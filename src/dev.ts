@@ -107,7 +107,7 @@ const server = http.createServer(async (req, res) => {
           const match = node.source.value.match(/^([-\w]+)(\/[-\w\/]+)?$/);
           if (match) {
             node.source.value = `https://esm.sh/${match[1]}${getVersion(
-              match[1]
+              match[1] as string
             )}${match[2] || ""}`;
           }
         }
