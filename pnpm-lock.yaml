@@ -5,6 +5,9 @@ specifiers:
   '@types/node': ^18.14.2
   '@types/react': ^18.0.27
   '@types/react-dom': ^18.0.10
+  react: 0.0.0-experimental-d49e0e0be-20230302
+  react-dom: 0.0.0-experimental-d49e0e0be-20230302
+  react-server-dom-webpack: 0.0.0-experimental-d49e0e0be-20230302
   tsx: ^3.12.3
 
 dependencies:
@@ -15,6 +18,9 @@ devDependencies:
   '@types/node': 18.14.5
   '@types/react': 18.0.28
   '@types/react-dom': 18.0.11
+  react: 0.0.0-experimental-d49e0e0be-20230302
+  react-dom: 0.0.0-experimental-d49e0e0be-20230302_qrzr74qg6p4dmcp6k3ulgtpgry
+  react-server-dom-webpack: 0.0.0-experimental-d49e0e0be-20230302_3luq6jx6lop4xk2qpwrmnll3iy
 
 packages:
 
@@ -370,6 +376,12 @@ packages:
     resolution: {integrity: sha512-hppQEBDmlwhFAXKJX2KnWLYu5yMfi91yazPb2l+lbJiwW+wdo1gNeRA+3RgNSO39WYX2euey41KEwnqesU2Jew==}
     dev: true
 
+  /acorn/6.4.2:
+    resolution: {integrity: sha512-XtGIhXwF8YM8bJhGxG5kXgjkEuNGLTkoYqVE+KMR+aspr4KGYmKYg7yUe3KghyQ9yheNwLnjmzh/7+gfDBmHCQ==}
+    engines: {node: '>=0.4.0'}
+    hasBin: true
+    dev: true
+
   /buffer-from/1.1.2:
     resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
     dev: false
@@ -419,6 +431,59 @@ packages:
   /get-tsconfig/4.4.0:
     resolution: {integrity: sha512-0Gdjo/9+FzsYhXCEFueo2aY1z1tpXrxWZzP7k8ul9qt1U5o8rYJwTJYmaeHdrVosYIVYkOy2iwCJ9FdpocJhPQ==}
     dev: false
+
+  /js-tokens/4.0.0:
+    resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
+    dev: true
+
+  /loose-envify/1.4.0:
+    resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
+    hasBin: true
+    dependencies:
+      js-tokens: 4.0.0
+    dev: true
+
+  /neo-async/2.6.2:
+    resolution: {integrity: sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==}
+    dev: true
+
+  /react-dom/0.0.0-experimental-d49e0e0be-20230302_qrzr74qg6p4dmcp6k3ulgtpgry:
+    resolution: {integrity: sha512-N2P82qsWUbIaZ1D1qUqSppa3V4c1xjmkwXrgKU13akC0+M51757J4/0j7vnsGpdYIF1CCaQrtLIvmwCJmu/1iQ==}
+    peerDependencies:
+      react: 0.0.0-experimental-d49e0e0be-20230302
+    dependencies:
+      loose-envify: 1.4.0
+      react: 0.0.0-experimental-d49e0e0be-20230302
+      scheduler: 0.0.0-experimental-d49e0e0be-20230302
+    dev: true
+
+  /react-server-dom-webpack/0.0.0-experimental-d49e0e0be-20230302_3luq6jx6lop4xk2qpwrmnll3iy:
+    resolution: {integrity: sha512-Wd95Y1TXFJnXEk44qv0R+NWxlUQ6dWE9BboHmUNErBMwkRy2+xKNSdf01P9FIarK0N2CEvVFIE8gbySuPaZIcA==}
+    engines: {node: '>=0.10.0'}
+    peerDependencies:
+      react: 0.0.0-experimental-d49e0e0be-20230302
+      react-dom: 0.0.0-experimental-d49e0e0be-20230302
+      webpack: ^5.59.0
+    dependencies:
+      acorn: 6.4.2
+      loose-envify: 1.4.0
+      neo-async: 2.6.2
+      react: 0.0.0-experimental-d49e0e0be-20230302
+      react-dom: 0.0.0-experimental-d49e0e0be-20230302_qrzr74qg6p4dmcp6k3ulgtpgry
+    dev: true
+
+  /react/0.0.0-experimental-d49e0e0be-20230302:
+    resolution: {integrity: sha512-uzd0LojQXTysCPzVFYwyCMQKr1dLQ+/Wmq+wjLYRBHyHC++jwqj2mFeNd400V3gDAIkpAkaLG8NghEzOp8wXUA==}
+    engines: {node: '>=0.10.0'}
+    dependencies:
+      loose-envify: 1.4.0
+    dev: true
+
+  /scheduler/0.0.0-experimental-d49e0e0be-20230302:
+    resolution: {integrity: sha512-68LvKA5zlZfSC4grcZGPruprtShPgdb98A+E3mDJWKUvNppm2rXwXrCyBo2OyKI+hoXpPPHg6X68wdJRZJNunQ==}
+    dependencies:
+      loose-envify: 1.4.0
+    dev: true
 
   /source-map-support/0.5.21:
     resolution: {integrity: sha512-uBHU3L3czsIyYXKX88fdrGovxdSCoTGDRZ6SYXtSRxLZUzHg5P/66Ht6uoUlHu9EZod+inXhKo3qQgwXUT/y1w==}
