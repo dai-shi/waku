@@ -11,6 +11,10 @@
     "cli.js",
     "scripts"
   ],
+  "scripts": {
+    "compile": "echo 'TODO'",
+    "test": "echo 'TODO'"
+  },
   "bin": {
     "wakuwork": "./cli.js"
   },
