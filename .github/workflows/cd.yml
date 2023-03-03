@@ -1,0 +1,21 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: DerYeger/pnpm-setup-action@master
+        with:
+          node-version: 18
+      - run: npm test
+      - run: npm run compile
+      - run: |
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

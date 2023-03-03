@@ -1,0 +1,14 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: DerYeger/pnpm-setup-action@master
+        with:
+          node-version: 18
+      - run: npm test
