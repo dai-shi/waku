@@ -1,0 +1,16 @@
+{
+  "name": "wakuwork-example",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "wakuwork dev"
+  },
+  "dependencies": {
+    "react": "0.0.0-experimental-d49e0e0be-20230302",
+    "react-dom": "0.0.0-experimental-d49e0e0be-20230302",
+    "react-server-dom-webpack": "0.0.0-experimental-d49e0e0be-20230302"
+  },
+  "devDependencies": {
+    "wakuwork": "^0.1.0"
+  }
+}
