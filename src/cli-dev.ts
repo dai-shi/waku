@@ -1,6 +1,6 @@
 import { startDevServer } from "./devServer.js";
 
-const opts: Record<string, string> = {};
+const opts: Record<string, unknown> = {};
 
 process.argv.forEach((arg, index) => {
   if (arg.startsWith("--")) {
