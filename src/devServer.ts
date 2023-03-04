@@ -1,11 +1,10 @@
 import path from "node:path";
 import fs from "node:fs";
-import fsPromises from "node:fs/promises";
 import http from "node:http";
+import Module from "node:module";
 import { URL } from "node:url";
 
 import * as swc from "@swc/core";
-import Module from "module";
 import RSDWRegister from "react-server-dom-webpack/node-register";
 import RSDWServer from "react-server-dom-webpack/server";
 
@@ -114,7 +113,7 @@ export function startDevServer(config?: DevServerConfig) {
       const url = new URL(req.url || "", "http://" + req.headers.host);
       if (url.pathname === "/") {
         const fname = path.join(dir, "index.html");
-        const stat = await fsPromises.stat(fname);
+        const stat = fs.statSync(fname);
         res.setHeader("Content-Length", stat.size);
         res.setHeader("Content-Type", "text/html; charset=utf-8");
         fs.createReadStream(fname).pipe(res);
@@ -166,7 +165,7 @@ export function startDevServer(config?: DevServerConfig) {
         res.end(code);
         return;
       }
-      const stat = await fsPromises.stat(fname);
+      const stat = fs.statSync(fname);
       res.setHeader("Content-Length", stat.size);
       // FIXME use proper content-type
       res.setHeader("Content-Type", "application/octet-stream");
