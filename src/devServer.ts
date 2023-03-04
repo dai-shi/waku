@@ -75,7 +75,7 @@ const savedLoad = (Module as any)._load;
 const getVersion = (name: string) => {
   const packageJson = require(path.join(cwd, "package.json"));
   const version = packageJson.dependencies[name];
-  return version ? `@${version}` : "";
+  return version ? `@${version.replace(/^\^/, "")}` : "";
 };
 
 const bundlerConfig = new Proxy(
