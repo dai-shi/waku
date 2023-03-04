@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { createFromFetch } from "react-server-dom-webpack/client";
 
 const fetchInnerApp = cache(
-  async (count: number): Promise<ReactNode> =>
+  (count: number): Promise<ReactNode> =>
     createFromFetch(fetch(`/src/InnerApp?__RSC&count=${count}`))
 );
 
