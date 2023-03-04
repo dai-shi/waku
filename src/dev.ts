@@ -8,6 +8,8 @@ import Module from "module";
 import register from "react-server-dom-webpack/node-register";
 import { renderToPipeableStream } from "react-server-dom-webpack/server";
 
+const require = Module.createRequire(import.meta.url);
+
 register();
 // HACK to pull directive to the root
 const savedCompile = (Module.prototype as any)._compile;
@@ -15,7 +17,23 @@ const savedCompile = (Module.prototype as any)._compile;
   content: string,
   filename: string
 ) {
-  const p = content.match(/(?:\n|;)("use (?:client|server)";)/);
+  const p = content.match(/(?:^|\n|;)("use (?:client|server)";)/);
+  content = swc.transformSync(content, {
+    jsc: {
+      parser: {
+        syntax: "typescript",
+        tsx: filename.endsWith(".tsx"),
+      },
+      transform: {
+        react: {
+          runtime: "automatic",
+        },
+      },
+    },
+    module: {
+      type: "commonjs",
+    },
+  }).code;
   if (p) {
     content = p[1] + content;
   }

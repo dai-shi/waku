@@ -4,7 +4,7 @@
     "target": "esnext",
     "downlevelIteration": true,
     "esModuleInterop": true,
-    "module": "es2015",
+    "module": "esnext",
     "moduleResolution": "node",
     "allowJs": true,
     "noUnusedLocals": true,
