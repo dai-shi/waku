@@ -7,10 +7,11 @@ import { URL } from "node:url";
 import * as swc from "@swc/core";
 import Module from "module";
 import register from "react-server-dom-webpack/node-register";
-import { renderToPipeableStream } from "react-server-dom-webpack/server";
+import RSDWServer from "react-server-dom-webpack/server";
 
 import type { DevServerConfig } from "./config";
 
+const { renderToPipeableStream } = RSDWServer;
 const require = Module.createRequire(import.meta.url);
 const cwd = process.cwd();
 const extensions = [".ts", ".tsx"];

@@ -1,7 +1,7 @@
 {
   "name": "wakuwork",
   "description": "Minimalistic React Framework",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "author": "Daishi Kato",
   "repository": {

@@ -11,7 +11,6 @@
     "react-server-dom-webpack": "0.0.0-experimental-d49e0e0be-20230302"
   },
   "devDependencies": {
-    "tsx": "^3.12.3",
-    "wakuwork": "^0.0.1"
+    "wakuwork": "^0.1.0"
   }
 }
