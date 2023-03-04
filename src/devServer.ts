@@ -96,7 +96,7 @@ export function startDevServer(config?: DevServerConfig) {
           {
             get(_target, name) {
               return {
-                id: "/" + path.relative("file://" + dir, filepath),
+                id: "/" + path.relative("file://" + encodeURI(dir), filepath),
                 chunks: [],
                 name,
                 async: true,
