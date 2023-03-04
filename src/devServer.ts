@@ -3,26 +3,39 @@ import fs from "node:fs";
 import fsPromises from "node:fs/promises";
 import http from "node:http";
 import { URL } from "node:url";
+
 import * as swc from "@swc/core";
 import Module from "module";
 import register from "react-server-dom-webpack/node-register";
 import { renderToPipeableStream } from "react-server-dom-webpack/server";
+
 import type { DevServerConfig } from "./config";
 
 const require = Module.createRequire(import.meta.url);
+const cwd = process.cwd();
+const extensions = [".ts", ".tsx"];
+
+const resolveFile = (name: string) => {
+  for (const ext of ["", ...extensions]) {
+    try {
+      const fname = path.join(cwd, name + ext);
+      fs.statSync(fname);
+      return fname;
+    } catch (e) {
+      continue;
+    }
+  }
+  throw new Error(`File not found: ${name}`);
+};
 
 register();
-// HACK to pull directive to the root
-const savedCompile = (Module.prototype as any)._compile;
-(Module.prototype as any)._compile = function (
-  content: string,
-  filename: string
-) {
-  content = swc.transformSync(content, {
+
+const transpileTypeScript = (m: any, fname: string) => {
+  let { code } = swc.transformFileSync(fname, {
     jsc: {
       parser: {
         syntax: "typescript",
-        tsx: filename.endsWith(".tsx"),
+        tsx: fname.endsWith(".tsx"),
       },
       transform: {
         react: {
@@ -33,29 +46,29 @@ const savedCompile = (Module.prototype as any)._compile;
     module: {
       type: "commonjs",
     },
-  }).code;
-  const p = content.match(/(?:^|\n|;)("use (?:client|server)";)/);
+  });
+  // HACK to pull directive to the root
+  // FIXME praseFileSync & transformSync would be nice, but encounter:
+  // https://github.com/swc-project/swc/issues/6255
+  const p = code.match(/(?:^|\n|;)("use (?:client|server)";)/);
   if (p) {
-    content = p[1] + content;
+    code = p[1] + code;
   }
-  savedCompile.call(this, content, filename);
+  return m._compile(code, fname);
 };
 
-const cwd = process.cwd();
+extensions.forEach((ext) => {
+  (Module as any)._extensions[ext] = transpileTypeScript;
+});
 
-const extensions = [".ts", ".tsx"];
-
-const resolveFile = async (name: string) => {
-  for (const ext of ["", ...extensions]) {
-    try {
-      const fname = path.join(cwd, name + ext);
-      await fsPromises.stat(fname);
-      return fname;
-    } catch (e) {
-      continue;
-    }
+const savedLoad = (Module as any)._load;
+(Module as any)._load = (fname: string, m: any, isMain: boolean) => {
+  try {
+    fname = resolveFile(fname);
+  } catch (e) {
+    // ignored
   }
-  throw new Error(`File not found: ${name}`);
+  return savedLoad(fname, m, isMain);
 };
 
 const getVersion = (name: string) => {
@@ -104,7 +117,7 @@ export function startDevServer(config?: DevServerConfig) {
         fs.createReadStream(fname).pipe(res);
         return;
       }
-      const fname = await resolveFile(url.pathname);
+      const fname = resolveFile(url.pathname);
       if (url.searchParams.has("__RSC")) {
         const name = url.searchParams.get("__RSC_NAME") || "default";
         url.searchParams.delete("__RSC");

@@ -1,4 +1,4 @@
-import { Counter } from "./Counter.tsx";
+import { Counter } from "./Counter";
 
 const App = ({ name = "Anonymous" }) => {
   return (
