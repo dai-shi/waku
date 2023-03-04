@@ -18,7 +18,6 @@ const savedCompile = (Module.prototype as any)._compile;
   content: string,
   filename: string
 ) {
-  const p = content.match(/(?:^|\n|;)("use (?:client|server)";)/);
   content = swc.transformSync(content, {
     jsc: {
       parser: {
@@ -35,6 +34,7 @@ const savedCompile = (Module.prototype as any)._compile;
       type: "commonjs",
     },
   }).code;
+  const p = content.match(/(?:^|\n|;)("use (?:client|server)";)/);
   if (p) {
     content = p[1] + content;
   }
@@ -109,6 +109,7 @@ export function startDevServer(config?: DevServerConfig) {
         const name = url.searchParams.get("__RSC_NAME") || "default";
         url.searchParams.delete("__RSC");
         url.searchParams.delete("__RSC_NAME");
+        // TODO can we use node:vm?
         const mod = require(fname);
         const props = Object.fromEntries(url.searchParams.entries());
         renderToPipeableStream((mod[name] || mod)(props), bundlerConfig).pipe(
