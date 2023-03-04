@@ -6,30 +6,23 @@ import { URL } from "node:url";
 
 import * as swc from "@swc/core";
 import Module from "module";
-import register from "react-server-dom-webpack/node-register";
+import RSDWRegister from "react-server-dom-webpack/node-register";
 import RSDWServer from "react-server-dom-webpack/server";
 
 import type { DevServerConfig } from "./config";
 
 const { renderToPipeableStream } = RSDWServer;
 const require = Module.createRequire(import.meta.url);
-const cwd = process.cwd();
 const extensions = [".ts", ".tsx"];
 
-const resolveFile = (name: string) => {
-  for (const ext of ["", ...extensions]) {
-    try {
-      const fname = path.join(cwd, name + ext);
-      fs.statSync(fname);
-      return fname;
-    } catch (e) {
-      continue;
-    }
-  }
-  throw new Error(`File not found: ${name}`);
-};
+RSDWRegister();
 
-register();
+// HACK to emulate webpack require
+const codeToInject = swc.parseSync(`
+  globalThis.__webpack_require__ = function (id) {
+    return import(id);
+  };
+`);
 
 const transpileTypeScript = (m: any, fname: string) => {
   let { code } = swc.transformFileSync(fname, {
@@ -63,55 +56,64 @@ extensions.forEach((ext) => {
 });
 
 const savedLoad = (Module as any)._load;
-(Module as any)._load = (fname: string, m: any, isMain: boolean) => {
-  try {
-    fname = resolveFile(fname);
-  } catch (e) {
-    // ignored
-  }
-  return savedLoad(fname, m, isMain);
-};
-
-const getVersion = (name: string) => {
-  const packageJson = require(path.join(cwd, "package.json"));
-  const version = packageJson.dependencies[name];
-  return version ? `@${version.replace(/^\^/, "")}` : "";
-};
-
-const bundlerConfig = new Proxy(
-  {},
-  {
-    get(_target, filepath: string) {
-      return new Proxy(
-        {},
-        {
-          get(_target, name) {
-            return {
-              id: "/" + path.relative("file://" + cwd, filepath),
-              chunks: [],
-              name,
-              async: true,
-            };
-          },
-        }
-      );
-    },
-  }
-);
-
-// HACK to emulate webpack require
-const codeToInject = swc.parseSync(`
-  globalThis.__webpack_require__ = function (id) {
-    return import(id);
-  };
-`);
 
 export function startDevServer(config?: DevServerConfig) {
+  const dir = path.resolve(config?.dir || ".");
+
+  const resolveFile = (name: string) => {
+    for (const ext of ["", ...extensions]) {
+      try {
+        const fname = path.join(dir, name + ext);
+        fs.statSync(fname);
+        return fname;
+      } catch (e) {
+        continue;
+      }
+    }
+    throw new Error(`File not found: ${name}`);
+  };
+
+  (Module as any)._load = (fname: string, m: any, isMain: boolean) => {
+    try {
+      fname = resolveFile(fname);
+    } catch (e) {
+      // ignored
+    }
+    return savedLoad(fname, m, isMain);
+  };
+
+  const getVersion = (name: string) => {
+    const packageJson = require(path.join(dir, "package.json"));
+    const version = packageJson.dependencies[name];
+    return version ? `@${version.replace(/^\^/, "")}` : "";
+  };
+
+  const bundlerConfig = new Proxy(
+    {},
+    {
+      get(_target, filepath: string) {
+        return new Proxy(
+          {},
+          {
+            get(_target, name) {
+              return {
+                id: "/" + path.relative("file://" + dir, filepath),
+                chunks: [],
+                name,
+                async: true,
+              };
+            },
+          }
+        );
+      },
+    }
+  );
+
   const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url || "", "http://" + req.headers.host);
       if (url.pathname === "/") {
-        const fname = path.join(cwd, "index.html");
+        const fname = path.join(dir, "index.html");
         const stat = await fsPromises.stat(fname);
         res.setHeader("Content-Length", stat.size);
         res.setHeader("Content-Type", "text/html; charset=utf-8");

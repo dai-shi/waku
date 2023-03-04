@@ -15,7 +15,8 @@
   ],
   "scripts": {
     "compile": "swc src -d dist",
-    "test": "tsc --project . --noEmit"
+    "test": "tsc --project . --noEmit",
+    "examples:01_counter": "npm run compile && ./cli.js dev --dir ./examples/01_counter"
   },
   "bin": {
     "wakuwork": "./cli.js"

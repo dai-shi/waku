@@ -1,4 +1,5 @@
 export type DevServerConfig = {
+  dir?: string;
   port?: number;
 }
 
