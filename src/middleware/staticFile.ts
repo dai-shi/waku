@@ -3,7 +3,7 @@ import fs from "node:fs";
 
 import type { Middleware } from "../config";
 
-export const staticFile: Middleware = async (config, req, res, next) => {
+const staticFile: Middleware = async (config, req, res, next) => {
   const dir = path.resolve(config?.devServer?.dir || ".");
   const url = new URL(req.url || "", "http://" + req.headers.host);
   const fname = path.join(dir, url.pathname);
@@ -17,3 +17,5 @@ export const staticFile: Middleware = async (config, req, res, next) => {
   }
   await next();
 };
+
+export default staticFile;

@@ -16,7 +16,7 @@ const codeToInject = swc.parseSync(`
   };
 `);
 
-export const tsFile: Middleware = async (config, req, res, next) => {
+const tsFile: Middleware = async (config, req, res, next) => {
   const dir = path.resolve(config?.devServer?.dir || ".");
   const resolveFile = (name: string) => {
     for (const ext of ["", ...extensions]) {
@@ -69,3 +69,5 @@ export const tsFile: Middleware = async (config, req, res, next) => {
   }
   await next();
 };
+
+export default tsFile;

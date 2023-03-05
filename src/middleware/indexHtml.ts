@@ -3,7 +3,7 @@ import fs from "node:fs";
 
 import type { Middleware } from "../config";
 
-export const indexHtml: Middleware = async (config, req, res, next) => {
+const indexHtml: Middleware = async (config, req, res, next) => {
   const dir = path.resolve(config?.devServer?.dir || ".");
   const url = new URL(req.url || "", "http://" + req.headers.host);
   if (url.pathname === "/") {
@@ -21,3 +21,5 @@ export const indexHtml: Middleware = async (config, req, res, next) => {
   }
   await next();
 };
+
+export default indexHtml;
