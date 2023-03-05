@@ -1,7 +1,9 @@
+import http from "node:http";
+
 export type Middleware = (
   config: Config,
-  req: Request,
-  res: Response,
+  req: http.IncomingMessage,
+  res: http.ServerResponse<http.IncomingMessage>,
   next: () => Promise<void>
 ) => Promise<void>;
 
