@@ -5,7 +5,7 @@ import * as swc from "@swc/core";
 import RSDWRegister from "react-server-dom-webpack/node-register";
 import RSDWServer from "react-server-dom-webpack/server";
 
-import type { Middleware } from "../config";
+import type { Middleware } from "../config.js";
 
 const { renderToPipeableStream } = RSDWServer;
 const require = Module.createRequire(import.meta.url);

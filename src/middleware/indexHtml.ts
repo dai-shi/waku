@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 
-import type { Middleware } from "../config";
+import type { Middleware } from "../config.js";
 
 const indexHtml: Middleware = async (config, req, res, next) => {
   const dir = path.resolve(config?.devServer?.dir || ".");
