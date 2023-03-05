@@ -8,7 +8,7 @@ import { createFromFetch } from "react-server-dom-webpack/client";
 
 const fetchInnerApp = cache(
   (count: number): Promise<ReactNode> =>
-    createFromFetch(fetch(`/src/InnerApp?__RSC&count=${count}`))
+    createFromFetch(fetch(`/RSC/InnerApp?count=${count}`))
 );
 
 export const Counter = ({ enableInnerApp = false }) => {

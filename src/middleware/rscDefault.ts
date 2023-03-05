@@ -1,5 +1,4 @@
 import path from "node:path";
-import fs from "node:fs";
 import Module from "node:module";
 
 import * as swc from "@swc/core";
@@ -47,15 +46,6 @@ extensions.forEach((ext) => {
 
 const rscDefault: Middleware = async (config, req, res, next) => {
   const dir = path.resolve(config?.devServer?.dir || ".");
-  const resolveFile = (name: string) => {
-    for (const ext of ["", ...extensions]) {
-      const fname = path.join(dir, name + ext);
-      if (fs.existsSync(fname)) {
-        return fname;
-      }
-    }
-    return null;
-  };
   const bundlerConfig = new Proxy(
     {},
     {
@@ -77,11 +67,9 @@ const rscDefault: Middleware = async (config, req, res, next) => {
     }
   );
   const url = new URL(req.url || "", "http://" + req.headers.host);
-  const fname = resolveFile(url.pathname);
-  if (fname && url.searchParams.has("__RSC")) {
-    const name = url.searchParams.get("__RSC_NAME") || "default";
-    url.searchParams.delete("__RSC");
-    url.searchParams.delete("__RSC_NAME");
+  const fname = path.join(dir, url.pathname);
+  const name = req.headers["x-react-server-component-name"];
+  if (typeof name === 'string') {
     // TODO can we use node:vm?
     const mod = require(fname);
     const props = Object.fromEntries(url.searchParams.entries());
