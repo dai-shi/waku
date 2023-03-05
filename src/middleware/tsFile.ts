@@ -1,10 +1,12 @@
 import path from "node:path";
 import fs from "node:fs";
+import Module from "node:module";
 
 import * as swc from "@swc/core";
 
 import type { Middleware } from "../config";
 
+const require = Module.createRequire(import.meta.url);
 const extensions = [".ts", ".tsx"];
 
 // HACK to emulate webpack require

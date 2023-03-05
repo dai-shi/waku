@@ -8,7 +8,7 @@
     "type": "git",
     "url": "https://github.com/dai-shi/wakuwork.git"
   },
-  "main": "./dist/index.js",
+  "main": "./dist/main.js",
   "bin": "./cli.js",
   "files": [
     "cli.js",

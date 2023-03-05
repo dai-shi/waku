@@ -1,1 +1,0 @@
-export { pipe } from './common';
