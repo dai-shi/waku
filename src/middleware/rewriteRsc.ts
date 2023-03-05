@@ -1,4 +1,4 @@
-import type { Middleware } from "../config.js";
+import type { Middleware } from "../config.ts";
 
 // This convension is just one idea.
 

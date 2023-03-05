@@ -1,4 +1,4 @@
-import type { Middleware } from "../config.js";
+import type { Middleware } from "../config.ts";
 
 const notFound: Middleware = async (_config, _req, res) => {
   res.statusCode = 404;

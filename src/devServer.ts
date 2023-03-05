@@ -1,6 +1,6 @@
 import http from "node:http";
 
-import type { Config } from "./config.js";
+import type { Config } from "./config.ts";
 import { pipe } from "./middleware/common.js";
 
 export function startDevServer(config: Config = {}) {

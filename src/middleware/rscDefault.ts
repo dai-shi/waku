@@ -5,15 +5,17 @@ import * as swc from "@swc/core";
 import RSDWRegister from "react-server-dom-webpack/node-register";
 import RSDWServer from "react-server-dom-webpack/server";
 
-import type { Middleware } from "../config.js";
+import type { Middleware } from "../config.ts";
 
 const { renderToPipeableStream } = RSDWServer;
 const require = Module.createRequire(import.meta.url);
-const extensions = [".ts", ".tsx"];
 
 RSDWRegister();
 
-const transpileTypeScript = (m: any, fname: string) => {
+(Module as any)._extensions[".ts"] = (Module as any)._extensions[".tsx"] = (
+  m: any,
+  fname: string
+) => {
   let { code } = swc.transformFileSync(fname, {
     jsc: {
       parser: {
@@ -40,10 +42,6 @@ const transpileTypeScript = (m: any, fname: string) => {
   return m._compile(code, fname);
 };
 
-extensions.forEach((ext) => {
-  (Module as any)._extensions[ext] = transpileTypeScript;
-});
-
 const rscDefault: Middleware = async (config, req, res, next) => {
   const dir = path.resolve(config?.devServer?.dir || ".");
   const bundlerConfig = new Proxy(
@@ -69,7 +67,7 @@ const rscDefault: Middleware = async (config, req, res, next) => {
   const url = new URL(req.url || "", "http://" + req.headers.host);
   const fname = path.join(dir, url.pathname);
   const name = req.headers["x-react-server-component-name"];
-  if (typeof name === 'string') {
+  if (typeof name === "string") {
     // TODO can we use node:vm?
     const mod = require(fname);
     const props = Object.fromEntries(url.searchParams.entries());

@@ -1,4 +1,4 @@
-import type { Middleware } from "../config.js";
+import type { Middleware } from "../config.ts";
 
 export const pipe =
   (middlewares: Middleware[]): Middleware =>

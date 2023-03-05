@@ -4,10 +4,9 @@ import Module from "node:module";
 
 import * as swc from "@swc/core";
 
-import type { Middleware } from "../config.js";
+import type { Middleware } from "../config.ts";
 
 const require = Module.createRequire(import.meta.url);
-const extensions = [".ts", ".tsx"];
 
 // HACK to emulate webpack require
 const codeToInject = swc.parseSync(`
@@ -18,29 +17,24 @@ const codeToInject = swc.parseSync(`
 
 const tsFile: Middleware = async (config, req, res, next) => {
   const dir = path.resolve(config?.devServer?.dir || ".");
-  const resolveFile = (name: string) => {
-    for (const ext of ["", ...extensions]) {
-      const fname = path.join(dir, name + ext);
-      if (fs.existsSync(fname)) {
-        return fname;
-      }
-    }
-    return null;
-  };
   const getVersion = (name: string) => {
     const packageJson = require(path.join(dir, "package.json"));
     const version = packageJson.dependencies[name];
     return version ? `@${version.replace(/^\^/, "")}` : "";
   };
   const url = new URL(req.url || "", "http://" + req.headers.host);
-  const fname = resolveFile(url.pathname);
-  if (fname && extensions.some((ext) => fname.endsWith(ext))) {
+  const fname = path.join(dir, url.pathname);
+  if ([".ts", ".tsx", ".mts"].some((ext) => fname.endsWith(ext))) {
+    if (!fs.existsSync(fname)) {
+      res.statusCode = 404;
+      res.end();
+      return;
+    }
     const mod = await swc.parseFile(fname, {
       syntax: "typescript",
       tsx: fname.endsWith(".tsx"),
     });
-    mod.body.push(...codeToInject.body);
-    // HACK we should transpile by ourselves in the future
+    // HACK we should transpile by ourselves in the future TODO
     mod.body.forEach((node) => {
       if (node.type === "ImportDeclaration") {
         const match = node.source.value.match(/^([-\w]+)(\/[-\w\/]+)?$/);
@@ -51,6 +45,7 @@ const tsFile: Middleware = async (config, req, res, next) => {
         }
       }
     });
+    mod.body.push(...codeToInject.body);
     const { code } = await swc.transform(mod, {
       sourceMaps: "inline",
       jsc: {
