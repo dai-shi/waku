@@ -8,7 +8,7 @@ import * as swc from "@swc/core";
 import RSDWRegister from "react-server-dom-webpack/node-register";
 import RSDWServer from "react-server-dom-webpack/server";
 
-import type { DevServerConfig } from "./config";
+import type { Config } from "./config";
 
 const { renderToPipeableStream } = RSDWServer;
 const require = Module.createRequire(import.meta.url);
@@ -56,8 +56,8 @@ extensions.forEach((ext) => {
 
 const savedLoad = (Module as any)._load;
 
-export function startDevServer(config?: DevServerConfig) {
-  const dir = path.resolve(config?.dir || ".");
+export function startDevServer(config?: Config) {
+  const dir = path.resolve(config?.devServer?.dir || ".");
 
   const resolveFile = (name: string) => {
     for (const ext of ["", ...extensions]) {
@@ -177,5 +177,5 @@ export function startDevServer(config?: DevServerConfig) {
     res.end();
   });
 
-  server.listen(config?.port ?? 3000);
+  server.listen(config?.devServer?.port ?? 3000);
 }
