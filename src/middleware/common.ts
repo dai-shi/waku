@@ -1,14 +1,15 @@
 import type { Middleware } from "../config";
 
 export const pipe =
-  (middleware: Middleware[]): Middleware =>
-  (req, res, next) => {
+  (middlewares: Middleware[]): Middleware =>
+  (config, req, res, next) => {
     const run = async (index: number) => {
-      if (index >= middleware.length) {
+      const middleware = middlewares[index];
+      if (!middleware) {
         return next();
       }
       let alreadyCalled = false;
-      await middleware[index]!(req, res, async () => {
+      await middleware(config, req, res, async () => {
         if (!alreadyCalled) {
           alreadyCalled = true;
           await run(index + 1);

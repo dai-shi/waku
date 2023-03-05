@@ -1,17 +1,18 @@
 export type Middleware = (
+  config: Config,
   req: Request,
   res: Response,
   next: () => Promise<void>
 ) => Promise<void>;
 
-type DevServerConfig = {
+type DevServer = {
   dir?: string;
   port?: number;
-  middleware?: (Middleware | string)[];
+  middlewares?: (Middleware | string)[];
 };
 
 export type Config = {
-  devServer?: DevServerConfig;
+  devServer?: DevServer;
 };
 
 export function defineConfig(config: Config): Config {
