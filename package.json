@@ -23,17 +23,17 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@swc/core": "^1.3.36"
+    "@swc/core": "^1.3.37"
   },
   "devDependencies": {
     "@swc/cli": "^0.1.62",
-    "@types/node": "^18.14.2",
-    "@types/react": "^18.0.27",
-    "@types/react-dom": "^18.0.10",
-    "react": "0.0.0-experimental-d49e0e0be-20230302",
-    "react-dom": "0.0.0-experimental-d49e0e0be-20230302",
-    "react-server-dom-webpack": "0.0.0-experimental-d49e0e0be-20230302",
-    "typescript": "^4.9.5"
+    "@types/node": "^18.14.6",
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.11",
+    "react": "0.0.0-experimental-b72ed698f-20230303",
+    "react-dom": "0.0.0-experimental-b72ed698f-20230303",
+    "react-server-dom-webpack": "0.0.0-experimental-b72ed698f-20230303",
+    "typescript": "^5.0.1-rc"
   },
   "peerDependencies": {
     "react": "experimental",
