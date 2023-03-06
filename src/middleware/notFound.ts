@@ -1,6 +1,6 @@
-import type { Middleware } from "../config.ts";
+import type { MiddlewareCreator } from "./common.ts";
 
-const notFound: Middleware = async (_config, _req, res) => {
+const notFound: MiddlewareCreator = () => async (_req, res) => {
   res.statusCode = 404;
   res.end();
 };

@@ -1,7 +1,6 @@
 import http from "node:http";
 
 export type Middleware = (
-  config: Config,
   req: http.IncomingMessage,
   res: http.ServerResponse,
   next: () => Promise<void>

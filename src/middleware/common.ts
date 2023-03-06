@@ -1,15 +1,17 @@
-import type { Middleware } from "../config.ts";
+import type { Config, Middleware } from "../config.ts";
+
+export type MiddlewareCreator = (config: Config) => Middleware;
 
 export const pipe =
   (middlewares: Middleware[]): Middleware =>
-  (config, req, res, next) => {
+  (req, res, next) => {
     const run = async (index: number) => {
       const middleware = middlewares[index];
       if (!middleware) {
         return next();
       }
       let alreadyCalled = false;
-      await middleware(config, req, res, async () => {
+      await middleware(req, res, async () => {
         if (!alreadyCalled) {
           alreadyCalled = true;
           await run(index + 1);

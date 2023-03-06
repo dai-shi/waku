@@ -1,6 +1,6 @@
 import http from "node:http";
 
-import type { Config } from "./config.ts";
+import type { Config, Middleware } from "./config.ts";
 import { pipe } from "./middleware/common.js";
 
 export function startDevServer(config: Config = {}) {
@@ -12,20 +12,18 @@ export function startDevServer(config: Config = {}) {
     "staticFile",
     "notFound",
   ];
-  const handler = pipe(
-    middlewares.map((middleware) => {
+  const resolvedMiddlewares = Promise.all<Middleware>(
+    middlewares.map(async (middleware) => {
       if (typeof middleware === "string") {
-        return async (config, req, res, next) => {
-          const mod = await import(`./middleware/${middleware}.js`);
-          await (mod.default || mod)(config, req, res, next);
-        };
+        const mod = await import(`./middleware/${middleware}.js`);
+        return (mod.default || mod)(config);
       }
       return middleware;
     })
   );
   const server = http.createServer(async (req, res) => {
     try {
-      await handler(config, req, res, async () => {});
+      await pipe(await resolvedMiddlewares)(req, res, async () => {});
       return;
     } catch (e) {
       console.info(e);

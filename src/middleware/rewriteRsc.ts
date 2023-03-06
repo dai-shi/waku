@@ -1,8 +1,8 @@
-import type { Middleware } from "../config.ts";
+import type { MiddlewareCreator } from "./common.ts";
 
 // This convension is just one idea.
 
-const rewriteRsc: Middleware = async (_config, req, _res, next) => {
+const rewriteRsc: MiddlewareCreator = () => async (req, _res, next) => {
   const url = new URL(req.url || "", "http://" + req.headers.host);
   if (url.pathname.startsWith("/RSC/")) {
     url.pathname = url.pathname.replace(/^\/RSC\//, "/src/") + ".tsx";

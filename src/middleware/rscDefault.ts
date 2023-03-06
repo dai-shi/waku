@@ -5,7 +5,7 @@ import * as swc from "@swc/core";
 import RSDWRegister from "react-server-dom-webpack/node-register";
 import RSDWServer from "react-server-dom-webpack/server";
 
-import type { Middleware } from "../config.ts";
+import type { MiddlewareCreator } from "./common.ts";
 
 const { renderToPipeableStream } = RSDWServer;
 const require = Module.createRequire(import.meta.url);
@@ -42,7 +42,7 @@ RSDWRegister();
   return m._compile(code, fname);
 };
 
-const rscDefault: Middleware = async (config, req, res, next) => {
+const rscDefault: MiddlewareCreator = (config) => {
   const dir = path.resolve(config?.devServer?.dir || ".");
   const bundlerConfig = new Proxy(
     {},
@@ -64,17 +64,21 @@ const rscDefault: Middleware = async (config, req, res, next) => {
       },
     }
   );
-  const url = new URL(req.url || "", "http://" + req.headers.host);
-  const fname = path.join(dir, url.pathname);
-  const name = req.headers["x-react-server-component-name"];
-  if (typeof name === "string") {
-    // TODO can we use node:vm?
-    const mod = require(fname);
-    const props = Object.fromEntries(url.searchParams.entries());
-    renderToPipeableStream((mod[name] || mod)(props), bundlerConfig).pipe(res);
-    return;
-  }
-  await next();
+  return async (req, res, next) => {
+    const url = new URL(req.url || "", "http://" + req.headers.host);
+    const fname = path.join(dir, url.pathname);
+    const name = req.headers["x-react-server-component-name"];
+    if (typeof name === "string") {
+      // TODO can we use node:vm?
+      const mod = require(fname);
+      const props = Object.fromEntries(url.searchParams.entries());
+      renderToPipeableStream((mod[name] || mod)(props), bundlerConfig).pipe(
+        res
+      );
+      return;
+    }
+    await next();
+  };
 };
 
 export default rscDefault;
