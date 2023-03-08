@@ -2,7 +2,7 @@
 
 "use client";
 
-import { use, useState } from "react";
+import { Suspense, use, useState } from "react";
 
 export const Counter = ({
   delayedMessage,
@@ -15,7 +15,9 @@ export const Counter = ({
       <p>Count: {count}</p>
       <button onClick={() => setCount((c) => c + 1)}>Increment</button>
       <h3>This is a client component.</h3>
-      <Message delayedMessage={delayedMessage} />
+      <Suspense fallback="Pending...">
+        <Message delayedMessage={delayedMessage} />
+      </Suspense>
     </div>
   );
 };
