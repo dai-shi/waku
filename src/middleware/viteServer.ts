@@ -43,11 +43,10 @@ const tsFile: MiddlewareCreator = (config) => {
     if (url.pathname === "/") {
       const fname = path.join(dir, "index.html");
       if (fs.existsSync(fname)) {
-        let data = await fsPromises.readFile(fname, { encoding: "utf-8" });
-        data = await vite.transformIndexHtml(req.url || "", data);
-        res.setHeader("Content-Length", data.length);
+        let content = await fsPromises.readFile(fname, { encoding: "utf-8" });
+        content = await vite.transformIndexHtml(req.url || "", content);
         res.setHeader("Content-Type", "text/html; charset=utf-8");
-        res.end(data);
+        res.end(content);
         return;
       }
       res.statusCode = 404;
