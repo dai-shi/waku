@@ -43,8 +43,8 @@ const rscDefault: MiddlewareCreator = (config) => {
       code = p[1] + code;
     }
     const savedPathToFileURL = url.pathToFileURL;
-    if (p?.[2] === "server") {
-      // HACK to resolve server module id
+    if (p) {
+      // HACK to resolve module id
       url.pathToFileURL = (p: string) =>
         ({ href: "/" + path.relative(dir, p) } as any);
     }
@@ -60,7 +60,7 @@ const rscDefault: MiddlewareCreator = (config) => {
           {
             get(_target, name) {
               return {
-                id: "/" + path.relative("file://" + encodeURI(dir), filepath),
+                id: filepath,
                 chunks: [],
                 name,
                 async: true,
