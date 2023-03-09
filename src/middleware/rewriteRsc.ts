@@ -8,6 +8,15 @@ const rewriteRsc: MiddlewareCreator = () => async (req, _res, next) => {
     url.pathname = url.pathname.replace(/^\/RSC\//, "/src/") + ".tsx";
     req.url = url.toString();
     req.headers["x-react-server-component-name"] = "default";
+  } else if (url.pathname === "/RSF") {
+    const id = url.searchParams.get("id");
+    if (!id) {
+      throw new Error("RSF: id is required");
+    }
+    url.pathname = id;
+    req.url = url.toString();
+    req.headers["x-react-server-function-name"] =
+      url.searchParams.get("name") || "default";
   }
   await next();
 };
