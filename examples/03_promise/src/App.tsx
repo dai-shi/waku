@@ -4,7 +4,7 @@ const App = ({ name = "Anonymous" }) => {
   const delayedMessage = new Promise<string>((resolve) => {
     setTimeout(() => {
       resolve("Hello from the server!");
-    }, 3000);
+    }, 2000);
   });
   return (
     <div style={{ border: "3px red dashed", margin: "1em", padding: "1em" }}>
