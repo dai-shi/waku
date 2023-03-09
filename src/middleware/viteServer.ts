@@ -53,15 +53,11 @@ const tsFile: MiddlewareCreator = (config) => {
       res.end();
       return;
     }
-    return new Promise((resolve, reject) => {
-      vite.middlewares(req, res, (err: unknown) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(next());
-        }
-      });
-    });
+    return new Promise((resolve, reject) =>
+      vite.middlewares(req, res, (err: unknown) =>
+        err ? reject(err) : resolve(next())
+      )
+    );
   };
 };
 
