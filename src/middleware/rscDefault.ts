@@ -1,5 +1,5 @@
 import path from "node:path";
-import Module from "node:module";
+import { createRequire } from "node:module";
 import url from "node:url";
 
 import * as swc from "@swc/core";
@@ -14,7 +14,7 @@ RSDWRegister();
 
 const rscDefault: MiddlewareCreator = (config) => {
   const dir = path.resolve(config?.devServer?.dir || ".");
-  const require = Module.createRequire(import.meta.url);
+  const require = createRequire(import.meta.url);
   (require as any).extensions[".ts"] = (require as any).extensions[".tsx"] = (
     m: any,
     fname: string
