@@ -18,11 +18,11 @@
   "scripts": {
     "compile": "swc src -d dist",
     "test": "tsc --project . --noEmit",
-    "examples:01_counter": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/01_counter\"}}' ./cli.js dev",
-    "examples:02_async": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/02_async\"}}' ./cli.js dev",
-    "examples:03_promise": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/03_promise\"}}' ./cli.js dev",
-    "examples:04_callserver": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/04_callserver\"}}' ./cli.js dev",
-    "examples:05_nesting": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/05_nesting\"}}' ./cli.js dev"
+    "examples:01_counter": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/01_counter\"}}' nodemon --ext ts,tsx --ignore ./examples/01_counter/src/Counter.tsx --exec /usr/bin/env ./cli.js dev",
+    "examples:02_async": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/02_async\"}}' nodemon --ext ts,tsx --ignore ./examples/02_async/src/Counter.tsx --exec /usr/bin/env ./cli.js dev",
+    "examples:03_promise": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/03_promise\"}}' nodemon --ext ts,tsx --ignore ./examples/03_promise/src/Counter.tsx --exec /usr/bin/env ./cli.js dev",
+    "examples:04_callserver": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/04_callserver\"}}' nodemon --ext ts,tsx --ignore ./examples/04_callserver/src/Counter.tsx --exec /usr/bin/env ./cli.js dev",
+    "examples:05_nesting": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/05_nesting\"}}' nodemon --ext ts,tsx --ignore ./examples/05_nesting/src/Counter.tsx --exec /usr/bin/env ./cli.js dev"
   },
   "license": "MIT",
   "dependencies": {
@@ -36,6 +36,7 @@
     "@types/node": "^18.14.6",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
+    "nodemon": "^2.0.21",
     "react": "0.0.0-experimental-b72ed698f-20230303",
     "react-dom": "0.0.0-experimental-b72ed698f-20230303",
     "react-server-dom-webpack": "0.0.0-experimental-b72ed698f-20230303",
