@@ -24,5 +24,5 @@ export const Counter = ({
 };
 
 const Message = ({ delayedMessage }: { delayedMessage: Promise<ReactNode> }) => (
-  <p>{use(delayedMessage)}</p>
+  <>{use(delayedMessage)}</>
 );
