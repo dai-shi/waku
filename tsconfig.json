@@ -12,6 +12,11 @@
     "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "wakuwork": ["./src/main.ts"],
+      "wakuwork/*": ["./src/*.ts"]
+    }
   }
 }

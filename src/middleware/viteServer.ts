@@ -1,11 +1,14 @@
 import path from "node:path";
 import fs from "node:fs";
 import fsPromises from "node:fs/promises";
+import url from "node:url";
 import { createServer } from "vite";
 import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
 import type { MiddlewareCreator } from "./common.ts";
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 const codeToInject = `
 globalThis.__webpack_require__ = function (id) {
@@ -29,10 +32,16 @@ const rscPlugin = (dir: string): Plugin => {
   };
 };
 
-const tsFile: MiddlewareCreator = (config) => {
+const viteServer: MiddlewareCreator = (config) => {
   const dir = path.resolve(config?.devServer?.dir || ".");
   const vitePromise = createServer({
     root: dir,
+    resolve: {
+      alias: {
+        "wakuwork/register": path.resolve(__dirname, "..", "register.js"),
+        "wakuwork": path.resolve(__dirname, "..", "main.js"),
+      },
+    },
     plugins: [react(), rscPlugin(dir)],
     server: { middlewareMode: true },
     appType: "custom",
@@ -61,4 +70,4 @@ const tsFile: MiddlewareCreator = (config) => {
   };
 };
 
-export default tsFile;
+export default viteServer;

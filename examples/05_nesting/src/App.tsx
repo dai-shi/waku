@@ -1,3 +1,5 @@
+import { register } from "wakuwork/register";
+
 import { Counter } from "./Counter.tsx";
 
 const App = ({ name = "Anonymous" }) => {
@@ -9,5 +11,7 @@ const App = ({ name = "Anonymous" }) => {
     </div>
   );
 };
+
+register('App', App);
 
 export default App;

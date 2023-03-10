@@ -1,12 +1,11 @@
 import { StrictMode } from "react";
-import type { ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { createFromFetch } from "react-server-dom-webpack/client";
+import { server } from "wakuwork";
+
+import App from "./App.tsx";
 
 const root = createRoot(document.getElementById("root")!);
 
-createFromFetch(fetch("/RSC/App?name=Wakuwork")).then(
-  (ele: ReactNode) => {
-    root.render(<StrictMode>{ele}</StrictMode>);
-  }
-);
+server(App)({ name: "Wakuwork" }).then((ele) => {
+  root.render(<StrictMode>{ele}</StrictMode>);
+});

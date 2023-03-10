@@ -1,3 +1,5 @@
+import { register } from "wakuwork/register";
+
 import { Counter } from "./Counter.tsx";
 
 const InnerApp = ({ count = -1 }) => {
@@ -9,5 +11,7 @@ const InnerApp = ({ count = -1 }) => {
     </div>
   );
 };
+
+register('InnerApp', InnerApp);
 
 export default InnerApp;

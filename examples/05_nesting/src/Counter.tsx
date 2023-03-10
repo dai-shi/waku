@@ -4,7 +4,9 @@
 
 import { cache, use, useState } from "react";
 import type { ReactNode } from "react";
-import { createFromFetch } from "react-server-dom-webpack/client";
+import { server } from "wakuwork";
+
+import InnerApp from "./InnerApp.tsx";
 
 export const Counter = ({ enableInnerApp = false }) => {
   const [count, setCount] = useState(0);
@@ -13,16 +15,16 @@ export const Counter = ({ enableInnerApp = false }) => {
       <p>Count: {count}</p>
       <button onClick={() => setCount((c) => c + 1)}>Increment</button>
       <h3>This is a client component.</h3>
-      {enableInnerApp && <InnerApp count={count} />}
+      {enableInnerApp && <ShowInnerApp count={count} />}
     </div>
   );
 };
 
 const fetchInnerApp = cache(async (count: number): Promise<ReactNode> => {
   await new Promise((r) => setTimeout(r, 1000)); // emulate slow network
-  return createFromFetch(fetch(`/RSC/InnerApp?count=${count}`));
+  return server(InnerApp)({ count });
 });
 
-const InnerApp = ({ count }: { count: number }) => (
+const ShowInnerApp = ({ count }: { count: number }) => (
   <>{use(fetchInnerApp(count))}</>
 );

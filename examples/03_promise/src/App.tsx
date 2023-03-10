@@ -1,3 +1,5 @@
+import { register } from "wakuwork/register";
+
 import { Counter } from "./Counter.tsx";
 
 const App = ({ name = "Anonymous" }) => {
@@ -14,5 +16,7 @@ const ServerMessage = async () => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
   return <p>Hello from server!</p>;
 };
+
+register("App", App);
 
 export default App;
