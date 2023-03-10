@@ -19,9 +19,10 @@
     "compile": "swc src -d dist",
     "test": "tsc --project . --noEmit",
     "examples:01_counter": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/01_counter\"}}' ./cli.js dev",
-    "examples:02_nesting": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/02_nesting\"}}' ./cli.js dev",
+    "examples:02_async": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/02_async\"}}' ./cli.js dev",
     "examples:03_promise": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/03_promise\"}}' ./cli.js dev",
-    "examples:04_callserver": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/04_callserver\"}}' ./cli.js dev"
+    "examples:04_callserver": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/04_callserver\"}}' ./cli.js dev",
+    "examples:05_nesting": "npm run compile && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/05_nesting\"}}' ./cli.js dev"
   },
   "license": "MIT",
   "dependencies": {

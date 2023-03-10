@@ -3,11 +3,12 @@
 "use client";
 
 import { Suspense, use, useState } from "react";
+import type { ReactNode } from "react";
 
 export const Counter = ({
   delayedMessage,
 }: {
-  delayedMessage: Promise<string>;
+  delayedMessage: Promise<ReactNode>;
 }) => {
   const [count, setCount] = useState(0);
   return (
@@ -22,6 +23,6 @@ export const Counter = ({
   );
 };
 
-const Message = ({ delayedMessage }: { delayedMessage: Promise<string> }) => (
+const Message = ({ delayedMessage }: { delayedMessage: Promise<ReactNode> }) => (
   <p>{use(delayedMessage)}</p>
 );
