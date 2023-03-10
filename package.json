@@ -22,7 +22,7 @@
   "scripts": {
     "compile": "npm run compile:code && npm run compile:types",
     "compile:code": "swc src -d dist",
-    "compile:types": "tsc --project . --declaration --emitDeclarationOnly",
+    "compile:types": "tsc --project tsconfig.build.json",
     "test": "tsc --project . --noEmit",
     "examples:01_counter": "npm run compile:code && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/01_counter\"}}' nodemon --ext ts,tsx --ignore ./examples/01_counter/src/Counter.tsx --exec /usr/bin/env ./cli.js dev",
     "examples:02_async": "npm run compile:code && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/02_async\"}}' nodemon --ext ts,tsx --ignore ./examples/02_async/src/Counter.tsx --exec /usr/bin/env ./cli.js dev",
