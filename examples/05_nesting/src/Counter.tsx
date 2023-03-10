@@ -2,29 +2,18 @@
 
 "use client";
 
-import { Suspense, cache, use, useState, useTransition } from "react";
+import { cache, use, useState } from "react";
 import type { ReactNode } from "react";
 import { createFromFetch } from "react-server-dom-webpack/client";
 
 export const Counter = ({ enableInnerApp = false }) => {
   const [count, setCount] = useState(0);
-  const [isPending, startTransition] = useTransition();
-  const inc = () => {
-    startTransition(() => {
-      setCount((c) => c + 1);
-    });
-  };
   return (
     <div style={{ border: "3px blue dashed", margin: "1em", padding: "1em" }}>
       <p>Count: {count}</p>
-      <button onClick={inc}>Increment</button>
-      {isPending && <span>Pending...</span>}
+      <button onClick={() => setCount((c) => c + 1)}>Increment</button>
       <h3>This is a client component.</h3>
-      {enableInnerApp && (
-        <Suspense fallback="Pending...">
-          <InnerApp count={count} />
-        </Suspense>
-      )}
+      {enableInnerApp && <InnerApp count={count} />}
     </div>
   );
 };
