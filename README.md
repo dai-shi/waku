@@ -23,3 +23,5 @@ Minimalistic React Framework
 - https://twitter.com/dai_shi/status/1633821215206035460
 - https://twitter.com/dai_shi/status/1633824588152074240
 - https://twitter.com/dai_shi/status/1633826855282434048
+- https://twitter.com/dai_shi/status/1634210639831867392
+- https://twitter.com/dai_shi/status/1634212827706654723
