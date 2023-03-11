@@ -5,7 +5,7 @@ import { componentToId } from "./register.js";
 
 const { createFromFetch } = RSDWClient;
 
-export function server<Props>(component: FunctionComponent<Props>) {
+export function serve<Props>(component: FunctionComponent<Props>) {
   const id = componentToId(component as FunctionComponent);
   return async (props: Props) => {
     const searchParams = new URLSearchParams();

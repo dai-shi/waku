@@ -4,7 +4,7 @@
 
 import { cache, use, useState } from "react";
 import type { ReactNode } from "react";
-import { server } from "wakuwork";
+import { serve } from "wakuwork";
 
 import InnerApp from "./InnerApp.tsx";
 
@@ -22,7 +22,7 @@ export const Counter = ({ enableInnerApp = false }) => {
 
 const fetchInnerApp = cache(async (count: number): Promise<ReactNode> => {
   await new Promise((r) => setTimeout(r, 1000)); // emulate slow network
-  return server(InnerApp)({ count });
+  return serve(InnerApp)({ count });
 });
 
 const ShowInnerApp = ({ count }: { count: number }) => (
