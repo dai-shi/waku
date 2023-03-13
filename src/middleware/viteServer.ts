@@ -10,6 +10,7 @@ import type { MiddlewareCreator } from "./common.ts";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
+// This actually belongs to the rscDefault middleware.
 const codeToInject = `
 globalThis.__webpack_require__ = function (id) {
   return import(/* @vite-ignore */ id);
