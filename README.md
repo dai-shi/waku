@@ -39,3 +39,5 @@ curl -L https://github.com/dai-shi/wakuwork/archive/main.tar.gz | tar -x --strip
 - https://twitter.com/dai_shi/status/1633826855282434048
 - https://twitter.com/dai_shi/status/1634210639831867392
 - https://twitter.com/dai_shi/status/1634212827706654723
+- https://twitter.com/dai_shi/status/1635142924928434177
+- https://twitter.com/dai_shi/status/1635149324383559681
