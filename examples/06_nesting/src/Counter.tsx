@@ -4,7 +4,7 @@
 
 import { cache, use, useState } from "react";
 import type { ReactNode } from "react";
-import { serve } from "wakuwork";
+import { serve } from "wakuwork/client";
 
 export const Counter = ({ enableInnerApp = false }) => {
   const [count, setCount] = useState(0);
@@ -20,7 +20,8 @@ export const Counter = ({ enableInnerApp = false }) => {
 
 const fetchInnerApp = cache(async (count: number): Promise<ReactNode> => {
   await new Promise((r) => setTimeout(r, 1000)); // emulate slow network
-  return serve('InnerApp')({ count });
+  // HACK not recommended at the moment for real use cases
+  return new Promise((resolve) => serve('InnerApp', resolve)({ count }));
 });
 
 const ShowInnerApp = ({ count }: { count: number }) => (

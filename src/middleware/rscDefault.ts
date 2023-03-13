@@ -53,10 +53,7 @@ const rscDefault: MiddlewareCreator = (config) => {
     url.pathToFileURL = savedPathToFileURL;
   };
 
-  const entriesFile = path.resolve(
-    dir,
-    config?.files?.entries || "entries.ts"
-  );
+  const entriesFile = path.resolve(dir, config?.files?.entries || "entries.ts");
   const { getEntry } = require(entriesFile);
 
   const bundlerConfig = new Proxy(
@@ -76,39 +73,37 @@ const rscDefault: MiddlewareCreator = (config) => {
 
   return async (req, res, next) => {
     const url = new URL(req.url || "", "http://" + req.headers.host);
-    {
-      const id = req.headers["x-react-server-component-id"];
-      if (typeof id === "string") {
-        let body = "";
-        for await (const chunk of req) {
-          body += chunk;
-        }
-        const props = JSON.parse(body || url.searchParams.get("props") || "{}");
-        let component = await getEntry(id);
-        if (typeof component !== "function") {
-          component = component.default;
-        }
-        renderToPipeableStream(component(props), bundlerConfig).pipe(res);
+    const rscId = req.headers["x-react-server-component-id"];
+    const rsfId = req.headers["x-react-server-function-id"];
+    if (typeof rsfId === "string") {
+      const [filePath, name] = rsfId.split("#");
+      const fname = path.join(dir, filePath!);
+      let body = "";
+      for await (const chunk of req) {
+        body += chunk;
+      }
+      const args = body ? JSON.parse(body) : [];
+      // TODO can we use node:vm?
+      const mod = require(fname);
+      const data = await (mod[name!] || mod)(...args);
+      if (typeof rscId !== "string") {
+        renderToPipeableStream(data, bundlerConfig).pipe(res);
         return;
       }
+      // continue for mutation mode
     }
-    {
-      const id = req.headers["x-react-server-function-id"];
-      if (typeof id === "string") {
-        const [filePath, name] = id.split("#");
-        const fname = path.join(dir, filePath!);
-        let body = "";
-        for await (const chunk of req) {
-          body += chunk;
-        }
-        const args = body ? JSON.parse(body) : [];
-        // TODO can we use node:vm?
-        const mod = require(fname);
-        renderToPipeableStream((mod[name!] || mod)(...args), bundlerConfig).pipe(
-          res
-        );
-        return;
+    if (typeof rscId === "string") {
+      let body = "";
+      for await (const chunk of req) {
+        body += chunk;
       }
+      const props = JSON.parse(body || url.searchParams.get("props") || "{}");
+      let component = await getEntry(rscId);
+      if (typeof component !== "function") {
+        component = component.default;
+      }
+      renderToPipeableStream(component(props), bundlerConfig).pipe(res);
+      return;
     }
     await next();
   };

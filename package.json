@@ -10,7 +10,9 @@
   },
   "exports": {
     "./package.json": "./package.json",
-    ".": "./dist/main.js"
+    ".": "./dist/main.js",
+    "./client": "./dist/client.js",
+    "./server": "./dist/server.js"
   },
   "bin": "./cli.js",
   "files": [
@@ -27,7 +29,8 @@
     "examples:02_async": "npm run compile:code && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/02_async\"}}' nodemon --ext ts,tsx --ignore ./examples/02_async/src/Counter.tsx --exec /usr/bin/env ./cli.js dev",
     "examples:03_promise": "npm run compile:code && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/03_promise\"}}' nodemon --ext ts,tsx --ignore ./examples/03_promise/src/Counter.tsx --exec /usr/bin/env ./cli.js dev",
     "examples:04_callserver": "npm run compile:code && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/04_callserver\"}}' nodemon --ext ts,tsx --ignore ./examples/04_callserver/src/Counter.tsx --exec /usr/bin/env ./cli.js dev",
-    "examples:05_nesting": "npm run compile:code && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/05_nesting\"}}' nodemon --ext ts,tsx --ignore ./examples/05_nesting/src/Counter.tsx --exec /usr/bin/env ./cli.js dev"
+    "examples:05_mutation": "npm run compile:code && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/05_mutation\"}}' nodemon --ext ts,tsx --ignore ./examples/05_mutation/src/Counter.tsx --exec /usr/bin/env ./cli.js dev",
+    "examples:06_nesting": "npm run compile:code && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/06_nesting\"}}' nodemon --ext ts,tsx --ignore ./examples/06_nesting/src/Counter.tsx --exec /usr/bin/env ./cli.js dev"
   },
   "license": "MIT",
   "dependencies": {
