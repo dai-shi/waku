@@ -9,9 +9,9 @@ specifiers:
   '@types/react-dom': ^18.0.11
   '@vitejs/plugin-react': ^3.1.0
   nodemon: ^2.0.21
-  react: 0.0.0-experimental-b72ed698f-20230303
-  react-dom: 0.0.0-experimental-b72ed698f-20230303
-  react-server-dom-webpack: 0.0.0-experimental-b72ed698f-20230303
+  react: 0.0.0-experimental-a8875eab7-20230310
+  react-dom: 0.0.0-experimental-a8875eab7-20230310
+  react-server-dom-webpack: 0.0.0-experimental-a8875eab7-20230310
   typescript: ^5.0.1-rc
   vite: ^4.1.4
 
@@ -27,9 +27,9 @@ devDependencies:
   '@types/react': 18.0.28
   '@types/react-dom': 18.0.11
   nodemon: 2.0.21
-  react: 0.0.0-experimental-b72ed698f-20230303
-  react-dom: 0.0.0-experimental-b72ed698f-20230303_zyr6glnzucqc2dxpaaplbkdl7y
-  react-server-dom-webpack: 0.0.0-experimental-b72ed698f-20230303_b6243ffkb5bkle3wpxnf3dtfj4
+  react: 0.0.0-experimental-a8875eab7-20230310
+  react-dom: 0.0.0-experimental-a8875eab7-20230310_kprbdlc4ys3ehb6d2iypim5egi
+  react-server-dom-webpack: 0.0.0-experimental-a8875eab7-20230310_iklglp3zbuckvpeokcdncmpnhm
   typescript: 5.0.1-rc
 
 packages:
@@ -1561,14 +1561,14 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  /react-dom/0.0.0-experimental-b72ed698f-20230303_zyr6glnzucqc2dxpaaplbkdl7y:
-    resolution: {integrity: sha512-3DZnfFyWk1OeQjfsTlJv7nMaPTNNqbPmaovLFOO3Eshqevy7OYt2rME1+OR/0C6jm00rwDLqw/f1lM+wr+2ATQ==}
+  /react-dom/0.0.0-experimental-a8875eab7-20230310_kprbdlc4ys3ehb6d2iypim5egi:
+    resolution: {integrity: sha512-Eh6M5NNxvFHoDVd6p5rIRRAMjpY0yyFaW/wh1bJnGNduAsgDQLgXZt5fwnuY0RfQEpRi6M5s6dxKsnHFulsfGg==}
     peerDependencies:
-      react: 0.0.0-experimental-b72ed698f-20230303
+      react: 0.0.0-experimental-a8875eab7-20230310
     dependencies:
       loose-envify: 1.4.0
-      react: 0.0.0-experimental-b72ed698f-20230303
-      scheduler: 0.0.0-experimental-b72ed698f-20230303
+      react: 0.0.0-experimental-a8875eab7-20230310
+      scheduler: 0.0.0-experimental-a8875eab7-20230310
     dev: true
 
   /react-refresh/0.14.0:
@@ -1576,23 +1576,23 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: false
 
-  /react-server-dom-webpack/0.0.0-experimental-b72ed698f-20230303_b6243ffkb5bkle3wpxnf3dtfj4:
-    resolution: {integrity: sha512-kw/HVGWb3jFmZEs5slfJ3EhmyIELivELs8ANvqU26CGNksz0Fj+k9xP+cWtKM3ZH8h2+tEPGLaewWpGEIo3/Qg==}
+  /react-server-dom-webpack/0.0.0-experimental-a8875eab7-20230310_iklglp3zbuckvpeokcdncmpnhm:
+    resolution: {integrity: sha512-Ve9JR8Rs+zH0KcYrj2XLwv6dMm3O/3yLkNYreNygnMH5iks471ZcwcQAxwRK9F5WsAUiaoNeWtDPf54XAp2XLQ==}
     engines: {node: '>=0.10.0'}
     peerDependencies:
-      react: 0.0.0-experimental-b72ed698f-20230303
-      react-dom: 0.0.0-experimental-b72ed698f-20230303
+      react: 0.0.0-experimental-a8875eab7-20230310
+      react-dom: 0.0.0-experimental-a8875eab7-20230310
       webpack: ^5.59.0
     dependencies:
       acorn: 6.4.2
       loose-envify: 1.4.0
       neo-async: 2.6.2
-      react: 0.0.0-experimental-b72ed698f-20230303
-      react-dom: 0.0.0-experimental-b72ed698f-20230303_zyr6glnzucqc2dxpaaplbkdl7y
+      react: 0.0.0-experimental-a8875eab7-20230310
+      react-dom: 0.0.0-experimental-a8875eab7-20230310_kprbdlc4ys3ehb6d2iypim5egi
     dev: true
 
-  /react/0.0.0-experimental-b72ed698f-20230303:
-    resolution: {integrity: sha512-RJQ5+Pz8w9JoSBl9b4yfRbK00ARR09TduKc3fCCFFSKecdA9Psma3fytUeN+FsZ7BkyhjtXQA4uCcRecf8kxWw==}
+  /react/0.0.0-experimental-a8875eab7-20230310:
+    resolution: {integrity: sha512-gT3Ag0to4AZSE7A4dR2ReJ01/Es1BCx/4ePWeYya7x/orOEqAPxzmhvpf8Lbj6ztDZ7PYJVbtw97zsQKAOtV4g==}
     engines: {node: '>=0.10.0'}
     dependencies:
       loose-envify: 1.4.0
@@ -1663,8 +1663,8 @@ packages:
     resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
     dev: true
 
-  /scheduler/0.0.0-experimental-b72ed698f-20230303:
-    resolution: {integrity: sha512-P7ywOMNOPNHm7VdN14S4sxhIfegNF3RVHjLG74G9f5RtUj8H+unI3nhtqpchePwFGkDaBNGE/sutUjmaqonMHg==}
+  /scheduler/0.0.0-experimental-a8875eab7-20230310:
+    resolution: {integrity: sha512-YtA7JRcolqriKgEdT7pPkRd7lhVreakS102TX5UJ1dJl88gnW/Otwvsp2/6+KZ6nn7Mn+OyuKInPcvpoEE+1PA==}
     dependencies:
       loose-envify: 1.4.0
     dev: true

@@ -96,20 +96,14 @@ const rscDefault: MiddlewareCreator = (config) => {
   const bundlerConfig = new Proxy(
     {},
     {
-      get(_target, filepath: string) {
-        return new Proxy(
-          {},
-          {
-            get(_target, name) {
-              return {
-                id: filepath,
-                chunks: [],
-                name,
-                async: true,
-              };
-            },
-          }
-        );
+      get(_target, id: string) {
+        const [filePath, name] = id.split("#");
+        return {
+          id: filePath,
+          chunks: [],
+          name,
+          async: true,
+        };
       },
     }
   );
@@ -144,9 +138,9 @@ const rscDefault: MiddlewareCreator = (config) => {
     }
     {
       const id = req.headers["x-react-server-function-id"];
-      const name = req.headers["x-react-server-function-name"];
-      if (typeof id === "string" && typeof name === "string") {
-        const fname = path.join(dir, id);
+      if (typeof id === "string") {
+        const [filePath, name] = id.split("#");
+        const fname = path.join(dir, filePath!);
         let body = "";
         for await (const chunk of req) {
           body += chunk;
@@ -154,7 +148,7 @@ const rscDefault: MiddlewareCreator = (config) => {
         const args = body ? JSON.parse(body) : [];
         // TODO can we use node:vm?
         const mod = require(fname);
-        renderToPipeableStream((mod[name] || mod)(...args), bundlerConfig).pipe(
+        renderToPipeableStream((mod[name!] || mod)(...args), bundlerConfig).pipe(
           res
         );
         return;

@@ -12,10 +12,9 @@ export function serve<Props>(component: FunctionComponent<Props>) {
     searchParams.set("rsc_id", id);
     searchParams.set("props", JSON.stringify(props));
     const ele: ReactNode = await createFromFetch(fetch(`/?${searchParams}`), {
-      callServer(id: { id: string; name: string }, args: unknown[]) {
+      callServer(id: string, args: unknown[]) {
         const searchParams = new URLSearchParams();
-        searchParams.set("rsf_id", id.id);
-        searchParams.set("name", id.name);
+        searchParams.set("rsf_id", id);
         const response = fetch(`/?${searchParams}`, {
           method: "POST",
           body: JSON.stringify(args),
