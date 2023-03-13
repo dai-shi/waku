@@ -12,6 +12,9 @@ const { renderToPipeableStream } = RSDWServer;
 
 RSDWRegister();
 
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const wakuworkServerFname = path.resolve(__dirname, "..", "server.js");
+
 const rscDefault: MiddlewareCreator = (config) => {
   const dir = path.resolve(config?.devServer?.dir || ".");
   const require = createRequire(import.meta.url);
@@ -36,6 +39,12 @@ const rscDefault: MiddlewareCreator = (config) => {
         type: "commonjs",
       },
     });
+    // HACK patch require for wakuwork register
+    // FIXME praseFileSync & transformSync would be nice, but encounter:
+    code = code.replace(
+      '=require("wakuwork/server");',
+      `=require("${wakuworkServerFname}");`
+    );
     // HACK to pull directive to the root
     // FIXME praseFileSync & transformSync would be nice, but encounter:
     // https://github.com/swc-project/swc/issues/6255
@@ -53,10 +62,26 @@ const rscDefault: MiddlewareCreator = (config) => {
     url.pathToFileURL = savedPathToFileURL;
   };
 
-  const entriesFile = path.resolve(
-    dir,
-    config?.files?.entries || "entries.ts"
-  );
+  const savedJsRequire = (require as any).extensions[".js"];
+  (require as any).extensions[".js"] = (m: any, fname: string) => {
+    if (fname !== wakuworkServerFname) {
+      return savedJsRequire(m, fname);
+    }
+    let { code } = swc.transformFileSync(fname, {
+      jsc: {
+        parser: {
+          syntax: "ecmascript",
+        },
+      },
+      module: {
+        type: "commonjs",
+      },
+    });
+    m._compile(code, fname);
+  };
+  const { shouldRerender } = require("../server.js");
+
+  const entriesFile = path.resolve(dir, config?.files?.entries || "entries.ts");
   const { getEntry } = require(entriesFile);
 
   const bundlerConfig = new Proxy(
@@ -76,39 +101,37 @@ const rscDefault: MiddlewareCreator = (config) => {
 
   return async (req, res, next) => {
     const url = new URL(req.url || "", "http://" + req.headers.host);
-    {
-      const id = req.headers["x-react-server-component-id"];
-      if (typeof id === "string") {
-        let body = "";
-        for await (const chunk of req) {
-          body += chunk;
-        }
-        const props = JSON.parse(body || url.searchParams.get("props") || "{}");
-        let component = await getEntry(id);
-        if (typeof component !== "function") {
-          component = component.default;
-        }
-        renderToPipeableStream(component(props), bundlerConfig).pipe(res);
+    const rscId = req.headers["x-react-server-component-id"];
+    const rsfId = req.headers["x-react-server-function-id"];
+    if (typeof rsfId === "string") {
+      const [filePath, name] = rsfId.split("#");
+      const fname = path.join(dir, filePath!);
+      let body = "";
+      for await (const chunk of req) {
+        body += chunk;
+      }
+      const args = body ? JSON.parse(body) : [];
+      // TODO can we use node:vm?
+      const mod = require(fname);
+      const data = await (mod[name!] || mod)(...args);
+      if (!shouldRerender(data)) {
+        renderToPipeableStream(data, bundlerConfig).pipe(res);
         return;
       }
+      // continue
     }
-    {
-      const id = req.headers["x-react-server-function-id"];
-      if (typeof id === "string") {
-        const [filePath, name] = id.split("#");
-        const fname = path.join(dir, filePath!);
-        let body = "";
-        for await (const chunk of req) {
-          body += chunk;
-        }
-        const args = body ? JSON.parse(body) : [];
-        // TODO can we use node:vm?
-        const mod = require(fname);
-        renderToPipeableStream((mod[name!] || mod)(...args), bundlerConfig).pipe(
-          res
-        );
-        return;
+    if (typeof rscId === "string") {
+      let body = "";
+      for await (const chunk of req) {
+        body += chunk;
       }
+      const props = JSON.parse(body || url.searchParams.get("props") || "{}");
+      let component = await getEntry(rscId);
+      if (typeof component !== "function") {
+        component = component.default;
+      }
+      renderToPipeableStream(component(props), bundlerConfig).pipe(res);
+      return;
     }
     await next();
   };

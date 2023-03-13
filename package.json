@@ -10,7 +10,9 @@
   },
   "exports": {
     "./package.json": "./package.json",
-    ".": "./dist/main.js"
+    ".": "./dist/main.js",
+    "./client": "./dist/client.js",
+    "./server": "./dist/server.js"
   },
   "bin": "./cli.js",
   "files": [

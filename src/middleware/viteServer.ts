@@ -43,7 +43,7 @@ const viteServer: MiddlewareCreator = (config) => {
     root: dir,
     resolve: {
       alias: {
-        "wakuwork/register": path.resolve(__dirname, "..", "register.js"),
+        "wakuwork/client": path.resolve(__dirname, "..", "client.js"),
         wakuwork: path.resolve(__dirname, "..", "main.js"),
       },
     },

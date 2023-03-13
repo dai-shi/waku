@@ -1,4 +1,4 @@
-import type { GetEntry } from "wakuwork";
+import type { GetEntry } from "wakuwork/server";
 
 export const getEntry: GetEntry = async (id) => {
   switch (id) {
