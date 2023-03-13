@@ -6,14 +6,15 @@ const { createFromFetch } = RSDWClient;
 
 export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
   return async (props: Props) => {
+    const serializedProps = JSON.stringify(props);
     const searchParams = new URLSearchParams();
     searchParams.set("rsc_id", rscId);
-    searchParams.set("props", JSON.stringify(props));
+    searchParams.set("props", serializedProps);
     const options = {
       callServer(rsfId: string, args: unknown[]) {
         const searchParams = new URLSearchParams();
         searchParams.set("rsc_id", rscId);
-        searchParams.set("props", JSON.stringify(props));
+        searchParams.set("props", serializedProps);
         searchParams.set("rsf_id", rsfId);
         const response = fetch(`/?${searchParams}`, {
           method: "POST",
