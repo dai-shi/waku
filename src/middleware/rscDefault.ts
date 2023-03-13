@@ -12,9 +12,6 @@ const { renderToPipeableStream } = RSDWServer;
 
 RSDWRegister();
 
-const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-const wakuworkServerFname = path.resolve(__dirname, "..", "server.js");
-
 const rscDefault: MiddlewareCreator = (config) => {
   const dir = path.resolve(config?.devServer?.dir || ".");
   const require = createRequire(import.meta.url);
@@ -39,12 +36,6 @@ const rscDefault: MiddlewareCreator = (config) => {
         type: "commonjs",
       },
     });
-    // HACK patch require for wakuwork register
-    // FIXME praseFileSync & transformSync would be nice, but encounter:
-    code = code.replace(
-      '=require("wakuwork/server");',
-      `=require("${wakuworkServerFname}");`
-    );
     // HACK to pull directive to the root
     // FIXME praseFileSync & transformSync would be nice, but encounter:
     // https://github.com/swc-project/swc/issues/6255
@@ -61,25 +52,6 @@ const rscDefault: MiddlewareCreator = (config) => {
     m._compile(code, fname);
     url.pathToFileURL = savedPathToFileURL;
   };
-
-  const savedJsRequire = (require as any).extensions[".js"];
-  (require as any).extensions[".js"] = (m: any, fname: string) => {
-    if (fname !== wakuworkServerFname) {
-      return savedJsRequire(m, fname);
-    }
-    let { code } = swc.transformFileSync(fname, {
-      jsc: {
-        parser: {
-          syntax: "ecmascript",
-        },
-      },
-      module: {
-        type: "commonjs",
-      },
-    });
-    m._compile(code, fname);
-  };
-  const { shouldRerender } = require("../server.js");
 
   const entriesFile = path.resolve(dir, config?.files?.entries || "entries.ts");
   const { getEntry } = require(entriesFile);
@@ -114,11 +86,11 @@ const rscDefault: MiddlewareCreator = (config) => {
       // TODO can we use node:vm?
       const mod = require(fname);
       const data = await (mod[name!] || mod)(...args);
-      if (!shouldRerender(data)) {
+      if (typeof rscId !== "string") {
         renderToPipeableStream(data, bundlerConfig).pipe(res);
         return;
       }
-      // continue
+      // continue for mutation mode
     }
     if (typeof rscId === "string") {
       let body = "";

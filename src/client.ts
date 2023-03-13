@@ -1,4 +1,3 @@
-import { isValidElement } from "react";
 import type { ReactNode } from "react";
 import RSDWClient from "react-server-dom-webpack/client";
 
@@ -13,20 +12,21 @@ export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
     const options = {
       callServer(rsfId: string, args: unknown[]) {
         const searchParams = new URLSearchParams();
-        searchParams.set("rsc_id", rscId);
-        searchParams.set("props", serializedProps);
         searchParams.set("rsf_id", rsfId);
+        if (isMutating) {
+          searchParams.set("rsc_id", rscId);
+          searchParams.set("props", serializedProps);
+        }
         const response = fetch(`/?${searchParams}`, {
           method: "POST",
           body: JSON.stringify(args),
         });
         const data = createFromFetch(response, options);
-        data.then((value: unknown) => {
-          // TODO should we check it more explicitly?
-          if (isValidElement(value)) {
-            render(value);
-          }
-        });
+        if (isMutating) {
+          data.then((value: unknown) => {
+            render(value as ReactNode);
+          });
+        }
         return data;
       },
     };
@@ -36,4 +36,15 @@ export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
     );
     render(ele);
   };
+}
+
+let isMutating = 0;
+
+export function mutate<Fn extends (...args: any[]) => any>(fn: Fn): Fn {
+  return ((...args: unknown[]) => {
+    ++isMutating;
+    const result = fn(...args);
+    --isMutating;
+    return result;
+  }) as Fn;
 }
