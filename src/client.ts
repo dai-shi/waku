@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import RSDWClient from "react-server-dom-webpack/client";
 
-const { createFromFetch } = RSDWClient;
+const { createFromFetch, encodeReply } = RSDWClient;
 
 export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
   return async (props: Props) => {
@@ -10,7 +10,8 @@ export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
     searchParams.set("rsc_id", rscId);
     searchParams.set("props", serializedProps);
     const options = {
-      callServer(rsfId: string, args: unknown[]) {
+      async callServer(rsfId: string, args: unknown[]) {
+        const isMutating = !!mutationMode;
         const searchParams = new URLSearchParams();
         searchParams.set("rsf_id", rsfId);
         if (isMutating) {
@@ -19,7 +20,7 @@ export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
         }
         const response = fetch(`/?${searchParams}`, {
           method: "POST",
-          body: JSON.stringify(args),
+          body: await encodeReply(args),
         });
         const data = createFromFetch(response, options);
         if (isMutating) {
@@ -38,13 +39,13 @@ export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
   };
 }
 
-let isMutating = 0;
+let mutationMode = 0;
 
 export function mutate<Fn extends (...args: any[]) => any>(fn: Fn): Fn {
   return ((...args: unknown[]) => {
-    ++isMutating;
+    ++mutationMode;
     const result = fn(...args);
-    --isMutating;
+    --mutationMode;
     return result;
   }) as Fn;
 }
