@@ -10,6 +10,8 @@ import type { MiddlewareCreator } from "./common.ts";
 
 const { renderToPipeableStream } = RSDWServer;
 
+// TODO we would like a native solution without hacks
+// https://nodejs.org/api/esm.html#loaders
 RSDWRegister();
 
 const rscDefault: MiddlewareCreator = (config) => {

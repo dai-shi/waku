@@ -6,7 +6,7 @@ import { pipe } from "./middleware/common.js";
 export function startDevServer(config: Config = {}) {
   const middlewares = config?.devServer?.middlewares || [
     "rewriteRsc",
-    "rscDefault",
+    "rscDev",
     "viteServer",
     "notFound",
   ];
