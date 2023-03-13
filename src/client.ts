@@ -9,16 +9,17 @@ export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
     const searchParams = new URLSearchParams();
     searchParams.set("rsc_id", rscId);
     searchParams.set("props", JSON.stringify(props));
-    const ele: ReactNode = await createFromFetch(fetch(`/?${searchParams}`), {
+    const options = {
       callServer(rsfId: string, args: unknown[]) {
         const searchParams = new URLSearchParams();
         searchParams.set("rsc_id", rscId);
+        searchParams.set("props", JSON.stringify(props));
         searchParams.set("rsf_id", rsfId);
         const response = fetch(`/?${searchParams}`, {
           method: "POST",
           body: JSON.stringify(args),
         });
-        const data = createFromFetch(response);
+        const data = createFromFetch(response, options);
         data.then((value: unknown) => {
           // TODO should we check it more explicitly?
           if (isValidElement(value)) {
@@ -27,7 +28,11 @@ export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
         });
         return data;
       },
-    });
+    };
+    const ele: ReactNode = await createFromFetch(
+      fetch(`/?${searchParams}`),
+      options
+    );
     render(ele);
   };
 }
