@@ -45,13 +45,13 @@
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
     "nodemon": "^2.0.21",
-    "react": "0.0.0-experimental-a8875eab7-20230310",
-    "react-dom": "0.0.0-experimental-a8875eab7-20230310",
-    "react-server-dom-webpack": "0.0.0-experimental-a8875eab7-20230310",
+    "react": "0.0.0-experimental-f828bad38-20230313",
+    "react-dom": "0.0.0-experimental-f828bad38-20230313",
+    "react-server-dom-webpack": "0.0.0-experimental-f828bad38-20230313",
     "typescript": "^5.0.1-rc"
   },
   "peerDependencies": {
-    "react": "0.0.0-experimental-a8875eab7-20230310",
-    "react-server-dom-webpack": "0.0.0-experimental-a8875eab7-20230310"
+    "react": "0.0.0-experimental-f828bad38-20230313",
+    "react-server-dom-webpack": "0.0.0-experimental-f828bad38-20230313"
   }
 }

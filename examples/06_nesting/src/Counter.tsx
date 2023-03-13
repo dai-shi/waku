@@ -2,7 +2,7 @@
 
 "use client";
 
-import { cache, use, useState } from "react";
+import { cache, useState } from "react";
 import type { ReactNode } from "react";
 import { serve } from "wakuwork/client";
 
@@ -25,5 +25,5 @@ const fetchInnerApp = cache(async (count: number): Promise<ReactNode> => {
 });
 
 const ShowInnerApp = ({ count }: { count: number }) => (
-  <>{use(fetchInnerApp(count))}</>
+  <>{fetchInnerApp(count)}</>
 );
