@@ -12,8 +12,14 @@ type DevServer = {
   middlewares?: (Middleware | string)[];
 };
 
+type Files = {
+  indexHtml?: string;
+  entries?: string;
+}
+
 export type Config = {
   devServer?: DevServer;
+  files?: Files;
 };
 
 export function defineConfig(config: Config): Config {

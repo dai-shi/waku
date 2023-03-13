@@ -10,8 +10,7 @@
   },
   "exports": {
     "./package.json": "./package.json",
-    ".": "./dist/main.js",
-    "./register": "./dist/register.js"
+    ".": "./dist/main.js"
   },
   "bin": "./cli.js",
   "files": [

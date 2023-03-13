@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { register } from "wakuwork/register";
 
 import { Counter } from "./Counter.tsx";
 
@@ -20,7 +19,5 @@ const ServerMessage = (async () => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
   return <p>Hello from server!</p>;
 }) as any; // FIXME how can we type async component?
-
-register('App', App);
 
 export default App;

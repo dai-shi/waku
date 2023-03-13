@@ -1,5 +1,3 @@
-import { register } from "wakuwork/register";
-
 import { Counter } from "./Counter.tsx";
 import { greet } from "./funcs.ts";
 
@@ -12,7 +10,5 @@ const App = ({ name = "Anonymous" }) => {
     </div>
   );
 };
-
-register('App', App);
 
 export default App;

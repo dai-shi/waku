@@ -1,5 +1,4 @@
 import path from "node:path";
-import fs from "node:fs";
 import { createRequire } from "node:module";
 import url from "node:url";
 
@@ -9,24 +8,9 @@ import RSDWServer from "react-server-dom-webpack/server";
 
 import type { MiddlewareCreator } from "./common.ts";
 
-const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-
 const { renderToPipeableStream } = RSDWServer;
 
 RSDWRegister();
-
-const walkDirSync = (dir: string, callback: (filePath: string) => void) => {
-  fs.readdirSync(dir, { withFileTypes: true }).forEach((dirent) => {
-    const filePath = path.join(dir, dirent.name);
-    if (dirent.isDirectory()) {
-      walkDirSync(filePath, callback);
-    } else {
-      callback(filePath);
-    }
-  });
-};
-
-const wakuworkRegisterFname = path.resolve(__dirname, "..", "register.js");
 
 const rscDefault: MiddlewareCreator = (config) => {
   const dir = path.resolve(config?.devServer?.dir || ".");
@@ -52,12 +36,6 @@ const rscDefault: MiddlewareCreator = (config) => {
         type: "commonjs",
       },
     });
-    // HACK patch require for wakuwork register
-    // FIXME praseFileSync & transformSync would be nice, but encounter:
-    code = code.replace(
-      '=require("wakuwork/register");',
-      `=require("${wakuworkRegisterFname}");`
-    );
     // HACK to pull directive to the root
     // FIXME praseFileSync & transformSync would be nice, but encounter:
     // https://github.com/swc-project/swc/issues/6255
@@ -75,23 +53,11 @@ const rscDefault: MiddlewareCreator = (config) => {
     url.pathToFileURL = savedPathToFileURL;
   };
 
-  const savedJsRequire = (require as any).extensions[".js"];
-  (require as any).extensions[".js"] = (m: any, fname: string) => {
-    if (fname !== wakuworkRegisterFname) {
-      return savedJsRequire(m, fname);
-    }
-    let { code } = swc.transformFileSync(fname, {
-      jsc: {
-        parser: {
-          syntax: "ecmascript",
-        },
-      },
-      module: {
-        type: "commonjs",
-      },
-    });
-    m._compile(code, fname);
-  };
+  const entriesFile = path.resolve(
+    dir,
+    config?.files?.entries || "entries.ts"
+  );
+  const { getEntry } = require(entriesFile);
 
   const bundlerConfig = new Proxy(
     {},
@@ -108,21 +74,8 @@ const rscDefault: MiddlewareCreator = (config) => {
     }
   );
 
-  // register all components
-  walkDirSync(dir, (filePath) => {
-    if (filePath.endsWith(".tsx")) {
-      try {
-        // TODO can we use node:vm?
-        require(filePath);
-      } catch (e) {
-        // ignore
-      }
-    }
-  });
-
   return async (req, res, next) => {
     const url = new URL(req.url || "", "http://" + req.headers.host);
-    const { idToComponent } = require("../register.js");
     {
       const id = req.headers["x-react-server-component-id"];
       if (typeof id === "string") {
@@ -131,7 +84,10 @@ const rscDefault: MiddlewareCreator = (config) => {
           body += chunk;
         }
         const props = JSON.parse(body || url.searchParams.get("props") || "{}");
-        const component = idToComponent(id);
+        let component = await getEntry(id);
+        if (typeof component !== "function") {
+          component = component.default;
+        }
         renderToPipeableStream(component(props), bundlerConfig).pipe(res);
         return;
       }

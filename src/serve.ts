@@ -1,12 +1,9 @@
 import type { FunctionComponent, ReactNode } from "react";
 import RSDWClient from "react-server-dom-webpack/client";
 
-import { componentToId } from "./register.js";
-
 const { createFromFetch } = RSDWClient;
 
-export function serve<Props>(component: FunctionComponent<Props>) {
-  const id = componentToId(component as FunctionComponent);
+export function serve<Props>(id: string) {
   return async (props: Props) => {
     const searchParams = new URLSearchParams();
     searchParams.set("rsc_id", id);
@@ -25,3 +22,11 @@ export function serve<Props>(component: FunctionComponent<Props>) {
     return ele;
   };
 }
+
+export type GetEntry = (
+  id: string
+) => Promise<FunctionComponent | { default: FunctionComponent }>;
+
+export type Preloader = () => Promise<
+  Iterable<readonly [id: string, props: unknown]>
+>;

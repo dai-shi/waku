@@ -34,12 +34,16 @@ const rscPlugin = (dir: string): Plugin => {
 
 const viteServer: MiddlewareCreator = (config) => {
   const dir = path.resolve(config?.devServer?.dir || ".");
+  const indexHtmlFile = path.resolve(
+    dir,
+    config?.files?.indexHtml || "index.html"
+  );
   const vitePromise = createServer({
     root: dir,
     resolve: {
       alias: {
         "wakuwork/register": path.resolve(__dirname, "..", "register.js"),
-        "wakuwork": path.resolve(__dirname, "..", "main.js"),
+        wakuwork: path.resolve(__dirname, "..", "main.js"),
       },
     },
     plugins: [react(), rscPlugin(dir)],
@@ -50,7 +54,7 @@ const viteServer: MiddlewareCreator = (config) => {
     const vite = await vitePromise;
     const url = new URL(req.url || "", "http://" + req.headers.host);
     if (url.pathname === "/") {
-      const fname = path.join(dir, "index.html");
+      const fname = indexHtmlFile;
       if (fs.existsSync(fname)) {
         let content = await fsPromises.readFile(fname, { encoding: "utf-8" });
         content = await vite.transformIndexHtml(req.url || "", content);
