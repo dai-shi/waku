@@ -1,14 +1,11 @@
-/// <reference types="react/experimental" />
-
 "use client";
 
 import { Suspense, useState } from "react";
-import type { ReactNode } from "react";
 
 export const Counter = ({
   delayedMessage,
 }: {
-  delayedMessage: Promise<ReactNode>;
+  delayedMessage: Promise<string>;
 }) => {
   const [count, setCount] = useState(0);
   return (
@@ -17,12 +14,21 @@ export const Counter = ({
       <button onClick={() => setCount((c) => c + 1)}>Increment</button>
       <h3>This is a client component.</h3>
       <Suspense fallback="Pending...">
-        <Message delayedMessage={delayedMessage} />
+        <Message count={count} delayedMessage={delayedMessage} />
       </Suspense>
     </div>
   );
 };
 
-const Message = ({ delayedMessage }: { delayedMessage: Promise<ReactNode> }) => (
-  <>{delayedMessage}</>
+const Message = ({
+  count,
+  delayedMessage,
+}: {
+  count: number;
+  delayedMessage: Promise<string>;
+}) => (
+  <ul>
+    <li>count: {count}</li>
+    <li>delayedMessage: {delayedMessage as any}</li>
+  </ul>
 );
