@@ -5,10 +5,12 @@ import url from "node:url";
 import * as swc from "@swc/core";
 import RSDWRegister from "react-server-dom-webpack/node-register";
 import RSDWServer from "react-server-dom-webpack/server";
+import busboy from "busboy";
 
 import type { MiddlewareCreator } from "./common.ts";
 
-const { renderToPipeableStream } = RSDWServer;
+const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
+  RSDWServer;
 
 // TODO we would like a native solution without hacks
 // https://nodejs.org/api/esm.html#loaders
@@ -80,11 +82,21 @@ const rscDefault: MiddlewareCreator = (config) => {
     if (typeof rsfId === "string") {
       const [filePath, name] = rsfId.split("#");
       const fname = path.join(dir, filePath!);
-      let body = "";
-      for await (const chunk of req) {
-        body += chunk;
+      let args: unknown[] = [];
+      if (req.headers["content-type"]?.startsWith("multipart/form-data")) {
+        const bb = busboy({ headers: req.headers });
+        const reply = decodeReplyFromBusboy(bb);
+        req.pipe(bb);
+        args = await reply;
+      } else {
+        let body = "";
+        for await (const chunk of req) {
+          body += chunk;
+        }
+        if (body) {
+          args = await decodeReply(body);
+        }
       }
-      const args = body ? JSON.parse(body) : [];
       // TODO can we use node:vm?
       const mod = require(fname);
       const data = await (mod[name!] || mod)(...args);
