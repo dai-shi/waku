@@ -42,3 +42,11 @@ curl -L https://github.com/dai-shi/wakuwork/archive/main.tar.gz | tar -x --strip
 - https://twitter.com/dai_shi/status/1635142924928434177
 - https://twitter.com/dai_shi/status/1635149324383559681
 - https://twitter.com/dai_shi/status/1635437958185766913
+
+## Diagrams
+
+### Architecture
+
+https://excalidraw.com/#json=W1apCXy3iJ3L0rIoDxtU4,AbYkm972Fm1CbIzfV5PTIQ
+
+![wakuwork-arch](https://user-images.githubusercontent.com/490574/224886500-20833ff1-961b-4b84-972c-6471bc732de2.png)
