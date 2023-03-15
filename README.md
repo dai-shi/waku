@@ -50,3 +50,9 @@ curl -L https://github.com/dai-shi/wakuwork/archive/main.tar.gz | tar -x --strip
 https://excalidraw.com/#json=W1apCXy3iJ3L0rIoDxtU4,AbYkm972Fm1CbIzfV5PTIQ
 
 ![wakuwork-arch](https://user-images.githubusercontent.com/490574/224886500-20833ff1-961b-4b84-972c-6471bc732de2.png)
+
+### How React Server Functions Work
+
+https://excalidraw.com/#json=fMeNJovUG7PGnpvP64XVw,kjZBTeM2KPZKhWtALDOY8A
+
+![react-server-functions](https://user-images.githubusercontent.com/490574/225330279-e10cee1e-ffb9-49d1-b47c-6c46eb7f6c3a.png)
