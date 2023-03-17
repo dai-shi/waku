@@ -26,6 +26,8 @@ curl -L https://github.com/dai-shi/wakuwork/archive/main.tar.gz | tar -x --strip
 
 ## Tweets
 
+<details>
+
 - https://twitter.com/dai_shi/status/1631668890861441024
 - https://twitter.com/dai_shi/status/1631989295866347520
 - https://twitter.com/dai_shi/status/1632005473401716736
@@ -42,6 +44,9 @@ curl -L https://github.com/dai-shi/wakuwork/archive/main.tar.gz | tar -x --strip
 - https://twitter.com/dai_shi/status/1635142924928434177
 - https://twitter.com/dai_shi/status/1635149324383559681
 - https://twitter.com/dai_shi/status/1635437958185766913
+- https://twitter.com/dai_shi/status/1636744180902014981
+
+</details>
 
 ## Diagrams
 
