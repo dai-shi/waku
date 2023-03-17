@@ -1,6 +1,8 @@
 import path from "node:path";
+import fs from "node:fs";
 import { createRequire } from "node:module";
 import url from "node:url";
+import { Writable } from "node:stream";
 
 import * as swc from "@swc/core";
 import RSDWRegister from "react-server-dom-webpack/node-register";
@@ -8,6 +10,7 @@ import RSDWServer from "react-server-dom-webpack/server";
 import busboy from "busboy";
 
 import type { MiddlewareCreator } from "./common.ts";
+import type { GetEntry, Prerenderer } from "../server.ts";
 
 const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
   RSDWServer;
@@ -20,13 +23,6 @@ const rscDefault: MiddlewareCreator = (config) => {
   if (!config.devServer) {
     config.devServer = {};
   }
-  config.devServer.INTERNAL_scriptToInject = (_path: string) => {
-    return `
-globalThis.__webpack_require__ = function (id) {
-  return import(/* @vite-ignore */ id);
-};
-`;
-  };
   const dir = path.resolve(config.devServer.dir || ".");
   const require = createRequire(import.meta.url);
 
@@ -67,9 +63,6 @@ globalThis.__webpack_require__ = function (id) {
     url.pathToFileURL = savedPathToFileURL;
   };
 
-  const entriesFile = path.resolve(dir, config.files?.entries || "entries.ts");
-  const { getEntry } = require(entriesFile);
-
   const bundlerConfig = new Proxy(
     {},
     {
@@ -84,6 +77,73 @@ globalThis.__webpack_require__ = function (id) {
       },
     }
   );
+
+  const entriesFile = path.resolve(dir, config.files?.entries || "entries.ts");
+  let getEntry: GetEntry | undefined;
+  let prerenderer: Prerenderer | undefined;
+  if (fs.existsSync(entriesFile)) {
+    ({ getEntry, prerenderer } = require(entriesFile));
+  }
+
+  const getFunctionComponent =
+    getEntry &&
+    (async (id: string) => {
+      const mod = await getEntry!(id);
+      if (typeof mod === "function") {
+        return mod;
+      }
+      return mod.default;
+    });
+
+  config.devServer.INTERNAL_scriptToInject = async (path: string) => {
+    type Id = string;
+    type SerializedProps = string;
+    type DataURL = string;
+    const prerendered: Record<Id, Record<SerializedProps, DataURL>> = {};
+    if (getFunctionComponent && prerenderer) {
+      await Promise.all(
+        [...(await prerenderer(path))].map(async ([id, props]) => {
+          // FIXME we blindly expect JSON.stringify usage is deterministic
+          const serializedProps = JSON.stringify(props);
+          const component = await getFunctionComponent(id);
+          if (!prerendered[id]) {
+            prerendered[id] = {};
+          }
+          return new Promise<void>((resolve) => {
+            const chunks: Uint8Array[] = [];
+            const writable = new Writable({
+              write(chunk, _encoding, callback) {
+                chunks.push(chunk);
+                callback();
+              },
+              final(callback) {
+                const buf = Buffer.concat(chunks);
+                prerendered[id]![serializedProps] =
+                  "data:text/x-component;base64," + buf.toString("base64");
+                resolve();
+                callback();
+              },
+            });
+            renderToPipeableStream(component(props as {}), bundlerConfig).pipe(
+              writable
+            );
+          });
+        })
+      );
+    }
+    return (
+      `
+globalThis.__webpack_require__ = function (id) {
+  return import(id);
+};
+` +
+      (Object.keys(prerendered).length
+        ? `
+globalThis.__WAKUWORK_PRERENDERED__ = ${JSON.stringify(prerendered)};
+`
+        : "")
+    );
+  };
 
   return async (req, res, next) => {
     const url = new URL(req.url || "", "http://" + req.headers.host);
@@ -111,6 +171,7 @@ globalThis.__webpack_require__ = function (id) {
       const mod = require(fname);
       const data = await (mod[name!] || mod)(...args);
       if (typeof rscId !== "string") {
+        res.setHeader("Content-Type", "text/x-component");
         renderToPipeableStream(data, bundlerConfig).pipe(res);
         return;
       }
@@ -121,11 +182,13 @@ globalThis.__webpack_require__ = function (id) {
       for await (const chunk of req) {
         body += chunk;
       }
-      const props = JSON.parse(body || url.searchParams.get("props") || "{}");
-      let component = await getEntry(rscId);
-      if (typeof component !== "function") {
-        component = component.default;
-      }
+      const props: {} = JSON.parse(
+        body || url.searchParams.get("props") || "{}"
+      );
+      const component = getFunctionComponent
+        ? await getFunctionComponent(rscId)
+        : () => null;
+      res.setHeader("Content-Type", "text/x-component");
       renderToPipeableStream(component(props), bundlerConfig).pipe(res);
       return;
     }

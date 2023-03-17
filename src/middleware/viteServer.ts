@@ -10,15 +10,17 @@ import type { MiddlewareCreator } from "./common.ts";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
-const rscPlugin = (scriptToInject?: (path: string) => string): Plugin => {
+const rscPlugin = (
+  scriptToInject?: (path: string) => Promise<string>
+): Plugin => {
   return {
     name: "rscPlugin",
-    transformIndexHtml(_html, ctx) {
+    async transformIndexHtml(_html, ctx) {
       if (scriptToInject) {
         return [
           {
             tag: "script",
-            children: scriptToInject(ctx.path),
+            children: await scriptToInject(ctx.path),
             injectTo: "body",
           },
         ];

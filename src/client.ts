@@ -5,6 +5,7 @@ const { createFromFetch, encodeReply } = RSDWClient;
 
 export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
   return async (props: Props) => {
+    // FIXME we blindly expect JSON.stringify usage is deterministic
     const serializedProps = JSON.stringify(props);
     const searchParams = new URLSearchParams();
     searchParams.set("rsc_id", rscId);
@@ -31,8 +32,11 @@ export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
         return data;
       },
     };
+    const prerendered = (globalThis as any).__WAKUWORK_PRERENDERED__?.[rscId]?.[
+      serializedProps
+    ];
     const ele: ReactNode = await createFromFetch(
-      fetch(`/?${searchParams}`),
+      fetch(prerendered || `/?${searchParams}`),
       options
     );
     render(ele);

@@ -10,7 +10,7 @@ type DevServer = {
   dir?: string;
   port?: number;
   middlewares?: (Middleware | string)[];
-  INTERNAL_scriptToInject?: (path: string) => string;
+  INTERNAL_scriptToInject?: (path: string) => Promise<string>;
 };
 
 type Files = {
