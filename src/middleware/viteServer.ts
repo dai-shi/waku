@@ -10,65 +10,64 @@ import type { MiddlewareCreator } from "./common.ts";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
-// This actually belongs to the rscDefault middleware.
-const codeToInject = `
-globalThis.__webpack_require__ = function (id) {
-  return import(/* @vite-ignore */ id);
-};
-`;
-
-const rscPlugin = (dir: string): Plugin => {
+const rscPlugin = (scriptToInject?: (path: string) => string): Plugin => {
   return {
     name: "rscPlugin",
-    transform(src, id) {
-      const relativePath = path.relative(dir, id);
-      if (
-        !relativePath.startsWith("node_modules/") &&
-        (relativePath.endsWith(".ts") || relativePath.endsWith(".tsx"))
-      ) {
-        return src + codeToInject;
+    transformIndexHtml(_html, ctx) {
+      if (scriptToInject) {
+        return [
+          {
+            tag: "script",
+            children: scriptToInject(ctx.path),
+            injectTo: "body",
+          },
+        ];
       }
-      return src;
     },
   };
 };
 
 const viteServer: MiddlewareCreator = (config) => {
-  const dir = path.resolve(config?.devServer?.dir || ".");
+  const dir = path.resolve(config.devServer?.dir || ".");
   const indexHtmlFile = path.resolve(
     dir,
-    config?.files?.indexHtml || "index.html"
+    config.files?.indexHtml || "index.html"
   );
   const vitePromise = createServer({
     root: dir,
     resolve: {
       alias: {
-        "wakuwork/client": path.resolve(__dirname, "..", "client.js")
+        "wakuwork/client": path.resolve(__dirname, "..", "client.js"),
       },
     },
-    plugins: [react(), rscPlugin(dir)],
+    plugins: [react(), rscPlugin(config.devServer?.INTERNAL_scriptToInject)],
     server: { middlewareMode: true },
     appType: "custom",
   });
   return async (req, res, next) => {
     const vite = await vitePromise;
-    const url = new URL(req.url || "", "http://" + req.headers.host);
-    if (url.pathname === "/") {
-      const fname = indexHtmlFile;
-      if (fs.existsSync(fname)) {
-        let content = await fsPromises.readFile(fname, { encoding: "utf-8" });
-        content = await vite.transformIndexHtml(req.url || "", content);
-        res.setHeader("Content-Type", "text/html; charset=utf-8");
-        res.end(content);
+    const apiFallback = async () => {
+      const url = new URL(req.url || "", "http://" + req.headers.host);
+      // TODO make it configurable?
+      const hasExtension = url.pathname.split(".").length > 1;
+      if (!hasExtension) {
+        const fname = indexHtmlFile;
+        if (fs.existsSync(fname)) {
+          let content = await fsPromises.readFile(fname, { encoding: "utf-8" });
+          content = await vite.transformIndexHtml(req.url || "", content);
+          res.setHeader("Content-Type", "text/html; charset=utf-8");
+          res.end(content);
+          return;
+        }
+        res.statusCode = 404;
+        res.end();
         return;
       }
-      res.statusCode = 404;
-      res.end();
-      return;
-    }
+      await next();
+    };
     return new Promise((resolve, reject) =>
       vite.middlewares(req, res, (err: unknown) =>
-        err ? reject(err) : resolve(next())
+        err ? reject(err) : resolve(apiFallback())
       )
     );
   };

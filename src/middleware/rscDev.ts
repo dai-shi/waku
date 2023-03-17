@@ -17,7 +17,17 @@ const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
 RSDWRegister();
 
 const rscDefault: MiddlewareCreator = (config) => {
-  const dir = path.resolve(config?.devServer?.dir || ".");
+  if (!config.devServer) {
+    config.devServer = {};
+  }
+  config.devServer.INTERNAL_scriptToInject = (_path: string) => {
+    return `
+globalThis.__webpack_require__ = function (id) {
+  return import(/* @vite-ignore */ id);
+};
+`;
+  };
+  const dir = path.resolve(config.devServer.dir || ".");
   const require = createRequire(import.meta.url);
 
   (require as any).extensions[".ts"] = (require as any).extensions[".tsx"] = (
@@ -57,7 +67,7 @@ const rscDefault: MiddlewareCreator = (config) => {
     url.pathToFileURL = savedPathToFileURL;
   };
 
-  const entriesFile = path.resolve(dir, config?.files?.entries || "entries.ts");
+  const entriesFile = path.resolve(dir, config.files?.entries || "entries.ts");
   const { getEntry } = require(entriesFile);
 
   const bundlerConfig = new Proxy(

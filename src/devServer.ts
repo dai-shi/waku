@@ -4,7 +4,7 @@ import type { Config, Middleware } from "./config.ts";
 import { pipe } from "./middleware/common.js";
 
 export function startDevServer(config: Config = {}) {
-  const middlewares = config?.devServer?.middlewares || [
+  const middlewares = config.devServer?.middlewares || [
     "rewriteRsc",
     "rscDev",
     "viteServer",
@@ -29,5 +29,5 @@ export function startDevServer(config: Config = {}) {
     res.statusCode = 500;
     res.end();
   });
-  server.listen(config?.devServer?.port ?? 3000);
+  server.listen(config.devServer?.port ?? 3000);
 }

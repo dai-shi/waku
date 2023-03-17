@@ -10,6 +10,7 @@ type DevServer = {
   dir?: string;
   port?: number;
   middlewares?: (Middleware | string)[];
+  INTERNAL_scriptToInject?: (path: string) => string;
 };
 
 type Files = {
