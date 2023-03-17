@@ -6,9 +6,9 @@
     "dev": "wakuwork dev"
   },
   "dependencies": {
-    "react": "0.0.0-experimental-f828bad38-20230313",
-    "react-dom": "0.0.0-experimental-f828bad38-20230313",
-    "react-server-dom-webpack": "0.0.0-experimental-f828bad38-20230313"
+    "react": "0.0.0-experimental-47cf4e578-20230315",
+    "react-dom": "0.0.0-experimental-47cf4e578-20230315",
+    "react-server-dom-webpack": "0.0.0-experimental-47cf4e578-20230315"
   },
   "devDependencies": {
     "wakuwork": "^0.6.0"

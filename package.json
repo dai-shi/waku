@@ -34,26 +34,26 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@swc/core": "1.3.39",
+    "@swc/core": "1.3.40",
     "@vitejs/plugin-react": "^3.1.0",
     "busboy": "^1.6.0",
-    "vite": "^4.1.4"
+    "vite": "^4.2.0"
   },
   "devDependencies": {
     "@swc/cli": "^0.1.62",
     "@types/babel__core": "^7.20.0",
     "@types/busboy": "^1.5.0",
-    "@types/node": "^18.15.0",
+    "@types/node": "^18.15.3",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
     "nodemon": "^2.0.21",
-    "react": "0.0.0-experimental-f828bad38-20230313",
-    "react-dom": "0.0.0-experimental-f828bad38-20230313",
-    "react-server-dom-webpack": "0.0.0-experimental-f828bad38-20230313",
-    "typescript": "^5.0.1-rc"
+    "react": "0.0.0-experimental-47cf4e578-20230315",
+    "react-dom": "0.0.0-experimental-47cf4e578-20230315",
+    "react-server-dom-webpack": "0.0.0-experimental-47cf4e578-20230315",
+    "typescript": "^5.0.2"
   },
   "peerDependencies": {
-    "react": "0.0.0-experimental-f828bad38-20230313",
-    "react-server-dom-webpack": "0.0.0-experimental-f828bad38-20230313"
+    "react": "0.0.0-experimental-47cf4e578-20230315",
+    "react-server-dom-webpack": "0.0.0-experimental-47cf4e578-20230315"
   }
 }
