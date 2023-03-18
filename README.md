@@ -63,3 +63,9 @@ https://excalidraw.com/#json=W1apCXy3iJ3L0rIoDxtU4,AbYkm972Fm1CbIzfV5PTIQ
 https://excalidraw.com/#json=fMeNJovUG7PGnpvP64XVw,kjZBTeM2KPZKhWtALDOY8A
 
 ![react-server-functions](https://user-images.githubusercontent.com/490574/225330279-e10cee1e-ffb9-49d1-b47c-6c46eb7f6c3a.png)
+
+### How Wakuwork counter example communicates with server
+
+https://excalidraw.com/#json=KXxKJkVJ2cqxU6VHISa45,H_GuTMRB8r0R9KAmuX2zvg
+
+![wakuwork_counter](https://user-images.githubusercontent.com/490574/226073029-a1e6dc8b-4192-45e4-b50b-6d287219b48c.png)
