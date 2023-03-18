@@ -13,7 +13,7 @@ Minimalistic React Framework
 Use one of examples as a template:
 
 ```bash
-curl -L https://github.com/dai-shi/wakuwork/archive/main.tar.gz | tar -x --strip-components=2 wakuwork-main/examples/01_counter
+curl -L https://github.com/dai-shi/wakuwork/archive/v0.6.1.tar.gz | tar -x --strip-components=2 wakuwork-0.6.1/examples/01_counter
 ```
 
 ## Work in progress

@@ -3,9 +3,9 @@ import type { GetEntry, Prerenderer } from "wakuwork/server";
 export const getEntry: GetEntry = async (id) => {
   switch (id) {
     case "App":
-      return import("./src/App.tsx");
+      return import("./src/App.js");
     case "InnerApp":
-      return import("./src/InnerApp.tsx");
+      return import("./src/InnerApp.js");
     default:
       throw new Error(`Unknown entry id: ${id}`);
   }

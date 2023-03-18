@@ -1,4 +1,4 @@
-import { Counter } from "./Counter.tsx";
+import { Counter } from "./Counter.js";
 
 const App = ({ name = "Anonymous" }) => {
   const delayedMessage = new Promise<string>((resolve) => {

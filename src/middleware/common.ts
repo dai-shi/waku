@@ -1,4 +1,4 @@
-import type { Config, Middleware } from "../config.ts";
+import type { Config, Middleware } from "../config.js";
 
 export type MiddlewareCreator = (config: Config) => Middleware;
 

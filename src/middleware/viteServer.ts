@@ -6,7 +6,7 @@ import { createServer } from "vite";
 import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
-import type { MiddlewareCreator } from "./common.ts";
+import type { MiddlewareCreator } from "./common.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
@@ -42,7 +42,11 @@ const viteServer: MiddlewareCreator = (config) => {
         "wakuwork/client": path.resolve(__dirname, "..", "client.js"),
       },
     },
-    plugins: [react(), rscPlugin(config.devServer?.INTERNAL_scriptToInject)],
+    plugins: [
+      // @ts-ignore
+      react(),
+      rscPlugin(config.devServer?.INTERNAL_scriptToInject),
+    ],
     server: { middlewareMode: true },
     appType: "custom",
   });

@@ -1,5 +1,5 @@
-import { Counter } from "./Counter.tsx";
-import { getCounter, increment } from "./funcs.ts";
+import { Counter } from "./Counter.js";
+import { getCounter, increment } from "./funcs.js";
 
 const App = ({ name = "Anonymous" }) => {
   return (

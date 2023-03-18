@@ -1,5 +1,5 @@
-import { Counter } from "./Counter.tsx";
-import { greet } from "./funcs.ts";
+import { Counter } from "./Counter.js";
+import { greet } from "./funcs.js";
 
 const App = ({ name = "Anonymous" }) => {
   return (

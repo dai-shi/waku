@@ -13,13 +13,20 @@ type DevServer = {
   INTERNAL_scriptToInject?: (path: string) => Promise<string>;
 };
 
+type Build = {
+  dir?: string;
+};
+
 type Files = {
   indexHtml?: string;
   entries?: string;
+  distDir?: string;
+  publicDir?: string;
 }
 
 export type Config = {
   devServer?: DevServer;
+  build?: Build;
   files?: Files;
 };
 

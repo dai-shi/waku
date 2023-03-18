@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import { Counter } from "./Counter.tsx";
+import { Counter } from "./Counter.js";
 
 const App = ({ name = "Anonymous" }) => {
   return (

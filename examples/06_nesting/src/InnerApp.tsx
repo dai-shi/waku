@@ -1,4 +1,4 @@
-import { Counter } from "./Counter.tsx";
+import { Counter } from "./Counter.js";
 
 const InnerApp = ({ count = -1 }) => {
   return (

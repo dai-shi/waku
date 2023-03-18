@@ -1,16 +1,16 @@
 import path from "node:path";
-import fs from "node:fs";
 import { createRequire } from "node:module";
 import url from "node:url";
 import { Writable } from "node:stream";
+import Module from "node:module";
 
 import * as swc from "@swc/core";
 import RSDWRegister from "react-server-dom-webpack/node-register";
 import RSDWServer from "react-server-dom-webpack/server";
 import busboy from "busboy";
 
-import type { MiddlewareCreator } from "./common.ts";
-import type { GetEntry, Prerenderer } from "../server.ts";
+import type { MiddlewareCreator } from "./common.js";
+import type { GetEntry, Prerenderer } from "../server.js";
 
 const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
   RSDWServer;
@@ -18,6 +18,21 @@ const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
 // TODO we would like a native solution without hacks
 // https://nodejs.org/api/esm.html#loaders
 RSDWRegister();
+
+// HACK to read .ts/.tsx files with .js extension
+const savedResolveFilename = (Module as any)._resolveFilename;
+(Module as any)._resolveFilename = (fname: string, m: any) => {
+  if (fname.endsWith(".js")) {
+    for (const ext of [".js", ".ts", ".tsx"]) {
+      try {
+        return savedResolveFilename(fname.slice(0, -3) + ext, m);
+      } catch (e) {
+        // ignored
+      }
+    }
+  }
+  return savedResolveFilename(fname, m);
+};
 
 const rscDefault: MiddlewareCreator = (config) => {
   if (!config.devServer) {
@@ -78,11 +93,13 @@ const rscDefault: MiddlewareCreator = (config) => {
     }
   );
 
-  const entriesFile = path.resolve(dir, config.files?.entries || "entries.ts");
+  const entriesFile = path.resolve(dir, config.files?.entries || "entries.js");
   let getEntry: GetEntry | undefined;
   let prerenderer: Prerenderer | undefined;
-  if (fs.existsSync(entriesFile)) {
+  try {
     ({ getEntry, prerenderer } = require(entriesFile));
+  } catch (e) {
+    console.info(`No entries file found at ${entriesFile}, ignoring...`, e);
   }
 
   const getFunctionComponent =
@@ -167,7 +184,6 @@ globalThis.__WAKUWORK_PRERENDERED__ = ${JSON.stringify(prerendered)};
           args = await decodeReply(body);
         }
       }
-      // TODO can we use node:vm?
       const mod = require(fname);
       const data = await (mod[name!] || mod)(...args);
       if (typeof rscId !== "string") {
