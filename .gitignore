@@ -1,4 +1,4 @@
 *~
 *.swp
 node_modules
-/dist
+dist

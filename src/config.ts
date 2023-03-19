@@ -15,6 +15,7 @@ type DevServer = {
 
 type Build = {
   dir?: string;
+  basePath?: string;
 };
 
 type Files = {
