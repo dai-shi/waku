@@ -31,10 +31,8 @@ const rscPlugin = (
 
 const viteServer: MiddlewareCreator = (config) => {
   const dir = path.resolve(config.devServer?.dir || ".");
-  const indexHtmlFile = path.resolve(
-    dir,
-    config.files?.indexHtml || "index.html"
-  );
+  const indexHtml = config.files?.indexHtml || "index.html";
+  const indexHtmlFile = path.join(dir, indexHtml);
   const vitePromise = createServer({
     root: dir,
     resolve: {
@@ -52,7 +50,7 @@ const viteServer: MiddlewareCreator = (config) => {
   });
   return async (req, res, next) => {
     const vite = await vitePromise;
-    const apiFallback = async () => {
+    const indexFallback = async () => {
       const url = new URL(req.url || "", "http://" + req.headers.host);
       // TODO make it configurable?
       const hasExtension = url.pathname.split(".").length > 1;
@@ -73,7 +71,7 @@ const viteServer: MiddlewareCreator = (config) => {
     };
     return new Promise((resolve, reject) =>
       vite.middlewares(req, res, (err: unknown) =>
-        err ? reject(err) : resolve(apiFallback())
+        err ? reject(err) : resolve(indexFallback())
       )
     );
   };

@@ -4,6 +4,7 @@ import fs from "node:fs";
 import url from "node:url";
 
 import { build } from "vite";
+import type { Plugin } from "vite";
 import * as swc from "@swc/core";
 
 import type { Config } from "./config.js";
@@ -11,6 +12,25 @@ import type { Config } from "./config.js";
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 const require = createRequire(import.meta.url);
+
+const rscPlugin = (): Plugin => {
+  const code = `
+globalThis.__webpack_require__ = function (id) {
+  return import(id);
+};`;
+  return {
+    name: "rscPlugin",
+    async transformIndexHtml() {
+      return [
+        {
+          tag: "script",
+          children: code,
+          injectTo: "body",
+        },
+      ];
+    },
+  };
+};
 
 const walkDirSync = (dir: string, callback: (filePath: string) => void) => {
   fs.readdirSync(dir, { withFileTypes: true }).forEach((dirent) => {
@@ -81,17 +101,14 @@ const compileFiles = (dir: string, dist: string) => {
 
 export async function runBuild(config: Config = {}) {
   const dir = path.resolve(config.build?.dir || ".");
-  const basePath = path.resolve(config.build?.basePath || "/");
-  const distDir = config.files?.distDir || "dist";
-  const publicDir = path.join(distDir, config.files?.publicDir || "public");
-  const indexHtmlFile = path.resolve(
+  const basePath = config.build?.basePath || "/";
+  const distPath = config.files?.dist || "dist";
+  const publicPath = path.join(distPath, config.files?.public || "public");
+  const indexHtmlFile = path.join(dir, config.files?.indexHtml || "index.html");
+  const entriesFile = path.join(
     dir,
-    config.files?.indexHtml || "index.html"
-  );
-  const entriesFile = path.resolve(
-    dir,
-    distDir,
-    config.files?.entries || "entries.js"
+    distPath,
+    config.files?.entriesJs || "entries.js"
   );
 
   const entryFiles = Object.fromEntries(
@@ -105,8 +122,9 @@ export async function runBuild(config: Config = {}) {
         "wakuwork/client": path.resolve(__dirname, "client.js"),
       },
     },
+    plugins: [rscPlugin()],
     build: {
-      outDir: publicDir,
+      outDir: publicPath,
       rollupOptions: {
         input: {
           main: indexHtmlFile,
@@ -127,7 +145,7 @@ export async function runBuild(config: Config = {}) {
   }
   console.log("clientEntries", clientEntries);
 
-  compileFiles(dir, distDir);
+  compileFiles(dir, distPath);
   fs.appendFileSync(
     entriesFile,
     `exports.clientEntries=${JSON.stringify(clientEntries)};`
@@ -141,7 +159,7 @@ export async function runBuild(config: Config = {}) {
     dependencies: origPackageJson.dependencies,
   };
   fs.writeFileSync(
-    path.join(dir, distDir, "package.json"),
+    path.join(dir, distPath, "package.json"),
     JSON.stringify(packageJson, null, 2)
   );
 }

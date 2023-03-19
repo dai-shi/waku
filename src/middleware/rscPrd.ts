@@ -1,10 +1,7 @@
 import path from "node:path";
 import { createRequire } from "node:module";
-import url from "node:url";
-import Module from "node:module";
 import { Writable } from "node:stream";
 
-import * as swc from "@swc/core";
 import RSDWRegister from "react-server-dom-webpack/node-register";
 import RSDWServer from "react-server-dom-webpack/server";
 import busboy from "busboy";
@@ -19,70 +16,22 @@ const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
 // https://nodejs.org/api/esm.html#loaders
 RSDWRegister();
 
-// HACK to read .ts/.tsx files with .js extension
-const savedResolveFilename = (Module as any)._resolveFilename;
-(Module as any)._resolveFilename = (fname: string, m: any) => {
-  if (fname.endsWith(".js")) {
-    for (const ext of [".js", ".ts", ".tsx"]) {
-      try {
-        return savedResolveFilename(fname.slice(0, -3) + ext, m);
-      } catch (e) {
-        // ignored
-      }
-    }
-  }
-  return savedResolveFilename(fname, m);
-};
+const require = createRequire(import.meta.url);
+
+// TODO we have duplicate code here and rscDev.ts
 
 const rscDefault: MiddlewareCreator = (config) => {
-  if (!config.devServer) {
-    config.devServer = {};
+  if (!config.prdServer) {
+    config.prdServer = {};
   }
-  const dir = path.resolve(config.devServer.dir || ".");
-  const require = createRequire(import.meta.url);
-
-  (require as any).extensions[".ts"] = (require as any).extensions[".tsx"] = (
-    m: any,
-    fname: string
-  ) => {
-    let { code } = swc.transformFileSync(fname, {
-      jsc: {
-        parser: {
-          syntax: "typescript",
-          tsx: fname.endsWith(".tsx"),
-        },
-        transform: {
-          react: {
-            runtime: "automatic",
-          },
-        },
-      },
-      module: {
-        type: "commonjs",
-      },
-    });
-    // HACK to pull directive to the root
-    // FIXME praseFileSync & transformSync would be nice, but encounter:
-    // https://github.com/swc-project/swc/issues/6255
-    const p = code.match(/(?:^|\n|;)("use (client|server)";)/);
-    if (p) {
-      code = p[1] + code;
-    }
-    const savedPathToFileURL = url.pathToFileURL;
-    if (p) {
-      // HACK to resolve module id
-      url.pathToFileURL = (p: string) =>
-        ({ href: "/" + path.relative(dir, p) } as any);
-    }
-    m._compile(code, fname);
-    url.pathToFileURL = savedPathToFileURL;
-  };
+  const dir = path.resolve(config.prdServer.dir || ".");
 
   const entriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
   let getEntry: GetEntry | undefined;
   let prefetcher: Prefetcher | undefined;
+  let clientEntries: Record<string, string> | undefined;
   try {
-    ({ getEntry, prefetcher } = require(entriesFile));
+    ({ getEntry, prefetcher, clientEntries } = require(entriesFile));
   } catch (e) {
     console.info(`No entries file found at ${entriesFile}, ignoring...`, e);
   }
@@ -98,11 +47,8 @@ const rscDefault: MiddlewareCreator = (config) => {
     return mod.default;
   };
 
-  config.devServer.INTERNAL_scriptToInject = async (path: string) => {
-    let code = `
-globalThis.__webpack_require__ = function (id) {
-  return import(id);
-};`;
+  config.prdServer.INTERNAL_scriptToInject = async (path: string) => {
+    let code = "";
     if (prefetcher) {
       code += `
 globalThis.__WAKUWORK_PREFETCHED__ = {};`;
@@ -167,7 +113,7 @@ import('${filePath}');`;
       get(_target, id: string) {
         const [filePath, name] = id.split("#");
         return {
-          id: filePath,
+          id: clientEntries?.[filePath!],
           chunks: [],
           name,
           async: true,

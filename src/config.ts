@@ -13,6 +13,13 @@ type DevServer = {
   INTERNAL_scriptToInject?: (path: string) => Promise<string>;
 };
 
+type PrdServer = {
+  dir?: string;
+  port?: number;
+  middlewares?: (Middleware | string)[];
+  INTERNAL_scriptToInject?: (path: string) => Promise<string>;
+};
+
 type Build = {
   dir?: string;
   basePath?: string;
@@ -20,13 +27,14 @@ type Build = {
 
 type Files = {
   indexHtml?: string;
-  entries?: string;
-  distDir?: string;
-  publicDir?: string;
-}
+  entriesJs?: string;
+  dist?: string;
+  public?: string;
+};
 
 export type Config = {
   devServer?: DevServer;
+  prdServer?: PrdServer;
   build?: Build;
   files?: Files;
 };
