@@ -1,7 +1,6 @@
 import path from "node:path";
 import { createRequire } from "node:module";
 import url from "node:url";
-import { Writable } from "node:stream";
 import Module from "node:module";
 
 import * as swc from "@swc/core";
@@ -10,7 +9,7 @@ import RSDWServer from "react-server-dom-webpack/server";
 import busboy from "busboy";
 
 import type { MiddlewareCreator } from "./common.js";
-import type { GetEntry, Prerenderer } from "../server.js";
+import type { GetEntry, Prefetcher } from "../server.js";
 
 const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
   RSDWServer;
@@ -95,9 +94,9 @@ const rscDefault: MiddlewareCreator = (config) => {
 
   const entriesFile = path.resolve(dir, config.files?.entries || "entries.js");
   let getEntry: GetEntry | undefined;
-  let prerenderer: Prerenderer | undefined;
+  let prefetcher: Prefetcher | undefined;
   try {
-    ({ getEntry, prerenderer } = require(entriesFile));
+    ({ getEntry, prefetcher } = require(entriesFile));
   } catch (e) {
     console.info(`No entries file found at ${entriesFile}, ignoring...`, e);
   }
@@ -113,53 +112,30 @@ const rscDefault: MiddlewareCreator = (config) => {
     });
 
   config.devServer.INTERNAL_scriptToInject = async (path: string) => {
-    type Id = string;
-    type SerializedProps = string;
-    type DataURL = string;
-    const prerendered: Record<Id, Record<SerializedProps, DataURL>> = {};
-    if (getFunctionComponent && prerenderer) {
-      await Promise.all(
-        [...(await prerenderer(path))].map(async ([id, props]) => {
-          // FIXME we blindly expect JSON.stringify usage is deterministic
-          const serializedProps = JSON.stringify(props);
-          const component = await getFunctionComponent(id);
-          if (!prerendered[id]) {
-            prerendered[id] = {};
-          }
-          return new Promise<void>((resolve) => {
-            const chunks: Uint8Array[] = [];
-            const writable = new Writable({
-              write(chunk, _encoding, callback) {
-                chunks.push(chunk);
-                callback();
-              },
-              final(callback) {
-                const buf = Buffer.concat(chunks);
-                prerendered[id]![serializedProps] =
-                  "data:text/x-component;base64," + buf.toString("base64");
-                resolve();
-                callback();
-              },
-            });
-            renderToPipeableStream(component(props as {}), bundlerConfig).pipe(
-              writable
-            );
-          });
-        })
-      );
-    }
-    return (
-      `
+    let code = `
 globalThis.__webpack_require__ = function (id) {
   return import(id);
-};
-` +
-      (Object.keys(prerendered).length
-        ? `
-globalThis.__WAKUWORK_PRERENDERED__ = ${JSON.stringify(prerendered)};
-`
-        : "")
-    );
+};`;
+    if (prefetcher) {
+      code += `
+globalThis.__WAKUWORK_PREFETCHED__ = {};`;
+      const seenIds = new Set<string>();
+      for (const [id, props] of await prefetcher(path)) {
+        if (!seenIds.has(id)) {
+          code += `
+globalThis.__WAKUWORK_PREFETCHED__['${id}'] = {};`;
+          seenIds.add(id);
+        }
+        // FIXME we blindly expect JSON.stringify usage is deterministic
+        const serializedProps = JSON.stringify(props);
+        const searchParams = new URLSearchParams();
+        searchParams.set("rsc_id", id);
+        searchParams.set("props", serializedProps);
+        code += `
+globalThis.__WAKUWORK_PREFETCHED__['${id}']['${serializedProps}'] = fetch('/?${searchParams}');`;
+      }
+    }
+    return code;
   };
 
   return async (req, res, next) => {

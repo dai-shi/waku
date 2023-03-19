@@ -32,11 +32,11 @@ export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
         return data;
       },
     };
-    const prerendered = (globalThis as any).__WAKUWORK_PRERENDERED__?.[rscId]?.[
+    const prefetched = (globalThis as any).__WAKUWORK_PREFETCHED__?.[rscId]?.[
       serializedProps
     ];
     const ele: ReactNode = await createFromFetch(
-      fetch(prerendered || `/?${searchParams}`),
+      prefetched || fetch(`/?${searchParams}`),
       options
     );
     render(ele);
