@@ -2,6 +2,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import url from "node:url";
 import Module from "node:module";
+import { Writable } from "node:stream";
 
 import * as swc from "@swc/core";
 import RSDWRegister from "react-server-dom-webpack/node-register";
@@ -101,15 +102,16 @@ const rscDefault: MiddlewareCreator = (config) => {
     console.info(`No entries file found at ${entriesFile}, ignoring...`, e);
   }
 
-  const getFunctionComponent =
-    getEntry &&
-    (async (id: string) => {
-      const mod = await getEntry!(id);
-      if (typeof mod === "function") {
-        return mod;
-      }
-      return mod.default;
-    });
+  const getFunctionComponent = async (id: string) => {
+    if (!getEntry) {
+      return () => null;
+    }
+    const mod = await getEntry(id);
+    if (typeof mod === "function") {
+      return mod;
+    }
+    return mod.default;
+  };
 
   config.devServer.INTERNAL_scriptToInject = async (path: string) => {
     let code = `
@@ -120,20 +122,53 @@ globalThis.__webpack_require__ = function (id) {
       code += `
 globalThis.__WAKUWORK_PREFETCHED__ = {};`;
       const seenIds = new Set<string>();
-      for (const [id, props] of await prefetcher(path)) {
-        if (!seenIds.has(id)) {
-          code += `
+      await Promise.all(
+        [...(await prefetcher(path))].map(async ([id, props]) => {
+          if (!seenIds.has(id)) {
+            code += `
 globalThis.__WAKUWORK_PREFETCHED__['${id}'] = {};`;
-          seenIds.add(id);
-        }
-        // FIXME we blindly expect JSON.stringify usage is deterministic
-        const serializedProps = JSON.stringify(props);
-        const searchParams = new URLSearchParams();
-        searchParams.set("rsc_id", id);
-        searchParams.set("props", serializedProps);
-        code += `
+            seenIds.add(id);
+          }
+          // FIXME we blindly expect JSON.stringify usage is deterministic
+          const serializedProps = JSON.stringify(props);
+          const searchParams = new URLSearchParams();
+          searchParams.set("rsc_id", id);
+          searchParams.set("props", serializedProps);
+          code += `
 globalThis.__WAKUWORK_PREFETCHED__['${id}']['${serializedProps}'] = fetch('/?${searchParams}');`;
-      }
+
+          // HACK extra rendering without caching FIXME
+          const component = await getFunctionComponent(id);
+          const config = new Proxy(
+            {},
+            {
+              get(_target, id: string) {
+                const [filePath, name] = id.split("#");
+                code += `
+import('${filePath}');`;
+                return {
+                  id: filePath,
+                  chunks: [],
+                  name,
+                  async: true,
+                };
+              },
+            }
+          );
+          await new Promise<void>((resolve) => {
+            const trash = new Writable({
+              write(_chunk, _encoding, callback) {
+                resolve(); // only wait for the first chunk
+                callback();
+              },
+              final(callback) {
+                callback();
+              },
+            });
+            renderToPipeableStream(component(props as {}), config).pipe(trash);
+          });
+        })
+      );
     }
     return code;
   };
@@ -177,9 +212,7 @@ globalThis.__WAKUWORK_PREFETCHED__['${id}']['${serializedProps}'] = fetch('/?${s
       const props: {} = JSON.parse(
         body || url.searchParams.get("props") || "{}"
       );
-      const component = getFunctionComponent
-        ? await getFunctionComponent(rscId)
-        : () => null;
+      const component = await getFunctionComponent(rscId);
       res.setHeader("Content-Type", "text/x-component");
       renderToPipeableStream(component(props), bundlerConfig).pipe(res);
       return;
