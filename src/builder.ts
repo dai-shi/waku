@@ -42,6 +42,37 @@ const getEntryFiles = (dir: string) => {
   return files;
 };
 
+const compileFiles = (dir: string, dist: string) => {
+  walkDirSync(dir, (fname) => {
+    const relativePath = path.relative(dir, fname);
+    if (relativePath.startsWith(dist)) {
+      return;
+    }
+    if (fname.endsWith(".ts") || fname.endsWith(".tsx")) {
+      const { code } = swc.transformFileSync(fname, {
+        jsc: {
+          parser: {
+            syntax: "typescript",
+            tsx: fname.endsWith(".tsx"),
+          },
+          transform: {
+            react: {
+              runtime: "automatic",
+            },
+          },
+        },
+      });
+      const destFile = path.join(
+        dir,
+        dist,
+        relativePath.replace(/\.tsx?$/, ".js")
+      );
+      fs.mkdirSync(path.dirname(destFile), { recursive: true });
+      fs.writeFileSync(destFile, code);
+    }
+  });
+};
+
 export async function runBuild(config: Config = {}) {
   const dir = path.resolve(config.build?.dir || ".");
   const basePath = path.resolve(config.build?.basePath || "/");
@@ -50,6 +81,11 @@ export async function runBuild(config: Config = {}) {
   const indexHtmlFile = path.resolve(
     dir,
     config.files?.indexHtml || "index.html"
+  );
+  const entriesFile = path.resolve(
+    dir,
+    distDir,
+    config.files?.entries || "entries.js"
   );
 
   const entryFiles = Object.fromEntries(
@@ -83,7 +119,11 @@ export async function runBuild(config: Config = {}) {
       }
     }
   }
-
   console.log("clientEntries", clientEntries);
-  // TODO
+
+  compileFiles(dir, distDir);
+  fs.appendFileSync(
+    entriesFile,
+    `export const clientEntries=${JSON.stringify(clientEntries)};`
+  );
 }
