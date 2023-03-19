@@ -44,7 +44,7 @@ const walkDirSync = (dir: string, callback: (filePath: string) => void) => {
   });
 };
 
-const getEntryFiles = (dir: string) => {
+const getClientEntryFiles = (dir: string) => {
   const files: string[] = [];
   walkDirSync(dir, (fname) => {
     if (fname.endsWith(".ts") || fname.endsWith(".tsx")) {
@@ -119,8 +119,8 @@ export async function runBuild(config: Config = {}) {
     config.files?.entriesJs || "entries.js"
   );
 
-  const entryFiles = Object.fromEntries(
-    getEntryFiles(dir).map((fname, i) => [`rsc${i}`, fname])
+  const clientEntryFiles = Object.fromEntries(
+    getClientEntryFiles(dir).map((fname, i) => [`rsc${i}`, fname])
   );
   const output = await build({
     root: dir,
@@ -140,8 +140,9 @@ export async function runBuild(config: Config = {}) {
       rollupOptions: {
         input: {
           main: indexHtmlFile,
-          ...entryFiles,
+          ...clientEntryFiles,
         },
+        preserveEntrySignatures: "exports-only",
       },
     },
   });
@@ -151,7 +152,7 @@ export async function runBuild(config: Config = {}) {
   }
   for (const item of output.output) {
     const { name, fileName } = item;
-    const entryFile = name && entryFiles[name];
+    const entryFile = name && clientEntryFiles[name];
     if (entryFile) {
       clientEntries[path.relative(dir, entryFile)] = fileName;
     }
