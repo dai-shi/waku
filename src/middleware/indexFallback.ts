@@ -9,7 +9,6 @@ const staticFile: MiddlewareCreator = (config) => {
   const publicPath = config.files?.public || "public";
   const indexHtml = config.files?.indexHtml || "index.html";
   const indexHtmlFile = path.join(dir, publicPath, indexHtml);
-  const scriptToInject = config.prdServer?.INTERNAL_scriptToInject;
   return async (req, res, next) => {
     const url = new URL(req.url || "", "http://" + req.headers.host);
     // TODO make it configurable?
@@ -18,14 +17,14 @@ const staticFile: MiddlewareCreator = (config) => {
       const stat = fs.statSync(indexHtmlFile, { throwIfNoEntry: false });
       if (stat) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
-        if (scriptToInject) {
+        const code = await config.prdServer?.INTERNAL_scriptToInject?.(
+          url.pathname
+        );
+        if (code) {
           let data = await fsPromises.readFile(indexHtmlFile, {
             encoding: "utf-8",
           });
-          data = data.replace(
-            /<\/body>/,
-            `<script>${scriptToInject}</script></body>`
-          );
+          data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
           res.setHeader("Content-Length", data.length);
           res.end(data);
           return;

@@ -98,10 +98,20 @@ globalThis.__WAKUWORK_PREFETCHED__['${id}']['${serializedProps}'] = fetch('/?${s
             {
               get(_target, id: string) {
                 const [filePath, name] = id.split("#");
+                if (!clientEntries) {
+                  throw new Error("Missing client entries");
+                }
+                const clientEntry =
+                  clientEntries[filePath!] ||
+                  clientEntries[filePath!.replace(/\.js$/, ".ts")] ||
+                  clientEntries[filePath!.replace(/\.js$/, ".tsx")];
+                if (!clientEntry) {
+                  throw new Error("No client entry found");
+                }
                 code += `
-import('${filePath}');`;
+import('/${clientEntry}');`;
                 return {
-                  id: filePath,
+                  id: "/" + clientEntry,
                   chunks: [],
                   name,
                   async: true,

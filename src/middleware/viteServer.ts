@@ -11,16 +11,17 @@ import type { MiddlewareCreator } from "./common.js";
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 const rscPlugin = (
-  scriptToInject?: (path: string) => Promise<string>
+  scriptToInject: (path: string) => Promise<string>
 ): Plugin => {
   return {
     name: "rscPlugin",
     async transformIndexHtml(_html, ctx) {
-      if (scriptToInject) {
+      const code = await scriptToInject(ctx.path);
+      if (code) {
         return [
           {
             tag: "script",
-            children: await scriptToInject(ctx.path),
+            children: code,
             injectTo: "body",
           },
         ];
@@ -43,7 +44,10 @@ const viteServer: MiddlewareCreator = (config) => {
     plugins: [
       // @ts-ignore
       react(),
-      rscPlugin(config.devServer?.INTERNAL_scriptToInject),
+      rscPlugin(
+        async (path: string) =>
+          config.devServer?.INTERNAL_scriptToInject?.(path) || ""
+      ),
     ],
     server: { middlewareMode: true },
     appType: "custom",
