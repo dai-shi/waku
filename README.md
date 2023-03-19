@@ -66,6 +66,6 @@ https://excalidraw.com/#json=fMeNJovUG7PGnpvP64XVw,kjZBTeM2KPZKhWtALDOY8A
 
 ### How Wakuwork counter example communicates with server
 
-https://excalidraw.com/#json=KXxKJkVJ2cqxU6VHISa45,H_GuTMRB8r0R9KAmuX2zvg
+https://excalidraw.com/#json=N0PrCUij21xc2-Zwl1phZ,VYiuI0A2Fzw8G7y5yrPY8Q
 
-![wakuwork_counter](https://user-images.githubusercontent.com/490574/226073029-a1e6dc8b-4192-45e4-b50b-6d287219b48c.png)
+![wakuwork_counter](https://user-images.githubusercontent.com/490574/226148795-de405044-fb66-440b-9a9d-d8ad5854c7fa.png)
