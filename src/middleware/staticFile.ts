@@ -12,7 +12,7 @@ const staticFile: MiddlewareCreator = (config) => {
     if (req.url) {
       const fname = path.join(dir, publicPath, req.url);
       const stat = fs.statSync(fname, { throwIfNoEntry: false });
-      if (stat) {
+      if (stat?.isFile()) {
         res.setHeader("Content-Length", stat.size);
         res.setHeader(
           "Content-Type",

@@ -1,10 +1,11 @@
 import path from "node:path";
-import { createRequire } from "node:module";
 import fs from "node:fs";
 import url from "node:url";
+import { createRequire } from "node:module";
 
 import { build } from "vite";
 import type { Plugin } from "vite";
+import react from "@vitejs/plugin-react";
 import * as swc from "@swc/core";
 
 import type { Config } from "./config.js";
@@ -72,7 +73,7 @@ const compileFiles = (dir: string, dist: string) => {
       return;
     }
     if (fname.endsWith(".ts") || fname.endsWith(".tsx")) {
-      const { code } = swc.transformFileSync(fname, {
+      let { code } = swc.transformFileSync(fname, {
         jsc: {
           parser: {
             syntax: "typescript",
@@ -88,6 +89,13 @@ const compileFiles = (dir: string, dist: string) => {
           type: "commonjs",
         },
       });
+      // HACK to pull directive to the root
+      // FIXME praseFileSync & transformSync would be nice, but encounter:
+      // https://github.com/swc-project/swc/issues/6255
+      const p = code.match(/(?:^|\n|;)("use (client|server)";)/);
+      if (p) {
+        code = p[1] + code;
+      }
       const destFile = path.join(
         dir,
         dist,
@@ -122,7 +130,11 @@ export async function runBuild(config: Config = {}) {
         "wakuwork/client": path.resolve(__dirname, "client.js"),
       },
     },
-    plugins: [rscPlugin()],
+    plugins: [
+      // @ts-ignore
+      react(),
+      rscPlugin(),
+    ],
     build: {
       outDir: publicPath,
       rollupOptions: {
@@ -134,13 +146,14 @@ export async function runBuild(config: Config = {}) {
     },
   });
   const clientEntries: Record<string, string> = {};
-  if ("output" in output) {
-    for (const item of output.output) {
-      const { name, fileName } = item;
-      const entryFile = name && entryFiles[name];
-      if (entryFile) {
-        clientEntries[path.relative(dir, entryFile)] = fileName;
-      }
+  if (!("output" in output)) {
+    throw new Error("Unexpected vite build output");
+  }
+  for (const item of output.output) {
+    const { name, fileName } = item;
+    const entryFile = name && entryFiles[name];
+    if (entryFile) {
+      clientEntries[path.relative(dir, entryFile)] = fileName;
     }
   }
   console.log("clientEntries", clientEntries);

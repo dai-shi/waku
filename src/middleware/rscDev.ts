@@ -1,6 +1,6 @@
 import path from "node:path";
-import { createRequire } from "node:module";
 import url from "node:url";
+import { createRequire } from "node:module";
 import Module from "node:module";
 import { Writable } from "node:stream";
 

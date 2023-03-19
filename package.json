@@ -31,7 +31,7 @@
     "examples:04_callserver": "npm run compile:code && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/04_callserver\"}}' nodemon --ext ts,tsx --ignore ./examples/04_callserver/src/Counter.tsx --exec /usr/bin/env ./cli.js dev",
     "examples:05_mutation": "npm run compile:code && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/05_mutation\"}}' nodemon --ext ts,tsx --ignore ./examples/05_mutation/src/Counter.tsx --exec /usr/bin/env ./cli.js dev",
     "examples:06_nesting": "npm run compile:code && WAKUWORK_CONFIG='{\"devServer\":{\"dir\":\"./examples/06_nesting\"}}' nodemon --ext ts,tsx --ignore ./examples/06_nesting/src/Counter.tsx --exec /usr/bin/env ./cli.js dev",
-    "build:examples:01_counter": "npm run compile:code && WAKUWORK_CONFIG='{\"build\":{\"dir\":\"./examples/01_counter\"}}' ./cli.js build"
+    "examples:01_counter:prd": "npm run compile:code && WAKUWORK_CONFIG='{\"build\":{\"dir\":\"./examples/01_counter\"}}' ./cli.js build && WAKUWORK_CONFIG='{\"prdServer\":{\"dir\":\"./examples/01_counter/dist\"}}' ./cli.js start"
   },
   "license": "MIT",
   "dependencies": {

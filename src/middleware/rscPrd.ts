@@ -1,4 +1,6 @@
 import path from "node:path";
+import fs from "node:fs";
+import url from "node:url";
 import { createRequire } from "node:module";
 import { Writable } from "node:stream";
 
@@ -16,8 +18,6 @@ const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
 // https://nodejs.org/api/esm.html#loaders
 RSDWRegister();
 
-const require = createRequire(import.meta.url);
-
 // TODO we have duplicate code here and rscDev.ts
 
 const rscDefault: MiddlewareCreator = (config) => {
@@ -25,6 +25,26 @@ const rscDefault: MiddlewareCreator = (config) => {
     config.prdServer = {};
   }
   const dir = path.resolve(config.prdServer.dir || ".");
+  const require = createRequire(import.meta.url);
+
+  (require as any).extensions[".js"] = (m: any, fname: string) => {
+    let code = fs.readFileSync(fname, { encoding: "utf8" });
+    // HACK to pull directive to the root
+    // FIXME praseFileSync & transformSync would be nice, but encounter:
+    // https://github.com/swc-project/swc/issues/6255
+    const p = code.match(/(?:^|\n|;)("use (client|server)";)/);
+    if (p) {
+      code = p[1] + code;
+    }
+    const savedPathToFileURL = url.pathToFileURL;
+    if (p) {
+      // HACK to resolve module id
+      url.pathToFileURL = (p: string) =>
+        ({ href: path.relative(dir, p) } as any);
+    }
+    m._compile(code, fname);
+    url.pathToFileURL = savedPathToFileURL;
+  };
 
   const entriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
   let getEntry: GetEntry | undefined;
@@ -112,8 +132,18 @@ import('${filePath}');`;
     {
       get(_target, id: string) {
         const [filePath, name] = id.split("#");
+        if (!clientEntries) {
+          throw new Error("Missing client entries");
+        }
+        const clientEntry =
+          clientEntries[filePath!] ||
+          clientEntries[filePath!.replace(/\.js$/, ".ts")] ||
+          clientEntries[filePath!.replace(/\.js$/, ".tsx")];
+        if (!clientEntry) {
+          throw new Error("No client entry found");
+        }
         return {
-          id: clientEntries?.[filePath!],
+          id: "/" + clientEntry,
           chunks: [],
           name,
           async: true,
