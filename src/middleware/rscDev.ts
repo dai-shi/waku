@@ -104,7 +104,7 @@ const rscDefault: MiddlewareCreator = (config) => {
 
   const getFunctionComponent = async (id: string) => {
     if (!getEntry) {
-      return () => null;
+      return null;
     }
     const mod = await getEntry(id);
     if (typeof mod === "function") {
@@ -139,6 +139,9 @@ globalThis.__WAKUWORK_PREFETCHED__['${id}']['${serializedProps}'] = fetch('/?${s
 
           // HACK extra rendering without caching FIXME
           const component = await getFunctionComponent(id);
+          if (!component) {
+            return;
+          }
           const config = new Proxy(
             {},
             {
@@ -213,9 +216,13 @@ import('${filePath}');`;
         body || url.searchParams.get("props") || "{}"
       );
       const component = await getFunctionComponent(rscId);
-      res.setHeader("Content-Type", "text/x-component");
-      renderToPipeableStream(component(props), bundlerConfig).pipe(res);
-      return;
+      if (component) {
+        res.setHeader("Content-Type", "text/x-component");
+        renderToPipeableStream(component(props), bundlerConfig).pipe(res);
+        return;
+      }
+      res.statusCode = 404;
+      res.end();
     }
     await next();
   };
