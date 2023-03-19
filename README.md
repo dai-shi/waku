@@ -19,7 +19,7 @@ curl -L https://github.com/dai-shi/wakuwork/archive/v0.6.1.tar.gz | tar -x --str
 ## Work in progress
 
 - [x] `wakuwork dev` (development server)
-- [ ] `wakuwork build` (build for production)
+- [x] `wakuwork build` (build for production)
 - [ ] `wakuwork start` (production server)
 - [ ] Exportable build
 - [ ] Static site generation
