@@ -1,4 +1,5 @@
 import path from "node:path";
+import { createRequire } from "node:module";
 import fs from "node:fs";
 import url from "node:url";
 
@@ -8,6 +9,8 @@ import * as swc from "@swc/core";
 import type { Config } from "./config.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+
+const require = createRequire(import.meta.url);
 
 const walkDirSync = (dir: string, callback: (filePath: string) => void) => {
   fs.readdirSync(dir, { withFileTypes: true }).forEach((dirent) => {
@@ -60,6 +63,9 @@ const compileFiles = (dir: string, dist: string) => {
               runtime: "automatic",
             },
           },
+        },
+        module: {
+          type: "commonjs",
         },
       });
       const destFile = path.join(
@@ -124,6 +130,18 @@ export async function runBuild(config: Config = {}) {
   compileFiles(dir, distDir);
   fs.appendFileSync(
     entriesFile,
-    `export const clientEntries=${JSON.stringify(clientEntries)};`
+    `exports.clientEntries=${JSON.stringify(clientEntries)};`
+  );
+  const origPackageJson = require(path.join(dir, "package.json"));
+  const packageJson = {
+    name: origPackageJson.name,
+    version: origPackageJson.version,
+    private: true,
+    type: "commonjs",
+    dependencies: origPackageJson.dependencies,
+  };
+  fs.writeFileSync(
+    path.join(dir, distDir, "package.json"),
+    JSON.stringify(packageJson, null, 2)
   );
 }

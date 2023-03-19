@@ -10,9 +10,7 @@
   "dependencies": {
     "react": "0.0.0-experimental-47cf4e578-20230315",
     "react-dom": "0.0.0-experimental-47cf4e578-20230315",
-    "react-server-dom-webpack": "0.0.0-experimental-47cf4e578-20230315"
-  },
-  "devDependencies": {
+    "react-server-dom-webpack": "0.0.0-experimental-47cf4e578-20230315",
     "wakuwork": "^0.6.0"
   }
 }
