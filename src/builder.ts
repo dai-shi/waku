@@ -37,7 +37,9 @@ const walkDirSync = (dir: string, callback: (filePath: string) => void) => {
   fs.readdirSync(dir, { withFileTypes: true }).forEach((dirent) => {
     const filePath = path.join(dir, dirent.name);
     if (dirent.isDirectory()) {
-      walkDirSync(filePath, callback);
+      if (dirent.name !== "node_modules") {
+        walkDirSync(filePath, callback);
+      }
     } else {
       callback(filePath);
     }
