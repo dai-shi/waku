@@ -1,5 +1,5 @@
 {
-  "name": "create-wakuwork",
+  "name": "wakuwork-example",
   "version": "0.1.0",
   "type": "module",
   "private": true,
@@ -12,6 +12,6 @@
     "react": "0.0.0-experimental-47cf4e578-20230315",
     "react-dom": "0.0.0-experimental-47cf4e578-20230315",
     "react-server-dom-webpack": "0.0.0-experimental-47cf4e578-20230315",
-    "wakuwork": "0.7.1"
+    "wakuwork": "^0.7.0"
   }
 }
