@@ -3,6 +3,8 @@ import RSDWClient from "react-server-dom-webpack/client";
 
 const { createFromFetch, encodeReply } = RSDWClient;
 
+// FIXME only works with basePath="/"
+
 export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
   return async (props: Props) => {
     // FIXME we blindly expect JSON.stringify usage is deterministic

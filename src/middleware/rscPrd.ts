@@ -25,6 +25,7 @@ const rscDefault: MiddlewareCreator = (config) => {
     config.prdServer = {};
   }
   const dir = path.resolve(config.prdServer.dir || ".");
+  const basePath = config.build?.basePath || "/"; // FIXME it's not build only
   const require = createRequire(import.meta.url);
 
   (require as any).extensions[".js"] = (m: any, fname: string) => {
@@ -111,7 +112,7 @@ globalThis.__WAKUWORK_PREFETCHED__['${rscId}']['${serializedProps}'] = fetch('/?
                 code += `
 import('/${clientEntry}');`;
                 return {
-                  id: "/" + clientEntry,
+                  id: basePath + clientEntry,
                   chunks: [],
                   name,
                   async: true,
@@ -153,7 +154,7 @@ import('/${clientEntry}');`;
           throw new Error("No client entry found");
         }
         return {
-          id: "/" + clientEntry,
+          id: basePath + clientEntry,
           chunks: [],
           name,
           async: true,
