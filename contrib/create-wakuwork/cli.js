@@ -1,7 +1,7 @@
 const fs = require('fs');
 const { exec } = require('child_process');
 
-const dirName = 'wanakwork-example';
+const dirName = 'wakuwork-example';
 
 if (fs.existsSync(dirName)) {
   throw new Error('Directory already exists');
