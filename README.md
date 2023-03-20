@@ -48,6 +48,7 @@ curl -L https://github.com/dai-shi/wakuwork/archive/v0.7.0.tar.gz | tar -x --str
 - https://twitter.com/dai_shi/status/1636744180902014981
 - https://twitter.com/dai_shi/status/1636745339624624132
 - https://twitter.com/dai_shi/status/1636746632900534273
+- https://twitter.com/dai_shi/status/1637635196458778627
 
 </details>
 
