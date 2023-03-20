@@ -4,6 +4,7 @@ import RSDWClient from "react-server-dom-webpack/client";
 const { createFromFetch, encodeReply } = RSDWClient;
 
 // FIXME only works with basePath="/"
+const basePath = "/";
 
 export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
   return async (props: Props) => {
@@ -21,7 +22,7 @@ export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
           searchParams.set("rsc_id", rscId);
           searchParams.set("props", serializedProps);
         }
-        const response = fetch(`/?${searchParams}`, {
+        const response = fetch(basePath + "?" + searchParams, {
           method: "POST",
           body: await encodeReply(args),
         });
@@ -38,7 +39,7 @@ export function serve<Props>(rscId: string, render: (ele: ReactNode) => void) {
       serializedProps
     ];
     const ele: ReactNode = await createFromFetch(
-      prefetched || fetch(`/?${searchParams}`),
+      prefetched || fetch(basePath + "?" + searchParams),
       options
     );
     render(ele);
