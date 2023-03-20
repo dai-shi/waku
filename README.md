@@ -10,10 +10,16 @@ Minimalistic React Framework
 
 ## How to start a new project
 
-Use one of examples as a template:
+```bash
+npm create wakuwork
+```
 
 ```bash
-curl -L https://github.com/dai-shi/wakuwork/archive/v0.7.0.tar.gz | tar -x --strip-components=2 wakuwork-0.7.0/examples/01_counter
+yarn create wakuwork
+```
+
+```bash
+pnpm create wakuwork
 ```
 
 ## Work in progress
