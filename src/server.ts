@@ -1,13 +1,13 @@
 import type { FunctionComponent } from "react";
 
 export type GetEntry = (
-  id: string
+  rscId: string
 ) => Promise<FunctionComponent | { default: FunctionComponent }>;
 
 export type Prefetcher = (
   path: string
-) => Promise<Iterable<readonly [id: string, props: unknown]>>;
+) => Promise<Iterable<readonly [rscId: string, props: unknown]>>;
 
 export type Prerenderer = () => Promise<
-  Iterable<readonly [id: string, props: unknown]>
+  Iterable<readonly [rscId: string, props: unknown]>
 >;

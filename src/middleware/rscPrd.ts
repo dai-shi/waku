@@ -38,7 +38,7 @@ const rscDefault: MiddlewareCreator = (config) => {
     }
     const savedPathToFileURL = url.pathToFileURL;
     if (p) {
-      // HACK to resolve module id
+      // HACK to resolve rscId
       url.pathToFileURL = (p: string) =>
         ({ href: path.relative(dir, p) } as any);
     }
@@ -56,11 +56,11 @@ const rscDefault: MiddlewareCreator = (config) => {
     console.info(`No entries file found at ${entriesFile}, ignoring...`, e);
   }
 
-  const getFunctionComponent = async (id: string) => {
+  const getFunctionComponent = async (rscId: string) => {
     if (!getEntry) {
       return null;
     }
-    const mod = await getEntry(id);
+    const mod = await getEntry(rscId);
     if (typeof mod === "function") {
       return mod;
     }
@@ -74,22 +74,22 @@ const rscDefault: MiddlewareCreator = (config) => {
 globalThis.__WAKUWORK_PREFETCHED__ = {};`;
       const seenIds = new Set<string>();
       await Promise.all(
-        [...(await prefetcher(path))].map(async ([id, props]) => {
-          if (!seenIds.has(id)) {
+        [...(await prefetcher(path))].map(async ([rscId, props]) => {
+          if (!seenIds.has(rscId)) {
             code += `
-globalThis.__WAKUWORK_PREFETCHED__['${id}'] = {};`;
-            seenIds.add(id);
+globalThis.__WAKUWORK_PREFETCHED__['${rscId}'] = {};`;
+            seenIds.add(rscId);
           }
           // FIXME we blindly expect JSON.stringify usage is deterministic
           const serializedProps = JSON.stringify(props);
           const searchParams = new URLSearchParams();
-          searchParams.set("rsc_id", id);
+          searchParams.set("rsc_id", rscId);
           searchParams.set("props", serializedProps);
           code += `
-globalThis.__WAKUWORK_PREFETCHED__['${id}']['${serializedProps}'] = fetch('/?${searchParams}');`;
+globalThis.__WAKUWORK_PREFETCHED__['${rscId}']['${serializedProps}'] = fetch('/?${searchParams}');`;
 
           // HACK extra rendering without caching FIXME
-          const component = await getFunctionComponent(id);
+          const component = await getFunctionComponent(rscId);
           if (!component) {
             return;
           }
