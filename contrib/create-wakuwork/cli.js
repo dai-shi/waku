@@ -1,12 +1,43 @@
-const fs = require('fs');
-const { exec } = require('child_process');
+const path = require("node:path");
+const fs = require("node:fs");
+const https = require("node:https");
 
-const dirName = 'wakuwork-example';
+const dirName = "wakuwork-example";
 
 if (fs.existsSync(dirName)) {
-  throw new Error('Directory already exists');
+  console.error(`Directory "${dirName}" already exists!`);
+  process.exit(1);
 }
 
-fs.mkdirSync(dirName);
+const baseUrl =
+  "https://raw.githubusercontent.com/dai-shi/wakuwork/v0.7.1/examples/01_counter/";
 
-exec(`curl -L https://github.com/dai-shi/wakuwork/archive/v0.7.1.tar.gz | tar -x --directory ${dirName} --strip-components=3 wakuwork-0.7.1/examples/01_counter`)
+const files = `
+entries.ts
+index.html
+package.json
+src/index.tsx
+src/App.tsx
+src/Counter.tsx
+`
+  .split(/\s/)
+  .filter((file) => file);
+
+const getFiles = (index = 0) => {
+  const file = files[index];
+  if (!file) return;
+  const destFile = path.join(dirName, file.replace("/", path.sep));
+  fs.mkdirSync(path.dirname(destFile), { recursive: true });
+  https.get(baseUrl + file, (res) => {
+    res.pipe(fs.createWriteStream(destFile));
+    res.on("end", () => getFiles(index + 1));
+  });
+};
+
+getFiles();
+
+process.on("exit", (code) => {
+  if (!code) {
+    console.info(`Done! Change directory "${dirName}"`);
+  }
+});
