@@ -25,7 +25,6 @@ const staticFile: MiddlewareCreator = (config) => {
             encoding: "utf-8",
           });
           data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
-          res.setHeader("Content-Length", data.length);
           res.end(data);
           return;
         }
