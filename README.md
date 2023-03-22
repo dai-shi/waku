@@ -78,3 +78,9 @@ https://excalidraw.com/#json=fMeNJovUG7PGnpvP64XVw,kjZBTeM2KPZKhWtALDOY8A
 https://excalidraw.com/#json=N0PrCUij21xc2-Zwl1phZ,VYiuI0A2Fzw8G7y5yrPY8Q
 
 ![wakuwork_counter](https://user-images.githubusercontent.com/490574/226148795-de405044-fb66-440b-9a9d-d8ad5854c7fa.png)
+
+### Wakuwork's minimal spec for React Server Components
+
+https://excalidraw.com/#json=VjIjQePYqfBCdnn1kiy92,75ozbvJOqCq4f8KWhYEyLQ
+
+![wakuwork-spec](https://user-images.githubusercontent.com/490574/226770699-7390e1be-f3c1-4c72-aa7d-42bd66848866.png)
