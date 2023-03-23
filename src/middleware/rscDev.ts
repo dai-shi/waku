@@ -177,7 +177,6 @@ import('${filePath}');`;
   );
 
   return async (req, res, next) => {
-    const url = new URL(req.url || "", "http://" + req.headers.host);
     const rscId = req.headers["x-react-server-component-id"];
     const rsfId = req.headers["x-react-server-function-id"];
     if (typeof rsfId === "string") {
