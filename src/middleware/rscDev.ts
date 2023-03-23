@@ -101,24 +101,10 @@ globalThis.__webpack_require__ = function (id) {
   return import(id);
 };`;
     if (prefetcher) {
-      code += `
-globalThis.__WAKUWORK_PREFETCHED__ = {};`;
-      const seenIds = new Set<string>();
+      const entryItems = [...(await prefetcher(path))];
+      const moduleIds = new Set<string>();
       await Promise.all(
-        [...(await prefetcher(path))].map(async ([rscId, props]) => {
-          if (!seenIds.has(rscId)) {
-            code += `
-globalThis.__WAKUWORK_PREFETCHED__['${rscId}'] = {};`;
-            seenIds.add(rscId);
-          }
-          // FIXME we blindly expect JSON.stringify usage is deterministic
-          const serializedProps = JSON.stringify(props);
-          const searchParams = new URLSearchParams();
-          searchParams.set("rsc_id", rscId);
-          searchParams.set("props", serializedProps);
-          code += `
-globalThis.__WAKUWORK_PREFETCHED__['${rscId}']['${serializedProps}'] = fetch('/?${searchParams}');`;
-
+        entryItems.map(async ([rscId, props]) => {
           // HACK extra rendering without caching FIXME
           const component = await getFunctionComponent(rscId);
           if (!component) {
@@ -129,8 +115,7 @@ globalThis.__WAKUWORK_PREFETCHED__['${rscId}']['${serializedProps}'] = fetch('/?
             {
               get(_target, id: string) {
                 const [filePath, name] = id.split("#");
-                code += `
-import('${filePath}');`;
+                moduleIds.add(filePath!);
                 return {
                   id: filePath,
                   chunks: [],
@@ -154,6 +139,7 @@ import('${filePath}');`;
           });
         })
       );
+      code += shared.generatePrefetchCode?.(entryItems, moduleIds) || "";
     }
     return code;
   };

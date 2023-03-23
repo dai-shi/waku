@@ -65,27 +65,27 @@ const rscDefault: MiddlewareCreator = (config, shared) => {
     return mod.default;
   };
 
+  const getClientEntry = (filePath: string) => {
+    if (!clientEntries) {
+      throw new Error("Missing client entries");
+    }
+    const clientEntry =
+      clientEntries[filePath!] ||
+      clientEntries[filePath!.replace(/\.js$/, ".ts")] ||
+      clientEntries[filePath!.replace(/\.js$/, ".tsx")];
+    if (!clientEntry) {
+      throw new Error("No client entry found");
+    }
+    return clientEntry;
+  };
+
   shared.prdScriptToInject = async (path: string) => {
     let code = "";
     if (prefetcher) {
-      code += `
-globalThis.__WAKUWORK_PREFETCHED__ = {};`;
-      const seenIds = new Set<string>();
+      const entryItems = [...(await prefetcher(path))];
+      const moduleIds = new Set<string>();
       await Promise.all(
-        [...(await prefetcher(path))].map(async ([rscId, props]) => {
-          if (!seenIds.has(rscId)) {
-            code += `
-globalThis.__WAKUWORK_PREFETCHED__['${rscId}'] = {};`;
-            seenIds.add(rscId);
-          }
-          // FIXME we blindly expect JSON.stringify usage is deterministic
-          const serializedProps = JSON.stringify(props);
-          const searchParams = new URLSearchParams();
-          searchParams.set("rsc_id", rscId);
-          searchParams.set("props", serializedProps);
-          code += `
-globalThis.__WAKUWORK_PREFETCHED__['${rscId}']['${serializedProps}'] = fetch('/?${searchParams}');`;
-
+        entryItems.map(async ([rscId, props]) => {
           // HACK extra rendering without caching FIXME
           const component = await getFunctionComponent(rscId);
           if (!component) {
@@ -96,18 +96,8 @@ globalThis.__WAKUWORK_PREFETCHED__['${rscId}']['${serializedProps}'] = fetch('/?
             {
               get(_target, id: string) {
                 const [filePath, name] = id.split("#");
-                if (!clientEntries) {
-                  throw new Error("Missing client entries");
-                }
-                const clientEntry =
-                  clientEntries[filePath!] ||
-                  clientEntries[filePath!.replace(/\.js$/, ".ts")] ||
-                  clientEntries[filePath!.replace(/\.js$/, ".tsx")];
-                if (!clientEntry) {
-                  throw new Error("No client entry found");
-                }
-                code += `
-import('/${clientEntry}');`;
+                const clientEntry = getClientEntry(filePath!);
+                moduleIds.add(clientEntry);
                 return {
                   id: basePath + clientEntry,
                   chunks: [],
@@ -131,6 +121,7 @@ import('/${clientEntry}');`;
           });
         })
       );
+      code += shared.generatePrefetchCode?.(entryItems, moduleIds) || "";
     }
     return code;
   };
@@ -140,16 +131,7 @@ import('/${clientEntry}');`;
     {
       get(_target, id: string) {
         const [filePath, name] = id.split("#");
-        if (!clientEntries) {
-          throw new Error("Missing client entries");
-        }
-        const clientEntry =
-          clientEntries[filePath!] ||
-          clientEntries[filePath!.replace(/\.js$/, ".ts")] ||
-          clientEntries[filePath!.replace(/\.js$/, ".tsx")];
-        if (!clientEntry) {
-          throw new Error("No client entry found");
-        }
+        const clientEntry = getClientEntry(filePath!);
         return {
           id: basePath + clientEntry,
           chunks: [],

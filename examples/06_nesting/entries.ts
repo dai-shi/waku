@@ -11,7 +11,7 @@ export const getEntry: GetEntry = async (id) => {
   }
 };
 
-export const prefethcer: Prefetcher = async (path) => {
+export const prefetcher: Prefetcher = async (path) => {
   switch (path) {
     case "/":
       return [
