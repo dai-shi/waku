@@ -213,7 +213,11 @@ import('${filePath}');`;
         body += chunk;
       }
       const props: {} = JSON.parse(
-        body || url.searchParams.get("props") || "{}"
+        body ||
+          (req.headers["x-react-server-component-props"] as
+            | string
+            | undefined) ||
+          "{}"
       );
       const component = await getFunctionComponent(rscId);
       if (component) {

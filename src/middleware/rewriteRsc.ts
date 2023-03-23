@@ -7,6 +7,8 @@ const rewriteRsc: MiddlewareCreator = () => async (req, _res, next) => {
   const rscId = url.searchParams.get("rsc_id");
   if (rscId) {
     req.headers["x-react-server-component-id"] = rscId;
+    req.headers["x-react-server-component-props"] =
+      url.searchParams.get("props") || undefined;
   }
   const rsfId = url.searchParams.get("rsf_id");
   if (rsfId) {
