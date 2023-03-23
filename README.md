@@ -27,10 +27,10 @@ pnpm create wakuwork
 - [x] `wakuwork dev` (development server)
 - [x] `wakuwork build` (build for production)
 - [x] `wakuwork start` (production server)
-- [ ] Exportable build
+- [x] Exportable build
 - [ ] Static site generation
-- [ ] Client rendering fallback
 - [ ] Opt-in router (reference implementation)
+- [ ] Client rendering fallback
 
 ## Tweets
 

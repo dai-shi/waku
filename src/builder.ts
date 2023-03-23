@@ -172,6 +172,9 @@ export async function runBuild(config: Config = {}) {
     version: origPackageJson.version,
     private: true,
     type: "commonjs",
+    scripts: {
+      start: "wakuwork start",
+    },
     dependencies: origPackageJson.dependencies,
   };
   fs.writeFileSync(
