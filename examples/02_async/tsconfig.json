@@ -6,15 +6,8 @@
     "esModuleInterop": true,
     "module": "nodenext",
     "skipLibCheck": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    "jsx": "react-jsx",
-    "baseUrl": ".",
-    "paths": {
-      "wakuwork": ["./src/main.ts"],
-      "wakuwork/*": ["./src/*.ts"]
-    }
+    "jsx": "react-jsx"
   }
 }
