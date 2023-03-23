@@ -30,6 +30,7 @@ pnpm create wakuwork
 - [ ] Exportable build
 - [ ] Static site generation
 - [ ] Client rendering fallback
+- [ ] Opt-in router (reference implementation)
 
 ## Tweets
 
