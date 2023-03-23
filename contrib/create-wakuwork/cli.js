@@ -12,12 +12,13 @@ if (fs.existsSync(dirName)) {
 }
 
 const baseUrl =
-  "https://raw.githubusercontent.com/dai-shi/wakuwork/v0.7.1/examples/01_counter/";
+  "https://raw.githubusercontent.com/dai-shi/wakuwork/v0.7.2/examples/01_counter/";
 
 const files = `
 entries.ts
 index.html
 package.json
+tsconfig.json
 src/index.tsx
 src/App.tsx
 src/Counter.tsx
