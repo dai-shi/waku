@@ -30,5 +30,8 @@ export function startPrdServer(config: Config = {}) {
     res.statusCode = 500;
     res.end();
   });
-  server.listen(config.prdServer?.port ?? 8080);
+  const port = config.prdServer?.port ?? 8080;
+  server.listen(port, () => {
+    console.info("Listening on", port);
+  });
 }

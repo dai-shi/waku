@@ -1,4 +1,5 @@
 import http from "node:http";
+import { exec } from "node:child_process";
 
 import type { Config, Middleware } from "./config.js";
 import { pipe } from "./middleware/common.js";
@@ -29,5 +30,10 @@ export function startDevServer(config: Config = {}) {
     res.statusCode = 500;
     res.end();
   });
-  server.listen(config.devServer?.port ?? 3000);
+  const port = config.devServer?.port ?? 3000;
+  server.listen(port, () => {
+    console.info("Listening on", port);
+    // Only works on macOS
+    exec(`open http://localhost:${port}`);
+  });
 }
