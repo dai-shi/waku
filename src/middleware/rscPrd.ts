@@ -20,11 +20,8 @@ RSDWRegister();
 
 // TODO we have duplicate code here and rscDev.ts
 
-const rscDefault: MiddlewareCreator = (config) => {
-  if (!config.prdServer) {
-    config.prdServer = {};
-  }
-  const dir = path.resolve(config.prdServer.dir || ".");
+const rscDefault: MiddlewareCreator = (config, shared) => {
+  const dir = path.resolve(config.prdServer?.dir || ".");
   const basePath = config.build?.basePath || "/"; // FIXME it's not build only
   const require = createRequire(import.meta.url);
 
@@ -68,7 +65,7 @@ const rscDefault: MiddlewareCreator = (config) => {
     return mod.default;
   };
 
-  config.prdServer.INTERNAL_scriptToInject = async (path: string) => {
+  shared.prdScriptToInject = async (path: string) => {
     let code = "";
     if (prefetcher) {
       code += `

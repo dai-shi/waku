@@ -4,7 +4,7 @@ import fsPromises from "node:fs/promises";
 
 import type { MiddlewareCreator } from "./common.js";
 
-const staticFile: MiddlewareCreator = (config) => {
+const staticFile: MiddlewareCreator = (config, shared) => {
   const dir = path.resolve(config.prdServer?.dir || ".");
   const publicPath = config.files?.public || "public";
   const indexHtml = config.files?.indexHtml || "index.html";
@@ -17,7 +17,7 @@ const staticFile: MiddlewareCreator = (config) => {
       const stat = fs.statSync(indexHtmlFile, { throwIfNoEntry: false });
       if (stat) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
-        const code = await config.prdServer?.INTERNAL_scriptToInject?.(
+        const code = await shared.prdScriptToInject?.(
           url.pathname
         );
         if (code) {

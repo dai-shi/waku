@@ -10,14 +10,12 @@ type DevServer = {
   dir?: string;
   port?: number;
   middlewares?: (Middleware | string)[];
-  INTERNAL_scriptToInject?: (path: string) => Promise<string>;
 };
 
 type PrdServer = {
   dir?: string;
   port?: number;
   middlewares?: (Middleware | string)[];
-  INTERNAL_scriptToInject?: (path: string) => Promise<string>;
 };
 
 type Build = {

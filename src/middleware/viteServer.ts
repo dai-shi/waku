@@ -30,7 +30,7 @@ const rscPlugin = (
   };
 };
 
-const viteServer: MiddlewareCreator = (config) => {
+const viteServer: MiddlewareCreator = (config, shared) => {
   const dir = path.resolve(config.devServer?.dir || ".");
   const indexHtml = config.files?.indexHtml || "index.html";
   const indexHtmlFile = path.join(dir, indexHtml);
@@ -44,10 +44,7 @@ const viteServer: MiddlewareCreator = (config) => {
     plugins: [
       // @ts-ignore
       react(),
-      rscPlugin(
-        async (path: string) =>
-          config.devServer?.INTERNAL_scriptToInject?.(path) || ""
-      ),
+      rscPlugin(async (path: string) => shared.devScriptToInject?.(path) || ""),
     ],
     server: { middlewareMode: true },
     appType: "custom",

@@ -34,11 +34,8 @@ const savedResolveFilename = (Module as any)._resolveFilename;
   return savedResolveFilename(fname, m);
 };
 
-const rscDefault: MiddlewareCreator = (config) => {
-  if (!config.devServer) {
-    config.devServer = {};
-  }
-  const dir = path.resolve(config.devServer.dir || ".");
+const rscDefault: MiddlewareCreator = (config, shared) => {
+  const dir = path.resolve(config.devServer?.dir || ".");
   const require = createRequire(import.meta.url);
 
   (require as any).extensions[".ts"] = (require as any).extensions[".tsx"] = (
@@ -98,7 +95,7 @@ const rscDefault: MiddlewareCreator = (config) => {
     return mod.default;
   };
 
-  config.devServer.INTERNAL_scriptToInject = async (path: string) => {
+  shared.devScriptToInject = async (path: string) => {
     let code = `
 globalThis.__webpack_require__ = function (id) {
   return import(id);

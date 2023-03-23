@@ -2,8 +2,10 @@ import http from "node:http";
 
 import type { Config, Middleware } from "./config.js";
 import { pipe } from "./middleware/common.js";
+import type { Shared } from "./middleware/common.js";
 
 export function startPrdServer(config: Config = {}) {
+  const shared: Shared = {};
   const middlewares = config.prdServer?.middlewares || [
     "staticFile",
     "rewriteRsc",
@@ -15,7 +17,7 @@ export function startPrdServer(config: Config = {}) {
     middlewares.map(async (middleware) => {
       if (typeof middleware === "string") {
         const mod = await import(`./middleware/${middleware}.js`);
-        return (mod.default || mod)(config);
+        return (mod.default || mod)(config, shared);
       }
       return middleware;
     })
