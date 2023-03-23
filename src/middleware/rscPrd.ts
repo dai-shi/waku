@@ -97,7 +97,7 @@ const rscDefault: MiddlewareCreator = (config, shared) => {
               get(_target, id: string) {
                 const [filePath, name] = id.split("#");
                 const clientEntry = getClientEntry(filePath!);
-                moduleIds.add(clientEntry);
+                moduleIds.add(basePath + clientEntry);
                 return {
                   id: basePath + clientEntry,
                   chunks: [],
