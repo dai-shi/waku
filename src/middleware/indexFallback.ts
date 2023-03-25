@@ -18,7 +18,8 @@ const staticFile: MiddlewareCreator = (config, shared) => {
       if (stat) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
         const code = await shared.prdScriptToInject?.(
-          url.pathname
+          url.pathname,
+          url.searchParams
         );
         if (code) {
           let data = await fsPromises.readFile(indexHtmlFile, {

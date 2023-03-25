@@ -97,7 +97,9 @@ const rscDefault: MiddlewareCreator = (config, shared) => {
 
   shared.devScriptToInject = async (path: string) => {
     let code = `
-globalThis.__webpack_require__ = function (id) {
+globalThis.__webpack_require__ = (id) => {
+  const cache = globalThis.__webpack_require__wakuwork_cache;
+  if (cache && cache.has(id)) return cache.get(id);
   return import(id);
 };`;
     if (prefetcher) {
@@ -115,7 +117,9 @@ globalThis.__webpack_require__ = function (id) {
             {
               get(_target, id: string) {
                 const [filePath, name] = id.split("#");
-                moduleIds.add(filePath!);
+                if (!filePath!.startsWith("wakuwork/")) {
+                  moduleIds.add(filePath!);
+                }
                 return {
                   id: filePath,
                   chunks: [],

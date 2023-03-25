@@ -1,6 +1,5 @@
 import path from "node:path";
 import fs from "node:fs";
-import url from "node:url";
 import { createRequire } from "node:module";
 
 import { build } from "vite";
@@ -10,13 +9,13 @@ import * as swc from "@swc/core";
 
 import type { Config } from "./config.js";
 
-const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-
 const require = createRequire(import.meta.url);
 
 const rscPlugin = (): Plugin => {
   const code = `
-globalThis.__webpack_require__ = function (id) {
+globalThis.__webpack_require__ = (id) => {
+  const cache = globalThis.__webpack_require__wakuwork_cache;
+  if (cache && cache.has(id)) return cache.get(id);
   return import(id);
 };`;
   return {
@@ -127,11 +126,6 @@ export async function runBuild(config: Config = {}) {
   const output = await build({
     root: dir,
     base: basePath,
-    resolve: {
-      alias: {
-        "wakuwork/client": path.resolve(__dirname, "client.js"),
-      },
-    },
     plugins: [
       // @ts-ignore
       react(),
