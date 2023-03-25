@@ -6,10 +6,7 @@ export type Shared = {
     moduleIds: Set<string>
   ) => string;
   devScriptToInject?: (path: string) => Promise<string>;
-  prdScriptToInject?: (
-    path: string,
-    searchParams: URLSearchParams
-  ) => Promise<string>;
+  prdScriptToInject?: (path: string) => Promise<string>;
 };
 
 export type MiddlewareCreator = (config: Config, shared: Shared) => Middleware;
