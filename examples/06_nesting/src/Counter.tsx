@@ -1,5 +1,3 @@
-/// <reference types="react/next" />
-
 "use client";
 
 import { useState } from "react";

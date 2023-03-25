@@ -1,3 +1,5 @@
+/// <reference types="react/next" />
+
 import { cache, useEffect, useState } from "react";
 import type { ReactNode, ReactElement } from "react";
 import RSDWClient from "react-server-dom-webpack/client";
