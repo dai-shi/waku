@@ -1,14 +1,11 @@
 import path from "node:path";
 import fs from "node:fs";
 import fsPromises from "node:fs/promises";
-import url from "node:url";
 import { createServer } from "vite";
 import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
 import type { MiddlewareCreator } from "./common.js";
-
-const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 const rscPlugin = (
   scriptToInject: (path: string) => Promise<string>
@@ -36,11 +33,6 @@ const viteServer: MiddlewareCreator = (config, shared) => {
   const indexHtmlFile = path.join(dir, indexHtml);
   const vitePromise = createServer({
     root: dir,
-    resolve: {
-      alias: {
-        "wakuwork/client": path.resolve(__dirname, "..", "client.js"),
-      },
-    },
     plugins: [
       // @ts-ignore
       react(),

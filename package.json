@@ -60,7 +60,8 @@
     "react": "18.3.0-next-8e17bfd14-20230322",
     "react-dom": "18.3.0-next-8e17bfd14-20230322",
     "react-server-dom-webpack": "18.3.0-next-8e17bfd14-20230322",
-    "typescript": "^5.0.2"
+    "typescript": "^5.0.2",
+    "wakuwork": "link:."
   },
   "peerDependencies": {
     "react": "18.3.0-next-8e17bfd14-20230322",
