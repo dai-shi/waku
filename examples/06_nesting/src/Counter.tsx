@@ -1,10 +1,11 @@
-/// <reference types="react/experimental" />
-
 "use client";
 
-import { cache, useState } from "react";
-import type { ReactNode } from "react";
+import { useState } from "react";
 import { serve } from "wakuwork/client";
+
+// XXX This is not recommended in practice
+// as it can easily make client server waterfalls.
+const InnerApp = serve<{ count: number }>("InnerApp");
 
 export const Counter = ({ enableInnerApp = false }) => {
   const [count, setCount] = useState(0);
@@ -13,17 +14,7 @@ export const Counter = ({ enableInnerApp = false }) => {
       <p>Count: {count}</p>
       <button onClick={() => setCount((c) => c + 1)}>Increment</button>
       <h3>This is a client component.</h3>
-      {enableInnerApp && <ShowInnerApp count={count} />}
+      {enableInnerApp && <InnerApp count={count} />}
     </div>
   );
 };
-
-const fetchInnerApp = cache(async (count: number): Promise<ReactNode> => {
-  await new Promise((r) => setTimeout(r, 1000)); // emulate slow network
-  // HACK not recommended at the moment for real use cases
-  return new Promise((resolve) => serve('InnerApp', resolve)({ count }));
-});
-
-const ShowInnerApp = ({ count }: { count: number }) => (
-  <>{fetchInnerApp(count)}</>
-);

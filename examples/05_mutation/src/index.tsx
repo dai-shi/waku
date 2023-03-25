@@ -4,6 +4,9 @@ import { serve } from "wakuwork/client";
 
 const root = createRoot(document.getElementById("root")!);
 
-serve("App", (ele) => {
-  root.render(<StrictMode>{ele}</StrictMode>);
-})({ name: "Wakuwork" });
+const App = serve<{ name: string }>("App");
+root.render(
+  <StrictMode>
+    <App name="Wakuwork" />
+  </StrictMode>
+);
