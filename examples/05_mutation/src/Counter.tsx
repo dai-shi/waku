@@ -10,7 +10,9 @@ export const Counter = ({ increment }: { increment: () => void }) => {
       <p>Count: {count}</p>
       <button onClick={() => setCount((c) => c + 1)}>Increment</button>
       <p>
-        <button onClick={() => mutate(increment)()}>Increment server counter</button>
+        <button onClick={() => mutate(increment)()}>
+          Increment server counter
+        </button>
       </p>
       <h3>This is a client component.</h3>
     </div>
