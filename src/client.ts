@@ -79,11 +79,8 @@ export function serve<Props>(rscId: string) {
 
 let mutationMode = 0;
 
-export function mutate<Fn extends (...args: any[]) => any>(fn: Fn): Fn {
-  return ((...args: unknown[]) => {
-    ++mutationMode;
-    const result = fn(...args);
-    --mutationMode;
-    return result;
-  }) as Fn;
+export function mutate(fn: () => void) {
+  ++mutationMode;
+  fn();
+  --mutationMode;
 }
