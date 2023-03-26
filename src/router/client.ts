@@ -44,8 +44,7 @@ export function useLocation() {
 // TODO ommitting `search` items would be important for caching
 
 const prefetchRoutes = (pathname: string, search: string) => {
-  const prefetched = (globalThis as any).__WAKUWORK_PREFETCHED__ || {};
-  (globalThis as any).__WAKUWORK_PREFETCHED__ = prefetched;
+  const prefetched = ((globalThis as any).__WAKUWORK_PREFETCHED__ ||= {});
   const pathItems = pathname.split("/").filter(Boolean);
   for (let index = 0; index <= pathItems.length; ++index) {
     const rscId = pathItems.slice(0, index).join("/") || "index";
@@ -98,10 +97,9 @@ export const Link = ({ href, children }: LinkProps) => {
   );
 };
 
-if (!(globalThis as any).__webpack_require__wakuwork_cache) {
-  (globalThis as any).__webpack_require__wakuwork_cache = new Map();
-}
-(globalThis as any).__webpack_require__wakuwork_cache.set(WAKUWORK_ROUTER, {
+const moduleCache = ((globalThis as any).__webpack_require__wakuwork_cache ||=
+  new Map());
+moduleCache.set(WAKUWORK_ROUTER, {
   ChildrenWrapper,
   Link,
 });
