@@ -40,6 +40,34 @@ export function useLocation() {
   return value.location;
 }
 
+// TODO normalizing `search` before prefetch would be necessary
+// TODO ommitting `search` items would be important for caching
+
+const prefetchRoutes = (pathname: string, search: string) => {
+  const prefetched = (globalThis as any).__WAKUWORK_PREFETCHED__ || {};
+  (globalThis as any).__WAKUWORK_PREFETCHED__ = prefetched;
+  const pathItems = pathname.split("/").filter(Boolean);
+  for (let index = 0; index <= pathItems.length; ++index) {
+    const rscId = pathItems.slice(0, index).join("/") || "index";
+    const props = {
+      pathname,
+      index,
+      search,
+    };
+    // FIXME we blindly expect JSON.stringify usage is deterministic
+    const serializedProps = JSON.stringify(props);
+    if (!prefetched[rscId]) {
+      prefetched[rscId] = {};
+    }
+    const searchParams = new URLSearchParams();
+    searchParams.set("rsc_id", rscId);
+    searchParams.set("props", serializedProps);
+    if (!prefetched[rscId][serializedProps]) {
+      prefetched[rscId][serializedProps] = fetch(`/?${searchParams}`);
+    }
+  }
+};
+
 const getRoute = cache((rscId: string) => serve<RouteProps>(rscId));
 
 const ChildrenWrapper = ({ pathname, index, search }: RouteProps) => {
@@ -113,6 +141,8 @@ export function Router() {
     window.addEventListener("popstate", callback);
     return () => window.removeEventListener("popstate", callback);
   }, []);
+
+  prefetchRoutes(location.pathname, location.search);
 
   const children = createElement(ChildrenWrapper, {
     pathname: location.pathname,
