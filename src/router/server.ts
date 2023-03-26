@@ -2,8 +2,8 @@ import { createElement } from "react";
 
 import type { GetEntry, Prefetcher } from "../server.js";
 
-import { childrenWrapperReference } from "./common.js";
-import type { RouteProps } from "./common.js";
+import { childrenWrapperReference, linkReference } from "./common.js";
+import type { RouteProps, LinkProps } from "./common.js";
 
 export function fileRouter(base: string) {
   const getEntry: GetEntry = async (id) => {
@@ -49,4 +49,8 @@ export function fileRouter(base: string) {
   };
 
   return { getEntry, prefetcher };
+}
+
+export function Link({ href, children }: LinkProps) {
+  return createElement(linkReference, { href }, children);
 }
