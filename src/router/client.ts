@@ -71,12 +71,8 @@ const getRoute = cache((rscId: string) => serve<RouteProps>(rscId));
 
 const ChildrenWrapper = ({ pathname, index, search }: RouteProps) => {
   const pathItems = pathname.split("/").filter(Boolean);
-  const subPathname = pathItems.slice(0, index).join("/");
-  return createElement(getRoute(subPathname || "index"), {
-    pathname,
-    index,
-    search,
-  });
+  const rscId = pathItems.slice(0, index).join("/") || "index";
+  return createElement(getRoute(rscId), { pathname, index, search });
 };
 
 export const Link = ({ href, children }: LinkProps) => {
@@ -150,9 +146,7 @@ export function Router() {
 
   return createElement(
     RouterContext.Provider,
-    {
-      value: { location, changeLocation },
-    },
+    { value: { location, changeLocation } },
     children
   );
 }
