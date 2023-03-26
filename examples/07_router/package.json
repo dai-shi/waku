@@ -1,0 +1,17 @@
+{
+  "name": "wakuwork-example",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "wakuwork dev",
+    "build": "wakuwork build",
+    "start": "WAKUWORK_CONFIG='{\"prdServer\":{\"dir\":\"dist\"}}' wakuwork start"
+  },
+  "dependencies": {
+    "react": "18.3.0-next-8e17bfd14-20230322",
+    "react-dom": "18.3.0-next-8e17bfd14-20230322",
+    "react-server-dom-webpack": "18.3.0-next-8e17bfd14-20230322",
+    "wakuwork": "^0.7.0"
+  }
+}

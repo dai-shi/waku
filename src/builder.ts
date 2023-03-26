@@ -13,7 +13,9 @@ const require = createRequire(import.meta.url);
 
 const rscPlugin = (): Plugin => {
   const code = `
-globalThis.__webpack_require__ = function (id) {
+globalThis.__webpack_require__ = (id) => {
+  const cache = globalThis.__webpack_require__wakuwork_cache;
+  if (cache && cache.has(id)) return cache.get(id);
   return import(id);
 };`;
   return {

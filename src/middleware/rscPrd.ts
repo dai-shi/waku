@@ -96,6 +96,14 @@ const rscDefault: MiddlewareCreator = (config, shared) => {
             {
               get(_target, id: string) {
                 const [filePath, name] = id.split("#");
+                if (filePath!.startsWith("wakuwork/")) {
+                  return {
+                    id: filePath,
+                    chunks: [],
+                    name,
+                    async: true,
+                  };
+                }
                 const clientEntry = getClientEntry(filePath!);
                 moduleIds.add(basePath + clientEntry);
                 return {
@@ -131,6 +139,14 @@ const rscDefault: MiddlewareCreator = (config, shared) => {
     {
       get(_target, id: string) {
         const [filePath, name] = id.split("#");
+        if (filePath!.startsWith("wakuwork/")) {
+          return {
+            id: filePath,
+            chunks: [],
+            name,
+            async: true,
+          };
+        }
         const clientEntry = getClientEntry(filePath!);
         return {
           id: basePath + clientEntry,

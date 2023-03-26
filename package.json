@@ -10,9 +10,30 @@
   },
   "exports": {
     "./package.json": "./package.json",
-    ".": "./dist/main.js",
-    "./client": "./dist/client.js",
-    "./server": "./dist/server.js"
+    ".": {
+      "types": "./dist/main.d.ts",
+      "default": "./dist/main.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "require": "./dist/cjs/client.js",
+      "default": "./dist/client.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "require": "./dist/cjs/server.js",
+      "default": "./dist/server.js"
+    },
+    "./router/client": {
+      "types": "./dist/router/client.d.ts",
+      "require": "./dist/cjs/router/client.js",
+      "default": "./dist/router/client.js"
+    },
+    "./router/server": {
+      "types": "./dist/router/server.d.ts",
+      "require": "./dist/cjs/router/server.js",
+      "default": "./dist/router/server.js"
+    }
   },
   "bin": "./cli.js",
   "files": [
@@ -22,7 +43,7 @@
   ],
   "scripts": {
     "compile": "npm run compile:code && npm run compile:types",
-    "compile:code": "swc src -d dist",
+    "compile:code": "swc src -d dist && swc src -d dist/cjs -C module.type=commonjs && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
     "compile:types": "tsc --project tsconfig.build.json",
     "test": "tsc --project . --noEmit",
     "examples:dev": "npm run compile:code && WAKUWORK_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" nodemon --ext ts,tsx --ignore ./examples/${NAME}/src/Counter.tsx --exec /usr/bin/env ./cli.js dev",
@@ -32,13 +53,15 @@
     "examples:dev:04_callserver": "NAME=04_callserver npm run examples:dev",
     "examples:dev:05_mutation": "NAME=05_mutation npm run examples:dev",
     "examples:dev:06_nesting": "NAME=06_nesting npm run examples:dev",
+    "examples:dev:07_router": "NAME=07_router npm run examples:dev",
     "examples:prd": "npm run compile:code && WAKUWORK_CONFIG=\"{\\\"build\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" ./cli.js build && WAKUWORK_CONFIG=\"{\\\"prdServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}/dist\\\"}}\" ./cli.js start",
     "examples:prd:01_counter": "NAME=01_counter npm run examples:prd",
     "examples:prd:02_async": "NAME=02_async npm run examples:prd",
     "examples:prd:03_promise": "NAME=03_promise npm run examples:prd",
     "examples:prd:04_callserver": "NAME=04_callserver npm run examples:prd",
     "examples:prd:05_mutation": "NAME=05_mutation npm run examples:prd",
-    "examples:prd:06_nesting": "NAME=06_nesting npm run examples:prd"
+    "examples:prd:06_nesting": "NAME=06_nesting npm run examples:prd",
+    "examples:prd:07_router": "NAME=07_router npm run examples:prd"
   },
   "license": "MIT",
   "dependencies": {
