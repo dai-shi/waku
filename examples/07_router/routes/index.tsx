@@ -5,7 +5,7 @@ import { Link } from "wakuwork/router/server";
 export default ({ children }: { children: ReactNode }) => {
   return (
     <div>
-      <h1>Index</h1>
+      <h1>Home</h1>
       <ul>
         <li><Link href="/">Home</Link></li>
         <li><Link href="/foo">Foo</Link></li>
