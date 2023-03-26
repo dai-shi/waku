@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 export type RouteProps = {
   pathname: string;
   index: number;
-  searchParams: string;
+  search: string;
 };
 
 export type LinkProps = {

@@ -11,7 +11,7 @@ export function fileRouter(base: string) {
     const component = (await import(`${base}/${id}.js`)).default;
     const RouteComponent: any = (props: RouteProps) => {
       const componentProps: Record<string, string> = {};
-      for (const [key, value] of new URLSearchParams(props.searchParams)) {
+      for (const [key, value] of new URLSearchParams(props.search)) {
         componentProps[key] = value;
       }
       const pathItems = props.pathname.split("/").filter(Boolean);
@@ -34,14 +34,14 @@ export function fileRouter(base: string) {
     const result: (readonly [id: string, props: RouteProps])[] = [];
     const pathItems = pathname.split("/").filter(Boolean);
     // Hmm, we can't get searchParams. Use empty string for now. FIXME
-    const searchParams = "";
+    const search = "";
     for (let index = 0; index <= pathItems.length; ++index) {
       result.push([
         pathItems.slice(0, index).join("/") || "index",
         {
           pathname,
           index,
-          searchParams,
+          search,
         },
       ]);
     }

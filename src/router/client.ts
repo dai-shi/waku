@@ -15,7 +15,7 @@ import type { RouteProps, LinkProps } from "./common.js";
 
 type ChangeLocation = (
   pathname?: string,
-  searchParams?: URLSearchParams,
+  search?: string,
   replace?: boolean
 ) => void;
 
@@ -42,13 +42,13 @@ export function useLocation() {
 
 const getRoute = cache((rscId: string) => serve<RouteProps>(rscId));
 
-const ChildrenWrapper = ({ pathname, index, searchParams }: RouteProps) => {
+const ChildrenWrapper = ({ pathname, index, search }: RouteProps) => {
   const pathItems = pathname.split("/").filter(Boolean);
   const subPathname = pathItems.slice(0, index).join("/");
   return createElement(getRoute(subPathname || "index"), {
     pathname,
     index,
-    searchParams,
+    search,
   });
 };
 
@@ -61,7 +61,9 @@ export const Link = ({ href, children }: LinkProps) => {
       onClick: (event: MouseEvent) => {
         event.preventDefault();
         const url = new URL(href, window.location.href);
-        changeLocation(url.pathname, new URLSearchParams(url.search));
+        if (url.href !== window.location.href) {
+          changeLocation(url.pathname, url.search);
+        }
       },
     },
     children
@@ -77,26 +79,26 @@ if (!(globalThis as any).__webpack_require__wakuwork_cache) {
 });
 
 const parseLocation = () => {
-  const pathname = window.location.pathname;
-  const searchParams = new URLSearchParams(window.location.search);
+  const { pathname, search } = window.location;
+  const searchParams = new URLSearchParams(search);
   if (searchParams.has("rsc_id") || searchParams.has("rsf_id")) {
     throw new Error(
       "rsc_id and rsf_id are currently reserved by wakuwork. This is not a finalized API"
     );
   }
-  return { pathname, searchParams };
+  return { pathname, search };
 };
 
 export function Router() {
   const [location, setLocation] = useState(parseLocation);
 
-  const changeLocation: ChangeLocation = (pathname, searchParams, replace) => {
+  const changeLocation: ChangeLocation = (pathname, search, replace) => {
     const url = new URL(window.location.href);
     if (pathname) {
       url.pathname = pathname;
     }
-    if (searchParams) {
-      url.search = searchParams.toString();
+    if (search) {
+      url.search = search;
     }
     if (replace) {
       window.history.replaceState(null, "", url);
@@ -115,7 +117,7 @@ export function Router() {
   const children = createElement(ChildrenWrapper, {
     pathname: location.pathname,
     index: 0,
-    searchParams: location.searchParams.toString(),
+    search: location.search,
   });
 
   return createElement(
