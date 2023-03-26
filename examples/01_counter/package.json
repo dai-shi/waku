@@ -12,6 +12,11 @@
     "react": "18.3.0-next-8e17bfd14-20230322",
     "react-dom": "18.3.0-next-8e17bfd14-20230322",
     "react-server-dom-webpack": "18.3.0-next-8e17bfd14-20230322",
-    "wakuwork": "^0.8.0"
+    "wakuwork": "~0.8.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.29",
+    "@types/react-dom": "^18.0.11",
+    "typescript": "^5.0.2"
   }
 }
