@@ -1,7 +1,7 @@
 /// <reference types="react/next" />
 
 import { cache, useEffect, useState } from "react";
-import type { ReactNode, ReactElement } from "react";
+import type { ReactElement } from "react";
 import RSDWClient from "react-server-dom-webpack/client";
 
 const { createFromFetch, encodeReply } = RSDWClient;
@@ -10,10 +10,22 @@ const { createFromFetch, encodeReply } = RSDWClient;
 const basePath = "/";
 
 export function serve<Props>(rscId: string) {
-  type SetRerender = (rerender: (next: ReactNode) => void) => () => void;
+  type SetRerender = (rerender: (next: ReactElement) => void) => () => void;
   const fetchRSC = cache(
-    (serializedProps: string): readonly [ReactNode, SetRerender, string] => {
-      let rerender: ((next: ReactNode) => void) | undefined;
+    (
+      serializedProps: string,
+      mutationData: ReactElement | undefined
+    ): readonly [ReactElement, SetRerender] => {
+      let rerender: ((next: ReactElement) => void) | undefined;
+      const setRerender: SetRerender = (fn) => {
+        rerender = fn;
+        return () => {
+          rerender = undefined;
+        };
+      };
+      if (mutationData !== undefined) {
+        return [mutationData, setRerender];
+      }
       const searchParams = new URLSearchParams();
       searchParams.set("props", serializedProps);
       const options = {
@@ -45,34 +57,17 @@ export function serve<Props>(rscId: string) {
         prefetched || fetch(basePath + rscPath + "?" + searchParams),
         options
       );
-      const setRerender: SetRerender = (fn) => {
-        rerender = fn;
-        return () => {
-          rerender = undefined;
-        };
-      };
-      return [data, setRerender, serializedProps];
+      return [data, setRerender];
     }
   );
   const ServerComponent = (props: Props) => {
+    const [mutationData, setMutationData] = useState<ReactElement|undefined>();
     // FIXME we blindly expect JSON.stringify usage is deterministic
     const serializedProps = JSON.stringify(props);
-    const [
-      [currentNode, currentSetRerender, currentSerializedProps],
-      setState,
-    ] = useState<readonly [ReactNode, SetRerender, string]>(() =>
-      fetchRSC(serializedProps)
-    );
-    if (currentSerializedProps !== serializedProps) {
-      setState(fetchRSC(serializedProps));
-    }
+    const [data, setRerender] = fetchRSC(serializedProps, mutationData);
     // XXX Should this be useLayoutEffect?
-    useEffect(() =>
-      currentSetRerender((nextNode) =>
-        setState([nextNode, currentSetRerender, serializedProps])
-      )
-    );
-    return currentNode as ReactElement; // HACK type FIXME
+    useEffect(() => setRerender(setMutationData));
+    return data;
   };
   return ServerComponent;
 }
