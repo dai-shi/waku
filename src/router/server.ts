@@ -45,6 +45,6 @@ export function fileRouter(base: string) {
   return { getEntry, prefetcher };
 }
 
-export function Link({ href, children }: LinkProps) {
-  return createElement(linkReference, { href }, children);
+export function Link({ href, children, transition }: LinkProps) {
+  return createElement(linkReference, { href, transition }, children);
 }
