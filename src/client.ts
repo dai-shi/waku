@@ -12,10 +12,7 @@ const basePath = "/";
 export function serve<Props>(rscId: string) {
   type SetRerender = (rerender: (next: ReactElement) => void) => () => void;
   const fetchRSC = cache(
-    (
-      serializedProps: string,
-      mutationData: ReactElement | undefined
-    ): readonly [ReactElement, SetRerender] => {
+    (serializedProps: string): readonly [ReactElement, SetRerender] => {
       let rerender: ((next: ReactElement) => void) | undefined;
       const setRerender: SetRerender = (fn) => {
         rerender = fn;
@@ -23,9 +20,6 @@ export function serve<Props>(rscId: string) {
           rerender = undefined;
         };
       };
-      if (mutationData !== undefined) {
-        return [mutationData, setRerender];
-      }
       const searchParams = new URLSearchParams();
       searchParams.set("props", serializedProps);
       const options = {
@@ -61,13 +55,20 @@ export function serve<Props>(rscId: string) {
     }
   );
   const ServerComponent = (props: Props) => {
-    const [mutationData, setMutationData] = useState<ReactElement|undefined>();
     // FIXME we blindly expect JSON.stringify usage is deterministic
     const serializedProps = JSON.stringify(props);
-    const [data, setRerender] = fetchRSC(serializedProps, mutationData);
+    const [currProps, setCurrProps] = useState(serializedProps);
+    const [mutationData, setMutationData] = useState<
+      ReactElement | undefined
+    >();
+    if (currProps !== serializedProps) {
+      setCurrProps(serializedProps);
+      setMutationData(undefined);
+    }
+    const [data, setRerender] = fetchRSC(serializedProps);
     // XXX Should this be useLayoutEffect?
     useEffect(() => setRerender(setMutationData));
-    return data;
+    return mutationData ?? data;
   };
   return ServerComponent;
 }

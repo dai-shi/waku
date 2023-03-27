@@ -107,7 +107,7 @@ export const Link = ({
   if (isPending && pending !== undefined) {
     return createElement(Fragment, null, ele, pending);
   }
-  return ele
+  return ele;
 };
 
 const moduleCache = ((globalThis as any).__webpack_require__wakuwork_cache ||=
