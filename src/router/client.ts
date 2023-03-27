@@ -59,10 +59,11 @@ const prefetchRoutes = (pathname: string, search: string) => {
       prefetched[rscId] = {};
     }
     const searchParams = new URLSearchParams();
-    searchParams.set("rsc_id", rscId);
     searchParams.set("props", serializedProps);
     if (!prefetched[rscId][serializedProps]) {
-      prefetched[rscId][serializedProps] = fetch(`/?${searchParams}`);
+      prefetched[rscId][serializedProps] = fetch(
+        `/RSC/${rscId}?${searchParams}`
+      );
     }
   }
 };
@@ -102,12 +103,6 @@ moduleCache.set(WAKUWORK_ROUTER, {
 
 const parseLocation = () => {
   const { pathname, search } = window.location;
-  const searchParams = new URLSearchParams(search);
-  if (searchParams.has("rsc_id") || searchParams.has("rsf_id")) {
-    throw new Error(
-      "rsc_id and rsf_id are currently reserved by wakuwork. This is not a finalized API"
-    );
-  }
   return { pathname, search };
 };
 

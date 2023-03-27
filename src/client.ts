@@ -15,18 +15,18 @@ export function serve<Props>(rscId: string) {
     (serializedProps: string): readonly [ReactNode, SetRerender] => {
       let rerender: ((next: ReactNode) => void) | undefined;
       const searchParams = new URLSearchParams();
-      searchParams.set("rsc_id", rscId);
       searchParams.set("props", serializedProps);
       const options = {
         async callServer(rsfId: string, args: unknown[]) {
           const isMutating = !!mutationMode;
           const searchParams = new URLSearchParams();
-          searchParams.set("rsf_id", rsfId);
+          searchParams.set("action_id", rsfId);
+          let rscPath = "RSC/";
           if (isMutating) {
-            searchParams.set("rsc_id", rscId);
+            rscPath += rscId;
             searchParams.set("props", serializedProps);
           }
-          const response = fetch(basePath + "?" + searchParams, {
+          const response = fetch(basePath + rscPath + "?" + searchParams, {
             method: "POST",
             body: await encodeReply(args),
           });
@@ -40,8 +40,9 @@ export function serve<Props>(rscId: string) {
       const prefetched = (globalThis as any).__WAKUWORK_PREFETCHED__?.[rscId]?.[
         serializedProps
       ];
+      const rscPath = "RSC/" + rscId;
       const data = createFromFetch(
-        prefetched || fetch(basePath + "?" + searchParams),
+        prefetched || fetch(basePath + rscPath + "?" + searchParams),
         options
       );
       const setRerender: SetRerender = (fn) => {
