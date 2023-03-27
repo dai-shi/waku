@@ -19,9 +19,8 @@ ${rscIds
           // FIXME we blindly expect JSON.stringify usage is deterministic
           const serializedProps = JSON.stringify(props);
           const searchParams = new URLSearchParams();
-          searchParams.set("rsc_id", rscId);
           searchParams.set("props", serializedProps);
-          return [`'${serializedProps}': fetch('/?${searchParams}')`];
+          return [`'${serializedProps}': fetch('/RSC/${rscId}?${searchParams}')`];
         })
         .join(",") +
       "}";
@@ -39,17 +38,19 @@ import('${moduleId}');`;
 
   return async (req, _res, next) => {
     const url = new URL(req.url || "", "http://" + req.headers.host);
-    const rscId = url.searchParams.get("rsc_id");
-    if (rscId) {
-      req.headers["x-react-server-component-id"] = rscId;
-      req.headers["x-react-server-component-props"] =
-        url.searchParams.get("props") || undefined;
-    }
-    const rsfId = url.searchParams.get("rsf_id");
-    if (rsfId) {
-      req.headers["x-react-server-function-id"] = rsfId;
-      req.headers["x-react-server-function-name"] =
-        url.searchParams.get("name") || "default";
+    if (url.pathname.startsWith("/RSC/")) {
+      const rscId = url.pathname.slice("/RSC/".length);
+      if (rscId) {
+        req.headers["x-react-server-component-id"] = rscId;
+        req.headers["x-react-server-component-props"] =
+          url.searchParams.get("props") || undefined;
+      }
+      const rsfId = url.searchParams.get("action_id");
+      if (rsfId) {
+        req.headers["x-react-server-function-id"] = rsfId;
+        req.headers["x-react-server-function-name"] =
+          url.searchParams.get("action_name") || "default";
+      }
     }
     await next();
   };
