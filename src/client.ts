@@ -10,10 +10,12 @@ const { createFromFetch, encodeReply } = RSDWClient;
 const basePath = "/";
 
 export function serve<Props>(rscId: string) {
-  type SetRerender = (rerender: (next: ReactElement) => void) => () => void;
+  type SetRerender = (
+    rerender: (next: [ReactElement, string]) => void
+  ) => () => void;
   const fetchRSC = cache(
     (serializedProps: string): readonly [ReactElement, SetRerender] => {
-      let rerender: ((next: ReactElement) => void) | undefined;
+      let rerender: ((next: [ReactElement, string]) => void) | undefined;
       const setRerender: SetRerender = (fn) => {
         rerender = fn;
         return () => {
@@ -38,7 +40,7 @@ export function serve<Props>(rscId: string) {
           });
           const data = createFromFetch(response, options);
           if (isMutating) {
-            rerender?.(data);
+            rerender?.([data, serializedProps]);
           }
           return data;
         },
@@ -57,19 +59,22 @@ export function serve<Props>(rscId: string) {
   const ServerComponent = (props: Props) => {
     // FIXME we blindly expect JSON.stringify usage is deterministic
     const serializedProps = JSON.stringify(props);
-    const [currProps, setCurrProps] = useState(serializedProps);
-    const [mutationData, setMutationData] = useState<
-      ReactElement | undefined
-    >();
     const [data, setRerender] = fetchRSC(serializedProps);
+    const [state, setState] = useState<
+      [mutationData: ReactElement, lastSerializedProps: string] | undefined
+    >();
     // XXX Should this be useLayoutEffect?
-    useEffect(() => setRerender(setMutationData));
-    if (currProps !== serializedProps) {
-      setCurrProps(serializedProps);
-      setMutationData(undefined);
-      return data;
+    useEffect(() => setRerender(setState));
+    let dataToReturn = data;
+    if (state) {
+      if (state[1] === serializedProps) {
+        dataToReturn = state[0];
+      } else {
+        setState(undefined);
+      }
     }
-    return mutationData ?? data;
+    return dataToReturn;
+    // return use(dataToReturn);
   };
   return ServerComponent;
 }
