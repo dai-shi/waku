@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Link } from 'wakuwork/router/client';
+import { Link } from "wakuwork/router/client";
 
 export const Counter = () => {
   const [count, setCount] = useState(0);
@@ -11,7 +11,7 @@ export const Counter = () => {
       <p>Count: {count}</p>
       <button onClick={() => setCount((c) => c + 1)}>Increment</button>
       <h3>This is a client component.</h3>
-      <Link href="/">Go to Index</Link>
+      <Link href="/">Go to Home</Link>
     </div>
   );
 };

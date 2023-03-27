@@ -20,7 +20,9 @@ ${rscIds
           const serializedProps = JSON.stringify(props);
           const searchParams = new URLSearchParams();
           searchParams.set("props", serializedProps);
-          return [`'${serializedProps}': fetch('/RSC/${rscId}?${searchParams}')`];
+          return [
+            `'${serializedProps}': fetch('/RSC/${rscId}?${searchParams}')`,
+          ];
         })
         .join(",") +
       "}";

@@ -2,7 +2,7 @@ import { createElement } from "react";
 
 import type { GetEntry, Prefetcher } from "../server.js";
 
-import { childrenWrapperReference, linkReference } from "./common.js";
+import { childReference, linkReference } from "./common.js";
 import type { RouteProps, LinkProps } from "./common.js";
 
 export function fileRouter(base: string) {
@@ -14,18 +14,11 @@ export function fileRouter(base: string) {
       for (const [key, value] of new URLSearchParams(props.search)) {
         componentProps[key] = value;
       }
-      const pathItems = props.pathname.split("/").filter(Boolean);
-      if (pathItems.length > props.index) {
-        return createElement(
-          component,
-          componentProps,
-          createElement(childrenWrapperReference, {
-            ...props,
-            index: props.index + 1,
-          })
-        );
-      }
-      return createElement(component, componentProps);
+      return createElement(
+        component,
+        componentProps,
+        createElement(childReference, { index: props.index + 1 })
+      );
     };
     return RouteComponent;
   };
@@ -37,7 +30,7 @@ export function fileRouter(base: string) {
     const search = "";
     for (let index = 0; index <= pathItems.length; ++index) {
       const rscId = pathItems.slice(0, index).join("/") || "index";
-      result.push([rscId, { pathname, index, search }]);
+      result.push([rscId, { index, search }]);
     }
     return result;
   };
@@ -45,6 +38,6 @@ export function fileRouter(base: string) {
   return { getEntry, prefetcher };
 }
 
-export function Link({ href, children }: LinkProps) {
-  return createElement(linkReference, { href }, children);
+export function Link(props: LinkProps) {
+  return createElement(linkReference, props);
 }

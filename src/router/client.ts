@@ -7,11 +7,13 @@ import {
   useContext,
   useEffect,
   useState,
+  useTransition,
+  Fragment,
 } from "react";
 
 import { serve } from "../client.js";
 import { WAKUWORK_ROUTER } from "./common.js";
-import type { RouteProps, LinkProps } from "./common.js";
+import type { RouteProps, ChildProps, LinkProps } from "./common.js";
 
 type ChangeLocation = (
   pathname?: string,
@@ -48,11 +50,7 @@ const prefetchRoutes = (pathname: string, search: string) => {
   const pathItems = pathname.split("/").filter(Boolean);
   for (let index = 0; index <= pathItems.length; ++index) {
     const rscId = pathItems.slice(0, index).join("/") || "index";
-    const props = {
-      pathname,
-      index,
-      search,
-    };
+    const props: RouteProps = { index, search };
     // FIXME we blindly expect JSON.stringify usage is deterministic
     const serializedProps = JSON.stringify(props);
     if (!prefetched[rscId]) {
@@ -70,34 +68,52 @@ const prefetchRoutes = (pathname: string, search: string) => {
 
 const getRoute = cache((rscId: string) => serve<RouteProps>(rscId));
 
-const ChildrenWrapper = ({ pathname, index, search }: RouteProps) => {
+const Child = ({ index }: ChildProps) => {
+  const { pathname, search } = useLocation();
   const pathItems = pathname.split("/").filter(Boolean);
+  if (index > pathItems.length) {
+    return null;
+  }
   const rscId = pathItems.slice(0, index).join("/") || "index";
-  return createElement(getRoute(rscId), { pathname, index, search });
+  return createElement(getRoute(rscId), { index, search });
 };
 
-export const Link = ({ href, children }: LinkProps) => {
+export const Link = ({
+  href,
+  children,
+  pending,
+  unstable_prefetchOnEnter,
+}: LinkProps) => {
   const changeLocation = useChangeLocation();
-  return createElement(
-    "a",
-    {
-      href,
-      onClick: (event: MouseEvent) => {
-        event.preventDefault();
+  const [isPending, startTransition] = useTransition();
+  const onClick = (event: MouseEvent) => {
+    event.preventDefault();
+    const url = new URL(href, window.location.href);
+    if (url.href !== window.location.href) {
+      startTransition(() => {
+        changeLocation(url.pathname, url.search);
+      });
+    }
+  };
+  const onMouseEnter = unstable_prefetchOnEnter
+    ? () => {
         const url = new URL(href, window.location.href);
         if (url.href !== window.location.href) {
-          changeLocation(url.pathname, url.search);
+          prefetchRoutes(url.pathname, url.search);
         }
-      },
-    },
-    children
-  );
+      }
+    : undefined;
+  const ele = createElement("a", { href, onClick, onMouseEnter }, children);
+  if (isPending && pending !== undefined) {
+    return createElement(Fragment, null, ele, pending);
+  }
+  return ele;
 };
 
 const moduleCache = ((globalThis as any).__webpack_require__wakuwork_cache ||=
   new Map());
 moduleCache.set(WAKUWORK_ROUTER, {
-  ChildrenWrapper,
+  Child,
   Link,
 });
 
@@ -133,15 +149,9 @@ export function Router() {
 
   prefetchRoutes(location.pathname, location.search);
 
-  const children = createElement(ChildrenWrapper, {
-    pathname: location.pathname,
-    index: 0,
-    search: location.search,
-  });
-
   return createElement(
     RouterContext.Provider,
     { value: { location, changeLocation } },
-    children
+    createElement(Child, { index: 0 })
   );
 }

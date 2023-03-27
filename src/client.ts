@@ -1,7 +1,7 @@
 /// <reference types="react/next" />
 
 import { cache, useEffect, useState } from "react";
-import type { ReactNode, ReactElement } from "react";
+import type { ReactElement } from "react";
 import RSDWClient from "react-server-dom-webpack/client";
 
 const { createFromFetch, encodeReply } = RSDWClient;
@@ -10,10 +10,18 @@ const { createFromFetch, encodeReply } = RSDWClient;
 const basePath = "/";
 
 export function serve<Props>(rscId: string) {
-  type SetRerender = (rerender: (next: ReactNode) => void) => () => void;
+  type SetRerender = (
+    rerender: (next: [ReactElement, string]) => void
+  ) => () => void;
   const fetchRSC = cache(
-    (serializedProps: string): readonly [ReactNode, SetRerender] => {
-      let rerender: ((next: ReactNode) => void) | undefined;
+    (serializedProps: string): readonly [ReactElement, SetRerender] => {
+      let rerender: ((next: [ReactElement, string]) => void) | undefined;
+      const setRerender: SetRerender = (fn) => {
+        rerender = fn;
+        return () => {
+          rerender = undefined;
+        };
+      };
       const searchParams = new URLSearchParams();
       searchParams.set("props", serializedProps);
       const options = {
@@ -32,7 +40,7 @@ export function serve<Props>(rscId: string) {
           });
           const data = createFromFetch(response, options);
           if (isMutating) {
-            rerender?.(data);
+            rerender?.([data, serializedProps]);
           }
           return data;
         },
@@ -45,35 +53,39 @@ export function serve<Props>(rscId: string) {
         prefetched || fetch(basePath + rscPath + "?" + searchParams),
         options
       );
-      const setRerender: SetRerender = (fn) => {
-        rerender = fn;
-        return () => {
-          rerender = undefined;
-        };
-      };
       return [data, setRerender];
     }
   );
   const ServerComponent = (props: Props) => {
-    // FIXME we blindly expect JSON.stringify usage is deterministic
-    const serializedProps = JSON.stringify(props);
-    const [
-      [currentNode, currentSetRerender, currentSerializedProps],
-      setState,
-    ] = useState<readonly [ReactNode, SetRerender, string]>(() => [
-      ...fetchRSC(serializedProps),
-      serializedProps,
-    ]);
-    if (currentSerializedProps !== serializedProps) {
-      setState([...fetchRSC(serializedProps), serializedProps]);
+    try {
+      // FIXME we blindly expect JSON.stringify usage is deterministic
+      const serializedProps = JSON.stringify(props);
+      const [data, setRerender] = fetchRSC(serializedProps);
+      const [state, setState] = useState<
+        [dataToOverride: ReactElement, lastSerializedProps: string] | undefined
+      >();
+      // XXX Should this be useLayoutEffect?
+      useEffect(() => setRerender(setState));
+      let dataToReturn = data;
+      if (state) {
+        if (state[1] === serializedProps) {
+          dataToReturn = state[0];
+        } else {
+          setState(undefined);
+        }
+      }
+      return dataToReturn;
+    } catch (e: any) {
+      // FIXME This error is caused with startTransition.
+      // Not sure if it's a React bug or our misusage.
+      // For now, we throw a promise to retry.
+      if (
+        e?.message === "Cannot read properties of null (reading 'alternate')"
+      ) {
+        throw Promise.resolve();
+      }
+      throw e;
     }
-    // XXX Should this be useLayoutEffect?
-    useEffect(() =>
-      currentSetRerender((nextNode) =>
-        setState([nextNode, currentSetRerender, serializedProps])
-      )
-    );
-    return currentNode as ReactElement; // HACK type FIXME
   };
   return ServerComponent;
 }

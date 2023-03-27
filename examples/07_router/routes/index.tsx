@@ -1,17 +1,34 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { Link } from "wakuwork/router/server";
 
 export default ({ children }: { children: ReactNode }) => {
   return (
     <div>
-      <h1>Home</h1>
       <ul>
-        <li><Link href="/">Home</Link></li>
-        <li><Link href="/foo">Foo</Link></li>
-        <li><Link href="/bar">Bar</Link></li>
-        <li><Link href="/nested/baz">Baz</Link></li>
+        <li>
+          <Link href="/" pending=" Pending...">
+            Home
+          </Link>
+        </li>
+        <li>
+          <Link href="/foo" pending=" Pending...">
+            Foo
+          </Link>
+        </li>
+        <li>
+          <Link href="/bar" unstable_prefetchOnEnter>
+            Bar
+          </Link>
+        </li>
+        <li>
+          <Link href="/nested/baz">Nested / Baz</Link>
+        </li>
+        <li>
+          <Link href="/nested/qux">Nested / Qux</Link>
+        </li>
       </ul>
+      <h1>Home</h1>
       {children}
     </div>
   );
