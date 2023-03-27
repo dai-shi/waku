@@ -17,9 +17,7 @@ export function fileRouter(base: string) {
       return createElement(
         component,
         componentProps,
-        createElement(childReference, {
-          index: props.index + 1,
-        })
+        createElement(childReference, { index: props.index + 1 })
       );
     };
     return RouteComponent;
