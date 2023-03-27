@@ -61,13 +61,14 @@ export function serve<Props>(rscId: string) {
     const [mutationData, setMutationData] = useState<
       ReactElement | undefined
     >();
-    if (currProps !== serializedProps) {
-      setCurrProps(serializedProps);
-      setMutationData(undefined);
-    }
     const [data, setRerender] = fetchRSC(serializedProps);
     // XXX Should this be useLayoutEffect?
     useEffect(() => setRerender(setMutationData));
+    if (currProps !== serializedProps) {
+      setCurrProps(serializedProps);
+      setMutationData(undefined);
+      return data;
+    }
     return mutationData ?? data;
   };
   return ServerComponent;
