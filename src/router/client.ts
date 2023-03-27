@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useTransition,
 } from "react";
 
 import { serve } from "../client.js";
@@ -76,21 +77,24 @@ const ChildrenWrapper = ({ pathname, index, search }: RouteProps) => {
   return createElement(getRoute(rscId), { pathname, index, search });
 };
 
-export const Link = ({ href, children }: LinkProps) => {
+export const Link = ({ href, children, transition }: LinkProps) => {
   const changeLocation = useChangeLocation();
+  const [isPending, startTransition] = useTransition();
+  const startTransitionIfAvailable =
+    transition === undefined ? (fn: () => void) => fn() : startTransition;
+  const onClick = (event: MouseEvent) => {
+    event.preventDefault();
+    const url = new URL(href, window.location.href);
+    if (url.href !== window.location.href) {
+      startTransitionIfAvailable(() => {
+        changeLocation(url.pathname, url.search);
+      });
+    }
+  };
   return createElement(
     "a",
-    {
-      href,
-      onClick: (event: MouseEvent) => {
-        event.preventDefault();
-        const url = new URL(href, window.location.href);
-        if (url.href !== window.location.href) {
-          changeLocation(url.pathname, url.search);
-        }
-      },
-    },
-    children
+    { href, onClick },
+    isPending ? transition : children
   );
 };
 

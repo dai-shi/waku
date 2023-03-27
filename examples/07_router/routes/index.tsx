@@ -9,7 +9,7 @@ export default ({ children }: { children: ReactNode }) => {
       <ul>
         <li><Link href="/">Home</Link></li>
         <li><Link href="/foo">Foo</Link></li>
-        <li><Link href="/bar">Bar</Link></li>
+        <li><Link href="/bar" transition="Bar (Pending...)">Bar</Link></li>
         <li><Link href="/nested/baz">Baz</Link></li>
       </ul>
       {children}
