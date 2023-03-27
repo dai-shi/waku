@@ -9,7 +9,8 @@ export type RouteProps = {
 export type LinkProps = {
   href: string;
   children: ReactNode;
-  transition?: ReactNode;
+  pending?: ReactNode;
+  unstable_prefetchOnEnter?: boolean;
 };
 
 const CLIENT_REFERENCE = Symbol.for("react.client.reference");

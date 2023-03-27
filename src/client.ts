@@ -12,7 +12,7 @@ const basePath = "/";
 export function serve<Props>(rscId: string) {
   type SetRerender = (rerender: (next: ReactNode) => void) => () => void;
   const fetchRSC = cache(
-    (serializedProps: string): readonly [ReactNode, SetRerender] => {
+    (serializedProps: string): readonly [ReactNode, SetRerender, string] => {
       let rerender: ((next: ReactNode) => void) | undefined;
       const searchParams = new URLSearchParams();
       searchParams.set("props", serializedProps);
@@ -51,7 +51,7 @@ export function serve<Props>(rscId: string) {
           rerender = undefined;
         };
       };
-      return [data, setRerender];
+      return [data, setRerender, serializedProps];
     }
   );
   const ServerComponent = (props: Props) => {
@@ -60,12 +60,11 @@ export function serve<Props>(rscId: string) {
     const [
       [currentNode, currentSetRerender, currentSerializedProps],
       setState,
-    ] = useState<readonly [ReactNode, SetRerender, string]>(() => [
-      ...fetchRSC(serializedProps),
-      serializedProps,
-    ]);
+    ] = useState<readonly [ReactNode, SetRerender, string]>(() =>
+      fetchRSC(serializedProps)
+    );
     if (currentSerializedProps !== serializedProps) {
-      setState([...fetchRSC(serializedProps), serializedProps]);
+      setState(fetchRSC(serializedProps));
     }
     // XXX Should this be useLayoutEffect?
     useEffect(() =>

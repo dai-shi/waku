@@ -8,15 +8,17 @@ export default ({ children }: { children: ReactNode }) => {
       <h1>Home</h1>
       <ul>
         <li>
-          <Link href="/">Home</Link>
-        </li>
-        <li>
-          <Link href="/foo">Foo</Link>
-        </li>
-        <li>
-          <Link href="/bar" transition="Bar (Pending...)">
-            Bar
+          <Link href="/" pending=" Pending...">
+            Home
           </Link>
+        </li>
+        <li>
+          <Link href="/foo" pending=" Pending...">
+            Foo
+          </Link>
+        </li>
+        <li>
+          <Link href="/bar" unstable_prefetchOnEnter>Bar</Link>
         </li>
         <li>
           <Link href="/nested/baz">Baz</Link>

@@ -8,6 +8,7 @@ import {
   useEffect,
   useState,
   useTransition,
+  Fragment,
 } from "react";
 
 import { serve } from "../client.js";
@@ -77,25 +78,36 @@ const ChildrenWrapper = ({ pathname, index, search }: RouteProps) => {
   return createElement(getRoute(rscId), { pathname, index, search });
 };
 
-export const Link = ({ href, children, transition }: LinkProps) => {
+export const Link = ({
+  href,
+  children,
+  pending,
+  unstable_prefetchOnEnter,
+}: LinkProps) => {
   const changeLocation = useChangeLocation();
   const [isPending, startTransition] = useTransition();
-  const startTransitionIfAvailable =
-    transition === undefined ? (fn: () => void) => fn() : startTransition;
   const onClick = (event: MouseEvent) => {
     event.preventDefault();
     const url = new URL(href, window.location.href);
     if (url.href !== window.location.href) {
-      startTransitionIfAvailable(() => {
+      startTransition(() => {
         changeLocation(url.pathname, url.search);
       });
     }
   };
-  return createElement(
-    "a",
-    { href, onClick },
-    isPending ? transition : children
-  );
+  const onMouseEnter = unstable_prefetchOnEnter
+    ? () => {
+        const url = new URL(href, window.location.href);
+        if (url.href !== window.location.href) {
+          prefetchRoutes(url.pathname, url.search);
+        }
+      }
+    : undefined;
+  const ele = createElement("a", { href, onClick, onMouseEnter }, children);
+  if (isPending && pending !== undefined) {
+    return createElement(Fragment, null, ele, pending);
+  }
+  return ele
 };
 
 const moduleCache = ((globalThis as any).__webpack_require__wakuwork_cache ||=
