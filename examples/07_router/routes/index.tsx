@@ -5,7 +5,6 @@ import { Link } from "wakuwork/router/server";
 export default ({ children }: { children: ReactNode }) => {
   return (
     <div>
-      <h1>Home</h1>
       <ul>
         <li>
           <Link href="/" pending=" Pending...">
@@ -27,6 +26,7 @@ export default ({ children }: { children: ReactNode }) => {
           <Link href="/nested/qux">Nested / Qux</Link>
         </li>
       </ul>
+      <h1>Home</h1>
       {children}
     </div>
   );
