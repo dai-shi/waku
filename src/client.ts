@@ -57,24 +57,35 @@ export function serve<Props>(rscId: string) {
     }
   );
   const ServerComponent = (props: Props) => {
-    // FIXME we blindly expect JSON.stringify usage is deterministic
-    const serializedProps = JSON.stringify(props);
-    const [data, setRerender] = fetchRSC(serializedProps);
-    const [state, setState] = useState<
-      [mutationData: ReactElement, lastSerializedProps: string] | undefined
-    >();
-    // XXX Should this be useLayoutEffect?
-    useEffect(() => setRerender(setState));
-    let dataToReturn = data;
-    if (state) {
-      if (state[1] === serializedProps) {
-        dataToReturn = state[0];
-      } else {
-        setState(undefined);
+    try {
+      // FIXME we blindly expect JSON.stringify usage is deterministic
+      const serializedProps = JSON.stringify(props);
+      const [data, setRerender] = fetchRSC(serializedProps);
+      const [state, setState] = useState<
+        [dataToOverride: ReactElement, lastSerializedProps: string] | undefined
+      >();
+      // XXX Should this be useLayoutEffect?
+      useEffect(() => setRerender(setState));
+      let dataToReturn = data;
+      if (state) {
+        if (state[1] === serializedProps) {
+          dataToReturn = state[0];
+        } else {
+          setState(undefined);
+        }
       }
+      return dataToReturn;
+    } catch (e: any) {
+      // FIXME This error is caused with startTransition.
+      // Not sure if it's a React bug or our misusage.
+      // For now, we throw a promise to retry.
+      if (
+        e?.message === "Cannot read properties of null (reading 'alternate')"
+      ) {
+        throw Promise.resolve();
+      }
+      throw e;
     }
-    return dataToReturn;
-    // return use(dataToReturn);
   };
   return ServerComponent;
 }
