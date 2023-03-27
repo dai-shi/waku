@@ -75,13 +75,13 @@ export function serve<Props>(rscId: string) {
         }
       }
       return dataToReturn;
-    } catch (e: any) {
-      // FIXME This error is caused with startTransition.
+    } catch (e) {
+      // FIXME The type error
+      // "Cannot read properties of null (reading 'alternate')"
+      // is caused with startTransition.
       // Not sure if it's a React bug or our misusage.
       // For now, we throw a promise to retry.
-      if (
-        e?.message === "Cannot read properties of null (reading 'alternate')"
-      ) {
+      if (e instanceof TypeError) {
         throw Promise.resolve();
       }
       throw e;
