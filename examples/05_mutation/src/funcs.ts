@@ -7,4 +7,4 @@ export const getCounter = () => counter;
 
 export const increment = () => {
   counter += 1;
-}
+};
