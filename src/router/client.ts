@@ -13,7 +13,7 @@ import {
 
 import { serve } from "../client.js";
 import { WAKUWORK_ROUTER } from "./common.js";
-import type { RouteProps, LinkProps } from "./common.js";
+import type { RouteProps, ChildProps, LinkProps } from "./common.js";
 
 type ChangeLocation = (
   pathname?: string,
@@ -50,11 +50,7 @@ const prefetchRoutes = (pathname: string, search: string) => {
   const pathItems = pathname.split("/").filter(Boolean);
   for (let index = 0; index <= pathItems.length; ++index) {
     const rscId = pathItems.slice(0, index).join("/") || "index";
-    const props = {
-      pathname,
-      index,
-      search,
-    };
+    const props: RouteProps = { index, search };
     // FIXME we blindly expect JSON.stringify usage is deterministic
     const serializedProps = JSON.stringify(props);
     if (!prefetched[rscId]) {
@@ -72,10 +68,14 @@ const prefetchRoutes = (pathname: string, search: string) => {
 
 const getRoute = cache((rscId: string) => serve<RouteProps>(rscId));
 
-const ChildrenWrapper = ({ pathname, index, search }: RouteProps) => {
+const Child = ({ index }: ChildProps) => {
+  const { pathname, search } = useLocation();
   const pathItems = pathname.split("/").filter(Boolean);
+  if (index > pathItems.length) {
+    return null;
+  }
   const rscId = pathItems.slice(0, index).join("/") || "index";
-  return createElement(getRoute(rscId), { pathname, index, search });
+  return createElement(getRoute(rscId), { index, search });
 };
 
 export const Link = ({
@@ -113,7 +113,7 @@ export const Link = ({
 const moduleCache = ((globalThis as any).__webpack_require__wakuwork_cache ||=
   new Map());
 moduleCache.set(WAKUWORK_ROUTER, {
-  ChildrenWrapper,
+  Child,
   Link,
 });
 
@@ -149,15 +149,9 @@ export function Router() {
 
   prefetchRoutes(location.pathname, location.search);
 
-  const children = createElement(ChildrenWrapper, {
-    pathname: location.pathname,
-    index: 0,
-    search: location.search,
-  });
-
   return createElement(
     RouterContext.Provider,
     { value: { location, changeLocation } },
-    children
+    createElement(Child, { index: 0 })
   );
 }

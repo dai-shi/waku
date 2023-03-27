@@ -21,7 +21,10 @@ export default ({ children }: { children: ReactNode }) => {
           <Link href="/bar" unstable_prefetchOnEnter>Bar</Link>
         </li>
         <li>
-          <Link href="/nested/baz">Baz</Link>
+          <Link href="/nested/baz">Nested / Baz</Link>
+        </li>
+        <li>
+          <Link href="/nested/qux">Nested / Qux</Link>
         </li>
       </ul>
       {children}
