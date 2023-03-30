@@ -54,6 +54,7 @@
     "examples:dev:05_mutation": "NAME=05_mutation npm run examples:dev",
     "examples:dev:06_nesting": "NAME=06_nesting npm run examples:dev",
     "examples:dev:07_router": "NAME=07_router npm run examples:dev",
+    "examples:dev:99_jotai": "NAME=99_jotai npm run examples:dev",
     "examples:prd": "npm run compile:code && WAKUWORK_CONFIG=\"{\\\"build\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" ./cli.js build && WAKUWORK_CONFIG=\"{\\\"prdServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}/dist\\\"}}\" ./cli.js start",
     "examples:prd:01_counter": "NAME=01_counter npm run examples:prd",
     "examples:prd:02_async": "NAME=02_async npm run examples:prd",
@@ -61,7 +62,8 @@
     "examples:prd:04_callserver": "NAME=04_callserver npm run examples:prd",
     "examples:prd:05_mutation": "NAME=05_mutation npm run examples:prd",
     "examples:prd:06_nesting": "NAME=06_nesting npm run examples:prd",
-    "examples:prd:07_router": "NAME=07_router npm run examples:prd"
+    "examples:prd:07_router": "NAME=07_router npm run examples:prd",
+    "examples:prd:99_jotai": "NAME=99_jotai npm run examples:prd"
   },
   "license": "MIT",
   "dependencies": {
@@ -79,6 +81,7 @@
     "@types/node": "^18.15.8",
     "@types/react": "^18.0.29",
     "@types/react-dom": "^18.0.11",
+    "jotai": "^2.0.3",
     "nodemon": "^2.0.22",
     "react": "18.3.0-next-8e17bfd14-20230322",
     "react-dom": "18.3.0-next-8e17bfd14-20230322",
