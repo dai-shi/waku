@@ -1,6 +1,6 @@
 /// <reference types="react/next" />
 
-import { cache, useEffect, useState } from "react";
+import { cache, use, useEffect, useState } from "react";
 import type { ReactElement } from "react";
 import RSDWClient from "react-server-dom-webpack/client";
 
@@ -57,35 +57,28 @@ export function serve<Props>(rscId: string) {
     }
   );
   const ServerComponent = (props: Props) => {
-    try {
-      // FIXME we blindly expect JSON.stringify usage is deterministic
-      const serializedProps = JSON.stringify(props);
-      const [data, setRerender] = fetchRSC(serializedProps);
-      const [state, setState] = useState<
-        [dataToOverride: ReactElement, lastSerializedProps: string] | undefined
-      >();
-      // XXX Should this be useLayoutEffect?
-      useEffect(() => setRerender(setState));
-      let dataToReturn = data;
-      if (state) {
-        if (state[1] === serializedProps) {
-          dataToReturn = state[0];
-        } else {
-          setState(undefined);
-        }
+    // FIXME we blindly expect JSON.stringify usage is deterministic
+    const serializedProps = JSON.stringify(props);
+    const [data, setRerender] = fetchRSC(serializedProps);
+    const [state, setState] = useState<
+      [dataToOverride: ReactElement, lastSerializedProps: string] | undefined
+    >();
+    // XXX Should this be useLayoutEffect?
+    useEffect(() => setRerender(setState));
+    let dataToReturn = data;
+    if (state) {
+      if (state[1] === serializedProps) {
+        dataToReturn = state[0];
+      } else {
+        setState(undefined);
       }
-      return dataToReturn;
-    } catch (e) {
-      // FIXME The type error
-      // "Cannot read properties of null (reading 'alternate')"
-      // is caused with startTransition.
-      // Not sure if it's a React bug or our misusage.
-      // For now, we throw a promise to retry.
-      if (e instanceof TypeError) {
-        throw Promise.resolve();
-      }
-      throw e;
     }
+    // FIXME The type error
+    // "Cannot read properties of null (reading 'alternate')"
+    // is caused with startTransition.
+    // Not sure if it's a React bug or our misusage.
+    // For now, using `use` seems to fix it. Is it a correct fix?
+    return use(dataToReturn);
   };
   return ServerComponent;
 }
