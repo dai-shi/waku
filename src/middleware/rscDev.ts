@@ -5,6 +5,7 @@ import Module from "node:module";
 import { Writable } from "node:stream";
 
 import * as swc from "@swc/core";
+import { createElement } from "react";
 import RSDWRegister from "react-server-dom-webpack/node-register";
 import RSDWServer from "react-server-dom-webpack/server";
 import busboy from "busboy";
@@ -108,8 +109,8 @@ globalThis.__webpack_require__ = (id) => {
       await Promise.all(
         entryItems.map(async ([rscId, props]) => {
           // HACK extra rendering without caching FIXME
-          const component = await getFunctionComponent(rscId);
-          if (!component) {
+          const Component = await getFunctionComponent(rscId);
+          if (!Component) {
             return;
           }
           const config = new Proxy(
@@ -139,7 +140,10 @@ globalThis.__webpack_require__ = (id) => {
                 callback();
               },
             });
-            renderToPipeableStream(component(props as {}), config).pipe(trash);
+            renderToPipeableStream(
+              createElement(Component, props as any),
+              config
+            ).pipe(trash);
           });
         })
       );
@@ -208,7 +212,7 @@ globalThis.__webpack_require__ = (id) => {
       const component = await getFunctionComponent(rscId);
       if (component) {
         res.setHeader("Content-Type", "text/x-component");
-        renderToPipeableStream(component(props), bundlerConfig).pipe(res);
+        renderToPipeableStream(createElement(component,props), bundlerConfig).pipe(res);
         return;
       }
       res.statusCode = 404;
