@@ -85,6 +85,7 @@ export const Link = ({
   href,
   children,
   pending,
+  notPending,
   unstable_prefetchOnEnter,
 }: LinkProps) => {
   const changeLocation = useChangeLocation();
@@ -109,6 +110,9 @@ export const Link = ({
   const ele = createElement("a", { href, onClick, onMouseEnter }, children);
   if (isPending && pending !== undefined) {
     return createElement(Fragment, null, ele, pending);
+  }
+  if (!isPending && notPending !== undefined) {
+    return createElement(Fragment, null, ele, notPending);
   }
   return ele;
 };

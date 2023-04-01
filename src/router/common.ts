@@ -13,6 +13,7 @@ export type LinkProps = {
   href: string;
   children: ReactNode;
   pending?: ReactNode;
+  notPending?: ReactNode;
   unstable_prefetchOnEnter?: boolean;
 };
 
