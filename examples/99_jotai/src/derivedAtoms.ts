@@ -1,4 +1,4 @@
-import { atom } from 'jotai/vanilla';
+import { atom } from "jotai/vanilla";
 
 import { countAtom } from "./mergedAtoms.js";
 

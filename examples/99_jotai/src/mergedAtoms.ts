@@ -1,6 +1,6 @@
 // TODO This is a temporary workaround.
 
-import { atom } from 'jotai/vanilla';
+import { atom } from "jotai/vanilla";
 
 import { merge } from "../lib/jotai-rsc/server.js";
 
