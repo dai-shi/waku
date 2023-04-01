@@ -2,4 +2,4 @@
 
 import { atom } from 'jotai/vanilla';
 
-export const countAtom = atom(1);
+export const countAtom = atom(10);

@@ -5,13 +5,12 @@ import type { AnyAtom, AtomId, AtomValues, JSONValue } from "./client.js";
 
 // TODO This should be avoidable if we create a custom handler for "use client".
 export function merge<T extends AnyAtom>(atomOnServer: T, atomOnClient: T): T {
-  return new Proxy(atomOnServer, {
-    get(target, prop) {
-      if (prop in target) {
-        return target[prop as keyof T];
-      }
-      return atomOnClient[prop as keyof T];
-    },
+  const { $$typeof, $$id, $$async, name } = atomOnClient as any;
+  return Object.assign(atomOnServer, {
+    $$typeof,
+    $$id,
+    $$async,
+    name,
   });
 }
 
@@ -32,6 +31,7 @@ const createStore = () => {
           return atomMap.get(a) as T;
         }
         if (hasInitialValue(a)) {
+          atomMap.set(a, a.init);
           return a.init as T;
         }
         throw new Error("no atom init");
@@ -52,6 +52,7 @@ const createStore = () => {
 type Store = ReturnType<typeof createStore>;
 
 // HACK I hope we had a context that can be used within server.
+// This hack only works for sync direct components.
 let store: Store | null = null;
 
 export function serverHoc<Fn extends (props: any) => any>(fn: Fn) {
@@ -72,6 +73,7 @@ export function serverHoc<Fn extends (props: any) => any>(fn: Fn) {
     return (
       <>
         {result}
+        {/* HACK This is very limited. */}
         <RegisterAtoms atoms={nextAtoms} />
       </>
     );
