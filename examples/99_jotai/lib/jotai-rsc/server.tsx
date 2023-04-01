@@ -1,28 +1,74 @@
-import { atom, createStore } from "jotai/vanilla";
-import type { ExtractAtomValue } from "jotai/vanilla";
-
-type Store = ReturnType<typeof createStore>;
+import type { Atom, ExtractAtomValue } from "jotai/vanilla";
 
 import { RegisterAtoms } from "./client.js";
-import type { AnyAtom, AtomId, AtomValues } from "./client.js";
+import type { AnyAtom, AtomId, AtomValues, JSONValue } from "./client.js";
 
-// Hmm, this conflicts accross sessions.
-let context:
-  | readonly [
-      store: Store,
-      atomValues: AtomValues,
-      nextAtoms: (readonly [AtomId, AnyAtom])[]
-    ]
-  | null = null;
+// TODO This should be avoidable if we create a custom handler for "use client".
+export function merge<T extends AnyAtom>(atomOnServer: T, atomOnClient: T): T {
+  return new Proxy(atomOnServer, {
+    get(target, prop) {
+      if (prop in target) {
+        return target[prop as keyof T];
+      }
+      return atomOnClient[prop as keyof T];
+    },
+  });
+}
+
+const isClientReference = (x: any) => !!x?.["$$typeof"];
+
+const hasInitialValue = <T extends Atom<any>>(
+  atom: T
+): atom is T & (T extends Atom<any> ? { init: JSONValue } : never) =>
+  "init" in atom;
+
+// TODO this is a simplified version for now to experiment.
+const createStore = () => {
+  const atomMap = new Map<Atom<unknown>, unknown>();
+  const get = (anAtom: AnyAtom): JSONValue => {
+    const getter = <T,>(a: Atom<T>): T => {
+      if (a === anAtom) {
+        if (atomMap.has(a)) {
+          return atomMap.get(a) as T;
+        }
+        if (hasInitialValue(a)) {
+          return a.init as T;
+        }
+        throw new Error("no atom init");
+      }
+      return get(a as AnyAtom) as T;
+    };
+    return anAtom.read(getter, {} as any);
+  };
+  const restore = (anAtom: AnyAtom, value: JSONValue): void => {
+    if (hasInitialValue(anAtom)) {
+      atomMap.set(anAtom, value);
+    }
+  };
+  const collect = (): AnyAtom[] =>
+    Array.from(atomMap.keys()).filter(hasInitialValue) as AnyAtom[];
+  return { get, restore, collect };
+};
+type Store = ReturnType<typeof createStore>;
+
+// HACK I hope we had a context that can be used within server.
+let store: Store | null = null;
 
 export function serverHoc<Fn extends (props: any) => any>(fn: Fn) {
   return (props: unknown) => {
-    const store = createStore();
+    store = createStore();
     const atomValues: AtomValues = (props as any)?.atomValues || [];
-    const nextAtoms: [AtomId, AnyAtom][] = [];
-    context = [store, atomValues, nextAtoms];
+    for (const [id, value] of atomValues) {
+      const anAtom = getAtomFromId(id);
+      store.restore(anAtom, value);
+    }
     const result = fn(props);
-    context = null;
+    const nextAtoms = store
+      .collect()
+      .flatMap((anAtom) =>
+        isClientReference(anAtom) ? [[getAtomId(anAtom), anAtom] as const] : []
+      );
+    store = null;
     return (
       <>
         {result}
@@ -34,33 +80,28 @@ export function serverHoc<Fn extends (props: any) => any>(fn: Fn) {
 
 let nextAtomId = 0;
 const atomIdCache = new WeakMap<AnyAtom, AtomId>();
+// FIXME This causes memory leaks.
+const idAtomCache = new Map<AtomId, AnyAtom>();
 const getAtomId = (anAtom: AnyAtom) => {
   let id = atomIdCache.get(anAtom);
   if (id === undefined) {
     id = nextAtomId++;
     atomIdCache.set(anAtom, id);
+    idAtomCache.set(id, anAtom);
   }
   return id;
 };
+const getAtomFromId = (id: AtomId) => {
+  const anAtom = idAtomCache.get(id);
+  if (anAtom === undefined) {
+    throw new Error("No atom found for id: " + id);
+  }
+  return anAtom;
+};
 
-export function readAtomValue<AtomType extends AnyAtom>(anAtom: AtomType) {
-  if (!context) {
+export function useAtomValue<T extends AnyAtom>(anAtom: T) {
+  if (!store) {
     throw new Error("Missing serverHoc");
   }
-  // if (!("init" in anAtom)) {
-  // throw new Error("Derived atoms are not supported yet.");
-  // }
-  const [store, atomValues, nextAtoms] = context;
-  const { $$typeof, $$id, $$async, name } = anAtom as any;
-  const atomClientReference = { $$typeof, $$id, $$async, name };
-  const atomId = getAtomId(anAtom);
-  if (!nextAtoms.some(([id]) => id === atomId)) {
-    nextAtoms.push([atomId, atomClientReference as any]);
-  }
-  const found = atomValues.find(([id]) => id === atomId);
-  if (found) {
-    return found[1] as ExtractAtomValue<AtomType>;
-  }
-  // return store.get(anAtom) as ExtractAtomValue<AtomType>;
-  return store.get(atom(undefined)) as ExtractAtomValue<AtomType>;
+  return store.get(anAtom) as ExtractAtomValue<T>;
 }

@@ -7,7 +7,7 @@ import { Provider, useStore } from "jotai/react";
 import type { Atom } from "jotai/vanilla";
 
 interface JSONArray extends ReadonlyArray<JSONArray> {}
-type JSONValue =
+export type JSONValue =
   | string
   | boolean
   | number
