@@ -3,7 +3,8 @@ import type { MiddlewareCreator } from "./common.js";
 // This convension is just one idea.
 
 const rewriteRsc: MiddlewareCreator = (_config, shared) => {
-  shared.generatePrefetchCode = (entryItems, moduleIds) => {
+  shared.generatePrefetchCode = (entryItemsIterable, moduleIds) => {
+    const entryItems = Array.from(entryItemsIterable);
     let code = "";
     if (entryItems.length) {
       const rscIds = [...new Set(entryItems.map(([rscId]) => rscId))];
@@ -31,10 +32,10 @@ ${rscIds
   .join(",\n")}
 };`;
     }
-    moduleIds.forEach((moduleId) => {
+    for (const moduleId of moduleIds) {
       code += `
 import('${moduleId}');`;
-    });
+    }
     return code;
   };
 

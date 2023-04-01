@@ -2,8 +2,8 @@ import type { Config, Middleware } from "../config.js";
 
 export type Shared = {
   generatePrefetchCode?: (
-    entryItems: readonly (readonly [rscId: string, props: unknown])[],
-    moduleIds: Set<string>
+    entryItems: Iterable<readonly [rscId: string, props: unknown]>,
+    moduleIds: Iterable<string>
   ) => string;
   devScriptToInject?: (path: string) => Promise<string>;
   prdScriptToInject?: (path: string) => Promise<string>;

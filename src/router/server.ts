@@ -23,16 +23,19 @@ export function fileRouter(base: string) {
     return RouteComponent;
   };
 
-  const prefetcher: Prefetcher = async (pathname) => {
+  const prefetcher: Prefetcher = async (path) => {
+    const url = new URL(path || "", "http://localhost");
     const result: (readonly [id: string, props: RouteProps])[] = [];
-    const pathItems = pathname.split("/").filter(Boolean);
-    // Hmm, we can't get searchParams. Use empty string for now. FIXME
-    const search = "";
+    const pathItems = url.pathname.split("/").filter(Boolean);
+    const search = url.search;
     for (let index = 0; index <= pathItems.length; ++index) {
       const rscId = pathItems.slice(0, index).join("/") || "index";
       result.push([rscId, { index, search }]);
     }
-    return result;
+    return {
+      entryItems: result,
+      clientModules: [], // TODO we should analyze or dry-run to get clientModules
+    };
   };
 
   return { getEntry, prefetcher };

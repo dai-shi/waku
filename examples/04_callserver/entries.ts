@@ -12,8 +12,14 @@ export const getEntry: GetEntry = async (id) => {
 export const prefetcher: Prefetcher = async (path) => {
   switch (path) {
     case "/":
-      return [["App", { name: "Wakuwork" }]];
+      return {
+        entryItems: [["App", { name: "Wakuwork" }]],
+        clientModules: [(await import("./src/Counter.js")).Counter],
+      };
     default:
-      return [];
+      return {
+        entryItems: [],
+        clientModules: [],
+      };
   }
 };

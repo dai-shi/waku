@@ -2,7 +2,6 @@ import path from "node:path";
 import fs from "node:fs";
 import url from "node:url";
 import { createRequire } from "node:module";
-import { Writable } from "node:stream";
 
 import { createElement } from "react";
 import RSDWRegister from "react-server-dom-webpack/node-register";
@@ -14,6 +13,8 @@ import type { GetEntry, Prefetcher } from "../server.js";
 
 const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
   RSDWServer;
+
+const CLIENT_REFERENCE = Symbol.for("react.client.reference");
 
 // TODO we would like a native solution without hacks
 // https://nodejs.org/api/esm.html#loaders
@@ -83,56 +84,15 @@ const rscDefault: MiddlewareCreator = (config, shared) => {
   shared.prdScriptToInject = async (path: string) => {
     let code = "";
     if (prefetcher) {
-      const entryItems = [...(await prefetcher(path))];
-      const moduleIds = new Set<string>();
-      await Promise.all(
-        entryItems.map(async ([rscId, props]) => {
-          // HACK extra rendering without caching FIXME
-          const Component = await getFunctionComponent(rscId);
-          if (!Component) {
-            return;
-          }
-          const config = new Proxy(
-            {},
-            {
-              get(_target, id: string) {
-                const [filePath, name] = id.split("#");
-                if (filePath!.startsWith("wakuwork/")) {
-                  return {
-                    id: filePath,
-                    chunks: [],
-                    name,
-                    async: true,
-                  };
-                }
-                const clientEntry = getClientEntry(filePath!);
-                moduleIds.add(basePath + clientEntry);
-                return {
-                  id: basePath + clientEntry,
-                  chunks: [],
-                  name,
-                  async: true,
-                };
-              },
-            }
-          );
-          await new Promise<void>((resolve) => {
-            const trash = new Writable({
-              write(_chunk, _encoding, callback) {
-                resolve(); // only wait for the first chunk
-                callback();
-              },
-              final(callback) {
-                callback();
-              },
-            });
-            renderToPipeableStream(
-              createElement(Component, props as any),
-              config
-            ).pipe(trash);
-          });
-        })
-      );
+      const { entryItems, clientModules } = await prefetcher(path);
+      const moduleIds = clientModules.map((m: any) => {
+        if (m["$$typeof"] !== CLIENT_REFERENCE) {
+          throw new Error("clientModules must be client references");
+        }
+        const [filePath] = m["$$id"].split("#");
+        const clientEntry = getClientEntry(filePath);
+        return basePath + clientEntry;
+      });
       code += shared.generatePrefetchCode?.(entryItems, moduleIds) || "";
     }
     return code;
