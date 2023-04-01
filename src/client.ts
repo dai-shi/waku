@@ -78,7 +78,7 @@ export function serve<Props>(rscId: string) {
     // is caused with startTransition.
     // Not sure if it's a React bug or our misusage.
     // For now, using `use` seems to fix it. Is it a correct fix?
-    return use(dataToReturn);
+    return use(dataToReturn as any) as typeof dataToReturn;
   };
   return ServerComponent;
 }
