@@ -33,8 +33,10 @@ export function serve<Props>(rscId: string) {
           if (isMutating) {
             rscPath += rscId;
             searchParams.set("props", serializedProps);
+          } else {
+            rscPath += "_";
           }
-          const response = fetch(basePath + rscPath + "?" + searchParams, {
+          const response = fetch(basePath + rscPath + "/" + searchParams, {
             method: "POST",
             body: await encodeReply(args),
           });
@@ -50,7 +52,7 @@ export function serve<Props>(rscId: string) {
       ];
       const rscPath = "RSC/" + rscId;
       const data = createFromFetch(
-        prefetched || fetch(basePath + rscPath + "?" + searchParams),
+        prefetched || fetch(basePath + rscPath + "/" + searchParams),
         options
       );
       return [data, setRerender];

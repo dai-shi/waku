@@ -63,7 +63,7 @@ const prefetchRoutes = (pathname: string, search: string) => {
     searchParams.set("props", serializedProps);
     if (!prefetched[rscId][serializedProps]) {
       prefetched[rscId][serializedProps] = fetch(
-        `/RSC/${rscId}?${searchParams}`
+        `/RSC/${rscId}/${searchParams}`
       );
     }
   }

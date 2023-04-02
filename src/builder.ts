@@ -223,7 +223,8 @@ const prerender = async (
         dir,
         publicPath,
         "RSC",
-        `${rscId}?${searchParams}`
+        decodeURIComponent(rscId),
+        decodeURIComponent(`${searchParams}`)
       );
       fs.mkdirSync(path.dirname(destFile), { recursive: true });
       const component = await getFunctionComponent(rscId);

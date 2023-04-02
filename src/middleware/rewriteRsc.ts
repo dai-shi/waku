@@ -25,7 +25,7 @@ ${rscIds
           const searchParams = new URLSearchParams();
           searchParams.set("props", serializedProps);
           return [
-            `'${serializedProps}': fetch('/RSC/${rscId}?${searchParams}')`,
+            `'${serializedProps}': fetch('/RSC/${rscId}/${searchParams}')`,
           ];
         })
         .join(",") +
@@ -49,17 +49,19 @@ const rewriteRsc: MiddlewareCreator = (_config, shared) => {
   return async (req, _res, next) => {
     const url = new URL(req.url || "", "http://" + req.headers.host);
     if (url.pathname.startsWith("/RSC/")) {
-      const rscId = url.pathname.slice("/RSC/".length);
-      if (rscId) {
+      const index = url.pathname.lastIndexOf("/");
+      const rscId = url.pathname.slice("/RSC/".length, index);
+      const params = new URLSearchParams(url.pathname.slice(index + 1));
+      if (rscId && rscId !== "_") {
         req.headers["x-react-server-component-id"] = rscId;
         req.headers["x-react-server-component-props"] =
-          url.searchParams.get("props") || undefined;
+          params.get("props") || undefined;
       }
-      const rsfId = url.searchParams.get("action_id");
+      const rsfId = params.get("action_id");
       if (rsfId) {
         req.headers["x-react-server-function-id"] = rsfId;
         req.headers["x-react-server-function-name"] =
-          url.searchParams.get("action_name") || "default";
+          params.get("action_name") || "default";
       }
     }
     await next();
