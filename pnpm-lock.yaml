@@ -36,7 +36,7 @@ devDependencies:
   '@types/node': 18.15.11
   '@types/react': 18.0.32
   '@types/react-dom': 18.0.11
-  jotai: 2.0.3_mpijlgjwwf4tp6a5ithoe64x5u
+  jotai: 2.0.3_epr3kncwymiq7w3tdth6sp7eem
   nodemon: 2.0.22
   react: 18.3.0-next-8310854ce-20230331
   react-dom: 18.3.0-next-8310854ce-20230331_epr3kncwymiq7w3tdth6sp7eem
@@ -1329,7 +1329,7 @@ packages:
     resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
     dev: true
 
-  /jotai/2.0.3_mpijlgjwwf4tp6a5ithoe64x5u:
+  /jotai/2.0.3_epr3kncwymiq7w3tdth6sp7eem:
     resolution: {integrity: sha512-MMjhSPAL3RoeZD9WbObufRT2quThEAEknHHridf2ma8Ml7ZVQmUiHk0ssdbR3F0h3kcwhYqSGJ59OjhPge7RRg==}
     engines: {node: '>=12.20.0'}
     peerDependencies:
@@ -1338,7 +1338,7 @@ packages:
       react:
         optional: true
     dependencies:
-      react: 18.3.0-next-8e17bfd14-20230322
+      react: 18.3.0-next-8310854ce-20230331
     dev: true
 
   /js-tokens/4.0.0:
