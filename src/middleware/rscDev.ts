@@ -105,14 +105,15 @@ globalThis.__webpack_require__ = (id) => {
   return import(id);
 };`;
     if (prefetcher) {
-      const { entryItems, clientModules } = await prefetcher(path);
-      const moduleIds = clientModules.map((m: any) => {
+      const { entryItems = [], clientModules = [] } = await prefetcher(path);
+      const moduleIds: string[] = [];
+      for (const m of clientModules as any[]) {
         if (m["$$typeof"] !== CLIENT_REFERENCE) {
           throw new Error("clientModules must be client references");
         }
         const [filePath] = m["$$id"].split("#");
-        return filePath;
-      });
+        moduleIds.push(filePath);
+      }
       code += shared.generatePrefetchCode?.(entryItems, moduleIds) || "";
     }
     return code;

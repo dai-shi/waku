@@ -84,15 +84,16 @@ const rscDefault: MiddlewareCreator = (config, shared) => {
   shared.prdScriptToInject = async (path: string) => {
     let code = "";
     if (prefetcher) {
-      const { entryItems, clientModules } = await prefetcher(path);
-      const moduleIds = clientModules.map((m: any) => {
+      const { entryItems = [], clientModules = [] } = await prefetcher(path);
+      const moduleIds: string[] = [];
+      for (const m of clientModules as any[]) {
         if (m["$$typeof"] !== CLIENT_REFERENCE) {
           throw new Error("clientModules must be client references");
         }
         const [filePath] = m["$$id"].split("#");
         const clientEntry = getClientEntry(filePath);
-        return basePath + clientEntry;
-      });
+        moduleIds.push(basePath + clientEntry);
+      }
       code += shared.generatePrefetchCode?.(entryItems, moduleIds) || "";
     }
     return code;

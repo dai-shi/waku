@@ -22,9 +22,6 @@ export const prefetcher: Prefetcher = async (path) => {
         clientModules: [(await import("./src/Counter.js")).Counter],
       };
     default:
-      return {
-        entryItems: [],
-        clientModules: [],
-      };
+      return {};
   }
 };
