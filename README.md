@@ -28,7 +28,7 @@ pnpm create wakuwork
 - [x] `wakuwork build` (build for production)
 - [x] `wakuwork start` (production server)
 - [x] Exportable build
-- [ ] Static site generation
+- [x] Static site generation
 - [ ] Client rendering fallback
 - [x] Opt-in router (reference implementation)
 - [ ] Opt-in SSR (HTML generation & hydration)
