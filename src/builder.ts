@@ -8,6 +8,7 @@ import react from "@vitejs/plugin-react";
 import * as swc from "@swc/core";
 
 import type { Config } from "./config.js";
+import type { GetEntry, Prefetcher, Prerenderer } from "./server.js";
 
 const require = createRequire(import.meta.url);
 
@@ -108,13 +109,27 @@ const compileFiles = (dir: string, dist: string) => {
   });
 };
 
+const prerender = (dir: string, dist: string, entriesFile: string) => {
+  let getEntry: GetEntry | undefined;
+  let prefetcher: Prefetcher | undefined;
+  let prerenderer: Prerenderer | undefined;
+  try {
+    ({ getEntry, prefetcher, prerenderer } = require(entriesFile));
+  } catch (e) {
+    console.info(`No entries file found at ${entriesFile}, ignoring...`, e);
+  }
+  // TODO
+  console.log("TODO", dir, dist, getEntry, prefetcher, prerenderer);
+};
+
 export async function runBuild(config: Config = {}) {
   const dir = path.resolve(config.build?.dir || ".");
   const basePath = config.build?.basePath || "/";
   const distPath = config.files?.dist || "dist";
   const publicPath = path.join(distPath, config.files?.public || "public");
   const indexHtmlFile = path.join(dir, config.files?.indexHtml || "index.html");
-  const entriesFile = path.join(
+  const entriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
+  const distEntriesFile = path.join(
     dir,
     distPath,
     config.files?.entriesJs || "entries.js"
@@ -157,9 +172,11 @@ export async function runBuild(config: Config = {}) {
 
   compileFiles(dir, distPath);
   fs.appendFileSync(
-    entriesFile,
+    distEntriesFile,
     `exports.clientEntries=${JSON.stringify(clientEntries)};`
   );
+  prerender(dir, distPath, entriesFile);
+
   const origPackageJson = require(path.join(dir, "package.json"));
   const packageJson = {
     name: origPackageJson.name,
