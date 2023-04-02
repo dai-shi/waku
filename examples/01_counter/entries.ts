@@ -1,4 +1,4 @@
-import type { GetEntry, Prefetcher } from "wakuwork/server";
+import type { GetEntry, Prefetcher, Prerenderer } from "wakuwork/server";
 
 export const getEntry: GetEntry = async (id) => {
   switch (id) {
@@ -19,4 +19,10 @@ export const prefetcher: Prefetcher = async (path) => {
     default:
       return {};
   }
+};
+
+export const prerenderer: Prerenderer = async () => {
+  return {
+    entryItems: [["App", { name: "Wakuwork" }]],
+  };
 };
