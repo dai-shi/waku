@@ -9,14 +9,14 @@
     "start": "WAKUWORK_CONFIG='{\"prdServer\":{\"dir\":\"dist\"}}' wakuwork start"
   },
   "dependencies": {
-    "react": "18.3.0-next-8e17bfd14-20230322",
-    "react-dom": "18.3.0-next-8e17bfd14-20230322",
-    "react-server-dom-webpack": "18.3.0-next-8e17bfd14-20230322",
+    "react": "18.3.0-next-8310854ce-20230331",
+    "react-dom": "18.3.0-next-8310854ce-20230331",
+    "react-server-dom-webpack": "18.3.0-next-8310854ce-20230331",
     "wakuwork": "~0.8.0"
   },
   "devDependencies": {
-    "@types/react": "^18.0.29",
+    "@types/react": "^18.0.32",
     "@types/react-dom": "^18.0.11",
-    "typescript": "^5.0.2"
+    "typescript": "^5.0.3"
   }
 }
