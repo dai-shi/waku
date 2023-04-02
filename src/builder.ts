@@ -13,8 +13,11 @@ import RSDWServer from "react-server-dom-webpack/server";
 
 import type { Config } from "./config.js";
 import type { GetEntry, Prefetcher, Prerenderer } from "./server.js";
+import { generatePrefetchCode } from "./middleware/rewriteRsc.js";
 
 const { renderToPipeableStream } = RSDWServer;
+
+const CLIENT_REFERENCE = Symbol.for("react.client.reference");
 
 // TODO we would like a native solution without hacks
 // https://nodejs.org/api/esm.html#loaders
@@ -124,7 +127,8 @@ const prerender = async (
   distPath: string,
   publicPath: string,
   entriesFile: string,
-  basePath: string
+  basePath: string,
+  indexHtmlFile: string
 ) => {
   const require = createRequire(import.meta.url);
   (require as any).extensions[".js"] = (m: any, fname: string) => {
@@ -230,7 +234,50 @@ const prerender = async (
         ).pipe(fs.createWriteStream(destFile));
       }
     }
-    console.log("TODO", paths, prefetcher);
+
+    for (const pathItem of paths) {
+      let code = "";
+      if (prefetcher) {
+        const { entryItems = [], clientModules = [] } = await prefetcher(
+          pathItem
+        );
+        const moduleIds: string[] = [];
+        for (const m of clientModules as any[]) {
+          if (m["$$typeof"] !== CLIENT_REFERENCE) {
+            throw new Error("clientModules must be client references");
+          }
+          const [filePath] = m["$$id"].split("#");
+          const clientEntry = getClientEntry(filePath);
+          moduleIds.push(basePath + clientEntry);
+        }
+        code += generatePrefetchCode?.(entryItems, moduleIds) || "";
+      }
+      if (code) {
+        const destFile = path.join(
+          dir,
+          publicPath,
+          pathItem,
+          pathItem.endsWith("/") ? "index.html" : ""
+        );
+        let content = "";
+        if (fs.existsSync(destFile)) {
+          content = fs.readFileSync(destFile, { encoding: "utf8" });
+        } else {
+          fs.mkdirSync(path.dirname(destFile), { recursive: true });
+          content = fs.readFileSync(indexHtmlFile, { encoding: "utf8" });
+        }
+        // HACK is this too naive to inject script code?
+        let index = content.lastIndexOf("</body>");
+        if (index === -1) {
+          throw new Error("No </body> found in html");
+        }
+        content = `${content.slice(0, index)}
+<script>
+${code}
+</script>${content.slice(index)}`;
+        fs.writeFileSync(destFile, content, { encoding: "utf8" });
+      }
+    }
   }
 };
 
@@ -287,7 +334,14 @@ export async function runBuild(config: Config = {}) {
     entriesFile,
     `exports.clientEntries=${JSON.stringify(clientEntries)};`
   );
-  await prerender(dir, distPath, publicPath, entriesFile, basePath);
+  await prerender(
+    dir,
+    distPath,
+    publicPath,
+    entriesFile,
+    basePath,
+    indexHtmlFile
+  );
 
   const origPackageJson = require(path.join(dir, "package.json"));
   const packageJson = {

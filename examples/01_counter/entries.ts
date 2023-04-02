@@ -24,5 +24,6 @@ export const prefetcher: Prefetcher = async (path) => {
 export const prerenderer: Prerenderer = async () => {
   return {
     entryItems: [["App", { name: "Wakuwork" }]],
+    paths: ["/"],
   };
 };

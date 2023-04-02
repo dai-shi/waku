@@ -2,13 +2,16 @@ import type { MiddlewareCreator } from "./common.js";
 
 // This convension is just one idea.
 
-const rewriteRsc: MiddlewareCreator = (_config, shared) => {
-  shared.generatePrefetchCode = (entryItemsIterable, moduleIds) => {
-    const entryItems = Array.from(entryItemsIterable);
-    let code = "";
-    if (entryItems.length) {
-      const rscIds = [...new Set(entryItems.map(([rscId]) => rscId))];
-      code += `
+export const generatePrefetchCode = (
+  entryItemsIterable: Iterable<readonly [rscId: string, props: unknown]>,
+  moduleIds: Iterable<string>
+) => {
+  const entryItems = Array.from(entryItemsIterable);
+  let code = "";
+  if (entryItems.length) {
+    const rscIds = [...new Set(entryItems.map(([rscId]) => rscId))];
+    code += "if (!globalThis.__WAKUWORK_PREFETCHED) {";
+    code += `
 globalThis.__WAKUWORK_PREFETCHED__ = {
 ${rscIds
   .map((rscId) => {
@@ -31,13 +34,17 @@ ${rscIds
   })
   .join(",\n")}
 };`;
-    }
-    for (const moduleId of moduleIds) {
-      code += `
+  }
+  for (const moduleId of moduleIds) {
+    code += `
 import('${moduleId}');`;
-    }
-    return code;
-  };
+  }
+  code += "}";
+  return code;
+};
+
+const rewriteRsc: MiddlewareCreator = (_config, shared) => {
+  shared.generatePrefetchCode = generatePrefetchCode;
 
   return async (req, _res, next) => {
     const url = new URL(req.url || "", "http://" + req.headers.host);
