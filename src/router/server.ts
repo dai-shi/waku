@@ -1,6 +1,6 @@
 import { createElement } from "react";
 
-import type { GetEntry, Prefetcher } from "../server.js";
+import type { GetEntry, Prefetcher, Prerenderer } from "../server.js";
 
 import { childReference, linkReference } from "./common.js";
 import type { RouteProps, LinkProps } from "./common.js";
@@ -38,7 +38,14 @@ export function fileRouter(base: string) {
     };
   };
 
-  return { getEntry, prefetcher };
+  const prerenderer: Prerenderer = async () => {
+    return {
+      entryItems: [], // TODO support prerender
+      paths: [], // TODO support prerender
+    };
+  };
+
+  return { getEntry, prefetcher, prerenderer };
 }
 
 export function Link(props: LinkProps) {
