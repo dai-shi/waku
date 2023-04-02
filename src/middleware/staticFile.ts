@@ -9,18 +9,17 @@ const staticFile: MiddlewareCreator = (config) => {
   const dir = path.resolve(config.prdServer?.dir || ".");
   const publicPath = config.files?.public || "public";
   return async (req, res, next) => {
-    if (req.url) {
-      const fname = path.join(dir, publicPath, req.url);
-      const stat = fs.statSync(fname, { throwIfNoEntry: false });
-      if (stat?.isFile()) {
-        res.setHeader("Content-Length", stat.size);
-        res.setHeader(
-          "Content-Type",
-          mime.getType(path.extname(fname)) || "application/octet-stream"
-        );
-        fs.createReadStream(fname).pipe(res);
-        return;
-      }
+    const url = new URL(req.url || "", "http://" + req.headers.host);
+    const fname = path.join(dir, publicPath, decodeURIComponent(url.pathname));
+    const stat = fs.statSync(fname, { throwIfNoEntry: false });
+    if (stat?.isFile()) {
+      res.setHeader("Content-Length", stat.size);
+      res.setHeader(
+        "Content-Type",
+        mime.getType(path.extname(fname)) || "application/octet-stream"
+      );
+      fs.createReadStream(fname).pipe(res);
+      return;
     }
     await next();
   };

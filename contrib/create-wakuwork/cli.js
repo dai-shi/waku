@@ -12,7 +12,7 @@ if (fs.existsSync(dirName)) {
 }
 
 const baseUrl =
-  "https://raw.githubusercontent.com/dai-shi/wakuwork/v0.8.1/examples/01_counter/";
+  "https://raw.githubusercontent.com/dai-shi/wakuwork/547f5be/examples/01_counter/";
 
 const files = `
 entries.ts

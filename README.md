@@ -28,7 +28,7 @@ pnpm create wakuwork
 - [x] `wakuwork build` (build for production)
 - [x] `wakuwork start` (production server)
 - [x] Exportable build
-- [ ] Static site generation
+- [x] Static site generation
 - [ ] Client rendering fallback
 - [x] Opt-in router (reference implementation)
 - [ ] Opt-in SSR (HTML generation & hydration)
@@ -61,6 +61,7 @@ pnpm create wakuwork
 - https://twitter.com/dai_shi/status/1638910110448902145
 - https://twitter.com/dai_shi/status/1639858260114300931
 - https://twitter.com/dai_shi/status/1640358907540537344
+- https://twitter.com/dai_shi/status/1642463300314333184
 
 </details>
 

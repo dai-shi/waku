@@ -42,8 +42,11 @@ export function useLocation() {
   return value.location;
 }
 
-// TODO normalizing `search` before prefetch would be necessary
-// TODO ommitting `search` items would be important for caching
+// FIXME normalizing `search` before prefetch would be necessary.
+// FIXME ommitting `search` items would be important for caching.
+
+// TODO prefetching dependent client modules in not supported yet.
+// Is it only possible with build step? No runtime solution?
 
 const prefetchRoutes = (pathname: string, search: string) => {
   const prefetched = ((globalThis as any).__WAKUWORK_PREFETCHED__ ||= {});
@@ -60,7 +63,7 @@ const prefetchRoutes = (pathname: string, search: string) => {
     searchParams.set("props", serializedProps);
     if (!prefetched[rscId][serializedProps]) {
       prefetched[rscId][serializedProps] = fetch(
-        `/RSC/${rscId}?${searchParams}`
+        `/RSC/${rscId}/${searchParams}`
       );
     }
   }
@@ -82,6 +85,7 @@ export const Link = ({
   href,
   children,
   pending,
+  notPending,
   unstable_prefetchOnEnter,
 }: LinkProps) => {
   const changeLocation = useChangeLocation();
@@ -106,6 +110,9 @@ export const Link = ({
   const ele = createElement("a", { href, onClick, onMouseEnter }, children);
   if (isPending && pending !== undefined) {
     return createElement(Fragment, null, ele, pending);
+  }
+  if (!isPending && notPending !== undefined) {
+    return createElement(Fragment, null, ele, notPending);
   }
   return ele;
 };

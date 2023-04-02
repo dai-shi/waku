@@ -1,4 +1,4 @@
-import type { GetEntry, Prefetcher } from "wakuwork/server";
+import type { GetEntry, Prefetcher, Prerenderer } from "wakuwork/server";
 
 export const getEntry: GetEntry = async (id) => {
   switch (id) {
@@ -14,11 +14,29 @@ export const getEntry: GetEntry = async (id) => {
 export const prefetcher: Prefetcher = async (path) => {
   switch (path) {
     case "/":
-      return [
-        ["App", { name: "Wakuwork" }],
-        ["InnerApp", { count: 0 }],
-      ];
+      return {
+        entryItems: [
+          ["App", { name: "Wakuwork" }],
+          ["InnerApp", { count: 0 }],
+        ],
+        clientModules: [(await import("./src/Counter.js")).Counter],
+      };
     default:
-      return [];
+      return {};
   }
+};
+
+export const prerenderer: Prerenderer = async () => {
+  return {
+    entryItems: [
+      ["App", { name: "Wakuwork" }],
+      ["InnerApp", { count: 0 }],
+      ["InnerApp", { count: 1 }],
+      ["InnerApp", { count: 2 }],
+      ["InnerApp", { count: 3 }],
+      ["InnerApp", { count: 4 }],
+      ["InnerApp", { count: 5 }],
+    ],
+    paths: ["/"],
+  };
 };

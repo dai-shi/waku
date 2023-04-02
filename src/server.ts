@@ -4,10 +4,14 @@ export type GetEntry = (
   rscId: string
 ) => Promise<FunctionComponent | { default: FunctionComponent }>;
 
-export type Prefetcher = (
-  path: string
-) => Promise<Iterable<readonly [rscId: string, props: unknown]>>;
+// For run-time optimization (plus, for build-time optimization with `paths`)
+export type Prefetcher = (path: string) => Promise<{
+  entryItems?: Iterable<readonly [rscId: string, props: unknown]>;
+  clientModules?: Iterable<unknown>;
+}>;
 
-export type Prerenderer = () => Promise<
-  Iterable<readonly [rscId: string, props: unknown]>
->;
+// For build-time optimization
+export type Prerenderer = () => Promise<{
+  entryItems?: Iterable<readonly [rscId: string, props: unknown]>;
+  paths?: Iterable<string>;
+}>;
