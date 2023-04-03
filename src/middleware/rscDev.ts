@@ -22,7 +22,7 @@ const rscDev: MiddlewareCreator = (config, shared) => {
   };
   const prefetcher: Prefetcher = async (pathItem) => {
     const mod = await import(entriesFile);
-    return mod.prefetcher(pathItem);
+    return mod?.prefetcher(pathItem) ?? {};
   };
 
   const getFunctionComponent = async (rscId: string) => {

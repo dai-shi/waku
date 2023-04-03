@@ -25,7 +25,7 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
   };
   const prefetcher: Prefetcher = async (pathItem) => {
     const mod = await import(entriesFile);
-    return mod.prefetcher(pathItem);
+    return mod?.prefetcher(pathItem) ?? {};
   };
   let clientEntries: Record<string, string> | undefined;
   import(entriesFile).then((mod) => {
@@ -33,9 +33,6 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
   });
 
   const getFunctionComponent = async (rscId: string) => {
-    if (!getEntry) {
-      return null;
-    }
     const mod = await getEntry(rscId);
     if (typeof mod === "function") {
       return mod;
@@ -48,9 +45,9 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
       throw new Error("Missing client entries");
     }
     const clientEntry =
-      clientEntries[id!] ||
-      clientEntries[id!.replace(/\.js$/, ".ts")] ||
-      clientEntries[id!.replace(/\.js$/, ".tsx")];
+      clientEntries[id] ||
+      clientEntries[id.replace(/\.js$/, ".ts")] ||
+      clientEntries[id.replace(/\.js$/, ".tsx")];
     if (!clientEntry) {
       throw new Error("No client entry found");
     }
