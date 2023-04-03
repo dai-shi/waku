@@ -6,6 +6,7 @@ import busboy from "busboy";
 
 import type { MiddlewareCreator } from "./common.js";
 import type { GetEntry, Prefetcher } from "../server.js";
+import { transformRsfId } from "./rewriteRsc.js";
 
 const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
   RSDWServer;
@@ -94,12 +95,8 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
     const rscId = req.headers["x-react-server-component-id"];
     const rsfId = req.headers["x-react-server-function-id"];
     if (typeof rsfId === "string") {
-      // FIXME We should not send the URL (with full path) to the client.
-      // This should be fixed. Not for production use.
-      // https://github.com/facebook/react/blob/93c10dfa6b0848c12189b773b59c77d74cad2a1a/packages/react-server-dom-webpack/src/ReactFlightClientNodeBundlerConfig.js#L47
-      const [id, name] = path
-        .relative("file://" + encodeURI(dir), rsfId)
-        .split("#");
+      // TODO check if rsfId is valid
+      const [id, name] = rsfId.split("#");
       const fname = path.join(dir, id!);
       let args: unknown[] = [];
       if (req.headers["content-type"]?.startsWith("multipart/form-data")) {
@@ -140,10 +137,9 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
       const component = await getFunctionComponent(rscId);
       if (component) {
         res.setHeader("Content-Type", "text/x-component");
-        renderToPipeableStream(
-          createElement(component, props),
-          bundlerConfig
-        ).pipe(res);
+        renderToPipeableStream(createElement(component, props), bundlerConfig)
+          .pipe(transformRsfId("file://" + encodeURI(dir)))
+          .pipe(res);
         return;
       }
       res.statusCode = 404;

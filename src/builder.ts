@@ -11,7 +11,10 @@ import RSDWServer from "react-server-dom-webpack/server";
 
 import type { Config } from "./config.js";
 import type { GetEntry, Prefetcher, Prerenderer } from "./server.js";
-import { generatePrefetchCode } from "./middleware/rewriteRsc.js";
+import {
+  generatePrefetchCode,
+  transformRsfId,
+} from "./middleware/rewriteRsc.js";
 
 const { renderToPipeableStream } = RSDWServer;
 
@@ -181,7 +184,9 @@ const prerender = async (
         renderToPipeableStream(
           createElement(component, props as any),
           bundlerConfig
-        ).pipe(fs.createWriteStream(destFile));
+        )
+          .pipe(transformRsfId("file://" + encodeURI(path.join(dir, distPath))))
+          .pipe(fs.createWriteStream(destFile));
       }
     }
 

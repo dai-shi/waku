@@ -1,7 +1,11 @@
+import { Buffer } from "node:buffer";
+import { Transform } from "node:stream";
+
 import type { MiddlewareCreator } from "./common.js";
 
 // This convension is just one idea.
 
+// HACK It's not ideal to export a function from middleware.
 export const generatePrefetchCode = (
   entryItemsIterable: Iterable<readonly [rscId: string, props: unknown]>,
   moduleIds: Iterable<string>
@@ -42,6 +46,30 @@ import('${moduleId}');`;
   code += "}";
   return code;
 };
+
+// HACK Patching the stream is very fragile.
+// HACK No reason to have this function in this file
+export const transformRsfId = (prefixToRemove: string) =>
+  new Transform({
+    transform(chunk, encoding, callback) {
+      if (encoding !== ("buffer" as any)) {
+        throw new Error("Unknown encoding");
+      }
+      const data = chunk.toString();
+      const lines = data.split("\n");
+      let changed = false;
+      for (let i = 0; i < lines.length; ++i) {
+        const match = lines[i].match(
+          new RegExp(`^([0-9]+):{"id":"${prefixToRemove}(.*?)"(.*)$`)
+        );
+        if (match) {
+          lines[i] = `${match[1]}:{"id":"${match[2]}"${match[3]}`;
+          changed = true;
+        }
+      }
+      callback(null, changed ? Buffer.from(lines.join("\n")) : chunk);
+    },
+  });
 
 const rewriteRsc: MiddlewareCreator = (_config, shared) => {
   shared.generatePrefetchCode = generatePrefetchCode;
