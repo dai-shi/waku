@@ -97,8 +97,10 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
       // FIXME We should not send the URL (with full path) to the client.
       // This should be fixed. Not for production use.
       // https://github.com/facebook/react/blob/93c10dfa6b0848c12189b773b59c77d74cad2a1a/packages/react-server-dom-webpack/src/ReactFlightClientNodeBundlerConfig.js#L47
-      const [id, name] = decodeId(rsfId);
-      const fname = path.join(dir, id);
+      const [id, name] = path
+        .relative("file://" + encodeURI(dir), rsfId)
+        .split("#");
+      const fname = path.join(dir, id!);
       let args: unknown[] = [];
       if (req.headers["content-type"]?.startsWith("multipart/form-data")) {
         const bb = busboy({ headers: req.headers });
