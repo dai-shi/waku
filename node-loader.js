@@ -1,8 +1,4 @@
-export async function resolve(
-  specifier: string,
-  context: any,
-  nextResolve: any
-): Promise<{ url: string }> {
+export async function resolve(specifier, context, nextResolve) {
   if (specifier.endsWith(".js")) {
     // Hoped tsx handles it, but doesn't seem so.
     for (const ext of [".js", ".ts", ".tsx"]) {
@@ -20,11 +16,7 @@ export async function resolve(
   return await nextResolve(specifier, context, nextResolve);
 }
 
-export async function load(
-  url: string,
-  context: any,
-  nextLoad: any
-): Promise<{ format: string; shortCircuit?: boolean; source: any }> {
+export async function load(url, context, nextLoad) {
   const result = await nextLoad(url, context, nextLoad);
   if (result.format === "module") {
     let { source } = result;
