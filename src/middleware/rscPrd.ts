@@ -22,7 +22,7 @@ RSDWRegister();
 
 // TODO we have duplicate code here and rscDev.ts
 
-const rscDefault: MiddlewareCreator = (config, shared) => {
+const rscPrd: MiddlewareCreator = (config, shared) => {
   const dir = path.resolve(config.prdServer?.dir || ".");
   const basePath = config.build?.basePath || "/"; // FIXME it's not build only
   const require = createRequire(import.meta.url);
@@ -181,4 +181,4 @@ const rscDefault: MiddlewareCreator = (config, shared) => {
   };
 };
 
-export default rscDefault;
+export default rscPrd;

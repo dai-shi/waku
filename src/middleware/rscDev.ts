@@ -12,7 +12,7 @@ const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
 
 const CLIENT_REFERENCE = Symbol.for("react.client.reference");
 
-const rscDefault: MiddlewareCreator = (config, shared) => {
+const rscDev: MiddlewareCreator = (config, shared) => {
   const dir = path.resolve(config.devServer?.dir || ".");
 
   const entriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
@@ -33,6 +33,11 @@ const rscDefault: MiddlewareCreator = (config, shared) => {
     return mod.default;
   };
 
+  const decodeId = (id: string) => {
+    const filePath = path.relative("file://" + encodeURI(dir), id);
+    return "/" + decodeURI(filePath);
+  };
+
   shared.devScriptToInject = async (path: string) => {
     let code = `
 globalThis.__webpack_require__ = (id) => {
@@ -44,11 +49,10 @@ globalThis.__webpack_require__ = (id) => {
     const moduleIds: string[] = [];
     for (const m of clientModules as any[]) {
       if (m["$$typeof"] !== CLIENT_REFERENCE) {
-        console.log('===========', path, m);
         throw new Error("clientModules must be client references");
       }
-      const [filePath] = m["$$id"].split("#");
-      moduleIds.push(filePath);
+      const [filePath] = decodeId(m["$$id"]).split("#");
+      moduleIds.push(filePath!);
     }
     code += shared.generatePrefetchCode?.(entryItems, moduleIds) || "";
     return code;
@@ -58,7 +62,7 @@ globalThis.__webpack_require__ = (id) => {
     {},
     {
       get(_target, id: string) {
-        const [filePath, name] = id.split("#");
+        const [filePath, name] = decodeId(id).split("#");
         return {
           id: filePath,
           chunks: [],
@@ -127,4 +131,4 @@ globalThis.__webpack_require__ = (id) => {
   };
 };
 
-export default rscDefault;
+export default rscDev;

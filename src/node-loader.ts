@@ -4,6 +4,7 @@ export async function resolve(
   nextResolve: any
 ): Promise<{ url: string }> {
   if (specifier.endsWith(".js")) {
+    // Hoped tsx handles it, but doesn't seem so.
     for (const ext of [".js", ".ts", ".tsx"]) {
       try {
         return await nextResolve(
@@ -25,12 +26,18 @@ export async function load(
   nextLoad: any
 ): Promise<{ format: string; shortCircuit?: boolean; source: any }> {
   const result = await nextLoad(url, context, nextLoad);
-  console.log('---', url, result);
   if (result.format === "module") {
-    if (typeof result.source !== "string") {
-      const source = result.source.toString("utf8");
-      return { ...result, source };
+    let { source } = result;
+    if (typeof source !== "string") {
+      source = source.toString("utf8");
     }
+    // HACK pull directive to the root
+    // Hope we can configure tsx to avoid this
+    const p = source.match(/(?:^|\n|;)("use (client|server)";)/);
+    if (p) {
+      source = p[1] + source;
+    }
+    return { ...result, source };
   }
   return result;
 }
