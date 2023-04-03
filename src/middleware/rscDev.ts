@@ -77,7 +77,10 @@ globalThis.__webpack_require__ = (id) => {
     const rscId = req.headers["x-react-server-component-id"];
     const rsfId = req.headers["x-react-server-function-id"];
     if (typeof rsfId === "string") {
-      const [filePath, name] = rsfId.split("#");
+      // FIXME We should not send the URL (with full path) to the client.
+      // This should be fixed. Not for production use.
+      // https://github.com/facebook/react/blob/93c10dfa6b0848c12189b773b59c77d74cad2a1a/packages/react-server-dom-webpack/src/ReactFlightClientNodeBundlerConfig.js#L47
+      const [filePath, name] = decodeId(rsfId).split("#");
       const fname = path.join(dir, filePath!);
       let args: unknown[] = [];
       if (req.headers["content-type"]?.startsWith("multipart/form-data")) {
