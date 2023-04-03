@@ -21,7 +21,7 @@ export async function load(url, context, nextLoad) {
   if (result.format === "module") {
     let { source } = result;
     if (typeof source !== "string") {
-      source = source.toString("utf8");
+      source = source.toString();
     }
     // HACK pull directive to the root
     // Hope we can configure tsx to avoid this
