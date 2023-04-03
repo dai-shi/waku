@@ -1,10 +1,6 @@
 import path from "node:path";
-import fs from "node:fs";
-import url from "node:url";
-import { createRequire } from "node:module";
 
 import { createElement } from "react";
-import RSDWRegister from "react-server-dom-webpack/node-register";
 import RSDWServer from "react-server-dom-webpack/server";
 import busboy from "busboy";
 
@@ -16,45 +12,25 @@ const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
 
 const CLIENT_REFERENCE = Symbol.for("react.client.reference");
 
-// TODO we would like a native solution without hacks
-// https://nodejs.org/api/esm.html#loaders
-RSDWRegister();
-
 // TODO we have duplicate code here and rscDev.ts
 
 const rscPrd: MiddlewareCreator = (config, shared) => {
   const dir = path.resolve(config.prdServer?.dir || ".");
   const basePath = config.build?.basePath || "/"; // FIXME it's not build only
-  const require = createRequire(import.meta.url);
-
-  (require as any).extensions[".js"] = (m: any, fname: string) => {
-    let code = fs.readFileSync(fname, { encoding: "utf8" });
-    // HACK to pull directive to the root
-    // FIXME praseFileSync & transformSync would be nice, but encounter:
-    // https://github.com/swc-project/swc/issues/6255
-    const p = code.match(/(?:^|\n|;)("use (client|server)";)/);
-    if (p) {
-      code = p[1] + code;
-    }
-    const savedPathToFileURL = url.pathToFileURL;
-    if (p) {
-      // HACK to resolve rscId
-      url.pathToFileURL = (p: string) =>
-        ({ href: path.relative(dir, p) } as any);
-    }
-    m._compile(code, fname);
-    url.pathToFileURL = savedPathToFileURL;
-  };
 
   const entriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
-  let getEntry: GetEntry | undefined;
-  let prefetcher: Prefetcher | undefined;
+  const getEntry: GetEntry = async (rscId) => {
+    const mod = await import(entriesFile);
+    return mod.getEntry(rscId);
+  };
+  const prefetcher: Prefetcher = async (pathItem) => {
+    const mod = await import(entriesFile);
+    return mod.prefetcher(pathItem);
+  };
   let clientEntries: Record<string, string> | undefined;
-  try {
-    ({ getEntry, prefetcher, clientEntries } = require(entriesFile));
-  } catch (e) {
-    console.info(`No entries file found at ${entriesFile}, ignoring...`, e);
-  }
+  import(entriesFile).then((mod) => {
+    clientEntries = mod.clientEntries;
+  });
 
   const getFunctionComponent = async (rscId: string) => {
     if (!getEntry) {
@@ -67,18 +43,27 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
     return mod.default;
   };
 
-  const getClientEntry = (filePath: string) => {
+  const getClientEntry = (id: string) => {
     if (!clientEntries) {
       throw new Error("Missing client entries");
     }
     const clientEntry =
-      clientEntries[filePath!] ||
-      clientEntries[filePath!.replace(/\.js$/, ".ts")] ||
-      clientEntries[filePath!.replace(/\.js$/, ".tsx")];
+      clientEntries[id!] ||
+      clientEntries[id!.replace(/\.js$/, ".ts")] ||
+      clientEntries[id!.replace(/\.js$/, ".tsx")];
     if (!clientEntry) {
       throw new Error("No client entry found");
     }
     return clientEntry;
+  };
+
+  const decodeId = (encodedId: string): [id: string, name: string] => {
+    let [id, name] = encodedId.split("#") as [string, string];
+    if (!id.startsWith("wakuwork/")) {
+      id = path.relative("file://" + encodeURI(dir), id);
+      id = basePath + getClientEntry(decodeURI(id));
+    }
+    return [id, name];
   };
 
   shared.prdScriptToInject = async (path: string) => {
@@ -90,9 +75,8 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
         if (m["$$typeof"] !== CLIENT_REFERENCE) {
           throw new Error("clientModules must be client references");
         }
-        const [filePath] = m["$$id"].split("#");
-        const clientEntry = getClientEntry(filePath);
-        moduleIds.push(basePath + clientEntry);
+        const [id] = decodeId(m["$$id"]);
+        moduleIds.push(id);
       }
       code += shared.generatePrefetchCode?.(entryItems, moduleIds) || "";
     }
@@ -102,23 +86,9 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
   const bundlerConfig = new Proxy(
     {},
     {
-      get(_target, id: string) {
-        const [filePath, name] = id.split("#");
-        if (filePath!.startsWith("wakuwork/")) {
-          return {
-            id: filePath,
-            chunks: [],
-            name,
-            async: true,
-          };
-        }
-        const clientEntry = getClientEntry(filePath!);
-        return {
-          id: basePath + clientEntry,
-          chunks: [],
-          name,
-          async: true,
-        };
+      get(_target, encodedId: string) {
+        const [id, name] = decodeId(encodedId);
+        return { id, chunks: [], name, async: true };
       },
     }
   );
@@ -127,8 +97,11 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
     const rscId = req.headers["x-react-server-component-id"];
     const rsfId = req.headers["x-react-server-function-id"];
     if (typeof rsfId === "string") {
-      const [filePath, name] = rsfId.split("#");
-      const fname = path.join(dir, filePath!);
+      // FIXME We should not send the URL (with full path) to the client.
+      // This should be fixed. Not for production use.
+      // https://github.com/facebook/react/blob/93c10dfa6b0848c12189b773b59c77d74cad2a1a/packages/react-server-dom-webpack/src/ReactFlightClientNodeBundlerConfig.js#L47
+      const [id, name] = decodeId(rsfId);
+      const fname = path.join(dir, id);
       let args: unknown[] = [];
       if (req.headers["content-type"]?.startsWith("multipart/form-data")) {
         const bb = busboy({ headers: req.headers });
@@ -144,7 +117,7 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
           args = await decodeReply(body);
         }
       }
-      const mod = require(fname);
+      const mod = await import(fname);
       const data = await (mod[name!] || mod)(...args);
       if (typeof rscId !== "string") {
         res.setHeader("Content-Type", "text/x-component");

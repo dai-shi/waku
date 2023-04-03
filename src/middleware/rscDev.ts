@@ -33,12 +33,13 @@ const rscDev: MiddlewareCreator = (config, shared) => {
     return mod.default;
   };
 
-  const decodeId = (id: string) => {
-    if (id.startsWith("wakuwork/")) {
-      return id;
+  const decodeId = (encodedId: string): [id: string, name: string] => {
+    let [id, name] = encodedId.split("#") as [string, string];
+    if (!id.startsWith("wakuwork/")) {
+      id = path.relative("file://" + encodeURI(dir), id);
+      id = "/" + decodeURI(id);
     }
-    const filePath = path.relative("file://" + encodeURI(dir), id);
-    return "/" + decodeURI(filePath);
+    return [id, name];
   };
 
   shared.devScriptToInject = async (path: string) => {
@@ -54,8 +55,8 @@ globalThis.__webpack_require__ = (id) => {
       if (m["$$typeof"] !== CLIENT_REFERENCE) {
         throw new Error("clientModules must be client references");
       }
-      const [filePath] = decodeId(m["$$id"]).split("#");
-      moduleIds.push(filePath!);
+      const [id] = decodeId(m["$$id"]);
+      moduleIds.push(id);
     }
     code += shared.generatePrefetchCode?.(entryItems, moduleIds) || "";
     return code;
@@ -64,14 +65,9 @@ globalThis.__webpack_require__ = (id) => {
   const bundlerConfig = new Proxy(
     {},
     {
-      get(_target, id: string) {
-        const [filePath, name] = decodeId(id).split("#");
-        return {
-          id: filePath,
-          chunks: [],
-          name,
-          async: true,
-        };
+      get(_target, encodedId: string) {
+        const [id, name] = decodeId(encodedId);
+        return { id, chunks: [], name, async: true };
       },
     }
   );
@@ -83,8 +79,8 @@ globalThis.__webpack_require__ = (id) => {
       // FIXME We should not send the URL (with full path) to the client.
       // This should be fixed. Not for production use.
       // https://github.com/facebook/react/blob/93c10dfa6b0848c12189b773b59c77d74cad2a1a/packages/react-server-dom-webpack/src/ReactFlightClientNodeBundlerConfig.js#L47
-      const [filePath, name] = decodeId(rsfId).split("#");
-      const fname = path.join(dir, filePath!);
+      const [id, name] = decodeId(rsfId);
+      const fname = path.join(dir, id);
       let args: unknown[] = [];
       if (req.headers["content-type"]?.startsWith("multipart/form-data")) {
         const bb = busboy({ headers: req.headers });
