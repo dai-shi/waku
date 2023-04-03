@@ -34,6 +34,9 @@ const rscDev: MiddlewareCreator = (config, shared) => {
   };
 
   const decodeId = (id: string) => {
+    if (id.startsWith("wakuwork/")) {
+      return id;
+    }
     const filePath = path.relative("file://" + encodeURI(dir), id);
     return "/" + decodeURI(filePath);
   };
