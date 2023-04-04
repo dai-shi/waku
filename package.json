@@ -10,6 +10,7 @@
   },
   "exports": {
     "./package.json": "./package.json",
+    "./node-loader": "./dist/node-loader.js",
     ".": {
       "types": "./dist/main.d.ts",
       "default": "./dist/main.js"
@@ -46,7 +47,7 @@
     "compile:code": "swc src -d dist && swc src -d dist/cjs -C module.type=commonjs && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
     "compile:types": "tsc --project tsconfig.build.json",
     "test": "tsc --project . --noEmit",
-    "examples:dev": "npm run compile:code && WAKUWORK_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" nodemon --ext ts,tsx --ignore ./examples/${NAME}/src/Counter.tsx --exec /usr/bin/env ./cli.js dev",
+    "examples:dev": "WAKUWORK_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" nodemon --ext ts,tsx --ignore ./examples/${NAME}/src/Counter.tsx --exec /usr/bin/env ./cli-dev.ts dev",
     "examples:dev:01_counter": "NAME=01_counter npm run examples:dev",
     "examples:dev:02_async": "NAME=02_async npm run examples:dev",
     "examples:dev:03_promise": "NAME=03_promise npm run examples:dev",
@@ -83,11 +84,13 @@
     "react": "18.3.0-next-8310854ce-20230331",
     "react-dom": "18.3.0-next-8310854ce-20230331",
     "react-server-dom-webpack": "18.3.0-next-8310854ce-20230331",
+    "tsx": "^3.12.6",
     "typescript": "^5.0.3",
     "wakuwork": "link:."
   },
   "peerDependencies": {
     "react": "18.3.0-next-8310854ce-20230331",
-    "react-server-dom-webpack": "18.3.0-next-8310854ce-20230331"
+    "react-server-dom-webpack": "18.3.0-next-8310854ce-20230331",
+    "tsx": "^3.12.6"
   }
 }

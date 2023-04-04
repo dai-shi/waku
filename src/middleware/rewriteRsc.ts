@@ -1,7 +1,11 @@
+import { Buffer } from "node:buffer";
+import { Transform } from "node:stream";
+
 import type { MiddlewareCreator } from "./common.js";
 
 // This convension is just one idea.
 
+// HACK It's not ideal to export a function from middleware.
 export const generatePrefetchCode = (
   entryItemsIterable: Iterable<readonly [rscId: string, props: unknown]>,
   moduleIds: Iterable<string>
@@ -10,7 +14,7 @@ export const generatePrefetchCode = (
   let code = "";
   if (entryItems.length) {
     const rscIds = [...new Set(entryItems.map(([rscId]) => rscId))];
-    code += "if (!globalThis.__WAKUWORK_PREFETCHED) {";
+    code += "if (!globalThis.__WAKUWORK_PREFETCHED__) {";
     code += `
 globalThis.__WAKUWORK_PREFETCHED__ = {
 ${rscIds
@@ -42,6 +46,33 @@ import('${moduleId}');`;
   code += "}";
   return code;
 };
+
+// HACK Patching stream is very fragile.
+// HACK No reason to have this function in this file
+export const transformRsfId = (
+  prefixToRemove: string,
+  convert = (id: string) => id
+) =>
+  new Transform({
+    transform(chunk, encoding, callback) {
+      if (encoding !== ("buffer" as any)) {
+        throw new Error("Unknown encoding");
+      }
+      const data = chunk.toString();
+      const lines = data.split("\n");
+      let changed = false;
+      for (let i = 0; i < lines.length; ++i) {
+        const match = lines[i].match(
+          new RegExp(`^([0-9]+):{"id":"${prefixToRemove}(.*?)"(.*)$`)
+        );
+        if (match) {
+          lines[i] = `${match[1]}:{"id":"${convert(match[2])}"${match[3]}`;
+          changed = true;
+        }
+      }
+      callback(null, changed ? Buffer.from(lines.join("\n")) : chunk);
+    },
+  });
 
 const rewriteRsc: MiddlewareCreator = (_config, shared) => {
   shared.generatePrefetchCode = generatePrefetchCode;
