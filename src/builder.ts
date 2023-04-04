@@ -116,7 +116,19 @@ const prerender = async (
   entriesFile: string,
   basePath: string,
   indexHtmlFile: string
-) => {
+): Promise<Record<string, string>> => {
+  const serverEntries: Record<string, string> = {};
+  const registerServerEntry = (fileId: string): string => {
+    for (const entry of Object.entries(serverEntries)) {
+      if (entry[1] === fileId) {
+        return entry[0];
+      }
+    }
+    const id = `rsf${Object.keys(serverEntries).length}`;
+    serverEntries[id] = fileId;
+    return id;
+  };
+
   const { getEntry, prefetcher, prerenderer, clientEntries } = await (import(
     entriesFile
   ) as Promise<{
@@ -166,29 +178,41 @@ const prerender = async (
 
   if (prerenderer) {
     const { entryItems = [], paths = [] } = await prerenderer();
-    for (const [rscId, props] of entryItems) {
-      // FIXME we blindly expect JSON.stringify usage is deterministic
-      const serializedProps = JSON.stringify(props);
-      const searchParams = new URLSearchParams();
-      searchParams.set("props", serializedProps);
-      const destFile = path.join(
-        dir,
-        publicPath,
-        "RSC",
-        decodeURIComponent(rscId),
-        decodeURIComponent(`${searchParams}`)
-      );
-      fs.mkdirSync(path.dirname(destFile), { recursive: true });
-      const component = await getFunctionComponent(rscId);
-      if (component) {
-        renderToPipeableStream(
-          createElement(component, props as any),
-          bundlerConfig
-        )
-          .pipe(transformRsfId("file://" + encodeURI(path.join(dir, distPath))))
-          .pipe(fs.createWriteStream(destFile));
-      }
-    }
+    await Promise.all(
+      Array.from(entryItems).map(async ([rscId, props]) => {
+        // FIXME we blindly expect JSON.stringify usage is deterministic
+        const serializedProps = JSON.stringify(props);
+        const searchParams = new URLSearchParams();
+        searchParams.set("props", serializedProps);
+        const destFile = path.join(
+          dir,
+          publicPath,
+          "RSC",
+          decodeURIComponent(rscId),
+          decodeURIComponent(`${searchParams}`)
+        );
+        fs.mkdirSync(path.dirname(destFile), { recursive: true });
+        const component = await getFunctionComponent(rscId);
+        if (component) {
+          await new Promise<void>((resolve, reject) => {
+            const stream = fs.createWriteStream(destFile);
+            stream.on("finish", resolve);
+            stream.on("error", reject);
+            renderToPipeableStream(
+              createElement(component, props as any),
+              bundlerConfig
+            )
+              .pipe(
+                transformRsfId(
+                  "file://" + encodeURI(path.join(dir, distPath)),
+                  registerServerEntry
+                )
+              )
+              .pipe(stream);
+          });
+        }
+      })
+    );
 
     for (const pathItem of paths) {
       let code = "";
@@ -233,6 +257,8 @@ ${code}
       }
     }
   }
+
+  return serverEntries;
 };
 
 export async function runBuild(config: Config = {}) {
@@ -288,13 +314,18 @@ export async function runBuild(config: Config = {}) {
     entriesFile,
     `export const clientEntries=${JSON.stringify(clientEntries)};`
   );
-  await prerender(
+  const serverEntries = await prerender(
     dir,
     distPath,
     publicPath,
     entriesFile,
     basePath,
     indexHtmlFile
+  );
+  console.log("serverEntries", serverEntries);
+  fs.appendFileSync(
+    entriesFile,
+    `export const serverEntries=${JSON.stringify(serverEntries)};`
   );
 
   const origPackageJson = require(path.join(dir, "package.json"));

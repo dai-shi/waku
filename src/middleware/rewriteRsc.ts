@@ -14,7 +14,7 @@ export const generatePrefetchCode = (
   let code = "";
   if (entryItems.length) {
     const rscIds = [...new Set(entryItems.map(([rscId]) => rscId))];
-    code += "if (!globalThis.__WAKUWORK_PREFETCHED) {";
+    code += "if (!globalThis.__WAKUWORK_PREFETCHED__) {";
     code += `
 globalThis.__WAKUWORK_PREFETCHED__ = {
 ${rscIds
@@ -49,7 +49,10 @@ import('${moduleId}');`;
 
 // HACK Patching the stream is very fragile.
 // HACK No reason to have this function in this file
-export const transformRsfId = (prefixToRemove: string) =>
+export const transformRsfId = (
+  prefixToRemove: string,
+  convert = (id: string) => id
+) =>
   new Transform({
     transform(chunk, encoding, callback) {
       if (encoding !== ("buffer" as any)) {
@@ -63,7 +66,7 @@ export const transformRsfId = (prefixToRemove: string) =>
           new RegExp(`^([0-9]+):{"id":"${prefixToRemove}(.*?)"(.*)$`)
         );
         if (match) {
-          lines[i] = `${match[1]}:{"id":"${match[2]}"${match[3]}`;
+          lines[i] = `${match[1]}:{"id":"${convert(match[2])}"${match[3]}`;
           changed = true;
         }
       }

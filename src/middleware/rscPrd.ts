@@ -29,8 +29,10 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
     return mod?.prefetcher(pathItem) ?? {};
   };
   let clientEntries: Record<string, string> | undefined;
+  let serverEntries: Record<string, string> | undefined;
   import(entriesFile).then((mod) => {
     clientEntries = mod.clientEntries;
+    serverEntries = mod.serverEntries;
   });
 
   const getFunctionComponent = async (rscId: string) => {
@@ -64,6 +66,31 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
     return [id, name];
   };
 
+  const registerServerEntry = (fileId: string): string => {
+    if (!serverEntries) {
+      throw new Error("Missing server entries");
+    }
+    for (const entry of Object.entries(serverEntries)) {
+      if (entry[1] === fileId) {
+        return entry[0];
+      }
+    }
+    const id = `rsf${Object.keys(serverEntries).length}`;
+    serverEntries[id] = fileId;
+    return id;
+  };
+
+  const getServerEntry = (id: string): string => {
+    if (!serverEntries) {
+      throw new Error("Missing server entries");
+    }
+    const fileId = serverEntries[id];
+    if (!fileId) {
+      throw new Error("No server entry found");
+    }
+    return fileId;
+  };
+
   shared.prdScriptToInject = async (path: string) => {
     let code = "";
     if (prefetcher) {
@@ -95,8 +122,7 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
     const rscId = req.headers["x-react-server-component-id"];
     const rsfId = req.headers["x-react-server-function-id"];
     if (typeof rsfId === "string") {
-      // TODO check if rsfId is valid
-      const [id, name] = rsfId.split("#");
+      const [id, name] = getServerEntry(rsfId).split("#");
       const fname = path.join(dir, id!);
       let args: unknown[] = [];
       if (req.headers["content-type"]?.startsWith("multipart/form-data")) {
@@ -138,7 +164,7 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
       if (component) {
         res.setHeader("Content-Type", "text/x-component");
         renderToPipeableStream(createElement(component, props), bundlerConfig)
-          .pipe(transformRsfId("file://" + encodeURI(dir)))
+          .pipe(transformRsfId("file://" + encodeURI(dir), registerServerEntry))
           .pipe(res);
         return;
       }
