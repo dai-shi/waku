@@ -47,7 +47,7 @@ import('${moduleId}');`;
   return code;
 };
 
-// HACK Patching the stream is very fragile.
+// HACK Patching stream is very fragile.
 // HACK No reason to have this function in this file
 export const transformRsfId = (
   prefixToRemove: string,

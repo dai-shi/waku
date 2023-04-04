@@ -5,7 +5,7 @@ export async function resolve(
 ) {
   if (specifier.endsWith(".js")) {
     // Hoped tsx handles it, but doesn't seem so.
-    for (const ext of [".js", ".ts", ".tsx"]) {
+    for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
       try {
         return await nextResolve(
           specifier.slice(0, -3) + ext,

@@ -50,7 +50,8 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
     const clientEntry =
       clientEntries[id] ||
       clientEntries[id.replace(/\.js$/, ".ts")] ||
-      clientEntries[id.replace(/\.js$/, ".tsx")];
+      clientEntries[id.replace(/\.js$/, ".tsx")] ||
+      clientEntries[id.replace(/\.js$/, ".jsx")];
     if (!clientEntry) {
       throw new Error("No client entry found");
     }

@@ -74,6 +74,7 @@ const getClientEntryFiles = (dir: string) => {
         }
       }
     }
+    // TODO transpile ".jsx"
   });
   return files;
 };
@@ -106,6 +107,7 @@ const compileFiles = (dir: string, distPath: string) => {
       fs.mkdirSync(path.dirname(destFile), { recursive: true });
       fs.writeFileSync(destFile, code);
     }
+    // TODO transpile ".jsx"
   });
 };
 
