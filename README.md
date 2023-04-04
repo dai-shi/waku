@@ -62,6 +62,7 @@ pnpm create wakuwork
 - https://twitter.com/dai_shi/status/1639858260114300931
 - https://twitter.com/dai_shi/status/1640358907540537344
 - https://twitter.com/dai_shi/status/1642463300314333184
+- https://twitter.com/dai_shi/status/1643224085755998210
 
 </details>
 
