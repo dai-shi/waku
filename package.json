@@ -70,7 +70,6 @@
     "@vitejs/plugin-react": "^3.1.0",
     "busboy": "^1.6.0",
     "mime": "^3.0.0",
-    "tsx": "^3.12.6",
     "vite": "^4.2.1"
   },
   "devDependencies": {
@@ -85,11 +84,13 @@
     "react": "18.3.0-next-8310854ce-20230331",
     "react-dom": "18.3.0-next-8310854ce-20230331",
     "react-server-dom-webpack": "18.3.0-next-8310854ce-20230331",
+    "tsx": "^3.12.6",
     "typescript": "^5.0.3",
     "wakuwork": "link:."
   },
   "peerDependencies": {
     "react": "18.3.0-next-8310854ce-20230331",
-    "react-server-dom-webpack": "18.3.0-next-8310854ce-20230331"
+    "react-server-dom-webpack": "18.3.0-next-8310854ce-20230331",
+    "tsx": "^3.12.6"
   }
 }
