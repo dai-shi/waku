@@ -1,0 +1,23 @@
+{
+  "name": "wakuwork-example",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "NODE_OPTIONS='--loader tsx' wakuwork dev",
+    "build": "wakuwork build",
+    "start": "WAKUWORK_CONFIG='{\"prdServer\":{\"dir\":\"dist\"}}' wakuwork start"
+  },
+  "dependencies": {
+    "react": "18.3.0-next-b14f8da15-20230403",
+    "react-dom": "18.3.0-next-b14f8da15-20230403",
+    "react-server-dom-webpack": "18.3.0-next-b14f8da15-20230403",
+    "tsx": "^3.12.6",
+    "wakuwork": "~0.9.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.32",
+    "@types/react-dom": "^18.0.11",
+    "typescript": "^5.0.3"
+  }
+}
