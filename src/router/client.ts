@@ -117,6 +117,7 @@ export function Link({
   return ele;
 }
 
+// FIXME Eventually, if we have server module graph, we could omit this hack.
 const moduleCache = ((globalThis as any).__webpack_require__wakuwork_cache ||=
   new Map());
 moduleCache.set(WAKUWORK_ROUTER, {

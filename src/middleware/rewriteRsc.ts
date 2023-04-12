@@ -14,7 +14,6 @@ export const generatePrefetchCode = (
   let code = "";
   if (entryItems.length) {
     const rscIds = [...new Set(entryItems.map(([rscId]) => rscId))];
-    code += "if (!globalThis.__WAKUWORK_PREFETCHED__) {";
     code += `
 globalThis.__WAKUWORK_PREFETCHED__ = {
 ${rscIds
@@ -43,7 +42,6 @@ ${rscIds
     code += `
 import('${moduleId}');`;
   }
-  code += "}";
   return code;
 };
 

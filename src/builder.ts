@@ -239,23 +239,16 @@ const prerender = async (
           pathItem,
           pathItem.endsWith("/") ? "index.html" : ""
         );
-        let content = "";
+        let data = "";
         if (fs.existsSync(destFile)) {
-          content = fs.readFileSync(destFile, { encoding: "utf8" });
+          data = fs.readFileSync(destFile, { encoding: "utf8" });
         } else {
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          content = fs.readFileSync(indexHtmlFile, { encoding: "utf8" });
+          data = fs.readFileSync(indexHtmlFile, { encoding: "utf8" });
         }
         // HACK is this too naive to inject script code?
-        let index = content.lastIndexOf("</body>");
-        if (index === -1) {
-          throw new Error("No </body> found in html");
-        }
-        content = `${content.slice(0, index)}
-<script>
-${code}
-</script>${content.slice(index)}`;
-        fs.writeFileSync(destFile, content, { encoding: "utf8" });
+        data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
+        fs.writeFileSync(destFile, data, { encoding: "utf8" });
       }
     }
   }
