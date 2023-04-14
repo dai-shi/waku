@@ -72,6 +72,23 @@ export function fileRouter(base: string) {
     ).flat();
   };
 
+  const getAllPaths = (dir = ""): string[] =>
+    fs
+      .readdirSync(path.join(base, dir), { withFileTypes: true })
+      .flatMap((dirent) => {
+        if (dirent.isDirectory()) {
+          return getAllPaths(path.join(dir, dirent.name));
+        }
+        const fname = path.join(dir, path.parse(dirent.name).name);
+        const stat = fs.statSync(path.join(base, fname), {
+          throwIfNoEntry: false,
+        });
+        if (stat?.isDirectory()) {
+          return [fname + "/"];
+        }
+        return [fname];
+      });
+
   const getEntry: GetEntry = async (id) => {
     // This can be too unsecure? FIXME
     const component = (await import(`${base}/${id}.js`)).default;
@@ -110,9 +127,12 @@ export function fileRouter(base: string) {
   };
 
   const prerenderer: Prerenderer = async () => {
+    const paths = getAllPaths().map((item) =>
+      item === "index" ? "/" : `/${item}`
+    );
     return {
-      entryItems: [], // TODO support prerender
-      paths: [], // TODO support prerender
+      paths,
+      // TODO add custom code to inject for client
     };
   };
 

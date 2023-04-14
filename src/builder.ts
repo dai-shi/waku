@@ -117,7 +117,7 @@ const prerender = async (
   publicPath: string,
   entriesFile: string,
   basePath: string,
-  indexHtmlFile: string
+  publicIndexHtmlFile: string
 ): Promise<Record<string, string>> => {
   const serverEntries: Record<string, string> = {};
   const registerServerEntry = (fileId: string): string => {
@@ -244,7 +244,7 @@ const prerender = async (
           data = fs.readFileSync(destFile, { encoding: "utf8" });
         } else {
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          data = fs.readFileSync(indexHtmlFile, { encoding: "utf8" });
+          data = fs.readFileSync(publicIndexHtmlFile, { encoding: "utf8" });
         }
         // HACK is this too naive to inject script code?
         data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
@@ -262,6 +262,11 @@ export async function runBuild(config: Config = {}) {
   const distPath = config.files?.dist || "dist";
   const publicPath = path.join(distPath, config.files?.public || "public");
   const indexHtmlFile = path.join(dir, config.files?.indexHtml || "index.html");
+  const publicIndexHtmlFile = path.join(
+    dir,
+    publicPath,
+    config.files?.indexHtml || "index.html"
+  );
   const entriesFile = path.join(
     dir,
     distPath,
@@ -315,7 +320,7 @@ export async function runBuild(config: Config = {}) {
     publicPath,
     entriesFile,
     basePath,
-    indexHtmlFile
+    publicIndexHtmlFile
   );
   console.log("serverEntries", serverEntries);
   fs.appendFileSync(
