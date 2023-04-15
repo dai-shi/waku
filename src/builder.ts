@@ -179,7 +179,11 @@ const prerender = async (
   );
 
   if (prerenderer) {
-    const { entryItems = [], paths = [] } = await prerenderer();
+    const {
+      entryItems = [],
+      paths = [],
+      customCode = () => "",
+    } = await prerenderer();
     await Promise.all(
       Array.from(entryItems).map(async ([rscId, props]) => {
         // FIXME we blindly expect JSON.stringify usage is deterministic
@@ -232,24 +236,28 @@ const prerender = async (
         }
         code += generatePrefetchCode?.(entryItems, moduleIds) || "";
       }
+      const destFile = path.join(
+        dir,
+        publicPath,
+        pathItem,
+        pathItem.endsWith("/") ? "index.html" : ""
+      );
+      let data = "";
+      if (fs.existsSync(destFile)) {
+        data = fs.readFileSync(destFile, { encoding: "utf8" });
+      } else {
+        fs.mkdirSync(path.dirname(destFile), { recursive: true });
+        data = fs.readFileSync(publicIndexHtmlFile, { encoding: "utf8" });
+      }
       if (code) {
-        const destFile = path.join(
-          dir,
-          publicPath,
-          pathItem,
-          pathItem.endsWith("/") ? "index.html" : ""
-        );
-        let data = "";
-        if (fs.existsSync(destFile)) {
-          data = fs.readFileSync(destFile, { encoding: "utf8" });
-        } else {
-          fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          data = fs.readFileSync(publicIndexHtmlFile, { encoding: "utf8" });
-        }
         // HACK is this too naive to inject script code?
         data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
-        fs.writeFileSync(destFile, data, { encoding: "utf8" });
       }
+      const code2 = customCode(pathItem);
+      if (code2) {
+        data = data.replace(/<\/body>/, `<script>${code2}</script></body>`);
+      }
+      fs.writeFileSync(destFile, data, { encoding: "utf8" });
     }
   }
 

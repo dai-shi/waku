@@ -22,9 +22,9 @@ const staticFile: MiddlewareCreator = (config, shared) => {
           let data = await fsPromises.readFile(indexHtmlFile, {
             encoding: "utf-8",
           });
-          const replacement = `<script>${code}</script></body>`;
-          if (!data.includes(replacement)) {
-            data = data.replace(/<\/body>/, replacement);
+          const scriptToInject = `<script>${code}</script>`;
+          if (!data.includes(scriptToInject)) {
+            data = data.replace(/<\/body>/, `${scriptToInject}</body>`);
           }
           res.end(data);
           return;
