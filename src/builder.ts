@@ -182,7 +182,7 @@ const prerender = async (
     const {
       entryItems = [],
       paths = [],
-      customCode = () => "",
+      unstable_customCode = () => "",
     } = await prerenderer();
     await Promise.all(
       Array.from(entryItems).map(async ([rscId, props]) => {
@@ -253,7 +253,7 @@ const prerender = async (
         // HACK is this too naive to inject script code?
         data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
       }
-      const code2 = customCode(pathItem);
+      const code2 = unstable_customCode(pathItem, decodeId);
       if (code2) {
         data = data.replace(/<\/body>/, `<script>${code2}</script></body>`);
       }

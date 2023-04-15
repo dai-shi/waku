@@ -14,5 +14,8 @@ export type Prefetcher = (path: string) => Promise<{
 export type Prerenderer = () => Promise<{
   entryItems?: Iterable<readonly [rscId: string, props: unknown]>;
   paths?: Iterable<string>;
-  customCode?: (path: string) => string;
+  unstable_customCode?: (
+    path: string,
+    decodeId: (encodedId: string) => [id: string, name: string]
+  ) => string;
 }>;

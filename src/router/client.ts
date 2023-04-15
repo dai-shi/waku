@@ -66,6 +66,7 @@ const prefetchRoutes = (pathname: string, search: string) => {
         `/RSC/${rscId}/${searchParams}`
       );
     }
+    (globalThis as any).__WAKUWORK_ROUTER_PREFETCH__?.(pathname, search);
   }
 };
 
