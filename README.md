@@ -63,6 +63,7 @@ pnpm create wakuwork
 - https://twitter.com/dai_shi/status/1640358907540537344
 - https://twitter.com/dai_shi/status/1642463300314333184
 - https://twitter.com/dai_shi/status/1643224085755998210
+- https://twitter.com/dai_shi/status/1647132330543419392
 
 </details>
 
@@ -84,7 +85,7 @@ https://excalidraw.com/#json=fMeNJovUG7PGnpvP64XVw,kjZBTeM2KPZKhWtALDOY8A
 
 https://excalidraw.com/#json=N0PrCUij21xc2-Zwl1phZ,VYiuI0A2Fzw8G7y5yrPY8Q
 
-![wakuwork_counter](https://user-images.githubusercontent.com/490574/226148795-de405044-fb66-440b-9a9d-d8ad5854c7fa.png)
+![wakuwork-counter](https://user-images.githubusercontent.com/490574/226148795-de405044-fb66-440b-9a9d-d8ad5854c7fa.png)
 
 ### Wakuwork's minimal spec for React Server Components
 
