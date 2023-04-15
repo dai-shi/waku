@@ -220,6 +220,9 @@ const prerender = async (
       })
     );
 
+    const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
+      encoding: "utf8",
+    });
     for (const pathItem of paths) {
       let code = "";
       if (prefetcher) {
@@ -247,7 +250,7 @@ const prerender = async (
         data = fs.readFileSync(destFile, { encoding: "utf8" });
       } else {
         fs.mkdirSync(path.dirname(destFile), { recursive: true });
-        data = fs.readFileSync(publicIndexHtmlFile, { encoding: "utf8" });
+        data = publicIndexHtml;
       }
       if (code) {
         // HACK is this too naive to inject script code?
