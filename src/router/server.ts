@@ -130,12 +130,7 @@ export function fileRouter(base: string) {
     const paths = getAllPaths().map((item) =>
       item === "index" ? "/" : `/${item}`
     );
-    const clientModulesForPaths = await Promise.all(
-      paths.map(async (path) => {
-        const { clientModules } = await prefetcher(path);
-        return clientModules;
-      })
-    );
+    const prefetcherForPaths = await Promise.all(paths.map(prefetcher));
     const unstable_customCode = (
       _path: string,
       decodeId: (encodedId: string) => [id: string, name: string]
@@ -144,7 +139,7 @@ globalThis.__WAKUWORK_ROUTER_PREFETCH__ = (pathname, search) => {
   const path = search ? pathname + "?" + search : pathname;
   const path2ids = {${paths.map((pathItem, index) => {
     const moduleIds: string[] = [];
-    for (const m of clientModulesForPaths[index] as any[]) {
+    for (const m of prefetcherForPaths[index]?.clientModules as any[]) {
       if (m["$$typeof"] !== CLIENT_REFERENCE) {
         throw new Error("clientModules must be client references");
       }
@@ -160,6 +155,9 @@ globalThis.__WAKUWORK_ROUTER_PREFETCH__ = (pathname, search) => {
   }
 };`;
     return {
+      entryItems: Array.from(prefetcherForPaths.values()).flatMap((item) =>
+        Array.from(item.entryItems || [])
+      ),
       paths,
       unstable_customCode,
     };
