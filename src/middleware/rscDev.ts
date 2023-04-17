@@ -1,100 +1,46 @@
 import path from "node:path";
-import url from "node:url";
-import { createRequire } from "node:module";
-import Module from "node:module";
 
-import * as swc from "@swc/core";
 import { createElement } from "react";
-import RSDWRegister from "react-server-dom-webpack/node-register";
 import RSDWServer from "react-server-dom-webpack/server";
 import busboy from "busboy";
 
 import type { MiddlewareCreator } from "./common.js";
 import type { GetEntry, Prefetcher } from "../server.js";
+import { transformRsfId } from "./rewriteRsc.js";
 
 const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
   RSDWServer;
 
 const CLIENT_REFERENCE = Symbol.for("react.client.reference");
 
-// TODO we would like a native solution without hacks
-// https://nodejs.org/api/esm.html#loaders
-RSDWRegister();
-
-// HACK to read .ts/.tsx files with .js extension
-const savedResolveFilename = (Module as any)._resolveFilename;
-(Module as any)._resolveFilename = (fname: string, m: any) => {
-  if (fname.endsWith(".js")) {
-    for (const ext of [".js", ".ts", ".tsx"]) {
-      try {
-        return savedResolveFilename(fname.slice(0, -3) + ext, m);
-      } catch (e) {
-        // ignored
-      }
-    }
-  }
-  return savedResolveFilename(fname, m);
-};
-
-const rscDefault: MiddlewareCreator = (config, shared) => {
+const rscDev: MiddlewareCreator = (config, shared) => {
   const dir = path.resolve(config.devServer?.dir || ".");
-  const require = createRequire(import.meta.url);
-
-  (require as any).extensions[".ts"] = (require as any).extensions[".tsx"] = (
-    m: any,
-    fname: string
-  ) => {
-    let { code } = swc.transformFileSync(fname, {
-      jsc: {
-        parser: {
-          syntax: "typescript",
-          tsx: fname.endsWith(".tsx"),
-        },
-        transform: {
-          react: {
-            runtime: "automatic",
-          },
-        },
-      },
-      module: {
-        type: "commonjs",
-      },
-    });
-    // HACK to pull directive to the root
-    // FIXME praseFileSync & transformSync would be nice, but encounter:
-    // https://github.com/swc-project/swc/issues/6255
-    const p = code.match(/(?:^|\n|;)("use (client|server)";)/);
-    if (p) {
-      code = p[1] + code;
-    }
-    const savedPathToFileURL = url.pathToFileURL;
-    if (p) {
-      // HACK to resolve rscId
-      url.pathToFileURL = (p: string) =>
-        ({ href: "/" + path.relative(dir, p) } as any);
-    }
-    m._compile(code, fname);
-    url.pathToFileURL = savedPathToFileURL;
-  };
 
   const entriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
-  let getEntry: GetEntry | undefined;
-  let prefetcher: Prefetcher | undefined;
-  try {
-    ({ getEntry, prefetcher } = require(entriesFile));
-  } catch (e) {
-    console.info(`No entries file found at ${entriesFile}, ignoring...`, e);
-  }
+  const getEntry: GetEntry = async (rscId) => {
+    const mod = await import(entriesFile);
+    return mod.getEntry(rscId);
+  };
+  const prefetcher: Prefetcher = async (pathItem) => {
+    const mod = await import(entriesFile);
+    return mod?.prefetcher(pathItem) ?? {};
+  };
 
   const getFunctionComponent = async (rscId: string) => {
-    if (!getEntry) {
-      return null;
-    }
     const mod = await getEntry(rscId);
     if (typeof mod === "function") {
       return mod;
     }
     return mod.default;
+  };
+
+  const decodeId = (encodedId: string): [id: string, name: string] => {
+    let [id, name] = encodedId.split("#") as [string, string];
+    if (!id.startsWith("wakuwork/")) {
+      id = path.relative("file://" + encodeURI(dir), id);
+      id = "/" + decodeURI(id);
+    }
+    return [id, name];
   };
 
   shared.devScriptToInject = async (path: string) => {
@@ -104,32 +50,25 @@ globalThis.__webpack_require__ = (id) => {
   if (cache && cache.has(id)) return cache.get(id);
   return import(id);
 };`;
-    if (prefetcher) {
-      const { entryItems = [], clientModules = [] } = await prefetcher(path);
-      const moduleIds: string[] = [];
-      for (const m of clientModules as any[]) {
-        if (m["$$typeof"] !== CLIENT_REFERENCE) {
-          throw new Error("clientModules must be client references");
-        }
-        const [filePath] = m["$$id"].split("#");
-        moduleIds.push(filePath);
+    const { entryItems = [], clientModules = [] } = await prefetcher(path);
+    const moduleIds: string[] = [];
+    for (const m of clientModules as any[]) {
+      if (m["$$typeof"] !== CLIENT_REFERENCE) {
+        throw new Error("clientModules must be client references");
       }
-      code += shared.generatePrefetchCode?.(entryItems, moduleIds) || "";
+      const [id] = decodeId(m["$$id"]);
+      moduleIds.push(id);
     }
+    code += shared.generatePrefetchCode?.(entryItems, moduleIds) || "";
     return code;
   };
 
   const bundlerConfig = new Proxy(
     {},
     {
-      get(_target, id: string) {
-        const [filePath, name] = id.split("#");
-        return {
-          id: filePath,
-          chunks: [],
-          name,
-          async: true,
-        };
+      get(_target, encodedId: string) {
+        const [id, name] = decodeId(encodedId);
+        return { id, chunks: [], name, async: true };
       },
     }
   );
@@ -155,7 +94,7 @@ globalThis.__webpack_require__ = (id) => {
           args = await decodeReply(body);
         }
       }
-      const mod = require(fname);
+      const mod = await import(fname);
       const data = await (mod[name!] || mod)(...args);
       if (typeof rscId !== "string") {
         res.setHeader("Content-Type", "text/x-component");
@@ -179,10 +118,9 @@ globalThis.__webpack_require__ = (id) => {
       const component = await getFunctionComponent(rscId);
       if (component) {
         res.setHeader("Content-Type", "text/x-component");
-        renderToPipeableStream(
-          createElement(component, props),
-          bundlerConfig
-        ).pipe(res);
+        renderToPipeableStream(createElement(component, props), bundlerConfig)
+          .pipe(transformRsfId("file://" + encodeURI(dir)))
+          .pipe(res);
         return;
       }
       res.statusCode = 404;
@@ -192,4 +130,4 @@ globalThis.__webpack_require__ = (id) => {
   };
 };
 
-export default rscDefault;
+export default rscDev;

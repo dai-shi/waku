@@ -66,6 +66,7 @@ const prefetchRoutes = (pathname: string, search: string) => {
         `/RSC/${rscId}/${searchParams}`
       );
     }
+    (globalThis as any).__WAKUWORK_ROUTER_PREFETCH__?.(pathname, search);
   }
 };
 
@@ -81,13 +82,13 @@ const Child = ({ index }: ChildProps) => {
   return createElement(getRoute(rscId), { index, search });
 };
 
-export const Link = ({
+export function Link({
   href,
   children,
   pending,
   notPending,
   unstable_prefetchOnEnter,
-}: LinkProps) => {
+}: LinkProps) {
   const changeLocation = useChangeLocation();
   const [isPending, startTransition] = useTransition();
   const onClick = (event: MouseEvent) => {
@@ -115,8 +116,9 @@ export const Link = ({
     return createElement(Fragment, null, ele, notPending);
   }
   return ele;
-};
+}
 
+// FIXME Eventually, if we have server module graph, we could omit this hack.
 const moduleCache = ((globalThis as any).__webpack_require__wakuwork_cache ||=
   new Map());
 moduleCache.set(WAKUWORK_ROUTER, {

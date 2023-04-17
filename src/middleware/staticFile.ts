@@ -16,7 +16,7 @@ const staticFile: MiddlewareCreator = (config) => {
       res.setHeader("Content-Length", stat.size);
       res.setHeader(
         "Content-Type",
-        mime.getType(path.extname(fname)) || "application/octet-stream"
+        mime.getType(path.extname(fname)) || "text/html; charset=utf-8"
       );
       fs.createReadStream(fname).pipe(res);
       return;

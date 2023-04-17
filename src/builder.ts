@@ -1,6 +1,5 @@
 import path from "node:path";
 import fs from "node:fs";
-import url from "node:url";
 import { createRequire } from "node:module";
 
 import { build } from "vite";
@@ -8,20 +7,18 @@ import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import * as swc from "@swc/core";
 import { createElement } from "react";
-import RSDWRegister from "react-server-dom-webpack/node-register";
 import RSDWServer from "react-server-dom-webpack/server";
 
 import type { Config } from "./config.js";
 import type { GetEntry, Prefetcher, Prerenderer } from "./server.js";
-import { generatePrefetchCode } from "./middleware/rewriteRsc.js";
+import {
+  generatePrefetchCode,
+  transformRsfId,
+} from "./middleware/rewriteRsc.js";
 
 const { renderToPipeableStream } = RSDWServer;
 
 const CLIENT_REFERENCE = Symbol.for("react.client.reference");
-
-// TODO we would like a native solution without hacks
-// https://nodejs.org/api/esm.html#loaders
-RSDWRegister();
 
 // TODO we have duplicate code here and rscPrd.ts
 
@@ -77,6 +74,7 @@ const getClientEntryFiles = (dir: string) => {
         }
       }
     }
+    // TODO transpile ".jsx"
   });
   return files;
 };
@@ -88,7 +86,7 @@ const compileFiles = (dir: string, distPath: string) => {
       return;
     }
     if (fname.endsWith(".ts") || fname.endsWith(".tsx")) {
-      let { code } = swc.transformFileSync(fname, {
+      const { code } = swc.transformFileSync(fname, {
         jsc: {
           parser: {
             syntax: "typescript",
@@ -100,17 +98,7 @@ const compileFiles = (dir: string, distPath: string) => {
             },
           },
         },
-        module: {
-          type: "commonjs",
-        },
       });
-      // HACK to pull directive to the root
-      // FIXME praseFileSync & transformSync would be nice, but encounter:
-      // https://github.com/swc-project/swc/issues/6255
-      const p = code.match(/(?:^|\n|;)("use (client|server)";)/);
-      if (p) {
-        code = p[1] + code;
-      }
       const destFile = path.join(
         dir,
         distPath,
@@ -119,6 +107,7 @@ const compileFiles = (dir: string, distPath: string) => {
       fs.mkdirSync(path.dirname(destFile), { recursive: true });
       fs.writeFileSync(destFile, code);
     }
+    // TODO transpile ".jsx"
   });
 };
 
@@ -128,114 +117,112 @@ const prerender = async (
   publicPath: string,
   entriesFile: string,
   basePath: string,
-  indexHtmlFile: string
-) => {
-  const require = createRequire(import.meta.url);
-  (require as any).extensions[".js"] = (m: any, fname: string) => {
-    let code = fs.readFileSync(fname, { encoding: "utf8" });
-    // HACK to pull directive to the root
-    // FIXME praseFileSync & transformSync would be nice, but encounter:
-    // https://github.com/swc-project/swc/issues/6255
-    const p = code.match(/(?:^|\n|;)("use (client|server)";)/);
-    if (p) {
-      code = p[1] + code;
+  publicIndexHtmlFile: string
+): Promise<Record<string, string>> => {
+  const serverEntries: Record<string, string> = {};
+  const registerServerEntry = (fileId: string): string => {
+    for (const entry of Object.entries(serverEntries)) {
+      if (entry[1] === fileId) {
+        return entry[0];
+      }
     }
-    const savedPathToFileURL = url.pathToFileURL;
-    if (p) {
-      // HACK to resolve rscId
-      url.pathToFileURL = (p: string) =>
-        ({ href: path.relative(path.join(dir, distPath), p) } as any);
-    }
-    m._compile(code, fname);
-    url.pathToFileURL = savedPathToFileURL;
+    const id = `rsf${Object.keys(serverEntries).length}`;
+    serverEntries[id] = fileId;
+    return id;
   };
 
-  let getEntry: GetEntry | undefined;
-  let prefetcher: Prefetcher | undefined;
-  let prerenderer: Prerenderer | undefined;
-  let clientEntries: Record<string, string> | undefined;
-  try {
-    ({
-      getEntry,
-      prefetcher,
-      prerenderer,
-      clientEntries,
-    } = require(entriesFile));
-  } catch (e) {
-    console.info(`No entries file found at ${entriesFile}, ignoring...`, e);
-  }
+  const { getEntry, prefetcher, prerenderer, clientEntries } = await (import(
+    entriesFile
+  ) as Promise<{
+    getEntry: GetEntry;
+    prefetcher?: Prefetcher;
+    prerenderer?: Prerenderer;
+    clientEntries?: Record<string, string>;
+  }>);
 
   const getFunctionComponent = async (rscId: string) => {
-    if (!getEntry) {
-      return null;
-    }
     const mod = await getEntry(rscId);
     if (typeof mod === "function") {
       return mod;
     }
     return mod.default;
   };
-  const getClientEntry = (filePath: string) => {
+  const getClientEntry = (id: string) => {
     if (!clientEntries) {
       throw new Error("Missing client entries");
     }
     const clientEntry =
-      clientEntries[filePath!] ||
-      clientEntries[filePath!.replace(/\.js$/, ".ts")] ||
-      clientEntries[filePath!.replace(/\.js$/, ".tsx")];
+      clientEntries[id] ||
+      clientEntries[id.replace(/\.js$/, ".ts")] ||
+      clientEntries[id.replace(/\.js$/, ".tsx")];
     if (!clientEntry) {
       throw new Error("No client entry found");
     }
     return clientEntry;
   };
+  const decodeId = (encodedId: string): [id: string, name: string] => {
+    let [id, name] = encodedId.split("#") as [string, string];
+    if (!id.startsWith("wakuwork/")) {
+      id = path.relative("file://" + encodeURI(path.join(dir, distPath)), id);
+      id = basePath + getClientEntry(decodeURI(id));
+    }
+    return [id, name];
+  };
   const bundlerConfig = new Proxy(
     {},
     {
-      get(_target, id: string) {
-        const [filePath, name] = id.split("#");
-        if (filePath!.startsWith("wakuwork/")) {
-          return {
-            id: filePath,
-            chunks: [],
-            name,
-            async: true,
-          };
-        }
-        const clientEntry = getClientEntry(filePath!);
-        return {
-          id: basePath + clientEntry,
-          chunks: [],
-          name,
-          async: true,
-        };
+      get(_target, encodedId: string) {
+        const [id, name] = decodeId(encodedId);
+        return { id, chunks: [], name, async: true };
       },
     }
   );
 
   if (prerenderer) {
-    const { entryItems = [], paths = [] } = await prerenderer();
-    for (const [rscId, props] of entryItems) {
-      // FIXME we blindly expect JSON.stringify usage is deterministic
-      const serializedProps = JSON.stringify(props);
-      const searchParams = new URLSearchParams();
-      searchParams.set("props", serializedProps);
-      const destFile = path.join(
-        dir,
-        publicPath,
-        "RSC",
-        decodeURIComponent(rscId),
-        decodeURIComponent(`${searchParams}`)
-      );
-      fs.mkdirSync(path.dirname(destFile), { recursive: true });
-      const component = await getFunctionComponent(rscId);
-      if (component) {
-        renderToPipeableStream(
-          createElement(component, props as any),
-          bundlerConfig
-        ).pipe(fs.createWriteStream(destFile));
-      }
-    }
+    const {
+      entryItems = [],
+      paths = [],
+      unstable_customCode = () => "",
+    } = await prerenderer();
+    await Promise.all(
+      Array.from(entryItems).map(async ([rscId, props]) => {
+        // FIXME we blindly expect JSON.stringify usage is deterministic
+        const serializedProps = JSON.stringify(props);
+        const searchParams = new URLSearchParams();
+        searchParams.set("props", serializedProps);
+        const destFile = path.join(
+          dir,
+          publicPath,
+          "RSC",
+          decodeURIComponent(rscId),
+          decodeURIComponent(`${searchParams}`)
+        );
+        fs.mkdirSync(path.dirname(destFile), { recursive: true });
+        const component = await getFunctionComponent(rscId);
+        if (component) {
+          await new Promise<void>((resolve, reject) => {
+            const stream = fs.createWriteStream(destFile);
+            stream.on("finish", resolve);
+            stream.on("error", reject);
+            renderToPipeableStream(
+              createElement(component, props as any),
+              bundlerConfig
+            )
+              .pipe(
+                transformRsfId(
+                  "file://" + encodeURI(path.join(dir, distPath)),
+                  registerServerEntry
+                )
+              )
+              .pipe(stream);
+          });
+        }
+      })
+    );
 
+    const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
+      encoding: "utf8",
+    });
     for (const pathItem of paths) {
       let code = "";
       if (prefetcher) {
@@ -247,39 +234,37 @@ const prerender = async (
           if (m["$$typeof"] !== CLIENT_REFERENCE) {
             throw new Error("clientModules must be client references");
           }
-          const [filePath] = m["$$id"].split("#");
-          const clientEntry = getClientEntry(filePath);
-          moduleIds.push(basePath + clientEntry);
+          const [id] = decodeId(m["$$id"]);
+          moduleIds.push(id);
         }
         code += generatePrefetchCode?.(entryItems, moduleIds) || "";
       }
-      if (code) {
-        const destFile = path.join(
-          dir,
-          publicPath,
-          pathItem,
-          pathItem.endsWith("/") ? "index.html" : ""
-        );
-        let content = "";
-        if (fs.existsSync(destFile)) {
-          content = fs.readFileSync(destFile, { encoding: "utf8" });
-        } else {
-          fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          content = fs.readFileSync(indexHtmlFile, { encoding: "utf8" });
-        }
-        // HACK is this too naive to inject script code?
-        let index = content.lastIndexOf("</body>");
-        if (index === -1) {
-          throw new Error("No </body> found in html");
-        }
-        content = `${content.slice(0, index)}
-<script>
-${code}
-</script>${content.slice(index)}`;
-        fs.writeFileSync(destFile, content, { encoding: "utf8" });
+      const destFile = path.join(
+        dir,
+        publicPath,
+        pathItem,
+        pathItem.endsWith("/") ? "index.html" : ""
+      );
+      let data = "";
+      if (fs.existsSync(destFile)) {
+        data = fs.readFileSync(destFile, { encoding: "utf8" });
+      } else {
+        fs.mkdirSync(path.dirname(destFile), { recursive: true });
+        data = publicIndexHtml;
       }
+      if (code) {
+        // HACK is this too naive to inject script code?
+        data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
+      }
+      const code2 = unstable_customCode(pathItem, decodeId);
+      if (code2) {
+        data = data.replace(/<\/body>/, `<script>${code2}</script></body>`);
+      }
+      fs.writeFileSync(destFile, data, { encoding: "utf8" });
     }
   }
+
+  return serverEntries;
 };
 
 export async function runBuild(config: Config = {}) {
@@ -288,6 +273,11 @@ export async function runBuild(config: Config = {}) {
   const distPath = config.files?.dist || "dist";
   const publicPath = path.join(distPath, config.files?.public || "public");
   const indexHtmlFile = path.join(dir, config.files?.indexHtml || "index.html");
+  const publicIndexHtmlFile = path.join(
+    dir,
+    publicPath,
+    config.files?.indexHtml || "index.html"
+  );
   const entriesFile = path.join(
     dir,
     distPath,
@@ -333,15 +323,20 @@ export async function runBuild(config: Config = {}) {
   compileFiles(dir, distPath);
   fs.appendFileSync(
     entriesFile,
-    `exports.clientEntries=${JSON.stringify(clientEntries)};`
+    `export const clientEntries=${JSON.stringify(clientEntries)};`
   );
-  await prerender(
+  const serverEntries = await prerender(
     dir,
     distPath,
     publicPath,
     entriesFile,
     basePath,
-    indexHtmlFile
+    publicIndexHtmlFile
+  );
+  console.log("serverEntries", serverEntries);
+  fs.appendFileSync(
+    entriesFile,
+    `export const serverEntries=${JSON.stringify(serverEntries)};`
   );
 
   const origPackageJson = require(path.join(dir, "package.json"));
@@ -349,7 +344,7 @@ export async function runBuild(config: Config = {}) {
     name: origPackageJson.name,
     version: origPackageJson.version,
     private: true,
-    type: "commonjs",
+    type: "module",
     scripts: {
       start: "wakuwork start",
     },
