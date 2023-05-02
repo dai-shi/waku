@@ -1,10 +1,12 @@
-import { ReactNode } from "react";
-
-export default function Layout({ children }: { children: ReactNode }) {
+export default function Layout() {
   return (
-    <div>
-      <h2>Minimal Practice</h2>
-      {children}
-    </div>
+    <>
+      <h2 className="text-xl font-bold">Minimal Practice</h2>
+      <article className="mt-4">
+        <p className="my-3">
+          TODO
+        </p>
+      </article>
+    </>
   );
 };

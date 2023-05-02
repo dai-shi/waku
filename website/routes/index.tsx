@@ -28,7 +28,7 @@ const MyLink = ({ name, href }: { name: string; href: string }) => (
 );
 
 const Sidebar = () => (
-  <nav className="h-screen bg-gray-800 text-white overflow-y-auto">
+  <div className="h-screen bg-gray-800 text-white overflow-y-auto">
     <Link
       href="/"
       pending={<Pending isPending />}
@@ -56,17 +56,26 @@ const Sidebar = () => (
         <MyLink href="/practices/router" name="Router" />
       </li>
     </ul>
-  </nav>
+  </div>
 );
 
-const Home = () => <h1>Home</h1>;
+const Home = () => (
+  <>
+    <h2 className="text-xl font-bold">Wakuwork</h2>
+    <article className="mt-4 bg-gray-800 text-white p-12 rounded">
+      <div className="text-3xl">
+        Minimalistic React Framework for React Server Components
+      </div>
+    </article>
+  </>
+);
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-col-reverse sm:flex-row">
-      <aside className="w-full sm:w-64">
+      <nav className="w-full sm:w-64">
         <Sidebar />
-      </aside>
+      </nav>
       <main className="flex-1 p-3">{children || <Home />}</main>
     </div>
   );
