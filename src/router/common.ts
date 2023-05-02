@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 export type RouteProps = {
-  index: number;
+  childIndex?: number;
   search: string;
 };
 

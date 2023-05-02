@@ -53,7 +53,8 @@ const prefetchRoutes = (pathname: string, search: string) => {
   const pathItems = pathname.split("/").filter(Boolean);
   for (let index = 0; index <= pathItems.length; ++index) {
     const rscId = pathItems.slice(0, index).join("/") || "index";
-    const props: RouteProps = { index, search };
+    const props: RouteProps =
+      index < pathItems.length ? { childIndex: index + 1, search } : { search };
     // FIXME we blindly expect JSON.stringify usage is deterministic
     const serializedProps = JSON.stringify(props);
     if (!prefetched[rscId]) {
@@ -76,10 +77,13 @@ const Child = ({ index }: ChildProps) => {
   const { pathname, search } = useLocation();
   const pathItems = pathname.split("/").filter(Boolean);
   if (index > pathItems.length) {
-    return null;
+    throw new Error("invalid index");
   }
   const rscId = pathItems.slice(0, index).join("/") || "index";
-  return createElement(getRoute(rscId), { index, search });
+  return createElement(
+    getRoute(rscId),
+    index < pathItems.length ? { childIndex: index + 1, search } : { search }
+  );
 };
 
 export function Link({
