@@ -1,3 +1,10 @@
+import { CodeBlock } from "../src/Code.js";
+
+const code1 = `npm create wakuwork@latest
+yarn create wakuwork
+pnpm create wakuwork
+`;
+
 export default function Layout() {
   return (
     <>
@@ -7,13 +14,8 @@ export default function Layout() {
           To start a new Wakuwork project, you can use the following commands.
           It will create an example app.
         </p>
-        <p className="my-3 p-4 bg-gray-300 rounded-lg">
-          {/* prettier-ignore */}
-          <code className="whitespace-pre overflow-x-scroll">
-npm create wakuwork@latest<br />
-yarn create wakuwork<br />
-pnpm create wakuwork<br />
-          </code>
+        <p className="my-3">
+          <CodeBlock>{code1}</CodeBlock>
         </p>
       </article>
     </>
