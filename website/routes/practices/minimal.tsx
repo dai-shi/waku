@@ -26,31 +26,31 @@ export default function Layout() {
       <h2 className="text-xl font-bold">Minimal Practice</h2>
       <h3 className="text-lg font-bold mt-2">Server API</h3>
       <article className="mt-4">
-        <p className="my-1">
+        <div className="my-1">
           We need to put <Code>entries.ts</Code> file in the project root
           directly. The required export function is <Code>getEntry</Code>.
-        </p>
-        <p className="my-3">
+        </div>
+        <div className="my-3">
           <CodeBlock>{code1}</CodeBlock>
-        </p>
-        <p className="my-1">
+        </div>
+        <div className="my-1">
           The parameter <Code>id</Code> is what we call RSC ID. We specify it
           from client.
-        </p>
+        </div>
       </article>
       <h3 className="text-lg font-bold mt-2">Client API</h3>
       <article className="mt-4">
-        <p className="my-1">
+        <div className="my-1">
           To render RSC, create a wrapper component in client with the RSC ID.
-        </p>
-        <p className="my-3">
+        </div>
+        <div className="my-3">
           <CodeBlock>{code2}</CodeBlock>
-        </p>
-        <p className="my-1">
+        </div>
+        <div className="my-1">
           We need to be careful to use <Code>serve</Code> to avoid client-server
           waterfalls. Usually, we should use it once close to the root
           component.
-        </p>
+        </div>
       </article>
       {/* TODO counter example, additonal apis */}
     </>

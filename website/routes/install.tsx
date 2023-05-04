@@ -10,13 +10,13 @@ export default function Layout() {
     <>
       <h2 className="text-xl font-bold">Install</h2>
       <article className="mt-4">
-        <p className="my-3">
+        <div className="my-3">
           To start a new Wakuwork project, you can use the following commands.
           It will create an example app.
-        </p>
-        <p className="my-3">
+        </div>
+        <div className="my-3">
           <CodeBlock>{code1}</CodeBlock>
-        </p>
+        </div>
       </article>
     </>
   );

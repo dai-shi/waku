@@ -3,9 +3,9 @@ export default function Layout() {
     <>
       <h2 className="text-xl font-bold">Router Practice</h2>
       <article className="mt-4">
-        <p className="my-3">
+        <div className="my-3">
           TODO
-        </p>
+        </div>
       </article>
     </>
   );
