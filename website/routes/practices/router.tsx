@@ -29,52 +29,57 @@ export default function Layout() {
       <h2 className="text-xl font-bold">Router Practice</h2>
       <article className="mt-6">
         <div className="my-3">
-          Wakuwork provides a router. It's built on top of the minimal API. It's
-          one of routers and it is to be a reference implementation. There can
-          be several router implementations with Wakuwork. In this page, we
-          describe about `wakuwork/router`.
+          Wakuwork provides a router built on top of the minimal API, and it
+          serves as a reference implementation. While other router
+          implementations can be used with Wakuwork, this page focuses on the{" "}
+          <Code>wakuwork/router</Code> implementation.
         </div>
       </article>
       <h3 className="text-lg font-bold mt-8">Client API</h3>
       <article className="mt-6">
         <div className="my-1">
-          Instead of using <Code>serve</Code> directly, we use{" "}
-          <Code>Router</Code> at the root component.
+          To use the router, it is required to use the <Code>Router</Code>{" "}
+          component instead of using <Code>serve</Code> directly. The following
+          code demonstrates how to use the <Code>Router</Code> component as the
+          root component:
         </div>
         <div className="my-3">
           <CodeBlock>{code1}</CodeBlock>
         </div>
         <div className="my-1">
-          <Code>Router</Code> internally uses <Code>serve</Code> and handles
-          nested routes.
+          The <Code>Router</Code> component internally uses <Code>serve</Code>{" "}
+          and handles nested routes.
         </div>
       </article>
       <h3 className="text-lg font-bold mt-8">Server API</h3>
       <article className="mt-6">
         <div className="my-1">
-          In <Code>entries.ts</Code>, we use `fileRouter` to export all three
-          functions `getEntry`, `prefetcher` and `prerenderer` at once.
+          In <Code>entries.ts</Code>, we use <Code>fileRouter</Code> to export
+          all three functions <Code>getEntry</Code>, <Code>prefetcher</Code>,
+          and <Code>prerenderer</Code> at once. Here's an example code:
         </div>
         <div className="my-3">
           <CodeBlock>{code2}</CodeBlock>
         </div>
         <div className="my-1">
-          This is file-based router implementation. We could technically provide
-          config based router implementation that is compatible, if desired.
+          The implementation of the <Code>Router</Code> is file-based. However,
+          it shouldn't be too difficult to provide a configuration-based router
+          implementation if desired.
         </div>
       </article>
       <h3 className="text-lg font-bold mt-8">How to try it</h3>
       <article className="mt-6">
         <div className="my-1">
-          You can try an example app in the repository.
+          You can try an example app in the repository by cloning it and running
+          the following commands:
         </div>
         <div className="my-3">
           <CodeBlock>{code3}</CodeBlock>
         </div>
         <div className="my-1">
-          You could also create a project with something like{" "}
+          Alternatively, you could create a project with something like{" "}
           <Code>pnpm create wakuwork</Code> and copy files from the example
-          folder of the repository.
+          folder in the repository.
         </div>
       </article>
     </>

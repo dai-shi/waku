@@ -73,61 +73,72 @@ export default function Layout() {
       <h3 className="text-lg font-bold mt-8">Server API</h3>
       <article className="mt-6">
         <div className="my-1">
-          We need to put <Code>entries.ts</Code> file in the project root
-          directly. The required export function is <Code>getEntry</Code>.
+          To use React Server Components in Wakuwork, you need to create an{" "}
+          <Code>entries.ts</Code> file in the project root directory with a{" "}
+          <Code>getEntry</Code> function that returns a server component module.
+          Here's an example:
         </div>
         <div className="my-3">
           <CodeBlock>{code1}</CodeBlock>
         </div>
         <div className="my-1">
-          The parameter <Code>id</Code> is what we call RSC ID. We specify it
-          from client.
+          The <Code>id</Code> parameter is the ID of the React Server Component
+          that you want to load on the server. You specify the RSC ID from the
+          client.
         </div>
       </article>
       <h3 className="text-lg font-bold mt-8">Client API</h3>
       <article className="mt-6">
         <div className="my-1">
-          To render RSC, create a wrapper component in client with the RSC ID.
+          To render a React Server Component on the client, you can use the{" "}
+          <Code>serve</Code> function from <Code>wakuwork/client</Code> with the
+          RSC ID to create a wrapper component. Here's an example:
         </div>
         <div className="my-3">
           <CodeBlock>{code2}</CodeBlock>
         </div>
         <div className="my-1">
-          We need to be careful to use <Code>serve</Code> to avoid client-server
+          The <Code>name</Code> prop is passed to the React Server Component. We
+          need to be careful to use <Code>serve</Code> to avoid client-server
           waterfalls. Usually, we should use it once close to the root
           component.
         </div>
       </article>
       <article className="mt-6">
-        <div className="my-1">We could re-render RSC with new props.</div>
+        <div className="my-1">
+          You can also re-render a React Server Component with new props. Here's
+          an example just to illustrate the idea:
+        </div>
         <div className="my-3">
           <CodeBlock>{code3}</CodeBlock>
         </div>
         <div className="my-1">
-          This is a little tricky and we may revisit the API. Probably it should
-          only be used within a library and not exposed to end developers.
+          Note that this is a little tricky and the API may be revisited in the
+          future.
         </div>
       </article>
       <h3 className="text-lg font-bold mt-8">Additional Server API</h3>
       <article className="mt-6">
         <div className="my-1">
-          There two more optional functions we can expose from `entries.ts` in
-          addition to the required `getEntry` function. They are `prefetcher`
-          and `prerenderer`.
+          In addition to the <Code>getEntry</Code> function, you can also
+          optionally export <Code>prefetcher</Code> and <Code>prerenderer</Code>{" "}
+          functions in <Code>entries.ts</Code>. Here's an example:
         </div>
         <div className="my-3">
           <CodeBlock>{code4}</CodeBlock>
         </div>
         <div className="my-1">
-          The `prefetcher` function is mainly used for run-time optimization. It
-          fetches RSCs and client modules in advance for client to become ready.
-          Prefetching is basically to avoid waterfalls. Without it, the
-          performance is suboptimal, but capability-wise it just works.
+          The <Code>prefetcher</Code> function is used for runtime optimization.
+          It fetches React Server Components and client modules before the
+          client becomes ready. Prefetching is basically to avoid waterfalls.
+          Without it, the performance is suboptimal, but capability-wise it
+          works.
         </div>
         <div className="my-1">
-          The `prerenderer` function is used for build-time optimization. It
-          renders RSCs during build. Note that rendering here means to produce
-          RSC payload not HTML content.
+          <Code>prerenderer</Code> function is used for build-time optimization.
+          It renders React Server Components during the build process to produce
+          the output that will be sent to the client. Note that rendering here
+          means to produce RSC payload not HTML content.
         </div>
       </article>
       <h3 className="text-lg font-bold mt-8">How to try it</h3>
