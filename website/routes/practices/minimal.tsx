@@ -130,6 +130,14 @@ export default function Layout() {
           RSC payload not HTML content.
         </div>
       </article>
+      <h3 className="text-lg font-bold mt-8">How to try it</h3>
+      <article className="mt-6">
+        <div className="my-1">
+          If you create a project with something like{" "}
+          <Code>pnpm create wakuwork</Code>, it will create the minimal example
+          app.
+        </div>
+      </article>
     </>
   );
 }
