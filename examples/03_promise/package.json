@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "NODE_OPTIONS='--loader tsx' wakuwork dev",
+    "dev": "wakuwork dev",
     "build": "wakuwork build",
     "start": "WAKUWORK_CONFIG='{\"prdServer\":{\"dir\":\"dist\"}}' wakuwork start"
   },

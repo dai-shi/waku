@@ -11,7 +11,7 @@ Minimalistic React Framework
 ## How to start a new project
 
 ```bash
-npm create wakuwork
+npm create wakuwork@latest
 ```
 
 ```bash

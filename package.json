@@ -47,7 +47,7 @@
     "compile:code": "swc src -d dist && swc src -d dist/cjs -C module.type=commonjs && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
     "compile:types": "tsc --project tsconfig.build.json",
     "test": "tsc --project . --noEmit",
-    "examples:dev": "WAKUWORK_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" nodemon --ext ts,tsx --ignore ./examples/${NAME}/src/Counter.tsx --exec /usr/bin/env ./cli-dev.ts dev",
+    "examples:dev": "WAKUWORK_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" nodemon --ext ts,tsx --ignore ./examples/${NAME}/src/Counter.tsx --exec /usr/bin/env ./cli-dev.js dev",
     "examples:dev:01_counter": "NAME=01_counter npm run examples:dev",
     "examples:dev:02_async": "NAME=02_async npm run examples:dev",
     "examples:dev:03_promise": "NAME=03_promise npm run examples:dev",
@@ -62,7 +62,10 @@
     "examples:prd:04_callserver": "NAME=04_callserver npm run examples:prd",
     "examples:prd:05_mutation": "NAME=05_mutation npm run examples:prd",
     "examples:prd:06_nesting": "NAME=06_nesting npm run examples:prd",
-    "examples:prd:07_router": "NAME=07_router npm run examples:prd"
+    "examples:prd:07_router": "NAME=07_router npm run examples:prd",
+    "website:dev": "WAKUWORK_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./website\\\"}}\" nodemon --ext ts,tsx --exec /usr/bin/env ./cli-dev.js dev",
+    "website:build": "npm run compile:code && WAKUWORK_CONFIG=\"{\\\"build\\\":{\\\"dir\\\":\\\"./website\\\"}}\" ./cli.js build",
+    "website:prd": "npm run website:build && WAKUWORK_CONFIG=\"{\\\"prdServer\\\":{\\\"dir\\\":\\\"./website/dist\\\"}}\" ./cli.js start"
   },
   "license": "MIT",
   "engines": {
@@ -83,10 +86,13 @@
     "@types/node": "^18.15.11",
     "@types/react": "^18.0.35",
     "@types/react-dom": "^18.0.11",
+    "autoprefixer": "^10.4.14",
     "nodemon": "^2.0.22",
+    "postcss": "^8.4.23",
     "react": "18.3.0-next-39a3b72c6-20230414",
     "react-dom": "18.3.0-next-39a3b72c6-20230414",
     "react-server-dom-webpack": "18.3.0-next-39a3b72c6-20230414",
+    "tailwindcss": "^3.3.1",
     "tsx": "^3.12.6",
     "typescript": "^5.0.4",
     "wakuwork": "link:."
