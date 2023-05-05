@@ -2,7 +2,7 @@ export default function Layout() {
   return (
     <>
       <h2 className="text-xl font-bold">Introduction</h2>
-      <article className="mt-4">
+      <article className="mt-6">
         <div className="my-3">
           Wakuwork is a React framework with React Server Components (RSCs).
           RSCs are a new React feature that will be available in the future

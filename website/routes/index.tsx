@@ -62,9 +62,9 @@ const Sidebar = () => (
 const Home = () => (
   <>
     <h2 className="text-xl font-bold">Wakuwork</h2>
-    <article className="mt-4 bg-gray-800 text-white p-12 rounded">
+    <article className="mt-6 bg-gray-800 text-white p-12 rounded">
       <div className="text-3xl">
-        Minimalistic React Framework for React Server Components
+        Minimalistic React Framework with React Server Components
       </div>
     </article>
   </>
