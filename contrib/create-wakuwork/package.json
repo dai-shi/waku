@@ -1,5 +1,5 @@
 {
   "name": "create-wakuwork",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "bin": "./cli.js"
 }
