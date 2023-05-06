@@ -45,11 +45,10 @@ const rscDev: MiddlewareCreator = (config, shared) => {
 
   shared.devScriptToInject = async (path: string) => {
     let code = `
-globalThis.__webpack_require__ = (id) => {
-  const cache = globalThis.__webpack_require__wakuwork_cache;
-  if (cache && cache.has(id)) return cache.get(id);
-  return import(id);
-};`;
+globalThis.__wakuwork_module_cache__ = new Map();
+globalThis.__webpack_chunk_load__ = async (id) => id.startsWith("wakuwork/") || import(id).then((m) => globalThis.__wakuwork_module_cache__.set(id, m));
+globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.get(id);
+`;
     const { entryItems = [], clientModules = [] } = await prefetcher(path);
     const moduleIds: string[] = [];
     for (const m of clientModules as any[]) {
@@ -68,7 +67,7 @@ globalThis.__webpack_require__ = (id) => {
     {
       get(_target, encodedId: string) {
         const [id, name] = decodeId(encodedId);
-        return { id, chunks: [], name, async: true };
+        return { id, chunks: [id], name, async: true };
       },
     }
   );

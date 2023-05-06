@@ -24,11 +24,10 @@ const CLIENT_REFERENCE = Symbol.for("react.client.reference");
 
 const rscPlugin = (): Plugin => {
   const code = `
-globalThis.__webpack_require__ = (id) => {
-  const cache = globalThis.__webpack_require__wakuwork_cache;
-  if (cache && cache.has(id)) return cache.get(id);
-  return import(id);
-};`;
+globalThis.__wakuwork_module_cache__ = new Map();
+globalThis.__webpack_chunk_load__ = async (id) => id.startsWith("wakuwork/") || import(id).then((m) => globalThis.__wakuwork_module_cache__.set(id, m));
+globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.get(id);
+`;
   return {
     name: "rscPlugin",
     async transformIndexHtml() {
@@ -173,7 +172,7 @@ const prerender = async (
     {
       get(_target, encodedId: string) {
         const [id, name] = decodeId(encodedId);
-        return { id, chunks: [], name, async: true };
+        return { id, chunks: [id], name, async: true };
       },
     }
   );
