@@ -47,7 +47,7 @@
     "compile:code": "swc src -d dist && swc src -d dist/cjs -C module.type=commonjs && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
     "compile:types": "tsc --project tsconfig.build.json",
     "test": "tsc --project . --noEmit",
-    "examples:dev": "WAKUWORK_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" nodemon --ext ts,tsx --ignore ./examples/${NAME}/src/Counter.tsx --exec /usr/bin/env ./cli-dev.js dev",
+    "examples:dev": "WAKUWORK_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" nodemon --ext ts,tsx --ignore ./examples/${NAME}/src/Counter.tsx --exec 'npm run compile:code && ./cli.js dev'",
     "examples:dev:01_counter": "NAME=01_counter npm run examples:dev",
     "examples:dev:02_async": "NAME=02_async npm run examples:dev",
     "examples:dev:03_promise": "NAME=03_promise npm run examples:dev",
@@ -63,7 +63,7 @@
     "examples:prd:05_mutation": "NAME=05_mutation npm run examples:prd",
     "examples:prd:06_nesting": "NAME=06_nesting npm run examples:prd",
     "examples:prd:07_router": "NAME=07_router npm run examples:prd",
-    "website:dev": "WAKUWORK_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./website\\\"}}\" nodemon --ext ts,tsx --exec /usr/bin/env ./cli-dev.js dev",
+    "website:dev": "WAKUWORK_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./website\\\"}}\" nodemon --ext ts,tsx --exec 'npm run compile:code && ./cli.js dev'",
     "website:build": "npm run compile:code && WAKUWORK_CONFIG=\"{\\\"build\\\":{\\\"dir\\\":\\\"./website\\\"}}\" ./cli.js build",
     "website:prd": "npm run website:build && WAKUWORK_CONFIG=\"{\\\"prdServer\\\":{\\\"dir\\\":\\\"./website/dist\\\"}}\" ./cli.js start"
   },
