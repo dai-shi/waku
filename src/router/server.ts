@@ -100,7 +100,9 @@ export function fileRouter(base: string) {
       return createElement(
         component,
         componentProps,
-        createElement(childReference, { index: props.index + 1 })
+        props.childIndex
+          ? createElement(childReference, { index: props.childIndex })
+          : null
       );
     };
     return RouteComponent;
@@ -113,7 +115,12 @@ export function fileRouter(base: string) {
     const search = url.search;
     for (let index = 0; index <= pathItems.length; ++index) {
       const rscId = pathItems.slice(0, index).join("/") || "index";
-      result.push([rscId, { index, search }]);
+      result.push([
+        rscId,
+        index < pathItems.length
+          ? { childIndex: index + 1, search }
+          : { search },
+      ]);
     }
     const clientModules = new Set(
       (
