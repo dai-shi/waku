@@ -114,7 +114,7 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
     {
       get(_target, encodedId: string) {
         const [id, name] = decodeId(encodedId);
-        return { id, chunks: [], name, async: true };
+        return { id, chunks: [id], name, async: true };
       },
     }
   );
