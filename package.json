@@ -89,7 +89,7 @@
     "@types/react": "^18.2.5",
     "@types/react-dom": "^18.2.3",
     "autoprefixer": "^10.4.14",
-    "jotai": "^2.0.3",
+    "jotai": "^2.0.4",
     "nodemon": "^2.0.22",
     "postcss": "^8.4.23",
     "react": "18.3.0-canary-aef7ce554-20230503",

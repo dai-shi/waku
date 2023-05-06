@@ -43,8 +43,8 @@ devDependencies:
     specifier: ^10.4.14
     version: 10.4.14(postcss@8.4.23)
   jotai:
-    specifier: ^2.0.3
-    version: 2.0.3(react@18.3.0-canary-aef7ce554-20230503)
+    specifier: ^2.0.4
+    version: 2.0.4(react@18.3.0-canary-aef7ce554-20230503)
   nodemon:
     specifier: ^2.0.22
     version: 2.0.22
@@ -1694,8 +1694,8 @@ packages:
     hasBin: true
     dev: true
 
-  /jotai@2.0.3(react@18.3.0-canary-aef7ce554-20230503):
-    resolution: {integrity: sha512-MMjhSPAL3RoeZD9WbObufRT2quThEAEknHHridf2ma8Ml7ZVQmUiHk0ssdbR3F0h3kcwhYqSGJ59OjhPge7RRg==}
+  /jotai@2.0.4(react@18.3.0-canary-aef7ce554-20230503):
+    resolution: {integrity: sha512-XkR1Jtm4a2iKV/7fdB3rNHjJz8FkkDMVczqiAok7lt8W4F69l/ZQkPGWSEV+hJOJXRn27k6XYKOoKEQIwBuAMA==}
     engines: {node: '>=12.20.0'}
     peerDependencies:
       react: '>=17.0.0'
