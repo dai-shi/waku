@@ -4,7 +4,7 @@ import { createElement } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 import busboy from "busboy";
 
-import type { MiddlewareCreator } from "./common.js";
+import type { MiddlewareCreator } from "./lib/common.js";
 import type { GetEntry, Prefetcher } from "../server.js";
 import { transformRsfId } from "./rewriteRsc.js";
 

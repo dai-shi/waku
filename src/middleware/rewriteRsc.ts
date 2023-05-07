@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 import { Transform } from "node:stream";
 
-import type { MiddlewareCreator } from "./common.js";
+import type { MiddlewareCreator } from "./lib/common.js";
 
 // This convension is just one idea.
 

@@ -2,7 +2,7 @@ import path from "node:path";
 import fs from "node:fs";
 import fsPromises from "node:fs/promises";
 
-import type { MiddlewareCreator } from "./common.js";
+import type { MiddlewareCreator } from "./lib/common.js";
 
 const staticFile: MiddlewareCreator = (config, shared) => {
   const dir = path.resolve(config.prdServer?.dir || ".");

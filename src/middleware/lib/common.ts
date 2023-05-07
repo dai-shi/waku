@@ -1,4 +1,4 @@
-import type { Config, Middleware } from "../config.js";
+import type { Config, Middleware } from "../../config.js";
 
 export type Shared = {
   generatePrefetchCode?: (
