@@ -5,6 +5,7 @@ import { Writable } from "node:stream";
 import { createElement } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 
+import { transformRsfId } from "./rsc-utils.js";
 import type { Input, MessageReq, MessageRes } from "./rsc-renderer.js";
 
 const { renderToPipeableStream } = RSDWServer;
@@ -20,11 +21,20 @@ const config =
 
 // TODO this is dev only
 const dir = path.resolve(config.devServer?.dir || ".");
-const entriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
+const entriesFile =
+  (process.platform === "win32" ? "file://" : "") +
+  path.join(dir, config.files?.entriesJs || "entries.js");
 
 const getFunctionComponent = async (rscId: string) => {
   const { getEntry } = await import(entriesFile);
-  return getEntry(rscId);
+  const mod = await getEntry(rscId);
+  if (typeof mod === "function") {
+    return mod;
+  }
+  if (typeof mod.default === "function") {
+    return mod.default;
+  }
+  throw new Error("no function component");
 };
 
 // TODO this is dev only
@@ -64,9 +74,11 @@ parentPort.on("message", async (mesg: MessageReq) => {
         const mesg: MessageRes = {
           id,
           type: "buf",
-          buf: chunk,
+          buf: chunk.buffer,
+          offset: chunk.byteOffset,
+          len: chunk.length,
         };
-        parentPort!.postMessage(mesg, [chunk]);
+        parentPort!.postMessage(mesg, [mesg.buf]);
         callback();
       },
       final(callback) {
@@ -101,5 +113,9 @@ async function renderRSC(input: Input): Promise<PipeableStream> {
     // continue for mutation mode
   }
   const component = await getFunctionComponent(input.rscId);
-  return renderToPipeableStream(createElement(component, input.props));
+  return (
+    renderToPipeableStream(createElement(component, input.props), bundlerConfig)
+      // TODO dev-only
+      .pipe(transformRsfId("file://" + encodeURI(dir)))
+  );
 }
