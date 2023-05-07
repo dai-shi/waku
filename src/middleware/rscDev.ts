@@ -16,7 +16,7 @@ const CLIENT_REFERENCE = Symbol.for("react.client.reference");
 const rscDev: MiddlewareCreator = (config, shared) => {
   const dir = path.resolve(config.devServer?.dir || ".");
 
-  const entriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
+  const entriesFile = (process.platform === 'win32' ? 'file://' : '') + path.join(dir, config.files?.entriesJs || "entries.js");
   const getEntry: GetEntry = async (rscId) => {
     const mod = await import(entriesFile);
     return mod.getEntry(rscId);
