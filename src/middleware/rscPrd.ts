@@ -19,7 +19,7 @@ const rscPrd: MiddlewareCreator = (config, shared) => {
   const dir = path.resolve(config.prdServer?.dir || ".");
   const basePath = config.build?.basePath || "/"; // FIXME it's not build only
 
-  const entriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
+  const entriesFile = (process.platform === 'win32' ? 'file://' : '') + path.join(dir, config.files?.entriesJs || "entries.js");
   const getEntry: GetEntry = async (rscId) => {
     const mod = await import(entriesFile);
     return mod.getEntry(rscId);
