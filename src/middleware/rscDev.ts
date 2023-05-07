@@ -6,7 +6,7 @@ import busboy from "busboy";
 
 import type { MiddlewareCreator } from "./lib/common.js";
 import type { GetEntry, Prefetcher } from "../server.js";
-import { transformRsfId } from "./rewriteRsc.js";
+import { generatePrefetchCode, transformRsfId } from "./lib/rsc-utils.js";
 
 const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
   RSDWServer;
@@ -58,7 +58,7 @@ globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.ge
       const [id] = decodeId(m["$$id"]);
       moduleIds.push(id);
     }
-    code += shared.generatePrefetchCode?.(entryItems, moduleIds) || "";
+    code += generatePrefetchCode?.(entryItems, moduleIds) || "";
     return code;
   };
 

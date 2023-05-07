@@ -14,7 +14,7 @@ import type { GetEntry, Prefetcher, Prerenderer } from "./server.js";
 import {
   generatePrefetchCode,
   transformRsfId,
-} from "./middleware/rewriteRsc.js";
+} from "./middleware/lib/rsc-utils.js";
 
 const { renderToPipeableStream } = RSDWServer;
 
