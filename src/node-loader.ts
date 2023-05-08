@@ -29,7 +29,7 @@ export async function load(url: string, context: any, nextLoad: any) {
     }
     // HACK pull directive to the root
     // Hope we can configure tsx to avoid this
-    const p = source.match(/(?:^|\n|;)("use (client|server)";)/);
+    const p = source.match(/(?:^|\n|;)(['"]use (client|server)["'];)/);
     if (p) {
       source = p[1] + source;
     }
