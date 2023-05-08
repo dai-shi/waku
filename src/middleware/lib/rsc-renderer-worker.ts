@@ -16,17 +16,28 @@ type PipeableStream = {
   pipe<T extends Writable>(destination: T): T;
 };
 
+// TODO use of process.env is all temporary
 // TODO these are temporary
 const config: Config =
   (process.env.WAKUWORK_CONFIG && JSON.parse(process.env.WAKUWORK_CONFIG)) ||
   {};
-const serverConfig =
-  process.env.WAKUWORK_CMD === "dev" ? config.devServer : config.prdServer;
-const dir = path.resolve(serverConfig?.dir || ".");
-const entriesFile = url
-  .pathToFileURL(path.join(dir, config.files?.entriesJs || "entries.js"))
-  .toString();
+const dirFromConfig = {
+  dev: config.devServer?.dir,
+  build: config.build?.dir,
+  start: config.prdServer?.dir,
+}[String(process.env.WAKUWORK_CMD)];
+const dir = path.resolve(dirFromConfig || ".");
 const basePath = config.build?.basePath || "/"; // FIXME it's not build only
+const distPath = config.files?.dist || "dist";
+const entriesFile = url
+  .pathToFileURL(
+    path.join(
+      dir,
+      process.env.WAKUWORK_CMD === "build" ? distPath : "",
+      config.files?.entriesJs || "entries.js"
+    )
+  )
+  .toString();
 
 const getFunctionComponent = async (rscId: string) => {
   const { getEntry } = await import(entriesFile);
@@ -116,6 +127,8 @@ async function renderRSC(
     if (!serverEntries) {
       throw new Error("Failed to load serverEntries");
     }
+  } else if (process.env.WAKUWORK_CMD !== "dev") {
+    serverEntries = {};
   }
 
   const getClientEntry = (id: string) => {
@@ -136,7 +149,13 @@ async function renderRSC(
   const decodeId = (encodedId: string): [id: string, name: string] => {
     let [id, name] = encodedId.split("#") as [string, string];
     if (!id.startsWith("wakuwork/")) {
-      id = path.relative("file://" + encodeURI(dir), id);
+      id = path.relative(
+        "file://" +
+          encodeURI(
+            path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : "")
+          ),
+        id
+      );
       id = basePath + getClientEntry(decodeURI(id));
     }
     return [id, name];
@@ -178,25 +197,29 @@ async function renderRSC(
     return fileId;
   };
 
-  if ("rsfId" in input && "args" in input) {
+  if (input.rsfId && input.args) {
     const [fileId, name] = getServerEntry(input.rsfId).split("#");
     const fname = path.join(dir, fileId!);
     const mod = await import(fname);
     const data = await (mod[name!] || mod)(...input.args);
-    if (!("rscId" in input)) {
+    if (!input.rscId) {
       return renderToPipeableStream(data, bundlerConfig);
     }
     // continue for mutation mode
   }
-  if ("rscId" in input && "props" in input) {
+  if (input.rscId && input.props) {
     const component = await getFunctionComponent(input.rscId);
-    return (
-      renderToPipeableStream(
-        createElement(component, input.props),
-        bundlerConfig
+    return renderToPipeableStream(
+      createElement(component, input.props),
+      bundlerConfig
+    ).pipe(
+      transformRsfId(
+        "file://" +
+          encodeURI(
+            path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : "")
+          ),
+        registerServerEntry
       )
-        // TODO dev-only
-        .pipe(transformRsfId("file://" + encodeURI(dir), registerServerEntry))
     );
   }
   throw new Error("Unexpected input");

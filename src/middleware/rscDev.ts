@@ -1,5 +1,4 @@
 import path from "node:path";
-import type { Readable } from "node:stream";
 
 import RSDWServer from "react-server-dom-webpack/server";
 import busboy from "busboy";
@@ -56,8 +55,11 @@ globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.ge
   return async (req, res, next) => {
     const rscId = req.headers["x-react-server-component-id"];
     const rsfId = req.headers["x-react-server-function-id"];
+    if (Array.isArray(rscId) || Array.isArray(rsfId)) {
+      throw new Error('rscId and rsfId should not be array')
+    }
     let props = {};
-    if (typeof rscId === "string") {
+    if (rscId) {
       res.setHeader("Content-Type", "text/x-component");
       props = JSON.parse(
         (req.headers["x-react-server-component-props"] as string | undefined) ||
@@ -65,7 +67,7 @@ globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.ge
       );
     }
     let args: unknown[] = [];
-    if (typeof rsfId === "string") {
+    if (rsfId) {
       if (req.headers["content-type"]?.startsWith("multipart/form-data")) {
         const bb = busboy({ headers: req.headers });
         const reply = decodeReplyFromBusboy(bb);
@@ -81,21 +83,11 @@ globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.ge
         }
       }
     }
-    let readable: Readable | undefined;
-    if (typeof rsfId === "string") {
-      if (typeof rscId === "string") {
-        readable = renderRSC({ rscId, props, rsfId, args });
-      } else {
-        readable = renderRSC({ rsfId, args });
-      }
-    } else if (typeof rscId === "string") {
-      readable = renderRSC({ rscId, props });
+    if (rscId || rsfId) {
+      renderRSC({ rscId, props, rsfId, args }).pipe(res);
+      return;
     }
-    if (readable) {
-      readable.pipe(res);
-    } else {
-      await next();
-    }
+    await next();
   };
 };
 

@@ -3,10 +3,10 @@ import type { Readable } from "node:stream";
 import { Worker } from "node:worker_threads";
 
 export type Input<Props extends {} = {}> = {
-  rscId?: string;
-  props?: Props;
-  rsfId?: string;
-  args?: unknown[];
+  rscId?: string | undefined;
+  props?: Props | undefined;
+  rsfId?: string | undefined;
+  args?: unknown[] | undefined;
 };
 
 type Options = {
@@ -18,6 +18,7 @@ type Options = {
 const execArgv = [
   "--conditions",
   "react-server",
+  // TODO the use of process.env is temporary
   ...(process.env.WAKUWORK_CMD === "dev"
     ? ["--experimental-loader", "tsx"]
     : []),
