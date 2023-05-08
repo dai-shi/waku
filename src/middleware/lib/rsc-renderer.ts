@@ -2,26 +2,25 @@ import { PassThrough } from "node:stream";
 import type { Readable } from "node:stream";
 import { Worker } from "node:worker_threads";
 
-export type Input<Props extends {} = {}> =
-  | {
-      rscId: string;
-      props: Props;
-    }
-  | {
-      rscId: string;
-      props: Props;
-      rsfId: string;
-      args: unknown[];
-    }
-  | {
-      rsfId: string;
-      args: unknown[];
-    };
+export type Input<Props extends {} = {}> = {
+  rscId?: string;
+  props?: Props;
+  rsfId?: string;
+  args?: unknown[];
+};
+
+type Options = {
+  loadClientEntries?: boolean;
+  loadServerEntries?: boolean;
+  serverEntryCallback?: (rsfId: string, fileId: string) => void;
+};
 
 const execArgv = [
   "--conditions",
   "react-server",
-  ...(true /* TODO dev only */ ? ["--experimental-loader", "tsx"] : []),
+  ...(process.env.WAKUWORK_CMD === "dev"
+    ? ["--experimental-loader", "tsx"]
+    : []),
   "--experimental-loader",
   "wakuwork/node-loader",
   "--experimental-loader",
@@ -32,12 +31,20 @@ const worker = new Worker(new URL("rsc-renderer-worker.js", import.meta.url), {
   execArgv,
 });
 
-export type MessageReq = { id: number; type: "start"; input: Input };
+export type MessageReq = {
+  id: number;
+  type: "start";
+  input: Input;
+  loadClientEntries: boolean | undefined;
+  loadServerEntries: boolean | undefined;
+  notifyServerEntry: boolean;
+};
 
 export type MessageRes =
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "end" }
-  | { id: number; type: "err"; err: unknown };
+  | { id: number; type: "err"; err: unknown }
+  | { id: number; type: "serverEntry"; rsfId: string; fileId: string };
 
 const handlers = new Map<number, (mesg: MessageRes) => void>();
 
@@ -47,7 +54,7 @@ worker.on("message", (mesg: MessageRes) => {
 
 let nextId = 1;
 
-export function renderRSC(input: Input): Readable {
+export function renderRSC(input: Input, options?: Options): Readable {
   const id = nextId++;
   const passthrough = new PassThrough();
   handlers.set(id, (mesg) => {
@@ -61,9 +68,18 @@ export function renderRSC(input: Input): Readable {
         mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err))
       );
       handlers.delete(id);
+    } else if (mesg.type === "serverEntry" && options?.serverEntryCallback) {
+      options.serverEntryCallback(mesg.rsfId, mesg.fileId);
     }
   });
-  const mesg: MessageReq = { id, type: "start", input };
+  const mesg: MessageReq = {
+    id,
+    type: "start",
+    input,
+    loadClientEntries: options?.loadClientEntries,
+    loadServerEntries: options?.loadServerEntries,
+    notifyServerEntry: !!options?.serverEntryCallback
+  };
   worker.postMessage(mesg);
   return passthrough;
 }

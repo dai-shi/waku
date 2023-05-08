@@ -45,7 +45,7 @@ import('${moduleId}');`;
 // HACK Patching stream is very fragile.
 export const transformRsfId = (
   prefixToRemove: string,
-  convert = (id: string) => id
+  convert: (id: string) => string
 ) =>
   new Transform({
     transform(chunk, encoding, callback) {

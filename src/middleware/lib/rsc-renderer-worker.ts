@@ -1,4 +1,5 @@
 import path from "node:path";
+import url from "node:url";
 import { parentPort } from "node:worker_threads";
 import { Writable } from "node:stream";
 
@@ -7,6 +8,7 @@ import RSDWServer from "react-server-dom-webpack/server";
 
 import { transformRsfId } from "./rsc-utils.js";
 import type { Input, MessageReq, MessageRes } from "./rsc-renderer.js";
+import type { Config } from "../../config.js";
 
 const { renderToPipeableStream } = RSDWServer;
 
@@ -14,16 +16,17 @@ type PipeableStream = {
   pipe<T extends Writable>(destination: T): T;
 };
 
-// TODO this is temporary
-const config =
+// TODO these are temporary
+const config: Config =
   (process.env.WAKUWORK_CONFIG && JSON.parse(process.env.WAKUWORK_CONFIG)) ||
   {};
-
-// TODO this is dev only
-const dir = path.resolve(config.devServer?.dir || ".");
-const entriesFile =
-  (process.platform === "win32" ? "file://" : "") +
-  path.join(dir, config.files?.entriesJs || "entries.js");
+const serverConfig =
+  process.env.WAKUWORK_CMD === "dev" ? config.devServer : config.prdServer;
+const dir = path.resolve(serverConfig?.dir || ".");
+const entriesFile = url
+  .pathToFileURL(path.join(dir, config.files?.entriesJs || "entries.js"))
+  .toString();
+const basePath = config.build?.basePath || "/"; // FIXME it's not build only
 
 const getFunctionComponent = async (rscId: string) => {
   const { getEntry } = await import(entriesFile);
@@ -34,49 +37,40 @@ const getFunctionComponent = async (rscId: string) => {
   if (typeof mod.default === "function") {
     return mod.default;
   }
-  throw new Error("no function component");
+  throw new Error("No function component found");
 };
 
-// TODO this is dev only
-const decodeId = (encodedId: string): [id: string, name: string] => {
-  let [id, name] = encodedId.split("#") as [string, string];
-  if (!id.startsWith("wakuwork/")) {
-    id = path.relative("file://" + encodeURI(dir), id);
-    id = "/" + decodeURI(id);
-  }
-  return [id, name];
-};
-
-// TODO this is dev only
-const bundlerConfig = new Proxy(
-  {},
-  {
-    get(_target, encodedId: string) {
-      const [id, name] = decodeId(encodedId);
-      return { id, chunks: [id], name, async: true };
-    },
-  }
-);
-
-if (!parentPort) {
-  throw new Error("Not in worker!");
-}
-
-parentPort.on("message", async (mesg: MessageReq) => {
-  const { id, input } = mesg;
+parentPort!.on("message", async (mesg: MessageReq) => {
+  const { id, input, loadClientEntries, loadServerEntries, notifyServerEntry } =
+    mesg;
   try {
-    const pipeable = await renderRSC(input);
+    const pipeable = await renderRSC(input, {
+      loadClientEntries,
+      loadServerEntries,
+      serverEntryCallback: notifyServerEntry
+        ? (rsfId, fileId) => {
+            const mesg: MessageRes = {
+              id,
+              type: "serverEntry",
+              rsfId,
+              fileId,
+            };
+            parentPort!.postMessage(mesg);
+          }
+        : undefined,
+    });
     const writable = new Writable({
       write(chunk, encoding, callback) {
         if (encoding !== ("buffer" as any)) {
           throw new Error("Unknown encoding");
         }
+        const buffer: Buffer = chunk;
         const mesg: MessageRes = {
           id,
           type: "buf",
-          buf: chunk.buffer,
-          offset: chunk.byteOffset,
-          len: chunk.length,
+          buf: buffer.buffer,
+          offset: buffer.byteOffset,
+          len: buffer.length,
         };
         parentPort!.postMessage(mesg, [mesg.buf]);
         callback();
@@ -101,10 +95,92 @@ parentPort.on("message", async (mesg: MessageReq) => {
   }
 });
 
-async function renderRSC(input: Input): Promise<PipeableStream> {
-  if ("rsfId" in input) {
-    const [filePath, name] = input.rsfId.split("#");
-    const fname = path.join(dir, filePath!);
+async function renderRSC(
+  input: Input,
+  options: {
+    loadClientEntries: boolean | undefined;
+    loadServerEntries: boolean | undefined;
+    serverEntryCallback: ((rsfId: string, fileId: string) => void) | undefined;
+  }
+): Promise<PipeableStream> {
+  let clientEntries: Record<string, string> | undefined;
+  let serverEntries: Record<string, string> | undefined;
+  if (options.loadClientEntries) {
+    ({ clientEntries } = await import(entriesFile));
+    if (!clientEntries) {
+      throw new Error("Failed to load clientEntries");
+    }
+  }
+  if (options.loadServerEntries) {
+    ({ serverEntries } = await import(entriesFile));
+    if (!serverEntries) {
+      throw new Error("Failed to load serverEntries");
+    }
+  }
+
+  const getClientEntry = (id: string) => {
+    if (!clientEntries) {
+      return id;
+    }
+    const clientEntry =
+      clientEntries[id] ||
+      clientEntries[id.replace(/\.js$/, ".ts")] ||
+      clientEntries[id.replace(/\.js$/, ".tsx")] ||
+      clientEntries[id.replace(/\.js$/, ".jsx")];
+    if (!clientEntry) {
+      throw new Error("No client entry found");
+    }
+    return clientEntry;
+  };
+
+  const decodeId = (encodedId: string): [id: string, name: string] => {
+    let [id, name] = encodedId.split("#") as [string, string];
+    if (!id.startsWith("wakuwork/")) {
+      id = path.relative("file://" + encodeURI(dir), id);
+      id = basePath + getClientEntry(decodeURI(id));
+    }
+    return [id, name];
+  };
+
+  const bundlerConfig = new Proxy(
+    {},
+    {
+      get(_target, encodedId: string) {
+        const [id, name] = decodeId(encodedId);
+        return { id, chunks: [id], name, async: true };
+      },
+    }
+  );
+
+  const registerServerEntry = (fileId: string): string => {
+    if (!serverEntries) {
+      return fileId;
+    }
+    for (const entry of Object.entries(serverEntries)) {
+      if (entry[1] === fileId) {
+        return entry[0];
+      }
+    }
+    const rsfId = `rsf${Object.keys(serverEntries).length}`;
+    serverEntries[rsfId] = fileId;
+    options.serverEntryCallback?.(rsfId, fileId);
+    return rsfId;
+  };
+
+  const getServerEntry = (rsfId: string): string => {
+    if (!serverEntries) {
+      return rsfId;
+    }
+    const fileId = serverEntries[rsfId];
+    if (!fileId) {
+      throw new Error("No server entry found");
+    }
+    return fileId;
+  };
+
+  if ("rsfId" in input && "args" in input) {
+    const [fileId, name] = getServerEntry(input.rsfId).split("#");
+    const fname = path.join(dir, fileId!);
     const mod = await import(fname);
     const data = await (mod[name!] || mod)(...input.args);
     if (!("rscId" in input)) {
@@ -112,10 +188,16 @@ async function renderRSC(input: Input): Promise<PipeableStream> {
     }
     // continue for mutation mode
   }
-  const component = await getFunctionComponent(input.rscId);
-  return (
-    renderToPipeableStream(createElement(component, input.props), bundlerConfig)
-      // TODO dev-only
-      .pipe(transformRsfId("file://" + encodeURI(dir)))
-  );
+  if ("rscId" in input && "props" in input) {
+    const component = await getFunctionComponent(input.rscId);
+    return (
+      renderToPipeableStream(
+        createElement(component, input.props),
+        bundlerConfig
+      )
+        // TODO dev-only
+        .pipe(transformRsfId("file://" + encodeURI(dir), registerServerEntry))
+    );
+  }
+  throw new Error("Unexpected input");
 }
