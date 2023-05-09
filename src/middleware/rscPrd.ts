@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import RSDWServer from "react-server-dom-webpack/server";
+import RSDWServer from "react-server-dom-webpack/server.node.unbundled";
 import busboy from "busboy";
 
 import type { MiddlewareCreator } from "./lib/common.js";

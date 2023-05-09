@@ -5,8 +5,6 @@ import { Worker } from "node:worker_threads";
 const cmd = process.argv[2];
 process.env.WAKUWORK_CMD = cmd;
 const execArgv = [
-  "--conditions",
-  "react-server",
   ...(cmd === "dev" ? ["--experimental-loader", "tsx"] : []),
   "--experimental-loader",
   "wakuwork/node-loader",
