@@ -31,7 +31,7 @@ export function startDevServer(config: Config = {}) {
     res.statusCode = 500;
     res.end();
   });
-  const port = config.devServer?.port ?? process.env.PORT ?? 3000;
+  const port = config.devServer?.port ?? 3000;
   server.listen(port, () => {
     console.info("Listening on", port);
   });
