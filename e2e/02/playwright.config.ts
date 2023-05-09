@@ -7,7 +7,7 @@ export default defineConfig({
   ...config,
   testDir: '.',
   webServer: {
-    command: 'pnpm run examples:dev:01_counter',
+    command: 'pnpm run examples:dev:02_async',
     port: 3000,
     timeout: 10 * 1000,
     reuseExistingServer: !process.env.CI,

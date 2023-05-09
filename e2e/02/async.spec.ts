@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 test('async', async ({ page }) => {
-  await page.goto('http://localhost:3001')
+  await page.goto('http://localhost:3000')
   expect(page.getByText('Pending...').isVisible()).toBeTruthy()
   await page.waitForTimeout(500)
   expect(page.getByText('Pending...').isVisible()).toBeTruthy()
