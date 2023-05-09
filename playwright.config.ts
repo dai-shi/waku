@@ -46,6 +46,18 @@ const config: PlaywrightTestConfig = {
       port: 3000,
       timeout: 10 * 1000,
       reuseExistingServer: !process.env.CI,
+      env: {
+        PORT: '3000',
+      }
+    },
+    {
+      command: 'pnpm run examples:dev:02_async',
+      port: 3001,
+      timeout: 10 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        PORT: '3001',
+      }
     },
   ],
 };
