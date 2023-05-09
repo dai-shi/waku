@@ -47,6 +47,7 @@
     "compile:code": "swc src -d dist && swc src -d dist/cjs -C module.type=commonjs && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
     "compile:types": "tsc --project tsconfig.build.json",
     "test": "tsc --project . --noEmit",
+    "e2e": "playwright test",
     "examples:dev": "WAKUWORK_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" nodemon --ext ts,tsx --ignore ./examples/${NAME}/src/Counter.tsx --exec 'npm run compile:code && ./cli.js dev'",
     "examples:dev:01_counter": "NAME=01_counter npm run examples:dev",
     "examples:dev:02_async": "NAME=02_async npm run examples:dev",
@@ -79,6 +80,7 @@
     "vite": "^4.3.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.33.0",
     "@swc/cli": "^0.1.62",
     "@types/babel__core": "^7.20.0",
     "@types/busboy": "^1.5.0",
