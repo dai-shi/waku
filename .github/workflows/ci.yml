@@ -35,9 +35,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: npx playwright install chromium
       - run: npm run e2e
-      - name: Upload test results
+      - uses: actions/upload-artifact@v2
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v2
         with:
           name: test-results-main
           path: ./test-results
