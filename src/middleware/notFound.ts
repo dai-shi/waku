@@ -1,4 +1,4 @@
-import type { MiddlewareCreator } from "./common.js";
+import type { MiddlewareCreator } from "./lib/common.js";
 
 const notFound: MiddlewareCreator = () => async (_req, res) => {
   res.statusCode = 404;

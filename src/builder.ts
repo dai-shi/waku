@@ -6,21 +6,15 @@ import { build } from "vite";
 import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import * as swc from "@swc/core";
-import { createElement } from "react";
-import RSDWServer from "react-server-dom-webpack/server";
 
 import type { Config } from "./config.js";
 import type { GetEntry, Prefetcher, Prerenderer } from "./server.js";
-import {
-  generatePrefetchCode,
-  transformRsfId,
-} from "./middleware/rewriteRsc.js";
-
-const { renderToPipeableStream } = RSDWServer;
+import { generatePrefetchCode } from "./middleware/lib/rsc-utils.js";
+import { renderRSC } from "./middleware/lib/rsc-renderer.js";
 
 const CLIENT_REFERENCE = Symbol.for("react.client.reference");
 
-// TODO we have duplicate code here and rscPrd.ts
+// TODO we have duplicate code here and rscPrd.ts and rsc-renderers*.ts
 
 const rscPlugin = (): Plugin => {
   const code = `
@@ -119,18 +113,8 @@ const prerender = async (
   publicIndexHtmlFile: string
 ): Promise<Record<string, string>> => {
   const serverEntries: Record<string, string> = {};
-  const registerServerEntry = (fileId: string): string => {
-    for (const entry of Object.entries(serverEntries)) {
-      if (entry[1] === fileId) {
-        return entry[0];
-      }
-    }
-    const id = `rsf${Object.keys(serverEntries).length}`;
-    serverEntries[id] = fileId;
-    return id;
-  };
 
-  const { getEntry, prefetcher, prerenderer, clientEntries } = await (import(
+  const { prefetcher, prerenderer, clientEntries } = await (import(
     entriesFile
   ) as Promise<{
     getEntry: GetEntry;
@@ -139,13 +123,6 @@ const prerender = async (
     clientEntries?: Record<string, string>;
   }>);
 
-  const getFunctionComponent = async (rscId: string) => {
-    const mod = await getEntry(rscId);
-    if (typeof mod === "function") {
-      return mod;
-    }
-    return mod.default;
-  };
   const getClientEntry = (id: string) => {
     if (!clientEntries) {
       throw new Error("Missing client entries");
@@ -167,15 +144,6 @@ const prerender = async (
     }
     return [id, name];
   };
-  const bundlerConfig = new Proxy(
-    {},
-    {
-      get(_target, encodedId: string) {
-        const [id, name] = decodeId(encodedId);
-        return { id, chunks: [id], name, async: true };
-      },
-    }
-  );
 
   if (prerenderer) {
     const {
@@ -197,25 +165,23 @@ const prerender = async (
           decodeURIComponent(`${searchParams}`)
         );
         fs.mkdirSync(path.dirname(destFile), { recursive: true });
-        const component = await getFunctionComponent(rscId);
-        if (component) {
-          await new Promise<void>((resolve, reject) => {
-            const stream = fs.createWriteStream(destFile);
-            stream.on("finish", resolve);
-            stream.on("error", reject);
-            renderToPipeableStream(
-              createElement(component, props as any),
-              bundlerConfig
-            )
-              .pipe(
-                transformRsfId(
-                  "file://" + encodeURI(path.join(dir, distPath)),
-                  registerServerEntry
-                )
-              )
-              .pipe(stream);
-          });
-        }
+        await new Promise<void>((resolve, reject) => {
+          const stream = fs.createWriteStream(destFile);
+          stream.on("finish", resolve);
+          stream.on("error", reject);
+          renderRSC(
+            {
+              rscId,
+              props: props as any,
+            },
+            {
+              loadClientEntries: true,
+              serverEntryCallback: (rsfId, fileId) => {
+                serverEntries[rsfId] = fileId;
+              },
+            }
+          ).pipe(stream);
+        });
       })
     );
 

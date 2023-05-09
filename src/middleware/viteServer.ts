@@ -5,7 +5,7 @@ import { createServer } from "vite";
 import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
-import type { MiddlewareCreator } from "./common.js";
+import type { MiddlewareCreator } from "./lib/common.js";
 
 const rscPlugin = (
   scriptToInject: (path: string) => Promise<string>
