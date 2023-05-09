@@ -38,7 +38,6 @@ jobs:
         run: |
           PLAYWRIGHT_VERSION=$(pnpm playwright -V)
           echo "PLAYWRIGHT_VERSION=${PLAYWRIGHT_VERSION##Version }" >> $GITHUB_OUTPUT
-
       - uses: actions/cache@v3
         id: playwright-cache
         if: ${{ inputs.playwright-install == 'true' }}
