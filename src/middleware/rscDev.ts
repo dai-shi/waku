@@ -20,6 +20,7 @@ const rscDev: MiddlewareCreator = (config, shared) => {
     (process.platform === "win32" ? "file://" : "") +
     path.join(dir, config.files?.entriesJs || "entries.js");
   const prefetcher: Prefetcher = async (pathItem) => {
+    return {}; // TODO TEMP experimenting without prefetcher
     const mod = await import(entriesFile);
     return mod?.prefetcher(pathItem) ?? {};
   };

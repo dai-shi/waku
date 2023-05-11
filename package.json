@@ -10,7 +10,6 @@
   },
   "exports": {
     "./package.json": "./package.json",
-    "./node-loader": "./dist/node-loader.js",
     ".": {
       "types": "./dist/main.d.ts",
       "default": "./dist/main.js"

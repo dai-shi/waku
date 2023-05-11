@@ -60,7 +60,7 @@ export function fileRouter(base: string) {
     return (
       await Promise.all(
         modules.map(async ([fname, exportNames]) => {
-          const m = await import(fname);
+          const m = await import(/* @vite-ignore */ fname);
           return exportNames.flatMap((name) => {
             if (m[name]?.["$$typeof"] === CLIENT_REFERENCE) {
               return [m[name]];
@@ -91,7 +91,8 @@ export function fileRouter(base: string) {
 
   const getEntry: GetEntry = async (id) => {
     // This can be too unsecure? FIXME
-    const component = (await import(`${base}/${id}.js`)).default;
+    const component = (await import(/* @vite-ignore */ `${base}/${id}.js`))
+      .default;
     const RouteComponent: any = (props: RouteProps) => {
       const componentProps: Record<string, string> = {};
       for (const [key, value] of new URLSearchParams(props.search)) {

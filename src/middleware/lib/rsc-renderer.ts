@@ -15,21 +15,8 @@ type Options = {
   serverEntryCallback?: (rsfId: string, fileId: string) => void;
 };
 
-const execArgv = [
-  "--conditions",
-  "react-server",
-  // TODO the use of process.env is temporary
-  ...(process.env.WAKUWORK_CMD === "dev"
-    ? ["--experimental-loader", "tsx"]
-    : []),
-  "--experimental-loader",
-  "wakuwork/node-loader",
-  "--experimental-loader",
-  "react-server-dom-webpack/node-loader",
-];
-
 const worker = new Worker(new URL("rsc-renderer-worker.js", import.meta.url), {
-  execArgv,
+  execArgv: ["--conditions", "react-server"],
 });
 
 export type MessageReq = {
@@ -79,7 +66,7 @@ export function renderRSC(input: Input, options?: Options): Readable {
     input,
     loadClientEntries: options?.loadClientEntries,
     loadServerEntries: options?.loadServerEntries,
-    notifyServerEntry: !!options?.serverEntryCallback
+    notifyServerEntry: !!options?.serverEntryCallback,
   };
   worker.postMessage(mesg);
   return passthrough;

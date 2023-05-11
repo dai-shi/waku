@@ -1,16 +1,67 @@
 import path from "node:path";
-import url from "node:url";
 import { parentPort } from "node:worker_threads";
 import { Writable } from "node:stream";
 
+import { createServer } from "vite";
+import type { Plugin } from "vite";
 import { createElement } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
+import * as RSDWNodeLoader from "react-server-dom-webpack/node-loader";
 
 import { transformRsfId } from "./rsc-utils.js";
 import type { Input, MessageReq, MessageRes } from "./rsc-renderer.js";
 import type { Config } from "../../config.js";
 
 const { renderToPipeableStream } = RSDWServer;
+
+const rscPlugin = (): Plugin => {
+  return {
+    name: "rsc-plugin",
+    async resolveId(id, importer, options) {
+      if (!id.endsWith(".js")) {
+        return id;
+      }
+      for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
+        const resolved = await this.resolve(id.slice(0, -3) + ext, importer, {
+          ...options,
+          skipSelf: true,
+        });
+        if (resolved) {
+          return resolved;
+        }
+      }
+    },
+    async transform(code, id) {
+      const resolve = async (
+        specifier: string,
+        { parentURL }: { parentURL: string }
+      ) => {
+        if (!specifier) {
+          return { url: "" };
+        }
+        const url = (await this.resolve(specifier, parentURL, {
+          skipSelf: true,
+        }))!.id;
+        return { url };
+      };
+      const load = async (url: string) => {
+        let source = url === id ? code : (await this.load({ id: url })).code;
+        // HACK move directives before import statements.
+        source = source!.replace(
+          /^(import {.*?} from ".*?";)\s*"use (client|server)";/,
+          '"use $2";$1'
+        );
+        return { format: "module", source };
+      };
+      RSDWNodeLoader.resolve(
+        "",
+        { conditions: ["react-server"], parentURL: "" },
+        resolve
+      );
+      return (await RSDWNodeLoader.load(id, null, load)).source;
+    },
+  };
+};
 
 type PipeableStream = {
   pipe<T extends Writable>(destination: T): T;
@@ -29,18 +80,30 @@ const dirFromConfig = {
 const dir = path.resolve(dirFromConfig || ".");
 const basePath = config.build?.basePath || "/"; // FIXME it's not build only
 const distPath = config.files?.dist || "dist";
-const entriesFile = url
-  .pathToFileURL(
-    path.join(
-      dir,
-      process.env.WAKUWORK_CMD === "build" ? distPath : "",
-      config.files?.entriesJs || "entries.js"
-    )
-  )
-  .toString();
+const entriesFile = path.join(
+  dir,
+  process.env.WAKUWORK_CMD === "build" ? distPath : "",
+  config.files?.entriesJs || "entries.js"
+);
+
+const vitePromise = createServer({
+  root: dir,
+  plugins: [rscPlugin()],
+  appType: "custom",
+});
+
+const loadEntries = async () => {
+  const vite = await vitePromise;
+  return vite.ssrLoadModule(entriesFile);
+};
+
+const loadServerFile = async (fname: string) => {
+  const vite = await vitePromise;
+  return vite.ssrLoadModule(fname);
+};
 
 const getFunctionComponent = async (rscId: string) => {
-  const { getEntry } = await import(entriesFile);
+  const { getEntry } = await loadEntries();
   const mod = await getEntry(rscId);
   if (typeof mod === "function") {
     return mod;
@@ -117,13 +180,13 @@ async function renderRSC(
   let clientEntries: Record<string, string> | undefined;
   let serverEntries: Record<string, string> | undefined;
   if (options.loadClientEntries) {
-    ({ clientEntries } = await import(entriesFile));
+    ({ clientEntries } = await loadEntries());
     if (!clientEntries) {
       throw new Error("Failed to load clientEntries");
     }
   }
   if (options.loadServerEntries) {
-    ({ serverEntries } = await import(entriesFile));
+    ({ serverEntries } = await loadEntries());
     if (!serverEntries) {
       throw new Error("Failed to load serverEntries");
     }
@@ -150,13 +213,10 @@ async function renderRSC(
     let [id, name] = encodedId.split("#") as [string, string];
     if (!id.startsWith("wakuwork/")) {
       id = path.relative(
-        "file://" +
-          encodeURI(
-            path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : "")
-          ),
+        path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : ""),
         id
       );
-      id = basePath + getClientEntry(decodeURI(id));
+      id = basePath + getClientEntry(id);
     }
     return [id, name];
   };
@@ -200,7 +260,7 @@ async function renderRSC(
   if (input.rsfId && input.args) {
     const [fileId, name] = getServerEntry(input.rsfId).split("#");
     const fname = path.join(dir, fileId!);
-    const mod = await import(fname);
+    const mod = await loadServerFile(fname);
     const data = await (mod[name!] || mod)(...input.args);
     if (!input.rscId) {
       return renderToPipeableStream(data, bundlerConfig);
@@ -214,10 +274,7 @@ async function renderRSC(
       bundlerConfig
     ).pipe(
       transformRsfId(
-        "file://" +
-          encodeURI(
-            path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : "")
-          ),
+        path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : ""),
         registerServerEntry
       )
     );
