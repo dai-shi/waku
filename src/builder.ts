@@ -8,14 +8,12 @@ import react from "@vitejs/plugin-react";
 import * as swc from "@swc/core";
 
 import type { Config } from "./config.js";
-import type { GetEntry, Prefetcher, Prerenderer } from "./server.js";
-import { generatePrefetchCode } from "./middleware/lib/rsc-utils.js";
-import { renderRSC } from "./middleware/lib/rsc-handler.js";
-
-const CLIENT_REFERENCE = Symbol.for("react.client.reference");
+import type { GetEntry, Prerenderer } from "./server.js";
+import { renderRSC, prefetcherRSC } from "./middleware/lib/rsc-handler.js";
 
 // TODO we have duplicate code here and rscPrd.ts and rsc-handler*.ts
 
+// TODO we could do this without plugin anyway
 const rscPlugin = (): Plugin => {
   const code = `
 globalThis.__wakuwork_module_cache__ = new Map();
@@ -114,11 +112,8 @@ const prerender = async (
 ): Promise<Record<string, string>> => {
   const serverEntries: Record<string, string> = {};
 
-  const { prefetcher, prerenderer, clientEntries } = await (import(
-    entriesFile
-  ) as Promise<{
+  const { prerenderer, clientEntries } = await (import(entriesFile) as Promise<{
     getEntry: GetEntry;
-    prefetcher?: Prefetcher;
     prerenderer?: Prerenderer;
     clientEntries?: Record<string, string>;
   }>);
@@ -189,21 +184,7 @@ const prerender = async (
       encoding: "utf8",
     });
     for (const pathItem of paths) {
-      let code = "";
-      if (prefetcher) {
-        const { entryItems = [], clientModules = [] } = await prefetcher(
-          pathItem
-        );
-        const moduleIds: string[] = [];
-        for (const m of clientModules as any[]) {
-          if (m["$$typeof"] !== CLIENT_REFERENCE) {
-            throw new Error("clientModules must be client references");
-          }
-          const [id] = decodeId(m["$$id"]);
-          moduleIds.push(id);
-        }
-        code += generatePrefetchCode?.(entryItems, moduleIds) || "";
-      }
+      const code = await prefetcherRSC(pathItem, true);
       const destFile = path.join(
         dir,
         publicPath,
