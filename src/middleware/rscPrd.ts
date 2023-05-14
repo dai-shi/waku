@@ -6,13 +6,13 @@ import busboy from "busboy";
 import type { MiddlewareCreator } from "./lib/common.js";
 import type { Prefetcher } from "../server.js";
 import { generatePrefetchCode } from "./lib/rsc-utils.js";
-import { renderRSC } from "./lib/rsc-renderer.js";
+import { renderRSC } from "./lib/rsc-handler.js";
 
 const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 
 const CLIENT_REFERENCE = Symbol.for("react.client.reference");
 
-// TODO we have duplicate code here and rsc-renderer-worker.ts
+// TODO we have duplicate code here and rsc-handler-worker.ts
 
 const rscPrd: MiddlewareCreator = (config, shared) => {
   const dir = path.resolve(config.prdServer?.dir || ".");

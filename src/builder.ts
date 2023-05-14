@@ -10,11 +10,11 @@ import * as swc from "@swc/core";
 import type { Config } from "./config.js";
 import type { GetEntry, Prefetcher, Prerenderer } from "./server.js";
 import { generatePrefetchCode } from "./middleware/lib/rsc-utils.js";
-import { renderRSC } from "./middleware/lib/rsc-renderer.js";
+import { renderRSC } from "./middleware/lib/rsc-handler.js";
 
 const CLIENT_REFERENCE = Symbol.for("react.client.reference");
 
-// TODO we have duplicate code here and rscPrd.ts and rsc-renderers*.ts
+// TODO we have duplicate code here and rscPrd.ts and rsc-handler*.ts
 
 const rscPlugin = (): Plugin => {
   const code = `

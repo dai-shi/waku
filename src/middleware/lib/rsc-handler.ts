@@ -15,7 +15,7 @@ type Options = {
   serverEntryCallback?: (rsfId: string, fileId: string) => void;
 };
 
-const worker = new Worker(new URL("rsc-renderer-worker.js", import.meta.url), {
+const worker = new Worker(new URL("rsc-handler-worker.js", import.meta.url), {
   execArgv: ["--conditions", "react-server"],
 });
 
@@ -34,10 +34,10 @@ export type MessageRes =
   | { id: number; type: "err"; err: unknown }
   | { id: number; type: "serverEntry"; rsfId: string; fileId: string };
 
-const handlers = new Map<number, (mesg: MessageRes) => void>();
+const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
 worker.on("message", (mesg: MessageRes) => {
-  handlers.get(mesg.id)?.(mesg);
+  messageCallbacks.get(mesg.id)?.(mesg);
 });
 
 let nextId = 1;
@@ -45,17 +45,17 @@ let nextId = 1;
 export function renderRSC(input: Input, options?: Options): Readable {
   const id = nextId++;
   const passthrough = new PassThrough();
-  handlers.set(id, (mesg) => {
+  messageCallbacks.set(id, (mesg) => {
     if (mesg.type === "buf") {
       passthrough.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
     } else if (mesg.type === "end") {
       passthrough.end();
-      handlers.delete(id);
+      messageCallbacks.delete(id);
     } else if (mesg.type === "err") {
       passthrough.destroy(
         mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err))
       );
-      handlers.delete(id);
+      messageCallbacks.delete(id);
     } else if (mesg.type === "serverEntry" && options?.serverEntryCallback) {
       options.serverEntryCallback(mesg.rsfId, mesg.fileId);
     }

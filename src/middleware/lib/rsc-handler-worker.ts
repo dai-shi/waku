@@ -9,7 +9,7 @@ import RSDWServer from "react-server-dom-webpack/server";
 import * as RSDWNodeLoader from "react-server-dom-webpack/node-loader";
 
 import { transformRsfId } from "./rsc-utils.js";
-import type { Input, MessageReq, MessageRes } from "./rsc-renderer.js";
+import type { Input, MessageReq, MessageRes } from "./rsc-handler.js";
 import type { Config } from "../../config.js";
 
 const { renderToPipeableStream } = RSDWServer;

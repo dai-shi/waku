@@ -7,7 +7,7 @@ import type { MiddlewareCreator } from "./lib/common.js";
 import type { Prefetcher } from "../server.js";
 import { generatePrefetchCode } from "./lib/rsc-utils.js";
 
-import { renderRSC } from "./lib/rsc-renderer.js";
+import { renderRSC } from "./lib/rsc-handler.js";
 
 const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 
@@ -49,7 +49,7 @@ globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.ge
       const [id] = decodeId(m["$$id"]);
       moduleIds.push(id);
     }
-    code += generatePrefetchCode?.(entryItems, moduleIds) || "";
+    code += generatePrefetchCode(entryItems, moduleIds);
     return code;
   };
 
