@@ -3,118 +3,17 @@ import { parentPort } from "node:worker_threads";
 import { Writable } from "node:stream";
 
 import { createServer } from "vite";
-import type { Plugin } from "vite";
 import { createElement } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
-import * as RSDWNodeLoader from "react-server-dom-webpack/node-loader";
 
 import { transformRsfId } from "./rsc-utils.js";
-import type { Input, MessageReq, MessageRes } from "./rsc-handler.js";
+import type { RenderInput, MessageReq, MessageRes } from "./rsc-handler.js";
 import type { Config } from "../../config.js";
+import { rscPlugin } from "./vite-rsc-plugin.js";
 
 const { renderToPipeableStream } = RSDWServer;
 
-const rscPlugin = (): Plugin => {
-  return {
-    name: "rsc-plugin",
-    async resolveId(id, importer, options) {
-      if (!id.endsWith(".js")) {
-        return id;
-      }
-      for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
-        const resolved = await this.resolve(id.slice(0, -3) + ext, importer, {
-          ...options,
-          skipSelf: true,
-        });
-        if (resolved) {
-          return resolved;
-        }
-      }
-    },
-    async transform(code, id) {
-      const resolve = async (
-        specifier: string,
-        { parentURL }: { parentURL: string }
-      ) => {
-        if (!specifier) {
-          return { url: "" };
-        }
-        const url = (await this.resolve(specifier, parentURL, {
-          skipSelf: true,
-        }))!.id;
-        return { url };
-      };
-      const load = async (url: string) => {
-        let source = url === id ? code : (await this.load({ id: url })).code;
-        // HACK move directives before import statements.
-        source = source!.replace(
-          /^(import {.*?} from ".*?";)\s*"use (client|server)";/,
-          '"use $2";$1'
-        );
-        return { format: "module", source };
-      };
-      RSDWNodeLoader.resolve(
-        "",
-        { conditions: ["react-server"], parentURL: "" },
-        resolve
-      );
-      return (await RSDWNodeLoader.load(id, null, load)).source;
-    },
-  };
-};
-
-type PipeableStream = {
-  pipe<T extends Writable>(destination: T): T;
-};
-
-// TODO use of process.env is all temporary
-// TODO these are temporary
-const config: Config =
-  (process.env.WAKUWORK_CONFIG && JSON.parse(process.env.WAKUWORK_CONFIG)) ||
-  {};
-const dirFromConfig = {
-  dev: config.devServer?.dir,
-  build: config.build?.dir,
-  start: config.prdServer?.dir,
-}[String(process.env.WAKUWORK_CMD)];
-const dir = path.resolve(dirFromConfig || ".");
-const basePath = config.build?.basePath || "/"; // FIXME it's not build only
-const distPath = config.files?.dist || "dist";
-const entriesFile = path.join(
-  dir,
-  process.env.WAKUWORK_CMD === "build" ? distPath : "",
-  config.files?.entriesJs || "entries.js"
-);
-
-const vitePromise = createServer({
-  root: dir,
-  plugins: [rscPlugin()],
-  appType: "custom",
-});
-
-const loadEntries = async () => {
-  const vite = await vitePromise;
-  return vite.ssrLoadModule(entriesFile);
-};
-
-const loadServerFile = async (fname: string) => {
-  const vite = await vitePromise;
-  return vite.ssrLoadModule(fname);
-};
-
-const getFunctionComponent = async (rscId: string) => {
-  const { getEntry } = await loadEntries();
-  const mod = await getEntry(rscId);
-  if (typeof mod === "function") {
-    return mod;
-  }
-  if (typeof mod.default === "function") {
-    return mod.default;
-  }
-  throw new Error("No function component found");
-};
-
-parentPort!.on("message", async (mesg: MessageReq) => {
+const handleRender = async (mesg: MessageReq & { type: "render" }) => {
   const { id, input, loadClientEntries, loadServerEntries, notifyServerEntry } =
     mesg;
   try {
@@ -167,10 +66,62 @@ parentPort!.on("message", async (mesg: MessageReq) => {
     };
     parentPort!.postMessage(mesg);
   }
+};
+
+parentPort!.on("message", (mesg: MessageReq) => {
+  if ((mesg.type = "render")) {
+    handleRender(mesg);
+  }
 });
 
+type PipeableStream = {
+  pipe<T extends Writable>(destination: T): T;
+};
+
+// TODO use of process.env is all temporary
+// TODO these are temporary
+const config: Config =
+  (process.env.WAKUWORK_CONFIG && JSON.parse(process.env.WAKUWORK_CONFIG)) ||
+  {};
+const dirFromConfig = {
+  dev: config.devServer?.dir,
+  build: config.build?.dir,
+  start: config.prdServer?.dir,
+}[String(process.env.WAKUWORK_CMD)];
+const dir = path.resolve(dirFromConfig || ".");
+const basePath = config.build?.basePath || "/"; // FIXME it's not build only
+const distPath = config.files?.dist || "dist";
+const entriesFile = path.join(
+  dir,
+  process.env.WAKUWORK_CMD === "build" ? distPath : "",
+  config.files?.entriesJs || "entries.js"
+);
+
+const vitePromise = createServer({
+  root: dir,
+  plugins: [rscPlugin()],
+  appType: "custom",
+});
+
+const loadServerFile = async (fname: string) => {
+  const vite = await vitePromise;
+  return vite.ssrLoadModule(fname);
+};
+
+const getFunctionComponent = async (rscId: string) => {
+  const { getEntry } = await loadServerFile(entriesFile);
+  const mod = await getEntry(rscId);
+  if (typeof mod === "function") {
+    return mod;
+  }
+  if (typeof mod.default === "function") {
+    return mod.default;
+  }
+  throw new Error("No function component found");
+};
+
 async function renderRSC(
-  input: Input,
+  input: RenderInput,
   options: {
     loadClientEntries: boolean | undefined;
     loadServerEntries: boolean | undefined;
@@ -180,13 +131,13 @@ async function renderRSC(
   let clientEntries: Record<string, string> | undefined;
   let serverEntries: Record<string, string> | undefined;
   if (options.loadClientEntries) {
-    ({ clientEntries } = await loadEntries());
+    ({ clientEntries } = await loadServerFile(entriesFile));
     if (!clientEntries) {
       throw new Error("Failed to load clientEntries");
     }
   }
   if (options.loadServerEntries) {
-    ({ serverEntries } = await loadEntries());
+    ({ serverEntries } = await loadServerFile(entriesFile));
     if (!serverEntries) {
       throw new Error("Failed to load serverEntries");
     }

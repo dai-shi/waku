@@ -2,27 +2,27 @@ import { PassThrough } from "node:stream";
 import type { Readable } from "node:stream";
 import { Worker } from "node:worker_threads";
 
-export type Input<Props extends {} = {}> = {
+const worker = new Worker(new URL("rsc-handler-worker.js", import.meta.url), {
+  execArgv: ["--conditions", "react-server"],
+});
+
+export type RenderInput<Props extends {} = {}> = {
   rscId?: string | undefined;
   props?: Props | undefined;
   rsfId?: string | undefined;
   args?: unknown[] | undefined;
 };
 
-type Options = {
+type RenderOptions = {
   loadClientEntries?: boolean;
   loadServerEntries?: boolean;
   serverEntryCallback?: (rsfId: string, fileId: string) => void;
 };
 
-const worker = new Worker(new URL("rsc-handler-worker.js", import.meta.url), {
-  execArgv: ["--conditions", "react-server"],
-});
-
 export type MessageReq = {
   id: number;
-  type: "start";
-  input: Input;
+  type: "render";
+  input: RenderInput;
   loadClientEntries: boolean | undefined;
   loadServerEntries: boolean | undefined;
   notifyServerEntry: boolean;
@@ -42,7 +42,10 @@ worker.on("message", (mesg: MessageRes) => {
 
 let nextId = 1;
 
-export function renderRSC(input: Input, options?: Options): Readable {
+export function renderRSC(
+  input: RenderInput,
+  options?: RenderOptions
+): Readable {
   const id = nextId++;
   const passthrough = new PassThrough();
   messageCallbacks.set(id, (mesg) => {
@@ -62,7 +65,7 @@ export function renderRSC(input: Input, options?: Options): Readable {
   });
   const mesg: MessageReq = {
     id,
-    type: "start",
+    type: "render",
     input,
     loadClientEntries: options?.loadClientEntries,
     loadServerEntries: options?.loadServerEntries,
