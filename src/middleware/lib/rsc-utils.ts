@@ -10,7 +10,7 @@ export const generatePrefetchCode = (
   const entryItems = Array.from(entryItemsIterable);
   let code = "";
   if (entryItems.length) {
-    const rscIds = [...new Set(entryItems.map(([rscId]) => rscId))];
+    const rscIds = Array.from(new Set(entryItems.map(([rscId]) => rscId)));
     code += `
 globalThis.__WAKUWORK_PREFETCHED__ = {
 ${rscIds

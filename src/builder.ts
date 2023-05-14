@@ -13,15 +13,15 @@ import { renderRSC, prefetcherRSC } from "./middleware/lib/rsc-handler.js";
 
 // TODO we have duplicate code here and rscPrd.ts and rsc-handler*.ts
 
-// TODO we could do this without plugin anyway
-const rscPlugin = (): Plugin => {
+// FIXME we could do this without plugin anyway
+const rscIndexPlugin = (): Plugin => {
   const code = `
 globalThis.__wakuwork_module_cache__ = new Map();
 globalThis.__webpack_chunk_load__ = async (id) => id.startsWith("wakuwork/") || import(id).then((m) => globalThis.__wakuwork_module_cache__.set(id, m));
 globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.get(id);
 `;
   return {
-    name: "rscPlugin",
+    name: "rsc-index-plugin",
     async transformIndexHtml() {
       return [
         {
@@ -34,85 +34,47 @@ globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.ge
   };
 };
 
-const walkDirSync = (dir: string, callback: (filePath: string) => void) => {
-  fs.readdirSync(dir, { withFileTypes: true }).forEach((dirent) => {
-    const filePath = path.join(dir, dirent.name);
-    if (dirent.isDirectory()) {
-      if (dirent.name !== "node_modules") {
-        walkDirSync(filePath, callback);
-      }
-    } else {
-      callback(filePath);
-    }
-  });
-};
-
-const getClientEntryFiles = (dir: string) => {
-  const files: string[] = [];
-  walkDirSync(dir, (fname) => {
-    if (fname.endsWith(".ts") || fname.endsWith(".tsx")) {
-      const mod = swc.parseFileSync(fname, {
-        syntax: "typescript",
-        tsx: fname.endsWith(".tsx"),
-      });
-      for (const item of mod.body) {
-        if (
-          item.type === "ExpressionStatement" &&
-          item.expression.type === "StringLiteral" &&
-          item.expression.value === "use client"
-        ) {
-          files.push(fname);
+const rscBundlePlugin = (
+  clientEntryCallback: (id: string) => void
+): Plugin => {
+  return {
+    name: "rsc-bundle-plugin",
+    transform(code, id) {
+      const ext = path.extname(id);
+      if ([".ts", ".tsx", ".js", ".jsx"].includes(ext)) {
+        const mod = swc.parseSync(code, {
+          syntax: ext === ".ts" || ext === ".tsx" ? "typescript" : "ecmascript",
+          tsx: ext === ".tsx",
+        });
+        for (const item of mod.body) {
+          if (
+            item.type === "ExpressionStatement" &&
+            item.expression.type === "StringLiteral" &&
+            item.expression.value === "use client"
+          ) {
+            clientEntryCallback(id);
+            break;
+          }
         }
       }
-    }
-    // TODO transpile ".jsx"
-  });
-  return files;
-};
-
-const compileFiles = (dir: string, distPath: string) => {
-  walkDirSync(dir, (fname) => {
-    const relativePath = path.relative(dir, fname);
-    if (relativePath.startsWith(distPath)) {
-      return;
-    }
-    if (fname.endsWith(".ts") || fname.endsWith(".tsx")) {
-      const { code } = swc.transformFileSync(fname, {
-        jsc: {
-          parser: {
-            syntax: "typescript",
-            tsx: fname.endsWith(".tsx"),
-          },
-          transform: {
-            react: {
-              runtime: "automatic",
-            },
-          },
-        },
-      });
-      const destFile = path.join(
-        dir,
-        distPath,
-        relativePath.replace(/\.tsx?$/, ".js")
-      );
-      fs.mkdirSync(path.dirname(destFile), { recursive: true });
-      fs.writeFileSync(destFile, code);
-    }
-    // TODO transpile ".jsx"
-  });
+      return code;
+    },
+  };
 };
 
 const prerender = async (
   dir: string,
   distPath: string,
   publicPath: string,
-  entriesFile: string,
+  distEntriesFile: string,
   basePath: string,
   publicIndexHtmlFile: string
 ): Promise<Record<string, string>> => {
   const serverEntries: Record<string, string> = {};
 
-  const { prerenderer, clientEntries } = await (import(entriesFile) as Promise<{
+  const { prerenderer, clientEntries } = await (import(
+    distEntriesFile
+  ) as Promise<{
     getEntry: GetEntry;
     prerenderer?: Prerenderer;
     clientEntries?: Record<string, string>;
@@ -224,23 +186,49 @@ export async function runBuild(config: Config = {}) {
     publicPath,
     config.files?.indexHtml || "index.html"
   );
-  const entriesFile = path.join(
+  const distEntriesFile = path.join(
     dir,
     distPath,
     config.files?.entriesJs || "entries.js"
   );
   const require = createRequire(import.meta.url);
 
+  const clientEntryFileSet = new Set<string>();
+  // TODO "use server" separation doesn't work yet
+  const serverBuildOutput = await build({
+    root: dir,
+    base: basePath,
+    plugins: [rscBundlePlugin((id) => clientEntryFileSet.add(id))],
+    build: {
+      outDir: distPath,
+      ssr: "entries",
+      rollupOptions: {
+        output: {
+          banner: (chunk) => {
+            // HACK to pull directives front
+            if (chunk.moduleIds.some((id) => clientEntryFileSet.has(id))) {
+              return '"use client";';
+            }
+            return "";
+          },
+        },
+      },
+    },
+  });
+  if (!("output" in serverBuildOutput)) {
+    throw new Error("Unexpected vite server build output");
+  }
+
   const clientEntryFiles = Object.fromEntries(
-    getClientEntryFiles(dir).map((fname, i) => [`rsc${i}`, fname])
+    Array.from(clientEntryFileSet).map((fname, i) => [`rsc${i}`, fname])
   );
-  const output = await build({
+  const clientBuildOutput = await build({
     root: dir,
     base: basePath,
     plugins: [
       // @ts-ignore
       react(),
-      rscPlugin(),
+      rscIndexPlugin(),
     ],
     build: {
       outDir: publicPath,
@@ -253,37 +241,44 @@ export async function runBuild(config: Config = {}) {
       },
     },
   });
-  const clientEntries: Record<string, string> = {};
-  if (!("output" in output)) {
-    throw new Error("Unexpected vite build output");
+  if (!("output" in clientBuildOutput)) {
+    throw new Error("Unexpected vite client build output");
   }
-  for (const item of output.output) {
+  const clientEntries: Record<string, string> = {};
+  for (const item of clientBuildOutput.output) {
     const { name, fileName } = item;
-    const entryFile = name && clientEntryFiles[name];
+    const entryFile =
+      name &&
+      serverBuildOutput.output.find(
+        (item) =>
+          "moduleIds" in item &&
+          item.moduleIds.includes(clientEntryFiles[name] as string)
+      )?.fileName;
     if (entryFile) {
-      clientEntries[path.relative(dir, entryFile)] = fileName;
+      clientEntries[entryFile] = fileName;
     }
   }
   console.log("clientEntries", clientEntries);
 
-  compileFiles(dir, distPath);
   fs.appendFileSync(
-    entriesFile,
+    distEntriesFile,
     `export const clientEntries=${JSON.stringify(clientEntries)};`
   );
+  /*
   const serverEntries = await prerender(
     dir,
     distPath,
     publicPath,
-    entriesFile,
+    distEntriesFile,
     basePath,
     publicIndexHtmlFile
   );
   console.log("serverEntries", serverEntries);
   fs.appendFileSync(
-    entriesFile,
+    distEntriesFile,
     `export const serverEntries=${JSON.stringify(serverEntries)};`
   );
+  */
 
   const origPackageJson = require(path.join(dir, "package.json"));
   const packageJson = {

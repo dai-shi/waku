@@ -15,8 +15,8 @@ export type RenderInput<Props extends {} = {}> = {
 
 type RenderOptions = {
   loadClientEntries?: boolean;
-  loadServerEntries?: boolean;
-  serverEntryCallback?: (rsfId: string, fileId: string) => void;
+  loadServerEntries?: boolean; // TODO remove
+  serverEntryCallback?: (rsfId: string, fileId: string) => void; // TODO remove
 };
 
 export type MessageReq =
