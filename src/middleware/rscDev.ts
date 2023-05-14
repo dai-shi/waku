@@ -1,55 +1,20 @@
-import path from "node:path";
-
 import RSDWServer from "react-server-dom-webpack/server.node.unbundled";
 import busboy from "busboy";
 
 import type { MiddlewareCreator } from "./lib/common.js";
-import type { Prefetcher } from "../server.js";
-import { generatePrefetchCode } from "./lib/rsc-utils.js";
 
-import { renderRSC } from "./lib/rsc-handler.js";
+import { renderRSC, prefetcherRSC } from "./lib/rsc-handler.js";
 
 const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 
-const CLIENT_REFERENCE = Symbol.for("react.client.reference");
-
-const rscDev: MiddlewareCreator = (config, shared) => {
-  const dir = path.resolve(config.devServer?.dir || ".");
-
-  const entriesFile =
-    (process.platform === "win32" ? "file://" : "") +
-    path.join(dir, config.files?.entriesJs || "entries.js");
-  const prefetcher: Prefetcher = async (pathItem) => {
-    return {}; // TODO TEMP experimenting without prefetcher
-    const mod = await import(entriesFile);
-    return mod?.prefetcher(pathItem) ?? {};
-  };
-
-  const decodeId = (encodedId: string): [id: string, name: string] => {
-    let [id, name] = encodedId.split("#") as [string, string];
-    if (!id.startsWith("wakuwork/")) {
-      id = path.relative("file://" + encodeURI(dir), id);
-      id = "/" + decodeURI(id);
-    }
-    return [id, name];
-  };
-
-  shared.devScriptToInject = async (path: string) => {
-    let code = `
+const rscDev: MiddlewareCreator = (_config, shared) => {
+  shared.devScriptToInject = async (pathItem: string) => {
+    const code =
+      `
 globalThis.__wakuwork_module_cache__ = new Map();
 globalThis.__webpack_chunk_load__ = async (id) => id.startsWith("wakuwork/") || import(id).then((m) => globalThis.__wakuwork_module_cache__.set(id, m));
-globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.get(id);
-`;
-    const { entryItems = [], clientModules = [] } = await prefetcher(path);
-    const moduleIds: string[] = [];
-    for (const m of clientModules as any[]) {
-      if (m["$$typeof"] !== CLIENT_REFERENCE) {
-        throw new Error("clientModules must be client references");
-      }
-      const [id] = decodeId(m["$$id"]);
-      moduleIds.push(id);
-    }
-    code += generatePrefetchCode(entryItems, moduleIds);
+globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.get(id);` +
+      (await prefetcherRSC(pathItem));
     return code;
   };
 
@@ -57,7 +22,7 @@ globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.ge
     const rscId = req.headers["x-react-server-component-id"];
     const rsfId = req.headers["x-react-server-function-id"];
     if (Array.isArray(rscId) || Array.isArray(rsfId)) {
-      throw new Error('rscId and rsfId should not be array')
+      throw new Error("rscId and rsfId should not be array");
     }
     let props = {};
     if (rscId) {

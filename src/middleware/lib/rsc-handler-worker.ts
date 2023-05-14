@@ -6,12 +6,13 @@ import { createServer } from "vite";
 import { createElement } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 
-import { transformRsfId } from "./rsc-utils.js";
+import { transformRsfId, generatePrefetchCode } from "./rsc-utils.js";
 import type { RenderInput, MessageReq, MessageRes } from "./rsc-handler.js";
 import type { Config } from "../../config.js";
 import { rscPlugin } from "./vite-rsc-plugin.js";
 
 const { renderToPipeableStream } = RSDWServer;
+const CLIENT_REFERENCE = Symbol.for("react.client.reference");
 
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
   const { id, input, loadClientEntries, loadServerEntries, notifyServerEntry } =
@@ -68,9 +69,33 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
   }
 };
 
+const handlePrefetcher = async (mesg: MessageReq & { type: "prefetcher" }) => {
+  const { id, pathItem, loadClientEntries } = mesg;
+  try {
+    const code = await prefetcherRSC(pathItem, {
+      loadClientEntries,
+    });
+    const mesg: MessageRes = {
+      id,
+      type: "prefetcher",
+      code,
+    };
+    parentPort!.postMessage(mesg);
+  } catch (err) {
+    const mesg: MessageRes = {
+      id,
+      type: "err",
+      err,
+    };
+    parentPort!.postMessage(mesg);
+  }
+};
+
 parentPort!.on("message", (mesg: MessageReq) => {
-  if ((mesg.type = "render")) {
+  if (mesg.type === "render") {
     handleRender(mesg);
+  } else if (mesg.type === "prefetcher") {
+    handlePrefetcher(mesg);
   }
 });
 
@@ -231,4 +256,62 @@ async function renderRSC(
     );
   }
   throw new Error("Unexpected input");
+}
+
+async function prefetcherRSC(
+  pathItem: string,
+  options: {
+    loadClientEntries: boolean | undefined;
+  }
+): Promise<string> {
+  let code = "";
+
+  // TOOD duplicated code with renderRSC
+  let clientEntries: Record<string, string> | undefined;
+  if (options.loadClientEntries) {
+    ({ clientEntries } = await loadServerFile(entriesFile));
+    if (!clientEntries) {
+      throw new Error("Failed to load clientEntries");
+    }
+  }
+  const getClientEntry = (id: string) => {
+    if (!clientEntries) {
+      return id;
+    }
+    const clientEntry =
+      clientEntries[id] ||
+      clientEntries[id.replace(/\.js$/, ".ts")] ||
+      clientEntries[id.replace(/\.js$/, ".tsx")] ||
+      clientEntries[id.replace(/\.js$/, ".jsx")];
+    if (!clientEntry) {
+      throw new Error("No client entry found");
+    }
+    return clientEntry;
+  };
+  const decodeId = (encodedId: string): [id: string, name: string] => {
+    let [id, name] = encodedId.split("#") as [string, string];
+    if (!id.startsWith("wakuwork/")) {
+      id = path.relative(
+        path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : ""),
+        id
+      );
+      id = basePath + getClientEntry(id);
+    }
+    return [id, name];
+  };
+
+  const { prefetcher } = await loadServerFile(entriesFile);
+  const { entryItems = [], clientModules = [] } = prefetcher
+    ? await prefetcher(pathItem)
+    : {};
+  const moduleIds: string[] = [];
+  for (const m of clientModules as any[]) {
+    if (m["$$typeof"] !== CLIENT_REFERENCE) {
+      throw new Error("clientModules must be client references");
+    }
+    const [id] = decodeId(m["$$id"]);
+    moduleIds.push(id);
+  }
+  code += generatePrefetchCode(entryItems, moduleIds);
+  return code;
 }

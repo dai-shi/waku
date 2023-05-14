@@ -19,20 +19,28 @@ type RenderOptions = {
   serverEntryCallback?: (rsfId: string, fileId: string) => void;
 };
 
-export type MessageReq = {
-  id: number;
-  type: "render";
-  input: RenderInput;
-  loadClientEntries: boolean | undefined;
-  loadServerEntries: boolean | undefined;
-  notifyServerEntry: boolean;
-};
+export type MessageReq =
+  | {
+      id: number;
+      type: "render";
+      input: RenderInput;
+      loadClientEntries: boolean | undefined;
+      loadServerEntries: boolean | undefined;
+      notifyServerEntry: boolean;
+    }
+  | {
+      id: number;
+      type: "prefetcher";
+      pathItem: string;
+      loadClientEntries: boolean | undefined;
+    };
 
 export type MessageRes =
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "end" }
   | { id: number; type: "err"; err: unknown }
-  | { id: number; type: "serverEntry"; rsfId: string; fileId: string };
+  | { id: number; type: "serverEntry"; rsfId: string; fileId: string }
+  | { id: number; type: "prefetcher"; code: string };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
@@ -73,4 +81,29 @@ export function renderRSC(
   };
   worker.postMessage(mesg);
   return passthrough;
+}
+
+export function prefetcherRSC(
+  pathItem: string,
+  loadClientEntries?: boolean
+): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const id = nextId++;
+    messageCallbacks.set(id, (mesg) => {
+      if (mesg.type === "prefetcher") {
+        resolve(mesg.code);
+        messageCallbacks.delete(id);
+      } else if (mesg.type === "err") {
+        reject(mesg.err);
+        messageCallbacks.delete(id);
+      }
+    });
+    const mesg: MessageReq = {
+      id,
+      type: "prefetcher",
+      pathItem,
+      loadClientEntries,
+    };
+    worker.postMessage(mesg);
+  });
 }
