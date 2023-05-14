@@ -34,9 +34,7 @@ globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.ge
   };
 };
 
-const rscBundlePlugin = (
-  clientEntryCallback: (id: string) => void
-): Plugin => {
+const rscBundlePlugin = (clientEntryCallback: (id: string) => void): Plugin => {
   return {
     name: "rsc-bundle-plugin",
     transform(code, id) {
@@ -264,21 +262,22 @@ export async function runBuild(config: Config = {}) {
     distEntriesFile,
     `export const clientEntries=${JSON.stringify(clientEntries)};`
   );
-  /*
-  const serverEntries = await prerender(
-    dir,
-    distPath,
-    publicPath,
-    distEntriesFile,
-    basePath,
-    publicIndexHtmlFile
-  );
-  console.log("serverEntries", serverEntries);
-  fs.appendFileSync(
-    distEntriesFile,
-    `export const serverEntries=${JSON.stringify(serverEntries)};`
-  );
-  */
+  if (!"STILL WIP") {
+    // TODO still wip
+    const serverEntries = await prerender(
+      dir,
+      distPath,
+      publicPath,
+      distEntriesFile,
+      basePath,
+      publicIndexHtmlFile
+    );
+    console.log("serverEntries", serverEntries);
+    fs.appendFileSync(
+      distEntriesFile,
+      `export const serverEntries=${JSON.stringify(serverEntries)};`
+    );
+  }
 
   const origPackageJson = require(path.join(dir, "package.json"));
   const packageJson = {
