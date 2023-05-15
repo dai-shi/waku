@@ -1,4 +1,5 @@
 import path from "node:path";
+import fs from "node:fs";
 import { parentPort } from "node:worker_threads";
 import { Writable } from "node:stream";
 
@@ -9,6 +10,7 @@ import RSDWServer from "react-server-dom-webpack/server";
 import { transformRsfId, generatePrefetchCode } from "./rsc-utils.js";
 import type { RenderInput, MessageReq, MessageRes } from "./rsc-handler.js";
 import type { Config } from "../../config.js";
+import type { GetEntry, Prefetcher, Prerenderer } from "../../server.js";
 import { rscPlugin } from "./vite-rsc-plugin.js";
 
 const { renderToPipeableStream } = RSDWServer;
@@ -57,13 +59,30 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
 const handlePrefetcher = async (mesg: MessageReq & { type: "prefetcher" }) => {
   const { id, pathItem, loadClientEntries } = mesg;
   try {
-    const code = await prefetcherRSC(pathItem, {
-      loadClientEntries,
-    });
+    const code = await prefetcherRSC(pathItem, loadClientEntries);
     const mesg: MessageRes = {
       id,
       type: "prefetcher",
       code,
+    };
+    parentPort!.postMessage(mesg);
+  } catch (err) {
+    const mesg: MessageRes = {
+      id,
+      type: "err",
+      err,
+    };
+    parentPort!.postMessage(mesg);
+  }
+};
+
+const handlePrerender = async (mesg: MessageReq & { type: "prerender" }) => {
+  const { id, loadClientEntries } = mesg;
+  try {
+    await prerenderRSC(loadClientEntries);
+    const mesg: MessageRes = {
+      id,
+      type: "end",
     };
     parentPort!.postMessage(mesg);
   } catch (err) {
@@ -81,6 +100,8 @@ parentPort!.on("message", (mesg: MessageReq) => {
     handleRender(mesg);
   } else if (mesg.type === "prefetcher") {
     handlePrefetcher(mesg);
+  } else if (mesg.type === "prerender") {
+    handlePrerender(mesg);
   }
 });
 
@@ -101,6 +122,12 @@ const dirFromConfig = {
 const dir = path.resolve(dirFromConfig || ".");
 const basePath = config.build?.basePath || "/"; // FIXME it's not build only
 const distPath = config.files?.dist || "dist";
+const publicPath = path.join(distPath, config.files?.public || "public");
+const publicIndexHtmlFile = path.join(
+  dir,
+  publicPath,
+  config.files?.indexHtml || "index.html"
+);
 const entriesFile = path.join(
   dir,
   process.env.WAKUWORK_CMD === "build" ? distPath : "",
@@ -119,7 +146,9 @@ const loadServerFile = async (fname: string) => {
 };
 
 const getFunctionComponent = async (rscId: string) => {
-  const { getEntry } = await loadServerFile(entriesFile);
+  const { getEntry } = await (loadServerFile(entriesFile) as Promise<{
+    getEntry: GetEntry;
+  }>);
   const mod = await getEntry(rscId);
   if (typeof mod === "function") {
     return mod;
@@ -205,15 +234,13 @@ async function renderRSC(
 
 async function prefetcherRSC(
   pathItem: string,
-  options: {
-    loadClientEntries: boolean | undefined;
-  }
+  loadClientEntries: boolean
 ): Promise<string> {
   let code = "";
 
-  // TOOD duplicated code with renderRSC
+  // FIXME duplicated code with renderRSC
   let clientEntries: Record<string, string> | undefined;
-  if (options.loadClientEntries) {
+  if (loadClientEntries) {
     ({ clientEntries } = await loadServerFile(entriesFile));
     if (!clientEntries) {
       throw new Error("Failed to load clientEntries");
@@ -245,7 +272,9 @@ async function prefetcherRSC(
     return [id, name];
   };
 
-  const { prefetcher } = await loadServerFile(entriesFile);
+  const { prefetcher } = await (loadServerFile(entriesFile) as Promise<{
+    prefetcher: Prefetcher;
+  }>);
   const { entryItems = [], clientModules = [] } = prefetcher
     ? await prefetcher(pathItem)
     : {};
@@ -259,4 +288,106 @@ async function prefetcherRSC(
   }
   code += generatePrefetchCode(entryItems, moduleIds);
   return code;
+}
+
+// TODO this takes too much responsibility
+// FIXME it shouldn't depend on `fs`
+async function prerenderRSC(loadClientEntries: boolean): Promise<void> {
+  const { prerenderer } = await (loadServerFile(entriesFile) as Promise<{
+    prerenderer?: Prerenderer;
+  }>);
+
+  // FIXME duplicated code with renderRSC
+  let clientEntries: Record<string, string> | undefined;
+  if (loadClientEntries) {
+    ({ clientEntries } = await loadServerFile(entriesFile));
+    if (!clientEntries) {
+      throw new Error("Failed to load clientEntries");
+    }
+  }
+  const getClientEntry = (id: string) => {
+    if (!clientEntries) {
+      return id;
+    }
+    const clientEntry =
+      clientEntries[id] ||
+      clientEntries[id.replace(/\.js$/, ".ts")] ||
+      clientEntries[id.replace(/\.js$/, ".tsx")] ||
+      clientEntries[id.replace(/\.js$/, ".jsx")];
+    if (!clientEntry) {
+      throw new Error("No client entry found");
+    }
+    return clientEntry;
+  };
+  const decodeId = (encodedId: string): [id: string, name: string] => {
+    let [id, name] = encodedId.split("#") as [string, string];
+    if (!id.startsWith("wakuwork/")) {
+      id = path.relative(
+        path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : ""),
+        id
+      );
+      id = basePath + getClientEntry(id);
+    }
+    return [id, name];
+  };
+
+  if (prerenderer) {
+    const {
+      entryItems = [],
+      paths = [],
+      unstable_customCode = () => "",
+    } = await prerenderer();
+    await Promise.all(
+      Array.from(entryItems).map(async ([rscId, props]) => {
+        // FIXME we blindly expect JSON.stringify usage is deterministic
+        const serializedProps = JSON.stringify(props);
+        const searchParams = new URLSearchParams();
+        searchParams.set("props", serializedProps);
+        const destFile = path.join(
+          dir,
+          publicPath,
+          "RSC",
+          decodeURIComponent(rscId),
+          decodeURIComponent(`${searchParams}`)
+        );
+        fs.mkdirSync(path.dirname(destFile), { recursive: true });
+        const pipeable = await renderRSC({ rscId, props: props as any }, true);
+        await new Promise<void>((resolve, reject) => {
+          const stream = fs.createWriteStream(destFile);
+          stream.on("finish", resolve);
+          stream.on("error", reject);
+          pipeable.pipe(stream);
+        });
+      })
+    );
+
+    const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
+      encoding: "utf8",
+    });
+    for (const pathItem of paths) {
+      const code = await prefetcherRSC(pathItem, true);
+      const destFile = path.join(
+        dir,
+        publicPath,
+        pathItem,
+        pathItem.endsWith("/") ? "index.html" : ""
+      );
+      let data = "";
+      if (fs.existsSync(destFile)) {
+        data = fs.readFileSync(destFile, { encoding: "utf8" });
+      } else {
+        fs.mkdirSync(path.dirname(destFile), { recursive: true });
+        data = publicIndexHtml;
+      }
+      if (code) {
+        // HACK is this too naive to inject script code?
+        data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
+      }
+      const code2 = unstable_customCode(pathItem, decodeId);
+      if (code2) {
+        data = data.replace(/<\/body>/, `<script>${code2}</script></body>`);
+      }
+      fs.writeFileSync(destFile, data, { encoding: "utf8" });
+    }
+  }
 }

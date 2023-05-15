@@ -25,6 +25,11 @@ export type MessageReq =
       type: "prefetcher";
       pathItem: string;
       loadClientEntries: boolean;
+    }
+  | {
+      id: number;
+      type: "prerender";
+      loadClientEntries: boolean;
     };
 
 export type MessageRes =
@@ -89,6 +94,29 @@ export function prefetcherRSC(
       id,
       type: "prefetcher",
       pathItem,
+      loadClientEntries,
+    };
+    worker.postMessage(mesg);
+  });
+}
+
+export function prerenderRSC(
+  loadClientEntries: boolean
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const id = nextId++;
+    messageCallbacks.set(id, (mesg) => {
+      if (mesg.type === "end") {
+        resolve();
+        messageCallbacks.delete(id);
+      } else if (mesg.type === "err") {
+        reject(mesg.err);
+        messageCallbacks.delete(id);
+      }
+    });
+    const mesg: MessageReq = {
+      id,
+      type: "prerender",
       loadClientEntries,
     };
     worker.postMessage(mesg);
