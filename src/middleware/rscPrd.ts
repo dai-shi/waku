@@ -10,7 +10,7 @@ const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 
 const rscPrd: MiddlewareCreator = (_config, shared) => {
   shared.prdScriptToInject = async (pathItem: string) => {
-    const code = await prefetcherRSC(pathItem);
+    const code = await prefetcherRSC(pathItem, true);
     return code;
   };
 
@@ -46,10 +46,7 @@ const rscPrd: MiddlewareCreator = (_config, shared) => {
       }
     }
     if (rscId || rsfId) {
-      renderRSC(
-        { rscId, props, rsfId, args },
-        { loadClientEntries: true }
-      ).pipe(res);
+      renderRSC({ rscId, props, rsfId, args }, true).pipe(res);
       return;
     }
     await next();

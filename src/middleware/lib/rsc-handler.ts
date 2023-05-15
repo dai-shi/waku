@@ -13,33 +13,24 @@ export type RenderInput<Props extends {} = {}> = {
   args?: unknown[] | undefined;
 };
 
-type RenderOptions = {
-  loadClientEntries?: boolean;
-  loadServerEntries?: boolean; // TODO remove
-  serverEntryCallback?: (rsfId: string, fileId: string) => void; // TODO remove
-};
-
 export type MessageReq =
   | {
       id: number;
       type: "render";
       input: RenderInput;
-      loadClientEntries: boolean | undefined;
-      loadServerEntries: boolean | undefined;
-      notifyServerEntry: boolean;
+      loadClientEntries: boolean;
     }
   | {
       id: number;
       type: "prefetcher";
       pathItem: string;
-      loadClientEntries: boolean | undefined;
+      loadClientEntries: boolean;
     };
 
 export type MessageRes =
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "end" }
   | { id: number; type: "err"; err: unknown }
-  | { id: number; type: "serverEntry"; rsfId: string; fileId: string }
   | { id: number; type: "prefetcher"; code: string };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
@@ -52,7 +43,7 @@ let nextId = 1;
 
 export function renderRSC(
   input: RenderInput,
-  options?: RenderOptions
+  loadClientEntries: boolean
 ): Readable {
   const id = nextId++;
   const passthrough = new PassThrough();
@@ -67,17 +58,13 @@ export function renderRSC(
         mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err))
       );
       messageCallbacks.delete(id);
-    } else if (mesg.type === "serverEntry" && options?.serverEntryCallback) {
-      options.serverEntryCallback(mesg.rsfId, mesg.fileId);
     }
   });
   const mesg: MessageReq = {
     id,
     type: "render",
     input,
-    loadClientEntries: options?.loadClientEntries,
-    loadServerEntries: options?.loadServerEntries,
-    notifyServerEntry: !!options?.serverEntryCallback,
+    loadClientEntries,
   };
   worker.postMessage(mesg);
   return passthrough;
@@ -85,7 +72,7 @@ export function renderRSC(
 
 export function prefetcherRSC(
   pathItem: string,
-  loadClientEntries?: boolean
+  loadClientEntries: boolean
 ): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     const id = nextId++;

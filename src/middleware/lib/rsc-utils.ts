@@ -43,10 +43,7 @@ import('${moduleId}');`;
 };
 
 // HACK Patching stream is very fragile.
-export const transformRsfId = (
-  prefixToRemove: string,
-  convert: (id: string) => string
-) =>
+export const transformRsfId = (prefixToRemove: string) =>
   new Transform({
     transform(chunk, encoding, callback) {
       if (encoding !== ("buffer" as any)) {
@@ -60,7 +57,7 @@ export const transformRsfId = (
           new RegExp(`^([0-9]+):{"id":"${prefixToRemove}(.*?)"(.*)$`)
         );
         if (match) {
-          lines[i] = `${match[1]}:{"id":"${convert(match[2])}"${match[3]}`;
+          lines[i] = `${match[1]}:{"id":"${match[2]}"${match[3]}`;
           changed = true;
         }
       }

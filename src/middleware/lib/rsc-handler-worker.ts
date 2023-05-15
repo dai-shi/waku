@@ -15,24 +15,9 @@ const { renderToPipeableStream } = RSDWServer;
 const CLIENT_REFERENCE = Symbol.for("react.client.reference");
 
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
-  const { id, input, loadClientEntries, loadServerEntries, notifyServerEntry } =
-    mesg;
+  const { id, input, loadClientEntries } = mesg;
   try {
-    const pipeable = await renderRSC(input, {
-      loadClientEntries,
-      loadServerEntries,
-      serverEntryCallback: notifyServerEntry
-        ? (rsfId, fileId) => {
-            const mesg: MessageRes = {
-              id,
-              type: "serverEntry",
-              rsfId,
-              fileId,
-            };
-            parentPort!.postMessage(mesg);
-          }
-        : undefined,
-    });
+    const pipeable = await renderRSC(input, loadClientEntries);
     const writable = new Writable({
       write(chunk, encoding, callback) {
         if (encoding !== ("buffer" as any)) {
@@ -147,27 +132,14 @@ const getFunctionComponent = async (rscId: string) => {
 
 async function renderRSC(
   input: RenderInput,
-  options: {
-    loadClientEntries: boolean | undefined;
-    loadServerEntries: boolean | undefined;
-    serverEntryCallback: ((rsfId: string, fileId: string) => void) | undefined;
-  }
+  loadClientEntries: boolean
 ): Promise<PipeableStream> {
   let clientEntries: Record<string, string> | undefined;
-  let serverEntries: Record<string, string> | undefined;
-  if (options.loadClientEntries) {
+  if (loadClientEntries) {
     ({ clientEntries } = await loadServerFile(entriesFile));
     if (!clientEntries) {
       throw new Error("Failed to load clientEntries");
     }
-  }
-  if (options.loadServerEntries) {
-    ({ serverEntries } = await loadServerFile(entriesFile));
-    if (!serverEntries) {
-      throw new Error("Failed to load serverEntries");
-    }
-  } else if (process.env.WAKUWORK_CMD !== "dev") {
-    serverEntries = {};
   }
 
   const getClientEntry = (id: string) => {
@@ -207,34 +179,8 @@ async function renderRSC(
     }
   );
 
-  const registerServerEntry = (fileId: string): string => {
-    if (!serverEntries) {
-      return fileId;
-    }
-    for (const entry of Object.entries(serverEntries)) {
-      if (entry[1] === fileId) {
-        return entry[0];
-      }
-    }
-    const rsfId = `rsf${Object.keys(serverEntries).length}`;
-    serverEntries[rsfId] = fileId;
-    options.serverEntryCallback?.(rsfId, fileId);
-    return rsfId;
-  };
-
-  const getServerEntry = (rsfId: string): string => {
-    if (!serverEntries) {
-      return rsfId;
-    }
-    const fileId = serverEntries[rsfId];
-    if (!fileId) {
-      throw new Error("No server entry found");
-    }
-    return fileId;
-  };
-
   if (input.rsfId && input.args) {
-    const [fileId, name] = getServerEntry(input.rsfId).split("#");
+    const [fileId, name] = input.rsfId.split("#");
     const fname = path.join(dir, fileId!);
     const mod = await loadServerFile(fname);
     const data = await (mod[name!] || mod)(...input.args);
@@ -250,8 +196,7 @@ async function renderRSC(
       bundlerConfig
     ).pipe(
       transformRsfId(
-        path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : ""),
-        registerServerEntry
+        path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : "")
       )
     );
   }

@@ -14,7 +14,7 @@ const rscDev: MiddlewareCreator = (_config, shared) => {
 globalThis.__wakuwork_module_cache__ = new Map();
 globalThis.__webpack_chunk_load__ = async (id) => id.startsWith("wakuwork/") || import(id).then((m) => globalThis.__wakuwork_module_cache__.set(id, m));
 globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.get(id);` +
-      (await prefetcherRSC(pathItem));
+      (await prefetcherRSC(pathItem, false));
     return code;
   };
 
@@ -50,7 +50,7 @@ globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.ge
       }
     }
     if (rscId || rsfId) {
-      renderRSC({ rscId, props, rsfId, args }).pipe(res);
+      renderRSC({ rscId, props, rsfId, args }, false).pipe(res);
       return;
     }
     await next();

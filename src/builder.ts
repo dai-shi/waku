@@ -67,9 +67,7 @@ const prerender = async (
   distEntriesFile: string,
   basePath: string,
   publicIndexHtmlFile: string
-): Promise<Record<string, string>> => {
-  const serverEntries: Record<string, string> = {};
-
+) => {
   const { prerenderer, clientEntries } = await (import(
     distEntriesFile
   ) as Promise<{
@@ -129,12 +127,7 @@ const prerender = async (
               rscId,
               props: props as any,
             },
-            {
-              loadClientEntries: true,
-              serverEntryCallback: (rsfId, fileId) => {
-                serverEntries[rsfId] = fileId;
-              },
-            }
+            true
           ).pipe(stream);
         });
       })
@@ -169,8 +162,6 @@ const prerender = async (
       fs.writeFileSync(destFile, data, { encoding: "utf8" });
     }
   }
-
-  return serverEntries;
 };
 
 export async function runBuild(config: Config = {}) {
@@ -264,18 +255,13 @@ export async function runBuild(config: Config = {}) {
   );
   if (!"STILL WIP") {
     // TODO still wip
-    const serverEntries = await prerender(
+    await prerender(
       dir,
       distPath,
       publicPath,
       distEntriesFile,
       basePath,
       publicIndexHtmlFile
-    );
-    console.log("serverEntries", serverEntries);
-    fs.appendFileSync(
-      distEntriesFile,
-      `export const serverEntries=${JSON.stringify(serverEntries)};`
     );
   }
 
