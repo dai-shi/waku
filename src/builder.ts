@@ -34,7 +34,10 @@ globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.ge
   };
 };
 
-const rscBundlePlugin = (clientEntryCallback: (id: string) => void): Plugin => {
+const rscAnalyzePlugin = (
+  clientEntryCallback: (id: string) => void,
+  serverEntryCallback: (id: string) => void
+): Plugin => {
   return {
     name: "rsc-bundle-plugin",
     transform(code, id) {
@@ -47,11 +50,13 @@ const rscBundlePlugin = (clientEntryCallback: (id: string) => void): Plugin => {
         for (const item of mod.body) {
           if (
             item.type === "ExpressionStatement" &&
-            item.expression.type === "StringLiteral" &&
-            item.expression.value === "use client"
+            item.expression.type === "StringLiteral"
           ) {
-            clientEntryCallback(id);
-            break;
+            if (item.expression.value === "use client") {
+              clientEntryCallback(id);
+            } else if (item.expression.value === "use server") {
+              serverEntryCallback(id);
+            }
           }
         }
       }
@@ -180,25 +185,71 @@ export async function runBuild(config: Config = {}) {
     distPath,
     config.files?.entriesJs || "entries.js"
   );
+  let entriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
+  if (entriesFile.endsWith(".js")) {
+    for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
+      const tmp = entriesFile.slice(0, -3) + ext;
+      if (fs.existsSync(tmp)) {
+        entriesFile = tmp;
+        break;
+      }
+    }
+  }
   const require = createRequire(import.meta.url);
 
   const clientEntryFileSet = new Set<string>();
-  // TODO "use server" separation doesn't work yet
+  const serverEntryFileSet = new Set<string>();
+  await build({
+    root: dir,
+    base: basePath,
+    plugins: [
+      rscAnalyzePlugin(
+        (id) => clientEntryFileSet.add(id),
+        (id) => serverEntryFileSet.add(id)
+      ),
+    ],
+    build: {
+      outDir: distPath,
+      ssr: entriesFile,
+      write: false,
+    },
+  });
+  const clientEntryFiles = Object.fromEntries(
+    Array.from(clientEntryFileSet).map((fname, i) => [`rsc${i}`, fname])
+  );
+  const serverEntryFiles = Object.fromEntries(
+    Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname])
+  );
+
   const serverBuildOutput = await build({
     root: dir,
     base: basePath,
-    plugins: [rscBundlePlugin((id) => clientEntryFileSet.add(id))],
     build: {
       outDir: distPath,
-      ssr: "entries",
+      ssr: true,
       rollupOptions: {
+        input: {
+          entries: entriesFile,
+          ...clientEntryFiles,
+          ...serverEntryFiles,
+        },
         output: {
           banner: (chunk) => {
-            // HACK to pull directives front
+            // HACK to bring directives to the front
+            let code = "";
             if (chunk.moduleIds.some((id) => clientEntryFileSet.has(id))) {
-              return '"use client";';
+              code += '"use client";';
             }
-            return "";
+            if (chunk.moduleIds.some((id) => serverEntryFileSet.has(id))) {
+              code += '"use server";';
+            }
+            return code;
+          },
+          entryFileNames: (chunkInfo) => {
+            if (chunkInfo.name === "entries") {
+              return "[name].js";
+            }
+            return "assets/[name].js";
           },
         },
       },
@@ -208,9 +259,6 @@ export async function runBuild(config: Config = {}) {
     throw new Error("Unexpected vite server build output");
   }
 
-  const clientEntryFiles = Object.fromEntries(
-    Array.from(clientEntryFileSet).map((fname, i) => [`rsc${i}`, fname])
-  );
   const clientBuildOutput = await build({
     root: dir,
     base: basePath,
@@ -233,6 +281,7 @@ export async function runBuild(config: Config = {}) {
   if (!("output" in clientBuildOutput)) {
     throw new Error("Unexpected vite client build output");
   }
+
   const clientEntries: Record<string, string> = {};
   for (const item of clientBuildOutput.output) {
     const { name, fileName } = item;
@@ -248,11 +297,11 @@ export async function runBuild(config: Config = {}) {
     }
   }
   console.log("clientEntries", clientEntries);
-
   fs.appendFileSync(
     distEntriesFile,
     `export const clientEntries=${JSON.stringify(clientEntries)};`
   );
+
   if (!"STILL WIP") {
     // TODO still wip
     await prerender(
