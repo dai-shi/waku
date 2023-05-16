@@ -8,6 +8,7 @@ export const rscPlugin = (): Plugin => {
       if (!id.endsWith(".js")) {
         return id;
       }
+      // FIXME This isn't necessary in production mode
       for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
         const resolved = await this.resolve(id.slice(0, -3) + ext, importer, {
           ...options,

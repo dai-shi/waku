@@ -30,13 +30,22 @@ export type MessageReq =
       id: number;
       type: "prerender";
       loadClientEntries: boolean;
+    }
+  | {
+      id: number;
+      type: "getCustomModules";
+    }
+  | {
+      id: number;
+      type: "build";
     };
 
 export type MessageRes =
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "end" }
   | { id: number; type: "err"; err: unknown }
-  | { id: number; type: "prefetcher"; code: string };
+  | { id: number; type: "prefetcher"; code: string }
+  | { id: number; type: "customModules"; modules: string[] };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
@@ -75,6 +84,7 @@ export function renderRSC(
   return passthrough;
 }
 
+// TODO remove
 export function prefetcherRSC(
   pathItem: string,
   loadClientEntries: boolean
@@ -100,9 +110,8 @@ export function prefetcherRSC(
   });
 }
 
-export function prerenderRSC(
-  loadClientEntries: boolean
-): Promise<void> {
+// TODO remove
+export function prerenderRSC(loadClientEntries: boolean): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const id = nextId++;
     messageCallbacks.set(id, (mesg) => {
@@ -118,6 +127,46 @@ export function prerenderRSC(
       id,
       type: "prerender",
       loadClientEntries,
+    };
+    worker.postMessage(mesg);
+  });
+}
+
+export function getCustomModulesRSC(): Promise<string[]> {
+  return new Promise<string[]>((resolve, reject) => {
+    const id = nextId++;
+    messageCallbacks.set(id, (mesg) => {
+      if (mesg.type === "customModules") {
+        resolve(mesg.modules);
+        messageCallbacks.delete(id);
+      } else if (mesg.type === "err") {
+        reject(mesg.err);
+        messageCallbacks.delete(id);
+      }
+    });
+    const mesg: MessageReq = {
+      id,
+      type: "getCustomModules",
+    };
+    worker.postMessage(mesg);
+  });
+}
+
+export function buildRSC(): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const id = nextId++;
+    messageCallbacks.set(id, (mesg) => {
+      if (mesg.type === "end") {
+        resolve();
+        messageCallbacks.delete(id);
+      } else if (mesg.type === "err") {
+        reject(mesg.err);
+        messageCallbacks.delete(id);
+      }
+    });
+    const mesg: MessageReq = {
+      id,
+      type: "build",
     };
     worker.postMessage(mesg);
   });

@@ -171,6 +171,7 @@ globalThis.__WAKUWORK_ROUTER_PREFETCH__ = (pathname, search) => {
     };
   };
 
+  return { getEntry }; // TODO
   return { getEntry, prefetcher, prerenderer };
 }
 

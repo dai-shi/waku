@@ -8,7 +8,7 @@ import react from "@vitejs/plugin-react";
 import * as swc from "@swc/core";
 
 import type { Config } from "./config.js";
-import { prerenderRSC } from "./middleware/lib/rsc-handler.js";
+import { getCustomModulesRSC, buildRSC } from "./middleware/lib/rsc-handler.js";
 
 // TODO we have duplicate code here and rscPrd.ts and rsc-handler*.ts
 
@@ -87,8 +87,9 @@ export async function runBuild(config: Config = {}) {
   }
   const require = createRequire(import.meta.url);
 
+  const customModules = await getCustomModulesRSC();
   const clientEntryFileSet = new Set<string>();
-  const serverEntryFileSet = new Set<string>();
+  const serverEntryFileSet = new Set<string>(customModules);
   await build({
     root: dir,
     base: basePath,
@@ -100,8 +101,11 @@ export async function runBuild(config: Config = {}) {
     ],
     build: {
       outDir: distPath,
-      ssr: entriesFile,
       write: false,
+      ssr: true,
+      rollupOptions: {
+        input: [entriesFile, ...customModules],
+      },
     },
   });
   const clientEntryFiles = Object.fromEntries(
@@ -192,7 +196,7 @@ export async function runBuild(config: Config = {}) {
     `export const clientEntries=${JSON.stringify(clientEntries)};`
   );
 
-  await prerenderRSC(true);
+  await buildRSC();
 
   const origPackageJson = require(path.join(dir, "package.json"));
   const packageJson = {
