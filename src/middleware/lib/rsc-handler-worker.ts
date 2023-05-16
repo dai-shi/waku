@@ -10,17 +10,10 @@ import RSDWServer from "react-server-dom-webpack/server";
 import { transformRsfId, generatePrefetchCode } from "./rsc-utils.js";
 import type { RenderInput, MessageReq, MessageRes } from "./rsc-handler.js";
 import type { Config } from "../../config.js";
-import type {
-  GetEntry,
-  Prefetcher,
-  Prerenderer,
-  GetBuilder,
-  GetCustomModules,
-} from "../../server.js";
+import type { GetEntry, GetBuilder, GetCustomModules } from "../../server.js";
 import { rscPlugin } from "./vite-rsc-plugin.js";
 
 const { renderToPipeableStream } = RSDWServer;
-const CLIENT_REFERENCE = Symbol.for("react.client.reference");
 
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
   const { id, input, loadClientEntries } = mesg;
@@ -52,45 +45,6 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
       },
     });
     pipeable.pipe(writable);
-  } catch (err) {
-    const mesg: MessageRes = {
-      id,
-      type: "err",
-      err,
-    };
-    parentPort!.postMessage(mesg);
-  }
-};
-
-const handlePrefetcher = async (mesg: MessageReq & { type: "prefetcher" }) => {
-  const { id, pathItem, loadClientEntries } = mesg;
-  try {
-    const code = await prefetcherRSC(pathItem, loadClientEntries);
-    const mesg: MessageRes = {
-      id,
-      type: "prefetcher",
-      code,
-    };
-    parentPort!.postMessage(mesg);
-  } catch (err) {
-    const mesg: MessageRes = {
-      id,
-      type: "err",
-      err,
-    };
-    parentPort!.postMessage(mesg);
-  }
-};
-
-const handlePrerender = async (mesg: MessageReq & { type: "prerender" }) => {
-  const { id, loadClientEntries } = mesg;
-  try {
-    await prerenderRSC(loadClientEntries);
-    const mesg: MessageRes = {
-      id,
-      type: "end",
-    };
-    parentPort!.postMessage(mesg);
   } catch (err) {
     const mesg: MessageRes = {
       id,
@@ -145,10 +99,6 @@ const handleBuild = async (mesg: MessageReq & { type: "build" }) => {
 parentPort!.on("message", (mesg: MessageReq) => {
   if (mesg.type === "render") {
     handleRender(mesg);
-  } else if (mesg.type === "prefetcher") {
-    handlePrefetcher(mesg);
-  } else if (mesg.type === "prerender") {
-    handlePrerender(mesg);
   } else if (mesg.type === "getCustomModules") {
     handleGetCustomModules(mesg);
   } else if (mesg.type === "build") {
@@ -289,102 +239,6 @@ async function renderRSC(
     );
   }
   throw new Error("Unexpected input");
-}
-
-async function prefetcherRSC(
-  pathItem: string,
-  loadClientEntries: boolean
-): Promise<string> {
-  let code = "";
-
-  const decodeId = await getDecodeId(loadClientEntries);
-
-  const { prefetcher } = await (loadServerFile(entriesFile) as Promise<{
-    prefetcher: Prefetcher;
-  }>);
-  const { entryItems = [], clientModules = [] } = prefetcher
-    ? await prefetcher(pathItem)
-    : {};
-  const moduleIds: string[] = [];
-  for (const m of clientModules as any[]) {
-    if (m["$$typeof"] !== CLIENT_REFERENCE) {
-      throw new Error("clientModules must be client references");
-    }
-    const [id] = decodeId(m["$$id"]);
-    moduleIds.push(id);
-  }
-  code += generatePrefetchCode(entryItems, moduleIds);
-  return code;
-}
-
-// TODO this takes too much responsibility
-// FIXME it shouldn't depend on `fs`
-async function prerenderRSC(loadClientEntries: boolean): Promise<void> {
-  const { prerenderer } = await (loadServerFile(entriesFile) as Promise<{
-    prerenderer?: Prerenderer;
-  }>);
-
-  const decodeId = await getDecodeId(loadClientEntries);
-
-  if (prerenderer) {
-    const {
-      entryItems = [],
-      paths = [],
-      unstable_customCode = () => "",
-    } = await prerenderer();
-    await Promise.all(
-      Array.from(entryItems).map(async ([rscId, props]) => {
-        // FIXME we blindly expect JSON.stringify usage is deterministic
-        const serializedProps = JSON.stringify(props);
-        const searchParams = new URLSearchParams();
-        searchParams.set("props", serializedProps);
-        const destFile = path.join(
-          dir,
-          publicPath,
-          "RSC",
-          decodeURIComponent(rscId),
-          decodeURIComponent(`${searchParams}`)
-        );
-        fs.mkdirSync(path.dirname(destFile), { recursive: true });
-        const pipeable = await renderRSC({ rscId, props: props as any }, true);
-        await new Promise<void>((resolve, reject) => {
-          const stream = fs.createWriteStream(destFile);
-          stream.on("finish", resolve);
-          stream.on("error", reject);
-          pipeable.pipe(stream);
-        });
-      })
-    );
-
-    const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
-      encoding: "utf8",
-    });
-    for (const pathItem of paths) {
-      const code = await prefetcherRSC(pathItem, true);
-      const destFile = path.join(
-        dir,
-        publicPath,
-        pathItem,
-        pathItem.endsWith("/") ? "index.html" : ""
-      );
-      let data = "";
-      if (fs.existsSync(destFile)) {
-        data = fs.readFileSync(destFile, { encoding: "utf8" });
-      } else {
-        fs.mkdirSync(path.dirname(destFile), { recursive: true });
-        data = publicIndexHtml;
-      }
-      if (code) {
-        // HACK is this too naive to inject script code?
-        data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
-      }
-      const code2 = unstable_customCode(pathItem, decodeId);
-      if (code2) {
-        data = data.replace(/<\/body>/, `<script>${code2}</script></body>`);
-      }
-      fs.writeFileSync(destFile, data, { encoding: "utf8" });
-    }
-  }
 }
 
 async function getCustomModulesRSC(): Promise<string[]> {

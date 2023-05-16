@@ -3,21 +3,11 @@ import busboy from "busboy";
 
 import type { MiddlewareCreator } from "./lib/common.js";
 
-import { renderRSC, prefetcherRSC } from "./lib/rsc-handler.js";
+import { renderRSC } from "./lib/rsc-handler.js";
 
 const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 
-const rscDev: MiddlewareCreator = (_config, shared) => {
-  shared.devScriptToInject = async (pathItem: string) => {
-    const code =
-      `
-globalThis.__wakuwork_module_cache__ = new Map();
-globalThis.__webpack_chunk_load__ = async (id) => id.startsWith("wakuwork/") || import(id).then((m) => globalThis.__wakuwork_module_cache__.set(id, m));
-globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.get(id);` +
-      (await prefetcherRSC(pathItem, false));
-    return code;
-  };
-
+const rscDev: MiddlewareCreator = () => {
   return async (req, res, next) => {
     const rscId = req.headers["x-react-server-component-id"];
     const rsfId = req.headers["x-react-server-function-id"];

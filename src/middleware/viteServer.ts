@@ -6,28 +6,24 @@ import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
 import type { MiddlewareCreator } from "./lib/common.js";
+import { codeToInject } from "./lib/rsc-utils.js";
 
-const rscPlugin = (
-  scriptToInject: (path: string) => Promise<string>
-): Plugin => {
+const rscPlugin = (): Plugin => {
   return {
     name: "rscPlugin",
-    async transformIndexHtml(_html, ctx) {
-      const code = await scriptToInject(ctx.path);
-      if (code) {
-        return [
-          {
-            tag: "script",
-            children: code,
-            injectTo: "body",
-          },
-        ];
-      }
+    async transformIndexHtml() {
+      return [
+        {
+          tag: "script",
+          children: codeToInject,
+          injectTo: "body",
+        },
+      ];
     },
   };
 };
 
-const viteServer: MiddlewareCreator = (config, shared) => {
+const viteServer: MiddlewareCreator = (config) => {
   const dir = path.resolve(config.devServer?.dir || ".");
   const indexHtml = config.files?.indexHtml || "index.html";
   const indexHtmlFile = path.join(dir, indexHtml);
@@ -36,7 +32,7 @@ const viteServer: MiddlewareCreator = (config, shared) => {
     plugins: [
       // @ts-ignore
       react(),
-      rscPlugin(async (path: string) => shared.devScriptToInject?.(path) || ""),
+      rscPlugin(),
     ],
     server: { middlewareMode: true },
     appType: "custom",

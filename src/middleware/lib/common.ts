@@ -1,9 +1,6 @@
 import type { Config, Middleware } from "../../config.js";
 
-export type Shared = {
-  devScriptToInject?: (path: string) => Promise<string>;
-  prdScriptToInject?: (path: string) => Promise<string>;
-};
+export type Shared = {};
 
 export type MiddlewareCreator = (config: Config, shared: Shared) => Middleware;
 

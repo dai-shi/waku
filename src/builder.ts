@@ -8,24 +8,20 @@ import react from "@vitejs/plugin-react";
 import * as swc from "@swc/core";
 
 import type { Config } from "./config.js";
+import { codeToInject } from "./middleware/lib/rsc-utils.js";
 import { getCustomModulesRSC, buildRSC } from "./middleware/lib/rsc-handler.js";
 
 // TODO we have duplicate code here and rscPrd.ts and rsc-handler*.ts
 
 // FIXME we could do this without plugin anyway
 const rscIndexPlugin = (): Plugin => {
-  const code = `
-globalThis.__wakuwork_module_cache__ = new Map();
-globalThis.__webpack_chunk_load__ = async (id) => id.startsWith("wakuwork/") || import(id).then((m) => globalThis.__wakuwork_module_cache__.set(id, m));
-globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.get(id);
-`;
   return {
     name: "rsc-index-plugin",
     async transformIndexHtml() {
       return [
         {
           tag: "script",
-          children: code,
+          children: codeToInject,
           injectTo: "body",
         },
       ];

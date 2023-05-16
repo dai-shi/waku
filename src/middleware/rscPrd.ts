@@ -2,18 +2,13 @@ import RSDWServer from "react-server-dom-webpack/server.node.unbundled";
 import busboy from "busboy";
 
 import type { MiddlewareCreator } from "./lib/common.js";
-import { renderRSC, prefetcherRSC } from "./lib/rsc-handler.js";
+import { renderRSC } from "./lib/rsc-handler.js";
 
 const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 
 // TODO we have duplicate code here and rsc-handler-worker.ts
 
-const rscPrd: MiddlewareCreator = (_config, shared) => {
-  shared.prdScriptToInject = async (pathItem: string) => {
-    const code = await prefetcherRSC(pathItem, true);
-    return code;
-  };
-
+const rscPrd: MiddlewareCreator = () => {
   return async (req, res, next) => {
     const rscId = req.headers["x-react-server-component-id"];
     const rsfId = req.headers["x-react-server-function-id"];

@@ -3,6 +3,11 @@
 import { Buffer } from "node:buffer";
 import { Transform } from "node:stream";
 
+export const codeToInject = `
+globalThis.__wakuwork_module_cache__ = new Map();
+globalThis.__webpack_chunk_load__ = async (id) => id.startsWith("wakuwork/") || import(id).then((m) => globalThis.__wakuwork_module_cache__.set(id, m));
+globalThis.__webpack_require__ = (id) => globalThis.__wakuwork_module_cache__.get(id);`;
+
 export const generatePrefetchCode = (
   entryItemsIterable: Iterable<readonly [rscId: string, props: unknown]>,
   moduleIds: Iterable<string>

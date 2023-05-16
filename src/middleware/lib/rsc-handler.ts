@@ -22,17 +22,6 @@ export type MessageReq =
     }
   | {
       id: number;
-      type: "prefetcher";
-      pathItem: string;
-      loadClientEntries: boolean;
-    }
-  | {
-      id: number;
-      type: "prerender";
-      loadClientEntries: boolean;
-    }
-  | {
-      id: number;
       type: "getCustomModules";
     }
   | {
@@ -44,7 +33,6 @@ export type MessageRes =
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "end" }
   | { id: number; type: "err"; err: unknown }
-  | { id: number; type: "prefetcher"; code: string }
   | { id: number; type: "customModules"; modules: string[] };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
@@ -82,54 +70,6 @@ export function renderRSC(
   };
   worker.postMessage(mesg);
   return passthrough;
-}
-
-// TODO remove
-export function prefetcherRSC(
-  pathItem: string,
-  loadClientEntries: boolean
-): Promise<string> {
-  return new Promise<string>((resolve, reject) => {
-    const id = nextId++;
-    messageCallbacks.set(id, (mesg) => {
-      if (mesg.type === "prefetcher") {
-        resolve(mesg.code);
-        messageCallbacks.delete(id);
-      } else if (mesg.type === "err") {
-        reject(mesg.err);
-        messageCallbacks.delete(id);
-      }
-    });
-    const mesg: MessageReq = {
-      id,
-      type: "prefetcher",
-      pathItem,
-      loadClientEntries,
-    };
-    worker.postMessage(mesg);
-  });
-}
-
-// TODO remove
-export function prerenderRSC(loadClientEntries: boolean): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    const id = nextId++;
-    messageCallbacks.set(id, (mesg) => {
-      if (mesg.type === "end") {
-        resolve();
-        messageCallbacks.delete(id);
-      } else if (mesg.type === "err") {
-        reject(mesg.err);
-        messageCallbacks.delete(id);
-      }
-    });
-    const mesg: MessageReq = {
-      id,
-      type: "prerender",
-      loadClientEntries,
-    };
-    worker.postMessage(mesg);
-  });
 }
 
 export function getCustomModulesRSC(): Promise<string[]> {
