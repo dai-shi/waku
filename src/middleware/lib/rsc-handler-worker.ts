@@ -15,6 +15,7 @@ import type {
   Prefetcher,
   Prerenderer,
   GetBuilder,
+  GetCustomModules,
 } from "../../server.js";
 import { rscPlugin } from "./vite-rsc-plugin.js";
 
@@ -178,6 +179,7 @@ const publicIndexHtmlFile = path.join(
   publicPath,
   config.files?.indexHtml || "index.html"
 );
+const srcEntriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
 const entriesFile = path.join(
   dir,
   process.env.WAKUWORK_CMD === "build" ? distPath : "",
@@ -386,17 +388,16 @@ async function prerenderRSC(loadClientEntries: boolean): Promise<void> {
 }
 
 async function getCustomModulesRSC(): Promise<string[]> {
-  const { getBuilder } = await (loadServerFile(entriesFile) as Promise<{
-    getBuilder?: GetBuilder;
+  const { getCustomModules } = await (loadServerFile(
+    srcEntriesFile
+  ) as Promise<{
+    getCustomModules?: GetCustomModules;
   }>);
-  if (!getBuilder) {
+  if (!getCustomModules) {
     return [];
   }
-  const decodeId = await getDecodeId(true);
-  const pathMap = await getBuilder(decodeId);
-  return Object.values(pathMap).flatMap((x) =>
-    Array.from(x.customModules || [])
-  );
+  const modules = await getCustomModules();
+  return Array.from(modules);
 }
 
 // FIXME this may take too much responsibility
@@ -476,32 +477,35 @@ async function buildRSC(): Promise<void> {
     encoding: "utf8",
   });
   await Promise.all(
-    Object.entries(pathMap).map(
-      async ([pathStr, { elements, unstable_customCode }]) => {
-        const destFile = path.join(
-          dir,
-          publicPath,
-          pathStr,
-          pathStr.endsWith("/") ? "index.html" : ""
-        );
-        let data = "";
-        if (fs.existsSync(destFile)) {
-          data = fs.readFileSync(destFile, { encoding: "utf8" });
-        } else {
-          fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          data = publicIndexHtml;
-        }
-        const code =
-          generatePrefetchCode(
-            elements || [],
-            clientModuleMap.get(pathStr) || []
-          ) + unstable_customCode;
-        if (code) {
-          // HACK is this too naive to inject script code?
-          data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
-        }
-        fs.writeFileSync(destFile, data, { encoding: "utf8" });
+    Object.entries(pathMap).map(async ([pathStr, { elements, customCode }]) => {
+      const destFile = path.join(
+        dir,
+        publicPath,
+        pathStr,
+        pathStr.endsWith("/") ? "index.html" : ""
+      );
+      let data = "";
+      if (fs.existsSync(destFile)) {
+        data = fs.readFileSync(destFile, { encoding: "utf8" });
+      } else {
+        fs.mkdirSync(path.dirname(destFile), { recursive: true });
+        data = publicIndexHtml;
       }
-    )
+      const code =
+        generatePrefetchCode(
+          Array.from(elements || []).flatMap(([rscId, props, skipPrefetch]) => {
+            if (skipPrefetch) {
+              return [];
+            }
+            return [[rscId, props]];
+          }),
+          clientModuleMap.get(pathStr) || []
+        ) + (customCode || "");
+      if (code) {
+        // HACK is this too naive to inject script code?
+        data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
+      }
+      fs.writeFileSync(destFile, data, { encoding: "utf8" });
+    })
   );
 }
