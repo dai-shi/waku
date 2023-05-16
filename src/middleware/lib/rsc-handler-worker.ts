@@ -120,11 +120,8 @@ type PipeableStream = {
 const config: Config =
   (process.env.WAKUWORK_CONFIG && JSON.parse(process.env.WAKUWORK_CONFIG)) ||
   {};
-const dirFromConfig = {
-  dev: config.devServer?.dir,
-  build: config.build?.dir,
-  start: config.prdServer?.dir,
-}[String(process.env.WAKUWORK_CMD)];
+const dirFromConfig =
+  config.prdServer?.dir ?? config.build?.dir ?? config.devServer?.dir; // HACK
 const dir = path.resolve(dirFromConfig || ".");
 const basePath = config.build?.basePath || "/"; // FIXME it's not build only
 const distPath = config.files?.dist || "dist";
@@ -134,10 +131,10 @@ const publicIndexHtmlFile = path.join(
   publicPath,
   config.files?.indexHtml || "index.html"
 );
-const srcEntriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
-const entriesFile = path.join(
+const entriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
+const distEntriesFile = path.join(
   dir,
-  process.env.WAKUWORK_CMD === "build" ? distPath : "",
+  distPath,
   config.files?.entriesJs || "entries.js"
 );
 
@@ -152,8 +149,10 @@ const loadServerFile = async (fname: string) => {
   return vite.ssrLoadModule(fname);
 };
 
-const getFunctionComponent = async (rscId: string) => {
-  const { getEntry } = await (loadServerFile(entriesFile) as Promise<{
+const getFunctionComponent = async (rscId: string, isBuild: boolean) => {
+  const { getEntry } = await (loadServerFile(
+    isBuild ? distEntriesFile : entriesFile
+  ) as Promise<{
     getEntry: GetEntry;
   }>);
   const mod = await getEntry(rscId);
@@ -167,10 +166,12 @@ const getFunctionComponent = async (rscId: string) => {
 };
 
 // FIXME better function name? decodeId seems too general
-const getDecodeId = async (loadClientEntries: boolean) => {
+const getDecodeId = async (loadClientEntries: boolean, isBuild: boolean) => {
   let clientEntries: Record<string, string> | undefined;
   if (loadClientEntries) {
-    ({ clientEntries } = await loadServerFile(entriesFile));
+    ({ clientEntries } = await loadServerFile(
+      isBuild ? distEntriesFile : entriesFile
+    ));
     if (!clientEntries) {
       throw new Error("Failed to load clientEntries");
     }
@@ -193,10 +194,7 @@ const getDecodeId = async (loadClientEntries: boolean) => {
 
   const decodeId = (encodedId: string): [id: string, name: string] => {
     let [id, name] = encodedId.split("#") as [string, string];
-    id = path.relative(
-      path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : ""),
-      id
-    );
+    id = path.relative(path.join(dir, isBuild ? distPath : ""), id);
     id = basePath + getClientEntry(id);
     return [id, name];
   };
@@ -208,7 +206,7 @@ async function renderRSC(
   input: RenderInput,
   loadClientEntries: boolean
 ): Promise<PipeableStream> {
-  const decodeId = await getDecodeId(loadClientEntries);
+  const decodeId = await getDecodeId(loadClientEntries, false);
 
   const bundlerConfig = new Proxy(
     {},
@@ -231,23 +229,17 @@ async function renderRSC(
     // continue for mutation mode
   }
   if (input.rscId && input.props) {
-    const component = await getFunctionComponent(input.rscId);
+    const component = await getFunctionComponent(input.rscId, false);
     return renderToPipeableStream(
       createElement(component, input.props),
       bundlerConfig
-    ).pipe(
-      transformRsfId(
-        path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : "")
-      )
-    );
+    ).pipe(transformRsfId(dir));
   }
   throw new Error("Unexpected input");
 }
 
 async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
-  const { getCustomModules } = await (loadServerFile(
-    srcEntriesFile
-  ) as Promise<{
+  const { getCustomModules } = await (loadServerFile(entriesFile) as Promise<{
     getCustomModules?: GetCustomModules;
   }>);
   if (!getCustomModules) {
@@ -259,7 +251,7 @@ async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
 
 // FIXME this may take too much responsibility
 async function buildRSC(): Promise<void> {
-  const { getBuilder } = await (loadServerFile(entriesFile) as Promise<{
+  const { getBuilder } = await (loadServerFile(distEntriesFile) as Promise<{
     getBuilder?: GetBuilder;
   }>);
   if (!getBuilder) {
@@ -269,7 +261,7 @@ async function buildRSC(): Promise<void> {
     return;
   }
 
-  const decodeId = await getDecodeId(true);
+  const decodeId = await getDecodeId(true, true);
 
   const pathMap = await getBuilder(decodeId);
   const clientModuleMap = new Map<string, Set<string>>();
@@ -306,15 +298,11 @@ async function buildRSC(): Promise<void> {
             },
           }
         );
-        const component = await getFunctionComponent(rscId);
+        const component = await getFunctionComponent(rscId, true);
         const pipeable = renderToPipeableStream(
           createElement(component, props as any),
           bundlerConfig
-        ).pipe(
-          transformRsfId(
-            path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : "")
-          )
-        );
+        ).pipe(transformRsfId(path.join(dir, distPath)));
         await new Promise<void>((resolve, reject) => {
           const stream = fs.createWriteStream(destFile);
           stream.on("finish", resolve);
