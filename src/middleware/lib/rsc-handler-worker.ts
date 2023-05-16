@@ -279,52 +279,47 @@ async function buildRSC(): Promise<void> {
     idSet.add(id);
   };
   await Promise.all(
-    Object.entries(pathMap).map(([pathStr, { elements }]) =>
-      Promise.all(
-        Array.from(elements || []).map(async ([rscId, props]) => {
-          // FIXME we blindly expect JSON.stringify usage is deterministic
-          const serializedProps = JSON.stringify(props);
-          const searchParams = new URLSearchParams();
-          searchParams.set("props", serializedProps);
-          const destFile = path.join(
-            dir,
-            publicPath,
-            "RSC",
-            decodeURIComponent(rscId),
-            decodeURIComponent(`${searchParams}`)
-          );
-          fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          const bundlerConfig = new Proxy(
-            {},
-            {
-              get(_target, encodedId: string) {
-                const [id, name] = decodeId(encodedId);
-                addClientModule(pathStr, id);
-                return { id, chunks: [id], name, async: true };
-              },
-            }
-          );
-          const component = await getFunctionComponent(rscId);
-          const pipeable = renderToPipeableStream(
-            createElement(component, props as any),
-            bundlerConfig
-          ).pipe(
-            transformRsfId(
-              path.join(
-                dir,
-                process.env.WAKUWORK_CMD === "build" ? distPath : ""
-              )
-            )
-          );
-          await new Promise<void>((resolve, reject) => {
-            const stream = fs.createWriteStream(destFile);
-            stream.on("finish", resolve);
-            stream.on("error", reject);
-            pipeable.pipe(stream);
-          });
-        })
-      )
-    )
+    Object.entries(pathMap).map(async ([pathStr, { elements }]) => {
+      for (const [rscId, props] of elements || []) {
+        // FIXME we blindly expect JSON.stringify usage is deterministic
+        const serializedProps = JSON.stringify(props);
+        const searchParams = new URLSearchParams();
+        searchParams.set("props", serializedProps);
+        const destFile = path.join(
+          dir,
+          publicPath,
+          "RSC",
+          decodeURIComponent(rscId),
+          decodeURIComponent(`${searchParams}`)
+        );
+        fs.mkdirSync(path.dirname(destFile), { recursive: true });
+        const bundlerConfig = new Proxy(
+          {},
+          {
+            get(_target, encodedId: string) {
+              const [id, name] = decodeId(encodedId);
+              addClientModule(pathStr, id);
+              return { id, chunks: [id], name, async: true };
+            },
+          }
+        );
+        const component = await getFunctionComponent(rscId);
+        const pipeable = renderToPipeableStream(
+          createElement(component, props as any),
+          bundlerConfig
+        ).pipe(
+          transformRsfId(
+            path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : "")
+          )
+        );
+        await new Promise<void>((resolve, reject) => {
+          const stream = fs.createWriteStream(destFile);
+          stream.on("finish", resolve);
+          stream.on("error", reject);
+          pipeable.pipe(stream);
+        });
+      }
+    })
   );
 
   const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
