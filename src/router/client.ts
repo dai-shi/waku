@@ -1,5 +1,7 @@
 /// <reference types="react/next" />
 
+"use client";
+
 import {
   cache,
   createContext,
@@ -12,7 +14,6 @@ import {
 } from "react";
 
 import { serve } from "../client.js";
-import { WAKUWORK_ROUTER } from "./common.js";
 import type { RouteProps, ChildProps, LinkProps } from "./common.js";
 
 type ChangeLocation = (
@@ -70,7 +71,7 @@ const prefetchRoutes = (pathname: string, search: string) => {
 
 const getRoute = cache((rscId: string) => serve<RouteProps>(rscId));
 
-const Child = ({ index }: ChildProps) => {
+export function Child({ index }: ChildProps) {
   const { pathname, search } = useLocation();
   const pathItems = pathname.split("/").filter(Boolean);
   if (index > pathItems.length) {
@@ -81,7 +82,7 @@ const Child = ({ index }: ChildProps) => {
     getRoute(rscId),
     index < pathItems.length ? { childIndex: index + 1, search } : { search }
   );
-};
+}
 
 export function Link({
   href,
@@ -118,12 +119,6 @@ export function Link({
   }
   return ele;
 }
-
-// FIXME Eventually, if we have server module graph, we could omit this hack.
-(globalThis as any).__wakuwork_module_cache__.set(WAKUWORK_ROUTER, {
-  Child,
-  Link,
-});
 
 const parseLocation = () => {
   const { pathname, search } = window.location;

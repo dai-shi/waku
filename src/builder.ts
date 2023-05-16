@@ -9,7 +9,7 @@ import * as swc from "@swc/core";
 
 import type { Config } from "./config.js";
 import { codeToInject } from "./middleware/lib/rsc-utils.js";
-import { getCustomModulesRSC, buildRSC } from "./middleware/lib/rsc-handler.js";
+import { shutdown, getCustomModulesRSC, buildRSC } from "./middleware/lib/rsc-handler.js";
 
 // TODO we have duplicate code here and rscPrd.ts and rsc-handler*.ts
 
@@ -213,4 +213,6 @@ export async function runBuild(config: Config = {}) {
     path.join(dir, distPath, "package.json"),
     JSON.stringify(packageJson, null, 2)
   );
+
+  await shutdown();
 }

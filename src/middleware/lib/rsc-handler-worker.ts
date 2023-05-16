@@ -97,7 +97,12 @@ const handleBuild = async (mesg: MessageReq & { type: "build" }) => {
 };
 
 parentPort!.on("message", (mesg: MessageReq) => {
-  if (mesg.type === "render") {
+  if (mesg.type === "shutdown") {
+    vitePromise.then(async (vite) => {
+      await vite.close();
+      parentPort!.close();
+    });
+  } else if (mesg.type === "render") {
     handleRender(mesg);
   } else if (mesg.type === "getCustomModules") {
     handleGetCustomModules(mesg);
@@ -188,13 +193,11 @@ const getDecodeId = async (loadClientEntries: boolean) => {
 
   const decodeId = (encodedId: string): [id: string, name: string] => {
     let [id, name] = encodedId.split("#") as [string, string];
-    if (!id.startsWith("wakuwork/")) {
-      id = path.relative(
-        path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : ""),
-        id
-      );
-      id = basePath + getClientEntry(id);
-    }
+    id = path.relative(
+      path.join(dir, process.env.WAKUWORK_CMD === "build" ? distPath : ""),
+      id
+    );
+    id = basePath + getClientEntry(id);
     return [id, name];
   };
 

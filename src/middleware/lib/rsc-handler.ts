@@ -18,6 +18,7 @@ type CustomModules = {
 };
 
 export type MessageReq =
+  | { type: "shutdown" }
   | {
       id: number;
       type: "render";
@@ -44,6 +45,13 @@ const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 worker.on("message", (mesg: MessageRes) => {
   messageCallbacks.get(mesg.id)?.(mesg);
 });
+
+export function shutdown() {
+  return new Promise<void>((resolve) => {
+    worker.on("close", resolve);
+    worker.postMessage({ type: "shutdown" });
+  });
+}
 
 let nextId = 1;
 

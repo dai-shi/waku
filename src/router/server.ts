@@ -5,8 +5,8 @@ import * as swc from "@swc/core";
 
 import type { GetEntry, GetBuilder, GetCustomModules } from "../server.js";
 
-import { childReference, linkReference } from "./common.js";
 import type { RouteProps, LinkProps } from "./common.js";
+import { Child as ClientChild, Link as ClientLink } from "./client.js";
 
 const getAllFiles = (base: string, parent = ""): string[] =>
   fs
@@ -48,6 +48,7 @@ const resolveFileName = (fname: string) => {
   throw new Error(`Cannot resolve file ${fname}`);
 };
 
+// XXX Can we avoid doing this here?
 const findDependentModules = (fname: string) => {
   fname = resolveFileName(fname);
   const ext = path.extname(fname);
@@ -113,7 +114,7 @@ export function fileRouter(base: string) {
         component,
         componentProps,
         props.childIndex
-          ? createElement(childReference, { index: props.childIndex })
+          ? createElement(ClientChild, { index: props.childIndex })
           : null
       );
     };
@@ -121,7 +122,7 @@ export function fileRouter(base: string) {
   };
 
   const prefetcher = async (pathStr: string) => {
-    const url = new URL(pathStr || "", "http://localhost");
+    const url = new URL(pathStr, "http://localhost");
     const elements: (readonly [id: string, props: RouteProps])[] = [];
     const pathItems = url.pathname.split("/").filter(Boolean);
     const search = url.search;
@@ -157,9 +158,6 @@ globalThis.__WAKUWORK_ROUTER_PREFETCH__ = (pathname, search) => {
   const path2ids = {${paths.map((pathItem, index) => {
     const moduleIds: string[] = [];
     for (const m of prefetcherForPaths[index]?.clientModules || []) {
-      if (m["$$typeof"] !== CLIENT_REFERENCE) {
-        throw new Error("clientModules must be client references");
-      }
       const [id] = decodeId(m["$$id"]);
       moduleIds.push(id);
     }
@@ -198,5 +196,5 @@ globalThis.__WAKUWORK_ROUTER_PREFETCH__ = (pathname, search) => {
 }
 
 export function Link(props: LinkProps) {
-  return createElement(linkReference, props);
+  return createElement(ClientLink, props);
 }
