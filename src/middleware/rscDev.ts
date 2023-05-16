@@ -40,7 +40,13 @@ const rscDev: MiddlewareCreator = () => {
       }
     }
     if (rscId || rsfId) {
-      renderRSC({ rscId, props, rsfId, args }, false).pipe(res);
+      const pipeable = renderRSC({ rscId, props, rsfId, args }, false);
+      pipeable.on("error", (err) => {
+        console.info("Cannot render RSC", err);
+        res.statusCode = 500;
+        res.end(String(err));
+      });
+      pipeable.pipe(res);
       return;
     }
     await next();

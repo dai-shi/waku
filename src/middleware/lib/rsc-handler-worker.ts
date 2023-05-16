@@ -241,17 +241,17 @@ async function renderRSC(
   throw new Error("Unexpected input");
 }
 
-async function getCustomModulesRSC(): Promise<string[]> {
+async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
   const { getCustomModules } = await (loadServerFile(
     srcEntriesFile
   ) as Promise<{
     getCustomModules?: GetCustomModules;
   }>);
   if (!getCustomModules) {
-    return [];
+    return {};
   }
   const modules = await getCustomModules();
-  return Array.from(modules);
+  return modules;
 }
 
 // FIXME this may take too much responsibility

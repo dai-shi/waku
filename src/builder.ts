@@ -85,7 +85,7 @@ export async function runBuild(config: Config = {}) {
 
   const customModules = await getCustomModulesRSC();
   const clientEntryFileSet = new Set<string>();
-  const serverEntryFileSet = new Set<string>(customModules);
+  const serverEntryFileSet = new Set<string>();
   await build({
     root: dir,
     base: basePath,
@@ -100,7 +100,10 @@ export async function runBuild(config: Config = {}) {
       write: false,
       ssr: true,
       rollupOptions: {
-        input: [entriesFile, ...customModules],
+        input: {
+          entries: entriesFile,
+          ...customModules,
+        },
       },
     },
   });
@@ -122,6 +125,7 @@ export async function runBuild(config: Config = {}) {
           entries: entriesFile,
           ...clientEntryFiles,
           ...serverEntryFiles,
+          ...customModules,
         },
         output: {
           banner: (chunk) => {
@@ -136,7 +140,7 @@ export async function runBuild(config: Config = {}) {
             return code;
           },
           entryFileNames: (chunkInfo) => {
-            if (chunkInfo.name === "entries") {
+            if (chunkInfo.name === "entries" || customModules[chunkInfo.name]) {
               return "[name].js";
             }
             return "assets/[name].js";

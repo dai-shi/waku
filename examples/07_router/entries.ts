@@ -3,6 +3,6 @@ import url from "node:url";
 
 import { fileRouter } from "wakuwork/router/server";
 
-export const { getEntry, prefetcher, prerenderer } = fileRouter(
+export const { getEntry, getBuilder, getCustomModules } = fileRouter(
   path.join(path.dirname(url.fileURLToPath(import.meta.url)), "routes")
 );

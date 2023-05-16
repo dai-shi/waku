@@ -13,6 +13,10 @@ export type RenderInput<Props extends {} = {}> = {
   args?: unknown[] | undefined;
 };
 
+type CustomModules = {
+  [name: string]: string;
+};
+
 export type MessageReq =
   | {
       id: number;
@@ -33,7 +37,7 @@ export type MessageRes =
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "end" }
   | { id: number; type: "err"; err: unknown }
-  | { id: number; type: "customModules"; modules: string[] };
+  | { id: number; type: "customModules"; modules: CustomModules };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
@@ -72,8 +76,8 @@ export function renderRSC(
   return passthrough;
 }
 
-export function getCustomModulesRSC(): Promise<string[]> {
-  return new Promise<string[]>((resolve, reject) => {
+export function getCustomModulesRSC(): Promise<CustomModules> {
+  return new Promise<CustomModules>((resolve, reject) => {
     const id = nextId++;
     messageCallbacks.set(id, (mesg) => {
       if (mesg.type === "customModules") {
