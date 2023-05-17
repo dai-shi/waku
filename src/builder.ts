@@ -11,8 +11,6 @@ import type { Config } from "./config.js";
 import { codeToInject } from "./middleware/lib/rsc-utils.js";
 import { shutdown, getCustomModulesRSC, buildRSC } from "./middleware/lib/rsc-handler.js";
 
-// TODO we have duplicate code here and rscPrd.ts and rsc-handler*.ts
-
 // FIXME we could do this without plugin anyway
 const rscIndexPlugin = (): Plugin => {
   return {

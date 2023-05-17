@@ -140,6 +140,7 @@ const distEntriesFile = path.join(
 
 const vitePromise = createServer({
   root: dir,
+  ...(process.env.NODE_ENV && { mode: process.env.NODE_ENV }),
   plugins: [rscPlugin()],
   appType: "custom",
 });
@@ -194,8 +195,15 @@ const getDecodeId = async (loadClientEntries: boolean, isBuild: boolean) => {
 
   const decodeId = (encodedId: string): [id: string, name: string] => {
     let [id, name] = encodedId.split("#") as [string, string];
-    id = path.relative(path.join(dir, isBuild ? distPath : ""), id);
-    id = basePath + getClientEntry(id);
+    const baseDir = isBuild ? path.join(dir, distPath) : dir;
+    if (id.startsWith(baseDir)) {
+      id = basePath + getClientEntry(path.relative(baseDir, id));
+    } else {
+      if (isBuild || process.env.NODE_ENV === "production") {
+        throw new Error("decodeId: no relative path in production");
+      }
+      id = basePath + path.join("@fs", getClientEntry(id));
+    }
     return [id, name];
   };
 
