@@ -2,9 +2,7 @@
 
 import { cache, use, useEffect, useState } from "react";
 import type { ReactElement } from "react";
-import RSDWClient from "react-server-dom-webpack/client";
-
-const { createFromFetch, encodeReply } = RSDWClient;
+import { createFromFetch, encodeReply } from "react-server-dom-webpack/client";
 
 // FIXME only works with basePath="/"
 const basePath = "/";

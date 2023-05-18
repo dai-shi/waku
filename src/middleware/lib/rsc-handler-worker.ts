@@ -142,6 +142,9 @@ const vitePromise = createServer({
   root: dir,
   ...(process.env.NODE_ENV && { mode: process.env.NODE_ENV }),
   plugins: [rscPlugin()],
+  ssr: {
+    noExternal: ["wakuwork"], // FIXME this doesn't seem ideal?
+  },
   appType: "custom",
 });
 
@@ -200,7 +203,7 @@ const getDecodeId = async (loadClientEntries: boolean, isBuild: boolean) => {
       id = basePath + getClientEntry(path.relative(baseDir, id));
     } else {
       if (isBuild || process.env.NODE_ENV === "production") {
-        throw new Error("decodeId: no relative path in production");
+        throw new Error("decodeId: no relative path in production: " + id);
       }
       id = basePath + path.join("@fs", getClientEntry(id));
     }
