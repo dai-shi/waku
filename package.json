@@ -95,13 +95,11 @@
     "react-dom": "18.3.0-canary-aef7ce554-20230503",
     "react-server-dom-webpack": "18.3.0-canary-aef7ce554-20230503",
     "tailwindcss": "^3.3.2",
-    "tsx": "^3.12.7",
     "typescript": "^5.0.4",
     "wakuwork": "link:."
   },
   "peerDependencies": {
     "react": "18.3.0-canary-aef7ce554-20230503",
-    "react-server-dom-webpack": "18.3.0-canary-aef7ce554-20230503",
-    "tsx": "^3.12.6"
+    "react-server-dom-webpack": "18.3.0-canary-aef7ce554-20230503"
   }
 }
