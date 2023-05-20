@@ -6,7 +6,7 @@ import { renderRSC } from "./lib/rsc-handler.js";
 
 const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 
-// TODO we have duplicate code here and rsc-handler-worker.ts
+// FIXME we have duplicate code here and rscDev.ts
 
 const rscPrd: MiddlewareCreator = () => {
   return async (req, res, next) => {

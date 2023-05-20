@@ -9,7 +9,11 @@ import * as swc from "@swc/core";
 
 import type { Config } from "./config.js";
 import { codeToInject } from "./middleware/lib/rsc-utils.js";
-import { shutdown, getCustomModulesRSC, buildRSC } from "./middleware/lib/rsc-handler.js";
+import {
+  shutdown,
+  getCustomModulesRSC,
+  buildRSC,
+} from "./middleware/lib/rsc-handler.js";
 
 // FIXME we could do this without plugin anyway
 const rscIndexPlugin = (): Plugin => {
@@ -93,6 +97,9 @@ export async function runBuild(config: Config = {}) {
         (id) => serverEntryFileSet.add(id)
       ),
     ],
+    ssr: {
+      noExternal: ["wakuwork"], // TODO we need to add all possible libs to analyze
+    },
     build: {
       outDir: distPath,
       write: false,
@@ -115,6 +122,12 @@ export async function runBuild(config: Config = {}) {
   const serverBuildOutput = await build({
     root: dir,
     base: basePath,
+    ssr: {
+      noExternal: Array.from(clientEntryFileSet).map(
+        (fname) =>
+          path.relative(path.join(dir, "node_modules"), fname).split("/")[0]!
+      ),
+    },
     build: {
       outDir: distPath,
       ssr: true,
