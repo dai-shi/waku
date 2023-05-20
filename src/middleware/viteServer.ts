@@ -8,9 +8,9 @@ import react from "@vitejs/plugin-react";
 import type { MiddlewareCreator } from "./lib/common.js";
 import { codeToInject } from "./lib/rsc-utils.js";
 
-const rscPlugin = (): Plugin => {
+const rscIndexPlugin = (): Plugin => {
   return {
-    name: "rscPlugin",
+    name: "rsc-index-plugin",
     async transformIndexHtml() {
       return [
         {
@@ -29,10 +29,13 @@ const viteServer: MiddlewareCreator = (config) => {
   const indexHtmlFile = path.join(dir, indexHtml);
   const vitePromise = createServer({
     root: dir,
+    optimizeDeps: {
+      include: ["react-server-dom-webpack/client"],
+    },
     plugins: [
       // @ts-ignore
       react(),
-      rscPlugin(),
+      rscIndexPlugin(),
     ],
     server: { middlewareMode: true },
     appType: "custom",
