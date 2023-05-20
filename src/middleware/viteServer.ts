@@ -7,6 +7,7 @@ import react from "@vitejs/plugin-react";
 
 import type { MiddlewareCreator } from "./lib/common.js";
 import { codeToInject } from "./lib/rsc-utils.js";
+import { setClientEntries } from "./lib/rsc-handler.js";
 
 const rscIndexPlugin = (): Plugin => {
   return {
@@ -42,6 +43,14 @@ const viteServer: MiddlewareCreator = (config) => {
   });
   return async (req, res, next) => {
     const vite = await vitePromise;
+    const absoluteClientEntries = Object.fromEntries(
+      Array.from(vite.moduleGraph.idToModuleMap.values()).map(
+        ({ file, url }) => [file, url]
+      )
+    );
+    absoluteClientEntries['*'] = '*'; // HACK to use fallback resolver
+    // FIXME this is bad in performance, let's revisit it
+    await setClientEntries(absoluteClientEntries);
     const indexFallback = async () => {
       const url = new URL(req.url || "", "http://" + req.headers.host);
       // TODO make it configurable?

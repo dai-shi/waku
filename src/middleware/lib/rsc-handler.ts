@@ -21,9 +21,13 @@ export type MessageReq =
   | { type: "shutdown" }
   | {
       id: number;
+      type: "setClientEntries";
+      value: "load" | Record<string, string>;
+    }
+  | {
+      id: number;
       type: "render";
       input: RenderInput;
-      loadClientEntries: boolean;
     }
   | {
       id: number;
@@ -55,10 +59,30 @@ export function shutdown() {
 
 let nextId = 1;
 
-export function renderRSC(
-  input: RenderInput,
-  loadClientEntries: boolean
-): Readable {
+export function setClientEntries(
+  value: "load" | Record<string, string>
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const id = nextId++;
+    messageCallbacks.set(id, (mesg) => {
+      if (mesg.type === "end") {
+        resolve();
+        messageCallbacks.delete(id);
+      } else if (mesg.type === "err") {
+        reject(mesg.err);
+        messageCallbacks.delete(id);
+      }
+    });
+    const mesg: MessageReq = {
+      id,
+      type: "setClientEntries",
+      value,
+    };
+    worker.postMessage(mesg);
+  });
+}
+
+export function renderRSC(input: RenderInput): Readable {
   const id = nextId++;
   const passthrough = new PassThrough();
   messageCallbacks.set(id, (mesg) => {
@@ -78,7 +102,6 @@ export function renderRSC(
     id,
     type: "render",
     input,
-    loadClientEntries,
   };
   worker.postMessage(mesg);
   return passthrough;

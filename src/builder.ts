@@ -11,6 +11,7 @@ import type { Config } from "./config.js";
 import { codeToInject } from "./middleware/lib/rsc-utils.js";
 import {
   shutdown,
+  setClientEntries,
   getCustomModulesRSC,
   buildRSC,
 } from "./middleware/lib/rsc-handler.js";
@@ -206,6 +207,14 @@ export async function runBuild(config: Config = {}) {
     distEntriesFile,
     `export const clientEntries=${JSON.stringify(clientEntries)};`
   );
+
+  const absoluteClientEntries = Object.fromEntries(
+    Object.entries(clientEntries).map(([key, val]) => [
+      path.join(path.dirname(entriesFile), distPath, key),
+      basePath + val,
+    ])
+  );
+  await setClientEntries(absoluteClientEntries);
 
   await buildRSC();
 

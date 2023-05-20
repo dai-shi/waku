@@ -2,14 +2,16 @@ import RSDWServer from "react-server-dom-webpack/server.node.unbundled";
 import busboy from "busboy";
 
 import type { MiddlewareCreator } from "./lib/common.js";
-import { renderRSC } from "./lib/rsc-handler.js";
+import { renderRSC, setClientEntries } from "./lib/rsc-handler.js";
 
 const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 
 // FIXME we have duplicate code here and rscDev.ts
 
 const rscPrd: MiddlewareCreator = () => {
+  const promise = setClientEntries("load");
   return async (req, res, next) => {
+    await promise;
     const rscId = req.headers["x-react-server-component-id"];
     const rsfId = req.headers["x-react-server-function-id"];
     if (Array.isArray(rscId) || Array.isArray(rsfId)) {
@@ -41,7 +43,7 @@ const rscPrd: MiddlewareCreator = () => {
       }
     }
     if (rscId || rsfId) {
-      const pipeable = renderRSC({ rscId, props, rsfId, args }, true);
+      const pipeable = renderRSC({ rscId, props, rsfId, args });
       pipeable.on("error", (err) => {
         console.info("Cannot render RSC", err);
         res.statusCode = 500;

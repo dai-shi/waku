@@ -15,10 +15,31 @@ import { rscPlugin } from "./vite-rsc-plugin.js";
 
 const { renderToPipeableStream } = RSDWServer;
 
-const handleRender = async (mesg: MessageReq & { type: "render" }) => {
-  const { id, input, loadClientEntries } = mesg;
+const handleSetClientEntries = async (
+  mesg: MessageReq & { type: "setClientEntries" }
+) => {
+  const { id, value } = mesg;
   try {
-    const pipeable = await renderRSC(input, loadClientEntries);
+    await setClientEntries(value);
+    const mesg: MessageRes = {
+      id,
+      type: "end",
+    };
+    parentPort!.postMessage(mesg);
+  } catch (err) {
+    const mesg: MessageRes = {
+      id,
+      type: "err",
+      err,
+    };
+    parentPort!.postMessage(mesg);
+  }
+};
+
+const handleRender = async (mesg: MessageReq & { type: "render" }) => {
+  const { id, input } = mesg;
+  try {
+    const pipeable = await renderRSC(input);
     const writable = new Writable({
       write(chunk, encoding, callback) {
         if (encoding !== ("buffer" as any)) {
@@ -102,6 +123,8 @@ parentPort!.on("message", (mesg: MessageReq) => {
       await vite.close();
       parentPort!.close();
     });
+  } else if (mesg.type === "setClientEntries") {
+    handleSetClientEntries(mesg);
   } else if (mesg.type === "render") {
     handleRender(mesg);
   } else if (mesg.type === "getCustomModules") {
@@ -169,61 +192,46 @@ const getFunctionComponent = async (rscId: string, isBuild: boolean) => {
   throw new Error("No function component found");
 };
 
-// FIXME better function name? decodeId seems too general
-const getDecodeId = async (loadClientEntries: boolean, isBuild: boolean) => {
-  let clientEntries: Record<string, string> | undefined;
-  if (loadClientEntries) {
-    ({ clientEntries } = await loadServerFile(
-      isBuild ? distEntriesFile : entriesFile
-    ));
-    if (!clientEntries) {
-      throw new Error("Failed to load clientEntries");
+let absoluteClientEntries: Record<string, string> = {};
+
+const resolveClientEntry = (filePath: string) => {
+  const clientEntry = absoluteClientEntries[filePath];
+  if (!clientEntry) {
+    if (absoluteClientEntries["*"] === "*") {
+      return basePath + path.relative(dir, filePath);
     }
+    throw new Error("No client entry found");
   }
-
-  const getClientEntry = (id: string) => {
-    if (!clientEntries) {
-      return id;
-    }
-    const clientEntry =
-      clientEntries[id] ||
-      clientEntries[id.replace(/\.js$/, ".ts")] ||
-      clientEntries[id.replace(/\.js$/, ".tsx")] ||
-      clientEntries[id.replace(/\.js$/, ".jsx")];
-    if (!clientEntry) {
-      throw new Error("No client entry found");
-    }
-    return clientEntry;
-  };
-
-  const decodeId = (encodedId: string): [id: string, name: string] => {
-    let [id, name] = encodedId.split("#") as [string, string];
-    const baseDir = isBuild ? path.join(dir, distPath) : dir;
-    if (id.startsWith(baseDir)) {
-      id = basePath + getClientEntry(path.relative(baseDir, id));
-    } else {
-      if (isBuild || process.env.NODE_ENV === "production") {
-        throw new Error("decodeId: no relative path in production: " + id);
-      }
-      id = basePath + path.join("@fs", getClientEntry(id));
-    }
-    return [id, name];
-  };
-
-  return decodeId;
+  return clientEntry;
 };
 
-async function renderRSC(
-  input: RenderInput,
-  loadClientEntries: boolean
-): Promise<PipeableStream> {
-  const decodeId = await getDecodeId(loadClientEntries, false);
+async function setClientEntries(
+  value: "load" | Record<string, string>
+): Promise<void> {
+  if (value !== "load") {
+    absoluteClientEntries = value;
+    return;
+  }
+  const { clientEntries } = await loadServerFile(entriesFile);
+  if (!clientEntries) {
+    throw new Error("Failed to load clientEntries");
+  }
+  const baseDir = path.dirname(entriesFile);
+  absoluteClientEntries = Object.fromEntries(
+    Object.entries(clientEntries).map(([key, val]) => [
+      path.join(baseDir, key),
+      basePath + val,
+    ])
+  );
+}
 
+async function renderRSC(input: RenderInput): Promise<PipeableStream> {
   const bundlerConfig = new Proxy(
     {},
     {
       get(_target, encodedId: string) {
-        const [id, name] = decodeId(encodedId);
+        const [filePath, name] = encodedId.split("#") as [string, string];
+        const id = resolveClientEntry(filePath);
         return { id, chunks: [id], name, async: true };
       },
     }
@@ -272,7 +280,12 @@ async function buildRSC(): Promise<void> {
     return;
   }
 
-  const decodeId = await getDecodeId(true, true);
+  // FIXME this doesn't seem an ideal solution
+  const decodeId = (encodedId: string): [id: string, name: string] => {
+    const [filePath, name] = encodedId.split("#") as [string, string];
+    const id = resolveClientEntry(filePath);
+    return [id, name];
+  };
 
   const pathMap = await getBuilder(decodeId);
   const clientModuleMap = new Map<string, Set<string>>();
