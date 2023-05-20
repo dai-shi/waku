@@ -99,7 +99,7 @@ export async function runBuild(config: Config = {}) {
       ),
     ],
     ssr: {
-      noExternal: ["wakuwork"], // TODO we need to add all possible libs to analyze
+      noExternal: ["wakuwork"], // TODO we need to add all possible libs
     },
     build: {
       outDir: distPath,

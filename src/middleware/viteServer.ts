@@ -32,6 +32,7 @@ const viteServer: MiddlewareCreator = (config) => {
     root: dir,
     optimizeDeps: {
       include: ["react-server-dom-webpack/client"],
+      exclude: ["wakuwork"], // TODO we need to add all possible libs
     },
     plugins: [
       // @ts-ignore
