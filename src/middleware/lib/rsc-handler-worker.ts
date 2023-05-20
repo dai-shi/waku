@@ -201,10 +201,6 @@ const getDecodeId = async (loadClientEntries: boolean, isBuild: boolean) => {
     const baseDir = isBuild ? path.join(dir, distPath) : dir;
     if (id.startsWith(baseDir)) {
       id = basePath + getClientEntry(path.relative(baseDir, id));
-    } else if (id.startsWith(path.join(dir, "node_modules"))) {
-      id =
-        basePath +
-        getClientEntry(path.relative(path.join(dir, "node_modules"), id));
     } else {
       if (isBuild || process.env.NODE_ENV === "production") {
         throw new Error("decodeId: no relative path in production: " + id);
