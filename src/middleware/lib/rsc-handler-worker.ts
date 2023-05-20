@@ -143,7 +143,7 @@ const vitePromise = createServer({
   ...(process.env.NODE_ENV && { mode: process.env.NODE_ENV }),
   plugins: [rscPlugin()],
   ssr: {
-    noExternal: ["wakuwork", "@swc/core"], // FIXME this doesn't seem ideal?
+    noExternal: ["wakuwork"], // FIXME this doesn't seem ideal?
   },
   appType: "custom",
 });
