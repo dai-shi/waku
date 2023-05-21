@@ -108,13 +108,15 @@ export function fileRouter(baseDir: string, routesPath: string) {
       .default;
     const RouteComponent: any = (props: RouteProps) => {
       const componentProps: Record<string, string> = {};
-      for (const [key, value] of new URLSearchParams(props.search)) {
-        componentProps[key] = value;
+      if ("search" in props) {
+        for (const [key, value] of new URLSearchParams(props.search)) {
+          componentProps[key] = value;
+        }
       }
       return createElement(
         component,
         componentProps,
-        props.childIndex
+        "childIndex" in props
           ? createElement(ClientChild, { index: props.childIndex })
           : null
       );
@@ -122,6 +124,7 @@ export function fileRouter(baseDir: string, routesPath: string) {
     return RouteComponent;
   };
 
+  // We have to make prefetcher consistent with client behavior
   const prefetcher = async (pathStr: string) => {
     const url = new URL(pathStr, "http://localhost");
     const elements: (readonly [id: string, props: RouteProps])[] = [];
@@ -131,9 +134,7 @@ export function fileRouter(baseDir: string, routesPath: string) {
       const rscId = pathItems.slice(0, index).join("/") || "index";
       elements.push([
         rscId,
-        index < pathItems.length
-          ? { childIndex: index + 1, search }
-          : { search },
+        index < pathItems.length ? { childIndex: index + 1 } : { search },
       ]);
     }
     const clientModules = new Set(

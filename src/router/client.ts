@@ -43,8 +43,8 @@ export function useLocation() {
   return value.location;
 }
 
-// FIXME normalizing `search` before prefetch would be necessary.
-// FIXME ommitting `search` items would be important for caching.
+// FIXME normalizing `search` before prefetch might be good.
+// FIXME selective `search` would be better. (for intermediate routes too)
 
 const prefetchRoutes = (pathname: string, search: string) => {
   const prefetched = ((globalThis as any).__WAKUWORK_PREFETCHED__ ||= {});
@@ -52,7 +52,7 @@ const prefetchRoutes = (pathname: string, search: string) => {
   for (let index = 0; index <= pathItems.length; ++index) {
     const rscId = pathItems.slice(0, index).join("/") || "index";
     const props: RouteProps =
-      index < pathItems.length ? { childIndex: index + 1, search } : { search };
+      index < pathItems.length ? { childIndex: index + 1 } : { search };
     // FIXME we blindly expect JSON.stringify usage is deterministic
     const serializedProps = JSON.stringify(props);
     if (!prefetched[rscId]) {
@@ -80,7 +80,13 @@ export function Child({ index }: ChildProps) {
   const rscId = pathItems.slice(0, index).join("/") || "index";
   return createElement(
     getRoute(rscId),
-    index < pathItems.length ? { childIndex: index + 1, search } : { search }
+    index < pathItems.length
+      ? {
+          childIndex: index + 1, // we still have a child route
+        }
+      : {
+          search, // attach `search` only for a leaf route for now
+        }
   );
 }
 
