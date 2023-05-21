@@ -39,6 +39,7 @@ export type MessageReq =
     };
 
 export type MessageRes =
+  | { type: "full-reload" }
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "end" }
   | { id: number; type: "err"; err: unknown }
@@ -47,8 +48,20 @@ export type MessageRes =
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
 worker.on("message", (mesg: MessageRes) => {
-  messageCallbacks.get(mesg.id)?.(mesg);
+  if ("id" in mesg) {
+    messageCallbacks.get(mesg.id)?.(mesg);
+  }
 });
+
+export function registerReloadCallback(fn: (type: "full-reload") => void) {
+  const listener = (mesg: MessageRes) => {
+    if (mesg.type === "full-reload") {
+      fn(mesg.type);
+    }
+  };
+  worker.on("message", listener);
+  return () => worker.off("message", listener);
+}
 
 export function shutdown() {
   return new Promise<void>((resolve) => {

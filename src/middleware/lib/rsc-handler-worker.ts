@@ -11,7 +11,7 @@ import { transformRsfId, generatePrefetchCode } from "./rsc-utils.js";
 import type { RenderInput, MessageReq, MessageRes } from "./rsc-handler.js";
 import type { Config } from "../../config.js";
 import type { GetEntry, GetBuilder, GetCustomModules } from "../../server.js";
-import { rscPlugin } from "./vite-rsc-plugin.js";
+import { rscTransformPlugin, rscReloadPlugin } from "./vite-plugin-rsc.js";
 
 const { renderToPipeableStream } = RSDWServer;
 
@@ -164,7 +164,17 @@ const distEntriesFile = path.join(
 const vitePromise = createServer({
   root: dir,
   ...(process.env.NODE_ENV && { mode: process.env.NODE_ENV }),
-  plugins: [rscPlugin()],
+  plugins: [
+    rscTransformPlugin(),
+    ...(process.env.NODE_ENV === "development"
+      ? [
+          rscReloadPlugin(entriesFile, (type) => {
+            const mesg: MessageRes = { type };
+            parentPort!.postMessage(mesg);
+          }),
+        ]
+      : []),
+  ],
   ssr: {
     noExternal: ["wakuwork"], // FIXME this doesn't seem ideal?
   },
