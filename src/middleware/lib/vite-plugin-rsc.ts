@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { Plugin, ModuleNode } from "vite";
+import type { Plugin } from "vite";
 import * as swc from "@swc/core";
 import * as RSDWNodeLoader from "react-server-dom-webpack/node-loader";
 
@@ -53,10 +53,7 @@ export const rscTransformPlugin = (): Plugin => {
   };
 };
 
-export const rscReloadPlugin = (
-  entriesFile: string,
-  fn: (type: "full-reload") => void
-): Plugin => {
+export const rscReloadPlugin = (fn: (type: "full-reload") => void): Plugin => {
   const isClientEntry = (id: string, code: string) => {
     const ext = path.extname(id);
     if ([".ts", ".tsx", ".js", ".jsx"].includes(ext)) {
@@ -76,29 +73,10 @@ export const rscReloadPlugin = (
     }
     return false;
   };
-  const findRootImporters = async (nodes: Set<ModuleNode>) => {
-    const rootImporters = new Set<ModuleNode>();
-    for (const node of nodes) {
-      if (node.importers.size) {
-        for (const i of await findRootImporters(node.importers)) {
-          rootImporters.add(i);
-        }
-      } else {
-        rootImporters.add(node);
-      }
-    }
-    return rootImporters;
-  };
   return {
     name: "reload-plugin",
     async handleHotUpdate(ctx) {
-      if (
-        Array.from(await findRootImporters(new Set(ctx.modules))).some(
-          ({ file }) =>
-            file?.replace(/\.\w+$/, "") === entriesFile.replace(/\.\w+$/, "")
-        ) &&
-        !isClientEntry(ctx.file, await ctx.read())
-      ) {
+      if (ctx.modules.length && !isClientEntry(ctx.file, await ctx.read())) {
         fn("full-reload");
       }
     },

@@ -168,7 +168,7 @@ const vitePromise = createServer({
     rscTransformPlugin(),
     ...(process.env.NODE_ENV === "development"
       ? [
-          rscReloadPlugin(entriesFile, (type) => {
+          rscReloadPlugin((type) => {
             const mesg: MessageRes = { type };
             parentPort!.postMessage(mesg);
           }),
