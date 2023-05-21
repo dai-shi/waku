@@ -100,7 +100,8 @@ const findClientModules = async (base: string, id: string) => {
   ).flat();
 };
 
-export function fileRouter(base: string) {
+export function fileRouter(baseDir: string, routesPath: string) {
+  const base = path.join(baseDir, routesPath);
   const getEntry: GetEntry = async (id) => {
     // This can be too unsecure? FIXME
     const component = (await import(/* @vite-ignore */ `${base}/${id}.js`))
@@ -184,9 +185,8 @@ globalThis.__WAKUWORK_ROUTER_PREFETCH__ = (pathname, search) => {
 
   const getCustomModules: GetCustomModules = async () => {
     return Object.fromEntries(
-      // TODO TEMP make "routes" configurable
       getAllFiles(base).map((file) => [
-        `routes/${file.replace(/\.\w+$/, "")}`,
+        `${routesPath}/${file.replace(/\.\w+$/, "")}`,
         `${base}/${file}`,
       ])
     );
