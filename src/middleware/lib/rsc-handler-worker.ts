@@ -210,7 +210,7 @@ const resolveClientEntry = (filePath: string) => {
     if (absoluteClientEntries["*"] === "*") {
       return basePath + path.relative(dir, filePath);
     }
-    throw new Error("No client entry found");
+    throw new Error("No client entry found for " + filePath);
   }
   return clientEntry;
 };

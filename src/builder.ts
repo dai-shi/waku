@@ -99,7 +99,10 @@ export async function runBuild(config: Config = {}) {
       ),
     ],
     ssr: {
-      noExternal: ["wakuwork"], // TODO we need to add all possible libs
+      // FIXME Without this, wakuwork/router isn't considered to have client
+      // entries, and "No client entry" error occurs.
+      // Unless we fix this, RSC-capable packages aren't supported.
+      noExternal: ["wakuwork"],
     },
     build: {
       outDir: distPath,
