@@ -10,10 +10,13 @@ import RSDWServer from "react-server-dom-webpack/server";
 import { transformRsfId, generatePrefetchCode } from "./rsc-utils.js";
 import type { RenderInput, MessageReq, MessageRes } from "./rsc-handler.js";
 import type { Config } from "../../config.js";
-import type { GetEntry, GetBuilder, GetCustomModules } from "../../server.js";
+import { defineEntries } from "../../server.js";
+import type { unstable_GetCustomModules } from "../../server.js";
 import { rscTransformPlugin, rscReloadPlugin } from "./vite-plugin-rsc.js";
 
 const { renderToPipeableStream } = RSDWServer;
+
+type Entries = { default: ReturnType<typeof defineEntries> };
 
 const handleSetClientEntries = async (
   mesg: MessageReq & { type: "setClientEntries" }
@@ -187,17 +190,17 @@ const loadServerFile = async (fname: string) => {
 };
 
 const getFunctionComponent = async (rscId: string, isBuild: boolean) => {
-  const { getEntry } = await (loadServerFile(
+  const {
+    default: { getEntry },
+  } = await (loadServerFile(
     isBuild ? distEntriesFile : entriesFile
-  ) as Promise<{
-    getEntry: GetEntry;
-  }>);
+  ) as Promise<Entries>);
   const mod = await getEntry(rscId);
   if (typeof mod === "function") {
     return mod;
   }
-  if (typeof mod.default === "function") {
-    return mod.default;
+  if (typeof mod?.default === "function") {
+    return mod?.default;
   }
   throw new Error("No function component found");
 };
@@ -268,8 +271,12 @@ async function renderRSC(input: RenderInput): Promise<PipeableStream> {
 }
 
 async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
-  const { getCustomModules } = await (loadServerFile(entriesFile) as Promise<{
-    getCustomModules?: GetCustomModules;
+  const {
+    default: { unstable_getCustomModules: getCustomModules },
+  } = await (loadServerFile(entriesFile) as Promise<{
+    default: Entries["default"] & {
+      unstable_getCustomModules?: unstable_GetCustomModules;
+    };
   }>);
   if (!getCustomModules) {
     return {};
@@ -280,9 +287,9 @@ async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
 
 // FIXME this may take too much responsibility
 async function buildRSC(): Promise<void> {
-  const { getBuilder } = await (loadServerFile(distEntriesFile) as Promise<{
-    getBuilder?: GetBuilder;
-  }>);
+  const {
+    default: { getBuilder },
+  } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
   if (!getBuilder) {
     console.warn(
       "getBuilder is undefined. It's recommended for optimization and sometimes required."

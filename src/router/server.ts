@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { createElement } from "react";
 import * as swc from "@swc/core";
 
-import type { GetEntry, GetBuilder, GetCustomModules } from "../server.js";
+import type { GetEntry, GetBuilder, unstable_GetCustomModules } from "../server.js";
 
 import type { RouteProps, LinkProps } from "./common.js";
 import { Child as ClientChild, Link as ClientLink } from "./client.js";
@@ -184,7 +184,7 @@ globalThis.__WAKUWORK_ROUTER_PREFETCH__ = (pathname, search) => {
     );
   };
 
-  const getCustomModules: GetCustomModules = async () => {
+  const unstable_getCustomModules: unstable_GetCustomModules = async () => {
     return Object.fromEntries(
       getAllFiles(base).map((file) => [
         `${routesPath}/${file.replace(/\.\w+$/, "")}`,
@@ -193,7 +193,7 @@ globalThis.__WAKUWORK_ROUTER_PREFETCH__ = (pathname, search) => {
     );
   };
 
-  return { getEntry, getBuilder, getCustomModules };
+  return { getEntry, getBuilder, unstable_getCustomModules };
 }
 
 export function Link(props: LinkProps) {

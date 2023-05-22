@@ -1,18 +1,21 @@
-import type { GetEntry, GetBuilder } from "wakuwork/server";
+import { defineEntries } from "wakuwork/server";
 
-export const getEntry: GetEntry = async (id) => {
-  switch (id) {
-    case "App":
-      return import("./src/App.js");
-    default:
-      throw new Error(`Unknown entry id: ${id}`);
+export default defineEntries(
+  // getEntry
+  async (id) => {
+    switch (id) {
+      case "App":
+        return import("./src/App.js");
+      default:
+        return null;
+    }
+  },
+  // getBuilder
+  async () => {
+    return {
+      "/": {
+        elements: [["App", { name: "Wakuwork" }]],
+      },
+    };
   }
-};
-
-export const getBuilder: GetBuilder = async () => {
-  return {
-    "/": {
-      elements: [["App", { name: "Wakuwork" }]],
-    },
-  };
-};
+);

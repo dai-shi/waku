@@ -3,7 +3,7 @@ import url from "node:url";
 
 import { fileRouter } from "wakuwork/router/server";
 
-export const { getEntry, getBuilder, getCustomModules } = fileRouter(
+export default fileRouter(
   path.dirname(url.fileURLToPath(import.meta.url)),
   "routes"
 );
