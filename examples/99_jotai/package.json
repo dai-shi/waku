@@ -1,23 +1,23 @@
 {
-  "name": "wakuwork-example",
+  "name": "waku-example",
   "version": "0.1.0",
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "wakuwork dev",
-    "build": "wakuwork build",
-    "start": "WAKUWORK_CONFIG='{\"prdServer\":{\"dir\":\"dist\"}}' wakuwork start"
+    "dev": "waku dev",
+    "build": "waku build",
+    "start": "WAKU_CONFIG='{\"prdServer\":{\"dir\":\"dist\"}}' waku start"
   },
   "dependencies": {
-    "jotai": "^2.0.3",
-    "react": "18.3.0-next-8e17bfd14-20230322",
-    "react-dom": "18.3.0-next-8e17bfd14-20230322",
-    "react-server-dom-webpack": "18.3.0-next-8e17bfd14-20230322",
-    "wakuwork": "~0.8.0"
+    "jotai": "^2.1.0",
+    "react": "18.3.0-canary-5309f1028-20230517",
+    "react-dom": "18.3.0-canary-5309f1028-20230517",
+    "react-server-dom-webpack": "18.3.0-canary-5309f1028-20230517",
+    "waku": "0.9.4"
   },
   "devDependencies": {
-    "@types/react": "^18.0.29",
-    "@types/react-dom": "^18.0.11",
-    "typescript": "^5.0.2"
+    "@types/react": "^18.2.6",
+    "@types/react-dom": "^18.2.4",
+    "typescript": "^5.0.4"
   }
 }
