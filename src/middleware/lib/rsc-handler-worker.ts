@@ -144,8 +144,7 @@ type PipeableStream = {
 // TODO use of process.env is all temporary
 // TODO these are temporary
 const config: Config =
-  (process.env.WAKUWORK_CONFIG && JSON.parse(process.env.WAKUWORK_CONFIG)) ||
-  {};
+  (process.env.WAKU_CONFIG && JSON.parse(process.env.WAKU_CONFIG)) || {};
 const dirFromConfig =
   config.prdServer?.dir ?? config.build?.dir ?? config.devServer?.dir; // HACK
 const dir = path.resolve(dirFromConfig || ".");
@@ -179,7 +178,11 @@ const vitePromise = createServer({
       : []),
   ],
   ssr: {
-    noExternal: ["wakuwork"], // FIXME this doesn't seem ideal?
+    // FIXME Without this, "use client" directive in waku/router/client
+    // is ignored, and some errors occur.
+    // Unless we fix this, RSC-capable packages aren't supported.
+    // This also seems to cause problems with pnpm.
+    noExternal: ["waku"],
   },
   appType: "custom",
 });

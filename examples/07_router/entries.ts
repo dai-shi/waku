@@ -1,7 +1,7 @@
 import path from "node:path";
 import url from "node:url";
 
-import { fileRouter } from "wakuwork/router/server";
+import { fileRouter } from "waku/router/server";
 
 export default fileRouter(
   path.dirname(url.fileURLToPath(import.meta.url)),

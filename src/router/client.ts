@@ -47,7 +47,7 @@ export function useLocation() {
 // FIXME selective `search` would be better. (for intermediate routes too)
 
 const prefetchRoutes = (pathname: string, search: string) => {
-  const prefetched = ((globalThis as any).__WAKUWORK_PREFETCHED__ ||= {});
+  const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
   const pathItems = pathname.split("/").filter(Boolean);
   for (let index = 0; index <= pathItems.length; ++index) {
     const rscId = pathItems.slice(0, index).join("/") || "index";
@@ -65,7 +65,7 @@ const prefetchRoutes = (pathname: string, search: string) => {
         `/RSC/${rscId}/${searchParams}`
       );
     }
-    (globalThis as any).__WAKUWORK_ROUTER_PREFETCH__?.(pathname, search);
+    (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(pathname, search);
   }
 };
 

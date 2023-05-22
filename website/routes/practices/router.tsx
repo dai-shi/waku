@@ -1,7 +1,7 @@
 import { Code, CodeBlock } from "../../src/Code.js";
 
 const code1 = `import { createRoot } from "react-dom/client";
-import { Router } from "wakuwork/router/client";
+import { Router } from "waku/router/client";
 
 const root = createRoot(document.getElementById("root")!);
 
@@ -10,15 +10,15 @@ root.render(<Router />);`;
 const code2 = `import path from "node:path";
 import url from "node:url";
 
-import { fileRouter } from "wakuwork/router/server";
+import { fileRouter } from "waku/router/server";
 
 export default fileRouter(
   path.dirname(url.fileURLToPath(import.meta.url)),
   "routes"
 );`;
 
-const code3 = `git clone https://github.com/dai-shi/wakuwork.git
-cd wakuwork
+const code3 = `git clone https://github.com/dai-shi/waku.git
+cd waku
 npm install
 npm run examples:dev:07_router`;
 
@@ -28,10 +28,10 @@ export default function Layout() {
       <h2 className="text-xl font-bold">Router Practice</h2>
       <article className="mt-6">
         <div className="my-3">
-          Wakuwork provides a router built on top of the minimal API, and it
-          serves as a reference implementation. While other router
-          implementations can be used with Wakuwork, this page focuses on the{" "}
-          <Code>wakuwork/router</Code> implementation.
+          Waku provides a router built on top of the minimal API, and it serves
+          as a reference implementation. While other router implementations can
+          be used with Waku, this page focuses on the <Code>waku/router</Code>{" "}
+          implementation.
         </div>
       </article>
       <h3 className="text-lg font-bold mt-8">Client API</h3>
@@ -73,12 +73,12 @@ export default function Layout() {
           the following commands:
         </div>
         <div className="my-3">
-          <CodeBlock lang="text">{code3}</CodeBlock>
+          <CodeBlock lang="shellscript">{code3}</CodeBlock>
         </div>
         <div className="my-1">
           Alternatively, you could create a project with something like{" "}
-          <Code>npm create wakuwork@latest</Code> and copy files from the
-          example folder in the repository.
+          <Code>npm create waku@latest</Code> and copy files from the example
+          folder in the repository.
         </div>
       </article>
     </>

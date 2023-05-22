@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { mutate } from "wakuwork/client";
+import { mutate } from "waku/client";
 
 export const Counter = ({ increment }: { increment: () => void }) => {
   const [count, setCount] = useState(0);
