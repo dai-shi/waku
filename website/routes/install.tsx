@@ -2,8 +2,7 @@ import { CodeBlock } from "../src/Code.js";
 
 const code1 = `npm create wakuwork@latest
 yarn create wakuwork
-pnpm create wakuwork
-`;
+pnpm create wakuwork`;
 
 export default function Layout() {
   return (

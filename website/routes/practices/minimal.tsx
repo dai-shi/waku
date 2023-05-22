@@ -1,24 +1,25 @@
 import { Code, CodeBlock } from "../../src/Code.js";
 
-const code1 = `import type { GetEntry } from "wakuwork/server";
+const code1 = `import { defineEntries } from "wakuwork/server";
 
-export const getEntry: GetEntry = async (id) => {
-  switch (id) {
-    case "App":
-      return import("./src/App.js");
-    default:
-      throw new Error(\`Unknown entry id: \${id}\`);
+export default defineEntries(
+  // getEntry
+  async (id) => {
+    switch (id) {
+      case "App":
+        return import("./src/App.js");
+      default:
+        return null;
+    }
   }
-};
-`;
+);`;
 
 const code2 = `import { createRoot } from "react-dom/client";
 import { serve } from "wakuwork/client";
 
 const root = createRoot(document.getElementById("root")!);
 const App = serve<{ name: string }>("App");
-root.render(<App name="Wakuwork" />);
-`;
+root.render(<App name="Wakuwork" />);`;
 
 const code3 = `import { useState, useEffect } from "react";
 import { serve } from "wakuwork/client";
@@ -32,39 +33,29 @@ const ContrivedRefetcher = () => {
     return () => clearInterval(id);
   }, []);
   return <App name={'count' + count} />;
-};
-`;
+};`;
 
-const code4 = `import type { GetEntry, Prefetcher, Prerenderer } from "wakuwork/server";
+const code4 = `import { defineEntries } from "wakuwork/server";
 
-export const getEntry: GetEntry = async (id) => {
-  switch (id) {
-    case "App":
-      return import("./src/App.js");
-    default:
-      throw new Error(\`Unknown entry id: \${id}\`);
+export default defineEntries(
+  // getEntry
+  async (id) => {
+    switch (id) {
+      case "App":
+        return import("./src/App.js");
+      default:
+        return null;
+    }
+  },
+  // getBuilder
+  async () => {
+    return {
+      "/": {
+        elements: [["App", { name: "Wakuwork" }]],
+      },
+    };
   }
-};
-
-export const prefetcher: Prefetcher = async (path) => {
-  switch (path) {
-    case "/":
-      return {
-        entryItems: [["App", { name: "Wakuwork" }]],
-        clientModules: [(await import("./src/Counter.js")).Counter],
-      };
-    default:
-      return {};
-  }
-};
-
-export const prerenderer: Prerenderer = async () => {
-  return {
-    entryItems: [["App", { name: "Wakuwork" }]],
-    paths: ["/"],
-  };
-};
-`;
+);`;
 
 export default function Layout() {
   return (
@@ -121,32 +112,25 @@ export default function Layout() {
       <article className="mt-6">
         <div className="my-1">
           In addition to the <Code>getEntry</Code> function, you can also
-          optionally export <Code>prefetcher</Code> and <Code>prerenderer</Code>{" "}
-          functions in <Code>entries.ts</Code>. Here's an example:
+          optionally specify <Code>getBuilder</Code> function in{" "}
+          <Code>entries.ts</Code>. Here's an example:
         </div>
         <div className="my-3">
           <CodeBlock lang="tsx">{code4}</CodeBlock>
         </div>
         <div className="my-1">
-          The <Code>prefetcher</Code> function is used for runtime optimization.
-          It fetches React Server Components and client modules before the
-          client becomes ready. Prefetching is basically to avoid waterfalls.
-          Without it, the performance is suboptimal, but capability-wise it
-          works.
-        </div>
-        <div className="my-1">
-          <Code>prerenderer</Code> function is used for build-time optimization.
-          It renders React Server Components during the build process to produce
-          the output that will be sent to the client. Note that rendering here
-          means to produce RSC payload not HTML content.
+          The <Code>getBuilder</Code> function is used for build-time
+          optimization. It renders React Server Components during the build
+          process to produce the output that will be sent to the client. Note
+          that rendering here means to produce RSC payload not HTML content.
         </div>
       </article>
       <h3 className="text-lg font-bold mt-8">How to try it</h3>
       <article className="mt-6">
         <div className="my-1">
           If you create a project with something like{" "}
-          <Code>pnpm create wakuwork</Code>, it will create the minimal example
-          app.
+          <Code>npm create wakuwork@latest</Code>, it will create the minimal
+          example app.
         </div>
       </article>
     </>
