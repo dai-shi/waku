@@ -2,10 +2,8 @@ import http from "node:http";
 
 import type { Config, Middleware } from "./config.js";
 import { pipe } from "./middleware/lib/common.js";
-import type { Shared } from "./middleware/lib/common.js";
 
 export function startDevServer(config: Config = {}) {
-  const shared: Shared = {};
   const middlewares = config.devServer?.middlewares || [
     "rewriteRsc",
     "rscDev",
@@ -16,7 +14,7 @@ export function startDevServer(config: Config = {}) {
     middlewares.map(async (middleware) => {
       if (typeof middleware === "string") {
         const mod = await import(`./middleware/${middleware}.js`);
-        return (mod.default || mod)(config, shared);
+        return (mod.default || mod)(config);
       }
       return middleware;
     })

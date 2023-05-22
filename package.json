@@ -10,7 +10,6 @@
   },
   "exports": {
     "./package.json": "./package.json",
-    "./node-loader": "./dist/node-loader.js",
     ".": {
       "types": "./dist/main.d.ts",
       "default": "./dist/main.js"
@@ -48,7 +47,7 @@
     "compile:types": "tsc --project tsconfig.build.json",
     "test": "tsc --project . --noEmit",
     "e2e": "cd e2e/01 && playwright test && cd ../02 && playwright test",
-    "examples:dev": "WAKUWORK_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" nodemon --ext ts,tsx --ignore ./examples/${NAME}/src/Counter.tsx --exec 'npm run compile:code && ./cli.js dev'",
+    "examples:dev": "npm run compile:code && WAKUWORK_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" ./cli.js dev",
     "examples:dev:01_counter": "NAME=01_counter npm run examples:dev",
     "examples:dev:02_async": "NAME=02_async npm run examples:dev",
     "examples:dev:03_promise": "NAME=03_promise npm run examples:dev",
@@ -56,7 +55,8 @@
     "examples:dev:05_mutation": "NAME=05_mutation npm run examples:dev",
     "examples:dev:06_nesting": "NAME=06_nesting npm run examples:dev",
     "examples:dev:07_router": "NAME=07_router npm run examples:dev",
-    "examples:prd": "npm run compile:code && WAKUWORK_CONFIG=\"{\\\"build\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" ./cli.js build && WAKUWORK_CONFIG=\"{\\\"prdServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}/dist\\\"}}\" ./cli.js start",
+    "examples:build": "npm run compile:code && WAKUWORK_CONFIG=\"{\\\"build\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" ./cli.js build",
+    "examples:prd": "npm run examples:build && WAKUWORK_CONFIG=\"{\\\"prdServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}/dist\\\"}}\" ./cli.js start",
     "examples:prd:01_counter": "NAME=01_counter npm run examples:prd",
     "examples:prd:02_async": "NAME=02_async npm run examples:prd",
     "examples:prd:03_promise": "NAME=03_promise npm run examples:prd",
@@ -64,13 +64,13 @@
     "examples:prd:05_mutation": "NAME=05_mutation npm run examples:prd",
     "examples:prd:06_nesting": "NAME=06_nesting npm run examples:prd",
     "examples:prd:07_router": "NAME=07_router npm run examples:prd",
-    "website:dev": "WAKUWORK_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./website\\\"}}\" nodemon --ext ts,tsx --exec 'npm run compile:code && ./cli.js dev'",
+    "website:dev": "npm run compile:code && WAKUWORK_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./website\\\"}}\" ./cli.js dev",
     "website:build": "npm run compile:code && WAKUWORK_CONFIG=\"{\\\"build\\\":{\\\"dir\\\":\\\"./website\\\"}}\" ./cli.js build",
     "website:prd": "npm run website:build && WAKUWORK_CONFIG=\"{\\\"prdServer\\\":{\\\"dir\\\":\\\"./website/dist\\\"}}\" ./cli.js start"
   },
   "license": "MIT",
   "engines": {
-    "node": ">=16.17.0"
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "@swc/core": "1.3.56",
@@ -89,19 +89,16 @@
     "@types/react": "^18.2.5",
     "@types/react-dom": "^18.2.3",
     "autoprefixer": "^10.4.14",
-    "nodemon": "^2.0.22",
     "postcss": "^8.4.23",
     "react": "18.3.0-canary-aef7ce554-20230503",
     "react-dom": "18.3.0-canary-aef7ce554-20230503",
     "react-server-dom-webpack": "18.3.0-canary-aef7ce554-20230503",
     "tailwindcss": "^3.3.2",
-    "tsx": "^3.12.7",
     "typescript": "^5.0.4",
     "wakuwork": "link:."
   },
   "peerDependencies": {
     "react": "18.3.0-canary-aef7ce554-20230503",
-    "react-server-dom-webpack": "18.3.0-canary-aef7ce554-20230503",
-    "tsx": "^3.12.6"
+    "react-server-dom-webpack": "18.3.0-canary-aef7ce554-20230503"
   }
 }

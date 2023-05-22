@@ -12,7 +12,6 @@
     "react": "18.3.0-canary-aef7ce554-20230503",
     "react-dom": "18.3.0-canary-aef7ce554-20230503",
     "react-server-dom-webpack": "18.3.0-canary-aef7ce554-20230503",
-    "tsx": "^3.12.7",
     "wakuwork": "~0.9.4"
   },
   "devDependencies": {

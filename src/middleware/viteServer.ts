@@ -6,43 +6,57 @@ import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
 import type { MiddlewareCreator } from "./lib/common.js";
+import { codeToInject } from "./lib/rsc-utils.js";
+import { registerReloadCallback, setClientEntries } from "./lib/rsc-handler.js";
 
-const rscPlugin = (
-  scriptToInject: (path: string) => Promise<string>
-): Plugin => {
+const rscIndexPlugin = (): Plugin => {
   return {
-    name: "rscPlugin",
-    async transformIndexHtml(_html, ctx) {
-      const code = await scriptToInject(ctx.path);
-      if (code) {
-        return [
-          {
-            tag: "script",
-            children: code,
-            injectTo: "body",
-          },
-        ];
-      }
+    name: "rsc-index-plugin",
+    async transformIndexHtml() {
+      return [
+        {
+          tag: "script",
+          children: codeToInject,
+          injectTo: "body",
+        },
+      ];
     },
   };
 };
 
-const viteServer: MiddlewareCreator = (config, shared) => {
+const viteServer: MiddlewareCreator = (config) => {
   const dir = path.resolve(config.devServer?.dir || ".");
   const indexHtml = config.files?.indexHtml || "index.html";
   const indexHtmlFile = path.join(dir, indexHtml);
   const vitePromise = createServer({
     root: dir,
+    optimizeDeps: {
+      include: ["react-server-dom-webpack/client"],
+      // FIXME without this, wakuwork router has dual module hazard,
+      // and "Uncaught Error: Missing Router" happens.
+      exclude: ["wakuwork"],
+    },
     plugins: [
       // @ts-ignore
       react(),
-      rscPlugin(async (path: string) => shared.devScriptToInject?.(path) || ""),
+      rscIndexPlugin(),
     ],
     server: { middlewareMode: true },
     appType: "custom",
   });
+  vitePromise.then((vite) => {
+    registerReloadCallback((type) => vite.ws.send({ type }));
+  });
   return async (req, res, next) => {
     const vite = await vitePromise;
+    const absoluteClientEntries = Object.fromEntries(
+      Array.from(vite.moduleGraph.idToModuleMap.values()).map(
+        ({ file, url }) => [file, url]
+      )
+    );
+    absoluteClientEntries["*"] = "*"; // HACK to use fallback resolver
+    // FIXME this is bad in performance, let's revisit it
+    await setClientEntries(absoluteClientEntries);
     const indexFallback = async () => {
       const url = new URL(req.url || "", "http://" + req.headers.host);
       // TODO make it configurable?
