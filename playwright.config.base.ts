@@ -15,14 +15,17 @@ import type {
  */
 export const config: PlaywrightTestConfig = {
   fullyParallel: true,
-  timeout: process.env.CI ? 50_000 : 30_000,
+  timeout: process.env.CI ? 60_000 : 30_000,
+  expect: {
+    timeout: process.env.CI ? 10_000 : 5_000,
+  },
   use: {
     baseURL: "http://localhost:3000/",
     browserName:
       (process.env.BROWSER as PlaywrightWorkerOptions["browserName"]) ??
       "chromium",
     viewport: { width: 1440, height: 800 },
-    actionTimeout: process.env.CI ? 9_000 : 5_000,
+    actionTimeout: 5_000,
     locale: "en-US",
     // Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer
     // You can open traces locally(`npx playwright show-trace trace.zip`)
