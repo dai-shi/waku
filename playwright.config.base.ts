@@ -17,7 +17,7 @@ export const config: PlaywrightTestConfig = {
   fullyParallel: true,
   timeout: process.env.CI ? 60_000 : 30_000,
   expect: {
-    timeout: process.env.CI ? 30_000 : 5_000,
+    timeout: process.env.CI ? 10_000 : 5_000,
   },
   use: {
     baseURL: "http://localhost:3000/",
