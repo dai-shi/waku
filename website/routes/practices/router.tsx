@@ -73,7 +73,7 @@ export default function Layout() {
           the following commands:
         </div>
         <div className="my-3">
-          <CodeBlock lang="text">{code3}</CodeBlock>
+          <CodeBlock lang="shellscript">{code3}</CodeBlock>
         </div>
         <div className="my-1">
           Alternatively, you could create a project with something like{" "}

@@ -2,7 +2,6 @@ import { CodeBlock } from "../src/Code.js";
 
 const code1 = `npm create waku@latest
 yarn create waku
-pnpm create waku
 pnpm create waku # pnpm not working for now`;
 
 export default function Layout() {
@@ -15,7 +14,7 @@ export default function Layout() {
           commands, depending on your preferred package manager:
         </div>
         <div className="my-3">
-          <CodeBlock lang="text">{code1}</CodeBlock>
+          <CodeBlock lang="shellscript">{code1}</CodeBlock>
         </div>
         <div className="my-3">
           These commands will create an example app that you can use as a
