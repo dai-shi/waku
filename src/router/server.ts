@@ -3,10 +3,38 @@ import fs from "node:fs";
 import { createElement } from "react";
 import * as swc from "@swc/core";
 
-import type { GetEntry, Prefetcher, Prerenderer } from "../server.js";
+import type { GetEntry, GetBuilder, GetCustomModules } from "../server.js";
 
-import { childReference, linkReference } from "./common.js";
 import type { RouteProps, LinkProps } from "./common.js";
+import { Child as ClientChild, Link as ClientLink } from "./client.js";
+
+const getAllFiles = (base: string, parent = ""): string[] =>
+  fs
+    .readdirSync(path.join(base, parent), { withFileTypes: true })
+    .flatMap((dirent) => {
+      if (dirent.isDirectory()) {
+        return getAllFiles(base, path.join(parent, dirent.name));
+      }
+      const fname = path.join(parent, dirent.name);
+      return [fname];
+    });
+
+const getAllPaths = (base: string, parent = ""): string[] =>
+  fs
+    .readdirSync(path.join(base, parent), { withFileTypes: true })
+    .flatMap((dirent) => {
+      if (dirent.isDirectory()) {
+        return getAllPaths(base, path.join(parent, dirent.name));
+      }
+      const fname = path.join(parent, path.parse(dirent.name).name);
+      const stat = fs.statSync(path.join(base, fname), {
+        throwIfNoEntry: false,
+      });
+      if (stat?.isDirectory()) {
+        return [fname + "/"];
+      }
+      return [fname];
+    });
 
 const CLIENT_REFERENCE = Symbol.for("react.client.reference");
 
@@ -20,12 +48,13 @@ const resolveFileName = (fname: string) => {
   throw new Error(`Cannot resolve file ${fname}`);
 };
 
+// XXX Can we avoid doing this here?
 const findDependentModules = (fname: string) => {
   fname = resolveFileName(fname);
-  // TODO support ".js" and ".jsx"
+  const ext = path.extname(fname);
   const mod = swc.parseFileSync(fname, {
-    syntax: "typescript",
-    tsx: fname.endsWith(".tsx"),
+    syntax: ext === ".ts" || ext === ".tsx" ? "typescript" : "ecmascript",
+    tsx: ext === ".tsx",
   });
   const modules: (readonly [fname: string, exportNames: string[]])[] = [];
   for (const item of mod.body) {
@@ -53,103 +82,84 @@ const findDependentModules = (fname: string) => {
   return modules;
 };
 
-export function fileRouter(base: string) {
-  const findClientModules = async (id: string) => {
-    const fname = `${base}/${id}.js`;
-    const modules = findDependentModules(fname);
-    return (
-      await Promise.all(
-        modules.map(async ([fname, exportNames]) => {
-          const m = await import(fname);
-          return exportNames.flatMap((name) => {
-            if (m[name]?.["$$typeof"] === CLIENT_REFERENCE) {
-              return [m[name]];
-            }
-            return [];
-          });
-        })
-      )
-    ).flat();
-  };
-
-  const getAllPaths = (dir = ""): string[] =>
-    fs
-      .readdirSync(path.join(base, dir), { withFileTypes: true })
-      .flatMap((dirent) => {
-        if (dirent.isDirectory()) {
-          return getAllPaths(path.join(dir, dirent.name));
-        }
-        const fname = path.join(dir, path.parse(dirent.name).name);
-        const stat = fs.statSync(path.join(base, fname), {
-          throwIfNoEntry: false,
+const findClientModules = async (base: string, id: string) => {
+  const fname = `${base}/${id}.js`;
+  const modules = findDependentModules(fname);
+  return (
+    await Promise.all(
+      modules.map(async ([fname, exportNames]) => {
+        const m = await import(/* @vite-ignore */ fname);
+        return exportNames.flatMap((name) => {
+          if (m[name]?.["$$typeof"] === CLIENT_REFERENCE) {
+            return [m[name]];
+          }
+          return [];
         });
-        if (stat?.isDirectory()) {
-          return [fname + "/"];
-        }
-        return [fname];
-      });
+      })
+    )
+  ).flat();
+};
 
+export function fileRouter(baseDir: string, routesPath: string) {
+  const base = path.join(baseDir, routesPath);
   const getEntry: GetEntry = async (id) => {
     // This can be too unsecure? FIXME
-    const component = (await import(`${base}/${id}.js`)).default;
+    const component = (await import(/* @vite-ignore */ `${base}/${id}.js`))
+      .default;
     const RouteComponent: any = (props: RouteProps) => {
       const componentProps: Record<string, string> = {};
-      for (const [key, value] of new URLSearchParams(props.search)) {
-        componentProps[key] = value;
+      if ("search" in props) {
+        for (const [key, value] of new URLSearchParams(props.search)) {
+          componentProps[key] = value;
+        }
       }
       return createElement(
         component,
         componentProps,
-        props.childIndex
-          ? createElement(childReference, { index: props.childIndex })
+        "childIndex" in props
+          ? createElement(ClientChild, { index: props.childIndex })
           : null
       );
     };
     return RouteComponent;
   };
 
-  const prefetcher: Prefetcher = async (path) => {
-    const url = new URL(path || "", "http://localhost");
-    const result: (readonly [id: string, props: RouteProps])[] = [];
+  // We have to make prefetcher consistent with client behavior
+  const prefetcher = async (pathStr: string) => {
+    const url = new URL(pathStr, "http://localhost");
+    const elements: (readonly [id: string, props: RouteProps])[] = [];
     const pathItems = url.pathname.split("/").filter(Boolean);
     const search = url.search;
     for (let index = 0; index <= pathItems.length; ++index) {
       const rscId = pathItems.slice(0, index).join("/") || "index";
-      result.push([
+      elements.push([
         rscId,
-        index < pathItems.length
-          ? { childIndex: index + 1, search }
-          : { search },
+        index < pathItems.length ? { childIndex: index + 1 } : { search },
       ]);
     }
     const clientModules = new Set(
       (
-        await Promise.all(result.map(([rscId]) => findClientModules(rscId)))
+        await Promise.all(
+          elements.map(([rscId]) => findClientModules(base, rscId))
+        )
       ).flat()
     );
-    return {
-      entryItems: result,
-      clientModules,
-    };
+    return { elements, clientModules };
   };
 
-  const prerenderer: Prerenderer = async () => {
-    const paths = getAllPaths().map((item) =>
+  const getBuilder: GetBuilder = async (
+    decodeId: (encodedId: string) => [id: string, name: string]
+  ) => {
+    const paths = getAllPaths(base).map((item) =>
       item === "index" ? "/" : `/${item}`
     );
     const prefetcherForPaths = await Promise.all(paths.map(prefetcher));
-    const unstable_customCode = (
-      _path: string,
-      decodeId: (encodedId: string) => [id: string, name: string]
-    ) => `
+    const customCode = `
 globalThis.__WAKUWORK_ROUTER_PREFETCH__ = (pathname, search) => {
   const path = search ? pathname + "?" + search : pathname;
   const path2ids = {${paths.map((pathItem, index) => {
     const moduleIds: string[] = [];
-    for (const m of prefetcherForPaths[index]?.clientModules as any[]) {
-      if (m["$$typeof"] !== CLIENT_REFERENCE) {
-        throw new Error("clientModules must be client references");
-      }
+    for (const m of prefetcherForPaths[index]?.clientModules || []) {
       const [id] = decodeId(m["$$id"]);
       moduleIds.push(id);
     }
@@ -161,18 +171,31 @@ globalThis.__WAKUWORK_ROUTER_PREFETCH__ = (pathname, search) => {
     import(id);
   }
 };`;
-    return {
-      entryItems: Array.from(prefetcherForPaths.values()).flatMap((item) =>
-        Array.from(item.entryItems || [])
-      ),
-      paths,
-      unstable_customCode,
-    };
+    return Object.fromEntries(
+      paths.map((pathStr, index) => {
+        return [
+          pathStr,
+          {
+            elements: prefetcherForPaths[index]?.elements || [],
+            customCode,
+          },
+        ];
+      })
+    );
   };
 
-  return { getEntry, prefetcher, prerenderer };
+  const getCustomModules: GetCustomModules = async () => {
+    return Object.fromEntries(
+      getAllFiles(base).map((file) => [
+        `${routesPath}/${file.replace(/\.\w+$/, "")}`,
+        `${base}/${file}`,
+      ])
+    );
+  };
+
+  return { getEntry, getBuilder, getCustomModules };
 }
 
 export function Link(props: LinkProps) {
-  return createElement(linkReference, props);
+  return createElement(ClientLink, props);
 }

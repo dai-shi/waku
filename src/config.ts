@@ -36,7 +36,3 @@ export type Config = {
   build?: Build;
   files?: Files;
 };
-
-export function defineConfig(config: Config): Config {
-  return config;
-}

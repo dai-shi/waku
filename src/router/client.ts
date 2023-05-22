@@ -1,5 +1,7 @@
 /// <reference types="react/next" />
 
+"use client";
+
 import {
   cache,
   createContext,
@@ -12,7 +14,6 @@ import {
 } from "react";
 
 import { serve } from "../client.js";
-import { WAKUWORK_ROUTER } from "./common.js";
 import type { RouteProps, ChildProps, LinkProps } from "./common.js";
 
 type ChangeLocation = (
@@ -42,11 +43,8 @@ export function useLocation() {
   return value.location;
 }
 
-// FIXME normalizing `search` before prefetch would be necessary.
-// FIXME ommitting `search` items would be important for caching.
-
-// TODO prefetching dependent client modules in not supported yet.
-// Is it only possible with build step? No runtime solution?
+// FIXME normalizing `search` before prefetch might be good.
+// FIXME selective `search` would be better. (for intermediate routes too)
 
 const prefetchRoutes = (pathname: string, search: string) => {
   const prefetched = ((globalThis as any).__WAKUWORK_PREFETCHED__ ||= {});
@@ -54,7 +52,7 @@ const prefetchRoutes = (pathname: string, search: string) => {
   for (let index = 0; index <= pathItems.length; ++index) {
     const rscId = pathItems.slice(0, index).join("/") || "index";
     const props: RouteProps =
-      index < pathItems.length ? { childIndex: index + 1, search } : { search };
+      index < pathItems.length ? { childIndex: index + 1 } : { search };
     // FIXME we blindly expect JSON.stringify usage is deterministic
     const serializedProps = JSON.stringify(props);
     if (!prefetched[rscId]) {
@@ -73,7 +71,7 @@ const prefetchRoutes = (pathname: string, search: string) => {
 
 const getRoute = cache((rscId: string) => serve<RouteProps>(rscId));
 
-const Child = ({ index }: ChildProps) => {
+export function Child({ index }: ChildProps) {
   const { pathname, search } = useLocation();
   const pathItems = pathname.split("/").filter(Boolean);
   if (index > pathItems.length) {
@@ -82,9 +80,15 @@ const Child = ({ index }: ChildProps) => {
   const rscId = pathItems.slice(0, index).join("/") || "index";
   return createElement(
     getRoute(rscId),
-    index < pathItems.length ? { childIndex: index + 1, search } : { search }
+    index < pathItems.length
+      ? {
+          childIndex: index + 1, // we still have a child route
+        }
+      : {
+          search, // attach `search` only for a leaf route for now
+        }
   );
-};
+}
 
 export function Link({
   href,
@@ -121,12 +125,6 @@ export function Link({
   }
   return ele;
 }
-
-// FIXME Eventually, if we have server module graph, we could omit this hack.
-(globalThis as any).__wakuwork_module_cache__.set(WAKUWORK_ROUTER, {
-  Child,
-  Link,
-});
 
 const parseLocation = () => {
   const { pathname, search } = window.location;

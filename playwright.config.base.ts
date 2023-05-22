@@ -13,8 +13,7 @@ import type {
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
-const config: PlaywrightTestConfig = {
-  testDir: './e2e',
+export const config: PlaywrightTestConfig = {
   fullyParallel: true,
   timeout: process.env.CI ? 50_000 : 30_000,
   use: {
@@ -39,15 +38,6 @@ const config: PlaywrightTestConfig = {
   // default 'list' when running locally
   // See https://playwright.dev/docs/test-reporters#github-actions-annotations
   reporter: process.env.CI ? 'github' : 'list',
-
-  webServer: [
-    {
-      command: 'pnpm run examples:dev:01_counter',
-      port: 3000,
-      timeout: 10 * 1000,
-      reuseExistingServer: !process.env.CI,
-    },
-  ],
 };
 
 if (process.env.CI) {
