@@ -1,4 +1,4 @@
-import { defineEntries } from "wakuwork/server";
+import { defineEntries } from "waku/server";
 
 export default defineEntries(
   // getEntry
@@ -17,7 +17,7 @@ export default defineEntries(
     return {
       "/": {
         elements: [
-          ["App", { name: "Wakuwork" }],
+          ["App", { name: "Waku" }],
           ["InnerApp", { count: 0 }],
           ["InnerApp", { count: 1 }, true],
           ["InnerApp", { count: 2 }, true],

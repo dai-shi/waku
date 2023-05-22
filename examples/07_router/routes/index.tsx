@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Link } from "wakuwork/router/server";
+import { Link } from "waku/router/server";
 
 const Pending = ({ isPending }: { isPending: boolean }) => (
   <span

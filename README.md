@@ -1,4 +1,4 @@
-# Wakuwork
+# Waku (formerly Wakuwork)
 
 Minimalistic React Framework
 
@@ -6,27 +6,27 @@ Minimalistic React Framework
 
 ## How to try it
 
-- https://codesandbox.io/p/sandbox/wakuwork-example-counter-mdc1yb
+- https://codesandbox.io/p/sandbox/waku-example-counter-mdc1yb
 
 ## How to start a new project
 
 ```bash
-npm create wakuwork@latest
+npm create waku@latest
 ```
 
 ```bash
-yarn create wakuwork
+yarn create waku
 ```
 
 ```bash
-pnpm create wakuwork
+pnpm create waku # pnpm not working for now
 ```
 
 ## Work in progress
 
-- [x] `wakuwork dev` (development server)
-- [x] `wakuwork build` (build for production)
-- [x] `wakuwork start` (production server)
+- [x] `waku dev` (development server)
+- [x] `waku build` (build for production)
+- [x] `waku start` (production server)
 - [x] Exportable build
 - [x] Static site generation
 - [ ] Client rendering fallback
@@ -74,7 +74,7 @@ pnpm create wakuwork
 
 https://excalidraw.com/#json=W1apCXy3iJ3L0rIoDxtU4,AbYkm972Fm1CbIzfV5PTIQ
 
-![wakuwork-arch](https://user-images.githubusercontent.com/490574/224886500-20833ff1-961b-4b84-972c-6471bc732de2.png)
+![waku-arch](https://user-images.githubusercontent.com/490574/224886500-20833ff1-961b-4b84-972c-6471bc732de2.png)
 
 ### How React Server Functions Work
 
@@ -82,14 +82,14 @@ https://excalidraw.com/#json=fMeNJovUG7PGnpvP64XVw,kjZBTeM2KPZKhWtALDOY8A
 
 ![react-server-functions](https://user-images.githubusercontent.com/490574/225330279-e10cee1e-ffb9-49d1-b47c-6c46eb7f6c3a.png)
 
-### How Wakuwork counter example communicates with server
+### How Waku counter example communicates with server
 
 https://excalidraw.com/#json=N0PrCUij21xc2-Zwl1phZ,VYiuI0A2Fzw8G7y5yrPY8Q
 
-![wakuwork-counter](https://user-images.githubusercontent.com/490574/226148795-de405044-fb66-440b-9a9d-d8ad5854c7fa.png)
+![waku-counter](https://user-images.githubusercontent.com/490574/226148795-de405044-fb66-440b-9a9d-d8ad5854c7fa.png)
 
-### Wakuwork's minimal spec for React Server Components
+### Waku's minimal spec for React Server Components
 
 https://excalidraw.com/#json=VjIjQePYqfBCdnn1kiy92,75ozbvJOqCq4f8KWhYEyLQ
 
-![wakuwork-spec](https://user-images.githubusercontent.com/490574/226770699-7390e1be-f3c1-4c72-aa7d-42bd66848866.png)
+![waku-spec](https://user-images.githubusercontent.com/490574/226770699-7390e1be-f3c1-4c72-aa7d-42bd66848866.png)

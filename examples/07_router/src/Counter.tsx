@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Link } from "wakuwork/router/client";
+import { Link } from "waku/router/client";
 
 export const Counter = () => {
   const [count, setCount] = useState(0);

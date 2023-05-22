@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Link } from "wakuwork/router/server";
+import { Link } from "waku/router/server";
 
 const Pending = ({ isPending }: { isPending: boolean }) => (
   <span
@@ -36,7 +36,7 @@ const Sidebar = () => (
       unstable_prefetchOnEnter
     >
       <div className="flex items-center justify-center h-16 font-bold">
-        Wakuwork
+        Waku
       </div>
     </Link>
     <ul className="pt-2 font-medium">
@@ -61,7 +61,7 @@ const Sidebar = () => (
 
 const Home = () => (
   <>
-    <h2 className="text-xl font-bold">Wakuwork</h2>
+    <h2 className="text-xl font-bold">Waku</h2>
     <article className="mt-6 bg-gray-800 text-white p-12 rounded">
       <div className="text-3xl">
         Minimalistic React Framework with React Server Components
