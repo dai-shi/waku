@@ -76,7 +76,9 @@ export default function Layout({ children }: { children: ReactNode }) {
       <nav className="w-full sm:w-64">
         <Sidebar />
       </nav>
-      <main className="flex-1 p-6 w-full sm:w-[calc(100%-16rem)]">{children || <Home />}</main>
+      <main className="flex-1 p-6 w-full sm:w-[calc(100%-16rem)]">
+        {children || <Home />}
+      </main>
     </div>
   );
 }

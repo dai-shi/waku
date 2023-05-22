@@ -1,12 +1,8 @@
 import type { FunctionComponent } from "react";
 
-// TODO revisit entries API
-// - prefer export default?
-// - return null from getEntry for 404, instead of throwing
-
 export type GetEntry = (
   rscId: string
-) => Promise<FunctionComponent | { default: FunctionComponent }>;
+) => Promise<FunctionComponent | { default: FunctionComponent } | null>;
 
 export type GetBuilder = (
   // FIXME can we somehow avoid leaking internal implementation?
@@ -22,6 +18,10 @@ export type GetBuilder = (
 
 // This is for ignored dynamic imports
 // XXX Are there any better ways?
-export type GetCustomModules = () => Promise<{
+export type unstable_GetCustomModules = () => Promise<{
   [name: string]: string;
 }>;
+
+export function defineEntries(getEntry: GetEntry, getBuilder: GetBuilder) {
+  return { getEntry, getBuilder };
+}

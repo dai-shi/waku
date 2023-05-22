@@ -5,24 +5,22 @@ import { Router } from "wakuwork/router/client";
 
 const root = createRoot(document.getElementById("root")!);
 
-root.render(<Router />);
-`;
+root.render(<Router />);`;
 
 const code2 = `import path from "node:path";
 import url from "node:url";
+
 import { fileRouter } from "wakuwork/router/server";
 
-export const { getEntry, prefetcher, prerenderer } = fileRouter(
+export default fileRouter(
   path.dirname(url.fileURLToPath(import.meta.url)),
   "routes"
-);
-`;
+);`;
 
 const code3 = `git clone https://github.com/dai-shi/wakuwork.git
 cd wakuwork
-pnpm i
-pnpm run examples:dev:07_router
-`;
+npm install
+npm run examples:dev:07_router`;
 
 export default function Layout() {
   return (
@@ -79,8 +77,8 @@ export default function Layout() {
         </div>
         <div className="my-1">
           Alternatively, you could create a project with something like{" "}
-          <Code>pnpm create wakuwork</Code> and copy files from the example
-          folder in the repository.
+          <Code>npm create wakuwork@latest</Code> and copy files from the
+          example folder in the repository.
         </div>
       </article>
     </>
