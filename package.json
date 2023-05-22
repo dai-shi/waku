@@ -89,6 +89,7 @@
     "@types/react": "^18.2.5",
     "@types/react-dom": "^18.2.3",
     "autoprefixer": "^10.4.14",
+    "bright": "^0.8.2",
     "postcss": "^8.4.23",
     "react": "18.3.0-canary-aef7ce554-20230503",
     "react-dom": "18.3.0-canary-aef7ce554-20230503",

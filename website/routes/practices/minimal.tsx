@@ -79,7 +79,7 @@ export default function Layout() {
           Here's an example:
         </div>
         <div className="my-3">
-          <CodeBlock>{code1}</CodeBlock>
+          <CodeBlock lang="tsx">{code1}</CodeBlock>
         </div>
         <div className="my-1">
           The <Code>id</Code> parameter is the ID of the React Server Component
@@ -95,7 +95,7 @@ export default function Layout() {
           RSC ID to create a wrapper component. Here's an example:
         </div>
         <div className="my-3">
-          <CodeBlock>{code2}</CodeBlock>
+          <CodeBlock lang="tsx">{code2}</CodeBlock>
         </div>
         <div className="my-1">
           The <Code>name</Code> prop is passed to the React Server Component. We
@@ -110,7 +110,7 @@ export default function Layout() {
           an example just to illustrate the idea:
         </div>
         <div className="my-3">
-          <CodeBlock>{code3}</CodeBlock>
+          <CodeBlock lang="tsx">{code3}</CodeBlock>
         </div>
         <div className="my-1">
           Note that this is a little tricky and the API may be revisited in the
@@ -125,7 +125,7 @@ export default function Layout() {
           functions in <Code>entries.ts</Code>. Here's an example:
         </div>
         <div className="my-3">
-          <CodeBlock>{code4}</CodeBlock>
+          <CodeBlock lang="tsx">{code4}</CodeBlock>
         </div>
         <div className="my-1">
           The <Code>prefetcher</Code> function is used for runtime optimization.

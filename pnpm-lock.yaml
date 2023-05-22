@@ -45,6 +45,9 @@ devDependencies:
   autoprefixer:
     specifier: ^10.4.14
     version: 10.4.14(postcss@8.4.23)
+  bright:
+    specifier: ^0.8.2
+    version: 0.8.2(react@18.3.0-canary-aef7ce554-20230503)
   postcss:
     specifier: ^8.4.23
     version: 8.4.23
@@ -297,6 +300,10 @@ packages:
       '@babel/helper-string-parser': 7.21.5
       '@babel/helper-validator-identifier': 7.19.1
       to-fast-properties: 2.0.0
+
+  /@code-hike/lighter@0.6.6:
+    resolution: {integrity: sha512-dLkSpowP4NaWDUgay3Mebb8V+wYqVGRD+Tl8wSfWdtIH0z4OUU3UznSsmvvGpCgkdUIF5DhOPRGRowqkNWQsrg==}
+    dev: true
 
   /@esbuild/android-arm64@0.17.18:
     resolution: {integrity: sha512-/iq0aK0eeHgSC3z55ucMAHO05OIqmQehiGay8eP5l/5l+iEr4EIbh4/MI8xD9qRFjqzgkc0JkX0LculNC9mXBw==}
@@ -1081,6 +1088,16 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       fill-range: 7.0.1
+    dev: true
+
+  /bright@0.8.2(react@18.3.0-canary-aef7ce554-20230503):
+    resolution: {integrity: sha512-5V5AZ7Fyykz9DVSiauXKXvN+5UlYi2JkK/QXWynW98rHGvM9GtHsEs9v+ml7xX49+zxsk9QUob72i4091VCDvQ==}
+    peerDependencies:
+      react: ^18
+    dependencies:
+      '@code-hike/lighter': 0.6.6
+      react: 18.3.0-canary-aef7ce554-20230503
+      server-only: 0.0.1
     dev: true
 
   /browserslist@4.21.5:
@@ -2206,6 +2223,10 @@ packages:
     resolution: {integrity: sha512-owoXEFjWRllis8/M1Q+Cw5k8ZH40e3zhp/ovX+Xr/vi1qj6QesbyXXViFbpNvWvPNAD62SutwEXavefrLJWj7w==}
     dependencies:
       randombytes: 2.1.0
+    dev: true
+
+  /server-only@0.0.1:
+    resolution: {integrity: sha512-qepMx2JxAa5jjfzxG79yPPq+8BuFToHd1hm7kI+Z4zAq1ftQiP7HcxMhDDItrbtwVeLg/cY2JnKnrcFkmiswNA==}
     dev: true
 
   /shebang-command@1.2.0:

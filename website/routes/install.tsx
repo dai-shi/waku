@@ -15,7 +15,7 @@ export default function Layout() {
           commands, depending on your preferred package manager:
         </div>
         <div className="my-3">
-          <CodeBlock>{code1}</CodeBlock>
+          <CodeBlock lang="text">{code1}</CodeBlock>
         </div>
         <div className="my-3">
           These commands will create an example app that you can use as a
