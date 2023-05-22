@@ -102,6 +102,7 @@ export async function runBuild(config: Config = {}) {
       // FIXME Without this, waku/router isn't considered to have client
       // entries, and "No client entry" error occurs.
       // Unless we fix this, RSC-capable packages aren't supported.
+      // This also seems to cause problems with pnpm.
       noExternal: ["waku"],
     },
     build: {

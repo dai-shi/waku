@@ -178,7 +178,11 @@ const vitePromise = createServer({
       : []),
   ],
   ssr: {
-    noExternal: ["waku"], // FIXME this doesn't seem ideal?
+    // FIXME Without this, "use client" directive in waku/router/client
+    // is ignored, and some error occur.
+    // Unless we fix this, RSC-capable packages aren't supported.
+    // This also seems to cause problems with pnpm.
+    noExternal: ["waku"],
   },
   appType: "custom",
 });
