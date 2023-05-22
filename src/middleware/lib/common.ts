@@ -1,8 +1,6 @@
 import type { Config, Middleware } from "../../config.js";
 
-export type Shared = {};
-
-export type MiddlewareCreator = (config: Config, shared: Shared) => Middleware;
+export type MiddlewareCreator = (config: Config) => Middleware;
 
 export const pipe =
   (middlewares: Middleware[]): Middleware =>
