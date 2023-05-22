@@ -1,42 +1,31 @@
-import type { GetEntry, Prefetcher, Prerenderer } from "wakuwork/server";
+import { defineEntries } from "wakuwork/server";
 
-export const getEntry: GetEntry = async (id) => {
-  switch (id) {
-    case "App":
-      return import("./src/App.js");
-    case "InnerApp":
-      return import("./src/InnerApp.js");
-    default:
-      throw new Error(`Unknown entry id: ${id}`);
-  }
-};
-
-export const prefetcher: Prefetcher = async (path) => {
-  switch (path) {
-    case "/":
-      return {
-        entryItems: [
+export default defineEntries(
+  // getEntry
+  async (id) => {
+    switch (id) {
+      case "App":
+        return import("./src/App.js");
+      case "InnerApp":
+        return import("./src/InnerApp.js");
+      default:
+        return null;
+    }
+  },
+  // getBuilder
+  async () => {
+    return {
+      "/": {
+        elements: [
           ["App", { name: "Wakuwork" }],
           ["InnerApp", { count: 0 }],
+          ["InnerApp", { count: 1 }, true],
+          ["InnerApp", { count: 2 }, true],
+          ["InnerApp", { count: 3 }, true],
+          ["InnerApp", { count: 4 }, true],
+          ["InnerApp", { count: 5 }, true],
         ],
-        clientModules: [(await import("./src/Counter.js")).Counter],
-      };
-    default:
-      return {};
+      },
+    };
   }
-};
-
-export const prerenderer: Prerenderer = async () => {
-  return {
-    entryItems: [
-      ["App", { name: "Wakuwork" }],
-      ["InnerApp", { count: 0 }],
-      ["InnerApp", { count: 1 }],
-      ["InnerApp", { count: 2 }],
-      ["InnerApp", { count: 3 }],
-      ["InnerApp", { count: 4 }],
-      ["InnerApp", { count: 5 }],
-    ],
-    paths: ["/"],
-  };
-};
+);

@@ -5,23 +5,22 @@ import { Router } from "wakuwork/router/client";
 
 const root = createRoot(document.getElementById("root")!);
 
-root.render(<Router />);
-`;
+root.render(<Router />);`;
 
 const code2 = `import path from "node:path";
 import url from "node:url";
+
 import { fileRouter } from "wakuwork/router/server";
 
-export const { getEntry, prefetcher, prerenderer } = fileRouter(
-  path.join(path.dirname(url.fileURLToPath(import.meta.url)), "routes")
-);
-`;
+export default fileRouter(
+  path.dirname(url.fileURLToPath(import.meta.url)),
+  "routes"
+);`;
 
 const code3 = `git clone https://github.com/dai-shi/wakuwork.git
 cd wakuwork
-pnpm i
-pnpm run examples:dev:07_router
-`;
+npm install
+npm run examples:dev:07_router`;
 
 export default function Layout() {
   return (
@@ -44,7 +43,7 @@ export default function Layout() {
           root component:
         </div>
         <div className="my-3">
-          <CodeBlock>{code1}</CodeBlock>
+          <CodeBlock lang="tsx">{code1}</CodeBlock>
         </div>
         <div className="my-1">
           The <Code>Router</Code> component internally uses <Code>serve</Code>{" "}
@@ -59,7 +58,7 @@ export default function Layout() {
           and <Code>prerenderer</Code> at once. Here's an example code:
         </div>
         <div className="my-3">
-          <CodeBlock>{code2}</CodeBlock>
+          <CodeBlock lang="tsx">{code2}</CodeBlock>
         </div>
         <div className="my-1">
           The implementation of the <Code>Router</Code> is file-based. However,
@@ -74,12 +73,12 @@ export default function Layout() {
           the following commands:
         </div>
         <div className="my-3">
-          <CodeBlock>{code3}</CodeBlock>
+          <CodeBlock lang="text">{code3}</CodeBlock>
         </div>
         <div className="my-1">
           Alternatively, you could create a project with something like{" "}
-          <Code>pnpm create wakuwork</Code> and copy files from the example
-          folder in the repository.
+          <Code>npm create wakuwork@latest</Code> and copy files from the
+          example folder in the repository.
         </div>
       </article>
     </>
