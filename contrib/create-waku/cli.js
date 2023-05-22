@@ -4,7 +4,7 @@ const path = require("node:path");
 const fs = require("node:fs");
 const https = require("node:https");
 
-const dirName = "wakuwork-example";
+const dirName = "waku-example";
 
 if (fs.existsSync(dirName)) {
   console.error(`Directory "${dirName}" already exists!`);
@@ -12,7 +12,7 @@ if (fs.existsSync(dirName)) {
 }
 
 const baseUrl =
-  "https://raw.githubusercontent.com/dai-shi/wakuwork/v0.9.4/examples/01_counter/";
+  "https://raw.githubusercontent.com/dai-shi/waku/v0.9.4/examples/01_counter/";
 
 const files = `
 entries.ts

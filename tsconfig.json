@@ -13,8 +13,8 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "wakuwork": ["./src/main.ts"],
-      "wakuwork/*": ["./src/*.ts"]
+      "waku": ["./src/main.ts"],
+      "waku/*": ["./src/*.ts"]
     }
   }
 }

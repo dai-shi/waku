@@ -1,8 +1,8 @@
 import { CodeBlock } from "../src/Code.js";
 
-const code1 = `npm create wakuwork@latest
-yarn create wakuwork
-pnpm create wakuwork`;
+const code1 = `npm create waku@latest
+yarn create waku
+pnpm create waku`;
 
 export default function Layout() {
   return (
@@ -10,7 +10,7 @@ export default function Layout() {
       <h2 className="text-xl font-bold">Install</h2>
       <article className="mt-6">
         <div className="my-3">
-          To start a new Wakuwork project, you can use any of the following
+          To start a new Waku project, you can use any of the following
           commands, depending on your preferred package manager:
         </div>
         <div className="my-3">

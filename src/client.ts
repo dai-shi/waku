@@ -45,7 +45,7 @@ export function serve<Props>(rscId: string) {
           return data;
         },
       };
-      const prefetched = (globalThis as any).__WAKUWORK_PREFETCHED__?.[rscId]?.[
+      const prefetched = (globalThis as any).__WAKU_PREFETCHED__?.[rscId]?.[
         serializedProps
       ];
       const rscPath = "RSC/" + rscId;

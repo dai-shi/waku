@@ -1,6 +1,6 @@
 import { Code, CodeBlock } from "../../src/Code.js";
 
-const code1 = `import { defineEntries } from "wakuwork/server";
+const code1 = `import { defineEntries } from "waku/server";
 
 export default defineEntries(
   // getEntry
@@ -15,14 +15,14 @@ export default defineEntries(
 );`;
 
 const code2 = `import { createRoot } from "react-dom/client";
-import { serve } from "wakuwork/client";
+import { serve } from "waku/client";
 
 const root = createRoot(document.getElementById("root")!);
 const App = serve<{ name: string }>("App");
-root.render(<App name="Wakuwork" />);`;
+root.render(<App name="Waku" />);`;
 
 const code3 = `import { useState, useEffect } from "react";
-import { serve } from "wakuwork/client";
+import { serve } from "waku/client";
 
 const App = serve<{ name: string }>("App");
 
@@ -35,7 +35,7 @@ const ContrivedRefetcher = () => {
   return <App name={'count' + count} />;
 };`;
 
-const code4 = `import { defineEntries } from "wakuwork/server";
+const code4 = `import { defineEntries } from "waku/server";
 
 export default defineEntries(
   // getEntry
@@ -51,7 +51,7 @@ export default defineEntries(
   async () => {
     return {
       "/": {
-        elements: [["App", { name: "Wakuwork" }]],
+        elements: [["App", { name: "Waku" }]],
       },
     };
   }
@@ -64,7 +64,7 @@ export default function Layout() {
       <h3 className="text-lg font-bold mt-8">Server API</h3>
       <article className="mt-6">
         <div className="my-1">
-          To use React Server Components in Wakuwork, you need to create an{" "}
+          To use React Server Components in Waku, you need to create an{" "}
           <Code>entries.ts</Code> file in the project root directory with a{" "}
           <Code>getEntry</Code> function that returns a server component module.
           Here's an example:
@@ -82,8 +82,8 @@ export default function Layout() {
       <article className="mt-6">
         <div className="my-1">
           To render a React Server Component on the client, you can use the{" "}
-          <Code>serve</Code> function from <Code>wakuwork/client</Code> with the
-          RSC ID to create a wrapper component. Here's an example:
+          <Code>serve</Code> function from <Code>waku/client</Code> with the RSC
+          ID to create a wrapper component. Here's an example:
         </div>
         <div className="my-3">
           <CodeBlock lang="tsx">{code2}</CodeBlock>
@@ -129,7 +129,7 @@ export default function Layout() {
       <article className="mt-6">
         <div className="my-1">
           If you create a project with something like{" "}
-          <Code>npm create wakuwork@latest</Code>, it will create the minimal
+          <Code>npm create waku@latest</Code>, it will create the minimal
           example app.
         </div>
       </article>

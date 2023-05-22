@@ -32,9 +32,9 @@ const viteServer: MiddlewareCreator = (config) => {
     root: dir,
     optimizeDeps: {
       include: ["react-server-dom-webpack/client"],
-      // FIXME without this, wakuwork router has dual module hazard,
+      // FIXME without this, waku router has dual module hazard,
       // and "Uncaught Error: Missing Router" happens.
-      exclude: ["wakuwork"],
+      exclude: ["waku"],
     },
     plugins: [
       // @ts-ignore

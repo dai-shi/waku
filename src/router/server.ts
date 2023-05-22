@@ -3,7 +3,11 @@ import fs from "node:fs";
 import { createElement } from "react";
 import * as swc from "@swc/core";
 
-import type { GetEntry, GetBuilder, unstable_GetCustomModules } from "../server.js";
+import type {
+  GetEntry,
+  GetBuilder,
+  unstable_GetCustomModules,
+} from "../server.js";
 
 import type { RouteProps, LinkProps } from "./common.js";
 import { Child as ClientChild, Link as ClientLink } from "./client.js";
@@ -155,7 +159,7 @@ export function fileRouter(baseDir: string, routesPath: string) {
     );
     const prefetcherForPaths = await Promise.all(paths.map(prefetcher));
     const customCode = `
-globalThis.__WAKUWORK_ROUTER_PREFETCH__ = (pathname, search) => {
+globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
   const path = search ? pathname + "?" + search : pathname;
   const path2ids = {${paths.map((pathItem, index) => {
     const moduleIds: string[] = [];

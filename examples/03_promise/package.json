@@ -1,18 +1,18 @@
 {
-  "name": "wakuwork-example",
+  "name": "waku-example",
   "version": "0.1.0",
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "wakuwork dev",
-    "build": "wakuwork build",
-    "start": "WAKUWORK_CONFIG='{\"prdServer\":{\"dir\":\"dist\"}}' wakuwork start"
+    "dev": "waku dev",
+    "build": "waku build",
+    "start": "WAKU_CONFIG='{\"prdServer\":{\"dir\":\"dist\"}}' waku start"
   },
   "dependencies": {
     "react": "18.3.0-canary-5309f1028-20230517",
     "react-dom": "18.3.0-canary-5309f1028-20230517",
     "react-server-dom-webpack": "18.3.0-canary-5309f1028-20230517",
-    "wakuwork": "0.9.4"
+    "waku": "0.9.4"
   },
   "devDependencies": {
     "@types/react": "^18.2.6",

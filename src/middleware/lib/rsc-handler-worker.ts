@@ -144,8 +144,7 @@ type PipeableStream = {
 // TODO use of process.env is all temporary
 // TODO these are temporary
 const config: Config =
-  (process.env.WAKUWORK_CONFIG && JSON.parse(process.env.WAKUWORK_CONFIG)) ||
-  {};
+  (process.env.WAKU_CONFIG && JSON.parse(process.env.WAKU_CONFIG)) || {};
 const dirFromConfig =
   config.prdServer?.dir ?? config.build?.dir ?? config.devServer?.dir; // HACK
 const dir = path.resolve(dirFromConfig || ".");
@@ -179,7 +178,7 @@ const vitePromise = createServer({
       : []),
   ],
   ssr: {
-    noExternal: ["wakuwork"], // FIXME this doesn't seem ideal?
+    noExternal: ["waku"], // FIXME this doesn't seem ideal?
   },
   appType: "custom",
 });

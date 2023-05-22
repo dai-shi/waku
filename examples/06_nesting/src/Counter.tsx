@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { serve } from "wakuwork/client";
+import { serve } from "waku/client";
 
 // XXX This is not recommended in practice
 // as it can easily make client server waterfalls.
