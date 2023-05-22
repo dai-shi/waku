@@ -23,5 +23,5 @@ export type GetBuilder = (
 // This is for ignored dynamic imports
 // XXX Are there any better ways?
 export type GetCustomModules = () => Promise<{
-  [name: string]: string
+  [name: string]: string;
 }>;
