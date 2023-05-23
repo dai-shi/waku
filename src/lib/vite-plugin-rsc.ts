@@ -77,17 +77,18 @@ export const rscReloadPlugin = (fn: (type: "full-reload") => void): Plugin => {
   return {
     name: "reload-plugin",
     configResolved(config) {
-      if (config.mode === 'development') {
+      if (config.mode === "development") {
         enabled = true;
       }
     },
     async handleHotUpdate(ctx) {
-      if (
-        enabled &&
-        ctx.modules.length &&
-        !isClientEntry(ctx.file, await ctx.read())
-      ) {
+      if (!enabled) {
+        return [];
+      }
+      if (ctx.modules.length && !isClientEntry(ctx.file, await ctx.read())) {
         fn("full-reload");
+      } else {
+        return [];
       }
     },
   };
