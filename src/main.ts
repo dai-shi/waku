@@ -1,4 +1,2 @@
-export type { Config } from "./config.js";
-
-export { startDevServer } from "./devServer.js";
-export { runBuild } from "./builder.js";
+export { rsc } from "./middleware.js";
+export { build } from "./builder.js";

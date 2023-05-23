@@ -5,9 +5,9 @@ import { createServer } from "vite";
 import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
-import type { MiddlewareCreator } from "./lib/common.js";
-import { codeToInject } from "./lib/rsc-utils.js";
-import { registerReloadCallback, setClientEntries } from "./lib/rsc-handler.js";
+import type { MiddlewareCreator } from "../lib/common.js";
+import { codeToInject } from "../lib/rsc-utils.js";
+import { registerReloadCallback, setClientEntries } from "../lib/rsc-handler.js";
 
 const rscIndexPlugin = (): Plugin => {
   return {

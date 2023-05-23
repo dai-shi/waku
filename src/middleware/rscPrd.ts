@@ -1,8 +1,8 @@
 import RSDWServer from "react-server-dom-webpack/server.node.unbundled";
 import busboy from "busboy";
 
-import type { MiddlewareCreator } from "./lib/common.js";
-import { renderRSC, setClientEntries } from "./lib/rsc-handler.js";
+import type { MiddlewareCreator } from "../lib/common.js";
+import { renderRSC, setClientEntries } from "../lib/rsc-handler.js";
 
 const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 

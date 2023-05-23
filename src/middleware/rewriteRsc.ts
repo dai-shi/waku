@@ -1,4 +1,4 @@
-import type { MiddlewareCreator } from "./lib/common.js";
+import type { MiddlewareCreator } from "../lib/common.js";
 
 // This convension is just one idea.
 

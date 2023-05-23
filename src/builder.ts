@@ -2,19 +2,19 @@ import path from "node:path";
 import fs from "node:fs";
 import { createRequire } from "node:module";
 
-import { build } from "vite";
+import { build as viteBuild } from "vite";
 import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import * as swc from "@swc/core";
 
 import type { Config } from "./config.js";
-import { codeToInject } from "./middleware/lib/rsc-utils.js";
+import { codeToInject } from "./lib/rsc-utils.js";
 import {
   shutdown,
   setClientEntries,
   getCustomModulesRSC,
   buildRSC,
-} from "./middleware/lib/rsc-handler.js";
+} from "./lib/rsc-handler.js";
 
 // FIXME we could do this without plugin anyway
 const rscIndexPlugin = (): Plugin => {
@@ -89,7 +89,7 @@ export async function runBuild(config: Config = {}) {
   const customModules = await getCustomModulesRSC();
   const clientEntryFileSet = new Set<string>();
   const serverEntryFileSet = new Set<string>();
-  await build({
+  await viteBuild({
     root: dir,
     base: basePath,
     plugins: [
@@ -124,7 +124,7 @@ export async function runBuild(config: Config = {}) {
     Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname])
   );
 
-  const serverBuildOutput = await build({
+  const serverBuildOutput = await viteBuild({
     root: dir,
     base: basePath,
     ssr: {
@@ -169,7 +169,7 @@ export async function runBuild(config: Config = {}) {
     throw new Error("Unexpected vite server build output");
   }
 
-  const clientBuildOutput = await build({
+  const clientBuildOutput = await viteBuild({
     root: dir,
     base: basePath,
     plugins: [
@@ -239,4 +239,8 @@ export async function runBuild(config: Config = {}) {
   );
 
   await shutdown();
+}
+
+export async function build() {
+  // TODO
 }

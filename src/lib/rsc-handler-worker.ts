@@ -9,9 +9,9 @@ import RSDWServer from "react-server-dom-webpack/server";
 
 import { transformRsfId, generatePrefetchCode } from "./rsc-utils.js";
 import type { RenderInput, MessageReq, MessageRes } from "./rsc-handler.js";
-import type { Config } from "../../config.js";
-import { defineEntries } from "../../server.js";
-import type { unstable_GetCustomModules } from "../../server.js";
+import type { Config } from "../config.js";
+import { defineEntries } from "../server.js";
+import type { unstable_GetCustomModules } from "../server.js";
 import { rscTransformPlugin, rscReloadPlugin } from "./vite-plugin-rsc.js";
 
 const { renderToPipeableStream } = RSDWServer;

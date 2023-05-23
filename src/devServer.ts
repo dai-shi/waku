@@ -1,7 +1,7 @@
 import http from "node:http";
 
 import type { Config, Middleware } from "./config.js";
-import { pipe } from "./middleware/lib/common.js";
+import { pipe } from "./lib/common.js";
 
 export function startDevServer(config: Config = {}) {
   const middlewares = config.devServer?.middlewares || [
