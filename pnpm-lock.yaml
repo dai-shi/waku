@@ -10,9 +10,6 @@ dependencies:
   busboy:
     specifier: ^1.6.0
     version: 1.6.0
-  mime:
-    specifier: ^3.0.0
-    version: 3.0.0
   vite:
     specifier: ^4.3.8
     version: 4.3.8(@types/node@20.2.3)
@@ -33,9 +30,6 @@ devDependencies:
   '@types/express':
     specifier: ^4.17.17
     version: 4.17.17
-  '@types/mime':
-    specifier: ^3.0.1
-    version: 3.0.1
   '@types/node':
     specifier: ^20.2.3
     version: 20.2.3
@@ -2088,12 +2082,6 @@ packages:
     engines: {node: '>=4'}
     hasBin: true
     dev: true
-
-  /mime@3.0.0:
-    resolution: {integrity: sha512-jSCU7/VB1loIWBZe14aEYHU/+1UMEHoaO7qxCOVJOw9GgH72VAWppxNcjU+x9a2k3GSIBXNKxXQFqRvvZ7vr3A==}
-    engines: {node: '>=10.0.0'}
-    hasBin: true
-    dev: false
 
   /mimic-fn@2.1.0:
     resolution: {integrity: sha512-OqbOk5oEQeAZ8WXWydlu9HJjz9WVdEIvamMCcXmuqUYjTknH/sqsWvhQ3vgwKFRR1HpjvNBKQ37nbJgYzGqGcg==}
