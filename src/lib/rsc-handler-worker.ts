@@ -4,12 +4,13 @@ import { parentPort } from "node:worker_threads";
 import { Writable } from "node:stream";
 
 import { createServer } from "vite";
+import type { ViteDevServer } from "vite";
 import { createElement } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 
+import type { FrameworkConfig } from "../config.js";
 import { transformRsfId, generatePrefetchCode } from "./rsc-utils.js";
 import type { RenderInput, MessageReq, MessageRes } from "./rsc-handler.js";
-import type { Config } from "../lib/common.js";
 import { defineEntries } from "../server.js";
 import type { unstable_GetCustomModules } from "../server.js";
 import { rscTransformPlugin, rscReloadPlugin } from "./vite-plugin-rsc.js";
@@ -141,41 +142,14 @@ type PipeableStream = {
   pipe<T extends Writable>(destination: T): T;
 };
 
-// TODO use of process.env is all temporary
-// TODO these are temporary
-const config: Config =
-  (process.env.WAKU_CONFIG && JSON.parse(process.env.WAKU_CONFIG)) || {};
-const dirFromConfig =
-  config.prdServer?.dir ?? config.build?.dir ?? config.devServer?.dir; // HACK
-const dir = path.resolve(dirFromConfig || ".");
-const basePath = config.build?.basePath || "/"; // FIXME it's not build only
-const distPath = config.files?.dist || "dist";
-const publicPath = path.join(distPath, config.files?.public || "public");
-const publicIndexHtmlFile = path.join(
-  dir,
-  publicPath,
-  config.files?.indexHtml || "index.html"
-);
-const entriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
-const distEntriesFile = path.join(
-  dir,
-  distPath,
-  config.files?.entriesJs || "entries.js"
-);
-
 const vitePromise = createServer({
-  root: dir,
-  ...(process.env.NODE_ENV && { mode: process.env.NODE_ENV }),
+  ...(process.env.CONFIG_FILE && { configFile: process.env.CONFIG_FILE }),
   plugins: [
     rscTransformPlugin(),
-    ...(process.env.NODE_ENV === "development"
-      ? [
-          rscReloadPlugin((type) => {
-            const mesg: MessageRes = { type };
-            parentPort!.postMessage(mesg);
-          }),
-        ]
-      : []),
+    rscReloadPlugin((type) => {
+      const mesg: MessageRes = { type };
+      parentPort!.postMessage(mesg);
+    }),
   ],
   ssr: {
     // FIXME Without this, "use client" directive in waku/router/client
@@ -192,12 +166,23 @@ const loadServerFile = async (fname: string) => {
   return vite.ssrLoadModule(fname);
 };
 
+const getEntriesFile = async (isBuild?: boolean) => {
+  const vite = await vitePromise;
+  const { framework: frameworkConfig } = vite.config as {
+    framework?: FrameworkConfig;
+  };
+  const entriesJs = frameworkConfig?.entriesJs || "entries.js";
+  if (isBuild) {
+    return path.join(vite.config.root, vite.config.build.outDir, entriesJs);
+  }
+  return path.join(vite.config.root, entriesJs);
+};
+
 const getFunctionComponent = async (rscId: string, isBuild: boolean) => {
+  const entriesFile = await getEntriesFile(isBuild);
   const {
     default: { getEntry },
-  } = await (loadServerFile(
-    isBuild ? distEntriesFile : entriesFile
-  ) as Promise<Entries>);
+  } = await (loadServerFile(entriesFile) as Promise<Entries>);
   const mod = await getEntry(rscId);
   if (typeof mod === "function") {
     return mod;
@@ -210,11 +195,11 @@ const getFunctionComponent = async (rscId: string, isBuild: boolean) => {
 
 let absoluteClientEntries: Record<string, string> = {};
 
-const resolveClientEntry = (filePath: string) => {
+const resolveClientEntry = (vite: ViteDevServer, filePath: string) => {
   const clientEntry = absoluteClientEntries[filePath];
   if (!clientEntry) {
     if (absoluteClientEntries["*"] === "*") {
-      return basePath + path.relative(dir, filePath);
+      return vite.config.base + path.relative(vite.config.root, filePath);
     }
     throw new Error("No client entry found for " + filePath);
   }
@@ -228,6 +213,8 @@ async function setClientEntries(
     absoluteClientEntries = value;
     return;
   }
+  const vite = await vitePromise;
+  const entriesFile = await getEntriesFile();
   const { clientEntries } = await loadServerFile(entriesFile);
   if (!clientEntries) {
     throw new Error("Failed to load clientEntries");
@@ -236,18 +223,19 @@ async function setClientEntries(
   absoluteClientEntries = Object.fromEntries(
     Object.entries(clientEntries).map(([key, val]) => [
       path.join(baseDir, key),
-      basePath + val,
+      vite.config.base + val,
     ])
   );
 }
 
 async function renderRSC(input: RenderInput): Promise<PipeableStream> {
+  const vite = await vitePromise;
   const bundlerConfig = new Proxy(
     {},
     {
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split("#") as [string, string];
-        const id = resolveClientEntry(filePath);
+        const id = resolveClientEntry(vite, filePath);
         return { id, chunks: [id], name, async: true };
       },
     }
@@ -255,7 +243,7 @@ async function renderRSC(input: RenderInput): Promise<PipeableStream> {
 
   if (input.rsfId && input.args) {
     const [fileId, name] = input.rsfId.split("#");
-    const fname = path.join(dir, fileId!);
+    const fname = path.join(vite.config.root, fileId!);
     const mod = await loadServerFile(fname);
     const data = await (mod[name!] || mod)(...input.args);
     if (!input.rscId) {
@@ -268,12 +256,13 @@ async function renderRSC(input: RenderInput): Promise<PipeableStream> {
     return renderToPipeableStream(
       createElement(component, input.props),
       bundlerConfig
-    ).pipe(transformRsfId(dir));
+    ).pipe(transformRsfId(vite.config.root));
   }
   throw new Error("Unexpected input");
 }
 
 async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
+  const entriesFile = await getEntriesFile();
   const {
     default: { unstable_getCustomModules: getCustomModules },
   } = await (loadServerFile(entriesFile) as Promise<{
@@ -290,6 +279,8 @@ async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
 
 // FIXME this may take too much responsibility
 async function buildRSC(): Promise<void> {
+  const vite = await vitePromise;
+  const distEntriesFile = await getEntriesFile(true);
   const {
     default: { getBuilder },
   } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
@@ -303,7 +294,7 @@ async function buildRSC(): Promise<void> {
   // FIXME this doesn't seem an ideal solution
   const decodeId = (encodedId: string): [id: string, name: string] => {
     const [filePath, name] = encodedId.split("#") as [string, string];
-    const id = resolveClientEntry(filePath);
+    const id = resolveClientEntry(vite, filePath);
     return [id, name];
   };
 
@@ -325,8 +316,8 @@ async function buildRSC(): Promise<void> {
         const searchParams = new URLSearchParams();
         searchParams.set("props", serializedProps);
         const destFile = path.join(
-          dir,
-          publicPath,
+          vite.config.root,
+          vite.config.publicDir,
           "RSC",
           decodeURIComponent(rscId),
           decodeURIComponent(`${searchParams}`)
@@ -346,7 +337,9 @@ async function buildRSC(): Promise<void> {
         const pipeable = renderToPipeableStream(
           createElement(component, props as any),
           bundlerConfig
-        ).pipe(transformRsfId(path.join(dir, distPath)));
+        ).pipe(
+          transformRsfId(path.join(vite.config.root, vite.config.build.outDir))
+        );
         await new Promise<void>((resolve, reject) => {
           const stream = fs.createWriteStream(destFile);
           stream.on("finish", resolve);
@@ -357,14 +350,22 @@ async function buildRSC(): Promise<void> {
     })
   );
 
+  const { framework: frameworkConfig } = vite.config as {
+    framework?: FrameworkConfig;
+  };
+  const publicIndexHtmlFile = path.join(
+    vite.config.root,
+    vite.config.publicDir,
+    frameworkConfig?.indexHtml || "index.html"
+  );
   const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
     encoding: "utf8",
   });
   await Promise.all(
     Object.entries(pathMap).map(async ([pathStr, { elements, customCode }]) => {
       const destFile = path.join(
-        dir,
-        publicPath,
+        vite.config.root,
+        vite.config.publicDir,
         pathStr,
         pathStr.endsWith("/") ? "index.html" : ""
       );

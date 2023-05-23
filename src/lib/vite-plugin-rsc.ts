@@ -54,6 +54,7 @@ export const rscTransformPlugin = (): Plugin => {
 };
 
 export const rscReloadPlugin = (fn: (type: "full-reload") => void): Plugin => {
+  let enabled = false;
   const isClientEntry = (id: string, code: string) => {
     const ext = path.extname(id);
     if ([".ts", ".tsx", ".js", ".jsx"].includes(ext)) {
@@ -75,8 +76,17 @@ export const rscReloadPlugin = (fn: (type: "full-reload") => void): Plugin => {
   };
   return {
     name: "reload-plugin",
+    configResolved(config) {
+      if (config.mode === 'development') {
+        enabled = true;
+      }
+    },
     async handleHotUpdate(ctx) {
-      if (ctx.modules.length && !isClientEntry(ctx.file, await ctx.read())) {
+      if (
+        enabled &&
+        ctx.modules.length &&
+        !isClientEntry(ctx.file, await ctx.read())
+      ) {
         fn("full-reload");
       }
     },
