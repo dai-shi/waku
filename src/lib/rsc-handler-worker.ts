@@ -280,7 +280,6 @@ async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
 
 // FIXME this may take too much responsibility
 async function buildRSC(): Promise<void> {
-  const vite = await vitePromise;
   const config = await resolveConfig('build');
   const distEntriesFile = await getEntriesFile(true);
   const {

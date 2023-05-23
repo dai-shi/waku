@@ -24,8 +24,15 @@ type Middleware = (
 
 const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 
-const createRscMiddleware = (): Middleware => {
+export function rsc(options: {
+  mode: "development" | "production";
+}): Middleware {
+  const promise =
+    options.mode === "production"
+      ? setClientEntries("load")
+      : Promise.resolve();
   return async (req, res, next) => {
+    await promise;
     const url = new URL(req.url || "", "http://" + req.headers.host);
     let rscId: string | undefined;
     let props = {};
@@ -64,14 +71,18 @@ const createRscMiddleware = (): Middleware => {
       pipeable.on("error", (err) => {
         console.info("Cannot render RSC", err);
         res.statusCode = 500;
-        res.end(String(err));
+        if (options.mode === "development") {
+          res.end(String(err));
+        } else {
+          res.end();
+        }
       });
       pipeable.pipe(res);
       return;
     }
     next();
   };
-};
+}
 
 const rscIndexPlugin = (): Plugin => {
   return {
@@ -89,7 +100,7 @@ const rscIndexPlugin = (): Plugin => {
 };
 
 // FIXME this should be refactored
-const createViteMiddleware = (): Middleware => {
+export function devServer(): Middleware {
   const vitePromise = viteCreateServer({
     ...configFileConfig,
     optimizeDeps: {
@@ -143,23 +154,5 @@ const createViteMiddleware = (): Middleware => {
       next();
     };
     vite.middlewares(req, res, indexFallback);
-  };
-};
-
-export function rsc(options: {
-  mode: "development" | "production";
-}): Middleware {
-  if (options.mode === "production") {
-    throw new Error("under construction");
-  }
-  const rscMiddleware = createRscMiddleware();
-  const viteMiddleware = createViteMiddleware();
-  return (req, res, next) => {
-    rscMiddleware(req, res, (err) => {
-      if (err) {
-        return next(err);
-      }
-      viteMiddleware(req, res, next);
-    });
   };
 }

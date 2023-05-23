@@ -32,9 +32,10 @@ switch (cmd) {
 
 async function runDev() {
   const { default: express } = await import("express");
-  const { rsc } = await import("./middleware.js");
+  const { rsc, devServer } = await import("./middleware.js");
   const app = express();
   app.use(rsc({ mode: "development" }));
+  app.use(devServer());
   const port = process.env.PORT || 3000;
   app.listen(port, () => {
     console.info("Listening on", port);
@@ -47,6 +48,12 @@ async function runBuild() {
 }
 
 async function runStart() {
-  // TODO
-  throw new Error('not yet ready');
+  const { default: express } = await import("express");
+  const { rsc } = await import("./middleware.js");
+  const app = express();
+  app.use(rsc({ mode: "production" }));
+  const port = process.env.PORT || 8080;
+  app.listen(port, () => {
+    console.info("Listening on", port);
+  });
 }
