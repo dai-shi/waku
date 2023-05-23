@@ -22,6 +22,6 @@ export type unstable_GetCustomModules = () => Promise<{
   [name: string]: string;
 }>;
 
-export function defineEntries(getEntry: GetEntry, getBuilder: GetBuilder) {
+export function defineEntries(getEntry: GetEntry, getBuilder?: GetBuilder) {
   return { getEntry, getBuilder };
 }
