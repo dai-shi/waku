@@ -7,7 +7,7 @@ import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import * as swc from "@swc/core";
 
-import type { Config } from "./config.js";
+import type { Config } from "./lib/common.js";
 import { codeToInject } from "./lib/rsc-utils.js";
 import {
   shutdown,

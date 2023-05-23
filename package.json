@@ -15,6 +15,11 @@
       "require": "./dist/cjs/main.js",
       "default": "./dist/main.js"
     },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "require": "./dist/cjs/config.js",
+      "default": "./dist/config.js"
+    },
     "./client": {
       "types": "./dist/client.d.ts",
       "require": "./dist/cjs/client.js",
@@ -47,7 +52,7 @@
     "compile:types": "tsc --project tsconfig.build.json",
     "test": "tsc --project . --noEmit",
     "e2e": "cd e2e/01 && playwright test && cd ../02 && playwright test",
-    "examples:dev": "npm run compile:code && WAKU_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" ./dist/cli.js dev",
+    "examples:dev": "npm run compile:code && ./dist/cli.js dev --config ./examples/${NAME}/vite.config.js",
     "examples:dev:01_counter": "NAME=01_counter npm run examples:dev",
     "examples:dev:02_async": "NAME=02_async npm run examples:dev",
     "examples:dev:03_promise": "NAME=03_promise npm run examples:dev",
@@ -55,8 +60,8 @@
     "examples:dev:05_mutation": "NAME=05_mutation npm run examples:dev",
     "examples:dev:06_nesting": "NAME=06_nesting npm run examples:dev",
     "examples:dev:07_router": "NAME=07_router npm run examples:dev",
-    "examples:build": "npm run compile:code && WAKU_CONFIG=\"{\\\"build\\\":{\\\"dir\\\":\\\"./examples/${NAME}\\\"}}\" ./dist/cli.js build",
-    "examples:prd": "npm run examples:build && WAKU_CONFIG=\"{\\\"prdServer\\\":{\\\"dir\\\":\\\"./examples/${NAME}/dist\\\"}}\" ./dist/cli.js start",
+    "examples:build": "npm run compile:code && ./dist/cli.js build --config ./examples/${NAME}/vite.config.js",
+    "examples:prd": "npm run compile:code && ./dist/cli.js start --config ./examples/${NAME}/vite.config.js",
     "examples:prd:01_counter": "NAME=01_counter npm run examples:prd",
     "examples:prd:02_async": "NAME=02_async npm run examples:prd",
     "examples:prd:03_promise": "NAME=03_promise npm run examples:prd",
@@ -64,9 +69,9 @@
     "examples:prd:05_mutation": "NAME=05_mutation npm run examples:prd",
     "examples:prd:06_nesting": "NAME=06_nesting npm run examples:prd",
     "examples:prd:07_router": "NAME=07_router npm run examples:prd",
-    "website:dev": "npm run compile:code && WAKU_CONFIG=\"{\\\"devServer\\\":{\\\"dir\\\":\\\"./website\\\"}}\" ./dist/cli.js dev",
-    "website:build": "npm run compile:code && WAKU_CONFIG=\"{\\\"build\\\":{\\\"dir\\\":\\\"./website\\\"}}\" ./dist/cli.js build",
-    "website:prd": "npm run website:build && WAKU_CONFIG=\"{\\\"prdServer\\\":{\\\"dir\\\":\\\"./website/dist\\\"}}\" ./dist/cli.js start"
+    "website:dev": "npm run compile:code && ./dist/cli.js dev --config ./website/vite.config.js",
+    "website:build": "npm run compile:code && ./dist/cli.js build --config ./website/vite.config.js",
+    "website:prd": "npm run website:build && ./dist/cli.js start --config ./website/vite.config.js"
   },
   "license": "MIT",
   "engines": {

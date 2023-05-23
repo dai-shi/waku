@@ -1,6 +1,20 @@
 #!/usr/bin/env node
 
+import fs from "node:fs";
+
 const cmd = process.argv[2];
+
+for (let i = 3; i < process.argv.length; ++i) {
+  if (process.argv[i] === "--config") {
+    const fname = process.argv[i + 1];
+    if (fname && fs.existsSync(fname)) {
+      process.env.CONFIG_FILE = fname;
+    } else {
+      throw new Error("config file does not exist");
+    }
+    ++i;
+  }
+}
 
 switch (cmd) {
   case "dev":

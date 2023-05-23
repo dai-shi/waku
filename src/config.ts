@@ -1,38 +1,19 @@
-import http from "node:http";
+import type { ConfigEnv, UserConfig } from "vite";
 
-export type Middleware = (
-  req: http.IncomingMessage,
-  res: http.ServerResponse,
-  next: () => Promise<void>
-) => Promise<void>;
-
-type DevServer = {
-  dir?: string;
-  port?: number;
-  middlewares?: (Middleware | string)[];
-};
-
-type PrdServer = {
-  dir?: string;
-  port?: number;
-  middlewares?: (Middleware | string)[];
-};
-
-type Build = {
-  dir?: string;
-  basePath?: string;
-};
-
-type Files = {
+export interface FrameworkConfig {
   indexHtml?: string;
-  entriesJs?: string;
-  dist?: string;
-  public?: string;
-};
+}
 
-export type Config = {
-  devServer?: DevServer;
-  prdServer?: PrdServer;
-  build?: Build;
-  files?: Files;
-};
+export interface ExtendedUserConfig extends UserConfig {
+  framework?: FrameworkConfig;
+}
+
+export function defineConfig(
+  config:
+    | ExtendedUserConfig
+    | Promise<ExtendedUserConfig>
+    | ((env: ConfigEnv) => ExtendedUserConfig)
+    | ((env: ConfigEnv) => Promise<ExtendedUserConfig>)
+) {
+  return config;
+}

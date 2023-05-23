@@ -1,6 +1,6 @@
 import http from "node:http";
 
-import type { Config, Middleware } from "./config.js";
+import type { Config, Middleware } from "./lib/common.js";
 import { pipe } from "./lib/common.js";
 
 export function startPrdServer(config: Config = {}) {
