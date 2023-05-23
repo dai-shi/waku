@@ -2,12 +2,12 @@ import path from "node:path";
 import fs from "node:fs";
 import { createRequire } from "node:module";
 
-import { build as viteBuild, resolveConfig } from "vite";
+import { build as viteBuild } from "vite";
 import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import * as swc from "@swc/core";
 
-import type { FrameworkConfig } from "./config.js";
+import { configFileConfig, resolveConfig } from "./lib/config.js";
 import { codeToInject } from "./lib/rsc-utils.js";
 import {
   shutdown,
@@ -64,25 +64,14 @@ const rscAnalyzePlugin = (
 };
 
 export async function build() {
-  const config = await resolveConfig(
-    {
-      ...(process.env.CONFIG_FILE && { configFile: process.env.CONFIG_FILE }),
-    },
-    "build"
-  );
-  const { framework: frameworkConfig } = config as {
-    framework?: FrameworkConfig;
-  };
-  const indexHtml = frameworkConfig?.indexHtml || "index.html";
-  const entriesJs = frameworkConfig?.entriesJs || "entries.js";
-  const outPublic = frameworkConfig?.outPublic || "public";
-  const indexHtmlFile = path.join(config.root, indexHtml);
+  const config = await resolveConfig("build");
+  const indexHtmlFile = path.join(config.root, config.framework.indexHtml);
   const distEntriesFile = path.join(
     config.root,
     config.build.outDir,
-    entriesJs
+    config.framework.entriesJs
   );
-  let entriesFile = path.join(config.root, entriesJs);
+  let entriesFile = path.join(config.root, config.framework.entriesJs);
   if (entriesFile.endsWith(".js")) {
     for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
       const tmp = entriesFile.slice(0, -3) + ext;
@@ -98,7 +87,7 @@ export async function build() {
   const clientEntryFileSet = new Set<string>();
   const serverEntryFileSet = new Set<string>();
   await viteBuild({
-    ...(process.env.CONFIG_FILE && { configFile: process.env.CONFIG_FILE }),
+    ...configFileConfig,
     plugins: [
       rscAnalyzePlugin(
         (id) => clientEntryFileSet.add(id),
@@ -131,7 +120,7 @@ export async function build() {
   );
 
   const serverBuildOutput = await viteBuild({
-    ...(process.env.CONFIG_FILE && { configFile: process.env.CONFIG_FILE }),
+    ...configFileConfig,
     ssr: {
       noExternal: Array.from(clientEntryFileSet).map(
         (fname) =>
@@ -176,14 +165,14 @@ export async function build() {
   }
 
   const clientBuildOutput = await viteBuild({
-    ...(process.env.CONFIG_FILE && { configFile: process.env.CONFIG_FILE }),
+    ...configFileConfig,
     plugins: [
       // @ts-ignore
       react(),
       rscIndexPlugin(),
     ],
     build: {
-      outDir: path.join(config.build.outDir, outPublic),
+      outDir: path.join(config.build.outDir, config.framework.outPublic),
       rollupOptions: {
         input: {
           main: indexHtmlFile,

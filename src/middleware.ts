@@ -8,7 +8,7 @@ import react from "@vitejs/plugin-react";
 import RSDWServer from "react-server-dom-webpack/server.node.unbundled";
 import busboy from "busboy";
 
-import type { FrameworkConfig } from "./config.js";
+import { configFileConfig, resolveConfig } from "./lib/config.js";
 import { codeToInject } from "./lib/rsc-utils.js";
 import {
   registerReloadCallback,
@@ -88,9 +88,10 @@ const rscIndexPlugin = (): Plugin => {
   };
 };
 
+// FIXME this should be refactored
 const createViteMiddleware = (): Middleware => {
   const vitePromise = viteCreateServer({
-    ...(process.env.CONFIG_FILE && { configFile: process.env.CONFIG_FILE }),
+    ...configFileConfig,
     optimizeDeps: {
       include: ["react-server-dom-webpack/client"],
       // FIXME without this, waku router has dual module hazard,
@@ -108,8 +109,10 @@ const createViteMiddleware = (): Middleware => {
   vitePromise.then((vite) => {
     registerReloadCallback((type) => vite.ws.send({ type }));
   });
+  const configPromise = resolveConfig("serve");
   return async (req, res, next) => {
     const vite = await vitePromise;
+    const config = await configPromise;
     const absoluteClientEntries = Object.fromEntries(
       Array.from(vite.moduleGraph.idToModuleMap.values()).map(
         ({ file, url }) => [file, url]
@@ -123,13 +126,7 @@ const createViteMiddleware = (): Middleware => {
       // TODO make it configurable?
       const hasExtension = url.pathname.split(".").length > 1;
       if (!hasExtension) {
-        const { framework: frameworkConfig } = vite.config as {
-          framework?: FrameworkConfig;
-        };
-        const fname = path.join(
-          vite.config.root,
-          frameworkConfig?.indexHtml || "index.html"
-        );
+        const fname = path.join(config.root, config.framework.indexHtml);
         if (fs.existsSync(fname)) {
           let content = await fsPromises.readFile(fname, {
             encoding: "utf-8",
