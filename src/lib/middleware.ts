@@ -5,13 +5,13 @@ import react from "@vitejs/plugin-react";
 import RSDWServer from "react-server-dom-webpack/server.node.unbundled";
 import busboy from "busboy";
 
-import { configFileConfig } from "./lib/config.js";
-import { codeToInject } from "./lib/rsc-utils.js";
+import { configFileConfig } from "./config.js";
+import { codeToInject } from "./rsc-utils.js";
 import {
   registerReloadCallback,
   setClientEntries,
   renderRSC,
-} from "./lib/rsc-handler.js";
+} from "./rsc-handler.js";
 
 type Middleware = (
   req: IncomingMessage,

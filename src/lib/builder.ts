@@ -7,14 +7,14 @@ import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import * as swc from "@swc/core";
 
-import { configFileConfig, resolveConfig } from "./lib/config.js";
-import { codeToInject } from "./lib/rsc-utils.js";
+import { configFileConfig, resolveConfig } from "./config.js";
+import { codeToInject } from "./rsc-utils.js";
 import {
   shutdown,
   setClientEntries,
   getCustomModulesRSC,
   buildRSC,
-} from "./lib/rsc-handler.js";
+} from "./rsc-handler.js";
 
 // FIXME we could do this without plugin anyway
 const rscIndexPlugin = (): Plugin => {

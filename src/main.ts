@@ -1,2 +1,2 @@
-export { rsc, devServer } from "./middleware.js";
-export { build } from "./builder.js";
+export { rsc, devServer } from "./lib/middleware.js";
+export { build } from "./lib/builder.js";
