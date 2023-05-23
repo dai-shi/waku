@@ -1,8 +1,8 @@
 import type { ConfigEnv, UserConfig } from "vite";
 
 export interface FrameworkConfig {
-  indexHtml?: string;
-  entriesJs?: string;
+  indexHtml?: string; // relative to root
+  entriesJs?: string; // relative to root
   outPublic?: string; // relative to build.outDir
 }
 
