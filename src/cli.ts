@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import path from "node:path";
 
 const cmd = process.argv[2];
 
@@ -49,9 +50,12 @@ async function runBuild() {
 
 async function runStart() {
   const { default: express } = await import("express");
+  const { resolveConfig } = await import("./lib/config.js");
+  const config = await resolveConfig("serve");
   const { rsc } = await import("./middleware.js");
   const app = express();
   app.use(rsc({ mode: "production" }));
+  app.use(express.static(path.join(config.root, config.framework.outPublic)));
   const port = process.env.PORT || 8080;
   app.listen(port, () => {
     console.info("Listening on", port);
