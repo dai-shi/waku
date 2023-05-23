@@ -2,12 +2,12 @@ import path from "node:path";
 import fs from "node:fs";
 import { createRequire } from "node:module";
 
-import { build as viteBuild } from "vite";
+import { build as viteBuild, resolveConfig } from "vite";
 import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import * as swc from "@swc/core";
 
-import type { Config } from "./lib/common.js";
+import type { FrameworkConfig } from "./config.js";
 import { codeToInject } from "./lib/rsc-utils.js";
 import {
   shutdown,
@@ -63,18 +63,26 @@ const rscAnalyzePlugin = (
   };
 };
 
-export async function runBuild(config: Config = {}) {
-  const dir = path.resolve(config.build?.dir || ".");
-  const basePath = config.build?.basePath || "/";
-  const distPath = config.files?.dist || "dist";
-  const publicPath = path.join(distPath, config.files?.public || "public");
-  const indexHtmlFile = path.join(dir, config.files?.indexHtml || "index.html");
-  const distEntriesFile = path.join(
-    dir,
-    distPath,
-    config.files?.entriesJs || "entries.js"
+export async function build() {
+  const config = await resolveConfig(
+    {
+      ...(process.env.CONFIG_FILE && { configFile: process.env.CONFIG_FILE }),
+    },
+    "build"
   );
-  let entriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
+  const { framework: frameworkConfig } = config as {
+    framework?: FrameworkConfig;
+  };
+  const indexHtml = frameworkConfig?.indexHtml || "index.html";
+  const entriesJs = frameworkConfig?.entriesJs || "entries.js";
+  const outPublic = frameworkConfig?.outPublic || "public";
+  const indexHtmlFile = path.join(config.root, indexHtml);
+  const distEntriesFile = path.join(
+    config.root,
+    config.build.outDir,
+    entriesJs
+  );
+  let entriesFile = path.join(config.root, entriesJs);
   if (entriesFile.endsWith(".js")) {
     for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
       const tmp = entriesFile.slice(0, -3) + ext;
@@ -90,8 +98,7 @@ export async function runBuild(config: Config = {}) {
   const clientEntryFileSet = new Set<string>();
   const serverEntryFileSet = new Set<string>();
   await viteBuild({
-    root: dir,
-    base: basePath,
+    ...(process.env.CONFIG_FILE && { configFile: process.env.CONFIG_FILE }),
     plugins: [
       rscAnalyzePlugin(
         (id) => clientEntryFileSet.add(id),
@@ -106,7 +113,6 @@ export async function runBuild(config: Config = {}) {
       noExternal: ["waku"],
     },
     build: {
-      outDir: distPath,
       write: false,
       ssr: true,
       rollupOptions: {
@@ -125,16 +131,16 @@ export async function runBuild(config: Config = {}) {
   );
 
   const serverBuildOutput = await viteBuild({
-    root: dir,
-    base: basePath,
+    ...(process.env.CONFIG_FILE && { configFile: process.env.CONFIG_FILE }),
     ssr: {
       noExternal: Array.from(clientEntryFileSet).map(
         (fname) =>
-          path.relative(path.join(dir, "node_modules"), fname).split("/")[0]!
+          path
+            .relative(path.join(config.root, "node_modules"), fname)
+            .split("/")[0]!
       ),
     },
     build: {
-      outDir: distPath,
       ssr: true,
       rollupOptions: {
         input: {
@@ -170,15 +176,14 @@ export async function runBuild(config: Config = {}) {
   }
 
   const clientBuildOutput = await viteBuild({
-    root: dir,
-    base: basePath,
+    ...(process.env.CONFIG_FILE && { configFile: process.env.CONFIG_FILE }),
     plugins: [
       // @ts-ignore
       react(),
       rscIndexPlugin(),
     ],
     build: {
-      outDir: publicPath,
+      outDir: path.join(config.build.outDir, outPublic),
       rollupOptions: {
         input: {
           main: indexHtmlFile,
@@ -214,15 +219,15 @@ export async function runBuild(config: Config = {}) {
 
   const absoluteClientEntries = Object.fromEntries(
     Object.entries(clientEntries).map(([key, val]) => [
-      path.join(path.dirname(entriesFile), distPath, key),
-      basePath + val,
+      path.join(path.dirname(entriesFile), config.build.outDir, key),
+      config.base + val,
     ])
   );
   await setClientEntries(absoluteClientEntries);
 
   await buildRSC();
 
-  const origPackageJson = require(path.join(dir, "package.json"));
+  const origPackageJson = require(path.join(config.root, "package.json"));
   const packageJson = {
     name: origPackageJson.name,
     version: origPackageJson.version,
@@ -234,13 +239,9 @@ export async function runBuild(config: Config = {}) {
     dependencies: origPackageJson.dependencies,
   };
   fs.writeFileSync(
-    path.join(dir, distPath, "package.json"),
+    path.join(config.root, config.build.outDir, "package.json"),
     JSON.stringify(packageJson, null, 2)
   );
 
   await shutdown();
-}
-
-export async function build() {
-  // TODO
 }

@@ -3,6 +3,7 @@ import type { ConfigEnv, UserConfig } from "vite";
 export interface FrameworkConfig {
   indexHtml?: string;
   entriesJs?: string;
+  outPublic?: string; // relative to build.outDir
 }
 
 export interface ExtendedUserConfig extends UserConfig {

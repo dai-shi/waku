@@ -43,9 +43,10 @@ async function runDev() {
 
 async function runBuild() {
   const { build } = await import("./builder.js");
-  build();
+  await build();
 }
 
 async function runStart() {
   // TODO
+  throw new Error('not yet ready');
 }

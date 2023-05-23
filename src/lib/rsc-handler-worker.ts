@@ -280,6 +280,11 @@ async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
 // FIXME this may take too much responsibility
 async function buildRSC(): Promise<void> {
   const vite = await vitePromise;
+  const { framework: frameworkConfig } = vite.config as {
+    framework?: FrameworkConfig;
+  };
+  const indexHtml = frameworkConfig?.indexHtml || "index.html";
+  const outPublic = frameworkConfig?.outPublic || "public";
   const distEntriesFile = await getEntriesFile(true);
   const {
     default: { getBuilder },
@@ -317,7 +322,8 @@ async function buildRSC(): Promise<void> {
         searchParams.set("props", serializedProps);
         const destFile = path.join(
           vite.config.root,
-          vite.config.publicDir,
+          vite.config.build.outDir,
+          outPublic,
           "RSC",
           decodeURIComponent(rscId),
           decodeURIComponent(`${searchParams}`)
@@ -350,13 +356,11 @@ async function buildRSC(): Promise<void> {
     })
   );
 
-  const { framework: frameworkConfig } = vite.config as {
-    framework?: FrameworkConfig;
-  };
   const publicIndexHtmlFile = path.join(
     vite.config.root,
-    vite.config.publicDir,
-    frameworkConfig?.indexHtml || "index.html"
+    vite.config.build.outDir,
+    outPublic,
+    indexHtml
   );
   const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
     encoding: "utf8",
@@ -365,7 +369,8 @@ async function buildRSC(): Promise<void> {
     Object.entries(pathMap).map(async ([pathStr, { elements, customCode }]) => {
       const destFile = path.join(
         vite.config.root,
-        vite.config.publicDir,
+        vite.config.build.outDir,
+        outPublic,
         pathStr,
         pathStr.endsWith("/") ? "index.html" : ""
       );
