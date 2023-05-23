@@ -52,7 +52,7 @@
     "compile:types": "tsc --project tsconfig.build.json",
     "test": "tsc --project . --noEmit",
     "e2e": "cd e2e/01 && playwright test && cd ../02 && playwright test",
-    "examples:dev": "npm run compile:code && ./dist/cli.js dev --config ./examples/${NAME}/vite.config.js",
+    "examples:dev": "npm run compile:code && ./dist/cli.js dev --config ./examples/${NAME}/vite.config.ts",
     "examples:dev:01_counter": "NAME=01_counter npm run examples:dev",
     "examples:dev:02_async": "NAME=02_async npm run examples:dev",
     "examples:dev:03_promise": "NAME=03_promise npm run examples:dev",
@@ -60,8 +60,8 @@
     "examples:dev:05_mutation": "NAME=05_mutation npm run examples:dev",
     "examples:dev:06_nesting": "NAME=06_nesting npm run examples:dev",
     "examples:dev:07_router": "NAME=07_router npm run examples:dev",
-    "examples:build": "npm run compile:code && ./dist/cli.js build --config ./examples/${NAME}/vite.config.js",
-    "examples:prd": "npm run examples:build && ./dist/cli.js start --config ./examples/${NAME}/vite.prd.config.js",
+    "examples:build": "npm run compile:code && ./dist/cli.js build --config ./examples/${NAME}/vite.config.ts",
+    "examples:prd": "npm run examples:build && ./dist/cli.js start --config ./examples/${NAME}/vite.prd.config.ts",
     "examples:prd:01_counter": "NAME=01_counter npm run examples:prd",
     "examples:prd:02_async": "NAME=02_async npm run examples:prd",
     "examples:prd:03_promise": "NAME=03_promise npm run examples:prd",
@@ -69,9 +69,9 @@
     "examples:prd:05_mutation": "NAME=05_mutation npm run examples:prd",
     "examples:prd:06_nesting": "NAME=06_nesting npm run examples:prd",
     "examples:prd:07_router": "NAME=07_router npm run examples:prd",
-    "website:dev": "npm run compile:code && ./dist/cli.js dev --config ./website/vite.config.js",
-    "website:build": "npm run compile:code && ./dist/cli.js build --config ./website/vite.config.js",
-    "website:prd": "npm run website:build && ./dist/cli.js start --config ./website/vite.prd.config.js"
+    "website:dev": "npm run compile:code && ./dist/cli.js dev --config ./website/vite.config.ts",
+    "website:build": "npm run compile:code && ./dist/cli.js build --config ./website/vite.config.ts",
+    "website:prd": "npm run website:build && ./dist/cli.js start --config ./website/vite.prd.config.ts"
   },
   "license": "MIT",
   "engines": {
