@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "waku dev",
     "build": "waku build",
-    "start": "WAKU_CONFIG='{\"prdServer\":{\"dir\":\"dist\"}}' waku start"
+    "start": "waku start --config vite.prd.config.js"
   },
   "dependencies": {
     "react": "18.3.0-canary-5309f1028-20230517",
