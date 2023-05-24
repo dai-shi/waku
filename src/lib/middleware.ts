@@ -5,7 +5,7 @@ import react from "@vitejs/plugin-react";
 import RSDWServer from "react-server-dom-webpack/server.node.unbundled";
 import busboy from "busboy";
 
-import { configFileConfig } from "./config.js";
+import { configFileConfig, resolveConfig } from "./config.js";
 import { codeToInject } from "./rsc-utils.js";
 import {
   registerReloadCallback,
@@ -28,16 +28,19 @@ export function rsc(options: {
     options.mode === "production"
       ? setClientEntries("load")
       : Promise.resolve();
+  const configPromise = resolveConfig("serve");
   return async (req, res, next) => {
     await promise;
+    const config = await configPromise;
+    const basePath = config.base + config.framework.rscPrefix;
     const url = new URL(req.url || "", "http://" + req.headers.host);
     let rscId: string | undefined;
     let props = {};
     let rsfId: string | undefined;
     let args: unknown[] = [];
-    if (url.pathname.startsWith("/RSC/")) {
+    if (url.pathname.startsWith(basePath)) {
       const index = url.pathname.lastIndexOf("/");
-      rscId = url.pathname.slice("/RSC/".length, index);
+      rscId = url.pathname.slice(basePath.length, index);
       const params = new URLSearchParams(url.pathname.slice(index + 1));
       if (rscId && rscId !== "_") {
         res.setHeader("Content-Type", "text/x-component");

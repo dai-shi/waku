@@ -196,7 +196,10 @@ const getFunctionComponent = async (rscId: string, isBuild: boolean) => {
 
 let absoluteClientEntries: Record<string, string> = {};
 
-const resolveClientEntry = (config: Awaited<typeof configPromise>, filePath: string) => {
+const resolveClientEntry = (
+  config: Awaited<typeof configPromise>,
+  filePath: string
+) => {
   const clientEntry = absoluteClientEntries[filePath];
   if (!clientEntry) {
     if (absoluteClientEntries["*"] === "*") {
@@ -280,7 +283,8 @@ async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
 
 // FIXME this may take too much responsibility
 async function buildRSC(): Promise<void> {
-  const config = await resolveConfig('build');
+  const config = await resolveConfig("build");
+  const basePath = config.base + config.framework.rscPrefix;
   const distEntriesFile = await getEntriesFile(true);
   const {
     default: { getBuilder },
@@ -320,7 +324,7 @@ async function buildRSC(): Promise<void> {
           config.root,
           config.build.outDir,
           config.framework.outPublic,
-          "RSC",
+          config.framework.rscPrefix,
           decodeURIComponent(rscId),
           decodeURIComponent(`${searchParams}`)
         );
@@ -339,9 +343,7 @@ async function buildRSC(): Promise<void> {
         const pipeable = renderToPipeableStream(
           createElement(component, props as any),
           bundlerConfig
-        ).pipe(
-          transformRsfId(path.join(config.root, config.build.outDir))
-        );
+        ).pipe(transformRsfId(path.join(config.root, config.build.outDir)));
         await new Promise<void>((resolve, reject) => {
           const stream = fs.createWriteStream(destFile);
           stream.on("finish", resolve);
@@ -379,6 +381,7 @@ async function buildRSC(): Promise<void> {
       }
       const code =
         generatePrefetchCode(
+          basePath,
           Array.from(elements || []).flatMap(([rscId, props, skipPrefetch]) => {
             if (skipPrefetch) {
               return [];

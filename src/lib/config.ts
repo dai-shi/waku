@@ -12,6 +12,7 @@ export async function resolveConfig(command: "build" | "serve") {
     indexHtml: "index.html",
     entriesJs: "entries.js",
     outPublic: "public",
+    rscPrefix: "RSC/",
     ...(origConfig as { framework?: FrameworkConfig }).framework,
   };
   const config = { ...origConfig, framework };
