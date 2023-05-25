@@ -1,5 +1,3 @@
-// FIXME rsc-utils isn't a good name
-
 import { Buffer } from "node:buffer";
 import { Transform } from "node:stream";
 

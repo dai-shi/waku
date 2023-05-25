@@ -3,65 +3,16 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 
 import { build as viteBuild } from "vite";
-import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
-import * as swc from "@swc/core";
 
 import { configFileConfig, resolveConfig } from "./config.js";
-import { codeToInject } from "./rsc-utils.js";
 import {
   shutdown,
   setClientEntries,
   getCustomModulesRSC,
   buildRSC,
 } from "./rsc-handler.js";
-
-// FIXME we could do this without plugin anyway
-const rscIndexPlugin = (): Plugin => {
-  return {
-    name: "rsc-index-plugin",
-    async transformIndexHtml() {
-      return [
-        {
-          tag: "script",
-          children: codeToInject,
-          injectTo: "body",
-        },
-      ];
-    },
-  };
-};
-
-const rscAnalyzePlugin = (
-  clientEntryCallback: (id: string) => void,
-  serverEntryCallback: (id: string) => void
-): Plugin => {
-  return {
-    name: "rsc-bundle-plugin",
-    transform(code, id) {
-      const ext = path.extname(id);
-      if ([".ts", ".tsx", ".js", ".jsx"].includes(ext)) {
-        const mod = swc.parseSync(code, {
-          syntax: ext === ".ts" || ext === ".tsx" ? "typescript" : "ecmascript",
-          tsx: ext === ".tsx",
-        });
-        for (const item of mod.body) {
-          if (
-            item.type === "ExpressionStatement" &&
-            item.expression.type === "StringLiteral"
-          ) {
-            if (item.expression.value === "use client") {
-              clientEntryCallback(id);
-            } else if (item.expression.value === "use server") {
-              serverEntryCallback(id);
-            }
-          }
-        }
-      }
-      return code;
-    },
-  };
-};
+import { rscIndexPlugin, rscAnalyzePlugin } from "./vite-plugin-rsc.js";
 
 export async function build() {
   const config = await resolveConfig("build");

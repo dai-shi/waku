@@ -1,17 +1,16 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createServer as viteCreateServer } from "vite";
-import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import RSDWServer from "react-server-dom-webpack/server.node.unbundled";
 import busboy from "busboy";
 
 import { configFileConfig, resolveConfig } from "./config.js";
-import { codeToInject } from "./rsc-utils.js";
 import {
   registerReloadCallback,
   setClientEntries,
   renderRSC,
 } from "./rsc-handler.js";
+import { rscIndexPlugin } from "./vite-plugin-rsc.js";
 
 type Middleware = (
   req: IncomingMessage,
@@ -83,21 +82,6 @@ export function rsc(options: {
     next();
   };
 }
-
-const rscIndexPlugin = (): Plugin => {
-  return {
-    name: "rsc-index-plugin",
-    async transformIndexHtml() {
-      return [
-        {
-          tag: "script",
-          children: codeToInject,
-          injectTo: "body",
-        },
-      ];
-    },
-  };
-};
 
 // TODO this should be refactored
 export function devServer(): Middleware {
