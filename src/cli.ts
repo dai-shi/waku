@@ -56,6 +56,7 @@ async function runStart() {
   const app = express();
   app.use(rsc({ mode: "production" }));
   app.use(express.static(path.join(config.root, config.framework.outPublic)));
+  (express.static.mime as any).default_type = "";
   const port = process.env.PORT || 8080;
   app.listen(port, () => {
     console.info("Listening on", port);
