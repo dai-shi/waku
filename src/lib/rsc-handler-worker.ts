@@ -7,16 +7,17 @@ import { createServer } from "vite";
 import { createElement } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 
+import { configFileConfig, resolveConfig } from "./config.js";
 import { transformRsfId, generatePrefetchCode } from "./rsc-utils.js";
 import type { RenderInput, MessageReq, MessageRes } from "./rsc-handler.js";
-import type { Config } from "../../config.js";
-import { defineEntries } from "../../server.js";
-import type { unstable_GetCustomModules } from "../../server.js";
+import { defineEntries } from "../server.js";
+import type { unstable_GetCustomModules } from "../server.js";
 import { rscTransformPlugin, rscReloadPlugin } from "./vite-plugin-rsc.js";
 
 const { renderToPipeableStream } = RSDWServer;
 
 type Entries = { default: ReturnType<typeof defineEntries> };
+type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
 const handleSetClientEntries = async (
   mesg: MessageReq & { type: "setClientEntries" }
@@ -24,17 +25,10 @@ const handleSetClientEntries = async (
   const { id, value } = mesg;
   try {
     await setClientEntries(value);
-    const mesg: MessageRes = {
-      id,
-      type: "end",
-    };
+    const mesg: MessageRes = { id, type: "end" };
     parentPort!.postMessage(mesg);
   } catch (err) {
-    const mesg: MessageRes = {
-      id,
-      type: "err",
-      err,
-    };
+    const mesg: MessageRes = { id, type: "err", err };
     parentPort!.postMessage(mesg);
   }
 };
@@ -60,21 +54,14 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
         callback();
       },
       final(callback) {
-        const mesg: MessageRes = {
-          id,
-          type: "end",
-        };
+        const mesg: MessageRes = { id, type: "end" };
         parentPort!.postMessage(mesg);
         callback();
       },
     });
     pipeable.pipe(writable);
   } catch (err) {
-    const mesg: MessageRes = {
-      id,
-      type: "err",
-      err,
-    };
+    const mesg: MessageRes = { id, type: "err", err };
     parentPort!.postMessage(mesg);
   }
 };
@@ -85,18 +72,10 @@ const handleGetCustomModules = async (
   const { id } = mesg;
   try {
     const modules = await getCustomModulesRSC();
-    const mesg: MessageRes = {
-      id,
-      type: "customModules",
-      modules,
-    };
+    const mesg: MessageRes = { id, type: "customModules", modules };
     parentPort!.postMessage(mesg);
   } catch (err) {
-    const mesg: MessageRes = {
-      id,
-      type: "err",
-      err,
-    };
+    const mesg: MessageRes = { id, type: "err", err };
     parentPort!.postMessage(mesg);
   }
 };
@@ -105,77 +84,22 @@ const handleBuild = async (mesg: MessageReq & { type: "build" }) => {
   const { id } = mesg;
   try {
     await buildRSC();
-    const mesg: MessageRes = {
-      id,
-      type: "end",
-    };
+    const mesg: MessageRes = { id, type: "end" };
     parentPort!.postMessage(mesg);
   } catch (err) {
-    const mesg: MessageRes = {
-      id,
-      type: "err",
-      err,
-    };
+    const mesg: MessageRes = { id, type: "err", err };
     parentPort!.postMessage(mesg);
   }
 };
 
-parentPort!.on("message", (mesg: MessageReq) => {
-  if (mesg.type === "shutdown") {
-    vitePromise.then(async (vite) => {
-      await vite.close();
-      parentPort!.close();
-    });
-  } else if (mesg.type === "setClientEntries") {
-    handleSetClientEntries(mesg);
-  } else if (mesg.type === "render") {
-    handleRender(mesg);
-  } else if (mesg.type === "getCustomModules") {
-    handleGetCustomModules(mesg);
-  } else if (mesg.type === "build") {
-    handleBuild(mesg);
-  }
-});
-
-type PipeableStream = {
-  pipe<T extends Writable>(destination: T): T;
-};
-
-// TODO use of process.env is all temporary
-// TODO these are temporary
-const config: Config =
-  (process.env.WAKU_CONFIG && JSON.parse(process.env.WAKU_CONFIG)) || {};
-const dirFromConfig =
-  config.prdServer?.dir ?? config.build?.dir ?? config.devServer?.dir; // HACK
-const dir = path.resolve(dirFromConfig || ".");
-const basePath = config.build?.basePath || "/"; // FIXME it's not build only
-const distPath = config.files?.dist || "dist";
-const publicPath = path.join(distPath, config.files?.public || "public");
-const publicIndexHtmlFile = path.join(
-  dir,
-  publicPath,
-  config.files?.indexHtml || "index.html"
-);
-const entriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
-const distEntriesFile = path.join(
-  dir,
-  distPath,
-  config.files?.entriesJs || "entries.js"
-);
-
 const vitePromise = createServer({
-  root: dir,
-  ...(process.env.NODE_ENV && { mode: process.env.NODE_ENV }),
+  ...configFileConfig,
   plugins: [
     rscTransformPlugin(),
-    ...(process.env.NODE_ENV === "development"
-      ? [
-          rscReloadPlugin((type) => {
-            const mesg: MessageRes = { type };
-            parentPort!.postMessage(mesg);
-          }),
-        ]
-      : []),
+    rscReloadPlugin((type) => {
+      const mesg: MessageRes = { type };
+      parentPort!.postMessage(mesg);
+    }),
   ],
   ssr: {
     // FIXME Without this, "use client" directive in waku/router/client
@@ -187,17 +111,56 @@ const vitePromise = createServer({
   appType: "custom",
 });
 
+const shutdown = async () => {
+  const vite = await vitePromise;
+  await vite.close();
+  parentPort!.close();
+};
+
 const loadServerFile = async (fname: string) => {
   const vite = await vitePromise;
   return vite.ssrLoadModule(fname);
 };
 
-const getFunctionComponent = async (rscId: string, isBuild: boolean) => {
+parentPort!.on("message", (mesg: MessageReq) => {
+  if (mesg.type === "shutdown") {
+    shutdown();
+  } else if (mesg.type === "setClientEntries") {
+    handleSetClientEntries(mesg);
+  } else if (mesg.type === "render") {
+    handleRender(mesg);
+  } else if (mesg.type === "getCustomModules") {
+    handleGetCustomModules(mesg);
+  } else if (mesg.type === "build") {
+    handleBuild(mesg);
+  }
+});
+
+const configPromise = resolveConfig("serve");
+
+const getEntriesFile = async (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  isBuild: boolean
+) => {
+  if (isBuild) {
+    return path.join(
+      config.root,
+      config.build.outDir,
+      config.framework.entriesJs
+    );
+  }
+  return path.join(config.root, config.framework.entriesJs);
+};
+
+const getFunctionComponent = async (
+  rscId: string,
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  isBuild: boolean
+) => {
+  const entriesFile = await getEntriesFile(config, isBuild);
   const {
     default: { getEntry },
-  } = await (loadServerFile(
-    isBuild ? distEntriesFile : entriesFile
-  ) as Promise<Entries>);
+  } = await (loadServerFile(entriesFile) as Promise<Entries>);
   const mod = await getEntry(rscId);
   if (typeof mod === "function") {
     return mod;
@@ -210,11 +173,14 @@ const getFunctionComponent = async (rscId: string, isBuild: boolean) => {
 
 let absoluteClientEntries: Record<string, string> = {};
 
-const resolveClientEntry = (filePath: string) => {
+const resolveClientEntry = (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  filePath: string
+) => {
   const clientEntry = absoluteClientEntries[filePath];
   if (!clientEntry) {
     if (absoluteClientEntries["*"] === "*") {
-      return basePath + path.relative(dir, filePath);
+      return config.base + path.relative(config.root, filePath);
     }
     throw new Error("No client entry found for " + filePath);
   }
@@ -228,6 +194,8 @@ async function setClientEntries(
     absoluteClientEntries = value;
     return;
   }
+  const config = await configPromise;
+  const entriesFile = await getEntriesFile(config, false);
   const { clientEntries } = await loadServerFile(entriesFile);
   if (!clientEntries) {
     throw new Error("Failed to load clientEntries");
@@ -236,18 +204,19 @@ async function setClientEntries(
   absoluteClientEntries = Object.fromEntries(
     Object.entries(clientEntries).map(([key, val]) => [
       path.join(baseDir, key),
-      basePath + val,
+      config.base + val,
     ])
   );
 }
 
 async function renderRSC(input: RenderInput): Promise<PipeableStream> {
+  const config = await configPromise;
   const bundlerConfig = new Proxy(
     {},
     {
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split("#") as [string, string];
-        const id = resolveClientEntry(filePath);
+        const id = resolveClientEntry(config, filePath);
         return { id, chunks: [id], name, async: true };
       },
     }
@@ -255,7 +224,7 @@ async function renderRSC(input: RenderInput): Promise<PipeableStream> {
 
   if (input.rsfId && input.args) {
     const [fileId, name] = input.rsfId.split("#");
-    const fname = path.join(dir, fileId!);
+    const fname = path.join(config.root, fileId!);
     const mod = await loadServerFile(fname);
     const data = await (mod[name!] || mod)(...input.args);
     if (!input.rscId) {
@@ -264,16 +233,18 @@ async function renderRSC(input: RenderInput): Promise<PipeableStream> {
     // continue for mutation mode
   }
   if (input.rscId && input.props) {
-    const component = await getFunctionComponent(input.rscId, false);
+    const component = await getFunctionComponent(input.rscId, config, false);
     return renderToPipeableStream(
       createElement(component, input.props),
       bundlerConfig
-    ).pipe(transformRsfId(dir));
+    ).pipe(transformRsfId(config.root));
   }
   throw new Error("Unexpected input");
 }
 
 async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
+  const config = await configPromise;
+  const entriesFile = await getEntriesFile(config, false);
   const {
     default: { unstable_getCustomModules: getCustomModules },
   } = await (loadServerFile(entriesFile) as Promise<{
@@ -290,6 +261,9 @@ async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
 
 // FIXME this may take too much responsibility
 async function buildRSC(): Promise<void> {
+  const config = await resolveConfig("build");
+  const basePath = config.base + config.framework.rscPrefix;
+  const distEntriesFile = await getEntriesFile(config, true);
   const {
     default: { getBuilder },
   } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
@@ -303,7 +277,7 @@ async function buildRSC(): Promise<void> {
   // FIXME this doesn't seem an ideal solution
   const decodeId = (encodedId: string): [id: string, name: string] => {
     const [filePath, name] = encodedId.split("#") as [string, string];
-    const id = resolveClientEntry(filePath);
+    const id = resolveClientEntry(config, filePath);
     return [id, name];
   };
 
@@ -325,9 +299,10 @@ async function buildRSC(): Promise<void> {
         const searchParams = new URLSearchParams();
         searchParams.set("props", serializedProps);
         const destFile = path.join(
-          dir,
-          publicPath,
-          "RSC",
+          config.root,
+          config.build.outDir,
+          config.framework.outPublic,
+          config.framework.rscPrefix,
           decodeURIComponent(rscId),
           decodeURIComponent(`${searchParams}`)
         );
@@ -342,11 +317,11 @@ async function buildRSC(): Promise<void> {
             },
           }
         );
-        const component = await getFunctionComponent(rscId, true);
+        const component = await getFunctionComponent(rscId, config, true);
         const pipeable = renderToPipeableStream(
           createElement(component, props as any),
           bundlerConfig
-        ).pipe(transformRsfId(path.join(dir, distPath)));
+        ).pipe(transformRsfId(path.join(config.root, config.build.outDir)));
         await new Promise<void>((resolve, reject) => {
           const stream = fs.createWriteStream(destFile);
           stream.on("finish", resolve);
@@ -357,14 +332,21 @@ async function buildRSC(): Promise<void> {
     })
   );
 
+  const publicIndexHtmlFile = path.join(
+    config.root,
+    config.build.outDir,
+    config.framework.outPublic,
+    config.framework.indexHtml
+  );
   const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
     encoding: "utf8",
   });
   await Promise.all(
     Object.entries(pathMap).map(async ([pathStr, { elements, customCode }]) => {
       const destFile = path.join(
-        dir,
-        publicPath,
+        config.root,
+        config.build.outDir,
+        config.framework.outPublic,
         pathStr,
         pathStr.endsWith("/") ? "index.html" : ""
       );
@@ -377,6 +359,7 @@ async function buildRSC(): Promise<void> {
       }
       const code =
         generatePrefetchCode(
+          basePath,
           Array.from(elements || []).flatMap(([rscId, props, skipPrefetch]) => {
             if (skipPrefetch) {
               return [];

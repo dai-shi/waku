@@ -1,5 +1,3 @@
-// FIXME rsc-utils isn't a good name
-
 import { Buffer } from "node:buffer";
 import { Transform } from "node:stream";
 
@@ -9,6 +7,7 @@ globalThis.__webpack_chunk_load__ = (id) => import(id).then((m) => globalThis.__
 globalThis.__webpack_require__ = (id) => globalThis.__waku_module_cache__.get(id);`;
 
 export const generatePrefetchCode = (
+  basePath: string,
   entryItemsIterable: Iterable<readonly [rscId: string, props: unknown]>,
   moduleIds: Iterable<string>
 ) => {
@@ -30,7 +29,7 @@ ${rscIds
           const searchParams = new URLSearchParams();
           searchParams.set("props", serializedProps);
           return [
-            `'${serializedProps}': fetch('/RSC/${rscId}/${searchParams}')`,
+            `'${serializedProps}': fetch('${basePath}${rscId}/${searchParams}')`,
           ];
         })
         .join(",") +

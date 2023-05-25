@@ -4,10 +4,7 @@ import { cache, use, useEffect, useState } from "react";
 import type { ReactElement } from "react";
 import { createFromFetch, encodeReply } from "react-server-dom-webpack/client";
 
-// FIXME only works with basePath="/"
-const basePath = "/";
-
-export function serve<Props>(rscId: string) {
+export function serve<Props>(rscId: string, basePath = "/RSC/") {
   type SetRerender = (
     rerender: (next: [ReactElement, string]) => void
   ) => () => void;
@@ -27,14 +24,14 @@ export function serve<Props>(rscId: string) {
           const isMutating = !!mutationMode;
           const searchParams = new URLSearchParams();
           searchParams.set("action_id", rsfId);
-          let rscPath = "RSC/";
+          let id: string;
           if (isMutating) {
-            rscPath += rscId;
+            id = rscId;
             searchParams.set("props", serializedProps);
           } else {
-            rscPath += "_";
+            id = "_";
           }
-          const response = fetch(basePath + rscPath + "/" + searchParams, {
+          const response = fetch(basePath + id + "/" + searchParams, {
             method: "POST",
             body: await encodeReply(args),
           });
@@ -48,9 +45,8 @@ export function serve<Props>(rscId: string) {
       const prefetched = (globalThis as any).__WAKU_PREFETCHED__?.[rscId]?.[
         serializedProps
       ];
-      const rscPath = "RSC/" + rscId;
       const data = createFromFetch(
-        prefetched || fetch(basePath + rscPath + "/" + searchParams),
+        prefetched || fetch(basePath + rscId + "/" + searchParams),
         options
       );
       return [data, setRerender];

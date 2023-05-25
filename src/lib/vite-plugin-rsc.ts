@@ -3,7 +3,24 @@ import type { Plugin } from "vite";
 import * as swc from "@swc/core";
 import * as RSDWNodeLoader from "react-server-dom-webpack/node-loader";
 
-export const rscTransformPlugin = (): Plugin => {
+import { codeToInject } from "./rsc-utils.js";
+
+export function rscIndexPlugin(): Plugin {
+  return {
+    name: "rsc-index-plugin",
+    async transformIndexHtml() {
+      return [
+        {
+          tag: "script",
+          children: codeToInject,
+          injectTo: "body",
+        },
+      ];
+    },
+  };
+}
+
+export function rscTransformPlugin(): Plugin {
   return {
     name: "rsc-transform-plugin",
     async resolveId(id, importer, options) {
@@ -51,9 +68,10 @@ export const rscTransformPlugin = (): Plugin => {
       return (await RSDWNodeLoader.load(id, null, load)).source;
     },
   };
-};
+}
 
-export const rscReloadPlugin = (fn: (type: "full-reload") => void): Plugin => {
+export function rscReloadPlugin(fn: (type: "full-reload") => void): Plugin {
+  let enabled = false;
   const isClientEntry = (id: string, code: string) => {
     const ext = path.extname(id);
     if ([".ts", ".tsx", ".js", ".jsx"].includes(ext)) {
@@ -75,10 +93,51 @@ export const rscReloadPlugin = (fn: (type: "full-reload") => void): Plugin => {
   };
   return {
     name: "reload-plugin",
+    configResolved(config) {
+      if (config.mode === "development") {
+        enabled = true;
+      }
+    },
     async handleHotUpdate(ctx) {
+      if (!enabled) {
+        return [];
+      }
       if (ctx.modules.length && !isClientEntry(ctx.file, await ctx.read())) {
         fn("full-reload");
+      } else {
+        return [];
       }
     },
   };
-};
+}
+
+export function rscAnalyzePlugin(
+  clientEntryCallback: (id: string) => void,
+  serverEntryCallback: (id: string) => void
+): Plugin {
+  return {
+    name: "rsc-bundle-plugin",
+    transform(code, id) {
+      const ext = path.extname(id);
+      if ([".ts", ".tsx", ".js", ".jsx"].includes(ext)) {
+        const mod = swc.parseSync(code, {
+          syntax: ext === ".ts" || ext === ".tsx" ? "typescript" : "ecmascript",
+          tsx: ext === ".tsx",
+        });
+        for (const item of mod.body) {
+          if (
+            item.type === "ExpressionStatement" &&
+            item.expression.type === "StringLiteral"
+          ) {
+            if (item.expression.value === "use client") {
+              clientEntryCallback(id);
+            } else if (item.expression.value === "use server") {
+              serverEntryCallback(id);
+            }
+          }
+        }
+      }
+      return code;
+    },
+  };
+}
