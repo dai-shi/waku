@@ -68,6 +68,7 @@ pnpm create waku # pnpm not working for now
 - https://twitter.com/dai_shi/status/1660306318140542976
 - https://twitter.com/dai_shi/status/1660537733201248257
 - https://twitter.com/dai_shi/status/1660660331528728578
+- https://twitter.com/dai_shi/status/1661727138746339328
 
 </details>
 
