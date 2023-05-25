@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.11.0] - 2023-05-25
 ### Changed
 - fix: make getBuilder optional #41 
 ### Added
