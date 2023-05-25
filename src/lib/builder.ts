@@ -74,6 +74,7 @@ export async function build() {
     ...configFileConfig,
     ssr: {
       noExternal: Array.from(clientEntryFileSet).map(
+        // FIXME this might not work with pnpm
         (fname) =>
           path
             .relative(path.join(config.root, "node_modules"), fname)
