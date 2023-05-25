@@ -66,7 +66,8 @@ export function registerReloadCallback(fn: (type: "full-reload") => void) {
 export function shutdown() {
   return new Promise<void>((resolve) => {
     worker.on("close", resolve);
-    worker.postMessage({ type: "shutdown" });
+    const mesg: MessageReq = { type: "shutdown" };
+    worker.postMessage(mesg);
   });
 }
 
@@ -86,11 +87,7 @@ export function setClientEntries(
         messageCallbacks.delete(id);
       }
     });
-    const mesg: MessageReq = {
-      id,
-      type: "setClientEntries",
-      value,
-    };
+    const mesg: MessageReq = { id, type: "setClientEntries", value };
     worker.postMessage(mesg);
   });
 }
@@ -111,11 +108,7 @@ export function renderRSC(input: RenderInput): Readable {
       messageCallbacks.delete(id);
     }
   });
-  const mesg: MessageReq = {
-    id,
-    type: "render",
-    input,
-  };
+  const mesg: MessageReq = { id, type: "render", input };
   worker.postMessage(mesg);
   return passthrough;
 }
@@ -132,10 +125,7 @@ export function getCustomModulesRSC(): Promise<CustomModules> {
         messageCallbacks.delete(id);
       }
     });
-    const mesg: MessageReq = {
-      id,
-      type: "getCustomModules",
-    };
+    const mesg: MessageReq = { id, type: "getCustomModules" };
     worker.postMessage(mesg);
   });
 }
@@ -152,10 +142,7 @@ export function buildRSC(): Promise<void> {
         messageCallbacks.delete(id);
       }
     });
-    const mesg: MessageReq = {
-      id,
-      type: "build",
-    };
+    const mesg: MessageReq = { id, type: "build" };
     worker.postMessage(mesg);
   });
 }

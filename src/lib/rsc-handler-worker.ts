@@ -17,6 +17,7 @@ import { rscTransformPlugin, rscReloadPlugin } from "./vite-plugin-rsc.js";
 const { renderToPipeableStream } = RSDWServer;
 
 type Entries = { default: ReturnType<typeof defineEntries> };
+type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
 const handleSetClientEntries = async (
   mesg: MessageReq & { type: "setClientEntries" }
@@ -24,17 +25,10 @@ const handleSetClientEntries = async (
   const { id, value } = mesg;
   try {
     await setClientEntries(value);
-    const mesg: MessageRes = {
-      id,
-      type: "end",
-    };
+    const mesg: MessageRes = { id, type: "end" };
     parentPort!.postMessage(mesg);
   } catch (err) {
-    const mesg: MessageRes = {
-      id,
-      type: "err",
-      err,
-    };
+    const mesg: MessageRes = { id, type: "err", err };
     parentPort!.postMessage(mesg);
   }
 };
@@ -60,21 +54,14 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
         callback();
       },
       final(callback) {
-        const mesg: MessageRes = {
-          id,
-          type: "end",
-        };
+        const mesg: MessageRes = { id, type: "end" };
         parentPort!.postMessage(mesg);
         callback();
       },
     });
     pipeable.pipe(writable);
   } catch (err) {
-    const mesg: MessageRes = {
-      id,
-      type: "err",
-      err,
-    };
+    const mesg: MessageRes = { id, type: "err", err };
     parentPort!.postMessage(mesg);
   }
 };
@@ -85,18 +72,10 @@ const handleGetCustomModules = async (
   const { id } = mesg;
   try {
     const modules = await getCustomModulesRSC();
-    const mesg: MessageRes = {
-      id,
-      type: "customModules",
-      modules,
-    };
+    const mesg: MessageRes = { id, type: "customModules", modules };
     parentPort!.postMessage(mesg);
   } catch (err) {
-    const mesg: MessageRes = {
-      id,
-      type: "err",
-      err,
-    };
+    const mesg: MessageRes = { id, type: "err", err };
     parentPort!.postMessage(mesg);
   }
 };
@@ -105,40 +84,12 @@ const handleBuild = async (mesg: MessageReq & { type: "build" }) => {
   const { id } = mesg;
   try {
     await buildRSC();
-    const mesg: MessageRes = {
-      id,
-      type: "end",
-    };
+    const mesg: MessageRes = { id, type: "end" };
     parentPort!.postMessage(mesg);
   } catch (err) {
-    const mesg: MessageRes = {
-      id,
-      type: "err",
-      err,
-    };
+    const mesg: MessageRes = { id, type: "err", err };
     parentPort!.postMessage(mesg);
   }
-};
-
-parentPort!.on("message", (mesg: MessageReq) => {
-  if (mesg.type === "shutdown") {
-    vitePromise.then(async (vite) => {
-      await vite.close();
-      parentPort!.close();
-    });
-  } else if (mesg.type === "setClientEntries") {
-    handleSetClientEntries(mesg);
-  } else if (mesg.type === "render") {
-    handleRender(mesg);
-  } else if (mesg.type === "getCustomModules") {
-    handleGetCustomModules(mesg);
-  } else if (mesg.type === "build") {
-    handleBuild(mesg);
-  }
-});
-
-type PipeableStream = {
-  pipe<T extends Writable>(destination: T): T;
 };
 
 const vitePromise = createServer({
@@ -160,15 +111,37 @@ const vitePromise = createServer({
   appType: "custom",
 });
 
-const configPromise = resolveConfig("serve");
+const shutdown = async () => {
+  const vite = await vitePromise;
+  await vite.close();
+  parentPort!.close();
+};
 
 const loadServerFile = async (fname: string) => {
   const vite = await vitePromise;
   return vite.ssrLoadModule(fname);
 };
 
-const getEntriesFile = async (isBuild?: boolean) => {
-  const config = await configPromise;
+parentPort!.on("message", (mesg: MessageReq) => {
+  if (mesg.type === "shutdown") {
+    shutdown();
+  } else if (mesg.type === "setClientEntries") {
+    handleSetClientEntries(mesg);
+  } else if (mesg.type === "render") {
+    handleRender(mesg);
+  } else if (mesg.type === "getCustomModules") {
+    handleGetCustomModules(mesg);
+  } else if (mesg.type === "build") {
+    handleBuild(mesg);
+  }
+});
+
+const configPromise = resolveConfig("serve");
+
+const getEntriesFile = async (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  isBuild: boolean
+) => {
   if (isBuild) {
     return path.join(
       config.root,
@@ -179,8 +152,12 @@ const getEntriesFile = async (isBuild?: boolean) => {
   return path.join(config.root, config.framework.entriesJs);
 };
 
-const getFunctionComponent = async (rscId: string, isBuild: boolean) => {
-  const entriesFile = await getEntriesFile(isBuild);
+const getFunctionComponent = async (
+  rscId: string,
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  isBuild: boolean
+) => {
+  const entriesFile = await getEntriesFile(config, isBuild);
   const {
     default: { getEntry },
   } = await (loadServerFile(entriesFile) as Promise<Entries>);
@@ -197,7 +174,7 @@ const getFunctionComponent = async (rscId: string, isBuild: boolean) => {
 let absoluteClientEntries: Record<string, string> = {};
 
 const resolveClientEntry = (
-  config: Awaited<typeof configPromise>,
+  config: Awaited<ReturnType<typeof resolveConfig>>,
   filePath: string
 ) => {
   const clientEntry = absoluteClientEntries[filePath];
@@ -218,7 +195,7 @@ async function setClientEntries(
     return;
   }
   const config = await configPromise;
-  const entriesFile = await getEntriesFile();
+  const entriesFile = await getEntriesFile(config, false);
   const { clientEntries } = await loadServerFile(entriesFile);
   if (!clientEntries) {
     throw new Error("Failed to load clientEntries");
@@ -256,7 +233,7 @@ async function renderRSC(input: RenderInput): Promise<PipeableStream> {
     // continue for mutation mode
   }
   if (input.rscId && input.props) {
-    const component = await getFunctionComponent(input.rscId, false);
+    const component = await getFunctionComponent(input.rscId, config, false);
     return renderToPipeableStream(
       createElement(component, input.props),
       bundlerConfig
@@ -266,7 +243,8 @@ async function renderRSC(input: RenderInput): Promise<PipeableStream> {
 }
 
 async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
-  const entriesFile = await getEntriesFile();
+  const config = await configPromise;
+  const entriesFile = await getEntriesFile(config, false);
   const {
     default: { unstable_getCustomModules: getCustomModules },
   } = await (loadServerFile(entriesFile) as Promise<{
@@ -285,7 +263,7 @@ async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
 async function buildRSC(): Promise<void> {
   const config = await resolveConfig("build");
   const basePath = config.base + config.framework.rscPrefix;
-  const distEntriesFile = await getEntriesFile(true);
+  const distEntriesFile = await getEntriesFile(config, true);
   const {
     default: { getBuilder },
   } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
@@ -339,7 +317,7 @@ async function buildRSC(): Promise<void> {
             },
           }
         );
-        const component = await getFunctionComponent(rscId, true);
+        const component = await getFunctionComponent(rscId, config, true);
         const pipeable = renderToPipeableStream(
           createElement(component, props as any),
           bundlerConfig

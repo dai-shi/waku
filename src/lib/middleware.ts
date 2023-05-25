@@ -83,7 +83,6 @@ export function rsc(options: {
   };
 }
 
-// TODO this should be refactored
 export function devServer(): Middleware {
   const vitePromise = viteCreateServer({
     ...configFileConfig,
