@@ -262,7 +262,7 @@ async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
 // FIXME this may take too much responsibility
 async function buildRSC(): Promise<void> {
   const config = await resolveConfig("build");
-  const basePath = config.base + config.framework.rscPrefix;
+  const basePrefix = config.base + config.framework.rscPrefix;
   const distEntriesFile = await getEntriesFile(config, true);
   const {
     default: { getBuilder },
@@ -302,8 +302,7 @@ async function buildRSC(): Promise<void> {
           config.root,
           config.build.outDir,
           config.framework.outPublic,
-          config.framework.rscPrefix,
-          decodeURIComponent(rscId),
+          config.framework.rscPrefix + decodeURIComponent(rscId),
           decodeURIComponent(`${searchParams}`)
         );
         fs.mkdirSync(path.dirname(destFile), { recursive: true });
@@ -359,7 +358,7 @@ async function buildRSC(): Promise<void> {
       }
       const code =
         generatePrefetchCode(
-          basePath,
+          basePrefix,
           Array.from(elements || []).flatMap(([rscId, props, skipPrefetch]) => {
             if (skipPrefetch) {
               return [];
