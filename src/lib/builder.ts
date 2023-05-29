@@ -33,7 +33,7 @@ const createVercelConfigJson = (
   );
   const overrides = Object.fromEntries([
     ...clientFiles.map((file) => [
-      path.relative(srcDir, file),
+      path.relative(srcDir, file).replace(/(^|\/)index.html$/, ''),
       { path: path.relative(dstDir, file) },
     ]),
     ...rscFiles.map((file) => [
@@ -41,7 +41,7 @@ const createVercelConfigJson = (
       { path: path.relative(dstDir, file), contentType: "text/plain" },
     ]),
     ...htmlFiles.map((file) => [
-      path.relative(srcDir, file),
+      path.relative(srcDir, file).replace(/(^|\/)index.html$/, ''),
       { path: path.relative(dstDir, file), contentType: "text/html" },
     ]),
   ]);
