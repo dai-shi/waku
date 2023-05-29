@@ -14,7 +14,7 @@ import {
 } from "./rsc-handler.js";
 import { rscIndexPlugin, rscAnalyzePlugin } from "./vite-plugin-rsc.js";
 
-const createVercelConfigJson = (
+const createVercelOutput = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   clientFiles: string[],
   rscFiles: string[],
@@ -31,22 +31,26 @@ const createVercelConfigJson = (
     ".vercel",
     "output"
   );
+  for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
+    const dstFile = path.join(dstDir, "static", path.relative(srcDir, file));
+    if (!fs.existsSync(dstFile)) {
+      fs.mkdirSync(path.dirname(dstFile), { recursive: true });
+      fs.symlinkSync(path.relative(path.dirname(dstFile), file), dstFile);
+    }
+  }
   const overrides = Object.fromEntries([
-    ...clientFiles.map((file) => [
-      path.relative(dstDir, file),
-      { path: path.relative(srcDir, file).replace(/(^|\/)index.html$/, "") },
-    ]),
-    ...rscFiles.map((file) => [
-      path.relative(dstDir, file),
-      { path: path.relative(srcDir, file), contentType: "text/plain" },
-    ]),
-    ...htmlFiles.map((file) => [
-      path.relative(dstDir, file),
-      {
-        path: path.relative(srcDir, file).replace(/(^|\/)index.html$/, ""),
-        contentType: "text/html",
-      },
-    ]),
+    ...rscFiles
+      .filter((file) => !path.extname(file))
+      .map((file) => [
+        path.relative(srcDir, file),
+        { contentType: "text/plain" },
+      ]),
+    ...htmlFiles
+      .filter((file) => !path.extname(file))
+      .map((file) => [
+        path.relative(srcDir, file),
+        { contentType: "text/html" },
+      ]),
   ]);
   const configJson = {
     version: 3,
@@ -231,7 +235,7 @@ export async function build() {
 
   // https://vercel.com/docs/build-output-api/v3
   // So far, only static sites are supported.
-  createVercelConfigJson(
+  createVercelOutput(
     config,
     clientBuildOutput.output.map(({ fileName }) =>
       path.join(
