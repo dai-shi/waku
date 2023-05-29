@@ -14,6 +14,48 @@ import {
 } from "./rsc-handler.js";
 import { rscIndexPlugin, rscAnalyzePlugin } from "./vite-plugin-rsc.js";
 
+const createVercelConfigJson = (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  clientFiles: string[],
+  rscFiles: string[],
+  htmlFiles: string[]
+) => {
+  const srcDir = path.join(
+    config.root,
+    config.build.outDir,
+    config.framework.outPublic
+  );
+  const dstDir = path.join(
+    config.root,
+    config.build.outDir,
+    ".vercel",
+    "output"
+  );
+  const overrides = Object.fromEntries([
+    ...clientFiles.map((file) => [
+      path.relative(srcDir, file),
+      { path: path.relative(dstDir, file) },
+    ]),
+    ...rscFiles.map((file) => [
+      path.relative(srcDir, file),
+      { path: path.relative(dstDir, file), contentType: "text/plain" },
+    ]),
+    ...htmlFiles.map((file) => [
+      path.relative(srcDir, file),
+      { path: path.relative(dstDir, file), contentType: "text/html" },
+    ]),
+  ]);
+  const configJson = {
+    version: 3,
+    overrides,
+  };
+  fs.mkdirSync(dstDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dstDir, "config.json"),
+    JSON.stringify(configJson, null, 2)
+  );
+};
+
 export async function build() {
   const config = await resolveConfig("build");
   const indexHtmlFile = path.join(config.root, config.framework.indexHtml);
@@ -166,7 +208,7 @@ export async function build() {
   );
   await setClientEntries(absoluteClientEntries);
 
-  await buildRSC();
+  const buildOutput = await buildRSC();
 
   const origPackageJson = require(path.join(config.root, "package.json"));
   const packageJson = {
@@ -182,6 +224,22 @@ export async function build() {
   fs.writeFileSync(
     path.join(config.root, config.build.outDir, "package.json"),
     JSON.stringify(packageJson, null, 2)
+  );
+
+  // https://vercel.com/docs/build-output-api/v3
+  // So far, only static sites are supported.
+  createVercelConfigJson(
+    config,
+    clientBuildOutput.output.map(({ fileName }) =>
+      path.join(
+        config.root,
+        config.build.outDir,
+        config.framework.outPublic,
+        fileName
+      )
+    ),
+    buildOutput.rscFiles,
+    buildOutput.htmlFiles
   );
 
   await shutdown();

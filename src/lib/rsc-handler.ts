@@ -13,8 +13,13 @@ export type RenderInput<Props extends {} = {}> = {
   args?: unknown[] | undefined;
 };
 
-type CustomModules = {
+export type CustomModules = {
   [name: string]: string;
+};
+
+export type BuildOutput = {
+  rscFiles: string[];
+  htmlFiles: string[];
 };
 
 export type MessageReq =
@@ -43,7 +48,8 @@ export type MessageRes =
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "end" }
   | { id: number; type: "err"; err: unknown }
-  | { id: number; type: "customModules"; modules: CustomModules };
+  | { id: number; type: "customModules"; modules: CustomModules }
+  | { id: number; type: "buildOutput"; output: BuildOutput };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
@@ -114,7 +120,7 @@ export function renderRSC(input: RenderInput): Readable {
 }
 
 export function getCustomModulesRSC(): Promise<CustomModules> {
-  return new Promise<CustomModules>((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const id = nextId++;
     messageCallbacks.set(id, (mesg) => {
       if (mesg.type === "customModules") {
@@ -130,12 +136,12 @@ export function getCustomModulesRSC(): Promise<CustomModules> {
   });
 }
 
-export function buildRSC(): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
+export function buildRSC(): Promise<BuildOutput> {
+  return new Promise((resolve, reject) => {
     const id = nextId++;
     messageCallbacks.set(id, (mesg) => {
-      if (mesg.type === "end") {
-        resolve();
+      if (mesg.type === "buildOutput") {
+        resolve(mesg.output);
         messageCallbacks.delete(id);
       } else if (mesg.type === "err") {
         reject(mesg.err);
