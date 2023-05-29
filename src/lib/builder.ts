@@ -28,8 +28,8 @@ const createVercelOutput = (
   const dstDir = path.join(
     config.root,
     config.build.outDir,
-    // ".vercel",
-    // "output"
+    ".vercel",
+    "output"
   );
   for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
     const dstFile = path.join(dstDir, "static", path.relative(srcDir, file));
