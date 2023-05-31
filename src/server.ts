@@ -5,8 +5,7 @@ export type GetEntry = (
 ) => Promise<FunctionComponent | { default: FunctionComponent } | null>;
 
 export type GetBuilder = (
-  // FIXME can we somehow avoid leaking internal implementation?
-  unstable_decodeId: (encodedId: string) => [id: string, name: string]
+  unstable_resolveClientEntry: (filePath: string) => string
 ) => Promise<{
   [pathStr: string]: {
     elements?: Iterable<

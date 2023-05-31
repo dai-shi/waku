@@ -40,17 +40,21 @@ const CLIENT_REFERENCE = Symbol.for("react.client.reference");
 
 const resolveFileName = (fname: string) => {
   for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
-    const resolvedName = fname.slice(0, -3) + ext;
+    const resolvedName =
+      fname.slice(0, fname.length - path.extname(fname).length) + ext;
     if (fs.existsSync(resolvedName)) {
       return resolvedName;
     }
   }
-  throw new Error(`Cannot resolve file ${fname}`);
+  return "";
 };
 
 // XXX Can we avoid doing this here?
 const findDependentModules = (fname: string) => {
   fname = resolveFileName(fname);
+  if (!fname) {
+    throw new Error(`Cannot resolve file ${fname}`);
+  }
   const ext = path.extname(fname);
   const mod = swc.parseFileSync(fname, {
     syntax: ext === ".ts" || ext === ".tsx" ? "typescript" : "ecmascript",
@@ -100,6 +104,68 @@ const findClientModules = async (base: string, id: string) => {
   ).flat();
 };
 
+const isClientEntry = (fname: string) => {
+  fname = resolveFileName(fname);
+  const ext = path.extname(fname);
+  if ([".ts", ".tsx", ".js", ".jsx"].includes(ext)) {
+    const mod = swc.parseFileSync(fname, {
+      syntax: ext === ".ts" || ext === ".tsx" ? "typescript" : "ecmascript",
+      tsx: ext === ".tsx",
+    });
+    for (const item of mod.body) {
+      if (
+        item.type === "ExpressionStatement" &&
+        item.expression.type === "StringLiteral" &&
+        item.expression.value === "use client"
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+const collectClientFiles = (fnames: string[]) => {
+  const fileSet = new Set<string>();
+  for (let fname of fnames) {
+    fname = resolveFileName(fname);
+    if (!fname) {
+      continue;
+    }
+    const ext = path.extname(fname);
+    const mod = swc.parseFileSync(fname, {
+      syntax: ext === ".ts" || ext === ".tsx" ? "typescript" : "ecmascript",
+      tsx: ext === ".tsx",
+    });
+    for (const item of mod.body) {
+      if (
+        item.type === "ImportDeclaration" &&
+        item.source.type === "StringLiteral"
+      ) {
+        const name = item.source.value;
+        if (name.startsWith(".")) {
+          const file = path.join(path.dirname(fname), name);
+          if (isClientEntry(file)) {
+            fileSet.add(file);
+          }
+        }
+      }
+    }
+  }
+  return Array.from(fileSet);
+};
+
+const getRscIds = (pathStr: string) => {
+  const url = new URL(pathStr, "http://localhost");
+  const pathItems = url.pathname.split("/").filter(Boolean);
+  const rscIdSet = new Set<string>();
+  for (let index = 0; index <= pathItems.length; ++index) {
+    const rscId = pathItems.slice(0, index).join("/") || "index";
+    rscIdSet.add(rscId);
+  }
+  return Array.from(rscIdSet);
+};
+
 export function fileRouter(baseDir: string, routesPath: string) {
   const base = path.join(baseDir, routesPath);
   const getEntry: GetEntry = async (id) => {
@@ -147,9 +213,7 @@ export function fileRouter(baseDir: string, routesPath: string) {
     return { elements, clientModules };
   };
 
-  const getBuilder: GetBuilder = async (
-    decodeId: (encodedId: string) => [id: string, name: string]
-  ) => {
+  const getBuilder: GetBuilder = async (unstable_resolveClientEntry) => {
     const paths = getAllPaths(base).map((item) =>
       item === "index" ? "/" : `/${item}`
     );
@@ -157,14 +221,12 @@ export function fileRouter(baseDir: string, routesPath: string) {
     const customCode = `
 globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
   const path = search ? pathname + "?" + search : pathname;
-  const path2ids = {${paths.map((pathItem, index) => {
-    const moduleIds: string[] = [];
-    for (const m of prefetcherForPaths[index]?.clientModules || []) {
-      const [id] = decodeId(m["$$id"]);
-      moduleIds.push(id);
-    }
+  const path2ids = {${paths.map((pathStr) => {
+    const moduleIds = collectClientFiles(
+      getRscIds(pathStr).map((id) => `${base}/${id}.js`)
+    ).map(unstable_resolveClientEntry);
     return `
-    ${JSON.stringify(pathItem)}: ${JSON.stringify(moduleIds)}`;
+    ${JSON.stringify(pathStr)}: ${JSON.stringify(moduleIds)}`;
   })}
   };
   for (const id of path2ids[path]) {

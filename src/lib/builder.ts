@@ -9,6 +9,17 @@ import { configFileConfig, resolveConfig } from "./config.js";
 import { shutdown, setClientEntries, buildRSC } from "./rsc-handler.js";
 import { rscIndexPlugin, rscAnalyzePlugin } from "./vite-plugin-rsc.js";
 
+const resolveFileName = (fname: string) => {
+  for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
+    const resolvedName =
+      fname.slice(0, fname.length - path.extname(fname).length) + ext;
+    if (fs.existsSync(resolvedName)) {
+      return resolvedName;
+    }
+  }
+  return "";
+};
+
 export async function build() {
   const config = await resolveConfig("build");
   const indexHtmlFile = path.join(config.root, config.framework.indexHtml);
@@ -19,13 +30,7 @@ export async function build() {
   );
   let entriesFile = path.join(config.root, config.framework.entriesJs);
   if (entriesFile.endsWith(".js")) {
-    for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
-      const tmp = entriesFile.slice(0, -3) + ext;
-      if (fs.existsSync(tmp)) {
-        entriesFile = tmp;
-        break;
-      }
-    }
+    entriesFile = resolveFileName(entriesFile) || entriesFile;
   }
   const require = createRequire(import.meta.url);
 

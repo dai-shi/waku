@@ -225,7 +225,6 @@ async function renderRSC(input: RenderInput): Promise<PipeableStream> {
   throw new Error("Unexpected input");
 }
 
-
 // FIXME this may take too much responsibility
 async function buildRSC(): Promise<void> {
   const config = await resolveConfig("build");
@@ -241,14 +240,9 @@ async function buildRSC(): Promise<void> {
     return;
   }
 
-  // FIXME this doesn't seem an ideal solution
-  const decodeId = (encodedId: string): [id: string, name: string] => {
-    const [filePath, name] = encodedId.split("#") as [string, string];
-    const id = resolveClientEntry(config, filePath);
-    return [id, name];
-  };
-
-  const pathMap = await getBuilder(decodeId);
+  const pathMap = await getBuilder((filePath: string) =>
+    resolveClientEntry(config, filePath)
+  );
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (pathStr: string, id: string) => {
     let idSet = clientModuleMap.get(pathStr);
@@ -277,7 +271,8 @@ async function buildRSC(): Promise<void> {
           {},
           {
             get(_target, encodedId: string) {
-              const [id, name] = decodeId(encodedId);
+              const [filePath, name] = encodedId.split("#") as [string, string];
+              const id = resolveClientEntry(config, filePath);
               addClientModule(pathStr, id);
               return { id, chunks: [id], name, async: true };
             },
