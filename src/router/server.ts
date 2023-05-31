@@ -8,17 +8,6 @@ import type { GetEntry, GetBuilder } from "../server.js";
 import type { RouteProps, LinkProps } from "./common.js";
 import { Child as ClientChild, Link as ClientLink } from "./client.js";
 
-const getAllFiles = (base: string, parent = ""): string[] =>
-  fs
-    .readdirSync(path.join(base, parent), { withFileTypes: true })
-    .flatMap((dirent) => {
-      if (dirent.isDirectory()) {
-        return getAllFiles(base, path.join(parent, dirent.name));
-      }
-      const fname = path.join(parent, dirent.name);
-      return [fname];
-    });
-
 const getAllPaths = (base: string, parent = ""): string[] =>
   fs
     .readdirSync(path.join(base, parent), { withFileTypes: true })
@@ -68,9 +57,13 @@ const isClientEntry = (fname: string) => {
   return false;
 };
 
-const collectClientFiles = (fnames: string[]) => {
+const collectClientFiles = (base: string, pathStr: string) => {
+  const url = new URL(pathStr, "http://localhost");
+  const pathItems = url.pathname.split("/").filter(Boolean);
   const fileSet = new Set<string>();
-  for (let fname of fnames) {
+  for (let index = 0; index <= pathItems.length; ++index) {
+    const rscId = pathItems.slice(0, index).join("/") || "index";
+    let fname = `${base}/${rscId}.js`;
     fname = resolveFileName(fname);
     if (!fname) {
       continue;
@@ -98,19 +91,25 @@ const collectClientFiles = (fnames: string[]) => {
   return Array.from(fileSet);
 };
 
-const getRscIds = (pathStr: string) => {
+// We have to make prefetcher consistent with client behavior
+const prefetcher = (pathStr: string) => {
   const url = new URL(pathStr, "http://localhost");
   const pathItems = url.pathname.split("/").filter(Boolean);
-  const rscIdSet = new Set<string>();
+  const search = url.search;
+  const elementSet = new Set<readonly [id: string, props: RouteProps]>();
   for (let index = 0; index <= pathItems.length; ++index) {
     const rscId = pathItems.slice(0, index).join("/") || "index";
-    rscIdSet.add(rscId);
+    elementSet.add([
+      rscId,
+      index < pathItems.length ? { childIndex: index + 1 } : { search },
+    ]);
   }
-  return Array.from(rscIdSet);
+  return Array.from(elementSet);
 };
 
 export function fileRouter(baseDir: string, routesPath: string) {
   const base = path.join(baseDir, routesPath);
+
   const getEntry: GetEntry = async (id) => {
     // This can be too unsecure? FIXME
     const component = (await import(/* @vite-ignore */ `${base}/${id}.js`))
@@ -133,33 +132,16 @@ export function fileRouter(baseDir: string, routesPath: string) {
     return RouteComponent;
   };
 
-  // We have to make prefetcher consistent with client behavior
-  const prefetcher = async (pathStr: string) => {
-    const url = new URL(pathStr, "http://localhost");
-    const elements: (readonly [id: string, props: RouteProps])[] = [];
-    const pathItems = url.pathname.split("/").filter(Boolean);
-    const search = url.search;
-    for (let index = 0; index <= pathItems.length; ++index) {
-      const rscId = pathItems.slice(0, index).join("/") || "index";
-      elements.push([
-        rscId,
-        index < pathItems.length ? { childIndex: index + 1 } : { search },
-      ]);
-    }
-    return { elements };
-  };
-
   const getBuilder: GetBuilder = async (unstable_resolveClientEntry) => {
     const paths = getAllPaths(base).map((item) =>
       item === "index" ? "/" : `/${item}`
     );
-    const prefetcherForPaths = await Promise.all(paths.map(prefetcher));
     const customCode = `
 globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   const path2ids = {${paths.map((pathStr) => {
-    const moduleIds = collectClientFiles(
-      getRscIds(pathStr).map((id) => `${base}/${id}.js`)
-    ).map(unstable_resolveClientEntry);
+    const moduleIds = collectClientFiles(base, pathStr).map(
+      unstable_resolveClientEntry
+    );
     return `
     ${JSON.stringify(pathStr)}: ${JSON.stringify(moduleIds)}`;
   })}
@@ -169,15 +151,10 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   }
 };`;
     return Object.fromEntries(
-      paths.map((pathStr, index) => {
-        return [
-          pathStr,
-          {
-            elements: prefetcherForPaths[index]?.elements || [],
-            customCode,
-          },
-        ];
-      })
+      paths.map((pathStr) => [
+        pathStr,
+        { elements: prefetcher(pathStr), customCode },
+      ])
     );
   };
 
