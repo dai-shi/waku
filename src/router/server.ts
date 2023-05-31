@@ -36,8 +36,6 @@ const getAllPaths = (base: string, parent = ""): string[] =>
       return [fname];
     });
 
-const CLIENT_REFERENCE = Symbol.for("react.client.reference");
-
 const resolveFileName = (fname: string) => {
   for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
     const resolvedName =
@@ -47,61 +45,6 @@ const resolveFileName = (fname: string) => {
     }
   }
   return "";
-};
-
-// XXX Can we avoid doing this here?
-const findDependentModules = (fname: string) => {
-  fname = resolveFileName(fname);
-  if (!fname) {
-    throw new Error(`Cannot resolve file ${fname}`);
-  }
-  const ext = path.extname(fname);
-  const mod = swc.parseFileSync(fname, {
-    syntax: ext === ".ts" || ext === ".tsx" ? "typescript" : "ecmascript",
-    tsx: ext === ".tsx",
-  });
-  const modules: (readonly [fname: string, exportNames: string[]])[] = [];
-  for (const item of mod.body) {
-    if (
-      item.type === "ImportDeclaration" &&
-      item.source.type === "StringLiteral"
-    ) {
-      const name = item.source.value;
-      if (name.startsWith(".")) {
-        modules.push([
-          path.join(path.dirname(fname), name),
-          item.specifiers.map((specifier) => {
-            if (specifier.type === "ImportSpecifier") {
-              return specifier.local.value;
-            }
-            if (specifier.type === "ImportDefaultSpecifier") {
-              return "default";
-            }
-            throw new Error(`Unknown specifier type: ${specifier.type}`);
-          }),
-        ]);
-      }
-    }
-  }
-  return modules;
-};
-
-const findClientModules = async (base: string, id: string) => {
-  const fname = `${base}/${id}.js`;
-  const modules = findDependentModules(fname);
-  return (
-    await Promise.all(
-      modules.map(async ([fname, exportNames]) => {
-        const m = await import(/* @vite-ignore */ fname);
-        return exportNames.flatMap((name) => {
-          if (m[name]?.["$$typeof"] === CLIENT_REFERENCE) {
-            return [m[name]];
-          }
-          return [];
-        });
-      })
-    )
-  ).flat();
 };
 
 const isClientEntry = (fname: string) => {
@@ -203,14 +146,7 @@ export function fileRouter(baseDir: string, routesPath: string) {
         index < pathItems.length ? { childIndex: index + 1 } : { search },
       ]);
     }
-    const clientModules = new Set(
-      (
-        await Promise.all(
-          elements.map(([rscId]) => findClientModules(base, rscId))
-        )
-      ).flat()
-    );
-    return { elements, clientModules };
+    return { elements };
   };
 
   const getBuilder: GetBuilder = async (unstable_resolveClientEntry) => {
@@ -219,8 +155,7 @@ export function fileRouter(baseDir: string, routesPath: string) {
     );
     const prefetcherForPaths = await Promise.all(paths.map(prefetcher));
     const customCode = `
-globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
-  const path = search ? pathname + "?" + search : pathname;
+globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   const path2ids = {${paths.map((pathStr) => {
     const moduleIds = collectClientFiles(
       getRscIds(pathStr).map((id) => `${base}/${id}.js`)
