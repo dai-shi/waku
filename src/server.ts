@@ -16,12 +16,6 @@ export type GetBuilder = (
   };
 }>;
 
-// This is for ignored dynamic imports
-// XXX Are there any better ways?
-export type unstable_GetCustomModules = () => Promise<{
-  [name: string]: string;
-}>;
-
 export function defineEntries(getEntry: GetEntry, getBuilder?: GetBuilder) {
   return { getEntry, getBuilder };
 }

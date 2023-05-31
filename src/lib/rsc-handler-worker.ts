@@ -11,7 +11,6 @@ import { configFileConfig, resolveConfig } from "./config.js";
 import { transformRsfId, generatePrefetchCode } from "./rsc-utils.js";
 import type { RenderInput, MessageReq, MessageRes } from "./rsc-handler.js";
 import { defineEntries } from "../server.js";
-import type { unstable_GetCustomModules } from "../server.js";
 import { rscTransformPlugin, rscReloadPlugin } from "./vite-plugin-rsc.js";
 
 const { renderToPipeableStream } = RSDWServer;
@@ -60,20 +59,6 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
       },
     });
     pipeable.pipe(writable);
-  } catch (err) {
-    const mesg: MessageRes = { id, type: "err", err };
-    parentPort!.postMessage(mesg);
-  }
-};
-
-const handleGetCustomModules = async (
-  mesg: MessageReq & { type: "getCustomModules" }
-) => {
-  const { id } = mesg;
-  try {
-    const modules = await getCustomModulesRSC();
-    const mesg: MessageRes = { id, type: "customModules", modules };
-    parentPort!.postMessage(mesg);
   } catch (err) {
     const mesg: MessageRes = { id, type: "err", err };
     parentPort!.postMessage(mesg);
@@ -129,8 +114,6 @@ parentPort!.on("message", (mesg: MessageReq) => {
     handleSetClientEntries(mesg);
   } else if (mesg.type === "render") {
     handleRender(mesg);
-  } else if (mesg.type === "getCustomModules") {
-    handleGetCustomModules(mesg);
   } else if (mesg.type === "build") {
     handleBuild(mesg);
   }
@@ -242,22 +225,6 @@ async function renderRSC(input: RenderInput): Promise<PipeableStream> {
   throw new Error("Unexpected input");
 }
 
-async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
-  const config = await configPromise;
-  const entriesFile = await getEntriesFile(config, false);
-  const {
-    default: { unstable_getCustomModules: getCustomModules },
-  } = await (loadServerFile(entriesFile) as Promise<{
-    default: Entries["default"] & {
-      unstable_getCustomModules?: unstable_GetCustomModules;
-    };
-  }>);
-  if (!getCustomModules) {
-    return {};
-  }
-  const modules = await getCustomModules();
-  return modules;
-}
 
 // FIXME this may take too much responsibility
 async function buildRSC(): Promise<void> {

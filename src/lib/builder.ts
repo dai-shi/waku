@@ -6,12 +6,7 @@ import { build as viteBuild } from "vite";
 import react from "@vitejs/plugin-react";
 
 import { configFileConfig, resolveConfig } from "./config.js";
-import {
-  shutdown,
-  setClientEntries,
-  getCustomModulesRSC,
-  buildRSC,
-} from "./rsc-handler.js";
+import { shutdown, setClientEntries, buildRSC } from "./rsc-handler.js";
 import { rscIndexPlugin, rscAnalyzePlugin } from "./vite-plugin-rsc.js";
 
 export async function build() {
@@ -34,7 +29,6 @@ export async function build() {
   }
   const require = createRequire(import.meta.url);
 
-  const customModules = await getCustomModulesRSC();
   const clientEntryFileSet = new Set<string>();
   const serverEntryFileSet = new Set<string>();
   await viteBuild({
@@ -58,7 +52,6 @@ export async function build() {
       rollupOptions: {
         input: {
           entries: entriesFile,
-          ...customModules,
         },
       },
     },
@@ -88,7 +81,6 @@ export async function build() {
           entries: entriesFile,
           ...clientEntryFiles,
           ...serverEntryFiles,
-          ...customModules,
         },
         output: {
           banner: (chunk) => {
@@ -103,10 +95,13 @@ export async function build() {
             return code;
           },
           entryFileNames: (chunkInfo) => {
-            if (chunkInfo.name === "entries" || customModules[chunkInfo.name]) {
-              return "[name].js";
+            if (
+              clientEntryFiles[chunkInfo.name] ||
+              serverEntryFiles[chunkInfo.name]
+            ) {
+              return "assets/[name].js";
             }
-            return "assets/[name].js";
+            return "[name].js";
           },
         },
       },

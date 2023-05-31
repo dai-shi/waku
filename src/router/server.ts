@@ -3,11 +3,7 @@ import fs from "node:fs";
 import { createElement } from "react";
 import * as swc from "@swc/core";
 
-import type {
-  GetEntry,
-  GetBuilder,
-  unstable_GetCustomModules,
-} from "../server.js";
+import type { GetEntry, GetBuilder } from "../server.js";
 
 import type { RouteProps, LinkProps } from "./common.js";
 import { Child as ClientChild, Link as ClientLink } from "./client.js";
@@ -188,16 +184,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
     );
   };
 
-  const unstable_getCustomModules: unstable_GetCustomModules = async () => {
-    return Object.fromEntries(
-      getAllFiles(base).map((file) => [
-        `${routesPath}/${file.replace(/\.\w+$/, "")}`,
-        `${base}/${file}`,
-      ])
-    );
-  };
-
-  return { getEntry, getBuilder, unstable_getCustomModules };
+  return { getEntry, getBuilder };
 }
 
 export function Link(props: LinkProps) {
