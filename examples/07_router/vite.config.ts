@@ -1,7 +1,8 @@
 import url from "node:url";
 import path from "node:path";
-import { defineConfig } from "waku/config";
+
 import { glob } from "glob";
+import { defineConfig } from "waku/config";
 
 const root = path.dirname(url.fileURLToPath(import.meta.url));
 const customModules = Object.fromEntries(

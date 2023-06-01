@@ -28,6 +28,7 @@ export function rscTransformPlugin(): Plugin {
         return id;
       }
       // FIXME This isn't necessary in production mode
+      // (But, waku/router may depend on this.)
       for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
         const resolved = await this.resolve(
           id.slice(0, id.length - path.extname(id).length) + ext,

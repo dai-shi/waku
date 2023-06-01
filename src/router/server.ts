@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
-import { createElement } from "react";
+import { createElement, Fragment } from "react";
+import type { FunctionComponent } from "react";
 import * as swc from "@swc/core";
 
 import type { GetEntry, GetBuilder } from "../server.js";
@@ -57,14 +58,17 @@ const isClientEntry = (fname: string) => {
   return false;
 };
 
-const collectClientFiles = (base: string, pathStr: string) => {
+const collectClientFiles = async (
+  pathStr: string,
+  getComponentFile: (rscId: string) => Promise<string>
+) => {
   const url = new URL(pathStr, "http://localhost");
   const pathItems = url.pathname.split("/").filter(Boolean);
   const fileSet = new Set<string>();
   for (let index = 0; index <= pathItems.length; ++index) {
     const rscId = pathItems.slice(0, index).join("/") || "index";
-    let fname = `${base}/${rscId}.js`;
-    fname = resolveFileName(fname);
+    let fname = await getComponentFile(rscId);
+    fname = fname && resolveFileName(fname);
     if (!fname) {
       continue;
     }
@@ -79,6 +83,7 @@ const collectClientFiles = (base: string, pathStr: string) => {
         item.source.type === "StringLiteral"
       ) {
         const name = item.source.value;
+        // FIXME it doesn't look into node_modules
         if (name.startsWith(".")) {
           const file = path.join(path.dirname(fname), name);
           if (isClientEntry(file)) {
@@ -138,13 +143,78 @@ export function fileRouter(baseDir: string, routesPath: string) {
     );
     const customCode = `
 globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
-  const path2ids = {${paths.map((pathStr) => {
-    const moduleIds = collectClientFiles(base, pathStr).map(
-      unstable_resolveClientEntry
-    );
-    return `
+  const path2ids = {${await Promise.all(
+    paths.map(async (pathStr) => {
+      const moduleIds = (
+        await collectClientFiles(
+          pathStr,
+          async (rscId) => `${base}/${rscId}.js`
+        )
+      ).map(unstable_resolveClientEntry);
+      return `
     ${JSON.stringify(pathStr)}: ${JSON.stringify(moduleIds)}`;
-  })}
+    })
+  )}
+  };
+  for (const id of path2ids[path]) {
+    import(id);
+  }
+};`;
+    return Object.fromEntries(
+      paths.map((pathStr) => [
+        pathStr,
+        { elements: prefetcher(pathStr), customCode },
+      ])
+    );
+  };
+
+  return { getEntry, getBuilder };
+}
+
+export function defineRouter(
+  getComponent: (
+    id: string
+  ) => Promise<FunctionComponent | { default: FunctionComponent } | null>,
+  getComponentFile: (id: string) => Promise<string>,
+  getAllPaths: () => Promise<string[]>
+) {
+  const getEntry: GetEntry = async (id) => {
+    const mod = await getComponent(id);
+    const component =
+      typeof mod === "function" ? mod : mod?.default || Fragment;
+    const RouteComponent: FunctionComponent<any> = (props: RouteProps) => {
+      const componentProps: Record<string, string> = {};
+      if ("search" in props) {
+        for (const [key, value] of new URLSearchParams(props.search)) {
+          componentProps[key] = value;
+        }
+      }
+      return createElement(
+        component,
+        componentProps,
+        "childIndex" in props
+          ? createElement(ClientChild, { index: props.childIndex })
+          : null
+      );
+    };
+    return RouteComponent;
+  };
+
+  const getBuilder: GetBuilder = async (unstable_resolveClientEntry) => {
+    const paths = (await getAllPaths()).map((item) =>
+      item === "index" ? "/" : `/${item}`
+    );
+    const customCode = `
+globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
+  const path2ids = {${await Promise.all(
+    paths.map(async (pathStr) => {
+      const moduleIds = (
+        await collectClientFiles(pathStr, getComponentFile)
+      ).map(unstable_resolveClientEntry);
+      return `
+    ${JSON.stringify(pathStr)}: ${JSON.stringify(moduleIds)}`;
+    })
+  )}
   };
   for (const id of path2ids[path]) {
     import(id);
