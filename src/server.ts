@@ -8,7 +8,6 @@ export type GetEntry = (
 ) => Promise<FunctionComponent | { default: FunctionComponent } | null>;
 
 export type GetBuilder = (
-  unstable_resolveClientEntry: (filePath: string) => string,
   unstable_renderForBuild: <Props extends {}>(
     component: FunctionComponent<Props>,
     props: Props,
