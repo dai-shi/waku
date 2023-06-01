@@ -6,13 +6,19 @@ import { build as viteBuild } from "vite";
 import react from "@vitejs/plugin-react";
 
 import { configFileConfig, resolveConfig } from "./config.js";
-import {
-  shutdown,
-  setClientEntries,
-  getCustomModulesRSC,
-  buildRSC,
-} from "./rsc-handler.js";
+import { shutdown, setClientEntries, buildRSC } from "./rsc-handler.js";
 import { rscIndexPlugin, rscAnalyzePlugin } from "./vite-plugin-rsc.js";
+
+const resolveFileName = (fname: string) => {
+  for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
+    const resolvedName =
+      fname.slice(0, fname.length - path.extname(fname).length) + ext;
+    if (fs.existsSync(resolvedName)) {
+      return resolvedName;
+    }
+  }
+  return "";
+};
 
 export async function build() {
   const config = await resolveConfig("build");
@@ -24,17 +30,10 @@ export async function build() {
   );
   let entriesFile = path.join(config.root, config.framework.entriesJs);
   if (entriesFile.endsWith(".js")) {
-    for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
-      const tmp = entriesFile.slice(0, -3) + ext;
-      if (fs.existsSync(tmp)) {
-        entriesFile = tmp;
-        break;
-      }
-    }
+    entriesFile = resolveFileName(entriesFile) || entriesFile;
   }
   const require = createRequire(import.meta.url);
 
-  const customModules = await getCustomModulesRSC();
   const clientEntryFileSet = new Set<string>();
   const serverEntryFileSet = new Set<string>();
   await viteBuild({
@@ -58,7 +57,6 @@ export async function build() {
       rollupOptions: {
         input: {
           entries: entriesFile,
-          ...customModules,
         },
       },
     },
@@ -88,7 +86,6 @@ export async function build() {
           entries: entriesFile,
           ...clientEntryFiles,
           ...serverEntryFiles,
-          ...customModules,
         },
         output: {
           banner: (chunk) => {
@@ -103,10 +100,13 @@ export async function build() {
             return code;
           },
           entryFileNames: (chunkInfo) => {
-            if (chunkInfo.name === "entries" || customModules[chunkInfo.name]) {
-              return "[name].js";
+            if (
+              clientEntryFiles[chunkInfo.name] ||
+              serverEntryFiles[chunkInfo.name]
+            ) {
+              return "assets/[name].js";
             }
-            return "assets/[name].js";
+            return "[name].js";
           },
         },
       },

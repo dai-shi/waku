@@ -13,10 +13,6 @@ export type RenderInput<Props extends {} = {}> = {
   args?: unknown[] | undefined;
 };
 
-type CustomModules = {
-  [name: string]: string;
-};
-
 export type MessageReq =
   | { type: "shutdown" }
   | {
@@ -24,26 +20,14 @@ export type MessageReq =
       type: "setClientEntries";
       value: "load" | Record<string, string>;
     }
-  | {
-      id: number;
-      type: "render";
-      input: RenderInput;
-    }
-  | {
-      id: number;
-      type: "getCustomModules";
-    }
-  | {
-      id: number;
-      type: "build";
-    };
+  | { id: number; type: "render"; input: RenderInput }
+  | { id: number; type: "build" };
 
 export type MessageRes =
   | { type: "full-reload" }
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "end" }
-  | { id: number; type: "err"; err: unknown }
-  | { id: number; type: "customModules"; modules: CustomModules };
+  | { id: number; type: "err"; err: unknown };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
@@ -111,23 +95,6 @@ export function renderRSC(input: RenderInput): Readable {
   const mesg: MessageReq = { id, type: "render", input };
   worker.postMessage(mesg);
   return passthrough;
-}
-
-export function getCustomModulesRSC(): Promise<CustomModules> {
-  return new Promise<CustomModules>((resolve, reject) => {
-    const id = nextId++;
-    messageCallbacks.set(id, (mesg) => {
-      if (mesg.type === "customModules") {
-        resolve(mesg.modules);
-        messageCallbacks.delete(id);
-      } else if (mesg.type === "err") {
-        reject(mesg.err);
-        messageCallbacks.delete(id);
-      }
-    });
-    const mesg: MessageReq = { id, type: "getCustomModules" };
-    worker.postMessage(mesg);
-  });
 }
 
 export function buildRSC(): Promise<void> {
