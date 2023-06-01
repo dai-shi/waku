@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.11.1] - 2023-06-01
 ### Changed
 - fix: rscPrefix config without trailing slash #50
 - feat: generalized router #55
