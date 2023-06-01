@@ -1,8 +1,12 @@
 import path from "node:path";
 import fs from "node:fs";
+import { PassThrough } from "node:stream";
+import type { Writable } from "node:stream";
 import { createElement, Fragment } from "react";
 import type { FunctionComponent } from "react";
 import * as swc from "@swc/core";
+
+type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
 import type { GetEntry, GetBuilder } from "../server.js";
 
@@ -96,6 +100,37 @@ const collectClientFiles = async (
   return Array.from(fileSet);
 };
 
+const collectClientModules = async (
+  pathStr: string,
+  getEntry: (rscId: string) => Promise<FunctionComponent>,
+  unstable_renderForBuild: <Props extends {}>(
+    component: FunctionComponent<Props>,
+    props: Props,
+    clientModuleCallback: (id: string) => void
+  ) => PipeableStream
+) => {
+  const url = new URL(pathStr, "http://localhost");
+  const pathItems = url.pathname.split("/").filter(Boolean);
+  const search = url.search;
+  const idSet = new Set<string>();
+  for (let index = 0; index <= pathItems.length; ++index) {
+    const rscId = pathItems.slice(0, index).join("/") || "index";
+    const props: RouteProps =
+      index < pathItems.length ? { childIndex: index + 1 } : { search };
+    const component = await getEntry(rscId);
+    const pipeable = unstable_renderForBuild(component, props, (id) =>
+      idSet.add(id)
+    );
+    await new Promise<void>((resolve, reject) => {
+      const stream = new PassThrough();
+      stream.on("finish", resolve);
+      stream.on("error", reject);
+      pipeable.pipe(stream);
+    });
+  }
+  return Array.from(idSet);
+};
+
 // We have to make prefetcher consistent with client behavior
 const prefetcher = (pathStr: string) => {
   const url = new URL(pathStr, "http://localhost");
@@ -104,10 +139,9 @@ const prefetcher = (pathStr: string) => {
   const elementSet = new Set<readonly [id: string, props: RouteProps]>();
   for (let index = 0; index <= pathItems.length; ++index) {
     const rscId = pathItems.slice(0, index).join("/") || "index";
-    elementSet.add([
-      rscId,
-      index < pathItems.length ? { childIndex: index + 1 } : { search },
-    ]);
+    const props: RouteProps =
+      index < pathItems.length ? { childIndex: index + 1 } : { search };
+    elementSet.add([rscId, props]);
   }
   return Array.from(elementSet);
 };
@@ -175,10 +209,9 @@ export function defineRouter(
   getComponent: (
     id: string
   ) => Promise<FunctionComponent | { default: FunctionComponent } | null>,
-  getComponentFile: (id: string) => Promise<string>,
   getAllPaths: () => Promise<string[]>
-) {
-  const getEntry: GetEntry = async (id) => {
+): { getEntry: GetEntry; getBuilder: GetBuilder } {
+  const getEntry = async (id: string) => {
     const mod = await getComponent(id);
     const component =
       typeof mod === "function" ? mod : mod?.default || Fragment;
@@ -200,7 +233,10 @@ export function defineRouter(
     return RouteComponent;
   };
 
-  const getBuilder: GetBuilder = async (unstable_resolveClientEntry) => {
+  const getBuilder: GetBuilder = async (
+    _unstable_resolveClientEntry,
+    unstable_renderForBuild
+  ) => {
     const paths = (await getAllPaths()).map((item) =>
       item === "index" ? "/" : `/${item}`
     );
@@ -208,9 +244,11 @@ export function defineRouter(
 globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   const path2ids = {${await Promise.all(
     paths.map(async (pathStr) => {
-      const moduleIds = (
-        await collectClientFiles(pathStr, getComponentFile)
-      ).map(unstable_resolveClientEntry);
+      const moduleIds = await collectClientModules(
+        pathStr,
+        getEntry,
+        unstable_renderForBuild
+      );
       return `
     ${JSON.stringify(pathStr)}: ${JSON.stringify(moduleIds)}`;
     })

@@ -5,6 +5,7 @@ import { Writable } from "node:stream";
 
 import { createServer } from "vite";
 import { createElement } from "react";
+import type { FunctionComponent } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 
 import { configFileConfig, resolveConfig } from "./config.js";
@@ -240,8 +241,32 @@ async function buildRSC(): Promise<void> {
     return;
   }
 
-  const pathMap = await getBuilder((filePath: string) =>
-    resolveClientEntry(config, filePath)
+  const renderForBuild = <Props extends {}>(
+    component: FunctionComponent<Props>,
+    props: Props,
+    clientModuleCallback: (id: string) => void
+  ): PipeableStream => {
+    const bundlerConfig = new Proxy(
+      {},
+      {
+        get(_target, encodedId: string) {
+          const [filePath, name] = encodedId.split("#") as [string, string];
+          const id = resolveClientEntry(config, filePath);
+          clientModuleCallback(id);
+          return { id, chunks: [id], name, async: true };
+        },
+      }
+    );
+    const pipeable = renderToPipeableStream(
+      createElement(component, props),
+      bundlerConfig
+    ).pipe(transformRsfId(path.join(config.root, config.build.outDir)));
+    return pipeable;
+  };
+
+  const pathMap = await getBuilder(
+    (filePath: string) => resolveClientEntry(config, filePath),
+    renderForBuild
   );
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (pathStr: string, id: string) => {
@@ -267,22 +292,10 @@ async function buildRSC(): Promise<void> {
           decodeURIComponent(`${searchParams}`)
         );
         fs.mkdirSync(path.dirname(destFile), { recursive: true });
-        const bundlerConfig = new Proxy(
-          {},
-          {
-            get(_target, encodedId: string) {
-              const [filePath, name] = encodedId.split("#") as [string, string];
-              const id = resolveClientEntry(config, filePath);
-              addClientModule(pathStr, id);
-              return { id, chunks: [id], name, async: true };
-            },
-          }
-        );
         const component = await getFunctionComponent(rscId, config, true);
-        const pipeable = renderToPipeableStream(
-          createElement(component, props as any),
-          bundlerConfig
-        ).pipe(transformRsfId(path.join(config.root, config.build.outDir)));
+        const pipeable = renderForBuild(component, props as any, (id) =>
+          addClientModule(pathStr, id)
+        );
         await new Promise<void>((resolve, reject) => {
           const stream = fs.createWriteStream(destFile);
           stream.on("finish", resolve);

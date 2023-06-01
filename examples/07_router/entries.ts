@@ -20,7 +20,6 @@ export default defineRouter(
         throw new Error("too deep route");
     }
   },
-  async (id) => path.join(routesDir, `${id}.js`),
   async () =>
     (await glob("**/*.js", { cwd: routesDir })).map((file) => {
       const name = file.slice(0, file.length - path.extname(file).length);
