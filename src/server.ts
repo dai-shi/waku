@@ -8,6 +8,7 @@ export type GetEntry = (
 ) => Promise<FunctionComponent | { default: FunctionComponent } | null>;
 
 export type GetBuilder = (
+  root: string,
   unstable_renderForBuild: <Props extends {}>(
     component: FunctionComponent<Props>,
     props: Props,

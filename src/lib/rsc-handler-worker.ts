@@ -264,7 +264,7 @@ async function buildRSC(): Promise<void> {
     return pipeable;
   };
 
-  const pathMap = await getBuilder(renderForBuild);
+  const pathMap = await getBuilder(config.root, renderForBuild);
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (pathStr: string, id: string) => {
     let idSet = clientModuleMap.get(pathStr);

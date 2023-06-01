@@ -63,7 +63,7 @@ export function defineRouter(
   getComponent: (
     id: string
   ) => Promise<FunctionComponent | { default: FunctionComponent } | null>,
-  getAllPaths: () => Promise<string[]>
+  getAllPaths: (root: string) => Promise<string[]>
 ): { getEntry: GetEntry; getBuilder: GetBuilder } {
   const getEntry = async (id: string) => {
     const mod = await getComponent(id);
@@ -87,8 +87,8 @@ export function defineRouter(
     return RouteComponent;
   };
 
-  const getBuilder: GetBuilder = async (unstable_renderForBuild) => {
-    const paths = (await getAllPaths()).map((item) =>
+  const getBuilder: GetBuilder = async (root, unstable_renderForBuild) => {
+    const paths = (await getAllPaths(root)).map((item) =>
       item === "index" ? "/" : `/${item}`
     );
     const path2moduleIds: Record<string, string[]> = {};
