@@ -9,9 +9,8 @@ export type GetEntry = (
 
 export type GetBuilder = (
   root: string,
-  unstable_renderForBuild: <Props extends {}>(
-    component: FunctionComponent<Props>,
-    props: Props,
+  unstable_renderForBuild: (
+    element: unknown,
     clientModuleCallback: (id: string) => void
   ) => PipeableStream
 ) => Promise<{

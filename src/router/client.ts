@@ -75,7 +75,7 @@ const prefetchRoutes = (pathname: string, search: string, basePath: string) => {
         `${basePath}${rscId}/${searchParams}`
       );
     }
-    (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(pathname);
+    (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(pathname, search);
   }
 };
 

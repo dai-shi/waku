@@ -5,7 +5,6 @@ import { Writable } from "node:stream";
 
 import { createServer } from "vite";
 import { createElement } from "react";
-import type { FunctionComponent } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 
 import { configFileConfig, resolveConfig } from "./config.js";
@@ -241,9 +240,8 @@ async function buildRSC(): Promise<void> {
     return;
   }
 
-  const renderForBuild = <Props extends {}>(
-    component: FunctionComponent<Props>,
-    props: Props,
+  const renderForBuild = (
+    element: unknown,
     clientModuleCallback: (id: string) => void
   ): PipeableStream => {
     const bundlerConfig = new Proxy(
@@ -257,10 +255,9 @@ async function buildRSC(): Promise<void> {
         },
       }
     );
-    const pipeable = renderToPipeableStream(
-      createElement(component, props),
-      bundlerConfig
-    ).pipe(transformRsfId(path.join(config.root, config.build.outDir)));
+    const pipeable = renderToPipeableStream(element, bundlerConfig).pipe(
+      transformRsfId(path.join(config.root, config.build.outDir))
+    );
     return pipeable;
   };
 
@@ -290,8 +287,9 @@ async function buildRSC(): Promise<void> {
         );
         fs.mkdirSync(path.dirname(destFile), { recursive: true });
         const component = await getFunctionComponent(rscId, config, true);
-        const pipeable = renderForBuild(component, props as any, (id) =>
-          addClientModule(pathStr, id)
+        const pipeable = renderForBuild(
+          createElement(component, props as any),
+          (id) => addClientModule(pathStr, id)
         );
         await new Promise<void>((resolve, reject) => {
           const stream = fs.createWriteStream(destFile);

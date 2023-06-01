@@ -33,10 +33,7 @@ export function rscTransformPlugin(): Plugin {
         const resolved = await this.resolve(
           id.slice(0, id.length - path.extname(id).length) + ext,
           importer,
-          {
-            ...options,
-            skipSelf: true,
-          }
+          { ...options, skipSelf: true }
         );
         if (resolved) {
           return resolved;

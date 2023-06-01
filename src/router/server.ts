@@ -12,9 +12,8 @@ import { Child as ClientChild, Link as ClientLink } from "./client.js";
 const collectClientModules = async (
   pathStr: string,
   getEntry: (rscId: string) => Promise<FunctionComponent>,
-  unstable_renderForBuild: <Props extends {}>(
-    component: FunctionComponent<Props>,
-    props: Props,
+  unstable_renderForBuild: (
+    element: unknown,
     clientModuleCallback: (id: string) => void
   ) => PipeableStream
 ) => {
@@ -27,8 +26,9 @@ const collectClientModules = async (
     const props: RouteProps =
       index < pathItems.length ? { childIndex: index + 1 } : { search };
     const component = await getEntry(rscId);
-    const pipeable = unstable_renderForBuild(component, props, (id) =>
-      idSet.add(id)
+    const pipeable = unstable_renderForBuild(
+      createElement(component, props as any),
+      (id) => idSet.add(id)
     );
     await new Promise<void>((resolve, reject) => {
       const stream = new Writable({
@@ -101,7 +101,8 @@ export function defineRouter(
       path2moduleIds[pathStr] = moduleIds;
     }
     const customCode = `
-globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
+globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
+  const path = search ? pathname + "?" + search : pathname;
   const path2ids = ${JSON.stringify(path2moduleIds)};
   for (const id of path2ids[path]) {
     import(id);
