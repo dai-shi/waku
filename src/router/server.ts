@@ -2,20 +2,14 @@ import { Writable } from "node:stream";
 import { createElement, Fragment } from "react";
 import type { FunctionComponent } from "react";
 
-type PipeableStream = { pipe<T extends Writable>(destination: T): T };
-
 import type { GetEntry, GetBuilder } from "../server.js";
-
 import type { RouteProps, LinkProps } from "./common.js";
 import { Child as ClientChild, Link as ClientLink } from "./client.js";
 
 const collectClientModules = async (
   pathStr: string,
   getEntry: (rscId: string) => Promise<FunctionComponent>,
-  unstable_renderForBuild: (
-    element: unknown,
-    clientModuleCallback: (id: string) => void
-  ) => PipeableStream
+  unstable_renderForBuild: Parameters<GetBuilder>[1]
 ) => {
   const url = new URL(pathStr, "http://localhost");
   const pathItems = url.pathname.split("/").filter(Boolean);

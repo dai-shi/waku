@@ -20,21 +20,14 @@ export type MessageReq =
       type: "setClientEntries";
       value: "load" | Record<string, string>;
     }
-  | {
-      id: number;
-      type: "render";
-      input: RenderInput;
-    }
-  | {
-      id: number;
-      type: "build";
-    };
+  | { id: number; type: "render"; input: RenderInput }
+  | { id: number; type: "build" };
 
 export type MessageRes =
   | { type: "full-reload" }
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "end" }
-  | { id: number; type: "err"; err: unknown }
+  | { id: number; type: "err"; err: unknown };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
