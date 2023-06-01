@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Changed
 - fix: rscPrefix config without trailing slash #50
+- feat: generalized router #55
 
 ## [0.11.0] - 2023-05-25
 ### Changed
