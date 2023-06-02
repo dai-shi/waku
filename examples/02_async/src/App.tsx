@@ -15,9 +15,9 @@ const App = ({ name = "Anonymous" }) => {
   );
 };
 
-const ServerMessage = (async () => {
+const ServerMessage = async () => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
   return <p>Hello from server!</p>;
-}) as any; // FIXME how can we type async component?
+}
 
 export default App;
