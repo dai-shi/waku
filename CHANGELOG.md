@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Changed
+- fix(examples): config extension in script #56
 
 ## [0.11.1] - 2023-06-01
 ### Changed
