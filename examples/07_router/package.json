@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "waku dev",
     "build": "waku build",
-    "start": "waku start --config vite.prd.config.js"
+    "start": "waku start --config vite.prd.config.ts"
   },
   "dependencies": {
     "express": "^4.18.2",
