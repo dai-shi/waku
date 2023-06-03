@@ -2,6 +2,10 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { createRequire } from 'node:module'
+const require = createRequire(
+  new URL('.', import.meta.url)
+)
 
 const cmd = process.argv[2];
 
@@ -27,6 +31,11 @@ switch (cmd) {
   case "start":
     runStart();
     break;
+  case "--version": {
+    const { version } = require('../package.json')
+    console.log(version)
+    break;
+  }
   default:
     throw Error("unknown cmd: " + cmd);
 }
