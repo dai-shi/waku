@@ -9,7 +9,12 @@ import RSDWServer from "react-server-dom-webpack/server";
 
 import { configFileConfig, resolveConfig } from "./config.js";
 import { transformRsfId, generatePrefetchCode } from "./rsc-utils.js";
-import type { RenderInput, MessageReq, MessageRes } from "./rsc-handler.js";
+import type {
+  RenderInput,
+  MessageReq,
+  MessageRes,
+  BuildOutput,
+} from "./rsc-handler.js";
 import { defineEntries } from "../server.js";
 import { rscTransformPlugin, rscReloadPlugin } from "./vite-plugin-rsc.js";
 
@@ -68,8 +73,8 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
 const handleBuild = async (mesg: MessageReq & { type: "build" }) => {
   const { id } = mesg;
   try {
-    await buildRSC();
-    const mesg: MessageRes = { id, type: "end" };
+    const output = await buildRSC();
+    const mesg: MessageRes = { id, type: "buildOutput", output };
     parentPort!.postMessage(mesg);
   } catch (err) {
     const mesg: MessageRes = { id, type: "err", err };
@@ -226,7 +231,7 @@ async function renderRSC(input: RenderInput): Promise<PipeableStream> {
 }
 
 // FIXME this may take too much responsibility
-async function buildRSC(): Promise<void> {
+async function buildRSC(): Promise<BuildOutput> {
   const config = await resolveConfig("build");
   const basePrefix = config.base + config.framework.rscPrefix;
   const distEntriesFile = await getEntriesFile(config, true);
@@ -237,7 +242,7 @@ async function buildRSC(): Promise<void> {
     console.warn(
       "getBuilder is undefined. It's recommended for optimization and sometimes required."
     );
-    return;
+    return { rscFiles: [], htmlFiles: [] };
   }
 
   const renderForBuild = (
@@ -271,6 +276,7 @@ async function buildRSC(): Promise<void> {
     }
     idSet.add(id);
   };
+  const rscFileSet = new Set<string>(); // XXX could be implemented better
   await Promise.all(
     Object.entries(pathMap).map(async ([pathStr, { elements }]) => {
       for (const [rscId, props] of elements || []) {
@@ -285,18 +291,21 @@ async function buildRSC(): Promise<void> {
           config.framework.rscPrefix + decodeURIComponent(rscId),
           decodeURIComponent(`${searchParams}`)
         );
-        fs.mkdirSync(path.dirname(destFile), { recursive: true });
-        const component = await getFunctionComponent(rscId, config, true);
-        const pipeable = renderForBuild(
-          createElement(component, props as any),
-          (id) => addClientModule(pathStr, id)
-        );
-        await new Promise<void>((resolve, reject) => {
-          const stream = fs.createWriteStream(destFile);
-          stream.on("finish", resolve);
-          stream.on("error", reject);
-          pipeable.pipe(stream);
-        });
+        if (!rscFileSet.has(destFile)) {
+          rscFileSet.add(destFile);
+          fs.mkdirSync(path.dirname(destFile), { recursive: true });
+          const component = await getFunctionComponent(rscId, config, true);
+          const pipeable = renderForBuild(
+            createElement(component, props as any),
+            (id) => addClientModule(pathStr, id)
+          );
+          await new Promise<void>((resolve, reject) => {
+            const stream = fs.createWriteStream(destFile);
+            stream.on("finish", resolve);
+            stream.on("error", reject);
+            pipeable.pipe(stream);
+          });
+        }
       }
     })
   );
@@ -310,7 +319,7 @@ async function buildRSC(): Promise<void> {
   const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
     encoding: "utf8",
   });
-  await Promise.all(
+  const htmlFiles = await Promise.all(
     Object.entries(pathMap).map(async ([pathStr, { elements, customCode }]) => {
       const destFile = path.join(
         config.root,
@@ -342,6 +351,8 @@ async function buildRSC(): Promise<void> {
         data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
       }
       fs.writeFileSync(destFile, data, { encoding: "utf8" });
+      return destFile;
     })
   );
+  return { rscFiles: Array.from(rscFileSet), htmlFiles };
 }

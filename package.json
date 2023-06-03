@@ -71,6 +71,7 @@
     "examples:prd:07_router": "NAME=07_router npm run examples:prd",
     "website:dev": "npm run compile:code && ./dist/cli.js dev --config ./website/vite.config.ts",
     "website:build": "npm run compile:code && ./dist/cli.js build --config ./website/vite.config.ts",
+    "website:vercel": "npm run website:build && cp -Lr ./website/dist/.vercel/output ./.vercel/",
     "website:prd": "npm run website:build && ./dist/cli.js start --config ./website/vite.prd.config.ts"
   },
   "license": "MIT",
