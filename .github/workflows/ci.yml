@@ -34,6 +34,7 @@ jobs:
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run compile
+      - run: pnpm link .
       - name: Get installed Playwright version
         id: playwright-version
         run: |
