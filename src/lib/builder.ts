@@ -2,96 +2,91 @@ import path from "node:path";
 import fs from "node:fs";
 import { createRequire } from "node:module";
 
-import { build } from "vite";
-import type { Plugin } from "vite";
+import { build as viteBuild } from "vite";
 import react from "@vitejs/plugin-react";
-import * as swc from "@swc/core";
 
-import type { Config } from "./config.js";
-import { codeToInject } from "./middleware/lib/rsc-utils.js";
-import {
-  shutdown,
-  setClientEntries,
-  getCustomModulesRSC,
-  buildRSC,
-} from "./middleware/lib/rsc-handler.js";
+import { configFileConfig, resolveConfig } from "./config.js";
+import { shutdown, setClientEntries, buildRSC } from "./rsc-handler.js";
+import { rscIndexPlugin, rscAnalyzePlugin } from "./vite-plugin-rsc.js";
 
-// FIXME we could do this without plugin anyway
-const rscIndexPlugin = (): Plugin => {
-  return {
-    name: "rsc-index-plugin",
-    async transformIndexHtml() {
-      return [
-        {
-          tag: "script",
-          children: codeToInject,
-          injectTo: "body",
-        },
-      ];
-    },
-  };
-};
-
-const rscAnalyzePlugin = (
-  clientEntryCallback: (id: string) => void,
-  serverEntryCallback: (id: string) => void
-): Plugin => {
-  return {
-    name: "rsc-bundle-plugin",
-    transform(code, id) {
-      const ext = path.extname(id);
-      if ([".ts", ".tsx", ".js", ".jsx"].includes(ext)) {
-        const mod = swc.parseSync(code, {
-          syntax: ext === ".ts" || ext === ".tsx" ? "typescript" : "ecmascript",
-          tsx: ext === ".tsx",
-        });
-        for (const item of mod.body) {
-          if (
-            item.type === "ExpressionStatement" &&
-            item.expression.type === "StringLiteral"
-          ) {
-            if (item.expression.value === "use client") {
-              clientEntryCallback(id);
-            } else if (item.expression.value === "use server") {
-              serverEntryCallback(id);
-            }
-          }
-        }
-      }
-      return code;
-    },
-  };
-};
-
-export async function runBuild(config: Config = {}) {
-  const dir = path.resolve(config.build?.dir || ".");
-  const basePath = config.build?.basePath || "/";
-  const distPath = config.files?.dist || "dist";
-  const publicPath = path.join(distPath, config.files?.public || "public");
-  const indexHtmlFile = path.join(dir, config.files?.indexHtml || "index.html");
-  const distEntriesFile = path.join(
-    dir,
-    distPath,
-    config.files?.entriesJs || "entries.js"
+const createVercelOutput = (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  clientFiles: string[],
+  rscFiles: string[],
+  htmlFiles: string[]
+) => {
+  const srcDir = path.join(
+    config.root,
+    config.build.outDir,
+    config.framework.outPublic
   );
-  let entriesFile = path.join(dir, config.files?.entriesJs || "entries.js");
-  if (entriesFile.endsWith(".js")) {
-    for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
-      const tmp = entriesFile.slice(0, -3) + ext;
-      if (fs.existsSync(tmp)) {
-        entriesFile = tmp;
-        break;
-      }
+  const dstDir = path.join(
+    config.root,
+    config.build.outDir,
+    ".vercel",
+    "output"
+  );
+  for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
+    const dstFile = path.join(dstDir, "static", path.relative(srcDir, file));
+    if (!fs.existsSync(dstFile)) {
+      fs.mkdirSync(path.dirname(dstFile), { recursive: true });
+      fs.symlinkSync(path.relative(path.dirname(dstFile), file), dstFile);
     }
+  }
+  const overrides = Object.fromEntries([
+    ...rscFiles
+      .filter((file) => !path.extname(file))
+      .map((file) => [
+        path.relative(srcDir, file),
+        { contentType: "text/plain" },
+      ]),
+    ...htmlFiles
+      .filter((file) => !path.extname(file))
+      .map((file) => [
+        path.relative(srcDir, file),
+        { contentType: "text/html" },
+      ]),
+  ]);
+  const configJson = {
+    version: 3,
+    overrides,
+  };
+  fs.mkdirSync(dstDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dstDir, "config.json"),
+    JSON.stringify(configJson, null, 2)
+  );
+};
+
+const resolveFileName = (fname: string) => {
+  for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
+    const resolvedName =
+      fname.slice(0, fname.length - path.extname(fname).length) + ext;
+    if (fs.existsSync(resolvedName)) {
+      return resolvedName;
+    }
+  }
+  return "";
+};
+
+export async function build() {
+  const config = await resolveConfig("build");
+  const indexHtmlFile = path.join(config.root, config.framework.indexHtml);
+  const distEntriesFile = path.join(
+    config.root,
+    config.build.outDir,
+    config.framework.entriesJs
+  );
+  let entriesFile = path.join(config.root, config.framework.entriesJs);
+  if (entriesFile.endsWith(".js")) {
+    entriesFile = resolveFileName(entriesFile) || entriesFile;
   }
   const require = createRequire(import.meta.url);
 
-  const customModules = await getCustomModulesRSC();
   const clientEntryFileSet = new Set<string>();
   const serverEntryFileSet = new Set<string>();
-  await build({
-    root: dir,
-    base: basePath,
+  await viteBuild({
+    ...configFileConfig,
     plugins: [
       rscAnalyzePlugin(
         (id) => clientEntryFileSet.add(id),
@@ -106,13 +101,11 @@ export async function runBuild(config: Config = {}) {
       noExternal: ["waku"],
     },
     build: {
-      outDir: distPath,
       write: false,
       ssr: true,
       rollupOptions: {
         input: {
           entries: entriesFile,
-          ...customModules,
         },
       },
     },
@@ -124,24 +117,24 @@ export async function runBuild(config: Config = {}) {
     Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname])
   );
 
-  const serverBuildOutput = await build({
-    root: dir,
-    base: basePath,
+  const serverBuildOutput = await viteBuild({
+    ...configFileConfig,
     ssr: {
       noExternal: Array.from(clientEntryFileSet).map(
+        // FIXME this might not work with pnpm
         (fname) =>
-          path.relative(path.join(dir, "node_modules"), fname).split("/")[0]!
+          path
+            .relative(path.join(config.root, "node_modules"), fname)
+            .split("/")[0]!
       ),
     },
     build: {
-      outDir: distPath,
       ssr: true,
       rollupOptions: {
         input: {
           entries: entriesFile,
           ...clientEntryFiles,
           ...serverEntryFiles,
-          ...customModules,
         },
         output: {
           banner: (chunk) => {
@@ -156,10 +149,13 @@ export async function runBuild(config: Config = {}) {
             return code;
           },
           entryFileNames: (chunkInfo) => {
-            if (chunkInfo.name === "entries" || customModules[chunkInfo.name]) {
-              return "[name].js";
+            if (
+              clientEntryFiles[chunkInfo.name] ||
+              serverEntryFiles[chunkInfo.name]
+            ) {
+              return "assets/[name].js";
             }
-            return "assets/[name].js";
+            return "[name].js";
           },
         },
       },
@@ -169,16 +165,15 @@ export async function runBuild(config: Config = {}) {
     throw new Error("Unexpected vite server build output");
   }
 
-  const clientBuildOutput = await build({
-    root: dir,
-    base: basePath,
+  const clientBuildOutput = await viteBuild({
+    ...configFileConfig,
     plugins: [
       // @ts-ignore
       react(),
       rscIndexPlugin(),
     ],
     build: {
-      outDir: publicPath,
+      outDir: path.join(config.build.outDir, config.framework.outPublic),
       rollupOptions: {
         input: {
           main: indexHtmlFile,
@@ -214,15 +209,15 @@ export async function runBuild(config: Config = {}) {
 
   const absoluteClientEntries = Object.fromEntries(
     Object.entries(clientEntries).map(([key, val]) => [
-      path.join(path.dirname(entriesFile), distPath, key),
-      basePath + val,
+      path.join(path.dirname(entriesFile), config.build.outDir, key),
+      config.base + val,
     ])
   );
   await setClientEntries(absoluteClientEntries);
 
-  await buildRSC();
+  const buildOutput = await buildRSC();
 
-  const origPackageJson = require(path.join(dir, "package.json"));
+  const origPackageJson = require(path.join(config.root, "package.json"));
   const packageJson = {
     name: origPackageJson.name,
     version: origPackageJson.version,
@@ -234,8 +229,24 @@ export async function runBuild(config: Config = {}) {
     dependencies: origPackageJson.dependencies,
   };
   fs.writeFileSync(
-    path.join(dir, distPath, "package.json"),
+    path.join(config.root, config.build.outDir, "package.json"),
     JSON.stringify(packageJson, null, 2)
+  );
+
+  // https://vercel.com/docs/build-output-api/v3
+  // So far, only static sites are supported.
+  createVercelOutput(
+    config,
+    clientBuildOutput.output.map(({ fileName }) =>
+      path.join(
+        config.root,
+        config.build.outDir,
+        config.framework.outPublic,
+        fileName
+      )
+    ),
+    buildOutput.rscFiles,
+    buildOutput.htmlFiles
   );
 
   await shutdown();

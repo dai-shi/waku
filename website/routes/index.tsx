@@ -44,7 +44,7 @@ const Sidebar = () => (
         <MyLink href="/introduction" name="Introduction" />
       </li>
       <li className="h-12 mx-4">
-        <MyLink href="/install" name="Install" />
+        <MyLink href="/installing" name="Installing" />
       </li>
       <li className="h-12 mx-4 text-gray-400">
         <span className="mx-4">Practices</span>

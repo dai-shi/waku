@@ -22,9 +22,11 @@ type ChangeLocation = (
   replace?: boolean
 ) => void;
 
+// FIXME we should separate this into three isolated contexts
 const RouterContext = createContext<{
   location: ReturnType<typeof parseLocation>;
   changeLocation: ChangeLocation;
+  basePath: string;
 } | null>(null);
 
 export function useChangeLocation() {
@@ -43,10 +45,18 @@ export function useLocation() {
   return value.location;
 }
 
+const useBasePath = () => {
+  const value = useContext(RouterContext);
+  if (!value) {
+    throw new Error("Missing Router");
+  }
+  return value.basePath;
+};
+
 // FIXME normalizing `search` before prefetch might be good.
 // FIXME selective `search` would be better. (for intermediate routes too)
 
-const prefetchRoutes = (pathname: string, search: string) => {
+const prefetchRoutes = (pathname: string, search: string, basePath: string) => {
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
   const pathItems = pathname.split("/").filter(Boolean);
   for (let index = 0; index <= pathItems.length; ++index) {
@@ -62,7 +72,7 @@ const prefetchRoutes = (pathname: string, search: string) => {
     searchParams.set("props", serializedProps);
     if (!prefetched[rscId][serializedProps]) {
       prefetched[rscId][serializedProps] = fetch(
-        `/RSC/${rscId}/${searchParams}`
+        `${basePath}${rscId}/${searchParams}`
       );
     }
     (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(pathname, search);
@@ -98,6 +108,7 @@ export function Link({
   unstable_prefetchOnEnter,
 }: LinkProps) {
   const changeLocation = useChangeLocation();
+  const basePath = useBasePath();
   const [isPending, startTransition] = useTransition();
   const onClick = (event: MouseEvent) => {
     event.preventDefault();
@@ -112,7 +123,7 @@ export function Link({
     ? () => {
         const url = new URL(href, window.location.href);
         if (url.href !== window.location.href) {
-          prefetchRoutes(url.pathname, url.search);
+          prefetchRoutes(url.pathname, url.search, basePath);
         }
       }
     : undefined;
@@ -131,7 +142,7 @@ const parseLocation = () => {
   return { pathname, search };
 };
 
-export function Router() {
+export function Router({ basePath = "/RSC/" }: { basePath?: string }) {
   const [location, setLocation] = useState(parseLocation);
 
   const changeLocation: ChangeLocation = (pathname, search, replace) => {
@@ -156,11 +167,11 @@ export function Router() {
     return () => window.removeEventListener("popstate", callback);
   }, []);
 
-  prefetchRoutes(location.pathname, location.search);
+  prefetchRoutes(location.pathname, location.search, basePath);
 
   return createElement(
     RouterContext.Provider,
-    { value: { location, changeLocation } },
+    { value: { location, changeLocation, basePath } },
     createElement(Child, { index: 0 })
   );
 }
