@@ -1,3 +1,4 @@
+/// <reference types="../types.d.ts" />
 import path from "node:path";
 import fs from "node:fs";
 import { parentPort } from "node:worker_threads";

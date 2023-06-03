@@ -4,7 +4,7 @@
     "target": "esnext",
     "downlevelIteration": true,
     "esModuleInterop": true,
-    "module": "nodenext",
+    "module": "Node16",
     "skipLibCheck": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -16,5 +16,11 @@
       "waku": ["./src/main.ts"],
       "waku/*": ["./src/*.ts"]
     }
+  },
+  "ts-node": {
+    "swc": true,
+    "esm": true,
+    "experimentalSpecifierResolution": "node",
+    "experimentalResolver": true
   }
 }

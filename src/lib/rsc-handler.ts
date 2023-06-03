@@ -1,10 +1,26 @@
 import { PassThrough } from "node:stream";
 import type { Readable } from "node:stream";
 import { Worker } from "node:worker_threads";
+import { existsSync } from 'node:fs'
 
-const worker = new Worker(new URL("rsc-handler-worker.js", import.meta.url), {
-  execArgv: ["--conditions", "react-server"],
-});
+const worker = (() => {
+  const tsFile = new URL("rsc-handler-worker.ts", import.meta.url)
+  const jsFile = new URL("rsc-handler-worker.js", import.meta.url)
+  const argv = ["--conditions", "react-server"]
+  if (existsSync(tsFile)) {
+    // debugging only
+    return new Worker(tsFile, {
+      execArgv: [
+        "--loader", "ts-node/esm",
+        ...argv
+      ],
+    });
+  } else {
+    return new Worker(jsFile, {
+      execArgv: [...argv],
+    });
+  }
+})()
 
 export type RenderInput<Props extends {} = {}> = {
   rscId?: string | undefined;

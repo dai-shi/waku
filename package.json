@@ -10,42 +10,54 @@
   },
   "exports": {
     "./package.json": "./package.json",
-    ".": {
-      "types": "./dist/main.d.ts",
-      "require": "./dist/cjs/main.js",
-      "default": "./dist/main.js"
-    },
-    "./config": {
-      "types": "./dist/config.d.ts",
-      "require": "./dist/cjs/config.js",
-      "default": "./dist/config.js"
-    },
-    "./client": {
-      "types": "./dist/client.d.ts",
-      "require": "./dist/cjs/client.js",
-      "default": "./dist/client.js"
-    },
-    "./server": {
-      "types": "./dist/server.d.ts",
-      "require": "./dist/cjs/server.js",
-      "default": "./dist/server.js"
-    },
-    "./router/client": {
-      "types": "./dist/router/client.d.ts",
-      "require": "./dist/cjs/router/client.js",
-      "default": "./dist/router/client.js"
-    },
-    "./router/server": {
-      "types": "./dist/router/server.d.ts",
-      "require": "./dist/cjs/router/server.js",
-      "default": "./dist/router/server.js"
-    }
+    ".": "./src/main.ts",
+    "./config": "./src/config.ts",
+    "./client": "./src/client.ts",
+    "./server": "./src/server.ts",
+    "./router/client": "./src/router/client.ts",
+    "./router/server": "./src/router/server.ts"
   },
-  "bin": "./dist/cli.js",
-  "files": [
-    "src",
-    "dist"
-  ],
+  "bin": "./src/cli.ts",
+  "publishConfig": {
+    "exports": {
+      "./package.json": "./package.json",
+      ".": {
+        "types": "./dist/main.d.ts",
+        "require": "./dist/cjs/main.js",
+        "default": "./dist/main.js"
+      },
+      "./config": {
+        "types": "./dist/config.d.ts",
+        "require": "./dist/cjs/config.js",
+        "default": "./dist/config.js"
+      },
+      "./client": {
+        "types": "./dist/client.d.ts",
+        "require": "./dist/cjs/client.js",
+        "default": "./dist/client.js"
+      },
+      "./server": {
+        "types": "./dist/server.d.ts",
+        "require": "./dist/cjs/server.js",
+        "default": "./dist/server.js"
+      },
+      "./router/client": {
+        "types": "./dist/router/client.d.ts",
+        "require": "./dist/cjs/router/client.js",
+        "default": "./dist/router/client.js"
+      },
+      "./router/server": {
+        "types": "./dist/router/server.d.ts",
+        "require": "./dist/cjs/router/server.js",
+        "default": "./dist/router/server.js"
+      }
+    },
+    "bin": "./cli.js",
+    "files": [
+      "src",
+      "dist"
+    ]
+  },
   "scripts": {
     "compile": "npm run compile:code && npm run compile:types",
     "compile:code": "swc src -d dist && swc src -d dist/cjs -C module.type=commonjs && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
@@ -102,6 +114,7 @@
     "react-dom": "18.3.0-canary-018c58c9c-20230601",
     "react-server-dom-webpack": "18.3.0-canary-018c58c9c-20230601",
     "tailwindcss": "^3.3.2",
+    "ts-node": "^10.9.1",
     "typescript": "^5.1.3",
     "waku": "link:."
   },

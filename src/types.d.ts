@@ -9,3 +9,5 @@ namespace JSX {
     | string
     | ((props: any) => React.ReactNode | Promise<React.ReactNode>);
 }
+
+declare var __DEV__: boolean

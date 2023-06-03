@@ -1,4 +1,5 @@
-#!/usr/bin/env node
+#!/usr/bin/env node --loader ts-node/esm
+/// <reference types="./types.d.ts" />
 
 import fs from "node:fs";
 import path from "node:path";
