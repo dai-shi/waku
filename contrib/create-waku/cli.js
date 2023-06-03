@@ -18,7 +18,7 @@ async function main() {
   }
 
   const baseUrl =
-    "https://raw.githubusercontent.com/dai-shi/waku/v0.11.0/examples/01_counter/";
+    "https://raw.githubusercontent.com/dai-shi/waku/v0.11.2/examples/01_counter/";
 
   const files = [
     'entries.ts',

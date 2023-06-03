@@ -1,12 +1,12 @@
 {
   "name": "create-waku",
-  "version": "0.4.1",
+  "version": "0.4.3",
   "bin": "./cli.js",
   "files": [
     "cli.js"
   ],
   "dependencies": {
-    "@clack/core": "=0.3.2",
-    "@clack/prompts": "=0.6.3"
+    "@clack/core": "0.3.2",
+    "@clack/prompts": "0.6.3"
   }
 }

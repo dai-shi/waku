@@ -9,9 +9,13 @@ import RSDWServer from "react-server-dom-webpack/server";
 
 import { configFileConfig, resolveConfig } from "./config.js";
 import { transformRsfId, generatePrefetchCode } from "./rsc-utils.js";
-import type { RenderInput, MessageReq, MessageRes } from "./rsc-handler.js";
+import type {
+  RenderInput,
+  MessageReq,
+  MessageRes,
+  BuildOutput,
+} from "./rsc-handler.js";
 import { defineEntries } from "../server.js";
-import type { unstable_GetCustomModules } from "../server.js";
 import { rscTransformPlugin, rscReloadPlugin } from "./vite-plugin-rsc.js";
 
 const { renderToPipeableStream } = RSDWServer;
@@ -66,25 +70,11 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
   }
 };
 
-const handleGetCustomModules = async (
-  mesg: MessageReq & { type: "getCustomModules" }
-) => {
-  const { id } = mesg;
-  try {
-    const modules = await getCustomModulesRSC();
-    const mesg: MessageRes = { id, type: "customModules", modules };
-    parentPort!.postMessage(mesg);
-  } catch (err) {
-    const mesg: MessageRes = { id, type: "err", err };
-    parentPort!.postMessage(mesg);
-  }
-};
-
 const handleBuild = async (mesg: MessageReq & { type: "build" }) => {
   const { id } = mesg;
   try {
-    await buildRSC();
-    const mesg: MessageRes = { id, type: "end" };
+    const output = await buildRSC();
+    const mesg: MessageRes = { id, type: "buildOutput", output };
     parentPort!.postMessage(mesg);
   } catch (err) {
     const mesg: MessageRes = { id, type: "err", err };
@@ -129,8 +119,6 @@ parentPort!.on("message", (mesg: MessageReq) => {
     handleSetClientEntries(mesg);
   } else if (mesg.type === "render") {
     handleRender(mesg);
-  } else if (mesg.type === "getCustomModules") {
-    handleGetCustomModules(mesg);
   } else if (mesg.type === "build") {
     handleBuild(mesg);
   }
@@ -242,27 +230,10 @@ async function renderRSC(input: RenderInput): Promise<PipeableStream> {
   throw new Error("Unexpected input");
 }
 
-async function getCustomModulesRSC(): Promise<{ [name: string]: string }> {
-  const config = await configPromise;
-  const entriesFile = await getEntriesFile(config, false);
-  const {
-    default: { unstable_getCustomModules: getCustomModules },
-  } = await (loadServerFile(entriesFile) as Promise<{
-    default: Entries["default"] & {
-      unstable_getCustomModules?: unstable_GetCustomModules;
-    };
-  }>);
-  if (!getCustomModules) {
-    return {};
-  }
-  const modules = await getCustomModules();
-  return modules;
-}
-
 // FIXME this may take too much responsibility
-async function buildRSC(): Promise<void> {
+async function buildRSC(): Promise<BuildOutput> {
   const config = await resolveConfig("build");
-  const basePath = config.base + config.framework.rscPrefix;
+  const basePrefix = config.base + config.framework.rscPrefix;
   const distEntriesFile = await getEntriesFile(config, true);
   const {
     default: { getBuilder },
@@ -271,17 +242,31 @@ async function buildRSC(): Promise<void> {
     console.warn(
       "getBuilder is undefined. It's recommended for optimization and sometimes required."
     );
-    return;
+    return { rscFiles: [], htmlFiles: [] };
   }
 
-  // FIXME this doesn't seem an ideal solution
-  const decodeId = (encodedId: string): [id: string, name: string] => {
-    const [filePath, name] = encodedId.split("#") as [string, string];
-    const id = resolveClientEntry(config, filePath);
-    return [id, name];
+  const renderForBuild = (
+    element: unknown,
+    clientModuleCallback: (id: string) => void
+  ): PipeableStream => {
+    const bundlerConfig = new Proxy(
+      {},
+      {
+        get(_target, encodedId: string) {
+          const [filePath, name] = encodedId.split("#") as [string, string];
+          const id = resolveClientEntry(config, filePath);
+          clientModuleCallback(id);
+          return { id, chunks: [id], name, async: true };
+        },
+      }
+    );
+    const pipeable = renderToPipeableStream(element, bundlerConfig).pipe(
+      transformRsfId(path.join(config.root, config.build.outDir))
+    );
+    return pipeable;
   };
 
-  const pathMap = await getBuilder(decodeId);
+  const pathMap = await getBuilder(config.root, renderForBuild);
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (pathStr: string, id: string) => {
     let idSet = clientModuleMap.get(pathStr);
@@ -291,6 +276,7 @@ async function buildRSC(): Promise<void> {
     }
     idSet.add(id);
   };
+  const rscFileSet = new Set<string>(); // XXX could be implemented better
   await Promise.all(
     Object.entries(pathMap).map(async ([pathStr, { elements }]) => {
       for (const [rscId, props] of elements || []) {
@@ -302,32 +288,24 @@ async function buildRSC(): Promise<void> {
           config.root,
           config.build.outDir,
           config.framework.outPublic,
-          config.framework.rscPrefix,
-          decodeURIComponent(rscId),
+          config.framework.rscPrefix + decodeURIComponent(rscId),
           decodeURIComponent(`${searchParams}`)
         );
-        fs.mkdirSync(path.dirname(destFile), { recursive: true });
-        const bundlerConfig = new Proxy(
-          {},
-          {
-            get(_target, encodedId: string) {
-              const [id, name] = decodeId(encodedId);
-              addClientModule(pathStr, id);
-              return { id, chunks: [id], name, async: true };
-            },
-          }
-        );
-        const component = await getFunctionComponent(rscId, config, true);
-        const pipeable = renderToPipeableStream(
-          createElement(component, props as any),
-          bundlerConfig
-        ).pipe(transformRsfId(path.join(config.root, config.build.outDir)));
-        await new Promise<void>((resolve, reject) => {
-          const stream = fs.createWriteStream(destFile);
-          stream.on("finish", resolve);
-          stream.on("error", reject);
-          pipeable.pipe(stream);
-        });
+        if (!rscFileSet.has(destFile)) {
+          rscFileSet.add(destFile);
+          fs.mkdirSync(path.dirname(destFile), { recursive: true });
+          const component = await getFunctionComponent(rscId, config, true);
+          const pipeable = renderForBuild(
+            createElement(component, props as any),
+            (id) => addClientModule(pathStr, id)
+          );
+          await new Promise<void>((resolve, reject) => {
+            const stream = fs.createWriteStream(destFile);
+            stream.on("finish", resolve);
+            stream.on("error", reject);
+            pipeable.pipe(stream);
+          });
+        }
       }
     })
   );
@@ -341,7 +319,7 @@ async function buildRSC(): Promise<void> {
   const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
     encoding: "utf8",
   });
-  await Promise.all(
+  const htmlFiles = await Promise.all(
     Object.entries(pathMap).map(async ([pathStr, { elements, customCode }]) => {
       const destFile = path.join(
         config.root,
@@ -359,7 +337,7 @@ async function buildRSC(): Promise<void> {
       }
       const code =
         generatePrefetchCode(
-          basePath,
+          basePrefix,
           Array.from(elements || []).flatMap(([rscId, props, skipPrefetch]) => {
             if (skipPrefetch) {
               return [];
@@ -373,6 +351,8 @@ async function buildRSC(): Promise<void> {
         data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
       }
       fs.writeFileSync(destFile, data, { encoding: "utf8" });
+      return destFile;
     })
   );
+  return { rscFiles: Array.from(rscFileSet), htmlFiles };
 }

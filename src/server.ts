@@ -1,12 +1,18 @@
+import type { Writable } from "node:stream";
 import type { FunctionComponent } from "react";
+
+type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
 export type GetEntry = (
   rscId: string
 ) => Promise<FunctionComponent | { default: FunctionComponent } | null>;
 
 export type GetBuilder = (
-  // FIXME can we somehow avoid leaking internal implementation?
-  unstable_decodeId: (encodedId: string) => [id: string, name: string]
+  root: string,
+  unstable_renderForBuild: (
+    element: unknown,
+    clientModuleCallback: (id: string) => void
+  ) => PipeableStream
 ) => Promise<{
   [pathStr: string]: {
     elements?: Iterable<
@@ -14,12 +20,6 @@ export type GetBuilder = (
     >;
     customCode?: string; // optional code to inject
   };
-}>;
-
-// This is for ignored dynamic imports
-// XXX Are there any better ways?
-export type unstable_GetCustomModules = () => Promise<{
-  [name: string]: string;
 }>;
 
 export function defineEntries(getEntry: GetEntry, getBuilder?: GetBuilder) {
