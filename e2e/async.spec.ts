@@ -1,7 +1,8 @@
+// 02_async
 import { test, expect } from '@playwright/test'
 
 test('async', async ({ page }) => {
-  await page.goto('http://localhost:3000')
+  await page.goto('http://localhost:3001')
   await expect(page.getByText('Pending...')).toBeVisible()
   await page.waitForTimeout(500)
   await expect(page.getByText('Pending...')).toBeVisible()
