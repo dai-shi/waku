@@ -30,7 +30,8 @@ const createVercelOutput = (
     const dstFile = path.join(dstDir, "static", path.relative(srcDir, file));
     if (!fs.existsSync(dstFile)) {
       fs.mkdirSync(path.dirname(dstFile), { recursive: true });
-      fs.symlinkSync(path.relative(path.dirname(dstFile), file), dstFile);
+      // fs.symlinkSync(path.relative(path.dirname(dstFile), file), dstFile);
+      fs.copyFileSync(file, dstFile);
     }
   }
   const overrides = Object.fromEntries([
