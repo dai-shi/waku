@@ -13,11 +13,9 @@ import type {
   RenderInput,
   MessageReq,
   MessageRes,
-  CustomModules,
   BuildOutput,
 } from "./rsc-handler.js";
 import { defineEntries } from "../server.js";
-import type { unstable_GetCustomModules } from "../server.js";
 import { rscTransformPlugin, rscReloadPlugin } from "./vite-plugin-rsc.js";
 
 const { renderToPipeableStream } = RSDWServer;
@@ -66,20 +64,6 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
       },
     });
     pipeable.pipe(writable);
-  } catch (err) {
-    const mesg: MessageRes = { id, type: "err", err };
-    parentPort!.postMessage(mesg);
-  }
-};
-
-const handleGetCustomModules = async (
-  mesg: MessageReq & { type: "getCustomModules" }
-) => {
-  const { id } = mesg;
-  try {
-    const modules = await getCustomModulesRSC();
-    const mesg: MessageRes = { id, type: "customModules", modules };
-    parentPort!.postMessage(mesg);
   } catch (err) {
     const mesg: MessageRes = { id, type: "err", err };
     parentPort!.postMessage(mesg);
@@ -135,8 +119,6 @@ parentPort!.on("message", (mesg: MessageReq) => {
     handleSetClientEntries(mesg);
   } else if (mesg.type === "render") {
     handleRender(mesg);
-  } else if (mesg.type === "getCustomModules") {
-    handleGetCustomModules(mesg);
   } else if (mesg.type === "build") {
     handleBuild(mesg);
   }
@@ -248,23 +230,6 @@ async function renderRSC(input: RenderInput): Promise<PipeableStream> {
   throw new Error("Unexpected input");
 }
 
-async function getCustomModulesRSC(): Promise<CustomModules> {
-  const config = await configPromise;
-  const entriesFile = await getEntriesFile(config, false);
-  const {
-    default: { unstable_getCustomModules: getCustomModules },
-  } = await (loadServerFile(entriesFile) as Promise<{
-    default: Entries["default"] & {
-      unstable_getCustomModules?: unstable_GetCustomModules;
-    };
-  }>);
-  if (!getCustomModules) {
-    return {};
-  }
-  const modules = await getCustomModules();
-  return modules;
-}
-
 // FIXME this may take too much responsibility
 async function buildRSC(): Promise<BuildOutput> {
   const config = await resolveConfig("build");
@@ -280,14 +245,28 @@ async function buildRSC(): Promise<BuildOutput> {
     return { rscFiles: [], htmlFiles: [] };
   }
 
-  // FIXME this doesn't seem an ideal solution
-  const decodeId = (encodedId: string): [id: string, name: string] => {
-    const [filePath, name] = encodedId.split("#") as [string, string];
-    const id = resolveClientEntry(config, filePath);
-    return [id, name];
+  const renderForBuild = (
+    element: unknown,
+    clientModuleCallback: (id: string) => void
+  ): PipeableStream => {
+    const bundlerConfig = new Proxy(
+      {},
+      {
+        get(_target, encodedId: string) {
+          const [filePath, name] = encodedId.split("#") as [string, string];
+          const id = resolveClientEntry(config, filePath);
+          clientModuleCallback(id);
+          return { id, chunks: [id], name, async: true };
+        },
+      }
+    );
+    const pipeable = renderToPipeableStream(element, bundlerConfig).pipe(
+      transformRsfId(path.join(config.root, config.build.outDir))
+    );
+    return pipeable;
   };
 
-  const pathMap = await getBuilder(decodeId);
+  const pathMap = await getBuilder(config.root, renderForBuild);
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (pathStr: string, id: string) => {
     let idSet = clientModuleMap.get(pathStr);
@@ -315,21 +294,11 @@ async function buildRSC(): Promise<BuildOutput> {
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          const bundlerConfig = new Proxy(
-            {},
-            {
-              get(_target, encodedId: string) {
-                const [id, name] = decodeId(encodedId);
-                addClientModule(pathStr, id);
-                return { id, chunks: [id], name, async: true };
-              },
-            }
-          );
           const component = await getFunctionComponent(rscId, config, true);
-          const pipeable = renderToPipeableStream(
+          const pipeable = renderForBuild(
             createElement(component, props as any),
-            bundlerConfig
-          ).pipe(transformRsfId(path.join(config.root, config.build.outDir)));
+            (id) => addClientModule(pathStr, id)
+          );
           await new Promise<void>((resolve, reject) => {
             const stream = fs.createWriteStream(destFile);
             stream.on("finish", resolve);

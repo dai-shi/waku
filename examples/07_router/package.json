@@ -6,18 +6,19 @@
   "scripts": {
     "dev": "waku dev",
     "build": "waku build",
-    "start": "waku start --config vite.prd.config.js"
+    "start": "waku start --config vite.prd.config.ts"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "react": "18.3.0-canary-535c038d1-20230522",
-    "react-dom": "18.3.0-canary-535c038d1-20230522",
-    "react-server-dom-webpack": "18.3.0-canary-535c038d1-20230522",
-    "waku": "0.11.0"
+    "glob": "^10.2.6",
+    "react": "18.3.0-canary-018c58c9c-20230601",
+    "react-dom": "18.3.0-canary-018c58c9c-20230601",
+    "react-server-dom-webpack": "18.3.0-canary-018c58c9c-20230601",
+    "waku": "0.11.1"
   },
   "devDependencies": {
-    "@types/react": "^18.2.7",
+    "@types/react": "^18.2.8",
     "@types/react-dom": "^18.2.4",
-    "typescript": "^5.0.4"
+    "typescript": "^5.1.3"
   }
 }

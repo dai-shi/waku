@@ -7,7 +7,7 @@ pnpm create waku # pnpm not working for now`;
 export default function Layout() {
   return (
     <>
-      <h2 className="text-xl font-bold">Install</h2>
+      <h2 className="text-xl font-bold">Installing</h2>
       <article className="mt-6">
         <div className="my-3">
           To start a new Waku project, you can use any of the following

@@ -11,7 +11,6 @@ export const CodeBlock = ({
   children: string;
   lang: BrightProps["lang"];
 }) => (
-  // @ts-expect-error
   <BrightCode
     className="p-0 !rounded-lg"
     theme="poimandres"

@@ -1,116 +1,69 @@
-import path from "node:path";
-import fs from "node:fs";
-import { createElement } from "react";
-import * as swc from "@swc/core";
+import { Writable } from "node:stream";
+import { createElement, Fragment } from "react";
+import type { FunctionComponent } from "react";
 
-import type {
-  GetEntry,
-  GetBuilder,
-  unstable_GetCustomModules,
-} from "../server.js";
-
+import type { GetEntry, GetBuilder } from "../server.js";
 import type { RouteProps, LinkProps } from "./common.js";
 import { Child as ClientChild, Link as ClientLink } from "./client.js";
 
-const getAllFiles = (base: string, parent = ""): string[] =>
-  fs
-    .readdirSync(path.join(base, parent), { withFileTypes: true })
-    .flatMap((dirent) => {
-      if (dirent.isDirectory()) {
-        return getAllFiles(base, path.join(parent, dirent.name));
-      }
-      const fname = path.join(parent, dirent.name);
-      return [fname];
-    });
-
-const getAllPaths = (base: string, parent = ""): string[] =>
-  fs
-    .readdirSync(path.join(base, parent), { withFileTypes: true })
-    .flatMap((dirent) => {
-      if (dirent.isDirectory()) {
-        return getAllPaths(base, path.join(parent, dirent.name));
-      }
-      const fname = path.join(parent, path.parse(dirent.name).name);
-      const stat = fs.statSync(path.join(base, fname), {
-        throwIfNoEntry: false,
+const collectClientModules = async (
+  pathStr: string,
+  getEntry: (rscId: string) => Promise<FunctionComponent>,
+  unstable_renderForBuild: Parameters<GetBuilder>[1]
+) => {
+  const url = new URL(pathStr, "http://localhost");
+  const pathItems = url.pathname.split("/").filter(Boolean);
+  const search = url.search;
+  const idSet = new Set<string>();
+  for (let index = 0; index <= pathItems.length; ++index) {
+    const rscId = pathItems.slice(0, index).join("/") || "index";
+    const props: RouteProps =
+      index < pathItems.length ? { childIndex: index + 1 } : { search };
+    const component = await getEntry(rscId);
+    const pipeable = unstable_renderForBuild(
+      createElement(component, props as any),
+      (id) => idSet.add(id)
+    );
+    await new Promise<void>((resolve, reject) => {
+      const stream = new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        },
       });
-      if (stat?.isDirectory()) {
-        return [fname + "/"];
-      }
-      return [fname];
+      stream.on("finish", resolve);
+      stream.on("error", reject);
+      pipeable.pipe(stream);
     });
-
-const CLIENT_REFERENCE = Symbol.for("react.client.reference");
-
-const resolveFileName = (fname: string) => {
-  for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
-    const resolvedName = fname.slice(0, -3) + ext;
-    if (fs.existsSync(resolvedName)) {
-      return resolvedName;
-    }
   }
-  throw new Error(`Cannot resolve file ${fname}`);
+  return Array.from(idSet);
 };
 
-// XXX Can we avoid doing this here?
-const findDependentModules = (fname: string) => {
-  fname = resolveFileName(fname);
-  const ext = path.extname(fname);
-  const mod = swc.parseFileSync(fname, {
-    syntax: ext === ".ts" || ext === ".tsx" ? "typescript" : "ecmascript",
-    tsx: ext === ".tsx",
-  });
-  const modules: (readonly [fname: string, exportNames: string[]])[] = [];
-  for (const item of mod.body) {
-    if (
-      item.type === "ImportDeclaration" &&
-      item.source.type === "StringLiteral"
-    ) {
-      const name = item.source.value;
-      if (name.startsWith(".")) {
-        modules.push([
-          path.join(path.dirname(fname), name),
-          item.specifiers.map((specifier) => {
-            if (specifier.type === "ImportSpecifier") {
-              return specifier.local.value;
-            }
-            if (specifier.type === "ImportDefaultSpecifier") {
-              return "default";
-            }
-            throw new Error(`Unknown specifier type: ${specifier.type}`);
-          }),
-        ]);
-      }
-    }
+// We have to make prefetcher consistent with client behavior
+const prefetcher = (pathStr: string) => {
+  const url = new URL(pathStr, "http://localhost");
+  const pathItems = url.pathname.split("/").filter(Boolean);
+  const search = url.search;
+  const elementSet = new Set<readonly [id: string, props: RouteProps]>();
+  for (let index = 0; index <= pathItems.length; ++index) {
+    const rscId = pathItems.slice(0, index).join("/") || "index";
+    const props: RouteProps =
+      index < pathItems.length ? { childIndex: index + 1 } : { search };
+    elementSet.add([rscId, props]);
   }
-  return modules;
+  return Array.from(elementSet);
 };
 
-const findClientModules = async (base: string, id: string) => {
-  const fname = `${base}/${id}.js`;
-  const modules = findDependentModules(fname);
-  return (
-    await Promise.all(
-      modules.map(async ([fname, exportNames]) => {
-        const m = await import(/* @vite-ignore */ fname);
-        return exportNames.flatMap((name) => {
-          if (m[name]?.["$$typeof"] === CLIENT_REFERENCE) {
-            return [m[name]];
-          }
-          return [];
-        });
-      })
-    )
-  ).flat();
-};
-
-export function fileRouter(baseDir: string, routesPath: string) {
-  const base = path.join(baseDir, routesPath);
-  const getEntry: GetEntry = async (id) => {
-    // This can be too unsecure? FIXME
-    const component = (await import(/* @vite-ignore */ `${base}/${id}.js`))
-      .default;
-    const RouteComponent: any = (props: RouteProps) => {
+export function defineRouter(
+  getComponent: (
+    id: string
+  ) => Promise<FunctionComponent | { default: FunctionComponent } | null>,
+  getAllPaths: (root: string) => Promise<string[]>
+): { getEntry: GetEntry; getBuilder: GetBuilder } {
+  const getEntry = async (id: string) => {
+    const mod = await getComponent(id);
+    const component =
+      typeof mod === "function" ? mod : mod?.default || Fragment;
+    const RouteComponent: FunctionComponent<any> = (props: RouteProps) => {
       const componentProps: Record<string, string> = {};
       if ("search" in props) {
         for (const [key, value] of new URLSearchParams(props.search)) {
@@ -128,76 +81,36 @@ export function fileRouter(baseDir: string, routesPath: string) {
     return RouteComponent;
   };
 
-  // We have to make prefetcher consistent with client behavior
-  const prefetcher = async (pathStr: string) => {
-    const url = new URL(pathStr, "http://localhost");
-    const elements: (readonly [id: string, props: RouteProps])[] = [];
-    const pathItems = url.pathname.split("/").filter(Boolean);
-    const search = url.search;
-    for (let index = 0; index <= pathItems.length; ++index) {
-      const rscId = pathItems.slice(0, index).join("/") || "index";
-      elements.push([
-        rscId,
-        index < pathItems.length ? { childIndex: index + 1 } : { search },
-      ]);
-    }
-    const clientModules = new Set(
-      (
-        await Promise.all(
-          elements.map(([rscId]) => findClientModules(base, rscId))
-        )
-      ).flat()
-    );
-    return { elements, clientModules };
-  };
-
-  const getBuilder: GetBuilder = async (
-    decodeId: (encodedId: string) => [id: string, name: string]
-  ) => {
-    const paths = getAllPaths(base).map((item) =>
+  const getBuilder: GetBuilder = async (root, unstable_renderForBuild) => {
+    const paths = (await getAllPaths(root)).map((item) =>
       item === "index" ? "/" : `/${item}`
     );
-    const prefetcherForPaths = await Promise.all(paths.map(prefetcher));
+    const path2moduleIds: Record<string, string[]> = {};
+    for (const pathStr of paths) {
+      const moduleIds = await collectClientModules(
+        pathStr,
+        getEntry,
+        unstable_renderForBuild
+      );
+      path2moduleIds[pathStr] = moduleIds;
+    }
     const customCode = `
 globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
   const path = search ? pathname + "?" + search : pathname;
-  const path2ids = {${paths.map((pathItem, index) => {
-    const moduleIds: string[] = [];
-    for (const m of prefetcherForPaths[index]?.clientModules || []) {
-      const [id] = decodeId(m["$$id"]);
-      moduleIds.push(id);
-    }
-    return `
-    ${JSON.stringify(pathItem)}: ${JSON.stringify(moduleIds)}`;
-  })}
-  };
+  const path2ids = ${JSON.stringify(path2moduleIds)};
   for (const id of path2ids[path]) {
     import(id);
   }
 };`;
     return Object.fromEntries(
-      paths.map((pathStr, index) => {
-        return [
-          pathStr,
-          {
-            elements: prefetcherForPaths[index]?.elements || [],
-            customCode,
-          },
-        ];
-      })
-    );
-  };
-
-  const unstable_getCustomModules: unstable_GetCustomModules = async () => {
-    return Object.fromEntries(
-      getAllFiles(base).map((file) => [
-        `${routesPath}/${file.replace(/\.\w+$/, "")}`,
-        `${base}/${file}`,
+      paths.map((pathStr) => [
+        pathStr,
+        { elements: prefetcher(pathStr), customCode },
       ])
     );
   };
 
-  return { getEntry, getBuilder, unstable_getCustomModules };
+  return { getEntry, getBuilder };
 }
 
 export function Link(props: LinkProps) {
