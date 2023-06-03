@@ -4,7 +4,7 @@
     "target": "esnext",
     "downlevelIteration": true,
     "esModuleInterop": true,
-    "module": "Node16",
+    "module": "nodenext",
     "skipLibCheck": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
