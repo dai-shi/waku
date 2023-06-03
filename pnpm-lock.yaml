@@ -45,14 +45,15 @@ devDependencies:
   bright:
     specifier: ^0.8.2
     version: 0.8.2(react@18.3.0-canary-018c58c9c-20230601)
-  jotai:
-    specifier: ^2.1.0
   express:
     specifier: ^4.18.2
     version: 4.18.2
   glob:
     specifier: ^10.2.6
     version: 10.2.6
+  jotai:
+    specifier: ^2.1.0
+    version: 2.1.0(react@18.3.0-canary-018c58c9c-20230601)
   postcss:
     specifier: ^8.4.24
     version: 8.4.24
@@ -2064,7 +2065,7 @@ packages:
     hasBin: true
     dev: true
 
-  /jotai@2.1.0(react@18.3.0-canary-5309f1028-20230517):
+  /jotai@2.1.0(react@18.3.0-canary-018c58c9c-20230601):
     resolution: {integrity: sha512-fR82PtHAmEQrc/daMEYGc4EteW96/b6wodtDSCzLvoJA/6y4YG70er4hh2f8CYwYjqwQ0eZUModGfG4DmwkTyQ==}
     engines: {node: '>=12.20.0'}
     peerDependencies:
@@ -2073,7 +2074,7 @@ packages:
       react:
         optional: true
     dependencies:
-      react: 18.3.0-canary-5309f1028-20230517
+      react: 18.3.0-canary-018c58c9c-20230601
     dev: true
 
   /js-tokens@4.0.0:
