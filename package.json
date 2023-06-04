@@ -47,12 +47,13 @@
     "dist"
   ],
   "scripts": {
+    "dev": "swc src -d dist -w",
     "compile": "npm run compile:code && npm run compile:types",
     "compile:code": "swc src -d dist && swc src -d dist/cjs -C module.type=commonjs && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
     "compile:types": "tsc --project tsconfig.build.json",
     "test": "tsc --project . --noEmit",
-    "e2e": "cd e2e/01 && playwright test && cd ../02 && playwright test",
-    "examples:dev": "npm run compile:code && ./dist/cli.js dev --config ./examples/${NAME}/vite.config.ts",
+    "e2e": "playwright test",
+    "examples:dev": "npm run compile:code && waku dev --config ./examples/${NAME}/vite.config.ts",
     "examples:dev:01_counter": "NAME=01_counter npm run examples:dev",
     "examples:dev:02_async": "NAME=02_async npm run examples:dev",
     "examples:dev:03_promise": "NAME=03_promise npm run examples:dev",
