@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Changed
+- fix: 'use client' warning #63
 
 ## [0.11.2] - 2023-06-03
 ### Changed
