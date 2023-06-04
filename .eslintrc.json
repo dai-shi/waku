@@ -1,17 +1,20 @@
 {
-  "settings": {
-    "react": { "version": "detect" }
-  },
+  "root": true,
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:react/recommended",
     "plugin:react/jsx-runtime",
+    "plugin:import/recommended",
+    "plugin:import/typescript",
     "prettier"
   ],
+  "settings": {
+    "react": { "version": "detect" },
+    "import/resolver": { "typescript": true }
+  },
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],
-  "root": true,
   "ignorePatterns": ["dist"],
   "rules": {
     "@typescript-eslint/no-non-null-assertion": "off",
