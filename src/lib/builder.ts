@@ -8,7 +8,7 @@ import react from "@vitejs/plugin-react";
 import { configFileConfig, resolveConfig } from "./config.js";
 import { shutdown, setClientEntries, buildRSC } from "./rsc-handler.js";
 import { rscIndexPlugin, rscAnalyzePlugin } from "./vite-plugin-rsc.js";
-import type { RollupWarning, WarningHandler } from 'rollup'
+import type { RollupWarning, WarningHandler } from "rollup";
 
 const createVercelOutput = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
@@ -71,25 +71,22 @@ const resolveFileName = (fname: string) => {
 };
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
-const onwarn = (
-  warning: RollupWarning,
-  warn: WarningHandler
-) => {
+const onwarn = (warning: RollupWarning, warn: WarningHandler) => {
   if (
-    warning.code === 'MODULE_LEVEL_DIRECTIVE' &&
-    warning.message.includes(`use client`)
+    warning.code === "MODULE_LEVEL_DIRECTIVE" &&
+    warning.message.includes("use client")
   ) {
     return;
   } else if (
-    warning.code === 'SOURCEMAP_ERROR' &&
-    warning.loc?.file?.endsWith('.tsx') &&
+    warning.code === "SOURCEMAP_ERROR" &&
+    warning.loc?.file?.endsWith(".tsx") &&
     warning.loc?.column === 0 &&
     warning.loc?.line === 1
   ) {
     return;
   }
   warn(warning);
-}
+};
 
 export async function build() {
   const config = await resolveConfig("build");
@@ -126,6 +123,7 @@ export async function build() {
       write: false,
       ssr: true,
       rollupOptions: {
+        onwarn,
         input: {
           entries: entriesFile,
         },
