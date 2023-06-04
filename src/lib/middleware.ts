@@ -93,7 +93,7 @@ export function devServer(): Middleware {
       exclude: ["waku"],
     },
     plugins: [
-      // @ts-ignore
+      // @ts-expect-error This expression is not callable.
       react(),
       rscIndexPlugin(),
     ],

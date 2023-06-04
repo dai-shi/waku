@@ -67,7 +67,7 @@ export default function Layout() {
           To use React Server Components in Waku, you need to create an{" "}
           <Code>entries.ts</Code> file in the project root directory with a{" "}
           <Code>getEntry</Code> function that returns a server component module.
-          Here's an example:
+          Here&apos;s an example:
         </div>
         <div className="my-3">
           <CodeBlock lang="tsx">{code1}</CodeBlock>
@@ -83,7 +83,7 @@ export default function Layout() {
         <div className="my-1">
           To render a React Server Component on the client, you can use the{" "}
           <Code>serve</Code> function from <Code>waku/client</Code> with the RSC
-          ID to create a wrapper component. Here's an example:
+          ID to create a wrapper component. Here&apos;s an example:
         </div>
         <div className="my-3">
           <CodeBlock lang="tsx">{code2}</CodeBlock>
@@ -97,8 +97,8 @@ export default function Layout() {
       </article>
       <article className="mt-6">
         <div className="my-1">
-          You can also re-render a React Server Component with new props. Here's
-          an example just to illustrate the idea:
+          You can also re-render a React Server Component with new props.
+          Here&apos;s an example just to illustrate the idea:
         </div>
         <div className="my-3">
           <CodeBlock lang="tsx">{code3}</CodeBlock>
@@ -113,7 +113,7 @@ export default function Layout() {
         <div className="my-1">
           In addition to the <Code>getEntry</Code> function, you can also
           optionally specify <Code>getBuilder</Code> function in{" "}
-          <Code>entries.ts</Code>. Here's an example:
+          <Code>entries.ts</Code>. Here&apos;s an example:
         </div>
         <div className="my-3">
           <CodeBlock lang="tsx">{code4}</CodeBlock>

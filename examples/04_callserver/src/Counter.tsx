@@ -21,7 +21,7 @@ export const Counter = ({
       <button onClick={() => setCount((c) => c + 1)}>Increment</button>
       <p>
         <button onClick={handleClick}>
-          greet("c=" + count) = {text as string}
+          greet(&quot;c=&quot; + count) = {text as string}
         </button>{" "}
         {isPending ? "Pending..." : ""}
       </p>

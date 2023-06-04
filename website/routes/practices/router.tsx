@@ -55,15 +55,15 @@ export default function Layout() {
         <div className="my-1">
           In <Code>entries.ts</Code>, we use <Code>fileRouter</Code> to export
           all three functions <Code>getEntry</Code>, <Code>prefetcher</Code>,
-          and <Code>prerenderer</Code> at once. Here's an example code:
+          and <Code>prerenderer</Code> at once. Here&apos;s an example code:
         </div>
         <div className="my-3">
           <CodeBlock lang="tsx">{code2}</CodeBlock>
         </div>
         <div className="my-1">
           The implementation of the <Code>Router</Code> is file-based. However,
-          it shouldn't be too difficult to provide a configuration-based router
-          implementation if desired.
+          it shouldn&apos;t be too difficult to provide a configuration-based
+          router implementation if desired.
         </div>
       </article>
       <h3 className="text-lg font-bold mt-8">How to try it</h3>
