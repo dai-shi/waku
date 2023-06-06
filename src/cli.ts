@@ -4,7 +4,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from 'node:util'
 import { createRequire } from 'node:module'
-import * as process from 'process'
 
 const require = createRequire(
   new URL('.', import.meta.url)
