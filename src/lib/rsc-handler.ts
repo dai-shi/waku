@@ -6,7 +6,7 @@ const worker = new Worker(new URL("rsc-handler-worker.js", import.meta.url), {
   execArgv: ["--conditions", "react-server"],
 });
 
-export type RenderInput<Props extends {} = {}> = {
+export type RenderInput<Props = unknown> = {
   rscId?: string | undefined;
   props?: Props | undefined;
   rsfId?: string | undefined;
