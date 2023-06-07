@@ -2,33 +2,61 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { parseArgs } from "node:util";
+import { createRequire } from "node:module";
 
-const cmd = process.argv[2];
+const require = createRequire(new URL(".", import.meta.url));
 
-for (let i = 3; i < process.argv.length; ++i) {
-  if (process.argv[i] === "--config") {
-    const fname = process.argv[i + 1];
-    if (fname && fs.existsSync(fname)) {
-      process.env.CONFIG_FILE = fname;
-    } else {
-      throw new Error("config file does not exist");
-    }
-    ++i;
+const { values, positionals } = parseArgs({
+  args: process.argv.splice(2),
+  allowPositionals: true,
+  options: {
+    config: {
+      type: "string",
+    },
+    version: {
+      type: "boolean",
+      short: "v",
+    },
+    help: {
+      type: "boolean",
+      short: "h",
+    },
+  },
+});
+
+const cmd = positionals[0];
+
+if (values.config) {
+  if (!fs.existsSync(values.config)) {
+    throw new Error("config file does not exist");
+  } else {
+    process.env.CONFIG_FILE = values.config;
   }
 }
 
-switch (cmd) {
-  case "dev":
-    runDev();
-    break;
-  case "build":
-    runBuild();
-    break;
-  case "start":
-    runStart();
-    break;
-  default:
-    throw Error("unknown cmd: " + cmd);
+if (values.version) {
+  const { version } = require("../package.json");
+  console.log(version);
+} else if (values.help) {
+  displayUsage();
+} else {
+  switch (cmd) {
+    case "dev":
+      runDev();
+      break;
+    case "build":
+      runBuild();
+      break;
+    case "start":
+      runStart();
+      break;
+    case undefined:
+      displayUsage();
+      break;
+    default:
+      throw Error("unknown cmd: " + cmd);
+  }
 }
 
 async function runDev() {
@@ -61,4 +89,18 @@ async function runStart() {
   app.listen(port, () => {
     console.info("Listening on", port);
   });
+}
+
+function displayUsage() {
+  console.log(`Usage: waku [options] <command>`);
+  console.log("");
+  console.log("Commands:");
+  console.log("  dev         Start the development server");
+  console.log("  build       Build the application for production");
+  console.log("  start       Start the production server");
+  console.log("");
+  console.log("Options:");
+  console.log("  -c, --config <path>   Path to the configuration file");
+  console.log("  -v, --version         Display the version number");
+  console.log("  -h, --help            Display this help message");
 }
