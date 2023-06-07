@@ -2,35 +2,30 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { parseArgs } from 'node:util'
-import { createRequire } from 'node:module'
+import { parseArgs } from "node:util";
+import { createRequire } from "node:module";
 
-const require = createRequire(
-  new URL('.', import.meta.url)
-)
+const require = createRequire(new URL(".", import.meta.url));
 
-const {
-  values,
-  positionals
-} = parseArgs({
+const { values, positionals } = parseArgs({
   args: process.argv.splice(2),
   allowPositionals: true,
   options: {
     config: {
-      type: 'string'
+      type: "string",
     },
     version: {
-      type: 'boolean',
-      short: 'v'
+      type: "boolean",
+      short: "v",
     },
     help: {
-      type: 'boolean',
-      short: 'h'
-    }
-  }
-})
+      type: "boolean",
+      short: "h",
+    },
+  },
+});
 
-const cmd = positionals[0]
+const cmd = positionals[0];
 
 if (values.config) {
   if (!fs.existsSync(values.config)) {
@@ -41,10 +36,10 @@ if (values.config) {
 }
 
 if (values.version) {
-  const { version } = require('../package.json')
-  console.log(version)
-} else if(values.help) {
-  displayUsage()
+  const { version } = require("../package.json");
+  console.log(version);
+} else if (values.help) {
+  displayUsage();
 } else {
   switch (cmd) {
     case "dev":
@@ -57,8 +52,8 @@ if (values.version) {
       runStart();
       break;
     case undefined:
-      displayUsage()
-      break
+      displayUsage();
+      break;
     default:
       throw Error("unknown cmd: " + cmd);
   }
@@ -97,15 +92,15 @@ async function runStart() {
 }
 
 function displayUsage() {
-  console.log(`Usage: waku [options] <command>`)
-  console.log('')
-  console.log('Commands:')
-  console.log('  dev         Start the development server')
-  console.log('  build       Build the application for production')
-  console.log('  start       Start the production server')
-  console.log('')
-  console.log('Options:')
-  console.log('  -c, --config <path>   Path to the configuration file')
-  console.log('  -v, --version         Display the version number')
-  console.log('  -h, --help            Display this help message')
+  console.log(`Usage: waku [options] <command>`);
+  console.log("");
+  console.log("Commands:");
+  console.log("  dev         Start the development server");
+  console.log("  build       Build the application for production");
+  console.log("  start       Start the production server");
+  console.log("");
+  console.log("Options:");
+  console.log("  -c, --config <path>   Path to the configuration file");
+  console.log("  -v, --version         Display the version number");
+  console.log("  -h, --help            Display this help message");
 }
