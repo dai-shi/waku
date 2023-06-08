@@ -9,13 +9,9 @@ import RSDWServer from "react-server-dom-webpack/server";
 
 import { configFileConfig, resolveConfig } from "./config.js";
 import { transformRsfId, generatePrefetchCode } from "./rsc-utils.js";
-import type {
-  RenderInput,
-  MessageReq,
-  MessageRes,
-  BuildOutput,
-} from "./rsc-handler.js";
+import type { MessageReq, MessageRes, BuildOutput } from "./rsc-handler.js";
 import { defineEntries } from "../server.js";
+import type { RenderInput } from "../server.js";
 import { rscTransformPlugin, rscReloadPlugin } from "./vite-plugin-rsc.js";
 
 const { renderToPipeableStream } = RSDWServer;
@@ -26,9 +22,9 @@ type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 const handleSetClientEntries = async (
   mesg: MessageReq & { type: "setClientEntries" }
 ) => {
-  const { id, value } = mesg;
+  const { id, value, command } = mesg;
   try {
-    await setClientEntries(value);
+    await setClientEntries(value, command);
     const mesg: MessageRes = { id, type: "end" };
     parentPort!.postMessage(mesg);
   } catch (err) {
@@ -124,13 +120,15 @@ parentPort!.on("message", (mesg: MessageReq) => {
   }
 });
 
-const configPromise = resolveConfig("serve");
+// FIXME using mutable module variable doesn't seem nice. Let's revisit this.
+let resolvedConfig: Awaited<ReturnType<typeof resolveConfig>> | undefined;
 
-const getEntriesFile = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
-  isBuild: boolean
-) => {
-  if (isBuild) {
+const getEntriesFile = async () => {
+  if (!resolvedConfig) {
+    throw new Error("config is not ready");
+  }
+  const config = resolvedConfig;
+  if (config.command === "build") {
     return path.join(
       config.root,
       config.build.outDir,
@@ -140,12 +138,8 @@ const getEntriesFile = async (
   return path.join(config.root, config.framework.entriesJs);
 };
 
-const getFunctionComponent = async (
-  rscId: string,
-  config: Awaited<ReturnType<typeof resolveConfig>>,
-  isBuild: boolean
-) => {
-  const entriesFile = await getEntriesFile(config, isBuild);
+const getFunctionComponent = async (rscId: string) => {
+  const entriesFile = await getEntriesFile();
   const {
     default: { getEntry },
   } = await (loadServerFile(entriesFile) as Promise<Entries>);
@@ -161,10 +155,11 @@ const getFunctionComponent = async (
 
 let absoluteClientEntries: Record<string, string> = {};
 
-const resolveClientEntry = (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
-  filePath: string
-) => {
+const resolveClientEntry = (filePath: string) => {
+  if (!resolvedConfig) {
+    throw new Error("config is not ready");
+  }
+  const config = resolvedConfig;
   const clientEntry = absoluteClientEntries[filePath];
   if (!clientEntry) {
     if (absoluteClientEntries["*"] === "*") {
@@ -176,14 +171,18 @@ const resolveClientEntry = (
 };
 
 async function setClientEntries(
-  value: "load" | Record<string, string>
+  value: "load" | Record<string, string>,
+  command: "serve" | "build"
 ): Promise<void> {
   if (value !== "load") {
     absoluteClientEntries = value;
     return;
   }
-  const config = await configPromise;
-  const entriesFile = await getEntriesFile(config, false);
+  if (!resolvedConfig) {
+    resolvedConfig = await resolveConfig(command);
+  }
+  const config = resolvedConfig;
+  const entriesFile = await getEntriesFile();
   const { clientEntries } = await loadServerFile(entriesFile);
   if (!clientEntries) {
     throw new Error("Failed to load clientEntries");
@@ -197,33 +196,40 @@ async function setClientEntries(
   );
 }
 
-async function renderRSC(input: RenderInput): Promise<PipeableStream> {
-  const config = await configPromise;
+async function renderRSC(
+  input: RenderInput,
+  clientModuleCallback?: (id: string) => void
+): Promise<PipeableStream> {
+  if (!resolvedConfig) {
+    resolvedConfig = await resolveConfig("serve");
+  }
+  const config = resolvedConfig;
   const bundlerConfig = new Proxy(
     {},
     {
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split("#") as [string, string];
-        const id = resolveClientEntry(config, filePath);
+        const id = resolveClientEntry(filePath);
+        clientModuleCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },
     }
   );
 
-  if (input.rsfId && input.args) {
+  if ("rsfId" in input) {
     const [fileId, name] = input.rsfId.split("#");
     const fname = path.join(config.root, fileId!);
     const mod = await loadServerFile(fname);
     const data = await (mod[name!] || mod)(...input.args);
-    if (!input.rscId) {
+    if (!("rscId" in input)) {
       return renderToPipeableStream(data, bundlerConfig);
     }
     // continue for mutation mode
   }
-  if (input.rscId && input.props) {
-    const component = await getFunctionComponent(input.rscId, config, false);
+  if ("rscId" in input) {
+    const component = await getFunctionComponent(input.rscId);
     return renderToPipeableStream(
-      createElement(component, input.props),
+      createElement(component, input.props as any),
       bundlerConfig
     ).pipe(transformRsfId(config.root));
   }
@@ -232,9 +238,12 @@ async function renderRSC(input: RenderInput): Promise<PipeableStream> {
 
 // FIXME this may take too much responsibility
 async function buildRSC(): Promise<BuildOutput> {
-  const config = await resolveConfig("build");
+  if (!resolvedConfig) {
+    resolvedConfig = await resolveConfig("build");
+  }
+  const config = resolvedConfig;
   const basePrefix = config.base + config.framework.rscPrefix;
-  const distEntriesFile = await getEntriesFile(config, true);
+  const distEntriesFile = await getEntriesFile();
   const {
     default: { getBuilder },
   } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
@@ -245,28 +254,7 @@ async function buildRSC(): Promise<BuildOutput> {
     return { rscFiles: [], htmlFiles: [] };
   }
 
-  const renderForBuild = (
-    element: unknown,
-    clientModuleCallback: (id: string) => void
-  ): PipeableStream => {
-    const bundlerConfig = new Proxy(
-      {},
-      {
-        get(_target, encodedId: string) {
-          const [filePath, name] = encodedId.split("#") as [string, string];
-          const id = resolveClientEntry(config, filePath);
-          clientModuleCallback(id);
-          return { id, chunks: [id], name, async: true };
-        },
-      }
-    );
-    const pipeable = renderToPipeableStream(element, bundlerConfig).pipe(
-      transformRsfId(path.join(config.root, config.build.outDir))
-    );
-    return pipeable;
-  };
-
-  const pathMap = await getBuilder(config.root, renderForBuild);
+  const pathMap = await getBuilder(config.root, renderRSC);
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (
     rscId: string,
@@ -304,10 +292,8 @@ async function buildRSC(): Promise<BuildOutput> {
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          const component = await getFunctionComponent(rscId, config, true);
-          const pipeable = renderForBuild(
-            createElement(component, props as any),
-            (id) => addClientModule(rscId, serializedProps, id)
+          const pipeable = await renderRSC({ rscId, props }, (id) =>
+            addClientModule(rscId, serializedProps, id)
           );
           await new Promise<void>((resolve, reject) => {
             const stream = fs.createWriteStream(destFile);

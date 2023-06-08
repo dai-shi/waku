@@ -235,7 +235,7 @@ export async function build() {
       config.base + val,
     ])
   );
-  await setClientEntries(absoluteClientEntries);
+  await setClientEntries(absoluteClientEntries, "build");
 
   const buildOutput = await buildRSC();
 

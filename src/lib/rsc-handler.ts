@@ -2,16 +2,11 @@ import { PassThrough } from "node:stream";
 import type { Readable } from "node:stream";
 import { Worker } from "node:worker_threads";
 
+import type { RenderInput } from "../server.js";
+
 const worker = new Worker(new URL("rsc-handler-worker.js", import.meta.url), {
   execArgv: ["--conditions", "react-server"],
 });
-
-export type RenderInput<Props = unknown> = {
-  rscId?: string | undefined;
-  props?: Props | undefined;
-  rsfId?: string | undefined;
-  args?: unknown[] | undefined;
-};
 
 export type BuildOutput = {
   rscFiles: string[];
@@ -24,6 +19,7 @@ export type MessageReq =
       id: number;
       type: "setClientEntries";
       value: "load" | Record<string, string>;
+      command: "serve" | "build";
     }
   | { id: number; type: "render"; input: RenderInput }
   | { id: number; type: "build" };
@@ -64,7 +60,8 @@ export function shutdown() {
 let nextId = 1;
 
 export function setClientEntries(
-  value: "load" | Record<string, string>
+  value: "load" | Record<string, string>,
+  command: "serve" | "build"
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const id = nextId++;
@@ -77,7 +74,7 @@ export function setClientEntries(
         messageCallbacks.delete(id);
       }
     });
-    const mesg: MessageReq = { id, type: "setClientEntries", value };
+    const mesg: MessageReq = { id, type: "setClientEntries", value, command };
     worker.postMessage(mesg);
   });
 }
