@@ -268,17 +268,27 @@ async function buildRSC(): Promise<BuildOutput> {
 
   const pathMap = await getBuilder(config.root, renderForBuild);
   const clientModuleMap = new Map<string, Set<string>>();
-  const addClientModule = (pathStr: string, id: string) => {
-    let idSet = clientModuleMap.get(pathStr);
+  const addClientModule = (
+    rscId: string,
+    serializedProps: string,
+    id: string
+  ) => {
+    const key = rscId + "/" + serializedProps;
+    let idSet = clientModuleMap.get(key);
     if (!idSet) {
       idSet = new Set();
-      clientModuleMap.set(pathStr, idSet);
+      clientModuleMap.set(key, idSet);
     }
     idSet.add(id);
   };
+  const getClientModules = (rscId: string, serializedProps: string) => {
+    const key = rscId + "/" + serializedProps;
+    const idSet = clientModuleMap.get(key);
+    return Array.from(idSet || []);
+  };
   const rscFileSet = new Set<string>(); // XXX could be implemented better
   await Promise.all(
-    Object.entries(pathMap).map(async ([pathStr, { elements }]) => {
+    Object.entries(pathMap).map(async ([, { elements }]) => {
       for (const [rscId, props] of elements || []) {
         // FIXME we blindly expect JSON.stringify usage is deterministic
         const serializedProps = JSON.stringify(props);
@@ -297,7 +307,7 @@ async function buildRSC(): Promise<BuildOutput> {
           const component = await getFunctionComponent(rscId, config, true);
           const pipeable = renderForBuild(
             createElement(component, props as any),
-            (id) => addClientModule(pathStr, id)
+            (id) => addClientModule(rscId, serializedProps, id)
           );
           await new Promise<void>((resolve, reject) => {
             const stream = fs.createWriteStream(destFile);
@@ -344,7 +354,11 @@ async function buildRSC(): Promise<BuildOutput> {
             }
             return [[rscId, props]];
           }),
-          clientModuleMap.get(pathStr) || []
+          Array.from(elements || []).flatMap(([rscId, props]) => {
+            // FIXME we blindly expect JSON.stringify usage is deterministic
+            const serializedProps = JSON.stringify(props);
+            return getClientModules(rscId, serializedProps);
+          })
         ) + (customCode || "");
       if (code) {
         // HACK is this too naive to inject script code?
