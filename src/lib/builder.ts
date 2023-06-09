@@ -229,6 +229,11 @@ const emitRscFiles = async (
     }
     idSet.add(id);
   };
+  const getClientModules = (rscId: string, serializedProps: string) => {
+    const key = rscId + "/" + serializedProps;
+    const idSet = clientModuleMap.get(key);
+    return Array.from(idSet || []);
+  };
   const rscFileSet = new Set<string>(); // XXX could be implemented better
   await Promise.all(
     Object.entries(pathMap).map(async ([, { elements }]) => {
@@ -260,13 +265,13 @@ const emitRscFiles = async (
       }
     })
   );
-  return { pathMap, clientModuleMap, rscFiles: Array.from(rscFileSet) };
+  return { pathMap, getClientModules, rscFiles: Array.from(rscFileSet) };
 };
 
 const emitHtmlFiles = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   pathMap: Awaited<ReturnType<typeof getBuilderRSC>>,
-  clientModuleMap: Map<string, Set<string>>
+  getClientModules: (rscId: string, serializedProps: string) => string[]
 ) => {
   const basePrefix = config.base + config.framework.rscPrefix;
   const publicIndexHtmlFile = path.join(
@@ -278,11 +283,6 @@ const emitHtmlFiles = async (
   const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
     encoding: "utf8",
   });
-  const getClientModules = (rscId: string, serializedProps: string) => {
-    const key = rscId + "/" + serializedProps;
-    const idSet = clientModuleMap.get(key);
-    return Array.from(idSet || []);
-  };
   const htmlFiles = await Promise.all(
     Object.entries(pathMap).map(async ([pathStr, { elements, customCode }]) => {
       const destFile = path.join(
@@ -437,8 +437,8 @@ export async function build() {
     clientBuildOutput
   );
 
-  const { pathMap, clientModuleMap, rscFiles } = await emitRscFiles(config);
-  const { htmlFiles } = await emitHtmlFiles(config, pathMap, clientModuleMap);
+  const { pathMap, getClientModules, rscFiles } = await emitRscFiles(config);
+  const { htmlFiles } = await emitHtmlFiles(config, pathMap, getClientModules);
 
   emitPackageJson(config);
 
