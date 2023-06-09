@@ -22,8 +22,7 @@ export type MessageReq =
       command: "serve" | "build";
     }
   | { id: number; type: "render"; input: RenderInput }
-  | { id: number; type: "getBuilder" }
-  | { id: number; type: "build" };
+  | { id: number; type: "getBuilder" };
 
 export type MessageRes =
   | { type: "full-reload" }
@@ -31,8 +30,7 @@ export type MessageRes =
   | { id: number; type: "moduleId"; moduleId: string }
   | { id: number; type: "end" }
   | { id: number; type: "err"; err: unknown }
-  | { id: number; type: "builder"; output: Awaited<ReturnType<GetBuilder>> }
-  | { id: number; type: "buildOutput"; output: BuildOutput };
+  | { id: number; type: "builder"; output: Awaited<ReturnType<GetBuilder>> };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
@@ -121,23 +119,6 @@ export function getBuilderRSC(): ReturnType<GetBuilder> {
       }
     });
     const mesg: MessageReq = { id, type: "getBuilder" };
-    worker.postMessage(mesg);
-  });
-}
-
-export function buildRSC(): Promise<BuildOutput> {
-  return new Promise((resolve, reject) => {
-    const id = nextId++;
-    messageCallbacks.set(id, (mesg) => {
-      if (mesg.type === "buildOutput") {
-        resolve(mesg.output);
-        messageCallbacks.delete(id);
-      } else if (mesg.type === "err") {
-        reject(mesg.err);
-        messageCallbacks.delete(id);
-      }
-    });
-    const mesg: MessageReq = { id, type: "build" };
     worker.postMessage(mesg);
   });
 }

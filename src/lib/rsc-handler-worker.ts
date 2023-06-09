@@ -1,5 +1,4 @@
 import path from "node:path";
-import fs from "node:fs";
 import { parentPort } from "node:worker_threads";
 import { Writable } from "node:stream";
 
@@ -8,8 +7,8 @@ import { createElement } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 
 import { configFileConfig, resolveConfig } from "./config.js";
-import { transformRsfId, generatePrefetchCode } from "./rsc-utils.js";
-import type { MessageReq, MessageRes, BuildOutput } from "./rsc-handler.js";
+import { transformRsfId } from "./rsc-utils.js";
+import type { MessageReq, MessageRes } from "./rsc-handler.js";
 import { defineEntries } from "../server.js";
 import type { RenderInput } from "../server.js";
 import { rscTransformPlugin, rscReloadPlugin } from "./vite-plugin-rsc.js";
@@ -81,18 +80,6 @@ const handleGetBuilder = async (mesg: MessageReq & { type: "getBuilder" }) => {
   }
 };
 
-const handleBuild = async (mesg: MessageReq & { type: "build" }) => {
-  const { id } = mesg;
-  try {
-    const output = await buildRSC();
-    const mesg: MessageRes = { id, type: "buildOutput", output };
-    parentPort!.postMessage(mesg);
-  } catch (err) {
-    const mesg: MessageRes = { id, type: "err", err };
-    parentPort!.postMessage(mesg);
-  }
-};
-
 const vitePromise = createServer({
   ...configFileConfig,
   plugins: [
@@ -132,8 +119,6 @@ parentPort!.on("message", (mesg: MessageReq) => {
     handleRender(mesg);
   } else if (mesg.type === "getBuilder") {
     handleGetBuilder(mesg);
-  } else if (mesg.type === "build") {
-    handleBuild(mesg);
   }
 });
 
@@ -271,125 +256,4 @@ async function getBuilderRSC() {
 
   const output = await getBuilder(config.root, renderRSC);
   return output;
-}
-
-// FIXME this may take too much responsibility
-async function buildRSC(): Promise<BuildOutput> {
-  if (!resolvedConfig) {
-    resolvedConfig = await resolveConfig("build");
-  }
-  const config = resolvedConfig;
-  const basePrefix = config.base + config.framework.rscPrefix;
-  const distEntriesFile = await getEntriesFile();
-  const {
-    default: { getBuilder },
-  } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
-  if (!getBuilder) {
-    console.warn(
-      "getBuilder is undefined. It's recommended for optimization and sometimes required."
-    );
-    return { rscFiles: [], htmlFiles: [] };
-  }
-
-  const pathMap = await getBuilder(config.root, renderRSC);
-  const clientModuleMap = new Map<string, Set<string>>();
-  const addClientModule = (
-    rscId: string,
-    serializedProps: string,
-    id: string
-  ) => {
-    const key = rscId + "/" + serializedProps;
-    let idSet = clientModuleMap.get(key);
-    if (!idSet) {
-      idSet = new Set();
-      clientModuleMap.set(key, idSet);
-    }
-    idSet.add(id);
-  };
-  const getClientModules = (rscId: string, serializedProps: string) => {
-    const key = rscId + "/" + serializedProps;
-    const idSet = clientModuleMap.get(key);
-    return Array.from(idSet || []);
-  };
-  const rscFileSet = new Set<string>(); // XXX could be implemented better
-  await Promise.all(
-    Object.entries(pathMap).map(async ([, { elements }]) => {
-      for (const [rscId, props] of elements || []) {
-        // FIXME we blindly expect JSON.stringify usage is deterministic
-        const serializedProps = JSON.stringify(props);
-        const searchParams = new URLSearchParams();
-        searchParams.set("props", serializedProps);
-        const destFile = path.join(
-          config.root,
-          config.build.outDir,
-          config.framework.outPublic,
-          config.framework.rscPrefix + decodeURIComponent(rscId),
-          decodeURIComponent(`${searchParams}`)
-        );
-        if (!rscFileSet.has(destFile)) {
-          rscFileSet.add(destFile);
-          fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          const pipeable = await renderRSC({ rscId, props }, (id) =>
-            addClientModule(rscId, serializedProps, id)
-          );
-          await new Promise<void>((resolve, reject) => {
-            const stream = fs.createWriteStream(destFile);
-            stream.on("finish", resolve);
-            stream.on("error", reject);
-            pipeable.pipe(stream);
-          });
-        }
-      }
-    })
-  );
-
-  const publicIndexHtmlFile = path.join(
-    config.root,
-    config.build.outDir,
-    config.framework.outPublic,
-    config.framework.indexHtml
-  );
-  const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
-    encoding: "utf8",
-  });
-  const htmlFiles = await Promise.all(
-    Object.entries(pathMap).map(async ([pathStr, { elements, customCode }]) => {
-      const destFile = path.join(
-        config.root,
-        config.build.outDir,
-        config.framework.outPublic,
-        pathStr,
-        pathStr.endsWith("/") ? "index.html" : ""
-      );
-      let data = "";
-      if (fs.existsSync(destFile)) {
-        data = fs.readFileSync(destFile, { encoding: "utf8" });
-      } else {
-        fs.mkdirSync(path.dirname(destFile), { recursive: true });
-        data = publicIndexHtml;
-      }
-      const code =
-        generatePrefetchCode(
-          basePrefix,
-          Array.from(elements || []).flatMap(([rscId, props, skipPrefetch]) => {
-            if (skipPrefetch) {
-              return [];
-            }
-            return [[rscId, props]];
-          }),
-          Array.from(elements || []).flatMap(([rscId, props]) => {
-            // FIXME we blindly expect JSON.stringify usage is deterministic
-            const serializedProps = JSON.stringify(props);
-            return getClientModules(rscId, serializedProps);
-          })
-        ) + (customCode || "");
-      if (code) {
-        // HACK is this too naive to inject script code?
-        data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
-      }
-      fs.writeFileSync(destFile, data, { encoding: "utf8" });
-      return destFile;
-    })
-  );
-  return { rscFiles: Array.from(rscFileSet), htmlFiles };
 }
