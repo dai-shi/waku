@@ -2,16 +2,11 @@ import { PassThrough } from "node:stream";
 import type { Readable } from "node:stream";
 import { Worker } from "node:worker_threads";
 
+import type { RenderInput, GetBuilder } from "../server.js";
+
 const worker = new Worker(new URL("rsc-handler-worker.js", import.meta.url), {
   execArgv: ["--conditions", "react-server"],
 });
-
-export type RenderInput<Props = unknown> = {
-  rscId?: string | undefined;
-  props?: Props | undefined;
-  rsfId?: string | undefined;
-  args?: unknown[] | undefined;
-};
 
 export type BuildOutput = {
   rscFiles: string[];
@@ -24,16 +19,23 @@ export type MessageReq =
       id: number;
       type: "setClientEntries";
       value: "load" | Record<string, string>;
+      command: "serve" | "build";
     }
-  | { id: number; type: "render"; input: RenderInput }
-  | { id: number; type: "build" };
+  | {
+      id: number;
+      type: "render";
+      input: RenderInput;
+      moduleIdCallback: boolean;
+    }
+  | { id: number; type: "getBuilder" };
 
 export type MessageRes =
   | { type: "full-reload" }
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
+  | { id: number; type: "moduleId"; moduleId: string }
   | { id: number; type: "end" }
   | { id: number; type: "err"; err: unknown }
-  | { id: number; type: "buildOutput"; output: BuildOutput };
+  | { id: number; type: "builder"; output: Awaited<ReturnType<GetBuilder>> };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
@@ -53,8 +55,8 @@ export function registerReloadCallback(fn: (type: "full-reload") => void) {
   return () => worker.off("message", listener);
 }
 
-export function shutdown() {
-  return new Promise<void>((resolve) => {
+export function shutdown(): Promise<void> {
+  return new Promise((resolve) => {
     worker.on("close", resolve);
     const mesg: MessageReq = { type: "shutdown" };
     worker.postMessage(mesg);
@@ -64,9 +66,10 @@ export function shutdown() {
 let nextId = 1;
 
 export function setClientEntries(
-  value: "load" | Record<string, string>
+  value: "load" | Record<string, string>,
+  command: "serve" | "build"
 ): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const id = nextId++;
     messageCallbacks.set(id, (mesg) => {
       if (mesg.type === "end") {
@@ -77,17 +80,22 @@ export function setClientEntries(
         messageCallbacks.delete(id);
       }
     });
-    const mesg: MessageReq = { id, type: "setClientEntries", value };
+    const mesg: MessageReq = { id, type: "setClientEntries", value, command };
     worker.postMessage(mesg);
   });
 }
 
-export function renderRSC(input: RenderInput): Readable {
+export function renderRSC(
+  input: RenderInput,
+  clientModuleCallback?: (id: string) => void
+): Readable {
   const id = nextId++;
   const passthrough = new PassThrough();
   messageCallbacks.set(id, (mesg) => {
     if (mesg.type === "buf") {
       passthrough.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
+    } else if (mesg.type === "moduleId") {
+      clientModuleCallback?.(mesg.moduleId);
     } else if (mesg.type === "end") {
       passthrough.end();
       messageCallbacks.delete(id);
@@ -98,16 +106,21 @@ export function renderRSC(input: RenderInput): Readable {
       messageCallbacks.delete(id);
     }
   });
-  const mesg: MessageReq = { id, type: "render", input };
+  const mesg: MessageReq = {
+    id,
+    type: "render",
+    input,
+    moduleIdCallback: !!clientModuleCallback,
+  };
   worker.postMessage(mesg);
   return passthrough;
 }
 
-export function buildRSC(): Promise<BuildOutput> {
+export function getBuilderRSC(): ReturnType<GetBuilder> {
   return new Promise((resolve, reject) => {
     const id = nextId++;
     messageCallbacks.set(id, (mesg) => {
-      if (mesg.type === "buildOutput") {
+      if (mesg.type === "builder") {
         resolve(mesg.output);
         messageCallbacks.delete(id);
       } else if (mesg.type === "err") {
@@ -115,7 +128,7 @@ export function buildRSC(): Promise<BuildOutput> {
         messageCallbacks.delete(id);
       }
     });
-    const mesg: MessageReq = { id, type: "build" };
+    const mesg: MessageReq = { id, type: "getBuilder" };
     worker.postMessage(mesg);
   });
 }

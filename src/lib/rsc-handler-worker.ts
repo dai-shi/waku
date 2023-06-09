@@ -1,5 +1,4 @@
 import path from "node:path";
-import fs from "node:fs";
 import { parentPort } from "node:worker_threads";
 import { Writable } from "node:stream";
 
@@ -8,14 +7,10 @@ import { createElement } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 
 import { configFileConfig, resolveConfig } from "./config.js";
-import { transformRsfId, generatePrefetchCode } from "./rsc-utils.js";
-import type {
-  RenderInput,
-  MessageReq,
-  MessageRes,
-  BuildOutput,
-} from "./rsc-handler.js";
+import { transformRsfId } from "./rsc-utils.js";
+import type { MessageReq, MessageRes } from "./rsc-handler.js";
 import { defineEntries } from "../server.js";
+import type { RenderInput } from "../server.js";
 import { rscTransformPlugin, rscReloadPlugin } from "./vite-plugin-rsc.js";
 
 const { renderToPipeableStream } = RSDWServer;
@@ -26,9 +21,9 @@ type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 const handleSetClientEntries = async (
   mesg: MessageReq & { type: "setClientEntries" }
 ) => {
-  const { id, value } = mesg;
+  const { id, value, command } = mesg;
   try {
-    await setClientEntries(value);
+    await setClientEntries(value, command);
     const mesg: MessageRes = { id, type: "end" };
     parentPort!.postMessage(mesg);
   } catch (err) {
@@ -38,9 +33,15 @@ const handleSetClientEntries = async (
 };
 
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
-  const { id, input } = mesg;
+  const { id, input, moduleIdCallback } = mesg;
   try {
-    const pipeable = await renderRSC(input);
+    const clientModuleCallback = moduleIdCallback
+      ? (moduleId: string) => {
+          const mesg: MessageRes = { id, type: "moduleId", moduleId };
+          parentPort!.postMessage(mesg);
+        }
+      : undefined;
+    const pipeable = await renderRSC(input, clientModuleCallback);
     const writable = new Writable({
       write(chunk, encoding, callback) {
         if (encoding !== ("buffer" as any)) {
@@ -70,11 +71,11 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
   }
 };
 
-const handleBuild = async (mesg: MessageReq & { type: "build" }) => {
+const handleGetBuilder = async (mesg: MessageReq & { type: "getBuilder" }) => {
   const { id } = mesg;
   try {
-    const output = await buildRSC();
-    const mesg: MessageRes = { id, type: "buildOutput", output };
+    const output = await getBuilderRSC();
+    const mesg: MessageRes = { id, type: "builder", output };
     parentPort!.postMessage(mesg);
   } catch (err) {
     const mesg: MessageRes = { id, type: "err", err };
@@ -119,18 +120,20 @@ parentPort!.on("message", (mesg: MessageReq) => {
     handleSetClientEntries(mesg);
   } else if (mesg.type === "render") {
     handleRender(mesg);
-  } else if (mesg.type === "build") {
-    handleBuild(mesg);
+  } else if (mesg.type === "getBuilder") {
+    handleGetBuilder(mesg);
   }
 });
 
-const configPromise = resolveConfig("serve");
+// FIXME using mutable module variable doesn't seem nice. Let's revisit this.
+let resolvedConfig: Awaited<ReturnType<typeof resolveConfig>> | undefined;
 
-const getEntriesFile = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
-  isBuild: boolean
-) => {
-  if (isBuild) {
+const getEntriesFile = async () => {
+  if (!resolvedConfig) {
+    throw new Error("config is not ready");
+  }
+  const config = resolvedConfig;
+  if (config.command === "build") {
     return path.join(
       config.root,
       config.build.outDir,
@@ -140,12 +143,8 @@ const getEntriesFile = async (
   return path.join(config.root, config.framework.entriesJs);
 };
 
-const getFunctionComponent = async (
-  rscId: string,
-  config: Awaited<ReturnType<typeof resolveConfig>>,
-  isBuild: boolean
-) => {
-  const entriesFile = await getEntriesFile(config, isBuild);
+const getFunctionComponent = async (rscId: string) => {
+  const entriesFile = await getEntriesFile();
   const {
     default: { getEntry },
   } = await (loadServerFile(entriesFile) as Promise<Entries>);
@@ -161,10 +160,11 @@ const getFunctionComponent = async (
 
 let absoluteClientEntries: Record<string, string> = {};
 
-const resolveClientEntry = (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
-  filePath: string
-) => {
+const resolveClientEntry = (filePath: string) => {
+  if (!resolvedConfig) {
+    throw new Error("config is not ready");
+  }
+  const config = resolvedConfig;
   const clientEntry = absoluteClientEntries[filePath];
   if (!clientEntry) {
     if (absoluteClientEntries["*"] === "*") {
@@ -176,14 +176,18 @@ const resolveClientEntry = (
 };
 
 async function setClientEntries(
-  value: "load" | Record<string, string>
+  value: "load" | Record<string, string>,
+  command: "serve" | "build"
 ): Promise<void> {
   if (value !== "load") {
     absoluteClientEntries = value;
     return;
   }
-  const config = await configPromise;
-  const entriesFile = await getEntriesFile(config, false);
+  if (!resolvedConfig) {
+    resolvedConfig = await resolveConfig(command);
+  }
+  const config = resolvedConfig;
+  const entriesFile = await getEntriesFile();
   const { clientEntries } = await loadServerFile(entriesFile);
   if (!clientEntries) {
     throw new Error("Failed to load clientEntries");
@@ -197,44 +201,52 @@ async function setClientEntries(
   );
 }
 
-async function renderRSC(input: RenderInput): Promise<PipeableStream> {
-  const config = await configPromise;
+async function renderRSC(
+  input: RenderInput,
+  clientModuleCallback?: (id: string) => void
+): Promise<PipeableStream> {
+  if (!resolvedConfig) {
+    resolvedConfig = await resolveConfig("serve");
+  }
+  const config = resolvedConfig;
   const bundlerConfig = new Proxy(
     {},
     {
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split("#") as [string, string];
-        const id = resolveClientEntry(config, filePath);
+        const id = resolveClientEntry(filePath);
+        clientModuleCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },
     }
   );
 
-  if (input.rsfId && input.args) {
+  if ("rsfId" in input) {
     const [fileId, name] = input.rsfId.split("#");
     const fname = path.join(config.root, fileId!);
     const mod = await loadServerFile(fname);
     const data = await (mod[name!] || mod)(...input.args);
-    if (!input.rscId) {
+    if (!("rscId" in input)) {
       return renderToPipeableStream(data, bundlerConfig);
     }
     // continue for mutation mode
   }
-  if (input.rscId && input.props) {
-    const component = await getFunctionComponent(input.rscId, config, false);
+  if ("rscId" in input) {
+    const component = await getFunctionComponent(input.rscId);
     return renderToPipeableStream(
-      createElement(component, input.props),
+      createElement(component, input.props as any),
       bundlerConfig
     ).pipe(transformRsfId(config.root));
   }
   throw new Error("Unexpected input");
 }
 
-// FIXME this may take too much responsibility
-async function buildRSC(): Promise<BuildOutput> {
-  const config = await resolveConfig("build");
-  const basePrefix = config.base + config.framework.rscPrefix;
-  const distEntriesFile = await getEntriesFile(config, true);
+async function getBuilderRSC() {
+  if (!resolvedConfig) {
+    resolvedConfig = await resolveConfig("build");
+  }
+  const config = resolvedConfig;
+  const distEntriesFile = await getEntriesFile();
   const {
     default: { getBuilder },
   } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
@@ -242,131 +254,9 @@ async function buildRSC(): Promise<BuildOutput> {
     console.warn(
       "getBuilder is undefined. It's recommended for optimization and sometimes required."
     );
-    return { rscFiles: [], htmlFiles: [] };
+    return {};
   }
 
-  const renderForBuild = (
-    element: unknown,
-    clientModuleCallback: (id: string) => void
-  ): PipeableStream => {
-    const bundlerConfig = new Proxy(
-      {},
-      {
-        get(_target, encodedId: string) {
-          const [filePath, name] = encodedId.split("#") as [string, string];
-          const id = resolveClientEntry(config, filePath);
-          clientModuleCallback(id);
-          return { id, chunks: [id], name, async: true };
-        },
-      }
-    );
-    const pipeable = renderToPipeableStream(element, bundlerConfig).pipe(
-      transformRsfId(path.join(config.root, config.build.outDir))
-    );
-    return pipeable;
-  };
-
-  const pathMap = await getBuilder(config.root, renderForBuild);
-  const clientModuleMap = new Map<string, Set<string>>();
-  const addClientModule = (
-    rscId: string,
-    serializedProps: string,
-    id: string
-  ) => {
-    const key = rscId + "/" + serializedProps;
-    let idSet = clientModuleMap.get(key);
-    if (!idSet) {
-      idSet = new Set();
-      clientModuleMap.set(key, idSet);
-    }
-    idSet.add(id);
-  };
-  const getClientModules = (rscId: string, serializedProps: string) => {
-    const key = rscId + "/" + serializedProps;
-    const idSet = clientModuleMap.get(key);
-    return Array.from(idSet || []);
-  };
-  const rscFileSet = new Set<string>(); // XXX could be implemented better
-  await Promise.all(
-    Object.entries(pathMap).map(async ([, { elements }]) => {
-      for (const [rscId, props] of elements || []) {
-        // FIXME we blindly expect JSON.stringify usage is deterministic
-        const serializedProps = JSON.stringify(props);
-        const searchParams = new URLSearchParams();
-        searchParams.set("props", serializedProps);
-        const destFile = path.join(
-          config.root,
-          config.build.outDir,
-          config.framework.outPublic,
-          config.framework.rscPrefix + decodeURIComponent(rscId),
-          decodeURIComponent(`${searchParams}`)
-        );
-        if (!rscFileSet.has(destFile)) {
-          rscFileSet.add(destFile);
-          fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          const component = await getFunctionComponent(rscId, config, true);
-          const pipeable = renderForBuild(
-            createElement(component, props as any),
-            (id) => addClientModule(rscId, serializedProps, id)
-          );
-          await new Promise<void>((resolve, reject) => {
-            const stream = fs.createWriteStream(destFile);
-            stream.on("finish", resolve);
-            stream.on("error", reject);
-            pipeable.pipe(stream);
-          });
-        }
-      }
-    })
-  );
-
-  const publicIndexHtmlFile = path.join(
-    config.root,
-    config.build.outDir,
-    config.framework.outPublic,
-    config.framework.indexHtml
-  );
-  const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
-    encoding: "utf8",
-  });
-  const htmlFiles = await Promise.all(
-    Object.entries(pathMap).map(async ([pathStr, { elements, customCode }]) => {
-      const destFile = path.join(
-        config.root,
-        config.build.outDir,
-        config.framework.outPublic,
-        pathStr,
-        pathStr.endsWith("/") ? "index.html" : ""
-      );
-      let data = "";
-      if (fs.existsSync(destFile)) {
-        data = fs.readFileSync(destFile, { encoding: "utf8" });
-      } else {
-        fs.mkdirSync(path.dirname(destFile), { recursive: true });
-        data = publicIndexHtml;
-      }
-      const code =
-        generatePrefetchCode(
-          basePrefix,
-          Array.from(elements || []).flatMap(([rscId, props, skipPrefetch]) => {
-            if (skipPrefetch) {
-              return [];
-            }
-            return [[rscId, props]];
-          }),
-          Array.from(elements || []).flatMap(([rscId, props]) => {
-            // FIXME we blindly expect JSON.stringify usage is deterministic
-            const serializedProps = JSON.stringify(props);
-            return getClientModules(rscId, serializedProps);
-          })
-        ) + (customCode || "");
-      if (code) {
-        // HACK is this too naive to inject script code?
-        data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
-      }
-      fs.writeFileSync(destFile, data, { encoding: "utf8" });
-      return destFile;
-    })
-  );
-  return { rscFiles: Array.from(rscFileSet), htmlFiles };
+  const output = await getBuilder(config.root, renderRSC);
+  return output;
 }

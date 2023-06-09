@@ -7,12 +7,28 @@ export type GetEntry = (
   rscId: string
 ) => Promise<FunctionComponent | { default: FunctionComponent } | null>;
 
+export type RenderInput =
+  | {
+      rscId: string;
+      props: unknown;
+    }
+  | {
+      rsfId: string;
+      args: unknown[];
+      rscId: string;
+      props: unknown;
+    }
+  | {
+      rsfId: string;
+      args: unknown[];
+    };
+
 export type GetBuilder = (
   root: string,
-  unstable_renderForBuild: (
-    element: unknown,
+  unstable_renderRSC: (
+    input: RenderInput,
     clientModuleCallback: (id: string) => void
-  ) => PipeableStream
+  ) => Promise<PipeableStream>
 ) => Promise<{
   [pathStr: string]: {
     elements?: Iterable<

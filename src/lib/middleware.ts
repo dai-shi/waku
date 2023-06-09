@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createServer as viteCreateServer } from "vite";
-import react from "@vitejs/plugin-react";
+import viteReact from "@vitejs/plugin-react";
 import RSDWServer from "react-server-dom-webpack/server.node.unbundled";
 import busboy from "busboy";
 
@@ -25,7 +25,7 @@ export function rsc(options: {
 }): Middleware {
   const promise =
     options.mode === "production"
-      ? setClientEntries("load")
+      ? setClientEntries("load", "serve")
       : Promise.resolve();
   const configPromise = resolveConfig("serve");
   return async (req, res, next) => {
@@ -66,7 +66,13 @@ export function rsc(options: {
       }
     }
     if (rscId || rsfId) {
-      const pipeable = renderRSC({ rscId, props, rsfId, args });
+      const pipeable = renderRSC(
+        rsfId
+          ? rscId
+            ? { rsfId, args, rscId, props }
+            : { rsfId, args }
+          : { rscId: rscId as string, props }
+      );
       pipeable.on("error", (err) => {
         console.info("Cannot render RSC", err);
         res.statusCode = 500;
@@ -94,7 +100,7 @@ export function devServer(): Middleware {
     },
     plugins: [
       // @ts-expect-error This expression is not callable.
-      react(),
+      viteReact(),
       rscIndexPlugin(),
     ],
     server: { middlewareMode: true },
@@ -111,7 +117,7 @@ export function devServer(): Middleware {
     );
     absoluteClientEntries["*"] = "*"; // HACK to use fallback resolver
     // FIXME this is bad in performance, let's revisit it
-    await setClientEntries(absoluteClientEntries);
+    await setClientEntries(absoluteClientEntries, "serve");
     vite.middlewares(req, res, next);
   };
 }

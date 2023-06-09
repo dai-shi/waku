@@ -8,8 +8,7 @@ import { Child as ClientChild, Link as ClientLink } from "./client.js";
 
 const collectClientModules = async (
   pathStr: string,
-  getEntry: (rscId: string) => Promise<FunctionComponent>,
-  unstable_renderForBuild: Parameters<GetBuilder>[1]
+  unstable_renderRSC: Parameters<GetBuilder>[1]
 ) => {
   const url = new URL(pathStr, "http://localhost");
   const pathItems = url.pathname.split("/").filter(Boolean);
@@ -19,10 +18,8 @@ const collectClientModules = async (
     const rscId = pathItems.slice(0, index).join("/") || "index";
     const props: RouteProps =
       index < pathItems.length ? { childIndex: index + 1 } : { search };
-    const component = await getEntry(rscId);
-    const pipeable = unstable_renderForBuild(
-      createElement(component, props as any),
-      (id) => idSet.add(id)
+    const pipeable = await unstable_renderRSC({ rscId, props }, (id) =>
+      idSet.add(id)
     );
     await new Promise<void>((resolve, reject) => {
       const stream = new Writable({
@@ -81,17 +78,13 @@ export function defineRouter(
     return RouteComponent;
   };
 
-  const getBuilder: GetBuilder = async (root, unstable_renderForBuild) => {
+  const getBuilder: GetBuilder = async (root, unstable_renderRSC) => {
     const paths = (await getAllPaths(root)).map((item) =>
       item === "index" ? "/" : `/${item}`
     );
     const path2moduleIds: Record<string, string[]> = {};
     for (const pathStr of paths) {
-      const moduleIds = await collectClientModules(
-        pathStr,
-        getEntry,
-        unstable_renderForBuild
-      );
+      const moduleIds = await collectClientModules(pathStr, unstable_renderRSC);
       path2moduleIds[pathStr] = moduleIds;
     }
     const customCode = `
