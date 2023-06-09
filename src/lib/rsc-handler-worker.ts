@@ -33,12 +33,15 @@ const handleSetClientEntries = async (
 };
 
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
-  const { id, input } = mesg;
+  const { id, input, moduleIdCallback } = mesg;
   try {
-    const pipeable = await renderRSC(input, (moduleId) => {
-      const mesg: MessageRes = { id, type: "moduleId", moduleId };
-      parentPort!.postMessage(mesg);
-    });
+    const clientModuleCallback = moduleIdCallback
+      ? (moduleId: string) => {
+          const mesg: MessageRes = { id, type: "moduleId", moduleId };
+          parentPort!.postMessage(mesg);
+        }
+      : undefined;
+    const pipeable = await renderRSC(input, clientModuleCallback);
     const writable = new Writable({
       write(chunk, encoding, callback) {
         if (encoding !== ("buffer" as any)) {
@@ -200,7 +203,7 @@ async function setClientEntries(
 
 async function renderRSC(
   input: RenderInput,
-  clientModuleCallback: (id: string) => void
+  clientModuleCallback?: (id: string) => void
 ): Promise<PipeableStream> {
   if (!resolvedConfig) {
     resolvedConfig = await resolveConfig("serve");

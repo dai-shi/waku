@@ -21,7 +21,12 @@ export type MessageReq =
       value: "load" | Record<string, string>;
       command: "serve" | "build";
     }
-  | { id: number; type: "render"; input: RenderInput }
+  | {
+      id: number;
+      type: "render";
+      input: RenderInput;
+      moduleIdCallback: boolean;
+    }
   | { id: number; type: "getBuilder" };
 
 export type MessageRes =
@@ -101,7 +106,12 @@ export function renderRSC(
       messageCallbacks.delete(id);
     }
   });
-  const mesg: MessageReq = { id, type: "render", input };
+  const mesg: MessageReq = {
+    id,
+    type: "render",
+    input,
+    moduleIdCallback: !!clientModuleCallback,
+  };
   worker.postMessage(mesg);
   return passthrough;
 }
