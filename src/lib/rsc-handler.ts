@@ -55,8 +55,8 @@ export function registerReloadCallback(fn: (type: "full-reload") => void) {
   return () => worker.off("message", listener);
 }
 
-export function shutdown() {
-  return new Promise<void>((resolve) => {
+export function shutdown(): Promise<void> {
+  return new Promise((resolve) => {
     worker.on("close", resolve);
     const mesg: MessageReq = { type: "shutdown" };
     worker.postMessage(mesg);
@@ -69,7 +69,7 @@ export function setClientEntries(
   value: "load" | Record<string, string>,
   command: "serve" | "build"
 ): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const id = nextId++;
     messageCallbacks.set(id, (mesg) => {
       if (mesg.type === "end") {
