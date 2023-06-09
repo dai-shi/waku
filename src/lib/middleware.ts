@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createServer as viteCreateServer } from "vite";
-import react from "@vitejs/plugin-react";
+import viteReact from "@vitejs/plugin-react";
 import RSDWServer from "react-server-dom-webpack/server.node.unbundled";
 import busboy from "busboy";
 
@@ -100,7 +100,7 @@ export function devServer(): Middleware {
     },
     plugins: [
       // @ts-expect-error This expression is not callable.
-      react(),
+      viteReact(),
       rscIndexPlugin(),
     ],
     server: { middlewareMode: true },
