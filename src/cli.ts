@@ -51,11 +51,12 @@ if (values.version) {
     case "start":
       runStart();
       break;
-    case undefined:
+    default:
+      if (cmd) {
+        console.error("Unknown command:", cmd);
+      }
       displayUsage();
       break;
-    default:
-      throw Error("unknown cmd: " + cmd);
   }
 }
 
@@ -92,15 +93,17 @@ async function runStart() {
 }
 
 function displayUsage() {
-  console.log(`Usage: waku [options] <command>`);
-  console.log("");
-  console.log("Commands:");
-  console.log("  dev         Start the development server");
-  console.log("  build       Build the application for production");
-  console.log("  start       Start the production server");
-  console.log("");
-  console.log("Options:");
-  console.log("  -c, --config <path>   Path to the configuration file");
-  console.log("  -v, --version         Display the version number");
-  console.log("  -h, --help            Display this help message");
+  console.log(`
+Usage: waku [options] <command>
+
+Commands:
+  dev         Start the development server
+  build       Build the application for production
+  start       Start the production server
+
+Options:
+  -c, --config <path>   Path to the configuration file
+  -v, --version         Display the version number
+  -h, --help            Display this help message
+`);
 }
