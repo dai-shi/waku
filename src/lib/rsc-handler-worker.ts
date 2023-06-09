@@ -36,7 +36,10 @@ const handleSetClientEntries = async (
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
   const { id, input } = mesg;
   try {
-    const pipeable = await renderRSC(input);
+    const pipeable = await renderRSC(input, (moduleId) => {
+      const mesg: MessageRes = { id, type: "moduleId", moduleId };
+      parentPort!.postMessage(mesg);
+    });
     const writable = new Writable({
       write(chunk, encoding, callback) {
         if (encoding !== ("buffer" as any)) {
@@ -60,6 +63,18 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
       },
     });
     pipeable.pipe(writable);
+  } catch (err) {
+    const mesg: MessageRes = { id, type: "err", err };
+    parentPort!.postMessage(mesg);
+  }
+};
+
+const handleGetBuilder = async (mesg: MessageReq & { type: "getBuilder" }) => {
+  const { id } = mesg;
+  try {
+    const output = await getBuilderRSC();
+    const mesg: MessageRes = { id, type: "builder", output };
+    parentPort!.postMessage(mesg);
   } catch (err) {
     const mesg: MessageRes = { id, type: "err", err };
     parentPort!.postMessage(mesg);
@@ -115,6 +130,8 @@ parentPort!.on("message", (mesg: MessageReq) => {
     handleSetClientEntries(mesg);
   } else if (mesg.type === "render") {
     handleRender(mesg);
+  } else if (mesg.type === "getBuilder") {
+    handleGetBuilder(mesg);
   } else if (mesg.type === "build") {
     handleBuild(mesg);
   }
@@ -198,7 +215,7 @@ async function setClientEntries(
 
 async function renderRSC(
   input: RenderInput,
-  clientModuleCallback?: (id: string) => void
+  clientModuleCallback: (id: string) => void
 ): Promise<PipeableStream> {
   if (!resolvedConfig) {
     resolvedConfig = await resolveConfig("serve");
@@ -234,6 +251,26 @@ async function renderRSC(
     ).pipe(transformRsfId(config.root));
   }
   throw new Error("Unexpected input");
+}
+
+async function getBuilderRSC() {
+  if (!resolvedConfig) {
+    resolvedConfig = await resolveConfig("build");
+  }
+  const config = resolvedConfig;
+  const distEntriesFile = await getEntriesFile();
+  const {
+    default: { getBuilder },
+  } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
+  if (!getBuilder) {
+    console.warn(
+      "getBuilder is undefined. It's recommended for optimization and sometimes required."
+    );
+    return {};
+  }
+
+  const output = await getBuilder(config.root, renderRSC);
+  return output;
 }
 
 // FIXME this may take too much responsibility

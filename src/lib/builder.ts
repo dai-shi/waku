@@ -6,7 +6,13 @@ import { build as viteBuild } from "vite";
 import react from "@vitejs/plugin-react";
 
 import { configFileConfig, resolveConfig } from "./config.js";
-import { shutdown, setClientEntries, buildRSC } from "./rsc-handler.js";
+import { generatePrefetchCode } from "./rsc-utils.js";
+import {
+  shutdown,
+  setClientEntries,
+  renderRSC,
+  getBuilderRSC,
+} from "./rsc-handler.js";
 import { rscIndexPlugin, rscAnalyzePlugin } from "./vite-plugin-rsc.js";
 import type { RollupWarning, WarningHandler } from "rollup";
 
@@ -88,6 +94,7 @@ const onwarn = (warning: RollupWarning, warn: WarningHandler) => {
   warn(warning);
 };
 
+// FIXME too long function body
 export async function build() {
   const config = await resolveConfig("build");
   const indexHtmlFile = path.join(config.root, config.framework.indexHtml);
@@ -237,7 +244,107 @@ export async function build() {
   );
   await setClientEntries(absoluteClientEntries, "build");
 
-  const buildOutput = await buildRSC();
+  const basePrefix = config.base + config.framework.rscPrefix;
+  const pathMap = await getBuilderRSC();
+  const clientModuleMap = new Map<string, Set<string>>();
+  const addClientModule = (
+    rscId: string,
+    serializedProps: string,
+    id: string
+  ) => {
+    const key = rscId + "/" + serializedProps;
+    let idSet = clientModuleMap.get(key);
+    if (!idSet) {
+      idSet = new Set();
+      clientModuleMap.set(key, idSet);
+    }
+    idSet.add(id);
+  };
+  const getClientModules = (rscId: string, serializedProps: string) => {
+    const key = rscId + "/" + serializedProps;
+    const idSet = clientModuleMap.get(key);
+    return Array.from(idSet || []);
+  };
+  const rscFileSet = new Set<string>(); // XXX could be implemented better
+  await Promise.all(
+    Object.entries(pathMap).map(async ([, { elements }]) => {
+      for (const [rscId, props] of elements || []) {
+        // FIXME we blindly expect JSON.stringify usage is deterministic
+        const serializedProps = JSON.stringify(props);
+        const searchParams = new URLSearchParams();
+        searchParams.set("props", serializedProps);
+        const destFile = path.join(
+          config.root,
+          config.build.outDir,
+          config.framework.outPublic,
+          config.framework.rscPrefix + decodeURIComponent(rscId),
+          decodeURIComponent(`${searchParams}`)
+        );
+        if (!rscFileSet.has(destFile)) {
+          rscFileSet.add(destFile);
+          fs.mkdirSync(path.dirname(destFile), { recursive: true });
+          const pipeable = renderRSC({ rscId, props }, (id) =>
+            addClientModule(rscId, serializedProps, id)
+          );
+          await new Promise<void>((resolve, reject) => {
+            const stream = fs.createWriteStream(destFile);
+            stream.on("finish", resolve);
+            stream.on("error", reject);
+            pipeable.pipe(stream);
+          });
+        }
+      }
+    })
+  );
+
+  const publicIndexHtmlFile = path.join(
+    config.root,
+    config.build.outDir,
+    config.framework.outPublic,
+    config.framework.indexHtml
+  );
+  const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
+    encoding: "utf8",
+  });
+  const htmlFiles = await Promise.all(
+    Object.entries(pathMap).map(async ([pathStr, { elements, customCode }]) => {
+      const destFile = path.join(
+        config.root,
+        config.build.outDir,
+        config.framework.outPublic,
+        pathStr,
+        pathStr.endsWith("/") ? "index.html" : ""
+      );
+      let data = "";
+      if (fs.existsSync(destFile)) {
+        data = fs.readFileSync(destFile, { encoding: "utf8" });
+      } else {
+        fs.mkdirSync(path.dirname(destFile), { recursive: true });
+        data = publicIndexHtml;
+      }
+      const code =
+        generatePrefetchCode(
+          basePrefix,
+          Array.from(elements || []).flatMap(([rscId, props, skipPrefetch]) => {
+            if (skipPrefetch) {
+              return [];
+            }
+            return [[rscId, props]];
+          }),
+          Array.from(elements || []).flatMap(([rscId, props]) => {
+            // FIXME we blindly expect JSON.stringify usage is deterministic
+            const serializedProps = JSON.stringify(props);
+            return getClientModules(rscId, serializedProps);
+          })
+        ) + (customCode || "");
+      if (code) {
+        // HACK is this too naive to inject script code?
+        data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
+      }
+      fs.writeFileSync(destFile, data, { encoding: "utf8" });
+      return destFile;
+    })
+  );
 
   const origPackageJson = require(path.join(config.root, "package.json"));
   const packageJson = {
@@ -267,8 +374,8 @@ export async function build() {
         fileName
       )
     ),
-    buildOutput.rscFiles,
-    buildOutput.htmlFiles
+    Array.from(rscFileSet),
+    htmlFiles
   );
 
   await shutdown();
