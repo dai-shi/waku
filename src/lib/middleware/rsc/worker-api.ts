@@ -17,12 +17,6 @@ export type MessageReq =
   | { type: "shutdown" }
   | {
       id: number;
-      type: "setClientEntries";
-      value: "load" | Record<string, string>;
-      command: "serve" | "build";
-    }
-  | {
-      id: number;
       type: "render";
       input: RenderInput;
       moduleIdCallback: boolean;
@@ -64,26 +58,6 @@ export function shutdown(): Promise<void> {
 }
 
 let nextId = 1;
-
-export function setClientEntries(
-  value: "load" | Record<string, string>,
-  command: "serve" | "build"
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const id = nextId++;
-    messageCallbacks.set(id, (mesg) => {
-      if (mesg.type === "end") {
-        resolve();
-        messageCallbacks.delete(id);
-      } else if (mesg.type === "err") {
-        reject(mesg.err);
-        messageCallbacks.delete(id);
-      }
-    });
-    const mesg: MessageReq = { id, type: "setClientEntries", value, command };
-    worker.postMessage(mesg);
-  });
-}
 
 export function renderRSC(
   input: RenderInput,

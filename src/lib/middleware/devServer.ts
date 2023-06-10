@@ -3,8 +3,7 @@ import { createServer as viteCreateServer } from "vite";
 import viteReact from "@vitejs/plugin-react";
 
 import { configFileConfig } from "../config.js";
-// FIXME can avoid external dependencies?
-import { registerReloadCallback, setClientEntries } from "./rsc/worker-api.js";
+import { registerReloadCallback } from "./rsc/worker-api.js";
 import { rscIndexPlugin } from "../vite-plugin/rsc-index-plugin.js";
 
 type Middleware = (
@@ -34,14 +33,6 @@ export function devServer(): Middleware {
   });
   return async (req, res, next) => {
     const vite = await vitePromise;
-    const absoluteClientEntries = Object.fromEntries(
-      Array.from(vite.moduleGraph.idToModuleMap.values()).map(
-        ({ file, url }) => [file, url]
-      )
-    );
-    absoluteClientEntries["*"] = "*"; // HACK to use fallback resolver
-    // FIXME this is bad in performance, let's revisit it
-    await setClientEntries(absoluteClientEntries, "serve");
     vite.middlewares(req, res, next);
   };
 }
