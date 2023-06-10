@@ -86,9 +86,7 @@ const analyzeEntries = async (entriesFile: string) => {
     )
   );
   const serverEntryFiles = Object.fromEntries(
-    await Promise.all(
-      Array.from(serverEntryFileSet).map(async (fname, i) => [`rsf${i}`, fname])
-    )
+    Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname])
   );
   return {
     clientEntryFiles,
