@@ -56,7 +56,7 @@ type Store = ReturnType<typeof createStore>;
 let store: Store | null = null;
 
 export function serverHoc<Fn extends (props: any) => any>(fn: Fn) {
-  return (props: unknown) => {
+  const ServerComponent = (props: unknown) => {
     store = createStore();
     const atomValues: AtomValues = (props as any)?.atomValues || [];
     for (const [id, value] of atomValues) {
@@ -78,6 +78,7 @@ export function serverHoc<Fn extends (props: any) => any>(fn: Fn) {
       </>
     );
   };
+  return ServerComponent;
 }
 
 let nextAtomId = 0;

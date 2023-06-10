@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { Provider, useStore } from "jotai/react";
 import type { Atom } from "jotai/vanilla";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface JSONArray extends ReadonlyArray<JSONArray> {}
 export type JSONValue =
   | string
