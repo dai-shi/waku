@@ -62,7 +62,8 @@ if (values.version) {
 
 async function runDev() {
   const { default: express } = await import("express");
-  const { rsc, devServer } = await import("./lib/middleware.js");
+  const { rsc } = await import("./lib/middleware/rsc.js");
+  const { devServer } = await import("./lib/middleware/devServer.js");
   const app = express();
   app.use(rsc({ mode: "development" }));
   app.use(devServer());
@@ -81,7 +82,7 @@ async function runStart() {
   const { default: express } = await import("express");
   const { resolveConfig } = await import("./lib/config.js");
   const config = await resolveConfig("serve");
-  const { rsc } = await import("./lib/middleware.js");
+  const { rsc } = await import("./lib/middleware/rsc.js");
   const app = express();
   app.use(rsc({ mode: "production" }));
   app.use(express.static(path.join(config.root, config.framework.outPublic)));
