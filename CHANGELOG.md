@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.11.3] - 2023-06-10
 ### Changed
 - fix: 'use client' warning #63
 - fix: collecting client modules #69
