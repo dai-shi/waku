@@ -2,9 +2,9 @@ import { PassThrough } from "node:stream";
 import type { Readable } from "node:stream";
 import { Worker } from "node:worker_threads";
 
-import type { RenderInput, GetBuilder } from "../server.js";
+import type { RenderInput, GetBuilder } from "../../../server.js";
 
-const worker = new Worker(new URL("rsc-handler-worker.js", import.meta.url), {
+const worker = new Worker(new URL("worker-impl.js", import.meta.url), {
   execArgv: ["--conditions", "react-server"],
 });
 

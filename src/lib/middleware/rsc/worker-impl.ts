@@ -6,12 +6,13 @@ import { createServer } from "vite";
 import { createElement } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 
-import { configFileConfig, resolveConfig } from "./config.js";
-import { transformRsfId } from "./rsc-utils.js";
-import type { MessageReq, MessageRes } from "./rsc-handler.js";
-import { defineEntries } from "../server.js";
-import type { RenderInput } from "../server.js";
-import { rscTransformPlugin, rscReloadPlugin } from "./vite-plugin-rsc.js";
+import { configFileConfig, resolveConfig } from "../../config.js";
+import { transformRsfId } from "./utils.js";
+import type { MessageReq, MessageRes } from "./worker-api.js";
+import { defineEntries } from "../../../server.js";
+import type { RenderInput } from "../../../server.js";
+import { rscTransformPlugin } from "../../vite-plugin/rsc-transform-plugin.js";
+import { rscReloadPlugin } from "../../vite-plugin/rsc-reload-plugin.js";
 
 const { renderToPipeableStream } = RSDWServer;
 

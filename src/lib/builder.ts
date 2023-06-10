@@ -6,14 +6,15 @@ import { build as viteBuild } from "vite";
 import viteReact from "@vitejs/plugin-react";
 
 import { configFileConfig, resolveConfig } from "./config.js";
-import { generatePrefetchCode } from "./rsc-utils.js";
+import { generatePrefetchCode } from "./middleware/rsc/utils.js";
 import {
   shutdown,
   setClientEntries,
   renderRSC,
   getBuilderRSC,
-} from "./rsc-handler.js";
-import { rscIndexPlugin, rscAnalyzePlugin } from "./vite-plugin-rsc.js";
+} from "./middleware/rsc/worker-api.js";
+import { rscIndexPlugin } from "./vite-plugin/rsc-index-plugin.js";
+import { rscAnalyzePlugin } from "./vite-plugin/rsc-analyze-plugin.js";
 import type { RollupWarning, WarningHandler } from "rollup";
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699

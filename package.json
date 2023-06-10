@@ -48,7 +48,7 @@
   ],
   "scripts": {
     "dev": "swc src -d dist -w",
-    "compile": "npm run compile:code && npm run compile:types",
+    "compile": "rm -rf dist && npm run compile:code && npm run compile:types",
     "compile:code": "swc src -d dist && swc src -d dist/cjs -C module.type=commonjs && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
     "compile:types": "tsc --project tsconfig.build.json",
     "test": "prettier -c . && eslint . && tsc --project . --noEmit",
