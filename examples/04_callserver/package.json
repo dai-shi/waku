@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "react": "18.3.0-canary-018c58c9c-20230601",
-    "react-dom": "18.3.0-canary-018c58c9c-20230601",
-    "react-server-dom-webpack": "18.3.0-canary-018c58c9c-20230601",
+    "react": "18.3.0-canary-21a161fa3-20230609",
+    "react-dom": "18.3.0-canary-21a161fa3-20230609",
+    "react-server-dom-webpack": "18.3.0-canary-21a161fa3-20230609",
     "waku": "0.11.2"
   },
   "devDependencies": {
