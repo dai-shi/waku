@@ -47,11 +47,12 @@ const analyzeEntries = async (entriesFile: string) => {
       ),
     ],
     ssr: {
-      // FIXME Without this, waku/router isn't considered to have client
-      // entries, and "No client entry" error occurs.
-      // Unless we fix this, RSC-capable packages aren't supported.
-      // This also seems to cause problems with pnpm.
-      noExternal: ["waku"],
+      noExternal: /^(?!node:)/,
+      // FIXME this is very adhoc.
+      external: ["react", "minimatch"],
+    },
+    resolve: {
+      conditions: ["react-server"],
     },
     build: {
       write: false,
@@ -92,6 +93,9 @@ const buildServerBundle = async (
             .relative(path.join(config.root, "node_modules"), fname)
             .split("/")[0]!
       ),
+    },
+    resolve: {
+      conditions: ["react-server"],
     },
     build: {
       ssr: true,
