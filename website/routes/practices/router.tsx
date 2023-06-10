@@ -7,17 +7,53 @@ const root = createRoot(document.getElementById("root")!);
 
 root.render(<Router />);`;
 
-const code2 = `import path from "node:path";
-import url from "node:url";
+const code2 = `import { defineRouter } from "waku/router/server";
 
-import { fileRouter } from "waku/router/server";
-
-export default fileRouter(
-  path.dirname(url.fileURLToPath(import.meta.url)),
-  "routes"
+export default defineRouter(
+  (id) => {
+    switch (id) {
+      case 'index':
+        return import('./routes/index.tsx');
+      case 'foo':
+        return import('./routes/foo.tsx');
+      default:
+        throw new Error("no such route");
+    }
+  }
 );`;
 
-const code3 = `git clone https://github.com/dai-shi/waku.git
+const code3 = `import path from "node:path";
+import fs from "node:fs";
+
+import { glob } from "glob";
+import { defineRouter } from "waku/router/server";
+
+export default defineRouter(
+  (id) => {
+    const items = id.split("/");
+    switch (items.length) {
+      case 1:
+        return import(${"`"}./routes/$\{items[0]}.tsx${"`"});
+      case 2:
+        return import(${"`"}./routes/$\{items[0]}/$\{items[1]}.tsx${"`"});
+      default:
+        throw new Error("too deep route");
+    }
+  },
+  async (root) => {
+    const routesDir = path.join(root, "routes");
+    const files = await glob("**/*.tsx", { cwd: routesDir });
+    return files.map((file) => {
+      const name = file.slice(0, file.length - path.extname(file).length);
+      const stat = fs.statSync(path.join(routesDir, name), {
+        throwIfNoEntry: false,
+      });
+      return stat?.isDirectory() ? name + "/" : name;
+    });
+  }
+);`;
+
+const code4 = `git clone https://github.com/dai-shi/waku.git
 cd waku
 npm install
 npm run examples:dev:07_router`;
@@ -53,17 +89,24 @@ export default function Layout() {
       <h3 className="text-lg font-bold mt-8">Server API</h3>
       <article className="mt-6">
         <div className="my-1">
-          In <Code>entries.ts</Code>, we use <Code>fileRouter</Code> to export
-          all three functions <Code>getEntry</Code>, <Code>prefetcher</Code>,
-          and <Code>prerenderer</Code> at once. Here&apos;s an example code:
+          In <Code>entries.ts</Code>, we use <Code>defineRouter</Code> to export{" "}
+          <Code>getEntry</Code> and <Code>getBuilder</Code> at once. Here&apos;s
+          a simple example code without builder:
         </div>
         <div className="my-3">
           <CodeBlock lang="tsx">{code2}</CodeBlock>
         </div>
         <div className="my-1">
-          The implementation of the <Code>Router</Code> is file-based. However,
-          it shouldn&apos;t be too difficult to provide a configuration-based
-          router implementation if desired.
+          The implementation of the <Code>defineRouter</Code> is config-based.
+          However, it isn&apos;t too difficult to make a file-based router.
+          Here&apos;s a file-based example code with builder:
+        </div>
+        <div className="my-3">
+          <CodeBlock lang="tsx">{code3}</CodeBlock>
+        </div>
+        <div className="my-1">
+          Due to the limitation of bundler, we cannot automatically allow
+          infinite depth of routes.
         </div>
       </article>
       <h3 className="text-lg font-bold mt-8">How to try it</h3>
@@ -73,7 +116,7 @@ export default function Layout() {
           the following commands:
         </div>
         <div className="my-3">
-          <CodeBlock lang="shellscript">{code3}</CodeBlock>
+          <CodeBlock lang="shellscript">{code4}</CodeBlock>
         </div>
         <div className="my-1">
           Alternatively, you could create a project with something like{" "}
