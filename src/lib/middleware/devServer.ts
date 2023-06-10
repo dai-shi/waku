@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import path from "node:path";
 import { createServer as viteCreateServer } from "vite";
 import viteReact from "@vitejs/plugin-react";
 
@@ -33,6 +34,18 @@ export function devServer(): Middleware {
   });
   return async (req, res, next) => {
     const vite = await vitePromise;
+    if (req.url?.startsWith("/node_modules/")) {
+      // HACK re-export "?v=..." URL to avoid dual module hazard.
+      const fname = path.join(vite.config.root, req.url);
+      for (const item of vite.moduleGraph.idToModuleMap.values()) {
+        if (item.file === fname && item.url !== req.url) {
+          res.setHeader("Content-Type", "application/javascript");
+          res.statusCode = 200;
+          res.end(`export * from "${item.url}";`, "utf8");
+          return;
+        }
+      }
+    }
     vite.middlewares(req, res, next);
   };
 }
