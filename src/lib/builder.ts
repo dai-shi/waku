@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import { createRequire } from "node:module";
+import { createHash } from "node:crypto";
 
 import { build as viteBuild } from "vite";
 import viteReact from "@vitejs/plugin-react";
@@ -9,7 +10,6 @@ import { configFileConfig, resolveConfig } from "./config.js";
 import { generatePrefetchCode } from "./middleware/rsc/utils.js";
 import {
   shutdown,
-  setClientEntries,
   renderRSC,
   getBuilderRSC,
 } from "./middleware/rsc/worker-api.js";
@@ -34,6 +34,18 @@ const onwarn = (warning: RollupWarning, warn: WarningHandler) => {
   }
   warn(warning);
 };
+
+const hash = (fname: string) =>
+  new Promise<string>((resolve) => {
+    const sha256 = createHash("sha256");
+    sha256.on("readable", () => {
+      const data = sha256.read();
+      if (data) {
+        resolve(data.toString("hex").slice(0, 9));
+      }
+    });
+    fs.createReadStream(fname).pipe(sha256);
+  });
 
 const analyzeEntries = async (entriesFile: string) => {
   const clientEntryFileSet = new Set<string>();
@@ -66,7 +78,12 @@ const analyzeEntries = async (entriesFile: string) => {
     },
   });
   const clientEntryFiles = Object.fromEntries(
-    Array.from(clientEntryFileSet).map((fname, i) => [`rsc${i}`, fname])
+    await Promise.all(
+      Array.from(clientEntryFileSet).map(async (fname, i) => [
+        `rsc${i}-${await hash(fname)}`,
+        fname,
+      ])
+    )
   );
   const serverEntryFiles = Object.fromEntries(
     Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname])
@@ -166,6 +183,14 @@ const buildClientBundle = async (
           ...clientEntryFiles,
         },
         preserveEntrySignatures: "exports-only",
+        output: {
+          entryFileNames: (chunkInfo) => {
+            if (clientEntryFiles[chunkInfo.name]) {
+              return "assets/[name].js";
+            }
+            return "assets/[name]-[hash].js";
+          },
+        },
       },
     },
   });
@@ -173,47 +198,6 @@ const buildClientBundle = async (
     throw new Error("Unexpected vite client build output");
   }
   return clientBuildOutput;
-};
-
-const emitClientEntries = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
-  entriesFile: string,
-  clientEntryFiles: Record<string, string>,
-  serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
-  clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>
-) => {
-  const distEntriesFile = path.join(
-    config.root,
-    config.build.outDir,
-    config.framework.entriesJs
-  );
-  const clientEntries: Record<string, string> = {};
-  for (const item of clientBuildOutput.output) {
-    const { name, fileName } = item;
-    const entryFile =
-      name &&
-      serverBuildOutput.output.find(
-        (item) =>
-          "moduleIds" in item &&
-          item.moduleIds.includes(clientEntryFiles[name] as string)
-      )?.fileName;
-    if (entryFile) {
-      clientEntries[entryFile] = fileName;
-    }
-  }
-  console.log("clientEntries", clientEntries);
-  fs.appendFileSync(
-    distEntriesFile,
-    `export const clientEntries=${JSON.stringify(clientEntries)};`
-  );
-  // set client entries
-  const absoluteClientEntries = Object.fromEntries(
-    Object.entries(clientEntries).map(([key, val]) => [
-      path.join(path.dirname(entriesFile), config.build.outDir, key),
-      config.base + val,
-    ])
-  );
-  await setClientEntries(absoluteClientEntries, "build");
 };
 
 const emitRscFiles = async (
@@ -426,21 +410,13 @@ export async function build() {
   const { clientEntryFiles, serverEntryFiles } = await analyzeEntries(
     entriesFile
   );
-  const serverBuildOutput = await buildServerBundle(
+  await buildServerBundle(
     config,
     entriesFile,
     clientEntryFiles,
     serverEntryFiles
   );
   const clientBuildOutput = await buildClientBundle(config, clientEntryFiles);
-
-  await emitClientEntries(
-    config,
-    entriesFile,
-    clientEntryFiles,
-    serverBuildOutput,
-    clientBuildOutput
-  );
 
   const { pathMap, getClientModules, rscFiles } = await emitRscFiles(config);
   const { htmlFiles } = await emitHtmlFiles(config, pathMap, getClientModules);

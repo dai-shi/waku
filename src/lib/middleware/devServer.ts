@@ -1,10 +1,10 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import path from "node:path";
 import { createServer as viteCreateServer } from "vite";
 import viteReact from "@vitejs/plugin-react";
 
 import { configFileConfig } from "../config.js";
-// FIXME can avoid external dependencies?
-import { registerReloadCallback, setClientEntries } from "./rsc/worker-api.js";
+import { registerReloadCallback } from "./rsc/worker-api.js";
 import { rscIndexPlugin } from "../vite-plugin/rsc-index-plugin.js";
 
 type Middleware = (
@@ -34,14 +34,18 @@ export function devServer(): Middleware {
   });
   return async (req, res, next) => {
     const vite = await vitePromise;
-    const absoluteClientEntries = Object.fromEntries(
-      Array.from(vite.moduleGraph.idToModuleMap.values()).map(
-        ({ file, url }) => [file, url]
-      )
-    );
-    absoluteClientEntries["*"] = "*"; // HACK to use fallback resolver
-    // FIXME this is bad in performance, let's revisit it
-    await setClientEntries(absoluteClientEntries, "serve");
+    if (req.url?.startsWith("/node_modules/")) {
+      // HACK re-export "?v=..." URL to avoid dual module hazard.
+      const fname = path.join(vite.config.root, req.url);
+      for (const item of vite.moduleGraph.idToModuleMap.values()) {
+        if (item.file === fname && item.url !== req.url) {
+          res.setHeader("Content-Type", "application/javascript");
+          res.statusCode = 200;
+          res.end(`export * from "${item.url}";`, "utf8");
+          return;
+        }
+      }
+    }
     vite.middlewares(req, res, next);
   };
 }

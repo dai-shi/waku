@@ -19,20 +19,6 @@ const { renderToPipeableStream } = RSDWServer;
 type Entries = { default: ReturnType<typeof defineEntries> };
 type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
-const handleSetClientEntries = async (
-  mesg: MessageReq & { type: "setClientEntries" }
-) => {
-  const { id, value, command } = mesg;
-  try {
-    await setClientEntries(value, command);
-    const mesg: MessageRes = { id, type: "end" };
-    parentPort!.postMessage(mesg);
-  } catch (err) {
-    const mesg: MessageRes = { id, type: "err", err };
-    parentPort!.postMessage(mesg);
-  }
-};
-
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
   const { id, input, moduleIdCallback } = mesg;
   try {
@@ -118,8 +104,6 @@ const loadServerFile = async (fname: string) => {
 parentPort!.on("message", (mesg: MessageReq) => {
   if (mesg.type === "shutdown") {
     shutdown();
-  } else if (mesg.type === "setClientEntries") {
-    handleSetClientEntries(mesg);
   } else if (mesg.type === "render") {
     handleRender(mesg);
   } else if (mesg.type === "getBuilder") {
@@ -160,48 +144,23 @@ const getFunctionComponent = async (rscId: string) => {
   throw new Error("No function component found");
 };
 
-let absoluteClientEntries: Record<string, string> = {};
-
 const resolveClientEntry = (filePath: string) => {
   if (!resolvedConfig) {
     throw new Error("config is not ready");
   }
   const config = resolvedConfig;
-  const clientEntry = absoluteClientEntries[filePath];
-  if (!clientEntry) {
-    if (absoluteClientEntries["*"] === "*") {
-      return config.base + path.relative(config.root, filePath);
-    }
-    throw new Error("No client entry found for " + filePath);
+  if (config.command === "build") {
+    return (
+      config.base +
+      path.relative(path.join(config.root, config.build.outDir), filePath)
+    );
   }
-  return clientEntry;
+  if (config.mode === "development" && !filePath.startsWith(config.root)) {
+    // HACK this relies on Vite's internal implementation detail.
+    return config.base + "@fs" + filePath;
+  }
+  return config.base + path.relative(config.root, filePath);
 };
-
-async function setClientEntries(
-  value: "load" | Record<string, string>,
-  command: "serve" | "build"
-): Promise<void> {
-  if (value !== "load") {
-    absoluteClientEntries = value;
-    return;
-  }
-  if (!resolvedConfig) {
-    resolvedConfig = await resolveConfig(command);
-  }
-  const config = resolvedConfig;
-  const entriesFile = await getEntriesFile();
-  const { clientEntries } = await loadServerFile(entriesFile);
-  if (!clientEntries) {
-    throw new Error("Failed to load clientEntries");
-  }
-  const baseDir = path.dirname(entriesFile);
-  absoluteClientEntries = Object.fromEntries(
-    Object.entries(clientEntries).map(([key, val]) => [
-      path.join(baseDir, key),
-      config.base + val,
-    ])
-  );
-}
 
 async function renderRSC(
   input: RenderInput,

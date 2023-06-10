@@ -3,7 +3,7 @@ import RSDWServer from "react-server-dom-webpack/server.node.unbundled";
 import busboy from "busboy";
 
 import { resolveConfig } from "../config.js";
-import { setClientEntries, renderRSC } from "./rsc/worker-api.js";
+import { renderRSC } from "./rsc/worker-api.js";
 
 type Middleware = (
   req: IncomingMessage,
@@ -16,13 +16,8 @@ const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 export function rsc(options: {
   mode: "development" | "production";
 }): Middleware {
-  const promise =
-    options.mode === "production"
-      ? setClientEntries("load", "serve")
-      : Promise.resolve();
   const configPromise = resolveConfig("serve");
   return async (req, res, next) => {
-    await promise;
     const config = await configPromise;
     const basePath = config.base + config.framework.rscPrefix;
     const url = new URL(req.url || "", "http://" + req.headers.host);
