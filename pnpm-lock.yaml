@@ -75,8 +75,8 @@ importers:
         specifier: ^10.2.7
         version: 10.2.7
       jotai:
-        specifier: ^2.1.0
-        version: 2.1.0(react@18.3.0-canary-21a161fa3-20230609)
+        specifier: ^2.1.1
+        version: 2.1.1(react@18.3.0-canary-21a161fa3-20230609)
       postcss:
         specifier: ^8.4.24
         version: 8.4.24
@@ -310,8 +310,8 @@ importers:
         specifier: ^4.18.2
         version: 4.18.2
       jotai:
-        specifier: ^2.1.0
-        version: 2.1.0(react@18.3.0-canary-21a161fa3-20230609)
+        specifier: ^2.1.1
+        version: 2.1.1(react@18.3.0-canary-21a161fa3-20230609)
       react:
         specifier: 18.3.0-canary-21a161fa3-20230609
         version: 18.3.0-canary-21a161fa3-20230609
@@ -3199,8 +3199,8 @@ packages:
     hasBin: true
     dev: true
 
-  /jotai@2.1.0(react@18.3.0-canary-21a161fa3-20230609):
-    resolution: {integrity: sha512-fR82PtHAmEQrc/daMEYGc4EteW96/b6wodtDSCzLvoJA/6y4YG70er4hh2f8CYwYjqwQ0eZUModGfG4DmwkTyQ==}
+  /jotai@2.1.1(react@18.3.0-canary-21a161fa3-20230609):
+    resolution: {integrity: sha512-LaaiuSaq+6XkwkrCtCkczyFVZOXe0dfjAFN4DVMsSZSRv/A/4xuLHnlpHMEDqvngjWYBotTIrnQ7OogMkUE6wA==}
     engines: {node: '>=12.20.0'}
     peerDependencies:
       react: '>=17.0.0'

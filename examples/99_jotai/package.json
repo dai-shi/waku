@@ -9,7 +9,7 @@
     "start": "WAKU_CONFIG='{\"prdServer\":{\"dir\":\"dist\"}}' waku start"
   },
   "dependencies": {
-    "jotai": "^2.1.0",
+    "jotai": "^2.1.1",
     "express": "^4.18.2",
     "react": "18.3.0-canary-21a161fa3-20230609",
     "react-dom": "18.3.0-canary-21a161fa3-20230609",
