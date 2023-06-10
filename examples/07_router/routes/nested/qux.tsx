@@ -1,10 +1,10 @@
 import { ReactNode } from "react";
 
-export default ({ children }: { children: ReactNode }) => {
-  return (
-    <div>
-      <h3>Qux</h3>
-      {children}
-    </div>
-  );
-};
+const Qux = ({ children }: { children: ReactNode }) => (
+  <div>
+    <h3>Qux</h3>
+    {children}
+  </div>
+);
+
+export default Qux;

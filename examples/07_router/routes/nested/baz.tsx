@@ -1,10 +1,10 @@
 import { ReactNode } from "react";
 
-export default ({ children }: { children: ReactNode }) => {
-  return (
-    <div>
-      <h3>Baz</h3>
-      {children}
-    </div>
-  );
-};
+const Baz = ({ children }: { children: ReactNode }) => (
+  <div>
+    <h3>Baz</h3>
+    {children}
+  </div>
+);
+
+export default Baz;

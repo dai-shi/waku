@@ -1,16 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { createServer as viteCreateServer } from "vite";
-import react from "@vitejs/plugin-react";
 import RSDWServer from "react-server-dom-webpack/server.node.unbundled";
 import busboy from "busboy";
 
-import { configFileConfig, resolveConfig } from "./config.js";
-import {
-  registerReloadCallback,
-  setClientEntries,
-  renderRSC,
-} from "./rsc-handler.js";
-import { rscIndexPlugin } from "./vite-plugin-rsc.js";
+import { resolveConfig } from "../config.js";
+import { renderRSC } from "./rsc/worker-api.js";
 
 type Middleware = (
   req: IncomingMessage,
@@ -23,13 +16,8 @@ const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 export function rsc(options: {
   mode: "development" | "production";
 }): Middleware {
-  const promise =
-    options.mode === "production"
-      ? setClientEntries("load")
-      : Promise.resolve();
   const configPromise = resolveConfig("serve");
   return async (req, res, next) => {
-    await promise;
     const config = await configPromise;
     const basePath = config.base + config.framework.rscPrefix;
     const url = new URL(req.url || "", "http://" + req.headers.host);
@@ -66,7 +54,13 @@ export function rsc(options: {
       }
     }
     if (rscId || rsfId) {
-      const pipeable = renderRSC({ rscId, props, rsfId, args });
+      const pipeable = renderRSC(
+        rsfId
+          ? rscId
+            ? { rsfId, args, rscId, props }
+            : { rsfId, args }
+          : { rscId: rscId as string, props }
+      );
       pipeable.on("error", (err) => {
         console.info("Cannot render RSC", err);
         res.statusCode = 500;
@@ -80,38 +74,5 @@ export function rsc(options: {
       return;
     }
     next();
-  };
-}
-
-export function devServer(): Middleware {
-  const vitePromise = viteCreateServer({
-    ...configFileConfig,
-    optimizeDeps: {
-      include: ["react-server-dom-webpack/client"],
-      // FIXME without this, waku router has dual module hazard,
-      // and "Uncaught Error: Missing Router" happens.
-      exclude: ["waku"],
-    },
-    plugins: [
-      // @ts-ignore
-      react(),
-      rscIndexPlugin(),
-    ],
-    server: { middlewareMode: true },
-  });
-  vitePromise.then((vite) => {
-    registerReloadCallback((type) => vite.ws.send({ type }));
-  });
-  return async (req, res, next) => {
-    const vite = await vitePromise;
-    const absoluteClientEntries = Object.fromEntries(
-      Array.from(vite.moduleGraph.idToModuleMap.values()).map(
-        ({ file, url }) => [file, url]
-      )
-    );
-    absoluteClientEntries["*"] = "*"; // HACK to use fallback resolver
-    // FIXME this is bad in performance, let's revisit it
-    await setClientEntries(absoluteClientEntries);
-    vite.middlewares(req, res, next);
   };
 }

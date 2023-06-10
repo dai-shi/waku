@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.11.3] - 2023-06-10
+### Changed
+- fix: 'use client' warning #63
+- fix: collecting client modules #69
+- fix: react-server condition for libraries #71
+
 ## [0.11.2] - 2023-06-03
 ### Changed
 - fix(examples): config extension in script #56

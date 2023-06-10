@@ -53,6 +53,10 @@ export function serve<Props>(rscId: string, basePath = "/RSC/") {
     }
   );
   const ServerComponent = (props: Props) => {
+    if (!props) {
+      console.warn("Something went wrong. Please refresh your browser.");
+      return;
+    }
     // FIXME we blindly expect JSON.stringify usage is deterministic
     const serializedProps = JSON.stringify(props);
     const [data, setRerender] = fetchRSC(serializedProps);

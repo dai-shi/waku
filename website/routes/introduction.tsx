@@ -19,10 +19,10 @@ export default function Layout() {
         </div>
         <div className="my-3">
           Waku uses Vite internally, and while it is still a work in progress,
-          it will eventually support all of Vite's features. It can even work as
-          a replacement for Vite + React client components. While using RSCs is
-          optional, it is highly recommended for improved user and developer
-          experiences.
+          it will eventually support all of Vite&apos;s features. It can even
+          work as a replacement for Vite + React client components. While using
+          RSCs is optional, it is highly recommended for improved user and
+          developer experiences.
         </div>
       </article>
     </>

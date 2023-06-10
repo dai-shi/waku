@@ -18,6 +18,6 @@ const App = ({ name = "Anonymous" }) => {
 const ServerMessage = async () => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
   return <p>Hello from server!</p>;
-}
+};
 
 export default App;
