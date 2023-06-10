@@ -21,7 +21,7 @@ import type { RollupWarning, WarningHandler } from "rollup";
 const onwarn = (warning: RollupWarning, warn: WarningHandler) => {
   if (
     warning.code === "MODULE_LEVEL_DIRECTIVE" &&
-    warning.message.includes("use client")
+    /"use (client|server)"/.test(warning.message)
   ) {
     return;
   } else if (
