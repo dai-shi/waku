@@ -54,14 +54,14 @@ export function rsc(options: {
       }
     }
     if (rscId || rsfId) {
-      const pipeable = renderRSC(
+      const readable = renderRSC(
         rsfId
           ? rscId
             ? { rsfId, args, rscId, props }
             : { rsfId, args }
           : { rscId: rscId as string, props }
       );
-      pipeable.on("error", (err) => {
+      readable.on("error", (err) => {
         console.info("Cannot render RSC", err);
         res.statusCode = 500;
         if (options.mode === "development") {
@@ -70,7 +70,7 @@ export function rsc(options: {
           res.end();
         }
       });
-      pipeable.pipe(res);
+      readable.pipe(res);
       return;
     }
     next();
