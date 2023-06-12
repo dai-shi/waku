@@ -28,7 +28,7 @@ export type MessageRes =
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "moduleId"; moduleId: string }
   | { id: number; type: "end" }
-  | { id: number; type: "err"; err: unknown }
+  | { id: number; type: "err"; err: unknown; statusCode?: number }
   | {
       id: number;
       type: "builder";
@@ -78,9 +78,12 @@ export function renderRSC(
       passthrough.end();
       messageCallbacks.delete(id);
     } else if (mesg.type === "err") {
-      passthrough.destroy(
-        mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err))
-      );
+      const err =
+        mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err));
+      if (mesg.statusCode) {
+        (err as any).statusCode = mesg.statusCode;
+      }
+      passthrough.destroy(err);
       messageCallbacks.delete(id);
     }
   });

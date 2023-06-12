@@ -57,7 +57,18 @@ export function defineRouter(
   getAllPaths: (root: string) => Promise<string[]>
 ): { getEntry: GetEntry; getBuildConfig: GetBuildConfig } {
   const getEntry = async (id: string) => {
-    const mod = await getComponent(id);
+    let mod: Awaited<ReturnType<typeof getComponent>>;
+    try {
+      mod = await getComponent(id);
+    } catch (e) {
+      if (
+        e instanceof Error &&
+        e.message.startsWith("Unknown variable dynamic import")
+      ) {
+        return null;
+      }
+      throw e;
+    }
     const component =
       typeof mod === "function" ? mod : mod?.default || Fragment;
     const RouteComponent: FunctionComponent<any> = (props: RouteProps) => {
@@ -91,7 +102,7 @@ export function defineRouter(
 globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
   const path = search ? pathname + "?" + search : pathname;
   const path2ids = ${JSON.stringify(path2moduleIds)};
-  for (const id of path2ids[path]) {
+  for (const id of path2ids[path] || []) {
     import(id);
   }
 };`;

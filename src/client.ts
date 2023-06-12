@@ -5,6 +5,18 @@ import type { ReactElement } from "react";
 import { createFromFetch, encodeReply } from "react-server-dom-webpack/client";
 import type { HydrationOptions } from "react-dom/client";
 
+const checkStatus = async (
+  responsePromise: Promise<Response>
+): Promise<Response> => {
+  const response = await responsePromise;
+  if (!response.ok) {
+    const err = new Error(response.statusText);
+    (err as any).statusCode = response.status;
+    throw err;
+  }
+  return response;
+};
+
 export function serve<Props>(rscId: string, basePath = "/RSC/") {
   type SetRerender = (
     rerender: (next: [ReactElement, string]) => void
@@ -36,7 +48,7 @@ export function serve<Props>(rscId: string, basePath = "/RSC/") {
             method: "POST",
             body: await encodeReply(args),
           });
-          const data = createFromFetch(response, options);
+          const data = createFromFetch(checkStatus(response), options);
           if (isMutating) {
             rerender?.([data, serializedProps]);
           }
@@ -46,10 +58,9 @@ export function serve<Props>(rscId: string, basePath = "/RSC/") {
       const prefetched = (globalThis as any).__WAKU_PREFETCHED__?.[rscId]?.[
         serializedProps
       ];
-      const data = createFromFetch(
-        prefetched || fetch(basePath + rscId + "/" + searchParams),
-        options
-      );
+      const response =
+        prefetched || fetch(basePath + rscId + "/" + searchParams);
+      const data = createFromFetch(checkStatus(response), options);
       return [data, setRerender];
     }
   );
