@@ -5,6 +5,7 @@ export interface FrameworkConfig {
   entriesJs?: string; // relative to root
   outPublic?: string; // relative to build.outDir
   rscPrefix?: string; // defaults to "RSC/"
+  rscServer?: string; // defaults to "/"
 }
 
 export interface ExtendedUserConfig extends UserConfig {

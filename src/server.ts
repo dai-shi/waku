@@ -38,6 +38,18 @@ export type GetBuilder = (
   };
 }>;
 
-export function defineEntries(getEntry: GetEntry, getBuilder?: GetBuilder) {
-  return { getEntry, getBuilder };
+export type GetSsrConfig = (pathStr: string) => Promise<{
+  element: [rscId: string, props: unknown];
+} | null>;
+
+export function defineEntries(
+  getEntry: GetEntry,
+  getBuilder?: GetBuilder,
+  getSsrConfig?: GetSsrConfig
+) {
+  return { getEntry, getBuilder, getSsrConfig };
+}
+
+export function ClientOnly() {
+  throw new Error("Client only component found. Please wrap with Suspense.");
 }

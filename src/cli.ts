@@ -14,6 +14,9 @@ const { values, positionals } = parseArgs({
     config: {
       type: "string",
     },
+    "with-ssr": {
+      type: "boolean",
+    },
     version: {
       type: "boolean",
       short: "v",
@@ -43,7 +46,7 @@ if (values.version) {
 } else {
   switch (cmd) {
     case "dev":
-      runDev();
+      runDev({ ssr: !!values["with-ssr"] });
       break;
     case "build":
       runBuild();
@@ -60,12 +63,16 @@ if (values.version) {
   }
 }
 
-async function runDev() {
+async function runDev(options: { ssr?: boolean }) {
   const { default: express } = await import("express");
   const { rsc } = await import("./lib/middleware/rsc.js");
   const { devServer } = await import("./lib/middleware/devServer.js");
   const app = express();
   app.use(rsc({ mode: "development" }));
+  if (options.ssr) {
+    const { ssr } = await import("./lib/middleware/ssr.js");
+    app.use(ssr({ mode: "development" }));
+  }
   app.use(devServer());
   const port = process.env.PORT || 3000;
   app.listen(port, () => {
@@ -104,6 +111,7 @@ Commands:
 
 Options:
   -c, --config <path>   Path to the configuration file
+  --with-ssr            Use opt-in SSR
   -v, --version         Display the version number
   -h, --help            Display this help message
 `);

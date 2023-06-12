@@ -53,7 +53,7 @@
     "compile:types": "tsc --project tsconfig.build.json",
     "test": "prettier -c . && eslint . && tsc --project . --noEmit",
     "e2e": "playwright test",
-    "examples:dev": "npm run compile:code && waku dev --config ./examples/${NAME}/vite.config.ts",
+    "examples:dev": "npm run compile:code && waku dev --config ./examples/${NAME}/vite.config.ts --with-ssr",
     "examples:dev:01_counter": "NAME=01_counter npm run examples:dev",
     "examples:dev:02_async": "NAME=02_async npm run examples:dev",
     "examples:dev:03_promise": "NAME=03_promise npm run examples:dev",
