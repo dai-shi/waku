@@ -11,7 +11,7 @@ import { generatePrefetchCode } from "./middleware/rsc/utils.js";
 import {
   shutdown,
   renderRSC,
-  getBuilderRSC,
+  getBuildConfigRSC,
 } from "./middleware/rsc/worker-api.js";
 import { rscIndexPlugin } from "./vite-plugin/rsc-index-plugin.js";
 import { rscAnalyzePlugin } from "./vite-plugin/rsc-analyze-plugin.js";
@@ -203,7 +203,7 @@ const buildClientBundle = async (
 const emitRscFiles = async (
   config: Awaited<ReturnType<typeof resolveConfig>>
 ) => {
-  const pathMap = await getBuilderRSC();
+  const buildConfig = await getBuildConfigRSC();
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (
     rscId: string,
@@ -225,7 +225,7 @@ const emitRscFiles = async (
   };
   const rscFileSet = new Set<string>(); // XXX could be implemented better
   await Promise.all(
-    Object.entries(pathMap).map(async ([, { elements }]) => {
+    Object.entries(buildConfig).map(async ([, { elements }]) => {
       for (const [rscId, props] of elements || []) {
         // FIXME we blindly expect JSON.stringify usage is deterministic
         const serializedProps = JSON.stringify(props);
@@ -254,12 +254,12 @@ const emitRscFiles = async (
       }
     })
   );
-  return { pathMap, getClientModules, rscFiles: Array.from(rscFileSet) };
+  return { buildConfig, getClientModules, rscFiles: Array.from(rscFileSet) };
 };
 
 const emitHtmlFiles = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
-  pathMap: Awaited<ReturnType<typeof getBuilderRSC>>,
+  buildConfig: Awaited<ReturnType<typeof getBuildConfigRSC>>,
   getClientModules: (rscId: string, serializedProps: string) => string[]
 ) => {
   const basePrefix = config.base + config.framework.rscPrefix;
@@ -273,43 +273,47 @@ const emitHtmlFiles = async (
     encoding: "utf8",
   });
   const htmlFiles = await Promise.all(
-    Object.entries(pathMap).map(async ([pathStr, { elements, customCode }]) => {
-      const destFile = path.join(
-        config.root,
-        config.build.outDir,
-        config.framework.outPublic,
-        pathStr,
-        pathStr.endsWith("/") ? "index.html" : ""
-      );
-      let data = "";
-      if (fs.existsSync(destFile)) {
-        data = fs.readFileSync(destFile, { encoding: "utf8" });
-      } else {
-        fs.mkdirSync(path.dirname(destFile), { recursive: true });
-        data = publicIndexHtml;
+    Object.entries(buildConfig).map(
+      async ([pathStr, { elements, customCode }]) => {
+        const destFile = path.join(
+          config.root,
+          config.build.outDir,
+          config.framework.outPublic,
+          pathStr,
+          pathStr.endsWith("/") ? "index.html" : ""
+        );
+        let data = "";
+        if (fs.existsSync(destFile)) {
+          data = fs.readFileSync(destFile, { encoding: "utf8" });
+        } else {
+          fs.mkdirSync(path.dirname(destFile), { recursive: true });
+          data = publicIndexHtml;
+        }
+        const code =
+          generatePrefetchCode(
+            basePrefix,
+            Array.from(elements || []).flatMap(
+              ([rscId, props, skipPrefetch]) => {
+                if (skipPrefetch) {
+                  return [];
+                }
+                return [[rscId, props]];
+              }
+            ),
+            Array.from(elements || []).flatMap(([rscId, props]) => {
+              // FIXME we blindly expect JSON.stringify usage is deterministic
+              const serializedProps = JSON.stringify(props);
+              return getClientModules(rscId, serializedProps);
+            })
+          ) + (customCode || "");
+        if (code) {
+          // HACK is this too naive to inject script code?
+          data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
+        }
+        fs.writeFileSync(destFile, data, { encoding: "utf8" });
+        return destFile;
       }
-      const code =
-        generatePrefetchCode(
-          basePrefix,
-          Array.from(elements || []).flatMap(([rscId, props, skipPrefetch]) => {
-            if (skipPrefetch) {
-              return [];
-            }
-            return [[rscId, props]];
-          }),
-          Array.from(elements || []).flatMap(([rscId, props]) => {
-            // FIXME we blindly expect JSON.stringify usage is deterministic
-            const serializedProps = JSON.stringify(props);
-            return getClientModules(rscId, serializedProps);
-          })
-        ) + (customCode || "");
-      if (code) {
-        // HACK is this too naive to inject script code?
-        data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
-      }
-      fs.writeFileSync(destFile, data, { encoding: "utf8" });
-      return destFile;
-    })
+    )
   );
   return { htmlFiles };
 };
@@ -418,8 +422,14 @@ export async function build() {
   );
   const clientBuildOutput = await buildClientBundle(config, clientEntryFiles);
 
-  const { pathMap, getClientModules, rscFiles } = await emitRscFiles(config);
-  const { htmlFiles } = await emitHtmlFiles(config, pathMap, getClientModules);
+  const { buildConfig, getClientModules, rscFiles } = await emitRscFiles(
+    config
+  );
+  const { htmlFiles } = await emitHtmlFiles(
+    config,
+    buildConfig,
+    getClientModules
+  );
 
   emitPackageJson(config);
 

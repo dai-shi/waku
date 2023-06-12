@@ -90,8 +90,8 @@ export default function Layout() {
       <article className="mt-6">
         <div className="my-1">
           In <Code>entries.ts</Code>, we use <Code>defineRouter</Code> to export{" "}
-          <Code>getEntry</Code> and <Code>getBuilder</Code> at once. Here&apos;s
-          a simple example code without builder:
+          <Code>getEntry</Code> and <Code>getBuildConfig</Code> at once.
+          Here&apos;s a simple example code without builder:
         </div>
         <div className="my-3">
           <CodeBlock lang="tsx">{code2}</CodeBlock>
