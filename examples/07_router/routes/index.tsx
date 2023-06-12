@@ -44,7 +44,7 @@ const Index = ({ children }: { children: ReactNode }) => (
         <Link href="/nested/baz">Nested / Baz</Link>
       </li>
       <li>
-        <Link href="/nested/qux">Nested / Qux</Link>
+        <Link href="/nested/qux2">Nested / Qux</Link>
       </li>
     </ul>
     <h1>Home</h1>
