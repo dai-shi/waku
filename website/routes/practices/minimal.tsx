@@ -47,7 +47,7 @@ export default defineEntries(
         return null;
     }
   },
-  // getBuilder
+  // getBuildConfig
   async () => {
     return {
       "/": {
@@ -112,14 +112,14 @@ export default function Layout() {
       <article className="mt-6">
         <div className="my-1">
           In addition to the <Code>getEntry</Code> function, you can also
-          optionally specify <Code>getBuilder</Code> function in{" "}
+          optionally specify <Code>getBuildConfig</Code> function in{" "}
           <Code>entries.ts</Code>. Here&apos;s an example:
         </div>
         <div className="my-3">
           <CodeBlock lang="tsx">{code4}</CodeBlock>
         </div>
         <div className="my-1">
-          The <Code>getBuilder</Code> function is used for build-time
+          The <Code>getBuildConfig</Code> function is used for build-time
           optimization. It renders React Server Components during the build
           process to produce the output that will be sent to the client. Note
           that rendering here means to produce RSC payload not HTML content.

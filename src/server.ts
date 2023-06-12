@@ -23,7 +23,7 @@ export type RenderInput =
       args: unknown[];
     };
 
-export type GetBuilder = (
+export type GetBuildConfig = (
   root: string,
   unstable_renderRSC: (
     input: RenderInput,
@@ -38,6 +38,9 @@ export type GetBuilder = (
   };
 }>;
 
-export function defineEntries(getEntry: GetEntry, getBuilder?: GetBuilder) {
-  return { getEntry, getBuilder };
+export function defineEntries(
+  getEntry: GetEntry,
+  getBuildConfig?: GetBuildConfig
+) {
+  return { getEntry, getBuildConfig };
 }

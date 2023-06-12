@@ -2,13 +2,13 @@ import { Writable } from "node:stream";
 import { createElement, Fragment } from "react";
 import type { FunctionComponent } from "react";
 
-import type { GetEntry, GetBuilder } from "../server.js";
+import type { GetEntry, GetBuildConfig } from "../server.js";
 import type { RouteProps, LinkProps } from "./common.js";
 import { Child as ClientChild, Link as ClientLink } from "./client.js";
 
 const collectClientModules = async (
   pathStr: string,
-  unstable_renderRSC: Parameters<GetBuilder>[1]
+  unstable_renderRSC: Parameters<GetBuildConfig>[1]
 ) => {
   const url = new URL(pathStr, "http://localhost");
   const pathItems = url.pathname.split("/").filter(Boolean);
@@ -55,7 +55,7 @@ export function defineRouter(
     id: string
   ) => Promise<FunctionComponent | { default: FunctionComponent } | null>,
   getAllPaths: (root: string) => Promise<string[]>
-): { getEntry: GetEntry; getBuilder: GetBuilder } {
+): { getEntry: GetEntry; getBuildConfig: GetBuildConfig } {
   const getEntry = async (id: string) => {
     const mod = await getComponent(id);
     const component =
@@ -78,7 +78,7 @@ export function defineRouter(
     return RouteComponent;
   };
 
-  const getBuilder: GetBuilder = async (root, unstable_renderRSC) => {
+  const getBuildConfig: GetBuildConfig = async (root, unstable_renderRSC) => {
     const paths = (await getAllPaths(root)).map((item) =>
       item === "index" ? "/" : `/${item}`
     );
@@ -103,7 +103,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
     );
   };
 
-  return { getEntry, getBuilder };
+  return { getEntry, getBuildConfig };
 }
 
 export function Link(props: LinkProps) {
