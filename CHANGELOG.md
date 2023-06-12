@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Changed
 - fix: rename getBuilder to getBuildConfig #75
+- feat: support 404 for rsc #76
 
 ## [0.11.3] - 2023-06-10
 ### Changed
