@@ -3,7 +3,7 @@ import {
   // createRoot,
   hydrateRoot,
 } from "react-dom/client";
-import { serve } from "waku/client";
+import { serve, hydrationOptions } from "waku/client";
 
 const App = serve<{ name: string }>("App");
 const rootElement = (
@@ -13,4 +13,4 @@ const rootElement = (
 );
 
 // createRoot(document.getElementById("root")!).render(rootElement);
-hydrateRoot(document.getElementById("root")!, rootElement);
+hydrateRoot(document.getElementById("root")!, rootElement, hydrationOptions);

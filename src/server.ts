@@ -51,5 +51,5 @@ export function defineEntries(
 }
 
 export function ClientOnly() {
-  throw new Error("Client only component found. Please wrap with Suspense.");
+  throw new Error("Client-only component found. Please wrap with Suspense.");
 }
