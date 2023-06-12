@@ -7,7 +7,7 @@ import { createElement } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 
 import { configFileConfig, resolveConfig } from "../../config.js";
-import { transformRsfId } from "./utils.js";
+import { hasStatusCode, transformRsfId } from "./utils.js";
 import type { MessageReq, MessageRes } from "./worker-api.js";
 import { defineEntries } from "../../../server.js";
 import type { RenderInput } from "../../../server.js";
@@ -54,6 +54,9 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
     pipeable.pipe(writable);
   } catch (err) {
     const mesg: MessageRes = { id, type: "err", err };
+    if (hasStatusCode(err)) {
+      mesg.statusCode = err.statusCode;
+    }
     parentPort!.postMessage(mesg);
   }
 };
@@ -143,7 +146,9 @@ const getFunctionComponent = async (rscId: string) => {
   if (typeof mod?.default === "function") {
     return mod?.default;
   }
-  throw new Error("No function component found");
+  const err = new Error("No function component found");
+  (err as any).statusCode = 404; // HACK our convention for NotFound
+  throw err;
 };
 
 const resolveClientEntry = (filePath: string) => {

@@ -32,7 +32,10 @@ const RouterContext = createContext<{
 export function useChangeLocation() {
   const value = useContext(RouterContext);
   if (!value) {
-    throw new Error("Missing Router");
+    const dummyFn: ChangeLocation = () => {
+      throw new Error("Missing Router");
+    };
+    return dummyFn;
   }
   return value.changeLocation;
 }
