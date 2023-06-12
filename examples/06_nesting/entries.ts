@@ -12,7 +12,7 @@ export default defineEntries(
         return null;
     }
   },
-  // getBuilder
+  // getBuildConfig
   async () => {
     return {
       "/": {

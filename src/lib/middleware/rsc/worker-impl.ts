@@ -58,10 +58,12 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
   }
 };
 
-const handleGetBuilder = async (mesg: MessageReq & { type: "getBuilder" }) => {
+const handleGetBuildConfig = async (
+  mesg: MessageReq & { type: "getBuildConfig" }
+) => {
   const { id } = mesg;
   try {
-    const output = await getBuilderRSC();
+    const output = await getBuildConfigRSC();
     const mesg: MessageRes = { id, type: "builder", output };
     parentPort!.postMessage(mesg);
   } catch (err) {
@@ -106,8 +108,8 @@ parentPort!.on("message", (mesg: MessageReq) => {
     shutdown();
   } else if (mesg.type === "render") {
     handleRender(mesg);
-  } else if (mesg.type === "getBuilder") {
-    handleGetBuilder(mesg);
+  } else if (mesg.type === "getBuildConfig") {
+    handleGetBuildConfig(mesg);
   }
 });
 
@@ -202,22 +204,22 @@ async function renderRSC(
   throw new Error("Unexpected input");
 }
 
-async function getBuilderRSC() {
+async function getBuildConfigRSC() {
   if (!resolvedConfig) {
     resolvedConfig = await resolveConfig("build");
   }
   const config = resolvedConfig;
   const distEntriesFile = await getEntriesFile();
   const {
-    default: { getBuilder },
+    default: { getBuildConfig },
   } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
-  if (!getBuilder) {
+  if (!getBuildConfig) {
     console.warn(
-      "getBuilder is undefined. It's recommended for optimization and sometimes required."
+      "getBuildConfig is undefined. It's recommended for optimization and sometimes required."
     );
     return {};
   }
 
-  const output = await getBuilder(config.root, renderRSC);
+  const output = await getBuildConfig(config.root, renderRSC);
   return output;
 }

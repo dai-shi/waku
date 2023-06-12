@@ -79,24 +79,24 @@ pnpm create waku # pnpm not working for now
 
 ### Architecture
 
-https://excalidraw.com/#json=W1apCXy3iJ3L0rIoDxtU4,AbYkm972Fm1CbIzfV5PTIQ
+https://excalidraw.com/#json=XGEA5V5JVU3AZSri7fXOw,Q95v26_30v05jwwQeU_tjw
 
-![waku-arch](https://user-images.githubusercontent.com/490574/224886500-20833ff1-961b-4b84-972c-6471bc732de2.png)
+![waku-arch](https://github.com/dai-shi/waku/assets/490574/482c60ba-3a92-45ba-b7cc-9a077110ce44)
 
 ### How React Server Functions Work
 
-https://excalidraw.com/#json=fMeNJovUG7PGnpvP64XVw,kjZBTeM2KPZKhWtALDOY8A
+https://excalidraw.com/#json=sqAZKA6csX-vLDlnu7CyK,JYQiZyAHbCPK4zPgeD2a8g
 
-![react-server-functions](https://user-images.githubusercontent.com/490574/225330279-e10cee1e-ffb9-49d1-b47c-6c46eb7f6c3a.png)
+![waku-rsf](https://github.com/dai-shi/waku/assets/490574/22874733-20ff-4096-8702-e1fe1166dfd2)
 
 ### How Waku counter example communicates with server
 
-https://excalidraw.com/#json=N0PrCUij21xc2-Zwl1phZ,VYiuI0A2Fzw8G7y5yrPY8Q
+https://excalidraw.com/#json=LMrRnVfDm8TDGtP-BfHZ5,o1fI7c_HvL81TDKSRoEc5A
 
-![waku-counter](https://user-images.githubusercontent.com/490574/226148795-de405044-fb66-440b-9a9d-d8ad5854c7fa.png)
+![waku-counter](https://github.com/dai-shi/waku/assets/490574/ca5685c6-a5b2-434a-89bd-272c0d87e935)
 
 ### Waku's minimal spec for React Server Components
 
-https://excalidraw.com/#json=VjIjQePYqfBCdnn1kiy92,75ozbvJOqCq4f8KWhYEyLQ
+https://excalidraw.com/#json=RPBX88sLf6FFCQXOVXIyW,ngpz5ZqKyQyU2vgWx_x6tg
 
-![waku-spec](https://user-images.githubusercontent.com/490574/226770699-7390e1be-f3c1-4c72-aa7d-42bd66848866.png)
+![waku-spec](https://github.com/dai-shi/waku/assets/490574/0dd50285-c443-4668-a7d6-fbd6952b0d76)

@@ -23,7 +23,7 @@ export type RenderInput =
       args: unknown[];
     };
 
-export type GetBuilder = (
+export type GetBuildConfig = (
   root: string,
   unstable_renderRSC: (
     input: RenderInput,
@@ -44,10 +44,10 @@ export type GetSsrConfig = (pathStr: string) => Promise<{
 
 export function defineEntries(
   getEntry: GetEntry,
-  getBuilder?: GetBuilder,
+  getBuildConfig?: GetBuildConfig,
   getSsrConfig?: GetSsrConfig
 ) {
-  return { getEntry, getBuilder, getSsrConfig };
+  return { getEntry, getBuildConfig, getSsrConfig };
 }
 
 export function ClientOnly() {
