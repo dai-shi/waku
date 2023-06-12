@@ -6,19 +6,18 @@ interface Props {
   children: ReactNode;
 }
 
-class ErrorBoundaryClass extends Component<Props, { error?: any }> {
-  constructor(props: any) {
+class ErrorBoundaryClass extends Component<Props, { error?: unknown }> {
+  constructor(props: Props) {
     super(props);
     this.state = {};
   }
 
-  static getDerivedStateFromError(error: any) {
+  static getDerivedStateFromError(error: unknown) {
     return { error };
   }
 
   render() {
     if ("error" in this.state) {
-      // You can render any custom fallback UI
       return this.props.fallback(this.state.error);
     }
     return this.props.children;
