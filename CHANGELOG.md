@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Changed
+- fix: rename getBuilder to getBuildConfig #75
 
 ## [0.11.3] - 2023-06-10
 ### Changed
