@@ -52,7 +52,7 @@ if (values.version) {
       runBuild();
       break;
     case "start":
-      runStart();
+      runStart({ ssr: !!values["with-ssr"] });
       break;
     default:
       if (cmd) {
@@ -63,13 +63,13 @@ if (values.version) {
   }
 }
 
-async function runDev(options: { ssr?: boolean }) {
+async function runDev(options?: { ssr?: boolean }) {
   const { default: express } = await import("express");
   const { rsc } = await import("./lib/middleware/rsc.js");
   const { devServer } = await import("./lib/middleware/devServer.js");
   const app = express();
   app.use(rsc({ mode: "development" }));
-  if (options.ssr) {
+  if (options?.ssr) {
     const { ssr } = await import("./lib/middleware/ssr.js");
     app.use(ssr({ mode: "development" }));
   }
@@ -85,13 +85,17 @@ async function runBuild() {
   await build();
 }
 
-async function runStart() {
+async function runStart(options?: { ssr?: boolean }) {
   const { default: express } = await import("express");
   const { resolveConfig } = await import("./lib/config.js");
   const config = await resolveConfig("serve");
   const { rsc } = await import("./lib/middleware/rsc.js");
   const app = express();
   app.use(rsc({ mode: "production" }));
+  if (options?.ssr) {
+    const { ssr } = await import("./lib/middleware/ssr.js");
+    app.use(ssr({ mode: "production" }));
+  }
   app.use(express.static(path.join(config.root, config.framework.outPublic)));
   (express.static.mime as any).default_type = "";
   const port = process.env.PORT || 8080;

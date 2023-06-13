@@ -13,7 +13,7 @@ const App = ({ name = "Anonymous" }) => {
       <h1>Hello {name}!!</h1>
       <h3>This is a server component.</h3>
       <p>Server counter: {getCounter()}</p>
-      <Suspense>
+      <Suspense fallback="Loading...">
         <Counter
           increment={increment as unknown as ServerFunction<typeof increment>}
         />
