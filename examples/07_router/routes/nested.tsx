@@ -1,11 +1,15 @@
-import { ReactNode } from "react";
+import { Suspense } from "react";
+import type { ReactNode } from "react";
 
 import { Counter } from "../src/Counter.js";
+import { CounterSkeleton } from "../src/CounterSkeleton.js";
 
 const Nested = ({ children }: { children: ReactNode }) => (
   <div>
     <h2>Nested</h2>
-    <Counter />
+    <Suspense fallback={<CounterSkeleton />}>
+      <Counter />
+    </Suspense>
     {children}
   </div>
 );

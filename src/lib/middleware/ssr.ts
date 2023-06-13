@@ -54,9 +54,10 @@ const bundlerConfig = new Proxy(
 const renderHTML = (
   pathStr: string,
   rscServer: URL,
+  rscPrefix: string,
   ssrConfig: NonNullable<Awaited<ReturnType<GetSsrConfig>>>
 ): Readable => {
-  const htmlResPromise = fetch(rscServer + pathStr, {
+  const htmlResPromise = fetch(rscServer + pathStr.slice(1), {
     headers: { "x-waku-skip-ssr": "true" },
   });
   const [rscId, props] = ssrConfig.element;
@@ -64,7 +65,9 @@ const renderHTML = (
   const serializedProps = JSON.stringify(props);
   const searchParams = new URLSearchParams();
   searchParams.set("props", serializedProps);
-  const rscResPromise = fetch(rscServer + rscId + "/" + searchParams);
+  const rscResPromise = fetch(
+    rscServer + rscPrefix + rscId + "/" + searchParams
+  );
   const passthrough = new PassThrough();
   Promise.all([htmlResPromise, rscResPromise]).then(
     async ([htmlRes, rscRes]) => {
@@ -143,10 +146,15 @@ export function ssr(options: {
       const ssrConfig = getSsrConfig && (await getSsrConfig(req.url));
       if (ssrConfig) {
         const rscServer = new URL(
-          config.framework.rscServer + config.framework.rscPrefix,
+          config.framework.rscServer,
           "http://" + req.headers.host
         );
-        const readable = renderHTML(req.url, rscServer, ssrConfig);
+        const readable = renderHTML(
+          req.url,
+          rscServer,
+          config.framework.rscPrefix,
+          ssrConfig
+        );
         readable.on("error", (err) => {
           if (hasStatusCode(err)) {
             res.statusCode = err.statusCode;

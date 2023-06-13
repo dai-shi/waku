@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 const Qux = ({ children }: { children: ReactNode }) => (
   <div>
