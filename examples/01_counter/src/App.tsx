@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+
 import { Counter } from "./Counter.js";
 import { CounterSkeleton } from "./CounterSkeleton.js";
 

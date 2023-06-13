@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { Counter } from "./Counter.js";
 import { getCounter, increment } from "./funcs.js";
 
@@ -11,9 +13,11 @@ const App = ({ name = "Anonymous" }) => {
       <h1>Hello {name}!!</h1>
       <h3>This is a server component.</h3>
       <p>Server counter: {getCounter()}</p>
-      <Counter
-        increment={increment as unknown as ServerFunction<typeof increment>}
-      />
+      <Suspense>
+        <Counter
+          increment={increment as unknown as ServerFunction<typeof increment>}
+        />
+      </Suspense>
     </div>
   );
 };

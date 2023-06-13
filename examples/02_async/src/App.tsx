@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import { Counter } from "./Counter.js";
+import { CounterSkeleton } from "./CounterSkeleton.js";
 
 const App = ({ name = "Anonymous" }) => {
   return (
@@ -10,7 +11,9 @@ const App = ({ name = "Anonymous" }) => {
       <Suspense fallback="Pending...">
         <ServerMessage />
       </Suspense>
-      <Counter />
+      <Suspense fallback={<CounterSkeleton />}>
+        <Counter />
+      </Suspense>
     </div>
   );
 };
