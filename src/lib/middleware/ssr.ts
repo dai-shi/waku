@@ -23,6 +23,9 @@ type Entries = { default: ReturnType<typeof defineEntries> };
 const { renderToPipeableStream } = RDServer;
 const { createFromNodeStream } = RSDWClient;
 
+const hasStatusCode = (x: unknown): x is { statusCode: number } =>
+  typeof (x as any)?.statusCode === "number";
+
 // TODO make it configurable
 const splitHTML = (htmlStr: string): readonly [string, string] => {
   const splitted = htmlStr.split(/\s*<div class="spinner"><\/div>\s*/);
@@ -66,13 +69,15 @@ const renderHTML = (
   Promise.all([htmlResPromise, rscResPromise]).then(
     async ([htmlRes, rscRes]) => {
       if (!htmlRes.ok) {
-        // TODO error handling
-        passthrough.destroy(new Error("TODO error handling"));
+        const err = new Error("Failed to fetch html from RSC server");
+        (err as any).statusCode = htmlRes.status;
+        passthrough.destroy(err);
         return;
       }
       if (!rscRes.ok) {
-        // TODO error handling
-        passthrough.destroy(new Error("TODO error handling"));
+        const err = new Error("Failed to fetch rsc from RSC server");
+        (err as any).statusCode = rscRes.status;
+        passthrough.destroy(err);
         return;
       }
       if (!htmlRes.body || !rscRes.body) {
@@ -143,8 +148,12 @@ export function ssr(options: {
         );
         const readable = renderHTML(req.url, rscServer, ssrConfig);
         readable.on("error", (err) => {
-          console.info("Cannot render HTML", err);
-          res.statusCode = 500;
+          if (hasStatusCode(err)) {
+            res.statusCode = err.statusCode;
+          } else {
+            console.info("Cannot render HTML", err);
+            res.statusCode = 500;
+          }
           if (options.mode === "development") {
             res.end(String(err));
           } else {
