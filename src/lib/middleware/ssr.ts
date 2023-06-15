@@ -43,7 +43,8 @@ const bundlerConfig = new Proxy(
         {},
         {
           get() {
-            return { specifier: "waku/server", name: "Empty" };
+            // TODO make it configurable
+            return { specifier: "waku/server", name: "ClientFallback" };
           },
         }
       );

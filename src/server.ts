@@ -1,5 +1,6 @@
 import type { Writable } from "node:stream";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { createElement } from "react";
 import type { FunctionComponent } from "react";
 
 type PipeableStream = { pipe<T extends Writable>(destination: T): T };
@@ -72,6 +73,6 @@ export function isSsr() {
 }
 
 // For internal use only
-export function Empty() {
-  return null;
+export function ClientFallback() {
+  return createElement("div", { className: "spinner" });
 }

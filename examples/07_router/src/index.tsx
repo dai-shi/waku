@@ -1,8 +1,5 @@
 import { StrictMode } from "react";
-import {
-  createRoot,
-  // hydrateRoot,
-} from "react-dom/client";
+import { createRoot } from "react-dom/client";
 import { Router } from "waku/router/client";
 
 import { ErrorBoundary } from "./ErrorBoundary.js";
@@ -16,4 +13,3 @@ const rootElement = (
 );
 
 createRoot(document.getElementById("root")!).render(rootElement);
-// hydrateRoot(document.getElementById("root")!, rootElement);
