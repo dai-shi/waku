@@ -103,18 +103,7 @@ const renderHTML = (
         passthrough.write(postamble, "utf8");
         return origEnd.apply(passthrough, args as any); // FIXME how to avoid any?
       };
-      renderToPipeableStream(data, {
-        onError(err) {
-          if (
-            err instanceof Error &&
-            err.message.startsWith("Client-only component found.")
-          ) {
-            // ignore
-            return;
-          }
-          console.error(err);
-        },
-      }).pipe(passthrough);
+      renderToPipeableStream(data).pipe(passthrough);
     }
   );
   return passthrough;
