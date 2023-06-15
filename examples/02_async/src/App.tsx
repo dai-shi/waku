@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 
+import { isSsr } from "waku/server";
+
 import { Counter } from "./Counter.js";
 import { CounterSkeleton } from "./CounterSkeleton.js";
 
@@ -11,9 +13,7 @@ const App = ({ name = "Anonymous" }) => {
       <Suspense fallback="Pending...">
         <ServerMessage />
       </Suspense>
-      <Suspense fallback={<CounterSkeleton />}>
-        <Counter />
-      </Suspense>
+      {isSsr() ? <CounterSkeleton /> : <Counter />}
     </div>
   );
 };

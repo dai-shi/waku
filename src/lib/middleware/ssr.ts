@@ -43,7 +43,7 @@ const bundlerConfig = new Proxy(
         {},
         {
           get() {
-            return { specifier: "waku/server", name: "ClientOnly" };
+            return { specifier: "waku/server", name: "Empty" };
           },
         }
       );
@@ -58,7 +58,7 @@ const renderHTML = (
   ssrConfig: NonNullable<Awaited<ReturnType<GetSsrConfig>>>
 ): Readable => {
   const htmlResPromise = fetch(rscServer + pathStr.slice(1), {
-    headers: { "x-waku-skip-ssr": "true" },
+    headers: { "x-waku-ssr-mode": "html" },
   });
   const [rscId, props] = ssrConfig.element;
   // FIXME we blindly expect JSON.stringify usage is deterministic
@@ -66,7 +66,10 @@ const renderHTML = (
   const searchParams = new URLSearchParams();
   searchParams.set("props", serializedProps);
   const rscResPromise = fetch(
-    rscServer + rscPrefix + rscId + "/" + searchParams
+    rscServer + rscPrefix + rscId + "/" + searchParams,
+    {
+      headers: { "x-waku-ssr-mode": "rsc" },
+    }
   );
   const passthrough = new PassThrough();
   Promise.all([htmlResPromise, rscResPromise]).then(
@@ -142,7 +145,7 @@ export function ssr(options: {
       configPromise,
       getSsrConfigPromise,
     ]);
-    if (req.url && !req.headers["x-waku-skip-ssr"]) {
+    if (req.url && !req.headers["x-waku-ssr-mode"]) {
       const ssrConfig = getSsrConfig && (await getSsrConfig(req.url));
       if (ssrConfig) {
         const rscServer = new URL(

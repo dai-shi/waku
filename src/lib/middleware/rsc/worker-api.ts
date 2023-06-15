@@ -20,6 +20,7 @@ export type MessageReq =
       type: "render";
       input: RenderInput;
       moduleIdCallback: boolean;
+      isSsr: boolean;
     }
   | { id: number; type: "getBuildConfig" };
 
@@ -65,7 +66,8 @@ let nextId = 1;
 
 export function renderRSC(
   input: RenderInput,
-  clientModuleCallback?: (id: string) => void
+  clientModuleCallback?: (id: string) => void,
+  isSsr?: boolean
 ): Readable {
   const id = nextId++;
   const passthrough = new PassThrough();
@@ -92,6 +94,7 @@ export function renderRSC(
     type: "render",
     input,
     moduleIdCallback: !!clientModuleCallback,
+    isSsr: !!isSsr,
   };
   worker.postMessage(mesg);
   return passthrough;

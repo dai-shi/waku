@@ -3,7 +3,6 @@
 import { cache, use, useEffect, useState } from "react";
 import type { ReactElement } from "react";
 import { createFromFetch, encodeReply } from "react-server-dom-webpack/client";
-import type { HydrationOptions } from "react-dom/client";
 
 const checkStatus = async (
   responsePromise: Promise<Response>
@@ -102,16 +101,3 @@ export function mutate(fn: () => void) {
   fn();
   --mutationMode;
 }
-
-export const hydrationOptions: HydrationOptions = {
-  onRecoverableError(err: any) {
-    if (
-      typeof err?.message === "string" &&
-      err.message.startsWith("Client-only component found.")
-    ) {
-      // ignore
-      return;
-    }
-    throw err;
-  },
-};

@@ -9,7 +9,10 @@ import RSDWServer from "react-server-dom-webpack/server";
 import { configFileConfig, resolveConfig } from "../../config.js";
 import { hasStatusCode, transformRsfId } from "./utils.js";
 import type { MessageReq, MessageRes } from "./worker-api.js";
-import { defineEntries } from "../../../server.js";
+import {
+  defineEntries,
+  runWithRscContext as runWithRscContextOrig,
+} from "../../../server.js";
 import type { RenderInput } from "../../../server.js";
 import { rscTransformPlugin } from "../../vite-plugin/rsc-transform-plugin.js";
 import { rscReloadPlugin } from "../../vite-plugin/rsc-reload-plugin.js";
@@ -20,7 +23,7 @@ type Entries = { default: ReturnType<typeof defineEntries> };
 type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
-  const { id, input, moduleIdCallback } = mesg;
+  const { id, input, moduleIdCallback, isSsr } = mesg;
   try {
     const clientModuleCallback = moduleIdCallback
       ? (moduleId: string) => {
@@ -28,7 +31,7 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
           parentPort!.postMessage(mesg);
         }
       : undefined;
-    const pipeable = await renderRSC(input, clientModuleCallback);
+    const pipeable = await renderRSC(input, clientModuleCallback, isSsr);
     const writable = new Writable({
       write(chunk, encoding, callback) {
         if (encoding !== ("buffer" as any)) {
@@ -106,6 +109,10 @@ const loadServerFile = async (fname: string) => {
   return vite.ssrLoadModule(fname);
 };
 
+const { runWithRscContext } = await (loadServerFile("waku/server") as Promise<{
+  runWithRscContext: typeof runWithRscContextOrig;
+}>);
+
 parentPort!.on("message", (mesg: MessageReq) => {
   if (mesg.type === "shutdown") {
     shutdown();
@@ -171,7 +178,8 @@ const resolveClientEntry = (filePath: string) => {
 
 async function renderRSC(
   input: RenderInput,
-  clientModuleCallback?: (id: string) => void
+  clientModuleCallback?: (id: string) => void,
+  isSsr?: boolean
 ): Promise<PipeableStream> {
   if (!resolvedConfig) {
     resolvedConfig = await resolveConfig("serve");
@@ -195,16 +203,20 @@ async function renderRSC(
     const mod = await loadServerFile(fname);
     const data = await (mod[name!] || mod)(...input.args);
     if (!("rscId" in input)) {
-      return renderToPipeableStream(data, bundlerConfig);
+      return runWithRscContext({ isSsr: !!isSsr }, () =>
+        renderToPipeableStream(data, bundlerConfig)
+      );
     }
     // continue for mutation mode
   }
   if ("rscId" in input) {
     const component = await getFunctionComponent(input.rscId);
-    return renderToPipeableStream(
-      createElement(component, input.props as any),
-      bundlerConfig
-    ).pipe(transformRsfId(config.root));
+    return runWithRscContext({ isSsr: !!isSsr }, () =>
+      renderToPipeableStream(
+        createElement(component, input.props as any),
+        bundlerConfig
+      ).pipe(transformRsfId(config.root))
+    );
   }
   throw new Error("Unexpected input");
 }

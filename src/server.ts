@@ -1,4 +1,5 @@
 import type { Writable } from "node:stream";
+import { AsyncLocalStorage } from "node:async_hooks";
 import type { FunctionComponent } from "react";
 
 type PipeableStream = { pipe<T extends Writable>(destination: T): T };
@@ -50,6 +51,27 @@ export function defineEntries(
   return { getEntry, getBuildConfig, getSsrConfig };
 }
 
-export function ClientOnly() {
-  throw new Error("Client-only component found. Please wrap with Suspense.");
+const rscContext = new AsyncLocalStorage<{
+  isSsr: boolean;
+}>();
+
+// For internal use only
+export function runWithRscContext<Result>(
+  ctx: NonNullable<ReturnType<typeof rscContext.getStore>>,
+  fn: () => Result
+) {
+  return rscContext.run(ctx, fn);
+}
+
+export function isSsr() {
+  const ctx = rscContext.getStore();
+  if (!ctx) {
+    throw new Error("Missing runWithRscContext");
+  }
+  return ctx.isSsr;
+}
+
+// For internal use only
+export function Empty() {
+  return null;
 }

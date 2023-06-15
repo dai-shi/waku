@@ -1,5 +1,3 @@
-import { Suspense } from "react";
-
 import { Counter } from "./Counter.js";
 import { greet } from "./funcs.js";
 
@@ -12,9 +10,7 @@ const App = ({ name = "Anonymous" }) => {
     <div style={{ border: "3px red dashed", margin: "1em", padding: "1em" }}>
       <h1>Hello {name}!!</h1>
       <h3>This is a server component.</h3>
-      <Suspense fallback="Loading...">
-        <Counter greet={greet as unknown as ServerFunction<typeof greet>} />
-      </Suspense>
+      <Counter greet={greet as unknown as ServerFunction<typeof greet>} />
     </div>
   );
 };
