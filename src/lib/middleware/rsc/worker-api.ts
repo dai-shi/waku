@@ -2,7 +2,11 @@ import { PassThrough } from "node:stream";
 import type { Readable } from "node:stream";
 import { Worker } from "node:worker_threads";
 
-import type { RenderInput, RenderOptions, GetBuildConfig } from "../../../server.js";
+import type {
+  RenderInput,
+  RenderOptions,
+  GetBuildConfig,
+} from "../../../server.js";
 
 const worker = new Worker(new URL("worker-impl.js", import.meta.url), {
   execArgv: ["--conditions", "react-server"],
