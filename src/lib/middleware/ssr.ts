@@ -35,16 +35,22 @@ const splitHTML = (htmlStr: string): readonly [string, string] => {
   return [splitted[0] as string, splitted[1] as string];
 };
 
+// TODO make it configurable
+const getFallback = (id: string) => {
+  return id && "waku/server#ClientFallback";
+};
+
 const bundlerConfig = new Proxy(
   {},
   {
-    get() {
+    get(_target, filePath: string) {
       return new Proxy(
         {},
         {
-          get() {
-            // TODO make it configurable
-            return { specifier: "waku/server", name: "ClientFallback" };
+          get(_target, nameStr: string) {
+            const id = getFallback(filePath + "#" + nameStr);
+            const [specifier, name] = id.split("#") as [string, string];
+            return { specifier, name };
           },
         }
       );
