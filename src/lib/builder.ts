@@ -274,7 +274,7 @@ const renderHtml = async (
   }
   const { splitHTML, getFallback } = config.framework.ssr;
   const [rscId, props] = ssrConfig.element;
-  const pipeable = renderRSC({ rscId, props });
+  const pipeable = renderRSC({ rscId, props }, { isSsr: true });
   return renderHtmlToReadable(htmlStr, pipeable, splitHTML, getFallback);
 };
 
