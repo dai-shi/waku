@@ -293,22 +293,25 @@ const emitHtmlFiles = async (
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
           data = publicIndexHtml;
         }
+        const elementsForPrefetch = new Set<
+          readonly [rscId: string, props: unknown]
+        >();
+        const moduleIdsForPrefetch = new Set<string>();
+        for (const [rscId, props, skipPrefetch] of elements || []) {
+          if (!skipPrefetch) {
+            elementsForPrefetch.add([rscId, props]);
+            // FIXME we blindly expect JSON.stringify usage is deterministic
+            const serializedProps = JSON.stringify(props);
+            for (const id of getClientModules(rscId, serializedProps)) {
+              moduleIdsForPrefetch.add(id);
+            }
+          }
+        }
         const code =
           generatePrefetchCode(
             basePrefix,
-            Array.from(elements || []).flatMap(
-              ([rscId, props, skipPrefetch]) => {
-                if (skipPrefetch) {
-                  return [];
-                }
-                return [[rscId, props]];
-              }
-            ),
-            Array.from(elements || []).flatMap(([rscId, props]) => {
-              // FIXME we blindly expect JSON.stringify usage is deterministic
-              const serializedProps = JSON.stringify(props);
-              return getClientModules(rscId, serializedProps);
-            })
+            elementsForPrefetch,
+            moduleIdsForPrefetch
           ) + (customCode || "");
         if (code) {
           // HACK is this too naive to inject script code?
