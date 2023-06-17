@@ -1,15 +1,14 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
-import { Readable, PassThrough } from "node:stream";
+import { Readable } from "node:stream";
 
-import RDServer from "react-dom/server";
-import RSDWClient from "react-server-dom-webpack/client.node.unbundled";
 import { createServer as viteCreateServer } from "vite";
 
 import { configFileConfig, resolveConfig } from "../config.js";
 import { defineEntries } from "../../server.js";
 import type { GetSsrConfig } from "../../server.js";
 import { nonjsResolvePlugin } from "../vite-plugin/nonjs-resolve-plugin.js";
+import { renderHtmlToReadable } from "./ssr/utils.js";
 
 type Middleware = (
   req: IncomingMessage,
@@ -19,38 +18,17 @@ type Middleware = (
 
 type Entries = { default: ReturnType<typeof defineEntries> };
 
-// eslint-disable-next-line import/no-named-as-default-member
-const { renderToPipeableStream } = RDServer;
-const { createFromNodeStream } = RSDWClient;
-
 const hasStatusCode = (x: unknown): x is { statusCode: number } =>
   typeof (x as any)?.statusCode === "number";
 
-const renderHTML = (
+const renderHTML = async (
   pathStr: string,
   rscServer: URL,
   config: Awaited<ReturnType<typeof resolveConfig>>,
   ssrConfig: NonNullable<Awaited<ReturnType<GetSsrConfig>>>
-): Readable => {
+): Promise<Readable> => {
   const rscPrefix = config.framework.rscPrefix;
   const { splitHTML, getFallback } = config.framework.ssr;
-  const bundlerConfig = new Proxy(
-    {},
-    {
-      get(_target, filePath: string) {
-        return new Proxy(
-          {},
-          {
-            get(_target, nameStr: string) {
-              const id = getFallback(filePath + "#" + nameStr);
-              const [specifier, name] = id.split("#") as [string, string];
-              return { specifier, name };
-            },
-          }
-        );
-      },
-    }
-  );
   const htmlResPromise = fetch(rscServer + pathStr.slice(1), {
     headers: { "x-waku-ssr-mode": "html" },
   });
@@ -65,41 +43,26 @@ const renderHTML = (
       headers: { "x-waku-ssr-mode": "rsc" },
     }
   );
-  const passthrough = new PassThrough();
-  Promise.all([htmlResPromise, rscResPromise]).then(
-    async ([htmlRes, rscRes]) => {
-      if (!htmlRes.ok) {
-        const err = new Error("Failed to fetch html from RSC server");
-        (err as any).statusCode = htmlRes.status;
-        passthrough.destroy(err);
-        return;
-      }
-      if (!rscRes.ok) {
-        const err = new Error("Failed to fetch rsc from RSC server");
-        (err as any).statusCode = rscRes.status;
-        passthrough.destroy(err);
-        return;
-      }
-      if (!htmlRes.body || !rscRes.body) {
-        passthrough.destroy(new Error("No body"));
-        return;
-      }
-      const htmlStr = await htmlRes.text(); // Hope stream works, but it'd be too tricky
-      const [preamble, postamble] = splitHTML(htmlStr);
-      passthrough.write(preamble, "utf8");
-      const data = createFromNodeStream(
-        Readable.fromWeb(rscRes.body as any), // FIXME how to avoid any?
-        bundlerConfig
-      );
-      const origEnd = passthrough.end;
-      passthrough.end = (...args) => {
-        passthrough.write(postamble, "utf8");
-        return origEnd.apply(passthrough, args as any); // FIXME how to avoid any?
-      };
-      renderToPipeableStream(data).pipe(passthrough);
-    }
+  const [htmlRes, rscRes] = await Promise.all([htmlResPromise, rscResPromise]);
+  if (!htmlRes.ok) {
+    const err = new Error("Failed to fetch html from RSC server");
+    (err as any).statusCode = htmlRes.status;
+    throw err;
+  }
+  if (!rscRes.ok) {
+    const err = new Error("Failed to fetch rsc from RSC server");
+    (err as any).statusCode = rscRes.status;
+    throw err;
+  }
+  if (!htmlRes.body || !rscRes.body) {
+    throw new Error("No body");
+  }
+  return renderHtmlToReadable(
+    await htmlRes.text(),
+    Readable.fromWeb(rscRes.body as any), // FIXME how to avoid any?
+    splitHTML,
+    getFallback
   );
-  return passthrough;
 };
 
 // Important note about the middleware design:
@@ -135,7 +98,12 @@ export function ssr(options: {
           config.framework.ssr.rscServer,
           "http://" + req.headers.host
         );
-        const readable = renderHTML(req.url, rscServer, config, ssrConfig);
+        const readable = await renderHTML(
+          req.url,
+          rscServer,
+          config,
+          ssrConfig
+        );
         readable.on("error", (err) => {
           if (hasStatusCode(err)) {
             res.statusCode = err.statusCode;
