@@ -26,44 +26,31 @@ const { createFromNodeStream } = RSDWClient;
 const hasStatusCode = (x: unknown): x is { statusCode: number } =>
   typeof (x as any)?.statusCode === "number";
 
-// TODO make it configurable
-const splitHTML = (htmlStr: string): readonly [string, string] => {
-  const splitted = htmlStr.split(/\s*<div class="spinner"><\/div>\s*/);
-  if (splitted.length !== 2) {
-    throw new Error("Failed to split HTML");
-  }
-  return [splitted[0] as string, splitted[1] as string];
-};
-
-// TODO make it configurable
-const getFallback = (id: string) => {
-  return id && "waku/server#ClientFallback";
-};
-
-const bundlerConfig = new Proxy(
-  {},
-  {
-    get(_target, filePath: string) {
-      return new Proxy(
-        {},
-        {
-          get(_target, nameStr: string) {
-            const id = getFallback(filePath + "#" + nameStr);
-            const [specifier, name] = id.split("#") as [string, string];
-            return { specifier, name };
-          },
-        }
-      );
-    },
-  }
-);
-
 const renderHTML = (
   pathStr: string,
   rscServer: URL,
-  rscPrefix: string,
+  config: Awaited<ReturnType<typeof resolveConfig>>,
   ssrConfig: NonNullable<Awaited<ReturnType<GetSsrConfig>>>
 ): Readable => {
+  const rscPrefix = config.framework.rscPrefix;
+  const { splitHTML, getFallback } = config.framework.ssr;
+  const bundlerConfig = new Proxy(
+    {},
+    {
+      get(_target, filePath: string) {
+        return new Proxy(
+          {},
+          {
+            get(_target, nameStr: string) {
+              const id = getFallback(filePath + "#" + nameStr);
+              const [specifier, name] = id.split("#") as [string, string];
+              return { specifier, name };
+            },
+          }
+        );
+      },
+    }
+  );
   const htmlResPromise = fetch(rscServer + pathStr.slice(1), {
     headers: { "x-waku-ssr-mode": "html" },
   });
@@ -145,15 +132,10 @@ export function ssr(options: {
       const ssrConfig = getSsrConfig && (await getSsrConfig(req.url));
       if (ssrConfig) {
         const rscServer = new URL(
-          config.framework.rscServer,
+          config.framework.ssr.rscServer,
           "http://" + req.headers.host
         );
-        const readable = renderHTML(
-          req.url,
-          rscServer,
-          config.framework.rscPrefix,
-          ssrConfig
-        );
+        const readable = renderHTML(req.url, rscServer, config, ssrConfig);
         readable.on("error", (err) => {
           if (hasStatusCode(err)) {
             res.statusCode = err.statusCode;
