@@ -25,7 +25,6 @@ export type MessageReq =
       type: "render";
       input: RenderInput;
       moduleIdCallback: boolean;
-      isSsr: boolean;
     }
   | { id: number; type: "getBuildConfig" }
   | { id: number; type: "getSsrConfig"; pathStr: string };
@@ -104,7 +103,6 @@ export function renderRSC(
     type: "render",
     input,
     moduleIdCallback: !!options?.moduleIdCallback,
-    isSsr: !!options?.isSsr,
   };
   worker.postMessage(mesg);
   return passthrough;

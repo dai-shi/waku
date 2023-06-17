@@ -1,11 +1,11 @@
 import { Writable } from "node:stream";
-import { createElement, Fragment } from "react";
+import { createElement, Fragment, Suspense } from "react";
 import type { FunctionComponent, ReactNode } from "react";
 
-import { defineEntries, isSsr } from "../server.js";
+import { defineEntries } from "../server.js";
 import type { GetEntry, GetBuildConfig, GetSsrConfig } from "../server.js";
 import type { RouteProps, LinkProps } from "./common.js";
-import { Child as ClientChild, Link as ClientLink } from "./client.js";
+import { Child as ClientChild, Waku_SSR_Capable_Link } from "./client.js";
 
 const collectClientModules = async (
   pathStr: string,
@@ -171,8 +171,10 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
 }
 
 export function Link(props: LinkProps) {
-  if (isSsr()) {
-    return createElement("a", { href: props.href }, props.children);
-  }
-  return createElement(ClientLink, props);
+  const fallback = createElement("a", { href: props.href }, props.children);
+  return createElement(
+    Suspense,
+    { fallback },
+    createElement(Waku_SSR_Capable_Link, props)
+  );
 }

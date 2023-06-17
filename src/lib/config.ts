@@ -9,14 +9,21 @@ type DeepRequired<T> = T extends (...args: any[]) => any
   : T;
 
 const splitHTML = (htmlStr: string): readonly [string, string] => {
-  const splitted = htmlStr.split(/<div id="root">[^\n]*<\/div>/, 2);
+  const startStr = "<!--placeholder!-->";
+  const endStr = "<!--/placeholder-->";
+  const splitted = htmlStr.split(new RegExp(startStr + "[\\s\\S]*" + endStr));
   if (splitted.length !== 2) {
     throw new Error("Failed to split HTML");
   }
-  return [splitted[0] + '<div id="root">', "</div>" + splitted[1]];
+  return [splitted[0] + startStr, endStr + splitted[1]];
 };
 
-const getFallback = () => "waku/server#ClientFallback";
+const getFallback = (id: string) => {
+  if (id.endsWith("#Waku_SSR_Capable_Link")) {
+    return "waku/server#ClientOnly";
+  }
+  return "waku/server#ClientFallback";
+};
 
 export const configFileConfig = process.env.CONFIG_FILE
   ? { configFile: process.env.CONFIG_FILE }

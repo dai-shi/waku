@@ -21,7 +21,6 @@ export function rsc(options: {
   return async (req, res, next) => {
     const config = await configPromise;
     const basePath = config.base + config.framework.rscPrefix;
-    const isSsr = !!req.headers["x-waku-ssr-mode"];
     const url = new URL(req.url || "", "http://" + req.headers.host);
     let rscId: string | undefined;
     let props = {};
@@ -61,8 +60,7 @@ export function rsc(options: {
           ? rscId
             ? { rsfId, args, rscId, props }
             : { rsfId, args }
-          : { rscId: rscId as string, props },
-        { isSsr }
+          : { rscId: rscId as string, props }
       );
       readable.on("error", (err) => {
         if (hasStatusCode(err)) {
