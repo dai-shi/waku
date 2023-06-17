@@ -241,8 +241,12 @@ const emitRscFiles = async (
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          const pipeable = renderRSC({ rscId, props }, (id) =>
-            addClientModule(rscId, serializedProps, id)
+          const pipeable = renderRSC(
+            { rscId, props },
+            {
+              moduleIdCallback: (id) =>
+                addClientModule(rscId, serializedProps, id),
+            }
           );
           await new Promise<void>((resolve, reject) => {
             const stream = fs.createWriteStream(destFile);

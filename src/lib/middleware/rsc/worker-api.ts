@@ -2,7 +2,7 @@ import { PassThrough } from "node:stream";
 import type { Readable } from "node:stream";
 import { Worker } from "node:worker_threads";
 
-import type { RenderInput, GetBuildConfig } from "../../../server.js";
+import type { RenderInput, RenderOptions, GetBuildConfig } from "../../../server.js";
 
 const worker = new Worker(new URL("worker-impl.js", import.meta.url), {
   execArgv: ["--conditions", "react-server"],
@@ -66,8 +66,7 @@ let nextId = 1;
 
 export function renderRSC(
   input: RenderInput,
-  clientModuleCallback?: (id: string) => void,
-  isSsr?: boolean
+  options?: RenderOptions
 ): Readable {
   const id = nextId++;
   const passthrough = new PassThrough();
@@ -75,7 +74,7 @@ export function renderRSC(
     if (mesg.type === "buf") {
       passthrough.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
     } else if (mesg.type === "moduleId") {
-      clientModuleCallback?.(mesg.moduleId);
+      options?.moduleIdCallback?.(mesg.moduleId);
     } else if (mesg.type === "end") {
       passthrough.end();
       messageCallbacks.delete(id);
@@ -93,8 +92,8 @@ export function renderRSC(
     id,
     type: "render",
     input,
-    moduleIdCallback: !!clientModuleCallback,
-    isSsr: !!isSsr,
+    moduleIdCallback: !!options?.moduleIdCallback,
+    isSsr: !!options?.isSsr,
   };
   worker.postMessage(mesg);
   return passthrough;

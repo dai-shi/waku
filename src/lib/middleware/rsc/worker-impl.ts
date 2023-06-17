@@ -13,7 +13,7 @@ import {
   defineEntries,
   runWithRscContext as runWithRscContextOrig,
 } from "../../../server.js";
-import type { RenderInput } from "../../../server.js";
+import type { RenderInput, RenderOptions } from "../../../server.js";
 import { rscTransformPlugin } from "../../vite-plugin/rsc-transform-plugin.js";
 import { rscReloadPlugin } from "../../vite-plugin/rsc-reload-plugin.js";
 
@@ -25,13 +25,15 @@ type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
   const { id, input, moduleIdCallback, isSsr } = mesg;
   try {
-    const clientModuleCallback = moduleIdCallback
-      ? (moduleId: string) => {
-          const mesg: MessageRes = { id, type: "moduleId", moduleId };
-          parentPort!.postMessage(mesg);
-        }
-      : undefined;
-    const pipeable = await renderRSC(input, clientModuleCallback, isSsr);
+    const options: RenderOptions = {};
+    if (moduleIdCallback) {
+      options.moduleIdCallback = (moduleId: string) => {
+        const mesg: MessageRes = { id, type: "moduleId", moduleId };
+        parentPort!.postMessage(mesg);
+      };
+    }
+    options.isSsr = isSsr;
+    const pipeable = await renderRSC(input, options);
     const writable = new Writable({
       write(chunk, encoding, callback) {
         if (encoding !== ("buffer" as any)) {
@@ -178,8 +180,7 @@ const resolveClientEntry = (filePath: string) => {
 
 async function renderRSC(
   input: RenderInput,
-  clientModuleCallback?: (id: string) => void,
-  isSsr?: boolean
+  options?: RenderOptions
 ): Promise<PipeableStream> {
   if (!resolvedConfig) {
     resolvedConfig = await resolveConfig("serve");
@@ -191,7 +192,7 @@ async function renderRSC(
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split("#") as [string, string];
         const id = resolveClientEntry(filePath);
-        clientModuleCallback?.(id);
+        options?.moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },
     }
@@ -203,7 +204,7 @@ async function renderRSC(
     const mod = await loadServerFile(fname);
     const data = await (mod[name!] || mod)(...input.args);
     if (!("rscId" in input)) {
-      return runWithRscContext({ isSsr: !!isSsr }, () =>
+      return runWithRscContext({ isSsr: !!options?.isSsr }, () =>
         renderToPipeableStream(data, bundlerConfig)
       );
     }
@@ -211,7 +212,7 @@ async function renderRSC(
   }
   if ("rscId" in input) {
     const component = await getFunctionComponent(input.rscId);
-    return runWithRscContext({ isSsr: !!isSsr }, () =>
+    return runWithRscContext({ isSsr: !!options?.isSsr }, () =>
       renderToPipeableStream(
         createElement(component, input.props as any),
         bundlerConfig

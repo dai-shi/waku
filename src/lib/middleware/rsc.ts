@@ -62,8 +62,7 @@ export function rsc(options: {
             ? { rsfId, args, rscId, props }
             : { rsfId, args }
           : { rscId: rscId as string, props },
-        undefined,
-        isSsr
+        { isSsr }
       );
       readable.on("error", (err) => {
         if (hasStatusCode(err)) {

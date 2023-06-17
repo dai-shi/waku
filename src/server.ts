@@ -25,11 +25,16 @@ export type RenderInput =
       args: unknown[];
     };
 
+export type RenderOptions = {
+  moduleIdCallback?: (id: string) => void;
+  isSsr?: boolean;
+};
+
 export type GetBuildConfig = (
   root: string,
   unstable_renderRSC: (
     input: RenderInput,
-    clientModuleCallback: (id: string) => void
+    options?: RenderOptions
   ) => Promise<PipeableStream>
 ) => Promise<{
   [pathStr: string]: {

@@ -19,8 +19,9 @@ const collectClientModules = async (
     const rscId = pathItems.slice(0, index).join("/") || "index";
     const props: RouteProps =
       index < pathItems.length ? { childIndex: index + 1 } : { search };
-    const pipeable = await unstable_renderRSC({ rscId, props }, (id) =>
-      idSet.add(id)
+    const pipeable = await unstable_renderRSC(
+      { rscId, props },
+      { moduleIdCallback: (id) => idSet.add(id) }
     );
     await new Promise<void>((resolve, reject) => {
       const stream = new Writable({
