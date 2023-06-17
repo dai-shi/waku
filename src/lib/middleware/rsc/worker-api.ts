@@ -6,6 +6,7 @@ import type {
   RenderInput,
   RenderOptions,
   GetBuildConfig,
+  GetSsrConfig,
 } from "../../../server.js";
 
 const worker = new Worker(new URL("worker-impl.js", import.meta.url), {
@@ -26,7 +27,8 @@ export type MessageReq =
       moduleIdCallback: boolean;
       isSsr: boolean;
     }
-  | { id: number; type: "getBuildConfig" };
+  | { id: number; type: "getBuildConfig" }
+  | { id: number; type: "getSsrConfig"; pathStr: string };
 
 export type MessageRes =
   | { type: "full-reload" }
@@ -36,8 +38,13 @@ export type MessageRes =
   | { id: number; type: "err"; err: unknown; statusCode?: number }
   | {
       id: number;
-      type: "builder";
+      type: "buildConfig";
       output: Awaited<ReturnType<GetBuildConfig>>;
+    }
+  | {
+      id: number;
+      type: "ssrConfig";
+      output: Awaited<ReturnType<GetSsrConfig>>;
     };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
@@ -107,7 +114,7 @@ export function getBuildConfigRSC(): ReturnType<GetBuildConfig> {
   return new Promise((resolve, reject) => {
     const id = nextId++;
     messageCallbacks.set(id, (mesg) => {
-      if (mesg.type === "builder") {
+      if (mesg.type === "buildConfig") {
         resolve(mesg.output);
         messageCallbacks.delete(id);
       } else if (mesg.type === "err") {
@@ -116,6 +123,23 @@ export function getBuildConfigRSC(): ReturnType<GetBuildConfig> {
       }
     });
     const mesg: MessageReq = { id, type: "getBuildConfig" };
+    worker.postMessage(mesg);
+  });
+}
+
+export function getSsrConfigRSC(pathStr: string): ReturnType<GetSsrConfig> {
+  return new Promise((resolve, reject) => {
+    const id = nextId++;
+    messageCallbacks.set(id, (mesg) => {
+      if (mesg.type === "ssrConfig") {
+        resolve(mesg.output);
+        messageCallbacks.delete(id);
+      } else if (mesg.type === "err") {
+        reject(mesg.err);
+        messageCallbacks.delete(id);
+      }
+    });
+    const mesg: MessageReq = { id, type: "getSsrConfig", pathStr };
     worker.postMessage(mesg);
   });
 }

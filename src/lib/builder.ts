@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 
 import { build as viteBuild } from "vite";
 import viteReact from "@vitejs/plugin-react";
+import type { RollupWarning, WarningHandler } from "rollup";
 
 import { configFileConfig, resolveConfig } from "./config.js";
 import { generatePrefetchCode } from "./middleware/rsc/utils.js";
@@ -12,10 +13,11 @@ import {
   shutdown,
   renderRSC,
   getBuildConfigRSC,
+  getSsrConfigRSC,
 } from "./middleware/rsc/worker-api.js";
 import { rscIndexPlugin } from "./vite-plugin/rsc-index-plugin.js";
 import { rscAnalyzePlugin } from "./vite-plugin/rsc-analyze-plugin.js";
-import type { RollupWarning, WarningHandler } from "rollup";
+import { renderHtmlToReadable } from "./middleware/ssr/utils.js";
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
 const onwarn = (warning: RollupWarning, warn: WarningHandler) => {
@@ -261,6 +263,21 @@ const emitRscFiles = async (
   return { buildConfig, getClientModules, rscFiles: Array.from(rscFileSet) };
 };
 
+const renderHtml = async (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  pathStr: string,
+  htmlStr: string
+) => {
+  const ssrConfig = await getSsrConfigRSC(pathStr);
+  if (!ssrConfig) {
+    return null;
+  }
+  const { splitHTML, getFallback } = config.framework.ssr;
+  const [rscId, props] = ssrConfig.element;
+  const pipeable = renderRSC({ rscId, props });
+  return renderHtmlToReadable(htmlStr, pipeable, splitHTML, getFallback);
+};
+
 const emitHtmlFiles = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   buildConfig: Awaited<ReturnType<typeof getBuildConfigRSC>>,
@@ -278,7 +295,7 @@ const emitHtmlFiles = async (
   });
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
-      async ([pathStr, { elements, customCode }]) => {
+      async ([pathStr, { elements, customCode, skipSsr }]) => {
         const destFile = path.join(
           config.root,
           config.build.outDir,
@@ -317,7 +334,18 @@ const emitHtmlFiles = async (
           // HACK is this too naive to inject script code?
           data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
         }
-        fs.writeFileSync(destFile, data, { encoding: "utf8" });
+        const htmlReadable =
+          !skipSsr && (await renderHtml(config, pathStr, data));
+        if (htmlReadable) {
+          await new Promise<void>((resolve, reject) => {
+            const stream = fs.createWriteStream(destFile);
+            stream.on("finish", resolve);
+            stream.on("error", reject);
+            htmlReadable.pipe(stream);
+          });
+        } else {
+          fs.writeFileSync(destFile, data, { encoding: "utf8" });
+        }
         return destFile;
       }
     )

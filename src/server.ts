@@ -42,6 +42,7 @@ export type GetBuildConfig = (
       readonly [rscId: string, props: unknown, skipPrefetch?: boolean]
     >;
     customCode?: string; // optional code to inject
+    skipSsr?: boolean;
   };
 }>;
 

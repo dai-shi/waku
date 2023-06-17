@@ -2,7 +2,7 @@ import path from "node:path";
 import { parentPort } from "node:worker_threads";
 import { Writable } from "node:stream";
 
-import { createServer } from "vite";
+import { createServer as viteCreateServer } from "vite";
 import { createElement } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 
@@ -72,7 +72,7 @@ const handleGetBuildConfig = async (
   const { id } = mesg;
   try {
     const output = await getBuildConfigRSC();
-    const mesg: MessageRes = { id, type: "builder", output };
+    const mesg: MessageRes = { id, type: "buildConfig", output };
     parentPort!.postMessage(mesg);
   } catch (err) {
     const mesg: MessageRes = { id, type: "err", err };
@@ -80,7 +80,21 @@ const handleGetBuildConfig = async (
   }
 };
 
-const vitePromise = createServer({
+const handleGetSsrConfig = async (
+  mesg: MessageReq & { type: "getSsrConfig" }
+) => {
+  const { id, pathStr } = mesg;
+  try {
+    const output = await getSsrConfigRSC(pathStr);
+    const mesg: MessageRes = { id, type: "ssrConfig", output };
+    parentPort!.postMessage(mesg);
+  } catch (err) {
+    const mesg: MessageRes = { id, type: "err", err };
+    parentPort!.postMessage(mesg);
+  }
+};
+
+const vitePromise = viteCreateServer({
   ...configFileConfig,
   plugins: [
     rscTransformPlugin(),
@@ -122,6 +136,8 @@ parentPort!.on("message", (mesg: MessageReq) => {
     handleRender(mesg);
   } else if (mesg.type === "getBuildConfig") {
     handleGetBuildConfig(mesg);
+  } else if (mesg.type === "getSsrConfig") {
+    handleGetSsrConfig(mesg);
   }
 });
 
@@ -239,5 +255,17 @@ async function getBuildConfigRSC() {
   }
 
   const output = await getBuildConfig(config.root, renderRSC);
+  return output;
+}
+
+async function getSsrConfigRSC(pathStr: string) {
+  const distEntriesFile = await getEntriesFile();
+  const {
+    default: { getSsrConfig },
+  } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
+  if (!getSsrConfig) {
+    return null;
+  }
+  const output = await getSsrConfig(pathStr);
   return output;
 }

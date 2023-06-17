@@ -9,11 +9,11 @@ type DeepRequired<T> = T extends (...args: any[]) => any
   : T;
 
 const splitHTML = (htmlStr: string): readonly [string, string] => {
-  const splitted = htmlStr.split(/\s*<div class="spinner"><\/div>\s*/);
+  const splitted = htmlStr.split(/<div id="root">[^\n]*<\/div>/, 2);
   if (splitted.length !== 2) {
     throw new Error("Failed to split HTML");
   }
-  return [splitted[0] as string, splitted[1] as string];
+  return [splitted[0] + '<div id="root">', "</div>" + splitted[1]];
 };
 
 const getFallback = () => "waku/server#ClientFallback";
