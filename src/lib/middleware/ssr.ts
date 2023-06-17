@@ -98,13 +98,7 @@ export function ssr(options: {
           config.framework.ssr.rscServer,
           "http://" + req.headers.host
         );
-        const readable = await renderHTML(
-          req.url,
-          rscServer,
-          config,
-          ssrConfig
-        );
-        readable.on("error", (err) => {
+        const handleError = (err: unknown) => {
           if (hasStatusCode(err)) {
             res.statusCode = err.statusCode;
           } else {
@@ -116,8 +110,19 @@ export function ssr(options: {
           } else {
             res.end();
           }
-        });
-        readable.pipe(res);
+        };
+        try {
+          const readable = await renderHTML(
+            req.url,
+            rscServer,
+            config,
+            ssrConfig
+          );
+          readable.on("error", handleError);
+          readable.pipe(res);
+        } catch (e) {
+          handleError(e);
+        }
         return;
       }
     }
