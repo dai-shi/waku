@@ -100,3 +100,9 @@ https://excalidraw.com/#json=LMrRnVfDm8TDGtP-BfHZ5,o1fI7c_HvL81TDKSRoEc5A
 https://excalidraw.com/#json=RPBX88sLf6FFCQXOVXIyW,ngpz5ZqKyQyU2vgWx_x6tg
 
 ![waku-spec](https://github.com/dai-shi/waku/assets/490574/0dd50285-c443-4668-a7d6-fbd6952b0d76)
+
+### How Waku's RSC-only SSR works
+
+https://excalidraw.com/#json=pSsBQOqkYX4O-TIgxNrZj,i_CsymP1VZiHIAa0dlLbNw
+
+![waku-ssr](https://github.com/dai-shi/waku/assets/490574/84629e46-518a-4ab1-946a-8a31c80db879)
