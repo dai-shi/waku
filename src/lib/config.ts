@@ -9,7 +9,7 @@ type DeepRequired<T> = T extends (...args: any[]) => any
   : T;
 
 const splitHTML = (htmlStr: string): readonly [string, string] => {
-  const startStr = "<!--placeholder!-->";
+  const startStr = "<!--placeholder-->";
   const endStr = "<!--/placeholder-->";
   const splitted = htmlStr.split(new RegExp(startStr + "[\\s\\S]*" + endStr));
   if (splitted.length !== 2) {
