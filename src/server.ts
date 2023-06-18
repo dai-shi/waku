@@ -26,7 +26,6 @@ export type RenderInput =
 
 export type RenderOptions = {
   moduleIdCallback?: (id: string) => void;
-  isSsr?: boolean;
 };
 
 export type GetBuildConfig = (
