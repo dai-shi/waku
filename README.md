@@ -29,9 +29,8 @@ pnpm create waku # pnpm not working for now
 - [x] `waku start` (production server)
 - [x] Exportable build
 - [x] Static site generation
-- [ ] Client rendering fallback
 - [x] Opt-in router (reference implementation)
-- [ ] Opt-in SSR (HTML generation & hydration)
+- [x] Opt-in SSR (HTML generation only)
 
 ## Tweets
 
