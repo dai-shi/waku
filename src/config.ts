@@ -5,6 +5,11 @@ export interface FrameworkConfig {
   entriesJs?: string; // relative to root
   outPublic?: string; // relative to build.outDir
   rscPrefix?: string; // defaults to "RSC/"
+  ssr?: {
+    rscServer?: string;
+    splitHTML?: (htmlStr: string) => readonly [string, string];
+    getFallback?: (id: string) => string;
+  };
 }
 
 export interface ExtendedUserConfig extends UserConfig {

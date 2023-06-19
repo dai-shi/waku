@@ -3,7 +3,9 @@
 ## [Unreleased]
 ### Changed
 - fix: rename getBuilder to getBuildConfig #75
+### Added
 - feat: support 404 for rsc #76
+- feat: ssr middlware #74
 
 ## [0.11.3] - 2023-06-10
 ### Changed

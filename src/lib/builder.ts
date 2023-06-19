@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 
 import { build as viteBuild } from "vite";
 import viteReact from "@vitejs/plugin-react";
+import type { RollupWarning, WarningHandler } from "rollup";
 
 import { configFileConfig, resolveConfig } from "./config.js";
 import { generatePrefetchCode } from "./middleware/rsc/utils.js";
@@ -12,10 +13,11 @@ import {
   shutdown,
   renderRSC,
   getBuildConfigRSC,
+  getSsrConfigRSC,
 } from "./middleware/rsc/worker-api.js";
 import { rscIndexPlugin } from "./vite-plugin/rsc-index-plugin.js";
 import { rscAnalyzePlugin } from "./vite-plugin/rsc-analyze-plugin.js";
-import type { RollupWarning, WarningHandler } from "rollup";
+import { renderHtmlToReadable } from "./middleware/ssr/utils.js";
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
 const onwarn = (warning: RollupWarning, warn: WarningHandler) => {
@@ -241,8 +243,12 @@ const emitRscFiles = async (
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          const pipeable = renderRSC({ rscId, props }, (id) =>
-            addClientModule(rscId, serializedProps, id)
+          const pipeable = renderRSC(
+            { rscId, props },
+            {
+              moduleIdCallback: (id) =>
+                addClientModule(rscId, serializedProps, id),
+            }
           );
           await new Promise<void>((resolve, reject) => {
             const stream = fs.createWriteStream(destFile);
@@ -255,6 +261,21 @@ const emitRscFiles = async (
     })
   );
   return { buildConfig, getClientModules, rscFiles: Array.from(rscFileSet) };
+};
+
+const renderHtml = async (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  pathStr: string,
+  htmlStr: string
+) => {
+  const ssrConfig = await getSsrConfigRSC(pathStr);
+  if (!ssrConfig) {
+    return null;
+  }
+  const { splitHTML, getFallback } = config.framework.ssr;
+  const [rscId, props] = ssrConfig.element;
+  const pipeable = renderRSC({ rscId, props });
+  return renderHtmlToReadable(htmlStr, pipeable, splitHTML, getFallback);
 };
 
 const emitHtmlFiles = async (
@@ -274,7 +295,7 @@ const emitHtmlFiles = async (
   });
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
-      async ([pathStr, { elements, customCode }]) => {
+      async ([pathStr, { elements, customCode, skipSsr }]) => {
         const destFile = path.join(
           config.root,
           config.build.outDir,
@@ -289,28 +310,42 @@ const emitHtmlFiles = async (
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
           data = publicIndexHtml;
         }
+        const elementsForPrefetch = new Set<
+          readonly [rscId: string, props: unknown]
+        >();
+        const moduleIdsForPrefetch = new Set<string>();
+        for (const [rscId, props, skipPrefetch] of elements || []) {
+          if (!skipPrefetch) {
+            elementsForPrefetch.add([rscId, props]);
+            // FIXME we blindly expect JSON.stringify usage is deterministic
+            const serializedProps = JSON.stringify(props);
+            for (const id of getClientModules(rscId, serializedProps)) {
+              moduleIdsForPrefetch.add(id);
+            }
+          }
+        }
         const code =
           generatePrefetchCode(
             basePrefix,
-            Array.from(elements || []).flatMap(
-              ([rscId, props, skipPrefetch]) => {
-                if (skipPrefetch) {
-                  return [];
-                }
-                return [[rscId, props]];
-              }
-            ),
-            Array.from(elements || []).flatMap(([rscId, props]) => {
-              // FIXME we blindly expect JSON.stringify usage is deterministic
-              const serializedProps = JSON.stringify(props);
-              return getClientModules(rscId, serializedProps);
-            })
+            elementsForPrefetch,
+            moduleIdsForPrefetch
           ) + (customCode || "");
         if (code) {
           // HACK is this too naive to inject script code?
           data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
         }
-        fs.writeFileSync(destFile, data, { encoding: "utf8" });
+        const htmlReadable =
+          !skipSsr && (await renderHtml(config, pathStr, data));
+        if (htmlReadable) {
+          await new Promise<void>((resolve, reject) => {
+            const stream = fs.createWriteStream(destFile);
+            stream.on("finish", resolve);
+            stream.on("error", reject);
+            htmlReadable.pipe(stream);
+          });
+        } else {
+          fs.writeFileSync(destFile, data, { encoding: "utf8" });
+        }
         return destFile;
       }
     )

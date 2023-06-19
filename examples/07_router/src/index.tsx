@@ -4,12 +4,12 @@ import { Router } from "waku/router/client";
 
 import { ErrorBoundary } from "./ErrorBoundary.js";
 
-const root = createRoot(document.getElementById("root")!);
-
-root.render(
+const rootElement = (
   <StrictMode>
     <ErrorBoundary fallback={(error) => <h1>{String(error)}</h1>}>
       <Router />
     </ErrorBoundary>
   </StrictMode>
 );
+
+createRoot(document.getElementById("root")!).render(rootElement);
