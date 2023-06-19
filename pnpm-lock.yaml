@@ -117,7 +117,7 @@ importers:
         specifier: 18.3.0-canary-613e6f5fc-20230616
         version: 18.3.0-canary-613e6f5fc-20230616(react-dom@18.3.0-canary-613e6f5fc-20230616)(react@18.3.0-canary-613e6f5fc-20230616)(webpack@5.87.0)
       waku:
-        specifier: 0.11.3
+        specifier: 0.12.0
         version: link:../..
     devDependencies:
       '@types/react':
@@ -145,7 +145,7 @@ importers:
         specifier: 18.3.0-canary-613e6f5fc-20230616
         version: 18.3.0-canary-613e6f5fc-20230616(react-dom@18.3.0-canary-613e6f5fc-20230616)(react@18.3.0-canary-613e6f5fc-20230616)(webpack@5.87.0)
       waku:
-        specifier: 0.11.3
+        specifier: 0.12.0
         version: link:../..
     devDependencies:
       '@types/react':
@@ -173,7 +173,7 @@ importers:
         specifier: 18.3.0-canary-613e6f5fc-20230616
         version: 18.3.0-canary-613e6f5fc-20230616(react-dom@18.3.0-canary-613e6f5fc-20230616)(react@18.3.0-canary-613e6f5fc-20230616)(webpack@5.87.0)
       waku:
-        specifier: 0.11.3
+        specifier: 0.12.0
         version: link:../..
     devDependencies:
       '@types/react':
@@ -201,7 +201,7 @@ importers:
         specifier: 18.3.0-canary-613e6f5fc-20230616
         version: 18.3.0-canary-613e6f5fc-20230616(react-dom@18.3.0-canary-613e6f5fc-20230616)(react@18.3.0-canary-613e6f5fc-20230616)(webpack@5.87.0)
       waku:
-        specifier: 0.11.3
+        specifier: 0.12.0
         version: link:../..
     devDependencies:
       '@types/react':
@@ -229,7 +229,7 @@ importers:
         specifier: 18.3.0-canary-613e6f5fc-20230616
         version: 18.3.0-canary-613e6f5fc-20230616(react-dom@18.3.0-canary-613e6f5fc-20230616)(react@18.3.0-canary-613e6f5fc-20230616)(webpack@5.87.0)
       waku:
-        specifier: 0.11.3
+        specifier: 0.12.0
         version: link:../..
     devDependencies:
       '@types/react':
@@ -257,7 +257,7 @@ importers:
         specifier: 18.3.0-canary-613e6f5fc-20230616
         version: 18.3.0-canary-613e6f5fc-20230616(react-dom@18.3.0-canary-613e6f5fc-20230616)(react@18.3.0-canary-613e6f5fc-20230616)(webpack@5.87.0)
       waku:
-        specifier: 0.11.3
+        specifier: 0.12.0
         version: link:../..
     devDependencies:
       '@types/react':
@@ -288,7 +288,7 @@ importers:
         specifier: 18.3.0-canary-613e6f5fc-20230616
         version: 18.3.0-canary-613e6f5fc-20230616(react-dom@18.3.0-canary-613e6f5fc-20230616)(react@18.3.0-canary-613e6f5fc-20230616)(webpack@5.87.0)
       waku:
-        specifier: 0.11.3
+        specifier: 0.12.0
         version: link:../..
     devDependencies:
       '@types/react':
