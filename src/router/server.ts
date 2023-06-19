@@ -1,14 +1,15 @@
 import { Writable } from "node:stream";
-import { createElement, Fragment } from "react";
-import type { FunctionComponent } from "react";
+import { createElement, Fragment, Suspense } from "react";
+import type { FunctionComponent, ReactNode } from "react";
 
-import type { GetEntry, GetBuilder } from "../server.js";
+import { defineEntries } from "../server.js";
+import type { GetEntry, GetBuildConfig, GetSsrConfig } from "../server.js";
 import type { RouteProps, LinkProps } from "./common.js";
-import { Child as ClientChild, Link as ClientLink } from "./client.js";
+import { Child as ClientChild, Waku_SSR_Capable_Link } from "./client.js";
 
 const collectClientModules = async (
   pathStr: string,
-  unstable_renderRSC: Parameters<GetBuilder>[1]
+  unstable_renderRSC: Parameters<GetBuildConfig>[1]
 ) => {
   const url = new URL(pathStr, "http://localhost");
   const pathItems = url.pathname.split("/").filter(Boolean);
@@ -18,8 +19,9 @@ const collectClientModules = async (
     const rscId = pathItems.slice(0, index).join("/") || "index";
     const props: RouteProps =
       index < pathItems.length ? { childIndex: index + 1 } : { search };
-    const pipeable = await unstable_renderRSC({ rscId, props }, (id) =>
-      idSet.add(id)
+    const pipeable = await unstable_renderRSC(
+      { rscId, props },
+      { moduleIdCallback: (id) => idSet.add(id) }
     );
     await new Promise<void>((resolve, reject) => {
       const stream = new Writable({
@@ -55,9 +57,56 @@ export function defineRouter(
     id: string
   ) => Promise<FunctionComponent | { default: FunctionComponent } | null>,
   getAllPaths: (root: string) => Promise<string[]>
-): { getEntry: GetEntry; getBuilder: GetBuilder } {
-  const getEntry = async (id: string) => {
-    const mod = await getComponent(id);
+): ReturnType<typeof defineEntries> {
+  const SSR_PREFIX = "__SSR__";
+  const getSsrEntry = async (pathname: string) => {
+    // We need to keep the logic in sync with waku/router/client
+    // FIXME We should probably create a common function
+    const pathItems = pathname.split("/").filter(Boolean);
+    const components: FunctionComponent[] = [];
+    for (let index = 0; index <= pathItems.length; ++index) {
+      const rscId = pathItems.slice(0, index).join("/") || "index";
+      const mod = await getComponent(rscId); // FIXME should use Promise.all
+      const component =
+        typeof mod === "function" ? mod : mod?.default || Fragment;
+      components.push(component);
+    }
+    const SsrComponent: FunctionComponent<any> = (props: {
+      search: string;
+    }) => {
+      const componentProps: Record<string, string> = {};
+      for (const [key, value] of new URLSearchParams(props.search)) {
+        componentProps[key] = value;
+      }
+      return components.reduceRight(
+        (acc: ReactNode, component, index) =>
+          createElement(
+            component,
+            index === components.length - 1 ? componentProps : {},
+            acc
+          ),
+        null
+      );
+    };
+    return SsrComponent;
+  };
+
+  const getEntry: GetEntry = async (id) => {
+    if (id.startsWith(SSR_PREFIX)) {
+      return getSsrEntry(id.slice(SSR_PREFIX.length));
+    }
+    let mod: Awaited<ReturnType<typeof getComponent>>;
+    try {
+      mod = await getComponent(id);
+    } catch (e) {
+      if (
+        e instanceof Error &&
+        e.message.startsWith("Unknown variable dynamic import")
+      ) {
+        return null;
+      }
+      throw e;
+    }
     const component =
       typeof mod === "function" ? mod : mod?.default || Fragment;
     const RouteComponent: FunctionComponent<any> = (props: RouteProps) => {
@@ -78,7 +127,7 @@ export function defineRouter(
     return RouteComponent;
   };
 
-  const getBuilder: GetBuilder = async (root, unstable_renderRSC) => {
+  const getBuildConfig: GetBuildConfig = async (root, unstable_renderRSC) => {
     const paths = (await getAllPaths(root)).map((item) =>
       item === "index" ? "/" : `/${item}`
     );
@@ -91,7 +140,7 @@ export function defineRouter(
 globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
   const path = search ? pathname + "?" + search : pathname;
   const path2ids = ${JSON.stringify(path2moduleIds)};
-  for (const id of path2ids[path]) {
+  for (const id of path2ids[path] || []) {
     import(id);
   }
 };`;
@@ -103,9 +152,29 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
     );
   };
 
-  return { getEntry, getBuilder };
+  const getSsrConfig: GetSsrConfig = async (pathStr) => {
+    const url = new URL(pathStr, "http://localhost");
+    // We need to keep the logic in sync with waku/router/client
+    // FIXME We should probably create a common function
+    const pathItems = url.pathname.split("/").filter(Boolean);
+    const rscId = pathItems.join("/") || "index";
+    try {
+      await getComponent(rscId);
+    } catch (e) {
+      // FIXME Is there a better way to check if the path exists?
+      return null;
+    }
+    return { element: [SSR_PREFIX + url.pathname, { search: url.search }] };
+  };
+
+  return { getEntry, getBuildConfig, getSsrConfig };
 }
 
 export function Link(props: LinkProps) {
-  return createElement(ClientLink, props);
+  const fallback = createElement("a", { href: props.href }, props.children);
+  return createElement(
+    Suspense,
+    { fallback },
+    createElement(Waku_SSR_Capable_Link, props)
+  );
 }

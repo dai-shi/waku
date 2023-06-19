@@ -32,7 +32,10 @@ const RouterContext = createContext<{
 export function useChangeLocation() {
   const value = useContext(RouterContext);
   if (!value) {
-    throw new Error("Missing Router");
+    const dummyFn: ChangeLocation = () => {
+      throw new Error("Missing Router");
+    };
+    return dummyFn;
   }
   return value.changeLocation;
 }
@@ -175,3 +178,6 @@ export function Router({ basePath = "/RSC/" }: { basePath?: string }) {
     createElement(Child, { index: 0 })
   );
 }
+
+// This is a trick to trigger fallback identified by the name.
+export const Waku_SSR_Capable_Link = Link;

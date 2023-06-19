@@ -2,15 +2,15 @@ import path from "node:path";
 import { parentPort } from "node:worker_threads";
 import { Writable } from "node:stream";
 
-import { createServer } from "vite";
+import { createServer as viteCreateServer } from "vite";
 import { createElement } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 
 import { configFileConfig, resolveConfig } from "../../config.js";
-import { transformRsfId } from "./utils.js";
+import { hasStatusCode, transformRsfId } from "./utils.js";
 import type { MessageReq, MessageRes } from "./worker-api.js";
 import { defineEntries } from "../../../server.js";
-import type { RenderInput } from "../../../server.js";
+import type { RenderInput, RenderOptions } from "../../../server.js";
 import { rscTransformPlugin } from "../../vite-plugin/rsc-transform-plugin.js";
 import { rscReloadPlugin } from "../../vite-plugin/rsc-reload-plugin.js";
 
@@ -22,13 +22,14 @@ type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
   const { id, input, moduleIdCallback } = mesg;
   try {
-    const clientModuleCallback = moduleIdCallback
-      ? (moduleId: string) => {
-          const mesg: MessageRes = { id, type: "moduleId", moduleId };
-          parentPort!.postMessage(mesg);
-        }
-      : undefined;
-    const pipeable = await renderRSC(input, clientModuleCallback);
+    const options: RenderOptions = {};
+    if (moduleIdCallback) {
+      options.moduleIdCallback = (moduleId: string) => {
+        const mesg: MessageRes = { id, type: "moduleId", moduleId };
+        parentPort!.postMessage(mesg);
+      };
+    }
+    const pipeable = await renderRSC(input, options);
     const writable = new Writable({
       write(chunk, encoding, callback) {
         if (encoding !== ("buffer" as any)) {
@@ -54,15 +55,20 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
     pipeable.pipe(writable);
   } catch (err) {
     const mesg: MessageRes = { id, type: "err", err };
+    if (hasStatusCode(err)) {
+      mesg.statusCode = err.statusCode;
+    }
     parentPort!.postMessage(mesg);
   }
 };
 
-const handleGetBuilder = async (mesg: MessageReq & { type: "getBuilder" }) => {
+const handleGetBuildConfig = async (
+  mesg: MessageReq & { type: "getBuildConfig" }
+) => {
   const { id } = mesg;
   try {
-    const output = await getBuilderRSC();
-    const mesg: MessageRes = { id, type: "builder", output };
+    const output = await getBuildConfigRSC();
+    const mesg: MessageRes = { id, type: "buildConfig", output };
     parentPort!.postMessage(mesg);
   } catch (err) {
     const mesg: MessageRes = { id, type: "err", err };
@@ -70,7 +76,21 @@ const handleGetBuilder = async (mesg: MessageReq & { type: "getBuilder" }) => {
   }
 };
 
-const vitePromise = createServer({
+const handleGetSsrConfig = async (
+  mesg: MessageReq & { type: "getSsrConfig" }
+) => {
+  const { id, pathStr } = mesg;
+  try {
+    const output = await getSsrConfigRSC(pathStr);
+    const mesg: MessageRes = { id, type: "ssrConfig", output };
+    parentPort!.postMessage(mesg);
+  } catch (err) {
+    const mesg: MessageRes = { id, type: "err", err };
+    parentPort!.postMessage(mesg);
+  }
+};
+
+const vitePromise = viteCreateServer({
   ...configFileConfig,
   plugins: [
     rscTransformPlugin(),
@@ -106,8 +126,10 @@ parentPort!.on("message", (mesg: MessageReq) => {
     shutdown();
   } else if (mesg.type === "render") {
     handleRender(mesg);
-  } else if (mesg.type === "getBuilder") {
-    handleGetBuilder(mesg);
+  } else if (mesg.type === "getBuildConfig") {
+    handleGetBuildConfig(mesg);
+  } else if (mesg.type === "getSsrConfig") {
+    handleGetSsrConfig(mesg);
   }
 });
 
@@ -141,7 +163,9 @@ const getFunctionComponent = async (rscId: string) => {
   if (typeof mod?.default === "function") {
     return mod?.default;
   }
-  throw new Error("No function component found");
+  const err = new Error("No function component found");
+  (err as any).statusCode = 404; // HACK our convention for NotFound
+  throw err;
 };
 
 const resolveClientEntry = (filePath: string) => {
@@ -164,7 +188,7 @@ const resolveClientEntry = (filePath: string) => {
 
 async function renderRSC(
   input: RenderInput,
-  clientModuleCallback?: (id: string) => void
+  options?: RenderOptions
 ): Promise<PipeableStream> {
   if (!resolvedConfig) {
     resolvedConfig = await resolveConfig("serve");
@@ -176,7 +200,7 @@ async function renderRSC(
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split("#") as [string, string];
         const id = resolveClientEntry(filePath);
-        clientModuleCallback?.(id);
+        options?.moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },
     }
@@ -202,22 +226,34 @@ async function renderRSC(
   throw new Error("Unexpected input");
 }
 
-async function getBuilderRSC() {
+async function getBuildConfigRSC() {
   if (!resolvedConfig) {
     resolvedConfig = await resolveConfig("build");
   }
   const config = resolvedConfig;
   const distEntriesFile = await getEntriesFile();
   const {
-    default: { getBuilder },
+    default: { getBuildConfig },
   } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
-  if (!getBuilder) {
+  if (!getBuildConfig) {
     console.warn(
-      "getBuilder is undefined. It's recommended for optimization and sometimes required."
+      "getBuildConfig is undefined. It's recommended for optimization and sometimes required."
     );
     return {};
   }
 
-  const output = await getBuilder(config.root, renderRSC);
+  const output = await getBuildConfig(config.root, renderRSC);
+  return output;
+}
+
+async function getSsrConfigRSC(pathStr: string) {
+  const distEntriesFile = await getEntriesFile();
+  const {
+    default: { getSsrConfig },
+  } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
+  if (!getSsrConfig) {
+    return null;
+  }
+  const output = await getSsrConfig(pathStr);
   return output;
 }

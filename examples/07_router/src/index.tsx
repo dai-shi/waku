@@ -2,10 +2,14 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Router } from "waku/router/client";
 
-const root = createRoot(document.getElementById("root")!);
+import { ErrorBoundary } from "./ErrorBoundary.js";
 
-root.render(
+const rootElement = (
   <StrictMode>
-    <Router />
+    <ErrorBoundary fallback={(error) => <h1>{String(error)}</h1>}>
+      <Router />
+    </ErrorBoundary>
   </StrictMode>
 );
+
+createRoot(document.getElementById("root")!).render(rootElement);

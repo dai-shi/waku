@@ -12,7 +12,7 @@ export default defineEntries(
         return null;
     }
   },
-  // getBuilder
+  // getBuildConfig
   async () => {
     return {
       "/": {
@@ -27,5 +27,14 @@ export default defineEntries(
         ],
       },
     };
+  },
+  // getSsrConfig
+  async (pathStr) => {
+    switch (pathStr) {
+      case "/":
+        return { element: ["App", { name: "Waku" }] };
+      default:
+        return null;
+    }
   }
 );

@@ -10,12 +10,21 @@ export default defineEntries(
         return null;
     }
   },
-  // getBuilder
+  // getBuildConfig
   async () => {
     return {
       "/": {
         elements: [["App", { name: "Waku" }]],
       },
     };
+  },
+  // getSsrConfig
+  async (pathStr) => {
+    switch (pathStr) {
+      case "/":
+        return { element: ["App", { name: "Waku" }] };
+      default:
+        return null;
+    }
   }
 );

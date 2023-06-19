@@ -2,7 +2,12 @@ import { PassThrough } from "node:stream";
 import type { Readable } from "node:stream";
 import { Worker } from "node:worker_threads";
 
-import type { RenderInput, GetBuilder } from "../../../server.js";
+import type {
+  RenderInput,
+  RenderOptions,
+  GetBuildConfig,
+  GetSsrConfig,
+} from "../../../server.js";
 
 const worker = new Worker(new URL("worker-impl.js", import.meta.url), {
   execArgv: ["--conditions", "react-server"],
@@ -21,15 +26,25 @@ export type MessageReq =
       input: RenderInput;
       moduleIdCallback: boolean;
     }
-  | { id: number; type: "getBuilder" };
+  | { id: number; type: "getBuildConfig" }
+  | { id: number; type: "getSsrConfig"; pathStr: string };
 
 export type MessageRes =
   | { type: "full-reload" }
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "moduleId"; moduleId: string }
   | { id: number; type: "end" }
-  | { id: number; type: "err"; err: unknown }
-  | { id: number; type: "builder"; output: Awaited<ReturnType<GetBuilder>> };
+  | { id: number; type: "err"; err: unknown; statusCode?: number }
+  | {
+      id: number;
+      type: "buildConfig";
+      output: Awaited<ReturnType<GetBuildConfig>>;
+    }
+  | {
+      id: number;
+      type: "ssrConfig";
+      output: Awaited<ReturnType<GetSsrConfig>>;
+    };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
@@ -61,7 +76,7 @@ let nextId = 1;
 
 export function renderRSC(
   input: RenderInput,
-  clientModuleCallback?: (id: string) => void
+  options?: RenderOptions
 ): Readable {
   const id = nextId++;
   const passthrough = new PassThrough();
@@ -69,14 +84,17 @@ export function renderRSC(
     if (mesg.type === "buf") {
       passthrough.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
     } else if (mesg.type === "moduleId") {
-      clientModuleCallback?.(mesg.moduleId);
+      options?.moduleIdCallback?.(mesg.moduleId);
     } else if (mesg.type === "end") {
       passthrough.end();
       messageCallbacks.delete(id);
     } else if (mesg.type === "err") {
-      passthrough.destroy(
-        mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err))
-      );
+      const err =
+        mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err));
+      if (mesg.statusCode) {
+        (err as any).statusCode = mesg.statusCode;
+      }
+      passthrough.destroy(err);
       messageCallbacks.delete(id);
     }
   });
@@ -84,17 +102,17 @@ export function renderRSC(
     id,
     type: "render",
     input,
-    moduleIdCallback: !!clientModuleCallback,
+    moduleIdCallback: !!options?.moduleIdCallback,
   };
   worker.postMessage(mesg);
   return passthrough;
 }
 
-export function getBuilderRSC(): ReturnType<GetBuilder> {
+export function getBuildConfigRSC(): ReturnType<GetBuildConfig> {
   return new Promise((resolve, reject) => {
     const id = nextId++;
     messageCallbacks.set(id, (mesg) => {
-      if (mesg.type === "builder") {
+      if (mesg.type === "buildConfig") {
         resolve(mesg.output);
         messageCallbacks.delete(id);
       } else if (mesg.type === "err") {
@@ -102,7 +120,24 @@ export function getBuilderRSC(): ReturnType<GetBuilder> {
         messageCallbacks.delete(id);
       }
     });
-    const mesg: MessageReq = { id, type: "getBuilder" };
+    const mesg: MessageReq = { id, type: "getBuildConfig" };
+    worker.postMessage(mesg);
+  });
+}
+
+export function getSsrConfigRSC(pathStr: string): ReturnType<GetSsrConfig> {
+  return new Promise((resolve, reject) => {
+    const id = nextId++;
+    messageCallbacks.set(id, (mesg) => {
+      if (mesg.type === "ssrConfig") {
+        resolve(mesg.output);
+        messageCallbacks.delete(id);
+      } else if (mesg.type === "err") {
+        reject(mesg.err);
+        messageCallbacks.delete(id);
+      }
+    });
+    const mesg: MessageReq = { id, type: "getSsrConfig", pathStr };
     worker.postMessage(mesg);
   });
 }

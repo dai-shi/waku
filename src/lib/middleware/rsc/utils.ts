@@ -1,6 +1,9 @@
 import { Buffer } from "node:buffer";
 import { Transform } from "node:stream";
 
+export const hasStatusCode = (x: unknown): x is { statusCode: number } =>
+  typeof (x as any)?.statusCode === "number";
+
 export const codeToInject = `
 globalThis.__waku_module_cache__ = new Map();
 globalThis.__webpack_chunk_load__ = (id) => import(id).then((m) => globalThis.__waku_module_cache__.set(id, m));
@@ -8,20 +11,20 @@ globalThis.__webpack_require__ = (id) => globalThis.__waku_module_cache__.get(id
 
 export const generatePrefetchCode = (
   basePrefix: string,
-  entryItemsIterable: Iterable<readonly [rscId: string, props: unknown]>,
+  elements: Iterable<readonly [rscId: string, props: unknown]>,
   moduleIds: Iterable<string>
 ) => {
-  const entryItems = Array.from(entryItemsIterable);
+  const elementsArray = Array.from(elements);
   let code = "";
-  if (entryItems.length) {
-    const rscIds = Array.from(new Set(entryItems.map(([rscId]) => rscId)));
+  if (elementsArray.length) {
+    const rscIds = Array.from(new Set(elementsArray.map(([rscId]) => rscId)));
     code += `
 globalThis.__WAKU_PREFETCHED__ = {
 ${rscIds
   .map((rscId) => {
     const value =
       "{" +
-      entryItems
+      elementsArray
         .flatMap(([id, props]) => {
           if (id !== rscId) return [];
           // FIXME we blindly expect JSON.stringify usage is deterministic

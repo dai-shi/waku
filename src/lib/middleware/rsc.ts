@@ -3,6 +3,7 @@ import RSDWServer from "react-server-dom-webpack/server.node.unbundled";
 import busboy from "busboy";
 
 import { resolveConfig } from "../config.js";
+import { hasStatusCode } from "./rsc/utils.js";
 import { renderRSC } from "./rsc/worker-api.js";
 
 type Middleware = (
@@ -54,23 +55,27 @@ export function rsc(options: {
       }
     }
     if (rscId || rsfId) {
-      const pipeable = renderRSC(
+      const readable = renderRSC(
         rsfId
           ? rscId
             ? { rsfId, args, rscId, props }
             : { rsfId, args }
           : { rscId: rscId as string, props }
       );
-      pipeable.on("error", (err) => {
-        console.info("Cannot render RSC", err);
-        res.statusCode = 500;
+      readable.on("error", (err) => {
+        if (hasStatusCode(err)) {
+          res.statusCode = err.statusCode;
+        } else {
+          console.info("Cannot render RSC", err);
+          res.statusCode = 500;
+        }
         if (options.mode === "development") {
           res.end(String(err));
         } else {
           res.end();
         }
       });
-      pipeable.pipe(res);
+      readable.pipe(res);
       return;
     }
     next();
