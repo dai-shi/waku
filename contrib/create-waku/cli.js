@@ -12,7 +12,8 @@ if (fs.existsSync(dirName)) {
 }
 
 const baseUrl =
-  "https://raw.githubusercontent.com/dai-shi/waku/v0.12.0/examples/01_counter/";
+  // "https://raw.githubusercontent.com/dai-shi/waku/v0.12.0/examples/01_counter/";
+  "https://raw.githubusercontent.com/dai-shi/waku/94c7b98/examples/01_counter/";
 
 const files = `
 entries.ts
