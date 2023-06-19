@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 
 import { build as viteBuild } from "vite";
 import viteReact from "@vitejs/plugin-react";
-import type { RollupWarning, WarningHandler } from "rollup";
+import type { RollupLog, LoggingFunction } from "rollup";
 
 import { configFileConfig, resolveConfig } from "./config.js";
 import { generatePrefetchCode } from "./middleware/rsc/utils.js";
@@ -20,7 +20,7 @@ import { rscAnalyzePlugin } from "./vite-plugin/rsc-analyze-plugin.js";
 import { renderHtmlToReadable } from "./middleware/ssr/utils.js";
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
-const onwarn = (warning: RollupWarning, warn: WarningHandler) => {
+const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   if (
     warning.code === "MODULE_LEVEL_DIRECTIVE" &&
     /"use (client|server)"/.test(warning.message)
@@ -34,7 +34,7 @@ const onwarn = (warning: RollupWarning, warn: WarningHandler) => {
   ) {
     return;
   }
-  warn(warning);
+  defaultHandler(warning);
 };
 
 const hash = (fname: string) =>
