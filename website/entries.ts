@@ -10,17 +10,17 @@ export default defineRouter(
     console.log(items);
     switch (items.length) {
       case 1:
-        return import(`./routes/${items[0]}.tsx`);
+        return import(`./src/routes/${items[0]}.tsx`);
       case 2:
-        return import(`./routes/${items[0]}/${items[1]}.tsx`);
+        return import(`./src/routes/${items[0]}/${items[1]}.tsx`);
       case 3:
-        return import(`./routes/${items[0]}/${items[1]}/${items[2]}.tsx`);
+        return import(`./src/routes/${items[0]}/${items[1]}/${items[2]}.tsx`);
       default:
         throw new Error("too deep route");
     }
   },
   async (root) => {
-    const routesDir = path.join(root, "routes");
+    const routesDir = path.join(root, "src/routes");
     const files = await glob("**/*.tsx", { cwd: routesDir });
     return files.map((file) => {
       console.log(file);

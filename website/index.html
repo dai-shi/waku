@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width" />
     <title>Waku website</title>
     <style>
+      @tailwind base;
+      @tailwind components;
+      @tailwind utilities;
+
       @keyframes spinner {
         to {
           transform: rotate(360deg);
@@ -31,6 +35,6 @@
       <div class="spinner"></div>
       <!--/placeholder-->
     </div>
-    <script src="/src/index.tsx" async type="module"></script>
+    <script src="/src/app.tsx" async type="module"></script>
   </body>
 </html>

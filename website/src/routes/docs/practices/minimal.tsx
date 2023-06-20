@@ -1,4 +1,4 @@
-import { Code, CodeBlock } from "../../../src/Code.js";
+import { Code, CodeBlock } from "../../../components/Code.js";
 
 const code1 = `import { defineEntries } from "waku/server";
 
