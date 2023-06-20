@@ -9,7 +9,10 @@ type DeepRequired<T> = T extends (...args: any[]) => any
   : T;
 
 const splitHTML = (htmlStr: string): readonly [string, string, string] => {
-  const P1 = ["<!--placeholder1-->", "<!--/placeholder1-->"] as const;
+  const P1 = [
+    "<!--placeholder1-->\\s*<div[^>]*>",
+    "</div>\\s*<!--/placeholder1-->",
+  ] as const;
   const P2 = ["<!--placeholder2-->", "<!--/placeholder2-->"] as const;
   const anyRE = "[\\s\\S]*";
   const match = htmlStr.match(
