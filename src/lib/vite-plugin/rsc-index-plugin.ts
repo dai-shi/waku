@@ -11,7 +11,7 @@ export function rscIndexPlugin(): Plugin {
         {
           tag: "script",
           children: codeToInject,
-          injectTo: "body",
+          injectTo: "head",
         },
       ];
     },
