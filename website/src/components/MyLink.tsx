@@ -8,8 +8,8 @@ export const MyLink = ({ name, href }: { name: string; href: string }) => (
     notPending={<Pending isPending={false} />}
     unstable_prefetchOnEnter
   >
-    <span className="py-2 text-gray-300 rounded-lg hover:bg-gray-700">
-      <span className="mx-4">{name}</span>
+    <span className="text-gray-300 rounded-lg hover:bg-gray-700">
+      <span className="">{name}</span>
     </span>
   </Link>
 );
