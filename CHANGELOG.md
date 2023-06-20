@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.12.1] - 2023-06-20
 ### Changed
 - fix: ssr with suspense and hydration #78
 
