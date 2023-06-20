@@ -1,4 +1,4 @@
-import { PassThrough } from "node:stream";
+import { Transform } from "node:stream";
 import type { Readable } from "node:stream";
 
 import RDServer from "react-dom/server";
@@ -8,10 +8,36 @@ import RSDWClient from "react-server-dom-webpack/client.node.unbundled";
 const { renderToPipeableStream } = RDServer;
 const { createFromNodeStream } = RSDWClient;
 
+const interleaveHtmlSnippets = (
+  preamble: string,
+  intermediate: string,
+  postamble: string
+) => {
+  let initialized = false;
+  return new Transform({
+    transform(chunk, encoding, callback) {
+      if (encoding !== ("buffer" as any)) {
+        throw new Error("Unknown encoding");
+      }
+      if (!initialized) {
+        initialized = true;
+        const data = chunk.toString();
+        callback(null, preamble + data + intermediate);
+      } else {
+        callback(null, chunk);
+      }
+    },
+    final(callback) {
+      this.push(postamble);
+      callback();
+    },
+  });
+};
+
 export const renderHtmlToReadable = (
   htmlStr: string, // Hope stream works, but it'd be too tricky
   rscStream: Readable,
-  splitHTML: (htmlStr: string) => readonly [string, string],
+  splitHTML: (htmlStr: string) => readonly [string, string, string],
   getFallback: (id: string) => string
 ): Readable => {
   const bundlerConfig = new Proxy(
@@ -31,16 +57,8 @@ export const renderHtmlToReadable = (
       },
     }
   );
-  const passthrough = new PassThrough();
-  const [preamble, postamble] = splitHTML(htmlStr);
-  passthrough.write(preamble, "utf8");
   const data = createFromNodeStream(rscStream, bundlerConfig);
-  const origEnd = passthrough.end;
-  passthrough.end = (...args) => {
-    passthrough.write(postamble, "utf8");
-    return origEnd.apply(passthrough, args as any); // FIXME how to avoid any?
-  };
-  renderToPipeableStream(data, {
+  return renderToPipeableStream(data, {
     onError(err) {
       if (
         err instanceof Error &&
@@ -51,6 +69,5 @@ export const renderHtmlToReadable = (
       }
       console.error(err);
     },
-  }).pipe(passthrough);
-  return passthrough;
+  }).pipe(interleaveHtmlSnippets(...splitHTML(htmlStr)));
 };

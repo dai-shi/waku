@@ -26,7 +26,7 @@ const renderHTML = async (
   rscServer: URL,
   config: Awaited<ReturnType<typeof resolveConfig>>,
   ssrConfig: NonNullable<Awaited<ReturnType<GetSsrConfig>>>
-): Promise<Readable> => {
+) => {
   const rscPrefix = config.framework.rscPrefix;
   const { splitHTML, getFallback } = config.framework.ssr;
   const htmlResPromise = fetch(rscServer + pathStr.slice(1), {
