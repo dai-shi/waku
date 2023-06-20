@@ -7,11 +7,14 @@ import { defineRouter } from "waku/router/server";
 export default defineRouter(
   (id) => {
     const items = id.split("/");
+    console.log(items);
     switch (items.length) {
       case 1:
         return import(`./routes/${items[0]}.tsx`);
       case 2:
         return import(`./routes/${items[0]}/${items[1]}.tsx`);
+      case 3:
+        return import(`./routes/${items[0]}/${items[1]}/${items[2]}.tsx`);
       default:
         throw new Error("too deep route");
     }
@@ -20,6 +23,7 @@ export default defineRouter(
     const routesDir = path.join(root, "routes");
     const files = await glob("**/*.tsx", { cwd: routesDir });
     return files.map((file) => {
+      console.log(file);
       const name = file.slice(0, file.length - path.extname(file).length);
       const stat = fs.statSync(path.join(routesDir, name), {
         throwIfNoEntry: false,

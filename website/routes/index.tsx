@@ -41,19 +41,19 @@ const Sidebar = () => (
     </Link>
     <ul className="pt-2 font-medium">
       <li className="h-12 mx-4">
-        <MyLink href="/introduction" name="Introduction" />
+        <MyLink href="/docs/introduction" name="Introduction" />
       </li>
       <li className="h-12 mx-4">
-        <MyLink href="/installing" name="Installing" />
+        <MyLink href="/docs/installing" name="Installing" />
       </li>
       <li className="h-12 mx-4 text-gray-400">
         <span className="mx-4">Practices</span>
       </li>
       <li className="h-12 mx-6">
-        <MyLink href="/practices/minimal" name="Minimal" />
+        <MyLink href="/docs/practices/minimal" name="Minimal" />
       </li>
       <li className="h-12 mx-6">
-        <MyLink href="/practices/router" name="Router" />
+        <MyLink href="/docs/practices/router" name="Router" />
       </li>
     </ul>
   </div>

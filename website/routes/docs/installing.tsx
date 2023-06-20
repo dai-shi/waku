@@ -1,4 +1,4 @@
-import { CodeBlock } from "../src/Code.js";
+import { CodeBlock } from "../../src/Code.js";
 
 const code1 = `npm create waku@latest
 yarn create waku
