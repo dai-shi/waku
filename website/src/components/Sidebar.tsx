@@ -1,31 +1,13 @@
-import { MyLink } from "./MyLink.js";
+import { SidebarGroup } from "./SidebarGroup.js";
+import { SidebarItem } from "./SidebarItem.js";
 
 export const Sidebar = () => (
-  <aside className="h-full sticky top-10">
-    <ul className="flex flex-col gap-4">
-      <li className="flex flex-row gap-2 items-center">
-        <MyLink href="/docs/introduction">
-          <p>Introduction</p>
-        </MyLink>
-      </li>
-      <li className="flex flex-row gap-2 items-center">
-        <MyLink href="/docs/installing">
-          <p>Installing</p>
-        </MyLink>
-      </li>
-      <li className="flex flex-row gap-2 items-center">
-        <span className="">Practices</span>
-      </li>
-      <li className="flex flex-row gap-2 items-center">
-        <MyLink href="/docs/practices/minimal">
-          <span>Minimal</span>
-        </MyLink>
-      </li>
-      <li className="flex flex-row gap-2 items-center">
-        <MyLink href="/docs/practices/router">
-          <span>Router</span>
-        </MyLink>
-      </li>
-    </ul>
-  </aside>
+	<aside className="h-full sticky top-20 flex flex-col gap-2">
+		<SidebarItem selected={true} link="/docs" text="Introduction" />
+		<SidebarItem link="/docs/installing" text="Installing" />
+		<SidebarGroup text="Practices">
+			<SidebarItem link="/docs/practices/minimal" text="Minimal" />
+			<SidebarItem link="/docs/practices/router" text="Router" />
+		</SidebarGroup>
+	</aside>
 );
