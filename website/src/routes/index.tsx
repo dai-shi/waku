@@ -3,14 +3,24 @@ import { Nav } from "../components/Nav.js";
 import { Footer } from "../components/Footer.js";
 
 const Home = () => (
-	<>
-		<h2 className="text-xl font-bold">Waku</h2>
-		<article className="mt-6 bg-gray-800 text-white p-12 rounded">
-			<div className="text-3xl">
-				Minimalistic React Framework with React Server Components
-			</div>
-		</article>
-	</>
+	<div className="flex flex-col gap-16 justify-center items-center h-full">
+		<div className="flex flex-col gap-0 text-4xl font-extrabold items-center">
+			<h1>The Minimalist</h1>
+			<h1 className="text-cCarmine">React Framework</h1>
+			<h1>With Server Components</h1>
+		</div>
+
+		<div className="flex flex-row gap-4 text-xl">
+			<button className="rounded-full px-4 py-1 border border-cBlack text-cBlack">
+				Contribute
+			</button>
+			<button className="rounded-full px-4 py-1 border border-cBlack bg-cCarmine text-cWhite">
+				Get Started
+			</button>
+		</div>
+
+		<div>Arrow</div>
+	</div>
 );
 
 export default function Layout({ children }: { children: ReactNode }) {
