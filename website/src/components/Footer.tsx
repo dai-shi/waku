@@ -1,6 +1,6 @@
 export const Footer = () => {
   return (
-    <nav className="px-8 py-3 flex gap-4 flex-row justify-between items-center text-sm bg-cCarmine text-cVanilla">
+    <nav className="px-16 py-3 flex gap-4 flex-row justify-between items-center text-sm bg-cCarmine text-cVanilla">
       <div>
         <h1>
           a library by{" "}

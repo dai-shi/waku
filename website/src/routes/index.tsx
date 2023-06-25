@@ -45,7 +45,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-col min-h-screen w-screen bg-cWhite text-cBlack gap-8 pattern">
       <Nav></Nav>
-      <main className="grow px-8 flex">{children || <Home />}</main>
+      <main className="grow px-16 flex">{children || <Home />}</main>
       <Footer></Footer>
     </div>
   );
