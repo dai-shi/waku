@@ -332,7 +332,7 @@ const emitHtmlFiles = async (
           ) + (customCode || "");
         if (code) {
           // HACK is this too naive to inject script code?
-          data = data.replace(/<\/body>/, `<script>${code}</script></body>`);
+          data = data.replace(/<\/head>/, `<script>${code}</script></head>`);
         }
         const htmlReadable =
           !skipSsr && (await renderHtml(config, pathStr, data));

@@ -21,13 +21,9 @@
         }
       }
       .spinner {
-        position: absolute;
-        top: 50%;
-        left: 50%;
         width: 36px;
         height: 36px;
-        margin-top: -18px;
-        margin-left: -18px;
+        margin: auto;
         border: 2px solid #ddd;
         border-top-color: #222;
         border-radius: 50%;
@@ -42,13 +38,16 @@
       body {
         font-family: "Rubik", sans-serif;
       }
+
+      #root > .spinner {
+        margin-top: calc(50% - 18px);
+      }
     </style>
   </head>
   <body>
+    <!--placeholder1-->
     <div id="root">
-      <!--placeholder-->
       <div class="spinner"></div>
-      <!--/placeholder-->
     </div>
     <script src="/src/app.tsx" async type="module"></script>
   </body>
