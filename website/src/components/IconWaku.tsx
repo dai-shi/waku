@@ -17,12 +17,11 @@ export function IconWaku() {
         <text
           transform="translate(-8.72 10.67) scale(.26458)"
           fontFamily="Vampiro One"
-          font-weight="400"
-          font-size="144"
-          font-family="Vampiro One"
+          fontWeight="400"
+          fontSize="144"
           fill="#fff"
-          stroke-width="25.181"
-          stroke-linecap="round"
+          strokeWidth="25.181"
+          strokeLinecap="round"
         >
           <tspan x="257.451" y="420.307">
             W<tspan fill="#392b28">aku</tspan>
