@@ -19,23 +19,23 @@ const Home = () => (
       {/* buttons */}
       <div className="flex flex-row gap-4 text-xl">
         <Button
-          text="Get Started"
-          href="/docs/introduction"
-          icon={<IconChevronRight />}
-          variant="primary"
-        />
-
-        <Button
           text="Contribute"
           href="https://github.com/dai-shi/waku"
           icon={<IconGithub />}
           variant="secondary"
         />
+
+        <Button
+          text="Get Started"
+          href="/docs/introduction"
+          icon={<IconChevronRight />}
+          variant="primary"
+        />
       </div>
     </div>
 
     {/* arrow */}
-    <div className="rounded-full border border-cBlack text-cBlack p-4 animate-pulse">
+    <div className="rounded-full text-cBlack animate-pulse">
       <IconArrowDown />
     </div>
   </div>

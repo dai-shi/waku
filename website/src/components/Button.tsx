@@ -9,10 +9,10 @@ export function Button(props: {
   return (
     <a
       href={props.href}
-      className={`rounded-full px-4 py-1 flex flex-row items-center gap-1 ${
+      className={`rounded-full px-4 py-1 flex flex-row items-center gap-1 border border-cBlack ${
         props.variant === "primary"
           ? "bg-cCarmine text-cWhite"
-          : "bg-cVanilla text-cCarmine"
+          : "bg-transparent"
       }`}
     >
       <p>{props.text}</p>
