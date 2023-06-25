@@ -43,7 +43,7 @@ const Home = () => (
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-col min-h-screen w-screen bg-cWhite text-cBlack gap-12 md:gap-8 pattern">
+    <div className="flex flex-col min-h-screen bg-cWhite text-cBlack gap-12 md:gap-8 pattern">
       <Nav></Nav>
       <main className="grow px-6 md:px-16 flex">{children || <Home />}</main>
       <Footer></Footer>
