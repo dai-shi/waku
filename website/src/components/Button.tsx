@@ -9,14 +9,14 @@ export function Button(props: {
   return (
     <a
       href={props.href}
-      className={`rounded-full px-4 py-1 flex flex-row gap-1 ${
+      className={`rounded-full px-4 py-1 flex flex-row items-center gap-1 ${
         props.variant === "primary"
           ? "bg-cCarmine text-cWhite"
           : "bg-cVanilla text-cCarmine"
       }`}
     >
-      {props.icon}
       <p>{props.text}</p>
+      {props.icon}
     </a>
   );
 }
