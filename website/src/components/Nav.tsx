@@ -3,7 +3,7 @@ import { MyLink } from "./MyLink.js";
 
 export const Nav = () => {
   return (
-    <nav className="px-16 py-4 flex gap-4 flex-row justify-between items-center">
+    <nav className="px-6 md:px-16 py-4 flex gap-4 flex-row justify-between items-center">
       {/* logo */}
       <div className="w-8 h-8">
         <MyLink href="/">

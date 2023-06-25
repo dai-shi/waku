@@ -10,14 +10,14 @@ const Home = () => (
   <div className="grow flex flex-col gap-16 justify-center items-center">
     <div className="flex flex-col gap-8 items-center">
       {/* hero text */}
-      <div className="flex flex-col gap-0 text-4xl font-extrabold items-center">
+      <div className="flex flex-col gap-0 text-4xl font-extrabold items-start md:items-center">
         <h1>The Minimalist</h1>
         <h1 className="text-cCarmine">React Framework</h1>
         <h1>With Server Components</h1>
       </div>
 
       {/* buttons */}
-      <div className="flex flex-row gap-4 text-xl">
+      <div className="flex flex-col md:flex-row gap-4 text-xl">
         <Button
           text="Contribute"
           href="https://github.com/dai-shi/waku"
@@ -43,9 +43,9 @@ const Home = () => (
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-col min-h-screen w-screen bg-cWhite text-cBlack gap-8 pattern">
+    <div className="flex flex-col min-h-screen w-screen bg-cWhite text-cBlack gap-12 md:gap-8 pattern">
       <Nav></Nav>
-      <main className="grow px-16 flex">{children || <Home />}</main>
+      <main className="grow px-6 md:px-16 flex">{children || <Home />}</main>
       <Footer></Footer>
     </div>
   );

@@ -2,7 +2,7 @@ import { SidebarGroup } from "./SidebarGroup.js";
 import { SidebarItem } from "./SidebarItem.js";
 
 export const Sidebar = () => (
-  <aside className="sticky top-10 flex flex-col gap-2">
+  <aside className="md:sticky md:top-10 flex flex-col gap-2">
     <SidebarItem
       selected={true}
       link="/docs/introduction"
