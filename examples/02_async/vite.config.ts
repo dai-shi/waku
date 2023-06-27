@@ -10,7 +10,6 @@ export const getFallback = (id: string) => {
 };
 
 export default defineConfig({
-  root: path.dirname(url.fileURLToPath(import.meta.url)),
   framework: {
     ssr: {
       getFallback,
