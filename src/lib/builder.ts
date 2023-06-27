@@ -227,7 +227,7 @@ const emitRscFiles = async (
   };
   const rscFileSet = new Set<string>(); // XXX could be implemented better
   await Promise.all(
-    Object.entries(buildConfig).map(async ([, { elements }]) => {
+    Object.entries(buildConfig).map(async ([, { elements, ctx }]) => {
       for (const [rscId, props] of elements || []) {
         // FIXME we blindly expect JSON.stringify usage is deterministic
         const serializedProps = JSON.stringify(props);
@@ -243,9 +243,10 @@ const emitRscFiles = async (
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          const pipeable = renderRSC(
+          const [pipeable] = await renderRSC(
             { rscId, props },
             {
+              ctx,
               moduleIdCallback: (id) =>
                 addClientModule(rscId, serializedProps, id),
             }
@@ -266,7 +267,8 @@ const emitRscFiles = async (
 const renderHtml = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   pathStr: string,
-  htmlStr: string
+  htmlStr: string,
+  ctx: unknown
 ) => {
   const ssrConfig = await getSsrConfigRSC(pathStr);
   if (!ssrConfig) {
@@ -274,7 +276,7 @@ const renderHtml = async (
   }
   const { splitHTML, getFallback } = config.framework.ssr;
   const [rscId, props] = ssrConfig.element;
-  const pipeable = renderRSC({ rscId, props });
+  const [pipeable] = await renderRSC({ rscId, props }, { ctx });
   return renderHtmlToReadable(htmlStr, pipeable, splitHTML, getFallback);
 };
 
@@ -295,7 +297,7 @@ const emitHtmlFiles = async (
   });
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
-      async ([pathStr, { elements, customCode, skipSsr }]) => {
+      async ([pathStr, { elements, customCode, ctx, skipSsr }]) => {
         const destFile = path.join(
           config.root,
           config.build.outDir,
@@ -335,7 +337,7 @@ const emitHtmlFiles = async (
           data = data.replace(/<\/head>/, `<script>${code}</script></head>`);
         }
         const htmlReadable =
-          !skipSsr && (await renderHtml(config, pathStr, data));
+          !skipSsr && (await renderHtml(config, pathStr, data, ctx));
         if (htmlReadable) {
           await new Promise<void>((resolve, reject) => {
             const stream = fs.createWriteStream(destFile);

@@ -1,4 +1,5 @@
 import type { Writable } from "node:stream";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { createElement } from "react";
 import type { FunctionComponent } from "react";
 
@@ -24,7 +25,8 @@ export type RenderInput =
       args: unknown[];
     };
 
-export type RenderOptions = {
+export type RenderOptions<Context> = {
+  ctx?: Context;
   moduleIdCallback?: (id: string) => void;
 };
 
@@ -32,7 +34,7 @@ export type GetBuildConfig = (
   root: string,
   unstable_renderRSC: (
     input: RenderInput,
-    options?: RenderOptions
+    options?: RenderOptions<never>
   ) => Promise<PipeableStream>
 ) => Promise<{
   [pathStr: string]: {
@@ -40,6 +42,7 @@ export type GetBuildConfig = (
       readonly [rscId: string, props: unknown, skipPrefetch?: boolean]
     >;
     customCode?: string; // optional code to inject
+    ctx?: unknown;
     skipSsr?: boolean;
   };
 }>;
@@ -64,4 +67,22 @@ export function ClientFallback() {
 // For internal use only
 export function ClientOnly() {
   throw new Error("Client-only component");
+}
+
+const ContextStore = new AsyncLocalStorage();
+
+export function getContext<T>() {
+  const ctx = ContextStore.getStore();
+  if (ctx === undefined) {
+    throw new Error("Missing runWithContext");
+  }
+  return ctx as T;
+}
+
+// For internal use only
+export function runWithContext<Context, Result>(
+  ctx: Context,
+  fn: () => Result
+): Result {
+  return ContextStore.run(ctx, fn);
 }
