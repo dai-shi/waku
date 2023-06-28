@@ -60,7 +60,8 @@ export function rsc(options: {
           ? rscId
             ? { rsfId, args, rscId, props }
             : { rsfId, args }
-          : { rscId: rscId as string, props }
+          : { rscId: rscId as string, props },
+        { isBuild: false }
       );
       readable.on("error", (err) => {
         if (hasStatusCode(err)) {

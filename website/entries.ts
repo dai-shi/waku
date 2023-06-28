@@ -3,6 +3,7 @@ import fs from "node:fs";
 
 import { glob } from "glob";
 import { defineRouter } from "waku/router/server";
+import { rootDir } from "waku/config";
 
 export default defineRouter(
   (id) => {
@@ -16,7 +17,8 @@ export default defineRouter(
         throw new Error("too deep route");
     }
   },
-  async (root) => {
+  async () => {
+    const root = rootDir();
     const routesDir = path.join(root, "routes");
     const files = await glob("**/*.tsx", { cwd: routesDir });
     return files.map((file) => {

@@ -246,6 +246,7 @@ const emitRscFiles = async (
           const pipeable = renderRSC(
             { rscId, props },
             {
+              isBuild: true,
               moduleIdCallback: (id) =>
                 addClientModule(rscId, serializedProps, id),
             }
@@ -268,13 +269,13 @@ const renderHtml = async (
   pathStr: string,
   htmlStr: string
 ) => {
-  const ssrConfig = await getSsrConfigRSC(pathStr);
+  const ssrConfig = await getSsrConfigRSC(pathStr, true);
   if (!ssrConfig) {
     return null;
   }
   const { splitHTML, getFallback } = config.framework.ssr;
   const [rscId, props] = ssrConfig.element;
-  const pipeable = renderRSC({ rscId, props });
+  const pipeable = renderRSC({ rscId, props }, { isBuild: true });
   return renderHtmlToReadable(htmlStr, pipeable, splitHTML, getFallback);
 };
 

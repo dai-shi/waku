@@ -9,7 +9,7 @@ import { Child as ClientChild, Waku_SSR_Capable_Link } from "./client.js";
 
 const collectClientModules = async (
   pathStr: string,
-  unstable_renderRSC: Parameters<GetBuildConfig>[1]
+  unstable_renderRSC: Parameters<GetBuildConfig>[0]
 ) => {
   const url = new URL(pathStr, "http://localhost");
   const pathItems = url.pathname.split("/").filter(Boolean);
@@ -56,7 +56,7 @@ export function defineRouter(
   getComponent: (
     id: string
   ) => Promise<FunctionComponent | { default: FunctionComponent } | null>,
-  getAllPaths: (root: string) => Promise<string[]>
+  getAllPaths: () => Promise<string[]>
 ): ReturnType<typeof defineEntries> {
   const SSR_PREFIX = "__SSR__";
   const getSsrEntry = async (pathname: string) => {
@@ -127,8 +127,8 @@ export function defineRouter(
     return RouteComponent;
   };
 
-  const getBuildConfig: GetBuildConfig = async (root, unstable_renderRSC) => {
-    const paths = (await getAllPaths(root)).map((item) =>
+  const getBuildConfig: GetBuildConfig = async (unstable_renderRSC) => {
+    const paths = (await getAllPaths()).map((item) =>
       item === "index" ? "/" : `/${item}`
     );
     const path2moduleIds: Record<string, string[]> = {};

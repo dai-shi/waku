@@ -24,10 +24,11 @@ export type MessageReq =
       id: number;
       type: "render";
       input: RenderInput;
+      isBuild: boolean;
       moduleIdCallback: boolean;
     }
   | { id: number; type: "getBuildConfig" }
-  | { id: number; type: "getSsrConfig"; pathStr: string };
+  | { id: number; type: "getSsrConfig"; pathStr: string; isBuild: boolean };
 
 export type MessageRes =
   | { type: "full-reload" }
@@ -76,7 +77,7 @@ let nextId = 1;
 
 export function renderRSC(
   input: RenderInput,
-  options?: RenderOptions
+  options: RenderOptions
 ): Readable {
   const id = nextId++;
   const passthrough = new PassThrough();
@@ -84,7 +85,7 @@ export function renderRSC(
     if (mesg.type === "buf") {
       passthrough.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
     } else if (mesg.type === "moduleId") {
-      options?.moduleIdCallback?.(mesg.moduleId);
+      options.moduleIdCallback?.(mesg.moduleId);
     } else if (mesg.type === "end") {
       passthrough.end();
       messageCallbacks.delete(id);
@@ -102,7 +103,8 @@ export function renderRSC(
     id,
     type: "render",
     input,
-    moduleIdCallback: !!options?.moduleIdCallback,
+    isBuild: options.isBuild,
+    moduleIdCallback: !!options.moduleIdCallback,
   };
   worker.postMessage(mesg);
   return passthrough;
@@ -125,7 +127,10 @@ export function getBuildConfigRSC(): ReturnType<GetBuildConfig> {
   });
 }
 
-export function getSsrConfigRSC(pathStr: string): ReturnType<GetSsrConfig> {
+export function getSsrConfigRSC(
+  pathStr: string,
+  isBuild: boolean
+): ReturnType<GetSsrConfig> {
   return new Promise((resolve, reject) => {
     const id = nextId++;
     messageCallbacks.set(id, (mesg) => {
@@ -137,7 +142,7 @@ export function getSsrConfigRSC(pathStr: string): ReturnType<GetSsrConfig> {
         messageCallbacks.delete(id);
       }
     });
-    const mesg: MessageReq = { id, type: "getSsrConfig", pathStr };
+    const mesg: MessageReq = { id, type: "getSsrConfig", pathStr, isBuild };
     worker.postMessage(mesg);
   });
 }
