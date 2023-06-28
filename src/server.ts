@@ -70,8 +70,12 @@ export function ClientOnly() {
 }
 
 const ContextStore = new AsyncLocalStorage();
+// FIXME this is not what we want
+(globalThis as any).WAKU_SERVER_CONTEXT_STORE ||= ContextStore;
 
 export function getContext<T>() {
+  const ContextStore: AsyncLocalStorage<unknown> = (globalThis as any)
+    .WAKU_SERVER_CONTEXT_STORE;
   const ctx = ContextStore.getStore();
   if (ctx === undefined) {
     throw new Error("Missing runWithContext");
@@ -84,5 +88,7 @@ export function runWithContext<Context, Result>(
   ctx: Context,
   fn: () => Result
 ): Result {
+  const ContextStore: AsyncLocalStorage<unknown> = (globalThis as any)
+    .WAKU_SERVER_CONTEXT_STORE;
   return ContextStore.run(ctx, fn);
 }
