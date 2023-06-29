@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { serve } from "waku/client";
 
-import { ClientProvider, useAtomValues } from "../lib/jotai-rsc/client.js";
+import { ClientProvider, useAtomValues } from "./lib/jotai-rsc/client.js";
 
 const root = createRoot(document.getElementById("root")!);
 
