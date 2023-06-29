@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Counter } from "../src/Counter.js";
+import { Counter } from "../components/Counter.js";
 
 const Foo = ({ children }: { children: ReactNode }) => (
   <div>
