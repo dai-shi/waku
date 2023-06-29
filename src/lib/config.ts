@@ -43,9 +43,11 @@ export async function resolveConfig(command: "build" | "serve") {
   const origFramework = (origConfig as { framework?: FrameworkConfig })
     .framework;
   const framework: DeepRequired<FrameworkConfig> = {
+    srcDir: "src",
+    distDir: "dist",
+    publicDir: "public",
     indexHtml: "index.html",
     entriesJs: "entries.js",
-    outPublic: "public",
     rscPrefix: "RSC/",
     ...origFramework,
     ssr: {
