@@ -7,7 +7,7 @@ export interface FrameworkConfig {
   rscPrefix?: string; // defaults to "RSC/"
   ssr?: {
     rscServer?: string;
-    splitHTML?: (htmlStr: string) => readonly [string, string];
+    splitHTML?: (htmlStr: string) => readonly [string, string, string];
     getFallback?: (id: string) => string;
   };
 }
