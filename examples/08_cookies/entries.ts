@@ -7,7 +7,7 @@ export default defineEntries(
     ++ctx.count;
     switch (id) {
       case "App":
-        return import("./src/App.js");
+        return import("./components/App.js");
       default:
         return null;
     }
