@@ -5,9 +5,9 @@ export default defineEntries(
   async (id) => {
     switch (id) {
       case "App":
-        return import("./src/App.js");
+        return import("./components/App.js");
       case "InnerApp":
-        return import("./src/InnerApp.js");
+        return import("./components/InnerApp.js");
       default:
         return null;
     }
