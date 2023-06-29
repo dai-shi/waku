@@ -68,10 +68,10 @@ async function runDev(options?: { ssr?: boolean }) {
   const { rsc } = await import("./lib/middleware/rsc.js");
   const { devServer } = await import("./lib/middleware/devServer.js");
   const app = express();
-  app.use(rsc({ mode: "development" }));
+  app.use(rsc({ command: "dev" }));
   if (options?.ssr) {
     const { ssr } = await import("./lib/middleware/ssr.js");
-    app.use(ssr({ mode: "development" }));
+    app.use(ssr({ command: "dev" }));
   }
   app.use(devServer());
   const port = process.env.PORT || 3000;
@@ -91,12 +91,20 @@ async function runStart(options?: { ssr?: boolean }) {
   const config = await resolveConfig("serve");
   const { rsc } = await import("./lib/middleware/rsc.js");
   const app = express();
-  app.use(rsc({ mode: "production" }));
+  app.use(rsc({ command: "start" }));
   if (options?.ssr) {
     const { ssr } = await import("./lib/middleware/ssr.js");
-    app.use(ssr({ mode: "production" }));
+    app.use(ssr({ command: "start" }));
   }
-  app.use(express.static(path.join(config.root, config.framework.outPublic)));
+  app.use(
+    express.static(
+      path.join(
+        config.root,
+        config.framework.distDir,
+        config.framework.publicDir
+      )
+    )
+  );
   (express.static.mime as any).default_type = "";
   const port = process.env.PORT || 8080;
   app.listen(port, () => {

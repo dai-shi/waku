@@ -68,19 +68,23 @@ const renderHTML = async (
 // Important note about the middleware design:
 // - We assume and support using ssr and rsc middleware on different machines.
 export function ssr(options: {
-  mode: "development" | "production";
+  command: "dev" | "build" | "start";
 }): Middleware {
   const configPromise = resolveConfig("serve");
   const vitePromise = viteCreateServer({
     ...configFileConfig,
-    plugins: [
-      ...(options.mode === "development" ? [nonjsResolvePlugin()] : []),
-    ],
+    plugins: [...(options.command === "dev" ? [nonjsResolvePlugin()] : [])],
     appType: "custom",
   });
   const getSsrConfigPromise = vitePromise.then(async (vite) => {
     const config = await configPromise;
-    const entriesFile = path.join(config.root, config.framework.entriesJs);
+    const entriesFile = path.join(
+      config.root,
+      options.command === "start"
+        ? config.framework.distDir
+        : config.framework.srcDir,
+      config.framework.entriesJs
+    );
     const {
       default: { getSsrConfig },
     } = await (vite.ssrLoadModule(entriesFile) as Promise<Entries>);
@@ -105,7 +109,7 @@ export function ssr(options: {
             console.info("Cannot render HTML", err);
             res.statusCode = 500;
           }
-          if (options.mode === "development") {
+          if (options.command === "dev") {
             res.end(String(err));
           } else {
             res.end();
