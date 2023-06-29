@@ -25,14 +25,14 @@ export type RenderInput =
     };
 
 export type RenderOptions = {
-  isBuild: boolean;
+  command: "dev" | "build" | "start";
   moduleIdCallback?: (id: string) => void;
 };
 
 export type GetBuildConfig = (
   unstable_renderRSC: (
     input: RenderInput,
-    options: Omit<RenderOptions, "isBuild">
+    options: Omit<RenderOptions, "command">
   ) => Promise<PipeableStream>
 ) => Promise<{
   [pathStr: string]: {

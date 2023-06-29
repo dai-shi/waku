@@ -20,9 +20,9 @@ type Entries = { default: ReturnType<typeof defineEntries> };
 type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
-  const { id, input, isBuild, moduleIdCallback } = mesg;
+  const { id, input, command, moduleIdCallback } = mesg;
   try {
-    const options: RenderOptions = { isBuild };
+    const options: RenderOptions = { command };
     if (moduleIdCallback) {
       options.moduleIdCallback = (moduleId: string) => {
         const mesg: MessageRes = { id, type: "moduleId", moduleId };
@@ -79,9 +79,9 @@ const handleGetBuildConfig = async (
 const handleGetSsrConfig = async (
   mesg: MessageReq & { type: "getSsrConfig" }
 ) => {
-  const { id, pathStr, isBuild } = mesg;
+  const { id, pathStr, command } = mesg;
   try {
-    const output = await getSsrConfigRSC(pathStr, isBuild);
+    const output = await getSsrConfigRSC(pathStr, command);
     const mesg: MessageRes = { id, type: "ssrConfig", output };
     parentPort!.postMessage(mesg);
   } catch (err) {
@@ -134,23 +134,23 @@ parentPort!.on("message", (mesg: MessageReq) => {
 });
 
 const getEntriesFile = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  command: "dev" | "build" | "start"
 ) => {
-  if (config.command === "build") {
-    return path.join(
-      config.root,
-      config.build.outDir,
-      config.framework.entriesJs
-    );
-  }
-  return path.join(config.root, config.framework.entriesJs);
+  return path.join(
+    config.root,
+    command === "dev" ? config.framework.srcDir : config.framework.distDir,
+    config.framework.entriesJs
+  );
 };
 
 async function renderRSC(
   input: RenderInput,
   options: RenderOptions
 ): Promise<PipeableStream> {
-  const config = await resolveConfig(options.isBuild ? "build" : "serve");
+  const config = await resolveConfig(
+    options.command === "build" ? "build" : "serve"
+  );
 
   const { setRootDir } = await (loadServerFile("waku/config") as Promise<{
     setRootDir: (root: string) => void;
@@ -158,7 +158,7 @@ async function renderRSC(
   setRootDir(config.root);
 
   const getFunctionComponent = async (rscId: string) => {
-    const entriesFile = await getEntriesFile(config);
+    const entriesFile = await getEntriesFile(config, options.command);
     const {
       default: { getEntry },
     } = await (loadServerFile(entriesFile) as Promise<Entries>);
@@ -175,17 +175,17 @@ async function renderRSC(
   };
 
   const resolveClientEntry = (filePath: string) => {
-    if (options.isBuild) {
-      return (
-        config.base +
-        path.relative(path.join(config.root, config.build.outDir), filePath)
-      );
-    }
-    if (config.mode === "development" && !filePath.startsWith(config.root)) {
+    const root = path.join(
+      config.root,
+      options.command === "dev"
+        ? config.framework.srcDir
+        : config.framework.distDir
+    );
+    if (options.command === "dev" && !filePath.startsWith(root)) {
       // HACK this relies on Vite's internal implementation detail.
       return config.base + "@fs" + filePath;
     }
-    return config.base + path.relative(config.root, filePath);
+    return config.base + path.relative(root, filePath);
   };
 
   const bundlerConfig = new Proxy(
@@ -228,10 +228,10 @@ async function getBuildConfigRSC() {
   }>);
   setRootDir(config.root);
 
-  const distEntriesFile = await getEntriesFile(config);
+  const entriesFile = await getEntriesFile(config, "build");
   const {
     default: { getBuildConfig },
-  } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
+  } = await (loadServerFile(entriesFile) as Promise<Entries>);
   if (!getBuildConfig) {
     console.warn(
       "getBuildConfig is undefined. It's recommended for optimization and sometimes required."
@@ -240,24 +240,27 @@ async function getBuildConfigRSC() {
   }
 
   const output = await getBuildConfig(
-    (input: RenderInput, options: Omit<RenderOptions, "isBuild">) =>
-      renderRSC(input, { ...options, isBuild: true })
+    (input: RenderInput, options: Omit<RenderOptions, "command">) =>
+      renderRSC(input, { ...options, command: "build" })
   );
   return output;
 }
 
-async function getSsrConfigRSC(pathStr: string, isBuild: boolean) {
-  const config = await resolveConfig(isBuild ? "build" : "serve");
+async function getSsrConfigRSC(
+  pathStr: string,
+  command: "dev" | "build" | "start"
+) {
+  const config = await resolveConfig(command === "build" ? "build" : "serve");
 
   const { setRootDir } = await (loadServerFile("waku/config") as Promise<{
     setRootDir: (root: string) => void;
   }>);
   setRootDir(config.root);
 
-  const distEntriesFile = await getEntriesFile(config);
+  const entriesFile = await getEntriesFile(config, command);
   const {
     default: { getSsrConfig },
-  } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
+  } = await (loadServerFile(entriesFile) as Promise<Entries>);
   if (!getSsrConfig) {
     return null;
   }

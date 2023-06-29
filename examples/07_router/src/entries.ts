@@ -19,7 +19,7 @@ export default defineRouter(
   },
   async () => {
     const root = rootDir();
-    const routesDir = path.join(root, "routes");
+    const routesDir = path.join(root, "src", "routes");
     const files = await glob("**/*.tsx", { cwd: routesDir });
     return files.map((file) => {
       const name = file.slice(0, file.length - path.extname(file).length);

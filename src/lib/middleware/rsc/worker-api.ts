@@ -24,11 +24,16 @@ export type MessageReq =
       id: number;
       type: "render";
       input: RenderInput;
-      isBuild: boolean;
+      command: "dev" | "build" | "start";
       moduleIdCallback: boolean;
     }
   | { id: number; type: "getBuildConfig" }
-  | { id: number; type: "getSsrConfig"; pathStr: string; isBuild: boolean };
+  | {
+      id: number;
+      type: "getSsrConfig";
+      pathStr: string;
+      command: "dev" | "build" | "start";
+    };
 
 export type MessageRes =
   | { type: "full-reload" }
@@ -103,8 +108,8 @@ export function renderRSC(
     id,
     type: "render",
     input,
-    isBuild: options.isBuild,
-    moduleIdCallback: !!options.moduleIdCallback,
+    command: options.command,
+    moduleIdCallback: !!options?.moduleIdCallback,
   };
   worker.postMessage(mesg);
   return passthrough;
@@ -129,7 +134,7 @@ export function getBuildConfigRSC(): ReturnType<GetBuildConfig> {
 
 export function getSsrConfigRSC(
   pathStr: string,
-  isBuild: boolean
+  command: "dev" | "build" | "start"
 ): ReturnType<GetSsrConfig> {
   return new Promise((resolve, reject) => {
     const id = nextId++;
@@ -142,7 +147,7 @@ export function getSsrConfigRSC(
         messageCallbacks.delete(id);
       }
     });
-    const mesg: MessageReq = { id, type: "getSsrConfig", pathStr, isBuild };
+    const mesg: MessageReq = { id, type: "getSsrConfig", pathStr, command };
     worker.postMessage(mesg);
   });
 }

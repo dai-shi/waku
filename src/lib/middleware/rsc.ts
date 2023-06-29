@@ -15,7 +15,7 @@ type Middleware = (
 const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 
 export function rsc(options: {
-  mode: "development" | "production";
+  command: "dev" | "build" | "start";
 }): Middleware {
   const configPromise = resolveConfig("serve");
   return async (req, res, next) => {
@@ -61,7 +61,7 @@ export function rsc(options: {
             ? { rsfId, args, rscId, props }
             : { rsfId, args }
           : { rscId: rscId as string, props },
-        { isBuild: false }
+        { command: options.command }
       );
       readable.on("error", (err) => {
         if (hasStatusCode(err)) {
@@ -70,7 +70,7 @@ export function rsc(options: {
           console.info("Cannot render RSC", err);
           res.statusCode = 500;
         }
-        if (options.mode === "development") {
+        if (options.command === "dev") {
           res.end(String(err));
         } else {
           res.end();
