@@ -5,7 +5,7 @@ import { defineConfig } from "waku/config";
 import { getFallback } from "./vite.config.js";
 
 export default defineConfig({
-  root: path.join(path.dirname(url.fileURLToPath(import.meta.url)), "dist"),
+  root: path.join(path.dirname(url.fileURLToPath(import.meta.url))),
   framework: {
     ssr: {
       getFallback,

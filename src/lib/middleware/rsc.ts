@@ -15,7 +15,7 @@ type Middleware = (
 const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 
 export function rsc<Context>(options: {
-  mode: "development" | "production";
+  command: "dev" | "build" | "start";
   prehook?: (req: IncomingMessage) => Context;
   posthook?: (res: ServerResponse, ctx: Context) => void;
 }): Middleware {
@@ -67,7 +67,7 @@ export function rsc<Context>(options: {
           console.info("Cannot render RSC", err);
           res.statusCode = 500;
         }
-        if (options.mode === "development") {
+        if (options.command === "dev") {
           res.end(String(err));
         } else {
           res.end();
@@ -81,7 +81,7 @@ export function rsc<Context>(options: {
               ? { rsfId, args, rscId, props }
               : { rsfId, args }
             : { rscId: rscId as string, props },
-          { ctx }
+          { command: options.command, ctx }
         );
         options.posthook?.(res, nextCtx as Context);
         readable.on("error", handleError);

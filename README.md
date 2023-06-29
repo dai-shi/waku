@@ -10,6 +10,8 @@ Minimalistic React Framework
 
 ## How to start a new project
 
+Minimum requirement: Node.js 18
+
 ```bash
 npm create waku@latest
 ```
