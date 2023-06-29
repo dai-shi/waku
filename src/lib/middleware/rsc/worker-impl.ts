@@ -160,8 +160,7 @@ const resolveClientEntry = (
     config.root,
     command === "dev" ? config.framework.srcDir : config.framework.distDir
   );
-  // TODO should we use `command` instead of `config.mode`?
-  if (config.mode === "development" && !filePath.startsWith(config.root)) {
+  if (command === "dev" && !filePath.startsWith(root)) {
     // HACK this relies on Vite's internal implementation detail.
     return config.base + "@fs" + filePath;
   }
@@ -231,10 +230,10 @@ async function getBuildConfigRSC() {
     resolvedConfig = await resolveConfig("build");
   }
   const config = resolvedConfig;
-  const distEntriesFile = await getEntriesFile("build");
+  const entriesFile = await getEntriesFile("build");
   const {
     default: { getBuildConfig },
-  } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
+  } = await (loadServerFile(entriesFile) as Promise<Entries>);
   if (!getBuildConfig) {
     console.warn(
       "getBuildConfig is undefined. It's recommended for optimization and sometimes required."
@@ -252,10 +251,10 @@ async function getSsrConfigRSC(
   pathStr: string,
   command: "dev" | "build" | "start"
 ) {
-  const distEntriesFile = await getEntriesFile(command);
+  const entriesFile = await getEntriesFile(command);
   const {
     default: { getSsrConfig },
-  } = await (loadServerFile(distEntriesFile) as Promise<Entries>);
+  } = await (loadServerFile(entriesFile) as Promise<Entries>);
   if (!getSsrConfig) {
     return null;
   }
