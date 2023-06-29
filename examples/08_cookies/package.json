@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node dev.js",
     "build": "waku build",
-    "start": "waku start --config vite.prd.config.ts --with-ssr"
+    "start": "node start.js"
   },
   "dependencies": {
     "cookie-parser": "^1.4.6",

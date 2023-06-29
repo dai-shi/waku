@@ -17,6 +17,7 @@ export default defineEntries(
     return {
       "/": {
         elements: [["App", { name: "Waku" }]],
+        ctx: { count: 0 },
       },
     };
   },

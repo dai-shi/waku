@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import express from "express";
 import cookieParser from "cookie-parser";
 import { rsc, ssr, devServer } from "waku";
