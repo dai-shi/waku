@@ -1,6 +1,5 @@
 import path from "node:path";
 import fs from "node:fs";
-import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
 
 import { build as viteBuild } from "vite";
@@ -116,8 +115,10 @@ const buildServerBundle = async (
     resolve: {
       conditions: ["react-server"],
     },
+    publicDir: false,
     build: {
       ssr: true,
+      outDir: config.framework.distDir,
       rollupOptions: {
         onwarn,
         input: {
@@ -168,7 +169,11 @@ const buildClientBundle = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   clientEntryFiles: Record<string, string>
 ) => {
-  const indexHtmlFile = path.join(config.root, config.framework.indexHtml);
+  const indexHtmlFile = path.join(
+    config.root,
+    config.framework.srcDir,
+    config.framework.indexHtml
+  );
   const clientBuildOutput = await viteBuild({
     ...configFileConfig,
     plugins: [
@@ -176,8 +181,13 @@ const buildClientBundle = async (
       viteReact(),
       rscIndexPlugin(),
     ],
+    root: path.join(config.root, config.framework.srcDir),
     build: {
-      outDir: path.join(config.build.outDir, config.framework.outPublic),
+      outDir: path.join(
+        config.root,
+        config.framework.distDir,
+        config.framework.publicDir
+      ),
       rollupOptions: {
         onwarn,
         input: {
@@ -235,8 +245,8 @@ const emitRscFiles = async (
         searchParams.set("props", serializedProps);
         const destFile = path.join(
           config.root,
-          config.build.outDir,
-          config.framework.outPublic,
+          config.framework.distDir,
+          config.framework.publicDir,
           config.framework.rscPrefix + decodeURIComponent(rscId),
           decodeURIComponent(`${searchParams}`)
         );
@@ -246,6 +256,7 @@ const emitRscFiles = async (
           const pipeable = renderRSC(
             { rscId, props },
             {
+              command: "build",
               moduleIdCallback: (id) =>
                 addClientModule(rscId, serializedProps, id),
             }
@@ -268,13 +279,13 @@ const renderHtml = async (
   pathStr: string,
   htmlStr: string
 ) => {
-  const ssrConfig = await getSsrConfigRSC(pathStr);
+  const ssrConfig = await getSsrConfigRSC(pathStr, "build");
   if (!ssrConfig) {
     return null;
   }
   const { splitHTML, getFallback } = config.framework.ssr;
   const [rscId, props] = ssrConfig.element;
-  const pipeable = renderRSC({ rscId, props });
+  const pipeable = renderRSC({ rscId, props }, { command: "build" });
   return renderHtmlToReadable(htmlStr, pipeable, splitHTML, getFallback);
 };
 
@@ -286,8 +297,8 @@ const emitHtmlFiles = async (
   const basePrefix = config.base + config.framework.rscPrefix;
   const publicIndexHtmlFile = path.join(
     config.root,
-    config.build.outDir,
-    config.framework.outPublic,
+    config.framework.distDir,
+    config.framework.publicDir,
     config.framework.indexHtml
   );
   const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
@@ -298,8 +309,8 @@ const emitHtmlFiles = async (
       async ([pathStr, { elements, customCode, skipSsr }]) => {
         const destFile = path.join(
           config.root,
-          config.build.outDir,
-          config.framework.outPublic,
+          config.framework.distDir,
+          config.framework.publicDir,
           pathStr,
           pathStr.endsWith("/") ? "index.html" : ""
         );
@@ -353,25 +364,6 @@ const emitHtmlFiles = async (
   return { htmlFiles };
 };
 
-const emitPackageJson = (config: Awaited<ReturnType<typeof resolveConfig>>) => {
-  const require = createRequire(import.meta.url);
-  const origPackageJson = require(path.join(config.root, "package.json"));
-  const packageJson = {
-    name: origPackageJson.name,
-    version: origPackageJson.version,
-    private: true,
-    type: "module",
-    scripts: {
-      start: "waku start",
-    },
-    dependencies: origPackageJson.dependencies,
-  };
-  fs.writeFileSync(
-    path.join(config.root, config.build.outDir, "package.json"),
-    JSON.stringify(packageJson, null, 2)
-  );
-};
-
 const emitVercelOutput = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
@@ -381,19 +373,19 @@ const emitVercelOutput = (
   const clientFiles = clientBuildOutput.output.map(({ fileName }) =>
     path.join(
       config.root,
-      config.build.outDir,
-      config.framework.outPublic,
+      config.framework.distDir,
+      config.framework.publicDir,
       fileName
     )
   );
   const srcDir = path.join(
     config.root,
-    config.build.outDir,
-    config.framework.outPublic
+    config.framework.distDir,
+    config.framework.publicDir
   );
   const dstDir = path.join(
     config.root,
-    config.build.outDir,
+    config.framework.distDir,
     ".vercel",
     "output"
   );
@@ -443,7 +435,7 @@ const resolveFileName = (fname: string) => {
 export async function build() {
   const config = await resolveConfig("build");
   const entriesFile = resolveFileName(
-    path.join(config.root, config.framework.entriesJs)
+    path.join(config.root, config.framework.srcDir, config.framework.entriesJs)
   );
 
   const { clientEntryFiles, serverEntryFiles } = await analyzeEntries(
@@ -465,8 +457,6 @@ export async function build() {
     buildConfig,
     getClientModules
   );
-
-  emitPackageJson(config);
 
   // https://vercel.com/docs/build-output-api/v3
   // So far, only static sites are supported.
