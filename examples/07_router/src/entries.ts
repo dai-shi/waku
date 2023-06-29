@@ -3,7 +3,7 @@ import fs from "node:fs";
 
 import { glob } from "glob";
 import { defineRouter } from "waku/router/server";
-import { rootDir } from "waku/config";
+import { unstable_rootDir as rootDir } from "waku/config";
 
 export default defineRouter(
   (id) => {
