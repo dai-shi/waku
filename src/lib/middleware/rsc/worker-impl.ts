@@ -144,6 +144,22 @@ const getEntriesFile = async (
   );
 };
 
+const resolveClientEntry = (
+  filePath: string,
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  command: "dev" | "build" | "start"
+) => {
+  const root = path.join(
+    config.root,
+    command === "dev" ? config.framework.srcDir : config.framework.distDir
+  );
+  if (command === "dev" && !filePath.startsWith(root)) {
+    // HACK this relies on Vite's internal implementation detail.
+    return config.base + "@fs" + filePath;
+  }
+  return config.base + path.relative(root, filePath);
+};
+
 async function renderRSC(
   input: RenderInput,
   options: RenderOptions
@@ -176,26 +192,12 @@ async function renderRSC(
     throw err;
   };
 
-  const resolveClientEntry = (filePath: string) => {
-    const root = path.join(
-      config.root,
-      options.command === "dev"
-        ? config.framework.srcDir
-        : config.framework.distDir
-    );
-    if (options.command === "dev" && !filePath.startsWith(root)) {
-      // HACK this relies on Vite's internal implementation detail.
-      return config.base + "@fs" + filePath;
-    }
-    return config.base + path.relative(root, filePath);
-  };
-
   const bundlerConfig = new Proxy(
     {},
     {
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split("#") as [string, string];
-        const id = resolveClientEntry(filePath);
+        const id = resolveClientEntry(filePath, config, options.command);
         options?.moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },
