@@ -90,7 +90,7 @@ export function renderRSC(
     if (mesg.type === "buf") {
       passthrough.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
     } else if (mesg.type === "moduleId") {
-      options?.moduleIdCallback?.(mesg.moduleId);
+      options.moduleIdCallback?.(mesg.moduleId);
     } else if (mesg.type === "end") {
       passthrough.end();
       messageCallbacks.delete(id);
