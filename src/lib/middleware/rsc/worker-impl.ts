@@ -252,7 +252,7 @@ async function getBuildConfigRSC() {
   }
 
   const output = await getBuildConfig(
-    (input: RenderInput, options: Omit<RenderOptions, "command">) =>
+    (input: RenderInput, options: Omit<RenderOptions<never>, "command">) =>
       renderRSC(input, { ...options, command: "build" })
   );
   return output;
