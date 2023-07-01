@@ -139,14 +139,10 @@ parentPort!.on("message", (mesg: MessageReq) => {
   }
 });
 
-// FIXME using mutable module variable doesn't seem nice. Let's revisit this.
-let resolvedConfig: Awaited<ReturnType<typeof resolveConfig>> | undefined;
-
-const getEntriesFile = async (command: "dev" | "build" | "start") => {
-  if (!resolvedConfig) {
-    throw new Error("config is not ready");
-  }
-  const config = resolvedConfig;
+const getEntriesFile = async (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  command: "dev" | "build" | "start"
+) => {
   return path.join(
     config.root,
     command === "dev" ? config.framework.srcDir : config.framework.distDir,
@@ -156,12 +152,9 @@ const getEntriesFile = async (command: "dev" | "build" | "start") => {
 
 const resolveClientEntry = (
   filePath: string,
+  config: Awaited<ReturnType<typeof resolveConfig>>,
   command: "dev" | "build" | "start"
 ) => {
-  if (!resolvedConfig) {
-    throw new Error("config is not ready");
-  }
-  const config = resolvedConfig;
   const root = path.join(
     config.root,
     command === "dev" ? config.framework.srcDir : config.framework.distDir
@@ -177,13 +170,19 @@ async function renderRSC(
   input: RenderInput,
   options: RenderOptions<never>
 ): Promise<PipeableStream> {
-  if (!resolvedConfig) {
-    resolvedConfig = await resolveConfig("serve");
-  }
-  const config = resolvedConfig;
+  const config = await resolveConfig(
+    options.command === "build" ? "build" : "serve"
+  );
+
+  const { unstable_setRootDir } = await (loadServerFile(
+    "waku/config"
+  ) as Promise<{
+    unstable_setRootDir: (root: string) => void;
+  }>);
+  unstable_setRootDir(config.root);
 
   const getFunctionComponent = async (rscId: string) => {
-    const entriesFile = await getEntriesFile(options.command);
+    const entriesFile = await getEntriesFile(config, options.command);
     const {
       default: { getEntry },
     } = await (loadServerFile(entriesFile) as Promise<Entries>);
@@ -204,7 +203,7 @@ async function renderRSC(
     {
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split("#") as [string, string];
-        const id = resolveClientEntry(filePath, options.command);
+        const id = resolveClientEntry(filePath, config, options.command);
         options?.moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },
@@ -232,11 +231,16 @@ async function renderRSC(
 }
 
 async function getBuildConfigRSC() {
-  if (!resolvedConfig) {
-    resolvedConfig = await resolveConfig("build");
-  }
-  const config = resolvedConfig;
-  const entriesFile = await getEntriesFile("build");
+  const config = await resolveConfig("build");
+
+  const { unstable_setRootDir } = await (loadServerFile(
+    "waku/config"
+  ) as Promise<{
+    unstable_setRootDir: (root: string) => void;
+  }>);
+  unstable_setRootDir(config.root);
+
+  const entriesFile = await getEntriesFile(config, "build");
   const {
     default: { getBuildConfig },
   } = await (loadServerFile(entriesFile) as Promise<Entries>);
@@ -247,8 +251,9 @@ async function getBuildConfigRSC() {
     return {};
   }
 
-  const output = await getBuildConfig(config.root, (input, options) =>
-    renderRSC(input, { ...options, command: "build" })
+  const output = await getBuildConfig(
+    (input: RenderInput, options: Omit<RenderOptions, "command">) =>
+      renderRSC(input, { ...options, command: "build" })
   );
   return output;
 }
@@ -257,7 +262,16 @@ async function getSsrConfigRSC(
   pathStr: string,
   command: "dev" | "build" | "start"
 ) {
-  const entriesFile = await getEntriesFile(command);
+  const config = await resolveConfig(command === "build" ? "build" : "serve");
+
+  const { unstable_setRootDir } = await (loadServerFile(
+    "waku/config"
+  ) as Promise<{
+    unstable_setRootDir: (root: string) => void;
+  }>);
+  unstable_setRootDir(config.root);
+
+  const entriesFile = await getEntriesFile(config, command);
   const {
     default: { getSsrConfig },
   } = await (loadServerFile(entriesFile) as Promise<Entries>);

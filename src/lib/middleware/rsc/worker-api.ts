@@ -104,7 +104,7 @@ export function renderRSC<Context>(
         }
         passthrough.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
       } else if (mesg.type === "moduleId") {
-        options?.moduleIdCallback?.(mesg.moduleId);
+        options.moduleIdCallback?.(mesg.moduleId);
       } else if (mesg.type === "end") {
         if (!started) {
           throw new Error("not yet started");
@@ -130,8 +130,8 @@ export function renderRSC<Context>(
       type: "render",
       input,
       command: options.command,
-      ctx: options?.ctx ?? null,
-      moduleIdCallback: !!options?.moduleIdCallback,
+      ctx: options.ctx ?? null,
+      moduleIdCallback: !!options.moduleIdCallback,
     };
     worker.postMessage(mesg);
   });

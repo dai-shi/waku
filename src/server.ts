@@ -32,7 +32,6 @@ export type RenderOptions<Context> = {
 };
 
 export type GetBuildConfig = (
-  root: string,
   unstable_renderRSC: (
     input: RenderInput,
     options: Omit<RenderOptions<never>, "command">
