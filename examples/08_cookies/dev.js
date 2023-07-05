@@ -7,10 +7,10 @@ app.use(cookieParser());
 app.use(
   rsc({
     mode: "development",
-    prehook: (req) => {
+    unstable_prehook: (req) => {
       return { count: Number(req.cookies.count) || 0 };
     },
-    posthook: (res, ctx) => {
+    unstable_posthook: (req, res, ctx) => {
       res.cookie("count", String(ctx.count));
     },
   })

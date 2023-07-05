@@ -16,10 +16,14 @@ const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 
 export function rsc<Context>(options: {
   command: "dev" | "build" | "start";
-  prehook?: (req: IncomingMessage) => Context;
-  posthook?: (res: ServerResponse, ctx: Context) => void;
+  unstable_prehook?: (req: IncomingMessage, res: ServerResponse) => Context;
+  unstable_posthook?: (
+    req: IncomingMessage,
+    res: ServerResponse,
+    ctx: Context
+  ) => void;
 }): Middleware {
-  if (!options.prehook && options.posthook) {
+  if (!options.unstable_prehook && options.unstable_posthook) {
     throw new Error("prehook is required if posthook is provided");
   }
   const configPromise = resolveConfig("serve");
@@ -74,7 +78,7 @@ export function rsc<Context>(options: {
         }
       };
       try {
-        const ctx = options.prehook?.(req);
+        const ctx = options.unstable_prehook?.(req, res);
         const [readable, nextCtx] = await renderRSC(
           rsfId
             ? rscId
@@ -83,7 +87,7 @@ export function rsc<Context>(options: {
             : { rscId: rscId as string, props },
           { command: options.command, ctx }
         );
-        options.posthook?.(res, nextCtx as Context);
+        options.unstable_posthook?.(req, res, nextCtx as Context);
         readable.on("error", handleError);
         readable.pipe(res);
       } catch (e) {
