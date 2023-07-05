@@ -11,7 +11,7 @@ export function IconWaku() {
       </defs>
       <g
         transform="translate(-56.468 -88.446)"
-        paint-order="markers stroke fill"
+        paintOrder="markers stroke fill"
       >
         <circle cx="76.468" cy="108.446" r="20" fill="#b0452d" />
         <text

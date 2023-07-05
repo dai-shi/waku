@@ -59,63 +59,63 @@ npm install
 npm run examples:dev:07_router`;
 
 export default function Layout() {
-	return (
-		<div className="flex flex-col gap-8">
-			<div>
-				<h2 className="text-cCarmine text-2xl font-bold">Router</h2>
-				<h5>Practices</h5>
-			</div>
-			<article className="flex flex-col gap-4">
-				<p>
-					Waku provides a router built on top of the minimal API, and it serves
-					as a reference implementation. While other router implementations can
-					be used with Waku, this page focuses on the <Code>waku/router</Code>{" "}
-					implementation.
-				</p>
+  return (
+    <div className="flex flex-col gap-8">
+      <div>
+        <h2 className="text-cCarmine text-2xl font-bold">Router</h2>
+        <h5>Practices</h5>
+      </div>
+      <article className="flex flex-col gap-4">
+        <p>
+          Waku provides a router built on top of the minimal API, and it serves
+          as a reference implementation. While other router implementations can
+          be used with Waku, this page focuses on the <Code>waku/router</Code>{" "}
+          implementation.
+        </p>
 
-				<h3 className="text-lg font-bold mt-4">Client API</h3>
-				<p>
-					To use the router, it is required to use the <Code>Router</Code>{" "}
-					component instead of using <Code>serve</Code> directly. The following
-					code demonstrates how to use the <Code>Router</Code> component as the
-					root component:
-				</p>
-				<CodeBlock lang="tsx">{code1}</CodeBlock>
-				<p>
-					The <Code>Router</Code> component internally uses <Code>serve</Code>{" "}
-					and handles nested routes.
-				</p>
+        <h3 className="text-lg font-bold mt-4">Client API</h3>
+        <p>
+          To use the router, it is required to use the <Code>Router</Code>{" "}
+          component instead of using <Code>serve</Code> directly. The following
+          code demonstrates how to use the <Code>Router</Code> component as the
+          root component:
+        </p>
+        <CodeBlock lang="tsx">{code1}</CodeBlock>
+        <p>
+          The <Code>Router</Code> component internally uses <Code>serve</Code>{" "}
+          and handles nested routes.
+        </p>
 
-				<h3 className="text-lg font-bold mt-4">Server API</h3>
-				<p>
-					In <Code>entries.ts</Code>, we use <Code>defineRouter</Code> to export{" "}
-					<Code>getEntry</Code> and <Code>getBuildConfig</Code> at once.
-					Here&apos;s a simple example code without builder:
-				</p>
-				<CodeBlock lang="tsx">{code2}</CodeBlock>
-				<p>
-					The implementation of the <Code>defineRouter</Code> is config-based.
-					However, it isn&apos;t too difficult to make a file-based router.
-					Here&apos;s a file-based example code with builder:
-				</p>
-				<CodeBlock lang="tsx">{code3}</CodeBlock>
-				<p>
-					Due to the limitation of bundler, we cannot automatically allow
-					infinite depth of routes.
-				</p>
+        <h3 className="text-lg font-bold mt-4">Server API</h3>
+        <p>
+          In <Code>entries.ts</Code>, we use <Code>defineRouter</Code> to export{" "}
+          <Code>getEntry</Code> and <Code>getBuildConfig</Code> at once.
+          Here&apos;s a simple example code without builder:
+        </p>
+        <CodeBlock lang="tsx">{code2}</CodeBlock>
+        <p>
+          The implementation of the <Code>defineRouter</Code> is config-based.
+          However, it isn&apos;t too difficult to make a file-based router.
+          Here&apos;s a file-based example code with builder:
+        </p>
+        <CodeBlock lang="tsx">{code3}</CodeBlock>
+        <p>
+          Due to the limitation of bundler, we cannot automatically allow
+          infinite depth of routes.
+        </p>
 
-				<h3 className="text-lg font-bold mt-4">How to try it</h3>
-				<p>
-					You can try an example app in the repository by cloning it and running
-					the following commands:
-				</p>
-				<CodeBlock lang="shellscript">{code4}</CodeBlock>
-				<p>
-					Alternatively, you could create a project with something like{" "}
-					<Code>npm create waku@latest</Code> and copy files from the example
-					folder in the repository.
-				</p>
-			</article>
-		</div>
-	);
+        <h3 className="text-lg font-bold mt-4">How to try it</h3>
+        <p>
+          You can try an example app in the repository by cloning it and running
+          the following commands:
+        </p>
+        <CodeBlock lang="shellscript">{code4}</CodeBlock>
+        <p>
+          Alternatively, you could create a project with something like{" "}
+          <Code>npm create waku@latest</Code> and copy files from the example
+          folder in the repository.
+        </p>
+      </article>
+    </div>
+  );
 }
