@@ -11,11 +11,11 @@ export default defineRouter(
     console.log(items);
     switch (items.length) {
       case 1:
-        return import(`./src/routes/${items[0]}.tsx`);
+        return import(`./routes/${items[0]}.tsx`);
       case 2:
-        return import(`./src/routes/${items[0]}/${items[1]}.tsx`);
+        return import(`./routes/${items[0]}/${items[1]}.tsx`);
       case 3:
-        return import(`./src/routes/${items[0]}/${items[1]}/${items[2]}.tsx`);
+        return import(`./routes/${items[0]}/${items[1]}/${items[2]}.tsx`);
       default:
         throw new Error("too deep route");
     }
