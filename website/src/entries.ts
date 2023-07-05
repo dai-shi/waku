@@ -8,7 +8,6 @@ import { unstable_rootDir as rootDir } from "waku/config";
 export default defineRouter(
   (id) => {
     const items = id.split("/");
-    console.log(items);
     switch (items.length) {
       case 1:
         return import(`./routes/${items[0]}.tsx`);
@@ -25,7 +24,6 @@ export default defineRouter(
     const routesDir = path.join(root, "src", "routes");
     const files = await glob("**/*.tsx", { cwd: routesDir });
     return files.map((file) => {
-      console.log(file);
       const name = file.slice(0, file.length - path.extname(file).length);
       const stat = fs.statSync(path.join(routesDir, name), {
         throwIfNoEntry: false,
