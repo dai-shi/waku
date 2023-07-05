@@ -4,7 +4,7 @@ const Pending = ({ isPending }: { isPending: boolean }) => (
   <div
     className="animate-ping w-2 h-2 rounded-full"
     style={{
-      backgroundColor: isPending ? "rgb(176, 69, 45)" : "transparent",
+      backgroundColor: isPending ? "#B0452D" : "transparent",
       transition: "background-color 75ms 100ms",
     }}
   ></div>
