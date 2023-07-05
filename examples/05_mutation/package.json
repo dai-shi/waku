@@ -4,9 +4,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "waku dev",
+    "dev": "waku dev --with-ssr",
     "build": "waku build",
-    "start": "waku start --config vite.prd.config.ts"
+    "start": "waku start --with-ssr"
   },
   "dependencies": {
     "express": "^4.18.2",

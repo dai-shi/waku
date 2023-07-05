@@ -3,7 +3,7 @@ import path from "node:path";
 import { createServer as viteCreateServer } from "vite";
 import viteReact from "@vitejs/plugin-react";
 
-import { configFileConfig } from "../config.js";
+import { configFileConfig, resolveConfig } from "../config.js";
 import { registerReloadCallback } from "./rsc/worker-api.js";
 import { rscIndexPlugin } from "../vite-plugin/rsc-index-plugin.js";
 
@@ -14,21 +14,25 @@ type Middleware = (
 ) => void;
 
 export function devServer(): Middleware {
-  const vitePromise = viteCreateServer({
-    ...configFileConfig,
-    optimizeDeps: {
-      include: ["react-server-dom-webpack/client"],
-      // FIXME without this, waku router has dual module hazard,
-      // and "Uncaught Error: Missing Router" happens.
-      exclude: ["waku"],
-    },
-    plugins: [
-      // @ts-expect-error This expression is not callable.
-      viteReact(),
-      rscIndexPlugin(),
-    ],
-    server: { middlewareMode: true },
-  });
+  const configPromise = resolveConfig("serve");
+  const vitePromise = configPromise.then((config) =>
+    viteCreateServer({
+      ...configFileConfig,
+      root: path.join(config.root, config.framework.srcDir),
+      optimizeDeps: {
+        include: ["react-server-dom-webpack/client"],
+        // FIXME without this, waku router has dual module hazard,
+        // and "Uncaught Error: Missing Router" happens.
+        exclude: ["waku"],
+      },
+      plugins: [
+        // @ts-expect-error This expression is not callable.
+        viteReact(),
+        rscIndexPlugin(),
+      ],
+      server: { middlewareMode: true },
+    })
+  );
   vitePromise.then((vite) => {
     registerReloadCallback((type) => vite.ws.send({ type }));
   });

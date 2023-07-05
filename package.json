@@ -53,7 +53,7 @@
     "compile:types": "tsc --project tsconfig.build.json",
     "test": "prettier -c . && eslint . && tsc --project . --noEmit",
     "e2e": "playwright test",
-    "examples:dev": "npm run compile:code && waku dev --config ./examples/${NAME}/vite.config.ts --with-ssr",
+    "examples:dev": "npm run compile:code && (cd ./examples/${NAME} && npm run dev)",
     "examples:dev:01_counter": "NAME=01_counter npm run examples:dev",
     "examples:dev:02_async": "NAME=02_async npm run examples:dev",
     "examples:dev:03_promise": "NAME=03_promise npm run examples:dev",
@@ -61,8 +61,8 @@
     "examples:dev:05_mutation": "NAME=05_mutation npm run examples:dev",
     "examples:dev:06_nesting": "NAME=06_nesting npm run examples:dev",
     "examples:dev:07_router": "NAME=07_router npm run examples:dev",
-    "examples:build": "npm run compile:code && waku build --config ./examples/${NAME}/vite.config.ts",
-    "examples:prd": "npm run examples:build && waku start --config ./examples/${NAME}/vite.prd.config.ts --with-ssr",
+    "examples:build": "npm run compile:code && (cd ./examples/${NAME} && npm run build)",
+    "examples:prd": "npm run examples:build && (cd ./examples/${NAME} && npm start)",
     "examples:prd:01_counter": "NAME=01_counter npm run examples:prd",
     "examples:prd:02_async": "NAME=02_async npm run examples:prd",
     "examples:prd:03_promise": "NAME=03_promise npm run examples:prd",
@@ -73,7 +73,7 @@
     "website:dev": "npm run compile:code && ./dist/cli.js dev --config ./website/vite.config.ts",
     "website:build": "npm run compile:code && ./dist/cli.js build --config ./website/vite.config.ts",
     "website:vercel": "npm run website:build && cp -Lr ./website/dist/.vercel/output ./.vercel/",
-    "website:prd": "npm run website:build && ./dist/cli.js start --config ./website/vite.prd.config.ts"
+    "website:prd": "npm run website:build && ./dist/cli.js start --config ./website/vite.config.ts"
   },
   "license": "MIT",
   "engines": {
