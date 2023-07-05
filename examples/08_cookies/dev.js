@@ -1,6 +1,10 @@
 import express from "express";
 import cookieParser from "cookie-parser";
-import { rsc, ssr, devServer } from "waku";
+import {
+  rsc,
+  //ssr,
+  devServer,
+} from "waku";
 
 const app = express();
 app.use(cookieParser());
@@ -15,7 +19,8 @@ app.use(
     },
   })
 );
-app.use(ssr({ command: "dev" }));
+// Passing cookies through SSR server isn't supported (yet).
+// app.use(ssr({ command: "dev" }));
 app.use(devServer());
 
 const port = process.env.PORT || 3000;

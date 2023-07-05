@@ -20,14 +20,15 @@ export default defineEntries(
         ctx: { count: 0 },
       },
     };
-  },
-  // getSsrConfig
-  async (pathStr) => {
-    switch (pathStr) {
-      case "/":
-        return { element: ["App", { name: "Waku" }] };
-      default:
-        return null;
-    }
   }
+  // getSsrConfig
+  // Passing cookies through SSR server isn't supported (yet).
+  // async (pathStr) => {
+  //   switch (pathStr) {
+  //     case "/":
+  //       return { element: ["App", { name: "Waku" }] };
+  //     default:
+  //       return null;
+  //   }
+  // }
 );

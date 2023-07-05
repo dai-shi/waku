@@ -2,7 +2,10 @@ import url from "node:url";
 import path from "node:path";
 import express from "express";
 import cookieParser from "cookie-parser";
-import { rsc, ssr } from "waku";
+import {
+  rsc,
+  // ssr,
+} from "waku";
 
 const root = path.join(
   path.dirname(url.fileURLToPath(import.meta.url)),
@@ -23,7 +26,8 @@ app.use(
     },
   })
 );
-app.use(ssr({ command: "start" }));
+// Passing cookies through SSR server isn't supported (yet).
+// app.use(ssr({ command: "start" }));
 app.use(express.static(path.join(root, "public")));
 express.static.mime.default_type = "";
 
