@@ -14,7 +14,7 @@ const app = express();
 app.use(cookieParser());
 app.use(
   rsc({
-    mode: "production",
+    command: "start",
     unstable_prehook: (req) => {
       return { count: Number(req.cookies.count) || 0 };
     },
@@ -23,7 +23,7 @@ app.use(
     },
   })
 );
-app.use(ssr({ mode: "production" }));
+app.use(ssr({ command: "start" }));
 app.use(express.static(path.join(root, "public")));
 express.static.mime.default_type = "";
 
