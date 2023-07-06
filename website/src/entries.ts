@@ -13,6 +13,8 @@ export default defineRouter(
         return import(`./routes/${items[0]}.tsx`);
       case 2:
         return import(`./routes/${items[0]}/${items[1]}.tsx`);
+      case 3:
+        return import(`./routes/${items[0]}/${items[1]}/${items[2]}.tsx`);
       default:
         throw new Error("too deep route");
     }
