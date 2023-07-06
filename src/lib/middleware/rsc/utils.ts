@@ -71,3 +71,12 @@ export const transformRsfId = (prefixToRemove: string) =>
       callback(null, changed ? Buffer.from(lines.join("\n")) : chunk);
     },
   });
+
+export const deepFreeze = (x: unknown): void => {
+  if (typeof x === "object" && x !== null) {
+    Object.freeze(x);
+    for (const value of Object.values(x)) {
+      deepFreeze(value);
+    }
+  }
+};

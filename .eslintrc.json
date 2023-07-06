@@ -28,6 +28,13 @@
       "rules": {
         "@typescript-eslint/no-var-requires": "off"
       }
+    },
+    {
+      "files": ["examples/08_cookies/*.js"],
+      "env": { "node": true },
+      "rules": {
+        "import/no-named-as-default-member": "off"
+      }
     }
   ]
 }

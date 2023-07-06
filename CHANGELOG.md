@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.13.0] - 2023-07-06
+### Changed
+- breaking: src and dist folders at the same level #92
+### Added
+- feat: server context #86
+
 ## [0.12.1] - 2023-06-20
 ### Changed
 - fix: ssr with suspense and hydration #78

@@ -12,18 +12,17 @@ if (fs.existsSync(dirName)) {
 }
 
 const baseUrl =
-  "https://raw.githubusercontent.com/dai-shi/waku/v0.12.1/examples/01_counter/";
+  "https://raw.githubusercontent.com/dai-shi/waku/v0.13.0/examples/01_counter/";
 
 const files = `
-entries.ts
-index.html
-vite.prd.config.ts
 package.json
 tsconfig.json
-vite.config.ts
-src/index.tsx
-src/App.tsx
-src/Counter.tsx
+src/main.tsx
+src/entries.ts
+src/index.html
+src/components
+src/components/App.tsx
+src/components/Counter.tsx
 `
   .split(/\s/)
   .filter((file) => file);
