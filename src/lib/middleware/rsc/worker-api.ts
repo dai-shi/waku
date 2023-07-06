@@ -25,6 +25,7 @@ export type MessageReq =
       type: "render";
       input: RenderInput;
       command: "dev" | "build" | "start";
+      ctx: unknown;
       moduleIdCallback: boolean;
     }
   | { id: number; type: "getBuildConfig" }
@@ -37,6 +38,7 @@ export type MessageReq =
 
 export type MessageRes =
   | { type: "full-reload" }
+  | { id: number; type: "start"; ctx: unknown }
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "moduleId"; moduleId: string }
   | { id: number; type: "end" }
@@ -80,39 +82,59 @@ export function shutdown(): Promise<void> {
 
 let nextId = 1;
 
-export function renderRSC(
+export function renderRSC<Context>(
   input: RenderInput,
-  options: RenderOptions
-): Readable {
+  options: RenderOptions<Context>
+): Promise<readonly [Readable, Context]> {
   const id = nextId++;
-  const passthrough = new PassThrough();
-  messageCallbacks.set(id, (mesg) => {
-    if (mesg.type === "buf") {
-      passthrough.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
-    } else if (mesg.type === "moduleId") {
-      options.moduleIdCallback?.(mesg.moduleId);
-    } else if (mesg.type === "end") {
-      passthrough.end();
-      messageCallbacks.delete(id);
-    } else if (mesg.type === "err") {
-      const err =
-        mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err));
-      if (mesg.statusCode) {
-        (err as any).statusCode = mesg.statusCode;
+  let started = false;
+  return new Promise((resolve, reject) => {
+    const passthrough = new PassThrough();
+    messageCallbacks.set(id, (mesg) => {
+      if (mesg.type === "start") {
+        if (!started) {
+          started = true;
+          resolve([passthrough, mesg.ctx as Context]);
+        } else {
+          throw new Error("already started");
+        }
+      } else if (mesg.type === "buf") {
+        if (!started) {
+          throw new Error("not yet started");
+        }
+        passthrough.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
+      } else if (mesg.type === "moduleId") {
+        options.moduleIdCallback?.(mesg.moduleId);
+      } else if (mesg.type === "end") {
+        if (!started) {
+          throw new Error("not yet started");
+        }
+        passthrough.end();
+        messageCallbacks.delete(id);
+      } else if (mesg.type === "err") {
+        const err =
+          mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err));
+        if (mesg.statusCode) {
+          (err as any).statusCode = mesg.statusCode;
+        }
+        if (!started) {
+          reject(err);
+        } else {
+          passthrough.destroy(err);
+        }
+        messageCallbacks.delete(id);
       }
-      passthrough.destroy(err);
-      messageCallbacks.delete(id);
-    }
+    });
+    const mesg: MessageReq = {
+      id,
+      type: "render",
+      input,
+      command: options.command,
+      ctx: options.ctx ?? null,
+      moduleIdCallback: !!options.moduleIdCallback,
+    };
+    worker.postMessage(mesg);
   });
-  const mesg: MessageReq = {
-    id,
-    type: "render",
-    input,
-    command: options.command,
-    moduleIdCallback: !!options?.moduleIdCallback,
-  };
-  worker.postMessage(mesg);
-  return passthrough;
 }
 
 export function getBuildConfigRSC(): ReturnType<GetBuildConfig> {
