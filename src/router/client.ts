@@ -1,4 +1,4 @@
-/// <reference types="react/next" />
+/// <reference types="react/canary" />
 
 "use client";
 
