@@ -7,7 +7,7 @@ import { createElement } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 
 import { configFileConfig, resolveConfig } from "../../config.js";
-import { hasStatusCode, transformRsfId } from "./utils.js";
+import { hasStatusCode, transformRsfId, deepFreeze } from "./utils.js";
 import type { MessageReq, MessageRes } from "./worker-api.js";
 import { defineEntries } from "../../../server.js";
 import type { RenderInput, RenderOptions } from "../../../server.js";
@@ -20,16 +20,22 @@ type Entries = { default: ReturnType<typeof defineEntries> };
 type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
-  const { id, input, command, moduleIdCallback } = mesg;
+  const { id, input, command, ctx, moduleIdCallback } = mesg;
   try {
-    const options: RenderOptions = { command };
+    const options: RenderOptions<never> = { command };
     if (moduleIdCallback) {
       options.moduleIdCallback = (moduleId: string) => {
         const mesg: MessageRes = { id, type: "moduleId", moduleId };
         parentPort!.postMessage(mesg);
       };
     }
-    const pipeable = await renderRSC(input, options);
+    const { runWithContext } = await (loadServerFile("waku/server") as Promise<{
+      runWithContext<Context, Result>(ctx: Context, fn: () => Result): Result;
+    }>);
+    const pipeable = await runWithContext(ctx, () => renderRSC(input, options));
+    const mesg: MessageRes = { id, type: "start", ctx };
+    parentPort!.postMessage(mesg);
+    deepFreeze(ctx);
     const writable = new Writable({
       write(chunk, encoding, callback) {
         if (encoding !== ("buffer" as any)) {
@@ -162,7 +168,7 @@ const resolveClientEntry = (
 
 async function renderRSC(
   input: RenderInput,
-  options: RenderOptions
+  options: RenderOptions<never>
 ): Promise<PipeableStream> {
   const config = await resolveConfig(
     options.command === "build" ? "build" : "serve"
@@ -246,7 +252,7 @@ async function getBuildConfigRSC() {
   }
 
   const output = await getBuildConfig(
-    (input: RenderInput, options: Omit<RenderOptions, "command">) =>
+    (input: RenderInput, options: Omit<RenderOptions<never>, "command">) =>
       renderRSC(input, { ...options, command: "build" })
   );
   return output;

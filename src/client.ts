@@ -1,4 +1,4 @@
-/// <reference types="react/next" />
+/// <reference types="react/canary" />
 
 import { cache, use, useEffect, useState } from "react";
 import type { ReactElement } from "react";

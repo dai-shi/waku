@@ -1,7 +1,7 @@
 {
   "name": "waku",
   "description": "Minimalistic React Framework",
-  "version": "0.12.1",
+  "version": "0.13.0",
   "type": "module",
   "author": "Daishi Kato",
   "repository": {
@@ -61,6 +61,7 @@
     "examples:dev:05_mutation": "NAME=05_mutation npm run examples:dev",
     "examples:dev:06_nesting": "NAME=06_nesting npm run examples:dev",
     "examples:dev:07_router": "NAME=07_router npm run examples:dev",
+    "examples:dev:08_cookies": "NAME=08_cookies npm run examples:dev",
     "examples:build": "npm run compile:code && (cd ./examples/${NAME} && npm run build)",
     "examples:prd": "npm run examples:build && (cd ./examples/${NAME} && npm start)",
     "examples:prd:01_counter": "NAME=01_counter npm run examples:prd",
@@ -70,6 +71,7 @@
     "examples:prd:05_mutation": "NAME=05_mutation npm run examples:prd",
     "examples:prd:06_nesting": "NAME=06_nesting npm run examples:prd",
     "examples:prd:07_router": "NAME=07_router npm run examples:prd",
+    "examples:prd:08_cookies": "NAME=08_cookies npm run examples:prd",
     "website:dev": "npm run compile:code && ./dist/cli.js dev --config ./website/vite.config.ts",
     "website:build": "npm run compile:code && ./dist/cli.js build --config ./website/vite.config.ts",
     "website:vercel": "npm run website:build && cp -Lr ./website/dist/.vercel/output ./.vercel/",
@@ -79,9 +81,10 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "prettier": {},
   "dependencies": {
-    "@swc/core": "1.3.64",
-    "@vitejs/plugin-react": "^4.0.0",
+    "@swc/core": "1.3.68",
+    "@vitejs/plugin-react": "^4.0.1",
     "busboy": "^1.6.0",
     "vite": "^4.3.9"
   },
@@ -91,35 +94,35 @@
     "@types/babel__core": "^7.20.1",
     "@types/busboy": "^1.5.0",
     "@types/express": "^4.17.17",
-    "@types/node": "^20.3.1",
-    "@types/react": "^18.2.12",
-    "@types/react-dom": "^18.2.5",
-    "@typescript-eslint/eslint-plugin": "^5.59.11",
-    "@typescript-eslint/parser": "^5.59.11",
+    "@types/node": "^20.4.0",
+    "@types/react": "^18.2.14",
+    "@types/react-dom": "^18.2.6",
+    "@typescript-eslint/eslint-plugin": "^5.61.0",
+    "@typescript-eslint/parser": "^5.61.0",
     "autoprefixer": "^10.4.14",
     "bright": "^0.8.2",
-    "eslint": "^8.43.0",
+    "cookie-parser": "^1.4.6",
+    "eslint": "^8.44.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-import-resolver-typescript": "^3.5.5",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-react": "^7.32.2",
     "express": "^4.18.2",
-    "glob": "^10.2.7",
-    "jotai": "^2.2.1",
+    "glob": "^10.3.1",
     "postcss": "^8.4.24",
     "prettier": "^2.8.8",
-    "react": "18.3.0-canary-613e6f5fc-20230616",
-    "react-dom": "18.3.0-canary-613e6f5fc-20230616",
-    "react-server-dom-webpack": "18.3.0-canary-613e6f5fc-20230616",
-    "rollup": "^3.25.1",
+    "react": "18.3.0-canary-7118f5dd7-20230705",
+    "react-dom": "18.3.0-canary-7118f5dd7-20230705",
+    "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705",
+    "rollup": "^3.26.1",
     "tailwindcss": "^3.3.2",
-    "typescript": "^5.1.3",
+    "typescript": "^5.1.6",
     "waku": "link:."
   },
   "peerDependencies": {
     "express": "^4.18.2",
-    "react": "18.3.0-canary-613e6f5fc-20230616",
-    "react-server-dom-webpack": "18.3.0-canary-613e6f5fc-20230616"
+    "react": "18.3.0-canary-7118f5dd7-20230705",
+    "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705"
   },
   "peerDependenciesMeta": {
     "express": {

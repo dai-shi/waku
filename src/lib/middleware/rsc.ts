@@ -14,9 +14,18 @@ type Middleware = (
 
 const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 
-export function rsc(options: {
+export function rsc<Context>(options: {
   command: "dev" | "build" | "start";
+  unstable_prehook?: (req: IncomingMessage, res: ServerResponse) => Context;
+  unstable_posthook?: (
+    req: IncomingMessage,
+    res: ServerResponse,
+    ctx: Context
+  ) => void;
 }): Middleware {
+  if (!options.unstable_prehook && options.unstable_posthook) {
+    throw new Error("prehook is required if posthook is provided");
+  }
   const configPromise = resolveConfig("serve");
   return async (req, res, next) => {
     const config = await configPromise;
@@ -55,15 +64,7 @@ export function rsc(options: {
       }
     }
     if (rscId || rsfId) {
-      const readable = renderRSC(
-        rsfId
-          ? rscId
-            ? { rsfId, args, rscId, props }
-            : { rsfId, args }
-          : { rscId: rscId as string, props },
-        { command: options.command }
-      );
-      readable.on("error", (err) => {
+      const handleError = (err: unknown) => {
         if (hasStatusCode(err)) {
           res.statusCode = err.statusCode;
         } else {
@@ -75,8 +76,23 @@ export function rsc(options: {
         } else {
           res.end();
         }
-      });
-      readable.pipe(res);
+      };
+      try {
+        const ctx = options.unstable_prehook?.(req, res);
+        const [readable, nextCtx] = await renderRSC(
+          rsfId
+            ? rscId
+              ? { rsfId, args, rscId, props }
+              : { rsfId, args }
+            : { rscId: rscId as string, props },
+          { command: options.command, ctx }
+        );
+        options.unstable_posthook?.(req, res, nextCtx as Context);
+        readable.on("error", handleError);
+        readable.pipe(res);
+      } catch (e) {
+        handleError(e);
+      }
       return;
     }
     next();
