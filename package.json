@@ -41,7 +41,9 @@
       "default": "./dist/router/server.js"
     }
   },
-  "bin": "./dist/cli.js",
+  "bin": {
+    "waku": "./dist/cli.js"
+  },
   "files": [
     "src",
     "dist"
