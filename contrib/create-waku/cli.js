@@ -20,7 +20,6 @@ tsconfig.json
 src/main.tsx
 src/entries.ts
 src/index.html
-src/components
 src/components/App.tsx
 src/components/Counter.tsx
 `
