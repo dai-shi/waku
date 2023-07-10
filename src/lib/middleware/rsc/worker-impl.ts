@@ -108,11 +108,6 @@ const vitePromise = viteCreateServer({
       parentPort!.postMessage(mesg);
     }),
   ],
-  ssr: {
-    noExternal: /^(?!node:)/,
-    // FIXME this is very adhoc.
-    external: ["react", "minimatch", "react-server-dom-webpack"],
-  },
   resolve: {
     conditions: ["react-server"],
   },
