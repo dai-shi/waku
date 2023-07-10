@@ -1,6 +1,7 @@
 import path from "node:path";
 import { parentPort } from "node:worker_threads";
 import { Writable } from "node:stream";
+import { Server } from "node:http";
 
 import { createServer as viteCreateServer } from "vite";
 import { createElement } from "react";
@@ -96,6 +97,8 @@ const handleGetSsrConfig = async (
   }
 };
 
+const dummyServer = new Server();
+
 const vitePromise = viteCreateServer({
   ...configFileConfig,
   plugins: [
@@ -114,6 +117,7 @@ const vitePromise = viteCreateServer({
     conditions: ["react-server"],
   },
   appType: "custom",
+  server: { middlewareMode: true, hmr: { server: dummyServer } },
 });
 
 const shutdown = async () => {
