@@ -1,6 +1,6 @@
 import { defineConfig } from "waku/config";
 
-export const getFallback = (id: string) => {
+const getFallback = (id: string) => {
   if (id.endsWith("#Counter")) {
     return "waku/server#ClientOnly";
   }
