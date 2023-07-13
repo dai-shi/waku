@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Changed
+- fix: partially for css modules #98
 
 ## [0.13.0] - 2023-07-06
 ### Changed
