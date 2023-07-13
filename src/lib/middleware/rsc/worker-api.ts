@@ -13,6 +13,8 @@ const worker = new Worker(new URL("worker-impl.js", import.meta.url), {
   execArgv: [
     "--experimental-loader",
     "waku/node-loader",
+    "--experimental-loader",
+    "react-server-dom-webpack/node-loader",
     "--conditions",
     "react-server",
   ],
