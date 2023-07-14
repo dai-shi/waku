@@ -21,7 +21,7 @@ yarn create waku
 ```
 
 ```bash
-pnpm create waku # pnpm not working for now
+pnpm create waku
 ```
 
 ## Work in progress
