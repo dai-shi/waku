@@ -59,11 +59,6 @@ const analyzeEntries = async (entriesFile: string) => {
         (id) => serverEntryFileSet.add(id)
       ),
     ],
-    ssr: {
-      noExternal: /^(?!node:)/,
-      // FIXME this is very adhoc.
-      external: ["react", "minimatch"],
-    },
     resolve: {
       conditions: ["react-server"],
     },
@@ -103,15 +98,6 @@ const buildServerBundle = async (
 ) => {
   const serverBuildOutput = await viteBuild({
     ...configFileConfig,
-    ssr: {
-      noExternal: Object.values(clientEntryFiles).map(
-        // FIXME this might not work with pnpm
-        (fname) =>
-          path
-            .relative(path.join(config.root, "node_modules"), fname)
-            .split("/")[0]!
-      ),
-    },
     resolve: {
       conditions: ["react-server"],
     },

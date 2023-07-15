@@ -2,7 +2,7 @@ import { CodeBlock } from "../../components/Code.js";
 
 const code1 = `npm create waku@latest
 yarn create waku
-pnpm create waku # pnpm not working for now`;
+pnpm create waku`;
 
 export default function Layout() {
   return (
