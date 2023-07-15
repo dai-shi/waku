@@ -15,6 +15,11 @@
       "require": "./dist/cjs/main.js",
       "default": "./dist/main.js"
     },
+    "./node-loader": {
+      "types": "./dist/node-loader.d.ts",
+      "require": "./dist/cjs/node-loader.js",
+      "default": "./dist/node-loader.js"
+    },
     "./config": {
       "types": "./dist/config.d.ts",
       "require": "./dist/cjs/config.js",
