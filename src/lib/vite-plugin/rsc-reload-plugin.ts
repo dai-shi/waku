@@ -24,7 +24,7 @@ export function rscReloadPlugin(fn: (type: "full-reload") => void): Plugin {
     return false;
   };
   return {
-    name: "reload-plugin",
+    name: "rsc-reload-plugin",
     configResolved(config) {
       if (config.mode === "development") {
         enabled = true;

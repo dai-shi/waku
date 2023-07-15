@@ -7,7 +7,7 @@ export function rscAnalyzePlugin(
   serverEntryCallback: (id: string) => void
 ): Plugin {
   return {
-    name: "rsc-bundle-plugin",
+    name: "rsc-analyze-plugin",
     transform(code, id) {
       const ext = path.extname(id);
       if ([".ts", ".tsx", ".js", ".jsx"].includes(ext)) {
