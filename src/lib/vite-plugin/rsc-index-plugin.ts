@@ -10,6 +10,7 @@ export function rscIndexPlugin(): Plugin {
       return [
         {
           tag: "script",
+          attrs: { type: "module" },
           children: codeToInject,
           injectTo: "head",
         },

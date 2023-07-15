@@ -4,8 +4,12 @@ import { createServer as viteCreateServer } from "vite";
 import viteReact from "@vitejs/plugin-react";
 
 import { configFileConfig, resolveConfig } from "../config.js";
-import { registerReloadCallback } from "./rsc/worker-api.js";
+import {
+  registerReloadCallback,
+  registerImportCallback,
+} from "./rsc/worker-api.js";
 import { rscIndexPlugin } from "../vite-plugin/rsc-index-plugin.js";
+import { rscHmrPlugin, hotImport } from "../vite-plugin/rsc-hmr-plugin.js";
 
 type Middleware = (
   req: IncomingMessage,
@@ -29,12 +33,14 @@ export function devServer(): Middleware {
         // @ts-expect-error This expression is not callable.
         viteReact(),
         rscIndexPlugin(),
+        rscHmrPlugin(),
       ],
       server: { middlewareMode: true },
     })
   );
   vitePromise.then((vite) => {
     registerReloadCallback((type) => vite.ws.send({ type }));
+    registerImportCallback((source) => hotImport(vite, source));
   });
   return async (req, res, next) => {
     const vite = await vitePromise;

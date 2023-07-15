@@ -14,6 +14,7 @@ import { defineEntries } from "../../../server.js";
 import type { RenderInput, RenderOptions } from "../../../server.js";
 import { rscTransformPlugin } from "../../vite-plugin/rsc-transform-plugin.js";
 import { rscReloadPlugin } from "../../vite-plugin/rsc-reload-plugin.js";
+import { rscDelegatePlugin } from "../../vite-plugin/rsc-delegate-plugin.js";
 
 const { renderToPipeableStream } = RSDWServer;
 
@@ -105,6 +106,10 @@ const vitePromise = viteCreateServer({
     rscTransformPlugin(),
     rscReloadPlugin((type) => {
       const mesg: MessageRes = { type };
+      parentPort!.postMessage(mesg);
+    }),
+    rscDelegatePlugin((source) => {
+      const mesg: MessageRes = { type: "hot-import", source };
       parentPort!.postMessage(mesg);
     }),
   ],
