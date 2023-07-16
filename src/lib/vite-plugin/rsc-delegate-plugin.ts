@@ -31,8 +31,7 @@ export function rscDelegatePlugin(
           if (item.type === "ImportDeclaration") {
             if (item.source.value.startsWith("virtual:")) {
               // HACK this relies on Vite's internal implementation detail.
-              const source =
-                "/@id/" + item.source.value.replace("\0", "__x00__");
+              const source = "/@id/__x00__" + item.source.value;
               importCallback(source);
             } else if (CSS_LANGS_RE.test(item.source.value)) {
               const filePath = path.join(path.dirname(id), item.source.value);
