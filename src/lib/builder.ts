@@ -52,7 +52,7 @@ const analyzeEntries = async (entriesFile: string) => {
   const clientEntryFileSet = new Set<string>();
   const serverEntryFileSet = new Set<string>();
   await viteBuild({
-    ...configFileConfig,
+    ...configFileConfig(),
     plugins: [
       rscAnalyzePlugin(
         (id) => clientEntryFileSet.add(id),
@@ -97,14 +97,14 @@ const buildServerBundle = async (
   serverEntryFiles: Record<string, string>
 ) => {
   const serverBuildOutput = await viteBuild({
-    ...configFileConfig,
+    ...configFileConfig(),
     resolve: {
       conditions: ["react-server"],
     },
     publicDir: false,
     build: {
       ssr: true,
-      outDir: config.framework.distDir,
+      outDir: path.join(config.root, config.framework.distDir),
       rollupOptions: {
         onwarn,
         input: {
@@ -161,13 +161,13 @@ const buildClientBundle = async (
     config.framework.indexHtml
   );
   const clientBuildOutput = await viteBuild({
-    ...configFileConfig,
+    ...configFileConfig(),
+    root: path.join(config.root, config.framework.srcDir),
     plugins: [
       // @ts-expect-error This expression is not callable.
       viteReact(),
       rscIndexPlugin(),
     ],
-    root: path.join(config.root, config.framework.srcDir),
     build: {
       outDir: path.join(
         config.root,

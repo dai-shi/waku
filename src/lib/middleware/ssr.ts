@@ -72,7 +72,7 @@ export function ssr(options: {
 }): Middleware {
   const configPromise = resolveConfig("serve");
   const vitePromise = viteCreateServer({
-    ...configFileConfig,
+    ...configFileConfig(),
     plugins: [...(options.command === "dev" ? [nonjsResolvePlugin()] : [])],
     appType: "custom",
   });

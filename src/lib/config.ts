@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { resolveConfig as viteResolveConfig } from "vite";
 
 import type { FrameworkConfig } from "../config.js";
@@ -34,12 +36,20 @@ const getFallback = (id: string) => {
   return "waku/server#ClientFallback";
 };
 
-export const configFileConfig = process.env.CONFIG_FILE
-  ? { configFile: process.env.CONFIG_FILE }
-  : {};
+export const configFileConfig = () => {
+  if (process.env.CONFIG_FILE) {
+    return { configFile: path.resolve(process.env.CONFIG_FILE) };
+  }
+  for (const file of ["vite.config.ts", "vite.config.js"]) {
+    if (fs.existsSync(file)) {
+      return { configFile: path.resolve(file) };
+    }
+  }
+  return {};
+};
 
 export async function resolveConfig(command: "build" | "serve") {
-  const origConfig = await viteResolveConfig(configFileConfig, command);
+  const origConfig = await viteResolveConfig(configFileConfig(), command);
   const origFramework = (origConfig as { framework?: FrameworkConfig })
     .framework;
   const framework: DeepRequired<FrameworkConfig> = {

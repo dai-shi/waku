@@ -21,7 +21,7 @@ export function devServer(): Middleware {
   const configPromise = resolveConfig("serve");
   const vitePromise = configPromise.then((config) =>
     viteCreateServer({
-      ...configFileConfig,
+      ...configFileConfig(),
       root: path.join(config.root, config.framework.srcDir),
       optimizeDeps: {
         include: ["react-server-dom-webpack/client"],
