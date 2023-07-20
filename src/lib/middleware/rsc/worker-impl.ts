@@ -154,13 +154,17 @@ const resolveClientEntry = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: "dev" | "build" | "start"
 ) => {
-  const root = path.join(
+  let root = path.join(
     config.root,
     command === "dev" ? config.framework.srcDir : config.framework.distDir
   );
+  if (path.sep !== "/") {
+    // HACK to support windows filesystem
+    root = root.replaceAll(path.sep, "/");
+  }
   if (command === "dev" && !filePath.startsWith(root)) {
     // HACK this relies on Vite's internal implementation detail.
-    return config.base + "@fs" + filePath;
+    return config.base + "@fs/" + filePath.replace(/^\//, "");
   }
   return config.base + path.relative(root, filePath);
 };
