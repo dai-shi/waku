@@ -32,7 +32,7 @@ export function devServer(): Middleware {
       plugins: [
         // @ts-expect-error This expression is not callable.
         viteReact(),
-        rscIndexPlugin(),
+        rscIndexPlugin([]),
         rscHmrPlugin(),
       ],
       server: { middlewareMode: true },
