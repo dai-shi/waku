@@ -200,7 +200,6 @@ const buildClientBundle = async (
   if (!("output" in clientBuildOutput)) {
     throw new Error("Unexpected vite client build output");
   }
-  // TODO copy server assets to public
   for (const cssAsset of cssAssets) {
     const from = path.join(config.root, config.framework.distDir, cssAsset);
     const to = path.join(
