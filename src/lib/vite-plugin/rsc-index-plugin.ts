@@ -3,7 +3,7 @@ import type { Plugin } from "vite";
 // FIXME we should avoid external dependencies out of this file.
 import { codeToInject } from "../middleware/rsc/utils.js";
 
-export function rscIndexPlugin(): Plugin {
+export function rscIndexPlugin(cssAssets: string[]): Plugin {
   return {
     name: "rsc-index-plugin",
     async transformIndexHtml() {
@@ -14,6 +14,11 @@ export function rscIndexPlugin(): Plugin {
           children: codeToInject,
           injectTo: "head",
         },
+        ...cssAssets.map((href) => ({
+          tag: "link",
+          attrs: { rel: "stylesheet", href },
+          injectTo: "head" as const,
+        })),
       ];
     },
   };
