@@ -4,6 +4,7 @@
 ### Changed
 - fix: partially for css modules #98
 - feat: use node-loader again #103
+- fix: hacks for windows filesystem #108
 
 ## [0.13.0] - 2023-07-06
 ### Changed
