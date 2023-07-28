@@ -11,7 +11,6 @@ const root = path.join(
   path.dirname(url.fileURLToPath(import.meta.url)),
   "dist",
 );
-process.env.CONFIG_FILE = "vite.prd.config.ts";
 
 const app = express();
 app.use(cookieParser());
