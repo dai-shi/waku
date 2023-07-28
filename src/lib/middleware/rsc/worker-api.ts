@@ -45,6 +45,7 @@ export type MessageReq =
 
 export type MessageRes =
   | { type: "full-reload" }
+  | { type: "hot-import"; source: string }
   | { id: number; type: "start"; ctx: unknown }
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "moduleId"; moduleId: string }
@@ -73,6 +74,16 @@ export function registerReloadCallback(fn: (type: "full-reload") => void) {
   const listener = (mesg: MessageRes) => {
     if (mesg.type === "full-reload") {
       fn(mesg.type);
+    }
+  };
+  worker.on("message", listener);
+  return () => worker.off("message", listener);
+}
+
+export function registerImportCallback(fn: (source: string) => void) {
+  const listener = (mesg: MessageRes) => {
+    if (mesg.type === "hot-import") {
+      fn(mesg.source);
     }
   };
   worker.on("message", listener);

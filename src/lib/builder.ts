@@ -52,7 +52,7 @@ const analyzeEntries = async (entriesFile: string) => {
   const clientEntryFileSet = new Set<string>();
   const serverEntryFileSet = new Set<string>();
   await viteBuild({
-    ...configFileConfig,
+    ...configFileConfig(),
     plugins: [
       rscAnalyzePlugin(
         (id) => clientEntryFileSet.add(id),
@@ -97,14 +97,15 @@ const buildServerBundle = async (
   serverEntryFiles: Record<string, string>
 ) => {
   const serverBuildOutput = await viteBuild({
-    ...configFileConfig,
+    ...configFileConfig(),
     resolve: {
       conditions: ["react-server"],
     },
     publicDir: false,
     build: {
       ssr: true,
-      outDir: config.framework.distDir,
+      ssrEmitAssets: true,
+      outDir: path.join(config.root, config.framework.distDir),
       rollupOptions: {
         onwarn,
         input: {
@@ -153,21 +154,25 @@ const buildServerBundle = async (
 
 const buildClientBundle = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
-  clientEntryFiles: Record<string, string>
+  clientEntryFiles: Record<string, string>,
+  serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>
 ) => {
   const indexHtmlFile = path.join(
     config.root,
     config.framework.srcDir,
     config.framework.indexHtml
   );
+  const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
+    type === "asset" && fileName.endsWith(".css") ? [fileName] : []
+  );
   const clientBuildOutput = await viteBuild({
-    ...configFileConfig,
+    ...configFileConfig(),
+    root: path.join(config.root, config.framework.srcDir),
     plugins: [
       // @ts-expect-error This expression is not callable.
       viteReact(),
-      rscIndexPlugin(),
+      rscIndexPlugin(cssAssets),
     ],
-    root: path.join(config.root, config.framework.srcDir),
     build: {
       outDir: path.join(
         config.root,
@@ -194,6 +199,16 @@ const buildClientBundle = async (
   });
   if (!("output" in clientBuildOutput)) {
     throw new Error("Unexpected vite client build output");
+  }
+  for (const cssAsset of cssAssets) {
+    const from = path.join(config.root, config.framework.distDir, cssAsset);
+    const to = path.join(
+      config.root,
+      config.framework.distDir,
+      config.framework.publicDir,
+      cssAsset
+    );
+    fs.renameSync(from, to);
   }
   return clientBuildOutput;
 };
@@ -434,13 +449,17 @@ export async function build() {
   const { clientEntryFiles, serverEntryFiles } = await analyzeEntries(
     entriesFile
   );
-  await buildServerBundle(
+  const serverBuildOutput = await buildServerBundle(
     config,
     entriesFile,
     clientEntryFiles,
     serverEntryFiles
   );
-  const clientBuildOutput = await buildClientBundle(config, clientEntryFiles);
+  const clientBuildOutput = await buildClientBundle(
+    config,
+    clientEntryFiles,
+    serverBuildOutput
+  );
 
   const { buildConfig, getClientModules, rscFiles } = await emitRscFiles(
     config

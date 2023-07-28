@@ -4,6 +4,7 @@ import { Writable } from "node:stream";
 import { Server } from "node:http";
 
 import { createServer as viteCreateServer } from "vite";
+import type { ViteDevServer } from "vite";
 import { createElement } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 
@@ -14,6 +15,7 @@ import { defineEntries } from "../../../server.js";
 import type { RenderInput, RenderOptions } from "../../../server.js";
 import { rscTransformPlugin } from "../../vite-plugin/rsc-transform-plugin.js";
 import { rscReloadPlugin } from "../../vite-plugin/rsc-reload-plugin.js";
+import { rscDelegatePlugin } from "../../vite-plugin/rsc-delegate-plugin.js";
 
 const { renderToPipeableStream } = RSDWServer;
 
@@ -30,7 +32,10 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
         parentPort!.postMessage(mesg);
       };
     }
-    const { runWithContext } = await (loadServerFile("waku/server") as Promise<{
+    const { runWithContext } = await (loadServerFile(
+      "waku/server",
+      command
+    ) as Promise<{
       runWithContext<Context, Result>(ctx: Context, fn: () => Result): Result;
     }>);
     const pipeable = await runWithContext(ctx, () => renderRSC(input, options));
@@ -99,30 +104,54 @@ const handleGetSsrConfig = async (
 
 const dummyServer = new Server();
 
-const vitePromise = viteCreateServer({
-  ...configFileConfig,
-  plugins: [
-    rscTransformPlugin(),
-    rscReloadPlugin((type) => {
-      const mesg: MessageRes = { type };
-      parentPort!.postMessage(mesg);
-    }),
-  ],
-  resolve: {
-    conditions: ["react-server"],
-  },
-  appType: "custom",
-  server: { middlewareMode: true, hmr: { server: dummyServer } },
-});
+let lastViteServer:
+  | [vite: ViteDevServer, command: "dev" | "build" | "start"]
+  | undefined;
+
+const getViteServer = async (command: "dev" | "build" | "start") => {
+  if (lastViteServer) {
+    if (lastViteServer[1] === command) {
+      return lastViteServer[0];
+    }
+    console.warn("Restarting Vite server with different command");
+    await lastViteServer[0].close();
+  }
+  const viteServer = await viteCreateServer({
+    ...configFileConfig(),
+    plugins: [
+      rscTransformPlugin(),
+      rscReloadPlugin((type) => {
+        const mesg: MessageRes = { type };
+        parentPort!.postMessage(mesg);
+      }),
+      rscDelegatePlugin((source) => {
+        const mesg: MessageRes = { type: "hot-import", source };
+        parentPort!.postMessage(mesg);
+      }),
+    ],
+    resolve: {
+      conditions: ["react-server"],
+    },
+    appType: "custom",
+    server: { middlewareMode: true, hmr: { server: dummyServer } },
+  });
+  lastViteServer = [viteServer, command];
+  return viteServer;
+};
 
 const shutdown = async () => {
-  const vite = await vitePromise;
-  await vite.close();
+  if (lastViteServer) {
+    await lastViteServer[0].close();
+    lastViteServer = undefined;
+  }
   parentPort!.close();
 };
 
-const loadServerFile = async (fname: string) => {
-  const vite = await vitePromise;
+const loadServerFile = async (
+  fname: string,
+  command: "dev" | "build" | "start"
+) => {
+  const vite = await getViteServer(command);
   return vite.ssrLoadModule(fname);
 };
 
@@ -178,7 +207,8 @@ async function renderRSC(
   );
 
   const { unstable_setRootDir } = await (loadServerFile(
-    "waku/config"
+    "waku/config",
+    options.command
   ) as Promise<{
     unstable_setRootDir: (root: string) => void;
   }>);
@@ -188,7 +218,10 @@ async function renderRSC(
     const entriesFile = await getEntriesFile(config, options.command);
     const {
       default: { getEntry },
-    } = await (loadServerFile(entriesFile) as Promise<Entries>);
+    } = await (loadServerFile(
+      entriesFile,
+      options.command
+    ) as Promise<Entries>);
     const mod = await getEntry(rscId);
     if (typeof mod === "function") {
       return mod;
@@ -216,7 +249,7 @@ async function renderRSC(
   if ("rsfId" in input) {
     const [fileId, name] = input.rsfId.split("#");
     const fname = path.join(config.root, fileId!);
-    const mod = await loadServerFile(fname);
+    const mod = await loadServerFile(fname, options.command);
     const data = await (mod[name!] || mod)(...input.args);
     if (!("rscId" in input)) {
       return renderToPipeableStream(data, bundlerConfig);
@@ -237,7 +270,8 @@ async function getBuildConfigRSC() {
   const config = await resolveConfig("build");
 
   const { unstable_setRootDir } = await (loadServerFile(
-    "waku/config"
+    "waku/config",
+    "build"
   ) as Promise<{
     unstable_setRootDir: (root: string) => void;
   }>);
@@ -246,7 +280,7 @@ async function getBuildConfigRSC() {
   const entriesFile = await getEntriesFile(config, "build");
   const {
     default: { getBuildConfig },
-  } = await (loadServerFile(entriesFile) as Promise<Entries>);
+  } = await (loadServerFile(entriesFile, "build") as Promise<Entries>);
   if (!getBuildConfig) {
     console.warn(
       "getBuildConfig is undefined. It's recommended for optimization and sometimes required."
@@ -268,7 +302,8 @@ async function getSsrConfigRSC(
   const config = await resolveConfig(command === "build" ? "build" : "serve");
 
   const { unstable_setRootDir } = await (loadServerFile(
-    "waku/config"
+    "waku/config",
+    command
   ) as Promise<{
     unstable_setRootDir: (root: string) => void;
   }>);
@@ -277,7 +312,7 @@ async function getSsrConfigRSC(
   const entriesFile = await getEntriesFile(config, command);
   const {
     default: { getSsrConfig },
-  } = await (loadServerFile(entriesFile) as Promise<Entries>);
+  } = await (loadServerFile(entriesFile, command) as Promise<Entries>);
   if (!getSsrConfig) {
     return null;
   }
