@@ -24,15 +24,9 @@ yarn create waku
 pnpm create waku
 ```
 
-## Work in progress
+## Roadmap
 
-- [x] `waku dev` (development server)
-- [x] `waku build` (build for production)
-- [x] `waku start` (production server)
-- [x] Exportable build
-- [x] Static site generation
-- [x] Opt-in router (reference implementation)
-- [x] Opt-in SSR (HTML generation only)
+https://github.com/dai-shi/waku/issues/24
 
 ## Tweets
 
