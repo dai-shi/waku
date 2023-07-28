@@ -36,7 +36,7 @@ export function rscDelegatePlugin(
             } else if (CSS_LANGS_RE.test(item.source.value)) {
               const filePath = path.join(path.dirname(id), item.source.value);
               // HACK this relies on Vite's internal implementation detail.
-              const source = base + "@fs" + filePath;
+              const source = base + "@fs/" + filePath.replace(/^\//, "");
               importCallback(source);
             }
           }
