@@ -7,7 +7,7 @@ const CSS_LANGS_RE =
   /\.(css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)/;
 
 export function rscDelegatePlugin(
-  importCallback: (source: string) => void
+  importCallback: (source: string) => void,
 ): Plugin {
   let mode = "development";
   let base = "/";

@@ -14,7 +14,7 @@ import { rscHmrPlugin, hotImport } from "../vite-plugin/rsc-hmr-plugin.js";
 type Middleware = (
   req: IncomingMessage,
   res: ServerResponse,
-  next: (err?: unknown) => void
+  next: (err?: unknown) => void,
 ) => void;
 
 export function devServer(): Middleware {
@@ -36,7 +36,7 @@ export function devServer(): Middleware {
         rscHmrPlugin(),
       ],
       server: { middlewareMode: true },
-    })
+    }),
   );
   vitePromise.then((vite) => {
     registerReloadCallback((type) => vite.ws.send({ type }));

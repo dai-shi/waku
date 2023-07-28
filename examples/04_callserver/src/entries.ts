@@ -26,5 +26,5 @@ export default defineEntries(
       default:
         return null;
     }
-  }
+  },
 );

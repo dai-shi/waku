@@ -9,7 +9,7 @@ import { renderRSC } from "./rsc/worker-api.js";
 type Middleware = (
   req: IncomingMessage,
   res: ServerResponse,
-  next: (err?: unknown) => void
+  next: (err?: unknown) => void,
 ) => void;
 
 const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
@@ -20,7 +20,7 @@ export function rsc<Context>(options: {
   unstable_posthook?: (
     req: IncomingMessage,
     res: ServerResponse,
-    ctx: Context
+    ctx: Context,
   ) => void;
 }): Middleware {
   if (!options.unstable_prehook && options.unstable_posthook) {
@@ -85,7 +85,7 @@ export function rsc<Context>(options: {
               ? { rsfId, args, rscId, props }
               : { rsfId, args }
             : { rscId: rscId as string, props },
-          { command: options.command, ctx }
+          { command: options.command, ctx },
         );
         options.unstable_posthook?.(req, res, nextCtx as Context);
         readable.on("error", handleError);

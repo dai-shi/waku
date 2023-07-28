@@ -9,7 +9,7 @@ import { Child as ClientChild, Waku_SSR_Capable_Link } from "./client.js";
 
 const collectClientModules = async (
   pathStr: string,
-  unstable_renderRSC: Parameters<GetBuildConfig>[0]
+  unstable_renderRSC: Parameters<GetBuildConfig>[0],
 ) => {
   const url = new URL(pathStr, "http://localhost");
   const pathItems = url.pathname.split("/").filter(Boolean);
@@ -21,7 +21,7 @@ const collectClientModules = async (
       index < pathItems.length ? { childIndex: index + 1 } : { search };
     const pipeable = await unstable_renderRSC(
       { rscId, props },
-      { moduleIdCallback: (id) => idSet.add(id) }
+      { moduleIdCallback: (id) => idSet.add(id) },
     );
     await new Promise<void>((resolve, reject) => {
       const stream = new Writable({
@@ -54,9 +54,9 @@ const prefetcher = (pathStr: string) => {
 
 export function defineRouter(
   getComponent: (
-    id: string
+    id: string,
   ) => Promise<FunctionComponent | { default: FunctionComponent } | null>,
-  getAllPaths: () => Promise<string[]>
+  getAllPaths: () => Promise<string[]>,
 ): ReturnType<typeof defineEntries> {
   const SSR_PREFIX = "__SSR__";
   const getSsrEntry = async (pathname: string) => {
@@ -83,9 +83,9 @@ export function defineRouter(
           createElement(
             component,
             index === components.length - 1 ? componentProps : {},
-            acc
+            acc,
           ),
-        null
+        null,
       );
     };
     return SsrComponent;
@@ -121,7 +121,7 @@ export function defineRouter(
         componentProps,
         "childIndex" in props
           ? createElement(ClientChild, { index: props.childIndex })
-          : null
+          : null,
       );
     };
     return RouteComponent;
@@ -129,7 +129,7 @@ export function defineRouter(
 
   const getBuildConfig: GetBuildConfig = async (unstable_renderRSC) => {
     const paths = (await getAllPaths()).map((item) =>
-      item === "index" ? "/" : `/${item}`
+      item === "index" ? "/" : `/${item}`,
     );
     const path2moduleIds: Record<string, string[]> = {};
     for (const pathStr of paths) {
@@ -148,7 +148,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
       paths.map((pathStr) => [
         pathStr,
         { elements: prefetcher(pathStr), customCode },
-      ])
+      ]),
     );
   };
 
@@ -175,6 +175,6 @@ export function Link(props: LinkProps) {
   return createElement(
     Suspense,
     { fallback },
-    createElement(Waku_SSR_Capable_Link, props)
+    createElement(Waku_SSR_Capable_Link, props),
   );
 }

@@ -17,7 +17,7 @@ app.use(
     unstable_posthook: (req, res, ctx) => {
       res.cookie("count", String(ctx.count));
     },
-  })
+  }),
 );
 // Passing cookies through SSR server isn't supported (yet).
 // app.use(ssr({ command: "dev" }));

@@ -30,5 +30,5 @@ export default defineRouter(
       });
       return stat?.isDirectory() ? name + "/" : name;
     });
-  }
+  },
 );

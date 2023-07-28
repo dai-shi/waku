@@ -102,7 +102,7 @@ let nextId = 1;
 
 export function renderRSC<Context>(
   input: RenderInput,
-  options: RenderOptions<Context>
+  options: RenderOptions<Context>,
 ): Promise<readonly [Readable, Context]> {
   const id = nextId++;
   let started = false;
@@ -174,7 +174,7 @@ export function getBuildConfigRSC(): ReturnType<GetBuildConfig> {
 
 export function getSsrConfigRSC(
   pathStr: string,
-  command: "dev" | "build" | "start"
+  command: "dev" | "build" | "start",
 ): ReturnType<GetSsrConfig> {
   return new Promise((resolve, reject) => {
     const id = nextId++;

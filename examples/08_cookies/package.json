@@ -11,9 +11,9 @@
   "dependencies": {
     "cookie-parser": "^1.4.6",
     "express": "^4.18.2",
-    "react": "18.3.0-canary-7118f5dd7-20230705",
-    "react-dom": "18.3.0-canary-7118f5dd7-20230705",
-    "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705",
+    "react": "18.3.0-canary-493f72b0a-20230727",
+    "react-dom": "18.3.0-canary-493f72b0a-20230727",
+    "react-server-dom-webpack": "18.3.0-canary-493f72b0a-20230727",
     "waku": "0.13.0"
   },
   "devDependencies": {

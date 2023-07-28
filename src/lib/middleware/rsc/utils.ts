@@ -12,7 +12,7 @@ globalThis.__webpack_require__ = (id) => globalThis.__waku_module_cache__.get(id
 export const generatePrefetchCode = (
   basePrefix: string,
   elements: Iterable<readonly [rscId: string, props: unknown]>,
-  moduleIds: Iterable<string>
+  moduleIds: Iterable<string>,
 ) => {
   const elementsArray = Array.from(elements);
   let code = "";
@@ -61,7 +61,7 @@ export const transformRsfId = (prefixToRemove: string) =>
       let changed = false;
       for (let i = 0; i < lines.length; ++i) {
         const match = lines[i].match(
-          new RegExp(`^([0-9]+):{"id":"${prefixToRemove}(.*?)"(.*)$`)
+          new RegExp(`^([0-9]+):{"id":"${prefixToRemove}(.*?)"(.*)$`),
         );
         if (match) {
           lines[i] = `${match[1]}:{"id":"${match[2]}"${match[3]}`;
