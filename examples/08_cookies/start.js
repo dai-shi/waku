@@ -9,9 +9,8 @@ import {
 
 const root = path.join(
   path.dirname(url.fileURLToPath(import.meta.url)),
-  "dist"
+  "dist",
 );
-process.env.CONFIG_FILE = "vite.prd.config.ts";
 
 const app = express();
 app.use(cookieParser());
@@ -24,7 +23,7 @@ app.use(
     unstable_posthook: (req, res, ctx) => {
       res.cookie("count", String(ctx.count));
     },
-  })
+  }),
 );
 // Passing cookies through SSR server isn't supported (yet).
 // app.use(ssr({ command: "start" }));

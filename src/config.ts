@@ -69,7 +69,7 @@ export function defineConfig(
     | ExtendedUserConfig
     | Promise<ExtendedUserConfig>
     | ((env: ConfigEnv) => ExtendedUserConfig)
-    | ((env: ConfigEnv) => Promise<ExtendedUserConfig>)
+    | ((env: ConfigEnv) => Promise<ExtendedUserConfig>),
 ) {
   return config;
 }

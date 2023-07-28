@@ -19,7 +19,7 @@ import type { RouteProps, ChildProps, LinkProps } from "./common.js";
 type ChangeLocation = (
   pathname?: string,
   search?: string,
-  replace?: boolean
+  replace?: boolean,
 ) => void;
 
 // FIXME we should separate this into three isolated contexts
@@ -75,7 +75,7 @@ const prefetchRoutes = (pathname: string, search: string, basePath: string) => {
     searchParams.set("props", serializedProps);
     if (!prefetched[rscId][serializedProps]) {
       prefetched[rscId][serializedProps] = fetch(
-        `${basePath}${rscId}/${searchParams}`
+        `${basePath}${rscId}/${searchParams}`,
       );
     }
     (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(pathname, search);
@@ -99,7 +99,7 @@ export function Child({ index }: ChildProps) {
         }
       : {
           search, // attach `search` only for a leaf route for now
-        }
+        },
   );
 }
 
@@ -175,7 +175,7 @@ export function Router({ basePath = "/RSC/" }: { basePath?: string }) {
   return createElement(
     RouterContext.Provider,
     { value: { location, changeLocation, basePath } },
-    createElement(Child, { index: 0 })
+    createElement(Child, { index: 0 }),
   );
 }
 

@@ -101,9 +101,9 @@ async function runStart(options?: { ssr?: boolean }) {
       path.join(
         config.root,
         config.framework.distDir,
-        config.framework.publicDir
-      )
-    )
+        config.framework.publicDir,
+      ),
+    ),
   );
   (express.static.mime as any).default_type = "";
   const port = process.env.PORT || 8080;

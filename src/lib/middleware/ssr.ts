@@ -13,7 +13,7 @@ import { renderHtmlToReadable } from "./ssr/utils.js";
 type Middleware = (
   req: IncomingMessage,
   res: ServerResponse,
-  next: (err?: unknown) => void
+  next: (err?: unknown) => void,
 ) => void;
 
 type Entries = { default: ReturnType<typeof defineEntries> };
@@ -25,7 +25,7 @@ const renderHTML = async (
   pathStr: string,
   rscServer: URL,
   config: Awaited<ReturnType<typeof resolveConfig>>,
-  ssrConfig: NonNullable<Awaited<ReturnType<GetSsrConfig>>>
+  ssrConfig: NonNullable<Awaited<ReturnType<GetSsrConfig>>>,
 ) => {
   const rscPrefix = config.framework.rscPrefix;
   const { splitHTML, getFallback } = config.framework.ssr;
@@ -41,7 +41,7 @@ const renderHTML = async (
     rscServer + rscPrefix + rscId + "/" + searchParams,
     {
       headers: { "x-waku-ssr-mode": "rsc" },
-    }
+    },
   );
   const [htmlRes, rscRes] = await Promise.all([htmlResPromise, rscResPromise]);
   if (!htmlRes.ok) {
@@ -61,7 +61,7 @@ const renderHTML = async (
     await htmlRes.text(),
     Readable.fromWeb(rscRes.body as any), // FIXME how to avoid any?
     splitHTML,
-    getFallback
+    getFallback,
   );
 };
 
@@ -83,7 +83,7 @@ export function ssr(options: {
       options.command === "start"
         ? config.framework.distDir
         : config.framework.srcDir,
-      config.framework.entriesJs
+      config.framework.entriesJs,
     );
     const {
       default: { getSsrConfig },
@@ -100,7 +100,7 @@ export function ssr(options: {
       if (ssrConfig) {
         const rscServer = new URL(
           config.framework.ssr.rscServer,
-          "http://" + req.headers.host
+          "http://" + req.headers.host,
         );
         const handleError = (err: unknown) => {
           if (hasStatusCode(err)) {
@@ -120,7 +120,7 @@ export function ssr(options: {
             req.url,
             rscServer,
             config,
-            ssrConfig
+            ssrConfig,
           );
           readable.on("error", handleError);
           readable.pipe(res);

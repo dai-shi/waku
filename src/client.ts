@@ -5,7 +5,7 @@ import type { ReactElement } from "react";
 import { createFromFetch, encodeReply } from "react-server-dom-webpack/client";
 
 const checkStatus = async (
-  responsePromise: Promise<Response>
+  responsePromise: Promise<Response>,
 ): Promise<Response> => {
   const response = await responsePromise;
   if (!response.ok) {
@@ -18,7 +18,7 @@ const checkStatus = async (
 
 export function serve<Props>(rscId: string, basePath = "/RSC/") {
   type SetRerender = (
-    rerender: (next: [ReactElement, string]) => void
+    rerender: (next: [ReactElement, string]) => void,
   ) => () => void;
   const fetchRSC = cache(
     (serializedProps: string): readonly [ReactElement, SetRerender] => {
@@ -61,7 +61,7 @@ export function serve<Props>(rscId: string, basePath = "/RSC/") {
         prefetched || fetch(basePath + rscId + "/" + searchParams);
       const data = createFromFetch(checkStatus(response), options);
       return [data, setRerender];
-    }
+    },
   );
   const ServerComponent = (props: Props) => {
     if (!props) {

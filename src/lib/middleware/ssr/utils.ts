@@ -11,7 +11,7 @@ const { createFromNodeStream } = RSDWClient;
 const interleaveHtmlSnippets = (
   preamble: string,
   intermediate: string,
-  postamble: string
+  postamble: string,
 ) => {
   let initialized = false;
   return new Transform({
@@ -38,7 +38,7 @@ export const renderHtmlToReadable = (
   htmlStr: string, // Hope stream works, but it'd be too tricky
   rscStream: Readable,
   splitHTML: (htmlStr: string) => readonly [string, string, string],
-  getFallback: (id: string) => string
+  getFallback: (id: string) => string,
 ): Readable => {
   const bundlerConfig = new Proxy(
     {},
@@ -52,10 +52,10 @@ export const renderHtmlToReadable = (
               const [specifier, name] = id.split("#") as [string, string];
               return { specifier, name };
             },
-          }
+          },
         );
       },
-    }
+    },
   );
   const data = createFromNodeStream(rscStream, bundlerConfig);
   return renderToPipeableStream(data, {

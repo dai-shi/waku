@@ -34,7 +34,7 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
     }
     const { runWithContext } = await (loadServerFile(
       "waku/server",
-      command
+      command,
     ) as Promise<{
       runWithContext<Context, Result>(ctx: Context, fn: () => Result): Result;
     }>);
@@ -75,7 +75,7 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
 };
 
 const handleGetBuildConfig = async (
-  mesg: MessageReq & { type: "getBuildConfig" }
+  mesg: MessageReq & { type: "getBuildConfig" },
 ) => {
   const { id } = mesg;
   try {
@@ -89,7 +89,7 @@ const handleGetBuildConfig = async (
 };
 
 const handleGetSsrConfig = async (
-  mesg: MessageReq & { type: "getSsrConfig" }
+  mesg: MessageReq & { type: "getSsrConfig" },
 ) => {
   const { id, pathStr, command } = mesg;
   try {
@@ -149,7 +149,7 @@ const shutdown = async () => {
 
 const loadServerFile = async (
   fname: string,
-  command: "dev" | "build" | "start"
+  command: "dev" | "build" | "start",
 ) => {
   const vite = await getViteServer(command);
   return vite.ssrLoadModule(fname);
@@ -169,23 +169,23 @@ parentPort!.on("message", (mesg: MessageReq) => {
 
 const getEntriesFile = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
-  command: "dev" | "build" | "start"
+  command: "dev" | "build" | "start",
 ) => {
   return path.join(
     config.root,
     command === "dev" ? config.framework.srcDir : config.framework.distDir,
-    config.framework.entriesJs
+    config.framework.entriesJs,
   );
 };
 
 const resolveClientEntry = (
   filePath: string,
   config: Awaited<ReturnType<typeof resolveConfig>>,
-  command: "dev" | "build" | "start"
+  command: "dev" | "build" | "start",
 ) => {
   let root = path.join(
     config.root,
-    command === "dev" ? config.framework.srcDir : config.framework.distDir
+    command === "dev" ? config.framework.srcDir : config.framework.distDir,
   );
   if (path.sep !== "/") {
     // HACK to support windows filesystem
@@ -200,15 +200,15 @@ const resolveClientEntry = (
 
 async function renderRSC(
   input: RenderInput,
-  options: RenderOptions<never>
+  options: RenderOptions<never>,
 ): Promise<PipeableStream> {
   const config = await resolveConfig(
-    options.command === "build" ? "build" : "serve"
+    options.command === "build" ? "build" : "serve",
   );
 
   const { unstable_setRootDir } = await (loadServerFile(
     "waku/config",
-    options.command
+    options.command,
   ) as Promise<{
     unstable_setRootDir: (root: string) => void;
   }>);
@@ -220,7 +220,7 @@ async function renderRSC(
       default: { getEntry },
     } = await (loadServerFile(
       entriesFile,
-      options.command
+      options.command,
     ) as Promise<Entries>);
     const mod = await getEntry(rscId);
     if (typeof mod === "function") {
@@ -243,7 +243,7 @@ async function renderRSC(
         options?.moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },
-    }
+    },
   );
 
   if ("rsfId" in input) {
@@ -260,7 +260,7 @@ async function renderRSC(
     const component = await getFunctionComponent(input.rscId);
     return renderToPipeableStream(
       createElement(component, input.props as any),
-      bundlerConfig
+      bundlerConfig,
     ).pipe(transformRsfId(config.root));
   }
   throw new Error("Unexpected input");
@@ -271,7 +271,7 @@ async function getBuildConfigRSC() {
 
   const { unstable_setRootDir } = await (loadServerFile(
     "waku/config",
-    "build"
+    "build",
   ) as Promise<{
     unstable_setRootDir: (root: string) => void;
   }>);
@@ -283,27 +283,27 @@ async function getBuildConfigRSC() {
   } = await (loadServerFile(entriesFile, "build") as Promise<Entries>);
   if (!getBuildConfig) {
     console.warn(
-      "getBuildConfig is undefined. It's recommended for optimization and sometimes required."
+      "getBuildConfig is undefined. It's recommended for optimization and sometimes required.",
     );
     return {};
   }
 
   const output = await getBuildConfig(
     (input: RenderInput, options: Omit<RenderOptions<never>, "command">) =>
-      renderRSC(input, { ...options, command: "build" })
+      renderRSC(input, { ...options, command: "build" }),
   );
   return output;
 }
 
 async function getSsrConfigRSC(
   pathStr: string,
-  command: "dev" | "build" | "start"
+  command: "dev" | "build" | "start",
 ) {
   const config = await resolveConfig(command === "build" ? "build" : "serve");
 
   const { unstable_setRootDir } = await (loadServerFile(
     "waku/config",
-    command
+    command,
   ) as Promise<{
     unstable_setRootDir: (root: string) => void;
   }>);

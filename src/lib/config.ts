@@ -20,8 +20,8 @@ const splitHTML = (htmlStr: string): readonly [string, string, string] => {
   const match = htmlStr.match(
     new RegExp(
       // prettier-ignore
-      "^(" + anyRE + P1[0] + ")" + anyRE + "(" + P1[1] + anyRE + P2[0] + ")" + anyRE + "(" + P2[1] + anyRE + ")$"
-    )
+      "^(" + anyRE + P1[0] + ")" + anyRE + "(" + P1[1] + anyRE + P2[0] + ")" + anyRE + "(" + P2[1] + anyRE + ")$",
+    ),
   );
   if (match?.length !== 1 + 3) {
     throw new Error("Failed to split HTML");

@@ -4,7 +4,7 @@ import * as swc from "@swc/core";
 
 export function rscAnalyzePlugin(
   clientEntryCallback: (id: string) => void,
-  serverEntryCallback: (id: string) => void
+  serverEntryCallback: (id: string) => void,
 ): Plugin {
   return {
     name: "rsc-analyze-plugin",
