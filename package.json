@@ -119,9 +119,9 @@
     "express": "^4.18.2",
     "glob": "^10.3.3",
     "prettier": "^3.0.0",
-    "react": "18.3.0-canary-493f72b0a-20230727",
-    "react-dom": "18.3.0-canary-493f72b0a-20230727",
-    "react-server-dom-webpack": "18.3.0-canary-493f72b0a-20230727",
+    "react": "18.3.0-canary-7118f5dd7-20230705",
+    "react-dom": "18.3.0-canary-7118f5dd7-20230705",
+    "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705",
     "rollup": "^3.26.3",
     "tailwindcss": "^3.3.3",
     "typescript": "^5.1.6",
@@ -129,8 +129,8 @@
   },
   "peerDependencies": {
     "express": "^4.18.2",
-    "react": "18.3.0-canary-493f72b0a-20230727",
-    "react-server-dom-webpack": "18.3.0-canary-493f72b0a-20230727"
+    "react": "18.3.0-canary-7118f5dd7-20230705",
+    "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705"
   },
   "peerDependenciesMeta": {
     "express": {
