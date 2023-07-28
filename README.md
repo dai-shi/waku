@@ -70,6 +70,7 @@ https://github.com/dai-shi/waku/issues/24
 - https://twitter.com/dai_shi/status/1670650381762961408
 - https://twitter.com/dai_shi/status/1671161795061628930
 - https://twitter.com/dai_shi/status/1676793637282394112
+- https://twitter.com/dai_shi/status/1684928419220578304
 
 </details>
 
