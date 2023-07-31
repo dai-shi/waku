@@ -16,5 +16,5 @@ root.render(
     <ClientProvider>
       <Main />
     </ClientProvider>
-  </StrictMode>
+  </StrictMode>,
 );

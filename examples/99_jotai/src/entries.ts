@@ -17,5 +17,5 @@ export default defineEntries(
         elements: [["App", { name: "Waku" }]],
       },
     };
-  }
+  },
 );

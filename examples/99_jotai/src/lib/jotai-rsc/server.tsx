@@ -17,7 +17,7 @@ export function merge<T extends AnyAtom>(atomOnServer: T, atomOnClient: T): T {
 const isClientReference = (x: any) => !!x?.["$$typeof"];
 
 const hasInitialValue = <T extends Atom<any>>(
-  atom: T
+  atom: T,
 ): atom is T & (T extends Atom<any> ? { init: JSONValue } : never) =>
   "init" in atom;
 
@@ -67,7 +67,7 @@ export function serverHoc<Fn extends (props: any) => any>(fn: Fn) {
     const nextAtoms = store
       .collect()
       .flatMap((anAtom) =>
-        isClientReference(anAtom) ? [[getAtomId(anAtom), anAtom] as const] : []
+        isClientReference(anAtom) ? [[getAtomId(anAtom), anAtom] as const] : [],
       );
     store = null;
     return (

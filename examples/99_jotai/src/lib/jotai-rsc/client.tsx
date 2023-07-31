@@ -20,7 +20,7 @@ export type AnyAtom = Atom<JSONValue>;
 export type AtomId = number;
 export type AtomValues = readonly (readonly [
   atomId: AtomId,
-  atomValue: JSONValue
+  atomValue: JSONValue,
 ])[];
 
 const ClientContext = createContext<
