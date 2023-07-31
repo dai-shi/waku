@@ -21,18 +21,12 @@ yarn create waku
 ```
 
 ```bash
-pnpm create waku # pnpm not working for now
+pnpm create waku
 ```
 
-## Work in progress
+## Roadmap
 
-- [x] `waku dev` (development server)
-- [x] `waku build` (build for production)
-- [x] `waku start` (production server)
-- [x] Exportable build
-- [x] Static site generation
-- [x] Opt-in router (reference implementation)
-- [x] Opt-in SSR (HTML generation only)
+https://github.com/dai-shi/waku/issues/24
 
 ## Tweets
 
@@ -75,6 +69,8 @@ pnpm create waku # pnpm not working for now
 - https://twitter.com/dai_shi/status/1667545252654366721
 - https://twitter.com/dai_shi/status/1670650381762961408
 - https://twitter.com/dai_shi/status/1671161795061628930
+- https://twitter.com/dai_shi/status/1676793637282394112
+- https://twitter.com/dai_shi/status/1684928419220578304
 
 </details>
 

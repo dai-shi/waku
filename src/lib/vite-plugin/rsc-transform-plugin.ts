@@ -15,7 +15,7 @@ export function rscTransformPlugin(): Plugin {
         const resolved = await this.resolve(
           id.slice(0, id.length - path.extname(id).length) + ext,
           importer,
-          { ...options, skipSelf: true }
+          { ...options, skipSelf: true },
         );
         if (resolved) {
           return resolved;
@@ -25,7 +25,7 @@ export function rscTransformPlugin(): Plugin {
     async transform(code, id) {
       const resolve = async (
         specifier: string,
-        { parentURL }: { parentURL: string }
+        { parentURL }: { parentURL: string },
       ) => {
         if (!specifier) {
           return { url: "" };
@@ -40,14 +40,14 @@ export function rscTransformPlugin(): Plugin {
         // HACK move directives before import statements.
         source = source!.replace(
           /^(import {.*?} from ".*?";)\s*"use (client|server)";/,
-          '"use $2";$1'
+          '"use $2";$1',
         );
         return { format: "module", source };
       };
       RSDWNodeLoader.resolve(
         "",
         { conditions: ["react-server"], parentURL: "" },
-        resolve
+        resolve,
       );
       return (await RSDWNodeLoader.load(id, null, load)).source;
     },

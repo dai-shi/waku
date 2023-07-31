@@ -6,7 +6,7 @@ import type { FunctionComponent } from "react";
 type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
 export type GetEntry = (
-  rscId: string
+  rscId: string,
 ) => Promise<FunctionComponent | { default: FunctionComponent } | null>;
 
 export type RenderInput =
@@ -34,8 +34,8 @@ export type RenderOptions<Context> = {
 export type GetBuildConfig = (
   unstable_renderRSC: (
     input: RenderInput,
-    options: Omit<RenderOptions<never>, "command">
-  ) => Promise<PipeableStream>
+    options: Omit<RenderOptions<never>, "command">,
+  ) => Promise<PipeableStream>,
 ) => Promise<{
   [pathStr: string]: {
     elements?: Iterable<
@@ -54,7 +54,7 @@ export type GetSsrConfig = (pathStr: string) => Promise<{
 export function defineEntries(
   getEntry: GetEntry,
   getBuildConfig?: GetBuildConfig,
-  getSsrConfig?: GetSsrConfig
+  getSsrConfig?: GetSsrConfig,
 ) {
   return { getEntry, getBuildConfig, getSsrConfig };
 }
@@ -86,7 +86,7 @@ export function getContext<T>() {
 // For internal use only
 export function runWithContext<Context, Result>(
   ctx: Context,
-  fn: () => Result
+  fn: () => Result,
 ): Result {
   const ContextStore: AsyncLocalStorage<unknown> = (globalThis as any)
     .WAKU_SERVER_CONTEXT_STORE;

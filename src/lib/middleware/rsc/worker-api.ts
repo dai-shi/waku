@@ -10,7 +10,14 @@ import type {
 } from "../../../server.js";
 
 const worker = new Worker(new URL("worker-impl.js", import.meta.url), {
-  execArgv: ["--conditions", "react-server"],
+  execArgv: [
+    "--experimental-loader",
+    "waku/node-loader",
+    "--experimental-loader",
+    "react-server-dom-webpack/node-loader",
+    "--conditions",
+    "react-server",
+  ],
 });
 
 export type BuildOutput = {
@@ -38,6 +45,7 @@ export type MessageReq =
 
 export type MessageRes =
   | { type: "full-reload" }
+  | { type: "hot-import"; source: string }
   | { id: number; type: "start"; ctx: unknown }
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "moduleId"; moduleId: string }
@@ -72,6 +80,16 @@ export function registerReloadCallback(fn: (type: "full-reload") => void) {
   return () => worker.off("message", listener);
 }
 
+export function registerImportCallback(fn: (source: string) => void) {
+  const listener = (mesg: MessageRes) => {
+    if (mesg.type === "hot-import") {
+      fn(mesg.source);
+    }
+  };
+  worker.on("message", listener);
+  return () => worker.off("message", listener);
+}
+
 export function shutdown(): Promise<void> {
   return new Promise((resolve) => {
     worker.on("close", resolve);
@@ -84,7 +102,7 @@ let nextId = 1;
 
 export function renderRSC<Context>(
   input: RenderInput,
-  options: RenderOptions<Context>
+  options: RenderOptions<Context>,
 ): Promise<readonly [Readable, Context]> {
   const id = nextId++;
   let started = false;
@@ -156,7 +174,7 @@ export function getBuildConfigRSC(): ReturnType<GetBuildConfig> {
 
 export function getSsrConfigRSC(
   pathStr: string,
-  command: "dev" | "build" | "start"
+  command: "dev" | "build" | "start",
 ): ReturnType<GetSsrConfig> {
   return new Promise((resolve, reject) => {
     const id = nextId++;

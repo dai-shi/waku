@@ -4,20 +4,24 @@ import { createServer as viteCreateServer } from "vite";
 import viteReact from "@vitejs/plugin-react";
 
 import { configFileConfig, resolveConfig } from "../config.js";
-import { registerReloadCallback } from "./rsc/worker-api.js";
+import {
+  registerReloadCallback,
+  registerImportCallback,
+} from "./rsc/worker-api.js";
 import { rscIndexPlugin } from "../vite-plugin/rsc-index-plugin.js";
+import { rscHmrPlugin, hotImport } from "../vite-plugin/rsc-hmr-plugin.js";
 
 type Middleware = (
   req: IncomingMessage,
   res: ServerResponse,
-  next: (err?: unknown) => void
+  next: (err?: unknown) => void,
 ) => void;
 
 export function devServer(): Middleware {
   const configPromise = resolveConfig("serve");
   const vitePromise = configPromise.then((config) =>
     viteCreateServer({
-      ...configFileConfig,
+      ...configFileConfig(),
       root: path.join(config.root, config.framework.srcDir),
       optimizeDeps: {
         include: ["react-server-dom-webpack/client"],
@@ -28,13 +32,15 @@ export function devServer(): Middleware {
       plugins: [
         // @ts-expect-error This expression is not callable.
         viteReact(),
-        rscIndexPlugin(),
+        rscIndexPlugin([]),
+        rscHmrPlugin(),
       ],
       server: { middlewareMode: true },
-    })
+    }),
   );
   vitePromise.then((vite) => {
     registerReloadCallback((type) => vite.ws.send({ type }));
+    registerImportCallback((source) => hotImport(vite, source));
   });
   return async (req, res, next) => {
     const vite = await vitePromise;

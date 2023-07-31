@@ -85,9 +85,7 @@ export default function Layout() {
           <Code>serve</Code> function from <Code>waku/client</Code> with the RSC
           ID to create a wrapper component. Here&apos;s an example:
         </p>
-        <p>
-          <CodeBlock lang="tsx">{code2}</CodeBlock>
-        </p>
+        <CodeBlock lang="tsx">{code2}</CodeBlock>
         <p>
           The <Code>name</Code> prop is passed to the React Server Component. We
           need to be careful to use <Code>serve</Code> to avoid client-server
@@ -98,9 +96,7 @@ export default function Layout() {
           You can also re-render a React Server Component with new props.
           Here&apos;s an example just to illustrate the idea:
         </p>
-        <p>
-          <CodeBlock lang="tsx">{code3}</CodeBlock>
-        </p>
+        <CodeBlock lang="tsx">{code3}</CodeBlock>
         <p>
           Note that this is a little tricky and the API may be revisited in the
           future.
@@ -112,9 +108,7 @@ export default function Layout() {
           optionally specify <Code>getBuildConfig</Code> function in{" "}
           <Code>entries.ts</Code>. Here&apos;s an example:
         </p>
-        <p>
-          <CodeBlock lang="tsx">{code4}</CodeBlock>
-        </p>
+        <CodeBlock lang="tsx">{code4}</CodeBlock>
         <p>
           The <Code>getBuildConfig</Code> function is used for build-time
           optimization. It renders React Server Components during the build

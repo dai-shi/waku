@@ -20,7 +20,7 @@ export default defineEntries(
         ctx: { count: 0 },
       },
     };
-  }
+  },
   // getSsrConfig
   // Passing cookies through SSR server isn't supported (yet).
   // async (pathStr) => {

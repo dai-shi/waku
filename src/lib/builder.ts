@@ -52,18 +52,13 @@ const analyzeEntries = async (entriesFile: string) => {
   const clientEntryFileSet = new Set<string>();
   const serverEntryFileSet = new Set<string>();
   await viteBuild({
-    ...configFileConfig,
+    ...configFileConfig(),
     plugins: [
       rscAnalyzePlugin(
         (id) => clientEntryFileSet.add(id),
-        (id) => serverEntryFileSet.add(id)
+        (id) => serverEntryFileSet.add(id),
       ),
     ],
-    ssr: {
-      noExternal: /^(?!node:)/,
-      // FIXME this is very adhoc.
-      external: ["react", "minimatch"],
-    },
     resolve: {
       conditions: ["react-server"],
     },
@@ -83,11 +78,11 @@ const analyzeEntries = async (entriesFile: string) => {
       Array.from(clientEntryFileSet).map(async (fname, i) => [
         `rsc${i}-${await hash(fname)}`,
         fname,
-      ])
-    )
+      ]),
+    ),
   );
   const serverEntryFiles = Object.fromEntries(
-    Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname])
+    Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname]),
   );
   return {
     clientEntryFiles,
@@ -99,26 +94,18 @@ const buildServerBundle = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   entriesFile: string,
   clientEntryFiles: Record<string, string>,
-  serverEntryFiles: Record<string, string>
+  serverEntryFiles: Record<string, string>,
 ) => {
   const serverBuildOutput = await viteBuild({
-    ...configFileConfig,
-    ssr: {
-      noExternal: Object.values(clientEntryFiles).map(
-        // FIXME this might not work with pnpm
-        (fname) =>
-          path
-            .relative(path.join(config.root, "node_modules"), fname)
-            .split("/")[0]!
-      ),
-    },
+    ...configFileConfig(),
     resolve: {
       conditions: ["react-server"],
     },
     publicDir: false,
     build: {
       ssr: true,
-      outDir: config.framework.distDir,
+      ssrEmitAssets: true,
+      outDir: path.join(config.root, config.framework.distDir),
       rollupOptions: {
         onwarn,
         input: {
@@ -132,14 +119,14 @@ const buildServerBundle = async (
             let code = "";
             if (
               chunk.moduleIds.some((id) =>
-                Object.values(clientEntryFiles).includes(id)
+                Object.values(clientEntryFiles).includes(id),
               )
             ) {
               code += '"use client";';
             }
             if (
               chunk.moduleIds.some((id) =>
-                Object.values(serverEntryFiles).includes(id)
+                Object.values(serverEntryFiles).includes(id),
               )
             ) {
               code += '"use server";';
@@ -167,26 +154,30 @@ const buildServerBundle = async (
 
 const buildClientBundle = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
-  clientEntryFiles: Record<string, string>
+  clientEntryFiles: Record<string, string>,
+  serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
 ) => {
   const indexHtmlFile = path.join(
     config.root,
     config.framework.srcDir,
-    config.framework.indexHtml
+    config.framework.indexHtml,
+  );
+  const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
+    type === "asset" && fileName.endsWith(".css") ? [fileName] : [],
   );
   const clientBuildOutput = await viteBuild({
-    ...configFileConfig,
+    ...configFileConfig(),
+    root: path.join(config.root, config.framework.srcDir),
     plugins: [
       // @ts-expect-error This expression is not callable.
       viteReact(),
-      rscIndexPlugin(),
+      rscIndexPlugin(cssAssets),
     ],
-    root: path.join(config.root, config.framework.srcDir),
     build: {
       outDir: path.join(
         config.root,
         config.framework.distDir,
-        config.framework.publicDir
+        config.framework.publicDir,
       ),
       rollupOptions: {
         onwarn,
@@ -209,18 +200,28 @@ const buildClientBundle = async (
   if (!("output" in clientBuildOutput)) {
     throw new Error("Unexpected vite client build output");
   }
+  for (const cssAsset of cssAssets) {
+    const from = path.join(config.root, config.framework.distDir, cssAsset);
+    const to = path.join(
+      config.root,
+      config.framework.distDir,
+      config.framework.publicDir,
+      cssAsset,
+    );
+    fs.renameSync(from, to);
+  }
   return clientBuildOutput;
 };
 
 const emitRscFiles = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>
+  config: Awaited<ReturnType<typeof resolveConfig>>,
 ) => {
   const buildConfig = await getBuildConfigRSC();
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (
     rscId: string,
     serializedProps: string,
-    id: string
+    id: string,
   ) => {
     const key = rscId + "/" + serializedProps;
     let idSet = clientModuleMap.get(key);
@@ -247,8 +248,10 @@ const emitRscFiles = async (
           config.root,
           config.framework.distDir,
           config.framework.publicDir,
-          config.framework.rscPrefix + decodeURIComponent(rscId),
-          decodeURIComponent(`${searchParams}`)
+          // HACK to support windows filesystem
+          config.framework.rscPrefix.replaceAll("/", path.sep) +
+            decodeURIComponent(rscId),
+          decodeURIComponent(`${searchParams}`),
         );
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
@@ -260,7 +263,7 @@ const emitRscFiles = async (
               ctx,
               moduleIdCallback: (id) =>
                 addClientModule(rscId, serializedProps, id),
-            }
+            },
           );
           await new Promise<void>((resolve, reject) => {
             const stream = fs.createWriteStream(destFile);
@@ -270,7 +273,7 @@ const emitRscFiles = async (
           });
         }
       }
-    })
+    }),
   );
   return { buildConfig, getClientModules, rscFiles: Array.from(rscFileSet) };
 };
@@ -279,7 +282,7 @@ const renderHtml = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   pathStr: string,
   htmlStr: string,
-  ctx: unknown
+  ctx: unknown,
 ) => {
   const ssrConfig = await getSsrConfigRSC(pathStr, "build");
   if (!ssrConfig) {
@@ -289,7 +292,7 @@ const renderHtml = async (
   const [rscId, props] = ssrConfig.element;
   const [pipeable] = await renderRSC(
     { rscId, props },
-    { command: "build", ctx }
+    { command: "build", ctx },
   );
   return renderHtmlToReadable(htmlStr, pipeable, splitHTML, getFallback);
 };
@@ -297,14 +300,14 @@ const renderHtml = async (
 const emitHtmlFiles = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   buildConfig: Awaited<ReturnType<typeof getBuildConfigRSC>>,
-  getClientModules: (rscId: string, serializedProps: string) => string[]
+  getClientModules: (rscId: string, serializedProps: string) => string[],
 ) => {
   const basePrefix = config.base + config.framework.rscPrefix;
   const publicIndexHtmlFile = path.join(
     config.root,
     config.framework.distDir,
     config.framework.publicDir,
-    config.framework.indexHtml
+    config.framework.indexHtml,
   );
   const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
     encoding: "utf8",
@@ -317,7 +320,7 @@ const emitHtmlFiles = async (
           config.framework.distDir,
           config.framework.publicDir,
           pathStr,
-          pathStr.endsWith("/") ? "index.html" : ""
+          pathStr.endsWith("/") ? "index.html" : "",
         );
         let data = "";
         if (fs.existsSync(destFile)) {
@@ -344,7 +347,7 @@ const emitHtmlFiles = async (
           generatePrefetchCode(
             basePrefix,
             elementsForPrefetch,
-            moduleIdsForPrefetch
+            moduleIdsForPrefetch,
           ) + (customCode || "");
         if (code) {
           // HACK is this too naive to inject script code?
@@ -363,8 +366,8 @@ const emitHtmlFiles = async (
           fs.writeFileSync(destFile, data, { encoding: "utf8" });
         }
         return destFile;
-      }
-    )
+      },
+    ),
   );
   return { htmlFiles };
 };
@@ -373,26 +376,26 @@ const emitVercelOutput = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
   rscFiles: string[],
-  htmlFiles: string[]
+  htmlFiles: string[],
 ) => {
   const clientFiles = clientBuildOutput.output.map(({ fileName }) =>
     path.join(
       config.root,
       config.framework.distDir,
       config.framework.publicDir,
-      fileName
-    )
+      fileName,
+    ),
   );
   const srcDir = path.join(
     config.root,
     config.framework.distDir,
-    config.framework.publicDir
+    config.framework.publicDir,
   );
   const dstDir = path.join(
     config.root,
     config.framework.distDir,
     ".vercel",
-    "output"
+    "output",
   );
   for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
     const dstFile = path.join(dstDir, "static", path.relative(srcDir, file));
@@ -422,7 +425,7 @@ const emitVercelOutput = (
   fs.mkdirSync(dstDir, { recursive: true });
   fs.writeFileSync(
     path.join(dstDir, "config.json"),
-    JSON.stringify(configJson, null, 2)
+    JSON.stringify(configJson, null, 2),
   );
 };
 
@@ -440,27 +443,31 @@ const resolveFileName = (fname: string) => {
 export async function build() {
   const config = await resolveConfig("build");
   const entriesFile = resolveFileName(
-    path.join(config.root, config.framework.srcDir, config.framework.entriesJs)
+    path.join(config.root, config.framework.srcDir, config.framework.entriesJs),
   );
 
   const { clientEntryFiles, serverEntryFiles } = await analyzeEntries(
-    entriesFile
+    entriesFile,
   );
-  await buildServerBundle(
+  const serverBuildOutput = await buildServerBundle(
     config,
     entriesFile,
     clientEntryFiles,
-    serverEntryFiles
+    serverEntryFiles,
   );
-  const clientBuildOutput = await buildClientBundle(config, clientEntryFiles);
+  const clientBuildOutput = await buildClientBundle(
+    config,
+    clientEntryFiles,
+    serverBuildOutput,
+  );
 
   const { buildConfig, getClientModules, rscFiles } = await emitRscFiles(
-    config
+    config,
   );
   const { htmlFiles } = await emitHtmlFiles(
     config,
     buildConfig,
-    getClientModules
+    getClientModules,
   );
 
   // https://vercel.com/docs/build-output-api/v3
