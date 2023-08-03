@@ -1,5 +1,14 @@
 {
   "name": "create-waku",
   "version": "0.4.10",
-  "bin": "./cli.js"
+  "bin": "./cli.js",
+  "type": "module",
+  "scripts": {
+    "test": "node ./tests/generateTemplates.test.js"
+  },
+  "dependencies": {
+    "kolorist": "^1.8.0",
+    "ora": "^7.0.1",
+    "prompts": "^2.4.2"
+  }
 }
