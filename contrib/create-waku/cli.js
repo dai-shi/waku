@@ -106,7 +106,7 @@ async function init() {
   )
 
   console.log("Setting up project...")
-  const templateRoot = path.resolve(__dirname, 'template')
+  const templateRoot = path.resolve(cwd, 'template')
 
   const render = function render(templateName) {
     const templateDir = path.resolve(templateRoot, templateName)
