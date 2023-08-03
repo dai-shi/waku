@@ -3,7 +3,6 @@
 import fs from 'fs'
 import path from 'path'
 import prompts from 'prompts'
-import ora from "ora"
 import { red, green, bold } from 'kolorist'
 
 import emptyDir from './emptyDir.js'
@@ -35,7 +34,6 @@ async function init() {
   let targetDir;
   let defaultProjectName = 'waku-project'
 
-  const spinner = ora("Setting up project...")
   const CHOICES = fs.readdirSync(path.join(cwd, 'template'))
   let result = {}
 
@@ -107,13 +105,12 @@ async function init() {
     JSON.stringify(pkg, null, 2),
   )
 
-  spinner.start();
-  const templateRoot = new URL('./template', import.meta.url).pathname
+  console.log("Setting up project...")
+  const templateRoot = path.resolve(__dirname, 'template')
 
   const render = function render(templateName) {
     const templateDir = path.resolve(templateRoot, templateName)
     renderTemplate(templateDir, root)
-    spinner.stop()
   }
 
   render(chooseProject)

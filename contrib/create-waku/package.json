@@ -4,11 +4,12 @@
   "bin": "./cli.js",
   "type": "module",
   "scripts": {
+    "build": "./node_modules/.bin/esbuild cli.js --bundle --platform=node --outfile=out.cjs",
     "test": "node ./tests/generateTemplates.test.js"
   },
   "dependencies": {
+    "esbuild": "0.18.17",
     "kolorist": "^1.8.0",
-    "ora": "^7.0.1",
     "prompts": "^2.4.2"
   }
 }
