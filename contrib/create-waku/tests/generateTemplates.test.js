@@ -14,7 +14,7 @@ function generateTemplate(targetDir, templateDir) {
 function testTemplateGeneration() {
   const cwd = process.cwd()
 
-  const templateDir = path.resolve(cwd, './template', 'basic')
+  const templateDir = path.resolve(cwd, '../../examples', '01_counter')
   const targetDir = path.resolve(cwd, '../playground', 'basic')
 
   // Generate the template

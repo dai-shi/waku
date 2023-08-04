@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import fs from 'fs'
-import path from 'path'
+import fs from 'node:fs'
+import path from 'node:path'
 import prompts from 'prompts'
 import { red, green, bold } from 'kolorist'
 
@@ -34,7 +34,7 @@ async function init() {
   let targetDir;
   let defaultProjectName = 'waku-project'
 
-  const CHOICES = fs.readdirSync(path.join(cwd, 'template'))
+  const CHOICES = fs.readdirSync(path.resolve(cwd, '../../examples'))
   let result = {}
 
   try {
@@ -72,9 +72,9 @@ async function init() {
         type: 'select',
         message: 'Choose a starter template',
         choices: [
-          { title: CHOICES[0], value: CHOICES[0] },
-          { title: CHOICES[1], value: CHOICES[1] },
-          { title: CHOICES[2], value: CHOICES[2] },
+          { title: 'basic', value: CHOICES[0] },
+          { title: 'async-template', value: CHOICES[1] },
+          { title: 'promise-template', value: CHOICES[2] },
         ],
       }
     ], {
@@ -106,7 +106,7 @@ async function init() {
   )
 
   console.log("Setting up project...")
-  const templateRoot = path.resolve(cwd, 'template')
+  const templateRoot = path.resolve(cwd, '../../examples')
 
   const render = function render(templateName) {
     const templateDir = path.resolve(templateRoot, templateName)
