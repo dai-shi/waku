@@ -1,7 +1,7 @@
-const isObject = val => val && typeof val === 'object'
-const mergeArrayWithDedupe = (a, b) => Array.from(new Set([...a, ...b]))
+const isObject = (val: object) => val && typeof val === 'object'
+const mergeArrayWithDedupe = (a: string[], b: string[]) => Array.from(new Set([...a, ...b]))
 
-export default function deepMerge(target, obj) {
+export function deepMerge(target: any, obj: any) {
   for (const key of Object.keys(obj)) {
     const oldVal = target[key]
     const newVal = obj[key]

@@ -5,16 +5,16 @@ import path from 'node:path'
 import prompts from 'prompts'
 import { red, green, bold } from 'kolorist'
 
-import emptyDir from './emptyDir.js'
-import renderTemplate from './renderTemplate.js'
+import { emptyDir } from './emptyDir'
+import { renderTemplate } from './renderTemplate'
 
-function isValidPackageName(projectName) {
+function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
     projectName
   )
 }
 
-function toValidPackageName(projectName) {
+function toValidPackageName(projectName: string) {
   return projectName
     .trim()
     .toLowerCase()
@@ -24,18 +24,22 @@ function toValidPackageName(projectName) {
 }
 
 // if the dir is empty or not exist
-function canSafelyOverwrite(dir) {
+function canSafelyOverwrite(dir: string) {
   return !fs.existsSync(dir) || fs.readdirSync(dir).length === 0
 }
 
 async function init() {
-  const cwd = process.cwd();
+  const cwd = process.cwd()
 
-  let targetDir;
+  let targetDir = '';
   let defaultProjectName = 'waku-project'
 
-  const CHOICES = fs.readdirSync(path.resolve(cwd, '../../examples'))
-  let result = {}
+  const CHOICES = fs.readdirSync(path.resolve(cwd, 'template'))
+  let result: {
+    packageName?: string
+    shouldOverwrite?: string
+    chooseProject?: string
+  } = {}
 
   try {
     result = await prompts([
@@ -44,7 +48,7 @@ async function init() {
         type: 'text',
         message: 'Project Name',
         initial: defaultProjectName,
-        onState: (state) => (targetDir = String(state.value).trim() || defaultProjectName)
+        onState: (state: any) => (targetDir = String(state.value).trim() || defaultProjectName)
       },
       {
         name: 'shouldOverwrite',
@@ -53,7 +57,7 @@ async function init() {
       },
       {
         name: 'overwriteChecker',
-        type: (values = {}) => {
+        type: (values: any) => {
           if (values.shouldOverwrite === false) {
             throw new Error(red('✖') + ' Operation cancelled')
           }
@@ -65,7 +69,7 @@ async function init() {
         type: () => (isValidPackageName(targetDir) ? null : 'text'),
         message: 'Package name',
         initial: () => toValidPackageName(targetDir),
-        validate: (dir) => isValidPackageName(dir) || 'Invalid package.json name'
+        validate: (dir: string) => isValidPackageName(dir) || 'Invalid package.json name'
       },
       {
         name: 'chooseProject',
@@ -83,14 +87,14 @@ async function init() {
       }
     })
   } catch (cancelled) {
-    console.log(cancelled.message)
+    if(cancelled instanceof Error) 
+      console.log(cancelled.message)
     process.exit(1)
   }
 
   const { packageName, shouldOverwrite, chooseProject } = result
 
   const root = path.join(cwd, targetDir)
-  // const root = path.resolve(cwd, '../playground', targetDir)
 
   if (shouldOverwrite) {
     emptyDir(root)
@@ -106,18 +110,19 @@ async function init() {
   )
 
   console.log("Setting up project...")
-  const templateRoot = path.resolve(cwd, '../../examples')
+  const templateRoot = path.resolve(cwd, 'template')
 
-  const render = function render(templateName) {
+  const render = function render(templateName: string) {
     const templateDir = path.resolve(templateRoot, templateName)
     renderTemplate(templateDir, root)
   }
 
-  render(chooseProject)
+  render(chooseProject as string)
 
-  const packageManager = /pnpm/.test(process.env.npm_execpath)
+  const manager = process.env.npm_config_user_agent ?? ''
+  const packageManager = /pnpm/.test(manager)
     ? 'pnpm'
-    : /yarn/.test(process.env.npm_execpath)
+    : /yarn/.test(manager)
       ? 'yarn'
       : 'npm'
 

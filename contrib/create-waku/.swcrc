@@ -1,0 +1,10 @@
+{ 
+  "exclude": "node_modules/", 
+  "jsc": { 
+    "parser": { 
+      "syntax": "typescript", 
+      "tsx": false, 
+      "decorators": false
+    } 
+  } 
+} 

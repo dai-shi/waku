@@ -1,13 +1,22 @@
 {
   "name": "create-waku",
   "version": "0.4.10",
-  "bin": "./cli.js",
-  "type": "module",
+  "bin": "dist/cli.js",
+  "type": "commonjs",
   "scripts": {
-    "test": "node ./tests/generateTemplates.test.js"
+    "build:esbuild": "esbuild cli.ts --bundle --platform=node --outfile=out.js",
+    "build:estemplate": "esbuild copyTemplateDir.ts --bundle --platform=node --outfile=copy.js",
+    "build:template": "node dist/copyTemplateDir.js",
+    "test": "node dist/generateTemplates.test.js"
   },
   "dependencies": {
     "kolorist": "^1.8.0",
     "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "esbuild": "0.18.17",
+    "@types/node": "^20.4.7",
+    "@types/prompts": "^2.4.4",
+    "typescript": "^5.1.6"
   }
 }

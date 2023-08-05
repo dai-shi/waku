@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "outDir": "dist",
+    "rootDir": "./",
+    "strict": true,
+  },
+  "include": ["./"],
+  "exclude": ["node_modules", "dist"]
+}

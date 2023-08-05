@@ -1,12 +1,12 @@
-import fs from 'fs'
-import path from 'path'
-import assert from 'assert'
+import fs from 'node:fs'
+import path from 'node:path'
+import assert from 'node:assert'
 import { green, bold } from 'kolorist'
 
-import renderTemplate from '../renderTemplate.js'
-import emptyDir from '../emptyDir.js'
+import { renderTemplate } from './renderTemplate'
+import { emptyDir } from './emptyDir'
 
-function generateTemplate(targetDir, templateDir) {
+function generateTemplate(targetDir: string, templateDir: string) {
   renderTemplate(templateDir, targetDir)
 }
 
@@ -22,6 +22,7 @@ function testTemplateGeneration() {
 
   // Check if the file was generated
   const fileExists = fs.existsSync(targetDir);
+  // @ts-expect-error
   assert.strictEqual(fileExists, true, console.log(bold(green(`Template generated successfully.`))))
 
   // Clean up the generated file after the test

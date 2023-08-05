@@ -1,8 +1,8 @@
-import fs from 'fs';
-import path from 'path';
-import deepMerge from './deepMerge.js'
+import fs from 'node:fs';
+import path from 'node:path';
+import { deepMerge } from './deepMerge'
 
-function renderTemplate(src, dest) {
+export function renderTemplate(src: string, dest: string) {
   const stats = fs.statSync(src);
 
   if (stats.isDirectory()) {
@@ -18,8 +18,8 @@ function renderTemplate(src, dest) {
   if (filename === 'package.json' && fs.existsSync(dest)) {
     // merge instead of overwriting
     const pkg = deepMerge(
-      JSON.parse(fs.readFileSync(dest)),
-      JSON.parse(fs.readFileSync(src))
+      // @ts-expect-error
+      JSON.parse(fs.readFileSync(dest)), JSON.parse(fs.readFileSync(src))
     );
     fs.writeFileSync(dest, JSON.stringify(pkg, null, 2) + '\n');
     return;
@@ -32,5 +32,3 @@ function renderTemplate(src, dest) {
 
   fs.copyFileSync(src, dest);
 }
-
-export default renderTemplate;

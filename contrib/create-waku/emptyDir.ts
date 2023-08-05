@@ -1,7 +1,7 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
-export default function emptyDir(dir) {
+export function emptyDir(dir: string) {
   // if the file empty
   if (!fs.existsSync(dir)) {
     return;
