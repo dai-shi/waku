@@ -4,10 +4,10 @@
   "bin": "dist/cli.js",
   "type": "commonjs",
   "scripts": {
-    "build:esbuild": "esbuild cli.ts --bundle --platform=node --outfile=out.js",
-    "build:estemplate": "esbuild copyTemplateDir.ts --bundle --platform=node --outfile=copy.js",
-    "build:template": "node dist/copyTemplateDir.js",
-    "test": "node dist/generateTemplates.test.js"
+    "start": "node out.js",
+    "template": "node copy.js",
+    "build:esbuild": "esbuild src/cli.ts --bundle --platform=node --outfile=out.js",
+    "build:template": "esbuild src/copyTemplateDir.ts --bundle --platform=node --outfile=copy.js"
   },
   "dependencies": {
     "kolorist": "^1.8.0",
