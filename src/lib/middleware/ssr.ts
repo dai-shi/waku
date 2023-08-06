@@ -1,3 +1,4 @@
+import type { ReadableStream } from "node:stream/web";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import { Readable } from "node:stream";
@@ -59,7 +60,10 @@ const renderHTML = async (
   }
   return renderHtmlToReadable(
     await htmlRes.text(),
-    Readable.fromWeb(rscRes.body as any), // FIXME how to avoid any?
+    // See: https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/65542#discussioncomment-6071004
+    //      https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/62651
+    //      https://github.com/microsoft/TypeScript/issues/29867
+    Readable.fromWeb(rscRes.body as ReadableStream<Uint8Array>),
     splitHTML,
     getFallback,
   );
