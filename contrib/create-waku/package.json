@@ -1,7 +1,7 @@
 {
   "name": "create-waku",
   "version": "0.4.10",
-  "bin": "dist/cli.js",
+  "bin": "out.js",
   "type": "commonjs",
   "scripts": {
     "start": "node out.js",
