@@ -102,7 +102,7 @@ async function init() {
     fs.mkdirSync(root)
   }
 
-  const pkg = { name: packageName, version: '0.0.0' }
+  const pkg = { name: toValidPackageName(targetDir), version: '0.0.0' }
 
   fs.writeFileSync(
     path.resolve(root, 'package.json'),

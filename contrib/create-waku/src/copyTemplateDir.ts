@@ -14,8 +14,8 @@ export function copyTemplate() {
   const templateRoot = path.resolve(cwd, '../../examples')
   
   for(let i = 0; i < 3; i++) {
-    const templateDir = path.resolve(templateRoot, CHOICES[i])
-    root = path.join(cwd, '/template', CHOICES[i])
+    const templateDir = path.resolve(templateRoot, CHOICES[i] as string)
+    root = path.join(cwd, '/template', CHOICES[i] as string)
     renderTemplate(templateDir, root)
   }
 }

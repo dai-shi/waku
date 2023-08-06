@@ -25,10 +25,5 @@ export function renderTemplate(src: string, dest: string) {
     return;
   }
 
-  if (filename.startsWith('_')) {
-    // rename `_file` to `.file`
-    dest = path.resolve(path.dirname(dest), filename.replace(/^_/, '.'));
-  }
-
   fs.copyFileSync(src, dest);
 }
