@@ -5,8 +5,8 @@ import path from 'node:path'
 import prompts from 'prompts'
 import { red, green, bold } from 'kolorist'
 
-import { emptyDir } from './emptyDir'
-import { renderTemplate } from './renderTemplate'
+import { emptyDir } from './emptyDir.js'
+import { renderTemplate } from './renderTemplate.js'
 
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
@@ -87,8 +87,9 @@ async function init() {
       }
     })
   } catch (cancelled) {
-    if(cancelled instanceof Error) 
+    if(cancelled instanceof Error) {
       console.log(cancelled.message)
+    }
     process.exit(1)
   }
 

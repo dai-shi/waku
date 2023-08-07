@@ -3,8 +3,8 @@ import path from 'node:path'
 import assert from 'node:assert'
 import { green, bold } from 'kolorist'
 
-import { renderTemplate } from './renderTemplate'
-import { emptyDir } from './emptyDir'
+import { renderTemplate } from './renderTemplate.js'
+import { emptyDir } from './emptyDir.js'
 
 function generateTemplate(targetDir: string, templateDir: string) {
   renderTemplate(templateDir, targetDir)

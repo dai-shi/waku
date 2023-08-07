@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { shallowMerge } from './shallowMerge'
 
 export function renderTemplate(src: string, dest: string) {
   const stats = fs.statSync(src);
@@ -16,11 +15,8 @@ export function renderTemplate(src: string, dest: string) {
   const filename = path.basename(src);
 
   if (filename === 'package.json' && fs.existsSync(dest)) {
-    // merge instead of overwriting
-    const pkg = shallowMerge(
-      // @ts-expect-error
-      JSON.parse(fs.readFileSync(dest)), JSON.parse(fs.readFileSync(src))
-    );
+    // @ts-expect-error
+    const pkg = Object.assign({}, JSON.parse(fs.readFileSync(src)), JSON.parse(fs.readFileSync(dest)))
     fs.writeFileSync(dest, JSON.stringify(pkg, null, 2) + '\n');
     return;
   }

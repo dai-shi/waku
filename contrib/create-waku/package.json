@@ -11,8 +11,8 @@
   "scripts": {
     "start": "node dist/cli.js",
     "template": "node dist/copyTemplateDir.js",
-    "build:esbuild": "esbuild src/cli.ts --bundle --platform=node --outfile=dist/cli.js",
-    "build:template": "esbuild src/copyTemplateDir.ts --bundle --platform=node --outfile=dist/copyTemplateDir.js"
+    "test": "node dist/generateTemplates.test.js",
+    "build:esbuild": "esbuild src/* --bundle --platform=node --outdir=dist"
   },
   "dependencies": {
     "kolorist": "^1.8.0",
