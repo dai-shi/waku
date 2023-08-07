@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { deepMerge } from './deepMerge'
+import { shallowMerge } from './shallowMerge'
 
 export function renderTemplate(src: string, dest: string) {
   const stats = fs.statSync(src);
@@ -17,7 +17,7 @@ export function renderTemplate(src: string, dest: string) {
 
   if (filename === 'package.json' && fs.existsSync(dest)) {
     // merge instead of overwriting
-    const pkg = deepMerge(
+    const pkg = shallowMerge(
       // @ts-expect-error
       JSON.parse(fs.readFileSync(dest)), JSON.parse(fs.readFileSync(src))
     );

@@ -4,7 +4,8 @@
   "bin": "dist/cli.js",
   "files": [
     "src",
-    "dist"
+    "dist",
+    "template"
   ],
   "type": "commonjs",
   "scripts": {

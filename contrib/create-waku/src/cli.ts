@@ -76,7 +76,7 @@ async function init() {
         type: 'select',
         message: 'Choose a starter template',
         choices: [
-          { title: 'basic', value: CHOICES[0] },
+          { title: 'basic-template', value: CHOICES[0] },
           { title: 'async-template', value: CHOICES[1] },
           { title: 'promise-template', value: CHOICES[2] },
         ],
@@ -102,7 +102,7 @@ async function init() {
     fs.mkdirSync(root)
   }
 
-  const pkg = { name: toValidPackageName(targetDir), version: '0.0.0' }
+  const pkg = { name: packageName?? toValidPackageName(targetDir), version: '0.0.0' }
 
   fs.writeFileSync(
     path.resolve(root, 'package.json'),
