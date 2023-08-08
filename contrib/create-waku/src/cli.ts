@@ -3,10 +3,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import prompts from 'prompts'
+import { spawnSync } from 'node:child_process'
 import { red, green, bold } from 'kolorist'
-
-import { emptyDir } from './emptyDir.js'
-import { renderTemplate } from './renderTemplate.js'
 
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
@@ -58,7 +56,7 @@ async function init() {
       {
         name: 'overwriteChecker',
         type: (values: any) => {
-          if (values.shouldOverwrite === false) {
+          if (values === false) {
             throw new Error(red('✖') + ' Operation cancelled')
           }
           return null
@@ -98,7 +96,7 @@ async function init() {
   const root = path.join(cwd, targetDir)
 
   if (shouldOverwrite) {
-    emptyDir(root)
+    spawnSync('rm', ['-rf', `${root}/*`])
   } else if (!fs.existsSync(root)) {
     fs.mkdirSync(root)
   }
@@ -115,7 +113,29 @@ async function init() {
 
   const render = function render(templateName: string) {
     const templateDir = path.resolve(templateRoot, templateName)
-    renderTemplate(templateDir, root)
+
+    // Read existing package.json from the root directory
+    const existingPackageJsonPath = path.join(root, 'package.json')
+    const existingPackageJson = JSON.parse(fs.readFileSync(existingPackageJsonPath, 'utf-8'))
+
+    // Read new package.json from the template directory
+    const newPackageJsonPath = path.join(templateDir, 'package.json')
+    const newPackageJson = JSON.parse(fs.readFileSync(newPackageJsonPath, 'utf-8'))
+
+    const mergedPackageJson = {
+      ...newPackageJson,
+      ...existingPackageJson
+    }
+
+    const result = spawnSync('cp', ['-r', `${templateDir}/`, root])
+
+    // Write the merged package.json back to the target directory
+    fs.writeFileSync(existingPackageJsonPath, JSON.stringify(mergedPackageJson, null, 2))
+
+    if (result.error) {
+      console.error('Error copying files:', result.error.message)
+      process.exit(1)
+    }
   }
 
   render(chooseProject as string)

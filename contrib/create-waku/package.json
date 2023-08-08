@@ -10,7 +10,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node dist/cli.js",
-    "template": "node dist/copyTemplateDir.js",
+    "template": "cp -r ../../examples template/",
     "test": "node dist/generateTemplates.test.js",
     "build:esbuild": "esbuild src/* --bundle --platform=node --outdir=dist"
   },
