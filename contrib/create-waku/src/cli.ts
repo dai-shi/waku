@@ -1,174 +1,184 @@
 #!/usr/bin/env node
 
-import fs from 'node:fs'
-import path from 'node:path'
-import prompts from 'prompts'
-import { spawnSync } from 'node:child_process'
-import { red, green, bold } from 'kolorist'
+import fs from "node:fs";
+import path from "node:path";
+import prompts from "prompts";
+import { red, green, bold } from "kolorist";
+import spawn from "cross-spawn";
 
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
-    projectName
-  )
+    projectName,
+  );
 }
 
 function toValidPackageName(projectName: string) {
   return projectName
     .trim()
     .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/^[._]/, '')
-    .replace(/[^a-z0-9-~]+/g, '-')
+    .replace(/\s+/g, "-")
+    .replace(/^[._]/, "")
+    .replace(/[^a-z0-9-~]+/g, "-");
 }
 
 // if the dir is empty or not exist
 function canSafelyOverwrite(dir: string) {
-  return !fs.existsSync(dir) || fs.readdirSync(dir).length === 0
+  return !fs.existsSync(dir) || fs.readdirSync(dir).length === 0;
 }
 
 async function init() {
-  const cwd = process.cwd()
+  const cwd = process.cwd();
 
-  let targetDir = '';
-  let defaultProjectName = 'waku-project'
+  let targetDir = "";
+  let defaultProjectName = "waku-project";
 
-  const CHOICES = fs.readdirSync(path.resolve(cwd, 'template'))
+  const CHOICES = fs.readdirSync("template");
   let result: {
-    packageName?: string
-    shouldOverwrite?: string
-    chooseProject?: string
-  } = {}
+    packageName?: string;
+    shouldOverwrite?: string;
+    chooseProject?: string;
+  } = {};
 
   try {
-    result = await prompts([
+    result = await prompts(
+      [
+        {
+          name: "projectName",
+          type: "text",
+          message: "Project Name",
+          initial: defaultProjectName,
+          onState: (state: any) =>
+            (targetDir = String(state.value).trim() || defaultProjectName),
+        },
+        {
+          name: "shouldOverwrite",
+          type: () => (canSafelyOverwrite(targetDir) ? null : "confirm"),
+          message: `${targetDir} is not empty. Remove existing files and continue?`,
+        },
+        {
+          name: "overwriteChecker",
+          type: (values: any) => {
+            if (values === false) {
+              throw new Error(red("✖") + " Operation cancelled");
+            }
+            return null;
+          },
+        },
+        {
+          name: "packageName",
+          type: () => (isValidPackageName(targetDir) ? null : "text"),
+          message: "Package name",
+          initial: () => toValidPackageName(targetDir),
+          validate: (dir: string) =>
+            isValidPackageName(dir) || "Invalid package.json name",
+        },
+        {
+          name: "chooseProject",
+          type: "select",
+          message: "Choose a starter template",
+          choices: [
+            { title: "basic-template", value: CHOICES[0] },
+            { title: "async-template", value: CHOICES[1] },
+            { title: "promise-template", value: CHOICES[2] },
+          ],
+        },
+      ],
       {
-        name: 'projectName',
-        type: 'text',
-        message: 'Project Name',
-        initial: defaultProjectName,
-        onState: (state: any) => (targetDir = String(state.value).trim() || defaultProjectName)
+        onCancel: () => {
+          throw new Error(red("✖") + " Operation cancelled");
+        },
       },
-      {
-        name: 'shouldOverwrite',
-        type: () => canSafelyOverwrite(targetDir) ? null : 'confirm',
-        message: `${targetDir} is not empty. Remove existing files and continue?`,
-      },
-      {
-        name: 'overwriteChecker',
-        type: (values: any) => {
-          if (values === false) {
-            throw new Error(red('✖') + ' Operation cancelled')
-          }
-          return null
-        }
-      },
-      {
-        name: 'packageName',
-        type: () => (isValidPackageName(targetDir) ? null : 'text'),
-        message: 'Package name',
-        initial: () => toValidPackageName(targetDir),
-        validate: (dir: string) => isValidPackageName(dir) || 'Invalid package.json name'
-      },
-      {
-        name: 'chooseProject',
-        type: 'select',
-        message: 'Choose a starter template',
-        choices: [
-          { title: 'basic-template', value: CHOICES[0] },
-          { title: 'async-template', value: CHOICES[1] },
-          { title: 'promise-template', value: CHOICES[2] },
-        ],
-      }
-    ], {
-      onCancel: () => {
-        throw new Error(red('✖') + ' Operation cancelled')
-      }
-    })
+    );
   } catch (cancelled) {
-    if(cancelled instanceof Error) {
-      console.log(cancelled.message)
+    if (cancelled instanceof Error) {
+      console.log(cancelled.message);
     }
-    process.exit(1)
+    process.exit(1);
   }
 
-  const { packageName, shouldOverwrite, chooseProject } = result
+  const { packageName, shouldOverwrite, chooseProject } = result;
 
-  const root = path.join(cwd, targetDir)
+  const root = path.join(cwd, targetDir);
 
   if (shouldOverwrite) {
-    spawnSync('rm', ['-rf', `${root}/*`])
+    spawn.sync("rm", ["-rf", `${root}/*`]);
   } else if (!fs.existsSync(root)) {
-    fs.mkdirSync(root)
+    fs.mkdirSync(root);
   }
 
-  const pkg = { name: packageName?? toValidPackageName(targetDir), version: '0.0.0' }
+  const pkg = {
+    name: packageName ?? toValidPackageName(targetDir),
+    version: "0.0.0",
+  };
 
   fs.writeFileSync(
-    path.resolve(root, 'package.json'),
+    path.resolve(root, "package.json"),
     JSON.stringify(pkg, null, 2),
-  )
+  );
 
-  console.log("Setting up project...")
-  const templateRoot = path.resolve(cwd, 'template')
+  console.log("Setting up project...");
+  const templateRoot = path.resolve("template");
 
   const render = function render(templateName: string) {
-    const templateDir = path.resolve(templateRoot, templateName)
+    const templateDir = path.resolve(templateRoot, templateName);
 
     // Read existing package.json from the root directory
-    const existingPackageJsonPath = path.join(root, 'package.json')
-    const existingPackageJson = JSON.parse(fs.readFileSync(existingPackageJsonPath, 'utf-8'))
+    const existingPackageJsonPath = path.join(root, "package.json");
+    const existingPackageJson = JSON.parse(
+      fs.readFileSync(existingPackageJsonPath, "utf-8"),
+    );
 
     // Read new package.json from the template directory
-    const newPackageJsonPath = path.join(templateDir, 'package.json')
-    const newPackageJson = JSON.parse(fs.readFileSync(newPackageJsonPath, 'utf-8'))
+    const newPackageJsonPath = path.join(templateDir, "package.json");
+    const newPackageJson = JSON.parse(
+      fs.readFileSync(newPackageJsonPath, "utf-8"),
+    );
 
     const mergedPackageJson = {
       ...newPackageJson,
-      ...existingPackageJson
-    }
+      ...existingPackageJson,
+    };
 
-    const result = spawnSync('cp', ['-r', `${templateDir}/`, root])
+    spawn.sync("cp", ["-r", `${templateDir}/`, root]);
 
     // Write the merged package.json back to the target directory
-    fs.writeFileSync(existingPackageJsonPath, JSON.stringify(mergedPackageJson, null, 2))
+    fs.writeFileSync(
+      existingPackageJsonPath,
+      JSON.stringify(mergedPackageJson, null, 2),
+    );
+  };
 
-    if (result.error) {
-      console.error('Error copying files:', result.error.message)
-      process.exit(1)
-    }
-  }
+  render(chooseProject as string);
 
-  render(chooseProject as string)
-
-  const manager = process.env.npm_config_user_agent ?? ''
+  const manager = process.env.npm_config_user_agent ?? "";
   const packageManager = /pnpm/.test(manager)
-    ? 'pnpm'
+    ? "pnpm"
     : /yarn/.test(manager)
-      ? 'yarn'
-      : 'npm'
+    ? "yarn"
+    : "npm";
 
   const commandsMap = {
     install: {
-      pnpm: 'pnpm install',
-      yarn: 'yarn',
-      npm: 'npm install'
+      pnpm: "pnpm install",
+      yarn: "yarn",
+      npm: "npm install",
     },
     dev: {
-      pnpm: 'pnpm dev',
-      yarn: 'yarn dev',
-      npm: 'npm run dev'
-    }
-  }
+      pnpm: "pnpm dev",
+      yarn: "yarn dev",
+      npm: "npm run dev",
+    },
+  };
 
-  console.log(`\nDone. Now run:\n`)
+  console.log(`\nDone. Now run:\n`);
   if (root !== cwd) {
-    console.log(`${bold(green(`cd ${path.relative(cwd, root)}`))}`)
+    console.log(`${bold(green(`cd ${path.relative(cwd, root)}`))}`);
   }
-  console.log(`${bold(green(commandsMap.install[packageManager]))}`)
-  console.log(`${bold(green(commandsMap.dev[packageManager]))}`)
-  console.log()
+  console.log(`${bold(green(commandsMap.install[packageManager]))}`);
+  console.log(`${bold(green(commandsMap.dev[packageManager]))}`);
+  console.log();
 }
 
 init().catch((e) => {
-  console.error(e)
-})
+  console.error(e);
+});
