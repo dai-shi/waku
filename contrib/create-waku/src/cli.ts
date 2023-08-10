@@ -4,11 +4,11 @@ import fs from "node:fs";
 import path from "node:path";
 import prompts from "prompts";
 import { red, green, bold } from "kolorist";
-import spawn from "cross-spawn";
+import fse from "fs-extra/esm";
 
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
-    projectName,
+    projectName
   );
 }
 
@@ -87,7 +87,7 @@ async function init() {
         onCancel: () => {
           throw new Error(red("✖") + " Operation cancelled");
         },
-      },
+      }
     );
   } catch (cancelled) {
     if (cancelled instanceof Error) {
@@ -101,7 +101,7 @@ async function init() {
   const root = path.join(cwd, targetDir);
 
   if (shouldOverwrite) {
-    spawn.sync("rm", ["-rf", `${root}/*`]);
+    fse.emptyDirSync(root);
   } else if (!fs.existsSync(root)) {
     fs.mkdirSync(root);
   }
@@ -113,7 +113,7 @@ async function init() {
 
   fs.writeFileSync(
     path.resolve(root, "package.json"),
-    JSON.stringify(pkg, null, 2),
+    JSON.stringify(pkg, null, 2)
   );
 
   console.log("Setting up project...");
@@ -125,13 +125,13 @@ async function init() {
     // Read existing package.json from the root directory
     const existingPackageJsonPath = path.join(root, "package.json");
     const existingPackageJson = JSON.parse(
-      fs.readFileSync(existingPackageJsonPath, "utf-8"),
+      fs.readFileSync(existingPackageJsonPath, "utf-8")
     );
 
     // Read new package.json from the template directory
     const newPackageJsonPath = path.join(templateDir, "package.json");
     const newPackageJson = JSON.parse(
-      fs.readFileSync(newPackageJsonPath, "utf-8"),
+      fs.readFileSync(newPackageJsonPath, "utf-8")
     );
 
     const mergedPackageJson = {
@@ -139,12 +139,12 @@ async function init() {
       ...existingPackageJson,
     };
 
-    spawn.sync("cp", ["-r", `${templateDir}/`, root]);
+    fse.copySync(templateDir, root);
 
     // Write the merged package.json back to the target directory
     fs.writeFileSync(
       existingPackageJsonPath,
-      JSON.stringify(mergedPackageJson, null, 2),
+      JSON.stringify(mergedPackageJson, null, 2)
     );
   };
 

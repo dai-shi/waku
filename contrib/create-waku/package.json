@@ -15,12 +15,12 @@
     "build:esbuild": "esbuild src/* --bundle --platform=node --outdir=dist"
   },
   "dependencies": {
-    "cross-spawn": "^7.0.3",
+    "fs-extra": "^11.1.1",
     "kolorist": "^1.8.0",
     "prompts": "^2.4.2"
   },
   "devDependencies": {
-    "@types/cross-spawn": "^6.0.2",
+    "@types/fs-extra": "^11.0.1",
     "@types/node": "^20.4.7",
     "@types/prompts": "^2.4.4",
     "esbuild": "0.18.17",
