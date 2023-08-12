@@ -112,7 +112,7 @@ async function init() {
   };
 
   fs.writeFileSync(
-    path.resolve(root, "package.json"),
+    path.join(root, "package.json"),
     JSON.stringify(pkg, null, 2)
   );
 
