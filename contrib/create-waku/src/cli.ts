@@ -142,9 +142,16 @@ async function init() {
     fse.copySync(templateDir, root);
 
     // Write the merged package.json back to the target directory
+    const existingPackageJson = JSON.parse(
+      fs.readFileSync(existingPackageJsonPath, "utf-8")
+    );
     fs.writeFileSync(
       existingPackageJsonPath,
-      JSON.stringify(mergedPackageJson, null, 2)
+      JSON.stringify({
+        ...existingPackageJson,
+        name: packageName ?? toValidPackageName(targetDir),
+        version: "0.0.0",
+      }, null, 2)
     );
   };
 
