@@ -34,10 +34,10 @@ async function init() {
 
   const CHOICES = fs.readdirSync("template");
   let result: {
-    packageName?: string;
-    shouldOverwrite?: string;
-    chooseProject?: string;
-  } = {};
+    packageName: string;
+    shouldOverwrite: string;
+    chooseProject: string;
+  };
 
   try {
     result = await prompts(
