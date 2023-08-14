@@ -98,7 +98,7 @@ async function init() {
 
   const { packageName, shouldOverwrite, chooseProject } = result;
 
-  const root = path.join(cwd, targetDir);
+  const root = path.resolve(targetDir);
 
   if (shouldOverwrite) {
     fse.emptyDirSync(root);
@@ -117,7 +117,7 @@ async function init() {
   );
 
   console.log("Setting up project...");
-  const templateRoot = path.resolve("template");
+  const templateRoot = path.join(__dirname, "template");
 
   const render = function render(templateName: string) {
     const templateDir = path.resolve(templateRoot, templateName);
