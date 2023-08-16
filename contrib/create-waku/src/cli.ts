@@ -30,7 +30,7 @@ async function init() {
   const cwd = process.cwd();
 
   let targetDir = "";
-  let defaultProjectName = "waku-project";
+  const defaultProjectName = "waku-project";
 
   const CHOICES = fs.readdirSync("template");
   let result: {
@@ -117,7 +117,7 @@ async function init() {
   );
 
   console.log("Setting up project...");
-  const templateRoot = path.join(__dirname, "template");
+  const templateRoot = path.join(__dirname, "../template");
 
   const render = function render(templateName: string) {
     const templateDir = path.resolve(templateRoot, templateName);
@@ -134,23 +134,13 @@ async function init() {
       fs.readFileSync(newPackageJsonPath, "utf-8")
     );
 
-    const mergedPackageJson = {
-      ...newPackageJson,
-      ...existingPackageJson,
-    };
-
     fse.copySync(templateDir, root);
-
-    // Write the merged package.json back to the target directory
-    const existingPackageJson = JSON.parse(
-      fs.readFileSync(existingPackageJsonPath, "utf-8")
-    );
+    
     fs.writeFileSync(
       existingPackageJsonPath,
       JSON.stringify({
-        ...existingPackageJson,
-        name: packageName ?? toValidPackageName(targetDir),
-        version: "0.0.0",
+        ...newPackageJson,
+        ...existingPackageJson
       }, null, 2)
     );
   };
