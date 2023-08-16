@@ -111,11 +111,6 @@ async function init() {
     version: "0.0.0",
   };
 
-  fs.writeFileSync(
-    path.join(root, "package.json"),
-    JSON.stringify(pkg, null, 2)
-  );
-
   console.log("Setting up project...");
   const templateRoot = path.join(__dirname, "../template");
 
@@ -123,10 +118,7 @@ async function init() {
     const templateDir = path.resolve(templateRoot, templateName);
 
     // Read existing package.json from the root directory
-    const existingPackageJsonPath = path.join(root, "package.json");
-    const existingPackageJson = JSON.parse(
-      fs.readFileSync(existingPackageJsonPath, "utf-8")
-    );
+    const packageJsonPath = path.join(root, "package.json");
 
     // Read new package.json from the template directory
     const newPackageJsonPath = path.join(templateDir, "package.json");
@@ -137,10 +129,10 @@ async function init() {
     fse.copySync(templateDir, root);
     
     fs.writeFileSync(
-      existingPackageJsonPath,
+      packageJsonPath,
       JSON.stringify({
         ...newPackageJson,
-        ...existingPackageJson
+        ...pkg,
       }, null, 2)
     );
   };
