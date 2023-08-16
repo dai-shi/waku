@@ -178,9 +178,7 @@ async function init() {
   };
 
   console.log(`\nDone. Now run:\n`);
-  if (root !== cwd) {
-    console.log(`${bold(green(`cd ${path.relative(cwd, root)}`))}`);
-  }
+  console.log(`${bold(green(`cd ${path.relative(cwd, root)}`))}`);
   console.log(`${bold(green(commandsMap.install[packageManager]))}`);
   console.log(`${bold(green(commandsMap.dev[packageManager]))}`);
   console.log();
