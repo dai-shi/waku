@@ -155,7 +155,7 @@ async function init() {
     );
   };
 
-  render(chooseProject as string);
+  render(chooseProject);
 
   const manager = process.env.npm_config_user_agent ?? "";
   const packageManager = /pnpm/.test(manager)
