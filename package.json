@@ -123,9 +123,11 @@
     "react-dom": "18.3.0-canary-7118f5dd7-20230705",
     "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705",
     "rollup": "^3.26.3",
+    "postcss": "^8.1.0",
     "tailwindcss": "^3.3.3",
     "typescript": "^5.1.6",
-    "waku": "link:."
+    "waku": "link:.",
+    "webpack": "^5.59.0"
   },
   "peerDependencies": {
     "express": "^4.18.2",
