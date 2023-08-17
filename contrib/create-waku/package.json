@@ -11,7 +11,7 @@
   "scripts": {
     "start": "node dist/cli.js",
     "template": "cp -r ../../examples template/",
-    "build:esbuild": "esbuild src/* --bundle --platform=node --outdir=dist"
+    "build": "esbuild src/* --bundle --platform=node --outdir=dist"
   },
   "dependencies": {
     "fs-extra": "^11.1.1",

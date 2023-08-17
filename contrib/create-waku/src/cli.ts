@@ -8,7 +8,7 @@ import fse from "fs-extra/esm";
 
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
-    projectName
+    projectName,
   );
 }
 
@@ -27,8 +27,6 @@ function canSafelyOverwrite(dir: string) {
 }
 
 async function init() {
-  const cwd = process.cwd();
-
   let targetDir = "";
   const defaultProjectName = "waku-project";
 
@@ -87,7 +85,7 @@ async function init() {
         onCancel: () => {
           throw new Error(red("✖") + " Operation cancelled");
         },
-      }
+      },
     );
   } catch (cancelled) {
     if (cancelled instanceof Error) {
@@ -112,32 +110,32 @@ async function init() {
   };
 
   console.log("Setting up project...");
+
   const templateRoot = path.join(__dirname, "../template");
+  const templateDir = path.resolve(templateRoot, chooseProject);
 
-  const render = function render(templateName: string) {
-    const templateDir = path.resolve(templateRoot, templateName);
+  // Read existing package.json from the root directory
+  const packageJsonPath = path.join(root, "package.json");
 
-    // Read existing package.json from the root directory
-    const packageJsonPath = path.join(root, "package.json");
+  // Read new package.json from the template directory
+  const newPackageJsonPath = path.join(templateDir, "package.json");
+  const newPackageJson = JSON.parse(
+    fs.readFileSync(newPackageJsonPath, "utf-8"),
+  );
 
-    // Read new package.json from the template directory
-    const newPackageJsonPath = path.join(templateDir, "package.json");
-    const newPackageJson = JSON.parse(
-      fs.readFileSync(newPackageJsonPath, "utf-8")
-    );
+  fse.copySync(templateDir, root);
 
-    fse.copySync(templateDir, root);
-    
-    fs.writeFileSync(
-      packageJsonPath,
-      JSON.stringify({
+  fs.writeFileSync(
+    packageJsonPath,
+    JSON.stringify(
+      {
         ...newPackageJson,
         ...pkg,
-      }, null, 2)
-    );
-  };
-
-  render(chooseProject);
+      },
+      null,
+      2,
+    ),
+  );
 
   const manager = process.env.npm_config_user_agent ?? "";
   const packageManager = /pnpm/.test(manager)
@@ -160,7 +158,7 @@ async function init() {
   };
 
   console.log(`\nDone. Now run:\n`);
-  console.log(`${bold(green(`cd ${path.relative(cwd, root)}`))}`);
+  console.log(`${bold(green(`cd ${targetDir}`))}`);
   console.log(`${bold(green(commandsMap.install[packageManager]))}`);
   console.log(`${bold(green(commandsMap.dev[packageManager]))}`);
   console.log();
