@@ -30,7 +30,7 @@
     "examples:prd:07_router": "NAME=07_router pnpm examples:prd",
     "examples:prd:08_cookies": "NAME=08_cookies pnpm examples:prd",
     "examples:prd:09_cssmodules": "NAME=09_cssmodules pnpm examples:prd",
-    "website:dev": "pnpm compile:code && ./dist/cli.js dev --config ./packages/website/vite.config.ts",
+    "website:dev": "pnpm compile:code && pnpm i && (cd packages/website && pnpm dev)",
     "website:build": "pnpm compile:code && ./dist/cli.js build --config ./packages/website/vite.config.ts",
     "website:vercel": "pnpm website:build && cp -Lr ./packages/website/dist/.vercel/output ./.vercel/",
     "website:prd": "pnpm website:build && ./dist/cli.js start --config ./packages/website/vite.config.ts"
