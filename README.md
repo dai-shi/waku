@@ -1,14 +1,33 @@
-# Waku (formerly Wakuwork)
+# Waku
 
 Minimalistic React Framework
 
-**Use it at your own risk.**
+## Project status
 
-## How to try it
+We are working toward v1-alpha: https://github.com/dai-shi/waku/issues/24
 
-- https://codesandbox.io/p/sandbox/waku-example-counter-mdc1yb
+Feel free to try it _serioursly_ with non-production projects and give us feedback.
 
-## How to start a new project
+Playground: https://codesandbox.io/p/sandbox/waku-example-counter-mdc1yb
+
+## Why develop a React framework?
+
+We believe that React Server Components (RSCs) are the future of React.
+The challenge is that we can't utilize RSCs with the React library alone.
+Instead, they require a React framework for bundling, at the very least.
+
+Currently, only a few React frameworks support RSCs, and
+they often come with more features than RSCs.
+It would be nice to have a minimal framework that implements RSCs,
+which should help learning how RSCs work.
+
+Learning is the start, but it's not what we aim at.
+Our assumption is that RSC best practices are still to explore.
+The minimal implementation should clarify the fundamentals of RSCs
+and enable the creation of additional features.
+Our goal is to establish an ecosystem that covers a broader range of use cases.
+
+## How to create a new project
 
 Minimum requirement: Node.js 18
 
@@ -24,9 +43,9 @@ yarn create waku
 pnpm create waku
 ```
 
-## Roadmap
+## APIs
 
-https://github.com/dai-shi/waku/issues/24
+TODO
 
 ## Tweets
 
