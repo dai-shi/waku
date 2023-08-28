@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+// FIXME the following is temporarily and will remove it soon
+/* eslint-disable */
+
 const path = require("node:path");
 const fs = require("node:fs");
 const https = require("node:https");

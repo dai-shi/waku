@@ -2,5 +2,11 @@
   "name": "waku-website",
   "version": "0.1.0",
   "type": "module",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "autoprefixer": "^10.4.14",
+    "bright": "^0.8.4",
+    "glob": "^10.3.3",
+    "tailwindcss": "^3.3.3"
+  }
 }

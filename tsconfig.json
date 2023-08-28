@@ -6,8 +6,15 @@
     "esModuleInterop": true,
     "module": "nodenext",
     "skipLibCheck": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "waku": ["./packages/waku/src/main.ts"],
+      "waku/*": ["./packages/waku/src/*.ts"]
+    }
   }
 }

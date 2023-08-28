@@ -2,7 +2,65 @@ lockfileVersion: '6.0'
 
 importers:
 
-  .: {}
+  .:
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.36.2
+        version: 1.36.2
+      '@types/babel__core':
+        specifier: ^7.20.1
+        version: 7.20.1
+      '@types/busboy':
+        specifier: ^1.5.0
+        version: 1.5.0
+      '@types/express':
+        specifier: ^4.17.17
+        version: 4.17.17
+      '@types/node':
+        specifier: ^20.4.5
+        version: 20.4.5
+      '@types/react':
+        specifier: ^18.2.17
+        version: 18.2.17
+      '@types/react-dom':
+        specifier: ^18.2.7
+        version: 18.2.7
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^6.2.0
+        version: 6.2.0(@typescript-eslint/parser@6.2.0)(eslint@8.45.0)(typescript@5.1.6)
+      '@typescript-eslint/parser':
+        specifier: ^6.2.0
+        version: 6.2.0(eslint@8.45.0)(typescript@5.1.6)
+      eslint:
+        specifier: ^8.45.0
+        version: 8.45.0
+      eslint-config-prettier:
+        specifier: ^8.9.0
+        version: 8.9.0(eslint@8.45.0)
+      eslint-import-resolver-typescript:
+        specifier: ^3.5.5
+        version: 3.5.5(@typescript-eslint/parser@6.2.0)(eslint-plugin-import@2.28.0)(eslint@8.45.0)
+      eslint-plugin-import:
+        specifier: ^2.28.0
+        version: 2.28.0(@typescript-eslint/parser@6.2.0)(eslint-import-resolver-typescript@3.5.5)(eslint@8.45.0)
+      eslint-plugin-react:
+        specifier: ^7.33.0
+        version: 7.33.0(eslint@8.45.0)
+      prettier:
+        specifier: ^3.0.0
+        version: 3.0.0
+      react:
+        specifier: 18.3.0-canary-7118f5dd7-20230705
+        version: 18.3.0-canary-7118f5dd7-20230705
+      react-dom:
+        specifier: 18.3.0-canary-7118f5dd7-20230705
+        version: 18.3.0-canary-7118f5dd7-20230705(react@18.3.0-canary-7118f5dd7-20230705)
+      react-server-dom-webpack:
+        specifier: 18.3.0-canary-7118f5dd7-20230705
+        version: 18.3.0-canary-7118f5dd7-20230705(react-dom@18.3.0-canary-7118f5dd7-20230705)(react@18.3.0-canary-7118f5dd7-20230705)(webpack@5.88.2)
+      typescript:
+        specifier: ^5.1.6
+        version: 5.1.6
 
   examples/01_counter:
     dependencies:
@@ -275,96 +333,43 @@ importers:
       busboy:
         specifier: ^1.6.0
         version: 1.6.0
+      react:
+        specifier: 18.3.0-canary-7118f5dd7-20230705
+        version: 18.3.0-canary-7118f5dd7-20230705
+      react-server-dom-webpack:
+        specifier: 18.3.0-canary-7118f5dd7-20230705
+        version: 18.3.0-canary-7118f5dd7-20230705(react-dom@18.3.0-canary-7118f5dd7-20230705)(react@18.3.0-canary-7118f5dd7-20230705)(webpack@5.88.2)
       vite:
         specifier: ^4.4.7
         version: 4.4.7(@types/node@20.4.5)
     devDependencies:
-      '@playwright/test':
-        specifier: ^1.36.2
-        version: 1.36.2
       '@swc/cli':
         specifier: ^0.1.62
         version: 0.1.62(@swc/core@1.3.71)
-      '@types/babel__core':
-        specifier: ^7.20.1
-        version: 7.20.1
-      '@types/busboy':
-        specifier: ^1.5.0
-        version: 1.5.0
-      '@types/express':
-        specifier: ^4.17.17
-        version: 4.17.17
-      '@types/node':
-        specifier: ^20.4.5
-        version: 20.4.5
-      '@types/react':
-        specifier: ^18.2.17
-        version: 18.2.17
-      '@types/react-dom':
-        specifier: ^18.2.7
-        version: 18.2.7
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^6.2.0
-        version: 6.2.0(@typescript-eslint/parser@6.2.0)(eslint@8.45.0)(typescript@5.1.6)
-      '@typescript-eslint/parser':
-        specifier: ^6.2.0
-        version: 6.2.0(eslint@8.45.0)(typescript@5.1.6)
+      cookie-parser:
+        specifier: ^1.4.6
+        version: 1.4.6
+      express:
+        specifier: ^4.18.2
+        version: 4.18.2
+      rollup:
+        specifier: ^3.26.3
+        version: 3.26.3
+
+  packages/website:
+    devDependencies:
       autoprefixer:
         specifier: ^10.4.14
         version: 10.4.14(postcss@8.4.28)
       bright:
         specifier: ^0.8.4
-        version: 0.8.4(react@18.3.0-canary-7118f5dd7-20230705)
-      cookie-parser:
-        specifier: ^1.4.6
-        version: 1.4.6
-      eslint:
-        specifier: ^8.45.0
-        version: 8.45.0
-      eslint-config-prettier:
-        specifier: ^8.9.0
-        version: 8.9.0(eslint@8.45.0)
-      eslint-import-resolver-typescript:
-        specifier: ^3.5.5
-        version: 3.5.5(@typescript-eslint/parser@6.2.0)(eslint-plugin-import@2.28.0)(eslint@8.45.0)
-      eslint-plugin-import:
-        specifier: ^2.28.0
-        version: 2.28.0(@typescript-eslint/parser@6.2.0)(eslint-import-resolver-typescript@3.5.5)(eslint@8.45.0)
-      eslint-plugin-react:
-        specifier: ^7.33.0
-        version: 7.33.0(eslint@8.45.0)
-      express:
-        specifier: ^4.18.2
-        version: 4.18.2
+        version: 0.8.4(react@18.2.0)
       glob:
         specifier: ^10.3.3
         version: 10.3.3
-      prettier:
-        specifier: ^3.0.0
-        version: 3.0.0
-      react:
-        specifier: 18.3.0-canary-7118f5dd7-20230705
-        version: 18.3.0-canary-7118f5dd7-20230705
-      react-dom:
-        specifier: 18.3.0-canary-7118f5dd7-20230705
-        version: 18.3.0-canary-7118f5dd7-20230705(react@18.3.0-canary-7118f5dd7-20230705)
-      react-server-dom-webpack:
-        specifier: 18.3.0-canary-7118f5dd7-20230705
-        version: 18.3.0-canary-7118f5dd7-20230705(react-dom@18.3.0-canary-7118f5dd7-20230705)(react@18.3.0-canary-7118f5dd7-20230705)(webpack@5.88.2)
-      rollup:
-        specifier: ^3.26.3
-        version: 3.26.3
       tailwindcss:
         specifier: ^3.3.3
         version: 3.3.3
-      typescript:
-        specifier: ^5.1.6
-        version: 5.1.6
-      waku:
-        specifier: link:.
-        version: 'link:'
-
-  packages/website: {}
 
 packages:
 
@@ -1801,13 +1806,13 @@ packages:
       fill-range: 7.0.1
     dev: true
 
-  /bright@0.8.4(react@18.3.0-canary-7118f5dd7-20230705):
+  /bright@0.8.4(react@18.2.0):
     resolution: {integrity: sha512-SBlcJje8EDh3lLihqr0W27yHCVpuh3NReziNxZOwUzuaShqq+V/imY+J+AvJdTIOifiCQkyIsgVWKAj5G/eOyg==}
     peerDependencies:
       react: ^18
     dependencies:
       '@code-hike/lighter': 0.8.1
-      react: 18.3.0-canary-7118f5dd7-20230705
+      react: 18.2.0
       server-only: 0.0.1
     dev: true
 
@@ -3970,6 +3975,13 @@ packages:
       react: 18.3.0-canary-7118f5dd7-20230705
       react-dom: 18.3.0-canary-7118f5dd7-20230705(react@18.3.0-canary-7118f5dd7-20230705)
       webpack: 5.88.2(@swc/core@1.3.71)
+
+  /react@18.2.0:
+    resolution: {integrity: sha512-/3IjMdb2L9QbBdWiW5e3P2/npwMBaU9mHCSCUzNln0ZCYbcfTsGbTJrU/kGemdH2IWmB2ioZ+zkxtmq6g09fGQ==}
+    engines: {node: '>=0.10.0'}
+    dependencies:
+      loose-envify: 1.4.0
+    dev: true
 
   /react@18.3.0-canary-7118f5dd7-20230705:
     resolution: {integrity: sha512-JmjeKd3OCthZzdNTvhMimIb7Tp+FwZDioOgBOxshhOv/AO256o4ZhlKWwqXMn72Orv4vgF3IGzUcK7Jxl1PVTw==}
