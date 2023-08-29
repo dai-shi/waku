@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "pnpm -r --filter='./packages/*' run dev",
     "compile": "pnpm -r --filter='./packages/*' run compile",
-    "postinstall": "test -d ./packages/waku/dist || (pnpm run compile && pnpm install)",
+    "postinstall": "test -d ./packages/waku/dist || (pnpm -r --filter='./packages/waku' run compile && pnpm link .)",
     "test": "prettier -c . && eslint . && tsc --project . --noEmit",
     "e2e": "playwright test",
     "examples:dev": "(cd ./examples/${NAME} && pnpm run dev)",
