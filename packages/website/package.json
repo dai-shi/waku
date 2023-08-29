@@ -9,10 +9,10 @@
     "start": "waku start --with-ssr"
   },
   "dependencies": {
-    "autoprefixer": "^10.4.14",
+    "autoprefixer": "^10.4.15",
     "bright": "^0.8.4",
     "express": "^4.18.2",
-    "glob": "^10.2.6",
+    "glob": "^10.3.3",
     "react": "18.3.0-canary-7118f5dd7-20230705",
     "react-dom": "18.3.0-canary-7118f5dd7-20230705",
     "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705",
