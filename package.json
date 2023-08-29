@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "pnpm -r --filter='./packages/*' run dev",
     "compile": "pnpm -r --filter='./packages/*' run compile",
-    "postinstall": "test -d ./packages/waku/dist || (pnpm -r --filter='./packages/waku' run compile && pnpm link .)",
+    "postinstall": "test -d ./packages/waku/dist || (pnpm -r --filter='./packages/waku' run compile && pnpm link ./packages/waku)",
     "test": "prettier -c . && eslint . && tsc --project . --noEmit",
     "e2e": "playwright test",
     "examples:dev": "(cd ./examples/${NAME} && pnpm run dev)",
@@ -55,7 +55,6 @@
     "react": "18.3.0-canary-7118f5dd7-20230705",
     "react-dom": "18.3.0-canary-7118f5dd7-20230705",
     "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705",
-    "typescript": "^5.1.6",
-    "waku": "link:./packages/waku"
+    "typescript": "^5.1.6"
   }
 }

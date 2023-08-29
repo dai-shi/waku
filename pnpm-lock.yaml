@@ -61,9 +61,6 @@ importers:
       typescript:
         specifier: ^5.1.6
         version: 5.1.6
-      waku:
-        specifier: link:./packages/waku
-        version: link:packages/waku
 
   examples/01_counter:
     dependencies:
