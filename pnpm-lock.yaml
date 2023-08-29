@@ -323,6 +323,37 @@ importers:
         specifier: ^5.2.2
         version: 5.2.2
 
+  examples/99_jotai:
+    dependencies:
+      express:
+        specifier: ^4.18.2
+        version: 4.18.2
+      jotai:
+        specifier: ^2.4.0
+        version: 2.4.0(@types/react@18.2.21)(react@18.3.0-canary-7118f5dd7-20230705)
+      react:
+        specifier: 18.3.0-canary-7118f5dd7-20230705
+        version: 18.3.0-canary-7118f5dd7-20230705
+      react-dom:
+        specifier: 18.3.0-canary-7118f5dd7-20230705
+        version: 18.3.0-canary-7118f5dd7-20230705(react@18.3.0-canary-7118f5dd7-20230705)
+      react-server-dom-webpack:
+        specifier: 18.3.0-canary-7118f5dd7-20230705
+        version: 18.3.0-canary-7118f5dd7-20230705(react-dom@18.3.0-canary-7118f5dd7-20230705)(react@18.3.0-canary-7118f5dd7-20230705)(webpack@5.88.2)
+      waku:
+        specifier: 0.13.0
+        version: 0.13.0(@types/node@20.5.7)(express@4.18.2)(react-server-dom-webpack@18.3.0-canary-7118f5dd7-20230705)(react@18.3.0-canary-7118f5dd7-20230705)
+    devDependencies:
+      '@types/react':
+        specifier: ^18.2.21
+        version: 18.2.21
+      '@types/react-dom':
+        specifier: ^18.2.7
+        version: 18.2.7
+      typescript:
+        specifier: ^5.2.2
+        version: 5.2.2
+
   packages/create-waku: {}
 
   packages/waku:
@@ -995,12 +1026,30 @@ packages:
       source-map: 0.7.4
     dev: true
 
+  /@swc/core-darwin-arm64@1.3.68:
+    resolution: {integrity: sha512-Z5pNxeuP2NxpOHTzDQkJs0wAPLnTlglZnR3WjObijwvdwT/kw1Y5EPDKM/BVSIeG40SPMkDLBbI0aj0qyXzrBA==}
+    engines: {node: '>=10'}
+    cpu: [arm64]
+    os: [darwin]
+    requiresBuild: true
+    dev: false
+    optional: true
+
   /@swc/core-darwin-arm64@1.3.80:
     resolution: {integrity: sha512-rhoFTcQMUGfO7IkfOnopPSF6O0/aVJ58B7KueIKbvrMe6YvSfFj9QfObELFjYCcrJZTvUWBhig0QrsfPIiUphA==}
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [darwin]
     requiresBuild: true
+    optional: true
+
+  /@swc/core-darwin-x64@1.3.68:
+    resolution: {integrity: sha512-ZHl42g6yXhfX4PzAQ0BNvBXpt/OcbAHfubWRN6eXELK3fiNnxL7QBW1if7iizlq6iA+Mj1pwHyyUit1pz0+fgA==}
+    engines: {node: '>=10'}
+    cpu: [x64]
+    os: [darwin]
+    requiresBuild: true
+    dev: false
     optional: true
 
   /@swc/core-darwin-x64@1.3.80:
@@ -1011,12 +1060,30 @@ packages:
     requiresBuild: true
     optional: true
 
+  /@swc/core-linux-arm-gnueabihf@1.3.68:
+    resolution: {integrity: sha512-Mk8f6KCOQ2CNAR4PtWajIjS6XKSSR7ZYDOCf1GXRxhS3qEyQH7V8elWvqWYqHcT4foO60NUmxA/NOM/dQrdO1A==}
+    engines: {node: '>=10'}
+    cpu: [arm]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
   /@swc/core-linux-arm-gnueabihf@1.3.80:
     resolution: {integrity: sha512-QIjwP3PtDeHBDkwF6+ZZqdUsqAhORbMpxrw2jq3mHe4lQrxBttSFTq018vlMRo2mFEorOvXdadzaD9m+NymPrw==}
     engines: {node: '>=10'}
     cpu: [arm]
     os: [linux]
     requiresBuild: true
+    optional: true
+
+  /@swc/core-linux-arm64-gnu@1.3.68:
+    resolution: {integrity: sha512-RhBllggh9t9sIxaRgRcGrVaS7fDk6KsIqR6b9+dwU5OyDr4ZyHWw1ZaH/1/HAebuXYhNBjoNUiRtca6lKRIPgQ==}
+    engines: {node: '>=10'}
+    cpu: [arm64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
     optional: true
 
   /@swc/core-linux-arm64-gnu@1.3.80:
@@ -1027,12 +1094,30 @@ packages:
     requiresBuild: true
     optional: true
 
+  /@swc/core-linux-arm64-musl@1.3.68:
+    resolution: {integrity: sha512-8K3zjU+tFgn6yGDEeD343gkKaHU9dhz77NiVkI1VzwRaT/Ag5pwl5eMQ1yStm8koNFzn3zq6rGjHfI5g2yI5Wg==}
+    engines: {node: '>=10'}
+    cpu: [arm64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
   /@swc/core-linux-arm64-musl@1.3.80:
     resolution: {integrity: sha512-AhdCQ7QKx5mWrtpaOA1mFRiWWvuiiUtspvo0QSpspDetRKTND1rlf/3UB5+gp0kCeCNUTsVmJWU7fIA9ICZtXA==}
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
+    optional: true
+
+  /@swc/core-linux-x64-gnu@1.3.68:
+    resolution: {integrity: sha512-4xAnvsBOyeTL0AB8GWlRKDM/hsysJ5jr5qvdKKI3rZfJgnnxl/xSX6TJKPsJ8gygfUJ3BmfCbmUmEyeDZ3YPvA==}
+    engines: {node: '>=10'}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
     optional: true
 
   /@swc/core-linux-x64-gnu@1.3.80:
@@ -1043,12 +1128,30 @@ packages:
     requiresBuild: true
     optional: true
 
+  /@swc/core-linux-x64-musl@1.3.68:
+    resolution: {integrity: sha512-RCpaBo1fcpy1EFdjF+I7N4lfzOaHXVV0iMw/ABM+0PD6tp3V/9pxsguaZyeAHyEiUlDA6PZ4TfXv5zfnXEgW4Q==}
+    engines: {node: '>=10'}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
   /@swc/core-linux-x64-musl@1.3.80:
     resolution: {integrity: sha512-8OK9IlI1zpWOm7vIp1iXmZSEzLAwFpqhsGSEhxPavpOx2m54kLFdPcw/Uv3n461f6TCtszIxkGq1kSqBUdfUBA==}
     engines: {node: '>=10'}
     cpu: [x64]
     os: [linux]
     requiresBuild: true
+    optional: true
+
+  /@swc/core-win32-arm64-msvc@1.3.68:
+    resolution: {integrity: sha512-v2WZvXrSslYEpY1nqpItyamL4DyaJinmOkXvM8Bc1LLKU5rGuvmBdjUYg/5Y+o0AUynuiWubpgHNOkBWiCvfqw==}
+    engines: {node: '>=10'}
+    cpu: [arm64]
+    os: [win32]
+    requiresBuild: true
+    dev: false
     optional: true
 
   /@swc/core-win32-arm64-msvc@1.3.80:
@@ -1059,12 +1162,30 @@ packages:
     requiresBuild: true
     optional: true
 
+  /@swc/core-win32-ia32-msvc@1.3.68:
+    resolution: {integrity: sha512-HH5NJrIdzkJs+1xxprie0qSCMBeL9yeEhcC1yZTzYv8bwmabOUSdtKIqS55iYP/2hLWn9CTbvKPmLOIhCopW3Q==}
+    engines: {node: '>=10'}
+    cpu: [ia32]
+    os: [win32]
+    requiresBuild: true
+    dev: false
+    optional: true
+
   /@swc/core-win32-ia32-msvc@1.3.80:
     resolution: {integrity: sha512-3jiiZzU/kaw7k4zUp1yMq1QiUe4wJVtCEXIhf+fKuBsIwm7rdvyK/+PIx5KHnZy4TGQnYczKBRhJA5nuBcrUCQ==}
     engines: {node: '>=10'}
     cpu: [ia32]
     os: [win32]
     requiresBuild: true
+    optional: true
+
+  /@swc/core-win32-x64-msvc@1.3.68:
+    resolution: {integrity: sha512-9HZVtLQUgK8r/yXQdwe0VBexbIcrY6+fBROhs7AAPWdewpaUeLkwQEJk6TbYr9CQuHw26FFGg6SjwAiqXF+kgQ==}
+    engines: {node: '>=10'}
+    cpu: [x64]
+    os: [win32]
+    requiresBuild: true
+    dev: false
     optional: true
 
   /@swc/core-win32-x64-msvc@1.3.80:
@@ -1074,6 +1195,28 @@ packages:
     os: [win32]
     requiresBuild: true
     optional: true
+
+  /@swc/core@1.3.68:
+    resolution: {integrity: sha512-njGQuJO+Wy06dEayt70cf0c/KI3HGjm4iW9LLViVLBuYNzJ4SSdNfzejludzufu6im+dsDJ0i3QjgWhAIcVHMQ==}
+    engines: {node: '>=10'}
+    requiresBuild: true
+    peerDependencies:
+      '@swc/helpers': ^0.5.0
+    peerDependenciesMeta:
+      '@swc/helpers':
+        optional: true
+    optionalDependencies:
+      '@swc/core-darwin-arm64': 1.3.68
+      '@swc/core-darwin-x64': 1.3.68
+      '@swc/core-linux-arm-gnueabihf': 1.3.68
+      '@swc/core-linux-arm64-gnu': 1.3.68
+      '@swc/core-linux-arm64-musl': 1.3.68
+      '@swc/core-linux-x64-gnu': 1.3.68
+      '@swc/core-linux-x64-musl': 1.3.68
+      '@swc/core-win32-arm64-msvc': 1.3.68
+      '@swc/core-win32-ia32-msvc': 1.3.68
+      '@swc/core-win32-x64-msvc': 1.3.68
+    dev: false
 
   /@swc/core@1.3.80:
     resolution: {integrity: sha512-yX2xV5I/lYswHHR+44TPvzBgq3/Y8N1YWpTQADYuvSiX3Jxyvemk5Jpx3rRtigYb8WBkWAAf2i5d5ZJ2M7hhgw==}
@@ -1236,7 +1379,6 @@ packages:
 
   /@types/prop-types@15.7.5:
     resolution: {integrity: sha512-JCB8C6SnDoQf0cNycqd/35A7MjcnK+ZTqE7judS6o7utxUCg6imJg3QK2qzHKszlTjcj2cn+NwMB2i96ubpj7w==}
-    dev: true
 
   /@types/qs@6.9.7:
     resolution: {integrity: sha512-FGa1F62FT09qcrueBA6qYTrJPVDzah9a+493+o2PCXsesWHIn27G98TsSMs3WPNbZIEj4+VJf6saSFpvD+3Zsw==}
@@ -1258,7 +1400,6 @@ packages:
       '@types/prop-types': 15.7.5
       '@types/scheduler': 0.16.3
       csstype: 3.1.2
-    dev: true
 
   /@types/responselike@1.0.0:
     resolution: {integrity: sha512-85Y2BjiufFzaMIlvJDvTTB8Fxl2xfLo4HgmHzVBz08w4wDePCTjYw66PdrolO0kzli3yam/YCgRufyo1DdQVTA==}
@@ -1268,7 +1409,6 @@ packages:
 
   /@types/scheduler@0.16.3:
     resolution: {integrity: sha512-5cJ8CB4yAx7BH1oMvdU0Jh9lrEXyPkar6F9G/ERswkCuvP4KQZfZkSjcMbAICCpQTN4OuZn8tz0HiKv9TGZgrQ==}
-    dev: true
 
   /@types/semver@7.5.1:
     resolution: {integrity: sha512-cJRQXpObxfNKkFAZbJl2yjWtJCqELQIdShsogr1d2MilP8dKD9TE/nEKHkJgUNHdGKCQaf9HbIynuV2csLGVLg==}
@@ -2013,7 +2153,6 @@ packages:
 
   /csstype@3.1.2:
     resolution: {integrity: sha512-I7K1Uu0MBPzaFKg4nI5Q7Vs2t+3gWWW648spaF+Rg7pI9ds18Ugn+lvg4SHczUdKlHI5LWBXyqfS8+DufyBsgQ==}
-    dev: true
 
   /debug@2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
@@ -3264,6 +3403,22 @@ packages:
   /jiti@1.19.3:
     resolution: {integrity: sha512-5eEbBDQT/jF1xg6l36P+mWGGoH9Spuy0PCdSr2dtWRDGC6ph/w9ZCL4lmESW8f8F7MwT3XKescfP0wnZWAKL9w==}
     hasBin: true
+    dev: false
+
+  /jotai@2.4.0(@types/react@18.2.21)(react@18.3.0-canary-7118f5dd7-20230705):
+    resolution: {integrity: sha512-NUHJdAJe3C8Prf0DD6EzezCATjkNvfCNI7pgkaX7bCPPsqE0oK8L9RzZsEhz/UxFoGRayXwacTvAli0VEYKkqQ==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@types/react': '>=17.0.0'
+      react: '>=17.0.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      react:
+        optional: true
+    dependencies:
+      '@types/react': 18.2.21
+      react: 18.3.0-canary-7118f5dd7-20230705
     dev: false
 
   /js-tokens@4.0.0:
@@ -4640,6 +4795,37 @@ packages:
       rollup: 3.28.1
     optionalDependencies:
       fsevents: 2.3.3
+    dev: false
+
+  /waku@0.13.0(@types/node@20.5.7)(express@4.18.2)(react-server-dom-webpack@18.3.0-canary-7118f5dd7-20230705)(react@18.3.0-canary-7118f5dd7-20230705):
+    resolution: {integrity: sha512-ayG/OoymR9YkYeYetaCXVAnqsoEcjE/gQ89poMfxJyWlEAPw0P9R3MbrBUiDrJGQQnVa/4uTG9+YwaiELFXaCA==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+    peerDependencies:
+      express: ^4.18.2
+      react: 18.3.0-canary-7118f5dd7-20230705
+      react-server-dom-webpack: 18.3.0-canary-7118f5dd7-20230705
+    peerDependenciesMeta:
+      express:
+        optional: true
+    dependencies:
+      '@swc/core': 1.3.68
+      '@vitejs/plugin-react': 4.0.4(vite@4.4.9)
+      busboy: 1.6.0
+      express: 4.18.2
+      react: 18.3.0-canary-7118f5dd7-20230705
+      react-server-dom-webpack: 18.3.0-canary-7118f5dd7-20230705(react-dom@18.3.0-canary-7118f5dd7-20230705)(react@18.3.0-canary-7118f5dd7-20230705)(webpack@5.88.2)
+      vite: 4.4.9(@types/node@20.5.7)
+    transitivePeerDependencies:
+      - '@swc/helpers'
+      - '@types/node'
+      - less
+      - lightningcss
+      - sass
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
     dev: false
 
   /watchpack@2.4.0:
