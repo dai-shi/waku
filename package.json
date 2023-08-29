@@ -1,105 +1,43 @@
 {
-  "name": "waku",
-  "description": "Minimalistic React Framework",
-  "version": "0.14.0",
+  "name": "waku-monorepo",
+  "version": "0.1.0",
   "type": "module",
-  "author": "Daishi Kato",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/dai-shi/waku.git"
-  },
-  "exports": {
-    "./package.json": "./package.json",
-    ".": {
-      "types": "./dist/main.d.ts",
-      "require": "./dist/cjs/main.js",
-      "default": "./dist/main.js"
-    },
-    "./node-loader": {
-      "types": "./dist/node-loader.d.ts",
-      "require": "./dist/cjs/node-loader.js",
-      "default": "./dist/node-loader.js"
-    },
-    "./config": {
-      "types": "./dist/config.d.ts",
-      "require": "./dist/cjs/config.js",
-      "default": "./dist/config.js"
-    },
-    "./client": {
-      "types": "./dist/client.d.ts",
-      "require": "./dist/cjs/client.js",
-      "default": "./dist/client.js"
-    },
-    "./server": {
-      "types": "./dist/server.d.ts",
-      "require": "./dist/cjs/server.js",
-      "default": "./dist/server.js"
-    },
-    "./router/client": {
-      "types": "./dist/router/client.d.ts",
-      "require": "./dist/cjs/router/client.js",
-      "default": "./dist/router/client.js"
-    },
-    "./router/server": {
-      "types": "./dist/router/server.d.ts",
-      "require": "./dist/cjs/router/server.js",
-      "default": "./dist/router/server.js"
-    }
-  },
-  "bin": {
-    "waku": "./dist/cli.js"
-  },
-  "files": [
-    "src",
-    "dist"
-  ],
+  "private": true,
   "scripts": {
-    "dev": "swc src -d dist -w",
-    "compile": "rm -rf dist && npm run compile:code && npm run compile:types",
-    "compile:code": "swc src -d dist && swc src -d dist/cjs -C module.type=commonjs && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
-    "compile:types": "tsc --project tsconfig.build.json",
+    "dev": "pnpm -r --filter='./packages/*' run dev",
+    "compile": "pnpm -r --filter='./packages/*' run compile",
+    "postinstall": "test -d ./packages/waku/dist || (pnpm -r --filter='./packages/waku' run compile && pnpm install)",
     "test": "prettier -c . && eslint . && tsc --project . --noEmit",
     "e2e": "playwright test",
-    "examples:dev": "npm run compile:code && (cd ./examples/${NAME} && npm run dev)",
-    "examples:dev:01_counter": "NAME=01_counter npm run examples:dev",
-    "examples:dev:02_async": "NAME=02_async npm run examples:dev",
-    "examples:dev:03_promise": "NAME=03_promise npm run examples:dev",
-    "examples:dev:04_callserver": "NAME=04_callserver npm run examples:dev",
-    "examples:dev:05_mutation": "NAME=05_mutation npm run examples:dev",
-    "examples:dev:06_nesting": "NAME=06_nesting npm run examples:dev",
-    "examples:dev:07_router": "NAME=07_router npm run examples:dev",
-    "examples:dev:08_cookies": "NAME=08_cookies npm run examples:dev",
-    "examples:dev:09_cssmodules": "NAME=09_cssmodules npm run examples:dev",
-    "examples:build": "npm run compile:code && (cd ./examples/${NAME} && npm run build)",
-    "examples:prd": "npm run examples:build && (cd ./examples/${NAME} && npm start)",
-    "examples:prd:01_counter": "NAME=01_counter npm run examples:prd",
-    "examples:prd:02_async": "NAME=02_async npm run examples:prd",
-    "examples:prd:03_promise": "NAME=03_promise npm run examples:prd",
-    "examples:prd:04_callserver": "NAME=04_callserver npm run examples:prd",
-    "examples:prd:05_mutation": "NAME=05_mutation npm run examples:prd",
-    "examples:prd:06_nesting": "NAME=06_nesting npm run examples:prd",
-    "examples:prd:07_router": "NAME=07_router npm run examples:prd",
-    "examples:prd:08_cookies": "NAME=08_cookies npm run examples:prd",
-    "examples:prd:09_cssmodules": "NAME=09_cssmodules npm run examples:prd",
-    "website:dev": "npm run compile:code && ./dist/cli.js dev --config ./website/vite.config.ts",
-    "website:build": "npm run compile:code && ./dist/cli.js build --config ./website/vite.config.ts",
-    "website:vercel": "npm run website:build && cp -Lr ./website/dist/.vercel/output ./.vercel/",
-    "website:prd": "npm run website:build && ./dist/cli.js start --config ./website/vite.config.ts"
-  },
-  "license": "MIT",
-  "engines": {
-    "node": ">=18.0.0"
+    "examples:dev": "(cd ./examples/${NAME} && pnpm run dev)",
+    "examples:dev:01_counter": "NAME=01_counter pnpm run examples:dev",
+    "examples:dev:02_async": "NAME=02_async pnpm run examples:dev",
+    "examples:dev:03_promise": "NAME=03_promise pnpm run examples:dev",
+    "examples:dev:04_callserver": "NAME=04_callserver pnpm run examples:dev",
+    "examples:dev:05_mutation": "NAME=05_mutation pnpm run examples:dev",
+    "examples:dev:06_nesting": "NAME=06_nesting pnpm run examples:dev",
+    "examples:dev:07_router": "NAME=07_router pnpm run examples:dev",
+    "examples:dev:08_cookies": "NAME=08_cookies pnpm run examples:dev",
+    "examples:dev:09_cssmodules": "NAME=09_cssmodules pnpm run examples:dev",
+    "examples:build": "(cd ./examples/${NAME} && pnpm run build)",
+    "examples:prd": "pnpm run examples:build && (cd ./examples/${NAME} && pnpm start)",
+    "examples:prd:01_counter": "NAME=01_counter pnpm run examples:prd",
+    "examples:prd:02_async": "NAME=02_async pnpm run examples:prd",
+    "examples:prd:03_promise": "NAME=03_promise pnpm run examples:prd",
+    "examples:prd:04_callserver": "NAME=04_callserver pnpm run examples:prd",
+    "examples:prd:05_mutation": "NAME=05_mutation pnpm run examples:prd",
+    "examples:prd:06_nesting": "NAME=06_nesting pnpm run examples:prd",
+    "examples:prd:07_router": "NAME=07_router pnpm run examples:prd",
+    "examples:prd:08_cookies": "NAME=08_cookies pnpm run examples:prd",
+    "examples:prd:09_cssmodules": "NAME=09_cssmodules pnpm run examples:prd",
+    "website:dev": "(cd packages/website && pnpm run dev)",
+    "website:build": "(cd packages/website && pnpm run build)",
+    "website:vercel": "pnpm run website:build && cp -Lr ./packages/website/dist/.vercel/output ./.vercel/",
+    "website:prd": "pnpm run website:build && (cd packages/website && pnpm start)"
   },
   "prettier": {},
-  "dependencies": {
-    "@swc/core": "1.3.71",
-    "@vitejs/plugin-react": "^4.0.3",
-    "busboy": "^1.6.0",
-    "vite": "^4.4.7"
-  },
   "devDependencies": {
     "@playwright/test": "^1.36.2",
-    "@swc/cli": "^0.1.62",
     "@types/babel__core": "^7.20.1",
     "@types/busboy": "^1.5.0",
     "@types/express": "^4.17.17",
@@ -108,33 +46,16 @@
     "@types/react-dom": "^18.2.7",
     "@typescript-eslint/eslint-plugin": "^6.2.0",
     "@typescript-eslint/parser": "^6.2.0",
-    "autoprefixer": "^10.4.14",
-    "bright": "^0.8.4",
-    "cookie-parser": "^1.4.6",
     "eslint": "^8.45.0",
     "eslint-config-prettier": "^8.9.0",
     "eslint-import-resolver-typescript": "^3.5.5",
     "eslint-plugin-import": "^2.28.0",
     "eslint-plugin-react": "^7.33.0",
-    "express": "^4.18.2",
-    "glob": "^10.3.3",
     "prettier": "^3.0.0",
     "react": "18.3.0-canary-7118f5dd7-20230705",
     "react-dom": "18.3.0-canary-7118f5dd7-20230705",
     "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705",
-    "rollup": "^3.26.3",
-    "tailwindcss": "^3.3.3",
     "typescript": "^5.1.6",
-    "waku": "link:."
-  },
-  "peerDependencies": {
-    "express": "^4.18.2",
-    "react": "18.3.0-canary-7118f5dd7-20230705",
-    "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705"
-  },
-  "peerDependenciesMeta": {
-    "express": {
-      "optional": true
-    }
+    "waku": "workspace:*"
   }
 }

@@ -1,5 +1,6 @@
 {
+  "packages": ["packages/waku"],
   "buildCommand": "compile",
   "sandboxes": ["vanilla", "vanilla-typescript-vanilla-ts", "new", "react-typescript-react-ts"],
-  "node": "14"
+  "node": "18"
 }

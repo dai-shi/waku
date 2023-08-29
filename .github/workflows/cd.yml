@@ -20,8 +20,8 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
-      - run: npm test
-      - run: npm run compile
-      - run: npm publish
+      - run: pnpm test
+      - run: pnpm run compile
+      - run: pnpm -r --filter='./packages/*' publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

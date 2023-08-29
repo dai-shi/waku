@@ -18,7 +18,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run test
+      - run: pnpm test
 
   e2e:
     runs-on: ubuntu-latest
@@ -34,7 +34,6 @@ jobs:
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run compile
-      - run: pnpm link .
       - name: Get installed Playwright version
         id: playwright-version
         run: |
