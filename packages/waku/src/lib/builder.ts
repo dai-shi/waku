@@ -446,9 +446,8 @@ export async function build() {
     path.join(config.root, config.framework.srcDir, config.framework.entriesJs),
   );
 
-  const { clientEntryFiles, serverEntryFiles } = await analyzeEntries(
-    entriesFile,
-  );
+  const { clientEntryFiles, serverEntryFiles } =
+    await analyzeEntries(entriesFile);
   const serverBuildOutput = await buildServerBundle(
     config,
     entriesFile,
@@ -461,9 +460,8 @@ export async function build() {
     serverBuildOutput,
   );
 
-  const { buildConfig, getClientModules, rscFiles } = await emitRscFiles(
-    config,
-  );
+  const { buildConfig, getClientModules, rscFiles } =
+    await emitRscFiles(config);
   const { htmlFiles } = await emitHtmlFiles(
     config,
     buildConfig,
