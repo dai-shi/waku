@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "pnpm -r --filter='./packages/*' run dev",
     "compile": "pnpm -r --filter='./packages/*' run compile",
+    "csb-install-FIXME": "pnpm install --no-frozen-lockfile",
     "postinstall": "test -d ./packages/waku/dist || (pnpm -r --filter='./packages/waku' run compile && pnpm install)",
     "test": "prettier -c . && eslint . && tsc --project . --noEmit",
     "e2e": "playwright test",
