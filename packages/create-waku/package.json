@@ -1,0 +1,10 @@
+{
+  "name": "create-waku",
+  "version": "0.4.10",
+  "author": "Daishi Kato",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dai-shi/waku.git"
+  },
+  "bin": "./cli.js"
+}
