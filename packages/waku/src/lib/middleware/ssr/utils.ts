@@ -1,6 +1,8 @@
 import { Transform } from "node:stream";
 import type { Readable } from "node:stream";
 
+import { createElement, use } from "react";
+import type { ReactNode } from "react";
 import RDServer from "react-dom/server";
 import RSDWClient from "react-server-dom-webpack/client.node.unbundled";
 
@@ -37,6 +39,7 @@ const interleaveHtmlSnippets = (
 export const renderHtmlToReadable = (
   htmlStr: string, // Hope stream works, but it'd be too tricky
   rscStream: Readable,
+  filter: (elements: Record<string, ReactNode>) => ReactNode,
   splitHTML: (htmlStr: string) => readonly [string, string, string],
   getFallback: (id: string) => string,
 ): Readable => {
@@ -58,7 +61,8 @@ export const renderHtmlToReadable = (
     },
   );
   const data = createFromNodeStream(rscStream, bundlerConfig);
-  return renderToPipeableStream(data, {
+  const Filter = ({ data }: { data: any }) => filter(use(data));
+  return renderToPipeableStream(createElement(Filter, { data }), {
     onError(err) {
       if (
         err instanceof Error &&

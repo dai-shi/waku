@@ -11,34 +11,16 @@ globalThis.__webpack_require__ = (id) => globalThis.__waku_module_cache__.get(id
 
 export const generatePrefetchCode = (
   basePrefix: string,
-  elements: Iterable<readonly [rscId: string, props: unknown]>,
+  inputs: Iterable<string>,
   moduleIds: Iterable<string>,
 ) => {
-  const elementsArray = Array.from(elements);
+  const inputsArray = Array.from(inputs);
   let code = "";
-  if (elementsArray.length) {
-    const rscIds = Array.from(new Set(elementsArray.map(([rscId]) => rscId)));
+  if (inputsArray.length) {
     code += `
 globalThis.__WAKU_PREFETCHED__ = {
-${rscIds
-  .map((rscId) => {
-    const value =
-      "{" +
-      elementsArray
-        .flatMap(([id, props]) => {
-          if (id !== rscId) return [];
-          // FIXME we blindly expect JSON.stringify usage is deterministic
-          const serializedProps = JSON.stringify(props);
-          const searchParams = new URLSearchParams();
-          searchParams.set("props", serializedProps);
-          return [
-            `'${serializedProps}': fetch('${basePrefix}${rscId}/${searchParams}')`,
-          ];
-        })
-        .join(",") +
-      "}";
-    return `  '${rscId}': ${value}`;
-  })
+${inputsArray
+  .map((input) => `  '${input}': fetch('${basePrefix}${input}')`)
   .join(",\n")}
 };`;
   }

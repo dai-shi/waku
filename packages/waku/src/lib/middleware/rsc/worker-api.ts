@@ -32,7 +32,7 @@ export type MessageReq =
       type: "render";
       input: RenderInput;
       command: "dev" | "build" | "start";
-      ctx: unknown;
+      context: unknown;
       moduleIdCallback: boolean;
     }
   | { id: number; type: "getBuildConfig" }
@@ -46,7 +46,7 @@ export type MessageReq =
 export type MessageRes =
   | { type: "full-reload" }
   | { type: "hot-import"; source: string }
-  | { id: number; type: "start"; ctx: unknown }
+  | { id: number; type: "start"; context: unknown }
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "moduleId"; moduleId: string }
   | { id: number; type: "end" }
@@ -102,7 +102,7 @@ let nextId = 1;
 
 export function renderRSC<Context>(
   input: RenderInput,
-  options: RenderOptions<Context>,
+  options: RenderOptions,
 ): Promise<readonly [Readable, Context]> {
   const id = nextId++;
   let started = false;
@@ -112,7 +112,7 @@ export function renderRSC<Context>(
       if (mesg.type === "start") {
         if (!started) {
           started = true;
-          resolve([passthrough, mesg.ctx as Context]);
+          resolve([passthrough, mesg.context as Context]);
         } else {
           throw new Error("already started");
         }
@@ -148,7 +148,7 @@ export function renderRSC<Context>(
       type: "render",
       input,
       command: options.command,
-      ctx: options.ctx ?? null,
+      context: options.context,
       moduleIdCallback: !!options.moduleIdCallback,
     };
     worker.postMessage(mesg);

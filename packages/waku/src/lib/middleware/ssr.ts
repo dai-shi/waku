@@ -33,17 +33,10 @@ const renderHTML = async (
   const htmlResPromise = fetch(rscServer + pathStr.slice(1), {
     headers: { "x-waku-ssr-mode": "html" },
   });
-  const [rscId, props] = ssrConfig.element;
-  // FIXME we blindly expect JSON.stringify usage is deterministic
-  const serializedProps = JSON.stringify(props);
-  const searchParams = new URLSearchParams();
-  searchParams.set("props", serializedProps);
-  const rscResPromise = fetch(
-    rscServer + rscPrefix + rscId + "/" + searchParams,
-    {
-      headers: { "x-waku-ssr-mode": "rsc" },
-    },
-  );
+  const { input, filter } = ssrConfig;
+  const rscResPromise = fetch(rscServer + rscPrefix + input, {
+    headers: { "x-waku-ssr-mode": "rsc" },
+  });
   const [htmlRes, rscRes] = await Promise.all([htmlResPromise, rscResPromise]);
   if (!htmlRes.ok) {
     const err = new Error("Failed to fetch html from RSC server");
@@ -58,12 +51,14 @@ const renderHTML = async (
   if (!htmlRes.body || !rscRes.body) {
     throw new Error("No body");
   }
+  // See: https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/65542#discussioncomment-6071004
+  //      https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/62651
+  //      https://github.com/microsoft/TypeScript/issues/29867
+  const rscStream = Readable.fromWeb(rscRes.body as ReadableStream<Uint8Array>);
   return renderHtmlToReadable(
     await htmlRes.text(),
-    // See: https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/65542#discussioncomment-6071004
-    //      https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/62651
-    //      https://github.com/microsoft/TypeScript/issues/29867
-    Readable.fromWeb(rscRes.body as ReadableStream<Uint8Array>),
+    rscStream,
+    filter,
     splitHTML,
     getFallback,
   );
