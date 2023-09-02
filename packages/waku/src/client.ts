@@ -18,14 +18,13 @@ const checkStatus = async (
 
 type Elements = Record<string, ReactNode>;
 
-const Context = createContext<Elements | null>(null);
-
 // TODO get basePath from vite config
 
-export function serve(basePath = "/RSC/") {
-  const fetchRSC = cache((
+export const fetchRSC = cache(
+  (
     input: string,
     rerender: (fn: (prev: Elements) => Elements) => void,
+    basePath = "/RSC/",
   ): Elements => {
     const options = {
       async callServer(actionId: string, args: unknown[]) {
@@ -43,37 +42,39 @@ export function serve(basePath = "/RSC/") {
     const response = prefetched || fetch(basePath + input);
     const data = createFromFetch(checkStatus(response), options);
     return data;
-  });
+  },
+);
 
-  const Root = ({
-    initialInput,
+const Context = createContext<Elements | null>(null);
+
+export const Root = ({
+  initialInput,
+  children,
+  basePath,
+}: {
+  initialInput: string;
+  children: ReactNode;
+  basePath?: string;
+}) => {
+  const [elements, setElements] = useState(
+    (): Elements => fetchRSC(initialInput, setElements, basePath),
+  );
+  return createElement(
+    Context.Provider,
+    {
+      value: use(elements as any) as typeof elements,
+    },
     children,
-  }: {
-    initialInput: string;
-    children: ReactNode;
-  }) => {
-    const [elements, setElements] = useState(
-      (): Elements => fetchRSC(initialInput, setElements),
-    );
-    return createElement(
-      Context.Provider,
-      {
-        value: use(elements as any) as typeof elements,
-      },
-      children,
-    );
-  };
+  );
+};
 
-  const Server = ({ id }: { id: string }) => {
-    const elements = use(Context);
-    if (!elements) {
-      throw new Error("Missing Root component");
-    }
-    if (!(id in elements)) {
-      throw new Error("Not found: " + id);
-    }
-    return elements[id];
-  };
-
-  return { Root, Server };
-}
+export const Server = ({ id }: { id: string }) => {
+  const elements = use(Context);
+  if (!elements) {
+    throw new Error("Missing Root component");
+  }
+  if (!(id in elements)) {
+    throw new Error("Not found: " + id);
+  }
+  return elements[id];
+};
