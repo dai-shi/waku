@@ -33,7 +33,7 @@ const renderHTML = async (
   const htmlResPromise = fetch(rscServer + pathStr.slice(1), {
     headers: { "x-waku-ssr-mode": "html" },
   });
-  const { input, filter } = ssrConfig;
+  const { input } = ssrConfig;
   const rscResPromise = fetch(rscServer + rscPrefix + input, {
     headers: { "x-waku-ssr-mode": "rsc" },
   });
@@ -58,7 +58,6 @@ const renderHTML = async (
   return renderHtmlToReadable(
     await htmlRes.text(),
     rscStream,
-    filter,
     splitHTML,
     getFallback,
   );

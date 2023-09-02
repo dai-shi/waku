@@ -34,6 +34,7 @@ export function rsc<Context>(options: {
     const url = new URL(req.url || "", "http://" + req.headers.host);
     if (url.pathname.startsWith(basePath)) {
       const id = url.pathname.slice(basePath.length);
+      const ssr = req.headers["x-waku-ssr-mode"] === "rsc";
       let input: RenderInput;
       if (req.method === "POST") {
         let args: unknown[] = [];
@@ -72,6 +73,7 @@ export function rsc<Context>(options: {
         const context = options.unstable_prehook?.(req, res);
         const [readable, nextCtx] = await renderRSC(input, {
           command: options.command,
+          ssr,
           context,
         });
         options.unstable_posthook?.(req, res, nextCtx as Context);

@@ -26,9 +26,9 @@ type Entries = { default: ReturnType<typeof defineEntries> };
 type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
-  const { id, input, command, context, moduleIdCallback } = mesg;
+  const { id, input, command, ssr, context, moduleIdCallback } = mesg;
   try {
-    const options: RenderOptions = { command, context };
+    const options: RenderOptions = { command, ssr, context };
     if (moduleIdCallback) {
       options.moduleIdCallback = (moduleId: string) => {
         const mesg: MessageRes = { id, type: "moduleId", moduleId };
@@ -226,13 +226,17 @@ async function renderRSC(
       entriesFile,
       options.command,
     ) as Promise<Entries>);
-    const elements = await renderEntries(input);
+    const elements = await renderEntries(input, { ssr: options.ssr });
     if (elements === null) {
       const err = new Error("No function component found");
       (err as any).statusCode = 404; // HACK our convention for NotFound
       throw err;
     }
-    if (Object.keys(elements).some((key) => key.startsWith("_"))) {
+    if (
+      Object.keys(elements).some((key) =>
+        key === "_ssr" ? !options.ssr : key.startsWith("_"),
+      )
+    ) {
       throw new Error('"_" prefix is reserved');
     }
     return elements;

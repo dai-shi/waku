@@ -32,6 +32,7 @@ export type MessageReq =
       type: "render";
       input: RenderInput;
       command: "dev" | "build" | "start";
+      ssr: boolean;
       context: unknown;
       moduleIdCallback: boolean;
     }
@@ -148,6 +149,7 @@ export function renderRSC<Context>(
       type: "render",
       input,
       command: options.command,
+      ssr: options.ssr,
       context: options.context,
       moduleIdCallback: !!options.moduleIdCallback,
     };

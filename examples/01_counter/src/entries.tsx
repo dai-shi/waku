@@ -6,7 +6,12 @@ const App = lazy(() => import("./components/App.js"));
 
 export default defineEntries(
   // renderEntries
-  async (input) => {
+  async (input, options) => {
+    if (options.ssr) {
+      return {
+        _ssr: <App name={input} />,
+      };
+    }
     return {
       App: <App name={input} />,
     };
@@ -23,10 +28,7 @@ export default defineEntries(
   async (pathStr) => {
     switch (pathStr) {
       case "/":
-        return {
-          input: "Waku",
-          filter: (elements) => elements.App,
-        };
+        return { input: "Waku" };
       default:
         return null;
     }

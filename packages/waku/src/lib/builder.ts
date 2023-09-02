@@ -278,16 +278,13 @@ const renderHtml = async (
   if (!ssrConfig) {
     return null;
   }
-  const { input, filter } = ssrConfig;
+  const { input } = ssrConfig;
   const { splitHTML, getFallback } = config.framework.ssr;
-  const [pipeable] = await renderRSC({ input }, { command: "build", context });
-  return renderHtmlToReadable(
-    htmlStr,
-    pipeable,
-    filter,
-    splitHTML,
-    getFallback,
+  const [pipeable] = await renderRSC(
+    { input },
+    { command: "build", ssr: true, context },
   );
+  return renderHtmlToReadable(htmlStr, pipeable, splitHTML, getFallback);
 };
 
 const emitHtmlFiles = async (
