@@ -30,11 +30,11 @@ export default defineEntries(
       "/": {
         entries: [
           ["App=Waku&InnerApp=0"],
-          ["InnerApp/1", true],
-          ["InnerApp/2", true],
-          ["InnerApp/3", true],
-          ["InnerApp/4", true],
-          ["InnerApp/5", true],
+          ["InnerApp=1", true],
+          ["InnerApp=2", true],
+          ["InnerApp=3", true],
+          ["InnerApp=4", true],
+          ["InnerApp=5", true],
         ],
       },
     };

@@ -239,8 +239,7 @@ const emitRscFiles = async (
           config.framework.distDir,
           config.framework.publicDir,
           // HACK to support windows filesystem
-          config.framework.rscPrefix.replaceAll("/", path.sep) +
-            encodeURIComponent(input),
+          config.framework.rscPrefix.replaceAll("/", path.sep) + input,
         );
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
