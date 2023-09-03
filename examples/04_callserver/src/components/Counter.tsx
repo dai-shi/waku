@@ -1,8 +1,6 @@
-/// <reference types="react/canary" />
-
 "use client";
 
-import { use, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 
 export const Counter = ({
   greet,
@@ -10,7 +8,7 @@ export const Counter = ({
   greet: (name: string) => Promise<string>;
 }) => {
   const [count, setCount] = useState(0);
-  const [text, setText] = useState(Promise.resolve(""));
+  const [text, setText] = useState<string | Promise<string>>("");
   const [isPending, startTransition] = useTransition();
   const handleClick = () => {
     startTransition(() => {
@@ -23,7 +21,7 @@ export const Counter = ({
       <button onClick={() => setCount((c) => c + 1)}>Increment</button>
       <p>
         <button onClick={handleClick}>
-          greet(&quot;c=&quot; + count) = {use(text)}
+          greet(&quot;c=&quot; + count) =  {text as string}
         </button>{" "}
         {isPending ? "Pending..." : ""}
       </p>
