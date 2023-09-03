@@ -239,10 +239,8 @@ const emitRscFiles = async (
           config.framework.distDir,
           config.framework.publicDir,
           // HACK to support windows filesystem
-          (config.framework.rscPrefix + decodeURIComponent(input)).replaceAll(
-            "/",
-            path.sep,
-          ),
+          config.framework.rscPrefix.replaceAll("/", path.sep) +
+            encodeURIComponent(input),
         );
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
@@ -251,6 +249,7 @@ const emitRscFiles = async (
             { input },
             {
               command: "build",
+              ssr: false,
               context,
               moduleIdCallback: (id) => addClientModule(input, id),
             },

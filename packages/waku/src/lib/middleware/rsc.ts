@@ -33,7 +33,7 @@ export function rsc<Context>(options: {
     const basePath = config.base + config.framework.rscPrefix;
     const url = new URL(req.url || "", "http://" + req.headers.host);
     if (url.pathname.startsWith(basePath)) {
-      const id = url.pathname.slice(basePath.length);
+      const id = decodeURIComponent(url.pathname.slice(basePath.length));
       const ssr = req.headers["x-waku-ssr-mode"] === "rsc";
       let input: RenderInput;
       if (req.method === "POST") {
@@ -52,7 +52,7 @@ export function rsc<Context>(options: {
             args = await decodeReply(body);
           }
         }
-        input = { actionId: decodeURIComponent(id), args };
+        input = { actionId: id, args };
       } else {
         input = { input: id };
       }

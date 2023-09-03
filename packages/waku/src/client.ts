@@ -1,6 +1,13 @@
 /// <reference types="react/canary" />
 
-import { cache, createContext, createElement, use, useState } from "react";
+import {
+  cache,
+  createContext,
+  createElement,
+  use,
+  useState,
+  startTransition,
+} from "react";
 import type { ReactNode } from "react";
 import { createFromFetch, encodeReply } from "react-server-dom-webpack/client";
 
@@ -18,6 +25,14 @@ const checkStatus = async (
 
 type Elements = Promise<Record<string, ReactNode>>;
 
+const mergeElements = cache(
+  async (a: Elements, b: Elements | Awaited<Elements>): Elements => {
+    const nextElements = { ...(await a), ...(await b) };
+    delete nextElements._value;
+    return nextElements;
+  },
+);
+
 // TODO get basePath from vite config
 
 export const fetchRSC = cache(
@@ -32,21 +47,16 @@ export const fetchRSC = cache(
           method: "POST",
           body: await encodeReply(args),
         });
-        const data = await createFromFetch(checkStatus(response), options);
-        const { _value: value, ...updatedElements } = data;
-        if (Object.keys(updatedElements).length > 0) {
-          rerender((prev) =>
-            prev.then((resolvedPrev) => ({
-              ...resolvedPrev,
-              ...updatedElements,
-            })),
-          );
-        }
-        return value;
+        const data = createFromFetch(checkStatus(response), options);
+        startTransition(() => {
+          // FIXME this causes rerenders even if data is empty
+          rerender((prev) => mergeElements(prev, data));
+        });
+        return (await data)._value;
       },
     };
     const prefetched = (globalThis as any).__WAKU_PREFETCHED__?.[input];
-    const response = prefetched || fetch(basePath + input);
+    const response = prefetched || fetch(basePath + encodeURIComponent(input));
     const data = createFromFetch(checkStatus(response), options);
     return data;
   },
@@ -81,11 +91,7 @@ export const Root = ({
     fetchRSC(initialInput, getRerender(), basePath),
   );
   setRerender(setElements);
-  return createElement(
-    ElementsContext.Provider,
-    { value: elements },
-    children,
-  );
+  return createElement(ElementsContext.Provider, { value: elements }, children);
 };
 
 export const Server = ({ id }: { id: string }) => {

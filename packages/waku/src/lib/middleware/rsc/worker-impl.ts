@@ -277,7 +277,7 @@ async function renderRSC(
         return renderToPipeableStream(
           { ...(await elements), _value: data },
           bundlerConfig,
-        );
+        ).pipe(transformRsfId(config.root));
       },
     );
   }
