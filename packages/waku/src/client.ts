@@ -1,5 +1,7 @@
 /// <reference types="react/canary" />
 
+"use client";
+
 import {
   cache,
   createContext,
@@ -63,8 +65,8 @@ export const fetchRSC = cache(
   },
 );
 
-const ElementsContext = createContext<Elements | null>(null);
 const RefetchContext = createContext<((input: string) => void) | null>(null);
+const ElementsContext = createContext<Elements | null>(null);
 
 // HACK there should be a better way...
 const createRerender = cache(() => {
@@ -104,7 +106,23 @@ export const Root = ({
   );
 };
 
-export const Server = ({ id }: { id: string }) => {
+export const useRefetch = () => {
+  const refetch = use(RefetchContext);
+  if (!refetch) {
+    throw new Error("Missing Root component");
+  }
+  return refetch;
+};
+
+const ChildrenContext = createContext<ReactNode>(undefined);
+
+export const Server = ({
+  id,
+  children,
+}: {
+  id: string;
+  children: ReactNode;
+}) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
     throw new Error("Missing Root component");
@@ -113,13 +131,11 @@ export const Server = ({ id }: { id: string }) => {
   if (!(id in elements)) {
     throw new Error("Not found: " + id);
   }
-  return elements[id];
+  return createElement(
+    ChildrenContext.Provider,
+    { value: children },
+    elements[id],
+  );
 };
 
-export const useRefetch = () => {
-  const refetch = use(RefetchContext);
-  if (!refetch) {
-    throw new Error("Missing Root component");
-  }
-  return refetch;
-};
+export const Children = () => use(ChildrenContext);

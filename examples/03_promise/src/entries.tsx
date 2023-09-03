@@ -1,6 +1,7 @@
 import { lazy } from "react";
 
 import { defineEntries } from "waku/server";
+import { Children } from "waku/client";
 
 const App = lazy(() => import("./components/App.js"));
 
@@ -9,11 +10,11 @@ export default defineEntries(
   async (input, options) => {
     if (options.ssr) {
       return {
-        _ssr: <App name={input} />,
+        _ssr: <App name={input}>...</App>,
       };
     }
     return {
-      App: <App name={input} />,
+      App: <App name={input}><Children /></App>,
     };
   },
   // getBuildConfig

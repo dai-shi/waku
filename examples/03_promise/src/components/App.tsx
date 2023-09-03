@@ -1,6 +1,13 @@
+import type { ReactNode } from "react";
 import { Counter } from "./Counter.js";
 
-const App = ({ name = "Anonymous" }) => {
+const App = ({
+  name = "Anonymous",
+  children,
+}: {
+  name?: string;
+  children: ReactNode;
+}) => {
   const delayedMessage = new Promise<string>((resolve) => {
     setTimeout(() => resolve("Hello from server!"), 2000);
   });
@@ -9,6 +16,7 @@ const App = ({ name = "Anonymous" }) => {
       <h1>Hello {name}!!</h1>
       <h3>This is a server component.</h3>
       <Counter delayedMessage={delayedMessage} />
+      {children}
     </div>
   );
 };
