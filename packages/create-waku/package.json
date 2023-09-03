@@ -1,7 +1,15 @@
 {
   "name": "create-waku",
   "version": "0.4.10",
-  "bin": "dist/cli.js",
+  "author": "Daishi Kato",
+  "contributors": [
+    "Vasu Singh"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dai-shi/waku.git"
+  },
+  "bin": "./dist/cli.js",
   "files": [
     "src",
     "dist",
