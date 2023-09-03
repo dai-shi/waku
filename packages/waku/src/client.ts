@@ -5,6 +5,7 @@ import {
   createContext,
   createElement,
   use,
+  useCallback,
   useState,
   startTransition,
 } from "react";
@@ -63,6 +64,7 @@ export const fetchRSC = cache(
 );
 
 const ElementsContext = createContext<Elements | null>(null);
+const RefetchContext = createContext<((input: string) => void) | null>(null);
 
 // HACK there should be a better way...
 const createRerender = cache(() => {
@@ -91,7 +93,15 @@ export const Root = ({
     fetchRSC(initialInput, getRerender(), basePath),
   );
   setRerender(setElements);
-  return createElement(ElementsContext.Provider, { value: elements }, children);
+  const refetch = useCallback((input: string) => {
+    const data = fetchRSC(input, getRerender(), basePath);
+    setElements((prev) => mergeElements(prev, data));
+  }, []);
+  return createElement(
+    RefetchContext.Provider,
+    { value: refetch },
+    createElement(ElementsContext.Provider, { value: elements }, children),
+  );
 };
 
 export const Server = ({ id }: { id: string }) => {
@@ -104,4 +114,12 @@ export const Server = ({ id }: { id: string }) => {
     throw new Error("Not found: " + id);
   }
   return elements[id];
+};
+
+export const useRefetch = () => {
+  const refetch = use(RefetchContext);
+  if (!refetch) {
+    throw new Error("Missing Root component");
+  }
+  return refetch;
 };
