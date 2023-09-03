@@ -104,7 +104,7 @@ async function init() {
   if (shouldOverwrite) {
     fse.emptyDirSync(root);
   } else if (!fs.existsSync(root)) {
-    fs.mkdirSync(root);
+    fs.mkdirSync(root, { recursive: true });
   }
 
   const pkg = {
