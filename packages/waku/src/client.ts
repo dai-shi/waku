@@ -16,7 +16,7 @@ const checkStatus = async (
   return response;
 };
 
-type Elements = Record<string, ReactNode>;
+type Elements = Promise<Record<string, ReactNode>>;
 
 // TODO get basePath from vite config
 
@@ -28,13 +28,20 @@ export const fetchRSC = cache(
   ): Elements => {
     const options = {
       async callServer(actionId: string, args: unknown[]) {
-        const response = fetch(basePath + actionId, {
+        const response = fetch(basePath + encodeURIComponent(actionId), {
           method: "POST",
           body: await encodeReply(args),
         });
-        const data = createFromFetch(checkStatus(response), options);
+        const data = await createFromFetch(checkStatus(response), options);
         const { _value: value, ...updatedElements } = data;
-        rerender((prev) => ({ ...prev, updatedElements }));
+        if (Object.keys(updatedElements).length > 0) {
+          rerender((prev) =>
+            prev.then((resolvedPrev) => ({
+              ...resolvedPrev,
+              ...updatedElements,
+            })),
+          );
+        }
         return value;
       },
     };
@@ -45,7 +52,20 @@ export const fetchRSC = cache(
   },
 );
 
-const Context = createContext<Elements | null>(null);
+const ElementsContext = createContext<Elements | null>(null);
+
+// HACK there should be a better way...
+const createRerender = cache(() => {
+  let rerender: ((fn: (prev: Elements) => Elements) => void) | undefined;
+  const stableRerender = (fn: Parameters<NonNullable<typeof rerender>>[0]) => {
+    rerender?.(fn);
+  };
+  const getRerender = () => stableRerender;
+  const setRerender = (newRerender: NonNullable<typeof rerender>) => {
+    rerender = newRerender;
+  };
+  return [getRerender, setRerender] as const;
+});
 
 export const Root = ({
   initialInput,
@@ -56,23 +76,24 @@ export const Root = ({
   children: ReactNode;
   basePath?: string;
 }) => {
-  const [elements, setElements] = useState(
-    (): Elements => fetchRSC(initialInput, setElements, basePath),
+  const [getRerender, setRerender] = createRerender();
+  const [elements, setElements] = useState(() =>
+    fetchRSC(initialInput, getRerender(), basePath),
   );
+  setRerender(setElements);
   return createElement(
-    Context.Provider,
-    {
-      value: use(elements as any) as typeof elements,
-    },
+    ElementsContext.Provider,
+    { value: elements },
     children,
   );
 };
 
 export const Server = ({ id }: { id: string }) => {
-  const elements = use(Context);
-  if (!elements) {
+  const elementsPromise = use(ElementsContext);
+  if (!elementsPromise) {
     throw new Error("Missing Root component");
   }
+  const elements = use(elementsPromise);
   if (!(id in elements)) {
     throw new Error("Not found: " + id);
   }

@@ -52,7 +52,7 @@ export function rsc<Context>(options: {
             args = await decodeReply(body);
           }
         }
-        input = { actionId: id, args };
+        input = { actionId: decodeURIComponent(id), args };
       } else {
         input = { input: id };
       }
