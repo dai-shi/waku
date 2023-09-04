@@ -1,1 +1,1 @@
-declare module 'fs-extra/esm';
+declare module "fs-extra/esm";
