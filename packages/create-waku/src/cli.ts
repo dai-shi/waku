@@ -1,8 +1,5 @@
 #!/usr/bin/env node
 
-// FIXME the following is temporarily and will remove it soon
-/* eslint-disable */
-
 import fs from "node:fs";
 import path from "node:path";
 import prompts from "prompts";
