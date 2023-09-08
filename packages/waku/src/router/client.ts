@@ -172,7 +172,9 @@ function InnerRouter({ basePath }: { basePath: string }) {
       const input = JSON.stringify(
         getInputObject(pathname, search, cachedRef.current),
       );
-      prefetched[input] = fetch(basePath + encodeURIComponent(input));
+      if (!prefetched[input]) {
+        prefetched[input] = fetch(basePath + encodeURIComponent(input));
+      }
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(pathname, search);
     },
     [basePath],

@@ -59,8 +59,9 @@ export const fetchRSC = cache(
         return (await data)._value;
       },
     };
-    const prefetched = (globalThis as any).__WAKU_PREFETCHED__?.[input];
-    const response = prefetched || fetch(basePath + encodeURIComponent(input));
+    const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
+    const response = prefetched[input] || fetch(basePath + encodeURIComponent(input));
+    delete prefetched[input];
     const data = createFromFetch(checkStatus(response), options);
     return data;
   },
