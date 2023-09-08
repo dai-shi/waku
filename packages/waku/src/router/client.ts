@@ -7,7 +7,6 @@ import {
   createElement,
   useContext,
   useEffect,
-  useMemo,
   useState,
   useTransition,
   Fragment,
@@ -23,10 +22,6 @@ const parseLocation = () => {
   return { pathname, search };
 };
 
-const LocationContext = createContext<ReturnType<typeof parseLocation> | null>(
-  null,
-);
-
 type ChangeLocation = (
   pathname?: string,
   search?: string,
@@ -35,27 +30,28 @@ type ChangeLocation = (
 
 type PrefetchLocation = (pathname: string, search: string) => void;
 
-const ActionContext = createContext<{
+const RouterContext = createContext<{
+  loc: ReturnType<typeof parseLocation>;
   changeLocation: ChangeLocation;
   prefetchLocation: PrefetchLocation;
 } | null>(null);
 
 export function useChangeLocation() {
-  const action = useContext(ActionContext);
-  if (!action) {
+  const value = useContext(RouterContext);
+  if (!value) {
     return () => {
       throw new Error("Missing Router");
     };
   }
-  return action.changeLocation;
+  return value.changeLocation;
 }
 
 export function useLocation() {
-  const loc = useContext(LocationContext);
-  if (!loc) {
+  const value = useContext(RouterContext);
+  if (!value) {
     throw new Error("Missing Router");
   }
-  return loc;
+  return value.loc;
 }
 
 export function Link({
@@ -65,14 +61,14 @@ export function Link({
   notPending,
   unstable_prefetchOnEnter,
 }: LinkProps) {
-  const action = useContext(ActionContext);
-  const changeLocation = action
-    ? action.changeLocation
+  const value = useContext(RouterContext);
+  const changeLocation = value
+    ? value.changeLocation
     : () => {
         throw new Error("Missing Router");
       };
-  const prefetchLocation = action
-    ? action.prefetchLocation
+  const prefetchLocation = value
+    ? value.prefetchLocation
     : () => {
         throw new Error("Missing Router");
       };
@@ -105,85 +101,11 @@ export function Link({
   return ele;
 }
 
-function InnerRouter({
-  setLoc,
-  cached,
-  setCached,
-  basePath,
-  children,
-}: {
-  setLoc: (loc: ReturnType<typeof parseLocation>) => void;
-  cached: Record<string, RouteProps>;
-  setCached: (
-    fn: (prev: Record<string, RouteProps>) => Record<string, RouteProps>,
-  ) => void;
-  basePath: string;
-  children: ReactNode;
-}) {
+function InnerRouter({ basePath }: { basePath: string }) {
   const refetch = useRefetch();
 
-  const action: {
-    changeLocation: ChangeLocation;
-    prefetchLocation: PrefetchLocation;
-  } = useMemo(() => {
-    const changeLocation: ChangeLocation = (pathname, search, replace) => {
-      const url = new URL(window.location.href);
-      if (pathname) {
-        url.pathname = pathname;
-      }
-      if (search) {
-        url.search = search;
-      }
-      if (replace) {
-        window.history.replaceState(null, "", url);
-      } else {
-        window.history.pushState(null, "", url);
-      }
-      const loc = parseLocation();
-      setLoc(loc);
-      const input = JSON.stringify(
-        getInputObject(loc.pathname, loc.search, cached),
-      );
-      refetch(input);
-      const componentIds = getComponentIds(loc.pathname);
-      const routeProps: RouteProps = {
-        path: loc.pathname,
-        search: loc.search,
-      };
-      setCached((prev) => ({
-        ...prev,
-        ...Object.fromEntries(componentIds.map((id) => [id, routeProps])),
-      }));
-    };
-    const prefetchLocation: PrefetchLocation = (pathname, search) => {
-      const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-      const input = JSON.stringify(getInputObject(pathname, search, cached));
-      if (!prefetched[input]) {
-        prefetched[input] = fetch(basePath + encodeURIComponent(input));
-      }
-      (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(pathname, search);
-    };
-    return { changeLocation, prefetchLocation };
-  }, [setLoc]);
-
-  const { changeLocation, prefetchLocation } = action;
-  useEffect(() => {
-    const callback = () => {
-      const loc = parseLocation();
-      prefetchLocation(loc.pathname, loc.search);
-      changeLocation(loc.pathname, loc.search);
-    };
-    window.addEventListener("popstate", callback);
-    return () => window.removeEventListener("popstate", callback);
-  }, []);
-
-  return createElement(ActionContext.Provider, { value: action }, children);
-}
-
-export function Router({ basePath = "/RSC/" }: { basePath?: string }) {
   const [loc, setLoc] = useState(parseLocation);
 
-  const initialInput = JSON.stringify(getInputObject(loc.pathname, loc.search));
   const componentIds = getComponentIds(loc.pathname);
   const [cached, setCached] = useState<Record<string, RouteProps>>(() => {
     const routeProps: RouteProps = {
@@ -205,20 +127,68 @@ export function Router({ basePath = "/RSC/" }: { basePath?: string }) {
     null,
   );
 
+  const changeLocation: ChangeLocation = (pathname, search, replace) => {
+    const url = new URL(window.location.href);
+    if (pathname) {
+      url.pathname = pathname;
+    }
+    if (search) {
+      url.search = search;
+    }
+    if (replace) {
+      window.history.replaceState(null, "", url);
+    } else {
+      window.history.pushState(null, "", url);
+    }
+    const loc = parseLocation();
+    setLoc(loc);
+    const input = JSON.stringify(
+      getInputObject(loc.pathname, loc.search, cached),
+    );
+    refetch(input);
+    const componentIds = getComponentIds(loc.pathname);
+    const routeProps: RouteProps = {
+      path: loc.pathname,
+      search: loc.search,
+    };
+    setCached((prev) => ({
+      ...prev,
+      ...Object.fromEntries(componentIds.map((id) => [id, routeProps])),
+    }));
+  };
+  const prefetchLocation: PrefetchLocation = (pathname, search) => {
+    const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
+    const input = JSON.stringify(getInputObject(pathname, search, cached));
+    if (!prefetched[input]) {
+      prefetched[input] = fetch(basePath + encodeURIComponent(input));
+    }
+    (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(pathname, search);
+  };
+
+  useEffect(() => {
+    const callback = () => {
+      const loc = parseLocation();
+      prefetchLocation(loc.pathname, loc.search);
+      changeLocation(loc.pathname, loc.search);
+    };
+    window.addEventListener("popstate", callback);
+    return () => window.removeEventListener("popstate", callback);
+  }, []);
+
   return createElement(
-    LocationContext.Provider,
-    { value: loc },
-    createElement(
-      Root as FunctionComponent<Omit<ComponentProps<typeof Root>, "children">>,
-      { initialInput, basePath },
-      createElement(
-        InnerRouter as FunctionComponent<
-          Omit<ComponentProps<typeof InnerRouter>, "children">
-        >,
-        { setLoc, cached, setCached, basePath },
-        children,
-      ),
-    ),
+    RouterContext.Provider,
+    { value: { loc, changeLocation, prefetchLocation } },
+    children,
+  );
+}
+
+export function Router({ basePath = "/RSC/" }: { basePath?: string }) {
+  const { pathname, search } = parseLocation();
+  const initialInput = JSON.stringify(getInputObject(pathname, search));
+  return createElement(
+    Root as FunctionComponent<Omit<ComponentProps<typeof Root>, "children">>,
+    { initialInput, basePath },
+    createElement(InnerRouter, { basePath }),
   );
 }
 
