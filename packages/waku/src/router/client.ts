@@ -14,7 +14,7 @@ import {
 } from "react";
 import type { ComponentProps, FunctionComponent, ReactNode } from "react";
 
-import { Root, Server, useRefetch } from "../client.js";
+import { Root, Slot, useRefetch } from "../client.js";
 import { getComponentIds, getInputObject } from "./common.js";
 import type { RouteProps, LinkProps } from "./common.js";
 
@@ -196,8 +196,8 @@ export function Router({ basePath = "/RSC/" }: { basePath?: string }) {
   const children = componentIds.reduceRight(
     (acc: ReactNode, id) =>
       createElement(
-        Server as FunctionComponent<
-          Omit<ComponentProps<typeof Server>, "children">
+        Slot as FunctionComponent<
+          Omit<ComponentProps<typeof Slot>, "children">
         >,
         { id },
         acc,

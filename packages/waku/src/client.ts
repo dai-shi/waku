@@ -118,12 +118,12 @@ export const useRefetch = () => {
 const ChildrenContext = createContext<ReactNode>(undefined);
 const ChildrenContextProvider = memo(ChildrenContext.Provider);
 
-export const Server = ({
+export const Slot = ({
   id,
   children,
 }: {
   id: string;
-  children: ReactNode;
+  children?: ReactNode;
 }) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {

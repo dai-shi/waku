@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Server, useRefetch } from "waku/client";
+import { Slot, useRefetch } from "waku/client";
 
 export const Counter = ({ enableInnerApp = false }) => {
   const [count, setCount] = useState(0);
@@ -18,7 +18,7 @@ export const Counter = ({ enableInnerApp = false }) => {
       <p>Count: {count}</p>
       <button onClick={handleClick}>Increment</button>
       <h3>This is a client component.</h3>
-      {enableInnerApp && <Server id="InnerApp" />}
+      {enableInnerApp && <Slot id="InnerApp" />}
     </div>
   );
 };
