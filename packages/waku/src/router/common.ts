@@ -17,9 +17,10 @@ export function getComponentIds(pathname: string): readonly string[] {
   const pathItems = pathname.split("/").filter(Boolean);
   const componentIds: string[] = [];
   for (let index = 0; index <= pathItems.length; ++index) {
-    const id =
-      pathItems.slice(0, index).join("/") +
-      (index === pathItems.length ? "" : "index");
+    const id = [
+      ...pathItems.slice(0, index),
+      ...(index === 0 || index < pathItems.length ? ["index"] : []),
+    ].join("/");
     componentIds.push(id);
   }
   return componentIds;
@@ -32,7 +33,7 @@ export function getInputObject(
 ) {
   const componentIds = getComponentIds(pathname);
   const routes: [string, RouteProps][] = [];
-  for (let index = 0; index <= componentIds.length; ++index) {
+  for (let index = 0; index < componentIds.length; ++index) {
     const props: RouteProps = { path: pathname, search };
     routes.push([componentIds[index]!, props]);
   }

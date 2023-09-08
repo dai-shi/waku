@@ -1,9 +1,14 @@
+import url from "node:url";
 import path from "node:path";
 import fs from "node:fs";
 
 import { glob } from "glob";
 import { defineRouter } from "waku/router/server";
-import { unstable_rootDir as rootDir } from "waku/config";
+
+const routesDir = path.join(
+  path.dirname(url.fileURLToPath(import.meta.url)),
+  "routes",
+);
 
 export default defineRouter(
   (id) => {
@@ -18,9 +23,7 @@ export default defineRouter(
     }
   },
   async () => {
-    const root = rootDir();
-    const routesDir = path.join(root, "src", "routes");
-    const files = await glob("**/*.tsx", { cwd: routesDir });
+    const files = await glob("**/*.{tsx,js}", { cwd: routesDir });
     return files.map((file) => {
       const name = file.slice(0, file.length - path.extname(file).length);
       const stat = fs.statSync(path.join(routesDir, name), {
