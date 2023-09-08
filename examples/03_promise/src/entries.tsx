@@ -14,7 +14,11 @@ export default defineEntries(
       };
     }
     return {
-      App: <App name={input}><Children /></App>,
+      App: (
+        <App name={input}>
+          <Children />
+        </App>
+      ),
     };
   },
   // getBuildConfig

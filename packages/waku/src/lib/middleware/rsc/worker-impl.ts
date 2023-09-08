@@ -261,10 +261,7 @@ async function renderRSC(
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
     const rerender = (input: string) => {
       elements = Promise.all([elements, render(input)]).then(
-        ([oldElements, newElements]) => ({
-          ...oldElements,
-          ...newElements,
-        }),
+        ([oldElements, newElements]) => ({ ...oldElements, ...newElements }),
       );
     };
     return runWithAsyncLocalStorage(

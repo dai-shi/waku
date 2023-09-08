@@ -6,6 +6,7 @@ import {
   cache,
   createContext,
   createElement,
+  memo,
   use,
   useCallback,
   useState,
@@ -115,6 +116,7 @@ export const useRefetch = () => {
 };
 
 const ChildrenContext = createContext<ReactNode>(undefined);
+const ChildrenContextProvider = memo(ChildrenContext.Provider);
 
 export const Server = ({
   id,
@@ -132,7 +134,7 @@ export const Server = ({
     throw new Error("Not found: " + id);
   }
   return createElement(
-    ChildrenContext.Provider,
+    ChildrenContextProvider,
     { value: children },
     elements[id],
   );
