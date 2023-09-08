@@ -106,13 +106,13 @@ export function Link({
 }
 
 function InnerRouter({
-  setLocation,
+  setLoc,
   cached,
   setCached,
   basePath,
   children,
 }: {
-  setLocation: (loc: ReturnType<typeof parseLocation>) => void;
+  setLoc: (loc: ReturnType<typeof parseLocation>) => void;
   cached: Record<string, RouteProps>;
   setCached: (
     fn: (prev: Record<string, RouteProps>) => Record<string, RouteProps>,
@@ -140,7 +140,7 @@ function InnerRouter({
         window.history.pushState(null, "", url);
       }
       const loc = parseLocation();
-      setLocation(loc);
+      setLoc(loc);
       const input = JSON.stringify(
         getInputObject(loc.pathname, loc.search, cached),
       );
@@ -164,7 +164,7 @@ function InnerRouter({
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(pathname, search);
     };
     return { changeLocation, prefetchLocation };
-  }, [setLocation]);
+  }, [setLoc]);
 
   const { changeLocation, prefetchLocation } = action;
   useEffect(() => {
@@ -181,7 +181,7 @@ function InnerRouter({
 }
 
 export function Router({ basePath = "/RSC/" }: { basePath?: string }) {
-  const [loc, setLocation] = useState(parseLocation);
+  const [loc, setLoc] = useState(parseLocation);
 
   const initialInput = JSON.stringify(getInputObject(loc.pathname, loc.search));
   const componentIds = getComponentIds(loc.pathname);
@@ -215,7 +215,7 @@ export function Router({ basePath = "/RSC/" }: { basePath?: string }) {
         InnerRouter as FunctionComponent<
           Omit<ComponentProps<typeof InnerRouter>, "children">
         >,
-        { setLocation, cached, setCached, basePath },
+        { setLoc, cached, setCached, basePath },
         children,
       ),
     ),
