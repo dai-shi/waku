@@ -5,8 +5,10 @@
 import {
   createContext,
   createElement,
+  useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   useTransition,
   Fragment,
@@ -114,6 +116,10 @@ function InnerRouter({ basePath }: { basePath: string }) {
     };
     return Object.fromEntries(componentIds.map((id) => [id, routeProps]));
   });
+  const cachedRef = useRef(cached);
+  useEffect(() => {
+    cachedRef.current = cached;
+  }, [cached]);
 
   const children = componentIds.reduceRight(
     (acc: ReactNode, id) =>
@@ -127,43 +133,50 @@ function InnerRouter({ basePath }: { basePath: string }) {
     null,
   );
 
-  const changeLocation: ChangeLocation = (pathname, search, replace) => {
-    const url = new URL(window.location.href);
-    if (pathname) {
-      url.pathname = pathname;
-    }
-    if (search) {
-      url.search = search;
-    }
-    if (replace) {
-      window.history.replaceState(null, "", url);
-    } else {
-      window.history.pushState(null, "", url);
-    }
-    const loc = parseLocation();
-    setLoc(loc);
-    const input = JSON.stringify(
-      getInputObject(loc.pathname, loc.search, cached),
-    );
-    refetch(input);
-    const componentIds = getComponentIds(loc.pathname);
-    const routeProps: RouteProps = {
-      path: loc.pathname,
-      search: loc.search,
-    };
-    setCached((prev) => ({
-      ...prev,
-      ...Object.fromEntries(componentIds.map((id) => [id, routeProps])),
-    }));
-  };
-  const prefetchLocation: PrefetchLocation = (pathname, search) => {
-    const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-    const input = JSON.stringify(getInputObject(pathname, search, cached));
-    if (!prefetched[input]) {
+  const changeLocation: ChangeLocation = useCallback(
+    (pathname, search, replace) => {
+      const url = new URL(window.location.href);
+      if (pathname) {
+        url.pathname = pathname;
+      }
+      if (search) {
+        url.search = search;
+      }
+      if (replace) {
+        window.history.replaceState(null, "", url);
+      } else {
+        window.history.pushState(null, "", url);
+      }
+      const loc = parseLocation();
+      setLoc(loc);
+      const input = JSON.stringify(
+        getInputObject(loc.pathname, loc.search, cachedRef.current),
+      );
+      refetch(input);
+      const componentIds = getComponentIds(loc.pathname);
+      const routeProps: RouteProps = {
+        path: loc.pathname,
+        search: loc.search,
+      };
+      setCached((prev) => ({
+        ...prev,
+        ...Object.fromEntries(componentIds.map((id) => [id, routeProps])),
+      }));
+    },
+    [refetch],
+  );
+
+  const prefetchLocation: PrefetchLocation = useCallback(
+    (pathname, search) => {
+      const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
+      const input = JSON.stringify(
+        getInputObject(pathname, search, cachedRef.current),
+      );
       prefetched[input] = fetch(basePath + encodeURIComponent(input));
-    }
-    (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(pathname, search);
-  };
+      (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(pathname, search);
+    },
+    [basePath],
+  );
 
   useEffect(() => {
     const callback = () => {
@@ -173,7 +186,7 @@ function InnerRouter({ basePath }: { basePath: string }) {
     };
     window.addEventListener("popstate", callback);
     return () => window.removeEventListener("popstate", callback);
-  }, []);
+  }, [changeLocation, prefetchLocation]);
 
   return createElement(
     RouterContext.Provider,
