@@ -9,8 +9,6 @@ import { getComponentIds, getInputObject } from "./common.js";
 import type { RouteProps, LinkProps } from "./common.js";
 import { Waku_SSR_Capable_Link } from "./client.js";
 
-const childrenElement = createElement(Children);
-
 const collectClientModules = async (
   pathname: string,
   unstable_renderRSC: Parameters<GetBuildConfig>[0],
@@ -110,7 +108,7 @@ export function defineRouter(
         const element = createElement(
           component as FunctionComponent<RouteProps>,
           props,
-          childrenElement,
+          createElement(Children),
         );
         return [id, element] as const;
       }),
@@ -162,9 +160,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
         }
         return null;
       },
-      filter: (elements) => {
-        return elements.Root;
-      },
+      filter: (elements) => elements.Root,
     };
   };
 

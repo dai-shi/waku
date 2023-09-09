@@ -1,6 +1,5 @@
 import url from "node:url";
 import path from "node:path";
-import fs from "node:fs";
 
 import { glob } from "glob";
 import { defineRouter } from "waku/router/server";
