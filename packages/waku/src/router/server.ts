@@ -12,11 +12,11 @@ import { Waku_SSR_Capable_Link } from "./client.js";
 const childrenElement = createElement(Children);
 
 const collectClientModules = async (
-  pathStr: string,
+  pathname: string,
   unstable_renderRSC: Parameters<GetBuildConfig>[0],
 ) => {
-  const url = new URL(pathStr, "http://localhost");
-  const input = JSON.stringify(getInputObject(url.pathname, url.search));
+  const search = ""; // XXX this is a limitation
+  const input = JSON.stringify(getInputObject(pathname, search));
   const idSet = new Set<string>();
   const pipeable = await unstable_renderRSC(
     { input },
@@ -36,9 +36,9 @@ const collectClientModules = async (
 };
 
 // We have to make prefetcher consistent with client behavior
-const prefetcher = (pathStr: string) => {
-  const url = new URL(pathStr, "http://localhost");
-  const input = JSON.stringify(getInputObject(url.pathname, url.search));
+const prefetcher = (pathname: string) => {
+  const search = ""; // XXX this is a limitation
+  const input = JSON.stringify(getInputObject(pathname, search));
   return [[input]] as const;
 };
 
@@ -54,7 +54,7 @@ export function defineRouter(
     | { default: FunctionComponentWithAreEqual }
     | null
   >,
-  getAllPaths: () => Promise<string[]>,
+  getAllIds: () => Promise<string[]>,
 ): ReturnType<typeof defineEntries> {
   const renderSsrEntries = async (pathStr: string) => {
     const url = new URL(pathStr, "http://localhost");
@@ -88,8 +88,8 @@ export function defineRouter(
     const { routes, cached } = JSON.parse(input) as ReturnType<
       typeof getInputObject
     >;
-    const allPaths = await getAllPaths();
-    if (routes.some(([id]) => !allPaths.includes(id))) {
+    const allIds = await getAllIds();
+    if (routes.some(([id]) => !allIds.includes(id))) {
       return null;
     }
     const entries = await Promise.all(
@@ -123,11 +123,14 @@ export function defineRouter(
   };
 
   const getBuildConfig: GetBuildConfig = async (unstable_renderRSC) => {
-    const allPaths = await getAllPaths();
+    const allIds = await getAllIds();
     const path2moduleIds: Record<string, string[]> = {};
-    for (const pathStr of allPaths) {
-      const moduleIds = await collectClientModules(pathStr, unstable_renderRSC);
-      path2moduleIds[pathStr] = moduleIds;
+    for (const pathname of allIds) {
+      const moduleIds = await collectClientModules(
+        pathname,
+        unstable_renderRSC,
+      );
+      path2moduleIds[pathname] = moduleIds;
     }
     const customCode = `
 globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
@@ -138,18 +141,18 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
   }
 };`;
     return Object.fromEntries(
-      allPaths.map((pathStr) => [
-        pathStr,
-        { entries: prefetcher(pathStr), customCode },
+      allIds.map((pathname) => [
+        pathname,
+        { entries: prefetcher(pathname), customCode },
       ]),
     );
   };
 
   const getSsrConfig: GetSsrConfig = async () => {
-    const allPaths = await getAllPaths();
+    const allIds = await getAllIds();
     const isValidPath = (pathname: string) => {
       const componentIds = getComponentIds(pathname);
-      return componentIds.every((id) => allPaths.includes(id));
+      return componentIds.every((id) => allIds.includes(id));
     };
     return {
       getInput: (pathStr) => {

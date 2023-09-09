@@ -25,11 +25,8 @@ export default defineRouter(
   async () => {
     const files = await glob("**/*.{tsx,js}", { cwd: routesDir });
     return files.map((file) => {
-      const name = file.slice(0, file.length - path.extname(file).length);
-      const stat = fs.statSync(path.join(routesDir, name), {
-        throwIfNoEntry: false,
-      });
-      return stat?.isDirectory() ? name + "/" : name;
+      const id = file.slice(0, file.length - path.extname(file).length);
+      return id;
     });
   },
 );
