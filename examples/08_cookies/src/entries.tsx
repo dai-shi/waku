@@ -1,23 +1,29 @@
+import { lazy } from "react";
+
 import { defineEntries, getContext } from "waku/server";
 
+const App = lazy(() => import("./components/App.js"));
+
 export default defineEntries(
-  // getEntry
-  async (id) => {
+  // renderEntries
+  async (input, options) => {
+    if (options.ssr) {
+      return {
+        _ssr: <App name={input} />,
+      };
+    }
     const ctx = getContext<{ count: number }>();
     ++ctx.count;
-    switch (id) {
-      case "App":
-        return import("./components/App.js");
-      default:
-        return null;
-    }
+    return {
+      App: <App name={input} />,
+    };
   },
   // getBuildConfig
   async () => {
     return {
       "/": {
-        elements: [["App", { name: "Waku" }]],
-        ctx: { count: 0 },
+        entries: [["Waku"]],
+        context: { count: 0 },
       },
     };
   },
@@ -26,9 +32,9 @@ export default defineEntries(
   // async (pathStr) => {
   //   switch (pathStr) {
   //     case "/":
-  //       return { element: ["App", { name: "Waku" }] };
+  //       return { input: "Waku" };
   //     default:
   //       return null;
   //   }
-  // }
+  // },
 );

@@ -278,9 +278,19 @@ async function renderRSC(
       },
     );
   }
-  const elements = await render(input.input);
-  return renderToPipeableStream(elements, bundlerConfig).pipe(
-    transformRsfId(config.root),
+  return runWithAsyncLocalStorage(
+    {
+      getContext: () => options.context,
+      rerender: () => {
+        throw new Error("Cannot rerender");
+      },
+    },
+    async () => {
+      const elements = await render(input.input);
+      return renderToPipeableStream(elements, bundlerConfig).pipe(
+        transformRsfId(config.root),
+      );
+    },
   );
 }
 
