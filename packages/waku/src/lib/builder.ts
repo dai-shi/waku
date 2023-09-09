@@ -12,7 +12,7 @@ import {
   shutdown,
   renderRSC,
   getBuildConfigRSC,
-  getSsrConfigRSC,
+  getSsrInputRSC,
 } from "./middleware/rsc/worker-api.js";
 import { rscIndexPlugin } from "./vite-plugin/rsc-index-plugin.js";
 import { rscAnalyzePlugin } from "./vite-plugin/rsc-analyze-plugin.js";
@@ -272,11 +272,10 @@ const renderHtml = async (
   htmlStr: string,
   context: unknown,
 ) => {
-  const ssrConfig = await getSsrConfigRSC(pathStr, "build");
-  if (!ssrConfig) {
+  const input = await getSsrInputRSC(pathStr, "build");
+  if (input === null) {
     return null;
   }
-  const { input } = ssrConfig;
   const { splitHTML, getFallback } = config.framework.ssr;
   const [pipeable] = await renderRSC(
     { input },

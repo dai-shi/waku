@@ -85,13 +85,13 @@ const handleGetBuildConfig = async (
   }
 };
 
-const handleGetSsrConfig = async (
-  mesg: MessageReq & { type: "getSsrConfig" },
+const handleGetSsrInput = async (
+  mesg: MessageReq & { type: "getSsrInput" },
 ) => {
   const { id, pathStr, command } = mesg;
   try {
-    const output = await getSsrConfigRSC(pathStr, command);
-    const mesg: MessageRes = { id, type: "ssrConfig", output };
+    const input = await getSsrInputRSC(pathStr, command);
+    const mesg: MessageRes = { id, type: "ssrInput", input };
     parentPort!.postMessage(mesg);
   } catch (err) {
     const mesg: MessageRes = { id, type: "err", err };
@@ -159,8 +159,8 @@ parentPort!.on("message", (mesg: MessageReq) => {
     handleRender(mesg);
   } else if (mesg.type === "getBuildConfig") {
     handleGetBuildConfig(mesg);
-  } else if (mesg.type === "getSsrConfig") {
-    handleGetSsrConfig(mesg);
+  } else if (mesg.type === "getSsrInput") {
+    handleGetSsrInput(mesg);
   }
 });
 
@@ -218,25 +218,26 @@ async function renderRSC(
     runWithAsyncLocalStorage: typeof runWithAsyncLocalStorageOrig;
   }>);
 
+  const entriesFile = await getEntriesFile(config, options.command);
+  const {
+    default: { renderEntries, getSsrConfig },
+  } = await (loadServerFile(entriesFile, options.command) as Promise<Entries>);
+  const ssrConfig = await getSsrConfig?.();
+  const ssrFilter: NonNullable<typeof ssrConfig>["filter"] = (elements) => {
+    if (!ssrConfig) {
+      throw new Error("getSsrConfig is required");
+    }
+    return ssrConfig.filter(elements);
+  };
+
   const render = async (input: string) => {
-    const entriesFile = await getEntriesFile(config, options.command);
-    const {
-      default: { renderEntries },
-    } = await (loadServerFile(
-      entriesFile,
-      options.command,
-    ) as Promise<Entries>);
-    const elements = await renderEntries(input, { ssr: options.ssr });
+    const elements = await renderEntries(input);
     if (elements === null) {
       const err = new Error("No function component found");
       (err as any).statusCode = 404; // HACK our convention for NotFound
       throw err;
     }
-    if (
-      Object.keys(elements).some((key) =>
-        key === "_ssr" ? !options.ssr : key.startsWith("_"),
-      )
-    ) {
+    if (Object.keys(elements).some((key) => key.startsWith("_"))) {
       throw new Error('"_" prefix is reserved');
     }
     return elements;
@@ -287,9 +288,10 @@ async function renderRSC(
     },
     async () => {
       const elements = await render(input.input);
-      return renderToPipeableStream(elements, bundlerConfig).pipe(
-        transformRsfId(config.root),
-      );
+      return renderToPipeableStream(
+        options.ssr ? ssrFilter(elements) : elements,
+        bundlerConfig,
+      ).pipe(transformRsfId(config.root));
     },
   );
 }
@@ -323,7 +325,7 @@ async function getBuildConfigRSC() {
   return output;
 }
 
-async function getSsrConfigRSC(
+async function getSsrInputRSC(
   pathStr: string,
   command: "dev" | "build" | "start",
 ) {
@@ -344,6 +346,6 @@ async function getSsrConfigRSC(
   if (!getSsrConfig) {
     return null;
   }
-  const output = await getSsrConfig(pathStr);
+  const output = (await getSsrConfig()).getInput(pathStr);
   return output;
 }

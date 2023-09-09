@@ -6,7 +6,6 @@ import type {
   RenderInput,
   RenderOptions,
   GetBuildConfig,
-  GetSsrConfig,
 } from "../../../server.js";
 
 const worker = new Worker(new URL("worker-impl.js", import.meta.url), {
@@ -39,7 +38,7 @@ export type MessageReq =
   | { id: number; type: "getBuildConfig" }
   | {
       id: number;
-      type: "getSsrConfig";
+      type: "getSsrInput";
       pathStr: string;
       command: "dev" | "build" | "start";
     };
@@ -59,8 +58,8 @@ export type MessageRes =
     }
   | {
       id: number;
-      type: "ssrConfig";
-      output: Awaited<ReturnType<GetSsrConfig>>;
+      type: "ssrInput";
+      input: string | null;
     };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
@@ -174,22 +173,22 @@ export function getBuildConfigRSC(): ReturnType<GetBuildConfig> {
   });
 }
 
-export function getSsrConfigRSC(
+export function getSsrInputRSC(
   pathStr: string,
   command: "dev" | "build" | "start",
-): ReturnType<GetSsrConfig> {
+): Promise<string | null> {
   return new Promise((resolve, reject) => {
     const id = nextId++;
     messageCallbacks.set(id, (mesg) => {
-      if (mesg.type === "ssrConfig") {
-        resolve(mesg.output);
+      if (mesg.type === "ssrInput") {
+        resolve(mesg.input);
         messageCallbacks.delete(id);
       } else if (mesg.type === "err") {
         reject(mesg.err);
         messageCallbacks.delete(id);
       }
     });
-    const mesg: MessageReq = { id, type: "getSsrConfig", pathStr, command };
+    const mesg: MessageReq = { id, type: "getSsrInput", pathStr, command };
     worker.postMessage(mesg);
   });
 }

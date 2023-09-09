@@ -56,14 +56,8 @@ export function defineRouter(
   >,
   getAllPaths: () => Promise<string[]>,
 ): ReturnType<typeof defineEntries> {
-  const isValidPath = async (pathname: string) => {
-    const componentIds = getComponentIds(pathname);
-    const allPaths = await getAllPaths();
-    return componentIds.every((id) => allPaths.includes(id));
-  };
-
-  const renderSsrEntries = async (input: string) => {
-    const url = new URL(input, "http://localhost");
+  const renderSsrEntries = async (pathStr: string) => {
+    const url = new URL(pathStr, "http://localhost");
     const componentIds = getComponentIds(url.pathname);
     const components = await Promise.all(
       componentIds.map(async (id) => {
@@ -82,12 +76,14 @@ export function defineRouter(
         ),
       null,
     );
-    return { _ssr: element };
+    return { Root: element };
   };
 
-  const renderEntries: RenderEntries = async (input, options) => {
-    if (options.ssr) {
-      return renderSsrEntries(input);
+  const SSR_PREFIX = "__SSR__";
+
+  const renderEntries: RenderEntries = async (input) => {
+    if (input.startsWith(SSR_PREFIX)) {
+      return renderSsrEntries(input.slice(SSR_PREFIX.length));
     }
     const { routes, cached } = JSON.parse(input) as ReturnType<
       typeof getInputObject
@@ -149,12 +145,24 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
     );
   };
 
-  const getSsrConfig: GetSsrConfig = async (pathStr) => {
-    const url = new URL(pathStr, "http://localhost");
-    if (await isValidPath(url.pathname)) {
-      return { input: pathStr };
-    }
-    return null;
+  const getSsrConfig: GetSsrConfig = async () => {
+    const allPaths = await getAllPaths();
+    const isValidPath = (pathname: string) => {
+      const componentIds = getComponentIds(pathname);
+      return componentIds.every((id) => allPaths.includes(id));
+    };
+    return {
+      getInput: (pathStr) => {
+        const url = new URL(pathStr, "http://localhost");
+        if (isValidPath(url.pathname)) {
+          return SSR_PREFIX + pathStr;
+        }
+        return null;
+      },
+      filter: (elements) => {
+        return elements.Root;
+      },
+    };
   };
 
   return { renderEntries, getBuildConfig, getSsrConfig };

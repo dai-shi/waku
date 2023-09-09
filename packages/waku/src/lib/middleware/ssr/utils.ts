@@ -1,7 +1,6 @@
 import { Transform } from "node:stream";
 import type { Readable } from "node:stream";
 
-import { createElement, use } from "react";
 import RDServer from "react-dom/server";
 import RSDWClient from "react-server-dom-webpack/client.node.unbundled";
 
@@ -59,8 +58,7 @@ export const renderHtmlToReadable = (
     },
   );
   const data = createFromNodeStream(rscStream, bundlerConfig);
-  const Filter = ({ data }: { data: any }) => (use(data) as typeof data)._ssr;
-  return renderToPipeableStream(createElement(Filter, { data }), {
+  return renderToPipeableStream(data, {
     onError(err) {
       if (
         err instanceof Error &&

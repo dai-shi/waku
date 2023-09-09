@@ -6,12 +6,7 @@ const App = lazy(() => import("./components/App.js"));
 
 export default defineEntries(
   // renderEntries
-  async (input, options) => {
-    if (options.ssr) {
-      return {
-        _ssr: <App name={input} />,
-      };
-    }
+  async (input) => {
     const ctx = getContext<{ count: number }>();
     ++ctx.count;
     return {
@@ -29,12 +24,15 @@ export default defineEntries(
   },
   // getSsrConfig
   // Passing cookies through SSR server isn't supported (yet).
-  // async (pathStr) => {
-  //   switch (pathStr) {
-  //     case "/":
-  //       return { input: "Waku" };
-  //     default:
-  //       return null;
-  //   }
-  // },
+  // async () => ({
+  //   getInput: (pathStr) => {
+  //     switch (pathStr) {
+  //       case "/":
+  //         return "Waku";
+  //       default:
+  //         return null;
+  //     }
+  //   },
+  //   filter: (elements) => elements.App,
+  // }),
 );

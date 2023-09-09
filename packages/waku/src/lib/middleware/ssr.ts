@@ -7,7 +7,6 @@ import { createServer as viteCreateServer } from "vite";
 
 import { configFileConfig, resolveConfig } from "../config.js";
 import { defineEntries } from "../../server.js";
-import type { GetSsrConfig } from "../../server.js";
 import { nonjsResolvePlugin } from "../vite-plugin/nonjs-resolve-plugin.js";
 import { renderHtmlToReadable } from "./ssr/utils.js";
 
@@ -26,14 +25,13 @@ const renderHTML = async (
   pathStr: string,
   rscServer: URL,
   config: Awaited<ReturnType<typeof resolveConfig>>,
-  ssrConfig: NonNullable<Awaited<ReturnType<GetSsrConfig>>>,
+  input: string,
 ) => {
   const rscPrefix = config.framework.rscPrefix;
   const { splitHTML, getFallback } = config.framework.ssr;
   const htmlResPromise = fetch(rscServer + pathStr.slice(1), {
     headers: { "x-waku-ssr-mode": "html" },
   });
-  const { input } = ssrConfig;
   const rscResPromise = fetch(rscServer + rscPrefix + input, {
     headers: { "x-waku-ssr-mode": "rsc" },
   });
@@ -94,8 +92,8 @@ export function ssr(options: {
       getSsrConfigPromise,
     ]);
     if (req.url && !req.headers["x-waku-ssr-mode"]) {
-      const ssrConfig = getSsrConfig && (await getSsrConfig(req.url));
-      if (ssrConfig) {
+      const input = (await getSsrConfig?.())?.getInput(req.url);
+      if (input) {
         const rscServer = new URL(
           config.framework.ssr.rscServer,
           "http://" + req.headers.host,
@@ -114,12 +112,7 @@ export function ssr(options: {
           }
         };
         try {
-          const readable = await renderHTML(
-            req.url,
-            rscServer,
-            config,
-            ssrConfig,
-          );
+          const readable = await renderHTML(req.url, rscServer, config, input);
           readable.on("error", handleError);
           readable.pipe(res);
         } catch (e) {

@@ -7,10 +7,7 @@ type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
 type Elements = Record<string, ReactNode>;
 
-export type RenderEntries = (
-  input: string,
-  options: { ssr: boolean },
-) => Promise<Elements | null>;
+export type RenderEntries = (input: string) => Promise<Elements | null>;
 
 export type RenderInput =
   | {
@@ -42,9 +39,10 @@ export type GetBuildConfig = (
   };
 }>;
 
-export type GetSsrConfig = (pathStr: string) => Promise<{
-  input: string;
-} | null>;
+export type GetSsrConfig = () => Promise<{
+  getInput: (pathStr: string) => string | null;
+  filter: (elements: Elements) => ReactNode;
+}>;
 
 export function defineEntries(
   renderEntries: RenderEntries,
