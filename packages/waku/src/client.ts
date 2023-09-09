@@ -60,7 +60,8 @@ export const fetchRSC = cache(
       },
     };
     const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-    const response = prefetched[input] || fetch(basePath + encodeURIComponent(input));
+    const response =
+      prefetched[input] || fetch(basePath + encodeURIComponent(input));
     delete prefetched[input];
     const data = createFromFetch(checkStatus(response), options);
     return data;
@@ -97,10 +98,13 @@ export const Root = ({
     fetchRSC(initialInput, getRerender(), basePath),
   );
   setRerender(setElements);
-  const refetch = useCallback((input: string) => {
-    const data = fetchRSC(input, getRerender(), basePath);
-    setElements((prev) => mergeElements(prev, data));
-  }, []);
+  const refetch = useCallback(
+    (input: string) => {
+      const data = fetchRSC(input, getRerender(), basePath);
+      setElements((prev) => mergeElements(prev, data));
+    },
+    [getRerender, basePath],
+  );
   return createElement(
     RefetchContext.Provider,
     { value: refetch },
