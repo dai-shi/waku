@@ -22,12 +22,16 @@ export default defineRouter(
   }
 );`;
 
-const code3 = `import path from "node:path";
-import fs from "node:fs";
+const code3 = `import url from "node:url";
+import path from "node:path";
 
 import { glob } from "glob";
 import { defineRouter } from "waku/router/server";
-import { unstable_rootDir as rootDir } from "waku/config";
+
+const routesDir = path.join(
+  path.dirname(url.fileURLToPath(import.meta.url)),
+  "routes",
+);
 
 export default defineRouter(
   (id) => {
@@ -42,17 +46,12 @@ export default defineRouter(
     }
   },
   async () => {
-    const root = rootDir();
-    const routesDir = path.join(root, "routes");
-    const files = await glob("**/*.tsx", { cwd: routesDir });
+    const files = await glob("**/*.{tsx,js}", { cwd: routesDir });
     return files.map((file) => {
-      const name = file.slice(0, file.length - path.extname(file).length);
-      const stat = fs.statSync(path.join(routesDir, name), {
-        throwIfNoEntry: false,
-      });
-      return stat?.isDirectory() ? name + "/" : name;
+      const id = file.slice(0, file.length - path.extname(file).length);
+      return id;
     });
-  }
+  },
 );`;
 
 const code4 = `git clone https://github.com/dai-shi/waku.git

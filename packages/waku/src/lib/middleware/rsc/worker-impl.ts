@@ -203,14 +203,6 @@ async function renderRSC(
     options.command === "build" ? "build" : "serve",
   );
 
-  const { unstable_setRootDir } = await (loadServerFile(
-    "waku/config",
-    options.command,
-  ) as Promise<{
-    unstable_setRootDir: (root: string) => void;
-  }>);
-  unstable_setRootDir(config.root);
-
   const { runWithAsyncLocalStorage } = await (loadServerFile(
     "waku/server",
     options.command,
@@ -299,14 +291,6 @@ async function renderRSC(
 async function getBuildConfigRSC() {
   const config = await resolveConfig("build");
 
-  const { unstable_setRootDir } = await (loadServerFile(
-    "waku/config",
-    "build",
-  ) as Promise<{
-    unstable_setRootDir: (root: string) => void;
-  }>);
-  unstable_setRootDir(config.root);
-
   const entriesFile = await getEntriesFile(config, "build");
   const {
     default: { getBuildConfig },
@@ -330,14 +314,6 @@ async function getSsrInputRSC(
   command: "dev" | "build" | "start",
 ) {
   const config = await resolveConfig(command === "build" ? "build" : "serve");
-
-  const { unstable_setRootDir } = await (loadServerFile(
-    "waku/config",
-    command,
-  ) as Promise<{
-    unstable_setRootDir: (root: string) => void;
-  }>);
-  unstable_setRootDir(config.root);
 
   const entriesFile = await getEntriesFile(config, command);
   const {
