@@ -39,7 +39,7 @@ export default defineEntries(
     getInput: (pathStr) => {
       switch (pathStr) {
         case "/":
-          return "Waku";
+          return "App=Waku";
         default:
           return null;
       }
