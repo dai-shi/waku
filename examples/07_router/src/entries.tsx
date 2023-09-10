@@ -24,7 +24,7 @@ export default defineRouter(
   async () => {
     const files = await glob("**/*.{tsx,js}", { cwd: routesDir });
     return files.map((file) => {
-      const id = file.slice(0, file.length - path.extname(file).length);
+      const id = file.slice(0, -path.extname(file).length);
       return id;
     });
   },

@@ -414,8 +414,7 @@ const emitVercelOutput = (
 
 const resolveFileName = (fname: string) => {
   for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
-    const resolvedName =
-      fname.slice(0, fname.length - path.extname(fname).length) + ext;
+    const resolvedName = fname.slice(0, -path.extname(fname).length) + ext;
     if (fs.existsSync(resolvedName)) {
       return resolvedName;
     }

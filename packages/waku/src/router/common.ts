@@ -14,6 +14,9 @@ export type LinkProps = {
 };
 
 export function getComponentIds(pathname: string): readonly string[] {
+  if (pathname.endsWith("/index")) {
+    pathname = pathname.slice(0, -"/index".length);
+  }
   const pathItems = pathname.split("/").filter(Boolean);
   const componentIds: string[] = [];
   for (let index = 0; index <= pathItems.length; ++index) {
