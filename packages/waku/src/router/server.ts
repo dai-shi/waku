@@ -102,7 +102,7 @@ export function defineRouter(
       return null;
     }
     const entries = await Promise.all(
-      componentIds.map(async (id) => {
+      componentIds.map(async (id, index) => {
         const mod = await getComponent(id);
         const component =
           typeof mod === "function" ? mod : mod?.default || Fragment;
@@ -119,7 +119,7 @@ export function defineRouter(
         const element = createElement(
           component as FunctionComponent<RouteProps>,
           props,
-          createElement(Children),
+          index === componentIds.length - 1 ? null : createElement(Children),
         );
         return [id, element] as const;
       }),
