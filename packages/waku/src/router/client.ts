@@ -16,7 +16,7 @@ import {
 import type { ComponentProps, FunctionComponent, ReactNode } from "react";
 
 import { Root, Slot, useRefetch } from "../client.js";
-import { getComponentIds, getInputObject } from "./common.js";
+import { getComponentIds, getInputString } from "./common.js";
 import type { RouteProps, LinkProps } from "./common.js";
 
 const parseLocation = () => {
@@ -149,9 +149,7 @@ function InnerRouter({ basePath }: { basePath: string }) {
       }
       const loc = parseLocation();
       setLoc(loc);
-      const input = JSON.stringify(
-        getInputObject(loc.pathname, loc.search, cachedRef.current),
-      );
+      const input = getInputString(loc.pathname, loc.search, cachedRef.current);
       refetch(input);
       const componentIds = getComponentIds(loc.pathname);
       const routeProps: RouteProps = {
@@ -169,11 +167,9 @@ function InnerRouter({ basePath }: { basePath: string }) {
   const prefetchLocation: PrefetchLocation = useCallback(
     (pathname, search) => {
       const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-      const input = JSON.stringify(
-        getInputObject(pathname, search, cachedRef.current),
-      );
+      const input = getInputString(pathname, search, cachedRef.current);
       if (!prefetched[input]) {
-        prefetched[input] = fetch(basePath + encodeURIComponent(input));
+        prefetched[input] = fetch(basePath + input);
       }
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(pathname, search);
     },
@@ -199,7 +195,7 @@ function InnerRouter({ basePath }: { basePath: string }) {
 
 export function Router({ basePath = "/RSC/" }: { basePath?: string }) {
   const { pathname, search } = parseLocation();
-  const initialInput = JSON.stringify(getInputObject(pathname, search));
+  const initialInput = getInputString(pathname, search);
   return createElement(
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, "children">>,
     { initialInput, basePath },

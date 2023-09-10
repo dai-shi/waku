@@ -12,6 +12,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
+        // FIXME this doesn't seem to provide nice output.
+        // TODO we should use `input` instead.
         preserveModules: true,
         preserveModulesRoot: modulesRoot,
       },

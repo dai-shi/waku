@@ -31,9 +31,9 @@ export function rsc<Context>(options: {
   return async (req, res, next) => {
     const config = await configPromise;
     const basePath = config.base + config.framework.rscPrefix;
-    const url = new URL(req.url || "", "http://" + req.headers.host);
-    if (url.pathname.startsWith(basePath)) {
-      const id = decodeURIComponent(url.pathname.slice(basePath.length));
+    const url = req.url || "";
+    if (url.startsWith(basePath)) {
+      const id = url.slice(basePath.length);
       const ssr = req.headers["x-waku-ssr-mode"] === "rsc";
       let input: RenderInput;
       if (req.method === "POST") {
@@ -52,7 +52,7 @@ export function rsc<Context>(options: {
             args = await decodeReply(body);
           }
         }
-        input = { actionId: id, args };
+        input = { actionId: id.slice(1), args };
       } else {
         input = { input: id };
       }

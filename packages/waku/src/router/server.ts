@@ -5,16 +5,27 @@ import type { FunctionComponent, ReactNode } from "react";
 import { defineEntries } from "../server.js";
 import type { RenderEntries, GetBuildConfig, GetSsrConfig } from "../server.js";
 import { Children } from "../client.js";
-import { getComponentIds, getInputObject } from "./common.js";
+import { getComponentIds, getInputString, parseInputString } from "./common.js";
 import type { RouteProps, LinkProps } from "./common.js";
 import { Waku_SSR_Capable_Link } from "./client.js";
+
+const getPathnamesFromComponentIds = (ids: string[]): string[] =>
+  ids.flatMap((id) => {
+    if (id === "index") {
+      return ["/"];
+    }
+    if (id.endsWith("/index")) {
+      return [];
+    }
+    return ["/" + id];
+  });
 
 const collectClientModules = async (
   pathname: string,
   unstable_renderRSC: Parameters<GetBuildConfig>[0],
 ) => {
   const search = ""; // XXX this is a limitation
-  const input = JSON.stringify(getInputObject(pathname, search));
+  const input = getInputString(pathname, search);
   const idSet = new Set<string>();
   const pipeable = await unstable_renderRSC(
     { input },
@@ -36,7 +47,7 @@ const collectClientModules = async (
 // We have to make prefetcher consistent with client behavior
 const prefetcher = (pathname: string) => {
   const search = ""; // XXX this is a limitation
-  const input = JSON.stringify(getInputObject(pathname, search));
+  const input = getInputString(pathname, search);
   return [[input]] as const;
 };
 
@@ -83,15 +94,15 @@ export function defineRouter(
     if (input.startsWith(SSR_PREFIX)) {
       return renderSsrEntries(input.slice(SSR_PREFIX.length));
     }
-    const { routes, cached } = JSON.parse(input) as ReturnType<
-      typeof getInputObject
-    >;
+    const { pathname, search, cached } = parseInputString(input);
+    const componentIds = getComponentIds(pathname);
+    const props: RouteProps = { path: pathname, search };
     const allIds = await getAllIds();
-    if (routes.some(([id]) => !allIds.includes(id))) {
+    if (componentIds.some((id) => !allIds.includes(id))) {
       return null;
     }
     const entries = await Promise.all(
-      routes.map(async ([id, props]) => {
+      componentIds.map(async (id) => {
         const mod = await getComponent(id);
         const component =
           typeof mod === "function" ? mod : mod?.default || Fragment;
@@ -122,8 +133,9 @@ export function defineRouter(
 
   const getBuildConfig: GetBuildConfig = async (unstable_renderRSC) => {
     const allIds = await getAllIds();
+    const allPathnames = getPathnamesFromComponentIds(allIds);
     const path2moduleIds: Record<string, string[]> = {};
-    for (const pathname of allIds) {
+    for (const pathname of allPathnames) {
       const moduleIds = await collectClientModules(
         pathname,
         unstable_renderRSC,
@@ -139,7 +151,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
   }
 };`;
     return Object.fromEntries(
-      allIds.map((pathname) => [
+      allPathnames.map((pathname) => [
         pathname,
         { entries: prefetcher(pathname), customCode },
       ]),
