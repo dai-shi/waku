@@ -47,7 +47,7 @@ export const fetchRSC = cache(
   ): Elements => {
     const options = {
       async callServer(actionId: string, args: unknown[]) {
-        const response = fetch(basePath + "=" + actionId, {
+        const response = fetch(basePath + encodeURIComponent(actionId), {
           method: "POST",
           body: await encodeReply(args),
         });
