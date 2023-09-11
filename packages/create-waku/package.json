@@ -2,9 +2,35 @@
   "name": "create-waku",
   "version": "0.4.10",
   "author": "Daishi Kato",
+  "contributors": [
+    "Vasu Singh"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/dai-shi/waku.git"
   },
-  "bin": "./cli.js"
+  "bin": "./dist/cli.js",
+  "files": [
+    "src",
+    "dist",
+    "template"
+  ],
+  "type": "commonjs",
+  "scripts": {
+    "start": "node dist/cli.js",
+    "template": "cp -r ../../examples template/",
+    "build": "esbuild src/* --bundle --platform=node --outdir=dist"
+  },
+  "dependencies": {
+    "fs-extra": "^11.1.1",
+    "kolorist": "^1.8.0",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.1",
+    "@types/node": "^20.4.7",
+    "@types/prompts": "^2.4.4",
+    "esbuild": "0.18.17",
+    "typescript": "^5.1.6"
+  }
 }
