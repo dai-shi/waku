@@ -1,5 +1,5 @@
 import { Writable } from "node:stream";
-import { createElement, Fragment, Suspense } from "react";
+import { createElement, Suspense } from "react";
 import type { FunctionComponent, ReactNode } from "react";
 
 import { defineEntries } from "../server.js";
@@ -8,17 +8,6 @@ import { Children } from "../client.js";
 import { getComponentIds, getInputString, parseInputString } from "./common.js";
 import type { RouteProps, LinkProps } from "./common.js";
 import { Waku_SSR_Capable_Link } from "./client.js";
-
-const getPathnamesFromComponentIds = (ids: string[]): string[] =>
-  ids.flatMap((id) => {
-    if (id === "index") {
-      return ["/"];
-    }
-    if (id.endsWith("/index")) {
-      return [];
-    }
-    return ["/" + id];
-  });
 
 const collectClientModules = async (
   pathname: string,
@@ -51,19 +40,13 @@ const prefetcher = (pathname: string) => {
   return [[input]] as const;
 };
 
-export type FunctionComponentWithAreEqual = FunctionComponent & {
-  areEqual?: (prevProps: any, nextProps: any) => boolean;
-};
+const Default = ({ children }: { children: ReactNode }) => children;
 
 export function defineRouter(
   getComponent: (
     componentId: string,
-  ) => Promise<
-    | FunctionComponentWithAreEqual
-    | { default: FunctionComponentWithAreEqual }
-    | null
-  >,
-  getAllIds: () => Promise<string[]>,
+  ) => Promise<FunctionComponent | { default: FunctionComponent } | null>,
+  getAllPaths: () => Promise<string[]>,
 ): ReturnType<typeof defineEntries> {
   const renderSsrEntries = async (pathStr: string) => {
     const url = new URL(pathStr, "http://localhost");
@@ -72,7 +55,7 @@ export function defineRouter(
       componentIds.map(async (id) => {
         const mod = await getComponent(id);
         const component =
-          typeof mod === "function" ? mod : mod?.default || Fragment;
+          typeof mod === "function" ? mod : mod?.default || Default;
         return component;
       }),
     );
@@ -94,48 +77,38 @@ export function defineRouter(
     if (input.startsWith(SSR_PREFIX)) {
       return renderSsrEntries(input.slice(SSR_PREFIX.length));
     }
-    const { pathname, search, cached } = parseInputString(input);
+    const { pathname, search, skip } = parseInputString(input);
     const componentIds = getComponentIds(pathname);
-    const props: RouteProps = { path: pathname, search };
-    const allIds = await getAllIds();
-    if (componentIds.some((id) => !allIds.includes(id))) {
+    const allPaths = await getAllPaths(); // XXX this is a bit costly
+    if (!allPaths.includes(pathname)) {
       return null;
     }
-    const entries = await Promise.all(
-      componentIds.map(async (id, index) => {
-        const mod = await getComponent(id);
-        const component =
-          typeof mod === "function" ? mod : mod?.default || Fragment;
-        const cachedProps = cached?.[id];
-        if (
-          cachedProps &&
-          (component as FunctionComponentWithAreEqual).areEqual?.(
-            cachedProps,
+    const props: RouteProps = { path: pathname, search };
+    const entries = (
+      await Promise.all(
+        componentIds.map(async (id) => {
+          if (skip?.includes(id)) {
+            return [];
+          }
+          const mod = await getComponent(id);
+          const component =
+            typeof mod === "function" ? mod : mod?.default || Default;
+          const element = createElement(
+            component as FunctionComponent<RouteProps>,
             props,
-          )
-        ) {
-          return null;
-        }
-        const element = createElement(
-          component as FunctionComponent<RouteProps>,
-          props,
-          index === componentIds.length - 1 ? null : createElement(Children),
-        );
-        return [id, element] as const;
-      }),
-    );
-    return Object.fromEntries(
-      entries.filter(
-        (entry): entry is NonNullable<typeof entry> => entry !== null,
-      ),
-    );
+            createElement(Children),
+          );
+          return [[id, element]] as const;
+        }),
+      )
+    ).flat();
+    return Object.fromEntries(entries);
   };
 
   const getBuildConfig: GetBuildConfig = async (unstable_renderRSC) => {
-    const allIds = await getAllIds();
-    const allPathnames = getPathnamesFromComponentIds(allIds);
+    const allPaths = await getAllPaths();
     const path2moduleIds: Record<string, string[]> = {};
-    for (const pathname of allPathnames) {
+    for (const pathname of allPaths) {
       const moduleIds = await collectClientModules(
         pathname,
         unstable_renderRSC,
@@ -151,7 +124,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
   }
 };`;
     return Object.fromEntries(
-      allPathnames.map((pathname) => [
+      allPaths.map((pathname) => [
         pathname,
         { entries: prefetcher(pathname), customCode },
       ]),
@@ -159,15 +132,11 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
   };
 
   const getSsrConfig: GetSsrConfig = async () => {
-    const allIds = await getAllIds();
-    const isValidPath = (pathname: string) => {
-      const componentIds = getComponentIds(pathname);
-      return componentIds.every((id) => allIds.includes(id));
-    };
+    const allPaths = await getAllPaths();
     return {
       getInput: (pathStr) => {
         const url = new URL(pathStr, "http://localhost");
-        if (isValidPath(url.pathname)) {
+        if (allPaths.includes(url.pathname)) {
           return SSR_PREFIX + pathStr;
         }
         return null;

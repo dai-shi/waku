@@ -6,6 +6,6 @@ const root = createRoot(document.getElementById("root")!);
 
 root.render(
   <StrictMode>
-    <Router />
+    <Router shouldSkip={(id) => id !== "docs/layout"} />
   </StrictMode>,
 );

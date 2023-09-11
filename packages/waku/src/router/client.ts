@@ -103,12 +103,37 @@ export function Link({
   return ele;
 }
 
-function InnerRouter({ basePath }: { basePath: string }) {
+type ShouldSkip = (
+  componentId: string,
+  props: RouteProps,
+  prevProps: RouteProps,
+) => boolean;
+
+const getSkipList = (
+  componentIds: readonly string[],
+  props: RouteProps,
+  cached: Record<string, RouteProps>,
+  shouldSkip?: ShouldSkip,
+): string[] =>
+  shouldSkip
+    ? componentIds.filter((id) => {
+        const prevProps = cached[id];
+        return prevProps && shouldSkip(id, props, prevProps);
+      })
+    : [];
+
+function InnerRouter({
+  basePath,
+  shouldSkip,
+}: {
+  basePath: string;
+  shouldSkip?: ShouldSkip | undefined;
+}) {
   const refetch = useRefetch();
 
   const [loc, setLoc] = useState(parseLocation);
-
   const componentIds = getComponentIds(loc.pathname);
+
   const [cached, setCached] = useState<Record<string, RouteProps>>(() => {
     const routeProps: RouteProps = {
       path: loc.pathname,
@@ -120,18 +145,6 @@ function InnerRouter({ basePath }: { basePath: string }) {
   useEffect(() => {
     cachedRef.current = cached;
   }, [cached]);
-
-  const children = componentIds.reduceRight(
-    (acc: ReactNode, id) =>
-      createElement(
-        Slot as FunctionComponent<
-          Omit<ComponentProps<typeof Slot>, "children">
-        >,
-        { id },
-        acc,
-      ),
-    null,
-  );
 
   const changeLocation: ChangeLocation = useCallback(
     (pathname, search, replace) => {
@@ -149,31 +162,58 @@ function InnerRouter({ basePath }: { basePath: string }) {
       }
       const loc = parseLocation();
       setLoc(loc);
-      const input = getInputString(loc.pathname, loc.search, cachedRef.current);
-      refetch(input);
       const componentIds = getComponentIds(loc.pathname);
       const routeProps: RouteProps = {
         path: loc.pathname,
         search: loc.search,
       };
+      const skip = getSkipList(
+        componentIds,
+        routeProps,
+        cachedRef.current,
+        shouldSkip,
+      );
+      if (skip.length === componentIds.length) {
+        return; // everything is cached
+      }
+      const input = getInputString(loc.pathname, loc.search, skip);
+      refetch(input);
       setCached((prev) => ({
         ...prev,
-        ...Object.fromEntries(componentIds.map((id) => [id, routeProps])),
+        ...Object.fromEntries(
+          componentIds.flatMap((id) =>
+            skip.includes(id) ? [] : [[id, routeProps]],
+          ),
+        ),
       }));
     },
-    [refetch],
+    [refetch, shouldSkip],
   );
 
   const prefetchLocation: PrefetchLocation = useCallback(
     (pathname, search) => {
+      const componentIds = getComponentIds(pathname);
+      const routeProps: RouteProps = {
+        path: pathname,
+        search: search,
+      };
+      const skip = getSkipList(
+        componentIds,
+        routeProps,
+        cachedRef.current,
+        shouldSkip,
+      );
+      if (skip.length === componentIds.length) {
+        return; // everything is cached
+      }
+      const input = getInputString(pathname, search, skip);
       const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-      const input = getInputString(pathname, search, cachedRef.current);
       if (!prefetched[input]) {
         prefetched[input] = fetch(basePath + input);
       }
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(pathname, search);
     },
-    [basePath],
+    [basePath, shouldSkip],
   );
 
   useEffect(() => {
@@ -186,6 +226,18 @@ function InnerRouter({ basePath }: { basePath: string }) {
     return () => window.removeEventListener("popstate", callback);
   }, [changeLocation, prefetchLocation]);
 
+  const children = componentIds.reduceRight(
+    (acc: ReactNode, id) =>
+      createElement(
+        Slot as FunctionComponent<
+          Omit<ComponentProps<typeof Slot>, "children">
+        >,
+        { id },
+        acc,
+      ),
+    null,
+  );
+
   return createElement(
     RouterContext.Provider,
     { value: { loc, changeLocation, prefetchLocation } },
@@ -193,13 +245,19 @@ function InnerRouter({ basePath }: { basePath: string }) {
   );
 }
 
-export function Router({ basePath = "/RSC/" }: { basePath?: string }) {
+export function Router({
+  basePath = "/RSC/",
+  shouldSkip,
+}: {
+  basePath?: string;
+  shouldSkip?: ShouldSkip;
+}) {
   const { pathname, search } = parseLocation();
   const initialInput = getInputString(pathname, search);
   return createElement(
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, "children">>,
     { initialInput, basePath },
-    createElement(InnerRouter, { basePath }),
+    createElement(InnerRouter, { basePath, shouldSkip }),
   );
 }
 

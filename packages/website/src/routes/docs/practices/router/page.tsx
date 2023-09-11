@@ -1,4 +1,4 @@
-import { Code, CodeBlock } from "../../../components/Code.js";
+import { Code, CodeBlock } from "../../../../components/Code.js";
 
 const code1 = `import { createRoot } from "react-dom/client";
 import { Router } from "waku/router/client";
@@ -59,7 +59,7 @@ cd waku
 npm install
 npm run examples:dev:07_router`;
 
-export default function Layout() {
+export default function Page() {
   return (
     <div className="flex flex-col gap-8">
       <div>

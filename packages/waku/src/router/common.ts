@@ -17,36 +17,30 @@ export function getComponentIds(pathname: string): readonly string[] {
   const pathItems = pathname.split("/").filter(Boolean);
   const idSet = new Set<string>();
   for (let index = 0; index <= pathItems.length; ++index) {
-    const id = [
-      ...pathItems.slice(0, index),
-      ...(index === 0 || index < pathItems.length ? ["index"] : []),
-    ].join("/");
+    const id = [...pathItems.slice(0, index), "layout"].join("/");
     idSet.add(id);
   }
+  idSet.add([...pathItems, "page"].join("/"));
   return Array.from(idSet);
 }
 
-const encode = (str: string) =>
-  str === "" ? "=" : encodeURIComponent(str).replaceAll("%", "=");
-const decode = (str: string) =>
-  str === "=" ? "" : decodeURIComponent(str.replaceAll("=", "%"));
-
-// FIXME The current input string format is not very good.
-// Some difficulties are:
-// - File name length limit for static files
-// - encodeURIComponent is not predictable as servers automatically decode it
-// - Readability in browser dev tools
+// XXX This custom encoding might not work in some edge cases.
 
 export function getInputString(
   pathname: string,
   search: string,
-  cached?: Record<string, RouteProps>,
+  skip?: string[],
 ): string {
+  if (search.includes("/")) {
+    throw new Error("Invalid search");
+  }
   let input = search
-    ? encode(pathname) + "/" + encode(search)
-    : encode(pathname);
-  if (cached) {
-    input += "?" + encode(JSON.stringify(cached));
+    ? "-" + pathname.replace(/\/$/, "/__INDEX__") + "/" + search
+    : "_" + pathname.replace(/\/$/, "/__INDEX__");
+  if (skip) {
+    const params = new URLSearchParams();
+    skip.forEach((id) => params.append("skip", id));
+    input += "?" + params;
   }
   return input;
 }
@@ -54,19 +48,24 @@ export function getInputString(
 export function parseInputString(input: string): {
   pathname: string;
   search: string;
-  cached?: Record<string, RouteProps>;
+  skip?: string[];
 } {
-  const [first, cached] = input.split("?", 2);
-  if (!first) {
+  const [first, second] = input.split("?", 2);
+  const skip = second && new URLSearchParams(second).getAll("skip");
+  if (first?.startsWith("-")) {
+    const index = first.lastIndexOf("/");
+    return {
+      pathname: first.slice(1, index).replace(/\/__INDEX__$/, "/"),
+      search: first.slice(index + 1),
+      ...(skip ? { skip } : {}),
+    };
+  } else if (first?.startsWith("_")) {
+    return {
+      pathname: first.slice(1).replace(/\/__INDEX__$/, "/"),
+      search: "",
+      ...(skip ? { skip } : {}),
+    };
+  } else {
     throw new Error("Invalid input string");
   }
-  const [pathname, search] = first.split("/", 2);
-  if (!pathname) {
-    throw new Error("Invalid input string");
-  }
-  return {
-    pathname: decode(pathname),
-    search: search ? decode(search) : "",
-    ...(cached ? { cached: JSON.parse(decode(cached)) } : {}),
-  };
 }
