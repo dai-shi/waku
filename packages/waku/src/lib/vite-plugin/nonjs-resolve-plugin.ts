@@ -10,7 +10,7 @@ export function nonjsResolvePlugin(): Plugin {
       }
       for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
         const resolved = await this.resolve(
-          id.slice(0, id.length - path.extname(id).length) + ext,
+          id.slice(0, -path.extname(id).length) + ext,
           importer,
           { ...options, skipSelf: true },
         );

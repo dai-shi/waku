@@ -1,11 +1,12 @@
 import { StrictMode } from "react";
 import { hydrateRoot } from "react-dom/client";
-import { serve } from "waku/client";
+import { Root, Slot } from "waku/client";
 
-const App = serve<{ name: string }>("App");
 const rootElement = (
   <StrictMode>
-    <App name="Waku" />
+    <Root>
+      <Slot id="App" />
+    </Root>
   </StrictMode>
 );
 

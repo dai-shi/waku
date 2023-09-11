@@ -1,62 +1,55 @@
 import type { Writable } from "node:stream";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createElement } from "react";
-import type { FunctionComponent } from "react";
+import type { ReactNode } from "react";
 
 type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
-export type GetEntry = (
-  rscId: string,
-) => Promise<FunctionComponent | { default: FunctionComponent } | null>;
+type Elements = Record<string, ReactNode>;
+
+export type RenderEntries = (input: string) => Promise<Elements | null>;
 
 export type RenderInput =
   | {
-      rscId: string;
-      props: unknown;
+      input: string;
     }
   | {
-      rsfId: string;
-      args: unknown[];
-      rscId: string;
-      props: unknown;
-    }
-  | {
-      rsfId: string;
+      actionId: string;
       args: unknown[];
     };
 
-export type RenderOptions<Context> = {
+export type RenderOptions = {
   command: "dev" | "build" | "start";
-  ctx?: Context;
+  ssr: boolean;
+  context: unknown;
   moduleIdCallback?: (id: string) => void;
 };
 
 export type GetBuildConfig = (
   unstable_renderRSC: (
     input: RenderInput,
-    options: Omit<RenderOptions<never>, "command">,
+    options: Omit<RenderOptions, "command" | "context">,
   ) => Promise<PipeableStream>,
 ) => Promise<{
   [pathStr: string]: {
-    elements?: Iterable<
-      readonly [rscId: string, props: unknown, skipPrefetch?: boolean]
-    >;
+    entries?: Iterable<readonly [input: string, skipPrefetch?: boolean]>;
     customCode?: string; // optional code to inject
-    ctx?: unknown;
+    context?: unknown;
     skipSsr?: boolean;
   };
 }>;
 
-export type GetSsrConfig = (pathStr: string) => Promise<{
-  element: [rscId: string, props: unknown];
-} | null>;
+export type GetSsrConfig = () => Promise<{
+  getInput: (pathStr: string) => string | null;
+  filter: (elements: Elements) => ReactNode;
+}>;
 
 export function defineEntries(
-  getEntry: GetEntry,
+  renderEntries: RenderEntries,
   getBuildConfig?: GetBuildConfig,
   getSsrConfig?: GetSsrConfig,
 ) {
-  return { getEntry, getBuildConfig, getSsrConfig };
+  return { renderEntries, getBuildConfig, getSsrConfig };
 }
 
 // For internal use only
@@ -69,26 +62,41 @@ export function ClientOnly() {
   throw new Error("Client-only component");
 }
 
-const ContextStore = new AsyncLocalStorage();
-// FIXME this is not what we want
-(globalThis as any).WAKU_SERVER_CONTEXT_STORE ||= ContextStore;
+type Store = {
+  getContext: () => unknown;
+  rerender: (input: string) => void;
+};
 
-export function getContext<T>() {
-  const ContextStore: AsyncLocalStorage<unknown> = (globalThis as any)
-    .WAKU_SERVER_CONTEXT_STORE;
-  const ctx = ContextStore.getStore();
-  if (ctx === undefined) {
-    throw new Error("Missing runWithContext");
+const asl = new AsyncLocalStorage<Store>();
+// FIXME this is not what we want
+(globalThis as any).WAKU_SERVER_ASYNC_LOCAL_STORAGE ||= asl;
+
+export function getContext<T = unknown>() {
+  const asl: AsyncLocalStorage<Store> = (globalThis as any)
+    .WAKU_SERVER_ASYNC_LOCAL_STORAGE;
+  const store = asl.getStore();
+  if (store === undefined) {
+    throw new Error("Missing runWithAsyncLocalStorage");
   }
-  return ctx as T;
+  return store.getContext() as T;
+}
+
+export function rerender(input: string) {
+  const asl: AsyncLocalStorage<Store> = (globalThis as any)
+    .WAKU_SERVER_ASYNC_LOCAL_STORAGE;
+  const store = asl.getStore();
+  if (store === undefined) {
+    throw new Error("Missing runWithAsyncLocalStorage");
+  }
+  return store.rerender(input);
 }
 
 // For internal use only
-export function runWithContext<Context, Result>(
-  ctx: Context,
+export function runWithAsyncLocalStorage<Result>(
+  store: Store,
   fn: () => Result,
 ): Result {
-  const ContextStore: AsyncLocalStorage<unknown> = (globalThis as any)
-    .WAKU_SERVER_CONTEXT_STORE;
-  return ContextStore.run(ctx, fn);
+  const asl: AsyncLocalStorage<Store> = (globalThis as any)
+    .WAKU_SERVER_ASYNC_LOCAL_STORAGE;
+  return asl.run(store, fn);
 }

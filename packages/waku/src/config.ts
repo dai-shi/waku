@@ -73,18 +73,3 @@ export function defineConfig(
 ) {
   return config;
 }
-
-// internal function
-export function unstable_setRootDir(root: string) {
-  // FIXME it would be better to use a module variable or async local storage
-  (globalThis as any).WAKU_CONFIG_ROOT_DIR = root;
-}
-
-// XXX this looks very hacky, not sure if we want to keep it in the future.
-export function unstable_rootDir(): string {
-  const resolvedRootDir = (globalThis as any).WAKU_CONFIG_ROOT_DIR;
-  if (typeof resolvedRootDir !== "string") {
-    throw new Error("rootDir() is called before resolved");
-  }
-  return resolvedRootDir;
-}

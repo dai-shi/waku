@@ -13,21 +13,36 @@ const interleaveHtmlSnippets = (
   intermediate: string,
   postamble: string,
 ) => {
-  let initialized = false;
+  let preambleSent = false;
+  let intermediateSent = false;
   return new Transform({
     transform(chunk, encoding, callback) {
       if (encoding !== ("buffer" as any)) {
         throw new Error("Unknown encoding");
       }
-      if (!initialized) {
-        initialized = true;
+      if (!preambleSent) {
+        preambleSent = true;
         const data = chunk.toString();
-        callback(null, preamble + data + intermediate);
-      } else {
-        callback(null, chunk);
+        callback(null, preamble + data);
+        return;
       }
+      if (!intermediateSent) {
+        const data = chunk.toString();
+        if (data.startsWith("<script>")) {
+          intermediateSent = true;
+          callback(null, intermediate + data);
+          return;
+        }
+      }
+      callback(null, chunk);
     },
     final(callback) {
+      if (!preambleSent) {
+        this.push(preamble);
+      }
+      if (!intermediateSent) {
+        this.push(intermediate);
+      }
       this.push(postamble);
       callback();
     },

@@ -1,63 +1,63 @@
-import { Code, CodeBlock } from "../../../components/Code.js";
+import { Code, CodeBlock } from "../../../../components/Code.js";
 
-const code1 = `import { defineEntries } from "waku/server";
+const code1 = `import { lazy } from "react";
+
+import { defineEntries } from "waku/server";
+
+const App = lazy(() => import("./components/App.js"));
 
 export default defineEntries(
-  // getEntry
-  async (id) => {
-    switch (id) {
-      case "App":
-        return import("./src/App.js");
-      default:
-        return null;
-    }
-  }
+  // renderEntries
+  async (input) => {
+    return {
+      App: <App name={input} />,
+    };
+  },
 );`;
 
 const code2 = `import { createRoot } from "react-dom/client";
-import { serve } from "waku/client";
+import { Root, Slot } from "waku/client";
 
-const root = createRoot(document.getElementById("root")!);
-const App = serve<{ name: string }>("App");
-root.render(<App name="Waku" />);`;
+const rootElement = (
+  <StrictMode>
+    <Root initialInput="Waku">
+      <Slot id="App" />
+    </Root>
+  </StrictMode>
+);
 
-const code3 = `import { useState, useEffect } from "react";
-import { serve } from "waku/client";
+createRoot(document.getElementById("root")!).render(rootElement);`;
 
-const App = serve<{ name: string }>("App");
+const code3 = `import { useRefetch } from "waku/client";
 
-const ContrivedRefetcher = () => {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setCount((c) => c + 1), 5000);
-    return () => clearInterval(id);
-  }, []);
-  return <App name={'count' + count} />;
+const Component = () => {
+  const refetch = useRefetch();
+  const handleClick = () => {
+    refetch("...");
+  };
+  // ...
 };`;
 
 const code4 = `import { defineEntries } from "waku/server";
 
 export default defineEntries(
-  // getEntry
-  async (id) => {
-    switch (id) {
-      case "App":
-        return import("./src/App.js");
-      default:
-        return null;
-    }
+  // renderEntries
+  async (input) => {
+    return {
+      App: <App name={input} />,
+    };
   },
   // getBuildConfig
   async () => {
     return {
       "/": {
-        elements: [["App", { name: "Waku" }]],
+        entries: [["Waku"]],
       },
     };
-  }
+  },
 );`;
 
-export default function Layout() {
+export default function Page() {
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -93,7 +93,7 @@ export default function Layout() {
           component.
         </p>
         <p>
-          You can also re-render a React Server Component with new props.
+          You can also re-render a React Server Component with new input.
           Here&apos;s an example just to illustrate the idea:
         </p>
         <CodeBlock lang="tsx">{code3}</CodeBlock>
