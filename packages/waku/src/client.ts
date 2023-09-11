@@ -45,6 +45,7 @@ export const fetchRSC = cache(
     rerender: (fn: (prev: Elements) => Elements) => void,
     basePath = "/RSC/",
   ): Elements => {
+    input ||= "__DEFAULT__";
     const options = {
       async callServer(actionId: string, args: unknown[]) {
         const response = fetch(basePath + encodeURIComponent(actionId), {

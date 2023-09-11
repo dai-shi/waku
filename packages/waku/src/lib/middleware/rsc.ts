@@ -54,7 +54,7 @@ export function rsc<Context>(options: {
         }
         input = { actionId: decodeURIComponent(id), args };
       } else {
-        input = { input: id };
+        input = { input: id === "__DEFAULT__" ? "" : id };
       }
       const handleError = (err: unknown) => {
         if (hasStatusCode(err)) {
