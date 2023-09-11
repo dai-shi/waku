@@ -8,14 +8,14 @@ export default defineEntries(
   // renderEntries
   async (input) => {
     return {
-      App: <App name={input} />,
+      App: <App name={input || "Waku"} />,
     };
   },
   // getBuildConfig
   async () => {
     return {
       "/": {
-        entries: [["Waku"]],
+        entries: [[""]],
       },
     };
   },
@@ -24,7 +24,7 @@ export default defineEntries(
     getInput: (pathStr) => {
       switch (pathStr) {
         case "/":
-          return "Waku";
+          return "";
         default:
           return null;
       }

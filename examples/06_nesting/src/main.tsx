@@ -4,7 +4,7 @@ import { Root, Slot } from "waku/client";
 
 const rootElement = (
   <StrictMode>
-    <Root initialInput="App=Waku&InnerApp=0">
+    <Root>
       <Slot id="App" />
     </Root>
   </StrictMode>

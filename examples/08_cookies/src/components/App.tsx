@@ -1,7 +1,7 @@
 import { getContext } from "waku/server";
 import { Counter } from "./Counter.js";
 
-const App = ({ name = "Anonymous" }) => {
+const App = ({ name }: { name: string }) => {
   const ctx = getContext<{ count: number }>();
   return (
     <div style={{ border: "3px red dashed", margin: "1em", padding: "1em" }}>

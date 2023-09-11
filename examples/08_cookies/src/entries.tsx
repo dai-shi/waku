@@ -10,14 +10,14 @@ export default defineEntries(
     const ctx = getContext<{ count: number }>();
     ++ctx.count;
     return {
-      App: <App name={input} />,
+      App: <App name={input || "Waku"} />,
     };
   },
   // getBuildConfig
   async () => {
     return {
       "/": {
-        entries: [["Waku"]],
+        entries: [[""]],
         context: { count: 0 },
       },
     };
@@ -28,7 +28,7 @@ export default defineEntries(
   //   getInput: (pathStr) => {
   //     switch (pathStr) {
   //       case "/":
-  //         return "Waku";
+  //         return "";
   //       default:
   //         return null;
   //     }

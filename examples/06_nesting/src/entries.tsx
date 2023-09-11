@@ -9,7 +9,7 @@ const InnerApp = lazy(() => import("./components/InnerApp.js"));
 export default defineEntries(
   // renderEntries
   async (input) => {
-    const params = new URLSearchParams(input);
+    const params = new URLSearchParams(input || "App=Waku&InnerApp=0");
     const result: Record<string, ReactNode> = {};
     if (params.has("App")) {
       result.App = <App name={params.get("App")!} />;
@@ -24,7 +24,7 @@ export default defineEntries(
     return {
       "/": {
         entries: [
-          ["App=Waku&InnerApp=0"],
+          [""],
           ["InnerApp=1", true],
           ["InnerApp=2", true],
           ["InnerApp=3", true],

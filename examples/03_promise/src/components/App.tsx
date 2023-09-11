@@ -1,13 +1,7 @@
 import type { ReactNode } from "react";
 import { Counter } from "./Counter.js";
 
-const App = ({
-  name = "Anonymous",
-  children,
-}: {
-  name?: string;
-  children: ReactNode;
-}) => {
+const App = ({ name, children }: { name: string; children: ReactNode }) => {
   const delayedMessage = new Promise<string>((resolve) => {
     setTimeout(() => resolve("Hello from server!"), 2000);
   });

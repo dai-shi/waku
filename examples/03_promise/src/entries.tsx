@@ -10,7 +10,7 @@ export default defineEntries(
   async (input) => {
     return {
       App: (
-        <App name={input}>
+        <App name={input || "Waku"}>
           <Children />
         </App>
       ),
@@ -20,7 +20,7 @@ export default defineEntries(
   async () => {
     return {
       "/": {
-        entries: [["Waku"]],
+        entries: [[""]],
       },
     };
   },
@@ -29,7 +29,7 @@ export default defineEntries(
     getInput: (pathStr) => {
       switch (pathStr) {
         case "/":
-          return "Waku";
+          return "";
         default:
           return null;
       }
