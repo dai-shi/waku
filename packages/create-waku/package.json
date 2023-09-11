@@ -1,6 +1,6 @@
 {
   "name": "create-waku",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "author": "Daishi Kato",
   "contributors": [
     "Vasu Singh"
@@ -18,6 +18,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node dist/cli.js",
+    "compile": "rm -rf template dist && pnpm run template && pnpm run build",
     "template": "cp -r ../../examples template/",
     "build": "esbuild src/* --bundle --platform=node --outdir=dist"
   },
