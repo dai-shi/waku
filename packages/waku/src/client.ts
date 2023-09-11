@@ -88,13 +88,13 @@ export const Root = ({
   children,
   basePath,
 }: {
-  initialInput: string;
+  initialInput?: string;
   children: ReactNode;
   basePath?: string;
 }) => {
   const [getRerender, setRerender] = createRerender();
   const [elements, setElements] = useState(() =>
-    fetchRSC(initialInput, getRerender(), basePath),
+    fetchRSC(initialInput || "", getRerender(), basePath),
   );
   setRerender(setElements);
   const refetch = useCallback(
