@@ -90,6 +90,8 @@ TODO
 - https://twitter.com/dai_shi/status/1671161795061628930
 - https://twitter.com/dai_shi/status/1676793637282394112
 - https://twitter.com/dai_shi/status/1684928419220578304
+- https://twitter.com/dai_shi/status/1701220824412528721
+- https://twitter.com/dai_shi/status/1701518886972293289
 
 </details>
 
@@ -124,3 +126,9 @@ https://excalidraw.com/#json=RPBX88sLf6FFCQXOVXIyW,ngpz5ZqKyQyU2vgWx_x6tg
 https://excalidraw.com/#json=pSsBQOqkYX4O-TIgxNrZj,i_CsymP1VZiHIAa0dlLbNw
 
 ![waku-ssr](https://github.com/dai-shi/waku/assets/490574/84629e46-518a-4ab1-946a-8a31c80db879)
+
+### Waku v0.15.0 Protocol
+
+https://excalidraw.com/#json=8muYAv1EfRMXi_If8h1Qn,ZDIumwmVrekMQqCTHLNJyg
+
+![waku-protocol](https://github.com/dai-shi/waku/assets/490574/6fac50e3-7890-447b-ac90-8aa7d6f1ac1b)
