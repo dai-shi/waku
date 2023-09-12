@@ -117,7 +117,7 @@ async function init() {
 
   console.log("Setting up project...");
 
-  const templateDir = path.resolve(templateRoot, chooseProject);
+  const templateDir = path.join(templateRoot, chooseProject);
 
   // Read existing package.json from the root directory
   const packageJsonPath = path.join(root, "package.json");
