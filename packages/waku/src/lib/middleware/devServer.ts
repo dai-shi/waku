@@ -44,9 +44,11 @@ export function devServer(): Middleware {
   });
   return async (req, res, next) => {
     const vite = await vitePromise;
-    if (req.url?.startsWith("/node_modules/")) {
+    if (req.url) {
       // HACK re-export "?v=..." URL to avoid dual module hazard.
-      const fname = path.join(vite.config.root, req.url);
+      const fname = req.url.startsWith("/@fs/")
+        ? req.url.slice(4)
+        : path.join(vite.config.root, req.url);
       for (const item of vite.moduleGraph.idToModuleMap.values()) {
         if (item.file === fname && item.url !== req.url) {
           res.setHeader("Content-Type", "application/javascript");
