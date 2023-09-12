@@ -90,6 +90,8 @@ TODO
 - https://twitter.com/dai_shi/status/1671161795061628930
 - https://twitter.com/dai_shi/status/1676793637282394112
 - https://twitter.com/dai_shi/status/1684928419220578304
+- https://twitter.com/dai_shi/status/1701220824412528721
+- https://twitter.com/dai_shi/status/1701518886972293289
 
 </details>
 
