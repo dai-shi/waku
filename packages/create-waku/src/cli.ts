@@ -35,7 +35,8 @@ async function init() {
   let targetDir = "";
   const defaultProjectName = "waku-project";
 
-  const CHOICES = fs.readdirSync("template");
+  const templateRoot = path.join(__dirname, "../template");
+  const CHOICES = fs.readdirSync(templateRoot);
   let result: {
     packageName: string;
     shouldOverwrite: string;
@@ -116,8 +117,7 @@ async function init() {
 
   console.log("Setting up project...");
 
-  const templateRoot = path.join(__dirname, "../template");
-  const templateDir = path.resolve(templateRoot, chooseProject);
+  const templateDir = path.join(templateRoot, chooseProject);
 
   // Read existing package.json from the root directory
   const packageJsonPath = path.join(root, "package.json");
