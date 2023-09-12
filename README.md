@@ -124,3 +124,9 @@ https://excalidraw.com/#json=RPBX88sLf6FFCQXOVXIyW,ngpz5ZqKyQyU2vgWx_x6tg
 https://excalidraw.com/#json=pSsBQOqkYX4O-TIgxNrZj,i_CsymP1VZiHIAa0dlLbNw
 
 ![waku-ssr](https://github.com/dai-shi/waku/assets/490574/84629e46-518a-4ab1-946a-8a31c80db879)
+
+### Waku v0.15.0 Protocol
+
+https://excalidraw.com/#json=8muYAv1EfRMXi_If8h1Qn,ZDIumwmVrekMQqCTHLNJyg
+
+![waku-protocol](https://github.com/dai-shi/waku/assets/490574/6fac50e3-7890-447b-ac90-8aa7d6f1ac1b)
