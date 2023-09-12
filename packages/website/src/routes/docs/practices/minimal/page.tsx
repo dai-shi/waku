@@ -10,7 +10,7 @@ export default defineEntries(
   // renderEntries
   async (input) => {
     return {
-      App: <App name={input} />,
+      App: <App name={input || "Waku"} />,
     };
   },
 );`;
@@ -20,7 +20,7 @@ import { Root, Slot } from "waku/client";
 
 const rootElement = (
   <StrictMode>
-    <Root initialInput="Waku">
+    <Root>
       <Slot id="App" />
     </Root>
   </StrictMode>
@@ -44,14 +44,14 @@ export default defineEntries(
   // renderEntries
   async (input) => {
     return {
-      App: <App name={input} />,
+      App: <App name={input || "Waku"} />,
     };
   },
   // getBuildConfig
   async () => {
     return {
       "/": {
-        entries: [["Waku"]],
+        entries: [[""]],
       },
     };
   },
