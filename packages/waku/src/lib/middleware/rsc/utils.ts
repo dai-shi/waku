@@ -20,7 +20,9 @@ export const generatePrefetchCode = (
     code += `
 globalThis.__WAKU_PREFETCHED__ = {
 ${inputsArray
-  .map((input) => `  '${input}': fetch('${basePrefix}${input}')`)
+  .map(
+    (input) => `  '${input}': fetch('${basePrefix}${input || "__DEFAULT__"}')`,
+  )
   .join(",\n")}
 };`;
   }

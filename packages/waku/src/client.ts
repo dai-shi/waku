@@ -45,7 +45,6 @@ export const fetchRSC = cache(
     rerender: (fn: (prev: Elements) => Elements) => void,
     basePath = "/RSC/",
   ): Elements => {
-    input ||= "__DEFAULT__";
     const options = {
       async callServer(actionId: string, args: unknown[]) {
         const response = fetch(basePath + encodeURIComponent(actionId), {
@@ -61,7 +60,8 @@ export const fetchRSC = cache(
       },
     };
     const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-    const response = prefetched[input] || fetch(basePath + input);
+    const response =
+      prefetched[input] || fetch(basePath + (input || "__DEFAULT__"));
     delete prefetched[input];
     const data = createFromFetch(checkStatus(response), options);
     return data;
