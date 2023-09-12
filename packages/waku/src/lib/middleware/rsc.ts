@@ -5,6 +5,7 @@ import busboy from "busboy";
 import { resolveConfig } from "../config.js";
 import { hasStatusCode } from "./rsc/utils.js";
 import { renderRSC } from "./rsc/worker-api.js";
+import type { RenderInput } from "../../server.js";
 
 type Middleware = (
   req: IncomingMessage,
@@ -30,23 +31,13 @@ export function rsc<Context>(options: {
   return async (req, res, next) => {
     const config = await configPromise;
     const basePath = config.base + config.framework.rscPrefix;
-    const url = new URL(req.url || "", "http://" + req.headers.host);
-    let rscId: string | undefined;
-    let props = {};
-    let rsfId: string | undefined;
-    let args: unknown[] = [];
-    if (url.pathname.startsWith(basePath)) {
-      const index = url.pathname.lastIndexOf("/");
-      rscId = url.pathname.slice(basePath.length, index);
-      const params = new URLSearchParams(url.pathname.slice(index + 1));
-      if (rscId && rscId !== "_") {
-        res.setHeader("Content-Type", "text/x-component");
-        props = JSON.parse(params.get("props") || "{}");
-      } else {
-        rscId = undefined;
-      }
-      rsfId = params.get("action_id") || undefined;
-      if (rsfId) {
+    const url = req.url || "";
+    if (url.startsWith(basePath)) {
+      const id = url.slice(basePath.length);
+      const ssr = req.headers["x-waku-ssr-mode"] === "rsc";
+      let input: RenderInput;
+      if (req.method === "POST") {
+        let args: unknown[] = [];
         if (req.headers["content-type"]?.startsWith("multipart/form-data")) {
           const bb = busboy({ headers: req.headers });
           const reply = decodeReplyFromBusboy(bb);
@@ -61,9 +52,10 @@ export function rsc<Context>(options: {
             args = await decodeReply(body);
           }
         }
+        input = { actionId: decodeURIComponent(id), args };
+      } else {
+        input = { input: id === "__DEFAULT__" ? "" : id };
       }
-    }
-    if (rscId || rsfId) {
       const handleError = (err: unknown) => {
         if (hasStatusCode(err)) {
           res.statusCode = err.statusCode;
@@ -78,15 +70,12 @@ export function rsc<Context>(options: {
         }
       };
       try {
-        const ctx = options.unstable_prehook?.(req, res);
-        const [readable, nextCtx] = await renderRSC(
-          rsfId
-            ? rscId
-              ? { rsfId, args, rscId, props }
-              : { rsfId, args }
-            : { rscId: rscId as string, props },
-          { command: options.command, ctx },
-        );
+        const context = options.unstable_prehook?.(req, res);
+        const [readable, nextCtx] = await renderRSC(input, {
+          command: options.command,
+          ssr,
+          context,
+        });
         options.unstable_posthook?.(req, res, nextCtx as Context);
         readable.on("error", handleError);
         readable.pipe(res);

@@ -1,6 +1,6 @@
 import { Counter } from "./Counter.js";
 
-const App = ({ name = "Anonymous" }) => {
+const App = ({ name }: { name: string }) => {
   return (
     <div style={{ border: "3px red dashed", margin: "1em", padding: "1em" }}>
       <h1>Hello {name}!!</h1>

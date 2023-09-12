@@ -5,13 +5,16 @@ import { Server } from "node:http";
 
 import { createServer as viteCreateServer } from "vite";
 import type { ViteDevServer } from "vite";
-import { createElement } from "react";
+import type { ReactNode } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 
 import { configFileConfig, resolveConfig } from "../../config.js";
 import { hasStatusCode, transformRsfId, deepFreeze } from "./utils.js";
 import type { MessageReq, MessageRes } from "./worker-api.js";
-import { defineEntries } from "../../../server.js";
+import {
+  defineEntries,
+  runWithAsyncLocalStorage as runWithAsyncLocalStorageOrig,
+} from "../../../server.js";
 import type { RenderInput, RenderOptions } from "../../../server.js";
 import { rscTransformPlugin } from "../../vite-plugin/rsc-transform-plugin.js";
 import { rscReloadPlugin } from "../../vite-plugin/rsc-reload-plugin.js";
@@ -23,25 +26,19 @@ type Entries = { default: ReturnType<typeof defineEntries> };
 type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
-  const { id, input, command, ctx, moduleIdCallback } = mesg;
+  const { id, input, command, ssr, context, moduleIdCallback } = mesg;
   try {
-    const options: RenderOptions<never> = { command };
+    const options: RenderOptions = { command, ssr, context };
     if (moduleIdCallback) {
       options.moduleIdCallback = (moduleId: string) => {
         const mesg: MessageRes = { id, type: "moduleId", moduleId };
         parentPort!.postMessage(mesg);
       };
     }
-    const { runWithContext } = await (loadServerFile(
-      "waku/server",
-      command,
-    ) as Promise<{
-      runWithContext<Context, Result>(ctx: Context, fn: () => Result): Result;
-    }>);
-    const pipeable = await runWithContext(ctx, () => renderRSC(input, options));
-    const mesg: MessageRes = { id, type: "start", ctx };
+    const pipeable = await renderRSC(input, options);
+    const mesg: MessageRes = { id, type: "start", context };
     parentPort!.postMessage(mesg);
-    deepFreeze(ctx);
+    deepFreeze(context);
     const writable = new Writable({
       write(chunk, encoding, callback) {
         if (encoding !== ("buffer" as any)) {
@@ -88,13 +85,13 @@ const handleGetBuildConfig = async (
   }
 };
 
-const handleGetSsrConfig = async (
-  mesg: MessageReq & { type: "getSsrConfig" },
+const handleGetSsrInput = async (
+  mesg: MessageReq & { type: "getSsrInput" },
 ) => {
   const { id, pathStr, command } = mesg;
   try {
-    const output = await getSsrConfigRSC(pathStr, command);
-    const mesg: MessageRes = { id, type: "ssrConfig", output };
+    const input = await getSsrInputRSC(pathStr, command);
+    const mesg: MessageRes = { id, type: "ssrInput", input };
     parentPort!.postMessage(mesg);
   } catch (err) {
     const mesg: MessageRes = { id, type: "err", err };
@@ -162,8 +159,8 @@ parentPort!.on("message", (mesg: MessageReq) => {
     handleRender(mesg);
   } else if (mesg.type === "getBuildConfig") {
     handleGetBuildConfig(mesg);
-  } else if (mesg.type === "getSsrConfig") {
-    handleGetSsrConfig(mesg);
+  } else if (mesg.type === "getSsrInput") {
+    handleGetSsrInput(mesg);
   }
 });
 
@@ -200,38 +197,42 @@ const resolveClientEntry = (
 
 async function renderRSC(
   input: RenderInput,
-  options: RenderOptions<never>,
+  options: RenderOptions,
 ): Promise<PipeableStream> {
   const config = await resolveConfig(
     options.command === "build" ? "build" : "serve",
   );
 
-  const { unstable_setRootDir } = await (loadServerFile(
-    "waku/config",
+  const { runWithAsyncLocalStorage } = await (loadServerFile(
+    "waku/server",
     options.command,
   ) as Promise<{
-    unstable_setRootDir: (root: string) => void;
+    runWithAsyncLocalStorage: typeof runWithAsyncLocalStorageOrig;
   }>);
-  unstable_setRootDir(config.root);
 
-  const getFunctionComponent = async (rscId: string) => {
-    const entriesFile = await getEntriesFile(config, options.command);
-    const {
-      default: { getEntry },
-    } = await (loadServerFile(
-      entriesFile,
-      options.command,
-    ) as Promise<Entries>);
-    const mod = await getEntry(rscId);
-    if (typeof mod === "function") {
-      return mod;
+  const entriesFile = await getEntriesFile(config, options.command);
+  const {
+    default: { renderEntries, getSsrConfig },
+  } = await (loadServerFile(entriesFile, options.command) as Promise<Entries>);
+  const ssrConfig = await getSsrConfig?.();
+  const ssrFilter: NonNullable<typeof ssrConfig>["filter"] = (elements) => {
+    if (!ssrConfig) {
+      throw new Error("getSsrConfig is required");
     }
-    if (typeof mod?.default === "function") {
-      return mod?.default;
+    return ssrConfig.filter(elements);
+  };
+
+  const render = async (input: string) => {
+    const elements = await renderEntries(input);
+    if (elements === null) {
+      const err = new Error("No function component found");
+      (err as any).statusCode = 404; // HACK our convention for NotFound
+      throw err;
     }
-    const err = new Error("No function component found");
-    (err as any).statusCode = 404; // HACK our convention for NotFound
-    throw err;
+    if (Object.keys(elements).some((key) => key.startsWith("_"))) {
+      throw new Error('"_" prefix is reserved');
+    }
+    return elements;
   };
 
   const bundlerConfig = new Proxy(
@@ -246,36 +247,49 @@ async function renderRSC(
     },
   );
 
-  if ("rsfId" in input) {
-    const [fileId, name] = input.rsfId.split("#");
+  if ("actionId" in input) {
+    const [fileId, name] = input.actionId.split("#");
     const fname = path.join(config.root, fileId!);
     const mod = await loadServerFile(fname, options.command);
-    const data = await (mod[name!] || mod)(...input.args);
-    if (!("rscId" in input)) {
-      return renderToPipeableStream(data, bundlerConfig);
-    }
-    // continue for mutation mode
+    let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
+    const rerender = (input: string) => {
+      elements = Promise.all([elements, render(input)]).then(
+        ([oldElements, newElements]) => ({ ...oldElements, ...newElements }),
+      );
+    };
+    return runWithAsyncLocalStorage(
+      {
+        getContext: () => options.context,
+        rerender,
+      },
+      async () => {
+        const data = await (mod[name!] || mod)(...input.args);
+        return renderToPipeableStream(
+          { ...(await elements), _value: data },
+          bundlerConfig,
+        ).pipe(transformRsfId(config.root));
+      },
+    );
   }
-  if ("rscId" in input) {
-    const component = await getFunctionComponent(input.rscId);
-    return renderToPipeableStream(
-      createElement(component, input.props as any),
-      bundlerConfig,
-    ).pipe(transformRsfId(config.root));
-  }
-  throw new Error("Unexpected input");
+  return runWithAsyncLocalStorage(
+    {
+      getContext: () => options.context,
+      rerender: () => {
+        throw new Error("Cannot rerender");
+      },
+    },
+    async () => {
+      const elements = await render(input.input);
+      return renderToPipeableStream(
+        options.ssr ? ssrFilter(elements) : elements,
+        bundlerConfig,
+      ).pipe(transformRsfId(config.root));
+    },
+  );
 }
 
 async function getBuildConfigRSC() {
   const config = await resolveConfig("build");
-
-  const { unstable_setRootDir } = await (loadServerFile(
-    "waku/config",
-    "build",
-  ) as Promise<{
-    unstable_setRootDir: (root: string) => void;
-  }>);
-  unstable_setRootDir(config.root);
 
   const entriesFile = await getEntriesFile(config, "build");
   const {
@@ -289,25 +303,17 @@ async function getBuildConfigRSC() {
   }
 
   const output = await getBuildConfig(
-    (input: RenderInput, options: Omit<RenderOptions<never>, "command">) =>
-      renderRSC(input, { ...options, command: "build" }),
+    (input: RenderInput, options: Omit<RenderOptions, "command" | "context">) =>
+      renderRSC(input, { ...options, command: "build", context: null }),
   );
   return output;
 }
 
-async function getSsrConfigRSC(
+async function getSsrInputRSC(
   pathStr: string,
   command: "dev" | "build" | "start",
 ) {
   const config = await resolveConfig(command === "build" ? "build" : "serve");
-
-  const { unstable_setRootDir } = await (loadServerFile(
-    "waku/config",
-    command,
-  ) as Promise<{
-    unstable_setRootDir: (root: string) => void;
-  }>);
-  unstable_setRootDir(config.root);
 
   const entriesFile = await getEntriesFile(config, command);
   const {
@@ -316,6 +322,6 @@ async function getSsrConfigRSC(
   if (!getSsrConfig) {
     return null;
   }
-  const output = await getSsrConfig(pathStr);
+  const output = (await getSsrConfig()).getInput(pathStr);
   return output;
 }

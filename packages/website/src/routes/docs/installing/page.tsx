@@ -1,10 +1,10 @@
-import { CodeBlock } from "../../components/Code.js";
+import { CodeBlock } from "../../../components/Code.js";
 
 const code1 = `npm create waku@latest
 yarn create waku
 pnpm create waku`;
 
-export default function Layout() {
+export default function Page() {
   return (
     <div className="flex flex-col gap-8">
       <h2 className="text-cCarmine text-2xl font-bold">Installing</h2>

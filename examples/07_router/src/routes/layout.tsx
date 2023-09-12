@@ -14,7 +14,7 @@ const Pending = ({ isPending }: { isPending: boolean }) => (
   </span>
 );
 
-const Index = ({ children }: { children: ReactNode }) => (
+const HomeLayout = ({ children }: { children: ReactNode }) => (
   <div>
     <ul>
       <li>
@@ -47,9 +47,8 @@ const Index = ({ children }: { children: ReactNode }) => (
         <Link href="/nested/qux">Nested / Qux</Link>
       </li>
     </ul>
-    <h1>Home</h1>
     {children}
   </div>
 );
 
-export default Index;
+export default HomeLayout;

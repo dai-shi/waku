@@ -1,7 +1,18 @@
 /// <reference types="react/canary" />
 
-import { cache, use, useEffect, useState } from "react";
-import type { ReactElement } from "react";
+"use client";
+
+import {
+  cache,
+  createContext,
+  createElement,
+  memo,
+  use,
+  useCallback,
+  useState,
+  startTransition,
+} from "react";
+import type { ReactNode } from "react";
 import { createFromFetch, encodeReply } from "react-server-dom-webpack/client";
 
 const checkStatus = async (
@@ -16,88 +27,122 @@ const checkStatus = async (
   return response;
 };
 
-export function serve<Props>(rscId: string, basePath = "/RSC/") {
-  type SetRerender = (
-    rerender: (next: [ReactElement, string]) => void,
-  ) => () => void;
-  const fetchRSC = cache(
-    (serializedProps: string): readonly [ReactElement, SetRerender] => {
-      let rerender: ((next: [ReactElement, string]) => void) | undefined;
-      const setRerender: SetRerender = (fn) => {
-        rerender = fn;
-        return () => {
-          rerender = undefined;
-        };
-      };
-      const searchParams = new URLSearchParams();
-      searchParams.set("props", serializedProps);
-      const options = {
-        async callServer(rsfId: string, args: unknown[]) {
-          const isMutating = !!mutationMode;
-          const searchParams = new URLSearchParams();
-          searchParams.set("action_id", rsfId);
-          let id: string;
-          if (isMutating) {
-            id = rscId;
-            searchParams.set("props", serializedProps);
-          } else {
-            id = "_";
-          }
-          const response = fetch(basePath + id + "/" + searchParams, {
-            method: "POST",
-            body: await encodeReply(args),
-          });
-          const data = createFromFetch(checkStatus(response), options);
-          if (isMutating) {
-            rerender?.([data, serializedProps]);
-          }
-          return data;
-        },
-      };
-      const prefetched = (globalThis as any).__WAKU_PREFETCHED__?.[rscId]?.[
-        serializedProps
-      ];
-      const response =
-        prefetched || fetch(basePath + rscId + "/" + searchParams);
-      const data = createFromFetch(checkStatus(response), options);
-      return [data, setRerender];
-    },
-  );
-  const ServerComponent = (props: Props) => {
-    if (!props) {
-      console.warn("Something went wrong. Please refresh your browser.");
-      return;
-    }
-    // FIXME we blindly expect JSON.stringify usage is deterministic
-    const serializedProps = JSON.stringify(props);
-    const [data, setRerender] = fetchRSC(serializedProps);
-    const [state, setState] = useState<
-      [dataToOverride: ReactElement, lastSerializedProps: string] | undefined
-    >();
-    // XXX Should this be useLayoutEffect?
-    useEffect(() => setRerender(setState));
-    let dataToReturn = data;
-    if (state) {
-      if (state[1] === serializedProps) {
-        dataToReturn = state[0];
-      } else {
-        setState(undefined);
-      }
-    }
-    // FIXME The type error
-    // "Cannot read properties of null (reading 'alternate')"
-    // is caused with startTransition.
-    // Not sure if it's a React bug or our misusage.
-    // For now, using `use` seems to fix it. Is it a correct fix?
-    return use(dataToReturn as any) as typeof dataToReturn;
+type Elements = Promise<Record<string, ReactNode>>;
+
+const mergeElements = cache(
+  async (a: Elements, b: Elements | Awaited<Elements>): Elements => {
+    const nextElements = { ...(await a), ...(await b) };
+    delete nextElements._value;
+    return nextElements;
+  },
+);
+
+// TODO get basePath from vite config
+
+export const fetchRSC = cache(
+  (
+    input: string,
+    rerender: (fn: (prev: Elements) => Elements) => void,
+    basePath = "/RSC/",
+  ): Elements => {
+    input ||= "__DEFAULT__";
+    const options = {
+      async callServer(actionId: string, args: unknown[]) {
+        const response = fetch(basePath + encodeURIComponent(actionId), {
+          method: "POST",
+          body: await encodeReply(args),
+        });
+        const data = createFromFetch(checkStatus(response), options);
+        startTransition(() => {
+          // FIXME this causes rerenders even if data is empty
+          rerender((prev) => mergeElements(prev, data));
+        });
+        return (await data)._value;
+      },
+    };
+    const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
+    const response = prefetched[input] || fetch(basePath + input);
+    delete prefetched[input];
+    const data = createFromFetch(checkStatus(response), options);
+    return data;
+  },
+);
+
+const RefetchContext = createContext<((input: string) => void) | null>(null);
+const ElementsContext = createContext<Elements | null>(null);
+
+// HACK there should be a better way...
+const createRerender = cache(() => {
+  let rerender: ((fn: (prev: Elements) => Elements) => void) | undefined;
+  const stableRerender = (fn: Parameters<NonNullable<typeof rerender>>[0]) => {
+    rerender?.(fn);
   };
-  return ServerComponent;
-}
+  const getRerender = () => stableRerender;
+  const setRerender = (newRerender: NonNullable<typeof rerender>) => {
+    rerender = newRerender;
+  };
+  return [getRerender, setRerender] as const;
+});
 
-let mutationMode = 0;
+export const Root = ({
+  initialInput,
+  children,
+  basePath,
+}: {
+  initialInput?: string;
+  children: ReactNode;
+  basePath?: string;
+}) => {
+  const [getRerender, setRerender] = createRerender();
+  const [elements, setElements] = useState(() =>
+    fetchRSC(initialInput || "", getRerender(), basePath),
+  );
+  setRerender(setElements);
+  const refetch = useCallback(
+    (input: string) => {
+      const data = fetchRSC(input, getRerender(), basePath);
+      setElements((prev) => mergeElements(prev, data));
+    },
+    [getRerender, basePath],
+  );
+  return createElement(
+    RefetchContext.Provider,
+    { value: refetch },
+    createElement(ElementsContext.Provider, { value: elements }, children),
+  );
+};
 
-export function mutate(fn: () => void) {
-  ++mutationMode;
-  fn();
-  --mutationMode;
-}
+export const useRefetch = () => {
+  const refetch = use(RefetchContext);
+  if (!refetch) {
+    throw new Error("Missing Root component");
+  }
+  return refetch;
+};
+
+const ChildrenContext = createContext<ReactNode>(undefined);
+const ChildrenContextProvider = memo(ChildrenContext.Provider);
+
+export const Slot = ({
+  id,
+  children,
+}: {
+  id: string;
+  children?: ReactNode;
+}) => {
+  const elementsPromise = use(ElementsContext);
+  if (!elementsPromise) {
+    throw new Error("Missing Root component");
+  }
+  const elements = use(elementsPromise);
+  if (!(id in elements)) {
+    throw new Error("Not found: " + id);
+  }
+  return createElement(
+    ChildrenContextProvider,
+    { value: children },
+    elements[id],
+  );
+};
+
+export const Children = () => use(ChildrenContext);

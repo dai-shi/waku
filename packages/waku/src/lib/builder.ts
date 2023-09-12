@@ -12,7 +12,7 @@ import {
   shutdown,
   renderRSC,
   getBuildConfigRSC,
-  getSsrConfigRSC,
+  getSsrInputRSC,
 } from "./middleware/rsc/worker-api.js";
 import { rscIndexPlugin } from "./vite-plugin/rsc-index-plugin.js";
 import { rscAnalyzePlugin } from "./vite-plugin/rsc-analyze-plugin.js";
@@ -218,51 +218,41 @@ const emitRscFiles = async (
 ) => {
   const buildConfig = await getBuildConfigRSC();
   const clientModuleMap = new Map<string, Set<string>>();
-  const addClientModule = (
-    rscId: string,
-    serializedProps: string,
-    id: string,
-  ) => {
-    const key = rscId + "/" + serializedProps;
-    let idSet = clientModuleMap.get(key);
+  const addClientModule = (input: string, id: string) => {
+    let idSet = clientModuleMap.get(input);
     if (!idSet) {
       idSet = new Set();
-      clientModuleMap.set(key, idSet);
+      clientModuleMap.set(input, idSet);
     }
     idSet.add(id);
   };
-  const getClientModules = (rscId: string, serializedProps: string) => {
-    const key = rscId + "/" + serializedProps;
-    const idSet = clientModuleMap.get(key);
+  const getClientModules = (input: string) => {
+    const idSet = clientModuleMap.get(input);
     return Array.from(idSet || []);
   };
   const rscFileSet = new Set<string>(); // XXX could be implemented better
   await Promise.all(
-    Object.entries(buildConfig).map(async ([, { elements, ctx }]) => {
-      for (const [rscId, props] of elements || []) {
-        // FIXME we blindly expect JSON.stringify usage is deterministic
-        const serializedProps = JSON.stringify(props);
-        const searchParams = new URLSearchParams();
-        searchParams.set("props", serializedProps);
+    Object.entries(buildConfig).map(async ([, { entries, context }]) => {
+      for (const [input] of entries || []) {
         const destFile = path.join(
           config.root,
           config.framework.distDir,
           config.framework.publicDir,
           // HACK to support windows filesystem
-          config.framework.rscPrefix.replaceAll("/", path.sep) +
-            decodeURIComponent(rscId),
-          decodeURIComponent(`${searchParams}`),
+          (
+            config.framework.rscPrefix + (input === "" ? "__DEFAULT__" : input)
+          ).replaceAll("/", path.sep),
         );
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
           const [pipeable] = await renderRSC(
-            { rscId, props },
+            { input },
             {
               command: "build",
-              ctx,
-              moduleIdCallback: (id) =>
-                addClientModule(rscId, serializedProps, id),
+              ssr: false,
+              context,
+              moduleIdCallback: (id) => addClientModule(input, id),
             },
           );
           await new Promise<void>((resolve, reject) => {
@@ -282,17 +272,16 @@ const renderHtml = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   pathStr: string,
   htmlStr: string,
-  ctx: unknown,
+  context: unknown,
 ) => {
-  const ssrConfig = await getSsrConfigRSC(pathStr, "build");
-  if (!ssrConfig) {
+  const input = await getSsrInputRSC(pathStr, "build");
+  if (input === null) {
     return null;
   }
   const { splitHTML, getFallback } = config.framework.ssr;
-  const [rscId, props] = ssrConfig.element;
   const [pipeable] = await renderRSC(
-    { rscId, props },
-    { command: "build", ctx },
+    { input },
+    { command: "build", ssr: true, context },
   );
   return renderHtmlToReadable(htmlStr, pipeable, splitHTML, getFallback);
 };
@@ -300,7 +289,7 @@ const renderHtml = async (
 const emitHtmlFiles = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   buildConfig: Awaited<ReturnType<typeof getBuildConfigRSC>>,
-  getClientModules: (rscId: string, serializedProps: string) => string[],
+  getClientModules: (input: string) => string[],
 ) => {
   const basePrefix = config.base + config.framework.rscPrefix;
   const publicIndexHtmlFile = path.join(
@@ -314,7 +303,7 @@ const emitHtmlFiles = async (
   });
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
-      async ([pathStr, { elements, customCode, ctx, skipSsr }]) => {
+      async ([pathStr, { entries, customCode, context, skipSsr }]) => {
         const destFile = path.join(
           config.root,
           config.framework.distDir,
@@ -329,16 +318,12 @@ const emitHtmlFiles = async (
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
           data = publicIndexHtml;
         }
-        const elementsForPrefetch = new Set<
-          readonly [rscId: string, props: unknown]
-        >();
+        const inputsForPrefetch = new Set<string>();
         const moduleIdsForPrefetch = new Set<string>();
-        for (const [rscId, props, skipPrefetch] of elements || []) {
+        for (const [input, skipPrefetch] of entries || []) {
           if (!skipPrefetch) {
-            elementsForPrefetch.add([rscId, props]);
-            // FIXME we blindly expect JSON.stringify usage is deterministic
-            const serializedProps = JSON.stringify(props);
-            for (const id of getClientModules(rscId, serializedProps)) {
+            inputsForPrefetch.add(input);
+            for (const id of getClientModules(input)) {
               moduleIdsForPrefetch.add(id);
             }
           }
@@ -346,7 +331,7 @@ const emitHtmlFiles = async (
         const code =
           generatePrefetchCode(
             basePrefix,
-            elementsForPrefetch,
+            inputsForPrefetch,
             moduleIdsForPrefetch,
           ) + (customCode || "");
         if (code) {
@@ -354,7 +339,7 @@ const emitHtmlFiles = async (
           data = data.replace(/<\/head>/, `<script>${code}</script></head>`);
         }
         const htmlReadable =
-          !skipSsr && (await renderHtml(config, pathStr, data, ctx));
+          !skipSsr && (await renderHtml(config, pathStr, data, context));
         if (htmlReadable) {
           await new Promise<void>((resolve, reject) => {
             const stream = fs.createWriteStream(destFile);
@@ -431,8 +416,7 @@ const emitVercelOutput = (
 
 const resolveFileName = (fname: string) => {
   for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
-    const resolvedName =
-      fname.slice(0, fname.length - path.extname(fname).length) + ext;
+    const resolvedName = fname.slice(0, -path.extname(fname).length) + ext;
     if (fs.existsSync(resolvedName)) {
       return resolvedName;
     }

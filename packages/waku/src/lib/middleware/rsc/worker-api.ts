@@ -6,7 +6,6 @@ import type {
   RenderInput,
   RenderOptions,
   GetBuildConfig,
-  GetSsrConfig,
 } from "../../../server.js";
 
 const worker = new Worker(new URL("worker-impl.js", import.meta.url), {
@@ -32,13 +31,14 @@ export type MessageReq =
       type: "render";
       input: RenderInput;
       command: "dev" | "build" | "start";
-      ctx: unknown;
+      ssr: boolean;
+      context: unknown;
       moduleIdCallback: boolean;
     }
   | { id: number; type: "getBuildConfig" }
   | {
       id: number;
-      type: "getSsrConfig";
+      type: "getSsrInput";
       pathStr: string;
       command: "dev" | "build" | "start";
     };
@@ -46,7 +46,7 @@ export type MessageReq =
 export type MessageRes =
   | { type: "full-reload" }
   | { type: "hot-import"; source: string }
-  | { id: number; type: "start"; ctx: unknown }
+  | { id: number; type: "start"; context: unknown }
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "moduleId"; moduleId: string }
   | { id: number; type: "end" }
@@ -58,8 +58,8 @@ export type MessageRes =
     }
   | {
       id: number;
-      type: "ssrConfig";
-      output: Awaited<ReturnType<GetSsrConfig>>;
+      type: "ssrInput";
+      input: string | null;
     };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
@@ -102,7 +102,7 @@ let nextId = 1;
 
 export function renderRSC<Context>(
   input: RenderInput,
-  options: RenderOptions<Context>,
+  options: RenderOptions,
 ): Promise<readonly [Readable, Context]> {
   const id = nextId++;
   let started = false;
@@ -112,7 +112,7 @@ export function renderRSC<Context>(
       if (mesg.type === "start") {
         if (!started) {
           started = true;
-          resolve([passthrough, mesg.ctx as Context]);
+          resolve([passthrough, mesg.context as Context]);
         } else {
           throw new Error("already started");
         }
@@ -148,7 +148,8 @@ export function renderRSC<Context>(
       type: "render",
       input,
       command: options.command,
-      ctx: options.ctx ?? null,
+      ssr: options.ssr,
+      context: options.context,
       moduleIdCallback: !!options.moduleIdCallback,
     };
     worker.postMessage(mesg);
@@ -172,22 +173,22 @@ export function getBuildConfigRSC(): ReturnType<GetBuildConfig> {
   });
 }
 
-export function getSsrConfigRSC(
+export function getSsrInputRSC(
   pathStr: string,
   command: "dev" | "build" | "start",
-): ReturnType<GetSsrConfig> {
+): Promise<string | null> {
   return new Promise((resolve, reject) => {
     const id = nextId++;
     messageCallbacks.set(id, (mesg) => {
-      if (mesg.type === "ssrConfig") {
-        resolve(mesg.output);
+      if (mesg.type === "ssrInput") {
+        resolve(mesg.input);
         messageCallbacks.delete(id);
       } else if (mesg.type === "err") {
         reject(mesg.err);
         messageCallbacks.delete(id);
       }
     });
-    const mesg: MessageReq = { id, type: "getSsrConfig", pathStr, command };
+    const mesg: MessageReq = { id, type: "getSsrInput", pathStr, command };
     worker.postMessage(mesg);
   });
 }

@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 export const Counter = ({
   greet,
 }: {
-  greet: (name: string) => string | Promise<string>;
+  greet: (name: string) => Promise<string>;
 }) => {
   const [count, setCount] = useState(0);
   const [text, setText] = useState<string | Promise<string>>("");

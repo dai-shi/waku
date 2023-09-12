@@ -1,4 +1,4 @@
-import { Code, CodeBlock } from "../../../components/Code.js";
+import { Code, CodeBlock } from "../../../../components/Code.js";
 
 const code1 = `import { createRoot } from "react-dom/client";
 import { Router } from "waku/router/client";
@@ -22,37 +22,43 @@ export default defineRouter(
   }
 );`;
 
-const code3 = `import path from "node:path";
-import fs from "node:fs";
+const code3 = `import url from "node:url";
+import path from "node:path";
 
 import { glob } from "glob";
 import { defineRouter } from "waku/router/server";
-import { unstable_rootDir as rootDir } from "waku/config";
+
+const routesDir = path.join(
+  path.dirname(url.fileURLToPath(import.meta.url)),
+  "routes",
+);
 
 export default defineRouter(
-  (id) => {
+  // getComponent (id is "**/layout" or "**/page")
+  async (id) => {
+    const files = await glob(${"`"}$\{id}.{tsx,js}${"`"}, { cwd: routesDir });
+    if (files.length === 0) {
+      return null;
+    }
     const items = id.split("/");
     switch (items.length) {
       case 1:
         return import(${"`"}./routes/$\{items[0]}.tsx${"`"});
       case 2:
         return import(${"`"}./routes/$\{items[0]}/$\{items[1]}.tsx${"`"});
+      case 3:
+        return import(${"`"}./routes/$\{items[0]}/$\{items[1]}/$\{items[2]}.tsx${"`"});
       default:
         throw new Error("too deep route");
     }
   },
+  // getAllPaths
   async () => {
-    const root = rootDir();
-    const routesDir = path.join(root, "routes");
-    const files = await glob("**/*.tsx", { cwd: routesDir });
-    return files.map((file) => {
-      const name = file.slice(0, file.length - path.extname(file).length);
-      const stat = fs.statSync(path.join(routesDir, name), {
-        throwIfNoEntry: false,
-      });
-      return stat?.isDirectory() ? name + "/" : name;
-    });
-  }
+    const files = await glob("**/page.{tsx,js}", { cwd: routesDir });
+    return files.map(
+      (file) => "/" + file.slice(0, Math.max(0, file.lastIndexOf("/"))),
+    );
+  },
 );`;
 
 const code4 = `git clone https://github.com/dai-shi/waku.git
@@ -60,7 +66,7 @@ cd waku
 npm install
 npm run examples:dev:07_router`;
 
-export default function Layout() {
+export default function Page() {
   return (
     <div className="flex flex-col gap-8">
       <div>

@@ -1,4 +1,4 @@
-export default function Layout() {
+export default function Page() {
   return (
     <div className="flex flex-col gap-8">
       <h2 className="text-cCarmine text-2xl font-bold">Introduction</h2>
