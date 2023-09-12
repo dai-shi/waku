@@ -180,6 +180,9 @@ const resolveClientEntry = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: "dev" | "build" | "start",
 ) => {
+  if (filePath.startsWith("file://")) {
+    filePath = filePath.slice(7);
+  }
   let root = path.join(
     config.root,
     command === "dev" ? config.framework.srcDir : config.framework.distDir,
