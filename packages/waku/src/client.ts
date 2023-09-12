@@ -13,7 +13,9 @@ import {
   startTransition,
 } from "react";
 import type { ReactNode } from "react";
-import { createFromFetch, encodeReply } from "react-server-dom-webpack/client";
+import RSDWClient from "react-server-dom-webpack/client";
+
+const { createFromFetch, encodeReply } = RSDWClient;
 
 const checkStatus = async (
   responsePromise: Promise<Response>,
