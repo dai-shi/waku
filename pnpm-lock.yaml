@@ -326,6 +326,37 @@ importers:
         specifier: ^5.2.2
         version: 5.2.2
 
+  examples/10_dynamicroute:
+    dependencies:
+      express:
+        specifier: ^4.18.2
+        version: 4.18.2
+      glob:
+        specifier: ^10.3.4
+        version: 10.3.4
+      react:
+        specifier: 18.3.0-canary-7118f5dd7-20230705
+        version: 18.3.0-canary-7118f5dd7-20230705
+      react-dom:
+        specifier: 18.3.0-canary-7118f5dd7-20230705
+        version: 18.3.0-canary-7118f5dd7-20230705(react@18.3.0-canary-7118f5dd7-20230705)
+      react-server-dom-webpack:
+        specifier: 18.3.0-canary-7118f5dd7-20230705
+        version: 18.3.0-canary-7118f5dd7-20230705(react-dom@18.3.0-canary-7118f5dd7-20230705)(react@18.3.0-canary-7118f5dd7-20230705)(webpack@5.88.2)
+      waku:
+        specifier: 0.15.1
+        version: link:../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: ^18.2.21
+        version: 18.2.21
+      '@types/react-dom':
+        specifier: ^18.2.7
+        version: 18.2.7
+      typescript:
+        specifier: ^5.2.2
+        version: 5.2.2
+
   packages/create-waku:
     dependencies:
       fs-extra:
