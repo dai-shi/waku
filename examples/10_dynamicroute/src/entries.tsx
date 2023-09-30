@@ -40,9 +40,9 @@ export default defineRouter(
         }
       }
     }
-    console.log({ items, mapping });
     if (
-      (await glob(`${path.join(routesDir, ...items)}.{tsx,js}`)).length === 0
+      !fs.existsSync(path.join(routesDir, ...items) + ".js") &&
+      !fs.existsSync(path.join(routesDir, ...items) + ".tsx")
     ) {
       return null;
     }

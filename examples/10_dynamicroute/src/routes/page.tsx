@@ -1,6 +1,6 @@
 const Home = () => (
   <div>
-    <p>Click the link below.</p>
+    <h1>Home</h1>
   </div>
 );
 

@@ -4,8 +4,10 @@ import { Link } from "waku/router/server";
 
 const HomeLayout = ({ children }: { children: ReactNode }) => (
   <div>
-    {children}
     <ul>
+      <li>
+        <Link href="/">Home</Link>
+      </li>
       <li>
         <Link href="/foo">Foo</Link>
       </li>
@@ -16,6 +18,7 @@ const HomeLayout = ({ children }: { children: ReactNode }) => (
         <Link href="/baz">Baz</Link>
       </li>
     </ul>
+    {children}
   </div>
 );
 
