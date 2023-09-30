@@ -217,7 +217,7 @@ async function renderRSC(
   const {
     default: { renderEntries, getSsrConfig },
   } = await (loadServerFile(entriesFile, options.command) as Promise<Entries>);
-  const ssrConfig = await getSsrConfig?.();
+  const ssrConfig = getSsrConfig?.();
   const ssrFilter: NonNullable<typeof ssrConfig>["filter"] = (elements) => {
     if (!ssrConfig) {
       throw new Error("getSsrConfig is required");
@@ -325,6 +325,6 @@ async function getSsrInputRSC(
   if (!getSsrConfig) {
     return null;
   }
-  const output = (await getSsrConfig()).getInput(pathStr);
+  const output = await getSsrConfig().getInput(pathStr);
   return output;
 }

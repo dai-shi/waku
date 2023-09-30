@@ -39,10 +39,10 @@ export type GetBuildConfig = (
   };
 }>;
 
-export type GetSsrConfig = () => Promise<{
-  getInput: (pathStr: string) => string | null;
+export type GetSsrConfig = () => {
+  getInput: (pathStr: string) => Promise<string | null>;
   filter: (elements: Elements) => ReactNode;
-}>;
+};
 
 export function defineEntries(
   renderEntries: RenderEntries,

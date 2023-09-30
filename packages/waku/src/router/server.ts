@@ -51,10 +51,6 @@ export function defineRouter(
   const renderSsrEntries = async (pathStr: string) => {
     const url = new URL(pathStr, "http://localhost");
     const componentIds = getComponentIds(url.pathname);
-    const leafComponentId = componentIds[componentIds.length - 1];
-    if (!leafComponentId || (await getComponent(leafComponentId)) === null) {
-      return null;
-    }
     const components = await Promise.all(
       componentIds.map(async (id) => {
         const mod = await getComponent(id);
@@ -135,8 +131,16 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
     );
   };
 
-  const getSsrConfig: GetSsrConfig = async () => ({
-    getInput: (pathStr) => SSR_PREFIX + pathStr,
+  const getSsrConfig: GetSsrConfig = () => ({
+    getInput: async (pathStr) => {
+      const url = new URL(pathStr, "http://localhost");
+      const componentIds = getComponentIds(url.pathname);
+      const leafComponentId = componentIds[componentIds.length - 1];
+      if (!leafComponentId || (await getComponent(leafComponentId)) === null) {
+        return null;
+      }
+      return SSR_PREFIX + pathStr;
+    },
     filter: (elements) => elements.Root,
   });
 
