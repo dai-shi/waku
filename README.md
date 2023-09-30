@@ -6,7 +6,7 @@ Minimalistic React Framework
 
 We are working toward v1-alpha: https://github.com/dai-shi/waku/issues/24
 
-Feel free to try it _serioursly_ with non-production projects and give us feedback.
+Feel free to try it _seriously_ with non-production projects and give us feedback.
 
 Playground: https://codesandbox.io/p/sandbox/waku-example-counter-mdc1yb
 
