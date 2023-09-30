@@ -100,6 +100,10 @@ export function ssr(options: {
         );
         const handleError = (err: unknown) => {
           if (hasStatusCode(err)) {
+            if (err.statusCode === 404) {
+              next();
+              return;
+            }
             res.statusCode = err.statusCode;
           } else {
             console.info("Cannot render HTML", err);
