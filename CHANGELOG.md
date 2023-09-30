@@ -1,6 +1,17 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.15.1] - 2023-09-12
+### Changed
+- fix(waku/client): CJS import hack #130
+- fix: prefetch default hack #131
+
+## [0.15.0] - 2023-09-11
+### Changed
+- breaking: multiple elements in a single response #124
+
+## [0.14.0] - 2023-07-28
 ### Changed
 - fix: partially for css modules #98
 - feat: use node-loader again #103
