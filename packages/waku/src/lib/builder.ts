@@ -438,10 +438,13 @@ const emitVercelOutput = (
   fs.writeFileSync(
     path.join(serverlessDir, "serve.mjs"),
     `
-import { rsc } from "waku";
-export default function handler(request, response) {
-  console.log(request);
-  return response.send('Hello WIP!');
+export default async function handler(req, res) {
+  console.log(req);
+  return res.send('Hello WIP!');
+  const { rsc } = import("waku");
+  rsc({ command: "start" })(req, res, () => {
+    throw new Error("not handled");
+  });
 }
 `,
     "utf8",
