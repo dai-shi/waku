@@ -439,7 +439,7 @@ const emitVercelOutput = (
     path.join(serverlessDir, "serve.mjs"),
     `
 export default async function handler(req, res) {
-  console.log(Object.keys(req), req.url, req.method, req.headers);
+  console.log("---", req.url, req.method, req.headers);
   return res.end('Hello WIP!');
   const { rsc } = import("waku");
   rsc({ command: "start" })(req, res, () => {
@@ -464,9 +464,11 @@ export default async function handler(req, res) {
         { contentType: "text/html" },
       ]),
   ]);
+  const routes = [{ src: "/RSC/(.*)", dest: "/RSC/" }];
   const configJson = {
     version: 3,
     overrides,
+    routes,
   };
   fs.mkdirSync(dstDir, { recursive: true });
   fs.writeFileSync(
