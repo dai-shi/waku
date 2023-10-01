@@ -426,22 +426,21 @@ const emitVercelOutput = (
       path.join(serverlessDir, config.framework.distDir, file),
     );
   });
+  const vcConfigJson = {
+    runtime: "nodejs18.x",
+    handler: "serve.mjs",
+    launcherType: "Nodejs",
+  };
   fs.writeFileSync(
     path.join(serverlessDir, ".vc-config.json"),
-    JSON.stringify({
-      runtime: "nodejs18.x",
-      handler: "serve.mjs",
-      launcherType: "Nodejs",
-    }),
+    JSON.stringify(vcConfigJson, null, 2),
     "utf8",
   );
   fs.writeFileSync(
     path.join(serverlessDir, "serve.mjs"),
     `
 export default async function handler(req, res) {
-  console.log("---", req.url, req.method, req.headers);
-  return res.end('Hello WIP!');
-  const { rsc } = import("waku");
+  const { rsc } = await import("waku");
   rsc({ command: "start" })(req, res, () => {
     throw new Error("not handled");
   });
@@ -465,11 +464,7 @@ export default async function handler(req, res) {
       ]),
   ]);
   const routes = [{ src: "/RSC/(.*)", dest: "/RSC/" }];
-  const configJson = {
-    version: 3,
-    overrides,
-    routes,
-  };
+  const configJson = { version: 3, overrides, routes };
   fs.mkdirSync(dstDir, { recursive: true });
   fs.writeFileSync(
     path.join(dstDir, "config.json"),
