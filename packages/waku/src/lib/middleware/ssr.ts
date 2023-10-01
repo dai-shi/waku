@@ -92,7 +92,7 @@ export function ssr(options: {
       getSsrConfigPromise,
     ]);
     if (req.url && !req.headers["x-waku-ssr-mode"]) {
-      const input = (await getSsrConfig?.())?.getInput(req.url) ?? null;
+      const input = (await getSsrConfig?.().getInput(req.url)) ?? null;
       if (input !== null) {
         const rscServer = new URL(
           config.framework.ssr.rscServer,

@@ -28,7 +28,7 @@ export default defineRouter(
         throw new Error("too deep route");
     }
   },
-  // getAllPaths
+  // getPathsForBuild
   async () => {
     const files = await glob("**/page.{tsx,js}", { cwd: routesDir });
     return files.map(

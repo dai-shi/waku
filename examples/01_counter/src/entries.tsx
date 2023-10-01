@@ -20,8 +20,8 @@ export default defineEntries(
     };
   },
   // getSsrConfig
-  async () => ({
-    getInput: (pathStr) => {
+  () => ({
+    getInput: async (pathStr) => {
       switch (pathStr) {
         case "/":
           return "";

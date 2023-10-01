@@ -24,8 +24,8 @@ export default defineEntries(
   },
   // getSsrConfig
   // Passing cookies through SSR server isn't supported (yet).
-  // async () => ({
-  //   getInput: (pathStr) => {
+  // () => ({
+  //   getInput: async (pathStr) => {
   //     switch (pathStr) {
   //       case "/":
   //         return "";

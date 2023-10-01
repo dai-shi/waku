@@ -46,7 +46,7 @@ export function defineRouter(
   getComponent: (
     componentId: string,
   ) => Promise<FunctionComponent | { default: FunctionComponent } | null>,
-  getAllPaths: () => Promise<string[]>,
+  getPathsForBuild: () => Promise<string[]>,
 ): ReturnType<typeof defineEntries> {
   const renderSsrEntries = async (pathStr: string) => {
     const url = new URL(pathStr, "http://localhost");
@@ -79,8 +79,8 @@ export function defineRouter(
     }
     const { pathname, search, skip } = parseInputString(input);
     const componentIds = getComponentIds(pathname);
-    const allPaths = await getAllPaths(); // XXX this is a bit costly
-    if (!allPaths.includes(pathname)) {
+    const leafComponentId = componentIds[componentIds.length - 1];
+    if (!leafComponentId || (await getComponent(leafComponentId)) === null) {
       return null;
     }
     const props: RouteProps = { path: pathname, search };
@@ -106,9 +106,9 @@ export function defineRouter(
   };
 
   const getBuildConfig: GetBuildConfig = async (unstable_renderRSC) => {
-    const allPaths = await getAllPaths();
+    const pathnames = await getPathsForBuild();
     const path2moduleIds: Record<string, string[]> = {};
-    for (const pathname of allPaths) {
+    for (const pathname of pathnames) {
       const moduleIds = await collectClientModules(
         pathname,
         unstable_renderRSC,
@@ -124,26 +124,25 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
   }
 };`;
     return Object.fromEntries(
-      allPaths.map((pathname) => [
+      pathnames.map((pathname) => [
         pathname,
         { entries: prefetcher(pathname), customCode },
       ]),
     );
   };
 
-  const getSsrConfig: GetSsrConfig = async () => {
-    const allPaths = await getAllPaths();
-    return {
-      getInput: (pathStr) => {
-        const url = new URL(pathStr, "http://localhost");
-        if (allPaths.includes(url.pathname)) {
-          return SSR_PREFIX + pathStr;
-        }
+  const getSsrConfig: GetSsrConfig = () => ({
+    getInput: async (pathStr) => {
+      const url = new URL(pathStr, "http://localhost");
+      const componentIds = getComponentIds(url.pathname);
+      const leafComponentId = componentIds[componentIds.length - 1];
+      if (!leafComponentId || (await getComponent(leafComponentId)) === null) {
         return null;
-      },
-      filter: (elements) => elements.Root,
-    };
-  };
+      }
+      return SSR_PREFIX + pathStr;
+    },
+    filter: (elements) => elements.Root,
+  });
 
   return { renderEntries, getBuildConfig, getSsrConfig };
 }

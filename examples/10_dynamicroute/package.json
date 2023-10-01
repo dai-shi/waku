@@ -1,0 +1,24 @@
+{
+  "name": "waku-example",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "waku dev --with-ssr",
+    "build": "waku build",
+    "start": "waku start --with-ssr"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "glob": "^10.3.4",
+    "react": "18.3.0-canary-7118f5dd7-20230705",
+    "react-dom": "18.3.0-canary-7118f5dd7-20230705",
+    "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705",
+    "waku": "0.15.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.21",
+    "@types/react-dom": "^18.2.7",
+    "typescript": "^5.2.2"
+  }
+}

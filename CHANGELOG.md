@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Changed
+- feat(router): slug support #133
 
 ## [0.15.1] - 2023-09-12
 ### Changed
