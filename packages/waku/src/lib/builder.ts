@@ -438,12 +438,11 @@ const emitVercelOutput = (
   fs.writeFileSync(
     path.join(serverlessDir, "serve.mjs"),
     `
-const { default: express } = await import("express");
-const { rsc } = await import("waku");
-const app = express();
-app.use(rsc({ command: "start" }));
-const port = process.env.PORT || 8080;
-app.listen(port);
+import { rsc } from "waku";
+export default function handler(request, response) {
+  console.log(request);
+  return response.send('Hello WIP!');
+}
 `,
     "utf8",
   );
