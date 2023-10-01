@@ -35,7 +35,7 @@
     "examples:prd:10_dynamicroute": "NAME=10_dynamicroute pnpm run examples:prd",
     "website:dev": "(cd packages/website && pnpm run dev)",
     "website:build": "(cd packages/website && pnpm run build)",
-    "website:vercel": "pnpm run website:build && cp -r ./node_modules/.pnpm/node_modules/* ./packages/website/node_modules/ && cp -Lr ./packages/website/dist/.vercel/output ./.vercel/",
+    "website:vercel": "pnpm run website:build && cp -r ./node_modules/.pnpm/node_modules/esbuild ./packages/website/node_modules/ && cp -Lr ./packages/website/dist/.vercel/output ./.vercel/",
     "website:prd": "pnpm run website:build && (cd packages/website && pnpm start)"
   },
   "prettier": {},
