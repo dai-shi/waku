@@ -448,12 +448,12 @@ app.listen(port);
   );
 
   const overrides = Object.fromEntries([
-    ...rscFiles
-      .filter((file) => !path.extname(file))
-      .map((file) => [
-        path.relative(srcDir, file),
-        { contentType: "text/plain" },
-      ]),
+    // ...rscFiles
+    //   .filter((file) => !path.extname(file))
+    //   .map((file) => [
+    //     path.relative(srcDir, file),
+    //     { contentType: "text/plain" },
+    //   ]),
     ...htmlFiles
       .filter((file) => !path.extname(file))
       .map((file) => [
