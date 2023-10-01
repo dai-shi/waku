@@ -402,6 +402,51 @@ const emitVercelOutput = (
       fs.symlinkSync(path.relative(path.dirname(dstFile), file), dstFile);
     }
   }
+
+  // for serverless function
+  const serverlessDir = path.join(
+    dstDir,
+    "functions",
+    config.framework.rscPrefix.replace(/\/$/, ".func"),
+  );
+  fs.mkdirSync(path.join(serverlessDir, config.framework.distDir), {
+    recursive: true,
+  });
+  fs.symlinkSync(
+    path.relative(serverlessDir, path.join(config.root, "node_modules")),
+    path.join(serverlessDir, "node_modules"),
+  );
+  ["public", "entries.js", "assets"].forEach((file) => {
+    fs.symlinkSync(
+      path.relative(
+        path.join(serverlessDir, config.framework.distDir),
+        path.join(config.root, config.framework.distDir, file),
+      ),
+      path.join(serverlessDir, config.framework.distDir, file),
+    );
+  });
+  fs.writeFileSync(
+    path.join(serverlessDir, ".vc-config.json"),
+    JSON.stringify({
+      runtime: "nodejs18.x",
+      handler: "serve.mjs",
+      launcherType: "Nodejs",
+    }),
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(serverlessDir, "serve.mjs"),
+    `
+const { default: express } = await import("express");
+const { rsc } = await import("waku");
+const app = express();
+app.use(rsc({ command: "start" }));
+const port = process.env.PORT || 8080;
+app.listen(port);
+`,
+    "utf8",
+  );
+
   const overrides = Object.fromEntries([
     ...rscFiles
       .filter((file) => !path.extname(file))
