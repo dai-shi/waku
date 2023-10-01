@@ -439,8 +439,8 @@ const emitVercelOutput = (
     path.join(serverlessDir, "serve.mjs"),
     `
 export default async function handler(req, res) {
-  console.log(req);
-  return res.send('Hello WIP!');
+  console.log(Object.keys(req), req.url, req.method, req.headers);
+  return res.end('Hello WIP!');
   const { rsc } = import("waku");
   rsc({ command: "start" })(req, res, () => {
     throw new Error("not handled");
