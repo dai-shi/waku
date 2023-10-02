@@ -463,7 +463,8 @@ export default async function handler(req, res) {
         { contentType: "text/html" },
       ]),
   ]);
-  const routes = [{ src: "/RSC/(.*)", dest: "/RSC/" }];
+  const basePrefix = config.base + config.framework.rscPrefix;
+  const routes = [{ src: basePrefix + "(.*)", dest: basePrefix }];
   const configJson = { version: 3, overrides, routes };
   fs.mkdirSync(dstDir, { recursive: true });
   fs.writeFileSync(
