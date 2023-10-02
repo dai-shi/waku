@@ -417,15 +417,20 @@ const emitVercelOutput = (
     path.relative(serverlessDir, path.join(config.root, "node_modules")),
     path.join(serverlessDir, "node_modules"),
   );
-  ["public", "entries.js", "assets"].forEach((file) => {
-    fs.symlinkSync(
-      path.relative(
-        path.join(serverlessDir, config.framework.distDir),
-        path.join(config.root, config.framework.distDir, file),
-      ),
-      path.join(serverlessDir, config.framework.distDir, file),
-    );
-  });
+  fs.readdirSync(path.join(config.root, config.framework.distDir)).forEach(
+    (file) => {
+      if ([".vercel"].includes(file)) {
+        return;
+      }
+      fs.symlinkSync(
+        path.relative(
+          path.join(serverlessDir, config.framework.distDir),
+          path.join(config.root, config.framework.distDir, file),
+        ),
+        path.join(serverlessDir, config.framework.distDir, file),
+      );
+    },
+  );
   const vcConfigJson = {
     runtime: "nodejs18.x",
     handler: "serve.mjs",
