@@ -376,7 +376,6 @@ const emitVercelOutput = (
   rscFiles: string[],
   htmlFiles: string[],
 ) => {
-  rscFiles = []; // Disable static rsc files and prefer serverless function
   const clientFiles = clientBuildOutput.output.map(({ fileName }) =>
     path.join(
       config.root,
