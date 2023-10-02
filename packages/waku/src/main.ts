@@ -1,4 +1,10 @@
 export { rsc } from "./lib/middleware/rsc.js";
 export { ssr } from "./lib/middleware/ssr.js";
-export { devServer } from "./lib/middleware/devServer.js";
-export { build } from "./lib/builder.js";
+
+export async function devServer() {
+  return (await import("./lib/middleware/devServer.js")).devServer();
+}
+
+export async function build() {
+  return (await import("./lib/builder.js")).build();
+}
