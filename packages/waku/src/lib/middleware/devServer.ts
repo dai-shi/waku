@@ -30,7 +30,6 @@ export function devServer(): Middleware {
         exclude: ["waku"],
       },
       plugins: [
-        // @ts-expect-error This expression is not callable.
         viteReact(),
         rscIndexPlugin([]),
         rscHmrPlugin(),
