@@ -402,6 +402,57 @@ const emitVercelOutput = (
       fs.symlinkSync(path.relative(path.dirname(dstFile), file), dstFile);
     }
   }
+
+  // for serverless function
+  const serverlessDir = path.join(
+    dstDir,
+    "functions",
+    config.framework.rscPrefix.replace(/\/$/, ".func"),
+  );
+  fs.mkdirSync(path.join(serverlessDir, config.framework.distDir), {
+    recursive: true,
+  });
+  fs.symlinkSync(
+    path.relative(serverlessDir, path.join(config.root, "node_modules")),
+    path.join(serverlessDir, "node_modules"),
+  );
+  fs.readdirSync(path.join(config.root, config.framework.distDir)).forEach(
+    (file) => {
+      if ([".vercel"].includes(file)) {
+        return;
+      }
+      fs.symlinkSync(
+        path.relative(
+          path.join(serverlessDir, config.framework.distDir),
+          path.join(config.root, config.framework.distDir, file),
+        ),
+        path.join(serverlessDir, config.framework.distDir, file),
+      );
+    },
+  );
+  const vcConfigJson = {
+    runtime: "nodejs18.x",
+    handler: "serve.mjs",
+    launcherType: "Nodejs",
+  };
+  fs.writeFileSync(
+    path.join(serverlessDir, ".vc-config.json"),
+    JSON.stringify(vcConfigJson, null, 2),
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(serverlessDir, "serve.mjs"),
+    `
+export default async function handler(req, res) {
+  const { rsc } = await import("waku");
+  rsc({ command: "start" })(req, res, () => {
+    throw new Error("not handled");
+  });
+}
+`,
+    "utf8",
+  );
+
   const overrides = Object.fromEntries([
     ...rscFiles
       .filter((file) => !path.extname(file))
@@ -416,10 +467,9 @@ const emitVercelOutput = (
         { contentType: "text/html" },
       ]),
   ]);
-  const configJson = {
-    version: 3,
-    overrides,
-  };
+  const basePrefix = config.base + config.framework.rscPrefix;
+  const routes = [{ src: basePrefix + "(.*)", dest: basePrefix }];
+  const configJson = { version: 3, overrides, routes };
   fs.mkdirSync(dstDir, { recursive: true });
   fs.writeFileSync(
     path.join(dstDir, "config.json"),
