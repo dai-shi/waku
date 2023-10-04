@@ -61,5 +61,10 @@
     "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705",
     "typescript": "^5.2.2",
     "waku": "workspace:*"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "vite@4.4.10": "packages/waku/patches/vite@4.4.10.patch"
+    }
   }
 }
