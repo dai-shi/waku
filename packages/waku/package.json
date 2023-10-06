@@ -85,10 +85,5 @@
     "express": {
       "optional": true
     }
-  },
-  "pnpm": {
-    "patchedDependencies": {
-      "vite@4.4.10": "patches/vite@4.4.10.patch"
-    }
   }
 }

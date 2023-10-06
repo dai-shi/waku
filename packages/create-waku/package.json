@@ -19,7 +19,7 @@
   "scripts": {
     "start": "node dist/cli.js",
     "compile": "rm -rf template dist && pnpm run template && pnpm run build",
-    "template": "cp -r ../../examples template/",
+    "template": "cp -r ../../examples template/; for d in template/*; do cp -r ../waku/patches $d; done",
     "build": "esbuild src/* --bundle --platform=node --outdir=dist"
   },
   "dependencies": {
