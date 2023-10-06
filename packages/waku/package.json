@@ -59,7 +59,7 @@
     "compile": "rm -rf dist && pnpm run compile:code && pnpm run compile:types",
     "compile:code": "swc src -d dist && swc src -d dist/cjs -C module.type=commonjs && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
     "compile:types": "tsc --project tsconfig.build.json",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package || true"
   },
   "license": "MIT",
   "engines": {
