@@ -180,10 +180,7 @@ const buildClientBundle = async (
   const clientBuildOutput = await viteBuild({
     ...configFileConfig(),
     root: path.join(config.root, config.framework.srcDir),
-    plugins: [
-      viteReact(),
-      rscIndexPlugin(cssAssets),
-    ],
+    plugins: [viteReact(), rscIndexPlugin(cssAssets)],
     build: {
       outDir: path.join(
         config.root,
