@@ -32,7 +32,7 @@ Our goal is to establish an ecosystem that covers a broader range of use cases.
 Minimum requirement: Node.js 18
 
 ```bash
-npm create waku@latest # Currently it doesn't work because of patches
+npm create waku@latest
 ```
 
 ```bash
