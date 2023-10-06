@@ -181,7 +181,6 @@ const buildClientBundle = async (
     ...configFileConfig(),
     root: path.join(config.root, config.framework.srcDir),
     plugins: [
-      // @ts-expect-error This expression is not callable.
       viteReact(),
       rscIndexPlugin(cssAssets),
     ],
