@@ -64,7 +64,7 @@
   },
   "pnpm": {
     "patchedDependencies": {
-      "vite@4.4.10": "packages/waku/patches/vite@4.4.10.patch"
+      "vite@4.4.10": "packages/waku/patches/vite+4.4.10.patch"
     }
   }
 }
