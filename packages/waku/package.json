@@ -51,33 +51,35 @@
   },
   "files": [
     "src",
-    "dist"
+    "dist",
+    "patches"
   ],
   "scripts": {
     "dev": "swc src -d dist -w",
     "compile": "rm -rf dist && pnpm run compile:code && pnpm run compile:types",
     "compile:code": "swc src -d dist && swc src -d dist/cjs -C module.type=commonjs && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
-    "compile:types": "tsc --project tsconfig.build.json"
+    "compile:types": "tsc --project tsconfig.build.json",
+    "postinstall": "(cd node_modules/vite && patch -p1 -i ../../patches/vite@4.4.10.patch) || (cd ../vite && patch -p1 -i ../waku/patches/vite@4.4.10.patch) || true"
   },
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@swc/core": "1.3.83",
-    "@vitejs/plugin-react": "^4.0.4",
+    "@swc/core": "1.3.91",
+    "@vitejs/plugin-react": "^4.1.0",
     "busboy": "^1.6.0",
-    "vite": "^4.4.9"
+    "vite": "4.4.10"
   },
   "devDependencies": {
     "@swc/cli": "^0.1.62",
     "express": "^4.18.2",
-    "rollup": "^3.29.1"
+    "rollup": "^3.29.4"
   },
   "peerDependencies": {
     "express": "^4.18.2",
-    "react": "18.3.0-canary-7118f5dd7-20230705",
-    "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705"
+    "react": "18.3.0-canary-d6dcad6a8-20230914",
+    "react-server-dom-webpack": "18.3.0-canary-d6dcad6a8-20230914"
   },
   "peerDependenciesMeta": {
     "express": {

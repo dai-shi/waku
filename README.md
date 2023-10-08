@@ -40,7 +40,7 @@ yarn create waku
 ```
 
 ```bash
-pnpm create waku
+pnpm create waku # It may not work correctly with some libs
 ```
 
 ## APIs

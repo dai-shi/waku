@@ -19,7 +19,7 @@
   "scripts": {
     "start": "node dist/cli.js",
     "compile": "rm -rf template dist && pnpm run template && pnpm run build",
-    "template": "cp -r ../../examples template/",
+    "template": "cp -r ../../examples template/; for d in template/*; do cp -r ../waku/patches $d; json -I -f $d/package.json -e 'this.pnpm??={};this.pnpm.patchedDependencies??={};this.pnpm.patchedDependencies[\"vite@4.4.10\"]=\"patches/vite@4.4.10.patch\"'; done",
     "build": "esbuild src/* --bundle --platform=node --outdir=dist"
   },
   "dependencies": {
@@ -28,8 +28,9 @@
     "prompts": "^2.4.2"
   },
   "devDependencies": {
-    "@types/fs-extra": "^11.0.1",
-    "@types/prompts": "^2.4.4",
-    "esbuild": "0.19.2"
+    "@types/fs-extra": "^11.0.2",
+    "@types/prompts": "^2.4.5",
+    "json": "^11.0.0",
+    "esbuild": "0.19.4"
   }
 }

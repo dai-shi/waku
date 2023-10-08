@@ -29,12 +29,7 @@ export function devServer(): Middleware {
         // and "Uncaught Error: Missing Router" happens.
         exclude: ["waku"],
       },
-      plugins: [
-        // @ts-expect-error This expression is not callable.
-        viteReact(),
-        rscIndexPlugin([]),
-        rscHmrPlugin(),
-      ],
+      plugins: [viteReact(), rscIndexPlugin([]), rscHmrPlugin()],
       server: { middlewareMode: true },
     }),
   );
