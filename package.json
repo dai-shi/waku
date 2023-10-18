@@ -56,9 +56,9 @@
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "prettier": "^3.0.3",
-    "react": "18.3.0-canary-7118f5dd7-20230705",
-    "react-dom": "18.3.0-canary-7118f5dd7-20230705",
-    "react-server-dom-webpack": "18.3.0-canary-7118f5dd7-20230705",
+    "react": "18.3.0-canary-a41957507-20231017",
+    "react-dom": "18.3.0-canary-a41957507-20231017",
+    "react-server-dom-webpack": "18.3.0-canary-a41957507-20231017",
     "typescript": "^5.2.2",
     "waku": "workspace:*"
   },
