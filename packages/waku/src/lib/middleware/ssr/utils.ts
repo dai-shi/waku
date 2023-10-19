@@ -55,7 +55,7 @@ export const renderHtmlToReadable = (
   splitHTML: (htmlStr: string) => readonly [string, string, string],
   getFallback: (id: string) => string,
 ): Readable => {
-  const bundlerConfig = new Proxy(
+  const moduleMap = new Proxy(
     {},
     {
       get(_target, filePath: string) {
@@ -72,7 +72,7 @@ export const renderHtmlToReadable = (
       },
     },
   );
-  const data = createFromNodeStream(rscStream, bundlerConfig);
+  const data = createFromNodeStream(rscStream, { moduleMap });
   return renderToPipeableStream(data, {
     onError(err) {
       if (
