@@ -1,35 +1,24 @@
-import type { Writable } from "node:stream";
+import type { Readable } from "node:stream";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createElement } from "react";
 import type { ReactNode } from "react";
-
-type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
 type Elements = Record<string, ReactNode>;
 
 export type RenderEntries = (input: string) => Promise<Elements | null>;
 
-export type RenderInput =
-  | {
-      input: string;
-    }
-  | {
-      actionId: string;
-      args: unknown[];
-    };
-
-export type RenderOptions = {
+export type RenderRequest = {
+  pathStr: string; // url path without rsc prefix
+  method: "GET" | "POST";
+  headers: Record<string, string | string[] | undefined>;
   command: "dev" | "build" | "start";
-  ssr: boolean;
+  stream: Readable;
   context: unknown;
   moduleIdCallback?: (id: string) => void;
 };
 
 export type GetBuildConfig = (
-  unstable_renderRSC: (
-    input: RenderInput,
-    options: Omit<RenderOptions, "command" | "context">,
-  ) => Promise<PipeableStream>,
+  unstable_collectClientModules: (pathStr: string) => Promise<string[]>,
 ) => Promise<{
   [pathStr: string]: {
     entries?: Iterable<readonly [input: string, skipPrefetch?: boolean]>;

@@ -1,12 +1,13 @@
 import path from "node:path";
 import { parentPort } from "node:worker_threads";
-import { Writable } from "node:stream";
+import { PassThrough, Writable } from "node:stream";
 import { Server } from "node:http";
 
 import { createServer as viteCreateServer } from "vite";
 import type { ViteDevServer } from "vite";
 import type { ReactNode } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
+import busboy from "busboy";
 
 import { configFileConfig, resolveConfig } from "../../config.js";
 import { hasStatusCode, transformRsfId, deepFreeze } from "./utils.js";
@@ -15,27 +16,40 @@ import {
   defineEntries,
   runWithAsyncLocalStorage as runWithAsyncLocalStorageOrig,
 } from "../../../server.js";
-import type { RenderInput, RenderOptions } from "../../../server.js";
+import type { RenderRequest } from "../../../server.js";
 import { rscTransformPlugin } from "../../vite-plugin/rsc-transform-plugin.js";
 import { rscReloadPlugin } from "../../vite-plugin/rsc-reload-plugin.js";
 import { rscDelegatePlugin } from "../../vite-plugin/rsc-delegate-plugin.js";
 
-const { renderToPipeableStream } = RSDWServer;
+const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
+  RSDWServer;
 
 type Entries = { default: ReturnType<typeof defineEntries> };
 type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
+const streamMap = new Map<number, Writable>();
+
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
-  const { id, input, command, ssr, context, moduleIdCallback } = mesg;
+  const { id, pathStr, method, headers, command, context, moduleIdCallback } =
+    mesg;
   try {
-    const options: RenderOptions = { command, ssr, context };
+    const stream = new PassThrough();
+    streamMap.set(id, stream);
+    const rr: RenderRequest = {
+      pathStr,
+      method,
+      headers,
+      command,
+      stream,
+      context,
+    };
     if (moduleIdCallback) {
-      options.moduleIdCallback = (moduleId: string) => {
+      rr.moduleIdCallback = (moduleId: string) => {
         const mesg: MessageRes = { id, type: "moduleId", moduleId };
         parentPort!.postMessage(mesg);
       };
     }
-    const pipeable = await renderRSC(input, options);
+    const pipeable = await renderRSC(rr);
     const mesg: MessageRes = { id, type: "start", context };
     parentPort!.postMessage(mesg);
     deepFreeze(context);
@@ -161,6 +175,17 @@ parentPort!.on("message", (mesg: MessageReq) => {
     handleGetBuildConfig(mesg);
   } else if (mesg.type === "getSsrInput") {
     handleGetSsrInput(mesg);
+  } else if (mesg.type === "buf") {
+    const stream = streamMap.get(mesg.id)!;
+    stream.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
+  } else if (mesg.type === "end") {
+    const stream = streamMap.get(mesg.id)!;
+    stream.end();
+  } else if (mesg.type === "err") {
+    const stream = streamMap.get(mesg.id)!;
+    const err =
+      mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err));
+    stream.destroy(err);
   }
 });
 
@@ -198,25 +223,22 @@ const resolveClientEntry = (
   return config.base + path.relative(root, filePath);
 };
 
-async function renderRSC(
-  input: RenderInput,
-  options: RenderOptions,
-): Promise<PipeableStream> {
+async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
   const config = await resolveConfig(
-    options.command === "build" ? "build" : "serve",
+    rr.command === "build" ? "build" : "serve",
   );
 
   const { runWithAsyncLocalStorage } = await (loadServerFile(
     "waku/server",
-    options.command,
+    rr.command,
   ) as Promise<{
     runWithAsyncLocalStorage: typeof runWithAsyncLocalStorageOrig;
   }>);
 
-  const entriesFile = await getEntriesFile(config, options.command);
+  const entriesFile = await getEntriesFile(config, rr.command);
   const {
     default: { renderEntries, getSsrConfig },
-  } = await (loadServerFile(entriesFile, options.command) as Promise<Entries>);
+  } = await (loadServerFile(entriesFile, rr.command) as Promise<Entries>);
   const ssrConfig = getSsrConfig?.();
   const ssrFilter: NonNullable<typeof ssrConfig>["filter"] = (elements) => {
     if (!ssrConfig) {
@@ -243,17 +265,37 @@ async function renderRSC(
     {
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split("#") as [string, string];
-        const id = resolveClientEntry(filePath, config, options.command);
-        options?.moduleIdCallback?.(id);
+        const id = resolveClientEntry(filePath, config, rr.command);
+        rr?.moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },
     },
   );
 
-  if ("actionId" in input) {
-    const [fileId, name] = input.actionId.split("#");
+  if (rr.method === "POST") {
+    const actionId = decodeURIComponent(rr.pathStr);
+    let args: unknown[] = [];
+    const contentType = rr.headers["content-type"];
+    if (
+      typeof contentType === "string" &&
+      contentType.startsWith("multipart/form-data")
+    ) {
+      const bb = busboy({ headers: rr.headers });
+      const reply = decodeReplyFromBusboy(bb);
+      rr.stream.pipe(bb);
+      args = await reply;
+    } else {
+      let body = "";
+      for await (const chunk of rr.stream) {
+        body += chunk;
+      }
+      if (body) {
+        args = await decodeReply(body);
+      }
+    }
+    const [fileId, name] = actionId.split("#");
     const fname = path.join(config.root, fileId!);
-    const mod = await loadServerFile(fname, options.command);
+    const mod = await loadServerFile(fname, rr.command);
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
     const rerender = (input: string) => {
       elements = Promise.all([elements, render(input)]).then(
@@ -262,11 +304,11 @@ async function renderRSC(
     };
     return runWithAsyncLocalStorage(
       {
-        getContext: () => options.context,
+        getContext: () => rr.context,
         rerender,
       },
       async () => {
-        const data = await (mod[name!] || mod)(...input.args);
+        const data = await (mod[name!] || mod)(...args);
         return renderToPipeableStream(
           { ...(await elements), _value: data },
           bundlerConfig,
@@ -274,17 +316,20 @@ async function renderRSC(
       },
     );
   }
+
+  const input = rr.pathStr === "__DEFAULT__" ? "" : rr.pathStr;
+  const ssr = rr.headers["x-waku-ssr-mode"] === "rsc";
   return runWithAsyncLocalStorage(
     {
-      getContext: () => options.context,
+      getContext: () => rr.context,
       rerender: () => {
         throw new Error("Cannot rerender");
       },
     },
     async () => {
-      const elements = await render(input.input);
+      const elements = await render(input);
       return renderToPipeableStream(
-        options.ssr ? ssrFilter(elements) : elements,
+        ssr ? ssrFilter(elements) : elements,
         bundlerConfig,
       ).pipe(transformRsfId(config.root));
     },
@@ -305,10 +350,35 @@ async function getBuildConfigRSC() {
     return {};
   }
 
-  const output = await getBuildConfig(
-    (input: RenderInput, options: Omit<RenderOptions, "command" | "context">) =>
-      renderRSC(input, { ...options, command: "build", context: null }),
-  );
+  const unstable_collectClientModules = async (
+    input: string,
+  ): Promise<string[]> => {
+    const idSet = new Set<string>();
+    const stream = new PassThrough();
+    stream.end();
+    const pipeable = await renderRSC({
+      pathStr: input || "__DEFAULT__",
+      method: "GET",
+      headers: {},
+      command: "build",
+      stream,
+      context: null,
+      moduleIdCallback: (id) => idSet.add(id),
+    });
+    await new Promise<void>((resolve, reject) => {
+      const stream = new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        },
+      });
+      stream.on("finish", resolve);
+      stream.on("error", reject);
+      pipeable.pipe(stream);
+    });
+    return Array.from(idSet);
+  };
+
+  const output = await getBuildConfig(unstable_collectClientModules);
   return output;
 }
 

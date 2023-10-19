@@ -2,11 +2,7 @@ import { PassThrough } from "node:stream";
 import type { Readable } from "node:stream";
 import { Worker } from "node:worker_threads";
 
-import type {
-  RenderInput,
-  RenderOptions,
-  GetBuildConfig,
-} from "../../../server.js";
+import type { RenderRequest, GetBuildConfig } from "../../../server.js";
 
 const worker = new Worker(new URL("worker-impl.js", import.meta.url), {
   execArgv: [
@@ -26,15 +22,14 @@ export type BuildOutput = {
 
 export type MessageReq =
   | { type: "shutdown" }
-  | {
+  | ({
       id: number;
       type: "render";
-      input: RenderInput;
-      command: "dev" | "build" | "start";
-      ssr: boolean;
-      context: unknown;
       moduleIdCallback: boolean;
-    }
+    } & Omit<RenderRequest, "stream" | "moduleIdCallback">)
+  | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
+  | { id: number; type: "end" }
+  | { id: number; type: "err"; err: unknown }
   | { id: number; type: "getBuildConfig" }
   | {
       id: number;
@@ -48,9 +43,9 @@ export type MessageRes =
   | { type: "hot-import"; source: string }
   | { id: number; type: "start"; context: unknown }
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
-  | { id: number; type: "moduleId"; moduleId: string }
   | { id: number; type: "end" }
   | { id: number; type: "err"; err: unknown; statusCode?: number }
+  | { id: number; type: "moduleId"; moduleId: string }
   | {
       id: number;
       type: "buildConfig";
@@ -101,10 +96,28 @@ export function shutdown(): Promise<void> {
 let nextId = 1;
 
 export function renderRSC<Context>(
-  input: RenderInput,
-  options: RenderOptions,
+  rr: RenderRequest,
 ): Promise<readonly [Readable, Context]> {
   const id = nextId++;
+  const pipe = async () => {
+    rr.stream.on("error", (err: unknown) => {
+      const mesg: MessageReq = { id, type: "err", err };
+      worker.postMessage(mesg);
+    });
+    for await (const chunk of rr.stream) {
+      const buffer: Buffer = chunk;
+      const mesg: MessageReq = {
+        id,
+        type: "buf",
+        buf: buffer.buffer,
+        offset: buffer.byteOffset,
+        len: buffer.length,
+      };
+      worker.postMessage(mesg);
+    }
+    const mesg: MessageReq = { id, type: "end" };
+    worker.postMessage(mesg);
+  };
   let started = false;
   return new Promise((resolve, reject) => {
     const passthrough = new PassThrough();
@@ -122,7 +135,7 @@ export function renderRSC<Context>(
         }
         passthrough.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
       } else if (mesg.type === "moduleId") {
-        options.moduleIdCallback?.(mesg.moduleId);
+        rr.moduleIdCallback?.(mesg.moduleId);
       } else if (mesg.type === "end") {
         if (!started) {
           throw new Error("not yet started");
@@ -146,13 +159,15 @@ export function renderRSC<Context>(
     const mesg: MessageReq = {
       id,
       type: "render",
-      input,
-      command: options.command,
-      ssr: options.ssr,
-      context: options.context,
-      moduleIdCallback: !!options.moduleIdCallback,
+      moduleIdCallback: !!rr.moduleIdCallback,
+      pathStr: rr.pathStr,
+      method: rr.method,
+      headers: rr.headers,
+      command: rr.command,
+      context: rr.context,
     };
     worker.postMessage(mesg);
+    pipe();
   });
 }
 

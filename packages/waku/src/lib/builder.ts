@@ -1,5 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
+import { PassThrough } from "node:stream";
 import { createHash } from "node:crypto";
 
 import { build as viteBuild } from "vite";
@@ -255,15 +256,17 @@ const emitRscFiles = async (
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          const [pipeable] = await renderRSC(
-            { input },
-            {
-              command: "build",
-              ssr: false,
-              context,
-              moduleIdCallback: (id) => addClientModule(input, id),
-            },
-          );
+          const stream = new PassThrough();
+          stream.end();
+          const [pipeable] = await renderRSC({
+            pathStr: input || "__DEFAULT__",
+            method: "GET",
+            headers: {},
+            command: "build",
+            stream,
+            context,
+            moduleIdCallback: (id) => addClientModule(input, id),
+          });
           await new Promise<void>((resolve, reject) => {
             const stream = fs.createWriteStream(destFile);
             stream.on("finish", resolve);
@@ -288,10 +291,18 @@ const renderHtml = async (
     return null;
   }
   const { splitHTML, getFallback } = config.framework.ssr;
-  const [pipeable] = await renderRSC(
-    { input },
-    { command: "build", ssr: true, context },
-  );
+  const stream = new PassThrough();
+  stream.end();
+  const [pipeable] = await renderRSC({
+    pathStr: input || "__DEFAULT__",
+    method: "GET",
+    headers: {
+      "x-waku-ssr-mode": "rsc",
+    },
+    command: "build",
+    stream,
+    context,
+  });
   return renderHtmlToReadable(htmlStr, pipeable, splitHTML, getFallback);
 };
 

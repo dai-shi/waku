@@ -1,19 +1,14 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import RSDWServer from "react-server-dom-webpack/server.node.unbundled";
-import busboy from "busboy";
 
 import { resolveConfig } from "../config.js";
 import { hasStatusCode } from "./rsc/utils.js";
 import { renderRSC } from "./rsc/worker-api.js";
-import type { RenderInput } from "../../server.js";
 
 type Middleware = (
   req: IncomingMessage,
   res: ServerResponse,
   next: (err?: unknown) => void,
 ) => void;
-
-const { decodeReply, decodeReplyFromBusboy } = RSDWServer;
 
 export function rsc<Context>(options: {
   command: "dev" | "build" | "start";
@@ -33,28 +28,9 @@ export function rsc<Context>(options: {
     const basePath = config.base + config.framework.rscPrefix;
     const url = req.url || "";
     if (url.startsWith(basePath)) {
-      const id = url.slice(basePath.length);
-      const ssr = req.headers["x-waku-ssr-mode"] === "rsc";
-      let input: RenderInput;
-      if (req.method === "POST") {
-        let args: unknown[] = [];
-        if (req.headers["content-type"]?.startsWith("multipart/form-data")) {
-          const bb = busboy({ headers: req.headers });
-          const reply = decodeReplyFromBusboy(bb);
-          req.pipe(bb);
-          args = await reply;
-        } else {
-          let body = "";
-          for await (const chunk of req) {
-            body += chunk;
-          }
-          if (body) {
-            args = await decodeReply(body);
-          }
-        }
-        input = { actionId: decodeURIComponent(id), args };
-      } else {
-        input = { input: id === "__DEFAULT__" ? "" : id };
+      const { method, headers } = req;
+      if (method !== "GET" && method !== "POST") {
+        throw new Error(`Unsupported method '${method}'`);
       }
       const handleError = (err: unknown) => {
         if (hasStatusCode(err)) {
@@ -71,9 +47,12 @@ export function rsc<Context>(options: {
       };
       try {
         const context = options.unstable_prehook?.(req, res);
-        const [readable, nextCtx] = await renderRSC(input, {
+        const [readable, nextCtx] = await renderRSC({
+          pathStr: url.slice(basePath.length),
+          method,
+          headers,
           command: options.command,
-          ssr,
+          stream: req,
           context,
         });
         options.unstable_posthook?.(req, res, nextCtx as Context);
