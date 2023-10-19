@@ -21,7 +21,7 @@ app.use(
 );
 // Passing cookies through SSR server isn't supported (yet).
 // app.use(ssr({ command: "dev" }));
-app.use(devServer());
+app.use(await devServer());
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
