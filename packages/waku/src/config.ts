@@ -2,19 +2,19 @@ import type { ConfigEnv, UserConfig } from "vite";
 
 export interface FrameworkConfig {
   /**
-   * The source directry relative to root.
+   * The source directory relative to root.
    * This will be the actual root in the development mode.
    * Defaults to  "src".
    */
   srcDir?: string;
   /**
-   * The dist directry relative to root.
+   * The dist directory relative to root.
    * This will be the actual root in the production mode.
    * Defaults to  "dist".
    */
   distDir?: string;
   /**
-   * The public directry relative to distDir.
+   * The public directory relative to distDir.
    * It's different from Vite's build.publicDir config.
    * Defaults to  "public".
    */
@@ -26,7 +26,7 @@ export interface FrameworkConfig {
   indexHtml?: string;
   /**
    * The entries.js file relative to srcDir or distDir.
-   * The extention should be `.js`,
+   * The extension should be `.js`,
    * but resolved with `.ts`, `.tsx` and `.jsx` in the development mode.
    * Defaults to  "entries.js".
    */
