@@ -5,6 +5,8 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import { createRequire } from "node:module";
 
+import type { Express } from "express";
+
 const require = createRequire(new URL(".", import.meta.url));
 
 const { values, positionals } = parseArgs({
@@ -74,10 +76,8 @@ async function runDev(options?: { ssr?: boolean }) {
     app.use(ssr({ command: "dev" }));
   }
   app.use(devServer());
-  const port = process.env.PORT || 3000;
-  app.listen(port, () => {
-    console.info("Listening on", port);
-  });
+  const port = parseInt(process.env.PORT || "3000", 10);
+  startServer(app, port);
 }
 
 async function runBuild() {
@@ -106,9 +106,22 @@ async function runStart(options?: { ssr?: boolean }) {
     ),
   );
   (express.static.mime as any).default_type = "";
-  const port = process.env.PORT || 8080;
-  app.listen(port, () => {
-    console.info("Listening on", port);
+  const port = parseInt(process.env.PORT || "8080", 10);
+  startServer(app, port);
+}
+
+function startServer(app: Express, port: number) {
+  const server = app.listen(port, () => {
+    console.log(`ready: Listening on http://localhost:${port}/`);
+  });
+
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") {
+      console.log(`warn: Port ${port} is in use, trying ${port + 1} instead.`);
+      startServer(app, port + 1);
+    } else {
+      console.error("Failed to start server");
+    }
   });
 }
 
