@@ -76,8 +76,8 @@ async function runDev(options?: { ssr?: boolean }) {
     app.use(ssr({ command: "dev" }));
   }
   app.use(devServer());
-  const port = parseInt(process.env.PORT || "3000", 10)
-  startServer(app, port)
+  const port = parseInt(process.env.PORT || "3000", 10);
+  startServer(app, port);
 }
 
 async function runBuild() {
@@ -106,8 +106,8 @@ async function runStart(options?: { ssr?: boolean }) {
     ),
   );
   (express.static.mime as any).default_type = "";
-  const port = parseInt(process.env.PORT || "8080", 10)
-  startServer(app, port)
+  const port = parseInt(process.env.PORT || "8080", 10);
+  startServer(app, port);
 }
 
 function startServer(app: Express, port: number) {
@@ -115,12 +115,12 @@ function startServer(app: Express, port: number) {
     console.log(`ready: Listening on http://localhost:${port}/`);
   });
 
-  server.on('error', (err: NodeJS.ErrnoException) => {
-    if (err.code === 'EADDRINUSE') {
-      console.log(`warn: Port ${port} is in use, trying ${port + 1} instead.`)
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") {
+      console.log(`warn: Port ${port} is in use, trying ${port + 1} instead.`);
       startServer(app, port + 1);
     } else {
-      console.error('Failed to start server');
+      console.error("Failed to start server");
     }
   });
 }
