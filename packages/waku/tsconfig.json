@@ -5,9 +5,7 @@
     "emitDeclarationOnly": true,
     "rootDir": "./src",
     "outDir": "./dist",
-    "types": [
-      "react/experimental"
-    ],
+    "types": ["react/experimental"],
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "tsBuildInfoFile": "./dist/.tsbuildinfo"
   },

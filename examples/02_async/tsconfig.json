@@ -12,13 +12,9 @@
     "outDir": "./dist",
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "composite": true,
-    "types": [
-      "react/experimental"
-    ]
+    "types": ["react/experimental"]
   },
-  "include": [
-    "./src"
-  ],
+  "include": ["./src"],
   "references": [
     {
       "path": "./tsconfig.node.json"

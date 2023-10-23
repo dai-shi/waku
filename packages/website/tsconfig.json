@@ -6,7 +6,7 @@
     "rootDir": "./src",
     "outDir": "./dist",
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"]
   },
   "include": ["src"],
   "references": [
