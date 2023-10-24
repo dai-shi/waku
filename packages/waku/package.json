@@ -58,8 +58,7 @@
     "dev": "swc src -d dist -w",
     "compile": "rm -rf dist && pnpm run compile:code && pnpm run compile:types",
     "compile:code": "swc src -d dist && swc src -d dist/cjs -C module.type=commonjs && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
-    "compile:types": "tsc --project tsconfig.build.json",
-    "postinstall": "(cd node_modules/vite && patch -p1 -i ../../patches/vite@4.4.10.patch) || (cd ../vite && patch -p1 -i ../waku/patches/vite@4.4.10.patch) || true"
+    "compile:types": "tsc --project tsconfig.build.json"
   },
   "license": "MIT",
   "engines": {
