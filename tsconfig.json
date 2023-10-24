@@ -62,6 +62,12 @@
     {
       "path": "./examples/09_cssmodules"
     },
+    {
+      "path": "./examples/10_dynamicroute"
+    },
+    {
+      "path": "./examples/11_form"
+    },
     // E2E
     {
       "path": "./tsconfig.e2e.json"

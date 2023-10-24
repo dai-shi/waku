@@ -10,6 +10,14 @@
     "exactOptionalPropertyTypes": true,
     "jsx": "react-jsx",
     "outDir": "./dist",
-    "rootDir": "./src"
-  }
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "composite": true,
+    "types": ["react/experimental"]
+  },
+  "include": ["./src"],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
 }

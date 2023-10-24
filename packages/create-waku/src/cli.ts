@@ -2,7 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import prompts from "prompts";
+import { default as prompts } from "prompts";
 import { red, green, bold } from "kolorist";
 import fse from "fs-extra/esm";
 
