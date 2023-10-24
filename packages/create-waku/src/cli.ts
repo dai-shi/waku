@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { default as prompts } from "prompts";
 import { red, green, bold } from "kolorist";
-import fse from "fs-extra/esm";
+import fse from "fs-extra";
 
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
