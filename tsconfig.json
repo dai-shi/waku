@@ -12,6 +12,8 @@
     "exactOptionalPropertyTypes": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
+    "declaration": true,
+    "emitDeclarationOnly": true,
     "composite": true,
     "incremental": true,
     "paths": {
