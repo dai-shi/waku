@@ -30,7 +30,6 @@
   "devDependencies": {
     "@types/fs-extra": "^11.0.2",
     "@types/prompts": "^2.4.5",
-    "json": "^11.0.0",
     "esbuild": "0.19.4"
   }
 }
