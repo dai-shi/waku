@@ -6,9 +6,9 @@
 import { useFormState, useFormStatus } from "react-dom";
 
 const FormStatus = () => {
-   const { pending } = useFormStatus();
+  const { pending } = useFormStatus();
   return pending ? "Pending..." : null;
-}
+};
 
 export const Counter = ({
   increment,
