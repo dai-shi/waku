@@ -12,7 +12,10 @@
     "outDir": "./dist",
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "composite": true,
-    "types": ["react/experimental"]
+    "types": [
+      // React Server Async Component type
+      "react/experimental"
+    ]
   },
   "include": ["./src"],
   "references": [
