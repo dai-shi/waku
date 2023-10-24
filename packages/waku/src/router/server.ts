@@ -1,4 +1,3 @@
-import { Writable } from "node:stream";
 import { createElement, Suspense } from "react";
 import type { FunctionComponent, ReactNode } from "react";
 
@@ -8,30 +7,6 @@ import { Children } from "../client.js";
 import { getComponentIds, getInputString, parseInputString } from "./common.js";
 import type { RouteProps, LinkProps } from "./common.js";
 import { Waku_SSR_Capable_Link } from "./client.js";
-
-const collectClientModules = async (
-  pathname: string,
-  unstable_renderRSC: Parameters<GetBuildConfig>[0],
-) => {
-  const search = ""; // XXX this is a limitation
-  const input = getInputString(pathname, search);
-  const idSet = new Set<string>();
-  const pipeable = await unstable_renderRSC(
-    { input },
-    { ssr: false, moduleIdCallback: (id) => idSet.add(id) },
-  );
-  await new Promise<void>((resolve, reject) => {
-    const stream = new Writable({
-      write(_chunk, _encoding, callback) {
-        callback();
-      },
-    });
-    stream.on("finish", resolve);
-    stream.on("error", reject);
-    pipeable.pipe(stream);
-  });
-  return Array.from(idSet);
-};
 
 // We have to make prefetcher consistent with client behavior
 const prefetcher = (pathname: string) => {
@@ -105,14 +80,15 @@ export function defineRouter(
     return Object.fromEntries(entries);
   };
 
-  const getBuildConfig: GetBuildConfig = async (unstable_renderRSC) => {
+  const getBuildConfig: GetBuildConfig = async (
+    unstable_collectClientModules,
+  ) => {
     const pathnames = await getPathsForBuild();
     const path2moduleIds: Record<string, string[]> = {};
     for (const pathname of pathnames) {
-      const moduleIds = await collectClientModules(
-        pathname,
-        unstable_renderRSC,
-      );
+      const search = ""; // XXX this is a limitation
+      const input = getInputString(pathname, search);
+      const moduleIds = await unstable_collectClientModules(input);
       path2moduleIds[pathname] = moduleIds;
     }
     const customCode = `

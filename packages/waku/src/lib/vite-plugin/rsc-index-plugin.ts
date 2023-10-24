@@ -12,7 +12,7 @@ export function rscIndexPlugin(cssAssets: string[]): Plugin {
           tag: "script",
           attrs: { type: "module" },
           children: codeToInject,
-          injectTo: "head",
+          injectTo: "head-prepend",
         },
         ...cssAssets.map((href) => ({
           tag: "link",
