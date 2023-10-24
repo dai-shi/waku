@@ -11,8 +11,7 @@
     "jsx": "react-jsx",
     "outDir": "./dist",
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
-    "composite": true,
-    "types": ["react/experimental"]
+    "composite": true
   },
   "include": ["./src"],
   "references": [
