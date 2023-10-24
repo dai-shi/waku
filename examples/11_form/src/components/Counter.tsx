@@ -1,9 +1,14 @@
+/// <reference types="react/canary" />
 /// <reference types="react-dom/canary" />
 
 "use client";
 
-// @ts-expect-error no exported member
-import { useFormState } from "react-dom";
+import { useFormState, useFormStatus } from "react-dom";
+
+const FormStatus = () => {
+  const { pending } = useFormStatus();
+  return pending ? "Pending..." : null;
+};
 
 export const Counter = ({
   increment,
@@ -16,6 +21,7 @@ export const Counter = ({
       <form>
         <p>Count: {count}</p>
         <button formAction={dispatch}>Increment</button>
+        <FormStatus />
       </form>
       <h3>This is a client component.</h3>
     </div>

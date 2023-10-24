@@ -1,13 +1,20 @@
+/// <reference types="react/canary" />
 /// <reference types="react-dom/canary" />
-//
+
 "use client";
 
-// @ts-expect-error no exported member
 import { useFormStatus } from "react-dom";
 
-const FormStatus = () => {
+const SubmitButton = () => {
   const { pending } = useFormStatus();
-  return pending ? "Pending..." : null;
+  return (
+    <>
+      <button disabled={pending} type="submit">
+        Submit
+      </button>
+      {pending ? "Pending..." : null}
+    </>
+  );
 };
 
 export const Form = ({
@@ -19,11 +26,9 @@ export const Form = ({
 }) => (
   <div style={{ border: "3px blue dashed", margin: "1em", padding: "1em" }}>
     <p>{message}</p>
-    {/* @ts-expect-error not assignable to type 'string' */}
     <form action={greet}>
       Name: <input name="name" />
-      <input type="submit" value="Send" />
-      <FormStatus />
+      <SubmitButton />
     </form>
     <h3>This is a client component.</h3>
   </div>

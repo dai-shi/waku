@@ -25,11 +25,11 @@ importers:
         specifier: ^20.8.2
         version: 20.8.2
       '@types/react':
-        specifier: ^18.2.24
-        version: 18.2.24
+        specifier: ^18.2.31
+        version: 18.2.31
       '@types/react-dom':
-        specifier: ^18.2.8
-        version: 18.2.8
+        specifier: ^18.2.14
+        version: 18.2.14
       '@typescript-eslint/eslint-plugin':
         specifier: ^6.7.4
         version: 6.7.4(@typescript-eslint/parser@6.7.4)(eslint@8.50.0)(typescript@5.2.2)
@@ -92,11 +92,11 @@ importers:
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: ^18.2.24
-        version: 18.2.24
+        specifier: ^18.2.31
+        version: 18.2.31
       '@types/react-dom':
-        specifier: ^18.2.8
-        version: 18.2.8
+        specifier: ^18.2.14
+        version: 18.2.14
       typescript:
         specifier: ^5.2.2
         version: 5.2.2
@@ -120,11 +120,11 @@ importers:
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: ^18.2.24
-        version: 18.2.24
+        specifier: ^18.2.31
+        version: 18.2.31
       '@types/react-dom':
-        specifier: ^18.2.8
-        version: 18.2.8
+        specifier: ^18.2.14
+        version: 18.2.14
       typescript:
         specifier: ^5.2.2
         version: 5.2.2
@@ -148,11 +148,11 @@ importers:
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: ^18.2.24
-        version: 18.2.24
+        specifier: ^18.2.31
+        version: 18.2.31
       '@types/react-dom':
-        specifier: ^18.2.8
-        version: 18.2.8
+        specifier: ^18.2.14
+        version: 18.2.14
       typescript:
         specifier: ^5.2.2
         version: 5.2.2
@@ -176,11 +176,11 @@ importers:
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: ^18.2.24
-        version: 18.2.24
+        specifier: ^18.2.31
+        version: 18.2.31
       '@types/react-dom':
-        specifier: ^18.2.8
-        version: 18.2.8
+        specifier: ^18.2.14
+        version: 18.2.14
       typescript:
         specifier: ^5.2.2
         version: 5.2.2
@@ -204,11 +204,11 @@ importers:
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: ^18.2.24
-        version: 18.2.24
+        specifier: ^18.2.31
+        version: 18.2.31
       '@types/react-dom':
-        specifier: ^18.2.8
-        version: 18.2.8
+        specifier: ^18.2.14
+        version: 18.2.14
       typescript:
         specifier: ^5.2.2
         version: 5.2.2
@@ -232,11 +232,11 @@ importers:
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: ^18.2.24
-        version: 18.2.24
+        specifier: ^18.2.31
+        version: 18.2.31
       '@types/react-dom':
-        specifier: ^18.2.8
-        version: 18.2.8
+        specifier: ^18.2.14
+        version: 18.2.14
       typescript:
         specifier: ^5.2.2
         version: 5.2.2
@@ -263,11 +263,11 @@ importers:
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: ^18.2.24
-        version: 18.2.24
+        specifier: ^18.2.31
+        version: 18.2.31
       '@types/react-dom':
-        specifier: ^18.2.8
-        version: 18.2.8
+        specifier: ^18.2.14
+        version: 18.2.14
       typescript:
         specifier: ^5.2.2
         version: 5.2.2
@@ -294,11 +294,11 @@ importers:
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: ^18.2.24
-        version: 18.2.24
+        specifier: ^18.2.31
+        version: 18.2.31
       '@types/react-dom':
-        specifier: ^18.2.8
-        version: 18.2.8
+        specifier: ^18.2.14
+        version: 18.2.14
       typescript:
         specifier: ^5.2.2
         version: 5.2.2
@@ -322,11 +322,11 @@ importers:
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: ^18.2.24
-        version: 18.2.24
+        specifier: ^18.2.31
+        version: 18.2.31
       '@types/react-dom':
-        specifier: ^18.2.8
-        version: 18.2.8
+        specifier: ^18.2.14
+        version: 18.2.14
       typescript:
         specifier: ^5.2.2
         version: 5.2.2
@@ -353,11 +353,11 @@ importers:
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: ^18.2.24
-        version: 18.2.24
+        specifier: ^18.2.31
+        version: 18.2.31
       '@types/react-dom':
-        specifier: ^18.2.8
-        version: 18.2.8
+        specifier: ^18.2.14
+        version: 18.2.14
       typescript:
         specifier: ^5.2.2
         version: 5.2.2
@@ -381,11 +381,11 @@ importers:
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: ^18.2.24
-        version: 18.2.24
+        specifier: ^18.2.31
+        version: 18.2.31
       '@types/react-dom':
-        specifier: ^18.2.8
-        version: 18.2.8
+        specifier: ^18.2.14
+        version: 18.2.14
       typescript:
         specifier: ^5.2.2
         version: 5.2.2
@@ -1551,14 +1551,14 @@ packages:
     resolution: {integrity: sha512-xrO9OoVPqFuYyR/loIHjnbvvyRZREYKLjxV4+dY6v3FQR3stQ9ZxIGkaclF7YhI9hfjpuTbu14hZEy94qKLtOA==}
     dev: true
 
-  /@types/react-dom@18.2.8:
-    resolution: {integrity: sha512-bAIvO5lN/U8sPGvs1Xm61rlRHHaq5rp5N3kp9C+NJ/Q41P8iqjkXSu0+/qu8POsjH9pNWb0OYabFez7taP7omw==}
+  /@types/react-dom@18.2.14:
+    resolution: {integrity: sha512-V835xgdSVmyQmI1KLV2BEIUgqEuinxp9O4G6g3FqO/SqLac049E53aysv0oEFD2kHfejeKU+ZqL2bcFWj9gLAQ==}
     dependencies:
-      '@types/react': 18.2.24
+      '@types/react': 18.2.31
     dev: true
 
-  /@types/react@18.2.24:
-    resolution: {integrity: sha512-Ee0Jt4sbJxMu1iDcetZEIKQr99J1Zfb6D4F3qfUWoR1JpInkY1Wdg4WwCyBjL257D0+jGqSl1twBjV8iCaC0Aw==}
+  /@types/react@18.2.31:
+    resolution: {integrity: sha512-c2UnPv548q+5DFh03y8lEDeMfDwBn9G3dRwfkrxQMo/dOtRHUUO57k6pHvBIfH/VF4Nh+98mZ5aaSe+2echD5g==}
     dependencies:
       '@types/prop-types': 15.7.8
       '@types/scheduler': 0.16.4
