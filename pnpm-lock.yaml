@@ -1,9 +1,5 @@
 lockfileVersion: '6.0'
 
-settings:
-  autoInstallPeers: true
-  excludeLinksFromLockfile: false
-
 importers:
 
   .:
@@ -87,7 +83,7 @@ importers:
         specifier: 18.3.0-canary-a41957507-20231017
         version: 18.3.0-canary-a41957507-20231017(react-dom@18.3.0-canary-a41957507-20231017)(react@18.3.0-canary-a41957507-20231017)(webpack@5.88.2)
       waku:
-        specifier: 0.15.1
+        specifier: 0.16.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -115,7 +111,7 @@ importers:
         specifier: 18.3.0-canary-a41957507-20231017
         version: 18.3.0-canary-a41957507-20231017(react-dom@18.3.0-canary-a41957507-20231017)(react@18.3.0-canary-a41957507-20231017)(webpack@5.88.2)
       waku:
-        specifier: 0.15.1
+        specifier: 0.16.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -143,7 +139,7 @@ importers:
         specifier: 18.3.0-canary-a41957507-20231017
         version: 18.3.0-canary-a41957507-20231017(react-dom@18.3.0-canary-a41957507-20231017)(react@18.3.0-canary-a41957507-20231017)(webpack@5.88.2)
       waku:
-        specifier: 0.15.1
+        specifier: 0.16.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -171,7 +167,7 @@ importers:
         specifier: 18.3.0-canary-a41957507-20231017
         version: 18.3.0-canary-a41957507-20231017(react-dom@18.3.0-canary-a41957507-20231017)(react@18.3.0-canary-a41957507-20231017)(webpack@5.88.2)
       waku:
-        specifier: 0.15.1
+        specifier: 0.16.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -199,7 +195,7 @@ importers:
         specifier: 18.3.0-canary-a41957507-20231017
         version: 18.3.0-canary-a41957507-20231017(react-dom@18.3.0-canary-a41957507-20231017)(react@18.3.0-canary-a41957507-20231017)(webpack@5.88.2)
       waku:
-        specifier: 0.15.1
+        specifier: 0.16.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -227,7 +223,7 @@ importers:
         specifier: 18.3.0-canary-a41957507-20231017
         version: 18.3.0-canary-a41957507-20231017(react-dom@18.3.0-canary-a41957507-20231017)(react@18.3.0-canary-a41957507-20231017)(webpack@5.88.2)
       waku:
-        specifier: 0.15.1
+        specifier: 0.16.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -258,7 +254,7 @@ importers:
         specifier: 18.3.0-canary-a41957507-20231017
         version: 18.3.0-canary-a41957507-20231017(react-dom@18.3.0-canary-a41957507-20231017)(react@18.3.0-canary-a41957507-20231017)(webpack@5.88.2)
       waku:
-        specifier: 0.15.1
+        specifier: 0.16.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -289,7 +285,7 @@ importers:
         specifier: 18.3.0-canary-a41957507-20231017
         version: 18.3.0-canary-a41957507-20231017(react-dom@18.3.0-canary-a41957507-20231017)(react@18.3.0-canary-a41957507-20231017)(webpack@5.88.2)
       waku:
-        specifier: 0.15.1
+        specifier: 0.16.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -317,7 +313,7 @@ importers:
         specifier: 18.3.0-canary-a41957507-20231017
         version: 18.3.0-canary-a41957507-20231017(react-dom@18.3.0-canary-a41957507-20231017)(react@18.3.0-canary-a41957507-20231017)(webpack@5.88.2)
       waku:
-        specifier: 0.15.1
+        specifier: 0.16.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -348,7 +344,7 @@ importers:
         specifier: 18.3.0-canary-a41957507-20231017
         version: 18.3.0-canary-a41957507-20231017(react-dom@18.3.0-canary-a41957507-20231017)(react@18.3.0-canary-a41957507-20231017)(webpack@5.88.2)
       waku:
-        specifier: 0.15.1
+        specifier: 0.16.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -376,7 +372,7 @@ importers:
         specifier: 18.3.0-canary-a41957507-20231017
         version: 18.3.0-canary-a41957507-20231017(react-dom@18.3.0-canary-a41957507-20231017)(react@18.3.0-canary-a41957507-20231017)(webpack@5.88.2)
       waku:
-        specifier: 0.15.1
+        specifier: 0.16.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -4077,7 +4073,7 @@ packages:
       neo-async: 2.6.2
       react: 18.3.0-canary-a41957507-20231017
       react-dom: 18.3.0-canary-a41957507-20231017(react@18.3.0-canary-a41957507-20231017)
-      webpack: 5.88.2
+      webpack: 5.88.2(@swc/core@1.3.91)
 
   /react@18.3.0-canary-a41957507-20231017:
     resolution: {integrity: sha512-mg+3eo4ZoPwLKOLdAg5YIhcuc8sH0Stt/GEQKR/NJp9QSM3Nh18zwPD7drjVRBQEaxI7f7h9njwzMSTdVfJuTQ==}
@@ -4579,7 +4575,7 @@ packages:
     resolution: {integrity: sha512-GNzQvQTOIP6RyTfE2Qxb8ZVlNmw0n88vp1szwWRimP02mnTsx3Wtn5qRdqY9w2XduFNUgvOwhNnQsjwCp+kqaQ==}
     engines: {node: '>=6'}
 
-  /terser-webpack-plugin@5.3.9(webpack@5.88.2):
+  /terser-webpack-plugin@5.3.9(@swc/core@1.3.91)(webpack@5.88.2):
     resolution: {integrity: sha512-ZuXsqE07EcggTWQjXUj+Aot/OMcD0bMKGgF63f7UxYcu5/AJF53aIpK1YoP5xR9l6s/Hy2b+t1AM0bLNPRuhwA==}
     engines: {node: '>= 10.13.0'}
     peerDependencies:
@@ -4596,11 +4592,12 @@ packages:
         optional: true
     dependencies:
       '@jridgewell/trace-mapping': 0.3.19
+      '@swc/core': 1.3.91
       jest-worker: 27.5.1
       schema-utils: 3.3.0
       serialize-javascript: 6.0.1
       terser: 5.21.0
-      webpack: 5.88.2
+      webpack: 5.88.2(@swc/core@1.3.91)
 
   /terser@5.21.0:
     resolution: {integrity: sha512-WtnFKrxu9kaoXuiZFSGrcAvvBqAdmKx0SFNmVNYdJamMu9yyN3I/QF0FbH4QcqJQ+y1CJnzxGIKH0cSj+FGYRw==}
@@ -4834,7 +4831,7 @@ packages:
     resolution: {integrity: sha512-/DyMEOrDgLKKIG0fmvtz+4dUX/3Ghozwgm6iPp8KRhvn+eQf9+Q7GWxVNMk3+uCPWfdXYC4ExGBckIXdFEfH1w==}
     engines: {node: '>=10.13.0'}
 
-  /webpack@5.88.2:
+  /webpack@5.88.2(@swc/core@1.3.91):
     resolution: {integrity: sha512-JmcgNZ1iKj+aiR0OvTYtWQqJwq37Pf683dY9bVORwVbUrDhLhdn/PlO2sHsFHPkj7sHNQF3JwaAkp49V+Sq1tQ==}
     engines: {node: '>=10.13.0'}
     hasBin: true
@@ -4865,7 +4862,7 @@ packages:
       neo-async: 2.6.2
       schema-utils: 3.3.0
       tapable: 2.2.1
-      terser-webpack-plugin: 5.3.9(webpack@5.88.2)
+      terser-webpack-plugin: 5.3.9(@swc/core@1.3.91)(webpack@5.88.2)
       watchpack: 2.4.0
       webpack-sources: 3.2.3
     transitivePeerDependencies:
@@ -4977,3 +4974,7 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
     dev: true
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false

@@ -1,8 +1,11 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.16.0] - 2023-10-25
 ### Changed
 - feat(router): slug support #133
+- feat: upgrade to vite 4.5.0 #141
 
 ## [0.15.1] - 2023-09-12
 ### Changed
