@@ -2,14 +2,9 @@
 
 import fs from "node:fs";
 import path from "node:path";
-// FIXME what's the proper fix?
-// eslint-disable-next-line import/no-named-as-default
-import prompts from "prompts";
+import { default as prompts } from "prompts";
 import { red, green, bold } from "kolorist";
-// FIXME why @types/fs-extra doesn't work?
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import fse from "fs-extra/esm";
+import fse from "fs-extra";
 
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(

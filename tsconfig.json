@@ -12,9 +12,65 @@
     "exactOptionalPropertyTypes": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "composite": true,
+    "incremental": true,
     "paths": {
       "waku": ["./packages/waku/src/main.ts"],
       "waku/*": ["./packages/waku/src/*.ts"]
     }
-  }
+  },
+  "files": [],
+  "include": [],
+  "references": [
+    // Packages
+    {
+      "path": "./packages/waku"
+    },
+    {
+      "path": "./packages/create-waku"
+    },
+    {
+      "path": "./packages/website"
+    },
+    // Examples
+    {
+      "path": "./examples/01_counter"
+    },
+    {
+      "path": "./examples/02_async"
+    },
+    {
+      "path": "./examples/03_promise"
+    },
+    {
+      "path": "./examples/04_callserver"
+    },
+    {
+      "path": "./examples/05_mutation"
+    },
+    {
+      "path": "./examples/06_nesting"
+    },
+    {
+      "path": "./examples/07_router"
+    },
+    {
+      "path": "./examples/08_cookies"
+    },
+    {
+      "path": "./examples/09_cssmodules"
+    },
+    {
+      "path": "./examples/10_dynamicroute"
+    },
+    {
+      "path": "./examples/11_form"
+    },
+    // E2E
+    {
+      "path": "./tsconfig.e2e.json"
+    }
+  ]
 }
