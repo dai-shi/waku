@@ -2,6 +2,7 @@
   "name": "create-waku",
   "version": "0.5.3",
   "author": "Daishi Kato",
+  "type": "module",
   "contributors": [
     "Vasu Singh"
   ],
@@ -15,12 +16,11 @@
     "dist",
     "template"
   ],
-  "type": "commonjs",
   "scripts": {
     "start": "node dist/cli.js",
     "compile": "rm -rf template dist && pnpm run template && pnpm run build",
     "template": "cp -r ../../examples template/",
-    "build": "esbuild src/* --bundle --platform=node --outdir=dist"
+    "build": "tsc -b"
   },
   "dependencies": {
     "fs-extra": "^11.1.1",
@@ -29,7 +29,6 @@
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.2",
-    "@types/prompts": "^2.4.5",
-    "esbuild": "0.19.4"
+    "@types/prompts": "^2.4.5"
   }
 }
