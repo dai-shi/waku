@@ -5,8 +5,10 @@
     "outDir": "./dist",
     "module": "NodeNext",
     "moduleResolution": "nodenext",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "tsBuildInfoFile": "./dist/.tsbuildinfo"
+    "types": [],
+    "lib": ["ESNext"],
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "emitDeclarationOnly": false
   },
   "include": ["./src"],
   "exclude": ["./template"],
