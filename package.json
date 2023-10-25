@@ -9,7 +9,7 @@
     "compile": "pnpm -r --filter='./packages/*' run compile",
     "csb-install-FIXME": "pnpm install --no-frozen-lockfile",
     "postinstall": "test -d ./packages/waku/dist || (pnpm -r --filter='./packages/waku' run compile && pnpm install)",
-    "test": "prettier -c . && eslint . && tsc --project . --noEmit",
+    "test": "prettier -c . && eslint . && tsc -b --diagnostics",
     "e2e": "playwright test",
     "examples:dev": "(cd ./examples/${NAME} && pnpm run dev)",
     "examples:dev:01_counter": "NAME=01_counter pnpm run examples:dev",

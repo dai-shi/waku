@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"]
+  },
+  "include": ["src"],
+  "references": [
+    {
+      "path": "../waku"
+    }
+  ]
+}
