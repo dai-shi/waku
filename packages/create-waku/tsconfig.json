@@ -5,7 +5,6 @@
     "outDir": "./dist",
     "module": "NodeNext",
     "moduleResolution": "nodenext",
-    "types": [],
     "lib": ["ESNext"],
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "emitDeclarationOnly": false
