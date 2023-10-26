@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
-import { createServer as viteCreateServer } from "vite";
+import { createServer as viteCreateServer, mergeConfig } from "vite";
 import viteReact from "@vitejs/plugin-react";
 
 import { configFileConfig, resolveConfig } from "../config.js";
@@ -20,8 +20,7 @@ type Middleware = (
 export function devServer(): Middleware {
   const configPromise = resolveConfig("serve");
   const vitePromise = configPromise.then((config) =>
-    viteCreateServer({
-      ...configFileConfig(),
+    viteCreateServer(mergeConfig(configFileConfig(), {
       root: path.join(config.root, config.framework.srcDir),
       optimizeDeps: {
         include: ["react-server-dom-webpack/client"],
@@ -31,7 +30,7 @@ export function devServer(): Middleware {
       },
       plugins: [viteReact(), rscIndexPlugin([]), rscHmrPlugin()],
       server: { middlewareMode: true },
-    }),
+    })),
   );
   vitePromise.then((vite) => {
     registerReloadCallback((type) => vite.ws.send({ type }));
