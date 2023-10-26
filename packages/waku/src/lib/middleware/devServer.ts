@@ -20,17 +20,19 @@ type Middleware = (
 export function devServer(): Middleware {
   const configPromise = resolveConfig("serve");
   const vitePromise = configPromise.then((config) =>
-    viteCreateServer(mergeConfig(configFileConfig(), {
-      root: path.join(config.root, config.framework.srcDir),
-      optimizeDeps: {
-        include: ["react-server-dom-webpack/client"],
-        // FIXME without this, waku router has dual module hazard,
-        // and "Uncaught Error: Missing Router" happens.
-        exclude: ["waku"],
-      },
-      plugins: [viteReact(), rscIndexPlugin([]), rscHmrPlugin()],
-      server: { middlewareMode: true },
-    })),
+    viteCreateServer(
+      mergeConfig(configFileConfig(), {
+        root: path.join(config.root, config.framework.srcDir),
+        optimizeDeps: {
+          include: ["react-server-dom-webpack/client"],
+          // FIXME without this, waku router has dual module hazard,
+          // and "Uncaught Error: Missing Router" happens.
+          exclude: ["waku"],
+        },
+        plugins: [viteReact(), rscIndexPlugin([]), rscHmrPlugin()],
+        server: { middlewareMode: true },
+      }),
+    ),
   );
   vitePromise.then((vite) => {
     registerReloadCallback((type) => vite.ws.send({ type }));
