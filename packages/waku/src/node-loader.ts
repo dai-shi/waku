@@ -1,4 +1,4 @@
-import type { LoadHook } from 'node:module'
+import type { LoadHook } from "node:module";
 
 export const load: LoadHook = async (url, context, nextLoad) => {
   const result = await nextLoad(url, context);
@@ -10,4 +10,4 @@ export const load: LoadHook = async (url, context, nextLoad) => {
     }
   }
   return result;
-}
+};
