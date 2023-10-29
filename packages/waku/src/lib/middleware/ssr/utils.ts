@@ -31,9 +31,17 @@ const getViteServer = async (command: "dev" | "build" | "start") => {
     ...configFileConfig(),
     plugins: [...(command === "dev" ? [nonjsResolvePlugin()] : [])],
     appType: "custom",
+    server: { middlewareMode: true },
   });
   lastViteServer = [viteServer, command];
   return viteServer;
+};
+
+export const shutdown = async () => {
+  if (lastViteServer) {
+    await lastViteServer[0].close();
+    lastViteServer = undefined;
+  }
 };
 
 const interleaveHtmlSnippets = (
@@ -86,7 +94,7 @@ export const renderHtml = async (
   const vite = await getViteServer(command);
   const entriesFile = path.join(
     config.root,
-    command === "start" ? config.framework.distDir : config.framework.srcDir,
+    command === "dev" ? config.framework.srcDir : config.framework.distDir,
     config.framework.entriesJs,
   );
   const {

@@ -10,13 +10,13 @@ import type { RollupLog, LoggingFunction } from "rollup";
 import { configFileConfig, resolveConfig } from "./config.js";
 import { encodeInput, generatePrefetchCode } from "./middleware/rsc/utils.js";
 import {
-  shutdown,
+  shutdown as shutdownRsc,
   renderRSC,
   getBuildConfigRSC,
 } from "./middleware/rsc/worker-api.js";
 import { rscIndexPlugin } from "./vite-plugin/rsc-index-plugin.js";
 import { rscAnalyzePlugin } from "./vite-plugin/rsc-analyze-plugin.js";
-import { renderHtml } from "./middleware/ssr/utils.js";
+import { renderHtml, shutdown as shutdownSsr } from "./middleware/ssr/utils.js";
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
@@ -506,5 +506,6 @@ export async function build() {
   // So far, only static sites are supported.
   emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
 
-  await shutdown();
+  await shutdownSsr();
+  await shutdownRsc();
 }
