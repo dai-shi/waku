@@ -21,19 +21,19 @@ export function ssr(options: {
   command: "dev" | "build" | "start";
 }): Middleware {
   const configPromise = resolveConfig("serve");
+  const publicIndexHtmlPromise = configPromise.then((config) => {
+    const publicIndexHtmlFile = path.join(
+      config.root,
+      config.framework.distDir,
+      config.framework.publicDir,
+      config.framework.indexHtml,
+    );
+    return fsPromises.readFile(publicIndexHtmlFile, {
+      encoding: "utf8",
+    });
+  });
   let getHtmlStrPromise: Promise<(pathStr: string) => Promise<string>>;
   if (options.command === "start") {
-    const publicIndexHtmlPromise = configPromise.then((config) => {
-      const publicIndexHtmlFile = path.join(
-        config.root,
-        config.framework.distDir,
-        config.framework.publicDir,
-        config.framework.indexHtml,
-      );
-      return fsPromises.readFile(publicIndexHtmlFile, {
-        encoding: "utf8",
-      });
-    });
     getHtmlStrPromise = configPromise.then((config) => async (pathStr) => {
       const destFile = path.join(
         config.root,
@@ -60,11 +60,11 @@ export function ssr(options: {
       }),
     );
     getHtmlStrPromise = vitePromise.then((vite) => async (pathStr) => {
-      const result = await vite.transformRequest(pathStr);
-      if (!result) {
-        throw new Error("Cannot find file for " + pathStr);
-      }
-      return result.code;
+      const result = await vite.transformIndexHtml(
+        pathStr,
+        await publicIndexHtmlPromise,
+      );
+      return result;
     });
   }
   return async (req, res, next) => {
