@@ -1,7 +1,8 @@
 import path from "node:path";
 import { parentPort } from "node:worker_threads";
-import { PassThrough, Writable } from "node:stream";
+import { PassThrough, Transform, Writable } from "node:stream";
 import { Server } from "node:http";
+import { Buffer } from "node:buffer";
 
 import { createServer as viteCreateServer } from "vite";
 import type { ViteDevServer } from "vite";
@@ -10,7 +11,7 @@ import RSDWServer from "react-server-dom-webpack/server";
 import busboy from "busboy";
 
 import { configFileConfig, resolveConfig } from "../../config.js";
-import { hasStatusCode, transformRsfId, deepFreeze } from "./utils.js";
+import { hasStatusCode, deepFreeze } from "./utils.js";
 import type { MessageReq, MessageRes, RenderRequest } from "./worker-api.js";
 import {
   defineEntries,
@@ -207,6 +208,29 @@ const resolveClientEntry = (
   }
   return config.base + path.relative(root, filePath);
 };
+
+// HACK Patching stream is very fragile.
+const transformRsfId = (prefixToRemove: string) =>
+  new Transform({
+    transform(chunk, encoding, callback) {
+      if (encoding !== ("buffer" as any)) {
+        throw new Error("Unknown encoding");
+      }
+      const data = chunk.toString();
+      const lines = data.split("\n");
+      let changed = false;
+      for (let i = 0; i < lines.length; ++i) {
+        const match = lines[i].match(
+          new RegExp(`^([0-9]+):{"id":"${prefixToRemove}(.*?)"(.*)$`),
+        );
+        if (match) {
+          lines[i] = `${match[1]}:{"id":"${match[2]}"${match[3]}`;
+          changed = true;
+        }
+      }
+      callback(null, changed ? Buffer.from(lines.join("\n")) : chunk);
+    },
+  });
 
 async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
   const config = await resolveConfig(
