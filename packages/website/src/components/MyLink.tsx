@@ -1,4 +1,4 @@
-import { Link } from "waku/router/server";
+import { Link } from "waku/router/client";
 
 const Pending = ({ isPending }: { isPending: boolean }) => (
   <div

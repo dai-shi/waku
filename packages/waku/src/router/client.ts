@@ -258,6 +258,3 @@ export function Router({
     createElement(InnerRouter, { basePath, shouldSkip }),
   );
 }
-
-// This is a trick to trigger fallback identified by the name.
-export const Waku_SSR_Capable_Link = Link;
