@@ -1,6 +1,24 @@
 import { Buffer } from "node:buffer";
 import { Transform } from "node:stream";
 
+export const encodeInput = (input: string) => {
+  if (input === "") {
+    return "_";
+  } else if (!input.startsWith("_")) {
+    return input;
+  }
+  throw new Error("Input must not start with '_'");
+};
+
+export const decodeInput = (encodedInput: string) => {
+  if (encodedInput === "_") {
+    return "";
+  } else if (!encodedInput.startsWith("_")) {
+    return encodedInput;
+  }
+  throw new Error("Invalid encoded input");
+};
+
 export const hasStatusCode = (x: unknown): x is { statusCode: number } =>
   typeof (x as any)?.statusCode === "number";
 
@@ -20,9 +38,7 @@ export const generatePrefetchCode = (
     code += `
 globalThis.__WAKU_PREFETCHED__ = {
 ${inputsArray
-  .map(
-    (input) => `  '${input}': fetch('${basePrefix}${input || "__DEFAULT__"}')`,
-  )
+  .map((input) => `  '${input}': fetch('${basePrefix}${encodeInput(input)}')`)
   .join(",\n")}
 };`;
   }

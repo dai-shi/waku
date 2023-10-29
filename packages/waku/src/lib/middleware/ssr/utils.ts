@@ -1,12 +1,40 @@
+import path from "node:path";
 import { Transform } from "node:stream";
 import type { Readable } from "node:stream";
 
 import RDServer from "react-dom/server";
-import RSDWClient from "react-server-dom-webpack/client.node.unbundled";
+import { createServer as viteCreateServer } from "vite";
+import type { ViteDevServer } from "vite";
+
+import { configFileConfig, resolveConfig } from "../../config.js";
+import { defineEntries } from "../../../server.js";
+import { nonjsResolvePlugin } from "../../vite-plugin/nonjs-resolve-plugin.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { renderToPipeableStream } = RDServer;
-const { createFromNodeStream } = RSDWClient;
+
+type Entries = { default: ReturnType<typeof defineEntries> };
+
+let lastViteServer:
+  | [vite: ViteDevServer, command: "dev" | "build" | "start"]
+  | undefined;
+
+const getViteServer = async (command: "dev" | "build" | "start") => {
+  if (lastViteServer) {
+    if (lastViteServer[1] === command) {
+      return lastViteServer[0];
+    }
+    console.warn("Restarting Vite server with different command");
+    await lastViteServer[0].close();
+  }
+  const viteServer = await viteCreateServer({
+    ...configFileConfig(),
+    plugins: [...(command === "dev" ? [nonjsResolvePlugin()] : [])],
+    appType: "custom",
+  });
+  lastViteServer = [viteServer, command];
+  return viteServer;
+};
 
 const interleaveHtmlSnippets = (
   preamble: string,
@@ -49,40 +77,27 @@ const interleaveHtmlSnippets = (
   });
 };
 
-export const renderHtmlToReadable = (
+export const renderHtml = async (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  command: "dev" | "build" | "start",
+  pathStr: string,
   htmlStr: string, // Hope stream works, but it'd be too tricky
-  rscStream: Readable,
-  splitHTML: (htmlStr: string) => readonly [string, string, string],
-  getFallback: (id: string) => string,
-): Readable => {
-  const moduleMap = new Proxy(
-    {},
-    {
-      get(_target, filePath: string) {
-        return new Proxy(
-          {},
-          {
-            get(_target, nameStr: string) {
-              const id = getFallback(filePath + "#" + nameStr);
-              const [specifier, name] = id.split("#") as [string, string];
-              return { specifier, name };
-            },
-          },
-        );
-      },
-    },
+): Promise<Readable | null> => {
+  const vite = await getViteServer(command);
+  const entriesFile = path.join(
+    config.root,
+    command === "start" ? config.framework.distDir : config.framework.srcDir,
+    config.framework.entriesJs,
   );
-  const data = createFromNodeStream(rscStream, { moduleMap });
-  return renderToPipeableStream(data, {
-    onError(err) {
-      if (
-        err instanceof Error &&
-        err.message.startsWith("Client-only component")
-      ) {
-        // ignore
-        return;
-      }
-      console.error(err);
-    },
-  }).pipe(interleaveHtmlSnippets(...splitHTML(htmlStr)));
+  const {
+    default: { renderPage },
+  } = await (vite.ssrLoadModule(entriesFile) as Promise<Entries>);
+  const page = (await renderPage?.(pathStr)) ?? null;
+  if (!page) {
+    return null;
+  }
+  const { splitHTML } = config.framework.ssr;
+  return renderToPipeableStream(page.element).pipe(
+    interleaveHtmlSnippets(...splitHTML(htmlStr)),
+  );
 };

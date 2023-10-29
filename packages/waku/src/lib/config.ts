@@ -29,13 +29,6 @@ const splitHTML = (htmlStr: string): readonly [string, string, string] => {
   return match.slice(1) as [string, string, string];
 };
 
-const getFallback = (id: string) => {
-  if (id.endsWith("#Waku_SSR_Capable_Link")) {
-    return "waku/server#ClientOnly";
-  }
-  return "waku/server#ClientFallback";
-};
-
 export const configFileConfig = () => {
   if (process.env.CONFIG_FILE) {
     return { configFile: path.resolve(process.env.CONFIG_FILE) };
@@ -63,7 +56,6 @@ export async function resolveConfig(command: "build" | "serve") {
     ssr: {
       rscServer: "/",
       splitHTML,
-      getFallback,
       ...origFramework?.ssr,
     },
   };

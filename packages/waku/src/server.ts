@@ -1,54 +1,30 @@
-import type { Readable } from "node:stream";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { createElement } from "react";
 import type { ReactNode } from "react";
 
 type Elements = Record<string, ReactNode>;
 
 export type RenderEntries = (input: string) => Promise<Elements | null>;
 
-export type RenderRequest = {
-  pathStr: string; // url path without rsc prefix
-  method: "GET" | "POST";
-  headers: Record<string, string | string[] | undefined>;
-  command: "dev" | "build" | "start";
-  stream: Readable;
-  context: unknown;
-  moduleIdCallback?: (id: string) => void;
-};
-
 export type GetBuildConfig = (
-  unstable_collectClientModules: (pathStr: string) => Promise<string[]>,
+  unstable_collectClientModules: (input: string) => Promise<string[]>,
 ) => Promise<{
   [pathStr: string]: {
     entries?: Iterable<readonly [input: string, skipPrefetch?: boolean]>;
     customCode?: string; // optional code to inject
     context?: unknown;
-    skipSsr?: boolean;
   };
 }>;
 
-export type GetSsrConfig = () => {
-  getInput: (pathStr: string) => Promise<string | null>;
-  filter: (elements: Elements) => ReactNode;
-};
+export type RenderPage = (pathStr: string) => Promise<{
+  element: ReactNode;
+} | null>;
 
 export function defineEntries(
   renderEntries: RenderEntries,
   getBuildConfig?: GetBuildConfig,
-  getSsrConfig?: GetSsrConfig,
+  renderPage?: RenderPage,
 ) {
-  return { renderEntries, getBuildConfig, getSsrConfig };
-}
-
-// For internal use only
-export function ClientFallback() {
-  return createElement("div", { className: "spinner" });
-}
-
-// For internal use only
-export function ClientOnly() {
-  throw new Error("Client-only component");
+  return { renderEntries, getBuildConfig, renderPage };
 }
 
 type Store = {

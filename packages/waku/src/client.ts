@@ -13,6 +13,7 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import RSDWClient from "react-server-dom-webpack/client";
+import { encodeInput } from "./lib/middleware/rsc/utils.js";
 
 const { createFromFetch, encodeReply } = RSDWClient;
 
@@ -48,10 +49,13 @@ export const fetchRSC = cache(
   ): Elements => {
     const options = {
       async callServer(actionId: string, args: unknown[]) {
-        const response = fetch(basePath + encodeURIComponent(actionId), {
-          method: "POST",
-          body: await encodeReply(args),
-        });
+        const response = fetch(
+          basePath + encodeInput(encodeURIComponent(actionId)),
+          {
+            method: "POST",
+            body: await encodeReply(args),
+          },
+        );
         const data = createFromFetch(checkStatus(response), options);
         startTransition(() => {
           // FIXME this causes rerenders even if data is empty
@@ -61,8 +65,7 @@ export const fetchRSC = cache(
       },
     };
     const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-    const response =
-      prefetched[input] || fetch(basePath + (input || "__DEFAULT__"));
+    const response = prefetched[input] || fetch(basePath + encodeInput(input));
     delete prefetched[input];
     const data = createFromFetch(checkStatus(response), options);
     return data;

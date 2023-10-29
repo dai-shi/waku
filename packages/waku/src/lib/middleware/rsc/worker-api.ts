@@ -2,7 +2,17 @@ import { PassThrough } from "node:stream";
 import type { Readable } from "node:stream";
 import { Worker } from "node:worker_threads";
 
-import type { RenderRequest, GetBuildConfig } from "../../../server.js";
+import type { GetBuildConfig } from "../../../server.js";
+
+export type RenderRequest = {
+  input: string;
+  method: "GET" | "POST";
+  headers: Record<string, string | string[] | undefined>;
+  command: "dev" | "build" | "start";
+  stream: Readable;
+  context: unknown;
+  moduleIdCallback?: (id: string) => void;
+};
 
 const worker = new Worker(new URL("worker-impl.js", import.meta.url), {
   execArgv: [
@@ -30,13 +40,7 @@ export type MessageReq =
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "end" }
   | { id: number; type: "err"; err: unknown }
-  | { id: number; type: "getBuildConfig" }
-  | {
-      id: number;
-      type: "getSsrInput";
-      pathStr: string;
-      command: "dev" | "build" | "start";
-    };
+  | { id: number; type: "getBuildConfig" };
 
 export type MessageRes =
   | { type: "full-reload" }
@@ -50,11 +54,6 @@ export type MessageRes =
       id: number;
       type: "buildConfig";
       output: Awaited<ReturnType<GetBuildConfig>>;
-    }
-  | {
-      id: number;
-      type: "ssrInput";
-      input: string | null;
     };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
@@ -160,7 +159,7 @@ export function renderRSC<Context>(
       id,
       type: "render",
       moduleIdCallback: !!rr.moduleIdCallback,
-      pathStr: rr.pathStr,
+      input: rr.input,
       method: rr.method,
       headers: rr.headers,
       command: rr.command,
@@ -184,26 +183,6 @@ export function getBuildConfigRSC(): ReturnType<GetBuildConfig> {
       }
     });
     const mesg: MessageReq = { id, type: "getBuildConfig" };
-    worker.postMessage(mesg);
-  });
-}
-
-export function getSsrInputRSC(
-  pathStr: string,
-  command: "dev" | "build" | "start",
-): Promise<string | null> {
-  return new Promise((resolve, reject) => {
-    const id = nextId++;
-    messageCallbacks.set(id, (mesg) => {
-      if (mesg.type === "ssrInput") {
-        resolve(mesg.input);
-        messageCallbacks.delete(id);
-      } else if (mesg.type === "err") {
-        reject(mesg.err);
-        messageCallbacks.delete(id);
-      }
-    });
-    const mesg: MessageReq = { id, type: "getSsrInput", pathStr, command };
     worker.postMessage(mesg);
   });
 }

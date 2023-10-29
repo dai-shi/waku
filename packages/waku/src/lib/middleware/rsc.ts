@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { resolveConfig } from "../config.js";
-import { hasStatusCode } from "./rsc/utils.js";
+import { decodeInput, hasStatusCode } from "./rsc/utils.js";
 import { renderRSC } from "./rsc/worker-api.js";
 
 type Middleware = (
@@ -48,7 +48,7 @@ export function rsc<Context>(options: {
       try {
         const context = options.unstable_prehook?.(req, res);
         const [readable, nextCtx] = await renderRSC({
-          pathStr: url.slice(basePath.length),
+          input: decodeInput(url.slice(basePath.length)),
           method,
           headers,
           command: options.command,

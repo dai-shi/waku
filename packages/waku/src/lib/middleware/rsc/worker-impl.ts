@@ -11,12 +11,11 @@ import busboy from "busboy";
 
 import { configFileConfig, resolveConfig } from "../../config.js";
 import { hasStatusCode, transformRsfId, deepFreeze } from "./utils.js";
-import type { MessageReq, MessageRes } from "./worker-api.js";
+import type { MessageReq, MessageRes, RenderRequest } from "./worker-api.js";
 import {
   defineEntries,
   runWithAsyncLocalStorage as runWithAsyncLocalStorageOrig,
 } from "../../../server.js";
-import type { RenderRequest } from "../../../server.js";
 import { rscTransformPlugin } from "../../vite-plugin/rsc-transform-plugin.js";
 import { rscReloadPlugin } from "../../vite-plugin/rsc-reload-plugin.js";
 import { rscDelegatePlugin } from "../../vite-plugin/rsc-delegate-plugin.js";
@@ -30,13 +29,13 @@ type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 const streamMap = new Map<number, Writable>();
 
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
-  const { id, pathStr, method, headers, command, context, moduleIdCallback } =
+  const { id, input, method, headers, command, context, moduleIdCallback } =
     mesg;
   try {
     const stream = new PassThrough();
     streamMap.set(id, stream);
     const rr: RenderRequest = {
-      pathStr,
+      input,
       method,
       headers,
       command,
@@ -92,20 +91,6 @@ const handleGetBuildConfig = async (
   try {
     const output = await getBuildConfigRSC();
     const mesg: MessageRes = { id, type: "buildConfig", output };
-    parentPort!.postMessage(mesg);
-  } catch (err) {
-    const mesg: MessageRes = { id, type: "err", err };
-    parentPort!.postMessage(mesg);
-  }
-};
-
-const handleGetSsrInput = async (
-  mesg: MessageReq & { type: "getSsrInput" },
-) => {
-  const { id, pathStr, command } = mesg;
-  try {
-    const input = await getSsrInputRSC(pathStr, command);
-    const mesg: MessageRes = { id, type: "ssrInput", input };
     parentPort!.postMessage(mesg);
   } catch (err) {
     const mesg: MessageRes = { id, type: "err", err };
@@ -175,8 +160,6 @@ parentPort!.on("message", (mesg: MessageReq) => {
     handleRender(mesg);
   } else if (mesg.type === "getBuildConfig") {
     handleGetBuildConfig(mesg);
-  } else if (mesg.type === "getSsrInput") {
-    handleGetSsrInput(mesg);
   } else if (mesg.type === "buf") {
     const stream = streamMap.get(mesg.id)!;
     stream.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
@@ -239,15 +222,8 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
 
   const entriesFile = await getEntriesFile(config, rr.command);
   const {
-    default: { renderEntries, getSsrConfig },
+    default: { renderEntries },
   } = await (loadServerFile(entriesFile, rr.command) as Promise<Entries>);
-  const ssrConfig = getSsrConfig?.();
-  const ssrFilter: NonNullable<typeof ssrConfig>["filter"] = (elements) => {
-    if (!ssrConfig) {
-      throw new Error("getSsrConfig is required");
-    }
-    return ssrConfig.filter(elements);
-  };
 
   const render = async (input: string) => {
     const elements = await renderEntries(input);
@@ -275,7 +251,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
   );
 
   if (rr.method === "POST") {
-    const actionId = decodeURIComponent(rr.pathStr);
+    const actionId = decodeURIComponent(rr.input);
     let args: unknown[] = [];
     const contentType = rr.headers["content-type"];
     if (
@@ -319,8 +295,6 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     );
   }
 
-  const input = rr.pathStr === "__DEFAULT__" ? "" : rr.pathStr;
-  const ssr = rr.headers["x-waku-ssr-mode"] === "rsc";
   return runWithAsyncLocalStorage(
     {
       getContext: () => rr.context,
@@ -329,11 +303,10 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
       },
     },
     async () => {
-      const elements = await render(input);
-      return renderToPipeableStream(
-        ssr ? ssrFilter(elements) : elements,
-        bundlerConfig,
-      ).pipe(transformRsfId(config.root));
+      const elements = await render(rr.input);
+      return renderToPipeableStream(elements, bundlerConfig).pipe(
+        transformRsfId(config.root),
+      );
     },
   );
 }
@@ -359,7 +332,7 @@ async function getBuildConfigRSC() {
     const stream = new PassThrough();
     stream.end();
     const pipeable = await renderRSC({
-      pathStr: input || "__DEFAULT__",
+      input,
       method: "GET",
       headers: {},
       command: "build",
@@ -381,22 +354,5 @@ async function getBuildConfigRSC() {
   };
 
   const output = await getBuildConfig(unstable_collectClientModules);
-  return output;
-}
-
-async function getSsrInputRSC(
-  pathStr: string,
-  command: "dev" | "build" | "start",
-) {
-  const config = await resolveConfig(command === "build" ? "build" : "serve");
-
-  const entriesFile = await getEntriesFile(config, command);
-  const {
-    default: { getSsrConfig },
-  } = await (loadServerFile(entriesFile, command) as Promise<Entries>);
-  if (!getSsrConfig) {
-    return null;
-  }
-  const output = await getSsrConfig().getInput(pathStr);
   return output;
 }

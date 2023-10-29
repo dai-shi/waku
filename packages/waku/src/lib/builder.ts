@@ -8,16 +8,15 @@ import viteReact from "@vitejs/plugin-react";
 import type { RollupLog, LoggingFunction } from "rollup";
 
 import { configFileConfig, resolveConfig } from "./config.js";
-import { generatePrefetchCode } from "./middleware/rsc/utils.js";
+import { encodeInput, generatePrefetchCode } from "./middleware/rsc/utils.js";
 import {
   shutdown,
   renderRSC,
   getBuildConfigRSC,
-  getSsrInputRSC,
 } from "./middleware/rsc/worker-api.js";
 import { rscIndexPlugin } from "./vite-plugin/rsc-index-plugin.js";
 import { rscAnalyzePlugin } from "./vite-plugin/rsc-analyze-plugin.js";
-import { renderHtmlToReadable } from "./middleware/ssr/utils.js";
+import { renderHtml } from "./middleware/ssr/utils.js";
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
@@ -248,7 +247,7 @@ const emitRscFiles = async (
           config.framework.distDir,
           config.framework.publicDir,
           // HACK to support windows filesystem
-          (config.framework.rscPrefix + (input || "__DEFAULT__")).replaceAll(
+          (config.framework.rscPrefix + encodeInput(input)).replaceAll(
             "/",
             path.sep,
           ),
@@ -259,7 +258,7 @@ const emitRscFiles = async (
           const stream = new PassThrough();
           stream.end();
           const [pipeable] = await renderRSC({
-            pathStr: input || "__DEFAULT__",
+            input,
             method: "GET",
             headers: {},
             command: "build",
@@ -280,32 +279,6 @@ const emitRscFiles = async (
   return { buildConfig, getClientModules, rscFiles: Array.from(rscFileSet) };
 };
 
-const renderHtml = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
-  pathStr: string,
-  htmlStr: string,
-  context: unknown,
-) => {
-  const input = await getSsrInputRSC(pathStr, "build");
-  if (input === null) {
-    return null;
-  }
-  const { splitHTML, getFallback } = config.framework.ssr;
-  const stream = new PassThrough();
-  stream.end();
-  const [pipeable] = await renderRSC({
-    pathStr: input || "__DEFAULT__",
-    method: "GET",
-    headers: {
-      "x-waku-ssr-mode": "rsc",
-    },
-    command: "build",
-    stream,
-    context,
-  });
-  return renderHtmlToReadable(htmlStr, pipeable, splitHTML, getFallback);
-};
-
 const emitHtmlFiles = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   buildConfig: Awaited<ReturnType<typeof getBuildConfigRSC>>,
@@ -323,7 +296,7 @@ const emitHtmlFiles = async (
   });
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
-      async ([pathStr, { entries, customCode, context, skipSsr }]) => {
+      async ([pathStr, { entries, customCode }]) => {
         const destFile = path.join(
           config.root,
           config.framework.distDir,
@@ -331,12 +304,12 @@ const emitHtmlFiles = async (
           pathStr,
           pathStr.endsWith("/") ? "index.html" : "",
         );
-        let data = "";
+        let htmlStr: string;
         if (fs.existsSync(destFile)) {
-          data = fs.readFileSync(destFile, { encoding: "utf8" });
+          htmlStr = fs.readFileSync(destFile, { encoding: "utf8" });
         } else {
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          data = publicIndexHtml;
+          htmlStr = publicIndexHtml;
         }
         const inputsForPrefetch = new Set<string>();
         const moduleIdsForPrefetch = new Set<string>();
@@ -356,10 +329,17 @@ const emitHtmlFiles = async (
           ) + (customCode || "");
         if (code) {
           // HACK is this too naive to inject script code?
-          data = data.replace(/<\/head>/, `<script>${code}</script></head>`);
+          htmlStr = htmlStr.replace(
+            /<\/head>/,
+            `<script>${code}</script></head>`,
+          );
         }
-        const htmlReadable =
-          !skipSsr && (await renderHtml(config, pathStr, data, context));
+        const htmlReadable = await renderHtml(
+          config,
+          "build",
+          pathStr,
+          htmlStr,
+        );
         if (htmlReadable) {
           await new Promise<void>((resolve, reject) => {
             const stream = fs.createWriteStream(destFile);
@@ -368,7 +348,7 @@ const emitHtmlFiles = async (
             htmlReadable.pipe(stream);
           });
         } else {
-          fs.writeFileSync(destFile, data, { encoding: "utf8" });
+          fs.writeFileSync(destFile, htmlStr, { encoding: "utf8" });
         }
         return destFile;
       },

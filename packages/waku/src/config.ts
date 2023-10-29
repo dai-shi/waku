@@ -52,11 +52,6 @@ export interface FrameworkConfig {
      * <!--placeholder2-->...<!--/placeholder2-->.
      */
     splitHTML?: (htmlStr: string) => readonly [string, string, string];
-    /**
-     * A function to return fallback component id for client components.
-     * The default function is to use empty components with some exceptions.
-     */
-    getFallback?: (id: string) => string;
   };
 }
 
