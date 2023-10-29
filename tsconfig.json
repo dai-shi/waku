@@ -68,6 +68,9 @@
     {
       "path": "./examples/11_form"
     },
+    {
+      "path": "./examples/12_path_alias"
+    },
     // E2E
     {
       "path": "./tsconfig.e2e.json"
