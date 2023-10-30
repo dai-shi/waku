@@ -3,7 +3,10 @@ import type { ReactNode } from "react";
 
 type Elements = Record<string, ReactNode>;
 
-export type RenderEntries = (input: string) => Promise<Elements | null>;
+export type RenderEntries = (
+  input: string,
+  ssr: boolean, // if true, return Promise<{ _ssr: ReactNode } | null>
+) => Promise<Elements | null>;
 
 export type GetBuildConfig = (
   unstable_collectClientModules: (input: string) => Promise<string[]>,
@@ -15,16 +18,11 @@ export type GetBuildConfig = (
   };
 }>;
 
-export type RenderPage = (pathStr: string) => Promise<{
-  element: ReactNode;
-} | null>;
-
 export function defineEntries(
   renderEntries: RenderEntries,
   getBuildConfig?: GetBuildConfig,
-  renderPage?: RenderPage,
 ) {
-  return { renderEntries, getBuildConfig, renderPage };
+  return { renderEntries, getBuildConfig };
 }
 
 export function ClientOnly() {

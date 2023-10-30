@@ -2,7 +2,7 @@ import { createElement } from "react";
 import type { FunctionComponent, ReactNode } from "react";
 
 import { defineEntries } from "../server.js";
-import type { RenderEntries, GetBuildConfig, RenderPage } from "../server.js";
+import type { RenderEntries, GetBuildConfig } from "../server.js";
 import { Children } from "../client.js";
 import { getComponentIds, getInputString, parseInputString } from "./common.js";
 import type { RouteProps } from "./common.js";
@@ -22,7 +22,37 @@ export function defineRouter(
   ) => Promise<FunctionComponent | { default: FunctionComponent } | null>,
   getPathsForBuild: () => Promise<string[]>,
 ): ReturnType<typeof defineEntries> {
-  const renderEntries: RenderEntries = async (input) => {
+  const renderSsrEntries = async (pathStr: string) => {
+    const url = new URL(pathStr, "http://localhost");
+    const componentIds = getComponentIds(url.pathname);
+    const leafComponentId = componentIds[componentIds.length - 1];
+    if (!leafComponentId || (await getComponent(leafComponentId)) === null) {
+      return null;
+    }
+    const components = await Promise.all(
+      componentIds.map(async (id) => {
+        const mod = await getComponent(id);
+        const component =
+          typeof mod === "function" ? mod : mod?.default || Default;
+        return component;
+      }),
+    );
+    const element = components.reduceRight(
+      (acc: ReactNode, component) =>
+        createElement(
+          component as FunctionComponent<RouteProps>,
+          { path: url.pathname, search: url.search },
+          acc,
+        ),
+      null,
+    );
+    return { _ssr: element };
+  };
+
+  const renderEntries: RenderEntries = async (input, ssr) => {
+    if (ssr) {
+      return renderSsrEntries(input);
+    }
     const { pathname, search, skip } = parseInputString(input);
     const componentIds = getComponentIds(pathname);
     const leafComponentId = componentIds[componentIds.length - 1];
@@ -78,32 +108,5 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
     );
   };
 
-  const renderPage: RenderPage = async (pathStr) => {
-    const url = new URL(pathStr, "http://localhost");
-    const componentIds = getComponentIds(url.pathname);
-    const leafComponentId = componentIds[componentIds.length - 1];
-    if (!leafComponentId || (await getComponent(leafComponentId)) === null) {
-      return null;
-    }
-    const components = await Promise.all(
-      componentIds.map(async (id) => {
-        const mod = await getComponent(id);
-        const component =
-          typeof mod === "function" ? mod : mod?.default || Default;
-        return component;
-      }),
-    );
-    const element = components.reduceRight(
-      (acc: ReactNode, component) =>
-        createElement(
-          component as FunctionComponent<RouteProps>,
-          { path: url.pathname, search: url.search },
-          acc,
-        ),
-      null,
-    );
-    return { element };
-  };
-
-  return { renderEntries, getBuildConfig, renderPage };
+  return { renderEntries, getBuildConfig };
 }

@@ -1,51 +1,17 @@
 import path from "node:path";
 import { Transform } from "node:stream";
 import type { Readable } from "node:stream";
-import { Server } from "node:http";
 
 import RDServer from "react-dom/server";
-import { createServer as viteCreateServer } from "vite";
-import type { ViteDevServer } from "vite";
+import RSDWClient from "react-server-dom-webpack/client.node.unbundled";
 
-import { configFileConfig, resolveConfig } from "../../config.js";
-import { defineEntries } from "../../../server.js";
-import { nonjsResolvePlugin } from "../../vite-plugin/nonjs-resolve-plugin.js";
+import { resolveConfig } from "../../config.js";
+// TODO we should probably move out of middleware/rsc
+import { renderRSC } from "../rsc/worker-api.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { renderToPipeableStream } = RDServer;
-
-type Entries = { default: ReturnType<typeof defineEntries> };
-
-const dummyServer = new Server();
-
-let lastViteServer:
-  | [vite: ViteDevServer, command: "dev" | "build" | "start"]
-  | undefined;
-
-const getViteServer = async (command: "dev" | "build" | "start") => {
-  if (lastViteServer) {
-    if (lastViteServer[1] === command) {
-      return lastViteServer[0];
-    }
-    console.warn("Restarting Vite server with different command");
-    await lastViteServer[0].close();
-  }
-  const viteServer = await viteCreateServer({
-    ...configFileConfig(),
-    plugins: [...(command === "dev" ? [nonjsResolvePlugin()] : [])],
-    appType: "custom",
-    server: { middlewareMode: true, hmr: { server: dummyServer } },
-  });
-  lastViteServer = [viteServer, command];
-  return viteServer;
-};
-
-export const shutdown = async () => {
-  if (lastViteServer) {
-    await lastViteServer[0].close();
-    lastViteServer = undefined;
-  }
-};
+const { createFromNodeStream } = RSDWClient;
 
 const interleaveHtmlSnippets = (
   preamble: string,
@@ -93,22 +59,40 @@ export const renderHtml = async (
   command: "dev" | "build" | "start",
   pathStr: string,
   htmlStr: string, // Hope stream works, but it'd be too tricky
-): Promise<Readable | null> => {
-  const vite = await getViteServer(command);
-  const entriesFile = path.join(
-    config.root,
-    command === "dev" ? config.framework.srcDir : config.framework.distDir,
-    config.framework.entriesJs,
-  );
-  const {
-    default: { renderPage },
-  } = await (vite.ssrLoadModule(entriesFile) as Promise<Entries>);
-  const page = (await renderPage?.(pathStr)) ?? null;
-  if (!page) {
-    return null;
-  }
+): Promise<Readable> => {
+  const [pipeable] = await renderRSC({
+    input: pathStr,
+    method: "GET",
+    headers: {},
+    command,
+    context: null,
+    ssr: true,
+  });
   const { splitHTML } = config.framework.ssr;
-  return renderToPipeableStream(page.element, {
+  const moduleMap = new Proxy(
+    {},
+    {
+      get(_target, filePath: string) {
+        return new Proxy(
+          {},
+          {
+            get(_target, name: string) {
+              const specifier = path.join(
+                config.root,
+                command === "dev"
+                  ? config.framework.srcDir
+                  : config.framework.distDir,
+                filePath,
+              );
+              return { specifier, name };
+            },
+          },
+        );
+      },
+    },
+  );
+  const data = await createFromNodeStream(pipeable, { moduleMap });
+  return renderToPipeableStream(data._ssr, {
     onError(err) {
       if (
         err instanceof Error &&

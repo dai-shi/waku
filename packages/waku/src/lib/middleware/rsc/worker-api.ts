@@ -9,8 +9,9 @@ export type RenderRequest = {
   method: "GET" | "POST";
   headers: Record<string, string | string[] | undefined>;
   command: "dev" | "build" | "start";
-  stream: Readable;
   context: unknown;
+  ssr: boolean;
+  stream?: Readable;
   moduleIdCallback?: (id: string) => void;
 };
 
@@ -99,20 +100,22 @@ export function renderRSC<Context>(
 ): Promise<readonly [Readable, Context]> {
   const id = nextId++;
   const pipe = async () => {
-    rr.stream.on("error", (err: unknown) => {
-      const mesg: MessageReq = { id, type: "err", err };
-      worker.postMessage(mesg);
-    });
-    for await (const chunk of rr.stream) {
-      const buffer: Buffer = chunk;
-      const mesg: MessageReq = {
-        id,
-        type: "buf",
-        buf: buffer.buffer,
-        offset: buffer.byteOffset,
-        len: buffer.length,
-      };
-      worker.postMessage(mesg);
+    if (rr.stream) {
+      rr.stream.on("error", (err: unknown) => {
+        const mesg: MessageReq = { id, type: "err", err };
+        worker.postMessage(mesg);
+      });
+      for await (const chunk of rr.stream) {
+        const buffer: Buffer = chunk;
+        const mesg: MessageReq = {
+          id,
+          type: "buf",
+          buf: buffer.buffer,
+          offset: buffer.byteOffset,
+          len: buffer.length,
+        };
+        worker.postMessage(mesg);
+      }
     }
     const mesg: MessageReq = { id, type: "end" };
     worker.postMessage(mesg);
@@ -164,6 +167,7 @@ export function renderRSC<Context>(
       headers: rr.headers,
       command: rr.command,
       context: rr.context,
+      ssr: rr.ssr,
     };
     worker.postMessage(mesg);
     pipe();

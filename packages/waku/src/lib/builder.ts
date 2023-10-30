@@ -1,6 +1,5 @@
 import path from "node:path";
 import fs from "node:fs";
-import { PassThrough } from "node:stream";
 import { createHash } from "node:crypto";
 
 import { build as viteBuild } from "vite";
@@ -16,7 +15,7 @@ import {
 } from "./middleware/rsc/worker-api.js";
 import { rscIndexPlugin } from "./vite-plugin/rsc-index-plugin.js";
 import { rscAnalyzePlugin } from "./vite-plugin/rsc-analyze-plugin.js";
-import { renderHtml, shutdown as shutdownSsr } from "./middleware/ssr/utils.js";
+import { renderHtml } from "./middleware/ssr/utils.js";
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
@@ -255,15 +254,13 @@ const emitRscFiles = async (
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          const stream = new PassThrough();
-          stream.end();
           const [pipeable] = await renderRSC({
             input,
             method: "GET",
             headers: {},
             command: "build",
-            stream,
             context,
+            ssr: false,
             moduleIdCallback: (id) => addClientModule(input, id),
           });
           await new Promise<void>((resolve, reject) => {
@@ -506,6 +503,5 @@ export async function build() {
   // So far, only static sites are supported.
   emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
 
-  await shutdownSsr();
   await shutdownRsc();
 }

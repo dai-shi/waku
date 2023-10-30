@@ -30,8 +30,16 @@ type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 const streamMap = new Map<number, Writable>();
 
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
-  const { id, input, method, headers, command, context, moduleIdCallback } =
-    mesg;
+  const {
+    id,
+    input,
+    method,
+    headers,
+    command,
+    context,
+    ssr,
+    moduleIdCallback,
+  } = mesg;
   try {
     const stream = new PassThrough();
     streamMap.set(id, stream);
@@ -42,6 +50,7 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
       command,
       stream,
       context,
+      ssr,
     };
     if (moduleIdCallback) {
       rr.moduleIdCallback = (moduleId: string) => {
@@ -250,14 +259,22 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
   } = await (loadServerFile(entriesFile, rr.command) as Promise<Entries>);
 
   const render = async (input: string) => {
-    const elements = await renderEntries(input);
+    const elements = await renderEntries(input, rr.ssr);
     if (elements === null) {
       const err = new Error("No function component found");
       (err as any).statusCode = 404; // HACK our convention for NotFound
       throw err;
     }
-    if (Object.keys(elements).some((key) => key.startsWith("_"))) {
-      throw new Error('"_" prefix is reserved');
+    const keys = Object.keys(elements);
+    if (rr.ssr) {
+      if (keys.length !== 1 || keys[0] !== "_ssr") {
+        console.log('keys=',keys)
+        throw new Error('Must return one element with "_ssr"');
+      }
+    } else {
+      if (Object.keys(elements).some((key) => key.startsWith("_"))) {
+        throw new Error('"_" prefix is reserved');
+      }
     }
     return elements;
   };
@@ -284,11 +301,11 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     ) {
       const bb = busboy({ headers: rr.headers });
       const reply = decodeReplyFromBusboy(bb);
-      rr.stream.pipe(bb);
+      rr.stream?.pipe(bb);
       args = await reply;
     } else {
       let body = "";
-      for await (const chunk of rr.stream) {
+      for await (const chunk of rr.stream || []) {
         body += chunk;
       }
       if (body) {
@@ -353,15 +370,13 @@ async function getBuildConfigRSC() {
     input: string,
   ): Promise<string[]> => {
     const idSet = new Set<string>();
-    const stream = new PassThrough();
-    stream.end();
     const pipeable = await renderRSC({
       input,
       method: "GET",
       headers: {},
       command: "build",
-      stream,
       context: null,
+      ssr: false,
       moduleIdCallback: (id) => idSet.add(id),
     });
     await new Promise<void>((resolve, reject) => {
