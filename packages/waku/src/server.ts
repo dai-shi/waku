@@ -27,6 +27,10 @@ export function defineEntries(
   return { renderEntries, getBuildConfig, renderPage };
 }
 
+export function ClientOnly() {
+  throw new Error("Client-only component");
+}
+
 type Store = {
   getContext: () => unknown;
   rerender: (input: string) => void;

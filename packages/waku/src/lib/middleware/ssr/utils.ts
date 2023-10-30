@@ -108,7 +108,16 @@ export const renderHtml = async (
     return null;
   }
   const { splitHTML } = config.framework.ssr;
-  return renderToPipeableStream(page.element).pipe(
-    interleaveHtmlSnippets(...splitHTML(htmlStr)),
-  );
+  return renderToPipeableStream(page.element, {
+    onError(err) {
+      if (
+        err instanceof Error &&
+        err.message.startsWith("Client-only component")
+      ) {
+        // ignore
+        return;
+      }
+      console.error(err);
+    },
+  }).pipe(interleaveHtmlSnippets(...splitHTML(htmlStr)));
 };

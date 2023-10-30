@@ -24,16 +24,15 @@ export default defineEntries(
       },
     };
   },
-  // getSsrConfig
-  () => ({
-    getInput: async (pathStr) => {
-      switch (pathStr) {
-        case "/":
-          return "";
-        default:
-          return null;
-      }
-    },
-    filter: (elements) => elements.App,
-  }),
+  // renderPage
+  async (pathStr) => {
+    switch (pathStr) {
+      case "/":
+        return {
+          element: <App name="Waku" ssr />,
+        };
+      default:
+        return null;
+    }
+  },
 );

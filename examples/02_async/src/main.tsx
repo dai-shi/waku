@@ -10,15 +10,4 @@ const rootElement = (
   </StrictMode>
 );
 
-hydrateRoot(document.getElementById("root")!, rootElement, {
-  onRecoverableError(err) {
-    if (
-      err instanceof Error &&
-      err.message.startsWith("Client-only component")
-    ) {
-      // ignore
-      return;
-    }
-    console.error(err);
-  },
-});
+hydrateRoot(document.getElementById("root")!, rootElement);
