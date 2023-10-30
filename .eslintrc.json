@@ -36,6 +36,12 @@
       "rules": {
         "import/no-named-as-default-member": "off"
       }
+    },
+    {
+      "files": ["examples/12_path-alias/**/*.tsx"],
+      "rules": {
+        "import/no-unresolved": "off"
+      }
     }
   ]
 }
