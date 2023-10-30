@@ -389,7 +389,7 @@ importers:
         specifier: ^5.2.2
         version: 5.2.2
 
-  examples/12_path_alias:
+  examples/12_path-alias:
     dependencies:
       express:
         specifier: ^4.18.2
