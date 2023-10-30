@@ -6,6 +6,16 @@ import { defineEntries } from "waku/server";
 const App = lazy(() => import("./components/App.js"));
 const InnerApp = lazy(() => import("./components/InnerApp.js"));
 
+const AppSkeleton = lazy(async () => ({
+  default: (await import("./components/App.js")).AppSkeleton,
+}));
+const InnerAppSkeleton = lazy(async () => ({
+  default: (await import("./components/InnerApp.js")).InnerAppSkeleton,
+}));
+const CounterSkeleton = lazy(async () => ({
+  default: (await import("./components/Counter.js")).CounterSkeleton,
+}));
+
 export default defineEntries(
   // renderEntries
   async (input) => {
@@ -34,16 +44,23 @@ export default defineEntries(
       },
     };
   },
-  // getSsrConfig
-  () => ({
-    getInput: async (pathStr) => {
-      switch (pathStr) {
-        case "/":
-          return "App=Waku";
-        default:
-          return null;
-      }
-    },
-    filter: (elements) => elements.App,
-  }),
+  // renderPage
+  async (pathStr) => {
+    switch (pathStr) {
+      case "/":
+        return {
+          element: (
+            <AppSkeleton name="Waku">
+              <CounterSkeleton>
+                <InnerAppSkeleton count={0}>
+                  <CounterSkeleton />
+                </InnerAppSkeleton>
+              </CounterSkeleton>
+            </AppSkeleton>
+          ),
+        };
+      default:
+        return null;
+    }
+  },
 );
