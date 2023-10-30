@@ -1,11 +1,8 @@
 import path from "node:path";
 import fsPromises from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { createServer as viteCreateServer } from "vite";
-import viteReact from "@vitejs/plugin-react";
 
-import { rscIndexPlugin } from "../vite-plugin/rsc-index-plugin.js";
-import { configFileConfig, resolveConfig } from "../config.js";
+import { resolveConfig } from "../config.js";
 import { renderHtml } from "./ssr/utils.js";
 
 type Middleware = (
@@ -33,15 +30,17 @@ export function ssr(options: {
       encoding: "utf8",
     });
   });
-  let getHtmlStrPromise: Promise<(pathStr: string) => Promise<string>>;
+  let getHtmlStrPromise: Promise<
+    (req: IncomingMessage & { url: string }) => Promise<string>
+  >;
   if (options.command === "start") {
-    getHtmlStrPromise = configPromise.then((config) => async (pathStr) => {
+    getHtmlStrPromise = configPromise.then((config) => async (req) => {
       const destFile = path.join(
         config.root,
         config.framework.distDir,
         config.framework.publicDir,
-        pathStr,
-        pathStr.endsWith("/") ? "index.html" : "",
+        req.url,
+        req.url.endsWith("/") ? "index.html" : "",
       );
       let htmlStr: string;
       try {
@@ -52,27 +51,29 @@ export function ssr(options: {
       return htmlStr;
     });
   } else {
-    const vitePromise = configPromise.then((config) =>
-      viteCreateServer({
-        ...configFileConfig(),
-        root: path.join(config.root, config.framework.srcDir),
-        plugins: [viteReact(), rscIndexPlugin([])],
-        appType: "custom",
-        server: { middlewareMode: true },
-      }),
-    );
-    getHtmlStrPromise = vitePromise.then((vite) => async (pathStr) => {
-      const result = await vite.transformIndexHtml(
-        pathStr,
-        await publicIndexHtmlPromise,
+    getHtmlStrPromise = configPromise.then((config) => async (req) => {
+      const rscServer = new URL(
+        config.framework.ssr.rscServer,
+        "http://" + req.headers.host,
       );
-      return result;
+      const htmlRes = await fetch(rscServer + req.url.slice(1), {
+        headers: { "x-waku-ssr-mode": "html" },
+      });
+      if (!htmlRes.ok) {
+        const err = new Error("Failed to fetch html from RSC server");
+        (err as any).statusCode = htmlRes.status;
+        throw err;
+      }
+      if (!htmlRes.body) {
+        throw new Error("No body");
+      }
+      return htmlRes.text();
     });
   }
   return async (req, res, next) => {
     const config = await configPromise;
     const getHtmlStr = await getHtmlStrPromise;
-    if (req.url) {
+    if (req.url && !req.headers["x-waku-ssr-mode"]) {
       const handleError = (err: unknown) => {
         if (hasStatusCode(err)) {
           res.statusCode = err.statusCode;
@@ -87,7 +88,7 @@ export function ssr(options: {
         }
       };
       try {
-        const htmlStr = await getHtmlStr(req.url);
+        const htmlStr = await getHtmlStr(req as typeof req & { url: string });
         const readable = await renderHtml(
           config,
           options.command,

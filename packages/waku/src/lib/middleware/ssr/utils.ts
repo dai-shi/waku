@@ -1,6 +1,7 @@
 import path from "node:path";
 import { Transform } from "node:stream";
 import type { Readable } from "node:stream";
+import { Server } from "node:http";
 
 import RDServer from "react-dom/server";
 import { createServer as viteCreateServer } from "vite";
@@ -14,6 +15,8 @@ import { nonjsResolvePlugin } from "../../vite-plugin/nonjs-resolve-plugin.js";
 const { renderToPipeableStream } = RDServer;
 
 type Entries = { default: ReturnType<typeof defineEntries> };
+
+const dummyServer = new Server();
 
 let lastViteServer:
   | [vite: ViteDevServer, command: "dev" | "build" | "start"]
@@ -31,7 +34,7 @@ const getViteServer = async (command: "dev" | "build" | "start") => {
     ...configFileConfig(),
     plugins: [...(command === "dev" ? [nonjsResolvePlugin()] : [])],
     appType: "custom",
-    server: { middlewareMode: true },
+    server: { middlewareMode: true, hmr: { server: dummyServer } },
   });
   lastViteServer = [viteServer, command];
   return viteServer;
