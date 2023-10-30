@@ -1,5 +1,4 @@
 import { lazy } from "react";
-
 import { defineEntries } from "waku/server";
 import { Children } from "waku/client";
 
