@@ -72,7 +72,9 @@ export const fetchRSC = cache(
   },
 );
 
-const RefetchContext = createContext<((input: string) => void) | null>(null);
+const RefetchContext = createContext<(input: string) => void>(() => {
+  throw new Error("Missing Root component");
+});
 const ElementsContext = createContext<Elements | null>(null);
 
 // HACK there should be a better way...
@@ -116,13 +118,7 @@ export const Root = ({
   );
 };
 
-export const useRefetch = () => {
-  const refetch = use(RefetchContext);
-  if (!refetch) {
-    throw new Error("Missing Root component");
-  }
-  return refetch;
-};
+export const useRefetch = () => use(RefetchContext);
 
 const ChildrenContext = createContext<ReactNode>(undefined);
 const ChildrenContextProvider = memo(ChildrenContext.Provider);

@@ -5,15 +5,8 @@ import { defineEntries } from "waku/server";
 
 const App = lazy(() => import("./components/App.js"));
 const InnerApp = lazy(() => import("./components/InnerApp.js"));
-
-const AppSkeleton = lazy(async () => ({
-  default: (await import("./components/App.js")).AppSkeleton,
-}));
-const InnerAppSkeleton = lazy(async () => ({
-  default: (await import("./components/InnerApp.js")).InnerAppSkeleton,
-}));
-const CounterSkeleton = lazy(async () => ({
-  default: (await import("./components/Counter.js")).CounterSkeleton,
+const Counter = lazy(async () => ({
+  default: (await import("./components/Counter.js")).Counter,
 }));
 
 export default defineEntries(
@@ -50,13 +43,13 @@ export default defineEntries(
       case "/":
         return {
           element: (
-            <AppSkeleton name="Waku">
-              <CounterSkeleton>
-                <InnerAppSkeleton count={0}>
-                  <CounterSkeleton />
-                </InnerAppSkeleton>
-              </CounterSkeleton>
-            </AppSkeleton>
+            <App name="Waku">
+              <Counter>
+                <InnerApp count={0}>
+                  <Counter />
+                </InnerApp>
+              </Counter>
+            </App>
           ),
         };
       default:

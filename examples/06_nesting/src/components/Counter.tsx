@@ -4,7 +4,13 @@ import { useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import { Slot, useRefetch } from "waku/client";
 
-export const Counter = ({ enableInnerApp = false }) => {
+export const Counter = ({
+  enableInnerApp,
+  children,
+}: {
+  enableInnerApp?: boolean;
+  children?: ReactNode;
+}) => {
   const [count, setCount] = useState(0);
   const [isPending, startTransition] = useTransition();
   const refetch = useRefetch();
@@ -27,19 +33,7 @@ export const Counter = ({ enableInnerApp = false }) => {
       <button onClick={handleClick}>Increment</button>{" "}
       {isPending && "Pending..."}
       <h3>This is a client component.</h3>
-      {enableInnerApp && <Slot id="InnerApp" />}
-    </div>
-  );
-};
-
-export const CounterSkeleton = ({ children }: { children?: ReactNode }) => {
-  const count = 0;
-  return (
-    <div style={{ border: "3px blue dashed", margin: "1em", padding: "1em" }}>
-      <p>Count: {count}</p>
-      <button>Increment</button>{" "}
-      <h3>This is a client component.</h3>
-      {children}
+      {children || (enableInnerApp && <Slot id="InnerApp" />)}
     </div>
   );
 };
