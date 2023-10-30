@@ -35,8 +35,8 @@ export function getInputString(
     throw new Error("Invalid search");
   }
   let input = search
-    ? "-" + pathname.replace(/\/$/, "/__INDEX__") + "/" + search
-    : "_" + pathname.replace(/\/$/, "/__INDEX__");
+    ? "=" + pathname.replace(/\/$/, "/__INDEX__") + "/" + search
+    : "-" + pathname.replace(/\/$/, "/__INDEX__");
   if (skip) {
     const params = new URLSearchParams();
     skip.forEach((id) => params.append("skip", id));
@@ -52,14 +52,14 @@ export function parseInputString(input: string): {
 } {
   const [first, second] = input.split("?", 2);
   const skip = second && new URLSearchParams(second).getAll("skip");
-  if (first?.startsWith("-")) {
+  if (first?.startsWith("=")) {
     const index = first.lastIndexOf("/");
     return {
       pathname: first.slice(1, index).replace(/\/__INDEX__$/, "/"),
       search: first.slice(index + 1),
       ...(skip ? { skip } : {}),
     };
-  } else if (first?.startsWith("_")) {
+  } else if (first?.startsWith("-")) {
     return {
       pathname: first.slice(1).replace(/\/__INDEX__$/, "/"),
       search: "",

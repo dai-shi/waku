@@ -24,8 +24,9 @@ export function ssr(options: {
   const publicIndexHtmlPromise = configPromise.then((config) => {
     const publicIndexHtmlFile = path.join(
       config.root,
-      config.framework.distDir,
-      config.framework.publicDir,
+      options.command === "dev"
+        ? config.framework.srcDir
+        : path.join(config.framework.distDir, config.framework.publicDir),
       config.framework.indexHtml,
     );
     return fsPromises.readFile(publicIndexHtmlFile, {
@@ -56,6 +57,7 @@ export function ssr(options: {
         ...configFileConfig(),
         root: path.join(config.root, config.framework.srcDir),
         plugins: [viteReact(), rscIndexPlugin([])],
+        appType: "custom",
         server: { middlewareMode: true },
       }),
     );
