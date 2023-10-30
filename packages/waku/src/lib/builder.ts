@@ -280,6 +280,7 @@ const emitHtmlFiles = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   buildConfig: Awaited<ReturnType<typeof getBuildConfigRSC>>,
   getClientModules: (input: string) => string[],
+  ssr: boolean,
 ) => {
   const basePrefix = config.base + config.framework.rscPrefix;
   const publicIndexHtmlFile = path.join(
@@ -331,12 +332,8 @@ const emitHtmlFiles = async (
             `<script>${code}</script></head>`,
           );
         }
-        const htmlReadable = await renderHtml(
-          config,
-          "build",
-          pathStr,
-          htmlStr,
-        );
+        const htmlReadable =
+          ssr && (await renderHtml(config, "build", pathStr, htmlStr));
         if (htmlReadable) {
           await new Promise<void>((resolve, reject) => {
             const stream = fs.createWriteStream(destFile);
@@ -471,7 +468,7 @@ const resolveFileName = (fname: string) => {
   return fname; // returning the default one
 };
 
-export async function build() {
+export async function build(options?: { ssr?: boolean }) {
   const config = await resolveConfig("build");
   const entriesFile = resolveFileName(
     path.join(config.root, config.framework.srcDir, config.framework.entriesJs),
@@ -497,6 +494,7 @@ export async function build() {
     config,
     buildConfig,
     getClientModules,
+    !!options?.ssr,
   );
 
   // https://vercel.com/docs/build-output-api/v3
