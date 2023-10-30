@@ -29,5 +29,15 @@ export default defineConfig({
         PORT: "3001",
       },
     },
+    {
+      command: "pnpm run build && pnpm run start",
+      cwd: resolve(rootDir, "examples", "12_path-alias"),
+      port: 3001,
+      timeout: 10 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        PORT: "3011",
+      },
+    },
   ],
 });
