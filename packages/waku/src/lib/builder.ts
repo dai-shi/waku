@@ -15,7 +15,7 @@ import {
 } from "./middleware/rsc/worker-api.js";
 import { rscIndexPlugin } from "./vite-plugin/rsc-index-plugin.js";
 import { rscAnalyzePlugin } from "./vite-plugin/rsc-analyze-plugin.js";
-import { renderHtml } from "./middleware/ssr/utils.js";
+import { renderHtml } from "./middleware/rsc/ssr.js";
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {

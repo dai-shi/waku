@@ -16,9 +16,6 @@ import {
   defineEntries,
   runWithAsyncLocalStorage as runWithAsyncLocalStorageOrig,
 } from "../../../server.js";
-import { rscTransformPlugin } from "../../vite-plugin/rsc-transform-plugin.js";
-import { rscReloadPlugin } from "../../vite-plugin/rsc-reload-plugin.js";
-import { rscDelegatePlugin } from "../../vite-plugin/rsc-delegate-plugin.js";
 
 const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
   RSDWServer;
@@ -122,6 +119,15 @@ const getViteServer = async (command: "dev" | "build" | "start") => {
     await lastViteServer[0].close();
   }
   const { createServer: viteCreateServer } = await import("vite");
+  const { rscTransformPlugin } = await import(
+    "../../vite-plugin/rsc-transform-plugin.js"
+  );
+  const { rscReloadPlugin } = await import(
+    "../../vite-plugin/rsc-reload-plugin.js"
+  );
+  const { rscDelegatePlugin } = await import(
+    "../../vite-plugin/rsc-delegate-plugin.js"
+  );
   const viteServer = await viteCreateServer({
     plugins: [
       rscTransformPlugin(),

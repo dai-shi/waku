@@ -6,8 +6,7 @@ import RDServer from "react-dom/server";
 import RSDWClient from "react-server-dom-webpack/client.node.unbundled";
 
 import { resolveConfig } from "../../config.js";
-// TODO we should probably move out of middleware/rsc
-import { renderRSC } from "../rsc/worker-api.js";
+import { renderRSC } from "./worker-api.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { renderToPipeableStream } = RDServer;
@@ -59,7 +58,8 @@ export const renderHtml = async (
   command: "dev" | "build" | "start",
   pathStr: string,
   htmlStr: string, // Hope stream works, but it'd be too tricky
-): Promise<Readable> => {
+): Promise<Readable | null> => {
+  // TODO return null if not found
   const [pipeable] = await renderRSC({
     input: pathStr,
     method: "GET",

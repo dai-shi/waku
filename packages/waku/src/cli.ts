@@ -56,14 +56,8 @@ if (values.version) {
 async function runDev(options: { ssr: boolean }) {
   const { default: express } = await import("express");
   const { rsc } = await import("./lib/middleware/rsc.js");
-  const { devServer } = await import("./lib/middleware/devServer.js");
   const app = express();
-  app.use(rsc({ command: "dev" }));
-  if (options.ssr) {
-    const { ssr } = await import("./lib/middleware/ssr.js");
-    app.use(ssr({ command: "dev" }));
-  }
-  app.use(devServer());
+  app.use(rsc({ command: "dev", ssr: options.ssr }));
   const port = parseInt(process.env.PORT || "3000", 10);
   startServer(app, port);
 }
@@ -79,11 +73,7 @@ async function runStart(options: { ssr: boolean }) {
   const config = await resolveConfig();
   const { rsc } = await import("./lib/middleware/rsc.js");
   const app = express();
-  app.use(rsc({ command: "start" }));
-  if (options.ssr) {
-    const { ssr } = await import("./lib/middleware/ssr.js");
-    app.use(ssr({ command: "start" }));
-  }
+  app.use(rsc({ command: "start", ssr: options.ssr }));
   app.use(
     express.static(path.join(config.rootDir, config.distDir, config.publicDir)),
   );
@@ -96,7 +86,6 @@ function startServer(app: Express, port: number) {
   const server = app.listen(port, () => {
     console.log(`ready: Listening on http://localhost:${port}/`);
   });
-
   server.on("error", (err: NodeJS.ErrnoException) => {
     if (err.code === "EADDRINUSE") {
       console.log(`warn: Port ${port} is in use, trying ${port + 1} instead.`);
