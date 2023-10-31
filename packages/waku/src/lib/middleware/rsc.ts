@@ -175,6 +175,7 @@ export function rsc<Context>(options: {
         }
       }
       vite.middlewares(req, res, next);
+      return;
     }
     next();
   };

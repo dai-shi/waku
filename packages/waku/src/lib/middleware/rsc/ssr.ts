@@ -1,4 +1,6 @@
 import path from "node:path";
+import fs from "node:fs";
+import crypto from "node:crypto";
 import { Transform } from "node:stream";
 import type { Readable } from "node:stream";
 
@@ -12,6 +14,33 @@ import { hasStatusCode } from "./utils.js";
 // eslint-disable-next-line import/no-named-as-default-member
 const { renderToPipeableStream } = RDServer;
 const { createFromNodeStream } = RSDWClient;
+
+// FIXME this is too hacky
+const createTranspiler = async (cleanupFns: Set<() => void>) => {
+  const swc = await import("@swc/core");
+  return (file: string) => {
+    const ext = path.extname(file);
+    const temp = path.resolve(
+      `.temp-${crypto.randomBytes(8).toString("hex")}.js`,
+    );
+    const { code } = swc.transformFileSync(file, {
+      jsc: {
+        parser: {
+          syntax: ext === ".ts" || ext === ".tsx" ? "typescript" : "ecmascript",
+          tsx: ext === ".tsx",
+        },
+        transform: {
+          react: {
+            runtime: "automatic",
+          },
+        },
+      },
+    });
+    fs.writeFileSync(temp, code);
+    cleanupFns.add(() => fs.unlinkSync(temp));
+    return temp;
+  };
+};
 
 const interleaveHtmlSnippets = (
   preamble: string,
@@ -78,6 +107,8 @@ export const renderHtml = async (
     throw e;
   }
   const { splitHTML } = config.ssr;
+  const cleanupFns = new Set<() => void>();
+  const transpile = command === "dev" && (await createTranspiler(cleanupFns));
   const moduleMap = new Proxy(
     {},
     {
@@ -86,12 +117,12 @@ export const renderHtml = async (
           {},
           {
             get(_target, name: string) {
-              const specifier = path.join(
+              const f = path.join(
                 config.rootDir,
                 command === "dev" ? config.srcDir : config.distDir,
                 filePath,
               );
-              return { specifier, name };
+              return { specifier: transpile ? transpile(f) : f, name };
             },
           },
         );
@@ -100,7 +131,13 @@ export const renderHtml = async (
   );
   const data = await createFromNodeStream(readable, { moduleMap });
   return renderToPipeableStream(data._ssr, {
+    onAllReady: () => {
+      cleanupFns.forEach((fn) => fn());
+      cleanupFns.clear();
+    },
     onError(err) {
+      cleanupFns.forEach((fn) => fn());
+      cleanupFns.clear();
       if (
         err instanceof Error &&
         err.message.startsWith("Client-only component")
