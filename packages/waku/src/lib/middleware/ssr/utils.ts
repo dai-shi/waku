@@ -68,7 +68,7 @@ export const renderHtml = async (
     context: null,
     ssr: true,
   });
-  const { splitHTML } = config.framework.ssr;
+  const { splitHTML } = config.ssr;
   const moduleMap = new Proxy(
     {},
     {
@@ -78,10 +78,8 @@ export const renderHtml = async (
           {
             get(_target, name: string) {
               const specifier = path.join(
-                config.root,
-                command === "dev"
-                  ? config.framework.srcDir
-                  : config.framework.distDir,
+                config.rootDir,
+                command === "dev" ? config.srcDir : config.distDir,
                 filePath,
               );
               return { specifier, name };

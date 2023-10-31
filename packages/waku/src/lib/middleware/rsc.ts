@@ -22,12 +22,12 @@ export function rsc<Context>(options: {
   if (!options.unstable_prehook && options.unstable_posthook) {
     throw new Error("prehook is required if posthook is provided");
   }
-  const configPromise = resolveConfig("serve");
+  const configPromise = resolveConfig();
   return async (req, res, next) => {
     const config = await configPromise;
-    const basePath = config.base + config.framework.rscPrefix;
+    const basePrefix = config.basePath + config.rscPrefix;
     const url = req.url || "";
-    if (url.startsWith(basePath)) {
+    if (url.startsWith(basePrefix)) {
       const { method, headers } = req;
       if (method !== "GET" && method !== "POST") {
         throw new Error(`Unsupported method '${method}'`);
@@ -48,7 +48,7 @@ export function rsc<Context>(options: {
       try {
         const context = options.unstable_prehook?.(req, res);
         const [readable, nextCtx] = await renderRSC({
-          input: decodeInput(url.slice(basePath.length)),
+          input: decodeInput(url.slice(basePrefix.length)),
           method,
           headers,
           command: options.command,

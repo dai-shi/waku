@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { createRequire } from "node:module";
@@ -13,9 +12,6 @@ const { values, positionals } = parseArgs({
   args: process.argv.splice(2),
   allowPositionals: true,
   options: {
-    config: {
-      type: "string",
-    },
     "with-ssr": {
       type: "boolean",
     },
@@ -31,14 +27,6 @@ const { values, positionals } = parseArgs({
 });
 
 const cmd = positionals[0];
-
-if (values.config) {
-  if (!fs.existsSync(values.config)) {
-    throw new Error("config file does not exist");
-  } else {
-    process.env.CONFIG_FILE = values.config;
-  }
-}
 
 if (values.version) {
   const { version } = require("../package.json");
@@ -88,7 +76,7 @@ async function runBuild(options: { ssr: boolean }) {
 async function runStart(options: { ssr: boolean }) {
   const { default: express } = await import("express");
   const { resolveConfig } = await import("./lib/config.js");
-  const config = await resolveConfig("serve");
+  const config = await resolveConfig();
   const { rsc } = await import("./lib/middleware/rsc.js");
   const app = express();
   app.use(rsc({ command: "start" }));
@@ -97,13 +85,7 @@ async function runStart(options: { ssr: boolean }) {
     app.use(ssr({ command: "start" }));
   }
   app.use(
-    express.static(
-      path.join(
-        config.root,
-        config.framework.distDir,
-        config.framework.publicDir,
-      ),
-    ),
+    express.static(path.join(config.rootDir, config.distDir, config.publicDir)),
   );
   (express.static.mime as any).default_type = "";
   const port = parseInt(process.env.PORT || "8080", 10);

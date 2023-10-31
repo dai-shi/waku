@@ -1,6 +1,14 @@
-import type { ConfigEnv, UserConfig } from "vite";
-
-export interface FrameworkConfig {
+export interface Config {
+  /**
+   * The project root directory.
+   * Defaults to  ".".
+   */
+  rootDir?: string;
+  /**
+   * The base path for serve HTTP.
+   * Defaults to  "/".
+   */
+  basePath?: string;
   /**
    * The source directory relative to root.
    * This will be the actual root in the development mode.
@@ -53,18 +61,4 @@ export interface FrameworkConfig {
      */
     splitHTML?: (htmlStr: string) => readonly [string, string, string];
   };
-}
-
-export interface ExtendedUserConfig extends UserConfig {
-  framework?: FrameworkConfig;
-}
-
-export function defineConfig(
-  config:
-    | ExtendedUserConfig
-    | Promise<ExtendedUserConfig>
-    | ((env: ConfigEnv) => ExtendedUserConfig)
-    | ((env: ConfigEnv) => Promise<ExtendedUserConfig>),
-) {
-  return config;
 }

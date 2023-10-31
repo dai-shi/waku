@@ -3,7 +3,7 @@ import path from "node:path";
 import { createServer as viteCreateServer } from "vite";
 import viteReact from "@vitejs/plugin-react";
 
-import { configFileConfig, resolveConfig } from "../config.js";
+import { resolveConfig } from "../config.js";
 import {
   registerReloadCallback,
   registerImportCallback,
@@ -18,11 +18,10 @@ type Middleware = (
 ) => void;
 
 export function devServer(): Middleware {
-  const configPromise = resolveConfig("serve");
+  const configPromise = resolveConfig();
   const vitePromise = configPromise.then((config) =>
     viteCreateServer({
-      ...configFileConfig(),
-      root: path.join(config.root, config.framework.srcDir),
+      root: path.join(config.rootDir, config.srcDir),
       optimizeDeps: {
         include: ["react-server-dom-webpack/client"],
         // FIXME without this, waku router has dual module hazard,

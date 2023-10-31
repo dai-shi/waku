@@ -9,7 +9,7 @@ import RSDWServer from "react-server-dom-webpack/server";
 import busboy from "busboy";
 import type { ViteDevServer } from "vite";
 
-import { configFileConfig, resolveConfig } from "../../config.js";
+import { resolveConfig } from "../../config.js";
 import { hasStatusCode, deepFreeze } from "./utils.js";
 import type { MessageReq, MessageRes, RenderRequest } from "./worker-api.js";
 import {
@@ -123,7 +123,6 @@ const getViteServer = async (command: "dev" | "build" | "start") => {
   }
   const { createServer: viteCreateServer } = await import("vite");
   const viteServer = await viteCreateServer({
-    ...configFileConfig(),
     plugins: [
       rscTransformPlugin(),
       rscReloadPlugin((type) => {
@@ -192,9 +191,9 @@ const getEntriesFile = async (
   command: "dev" | "build" | "start",
 ) => {
   return path.join(
-    config.root,
-    command === "dev" ? config.framework.srcDir : config.framework.distDir,
-    config.framework.entriesJs,
+    config.rootDir,
+    command === "dev" ? config.srcDir : config.distDir,
+    config.entriesJs,
   );
 };
 
@@ -207,8 +206,8 @@ const resolveClientEntry = (
     filePath = filePath.slice(7);
   }
   let root = path.join(
-    config.root,
-    command === "dev" ? config.framework.srcDir : config.framework.distDir,
+    config.rootDir,
+    command === "dev" ? config.srcDir : config.distDir,
   );
   if (path.sep !== "/") {
     // HACK to support windows filesystem
@@ -216,9 +215,9 @@ const resolveClientEntry = (
   }
   if (command === "dev" && !filePath.startsWith(root)) {
     // HACK this relies on Vite's internal implementation detail.
-    return config.base + "@fs/" + filePath.replace(/^\//, "");
+    return config.basePath + "@fs/" + filePath.replace(/^\//, "");
   }
-  return config.base + path.relative(root, filePath);
+  return config.basePath + path.relative(root, filePath);
 };
 
 // HACK Patching stream is very fragile.
@@ -245,9 +244,7 @@ const transformRsfId = (prefixToRemove: string) =>
   });
 
 async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
-  const config = await resolveConfig(
-    rr.command === "build" ? "build" : "serve",
-  );
+  const config = await resolveConfig();
 
   const { runWithAsyncLocalStorage } = await (loadServerFile(
     "waku/server",
@@ -315,7 +312,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
       }
     }
     const [fileId, name] = actionId.split("#");
-    const fname = path.join(config.root, fileId!);
+    const fname = path.join(config.rootDir, fileId!);
     const mod = await loadServerFile(fname, rr.command);
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
     const rerender = (input: string) => {
@@ -333,7 +330,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
         return renderToPipeableStream(
           { ...(await elements), _value: data },
           bundlerConfig,
-        ).pipe(transformRsfId(config.root));
+        ).pipe(transformRsfId(config.rootDir));
       },
     );
   }
@@ -348,14 +345,14 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     async () => {
       const elements = await render(rr.input);
       return renderToPipeableStream(elements, bundlerConfig).pipe(
-        transformRsfId(config.root),
+        transformRsfId(config.rootDir),
       );
     },
   );
 }
 
 async function getBuildConfigRSC() {
-  const config = await resolveConfig("build");
+  const config = await resolveConfig();
 
   const entriesFile = await getEntriesFile(config, "build");
   const {

@@ -6,7 +6,7 @@ import { build as viteBuild } from "vite";
 import viteReact from "@vitejs/plugin-react";
 import type { RollupLog, LoggingFunction } from "rollup";
 
-import { configFileConfig, resolveConfig } from "./config.js";
+import { resolveConfig } from "./config.js";
 import { encodeInput, generatePrefetchCode } from "./middleware/rsc/utils.js";
 import {
   shutdown as shutdownRsc,
@@ -51,7 +51,6 @@ const analyzeEntries = async (entriesFile: string) => {
   const clientEntryFileSet = new Set<string>();
   const serverEntryFileSet = new Set<string>();
   await viteBuild({
-    ...configFileConfig(),
     plugins: [
       rscAnalyzePlugin(
         (id) => clientEntryFileSet.add(id),
@@ -99,7 +98,6 @@ const buildServerBundle = async (
   serverEntryFiles: Record<string, string>,
 ) => {
   const serverBuildOutput = await viteBuild({
-    ...configFileConfig(),
     ssr: {
       resolve: {
         externalConditions: ["react-server"],
@@ -108,7 +106,7 @@ const buildServerBundle = async (
         // FIXME this might not work with pnpm
         (fname) =>
           path
-            .relative(path.join(config.root, "node_modules"), fname)
+            .relative(path.join(config.rootDir, "node_modules"), fname)
             .split("/")[0]!,
       ),
     },
@@ -116,7 +114,7 @@ const buildServerBundle = async (
     build: {
       ssr: true,
       ssrEmitAssets: true,
-      outDir: path.join(config.root, config.framework.distDir),
+      outDir: path.join(config.rootDir, config.distDir),
       rollupOptions: {
         onwarn,
         input: {
@@ -169,23 +167,18 @@ const buildClientBundle = async (
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
 ) => {
   const indexHtmlFile = path.join(
-    config.root,
-    config.framework.srcDir,
-    config.framework.indexHtml,
+    config.rootDir,
+    config.srcDir,
+    config.indexHtml,
   );
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === "asset" && fileName.endsWith(".css") ? [fileName] : [],
   );
   const clientBuildOutput = await viteBuild({
-    ...configFileConfig(),
-    root: path.join(config.root, config.framework.srcDir),
+    root: path.join(config.rootDir, config.srcDir),
     plugins: [viteReact(), rscIndexPlugin(cssAssets)],
     build: {
-      outDir: path.join(
-        config.root,
-        config.framework.distDir,
-        config.framework.publicDir,
-      ),
+      outDir: path.join(config.rootDir, config.distDir, config.publicDir),
       rollupOptions: {
         onwarn,
         input: {
@@ -208,11 +201,11 @@ const buildClientBundle = async (
     throw new Error("Unexpected vite client build output");
   }
   for (const cssAsset of cssAssets) {
-    const from = path.join(config.root, config.framework.distDir, cssAsset);
+    const from = path.join(config.rootDir, config.distDir, cssAsset);
     const to = path.join(
-      config.root,
-      config.framework.distDir,
-      config.framework.publicDir,
+      config.rootDir,
+      config.distDir,
+      config.publicDir,
       cssAsset,
     );
     fs.renameSync(from, to);
@@ -242,14 +235,11 @@ const emitRscFiles = async (
     Object.entries(buildConfig).map(async ([, { entries, context }]) => {
       for (const [input] of entries || []) {
         const destFile = path.join(
-          config.root,
-          config.framework.distDir,
-          config.framework.publicDir,
+          config.rootDir,
+          config.distDir,
+          config.publicDir,
           // HACK to support windows filesystem
-          (config.framework.rscPrefix + encodeInput(input)).replaceAll(
-            "/",
-            path.sep,
-          ),
+          (config.rscPrefix + encodeInput(input)).replaceAll("/", path.sep),
         );
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
@@ -282,12 +272,12 @@ const emitHtmlFiles = async (
   getClientModules: (input: string) => string[],
   ssr: boolean,
 ) => {
-  const basePrefix = config.base + config.framework.rscPrefix;
+  const basePrefix = config.basePath + config.rscPrefix;
   const publicIndexHtmlFile = path.join(
-    config.root,
-    config.framework.distDir,
-    config.framework.publicDir,
-    config.framework.indexHtml,
+    config.rootDir,
+    config.distDir,
+    config.publicDir,
+    config.indexHtml,
   );
   const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
     encoding: "utf8",
@@ -296,9 +286,9 @@ const emitHtmlFiles = async (
     Object.entries(buildConfig).map(
       async ([pathStr, { entries, customCode }]) => {
         const destFile = path.join(
-          config.root,
-          config.framework.distDir,
-          config.framework.publicDir,
+          config.rootDir,
+          config.distDir,
+          config.publicDir,
           pathStr,
           pathStr.endsWith("/") ? "index.html" : "",
         );
@@ -358,24 +348,10 @@ const emitVercelOutput = (
   htmlFiles: string[],
 ) => {
   const clientFiles = clientBuildOutput.output.map(({ fileName }) =>
-    path.join(
-      config.root,
-      config.framework.distDir,
-      config.framework.publicDir,
-      fileName,
-    ),
+    path.join(config.rootDir, config.distDir, config.publicDir, fileName),
   );
-  const srcDir = path.join(
-    config.root,
-    config.framework.distDir,
-    config.framework.publicDir,
-  );
-  const dstDir = path.join(
-    config.root,
-    config.framework.distDir,
-    ".vercel",
-    "output",
-  );
+  const srcDir = path.join(config.rootDir, config.distDir, config.publicDir);
+  const dstDir = path.join(config.rootDir, config.distDir, ".vercel", "output");
   for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
     const dstFile = path.join(dstDir, "static", path.relative(srcDir, file));
     if (!fs.existsSync(dstFile)) {
@@ -388,29 +364,27 @@ const emitVercelOutput = (
   const serverlessDir = path.join(
     dstDir,
     "functions",
-    config.framework.rscPrefix.replace(/\/$/, ".func"),
+    config.rscPrefix.replace(/\/$/, ".func"),
   );
-  fs.mkdirSync(path.join(serverlessDir, config.framework.distDir), {
+  fs.mkdirSync(path.join(serverlessDir, config.distDir), {
     recursive: true,
   });
   fs.symlinkSync(
-    path.relative(serverlessDir, path.join(config.root, "node_modules")),
+    path.relative(serverlessDir, path.join(config.rootDir, "node_modules")),
     path.join(serverlessDir, "node_modules"),
   );
-  fs.readdirSync(path.join(config.root, config.framework.distDir)).forEach(
-    (file) => {
-      if ([".vercel"].includes(file)) {
-        return;
-      }
-      fs.symlinkSync(
-        path.relative(
-          path.join(serverlessDir, config.framework.distDir),
-          path.join(config.root, config.framework.distDir, file),
-        ),
-        path.join(serverlessDir, config.framework.distDir, file),
-      );
-    },
-  );
+  fs.readdirSync(path.join(config.rootDir, config.distDir)).forEach((file) => {
+    if ([".vercel"].includes(file)) {
+      return;
+    }
+    fs.symlinkSync(
+      path.relative(
+        path.join(serverlessDir, config.distDir),
+        path.join(config.rootDir, config.distDir, file),
+      ),
+      path.join(serverlessDir, config.distDir, file),
+    );
+  });
   const vcConfigJson = {
     runtime: "nodejs18.x",
     handler: "serve.mjs",
@@ -448,7 +422,7 @@ export default async function handler(req, res) {
         { contentType: "text/html" },
       ]),
   ]);
-  const basePrefix = config.base + config.framework.rscPrefix;
+  const basePrefix = config.basePath + config.rscPrefix;
   const routes = [{ src: basePrefix + "(.*)", dest: basePrefix }];
   const configJson = { version: 3, overrides, routes };
   fs.mkdirSync(dstDir, { recursive: true });
@@ -469,9 +443,9 @@ const resolveFileName = (fname: string) => {
 };
 
 export async function build(options?: { ssr?: boolean }) {
-  const config = await resolveConfig("build");
+  const config = await resolveConfig();
   const entriesFile = resolveFileName(
-    path.join(config.root, config.framework.srcDir, config.framework.entriesJs),
+    path.join(config.rootDir, config.srcDir, config.entriesJs),
   );
 
   const { clientEntryFiles, serverEntryFiles } =

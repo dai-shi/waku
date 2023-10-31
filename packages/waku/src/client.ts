@@ -39,7 +39,7 @@ const mergeElements = cache(
   },
 );
 
-// TODO get basePath from vite config
+// TODO get basePath from config
 
 export const fetchRSC = cache(
   (

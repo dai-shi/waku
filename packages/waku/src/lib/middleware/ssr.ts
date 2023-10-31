@@ -17,14 +17,14 @@ const hasStatusCode = (x: unknown): x is { statusCode: number } =>
 export function ssr(options: {
   command: "dev" | "build" | "start";
 }): Middleware {
-  const configPromise = resolveConfig("serve");
+  const configPromise = resolveConfig();
   const publicIndexHtmlPromise = configPromise.then((config) => {
     const publicIndexHtmlFile = path.join(
-      config.root,
+      config.rootDir,
       options.command === "dev"
-        ? config.framework.srcDir
-        : path.join(config.framework.distDir, config.framework.publicDir),
-      config.framework.indexHtml,
+        ? config.srcDir
+        : path.join(config.distDir, config.publicDir),
+      config.indexHtml,
     );
     return fsPromises.readFile(publicIndexHtmlFile, {
       encoding: "utf8",
@@ -36,9 +36,9 @@ export function ssr(options: {
   if (options.command === "start") {
     getHtmlStrPromise = configPromise.then((config) => async (req) => {
       const destFile = path.join(
-        config.root,
-        config.framework.distDir,
-        config.framework.publicDir,
+        config.rootDir,
+        config.distDir,
+        config.publicDir,
         req.url,
         req.url.endsWith("/") ? "index.html" : "",
       );
@@ -53,7 +53,7 @@ export function ssr(options: {
   } else {
     getHtmlStrPromise = configPromise.then((config) => async (req) => {
       const rscServer = new URL(
-        config.framework.ssr.rscServer,
+        config.ssr.rscServer,
         "http://" + req.headers.host,
       );
       const htmlRes = await fetch(rscServer + req.url.slice(1), {
