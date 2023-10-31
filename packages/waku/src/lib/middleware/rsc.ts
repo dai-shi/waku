@@ -65,7 +65,7 @@ export function rsc<Context>(options: {
   };
 
   let publicIndexHtml: string | undefined;
-  const getHtmlStr = async (pathStr: string): Promise<string> => {
+  const getHtmlStr = async (pathStr: string): Promise<string | null> => {
     const config = await configPromise;
     if (!publicIndexHtml) {
       const publicIndexHtmlFile = path.join(
@@ -88,12 +88,27 @@ export function rsc<Context>(options: {
         pathStr.endsWith("/") ? "index.html" : "",
       );
       try {
-        return fsPromises.readFile(destFile, { encoding: "utf8" });
+        return await fsPromises.readFile(destFile, { encoding: "utf8" });
       } catch (e) {
         return publicIndexHtml;
       }
     } else {
       const vite = await getViteServer();
+      for (const item of vite.moduleGraph.idToModuleMap.values()) {
+        if (item.url === pathStr) {
+          return null;
+        }
+      }
+      const destFile = path.join(config.rootDir, config.srcDir, pathStr);
+      try {
+        // check if exists?
+        const stats = await fsPromises.stat(destFile);
+        if (stats.isFile()) {
+          return null;
+        }
+      } catch (e) {
+        // does not exist
+      }
       return vite.transformIndexHtml(pathStr, publicIndexHtml);
     }
   };
@@ -118,12 +133,9 @@ export function rsc<Context>(options: {
     if (options.ssr) {
       try {
         const htmlStr = await getHtmlStr(pathStr);
-        const readable = await renderHtml(
-          config,
-          options.command,
-          pathStr,
-          htmlStr,
-        );
+        const readable =
+          htmlStr &&
+          (await renderHtml(config, options.command, pathStr, htmlStr));
         if (readable) {
           readable.on("error", handleError);
           readable.pipe(res);
@@ -160,18 +172,16 @@ export function rsc<Context>(options: {
     }
     if (options.command === "dev") {
       const vite = await getViteServer();
-      if (req.url) {
-        // HACK re-export "?v=..." URL to avoid dual module hazard.
-        const fname = req.url.startsWith("/@fs/")
-          ? req.url.slice(4)
-          : path.join(vite.config.root, req.url);
-        for (const item of vite.moduleGraph.idToModuleMap.values()) {
-          if (item.file === fname && item.url !== req.url) {
-            res.setHeader("Content-Type", "application/javascript");
-            res.statusCode = 200;
-            res.end(`export * from "${item.url}";`, "utf8");
-            return;
-          }
+      // HACK re-export "?v=..." URL to avoid dual module hazard.
+      const fname = pathStr.startsWith("/@fs/")
+        ? pathStr.slice(4)
+        : path.join(vite.config.root, pathStr);
+      for (const item of vite.moduleGraph.idToModuleMap.values()) {
+        if (item.file === fname && item.url !== pathStr) {
+          res.setHeader("Content-Type", "application/javascript");
+          res.statusCode = 200;
+          res.end(`export * from "${item.url}";`, "utf8");
+          return;
         }
       }
       vite.middlewares(req, res, next);
