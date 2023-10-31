@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+// FIXME we hope to remove vite dependency on build,
+// but it requires to change the directory structure.
 import { resolveConfig as viteResolveConfig } from "vite";
 
 import type { FrameworkConfig } from "../config.js";

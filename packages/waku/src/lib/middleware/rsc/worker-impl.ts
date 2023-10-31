@@ -4,11 +4,10 @@ import { PassThrough, Transform, Writable } from "node:stream";
 import { Server } from "node:http";
 import { Buffer } from "node:buffer";
 
-import { createServer as viteCreateServer } from "vite";
-import type { ViteDevServer } from "vite";
 import type { ReactNode } from "react";
 import RSDWServer from "react-server-dom-webpack/server";
 import busboy from "busboy";
+import type { ViteDevServer } from "vite";
 
 import { configFileConfig, resolveConfig } from "../../config.js";
 import { hasStatusCode, deepFreeze } from "./utils.js";
@@ -122,6 +121,7 @@ const getViteServer = async (command: "dev" | "build" | "start") => {
     console.warn("Restarting Vite server with different command");
     await lastViteServer[0].close();
   }
+  const { createServer: viteCreateServer } = await import("vite");
   const viteServer = await viteCreateServer({
     ...configFileConfig(),
     plugins: [
@@ -159,6 +159,9 @@ const loadServerFile = async (
   fname: string,
   command: "dev" | "build" | "start",
 ) => {
+  if (command === "start") {
+    return import(fname);
+  }
   const vite = await getViteServer(command);
   return vite.ssrLoadModule(fname);
 };
@@ -268,7 +271,6 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     const keys = Object.keys(elements);
     if (rr.ssr) {
       if (keys.length !== 1 || keys[0] !== "_ssr") {
-        console.log('keys=',keys)
         throw new Error('Must return one element with "_ssr"');
       }
     } else {
