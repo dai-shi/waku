@@ -7,6 +7,7 @@ import RSDWClient from "react-server-dom-webpack/client.node.unbundled";
 
 import { resolveConfig } from "../../config.js";
 import { renderRSC } from "./worker-api.js";
+import { hasStatusCode } from "./utils.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { renderToPipeableStream } = RDServer;
@@ -59,15 +60,23 @@ export const renderHtml = async (
   pathStr: string,
   htmlStr: string, // Hope stream works, but it'd be too tricky
 ): Promise<Readable | null> => {
-  // TODO return null if not found
-  const [pipeable] = await renderRSC({
-    input: pathStr,
-    method: "GET",
-    headers: {},
-    command,
-    context: null,
-    ssr: true,
-  });
+  let readable: Readable;
+  try {
+    const [pipeable] = await renderRSC({
+      input: pathStr,
+      method: "GET",
+      headers: {},
+      command,
+      context: null,
+      ssr: true,
+    });
+    readable = pipeable;
+  } catch (e) {
+    if (hasStatusCode(e) && e.statusCode === 404) {
+      return null;
+    }
+    throw e;
+  }
   const { splitHTML } = config.ssr;
   const moduleMap = new Proxy(
     {},
@@ -89,7 +98,7 @@ export const renderHtml = async (
       },
     },
   );
-  const data = await createFromNodeStream(pipeable, { moduleMap });
+  const data = await createFromNodeStream(readable, { moduleMap });
   return renderToPipeableStream(data._ssr, {
     onError(err) {
       if (
