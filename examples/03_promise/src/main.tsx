@@ -1,5 +1,5 @@
 import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
+import { hydrateRoot } from "react-dom/client";
 import { Root, Slot } from "waku/client";
 
 const rootElement = (
@@ -12,4 +12,4 @@ const rootElement = (
   </StrictMode>
 );
 
-createRoot(document.getElementById("root")!).render(rootElement);
+hydrateRoot(document.getElementById("root")!, rootElement);

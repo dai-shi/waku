@@ -138,13 +138,6 @@ export const renderHtml = async (
     onError(err) {
       cleanupFns.forEach((fn) => fn());
       cleanupFns.clear();
-      if (
-        err instanceof Error &&
-        err.message.startsWith("Client-only component")
-      ) {
-        // ignore
-        return;
-      }
       console.error(err);
     },
   }).pipe(interleaveHtmlSnippets(...splitHTML(htmlStr)));
