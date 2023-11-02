@@ -10,7 +10,7 @@ export default defineEntries(
     if (ssr) {
       switch (input) {
         case "/":
-          return { _ssr: <App name="Waku" /> };
+          return { _ssr: <App name="Waku" />, _input: "" };
         default:
           return null;
       }

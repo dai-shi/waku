@@ -1,5 +1,6 @@
 import { PassThrough } from "node:stream";
 import type { Readable } from "node:stream";
+import { Buffer } from "node:buffer";
 import { Worker } from "node:worker_threads";
 
 import type { GetBuildConfig } from "../../../server.js";

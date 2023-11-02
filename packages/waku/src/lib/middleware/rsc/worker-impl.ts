@@ -273,11 +273,12 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     }
     const keys = Object.keys(elements);
     if (rr.ssr) {
-      if (keys.length !== 1 || keys[0] !== "_ssr") {
-        throw new Error('Must return one element with "_ssr"');
+      const keySet = new Set(keys);
+      if (keySet.size !== 2 || !keySet.has("_ssr") || !keySet.has("_input")) {
+        throw new Error('Must return "_ssr" and "_input" keys');
       }
     } else {
-      if (Object.keys(elements).some((key) => key.startsWith("_"))) {
+      if (keys.some((key) => key.startsWith("_"))) {
         throw new Error('"_" prefix is reserved');
       }
     }
