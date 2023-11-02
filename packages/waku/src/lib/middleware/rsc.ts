@@ -159,7 +159,6 @@ export function rsc<Context>(options: {
           headers,
           command: options.command,
           context,
-          ssr: false,
           stream: req,
         });
         options.unstable_posthook?.(req, res, nextCtx as Context);

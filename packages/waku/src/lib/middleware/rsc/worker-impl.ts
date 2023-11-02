@@ -26,16 +26,8 @@ type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 const streamMap = new Map<number, Writable>();
 
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
-  const {
-    id,
-    input,
-    method,
-    headers,
-    command,
-    context,
-    ssr,
-    moduleIdCallback,
-  } = mesg;
+  const { id, input, method, headers, command, context, moduleIdCallback } =
+    mesg;
   try {
     const stream = new PassThrough();
     streamMap.set(id, stream);
@@ -46,7 +38,6 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
       command,
       stream,
       context,
-      ssr,
     };
     if (moduleIdCallback) {
       rr.moduleIdCallback = (moduleId: string) => {
@@ -265,22 +256,14 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
   } = await (loadServerFile(entriesFile, rr.command) as Promise<Entries>);
 
   const render = async (input: string) => {
-    const elements = await renderEntries(input, rr.ssr);
+    const elements = await renderEntries(input);
     if (elements === null) {
       const err = new Error("No function component found");
       (err as any).statusCode = 404; // HACK our convention for NotFound
       throw err;
     }
-    const keys = Object.keys(elements);
-    if (rr.ssr) {
-      const keySet = new Set(keys);
-      if (keySet.size !== 2 || !keySet.has("_ssr") || !keySet.has("_input")) {
-        throw new Error('Must return "_ssr" and "_input" keys');
-      }
-    } else {
-      if (keys.some((key) => key.startsWith("_"))) {
-        throw new Error('"_" prefix is reserved');
-      }
+    if (Object.keys(elements).some((key) => key.startsWith("_"))) {
+      throw new Error('"_" prefix is reserved');
     }
     return elements;
   };
@@ -382,7 +365,6 @@ async function getBuildConfigRSC() {
       headers: {},
       command: "build",
       context: null,
-      ssr: false,
       moduleIdCallback: (id) => idSet.add(id),
     });
     await new Promise<void>((resolve, reject) => {

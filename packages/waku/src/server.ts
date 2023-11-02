@@ -3,10 +3,7 @@ import type { ReactNode } from "react";
 
 type Elements = Record<string, ReactNode>;
 
-export type RenderEntries = (
-  input: string,
-  ssr: boolean, // if true, return Promise<{ _ssr: ReactNode } | null>
-) => Promise<Elements | null>;
+export type RenderEntries = (input: string) => Promise<Elements | null>;
 
 export type GetBuildConfig = (
   unstable_collectClientModules: (input: string) => Promise<string[]>,
@@ -18,11 +15,17 @@ export type GetBuildConfig = (
   };
 }>;
 
+export type GetSsrConfig = (pathStr: string) => Promise<{
+  input: string;
+  filter: (elements: Elements) => ReactNode;
+} | null>;
+
 export function defineEntries(
   renderEntries: RenderEntries,
   getBuildConfig?: GetBuildConfig,
+  getSsrConfig?: GetSsrConfig,
 ) {
-  return { renderEntries, getBuildConfig };
+  return { renderEntries, getBuildConfig, getSsrConfig };
 }
 
 type Store = {

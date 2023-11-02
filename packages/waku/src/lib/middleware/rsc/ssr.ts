@@ -7,14 +7,64 @@ import { Buffer } from "node:buffer";
 
 import RDServer from "react-dom/server";
 import RSDWClient from "react-server-dom-webpack/client.node.unbundled";
+import type { ViteDevServer } from "vite";
 
 import { resolveConfig } from "../../config.js";
+import { defineEntries } from "../../../server.js";
 import { renderRSC } from "./worker-api.js";
 import { hasStatusCode } from "./utils.js";
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { renderToPipeableStream } = RDServer;
 const { createFromNodeStream } = RSDWClient;
+
+type Entries = { default: ReturnType<typeof defineEntries> };
+
+let lastViteServer: [vite: ViteDevServer, command: "dev" | "build"] | undefined;
+
+const getViteServer = async (command: "dev" | "build") => {
+  if (lastViteServer) {
+    if (lastViteServer[1] === command) {
+      return lastViteServer[0];
+    }
+    console.warn("Restarting Vite server with different command");
+    await lastViteServer[0].close();
+  }
+  const { createServer: viteCreateServer } = await import("vite");
+  const { nonjsResolvePlugin } = await import(
+    "../../vite-plugin/nonjs-resolve-plugin.js"
+  );
+  const viteServer = await viteCreateServer({
+    plugins: [...(command === "dev" ? [nonjsResolvePlugin()] : [])],
+    appType: "custom",
+    server: { middlewareMode: true },
+  });
+  lastViteServer = [viteServer, command];
+  return viteServer;
+};
+
+export const shutdown = async () => {
+  if (lastViteServer) {
+    await lastViteServer[0].close();
+    lastViteServer = undefined;
+  }
+};
+
+const loadEntriesFile = async (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  command: "dev" | "build" | "start",
+): Promise<Entries> => {
+  const fname = path.join(
+    config.rootDir,
+    command === "dev" ? config.srcDir : config.distDir,
+    config.entriesJs,
+  );
+  if (command === "start") {
+    return import(fname);
+  }
+  const vite = await getViteServer(command);
+  return vite.ssrLoadModule(fname) as any;
+};
 
 // FIXME this is too hacky
 const createTranspiler = async (cleanupFns: Set<() => void>) => {
@@ -43,31 +93,12 @@ const createTranspiler = async (cleanupFns: Set<() => void>) => {
   };
 };
 
-const injectRscPayload = (stream: Readable) => {
+const injectRscPayload = (stream: Readable, input: string) => {
   const chunks: Buffer[] = [];
-  let input: string | undefined;
   let closed = false;
   const copied = new PassThrough();
   stream.on("data", (chunk) => {
-    if (input === undefined) {
-      const lines = chunk.toString().split("\n");
-      for (let i = 0; i < lines.length; ++i) {
-        const index = lines[i].indexOf(":") + 1;
-        try {
-          const obj = JSON.parse(lines[i].slice(index));
-          if (typeof obj?._input === "string") {
-            input = obj._input;
-            lines[i] = lines[i].slice(0, index) + JSON.stringify(obj._ssr);
-            break;
-          }
-        } catch (e) {
-          // ignore
-        }
-      }
-      chunks.push(Buffer.from(lines.join("\n")));
-    } else {
-      chunks.push(chunk);
-    }
+    chunks.push(chunk);
     copied.write(chunk);
   });
   stream.on("end", () => {
@@ -92,7 +123,7 @@ const injectRscPayload = (stream: Readable) => {
               `
 <script>
 globalThis.__WAKU_PREFETCHED__ ||= {};
-globalThis.__WAKU_PREFETCHED__["${input}"] = Promise.resolve({
+globalThis.__WAKU_PREFETCHED__['${input}'] = Promise.resolve({
   ok: true,
   body: new ReadableStream({
     start(c) {
@@ -111,7 +142,7 @@ globalThis.__WAKU_PREFETCHED__["${input}"] = Promise.resolve({
       if (headSent && !closedSent) {
         const scripts = chunks.splice(0).map((chunk) =>
           Buffer.from(`
-<script>globalThis.__WAKU_PUSH__("${chunk.toString("hex")}")</script>`),
+<script>globalThis.__WAKU_PUSH__('${chunk.toString("hex")}')</script>`),
         );
         if (closed) {
           closedSent = true;
@@ -182,15 +213,21 @@ export const renderHtml = async (
   pathStr: string,
   htmlStr: string, // Hope stream works, but it'd be too tricky
 ): Promise<Readable | null> => {
+  const {
+    default: { getSsrConfig },
+  } = await loadEntriesFile(config, command);
+  const ssrConfig = await getSsrConfig?.(pathStr);
+  if (!ssrConfig) {
+    return null;
+  }
   let pipeable: Readable;
   try {
     [pipeable] = await renderRSC({
-      input: pathStr,
+      input: ssrConfig.input,
       method: "GET",
       headers: {},
       command,
       context: null,
-      ssr: true,
     });
   } catch (e) {
     if (hasStatusCode(e) && e.statusCode === 404) {
@@ -221,9 +258,9 @@ export const renderHtml = async (
       },
     },
   );
-  const [copied, inject] = injectRscPayload(pipeable);
+  const [copied, inject] = injectRscPayload(pipeable, ssrConfig.input);
   const data = await createFromNodeStream(copied, { moduleMap });
-  return renderToPipeableStream(data._ssr, {
+  return renderToPipeableStream(ssrConfig.filter(data), {
     onAllReady: () => {
       cleanupFns.forEach((fn) => fn());
       cleanupFns.clear();

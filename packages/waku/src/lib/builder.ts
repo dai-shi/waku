@@ -15,7 +15,7 @@ import {
 } from "./middleware/rsc/worker-api.js";
 import { rscIndexPlugin } from "./vite-plugin/rsc-index-plugin.js";
 import { rscAnalyzePlugin } from "./vite-plugin/rsc-analyze-plugin.js";
-import { renderHtml } from "./middleware/rsc/ssr.js";
+import { renderHtml, shutdown as shutdownSsr } from "./middleware/rsc/ssr.js";
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
@@ -250,7 +250,6 @@ const emitRscFiles = async (
             headers: {},
             command: "build",
             context,
-            ssr: false,
             moduleIdCallback: (id) => addClientModule(input, id),
           });
           await new Promise<void>((resolve, reject) => {
@@ -475,5 +474,6 @@ export async function build(options?: { ssr?: boolean }) {
   // So far, only static sites are supported.
   emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
 
+  await shutdownSsr();
   await shutdownRsc();
 }

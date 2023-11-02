@@ -11,7 +11,6 @@ export type RenderRequest = {
   headers: Record<string, string | string[] | undefined>;
   command: "dev" | "build" | "start";
   context: unknown;
-  ssr: boolean;
   stream?: Readable;
   moduleIdCallback?: (id: string) => void;
 };
@@ -168,7 +167,6 @@ export function renderRSC<Context>(
       headers: rr.headers,
       command: rr.command,
       context: rr.context,
-      ssr: rr.ssr,
     };
     worker.postMessage(mesg);
     pipe();

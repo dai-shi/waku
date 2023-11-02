@@ -146,3 +146,11 @@ export const Slot = ({
 };
 
 export const Children = () => use(ChildrenContext);
+
+export const ServerSlot = ({
+  node,
+  children,
+}: {
+  node: ReactNode;
+  children: ReactNode;
+}) => createElement(ChildrenContextProvider, { value: children }, node);
