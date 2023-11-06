@@ -26,7 +26,7 @@ const App = () => {
         </h3>
         <div className="mt-8 flex justify-center gap-4">
           {links.map((link) => (
-            <Link {...link} />
+            <Link key={link.href} {...link} />
           ))}
         </div>
       </div>
@@ -40,7 +40,7 @@ const Link = ({ href, children }: any) => {
     <a
       href={href}
       target="_blank"
-      rel="noopenner"
+      rel="noopenner noreferrer"
       className="box-content rounded-sm border-b-4 border-red-950 bg-red-900 px-3 py-2 text-sm font-black uppercase leading-none tracking-wide text-red-50"
     >
       {children}

@@ -4,7 +4,7 @@ import { defineEntries } from "waku/server";
 const App = lazy(() => import("./components/app.js"));
 
 export default defineEntries(
-  async (input) => {
+  async () => {
     return {
       App: <App />,
     };
