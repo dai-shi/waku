@@ -82,7 +82,7 @@ Minimum requirement: Node.js 18
 
 To use React Server Components in Waku, you need to create an
 `entries.ts` file in the project root directory with a
-`getEntry` function that returns a server component module.
+`renderEntries` function that returns a server component module.
 Here's an example:
 
 ```tsx
@@ -109,7 +109,7 @@ client.
 #### Client API
 
 To render a React Server Component on the client, you can use the
-`serve` function from `waku/client` with the RSC
+`Root` and `Slot` components from `waku/client` with the RSC
 ID to create a wrapper component. Here's an example:
 
 ```tsx
@@ -127,11 +127,8 @@ const rootElement = (
 createRoot(document.getElementById("root")!).render(rootElement);
 ```
 
-The `name` prop is passed to the React Server Component. We
-need to be careful to use `serve` to avoid client-server
-waterfalls. Usually, we should use it once close to the root
-component.
-
+The `initialInput` prop can be passed to the `Root` Component,
+overriding the default input which is `""`.
 You can also re-render a React Server Component with new input.
 Here's an example just to illustrate the idea:
 
@@ -147,12 +144,9 @@ const Component = () => {
 };
 ```
 
-Note that this is a little tricky and the API may be revisited in the
-future.
-
 #### Additional Server API
 
-In addition to the `getEntry` function, you can also
+In addition to the `renderEntries` function, you can also
 optionally specify `getBuildConfig` function in
 `entries.ts`. Here's an example:
 
