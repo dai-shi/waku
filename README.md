@@ -218,18 +218,16 @@ Here's a simple example code without builder:
 ```tsx
 import { defineRouter } from "waku/router/server";
 
-export default defineRouter(
-  (id) => {
-    switch (id) {
-      case 'index':
-        return import('./routes/index.tsx');
-      case 'foo':
-        return import('./routes/foo.tsx');
-      default:
-        throw new Error("no such route");
-    }
+export default defineRouter((id) => {
+  switch (id) {
+    case "index":
+      return import("./routes/index.tsx");
+    case "foo":
+      return import("./routes/foo.tsx");
+    default:
+      throw new Error("no such route");
   }
-);
+});
 ```
 
 The implementation of the `defineRouter` is config-based.
