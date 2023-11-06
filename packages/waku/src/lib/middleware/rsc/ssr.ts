@@ -151,6 +151,7 @@ ${prefetchedLines
   .join("\n")}
   '${input}': ${fakeFetchCode},
 };
+globalThis.__WAKU_SSR_ENABLED__ = true;
 </script>
 ` +
             data.slice(closingHeadIndex);
@@ -179,7 +180,7 @@ ${prefetchedLines
       callback(null, chunk);
     },
     final(callback) {
-      if (!closed) {
+      if (!closedSent) {
         throw new Error("RSC stream is not closed yet");
       }
       callback();
@@ -194,36 +195,26 @@ const interleaveHtmlSnippets = (
   postamble: string,
 ) => {
   let preambleSent = false;
-  let intermediateSent = false;
   return new Transform({
     transform(chunk, encoding, callback) {
       if (encoding !== ("buffer" as any)) {
         throw new Error("Unknown encoding");
       }
       if (!preambleSent) {
+        const data = chunk.toString();
         preambleSent = true;
-        const data = chunk.toString();
-        callback(null, preamble + data);
+        callback(null, Buffer.from(preamble + data + intermediate));
         return;
-      }
-      if (!intermediateSent) {
-        const data = chunk.toString();
-        if (data.startsWith("<script>")) {
-          intermediateSent = true;
-          callback(null, intermediate + data);
-          return;
-        }
       }
       callback(null, chunk);
     },
-    final(callback) {
+    async final(callback) {
       if (!preambleSent) {
-        this.push(preamble);
+        this.push(Buffer.from(preamble));
       }
-      if (!intermediateSent) {
-        this.push(intermediate);
-      }
-      this.push(postamble);
+      // HACK wait a little bit for `closed` in injectRscPayload.
+      await new Promise((resolve) => setTimeout(resolve));
+      this.push(Buffer.from(postamble));
       callback();
     },
   });

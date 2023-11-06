@@ -18,7 +18,7 @@ const App = ({ name }: { name: string }) => {
 };
 
 const ServerMessage = async () => {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 2000));
   return <p>Hello from server!</p>;
 };
 
