@@ -259,10 +259,14 @@ export const renderHtml = async (
           {},
           {
             get(_target, name: string) {
+              const file = filePath.slice(config.basePath.length);
+              if (file.startsWith("@fs/")) {
+                return { specifier: file.slice(3), name };
+              }
               const f = path.join(
                 config.rootDir,
                 command === "dev" ? config.srcDir : config.distDir,
-                filePath,
+                file,
               );
               return { specifier: transpile ? transpile(f) : f, name };
             },

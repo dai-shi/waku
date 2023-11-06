@@ -172,8 +172,8 @@ export function rsc<Context>(options: {
     if (options.command === "dev") {
       const vite = await getViteServer();
       // HACK re-export "?v=..." URL to avoid dual module hazard.
-      const fname = pathStr.startsWith("/@fs/")
-        ? pathStr.slice(4)
+      const fname = pathStr.startsWith(config.basePath + "@fs/")
+        ? pathStr.slice(config.basePath.length + 3)
         : path.join(vite.config.root, pathStr);
       for (const item of vite.moduleGraph.idToModuleMap.values()) {
         if (item.file === fname && item.url !== pathStr) {
