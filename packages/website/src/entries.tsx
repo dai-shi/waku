@@ -1,7 +1,7 @@
-import { lazy } from 'react';
-import { defineEntries } from 'waku/server';
+import { lazy } from "react";
+import { defineEntries } from "waku/server";
 
-const App = lazy(() => import('./components/app.js'));
+const App = lazy(() => import("./components/app.js"));
 
 export default defineEntries(
   async (input) => {
@@ -11,16 +11,16 @@ export default defineEntries(
   },
   async () => {
     return {
-      '/': {
-        entries: [['']],
+      "/": {
+        entries: [[""]],
       },
     };
   },
   () => ({
     getInput: async (pathStr) => {
       switch (pathStr) {
-        case '/':
-          return '';
+        case "/":
+          return "";
         default:
           return null;
       }

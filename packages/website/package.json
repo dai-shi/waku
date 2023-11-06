@@ -1,10 +1,6 @@
 {
   "name": "waku-website",
-  "version": "0.0.0",
-  "description": "⛩️ The minimal React framework",
-  "homepage": "https://github.com/dai-shi/waku",
-  "bugs": "https://github.com/dai-shi/waku/issues",
-  "license": "MIT",
+  "version": "0.2.0",
   "author": "Sophia Michelle Andren (https://candycode.com/)",
   "type": "module",
   "private": true,
@@ -18,7 +14,7 @@
     "react": "18.3.0-canary-a41957507-20231017",
     "react-dom": "18.3.0-canary-a41957507-20231017",
     "react-server-dom-webpack": "18.3.0-canary-a41957507-20231017",
-    "waku": "0.16.0"
+    "waku": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^18.2.31",
@@ -27,6 +23,7 @@
     "prettier": "^3.0.3",
     "prettier-plugin-tailwindcss": "^0.5.6",
     "tailwindcss": "^3.3.5",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "vite": "4.5.0"
   }
 }
