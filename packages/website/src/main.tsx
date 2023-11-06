@@ -1,11 +1,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { Router } from "waku/router/client";
+import { Root, Slot } from "waku/client";
 
-const root = createRoot(document.getElementById("root")!);
-
-root.render(
+const rootElement = (
   <StrictMode>
-    <Router shouldSkip={(id) => id !== "docs/layout"} />
-  </StrictMode>,
+    <Root>
+      <Slot id="App" />
+    </Root>
+  </StrictMode>
 );
+
+createRoot(document.getElementById("root")!).render(rootElement);
