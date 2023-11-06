@@ -93,6 +93,21 @@ const createTranspiler = async (cleanupFns: Set<() => void>) => {
   };
 };
 
+const fakeFetchCode = `
+Promise.resolve({
+  ok: true, body:
+  new ReadableStream({
+    start(c) {
+      const f = (s) => new Uint8Array(s.match(/../g).map((h) => parseInt(h, 16)));
+      globalThis.__WAKU_PUSH__ = (s) => s ? c.enqueue(f(s)) : c.close();
+    }
+  })
+})
+`
+  .split("\n")
+  .map((line) => line.trim())
+  .join("");
+
 const injectRscPayload = (stream: Readable, input: string) => {
   const chunks: Buffer[] = [];
   let closed = false;
@@ -105,6 +120,7 @@ const injectRscPayload = (stream: Readable, input: string) => {
     closed = true;
     copied.end();
   });
+  let prefetchedLines: string[] = [];
   let headSent = false;
   let closedSent = false;
   const inject = new Transform({
@@ -112,30 +128,36 @@ const injectRscPayload = (stream: Readable, input: string) => {
       if (encoding !== ("buffer" as any)) {
         throw new Error("Unknown encoding");
       }
-      const data = chunk.toString();
       if (!headSent) {
-        const index = data.indexOf("</head>");
-        if (index >= 0) {
+        let data: string = chunk.toString();
+        const matchPrefetched = data.match(
+          // FIXME This is very ad-hoc.
+          /(.*)<script>\nglobalThis\.__WAKU_PREFETCHED__ = {\n(.*?)\n};\n(.*)/s,
+        );
+        if (matchPrefetched) {
+          prefetchedLines = matchPrefetched[2]!.split("\n");
+          data = matchPrefetched[1] + "<script>\n" + matchPrefetched[3];
+        }
+        const closingHeadIndex = data.indexOf("</head>");
+        if (closingHeadIndex >= 0) {
           headSent = true;
-          callback(
-            null,
-            data.slice(0, index) +
-              `
+          data =
+            data.slice(0, closingHeadIndex) +
+            `
 <script>
-globalThis.__WAKU_PREFETCHED__ ||= {};
-globalThis.__WAKU_PREFETCHED__['${input}'] = Promise.resolve({
-  ok: true,
-  body: new ReadableStream({
-    start(c) {
-      const f = (s) => new Uint8Array(s.match(/../g).map((h) => parseInt(h, 16)));
-      globalThis.__WAKU_PUSH__ = (s) => s ? c.enqueue(f(s)) : c.close();
-    }
-  })
-});
+globalThis.__WAKU_PREFETCHED__ = {
+${prefetchedLines
+  .filter((line) => !line.startsWith(`  '${input}':`))
+  .join("\n")}
+  '${input}': ${fakeFetchCode},
+};
 </script>
 ` +
-              data.slice(index),
-          );
+            data.slice(closingHeadIndex);
+          callback(null, Buffer.from(data));
+          return;
+        } else if (matchPrefetched) {
+          callback(null, Buffer.from(data));
           return;
         }
       }
