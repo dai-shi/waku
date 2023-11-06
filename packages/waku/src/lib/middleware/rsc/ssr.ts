@@ -111,14 +111,17 @@ Promise.resolve({
 const injectRscPayload = (stream: Readable, input: string) => {
   const chunks: Buffer[] = [];
   let closed = false;
+  let notify: (() => void) | undefined;
   const copied = new PassThrough();
   stream.on("data", (chunk) => {
-    chunks.push(chunk);
     copied.write(chunk);
+    chunks.push(chunk);
+    notify?.();
   });
   stream.on("end", () => {
-    closed = true;
     copied.end();
+    closed = true;
+    notify?.();
   });
   let prefetchedLines: string[] = [];
   let headSent = false;
@@ -156,34 +159,41 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
 ` +
             data.slice(closingHeadIndex);
           callback(null, Buffer.from(data));
+          notify = () => {
+            const scripts = chunks.splice(0).map((chunk) =>
+              Buffer.from(`
+<script>globalThis.__WAKU_PUSH__('${chunk.toString("hex")}')</script>`),
+            );
+            if (closed) {
+              closedSent = true;
+              scripts.push(
+                Buffer.from(`
+<script>globalThis.__WAKU_PUSH__()</script>`),
+              );
+            }
+            this.push(Buffer.concat(scripts));
+          };
+          notify();
           return;
         } else if (matchPrefetched) {
           callback(null, Buffer.from(data));
           return;
         }
       }
-      if (headSent && !closedSent) {
-        const scripts = chunks.splice(0).map((chunk) =>
-          Buffer.from(`
-<script>globalThis.__WAKU_PUSH__('${chunk.toString("hex")}')</script>`),
-        );
-        if (closed) {
-          closedSent = true;
-          scripts.push(
-            Buffer.from(`
-<script>globalThis.__WAKU_PUSH__()</script>`),
-          );
-        }
-        callback(null, Buffer.concat([...scripts, chunk]));
-        return;
-      }
       callback(null, chunk);
     },
     final(callback) {
-      if (!closedSent) {
-        throw new Error("RSC stream is not closed yet");
+      if (!closedSent && notify) {
+        const notifyOrig = notify;
+        notify = () => {
+          notifyOrig();
+          if (closedSent) {
+            callback();
+          }
+        };
+      } else {
+        callback();
       }
-      callback();
     },
   });
   return [copied, inject] as const;
@@ -203,18 +213,30 @@ const interleaveHtmlSnippets = (
       if (!preambleSent) {
         const data = chunk.toString();
         preambleSent = true;
-        callback(null, Buffer.from(preamble + data + intermediate));
+        callback(
+          null,
+          Buffer.concat([
+            Buffer.from(preamble),
+            Buffer.from(data),
+            Buffer.from(intermediate),
+          ]),
+        );
         return;
       }
       callback(null, chunk);
     },
-    async final(callback) {
+    final(callback) {
       if (!preambleSent) {
-        this.push(Buffer.from(preamble));
+        this.push(
+          Buffer.concat([
+            Buffer.from(preamble),
+            Buffer.from(intermediate),
+            Buffer.from(postamble),
+          ]),
+        );
+      } else {
+        this.push(Buffer.from(postamble));
       }
-      // HACK wait a little bit for `closed` in injectRscPayload.
-      await new Promise((resolve) => setTimeout(resolve));
-      this.push(Buffer.from(postamble));
       callback();
     },
   });
