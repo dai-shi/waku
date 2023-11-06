@@ -10,6 +10,26 @@ Feel free to try it _seriously_ with non-production projects and give us feedbac
 
 Playground: https://codesandbox.io/p/sandbox/waku-example-counter-mdc1yb
 
+## Introduction
+
+Waku is a React framework that supports React Server Components
+(RSCs), a new feature that will be available in a future version of
+React. RSCs allow developers to render UI components on the server,
+improving performance and enabling server-side features. To use RSCs,
+a framework is necessary for bundling, optionally server, router and
+so on.
+
+Waku takes a minimalistic approach, providing a minimal API that
+allows for multiple feature implementations and encourages growth in
+the ecosystem. For example, the minimal API is not tied to a specific
+router. This flexibility makes it easier to build new features.
+
+Waku uses Vite internally, and while it is still a work in progress,
+it will eventually support all of Vite's features. It can even
+work as a replacement for Vite + React client components. While using
+RSCs is optional, it is highly recommended for improved user and
+developer experiences.
+
 ## Why develop a React framework?
 
 We believe that React Server Components (RSCs) are the future of React.
@@ -29,7 +49,8 @@ Our goal is to establish an ecosystem that covers a broader range of use cases.
 
 ## How to create a new project
 
-Minimum requirement: Node.js 18
+To start a new Waku project, you can use any of the following
+commands, depending on your preferred package manager:
 
 ```bash
 npm create waku@latest
@@ -43,93 +64,240 @@ yarn create waku
 pnpm create waku # It may not work correctly with some libs
 ```
 
-## APIs
+These commands will create an example app that you can use as a
+starting point for your project.
 
-TODO
+Minimum requirement: Node.js 18
+
+## Practices
+
+### Minimal
+
+#### Server API
+
+To use React Server Components in Waku, you need to create an
+`entries.ts` file in the project root directory with a
+`getEntry` function that returns a server component module.
+Here's an example:
+
+```tsx
+import { lazy } from "react";
+
+import { defineEntries } from "waku/server";
+
+const App = lazy(() => import("./components/App.js"));
+
+export default defineEntries(
+  // renderEntries
+  async (input) => {
+    return {
+      App: <App name={input || "Waku"} />,
+    };
+  },
+);
+```
+
+The `id` parameter is the ID of the React Server Component
+that you want to load on the server. You specify the RSC ID from the
+client.
+
+#### Client API
+
+To render a React Server Component on the client, you can use the
+`serve` function from `waku/client` with the RSC
+ID to create a wrapper component. Here's an example:
+
+```tsx
+import { createRoot } from "react-dom/client";
+import { Root, Slot } from "waku/client";
+
+const rootElement = (
+  <StrictMode>
+    <Root>
+      <Slot id="App" />
+    </Root>
+  </StrictMode>
+);
+
+createRoot(document.getElementById("root")!).render(rootElement);
+```
+
+The `name` prop is passed to the React Server Component. We
+need to be careful to use `serve` to avoid client-server
+waterfalls. Usually, we should use it once close to the root
+component.
+
+You can also re-render a React Server Component with new input.
+Here's an example just to illustrate the idea:
+
+```tsx
+import { useRefetch } from "waku/client";
+
+const Component = () => {
+  const refetch = useRefetch();
+  const handleClick = () => {
+    refetch("...");
+  };
+  // ...
+};
+```
+
+Note that this is a little tricky and the API may be revisited in the
+future.
+
+#### Additional Server API
+
+In addition to the `getEntry` function, you can also
+optionally specify `getBuildConfig` function in
+`entries.ts`. Here's an example:
+
+```tsx
+import { defineEntries } from "waku/server";
+
+export default defineEntries(
+  // renderEntries
+  async (input) => {
+    return {
+      App: <App name={input || "Waku"} />,
+    };
+  },
+  // getBuildConfig
+  async () => {
+    return {
+      "/": {
+        entries: [[""]],
+      },
+    };
+  },
+);
+```
+
+The `getBuildConfig` function is used for build-time
+optimization. It renders React Server Components during the build
+process to produce the output that will be sent to the client. Note
+that rendering here means to produce RSC payload not HTML content.
+
+#### How to try it
+
+If you create a project with something like
+`npm create waku@latest`, it will create the minimal
+example app.
+
+### Router
+
+Waku provides a router built on top of the minimal API, and it serves
+as a reference implementation. While other router implementations can
+be used with Waku, this page focuses on the `waku/router`
+implementation.
+
+#### Client API
+
+To use the router, it is required to use the `Router`
+component instead of using `serve` directly. The following
+code demonstrates how to use the `Router` component as the
+root component:
+
+```tsx
+import { createRoot } from "react-dom/client";
+import { Router } from "waku/router/client";
+
+const root = createRoot(document.getElementById("root")!);
+
+root.render(<Router />);
+```
+
+The `Router` component internally uses `serve`
+and handles nested routes.
+
+#### Server API
+
+In `entries.ts`, we use `defineRouter` to export
+`getEntry` and `getBuildConfig` at once.
+Here's a simple example code without builder:
+
+```tsx
+import { defineRouter } from "waku/router/server";
+
+export default defineRouter((id) => {
+  switch (id) {
+    case "index":
+      return import("./routes/index.tsx");
+    case "foo":
+      return import("./routes/foo.tsx");
+    default:
+      throw new Error("no such route");
+  }
+});
+```
+
+The implementation of the `defineRouter` is config-based.
+However, it isn't too difficult to make a file-based router.
+Here's a file-based example code with builder:
+
+```tsx
+import url from "node:url";
+import path from "node:path";
+
+import { glob } from "glob";
+import { defineRouter } from "waku/router/server";
+
+const routesDir = path.join(
+  path.dirname(url.fileURLToPath(import.meta.url)),
+  "routes",
+);
+
+export default defineRouter(
+  // getComponent (id is "**/layout" or "**/page")
+  async (id) => {
+    const files = await glob(${"`"}$\{id}.{tsx,js}${"`"}, { cwd: routesDir });
+    if (files.length === 0) {
+      return null;
+    }
+    const items = id.split("/");
+    switch (items.length) {
+      case 1:
+        return import(${"`"}./routes/$\{items[0]}.tsx${"`"});
+      case 2:
+        return import(${"`"}./routes/$\{items[0]}/$\{items[1]}.tsx${"`"});
+      case 3:
+        return import(${"`"}./routes/$\{items[0]}/$\{items[1]}/$\{items[2]}.tsx${"`"});
+      default:
+        throw new Error("too deep route");
+    }
+  },
+  // getPathsForBuild
+  async () => {
+    const files = await glob("**/page.{tsx,js}", { cwd: routesDir });
+    return files.map(
+      (file) => "/" + file.slice(0, Math.max(0, file.lastIndexOf("/"))),
+    );
+  },
+);
+```
+
+Due to the limitation of bundler, we cannot automatically allow
+infinite depth of routes.
+
+#### How to try it
+
+You can try an example app in the repository by cloning it and running
+the following commands:
+
+```bash
+git clone https://github.com/dai-shi/waku.git
+cd waku
+npm install
+npm run examples:dev:07_router
+```
+
+Alternatively, you could create a project with something like
+`npm create waku@latest` and copy files from the example
+folder in the repository.
 
 ## Tweets
 
-<details>
-
-- https://twitter.com/dai_shi/status/1631668890861441024
-- https://twitter.com/dai_shi/status/1631989295866347520
-- https://twitter.com/dai_shi/status/1632005473401716736
-- https://twitter.com/dai_shi/status/1632168346354593792
-- https://twitter.com/dai_shi/status/1632729614450823169
-- https://twitter.com/dai_shi/status/1632749501416087552
-- https://twitter.com/dai_shi/status/1633262538862530561
-- https://twitter.com/dai_shi/status/1633301007391424518
-- https://twitter.com/dai_shi/status/1633821215206035460
-- https://twitter.com/dai_shi/status/1633824588152074240
-- https://twitter.com/dai_shi/status/1633826855282434048
-- https://twitter.com/dai_shi/status/1634210639831867392
-- https://twitter.com/dai_shi/status/1634212827706654723
-- https://twitter.com/dai_shi/status/1635142924928434177
-- https://twitter.com/dai_shi/status/1635149324383559681
-- https://twitter.com/dai_shi/status/1635437958185766913
-- https://twitter.com/dai_shi/status/1636744180902014981
-- https://twitter.com/dai_shi/status/1636745339624624132
-- https://twitter.com/dai_shi/status/1636746632900534273
-- https://twitter.com/dai_shi/status/1637635196458778627
-- https://twitter.com/dai_shi/status/1637768216817840129
-- https://twitter.com/dai_shi/status/1638910110448902145
-- https://twitter.com/dai_shi/status/1639858260114300931
-- https://twitter.com/dai_shi/status/1640358907540537344
-- https://twitter.com/dai_shi/status/1642463300314333184
-- https://twitter.com/dai_shi/status/1643224085755998210
-- https://twitter.com/dai_shi/status/1647132330543419392
-- https://twitter.com/dai_shi/status/1654755487391559680
-- https://twitter.com/dai_shi/status/1660306318140542976
-- https://twitter.com/dai_shi/status/1660537733201248257
-- https://twitter.com/dai_shi/status/1660660331528728578
-- https://twitter.com/dai_shi/status/1661727138746339328
-- https://twitter.com/dai_shi/status/1664286329763684353
-- https://twitter.com/dai_shi/status/1664989534889861123
-- https://twitter.com/dai_shi/status/1667545252654366721
-- https://twitter.com/dai_shi/status/1670650381762961408
-- https://twitter.com/dai_shi/status/1671161795061628930
-- https://twitter.com/dai_shi/status/1676793637282394112
-- https://twitter.com/dai_shi/status/1684928419220578304
-- https://twitter.com/dai_shi/status/1701220824412528721
-- https://twitter.com/dai_shi/status/1701518886972293289
-- https://twitter.com/dai_shi/status/1717018915539492971
-
-</details>
+<https://github.com/dai-shi/waku/discussions/150>
 
 ## Diagrams
 
-### Architecture
-
-https://excalidraw.com/#json=XGEA5V5JVU3AZSri7fXOw,Q95v26_30v05jwwQeU_tjw
-
-![waku-arch](https://github.com/dai-shi/waku/assets/490574/482c60ba-3a92-45ba-b7cc-9a077110ce44)
-
-### How React Server Functions Work
-
-https://excalidraw.com/#json=sqAZKA6csX-vLDlnu7CyK,JYQiZyAHbCPK4zPgeD2a8g
-
-![waku-rsf](https://github.com/dai-shi/waku/assets/490574/22874733-20ff-4096-8702-e1fe1166dfd2)
-
-### How Waku counter example communicates with server
-
-https://excalidraw.com/#json=LMrRnVfDm8TDGtP-BfHZ5,o1fI7c_HvL81TDKSRoEc5A
-
-![waku-counter](https://github.com/dai-shi/waku/assets/490574/ca5685c6-a5b2-434a-89bd-272c0d87e935)
-
-### Waku's minimal spec for React Server Components
-
-https://excalidraw.com/#json=RPBX88sLf6FFCQXOVXIyW,ngpz5ZqKyQyU2vgWx_x6tg
-
-![waku-spec](https://github.com/dai-shi/waku/assets/490574/0dd50285-c443-4668-a7d6-fbd6952b0d76)
-
-### How Waku's RSC-only SSR works
-
-https://excalidraw.com/#json=pSsBQOqkYX4O-TIgxNrZj,i_CsymP1VZiHIAa0dlLbNw
-
-![waku-ssr](https://github.com/dai-shi/waku/assets/490574/84629e46-518a-4ab1-946a-8a31c80db879)
-
-### Waku v0.15.0 Protocol
-
-https://excalidraw.com/#json=8muYAv1EfRMXi_If8h1Qn,ZDIumwmVrekMQqCTHLNJyg
-
-![waku-protocol](https://github.com/dai-shi/waku/assets/490574/6fac50e3-7890-447b-ac90-8aa7d6f1ac1b)
+<https://github.com/dai-shi/waku/discussions/151>
