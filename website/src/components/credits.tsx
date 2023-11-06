@@ -1,5 +1,5 @@
 export const Credits = () => {
-  if (process.env.VITE_CREDITS !== '1') return null;
+  if (process.env.VITE_SHOW_CREDITS !== '1') return null;
 
   return (
     <div
