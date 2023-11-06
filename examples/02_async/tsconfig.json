@@ -10,7 +10,6 @@
     "exactOptionalPropertyTypes": true,
     "jsx": "react-jsx",
     "outDir": "./dist",
-    "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "composite": true
   },
   "include": ["./src"],

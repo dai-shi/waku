@@ -3,7 +3,7 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "lib": ["esnext", "dom", "dom.iterable"],
     "tsBuildInfoFile": "./dist/.tsbuildinfo"
   },
   "include": ["src"]
