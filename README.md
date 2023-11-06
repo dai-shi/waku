@@ -1,6 +1,6 @@
 # Waku
 
-⛩️  The minimal React framework
+⛩️ The minimal React framework
 
 ## Project status
 
