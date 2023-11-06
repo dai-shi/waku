@@ -42,9 +42,13 @@
     "website:prd": "pnpm run website:build && (cd packages/website && pnpm start)"
   },
   "prettier": {
-    "plugins": ["prettier-plugin-tailwindcss"],
+    "plugins": [
+      "prettier-plugin-tailwindcss"
+    ],
     "tailwindConfig": "./packages/website/tailwind.config.js",
-    "tailwindFunctions": ["cx"]
+    "tailwindFunctions": [
+      "cx"
+    ]
   },
   "devDependencies": {
     "@playwright/test": "^1.38.1",
@@ -68,5 +72,8 @@
     "react-server-dom-webpack": "18.3.0-canary-a41957507-20231017",
     "typescript": "^5.2.2",
     "waku": "workspace:*"
+  },
+  "dependencies": {
+    "prettier-plugin-tailwindcss": "^0.5.6"
   }
 }
