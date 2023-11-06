@@ -9,9 +9,9 @@ export default function Page() {
       <div className="flex flex-col gap-8 items-center">
         {/* hero text */}
         <div className="flex flex-col gap-0 text-4xl font-extrabold items-start md:items-center">
-          <h1>The Minimalist</h1>
-          <h1 className="text-cCarmine">React Framework</h1>
-          <h1>With Server Components</h1>
+          <h1>⛩️ The minimal</h1>
+          <h1 className="text-cCarmine">React framework</h1>
+          <h1>with Server Components</h1>
         </div>
 
         {/* buttons */}
