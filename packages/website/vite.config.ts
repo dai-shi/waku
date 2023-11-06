@@ -2,22 +2,12 @@ import url from "node:url";
 import path from "node:path";
 
 import { defineConfig } from "waku/config";
+import { loadEnv } from "vite";
 
-const modulesRoot = path.join(
-  path.dirname(url.fileURLToPath(import.meta.url)),
-  "src",
-);
+export default ({ mode }) => {
+  process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
 
-export default defineConfig({
-  root: path.dirname(url.fileURLToPath(import.meta.url)),
-  build: {
-    rollupOptions: {
-      output: {
-        // FIXME this doesn't seem to provide nice output.
-        // TODO we should use `input` instead.
-        preserveModules: true,
-        preserveModulesRoot: modulesRoot,
-      },
-    },
-  },
-});
+  return defineConfig({
+    root: path.dirname(url.fileURLToPath(import.meta.url)),
+  });
+};
