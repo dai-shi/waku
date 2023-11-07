@@ -24,7 +24,7 @@ export default defineEntries(
       case "/":
         return {
           input: "",
-          filter: (elements) => elements.App,
+          render: ({ Slot }) => <Slot id="App" />,
         };
       default:
         return null;
