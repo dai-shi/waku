@@ -1,14 +1,13 @@
 import url from "node:url";
 import path from "node:path";
 
-import { defineConfig } from "waku/config";
-
 const modulesRoot = path.join(
   path.dirname(url.fileURLToPath(import.meta.url)),
   "src",
 );
 
-export default defineConfig({
+/** @type {import('vite').UserConfig} */
+export default {
   build: {
     rollupOptions: {
       output: {
@@ -19,4 +18,4 @@ export default defineConfig({
       },
     },
   },
-});
+};

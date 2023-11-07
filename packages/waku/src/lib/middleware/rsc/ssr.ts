@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import { PassThrough, Transform } from "node:stream";
 import type { Readable } from "node:stream";
 import { Buffer } from "node:buffer";
+import { Server } from "node:http";
 
 import { createElement } from "react";
 import RDServer from "react-dom/server";
@@ -38,6 +39,7 @@ const getViteServer = async (command: "dev" | "build") => {
     console.warn("Restarting Vite server with different command");
     await lastViteServer[0].close();
   }
+  const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const { createServer: viteCreateServer } = await import("vite");
   const { nonjsResolvePlugin } = await import(
     "../../vite-plugin/nonjs-resolve-plugin.js"
@@ -45,8 +47,10 @@ const getViteServer = async (command: "dev" | "build") => {
   const viteServer = await viteCreateServer({
     plugins: [...(command === "dev" ? [nonjsResolvePlugin()] : [])],
     appType: "custom",
-    server: { middlewareMode: true },
+    server: { middlewareMode: true, hmr: { server: dummyServer } },
   });
+  await viteServer.watcher.close(); // TODO watch: null
+  await viteServer.ws.close();
   lastViteServer = [viteServer, command];
   return viteServer;
 };

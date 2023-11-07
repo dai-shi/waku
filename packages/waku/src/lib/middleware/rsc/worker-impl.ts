@@ -91,8 +91,6 @@ const handleGetBuildConfig = async (
   }
 };
 
-const dummyServer = new Server();
-
 let lastViteServer:
   | [vite: ViteDevServer, command: "dev" | "build" | "start"]
   | undefined;
@@ -105,6 +103,7 @@ const getViteServer = async (command: "dev" | "build" | "start") => {
     console.warn("Restarting Vite server with different command");
     await lastViteServer[0].close();
   }
+  const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const { createServer: viteCreateServer } = await import("vite");
   const { rscTransformPlugin } = await import(
     "../../vite-plugin/rsc-transform-plugin.js"
@@ -135,6 +134,7 @@ const getViteServer = async (command: "dev" | "build" | "start") => {
     appType: "custom",
     server: { middlewareMode: true, hmr: { server: dummyServer } },
   });
+  await viteServer.ws.close();
   lastViteServer = [viteServer, command];
   return viteServer;
 };
