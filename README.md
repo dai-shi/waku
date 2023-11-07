@@ -5,6 +5,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/dai-shi/waku/ci.yml?branch=main)](https://github.com/dai-shi/waku/actions?query=workflow%3ACI)
 [![npm](https://img.shields.io/npm/v/waku)](https://www.npmjs.com/package/waku)
 [![discord](https://img.shields.io/discord/627656437971288081)](https://discord.gg/MrQdmzd)
+
 <!-- [![size](https://img.shields.io/bundlephobia/minzip/waku)](https://bundlephobia.com/result?p=waku) -->
 
 ## Project status
