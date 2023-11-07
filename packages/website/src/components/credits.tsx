@@ -15,6 +15,7 @@ export const Credits = () => {
         backgroundRepeat: "no-repeat",
         lineHeight: 1,
         pointerEvents: "none",
+        overflow: "clip",
       }}
     >
       <a
