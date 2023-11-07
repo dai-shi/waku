@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "waku dev --with-ssr",
-    "build": "waku build",
+    "build": "waku build --with-ssr",
     "start": "waku start --with-ssr"
   },
   "dependencies": {

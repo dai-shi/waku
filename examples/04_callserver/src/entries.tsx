@@ -19,11 +19,14 @@ export default defineEntries(
       },
     };
   },
-  // renderPage
+  // getSsrConfig
   async (pathStr) => {
     switch (pathStr) {
       case "/":
-        return { element: <App name="Waku" /> };
+        return {
+          input: "",
+          filter: (elements) => elements.App,
+        };
       default:
         return null;
     }
