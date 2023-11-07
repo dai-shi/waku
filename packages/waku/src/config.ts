@@ -49,11 +49,6 @@ export interface Config {
    */
   ssr?: {
     /**
-     * The RSC server URL.
-     * Defaults to "/".
-     */
-    rscServer?: string;
-    /**
      * A function to split HTML string into three parts.
      * The default function is to split with
      * <!--placeholder1-->...<!--/placeholder1--> and

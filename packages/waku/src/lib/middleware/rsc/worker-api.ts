@@ -11,6 +11,7 @@ export type RenderRequest = {
   headers: Record<string, string | string[] | undefined>;
   command: "dev" | "build" | "start";
   context: unknown;
+  ssr?: boolean | undefined;
   stream?: Readable;
   moduleIdCallback?: (id: string) => void;
 };
@@ -36,7 +37,7 @@ export type MessageReq =
   | ({
       id: number;
       type: "render";
-      moduleIdCallback: boolean;
+      hasModuleIdCallback: boolean;
     } & Omit<RenderRequest, "stream" | "moduleIdCallback">)
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "end" }
@@ -158,15 +159,14 @@ export function renderRSC<Context>(
         messageCallbacks.delete(id);
       }
     });
+    const copied = { ...rr };
+    delete copied.stream;
+    delete copied.moduleIdCallback;
     const mesg: MessageReq = {
       id,
       type: "render",
-      moduleIdCallback: !!rr.moduleIdCallback,
-      input: rr.input,
-      method: rr.method,
-      headers: rr.headers,
-      command: rr.command,
-      context: rr.context,
+      hasModuleIdCallback: !!rr.moduleIdCallback,
+      ...copied,
     };
     worker.postMessage(mesg);
     pipe();

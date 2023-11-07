@@ -9,6 +9,7 @@ import RSDWServer from "react-server-dom-webpack/server";
 import busboy from "busboy";
 import type { ViteDevServer } from "vite";
 
+import { Slot, ServerRoot } from "../../../client.js";
 import { resolveConfig } from "../../config.js";
 import { hasStatusCode, deepFreeze } from "./utils.js";
 import type { MessageReq, MessageRes, RenderRequest } from "./worker-api.js";
@@ -26,29 +27,22 @@ type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 const streamMap = new Map<number, Writable>();
 
 const handleRender = async (mesg: MessageReq & { type: "render" }) => {
-  const { id, input, method, headers, command, context, moduleIdCallback } =
-    mesg;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { id, type, hasModuleIdCallback, ...rest } = mesg;
+  const rr: RenderRequest = rest;
   try {
     const stream = new PassThrough();
     streamMap.set(id, stream);
-    const rr: RenderRequest = {
-      input,
-      method,
-      headers,
-      command,
-      stream,
-      context,
-    };
-    if (moduleIdCallback) {
+    if (hasModuleIdCallback) {
       rr.moduleIdCallback = (moduleId: string) => {
         const mesg: MessageRes = { id, type: "moduleId", moduleId };
         parentPort!.postMessage(mesg);
       };
     }
     const pipeable = await renderRSC(rr);
-    const mesg: MessageRes = { id, type: "start", context };
+    const mesg: MessageRes = { id, type: "start", context: rr.context };
     parentPort!.postMessage(mesg);
-    deepFreeze(context);
+    deepFreeze(rr.context);
     const writable = new Writable({
       write(chunk, encoding, callback) {
         if (encoding !== ("buffer" as any)) {
@@ -229,7 +223,9 @@ const transformRsfId = (prefixToRemove: string) =>
       let changed = false;
       for (let i = 0; i < lines.length; ++i) {
         const match = lines[i].match(
-          new RegExp(`^([0-9]+):{"id":"(?:file://)?${prefixToRemove}(.*?)"(.*)$`),
+          new RegExp(
+            `^([0-9]+):{"id":"(?:file://)?${prefixToRemove}(.*?)"(.*)$`,
+          ),
         );
         if (match) {
           lines[i] = `${match[1]}:{"id":"${match[2]}"${match[3]}`;
@@ -264,6 +260,10 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     }
     if (Object.keys(elements).some((key) => key.startsWith("_"))) {
       throw new Error('"_" prefix is reserved');
+    }
+    if (rr.ssr) {
+      elements._Slot = Slot as any; // HACK lie the type
+      elements._ServerRoot = ServerRoot as any; // HACK lie the type
     }
     return elements;
   };

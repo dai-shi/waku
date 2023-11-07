@@ -5,6 +5,7 @@ import { PassThrough, Transform } from "node:stream";
 import type { Readable } from "node:stream";
 import { Buffer } from "node:buffer";
 
+import { createElement } from "react";
 import RDServer from "react-dom/server";
 import RSDWClient from "react-server-dom-webpack/client.node.unbundled";
 import type { ViteDevServer } from "vite";
@@ -19,6 +20,13 @@ const { renderToPipeableStream } = RDServer;
 const { createFromNodeStream } = RSDWClient;
 
 type Entries = { default: ReturnType<typeof defineEntries> };
+
+const createResolvedPromise = <T>(value: T) => {
+  const promise = Promise.resolve(value);
+  (promise as any).status = "fulfilled";
+  (promise as any).value = value;
+  return promise;
+};
 
 let lastViteServer: [vite: ViteDevServer, command: "dev" | "build"] | undefined;
 
@@ -263,6 +271,7 @@ export const renderHtml = async (
       headers: {},
       command,
       context: null,
+      ssr: true,
     });
   } catch (e) {
     if (hasStatusCode(e) && e.statusCode === 404) {
@@ -299,17 +308,25 @@ export const renderHtml = async (
   );
   const [copied, inject] = injectRscPayload(pipeable, ssrConfig.input);
   const data = await createFromNodeStream(copied, { moduleMap });
-  return renderToPipeableStream(ssrConfig.filter(data), {
-    onAllReady: () => {
-      cleanupFns.forEach((fn) => fn());
-      cleanupFns.clear();
+  const { _Slot: Slot, _ServerRoot: ServerRoot, ...elements } = data;
+  return renderToPipeableStream(
+    createElement(
+      ServerRoot,
+      { elements: createResolvedPromise(elements) },
+      ssrConfig.render({ Slot }),
+    ),
+    {
+      onAllReady: () => {
+        cleanupFns.forEach((fn) => fn());
+        cleanupFns.clear();
+      },
+      onError(err) {
+        cleanupFns.forEach((fn) => fn());
+        cleanupFns.clear();
+        console.error(err);
+      },
     },
-    onError(err) {
-      cleanupFns.forEach((fn) => fn());
-      cleanupFns.clear();
-      console.error(err);
-    },
-  })
+  )
     .pipe(interleaveHtmlSnippets(...splitHTML(htmlStr)))
     .pipe(inject);
 };

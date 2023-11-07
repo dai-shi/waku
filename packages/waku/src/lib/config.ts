@@ -45,7 +45,6 @@ export async function resolveConfig() {
     rscPrefix: "RSC/",
     ...config,
     ssr: {
-      rscServer: "/",
       splitHTML,
       ...config?.ssr,
     },

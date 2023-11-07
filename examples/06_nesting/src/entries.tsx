@@ -1,13 +1,9 @@
 import { lazy } from "react";
 import type { ReactNode } from "react";
-
 import { defineEntries } from "waku/server";
 
 const App = lazy(() => import("./components/App.js"));
 const InnerApp = lazy(() => import("./components/InnerApp.js"));
-const Counter = lazy(async () => ({
-  default: (await import("./components/Counter.js")).Counter,
-}));
 
 export default defineEntries(
   // renderEntries
@@ -37,20 +33,13 @@ export default defineEntries(
       },
     };
   },
-  // renderPage
+  // getSsrConfig
   async (pathStr) => {
     switch (pathStr) {
       case "/":
         return {
-          element: (
-            <App name="Waku">
-              <Counter>
-                <InnerApp count={0}>
-                  <Counter />
-                </InnerApp>
-              </Counter>
-            </App>
-          ),
+          input: "",
+          render: ({ Slot }) => <Slot id="App" />,
         };
       default:
         return null;
