@@ -84,13 +84,13 @@ const analyzeEntries = async (entriesFile: string) => {
       ]),
     ),
   );
-  const serverEntryFiles = Object.fromEntries(
-    Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname]),
-  );
   // HACK to expose Slot and ServerRoot for ssr.ts
-  clientEntryFiles["waku-client"] = serverEntryFiles["waku-client"] = path.join(
+  clientEntryFiles["waku-client"] = path.join(
     path.dirname(url.fileURLToPath(import.meta.url)),
     "../client.js",
+  );
+  const serverEntryFiles = Object.fromEntries(
+    Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname]),
   );
   return {
     clientEntryFiles,

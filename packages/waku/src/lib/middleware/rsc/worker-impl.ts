@@ -34,6 +34,7 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
   try {
     const stream = new PassThrough();
     streamMap.set(id, stream);
+    rr.stream = stream;
     if (hasModuleIdCallback) {
       rr.moduleIdCallback = (moduleId: string) => {
         const mesg: MessageRes = { id, type: "moduleId", moduleId };
