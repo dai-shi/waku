@@ -338,7 +338,7 @@ const emitHtmlFiles = async (
             htmlReadable.pipe(stream);
           });
         } else {
-          fs.writeFileSync(destFile, htmlStr, { encoding: "utf8" });
+          fs.writeFileSync(destFile, htmlStr);
         }
         return destFile;
       },
@@ -393,16 +393,19 @@ const emitVercelOutput = (
   });
   const vcConfigJson = {
     runtime: "nodejs18.x",
-    handler: "serve.mjs",
+    handler: "serve.js",
     launcherType: "Nodejs",
   };
   fs.writeFileSync(
     path.join(serverlessDir, ".vc-config.json"),
     JSON.stringify(vcConfigJson, null, 2),
-    "utf8",
   );
   fs.writeFileSync(
-    path.join(serverlessDir, "serve.mjs"),
+    path.join(serverlessDir, "package.json"),
+    JSON.stringify({ type: "module" }, null, 2),
+  );
+  fs.writeFileSync(
+    path.join(serverlessDir, "serve.js"),
     `
 export default async function handler(req, res) {
   const { rsc } = await import("waku");
@@ -411,7 +414,6 @@ export default async function handler(req, res) {
   });
 }
 `,
-    "utf8",
   );
 
   const overrides = Object.fromEntries([

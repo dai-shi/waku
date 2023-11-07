@@ -143,7 +143,7 @@ const injectRscPayload = (stream: Readable, input: string) => {
         let data: string = chunk.toString();
         const matchPrefetched = data.match(
           // FIXME This is very ad-hoc.
-          /(.*)<script>\nglobalThis\.__WAKU_PREFETCHED__ = {\n(.*?)\n};\n(.*)/s,
+          /(.*)<script>\nglobalThis\.__WAKU_PREFETCHED__ = {\n(.*?)\n};(.*)/s,
         );
         if (matchPrefetched) {
           prefetchedLines = matchPrefetched[2]!.split("\n");
