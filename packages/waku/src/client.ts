@@ -131,7 +131,6 @@ export const Slot = ({
   children?: ReactNode;
 }) => {
   const elementsPromise = use(ElementsContext);
-  console.log("222222222222", elementsPromise);
   if (!elementsPromise) {
     throw new Error("Missing Root component");
   }
@@ -154,7 +153,4 @@ export const ServerRoot = ({
 }: {
   elements: Elements;
   children: ReactNode;
-}) => {
-  console.log("111111111111111", elements);
-  return createElement(ElementsContext.Provider, { value: elements }, children);
-};
+}) => createElement(ElementsContext.Provider, { value: elements }, children);

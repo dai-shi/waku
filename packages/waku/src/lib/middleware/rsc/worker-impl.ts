@@ -1,4 +1,5 @@
 import path from "node:path";
+import url from "node:url";
 import { parentPort } from "node:worker_threads";
 import { PassThrough, Transform, Writable } from "node:stream";
 import { Server } from "node:http";
@@ -204,9 +205,26 @@ const resolveClientEntry = (
     // HACK to support windows filesystem
     root = root.replaceAll(path.sep, "/");
   }
-  if (command === "dev" && !filePath.startsWith(root)) {
-    // HACK this relies on Vite's internal implementation detail.
-    return config.basePath + "@fs/" + filePath.replace(/^\//, "");
+  if (!filePath.startsWith(root)) {
+    if (command === "dev") {
+      // HACK this relies on Vite's internal implementation detail.
+      return config.basePath + "@fs/" + filePath.replace(/^\//, "");
+    } else {
+      if (
+        filePath ===
+        path.join(
+          path.dirname(url.fileURLToPath(import.meta.url)),
+          "../../../client.js",
+        )
+      ) {
+        // HACK to expose Slot and ServerRoot for ssr.ts
+        // FIXME we should find a better solution
+        return config.basePath + "assets/waku-client.js";
+      }
+      throw new Error(
+        "Resolving client module outside root is unsupported for now",
+      );
+    }
   }
   return config.basePath + path.relative(root, filePath);
 };

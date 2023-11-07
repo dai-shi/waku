@@ -106,7 +106,7 @@ Promise.resolve({
   ok: true, body:
   new ReadableStream({
     start(c) {
-      const f = (s) => new Uint8Array(s.match(/../g).map((h) => parseInt(h, 16)));
+      const f = (s) => new TextEncoder().encode(s);
       globalThis.__WAKU_PUSH__ = (s) => s ? c.enqueue(f(s)) : c.close();
     }
   })
@@ -170,7 +170,7 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
           notify = () => {
             const scripts = chunks.splice(0).map((chunk) =>
               Buffer.from(`
-<script>globalThis.__WAKU_PUSH__('${chunk.toString("hex")}')</script>`),
+<script>globalThis.__WAKU_PUSH__(\`${chunk.toString()}\`)</script>`),
             );
             if (closed) {
               closedSent = true;
@@ -291,7 +291,7 @@ export const renderHtml = async (
           {
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
-              if (file.startsWith("@fs/")) {
+              if (command === "dev" && file.startsWith("@fs/")) {
                 return { specifier: file.slice(3), name };
               }
               const f = path.join(
