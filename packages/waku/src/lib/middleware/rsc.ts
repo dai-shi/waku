@@ -11,6 +11,7 @@ import {
   registerImportCallback,
   renderRSC,
 } from "./rsc/worker-api.js";
+import { patchReactRefresh } from "../vite-plugin/patch-react-refresh.js";
 
 type Middleware = (
   req: IncomingMessage,
@@ -55,7 +56,11 @@ export function rsc<Context>(options: {
         // and "Uncaught Error: Missing Router" happens.
         exclude: ["waku"],
       },
-      plugins: [viteReact(), rscIndexPlugin([]), rscHmrPlugin()],
+      plugins: [
+        patchReactRefresh(viteReact()),
+        rscIndexPlugin([]),
+        rscHmrPlugin(),
+      ],
       server: { middlewareMode: true },
     });
     const vite = viteServer;

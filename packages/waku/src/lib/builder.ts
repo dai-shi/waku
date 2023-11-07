@@ -15,6 +15,7 @@ import {
 } from "./middleware/rsc/worker-api.js";
 import { rscIndexPlugin } from "./vite-plugin/rsc-index-plugin.js";
 import { rscAnalyzePlugin } from "./vite-plugin/rsc-analyze-plugin.js";
+import { patchReactRefresh } from "./vite-plugin/patch-react-refresh.js";
 import { renderHtml, shutdown as shutdownSsr } from "./middleware/rsc/ssr.js";
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
@@ -176,7 +177,7 @@ const buildClientBundle = async (
   );
   const clientBuildOutput = await viteBuild({
     root: path.join(config.rootDir, config.srcDir),
-    plugins: [viteReact(), rscIndexPlugin(cssAssets)],
+    plugins: [patchReactRefresh(viteReact()), rscIndexPlugin(cssAssets)],
     build: {
       outDir: path.join(config.rootDir, config.distDir, config.publicDir),
       rollupOptions: {
