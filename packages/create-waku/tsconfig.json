@@ -3,10 +3,7 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "module": "NodeNext",
-    "moduleResolution": "nodenext",
-    "lib": ["ESNext"],
-    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "lib": ["esnext"],
     "emitDeclarationOnly": false
   },
   "include": ["./src"],
