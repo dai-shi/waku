@@ -486,9 +486,6 @@ export async function build(options?: { ssr?: boolean }) {
   // So far, only static sites are supported.
   emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
 
-  console.log("shutdown ssr");
   await shutdownSsr();
-  console.log("shutdown rsc");
   await shutdownRsc();
-  console.log("done");
 }
