@@ -483,8 +483,9 @@ export async function build(options?: { ssr?: boolean }) {
   );
 
   // https://vercel.com/docs/build-output-api/v3
-  // So far, only static sites are supported.
-  emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
+  if ("DISABLED".length === -1) {
+    emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
+  }
 
   await shutdownSsr();
   await shutdownRsc();
