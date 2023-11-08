@@ -267,6 +267,8 @@ const rectifyHtml = () => {
       pending.push(chunk);
       if (chunk.toString().endsWith(">")) {
         callback(null, Buffer.concat(pending.splice(0)));
+      } else {
+        callback();
       }
     },
     final(callback) {

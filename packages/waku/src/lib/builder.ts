@@ -331,15 +331,11 @@ const emitHtmlFiles = async (
             `<script>${code}</script></head>`,
           );
         }
-        console.log("step3-1", pathStr);
         const htmlResult =
           ssr && (await renderHtml(config, "build", pathStr, htmlStr, context));
-        console.log("step3-2", pathStr);
         if (htmlResult) {
           const [htmlReadable] = htmlResult;
-          console.log("step3-3", pathStr);
           await pipeline(htmlReadable, fs.createWriteStream(destFile));
-          console.log("step3-4", pathStr);
         } else {
           fs.writeFileSync(destFile, htmlStr);
         }
@@ -467,17 +463,14 @@ export async function build(options?: { ssr?: boolean }) {
     clientEntryFiles,
     serverEntryFiles,
   );
-  console.log("step1");
   const clientBuildOutput = await buildClientBundle(
     config,
     clientEntryFiles,
     serverBuildOutput,
   );
 
-  console.log("step2");
   const { buildConfig, getClientModules, rscFiles } =
     await emitRscFiles(config);
-  console.log("step3");
   const { htmlFiles } = await emitHtmlFiles(
     config,
     buildConfig,
@@ -485,13 +478,9 @@ export async function build(options?: { ssr?: boolean }) {
     !!options?.ssr,
   );
 
-  console.log("step4");
   // https://vercel.com/docs/build-output-api/v3
   emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
 
-  console.log("step5");
   await shutdownSsr();
-  console.log("step6");
   await shutdownRsc();
-  console.log("step7");
 }
