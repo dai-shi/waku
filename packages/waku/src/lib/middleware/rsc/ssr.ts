@@ -146,7 +146,7 @@ const injectRscPayload = (stream: Readable, input: string) => {
       if (!headSent) {
         let data: string = chunk.toString();
         const matchPrefetched = data.match(
-          // FIXME This is very ad-hoc.
+          // HACK This is very brittle
           /(.*)<script>\nglobalThis\.__WAKU_PREFETCHED__ = {\n(.*?)\n};(.*)/s,
         );
         if (matchPrefetched) {
@@ -196,10 +196,10 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
       callback(null, chunk);
     },
     final(callback) {
-      if (!closedSent && notify) {
+      if (!closedSent) {
         const notifyOrig = notify;
         notify = () => {
-          notifyOrig();
+          notifyOrig?.();
           if (closedSent) {
             callback();
           }
@@ -249,6 +249,28 @@ const interleaveHtmlSnippets = (
         );
       } else {
         this.push(Buffer.from(postamble));
+      }
+      callback();
+    },
+  });
+};
+
+// HACK for now, do we want to use HTML parser?
+const rectifyHtml = () => {
+  const pending: Buffer[] = [];
+  return new Transform({
+    transform(chunk, encoding, callback) {
+      if (encoding !== ("buffer" as any)) {
+        throw new Error("Unknown encoding");
+      }
+      pending.push(chunk);
+      if (chunk.toString().endsWith(">")) {
+        callback(null, Buffer.concat(pending.splice(0)));
+      }
+    },
+    final(callback) {
+      if (!pending.length) {
+        this.push(Buffer.concat(pending.splice(0)));
       }
       callback();
     },
@@ -334,6 +356,7 @@ export const renderHtml = async <Context>(
       },
     },
   )
+    .pipe(rectifyHtml())
     .pipe(interleaveHtmlSnippets(...splitHTML(htmlStr)))
     .pipe(inject);
   return [readable, nextCtx];
