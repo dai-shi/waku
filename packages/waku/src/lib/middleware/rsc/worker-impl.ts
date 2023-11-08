@@ -387,7 +387,11 @@ async function getBuildConfigRSC() {
       context: null,
       moduleIdCallback: (id) => idSet.add(id),
     });
-    const stream = new PassThrough();
+    const stream = new Writable({
+      write(_chunk, _encoding, callback) {
+        callback();
+      },
+    });
     pipeable.pipe(stream);
     await finished(stream);
     return Array.from(idSet);
