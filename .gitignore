@@ -6,4 +6,4 @@ dist
 .env
 .devcontainer
 .vscode
-tsconfig.tsbuildinfo
+*.tsbuildinfo
