@@ -2,10 +2,9 @@ import url from "node:url";
 import path from "node:path";
 import express from "express";
 import cookieParser from "cookie-parser";
-import {
-  rsc,
-  // ssr,
-} from "waku";
+import { rsc } from "waku";
+
+const withSsr = process.argv[2] === "--with-ssr";
 
 const root = path.join(
   path.dirname(url.fileURLToPath(import.meta.url)),
@@ -23,10 +22,9 @@ app.use(
     unstable_posthook: (req, res, ctx) => {
       res.cookie("count", String(ctx.count));
     },
+    ssr: withSsr,
   }),
 );
-// Passing cookies through SSR server isn't supported (yet).
-// app.use(ssr({ command: "start" }));
 app.use(express.static(path.join(root, "public")));
 express.static.mime.default_type = "";
 

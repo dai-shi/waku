@@ -255,12 +255,13 @@ const interleaveHtmlSnippets = (
   });
 };
 
-export const renderHtml = async (
+export const renderHtml = async <Context>(
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: "dev" | "build" | "start",
   pathStr: string,
   htmlStr: string, // Hope stream works, but it'd be too tricky
-): Promise<Readable | null> => {
+  context: Context,
+): Promise<readonly [Readable, Context] | null> => {
   const {
     default: { getSsrConfig },
   } = await loadEntriesFile(config, command);
@@ -269,13 +270,14 @@ export const renderHtml = async (
     return null;
   }
   let pipeable: Readable;
+  let nextCtx: Context;
   try {
-    [pipeable] = await renderRSC({
+    [pipeable, nextCtx] = await renderRSC({
       input: ssrConfig.input,
       method: "GET",
       headers: {},
       command,
-      context: null,
+      context,
       ssr: true,
     });
   } catch (e) {
@@ -314,7 +316,7 @@ export const renderHtml = async (
   const [copied, inject] = injectRscPayload(pipeable, ssrConfig.input);
   const data = await createFromNodeStream(copied, { moduleMap });
   const { _Slot: Slot, _ServerRoot: ServerRoot, ...elements } = data;
-  return renderToPipeableStream(
+  const readable = renderToPipeableStream(
     createElement(
       ServerRoot,
       { elements: createResolvedPromise(elements) },
@@ -334,4 +336,5 @@ export const renderHtml = async (
   )
     .pipe(interleaveHtmlSnippets(...splitHTML(htmlStr)))
     .pipe(inject);
+  return [readable, nextCtx];
 };

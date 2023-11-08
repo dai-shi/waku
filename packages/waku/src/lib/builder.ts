@@ -292,7 +292,7 @@ const emitHtmlFiles = async (
   });
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
-      async ([pathStr, { entries, customCode }]) => {
+      async ([pathStr, { entries, context, customCode }]) => {
         const destFile = path.join(
           config.rootDir,
           config.distDir,
@@ -330,9 +330,10 @@ const emitHtmlFiles = async (
             `<script>${code}</script></head>`,
           );
         }
-        const htmlReadable =
-          ssr && (await renderHtml(config, "build", pathStr, htmlStr));
-        if (htmlReadable) {
+        const htmlResult =
+          ssr && (await renderHtml(config, "build", pathStr, htmlStr, context));
+        if (htmlResult) {
+          const [htmlReadable] = htmlResult;
           await new Promise<void>((resolve, reject) => {
             const stream = fs.createWriteStream(destFile);
             stream.on("finish", resolve);

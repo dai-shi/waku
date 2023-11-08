@@ -135,13 +135,28 @@ export function rsc<Context>(options: {
         res.end();
       }
     };
+    let context: Context | undefined;
+    try {
+      context = options.unstable_prehook?.(req, res);
+    } catch (e) {
+      handleError(e);
+      return;
+    }
     if (options.ssr) {
       try {
         const htmlStr = await getHtmlStr(pathStr);
-        const readable =
+        const result =
           htmlStr &&
-          (await renderHtml(config, options.command, pathStr, htmlStr));
-        if (readable) {
+          (await renderHtml(
+            config,
+            options.command,
+            pathStr,
+            htmlStr,
+            context,
+          ));
+        if (result) {
+          const [readable, nextCtx] = result;
+          options.unstable_posthook?.(req, res, nextCtx as Context);
           readable.on("error", handleError);
           readable.pipe(res);
           return;
@@ -157,7 +172,6 @@ export function rsc<Context>(options: {
         throw new Error(`Unsupported method '${method}'`);
       }
       try {
-        const context = options.unstable_prehook?.(req, res);
         const [readable, nextCtx] = await renderRSC({
           input: decodeInput(pathStr.slice(basePrefix.length)),
           method,
