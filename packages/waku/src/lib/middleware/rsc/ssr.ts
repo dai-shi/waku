@@ -263,7 +263,6 @@ const rectifyHtml = () => {
       if (encoding !== ("buffer" as any)) {
         throw new Error("Unknown encoding");
       }
-      console.log("chunk", chunk.toString());
       pending.push(chunk);
       if (chunk.toString().endsWith(">")) {
         callback(null, Buffer.concat(pending.splice(0)));
@@ -272,7 +271,6 @@ const rectifyHtml = () => {
       }
     },
     final(callback) {
-      console.log("end", pending.length);
       if (!pending.length) {
         this.push(Buffer.concat(pending.splice(0)));
       }

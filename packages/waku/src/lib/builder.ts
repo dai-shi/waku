@@ -262,12 +262,7 @@ const emitRscFiles = async (
             context,
             moduleIdCallback: (id) => addClientModule(input, id),
           });
-          await new Promise<void>((resolve, reject) => {
-            const stream = fs.createWriteStream(destFile);
-            stream.on("finish", resolve);
-            stream.on("error", reject);
-            pipeable.pipe(stream);
-          });
+          await pipeline(pipeable, fs.createWriteStream(destFile));
         }
       }
     }),
