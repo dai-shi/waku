@@ -15,7 +15,7 @@ import type { ComponentProps, FunctionComponent, ReactNode } from "react";
 
 import { Root, Slot, useRefetch } from "../client.js";
 import { getComponentIds, getInputString } from "./common.js";
-import type { RouteProps, LinkProps } from "./common.js";
+import type { RouteProps } from "./common.js";
 
 const parseLocation = () => {
   const { pathname, search } = window.location;
@@ -60,7 +60,13 @@ export function Link({
   pending,
   notPending,
   unstable_prefetchOnEnter,
-}: LinkProps) {
+}: {
+  href: string;
+  children: ReactNode;
+  pending?: ReactNode;
+  notPending?: ReactNode;
+  unstable_prefetchOnEnter?: boolean;
+}) {
   const value = useContext(RouterContext);
   const changeLocation = value
     ? value.changeLocation
