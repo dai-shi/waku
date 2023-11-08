@@ -467,14 +467,17 @@ export async function build(options?: { ssr?: boolean }) {
     clientEntryFiles,
     serverEntryFiles,
   );
+  console.log("step1");
   const clientBuildOutput = await buildClientBundle(
     config,
     clientEntryFiles,
     serverBuildOutput,
   );
 
+  console.log("step2");
   const { buildConfig, getClientModules, rscFiles } =
     await emitRscFiles(config);
+  console.log("step3");
   const { htmlFiles } = await emitHtmlFiles(
     config,
     buildConfig,
