@@ -110,7 +110,8 @@ Promise.resolve({
   ok: true, body:
   new ReadableStream({
     start(c) {
-      const f = (s) => new TextEncoder().encode(decodeURI(s));
+      const f = (s) => new Uint8Array(s.match(/../g).map((h) => parseInt(h, 16)
+));
       globalThis.__WAKU_PUSH__ = (s) => s ? c.enqueue(f(s)) : c.close();
     }
   })
@@ -174,7 +175,7 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
           notify = () => {
             const scripts = chunks.splice(0).map((chunk) =>
               Buffer.from(`
-<script>globalThis.__WAKU_PUSH__("${encodeURI(chunk.toString())}")</script>`),
+<script>globalThis.__WAKU_PUSH__("${chunk.toString("hex")}")</script>`),
             );
             if (closed) {
               closedSent = true;
