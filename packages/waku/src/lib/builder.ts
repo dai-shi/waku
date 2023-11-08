@@ -2,6 +2,7 @@ import path from "node:path";
 import fs from "node:fs";
 import url from "node:url";
 import { createHash } from "node:crypto";
+import { pipeline } from "node:stream/promises";
 
 import { build as viteBuild } from "vite";
 import viteReact from "@vitejs/plugin-react";
@@ -337,12 +338,7 @@ const emitHtmlFiles = async (
         if (htmlResult) {
           const [htmlReadable] = htmlResult;
           console.log("step3-3", pathStr);
-          await new Promise<void>((resolve, reject) => {
-            const stream = fs.createWriteStream(destFile);
-            stream.on("finish", resolve);
-            stream.on("error", reject);
-            htmlReadable.pipe(stream);
-          });
+          await pipeline(htmlReadable, fs.createWriteStream(destFile));
           console.log("step3-4", pathStr);
         } else {
           fs.writeFileSync(destFile, htmlStr);
