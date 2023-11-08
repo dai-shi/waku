@@ -10,7 +10,7 @@ export default defineConfig({
   testDir: "./e2e",
   webServer: [
     {
-      command: "pnpm run build && pnpm run start",
+      command: "pnpm exec waku build && pnpm exec waku start",
       cwd: resolve(rootDir, "examples", "01_counter"),
       port: 3000,
       timeout: 10 * 1000,
@@ -20,7 +20,7 @@ export default defineConfig({
       },
     },
     {
-      command: "pnpm run build && pnpm run start",
+      command: "pnpm exec waku build && pnpm exec waku start",
       cwd: resolve(rootDir, "examples", "02_async"),
       port: 3001,
       timeout: 10 * 1000,
