@@ -2,6 +2,7 @@ import path from "node:path";
 import url from "node:url";
 import { parentPort } from "node:worker_threads";
 import { PassThrough, Transform, Writable } from "node:stream";
+import { finished } from "node:stream/promises";
 import { Server } from "node:http";
 import { Buffer } from "node:buffer";
 
@@ -386,16 +387,9 @@ async function getBuildConfigRSC() {
       context: null,
       moduleIdCallback: (id) => idSet.add(id),
     });
-    await new Promise<void>((resolve, reject) => {
-      const stream = new Writable({
-        write(_chunk, _encoding, callback) {
-          callback();
-        },
-      });
-      stream.on("finish", resolve);
-      stream.on("error", reject);
-      pipeable.pipe(stream);
-    });
+    const stream = new PassThrough();
+    pipeable.pipe(stream);
+    await finished(stream);
     return Array.from(idSet);
   };
 
