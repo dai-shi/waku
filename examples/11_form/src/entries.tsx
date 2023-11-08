@@ -20,15 +20,15 @@ export default defineEntries(
     };
   },
   // getSsrConfig
-  () => ({
-    getInput: async (pathStr) => {
-      switch (pathStr) {
-        case "/":
-          return "";
-        default:
-          return null;
-      }
-    },
-    filter: (elements) => elements.App,
-  }),
+  async (pathStr) => {
+    switch (pathStr) {
+      case "/":
+        return {
+          input: "",
+          render: ({ Slot }) => <Slot id="App" />,
+        };
+      default:
+        return null;
+    }
+  },
 );
