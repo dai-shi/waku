@@ -29,7 +29,7 @@ export default defineEntries(
       case "/":
         return {
           input: "",
-          render: () => (
+          unstable_render: () => (
             <Slot id="App">
               <h3>A client element</h3>
             </Slot>

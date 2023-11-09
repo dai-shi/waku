@@ -40,7 +40,7 @@ export default defineEntries(
       case "/":
         return {
           input: "",
-          render: () => <Slot id="App" />,
+          unstable_render: () => <Slot id="App" />,
         };
       default:
         return null;

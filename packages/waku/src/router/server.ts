@@ -91,7 +91,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
         (acc: ReactNode, id) => createElement(Slot, { id }, acc),
         null,
       );
-    return { input, render };
+    return { input, unstable_render: render };
   };
 
   return { renderEntries, getBuildConfig, getSsrConfig };

@@ -343,7 +343,7 @@ export const renderHtml = async <Context>(
     command,
   );
   const readable = renderToPipeableStream(
-    createElement(ServerRoot, { elements }, ssrConfig.render()),
+    createElement(ServerRoot, { elements }, ssrConfig.unstable_render()),
     {
       onAllReady: () => {
         cleanupFns.forEach((fn) => fn());

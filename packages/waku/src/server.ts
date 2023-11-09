@@ -17,7 +17,7 @@ export type GetBuildConfig = (
 
 export type GetSsrConfig = (pathStr: string) => Promise<{
   input: string;
-  render: () => ReactNode;
+  unstable_render: () => ReactNode;
 } | null>;
 
 export function defineEntries(
