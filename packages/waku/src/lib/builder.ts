@@ -254,7 +254,7 @@ const emitRscFiles = async (
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          const [pipeable] = await renderRSC({
+          const [readable] = await renderRSC({
             input,
             method: "GET",
             headers: {},
@@ -262,7 +262,7 @@ const emitRscFiles = async (
             context,
             moduleIdCallback: (id) => addClientModule(input, id),
           });
-          await pipeline(pipeable, fs.createWriteStream(destFile));
+          await pipeline(readable, fs.createWriteStream(destFile));
         }
       }
     }),
@@ -288,7 +288,7 @@ const emitHtmlFiles = async (
   });
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
-      async ([pathStr, { entries, context, customCode }]) => {
+      async ([pathStr, { entries, customCode, context }]) => {
         const destFile = path.join(
           config.rootDir,
           config.distDir,

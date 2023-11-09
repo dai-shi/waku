@@ -24,7 +24,6 @@ const { createFromNodeStream } = RSDWClient;
 type Entries = { default: ReturnType<typeof defineEntries> };
 
 let lastViteServer: ViteDevServer | undefined;
-
 const getViteServer = async () => {
   if (lastViteServer) {
     return lastViteServer;
@@ -326,6 +325,7 @@ export const renderHtml = async <Context>(
                   name,
                 };
               }
+              // command === "dev"
               const f = file.startsWith("@fs/")
                 ? file.slice(3)
                 : path.join(config.rootDir, config.srcDir, file);

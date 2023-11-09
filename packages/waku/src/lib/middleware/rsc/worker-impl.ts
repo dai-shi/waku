@@ -91,7 +91,6 @@ const handleGetBuildConfig = async (
 };
 
 let lastViteServer: ViteDevServer | undefined;
-
 const getViteServer = async () => {
   if (lastViteServer) {
     return lastViteServer;

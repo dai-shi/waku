@@ -21,7 +21,7 @@ type Middleware = (
 
 export function rsc<Context>(options: {
   command: "dev" | "start";
-  ssr: boolean;
+  ssr?: boolean;
   unstable_prehook?: (req: IncomingMessage, res: ServerResponse) => Context;
   unstable_posthook?: (
     req: IncomingMessage,
@@ -29,15 +29,16 @@ export function rsc<Context>(options: {
     ctx: Context,
   ) => void;
 }): Middleware {
-  if (!options.unstable_prehook && options.unstable_posthook) {
+  const { command, ssr, unstable_prehook, unstable_posthook } = options;
+  if (!unstable_prehook && unstable_posthook) {
     throw new Error("prehook is required if posthook is provided");
   }
   const configPromise = resolveConfig();
 
-  let viteServer: ViteDevServer | undefined;
+  let lastViteServer: ViteDevServer | undefined;
   const getViteServer = async (): Promise<ViteDevServer> => {
-    if (viteServer) {
-      return viteServer;
+    if (lastViteServer) {
+      return lastViteServer;
     }
     const config = await configPromise;
     const { createServer: viteCreateServer } = await import("vite");
@@ -48,7 +49,7 @@ export function rsc<Context>(options: {
     const { rscHmrPlugin, hotImport } = await import(
       "../vite-plugin/rsc-hmr-plugin.js"
     );
-    viteServer = await viteCreateServer({
+    const viteServer = await viteCreateServer({
       root: path.join(config.rootDir, config.srcDir),
       optimizeDeps: {
         include: ["react-server-dom-webpack/client"],
@@ -63,9 +64,9 @@ export function rsc<Context>(options: {
       ],
       server: { middlewareMode: true },
     });
-    const vite = viteServer;
-    registerReloadCallback((type) => vite.ws.send({ type }));
-    registerImportCallback((source) => hotImport(vite, source));
+    registerReloadCallback((type) => viteServer.ws.send({ type }));
+    registerImportCallback((source) => hotImport(viteServer, source));
+    lastViteServer = viteServer;
     return viteServer;
   };
 
@@ -75,7 +76,7 @@ export function rsc<Context>(options: {
     if (!publicIndexHtml) {
       const publicIndexHtmlFile = path.join(
         config.rootDir,
-        options.command === "dev"
+        command === "dev"
           ? config.srcDir
           : path.join(config.distDir, config.publicDir),
         config.indexHtml,
@@ -84,7 +85,7 @@ export function rsc<Context>(options: {
         encoding: "utf8",
       });
     }
-    if (options.command === "start") {
+    if (command === "start") {
       const destFile = path.join(
         config.rootDir,
         config.distDir,
@@ -97,25 +98,25 @@ export function rsc<Context>(options: {
       } catch (e) {
         return publicIndexHtml;
       }
-    } else {
-      const vite = await getViteServer();
-      for (const item of vite.moduleGraph.idToModuleMap.values()) {
-        if (item.url === pathStr) {
-          return null;
-        }
-      }
-      const destFile = path.join(config.rootDir, config.srcDir, pathStr);
-      try {
-        // check if exists?
-        const stats = await fsPromises.stat(destFile);
-        if (stats.isFile()) {
-          return null;
-        }
-      } catch (e) {
-        // does not exist
-      }
-      return vite.transformIndexHtml(pathStr, publicIndexHtml);
     }
+    // command === "dev"
+    const vite = await getViteServer();
+    for (const item of vite.moduleGraph.idToModuleMap.values()) {
+      if (item.url === pathStr) {
+        return null;
+      }
+    }
+    const destFile = path.join(config.rootDir, config.srcDir, pathStr);
+    try {
+      // check if exists?
+      const stats = await fsPromises.stat(destFile);
+      if (stats.isFile()) {
+        return null;
+      }
+    } catch (e) {
+      // does not exist
+    }
+    return vite.transformIndexHtml(pathStr, publicIndexHtml);
   };
 
   return async (req, res, next) => {
@@ -129,7 +130,7 @@ export function rsc<Context>(options: {
         console.info("Cannot render RSC", err);
         res.statusCode = 500;
       }
-      if (options.command === "dev") {
+      if (command === "dev") {
         res.end(String(err));
       } else {
         res.end();
@@ -137,26 +138,20 @@ export function rsc<Context>(options: {
     };
     let context: Context | undefined;
     try {
-      context = options.unstable_prehook?.(req, res);
+      context = unstable_prehook?.(req, res);
     } catch (e) {
       handleError(e);
       return;
     }
-    if (options.ssr) {
+    if (ssr) {
       try {
         const htmlStr = await getHtmlStr(pathStr);
         const result =
           htmlStr &&
-          (await renderHtml(
-            config,
-            options.command,
-            pathStr,
-            htmlStr,
-            context,
-          ));
+          (await renderHtml(config, command, pathStr, htmlStr, context));
         if (result) {
           const [readable, nextCtx] = result;
-          options.unstable_posthook?.(req, res, nextCtx as Context);
+          unstable_posthook?.(req, res, nextCtx as Context);
           readable.on("error", handleError);
           readable.pipe(res);
           return;
@@ -176,11 +171,11 @@ export function rsc<Context>(options: {
           input: decodeInput(pathStr.slice(basePrefix.length)),
           method,
           headers,
-          command: options.command,
+          command,
           context,
           stream: req,
         });
-        options.unstable_posthook?.(req, res, nextCtx as Context);
+        unstable_posthook?.(req, res, nextCtx as Context);
         readable.on("error", handleError);
         readable.pipe(res);
       } catch (e) {
@@ -188,7 +183,7 @@ export function rsc<Context>(options: {
       }
       return;
     }
-    if (options.command === "dev") {
+    if (command === "dev") {
       const vite = await getViteServer();
       // HACK re-export "?v=..." URL to avoid dual module hazard.
       const fname = pathStr.startsWith(config.basePath + "@fs/")
