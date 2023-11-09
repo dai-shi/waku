@@ -23,13 +23,6 @@ const { createFromNodeStream } = RSDWClient;
 
 type Entries = { default: ReturnType<typeof defineEntries> };
 
-const createResolvedPromise = <T>(value: T) => {
-  const promise = Promise.resolve(value);
-  (promise as any).status = "fulfilled";
-  (promise as any).value = value;
-  return promise;
-};
-
 let lastViteServer: ViteDevServer | undefined;
 
 const getViteServer = async () => {
@@ -344,17 +337,13 @@ export const renderHtml = async <Context>(
     },
   );
   const [copied, inject] = injectRscPayload(pipeable, ssrConfig.input);
-  const data = await createFromNodeStream(copied, { moduleMap });
+  const elements = createFromNodeStream(copied, { moduleMap });
   const { ServerRoot } = await loadServerFile(
     getWakuClientFile(config, command),
     command,
   );
   const readable = renderToPipeableStream(
-    createElement(
-      ServerRoot,
-      { elements: createResolvedPromise(data) },
-      ssrConfig.render(),
-    ),
+    createElement(ServerRoot, { elements }, ssrConfig.render()),
     {
       onAllReady: () => {
         cleanupFns.forEach((fn) => fn());
