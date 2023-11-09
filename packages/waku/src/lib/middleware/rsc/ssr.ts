@@ -29,15 +29,11 @@ const createResolvedPromise = <T>(value: T) => {
   return promise;
 };
 
-let lastViteServer: [vite: ViteDevServer, command: "dev" | "build"] | undefined;
+let lastViteServer: ViteDevServer | undefined;
 
-const getViteServer = async (command: "dev" | "build") => {
+const getViteServer = async () => {
   if (lastViteServer) {
-    if (lastViteServer[1] === command) {
-      return lastViteServer[0];
-    }
-    console.warn("Restarting Vite server with different command");
-    await lastViteServer[0].close();
+    return lastViteServer;
   }
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const { createServer: viteCreateServer } = await import("vite");
@@ -45,19 +41,19 @@ const getViteServer = async (command: "dev" | "build") => {
     "../../vite-plugin/nonjs-resolve-plugin.js"
   );
   const viteServer = await viteCreateServer({
-    plugins: [...(command === "dev" ? [nonjsResolvePlugin()] : [])],
+    plugins: [nonjsResolvePlugin()],
     appType: "custom",
     server: { middlewareMode: true, hmr: { server: dummyServer } },
   });
   await viteServer.watcher.close(); // TODO watch: null
   await viteServer.ws.close();
-  lastViteServer = [viteServer, command];
+  lastViteServer = viteServer;
   return viteServer;
 };
 
 export const shutdown = async () => {
   if (lastViteServer) {
-    await lastViteServer[0].close();
+    await lastViteServer.close();
     lastViteServer = undefined;
   }
 };
@@ -66,10 +62,10 @@ const loadServerFile = async (
   fname: string,
   command: "dev" | "build" | "start",
 ) => {
-  if (command === "start") {
+  if (command !== "dev") {
     return import(fname);
   }
-  const vite = await getViteServer(command);
+  const vite = await getViteServer();
   return vite.ssrLoadModule(fname);
 };
 

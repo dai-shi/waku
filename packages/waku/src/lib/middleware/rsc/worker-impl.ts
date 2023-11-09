@@ -92,17 +92,11 @@ const handleGetBuildConfig = async (
   }
 };
 
-let lastViteServer:
-  | [vite: ViteDevServer, command: "dev" | "build" | "start"]
-  | undefined;
+let lastViteServer: ViteDevServer | undefined;
 
-const getViteServer = async (command: "dev" | "build" | "start") => {
+const getViteServer = async () => {
   if (lastViteServer) {
-    if (lastViteServer[1] === command) {
-      return lastViteServer[0];
-    }
-    console.warn("Restarting Vite server with different command");
-    await lastViteServer[0].close();
+    lastViteServer;
   }
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const { createServer: viteCreateServer } = await import("vite");
@@ -136,13 +130,13 @@ const getViteServer = async (command: "dev" | "build" | "start") => {
     server: { middlewareMode: true, hmr: { server: dummyServer } },
   });
   await viteServer.ws.close();
-  lastViteServer = [viteServer, command];
+  lastViteServer = viteServer;
   return viteServer;
 };
 
 const shutdown = async () => {
   if (lastViteServer) {
-    await lastViteServer[0].close();
+    await lastViteServer.close();
     lastViteServer = undefined;
   }
   parentPort!.close();
@@ -152,10 +146,10 @@ const loadServerFile = async (
   fname: string,
   command: "dev" | "build" | "start",
 ) => {
-  if (command === "start") {
+  if (command !== "dev") {
     return import(fname);
   }
-  const vite = await getViteServer(command);
+  const vite = await getViteServer();
   return vite.ssrLoadModule(fname);
 };
 
