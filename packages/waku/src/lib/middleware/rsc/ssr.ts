@@ -333,16 +333,10 @@ export const renderHtml = async <Context>(
                   name,
                 };
               }
-              if (file.startsWith("@fs/")) {
-                return { specifier: file.slice(3), name };
-              }
-              return {
-                specifier: transpile!(
-                  path.join(config.rootDir, config.srcDir, file),
-                  name,
-                ),
-                name,
-              };
+              const f = file.startsWith("@fs/")
+                ? file.slice(3)
+                : path.join(config.rootDir, config.srcDir, file);
+              return { specifier: transpile!(f, name), name };
             },
           },
         );

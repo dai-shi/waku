@@ -231,14 +231,7 @@ function InnerRouter({
   }, [changeLocation, prefetchLocation]);
 
   const children = componentIds.reduceRight(
-    (acc: ReactNode, id) =>
-      createElement(
-        Slot as FunctionComponent<
-          Omit<ComponentProps<typeof Slot>, "children">
-        >,
-        { id },
-        acc,
-      ),
+    (acc: ReactNode, id) => createElement(Slot, { id }, acc),
     null,
   );
 
