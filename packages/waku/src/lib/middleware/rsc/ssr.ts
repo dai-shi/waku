@@ -1,5 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
+import url from "node:url";
 import crypto from "node:crypto";
 import { PassThrough, Transform } from "node:stream";
 import type { Readable } from "node:stream";
@@ -58,7 +59,8 @@ export const shutdown = async () => {
   }
 };
 
-const loadServerFile = async (
+// This is exported only for createTranspiler
+export const loadServerFile = async (
   fname: string,
   command: "dev" | "build" | "start",
 ) => {
@@ -67,6 +69,23 @@ const loadServerFile = async (
   }
   const vite = await getViteServer();
   return vite.ssrLoadModule(fname);
+};
+
+// FIXME this is very hacky
+const createTranspiler = async (cleanupFns: Set<() => void>) => {
+  return (file: string, name: string) => {
+    const temp = path.resolve(
+      `.temp-${crypto.randomBytes(8).toString("hex")}.js`,
+    );
+    const code = `
+import { loadServerFile } from '${url.fileURLToPath(import.meta.url)}';
+const { ${name} } = await loadServerFile('${file}', 'dev');
+export { ${name} }
+`;
+    fs.writeFileSync(temp, code);
+    cleanupFns.add(() => fs.unlinkSync(temp));
+    return temp;
+  };
 };
 
 const getEntriesFile = (
@@ -89,33 +108,6 @@ const getWakuClientFile = (
     return path.join(config.rootDir, config.distDir, "./assets/waku-client.js");
   }
   return "waku/client";
-};
-
-// FIXME this is too hacky
-const createTranspiler = async (cleanupFns: Set<() => void>) => {
-  const swc = await import("@swc/core");
-  return (file: string) => {
-    const ext = path.extname(file);
-    const temp = path.resolve(
-      `.temp-${crypto.randomBytes(8).toString("hex")}.js`,
-    );
-    const { code } = swc.transformFileSync(file, {
-      jsc: {
-        parser: {
-          syntax: ext === ".ts" || ext === ".tsx" ? "typescript" : "ecmascript",
-          tsx: ext === ".tsx",
-        },
-        transform: {
-          react: {
-            runtime: "automatic",
-          },
-        },
-      },
-    });
-    fs.writeFileSync(temp, code);
-    cleanupFns.add(() => fs.unlinkSync(temp));
-    return temp;
-  };
 };
 
 const fakeFetchCode = `
@@ -324,7 +316,8 @@ export const renderHtml = async <Context>(
   }
   const { splitHTML } = config.ssr;
   const cleanupFns = new Set<() => void>();
-  const transpile = command === "dev" && (await createTranspiler(cleanupFns));
+  const transpile =
+    command === "dev" ? await createTranspiler(cleanupFns) : undefined;
   const moduleMap = new Proxy(
     {},
     {
@@ -334,15 +327,22 @@ export const renderHtml = async <Context>(
           {
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
-              if (command === "dev" && file.startsWith("@fs/")) {
+              if (command !== "dev") {
+                return {
+                  specifier: path.join(config.rootDir, config.distDir, file),
+                  name,
+                };
+              }
+              if (file.startsWith("@fs/")) {
                 return { specifier: file.slice(3), name };
               }
-              const f = path.join(
-                config.rootDir,
-                command === "dev" ? config.srcDir : config.distDir,
-                file,
-              );
-              return { specifier: transpile ? transpile(f) : f, name };
+              return {
+                specifier: transpile!(
+                  path.join(config.rootDir, config.srcDir, file),
+                  name,
+                ),
+                name,
+              };
             },
           },
         );
