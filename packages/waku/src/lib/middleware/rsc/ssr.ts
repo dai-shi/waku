@@ -62,20 +62,26 @@ export const shutdown = async () => {
   }
 };
 
-const loadEntriesFile = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+const loadServerFile = async (
+  fname: string,
   command: "dev" | "build" | "start",
-): Promise<Entries> => {
-  const fname = path.join(
-    config.rootDir,
-    command === "dev" ? config.srcDir : config.distDir,
-    config.entriesJs,
-  );
+) => {
   if (command === "start") {
     return import(fname);
   }
   const vite = await getViteServer(command);
-  return vite.ssrLoadModule(fname) as any;
+  return vite.ssrLoadModule(fname);
+};
+
+const getEntriesFile = (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  command: "dev" | "build" | "start",
+) => {
+  return path.join(
+    config.rootDir,
+    command === "dev" ? config.srcDir : config.distDir,
+    config.entriesJs,
+  );
 };
 
 // FIXME this is too hacky
@@ -285,9 +291,10 @@ export const renderHtml = async <Context>(
   htmlStr: string, // Hope stream works, but it'd be too tricky
   context: Context,
 ): Promise<readonly [Readable, Context] | null> => {
+  const entriesFile = getEntriesFile(config, command);
   const {
     default: { getSsrConfig },
-  } = await loadEntriesFile(config, command);
+  } = await (loadServerFile(entriesFile, command) as Promise<Entries>);
   const ssrConfig = await getSsrConfig?.(pathStr);
   if (!ssrConfig) {
     return null;

@@ -180,7 +180,7 @@ parentPort!.on("message", (mesg: MessageReq) => {
   }
 });
 
-const getEntriesFile = async (
+const getEntriesFile = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: "dev" | "build" | "start",
 ) => {
@@ -266,7 +266,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     runWithAsyncLocalStorage: typeof runWithAsyncLocalStorageOrig;
   }>);
 
-  const entriesFile = await getEntriesFile(config, rr.command);
+  const entriesFile = getEntriesFile(config, rr.command);
   const {
     default: { renderEntries },
   } = await (loadServerFile(entriesFile, rr.command) as Promise<Entries>);
@@ -364,7 +364,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
 async function getBuildConfigRSC() {
   const config = await resolveConfig();
 
-  const entriesFile = await getEntriesFile(config, "build");
+  const entriesFile = getEntriesFile(config, "build");
   const {
     default: { getBuildConfig },
   } = await (loadServerFile(entriesFile, "build") as Promise<Entries>);
