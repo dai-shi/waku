@@ -94,7 +94,7 @@ let lastViteServer: ViteDevServer | undefined;
 
 const getViteServer = async () => {
   if (lastViteServer) {
-    lastViteServer;
+    return lastViteServer;
   }
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const { createServer: viteCreateServer } = await import("vite");
