@@ -25,7 +25,7 @@ const parseLocation = () => {
 type ChangeLocation = (
   pathname?: string,
   search?: string,
-  replace?: boolean,
+  mode?: "push" | "replace" | false,
 ) => void;
 
 type PrefetchLocation = (pathname: string, search: string) => void;
@@ -151,7 +151,7 @@ function InnerRouter({
   }, [cached]);
 
   const changeLocation: ChangeLocation = useCallback(
-    (pathname, search, replace) => {
+    (pathname, search, mode = "push") => {
       const url = new URL(window.location.href);
       if (pathname) {
         url.pathname = pathname;
@@ -159,10 +159,10 @@ function InnerRouter({
       if (search) {
         url.search = search;
       }
-      if (replace) {
-        window.history.replaceState(null, "", url);
-      } else {
-        window.history.pushState(null, "", url);
+      if (mode === "replace") {
+        window.history.replaceState(window.history.state, "", url);
+      } else if (mode === "push") {
+        window.history.pushState(window.history.state, "", url);
       }
       const loc = parseLocation();
       setLoc(loc);
@@ -224,7 +224,7 @@ function InnerRouter({
     const callback = () => {
       const loc = parseLocation();
       prefetchLocation(loc.pathname, loc.search);
-      changeLocation(loc.pathname, loc.search);
+      changeLocation(loc.pathname, loc.search, false);
     };
     window.addEventListener("popstate", callback);
     return () => window.removeEventListener("popstate", callback);
