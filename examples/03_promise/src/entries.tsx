@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import { defineEntries } from "waku/server";
-import { Children } from "waku/client";
+import { Children, Slot } from "waku/client";
 
 const App = lazy(() => import("./components/App.js"));
 
@@ -29,7 +29,7 @@ export default defineEntries(
       case "/":
         return {
           input: "",
-          render: ({ Slot }) => (
+          render: () => (
             <Slot id="App">
               <h3>A client element</h3>
             </Slot>
