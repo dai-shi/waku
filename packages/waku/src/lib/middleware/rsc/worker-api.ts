@@ -11,7 +11,6 @@ export type RenderRequest = {
   headers: Record<string, string | string[] | undefined>;
   command: "dev" | "build" | "start";
   context: unknown;
-  ssr?: boolean | undefined;
   stream?: Readable;
   moduleIdCallback?: (id: string) => void;
 };

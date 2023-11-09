@@ -1,5 +1,4 @@
 import path from "node:path";
-import url from "node:url";
 import { parentPort } from "node:worker_threads";
 import { PassThrough, Transform, Writable } from "node:stream";
 import { finished } from "node:stream/promises";
@@ -11,7 +10,6 @@ import RSDWServer from "react-server-dom-webpack/server";
 import busboy from "busboy";
 import type { ViteDevServer } from "vite";
 
-import { Slot, ServerRoot } from "../../../client.js";
 import { resolveConfig } from "../../config.js";
 import { hasStatusCode, deepFreeze } from "./utils.js";
 import type { MessageReq, MessageRes, RenderRequest } from "./worker-api.js";
@@ -206,17 +204,6 @@ const resolveClientEntry = (
       // HACK this relies on Vite's internal implementation detail.
       return config.basePath + "@fs/" + filePath.replace(/^\//, "");
     } else {
-      if (
-        filePath ===
-        path.join(
-          path.dirname(url.fileURLToPath(import.meta.url)),
-          "../../../client.js",
-        )
-      ) {
-        // HACK to expose Slot and ServerRoot for ssr.ts
-        // FIXME we should find a better solution
-        return config.basePath + "assets/waku-client.js";
-      }
       throw new Error(
         "Resolving client module outside root is unsupported for now",
       );
@@ -274,10 +261,6 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     }
     if (Object.keys(elements).some((key) => key.startsWith("_"))) {
       throw new Error('"_" prefix is reserved');
-    }
-    if (rr.ssr) {
-      elements._Slot = Slot as any; // HACK lie the type
-      elements._ServerRoot = ServerRoot as any; // HACK lie the type
     }
     return elements;
   };

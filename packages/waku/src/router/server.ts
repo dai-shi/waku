@@ -86,9 +86,9 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
       return null;
     }
     const input = getInputString(url.pathname, url.search);
-    const render = (components: { Slot: typeof Slot }) =>
+    const render = () =>
       componentIds.reduceRight(
-        (acc: ReactNode, id) => createElement(components.Slot, { id }, acc),
+        (acc: ReactNode, id) => createElement(Slot, { id }, acc),
         null,
       );
     return { input, render };

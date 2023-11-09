@@ -80,6 +80,17 @@ const getEntriesFile = (
   );
 };
 
+const getWakuClientFile = (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  command: "dev" | "build" | "start",
+) => {
+  if (command !== "dev") {
+    // HACK kind of hard coded to be sync with builder.ts
+    return path.join(config.rootDir, config.distDir, "./assets/waku-client.js");
+  }
+  return "waku/client";
+};
+
 // FIXME this is too hacky
 const createTranspiler = async (cleanupFns: Set<() => void>) => {
   const swc = await import("@swc/core");
@@ -304,7 +315,6 @@ export const renderHtml = async <Context>(
       headers: {},
       command,
       context,
-      ssr: true,
     });
   } catch (e) {
     if (hasStatusCode(e) && e.statusCode === 404) {
@@ -341,12 +351,15 @@ export const renderHtml = async <Context>(
   );
   const [copied, inject] = injectRscPayload(pipeable, ssrConfig.input);
   const data = await createFromNodeStream(copied, { moduleMap });
-  const { _Slot: Slot, _ServerRoot: ServerRoot, ...elements } = data;
+  const { ServerRoot } = await loadServerFile(
+    getWakuClientFile(config, command),
+    command,
+  );
   const readable = renderToPipeableStream(
     createElement(
       ServerRoot,
-      { elements: createResolvedPromise(elements) },
-      ssrConfig.render({ Slot }),
+      { elements: createResolvedPromise(data) },
+      ssrConfig.render(),
     ),
     {
       onAllReady: () => {
