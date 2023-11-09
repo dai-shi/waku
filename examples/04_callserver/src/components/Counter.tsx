@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 
+import { TextBox } from "./TextBox.js";
+
 export const Counter = ({
   greet,
 }: {
@@ -26,6 +28,7 @@ export const Counter = ({
         {isPending ? "Pending..." : ""}
       </p>
       <h3>This is a client component.</h3>
+      <TextBox />
     </div>
   );
 };
