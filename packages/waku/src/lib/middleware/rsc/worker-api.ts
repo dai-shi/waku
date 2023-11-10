@@ -15,12 +15,18 @@ export type RenderRequest = {
   moduleIdCallback?: (id: string) => void;
 };
 
+const IS_NODE_18 = Number(process.versions.node.split(".")[0]) < 20;
+
 const worker = new Worker(new URL("worker-impl.js", import.meta.url), {
   execArgv: [
-    "--experimental-loader",
-    "waku/node-loader",
-    "--experimental-loader",
-    "react-server-dom-webpack/node-loader",
+    ...(IS_NODE_18
+      ? [
+          "--experimental-loader",
+          "waku/node-loader",
+          "--experimental-loader",
+          "react-server-dom-webpack/node-loader",
+        ]
+      : []),
     "--conditions",
     "react-server",
   ],
