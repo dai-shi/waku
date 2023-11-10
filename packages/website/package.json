@@ -10,6 +10,7 @@
     "start": "waku start --with-ssr"
   },
   "dependencies": {
+    "bright": "^0.8.4",
     "express": "^4.18.2",
     "react": "18.3.0-canary-a41957507-20231017",
     "react-dom": "18.3.0-canary-a41957507-20231017",

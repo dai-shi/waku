@@ -1,4 +1,6 @@
 import { Credits } from "./credits.js";
+import { ShowHide } from "./showhide.js";
+import { Code1 } from "./code.js";
 
 const App = () => {
   return (
@@ -31,6 +33,9 @@ const App = () => {
         </div>
       </div>
       <Credits />
+      <ShowHide>
+        <Code1 />
+      </ShowHide>
     </div>
   );
 };
