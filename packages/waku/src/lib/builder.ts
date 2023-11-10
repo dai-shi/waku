@@ -248,8 +248,9 @@ const emitRscFiles = async (
           config.rootDir,
           config.distDir,
           config.publicDir,
+          config.rscPath,
           // HACK to support windows filesystem
-          (config.rscPrefix + encodeInput(input)).replaceAll("/", path.sep),
+          encodeInput(input).replaceAll("/", path.sep),
         );
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
@@ -276,7 +277,7 @@ const emitHtmlFiles = async (
   getClientModules: (input: string) => string[],
   ssr: boolean,
 ) => {
-  const basePrefix = config.basePath + config.rscPrefix;
+  const basePrefix = config.basePath + config.rscPath + "/";
   const publicIndexHtmlFile = path.join(
     config.rootDir,
     config.distDir,
@@ -364,7 +365,7 @@ const emitVercelOutput = (
   const serverlessDir = path.join(
     dstDir,
     "functions",
-    config.rscPrefix.replace(/\/$/, ".func"),
+    config.rscPath + ".func",
   );
   fs.mkdirSync(path.join(serverlessDir, config.distDir), {
     recursive: true,
@@ -424,7 +425,7 @@ export default async function handler(req, res) {
         { contentType: "text/html" },
       ]),
   ]);
-  const basePrefix = config.basePath + config.rscPrefix;
+  const basePrefix = config.basePath + config.rscPath + "/";
   const routes = [{ src: basePrefix + "(.*)", dest: basePrefix }];
   const configJson = { version: 3, overrides, routes };
   fs.mkdirSync(dstDir, { recursive: true });

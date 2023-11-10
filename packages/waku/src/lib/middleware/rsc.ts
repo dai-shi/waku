@@ -121,7 +121,7 @@ export function rsc<Context>(options: {
 
   return async (req, res, next) => {
     const config = await configPromise;
-    const basePrefix = config.basePath + config.rscPrefix;
+    const basePrefix = config.basePath + config.rscPath + "/";
     const pathStr = req.url || "";
     const handleError = (err: unknown) => {
       if (hasStatusCode(err)) {

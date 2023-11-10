@@ -42,7 +42,7 @@ export async function resolveConfig() {
     publicDir: "public",
     indexHtml: "index.html",
     entriesJs: "entries.js",
-    rscPrefix: "RSC/",
+    rscPath: "RSC",
     ...config,
     ssr: {
       splitHTML,
