@@ -1,8 +1,19 @@
 import { PassThrough } from "node:stream";
 import type { Readable } from "node:stream";
+import { Buffer } from "node:buffer";
 import { Worker } from "node:worker_threads";
 
-import type { RenderRequest, GetBuildConfig } from "../../../server.js";
+import type { GetBuildConfig } from "../../../server.js";
+
+export type RenderRequest = {
+  input: string;
+  method: "GET" | "POST";
+  headers: Record<string, string | string[] | undefined>;
+  command: "dev" | "build" | "start";
+  context: unknown;
+  stream?: Readable;
+  moduleIdCallback?: (id: string) => void;
+};
 
 const worker = new Worker(new URL("worker-impl.js", import.meta.url), {
   execArgv: [
@@ -25,18 +36,12 @@ export type MessageReq =
   | ({
       id: number;
       type: "render";
-      moduleIdCallback: boolean;
+      hasModuleIdCallback: boolean;
     } & Omit<RenderRequest, "stream" | "moduleIdCallback">)
   | { id: number; type: "buf"; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: "end" }
   | { id: number; type: "err"; err: unknown }
-  | { id: number; type: "getBuildConfig" }
-  | {
-      id: number;
-      type: "getSsrInput";
-      pathStr: string;
-      command: "dev" | "build" | "start";
-    };
+  | { id: number; type: "getBuildConfig" };
 
 export type MessageRes =
   | { type: "full-reload" }
@@ -50,11 +55,6 @@ export type MessageRes =
       id: number;
       type: "buildConfig";
       output: Awaited<ReturnType<GetBuildConfig>>;
-    }
-  | {
-      id: number;
-      type: "ssrInput";
-      input: string | null;
     };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
@@ -100,20 +100,22 @@ export function renderRSC<Context>(
 ): Promise<readonly [Readable, Context]> {
   const id = nextId++;
   const pipe = async () => {
-    rr.stream.on("error", (err: unknown) => {
-      const mesg: MessageReq = { id, type: "err", err };
-      worker.postMessage(mesg);
-    });
-    for await (const chunk of rr.stream) {
-      const buffer: Buffer = chunk;
-      const mesg: MessageReq = {
-        id,
-        type: "buf",
-        buf: buffer.buffer,
-        offset: buffer.byteOffset,
-        len: buffer.length,
-      };
-      worker.postMessage(mesg);
+    if (rr.stream) {
+      rr.stream.on("error", (err: unknown) => {
+        const mesg: MessageReq = { id, type: "err", err };
+        worker.postMessage(mesg);
+      });
+      for await (const chunk of rr.stream) {
+        const buffer: Buffer = chunk;
+        const mesg: MessageReq = {
+          id,
+          type: "buf",
+          buf: buffer.buffer,
+          offset: buffer.byteOffset,
+          len: buffer.length,
+        };
+        worker.postMessage(mesg);
+      }
     }
     const mesg: MessageReq = { id, type: "end" };
     worker.postMessage(mesg);
@@ -156,15 +158,14 @@ export function renderRSC<Context>(
         messageCallbacks.delete(id);
       }
     });
+    const copied = { ...rr };
+    delete copied.stream;
+    delete copied.moduleIdCallback;
     const mesg: MessageReq = {
       id,
       type: "render",
-      moduleIdCallback: !!rr.moduleIdCallback,
-      pathStr: rr.pathStr,
-      method: rr.method,
-      headers: rr.headers,
-      command: rr.command,
-      context: rr.context,
+      hasModuleIdCallback: !!rr.moduleIdCallback,
+      ...copied,
     };
     worker.postMessage(mesg);
     pipe();
@@ -184,26 +185,6 @@ export function getBuildConfigRSC(): ReturnType<GetBuildConfig> {
       }
     });
     const mesg: MessageReq = { id, type: "getBuildConfig" };
-    worker.postMessage(mesg);
-  });
-}
-
-export function getSsrInputRSC(
-  pathStr: string,
-  command: "dev" | "build" | "start",
-): Promise<string | null> {
-  return new Promise((resolve, reject) => {
-    const id = nextId++;
-    messageCallbacks.set(id, (mesg) => {
-      if (mesg.type === "ssrInput") {
-        resolve(mesg.input);
-        messageCallbacks.delete(id);
-      } else if (mesg.type === "err") {
-        reject(mesg.err);
-        messageCallbacks.delete(id);
-      }
-    });
-    const mesg: MessageReq = { id, type: "getSsrInput", pathStr, command };
     worker.postMessage(mesg);
   });
 }

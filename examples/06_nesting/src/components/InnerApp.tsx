@@ -1,6 +1,6 @@
 import { Counter } from "./Counter.js";
 
-const InnerApp = ({ count = -1 }) => {
+const InnerApp = ({ count }: { count: number }) => {
   return (
     <div style={{ border: "3px red dashed", margin: "1em", padding: "1em" }}>
       <h3>This is another server component.</h3>

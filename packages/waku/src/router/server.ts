@@ -1,12 +1,11 @@
-import { createElement, Suspense } from "react";
+import { createElement } from "react";
 import type { FunctionComponent, ReactNode } from "react";
 
 import { defineEntries } from "../server.js";
 import type { RenderEntries, GetBuildConfig, GetSsrConfig } from "../server.js";
-import { Children } from "../client.js";
+import { Children, Slot } from "../client.js";
 import { getComponentIds, getInputString, parseInputString } from "./common.js";
-import type { RouteProps, LinkProps } from "./common.js";
-import { Waku_SSR_Capable_Link } from "./client.js";
+import type { RouteProps } from "./common.js";
 
 // We have to make prefetcher consistent with client behavior
 const prefetcher = (pathname: string) => {
@@ -23,35 +22,7 @@ export function defineRouter(
   ) => Promise<FunctionComponent | { default: FunctionComponent } | null>,
   getPathsForBuild: () => Promise<string[]>,
 ): ReturnType<typeof defineEntries> {
-  const renderSsrEntries = async (pathStr: string) => {
-    const url = new URL(pathStr, "http://localhost");
-    const componentIds = getComponentIds(url.pathname);
-    const components = await Promise.all(
-      componentIds.map(async (id) => {
-        const mod = await getComponent(id);
-        const component =
-          typeof mod === "function" ? mod : mod?.default || Default;
-        return component;
-      }),
-    );
-    const element = components.reduceRight(
-      (acc: ReactNode, component) =>
-        createElement(
-          component as FunctionComponent<RouteProps>,
-          { path: url.pathname, search: url.search },
-          acc,
-        ),
-      null,
-    );
-    return { Root: element };
-  };
-
-  const SSR_PREFIX = "__SSR__";
-
   const renderEntries: RenderEntries = async (input) => {
-    if (input.startsWith(SSR_PREFIX)) {
-      return renderSsrEntries(input.slice(SSR_PREFIX.length));
-    }
     const { pathname, search, skip } = parseInputString(input);
     const componentIds = getComponentIds(pathname);
     const leafComponentId = componentIds[componentIds.length - 1];
@@ -107,27 +78,21 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
     );
   };
 
-  const getSsrConfig: GetSsrConfig = () => ({
-    getInput: async (pathStr) => {
-      const url = new URL(pathStr, "http://localhost");
-      const componentIds = getComponentIds(url.pathname);
-      const leafComponentId = componentIds[componentIds.length - 1];
-      if (!leafComponentId || (await getComponent(leafComponentId)) === null) {
-        return null;
-      }
-      return SSR_PREFIX + pathStr;
-    },
-    filter: (elements) => elements.Root,
-  });
+  const getSsrConfig: GetSsrConfig = async (pathStr) => {
+    const url = new URL(pathStr, "http://localhost");
+    const componentIds = getComponentIds(url.pathname);
+    const leafComponentId = componentIds[componentIds.length - 1];
+    if (!leafComponentId || (await getComponent(leafComponentId)) === null) {
+      return null;
+    }
+    const input = getInputString(url.pathname, url.search);
+    const render = () =>
+      componentIds.reduceRight(
+        (acc: ReactNode, id) => createElement(Slot, { id }, acc),
+        null,
+      );
+    return { input, unstable_render: render };
+  };
 
   return { renderEntries, getBuildConfig, getSsrConfig };
-}
-
-export function Link(props: LinkProps) {
-  const fallback = createElement("a", { href: props.href }, props.children);
-  return createElement(
-    Suspense,
-    { fallback },
-    createElement(Waku_SSR_Capable_Link, props),
-  );
 }

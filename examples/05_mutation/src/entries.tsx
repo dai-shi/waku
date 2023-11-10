@@ -1,6 +1,6 @@
 import { lazy } from "react";
-
 import { defineEntries } from "waku/server";
+import { Slot } from "waku/client";
 
 const App = lazy(() => import("./components/App.js"));
 
@@ -20,15 +20,15 @@ export default defineEntries(
     };
   },
   // getSsrConfig
-  () => ({
-    getInput: async (pathStr) => {
-      switch (pathStr) {
-        case "/":
-          return "";
-        default:
-          return null;
-      }
-    },
-    filter: (elements) => elements.App,
-  }),
+  async (pathStr) => {
+    switch (pathStr) {
+      case "/":
+        return {
+          input: "",
+          unstable_render: () => <Slot id="App" />,
+        };
+      default:
+        return null;
+    }
+  },
 );

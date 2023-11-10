@@ -88,7 +88,6 @@ Here's an example:
 
 ```tsx
 import { lazy } from "react";
-
 import { defineEntries } from "waku/server";
 
 const App = lazy(() => import("./components/App.js"));
@@ -237,7 +236,6 @@ Here's a file-based example code with builder:
 ```tsx
 import url from "node:url";
 import path from "node:path";
-
 import { glob } from "glob";
 import { defineRouter } from "waku/router/server";
 

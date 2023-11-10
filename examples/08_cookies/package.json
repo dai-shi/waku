@@ -4,9 +4,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "node dev.js",
-    "build": "waku build",
-    "start": "node start.js"
+    "dev": "node dev.js --with-ssr",
+    "build": "waku build --with-ssr",
+    "start": "node start.js --with-ssr"
   },
   "dependencies": {
     "cookie-parser": "^1.4.6",

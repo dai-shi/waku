@@ -10,7 +10,7 @@ export function rscIndexPlugin(cssAssets: string[]): Plugin {
       return [
         {
           tag: "script",
-          attrs: { type: "module" },
+          attrs: { type: "module", async: true },
           children: codeToInject,
           injectTo: "head-prepend",
         },

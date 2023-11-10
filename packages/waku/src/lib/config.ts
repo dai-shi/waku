@@ -1,8 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { resolveConfig as viteResolveConfig } from "vite";
 
-import type { FrameworkConfig } from "../config.js";
+import type { Config } from "../config.js";
 
 type DeepRequired<T> = T extends (...args: any[]) => any
   ? T
@@ -29,44 +28,26 @@ const splitHTML = (htmlStr: string): readonly [string, string, string] => {
   return match.slice(1) as [string, string, string];
 };
 
-const getFallback = (id: string) => {
-  if (id.endsWith("#Waku_SSR_Capable_Link")) {
-    return "waku/server#ClientOnly";
+export async function resolveConfig() {
+  const configFile = path.resolve("waku.config.js");
+  let config: Config = {};
+  if (fs.existsSync(configFile)) {
+    config = (await import(configFile)).default;
   }
-  return "waku/server#ClientFallback";
-};
-
-export const configFileConfig = () => {
-  if (process.env.CONFIG_FILE) {
-    return { configFile: path.resolve(process.env.CONFIG_FILE) };
-  }
-  for (const file of ["vite.config.ts", "vite.config.js"]) {
-    if (fs.existsSync(file)) {
-      return { configFile: path.resolve(file) };
-    }
-  }
-  return {};
-};
-
-export async function resolveConfig(command: "build" | "serve") {
-  const origConfig = await viteResolveConfig(configFileConfig(), command);
-  const origFramework = (origConfig as { framework?: FrameworkConfig })
-    .framework;
-  const framework: DeepRequired<FrameworkConfig> = {
+  const resolvedConfig: DeepRequired<Config> = {
+    rootDir: path.resolve("."),
+    basePath: "/",
     srcDir: "src",
     distDir: "dist",
     publicDir: "public",
     indexHtml: "index.html",
     entriesJs: "entries.js",
     rscPrefix: "RSC/",
-    ...origFramework,
+    ...config,
     ssr: {
-      rscServer: "/",
       splitHTML,
-      getFallback,
-      ...origFramework?.ssr,
+      ...config?.ssr,
     },
   };
-  const config = { ...origConfig, framework };
-  return config;
+  return resolvedConfig;
 }

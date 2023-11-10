@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Slot, useRefetch } from "waku/client";
 
-export const Counter = ({ enableInnerApp = false }) => {
+export const Counter = ({ enableInnerApp }: { enableInnerApp?: boolean }) => {
   const [count, setCount] = useState(0);
   const [isPending, startTransition] = useTransition();
   const refetch = useRefetch();

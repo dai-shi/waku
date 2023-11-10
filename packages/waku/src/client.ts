@@ -13,6 +13,7 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import RSDWClient from "react-server-dom-webpack/client";
+import { encodeInput } from "./lib/middleware/rsc/utils.js";
 
 const { createFromFetch, encodeReply } = RSDWClient;
 
@@ -38,7 +39,7 @@ const mergeElements = cache(
   },
 );
 
-// TODO get basePath from vite config
+// TODO get basePath from config
 
 export const fetchRSC = cache(
   (
@@ -48,10 +49,13 @@ export const fetchRSC = cache(
   ): Elements => {
     const options = {
       async callServer(actionId: string, args: unknown[]) {
-        const response = fetch(basePath + encodeURIComponent(actionId), {
-          method: "POST",
-          body: await encodeReply(args),
-        });
+        const response = fetch(
+          basePath + encodeInput(encodeURIComponent(actionId)),
+          {
+            method: "POST",
+            body: await encodeReply(args),
+          },
+        );
         const data = createFromFetch(checkStatus(response), options);
         startTransition(() => {
           // FIXME this causes rerenders even if data is empty
@@ -61,15 +65,16 @@ export const fetchRSC = cache(
       },
     };
     const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-    const response =
-      prefetched[input] || fetch(basePath + (input || "__DEFAULT__"));
+    const response = prefetched[input] || fetch(basePath + encodeInput(input));
     delete prefetched[input];
     const data = createFromFetch(checkStatus(response), options);
     return data;
   },
 );
 
-const RefetchContext = createContext<((input: string) => void) | null>(null);
+const RefetchContext = createContext<(input: string) => void>(() => {
+  throw new Error("Missing Root component");
+});
 const ElementsContext = createContext<Elements | null>(null);
 
 // HACK there should be a better way...
@@ -113,13 +118,7 @@ export const Root = ({
   );
 };
 
-export const useRefetch = () => {
-  const refetch = use(RefetchContext);
-  if (!refetch) {
-    throw new Error("Missing Root component");
-  }
-  return refetch;
-};
+export const useRefetch = () => use(RefetchContext);
 
 const ChildrenContext = createContext<ReactNode>(undefined);
 const ChildrenContextProvider = memo(ChildrenContext.Provider);
@@ -147,3 +146,11 @@ export const Slot = ({
 };
 
 export const Children = () => use(ChildrenContext);
+
+export const ServerRoot = ({
+  elements,
+  children,
+}: {
+  elements: Elements;
+  children: ReactNode;
+}) => createElement(ElementsContext.Provider, { value: elements }, children);

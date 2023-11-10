@@ -15,7 +15,7 @@ import type { ComponentProps, FunctionComponent, ReactNode } from "react";
 
 import { Root, Slot, useRefetch } from "../client.js";
 import { getComponentIds, getInputString } from "./common.js";
-import type { RouteProps, LinkProps } from "./common.js";
+import type { RouteProps } from "./common.js";
 
 const parseLocation = () => {
   const { pathname, search } = window.location;
@@ -25,7 +25,7 @@ const parseLocation = () => {
 type ChangeLocation = (
   pathname?: string,
   search?: string,
-  replace?: boolean,
+  mode?: "push" | "replace" | false,
 ) => void;
 
 type PrefetchLocation = (pathname: string, search: string) => void;
@@ -60,7 +60,13 @@ export function Link({
   pending,
   notPending,
   unstable_prefetchOnEnter,
-}: LinkProps) {
+}: {
+  href: string;
+  children: ReactNode;
+  pending?: ReactNode;
+  notPending?: ReactNode;
+  unstable_prefetchOnEnter?: boolean;
+}) {
   const value = useContext(RouterContext);
   const changeLocation = value
     ? value.changeLocation
@@ -145,7 +151,7 @@ function InnerRouter({
   }, [cached]);
 
   const changeLocation: ChangeLocation = useCallback(
-    (pathname, search, replace) => {
+    (pathname, search, mode = "push") => {
       const url = new URL(window.location.href);
       if (pathname) {
         url.pathname = pathname;
@@ -153,10 +159,10 @@ function InnerRouter({
       if (search) {
         url.search = search;
       }
-      if (replace) {
-        window.history.replaceState(null, "", url);
-      } else {
-        window.history.pushState(null, "", url);
+      if (mode === "replace") {
+        window.history.replaceState(window.history.state, "", url);
+      } else if (mode === "push") {
+        window.history.pushState(window.history.state, "", url);
       }
       const loc = parseLocation();
       setLoc(loc);
@@ -218,21 +224,14 @@ function InnerRouter({
     const callback = () => {
       const loc = parseLocation();
       prefetchLocation(loc.pathname, loc.search);
-      changeLocation(loc.pathname, loc.search);
+      changeLocation(loc.pathname, loc.search, false);
     };
     window.addEventListener("popstate", callback);
     return () => window.removeEventListener("popstate", callback);
   }, [changeLocation, prefetchLocation]);
 
   const children = componentIds.reduceRight(
-    (acc: ReactNode, id) =>
-      createElement(
-        Slot as FunctionComponent<
-          Omit<ComponentProps<typeof Slot>, "children">
-        >,
-        { id },
-        acc,
-      ),
+    (acc: ReactNode, id) => createElement(Slot, { id }, acc),
     null,
   );
 
@@ -258,6 +257,3 @@ export function Router({
     createElement(InnerRouter, { basePath, shouldSkip }),
   );
 }
-
-// This is a trick to trigger fallback identified by the name.
-export const Waku_SSR_Capable_Link = Link;

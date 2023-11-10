@@ -12,26 +12,14 @@ const App = ({ name }: { name: string }) => {
       <Suspense fallback="Pending...">
         <ServerMessage />
       </Suspense>
-      <Suspense fallback={<CounterSkeleton />}>
-        <Counter />
-      </Suspense>
+      <Counter />
     </div>
   );
 };
 
 const ServerMessage = async () => {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 2000));
   return <p>Hello from server!</p>;
-};
-
-const CounterSkeleton = () => {
-  return (
-    <div style={{ border: "3px blue dashed", margin: "1em", padding: "1em" }}>
-      <p>Count: {0}</p>
-      <button disabled>Increment</button>
-      <h3>This is a skeleton component.</h3>
-    </div>
-  );
 };
 
 export default App;

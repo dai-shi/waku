@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+
 import { Counter } from "./Counter.js";
 
 const App = ({ name, children }: { name: string; children: ReactNode }) => {

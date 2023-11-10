@@ -1,5 +1,5 @@
 import { StrictMode } from "react";
-import { hydrateRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
 import { Root, Slot } from "waku/client";
 
 const rootElement = (
@@ -10,15 +10,8 @@ const rootElement = (
   </StrictMode>
 );
 
-hydrateRoot(document.getElementById("root")!, rootElement, {
-  onRecoverableError(err) {
-    if (
-      err instanceof Error &&
-      err.message.startsWith("Client-only component")
-    ) {
-      // ignore
-      return;
-    }
-    console.error(err);
-  },
-});
+if ((globalThis as any).__WAKU_SSR_ENABLED__) {
+  hydrateRoot(document.getElementById("root")!, rootElement);
+} else {
+  createRoot(document.getElementById("root")!).render(rootElement);
+}

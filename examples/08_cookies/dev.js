@@ -1,10 +1,8 @@
 import express from "express";
 import cookieParser from "cookie-parser";
-import {
-  rsc,
-  //ssr,
-  devServer,
-} from "waku";
+import { rsc } from "waku";
+
+const withSsr = process.argv[2] === "--with-ssr";
 
 const app = express();
 app.use(cookieParser());
@@ -17,11 +15,9 @@ app.use(
     unstable_posthook: (req, res, ctx) => {
       res.cookie("count", String(ctx.count));
     },
+    ssr: withSsr,
   }),
 );
-// Passing cookies through SSR server isn't supported (yet).
-// app.use(ssr({ command: "dev" }));
-app.use(await devServer());
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
