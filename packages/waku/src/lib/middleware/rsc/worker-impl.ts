@@ -1,4 +1,5 @@
 import path from "node:path";
+import url from "node:url";
 import { parentPort } from "node:worker_threads";
 import { PassThrough, Transform, Writable } from "node:stream";
 import { finished } from "node:stream/promises";
@@ -20,6 +21,13 @@ import {
 
 const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
   RSDWServer;
+
+const IS_NODE_20 = Number(process.versions.node.split(".")[0]) >= 20;
+if (IS_NODE_20) {
+  const { register } = (await import("node:module")) as any;
+  register("waku/node-loader", url.pathToFileURL("./"));
+  register("react-server-dom-webpack/node-loader", url.pathToFileURL("./"));
+}
 
 type Entries = { default: ReturnType<typeof defineEntries> };
 type PipeableStream = { pipe<T extends Writable>(destination: T): T };
