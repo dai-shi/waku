@@ -440,6 +440,9 @@ importers:
 
   packages/website:
     dependencies:
+      bright:
+        specifier: ^0.8.4
+        version: 0.8.4(react@18.3.0-canary-a41957507-20231017)
       express:
         specifier: ^4.18.2
         version: 4.18.2
@@ -716,6 +719,10 @@ packages:
       '@babel/helper-validator-identifier': 7.22.20
       to-fast-properties: 2.0.0
     dev: true
+
+  /@code-hike/lighter@0.8.1:
+    resolution: {integrity: sha512-St4rPmB7C2EWmAK1sAbvD3lZeM7UDInVDMjQDzEDsu4Q3B3AqF25vXedQK51U0UO0MCOASgBBdTiNwvJAfIqMQ==}
+    dev: false
 
   /@esbuild/android-arm64@0.18.20:
     resolution: {integrity: sha512-Nz4rJcchGDtENV0eMKUNa6L12zz2zBDXuhj/Vjh18zGqB44Bi7MBMSXjgunJgjRhCmKOjnPuZp4Mb6OKqtMHLQ==}
@@ -1929,6 +1936,16 @@ packages:
     dependencies:
       fill-range: 7.0.1
     dev: true
+
+  /bright@0.8.4(react@18.3.0-canary-a41957507-20231017):
+    resolution: {integrity: sha512-SBlcJje8EDh3lLihqr0W27yHCVpuh3NReziNxZOwUzuaShqq+V/imY+J+AvJdTIOifiCQkyIsgVWKAj5G/eOyg==}
+    peerDependencies:
+      react: ^18
+    dependencies:
+      '@code-hike/lighter': 0.8.1
+      react: 18.3.0-canary-a41957507-20231017
+      server-only: 0.0.1
+    dev: false
 
   /browserslist@4.22.1:
     resolution: {integrity: sha512-FEVc202+2iuClEhZhrWy6ZiAcRLvNMyYcxZ8raemul1DYVOVdFsbqckWLdsixQZCpJlwe77Z3UTalE7jsjnKfQ==}
@@ -4386,6 +4403,10 @@ packages:
       send: 0.18.0
     transitivePeerDependencies:
       - supports-color
+
+  /server-only@0.0.1:
+    resolution: {integrity: sha512-qepMx2JxAa5jjfzxG79yPPq+8BuFToHd1hm7kI+Z4zAq1ftQiP7HcxMhDDItrbtwVeLg/cY2JnKnrcFkmiswNA==}
+    dev: false
 
   /set-function-name@2.0.1:
     resolution: {integrity: sha512-tMNCiqYVkXIZgc2Hnoy2IvC/f8ezc5koaRFkCjrpWzGpCd3qbZXPzVy9MAZzK1ch/X0jvSkojys3oqJN0qCmdA==}
