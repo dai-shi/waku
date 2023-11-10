@@ -41,9 +41,9 @@ export interface Config {
   entriesJs?: string;
   /**
    * Prefix for HTTP requests to indicate RSC requests.
-   * Defaults to  "RSC/".
+   * Defaults to  "RSC".
    */
-  rscPrefix?: string;
+  rscPath?: string;
   /**
    * ssr middleware specific configs.
    */
