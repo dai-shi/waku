@@ -11,14 +11,17 @@
   "dependencies": {
     "express": "^4.18.2",
     "glob": "^10.3.10",
-    "react": "18.3.0-canary-a41957507-20231017",
-    "react-dom": "18.3.0-canary-a41957507-20231017",
-    "react-server-dom-webpack": "18.3.0-canary-a41957507-20231017",
+    "react": "18.3.0-canary-0e352ea01-20231109",
+    "react-dom": "18.3.0-canary-0e352ea01-20231109",
+    "react-server-dom-webpack": "18.3.0-canary-0e352ea01-20231109",
     "waku": "0.16.0"
   },
   "devDependencies": {
-    "@types/react": "^18.2.31",
-    "@types/react-dom": "^18.2.14",
-    "typescript": "^5.2.2"
+    "@swc/core": "1.3.96",
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "@vitejs/plugin-react": "4.1.1",
+    "typescript": "^5.2.2",
+    "vite": "4.5.0"
   }
 }
