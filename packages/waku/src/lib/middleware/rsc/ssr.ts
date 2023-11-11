@@ -35,6 +35,10 @@ const getViteServer = async () => {
   );
   const viteServer = await viteCreateServer({
     plugins: [nonjsResolvePlugin()],
+    ssr: {
+      // HACK required for ServerRoot for waku/client
+      noExternal: ["waku"],
+    },
     appType: "custom",
     server: { middlewareMode: true, hmr: { server: dummyServer } },
   });
