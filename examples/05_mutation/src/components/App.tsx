@@ -1,4 +1,4 @@
-import { Balancer } from 'react-wrap-balancer'
+import { Balancer } from "react-wrap-balancer";
 
 import { Counter } from "./Counter.js";
 import { getCounter, increment } from "./funcs.js";
