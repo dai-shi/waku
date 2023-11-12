@@ -62,6 +62,7 @@ const analyzeEntries = async (entriesFile: string) => {
     ],
     ssr: {
       resolve: {
+        conditions: ["react-server"],
         externalConditions: ["react-server"],
       },
       noExternal: /^(?!node:)/,
@@ -108,6 +109,7 @@ const buildServerBundle = async (
   const serverBuildOutput = await viteBuild({
     ssr: {
       resolve: {
+        conditions: ["react-server"],
         externalConditions: ["react-server"],
       },
       noExternal: Object.values(clientEntryFiles).flatMap((fname) => {
