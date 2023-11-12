@@ -108,8 +108,8 @@ const getWakuClientFile = (
 
 const fakeFetchCode = `
 Promise.resolve({
-  ok: true, body:
-  new ReadableStream({
+  ok: true,
+  body: new ReadableStream({
     start(c) {
       const f = (s) => new TextEncoder().encode(decodeURI(s));
       globalThis.__WAKU_PUSH__ = (s) => s ? c.enqueue(f(s)) : c.close();
@@ -264,7 +264,7 @@ const rectifyHtml = () => {
         throw new Error("Unknown encoding");
       }
       pending.push(chunk);
-      if (chunk.toString().endsWith(">")) {
+      if (/<\/\w+>$/.test(chunk.toString())) {
         callback(null, Buffer.concat(pending.splice(0)));
       } else {
         callback();
