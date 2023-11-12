@@ -67,7 +67,7 @@ yarn create waku
 ```
 
 ```bash
-pnpm create waku # It may not work correctly with some libs
+pnpm create waku
 ```
 
 These commands will create an example app that you can use as a

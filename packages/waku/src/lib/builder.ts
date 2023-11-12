@@ -110,15 +110,12 @@ const buildServerBundle = async (
       resolve: {
         externalConditions: ["react-server"],
       },
-      noExternal: Object.values(clientEntryFiles).map(
-        // FIXME this might not work with pnpm
-        (fname) =>
-          path
-            .relative(path.join(config.rootDir, "node_modules"), fname)
-            .split("/")[0]!,
-      ),
-      // Could that be just this? (and can it avoid copying in website:vercel?)
-      // noExternal: /^(?!node:)/,
+      noExternal: Object.values(clientEntryFiles).flatMap((fname) => {
+        const items = fname.split(path.sep);
+        const index = items.lastIndexOf("node_modules");
+        const name = index >= 0 && items[index + 1];
+        return name ? [name] : [];
+      }),
     },
     publicDir: false,
     build: {

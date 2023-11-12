@@ -53,9 +53,6 @@ export function rsc<Context>(options: {
       root: path.join(config.rootDir, config.srcDir),
       optimizeDeps: {
         include: ["react-server-dom-webpack/client"],
-        // FIXME without this, waku router has dual module hazard,
-        // and "Uncaught Error: Missing Router" happens.
-        exclude: ["waku"],
       },
       plugins: [
         patchReactRefresh(viteReact()),

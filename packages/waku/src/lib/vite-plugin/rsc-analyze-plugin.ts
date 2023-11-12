@@ -10,7 +10,7 @@ export function rscAnalyzePlugin(
     name: "rsc-analyze-plugin",
     transform(code, id) {
       const ext = path.extname(id);
-      if ([".ts", ".tsx", ".js", ".jsx"].includes(ext)) {
+      if ([".ts", ".tsx", ".js", ".jsx", ".mjs"].includes(ext)) {
         const mod = swc.parseSync(code, {
           syntax: ext === ".ts" || ext === ".tsx" ? "typescript" : "ecmascript",
           tsx: ext === ".tsx",
