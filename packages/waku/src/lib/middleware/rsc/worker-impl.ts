@@ -128,8 +128,11 @@ const getViteServer = async () => {
     ],
     ssr: {
       resolve: {
+        conditions: ["react-server"],
         externalConditions: ["react-server"],
       },
+      external: ["react", "react-server-dom-webpack", "waku"],
+      noExternal: /^(?!node:)/,
     },
     appType: "custom",
     server: { middlewareMode: true, hmr: { server: dummyServer } },

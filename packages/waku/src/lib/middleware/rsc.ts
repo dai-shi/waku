@@ -53,9 +53,6 @@ export function rsc<Context>(options: {
       root: path.join(config.rootDir, config.srcDir),
       optimizeDeps: {
         include: ["react-server-dom-webpack/client"],
-        // FIXME without this, waku router has dual module hazard,
-        // and "Uncaught Error: Missing Router" happens.
-        exclude: ["waku"],
       },
       plugins: [
         patchReactRefresh(viteReact()),
@@ -190,7 +187,11 @@ export function rsc<Context>(options: {
         ? pathStr.slice(config.basePath.length + 3)
         : path.join(vite.config.root, pathStr);
       for (const item of vite.moduleGraph.idToModuleMap.values()) {
-        if (item.file === fname && item.url !== pathStr) {
+        if (
+          item.file === fname &&
+          item.url !== pathStr &&
+          !item.url.includes("?html-proxy")
+        ) {
           res.setHeader("Content-Type", "application/javascript");
           res.statusCode = 200;
           res.end(`export * from "${item.url}";`, "utf8");

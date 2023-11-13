@@ -8,6 +8,9 @@ const modulesRoot = path.join(
 
 /** @type {import('vite').UserConfig} */
 export default {
+  ssr: {
+    external: ["glob"],
+  },
   build: {
     rollupOptions: {
       output: {
