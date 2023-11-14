@@ -185,16 +185,14 @@ example app.
 ### Router
 
 Waku provides a router built on top of the minimal API, and it serves
-as a reference implementation. While other router implementations can
-be used with Waku, this page focuses on the `waku/router`
-implementation.
+as a reference implementation.
 
 #### Client API
 
 To use the router, it is required to use the `Router`
-component instead of using `serve` directly. The following
-code demonstrates how to use the `Router` component as the
-root component:
+component instead of using `Root` and `Slot` directly.
+The following code demonstrates how to use
+the `Router` component as the root component:
 
 ```tsx
 import { createRoot } from "react-dom/client";
@@ -205,7 +203,7 @@ const root = createRoot(document.getElementById("root")!);
 root.render(<Router />);
 ```
 
-The `Router` component internally uses `serve`
+The `Router` component internally uses `Root` and `Slot`
 and handles nested routes.
 
 #### Server API
@@ -219,9 +217,9 @@ import { defineRouter } from "waku/router/server";
 
 export default defineRouter((id) => {
   switch (id) {
-    case "index":
+    case "index/page":
       return import("./routes/index.tsx");
-    case "foo":
+    case "foo/page":
       return import("./routes/foo.tsx");
     default:
       throw new Error("no such route");
