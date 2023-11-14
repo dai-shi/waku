@@ -1,8 +1,8 @@
-import { lazy } from "react";
-import { defineEntries } from "waku/server";
-import { Slot } from "waku/client";
+import { lazy } from 'react';
+import { defineEntries } from 'waku/server';
+import { Slot } from 'waku/client';
 
-const App = lazy(() => import("./components/app.js"));
+const App = lazy(() => import('./components/app.js'));
 
 export default defineEntries(
   // renderEntries
@@ -14,17 +14,17 @@ export default defineEntries(
   // getBuildConfig
   async () => {
     return {
-      "/": {
-        entries: [[""]],
+      '/': {
+        entries: [['']],
       },
     };
   },
   // getSsrConfig
   async (pathStr) => {
     switch (pathStr) {
-      case "/":
+      case '/':
         return {
-          input: "",
+          input: '',
           unstable_render: () => <Slot id="App" />,
         };
       default:

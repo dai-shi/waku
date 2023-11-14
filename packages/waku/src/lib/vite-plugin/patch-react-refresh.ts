@@ -1,12 +1,12 @@
-import type { Plugin, PluginOption } from "vite";
+import type { Plugin, PluginOption } from 'vite';
 
 export const patchReactRefresh = <T extends PluginOption[]>(options: T): T =>
   options.map((option) => {
     const plugin = option as Plugin;
     const origTransformIndexHtml = plugin?.transformIndexHtml;
     if (
-      plugin?.name === "vite:react-refresh" &&
-      typeof origTransformIndexHtml === "function"
+      plugin?.name === 'vite:react-refresh' &&
+      typeof origTransformIndexHtml === 'function'
     ) {
       return {
         ...option,

@@ -1,5 +1,5 @@
 /// <reference types="react/canary" />
-"use client";
+'use client';
 
 import {
   cache,
@@ -10,10 +10,10 @@ import {
   useCallback,
   useState,
   startTransition,
-} from "react";
-import type { ReactNode } from "react";
-import RSDWClient from "react-server-dom-webpack/client";
-import { encodeInput } from "./lib/middleware/rsc/utils.js";
+} from 'react';
+import type { ReactNode } from 'react';
+import RSDWClient from 'react-server-dom-webpack/client';
+import { encodeInput } from './lib/middleware/rsc/utils.js';
 
 const { createFromFetch, encodeReply } = RSDWClient;
 
@@ -45,14 +45,14 @@ export const fetchRSC = cache(
   (
     input: string,
     rerender: (fn: (prev: Elements) => Elements) => void,
-    basePath = "/RSC/",
+    basePath = '/RSC/',
   ): Elements => {
     const options = {
       async callServer(actionId: string, args: unknown[]) {
         const response = fetch(
           basePath + encodeInput(encodeURIComponent(actionId)),
           {
-            method: "POST",
+            method: 'POST',
             body: await encodeReply(args),
           },
         );
@@ -73,7 +73,7 @@ export const fetchRSC = cache(
 );
 
 const RefetchContext = createContext<(input: string) => void>(() => {
-  throw new Error("Missing Root component");
+  throw new Error('Missing Root component');
 });
 const ElementsContext = createContext<Elements | null>(null);
 
@@ -101,7 +101,7 @@ export const Root = ({
 }) => {
   const [getRerender, setRerender] = createRerender();
   const [elements, setElements] = useState(() =>
-    fetchRSC(initialInput || "", getRerender(), basePath),
+    fetchRSC(initialInput || '', getRerender(), basePath),
   );
   setRerender(setElements);
   const refetch = useCallback(
@@ -132,11 +132,11 @@ export const Slot = ({
 }) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
-    throw new Error("Missing Root component");
+    throw new Error('Missing Root component');
   }
   const elements = use(elementsPromise);
   if (!(id in elements)) {
-    throw new Error("Not found: " + id);
+    throw new Error('Not found: ' + id);
   }
   return createElement(
     ChildrenContextProvider,

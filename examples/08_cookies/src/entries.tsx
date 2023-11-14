@@ -1,8 +1,8 @@
-import { lazy } from "react";
-import { defineEntries, getContext } from "waku/server";
-import { Slot } from "waku/client";
+import { lazy } from 'react';
+import { defineEntries, getContext } from 'waku/server';
+import { Slot } from 'waku/client';
 
-const App = lazy(() => import("./components/App.js"));
+const App = lazy(() => import('./components/App.js'));
 
 export default defineEntries(
   // renderEntries
@@ -10,14 +10,14 @@ export default defineEntries(
     const ctx = getContext<{ count: number }>();
     ++ctx.count;
     return {
-      App: <App name={input || "Waku"} />,
+      App: <App name={input || 'Waku'} />,
     };
   },
   // getBuildConfig
   async () => {
     return {
-      "/": {
-        entries: [[""]],
+      '/': {
+        entries: [['']],
         context: { count: 0 },
       },
     };
@@ -25,9 +25,9 @@ export default defineEntries(
   // getSsrConfig
   async (pathStr) => {
     switch (pathStr) {
-      case "/":
+      case '/':
         return {
-          input: "",
+          input: '',
           unstable_render: () => <Slot id="App" />,
         };
       default:

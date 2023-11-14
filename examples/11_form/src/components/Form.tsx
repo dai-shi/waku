@@ -1,9 +1,9 @@
 /// <reference types="react/canary" />
 /// <reference types="react-dom/canary" />
 
-"use client";
+'use client';
 
-import { useFormStatus } from "react-dom";
+import { useFormStatus } from 'react-dom';
 
 const SubmitButton = () => {
   const { pending } = useFormStatus();
@@ -12,7 +12,7 @@ const SubmitButton = () => {
       <button disabled={pending} type="submit">
         Submit
       </button>
-      {pending ? "Pending..." : null}
+      {pending ? 'Pending...' : null}
     </>
   );
 };
@@ -24,7 +24,7 @@ export const Form = ({
   message: string;
   greet: (formData: FormData) => Promise<void>;
 }) => (
-  <div style={{ border: "3px blue dashed", margin: "1em", padding: "1em" }}>
+  <div style={{ border: '3px blue dashed', margin: '1em', padding: '1em' }}>
     <p>{message}</p>
     <form action={greet}>
       Name: <input name="name" />

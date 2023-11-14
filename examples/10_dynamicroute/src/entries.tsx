@@ -1,19 +1,19 @@
-import url from "node:url";
-import path from "node:path";
-import fs from "node:fs";
-import { lazy } from "react";
-import { glob } from "glob";
-import { defineRouter } from "waku/router/server";
+import url from 'node:url';
+import path from 'node:path';
+import fs from 'node:fs';
+import { lazy } from 'react';
+import { glob } from 'glob';
+import { defineRouter } from 'waku/router/server';
 
 const routesDir = path.join(
   path.dirname(url.fileURLToPath(import.meta.url)),
-  "routes",
+  'routes',
 );
 
 const getRoute = (items: string[]) =>
   lazy(() => {
     // HACK: replace "_slug_" to "[slug]"
-    items = items.map((item) => item.replace(/^_(\w+)_$/, "[$1]"));
+    items = items.map((item) => item.replace(/^_(\w+)_$/, '[$1]'));
     switch (items.length) {
       case 1:
         return import(`./routes/${items[0]}.tsx`);
@@ -22,13 +22,13 @@ const getRoute = (items: string[]) =>
       case 3:
         return import(`./routes/${items[0]}/${items[1]}/${items[2]}.tsx`);
       default:
-        throw new Error("too deep route");
+        throw new Error('too deep route');
     }
   });
 
 // HACK for vite dev server
 const isReservedId = (id: string) =>
-  id.startsWith("@") || id.startsWith("main.tsx/");
+  id.startsWith('@') || id.startsWith('main.tsx/');
 
 export default defineRouter(
   // getComponent (id is "**/layout" or "**/page")
@@ -37,7 +37,7 @@ export default defineRouter(
       return null;
     }
     const mapping: Record<string, string> = {};
-    const items = id.split("/");
+    const items = id.split('/');
     for (let i = 0; i < items.length - 1; ++i) {
       const dir = path.join(routesDir, ...items.slice(0, i));
       if (!fs.existsSync(dir)) {
@@ -53,8 +53,8 @@ export default defineRouter(
       }
     }
     if (
-      !fs.existsSync(path.join(routesDir, ...items) + ".js") &&
-      !fs.existsSync(path.join(routesDir, ...items) + ".tsx")
+      !fs.existsSync(path.join(routesDir, ...items) + '.js') &&
+      !fs.existsSync(path.join(routesDir, ...items) + '.tsx')
     ) {
       return null;
     }
@@ -66,9 +66,9 @@ export default defineRouter(
   },
   // getPathsForBuild
   async () => {
-    const files = await glob("**/page.{tsx,js}", { cwd: routesDir });
+    const files = await glob('**/page.{tsx,js}', { cwd: routesDir });
     return files
       .filter((file) => !/(^|\/)(\[\w+\]|_\w+_)\//.test(file))
-      .map((file) => "/" + file.slice(0, Math.max(0, file.lastIndexOf("/"))));
+      .map((file) => '/' + file.slice(0, Math.max(0, file.lastIndexOf('/'))));
   },
 );

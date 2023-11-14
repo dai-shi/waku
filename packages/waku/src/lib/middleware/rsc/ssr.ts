@@ -1,21 +1,21 @@
-import path from "node:path";
-import fs from "node:fs";
-import url from "node:url";
-import crypto from "node:crypto";
-import { PassThrough, Transform } from "node:stream";
-import type { Readable } from "node:stream";
-import { Buffer } from "node:buffer";
-import { Server } from "node:http";
+import path from 'node:path';
+import fs from 'node:fs';
+import url from 'node:url';
+import crypto from 'node:crypto';
+import { PassThrough, Transform } from 'node:stream';
+import type { Readable } from 'node:stream';
+import { Buffer } from 'node:buffer';
+import { Server } from 'node:http';
 
-import { createElement } from "react";
-import RDServer from "react-dom/server";
-import RSDWClient from "react-server-dom-webpack/client.node.unbundled";
-import type { ViteDevServer } from "vite";
+import { createElement } from 'react';
+import RDServer from 'react-dom/server';
+import RSDWClient from 'react-server-dom-webpack/client.node.unbundled';
+import type { ViteDevServer } from 'vite';
 
-import { resolveConfig } from "../../config.js";
-import { defineEntries } from "../../../server.js";
-import { renderRSC } from "./worker-api.js";
-import { hasStatusCode } from "./utils.js";
+import { resolveConfig } from '../../config.js';
+import { defineEntries } from '../../../server.js';
+import { renderRSC } from './worker-api.js';
+import { hasStatusCode } from './utils.js';
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { renderToPipeableStream } = RDServer;
@@ -29,17 +29,17 @@ const getViteServer = async () => {
     return lastViteServer;
   }
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
-  const { createServer: viteCreateServer } = await import("vite");
+  const { createServer: viteCreateServer } = await import('vite');
   const { nonjsResolvePlugin } = await import(
-    "../../vite-plugin/nonjs-resolve-plugin.js"
+    '../../vite-plugin/nonjs-resolve-plugin.js'
   );
   const viteServer = await viteCreateServer({
     plugins: [nonjsResolvePlugin()],
     ssr: {
       // HACK required for ServerRoot for waku/client
-      noExternal: ["waku"],
+      noExternal: ['waku'],
     },
-    appType: "custom",
+    appType: 'custom',
     server: { middlewareMode: true, hmr: { server: dummyServer } },
   });
   await viteServer.watcher.close(); // TODO watch: null
@@ -58,9 +58,9 @@ export const shutdown = async () => {
 // This is exported only for createTranspiler
 export const loadServerFile = async (
   fname: string,
-  command: "dev" | "build" | "start",
+  command: 'dev' | 'build' | 'start',
 ) => {
-  if (command !== "dev") {
+  if (command !== 'dev') {
     return import(fname);
   }
   const vite = await getViteServer();
@@ -71,7 +71,7 @@ export const loadServerFile = async (
 const createTranspiler = async (cleanupFns: Set<() => void>) => {
   return (file: string, name: string) => {
     const temp = path.resolve(
-      `.temp-${crypto.randomBytes(8).toString("hex")}.js`,
+      `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
     );
     const code = `
 import { loadServerFile } from '${url.fileURLToPath(import.meta.url)}';
@@ -86,24 +86,24 @@ export { ${name} }
 
 const getEntriesFile = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
-  command: "dev" | "build" | "start",
+  command: 'dev' | 'build' | 'start',
 ) => {
   return path.join(
     config.rootDir,
-    command === "dev" ? config.srcDir : config.distDir,
+    command === 'dev' ? config.srcDir : config.distDir,
     config.entriesJs,
   );
 };
 
 const getWakuClientFile = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
-  command: "dev" | "build" | "start",
+  command: 'dev' | 'build' | 'start',
 ) => {
-  if (command !== "dev") {
+  if (command !== 'dev') {
     // HACK kind of hard coded to be sync with builder.ts
-    return path.join(config.rootDir, config.distDir, "./assets/waku-client.js");
+    return path.join(config.rootDir, config.distDir, './assets/waku-client.js');
   }
-  return "waku/client";
+  return 'waku/client';
 };
 
 const fakeFetchCode = `
@@ -117,21 +117,21 @@ Promise.resolve({
   })
 })
 `
-  .split("\n")
+  .split('\n')
   .map((line) => line.trim())
-  .join("");
+  .join('');
 
 const injectRscPayload = (stream: Readable, input: string) => {
   const chunks: Buffer[] = [];
   let closed = false;
   let notify: (() => void) | undefined;
   const copied = new PassThrough();
-  stream.on("data", (chunk) => {
+  stream.on('data', (chunk) => {
     copied.write(chunk);
     chunks.push(chunk);
     notify?.();
   });
-  stream.on("end", () => {
+  stream.on('end', () => {
     copied.end();
     closed = true;
     notify?.();
@@ -141,8 +141,8 @@ const injectRscPayload = (stream: Readable, input: string) => {
   let closedSent = false;
   const inject = new Transform({
     transform(chunk, encoding, callback) {
-      if (encoding !== ("buffer" as any)) {
-        throw new Error("Unknown encoding");
+      if (encoding !== ('buffer' as any)) {
+        throw new Error('Unknown encoding');
       }
       if (!headSent) {
         let data: string = chunk.toString();
@@ -151,10 +151,10 @@ const injectRscPayload = (stream: Readable, input: string) => {
           /(.*)<script>\nglobalThis\.__WAKU_PREFETCHED__ = {\n(.*?)\n};(.*)/s,
         );
         if (matchPrefetched) {
-          prefetchedLines = matchPrefetched[2]!.split("\n");
-          data = matchPrefetched[1] + "<script>\n" + matchPrefetched[3];
+          prefetchedLines = matchPrefetched[2]!.split('\n');
+          data = matchPrefetched[1] + '<script>\n' + matchPrefetched[3];
         }
-        const closingHeadIndex = data.indexOf("</head>");
+        const closingHeadIndex = data.indexOf('</head>');
         if (closingHeadIndex >= 0) {
           headSent = true;
           data =
@@ -164,7 +164,7 @@ const injectRscPayload = (stream: Readable, input: string) => {
 globalThis.__WAKU_PREFETCHED__ = {
 ${prefetchedLines
   .filter((line) => !line.startsWith(`  '${input}':`))
-  .join("\n")}
+  .join('\n')}
   '${input}': ${fakeFetchCode},
 };
 globalThis.__WAKU_SSR_ENABLED__ = true;
@@ -220,8 +220,8 @@ const interleaveHtmlSnippets = (
   let preambleSent = false;
   return new Transform({
     transform(chunk, encoding, callback) {
-      if (encoding !== ("buffer" as any)) {
-        throw new Error("Unknown encoding");
+      if (encoding !== ('buffer' as any)) {
+        throw new Error('Unknown encoding');
       }
       if (!preambleSent) {
         const data = chunk.toString();
@@ -260,8 +260,8 @@ const rectifyHtml = () => {
   const pending: Buffer[] = [];
   return new Transform({
     transform(chunk, encoding, callback) {
-      if (encoding !== ("buffer" as any)) {
-        throw new Error("Unknown encoding");
+      if (encoding !== ('buffer' as any)) {
+        throw new Error('Unknown encoding');
       }
       pending.push(chunk);
       if (/<\/\w+>$/.test(chunk.toString())) {
@@ -281,7 +281,7 @@ const rectifyHtml = () => {
 
 export const renderHtml = async <Context>(
   config: Awaited<ReturnType<typeof resolveConfig>>,
-  command: "dev" | "build" | "start",
+  command: 'dev' | 'build' | 'start',
   pathStr: string,
   htmlStr: string, // Hope stream works, but it'd be too tricky
   context: Context,
@@ -299,7 +299,7 @@ export const renderHtml = async <Context>(
   try {
     [pipeable, nextCtx] = await renderRSC({
       input: ssrConfig.input,
-      method: "GET",
+      method: 'GET',
       headers: {},
       command,
       context,
@@ -313,7 +313,7 @@ export const renderHtml = async <Context>(
   const { splitHTML } = config.ssr;
   const cleanupFns = new Set<() => void>();
   const transpile =
-    command === "dev" ? await createTranspiler(cleanupFns) : undefined;
+    command === 'dev' ? await createTranspiler(cleanupFns) : undefined;
   const moduleMap = new Proxy(
     {},
     {
@@ -323,14 +323,14 @@ export const renderHtml = async <Context>(
           {
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
-              if (command !== "dev") {
+              if (command !== 'dev') {
                 return {
                   specifier: path.join(config.rootDir, config.distDir, file),
                   name,
                 };
               }
               // command === "dev"
-              const f = file.startsWith("@fs/")
+              const f = file.startsWith('@fs/')
                 ? file.slice(3)
                 : path.join(config.rootDir, config.srcDir, file);
               return { specifier: transpile!(f, name), name };

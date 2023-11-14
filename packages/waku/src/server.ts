@@ -1,5 +1,5 @@
-import { AsyncLocalStorage } from "node:async_hooks";
-import type { ReactNode } from "react";
+import { AsyncLocalStorage } from 'node:async_hooks';
+import type { ReactNode } from 'react';
 
 type Elements = Record<string, ReactNode>;
 
@@ -42,7 +42,7 @@ export function getContext<T = unknown>() {
     .WAKU_SERVER_ASYNC_LOCAL_STORAGE;
   const store = asl.getStore();
   if (store === undefined) {
-    throw new Error("Missing runWithAsyncLocalStorage");
+    throw new Error('Missing runWithAsyncLocalStorage');
   }
   return store.getContext() as T;
 }
@@ -52,7 +52,7 @@ export function rerender(input: string) {
     .WAKU_SERVER_ASYNC_LOCAL_STORAGE;
   const store = asl.getStore();
   if (store === undefined) {
-    throw new Error("Missing runWithAsyncLocalStorage");
+    throw new Error('Missing runWithAsyncLocalStorage');
   }
   return store.rerender(input);
 }

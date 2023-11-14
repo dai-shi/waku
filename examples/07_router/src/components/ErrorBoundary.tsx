@@ -1,5 +1,5 @@
-import { Component } from "react";
-import type { ReactNode, FunctionComponent } from "react";
+import { Component } from 'react';
+import type { ReactNode, FunctionComponent } from 'react';
 
 interface Props {
   fallback: (error: unknown) => ReactNode;
@@ -17,7 +17,7 @@ class ErrorBoundaryClass extends Component<Props, { error?: unknown }> {
   }
 
   render() {
-    if ("error" in this.state) {
+    if ('error' in this.state) {
       return this.props.fallback(this.state.error);
     }
     return this.props.children;

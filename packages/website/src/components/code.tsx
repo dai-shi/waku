@@ -1,4 +1,4 @@
-import { Code } from "bright";
+import { Code } from 'bright';
 
 const code1 = `
 import { lazy } from "react";

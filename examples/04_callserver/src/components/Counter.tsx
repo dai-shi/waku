@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
+import { useState, useTransition } from 'react';
 
-import { TextBox } from "./TextBox.js";
+import { TextBox } from './TextBox.js';
 
 export const Counter = ({
   greet,
@@ -10,22 +10,22 @@ export const Counter = ({
   greet: (name: string) => Promise<string>;
 }) => {
   const [count, setCount] = useState(0);
-  const [text, setText] = useState<string | Promise<string>>("");
+  const [text, setText] = useState<string | Promise<string>>('');
   const [isPending, startTransition] = useTransition();
   const handleClick = () => {
     startTransition(() => {
-      setText(greet("c=" + count));
+      setText(greet('c=' + count));
     });
   };
   return (
-    <div style={{ border: "3px blue dashed", margin: "1em", padding: "1em" }}>
+    <div style={{ border: '3px blue dashed', margin: '1em', padding: '1em' }}>
       <p>Count: {count}</p>
       <button onClick={() => setCount((c) => c + 1)}>Increment</button>
       <p>
         <button onClick={handleClick}>
           greet(&quot;c=&quot; + count) = {text as string}
-        </button>{" "}
-        {isPending ? "Pending..." : ""}
+        </button>{' '}
+        {isPending ? 'Pending...' : ''}
       </p>
       <h3>This is a client component.</h3>
       <TextBox />
