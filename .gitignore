@@ -2,6 +2,7 @@
 *.swp
 node_modules
 dist
+/packages/waku/README.md
 /packages/create-waku/template
 .env
 .devcontainer
