@@ -1,32 +1,32 @@
-import path from "node:path";
-import url from "node:url";
-import { parentPort } from "node:worker_threads";
-import { PassThrough, Transform, Writable } from "node:stream";
-import { finished } from "node:stream/promises";
-import { Server } from "node:http";
-import { Buffer } from "node:buffer";
+import path from 'node:path';
+import url from 'node:url';
+import { parentPort } from 'node:worker_threads';
+import { PassThrough, Transform, Writable } from 'node:stream';
+import { finished } from 'node:stream/promises';
+import { Server } from 'node:http';
+import { Buffer } from 'node:buffer';
 
-import type { ReactNode } from "react";
-import RSDWServer from "react-server-dom-webpack/server";
-import busboy from "busboy";
-import type { ViteDevServer } from "vite";
+import type { ReactNode } from 'react';
+import RSDWServer from 'react-server-dom-webpack/server';
+import busboy from 'busboy';
+import type { ViteDevServer } from 'vite';
 
-import { resolveConfig } from "../../config.js";
-import { hasStatusCode, deepFreeze } from "./utils.js";
-import type { MessageReq, MessageRes, RenderRequest } from "./worker-api.js";
+import { resolveConfig } from '../../config.js';
+import { hasStatusCode, deepFreeze } from './utils.js';
+import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
 import {
   defineEntries,
   runWithAsyncLocalStorage as runWithAsyncLocalStorageOrig,
-} from "../../../server.js";
+} from '../../../server.js';
 
 const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
   RSDWServer;
 
-const IS_NODE_20 = Number(process.versions.node.split(".")[0]) >= 20;
+const IS_NODE_20 = Number(process.versions.node.split('.')[0]) >= 20;
 if (IS_NODE_20) {
-  const { register } = (await import("node:module")) as any;
-  register("waku/node-loader", url.pathToFileURL("./"));
-  register("react-server-dom-webpack/node-loader", url.pathToFileURL("./"));
+  const { register } = (await import('node:module')) as any;
+  register('waku/node-loader', url.pathToFileURL('./'));
+  register('react-server-dom-webpack/node-loader', url.pathToFileURL('./'));
 }
 
 type Entries = { default: ReturnType<typeof defineEntries> };
@@ -34,7 +34,7 @@ type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
 const streamMap = new Map<number, Writable>();
 
-const handleRender = async (mesg: MessageReq & { type: "render" }) => {
+const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id, type, hasModuleIdCallback, ...rest } = mesg;
   const rr: RenderRequest = rest;
@@ -44,23 +44,23 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
     rr.stream = stream;
     if (hasModuleIdCallback) {
       rr.moduleIdCallback = (moduleId: string) => {
-        const mesg: MessageRes = { id, type: "moduleId", moduleId };
+        const mesg: MessageRes = { id, type: 'moduleId', moduleId };
         parentPort!.postMessage(mesg);
       };
     }
     const pipeable = await renderRSC(rr);
-    const mesg: MessageRes = { id, type: "start", context: rr.context };
+    const mesg: MessageRes = { id, type: 'start', context: rr.context };
     parentPort!.postMessage(mesg);
     deepFreeze(rr.context);
     const writable = new Writable({
       write(chunk, encoding, callback) {
-        if (encoding !== ("buffer" as any)) {
-          throw new Error("Unknown encoding");
+        if (encoding !== ('buffer' as any)) {
+          throw new Error('Unknown encoding');
         }
         const buffer: Buffer = chunk;
         const mesg: MessageRes = {
           id,
-          type: "buf",
+          type: 'buf',
           buf: buffer.buffer,
           offset: buffer.byteOffset,
           len: buffer.length,
@@ -69,14 +69,14 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
         callback();
       },
       final(callback) {
-        const mesg: MessageRes = { id, type: "end" };
+        const mesg: MessageRes = { id, type: 'end' };
         parentPort!.postMessage(mesg);
         callback();
       },
     });
     pipeable.pipe(writable);
   } catch (err) {
-    const mesg: MessageRes = { id, type: "err", err };
+    const mesg: MessageRes = { id, type: 'err', err };
     if (hasStatusCode(err)) {
       mesg.statusCode = err.statusCode;
     }
@@ -85,15 +85,15 @@ const handleRender = async (mesg: MessageReq & { type: "render" }) => {
 };
 
 const handleGetBuildConfig = async (
-  mesg: MessageReq & { type: "getBuildConfig" },
+  mesg: MessageReq & { type: 'getBuildConfig' },
 ) => {
   const { id } = mesg;
   try {
     const output = await getBuildConfigRSC();
-    const mesg: MessageRes = { id, type: "buildConfig", output };
+    const mesg: MessageRes = { id, type: 'buildConfig', output };
     parentPort!.postMessage(mesg);
   } catch (err) {
-    const mesg: MessageRes = { id, type: "err", err };
+    const mesg: MessageRes = { id, type: 'err', err };
     parentPort!.postMessage(mesg);
   }
 };
@@ -104,15 +104,15 @@ const getViteServer = async () => {
     return lastViteServer;
   }
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
-  const { createServer: viteCreateServer } = await import("vite");
+  const { createServer: viteCreateServer } = await import('vite');
   const { rscTransformPlugin } = await import(
-    "../../vite-plugin/rsc-transform-plugin.js"
+    '../../vite-plugin/rsc-transform-plugin.js'
   );
   const { rscReloadPlugin } = await import(
-    "../../vite-plugin/rsc-reload-plugin.js"
+    '../../vite-plugin/rsc-reload-plugin.js'
   );
   const { rscDelegatePlugin } = await import(
-    "../../vite-plugin/rsc-delegate-plugin.js"
+    '../../vite-plugin/rsc-delegate-plugin.js'
   );
   const viteServer = await viteCreateServer({
     plugins: [
@@ -122,19 +122,19 @@ const getViteServer = async () => {
         parentPort!.postMessage(mesg);
       }),
       rscDelegatePlugin((source) => {
-        const mesg: MessageRes = { type: "hot-import", source };
+        const mesg: MessageRes = { type: 'hot-import', source };
         parentPort!.postMessage(mesg);
       }),
     ],
     ssr: {
       resolve: {
-        conditions: ["react-server"],
-        externalConditions: ["react-server"],
+        conditions: ['react-server'],
+        externalConditions: ['react-server'],
       },
-      external: ["react", "react-server-dom-webpack", "waku"],
+      external: ['react', 'react-server-dom-webpack', 'waku'],
       noExternal: /^(?!node:)/,
     },
-    appType: "custom",
+    appType: 'custom',
     server: { middlewareMode: true, hmr: { server: dummyServer } },
   });
   await viteServer.ws.close();
@@ -152,29 +152,29 @@ const shutdown = async () => {
 
 const loadServerFile = async (
   fname: string,
-  command: "dev" | "build" | "start",
+  command: 'dev' | 'build' | 'start',
 ) => {
-  if (command !== "dev") {
+  if (command !== 'dev') {
     return import(fname);
   }
   const vite = await getViteServer();
   return vite.ssrLoadModule(fname);
 };
 
-parentPort!.on("message", (mesg: MessageReq) => {
-  if (mesg.type === "shutdown") {
+parentPort!.on('message', (mesg: MessageReq) => {
+  if (mesg.type === 'shutdown') {
     shutdown();
-  } else if (mesg.type === "render") {
+  } else if (mesg.type === 'render') {
     handleRender(mesg);
-  } else if (mesg.type === "getBuildConfig") {
+  } else if (mesg.type === 'getBuildConfig') {
     handleGetBuildConfig(mesg);
-  } else if (mesg.type === "buf") {
+  } else if (mesg.type === 'buf') {
     const stream = streamMap.get(mesg.id)!;
     stream.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
-  } else if (mesg.type === "end") {
+  } else if (mesg.type === 'end') {
     const stream = streamMap.get(mesg.id)!;
     stream.end();
-  } else if (mesg.type === "err") {
+  } else if (mesg.type === 'err') {
     const stream = streamMap.get(mesg.id)!;
     const err =
       mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err));
@@ -184,11 +184,11 @@ parentPort!.on("message", (mesg: MessageReq) => {
 
 const getEntriesFile = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
-  command: "dev" | "build" | "start",
+  command: 'dev' | 'build' | 'start',
 ) => {
   return path.join(
     config.rootDir,
-    command === "dev" ? config.srcDir : config.distDir,
+    command === 'dev' ? config.srcDir : config.distDir,
     config.entriesJs,
   );
 };
@@ -196,26 +196,26 @@ const getEntriesFile = (
 const resolveClientEntry = (
   filePath: string,
   config: Awaited<ReturnType<typeof resolveConfig>>,
-  command: "dev" | "build" | "start",
+  command: 'dev' | 'build' | 'start',
 ) => {
-  if (filePath.startsWith("file://")) {
+  if (filePath.startsWith('file://')) {
     filePath = filePath.slice(7);
   }
   let root = path.join(
     config.rootDir,
-    command === "dev" ? config.srcDir : config.distDir,
+    command === 'dev' ? config.srcDir : config.distDir,
   );
-  if (path.sep !== "/") {
+  if (path.sep !== '/') {
     // HACK to support windows filesystem
-    root = root.replaceAll(path.sep, "/");
+    root = root.replaceAll(path.sep, '/');
   }
   if (!filePath.startsWith(root)) {
-    if (command === "dev") {
+    if (command === 'dev') {
       // HACK this relies on Vite's internal implementation detail.
-      return config.basePath + "@fs/" + filePath.replace(/^\//, "");
+      return config.basePath + '@fs/' + filePath.replace(/^\//, '');
     } else {
       throw new Error(
-        "Resolving client module outside root is unsupported for now",
+        'Resolving client module outside root is unsupported for now',
       );
     }
   }
@@ -226,11 +226,11 @@ const resolveClientEntry = (
 const transformRsfId = (prefixToRemove: string) =>
   new Transform({
     transform(chunk, encoding, callback) {
-      if (encoding !== ("buffer" as any)) {
-        throw new Error("Unknown encoding");
+      if (encoding !== ('buffer' as any)) {
+        throw new Error('Unknown encoding');
       }
       const data = chunk.toString();
-      const lines = data.split("\n");
+      const lines = data.split('\n');
       let changed = false;
       for (let i = 0; i < lines.length; ++i) {
         const match = lines[i].match(
@@ -243,7 +243,7 @@ const transformRsfId = (prefixToRemove: string) =>
           changed = true;
         }
       }
-      callback(null, changed ? Buffer.from(lines.join("\n")) : chunk);
+      callback(null, changed ? Buffer.from(lines.join('\n')) : chunk);
     },
   });
 
@@ -251,7 +251,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
   const config = await resolveConfig();
 
   const { runWithAsyncLocalStorage } = await (loadServerFile(
-    "waku/server",
+    'waku/server',
     rr.command,
   ) as Promise<{
     runWithAsyncLocalStorage: typeof runWithAsyncLocalStorageOrig;
@@ -265,11 +265,11 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
   const render = async (input: string) => {
     const elements = await renderEntries(input);
     if (elements === null) {
-      const err = new Error("No function component found");
+      const err = new Error('No function component found');
       (err as any).statusCode = 404; // HACK our convention for NotFound
       throw err;
     }
-    if (Object.keys(elements).some((key) => key.startsWith("_"))) {
+    if (Object.keys(elements).some((key) => key.startsWith('_'))) {
       throw new Error('"_" prefix is reserved');
     }
     return elements;
@@ -279,7 +279,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     {},
     {
       get(_target, encodedId: string) {
-        const [filePath, name] = encodedId.split("#") as [string, string];
+        const [filePath, name] = encodedId.split('#') as [string, string];
         const id = resolveClientEntry(filePath, config, rr.command);
         rr?.moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
@@ -287,20 +287,20 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     },
   );
 
-  if (rr.method === "POST") {
+  if (rr.method === 'POST') {
     const actionId = decodeURIComponent(rr.input);
     let args: unknown[] = [];
-    const contentType = rr.headers["content-type"];
+    const contentType = rr.headers['content-type'];
     if (
-      typeof contentType === "string" &&
-      contentType.startsWith("multipart/form-data")
+      typeof contentType === 'string' &&
+      contentType.startsWith('multipart/form-data')
     ) {
       const bb = busboy({ headers: rr.headers });
       const reply = decodeReplyFromBusboy(bb);
       rr.stream?.pipe(bb);
       args = await reply;
     } else {
-      let body = "";
+      let body = '';
       for await (const chunk of rr.stream || []) {
         body += chunk;
       }
@@ -308,7 +308,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
         args = await decodeReply(body);
       }
     }
-    const [fileId, name] = actionId.split("#");
+    const [fileId, name] = actionId.split('#');
     const fname = path.join(config.rootDir, fileId!);
     const mod = await loadServerFile(fname, rr.command);
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
@@ -336,7 +336,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     {
       getContext: () => rr.context,
       rerender: () => {
-        throw new Error("Cannot rerender");
+        throw new Error('Cannot rerender');
       },
     },
     async () => {
@@ -351,10 +351,10 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
 async function getBuildConfigRSC() {
   const config = await resolveConfig();
 
-  const entriesFile = getEntriesFile(config, "build");
+  const entriesFile = getEntriesFile(config, 'build');
   const {
     default: { getBuildConfig },
-  } = await (loadServerFile(entriesFile, "build") as Promise<Entries>);
+  } = await (loadServerFile(entriesFile, 'build') as Promise<Entries>);
   if (!getBuildConfig) {
     console.warn(
       "getBuildConfig is undefined. It's recommended for optimization and sometimes required.",
@@ -368,9 +368,9 @@ async function getBuildConfigRSC() {
     const idSet = new Set<string>();
     const pipeable = await renderRSC({
       input,
-      method: "GET",
+      method: 'GET',
       headers: {},
-      command: "build",
+      command: 'build',
       context: null,
       moduleIdCallback: (id) => idSet.add(id),
     });

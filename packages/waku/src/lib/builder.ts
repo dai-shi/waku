@@ -1,35 +1,35 @@
-import path from "node:path";
-import fs from "node:fs";
-import url from "node:url";
-import { createHash } from "node:crypto";
-import { pipeline } from "node:stream/promises";
+import path from 'node:path';
+import fs from 'node:fs';
+import url from 'node:url';
+import { createHash } from 'node:crypto';
+import { pipeline } from 'node:stream/promises';
 
-import { build as viteBuild } from "vite";
-import viteReact from "@vitejs/plugin-react";
-import type { RollupLog, LoggingFunction } from "rollup";
+import { build as viteBuild } from 'vite';
+import viteReact from '@vitejs/plugin-react';
+import type { RollupLog, LoggingFunction } from 'rollup';
 
-import { resolveConfig } from "./config.js";
-import { encodeInput, generatePrefetchCode } from "./middleware/rsc/utils.js";
+import { resolveConfig } from './config.js';
+import { encodeInput, generatePrefetchCode } from './middleware/rsc/utils.js';
 import {
   shutdown as shutdownRsc,
   renderRSC,
   getBuildConfigRSC,
-} from "./middleware/rsc/worker-api.js";
-import { rscIndexPlugin } from "./vite-plugin/rsc-index-plugin.js";
-import { rscAnalyzePlugin } from "./vite-plugin/rsc-analyze-plugin.js";
-import { patchReactRefresh } from "./vite-plugin/patch-react-refresh.js";
-import { renderHtml, shutdown as shutdownSsr } from "./middleware/rsc/ssr.js";
+} from './middleware/rsc/worker-api.js';
+import { rscIndexPlugin } from './vite-plugin/rsc-index-plugin.js';
+import { rscAnalyzePlugin } from './vite-plugin/rsc-analyze-plugin.js';
+import { patchReactRefresh } from './vite-plugin/patch-react-refresh.js';
+import { renderHtml, shutdown as shutdownSsr } from './middleware/rsc/ssr.js';
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   if (
-    warning.code === "MODULE_LEVEL_DIRECTIVE" &&
+    warning.code === 'MODULE_LEVEL_DIRECTIVE' &&
     /"use (client|server)"/.test(warning.message)
   ) {
     return;
   } else if (
-    warning.code === "SOURCEMAP_ERROR" &&
-    warning.loc?.file?.endsWith(".tsx") &&
+    warning.code === 'SOURCEMAP_ERROR' &&
+    warning.loc?.file?.endsWith('.tsx') &&
     warning.loc?.column === 0 &&
     warning.loc?.line === 1
   ) {
@@ -40,11 +40,11 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
 
 const hash = (fname: string) =>
   new Promise<string>((resolve) => {
-    const sha256 = createHash("sha256");
-    sha256.on("readable", () => {
+    const sha256 = createHash('sha256');
+    sha256.on('readable', () => {
       const data = sha256.read();
       if (data) {
-        resolve(data.toString("hex").slice(0, 9));
+        resolve(data.toString('hex').slice(0, 9));
       }
     });
     fs.createReadStream(fname).pipe(sha256);
@@ -62,8 +62,8 @@ const analyzeEntries = async (entriesFile: string) => {
     ],
     ssr: {
       resolve: {
-        conditions: ["react-server"],
-        externalConditions: ["react-server"],
+        conditions: ['react-server'],
+        externalConditions: ['react-server'],
       },
       noExternal: /^(?!node:)/,
     },
@@ -87,9 +87,9 @@ const analyzeEntries = async (entriesFile: string) => {
     ),
   );
   // HACK to expose Slot and ServerRoot for ssr.ts
-  clientEntryFiles["waku-client"] = path.join(
+  clientEntryFiles['waku-client'] = path.join(
     path.dirname(url.fileURLToPath(import.meta.url)),
-    "../client.js",
+    '../client.js',
   );
   const serverEntryFiles = Object.fromEntries(
     Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname]),
@@ -109,12 +109,12 @@ const buildServerBundle = async (
   const serverBuildOutput = await viteBuild({
     ssr: {
       resolve: {
-        conditions: ["react-server"],
-        externalConditions: ["react-server"],
+        conditions: ['react-server'],
+        externalConditions: ['react-server'],
       },
       noExternal: Object.values(clientEntryFiles).flatMap((fname) => {
         const items = fname.split(path.sep);
-        const index = items.lastIndexOf("node_modules");
+        const index = items.lastIndexOf('node_modules');
         const name = index >= 0 && items[index + 1];
         return name ? [name] : [];
       }),
@@ -134,7 +134,7 @@ const buildServerBundle = async (
         output: {
           banner: (chunk) => {
             // HACK to bring directives to the front
-            let code = "";
+            let code = '';
             if (
               chunk.moduleIds.some((id) =>
                 Object.values(clientEntryFiles).includes(id),
@@ -156,16 +156,16 @@ const buildServerBundle = async (
               clientEntryFiles[chunkInfo.name] ||
               serverEntryFiles[chunkInfo.name]
             ) {
-              return "assets/[name].js";
+              return 'assets/[name].js';
             }
-            return "[name].js";
+            return '[name].js';
           },
         },
       },
     },
   });
-  if (!("output" in serverBuildOutput)) {
-    throw new Error("Unexpected vite server build output");
+  if (!('output' in serverBuildOutput)) {
+    throw new Error('Unexpected vite server build output');
   }
   return serverBuildOutput;
 };
@@ -181,7 +181,7 @@ const buildClientBundle = async (
     config.indexHtml,
   );
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
-    type === "asset" && fileName.endsWith(".css") ? [fileName] : [],
+    type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
   const clientBuildOutput = await viteBuild({
     root: path.join(config.rootDir, config.srcDir),
@@ -194,20 +194,20 @@ const buildClientBundle = async (
           main: indexHtmlFile,
           ...clientEntryFiles,
         },
-        preserveEntrySignatures: "exports-only",
+        preserveEntrySignatures: 'exports-only',
         output: {
           entryFileNames: (chunkInfo) => {
             if (clientEntryFiles[chunkInfo.name]) {
-              return "assets/[name].js";
+              return 'assets/[name].js';
             }
-            return "assets/[name]-[hash].js";
+            return 'assets/[name]-[hash].js';
           },
         },
       },
     },
   });
-  if (!("output" in clientBuildOutput)) {
-    throw new Error("Unexpected vite client build output");
+  if (!('output' in clientBuildOutput)) {
+    throw new Error('Unexpected vite client build output');
   }
   for (const cssAsset of cssAssets) {
     const from = path.join(config.rootDir, config.distDir, cssAsset);
@@ -249,16 +249,16 @@ const emitRscFiles = async (
           config.publicDir,
           config.rscPath,
           // HACK to support windows filesystem
-          encodeInput(input).replaceAll("/", path.sep),
+          encodeInput(input).replaceAll('/', path.sep),
         );
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
           const [readable] = await renderRSC({
             input,
-            method: "GET",
+            method: 'GET',
             headers: {},
-            command: "build",
+            command: 'build',
             context,
             moduleIdCallback: (id) => addClientModule(input, id),
           });
@@ -276,7 +276,7 @@ const emitHtmlFiles = async (
   getClientModules: (input: string) => string[],
   ssr: boolean,
 ) => {
-  const basePrefix = config.basePath + config.rscPath + "/";
+  const basePrefix = config.basePath + config.rscPath + '/';
   const publicIndexHtmlFile = path.join(
     config.rootDir,
     config.distDir,
@@ -284,7 +284,7 @@ const emitHtmlFiles = async (
     config.indexHtml,
   );
   const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
-    encoding: "utf8",
+    encoding: 'utf8',
   });
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
@@ -294,11 +294,11 @@ const emitHtmlFiles = async (
           config.distDir,
           config.publicDir,
           pathStr,
-          pathStr.endsWith("/") ? "index.html" : "",
+          pathStr.endsWith('/') ? 'index.html' : '',
         );
         let htmlStr: string;
         if (fs.existsSync(destFile)) {
-          htmlStr = fs.readFileSync(destFile, { encoding: "utf8" });
+          htmlStr = fs.readFileSync(destFile, { encoding: 'utf8' });
         } else {
           fs.mkdirSync(path.dirname(destFile), { recursive: true });
           htmlStr = publicIndexHtml;
@@ -318,7 +318,7 @@ const emitHtmlFiles = async (
             basePrefix,
             inputsForPrefetch,
             moduleIdsForPrefetch,
-          ) + (customCode || "");
+          ) + (customCode || '');
         if (code) {
           // HACK is this too naive to inject script code?
           htmlStr = htmlStr.replace(
@@ -327,7 +327,7 @@ const emitHtmlFiles = async (
           );
         }
         const htmlResult =
-          ssr && (await renderHtml(config, "build", pathStr, htmlStr, context));
+          ssr && (await renderHtml(config, 'build', pathStr, htmlStr, context));
         if (htmlResult) {
           const [htmlReadable] = htmlResult;
           await pipeline(htmlReadable, fs.createWriteStream(destFile));
@@ -351,9 +351,9 @@ const emitVercelOutput = (
     path.join(config.rootDir, config.distDir, config.publicDir, fileName),
   );
   const srcDir = path.join(config.rootDir, config.distDir, config.publicDir);
-  const dstDir = path.join(config.rootDir, config.distDir, ".vercel", "output");
+  const dstDir = path.join(config.rootDir, config.distDir, '.vercel', 'output');
   for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
-    const dstFile = path.join(dstDir, "static", path.relative(srcDir, file));
+    const dstFile = path.join(dstDir, 'static', path.relative(srcDir, file));
     if (!fs.existsSync(dstFile)) {
       fs.mkdirSync(path.dirname(dstFile), { recursive: true });
       fs.symlinkSync(path.relative(path.dirname(dstFile), file), dstFile);
@@ -363,18 +363,18 @@ const emitVercelOutput = (
   // for serverless function
   const serverlessDir = path.join(
     dstDir,
-    "functions",
-    config.rscPath + ".func",
+    'functions',
+    config.rscPath + '.func',
   );
   fs.mkdirSync(path.join(serverlessDir, config.distDir), {
     recursive: true,
   });
   fs.symlinkSync(
-    path.relative(serverlessDir, path.join(config.rootDir, "node_modules")),
-    path.join(serverlessDir, "node_modules"),
+    path.relative(serverlessDir, path.join(config.rootDir, 'node_modules')),
+    path.join(serverlessDir, 'node_modules'),
   );
   fs.readdirSync(path.join(config.rootDir, config.distDir)).forEach((file) => {
-    if ([".vercel"].includes(file)) {
+    if (['.vercel'].includes(file)) {
       return;
     }
     fs.symlinkSync(
@@ -386,20 +386,20 @@ const emitVercelOutput = (
     );
   });
   const vcConfigJson = {
-    runtime: "nodejs18.x",
-    handler: "serve.js",
-    launcherType: "Nodejs",
+    runtime: 'nodejs18.x',
+    handler: 'serve.js',
+    launcherType: 'Nodejs',
   };
   fs.writeFileSync(
-    path.join(serverlessDir, ".vc-config.json"),
+    path.join(serverlessDir, '.vc-config.json'),
     JSON.stringify(vcConfigJson, null, 2),
   );
   fs.writeFileSync(
-    path.join(serverlessDir, "package.json"),
-    JSON.stringify({ type: "module" }, null, 2),
+    path.join(serverlessDir, 'package.json'),
+    JSON.stringify({ type: 'module' }, null, 2),
   );
   fs.writeFileSync(
-    path.join(serverlessDir, "serve.js"),
+    path.join(serverlessDir, 'serve.js'),
     `
 export default async function handler(req, res) {
   const { rsc } = await import("waku");
@@ -415,27 +415,27 @@ export default async function handler(req, res) {
       .filter((file) => !path.extname(file))
       .map((file) => [
         path.relative(srcDir, file),
-        { contentType: "text/plain" },
+        { contentType: 'text/plain' },
       ]),
     ...htmlFiles
       .filter((file) => !path.extname(file))
       .map((file) => [
         path.relative(srcDir, file),
-        { contentType: "text/html" },
+        { contentType: 'text/html' },
       ]),
   ]);
-  const basePrefix = config.basePath + config.rscPath + "/";
-  const routes = [{ src: basePrefix + "(.*)", dest: basePrefix }];
+  const basePrefix = config.basePath + config.rscPath + '/';
+  const routes = [{ src: basePrefix + '(.*)', dest: basePrefix }];
   const configJson = { version: 3, overrides, routes };
   fs.mkdirSync(dstDir, { recursive: true });
   fs.writeFileSync(
-    path.join(dstDir, "config.json"),
+    path.join(dstDir, 'config.json'),
     JSON.stringify(configJson, null, 2),
   );
 };
 
 const resolveFileName = (fname: string) => {
-  for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
+  for (const ext of ['.js', '.ts', '.tsx', '.jsx']) {
     const resolvedName = fname.slice(0, -path.extname(fname).length) + ext;
     if (fs.existsSync(resolvedName)) {
       return resolvedName;

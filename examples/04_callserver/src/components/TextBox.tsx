@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState } from 'react';
 
 export const TextBox = () => {
-  const [text, setText] = useState("hello");
+  const [text, setText] = useState('hello');
   return (
     <div>
       <input value={text} onChange={(e) => setText(e.target.value)} />

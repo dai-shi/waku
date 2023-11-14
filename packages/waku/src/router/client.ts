@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   createContext,
@@ -10,12 +10,12 @@ import {
   useState,
   useTransition,
   Fragment,
-} from "react";
-import type { ComponentProps, FunctionComponent, ReactNode } from "react";
+} from 'react';
+import type { ComponentProps, FunctionComponent, ReactNode } from 'react';
 
-import { Root, Slot, useRefetch } from "../client.js";
-import { getComponentIds, getInputString } from "./common.js";
-import type { RouteProps } from "./common.js";
+import { Root, Slot, useRefetch } from '../client.js';
+import { getComponentIds, getInputString } from './common.js';
+import type { RouteProps } from './common.js';
 
 const parseLocation = () => {
   const { pathname, search } = window.location;
@@ -25,7 +25,7 @@ const parseLocation = () => {
 type ChangeLocation = (
   pathname?: string,
   search?: string,
-  mode?: "push" | "replace" | false,
+  mode?: 'push' | 'replace' | false,
 ) => void;
 
 type PrefetchLocation = (pathname: string, search: string) => void;
@@ -40,7 +40,7 @@ export function useChangeLocation() {
   const value = useContext(RouterContext);
   if (!value) {
     return () => {
-      throw new Error("Missing Router");
+      throw new Error('Missing Router');
     };
   }
   return value.changeLocation;
@@ -49,7 +49,7 @@ export function useChangeLocation() {
 export function useLocation() {
   const value = useContext(RouterContext);
   if (!value) {
-    throw new Error("Missing Router");
+    throw new Error('Missing Router');
   }
   return value.loc;
 }
@@ -71,12 +71,12 @@ export function Link({
   const changeLocation = value
     ? value.changeLocation
     : () => {
-        throw new Error("Missing Router");
+        throw new Error('Missing Router');
       };
   const prefetchLocation = value
     ? value.prefetchLocation
     : () => {
-        throw new Error("Missing Router");
+        throw new Error('Missing Router');
       };
   const [isPending, startTransition] = useTransition();
   const onClick = (event: MouseEvent) => {
@@ -97,7 +97,7 @@ export function Link({
         }
       }
     : undefined;
-  const ele = createElement("a", { href, onClick, onMouseEnter }, children);
+  const ele = createElement('a', { href, onClick, onMouseEnter }, children);
   if (isPending && pending !== undefined) {
     return createElement(Fragment, null, ele, pending);
   }
@@ -151,7 +151,7 @@ function InnerRouter({
   }, [cached]);
 
   const changeLocation: ChangeLocation = useCallback(
-    (pathname, search, mode = "push") => {
+    (pathname, search, mode = 'push') => {
       const url = new URL(window.location.href);
       if (pathname) {
         url.pathname = pathname;
@@ -159,10 +159,10 @@ function InnerRouter({
       if (search) {
         url.search = search;
       }
-      if (mode === "replace") {
-        window.history.replaceState(window.history.state, "", url);
-      } else if (mode === "push") {
-        window.history.pushState(window.history.state, "", url);
+      if (mode === 'replace') {
+        window.history.replaceState(window.history.state, '', url);
+      } else if (mode === 'push') {
+        window.history.pushState(window.history.state, '', url);
       }
       const loc = parseLocation();
       setLoc(loc);
@@ -226,8 +226,8 @@ function InnerRouter({
       prefetchLocation(loc.pathname, loc.search);
       changeLocation(loc.pathname, loc.search, false);
     };
-    window.addEventListener("popstate", callback);
-    return () => window.removeEventListener("popstate", callback);
+    window.addEventListener('popstate', callback);
+    return () => window.removeEventListener('popstate', callback);
   }, [changeLocation, prefetchLocation]);
 
   const children = componentIds.reduceRight(
@@ -243,7 +243,7 @@ function InnerRouter({
 }
 
 export function Router({
-  basePath = "/RSC/",
+  basePath = '/RSC/',
   shouldSkip,
 }: {
   basePath?: string;
@@ -252,7 +252,7 @@ export function Router({
   const { pathname, search } = parseLocation();
   const initialInput = getInputString(pathname, search);
   return createElement(
-    Root as FunctionComponent<Omit<ComponentProps<typeof Root>, "children">>,
+    Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
     { initialInput, basePath },
     createElement(InnerRouter, { basePath, shouldSkip }),
   );

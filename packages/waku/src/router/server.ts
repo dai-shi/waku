@@ -1,15 +1,15 @@
-import { createElement } from "react";
-import type { FunctionComponent, ReactNode } from "react";
+import { createElement } from 'react';
+import type { FunctionComponent, ReactNode } from 'react';
 
-import { defineEntries } from "../server.js";
-import type { RenderEntries, GetBuildConfig, GetSsrConfig } from "../server.js";
-import { Children, Slot } from "../client.js";
-import { getComponentIds, getInputString, parseInputString } from "./common.js";
-import type { RouteProps } from "./common.js";
+import { defineEntries } from '../server.js';
+import type { RenderEntries, GetBuildConfig, GetSsrConfig } from '../server.js';
+import { Children, Slot } from '../client.js';
+import { getComponentIds, getInputString, parseInputString } from './common.js';
+import type { RouteProps } from './common.js';
 
 // We have to make prefetcher consistent with client behavior
 const prefetcher = (pathname: string) => {
-  const search = ""; // XXX this is a limitation
+  const search = ''; // XXX this is a limitation
   const input = getInputString(pathname, search);
   return [[input]] as const;
 };
@@ -38,7 +38,7 @@ export function defineRouter(
           }
           const mod = await getComponent(id);
           const component =
-            typeof mod === "function" ? mod : mod?.default || Default;
+            typeof mod === 'function' ? mod : mod?.default || Default;
           const element = createElement(
             component as FunctionComponent<RouteProps>,
             props,
@@ -57,7 +57,7 @@ export function defineRouter(
     const pathnames = await getPathsForBuild();
     const path2moduleIds: Record<string, string[]> = {};
     for (const pathname of pathnames) {
-      const search = ""; // XXX this is a limitation
+      const search = ''; // XXX this is a limitation
       const input = getInputString(pathname, search);
       const moduleIds = await unstable_collectClientModules(input);
       path2moduleIds[pathname] = moduleIds;
@@ -79,7 +79,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
   };
 
   const getSsrConfig: GetSsrConfig = async (pathStr) => {
-    const url = new URL(pathStr, "http://localhost");
+    const url = new URL(pathStr, 'http://localhost');
     const componentIds = getComponentIds(url.pathname);
     const leafComponentId = componentIds[componentIds.length - 1];
     if (!leafComponentId || (await getComponent(leafComponentId)) === null) {

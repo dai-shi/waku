@@ -87,16 +87,16 @@ To use React Server Components in Waku, you need to create an
 Here's an example:
 
 ```tsx
-import { lazy } from "react";
-import { defineEntries } from "waku/server";
+import { lazy } from 'react';
+import { defineEntries } from 'waku/server';
 
-const App = lazy(() => import("./components/App.js"));
+const App = lazy(() => import('./components/App.js'));
 
 export default defineEntries(
   // renderEntries
   async (input) => {
     return {
-      App: <App name={input || "Waku"} />,
+      App: <App name={input || 'Waku'} />,
     };
   },
 );
@@ -113,8 +113,8 @@ To render a React Server Component on the client, you can use the
 ID to create a wrapper component. Here's an example:
 
 ```tsx
-import { createRoot } from "react-dom/client";
-import { Root, Slot } from "waku/client";
+import { createRoot } from 'react-dom/client';
+import { Root, Slot } from 'waku/client';
 
 const rootElement = (
   <StrictMode>
@@ -124,7 +124,7 @@ const rootElement = (
   </StrictMode>
 );
 
-createRoot(document.getElementById("root")!).render(rootElement);
+createRoot(document.getElementById('root')!).render(rootElement);
 ```
 
 The `initialInput` prop can be passed to the `Root` Component,
@@ -133,12 +133,12 @@ You can also re-render a React Server Component with new input.
 Here's an example just to illustrate the idea:
 
 ```tsx
-import { useRefetch } from "waku/client";
+import { useRefetch } from 'waku/client';
 
 const Component = () => {
   const refetch = useRefetch();
   const handleClick = () => {
-    refetch("...");
+    refetch('...');
   };
   // ...
 };
@@ -151,20 +151,20 @@ optionally specify `getBuildConfig` function in
 `entries.ts`. Here's an example:
 
 ```tsx
-import { defineEntries } from "waku/server";
+import { defineEntries } from 'waku/server';
 
 export default defineEntries(
   // renderEntries
   async (input) => {
     return {
-      App: <App name={input || "Waku"} />,
+      App: <App name={input || 'Waku'} />,
     };
   },
   // getBuildConfig
   async () => {
     return {
-      "/": {
-        entries: [[""]],
+      '/': {
+        entries: [['']],
       },
     };
   },
@@ -195,10 +195,10 @@ The following code demonstrates how to use
 the `Router` component as the root component:
 
 ```tsx
-import { createRoot } from "react-dom/client";
-import { Router } from "waku/router/client";
+import { createRoot } from 'react-dom/client';
+import { Router } from 'waku/router/client';
 
-const root = createRoot(document.getElementById("root")!);
+const root = createRoot(document.getElementById('root')!);
 
 root.render(<Router />);
 ```
@@ -213,16 +213,16 @@ In `entries.ts`, we use `defineRouter` to export
 Here's a simple example code without builder:
 
 ```tsx
-import { defineRouter } from "waku/router/server";
+import { defineRouter } from 'waku/router/server';
 
 export default defineRouter((id) => {
   switch (id) {
-    case "index/page":
-      return import("./routes/index.tsx");
-    case "foo/page":
-      return import("./routes/foo.tsx");
+    case 'index/page':
+      return import('./routes/index.tsx');
+    case 'foo/page':
+      return import('./routes/foo.tsx');
     default:
-      throw new Error("no such route");
+      throw new Error('no such route');
   }
 });
 ```

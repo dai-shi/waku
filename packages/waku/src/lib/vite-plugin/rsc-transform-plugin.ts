@@ -1,17 +1,17 @@
-import path from "node:path";
-import type { Plugin } from "vite";
-import * as RSDWNodeLoader from "react-server-dom-webpack/node-loader";
+import path from 'node:path';
+import type { Plugin } from 'vite';
+import * as RSDWNodeLoader from 'react-server-dom-webpack/node-loader';
 
 export function rscTransformPlugin(): Plugin {
   return {
-    name: "rsc-transform-plugin",
+    name: 'rsc-transform-plugin',
     async resolveId(id, importer, options) {
-      if (!id.endsWith(".js")) {
+      if (!id.endsWith('.js')) {
         return id;
       }
       // FIXME This isn't necessary in production mode
       // (But, waku/router may depend on this.)
-      for (const ext of [".js", ".ts", ".tsx", ".jsx"]) {
+      for (const ext of ['.js', '.ts', '.tsx', '.jsx']) {
         const resolved = await this.resolve(
           id.slice(0, -path.extname(id).length) + ext,
           importer,
@@ -28,7 +28,7 @@ export function rscTransformPlugin(): Plugin {
         { parentURL }: { parentURL: string },
       ) => {
         if (!specifier) {
-          return { url: "" };
+          return { url: '' };
         }
         const url = (await this.resolve(specifier, parentURL, {
           skipSelf: true,
@@ -42,11 +42,11 @@ export function rscTransformPlugin(): Plugin {
           /^(import {.*?} from ".*?";)\s*"use (client|server)";/,
           '"use $2";$1',
         );
-        return { format: "module", source };
+        return { format: 'module', source };
       };
       RSDWNodeLoader.resolve(
-        "",
-        { conditions: ["react-server"], parentURL: "" },
+        '',
+        { conditions: ['react-server'], parentURL: '' },
         resolve,
       );
       return (await RSDWNodeLoader.load(id, null, load)).source;

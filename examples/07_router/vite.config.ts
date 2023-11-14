@@ -1,15 +1,15 @@
-import url from "node:url";
-import path from "node:path";
+import url from 'node:url';
+import path from 'node:path';
 
 const modulesRoot = path.join(
   path.dirname(url.fileURLToPath(import.meta.url)),
-  "src",
+  'src',
 );
 
 /** @type {import('vite').UserConfig} */
 export default {
   ssr: {
-    external: ["glob"],
+    external: ['glob'],
   },
   build: {
     rollupOptions: {

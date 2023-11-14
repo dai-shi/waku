@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import type { ReactNode } from "react";
+import { useState } from 'react';
+import type { ReactNode } from 'react';
 
 export const ShowHide = ({ children }: { children: ReactNode }) => {
   const [show, setShow] = useState(false);
   return (
     <div
       style={{
-        position: "absolute",
+        position: 'absolute',
         bottom: 0,
         left: 0,
-        padding: "24px",
+        padding: '24px',
         zIndex: 20,
       }}
     >

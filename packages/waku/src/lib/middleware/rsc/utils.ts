@@ -1,23 +1,23 @@
 export const encodeInput = (input: string) => {
-  if (input === "") {
-    return "_";
-  } else if (!input.startsWith("_")) {
+  if (input === '') {
+    return '_';
+  } else if (!input.startsWith('_')) {
     return input;
   }
   throw new Error("Input must not start with '_'");
 };
 
 export const decodeInput = (encodedInput: string) => {
-  if (encodedInput === "_") {
-    return "";
-  } else if (!encodedInput.startsWith("_")) {
+  if (encodedInput === '_') {
+    return '';
+  } else if (!encodedInput.startsWith('_')) {
     return encodedInput;
   }
-  throw new Error("Invalid encoded input");
+  throw new Error('Invalid encoded input');
 };
 
 export const hasStatusCode = (x: unknown): x is { statusCode: number } =>
-  typeof (x as any)?.statusCode === "number";
+  typeof (x as any)?.statusCode === 'number';
 
 export const codeToInject = `
 globalThis.__waku_module_cache__ = new Map();
@@ -30,13 +30,13 @@ export const generatePrefetchCode = (
   moduleIds: Iterable<string>,
 ) => {
   const inputsArray = Array.from(inputs);
-  let code = "";
+  let code = '';
   if (inputsArray.length) {
     code += `
 globalThis.__WAKU_PREFETCHED__ = {
 ${inputsArray
   .map((input) => `  '${input}': fetch('${basePrefix}${encodeInput(input)}')`)
-  .join(",\n")}
+  .join(',\n')}
 };`;
   }
   for (const moduleId of moduleIds) {
@@ -47,7 +47,7 @@ import('${moduleId}');`;
 };
 
 export const deepFreeze = (x: unknown): void => {
-  if (typeof x === "object" && x !== null) {
+  if (typeof x === 'object' && x !== null) {
     Object.freeze(x);
     for (const value of Object.values(x)) {
       deepFreeze(value);

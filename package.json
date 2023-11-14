@@ -42,6 +42,7 @@
     "website:prd": "pnpm run website:build && (cd packages/website && pnpm start)"
   },
   "prettier": {
+    "singleQuote": true,
     "plugins": [
       "prettier-plugin-tailwindcss"
     ],

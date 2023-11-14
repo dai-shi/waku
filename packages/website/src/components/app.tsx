@@ -1,6 +1,6 @@
-import { Credits } from "./credits.js";
-import { ShowHide } from "./showhide.js";
-import { Code1 } from "./code.js";
+import { Credits } from './credits.js';
+import { ShowHide } from './showhide.js';
+import { Code1 } from './code.js';
 
 const App = () => {
   return (
@@ -16,13 +16,13 @@ const App = () => {
       <div className="relative z-20 pt-8 text-center text-white">
         <h1
           className="-ml-4 font-serif text-8xl font-extrabold leading-none sm:text-[10rem]"
-          style={{ textShadow: "0.375rem 0.375rem 0px black" }}
+          style={{ textShadow: '0.375rem 0.375rem 0px black' }}
         >
           Waku
         </h1>
         <h3
           className="text-xl font-bold leading-none text-white/80 sm:-mt-2 sm:text-3xl"
-          style={{ textShadow: "0.075rem 0.075rem 0px black" }}
+          style={{ textShadow: '0.075rem 0.075rem 0px black' }}
         >
           The minimal React framework
         </h3>
@@ -54,9 +54,9 @@ const Link = ({ href, children }: any) => {
 };
 
 const links = [
-  { href: "https://github.com/dai-shi/waku", children: "GitHub" },
-  { href: "https://www.npmjs.com/package/waku", children: "NPM" },
-  { href: "https://discord.gg/MrQdmzd", children: "Discord" },
+  { href: 'https://github.com/dai-shi/waku', children: 'GitHub' },
+  { href: 'https://www.npmjs.com/package/waku', children: 'NPM' },
+  { href: 'https://discord.gg/MrQdmzd', children: 'Discord' },
 ];
 
 export default App;

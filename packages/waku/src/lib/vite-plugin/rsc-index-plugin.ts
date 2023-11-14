@@ -1,23 +1,23 @@
-import type { Plugin } from "vite";
+import type { Plugin } from 'vite';
 
 // FIXME we should avoid external dependencies out of this file.
-import { codeToInject } from "../middleware/rsc/utils.js";
+import { codeToInject } from '../middleware/rsc/utils.js';
 
 export function rscIndexPlugin(cssAssets: string[]): Plugin {
   return {
-    name: "rsc-index-plugin",
+    name: 'rsc-index-plugin',
     async transformIndexHtml() {
       return [
         {
-          tag: "script",
-          attrs: { type: "module", async: true },
+          tag: 'script',
+          attrs: { type: 'module', async: true },
           children: codeToInject,
-          injectTo: "head-prepend",
+          injectTo: 'head-prepend',
         },
         ...cssAssets.map((href) => ({
-          tag: "link",
-          attrs: { rel: "stylesheet", href },
-          injectTo: "head" as const,
+          tag: 'link',
+          attrs: { rel: 'stylesheet', href },
+          injectTo: 'head' as const,
         })),
       ];
     },

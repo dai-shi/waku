@@ -1,6 +1,6 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import { Root, Slot } from "waku/client";
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { Root, Slot } from 'waku/client';
 
 const rootElement = (
   <StrictMode>
@@ -10,4 +10,4 @@ const rootElement = (
   </StrictMode>
 );
 
-createRoot(document.getElementById("root")!).render(rootElement);
+createRoot(document.getElementById('root')!).render(rootElement);

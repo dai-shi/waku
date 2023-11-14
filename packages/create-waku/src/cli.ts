@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import fs from "node:fs";
-import path from "node:path";
-import { default as prompts } from "prompts";
-import { red, green, bold } from "kolorist";
-import fse from "fs-extra/esm";
-import { fileURLToPath } from "node:url";
+import fs from 'node:fs';
+import path from 'node:path';
+import { default as prompts } from 'prompts';
+import { red, green, bold } from 'kolorist';
+import fse from 'fs-extra/esm';
+import { fileURLToPath } from 'node:url';
 
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
@@ -17,9 +17,9 @@ function toValidPackageName(projectName: string) {
   return projectName
     .trim()
     .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/^[._]/, "")
-    .replace(/[^a-z0-9-~]+/g, "-");
+    .replace(/\s+/g, '-')
+    .replace(/^[._]/, '')
+    .replace(/[^a-z0-9-~]+/g, '-');
 }
 
 // if the dir is empty or not exist
@@ -28,10 +28,10 @@ function canSafelyOverwrite(dir: string) {
 }
 
 async function init() {
-  let targetDir = "";
-  const defaultProjectName = "waku-project";
+  let targetDir = '';
+  const defaultProjectName = 'waku-project';
 
-  const templateRoot = fileURLToPath(new URL("../template", import.meta.url));
+  const templateRoot = fileURLToPath(new URL('../template', import.meta.url));
   const CHOICES = fs.readdirSync(templateRoot);
   let result: {
     packageName: string;
@@ -43,49 +43,49 @@ async function init() {
     result = await prompts(
       [
         {
-          name: "projectName",
-          type: "text",
-          message: "Project Name",
+          name: 'projectName',
+          type: 'text',
+          message: 'Project Name',
           initial: defaultProjectName,
           onState: (state: any) =>
             (targetDir = String(state.value).trim() || defaultProjectName),
         },
         {
-          name: "shouldOverwrite",
-          type: () => (canSafelyOverwrite(targetDir) ? null : "confirm"),
+          name: 'shouldOverwrite',
+          type: () => (canSafelyOverwrite(targetDir) ? null : 'confirm'),
           message: `${targetDir} is not empty. Remove existing files and continue?`,
         },
         {
-          name: "overwriteChecker",
+          name: 'overwriteChecker',
           type: (values: any) => {
             if (values === false) {
-              throw new Error(red("✖") + " Operation cancelled");
+              throw new Error(red('✖') + ' Operation cancelled');
             }
             return null;
           },
         },
         {
-          name: "packageName",
-          type: () => (isValidPackageName(targetDir) ? null : "text"),
-          message: "Package name",
+          name: 'packageName',
+          type: () => (isValidPackageName(targetDir) ? null : 'text'),
+          message: 'Package name',
           initial: () => toValidPackageName(targetDir),
           validate: (dir: string) =>
-            isValidPackageName(dir) || "Invalid package.json name",
+            isValidPackageName(dir) || 'Invalid package.json name',
         },
         {
-          name: "chooseProject",
-          type: "select",
-          message: "Choose a starter template",
+          name: 'chooseProject',
+          type: 'select',
+          message: 'Choose a starter template',
           choices: [
-            { title: "basic-template", value: CHOICES[0] },
-            { title: "async-template", value: CHOICES[1] },
-            { title: "promise-template", value: CHOICES[2] },
+            { title: 'basic-template', value: CHOICES[0] },
+            { title: 'async-template', value: CHOICES[1] },
+            { title: 'promise-template', value: CHOICES[2] },
           ],
         },
       ],
       {
         onCancel: () => {
-          throw new Error(red("✖") + " Operation cancelled");
+          throw new Error(red('✖') + ' Operation cancelled');
         },
       },
     );
@@ -108,20 +108,20 @@ async function init() {
 
   const pkg = {
     name: packageName ?? toValidPackageName(targetDir),
-    version: "0.0.0",
+    version: '0.0.0',
   };
 
-  console.log("Setting up project...");
+  console.log('Setting up project...');
 
   const templateDir = path.join(templateRoot, chooseProject);
 
   // Read existing package.json from the root directory
-  const packageJsonPath = path.join(root, "package.json");
+  const packageJsonPath = path.join(root, 'package.json');
 
   // Read new package.json from the template directory
-  const newPackageJsonPath = path.join(templateDir, "package.json");
+  const newPackageJsonPath = path.join(templateDir, 'package.json');
   const newPackageJson = JSON.parse(
-    fs.readFileSync(newPackageJsonPath, "utf-8"),
+    fs.readFileSync(newPackageJsonPath, 'utf-8'),
   );
 
   fse.copySync(templateDir, root);
@@ -138,23 +138,23 @@ async function init() {
     ),
   );
 
-  const manager = process.env.npm_config_user_agent ?? "";
+  const manager = process.env.npm_config_user_agent ?? '';
   const packageManager = /pnpm/.test(manager)
-    ? "pnpm"
+    ? 'pnpm'
     : /yarn/.test(manager)
-    ? "yarn"
-    : "npm";
+    ? 'yarn'
+    : 'npm';
 
   const commandsMap = {
     install: {
-      pnpm: "pnpm install",
-      yarn: "yarn",
-      npm: "npm install",
+      pnpm: 'pnpm install',
+      yarn: 'yarn',
+      npm: 'npm install',
     },
     dev: {
-      pnpm: "pnpm dev",
-      yarn: "yarn dev",
-      npm: "npm run dev",
+      pnpm: 'pnpm dev',
+      yarn: 'yarn dev',
+      npm: 'npm run dev',
     },
   };
 
