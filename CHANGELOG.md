@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.17.0] - 2023-11-14
 ### Added
 - breaking: switch to full SSR from RSC-only SSR #147
 ### Changed
