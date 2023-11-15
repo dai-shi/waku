@@ -89,7 +89,7 @@ const wrap =
         },
       });
       res.setHeader = (name: string, value: string) => {
-        c.header(name, value)
+        c.header(name, value);
       };
       m(req, res, () => next().then(resolve));
     });
