@@ -9,9 +9,8 @@
     "start": "node start.js --with-ssr"
   },
   "dependencies": {
-    "@hono/node-server": "^1.2.2",
     "cookie-parser": "^1.4.6",
-    "hono": "^3.10.0",
+    "express": "^4.18.2",
     "react": "18.3.0-canary-0e352ea01-20231109",
     "react-dom": "18.3.0-canary-0e352ea01-20231109",
     "react-server-dom-webpack": "18.3.0-canary-0e352ea01-20231109",
