@@ -70,6 +70,7 @@ const wrap =
         req = new PassThrough();
         req.end();
       }
+      req.method = c.req.method;
       req.url = c.req.path;
       req.headers = new Proxy(
         {},
@@ -80,21 +81,32 @@ const wrap =
         },
       );
       const res = new PassThrough() as any; // HACK
-      res.on('pipe', () => {
-        resolve(c.body(Readable.toWeb(res) as any));
+      const stream = Readable.toWeb(res) as any;
+      let resolved = false;
+      res.on('data', () => {
+        if (!resolved) {
+          resolved = true;
+          resolve(c.body(stream));
+        }
+      });
+      res.on('close', () => {
+        if (!resolved) {
+          resolved = true;
+          resolve(c.body(null));
+        }
       });
       Object.defineProperty(res, 'statusCode', {
-        set(statusCode) {
-          c.status(statusCode);
+        set(code) {
+          c.status(code);
         },
       });
       res.getHeader = (name: string) => c.res.headers.get(name);
       res.setHeader = (name: string, value: string) => {
         c.header(name, value);
       };
-      res.writeHead = (statusCode: number, headers: Record<string, string>) => {
-        c.status(statusCode);
-        for (const [name, value] of Object.entries(headers)) {
+      res.writeHead = (code: number, headers?: Record<string, string>) => {
+        c.status(code);
+        for (const [name, value] of Object.entries(headers || {})) {
           c.header(name, value);
         }
       };
@@ -105,7 +117,7 @@ async function runDev(options: { ssr: boolean }) {
   const { Hono } = await import('hono');
   const { rsc } = await import('./lib/middleware/rsc.js');
   const app = new Hono();
-  app.use('/*', wrap(rsc({ command: 'dev', ssr: options.ssr })));
+  app.use('*', wrap(rsc({ command: 'dev', ssr: options.ssr })));
   const port = parseInt(process.env.PORT || '3000', 10);
   startServer(app, port);
 }
@@ -122,9 +134,9 @@ async function runStart(options: { ssr: boolean }) {
   const config = await resolveConfig();
   const { rsc } = await import('./lib/middleware/rsc.js');
   const app = new Hono();
-  app.use('/*', wrap(rsc({ command: 'start', ssr: options.ssr })));
+  app.use('*', wrap(rsc({ command: 'start', ssr: options.ssr })));
   app.use(
-    '/*',
+    '*',
     serveStatic({
       root: path.relative(
         path.resolve('.'),
