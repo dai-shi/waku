@@ -84,12 +84,19 @@ const wrap =
         resolve(c.body(Readable.toWeb(res) as any));
       });
       Object.defineProperty(res, 'statusCode', {
-        set(code) {
-          c.status(code);
+        set(statusCode) {
+          c.status(statusCode);
         },
       });
+      res.getHeader = (name: string) => c.res.headers.get(name);
       res.setHeader = (name: string, value: string) => {
         c.header(name, value);
+      };
+      res.writeHead = (statusCode: number, headers: Record<string, string>) => {
+        c.status(statusCode);
+        for (const [name, value] of Object.entries(headers)) {
+          c.header(name, value);
+        }
       };
       m(req, res, () => next().then(resolve));
     });
@@ -98,7 +105,7 @@ async function runDev(options: { ssr: boolean }) {
   const { Hono } = await import('hono');
   const { rsc } = await import('./lib/middleware/rsc.js');
   const app = new Hono();
-  app.use(wrap(rsc({ command: 'dev', ssr: options.ssr })));
+  app.use('/*', wrap(rsc({ command: 'dev', ssr: options.ssr })));
   const port = parseInt(process.env.PORT || '3000', 10);
   startServer(app, port);
 }
@@ -115,10 +122,14 @@ async function runStart(options: { ssr: boolean }) {
   const config = await resolveConfig();
   const { rsc } = await import('./lib/middleware/rsc.js');
   const app = new Hono();
-  app.use(wrap(rsc({ command: 'start', ssr: options.ssr })));
+  app.use('/*', wrap(rsc({ command: 'start', ssr: options.ssr })));
   app.use(
+    '/*',
     serveStatic({
-      root: path.join(config.rootDir, config.distDir, config.publicDir),
+      root: path.relative(
+        path.resolve('.'),
+        path.join(config.rootDir, config.distDir, config.publicDir),
+      ),
     }),
   );
   const port = parseInt(process.env.PORT || '8080', 10);
