@@ -3,8 +3,9 @@
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
-
-import type { Express } from 'express';
+import { PassThrough, Readable } from 'node:stream';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { Hono, MiddlewareHandler } from 'hono';
 
 const require = createRequire(new URL('.', import.meta.url));
 
@@ -53,11 +54,51 @@ if (values.version) {
   }
 }
 
+type Middleware = (
+  req: IncomingMessage,
+  res: ServerResponse,
+  next: (err?: unknown) => void,
+) => void;
+const wrap =
+  (m: Middleware): MiddlewareHandler =>
+  (c, next) =>
+    new Promise((resolve) => {
+      let req: any; // HACK
+      if (c.req.raw.body) {
+        req = Readable.fromWeb(c.req.raw.body as any);
+      } else {
+        req = new PassThrough();
+        req.end();
+      }
+      req.url = c.req.path;
+      req.headers = new Proxy(
+        {},
+        {
+          get(_, name: string) {
+            return c.req.header(name);
+          },
+        },
+      );
+      const res = new PassThrough() as any; // HACK
+      res.on('pipe', () => {
+        resolve(c.body(Readable.toWeb(res) as any));
+      });
+      Object.defineProperty(res, 'statusCode', {
+        set(code) {
+          c.status(code);
+        },
+      });
+      res.setHeader = (name: string, value: string) => {
+        c.header(name, value)
+      };
+      m(req, res, () => next().then(resolve));
+    });
+
 async function runDev(options: { ssr: boolean }) {
-  const { default: express } = await import('express');
+  const { Hono } = await import('hono');
   const { rsc } = await import('./lib/middleware/rsc.js');
-  const app = express();
-  app.use(rsc({ command: 'dev', ssr: options.ssr }));
+  const app = new Hono();
+  app.use(wrap(rsc({ command: 'dev', ssr: options.ssr })));
   const port = parseInt(process.env.PORT || '3000', 10);
   startServer(app, port);
 }
@@ -68,22 +109,25 @@ async function runBuild(options: { ssr: boolean }) {
 }
 
 async function runStart(options: { ssr: boolean }) {
-  const { default: express } = await import('express');
+  const { Hono } = await import('hono');
+  const { serveStatic } = await import('@hono/node-server/serve-static');
   const { resolveConfig } = await import('./lib/config.js');
   const config = await resolveConfig();
   const { rsc } = await import('./lib/middleware/rsc.js');
-  const app = express();
-  app.use(rsc({ command: 'start', ssr: options.ssr }));
+  const app = new Hono();
+  app.use(wrap(rsc({ command: 'start', ssr: options.ssr })));
   app.use(
-    express.static(path.join(config.rootDir, config.distDir, config.publicDir)),
+    serveStatic({
+      root: path.join(config.rootDir, config.distDir, config.publicDir),
+    }),
   );
-  (express.static.mime as any).default_type = '';
   const port = parseInt(process.env.PORT || '8080', 10);
   startServer(app, port);
 }
 
-function startServer(app: Express, port: number) {
-  const server = app.listen(port, () => {
+async function startServer(app: Hono, port: number) {
+  const { serve } = await import('@hono/node-server');
+  const server = serve({ ...app, port }, () => {
     console.log(`ready: Listening on http://localhost:${port}/`);
   });
   server.on('error', (err: NodeJS.ErrnoException) => {
