@@ -18,6 +18,7 @@ export default {
     fontFamily: {
       serif: ['"Alegreya"', 'serif'],
       sans: ['"Nunito"', 'sans-serif'],
+      mono: ['"Fira Code"', 'monospace'],
     },
     extend: {
       backgroundImage: {
