@@ -1,6 +1,5 @@
-import cx from 'classnames';
-
 import type { ComponentPropsWithoutRef, ElementType } from 'react';
+import cx from 'classnames';
 
 type ButtonProps = ComponentPropsWithoutRef<'button'> &
   ComponentPropsWithoutRef<'a'>;

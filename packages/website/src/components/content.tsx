@@ -44,7 +44,7 @@ const components = {
   ),
   code: ({ children, ...rest }: any) => (
     <span
-      className="font-mono -my-0.5 inline-block rounded bg-gray-800 px-1.5 py-px text-base text-white/80"
+      className="-my-0.5 inline-block rounded bg-gray-800 px-1.5 py-px font-mono text-base text-white/80"
       {...rest}
     >
       {children}
@@ -53,7 +53,7 @@ const components = {
   pre: ({ children, ...rest }: any) => (
     <Code
       code={children.props.children}
-      className="!font-mono !-mx-[0.75em] !overflow-clip !rounded-xl !bg-gray-800 !p-[0.5em] [&>*]:!bg-gray-800"
+      className="!-mx-[0.75em] !overflow-clip !rounded-xl !bg-gray-800 !p-[0.5em] !font-mono [&>*]:!bg-gray-800"
       {...rest}
     />
   ),
