@@ -1,14 +1,12 @@
 'use client';
 
-import { atom, useAtom } from 'jotai';
+import { useState } from 'react';
 
 import { Button } from './button.js';
 import { Modal } from './modal.js';
 
-const readmeAtom = atom<boolean>(false);
-
 export const Readme = ({ children }: any) => {
-  const [isOpen, setIsOpen] = useAtom(readmeAtom);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
