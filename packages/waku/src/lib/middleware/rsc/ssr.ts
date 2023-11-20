@@ -10,6 +10,7 @@ import { Server } from 'node:http';
 import { createElement } from 'react';
 import RDServer from 'react-dom/server';
 import RSDWClient from 'react-server-dom-webpack/client.node.unbundled';
+import { resolveConfig as resolveViteConfig, mergeConfig } from 'vite';
 import type { ViteDevServer } from 'vite';
 
 import { resolveConfig } from '../../config.js';
@@ -33,7 +34,12 @@ const getViteServer = async () => {
   const { nonjsResolvePlugin } = await import(
     '../../vite-plugin/nonjs-resolve-plugin.js'
   );
-  const viteServer = await viteCreateServer({
+
+  const config = await resolveConfig();
+  const resolvedConfig = await resolveViteConfig({
+    root: path.join(config.rootDir),
+  }, 'serve')
+  const viteServer = await viteCreateServer(mergeConfig({
     plugins: [nonjsResolvePlugin()],
     ssr: {
       // HACK required for ServerRoot for waku/client
@@ -41,7 +47,9 @@ const getViteServer = async () => {
     },
     appType: 'custom',
     server: { middlewareMode: true, hmr: { server: dummyServer } },
-  });
+  },{
+    plugins: resolvedConfig.plugins.filter(plugin => !plugin.name.startsWith('vite:'))
+  }));
   await viteServer.watcher.close(); // TODO watch: null
   await viteServer.ws.close();
   lastViteServer = viteServer;

@@ -4,6 +4,7 @@ import { Buffer } from 'node:buffer';
 import { Worker } from 'node:worker_threads';
 
 import type { GetBuildConfig } from '../../../server.js';
+import type { TransformResult } from 'vite';
 
 export type RenderRequest = {
   input: string;
@@ -61,7 +62,8 @@ export type MessageRes =
       id: number;
       type: 'buildConfig';
       output: Awaited<ReturnType<GetBuildConfig>>;
-    };
+    }
+  | { type: 'module'; result: TransformResult };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
@@ -75,6 +77,16 @@ export function registerReloadCallback(fn: (type: 'full-reload') => void) {
   const listener = (mesg: MessageRes) => {
     if (mesg.type === 'full-reload') {
       fn(mesg.type);
+    }
+  };
+  worker.on('message', listener);
+  return () => worker.off('message', listener);
+}
+
+export function registerImportModule(fn: (result: TransformResult) => void) {
+  const listener = (mesg: MessageRes) => {
+    if (mesg.type === 'module') {
+      fn(mesg.result);
     }
   };
   worker.on('message', listener);

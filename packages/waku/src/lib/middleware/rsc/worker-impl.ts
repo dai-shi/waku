@@ -9,7 +9,8 @@ import { Buffer } from 'node:buffer';
 import type { ReactNode } from 'react';
 import RSDWServer from 'react-server-dom-webpack/server';
 import busboy from 'busboy';
-import type { ViteDevServer } from 'vite';
+import { resolveConfig as resolveViteConfig, mergeConfig } from 'vite';
+import type { ModuleNode, ViteDevServer } from 'vite';
 
 import { resolveConfig } from '../../config.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
@@ -103,6 +104,11 @@ const getViteServer = async () => {
   if (lastViteServer) {
     return lastViteServer;
   }
+
+  const config = await resolveConfig();
+  const resolvedConfig = await resolveViteConfig({
+    root: path.join(config.rootDir),
+  }, 'serve')
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const { createServer: viteCreateServer } = await import('vite');
   const { rscTransformPlugin } = await import(
@@ -114,15 +120,15 @@ const getViteServer = async () => {
   const { rscDelegatePlugin } = await import(
     '../../vite-plugin/rsc-delegate-plugin.js'
   );
-  const viteServer = await viteCreateServer({
+  const viteServer = await viteCreateServer(mergeConfig({
     plugins: [
       rscTransformPlugin(),
       rscReloadPlugin((type) => {
         const mesg: MessageRes = { type };
         parentPort!.postMessage(mesg);
       }),
-      rscDelegatePlugin((source) => {
-        const mesg: MessageRes = { type: 'hot-import', source };
+      rscDelegatePlugin((result) => {
+        const mesg: MessageRes = { type: 'module', result };
         parentPort!.postMessage(mesg);
       }),
     ],
@@ -136,7 +142,9 @@ const getViteServer = async () => {
     },
     appType: 'custom',
     server: { middlewareMode: true, hmr: { server: dummyServer } },
-  });
+  }, 
+  {plugins: resolvedConfig.plugins.filter(plugin => !plugin.name.startsWith('vite:'))}
+  ));
   await viteServer.ws.close();
   lastViteServer = viteServer;
   return viteServer;
@@ -150,6 +158,19 @@ const shutdown = async () => {
   parentPort!.close();
 };
 
+const collectCssUrls = (mods: Set<ModuleNode>, styles: Map<string, string>) => {
+  for (const mod of mods) {
+    if (mod.ssrModule && mod.file && mod.id) {
+      if (mod.file.endsWith('.css') || /\?vue&type=style/.test(mod.id)) {
+        styles.set(mod.url, mod.ssrModule.default)
+      }
+    }
+    if (mod.importedModules.size > 0) {
+      collectCssUrls(mod.importedModules, styles)
+    }
+  }
+}
+
 const loadServerFile = async (
   fname: string,
   command: 'dev' | 'build' | 'start',
@@ -158,7 +179,16 @@ const loadServerFile = async (
     return import(fname);
   }
   const vite = await getViteServer();
-  return vite.ssrLoadModule(fname);
+  
+  const result = await vite.ssrLoadModule(fname);
+  // console.log('transformResult', transformResult)
+  const stylesMap = new Map<string, string>()
+  console.log(collectCssUrls(new Set([...vite.moduleGraph.idToModuleMap.values()]), stylesMap) )
+  // console.log(vite.moduleGraph.idToModuleMap)
+  console.log(stylesMap)
+
+
+  return result
 };
 
 parentPort!.on('message', (mesg: MessageReq) => {

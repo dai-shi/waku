@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fsPromises from 'node:fs/promises';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import type { ViteDevServer } from 'vite';
+import { resolveConfig as resolveViteConfig, mergeConfig, type ViteDevServer } from 'vite';
 
 import { resolveConfig } from '../config.js';
 import { renderHtml } from './rsc/ssr.js';
@@ -10,8 +10,10 @@ import {
   registerReloadCallback,
   registerImportCallback,
   renderRSC,
+  registerImportModule,
 } from './rsc/worker-api.js';
 import { patchReactRefresh } from '../vite-plugin/patch-react-refresh.js';
+import { moduleImport } from '../vite-plugin/rsc-hmr-plugin.js';
 
 type Middleware = (
   req: IncomingMessage,
@@ -49,7 +51,12 @@ export function rsc<Context>(options: {
     const { rscHmrPlugin, hotImport } = await import(
       '../vite-plugin/rsc-hmr-plugin.js'
     );
-    const viteServer = await viteCreateServer({
+    const resolvedConfig = await resolveViteConfig({
+      root: path.join(config.rootDir),
+    }, 'serve')
+    const viteServer = await viteCreateServer(
+mergeConfig(
+ {
       root: path.join(config.rootDir, config.srcDir),
       optimizeDeps: {
         include: ['react-server-dom-webpack/client'],
@@ -60,9 +67,14 @@ export function rsc<Context>(options: {
         rscHmrPlugin(),
       ],
       server: { middlewareMode: true },
-    });
+    },{plugins: resolvedConfig.plugins.filter(plugin => !plugin.name.startsWith('vite:'))}
+    )
+     );
     registerReloadCallback((type) => viteServer.ws.send({ type }));
     registerImportCallback((source) => hotImport(viteServer, source));
+    registerImportModule((module) => {
+      moduleImport(viteServer, module)
+    })
     lastViteServer = viteServer;
     return viteServer;
   };
@@ -186,6 +198,9 @@ export function rsc<Context>(options: {
       const fname = pathStr.startsWith(config.basePath + '@fs/')
         ? pathStr.slice(config.basePath.length + 3)
         : path.join(vite.config.root, pathStr);
+      // for vite-plugin-inspect, /__inspect would be /${absolutePath}/__inspect
+      // which is incorrect, since it's a url handled by vite-plugin-inspect and
+      // not a file
       for (const item of vite.moduleGraph.idToModuleMap.values()) {
         if (
           item.file === fname &&
