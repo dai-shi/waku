@@ -38,9 +38,7 @@ export function rscDelegatePlugin(
               // const source = base + '@id/__x00__' + item.source.value;
               // importCallback(source);
             } else if (CSS_LANGS_RE.test(item.source.value)) {
-              // const filePath = path.join(path.dirname(id), item.source.value);
               // HACK this relies on Vite's internal implementation detail.
-              // const source = base + '@fs/' + filePath.replace(/^\//, '');
               const resolvedSource = await server.pluginContainer.resolveId(item.source.value, id, {ssr:true})
               if (resolvedSource?.id) {
                 const transformedResult = await server.transformRequest(resolvedSource.id)
