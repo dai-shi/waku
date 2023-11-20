@@ -1,7 +1,8 @@
 import path from 'node:path';
 import fsPromises from 'node:fs/promises';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { resolveConfig as resolveViteConfig, mergeConfig, type ViteDevServer } from 'vite';
+import { resolveConfig as resolveViteConfig, mergeConfig } from 'vite';
+import type { ViteDevServer } from 'vite';
 
 import { resolveConfig } from '../config.js';
 import { renderHtml } from './rsc/ssr.js';
