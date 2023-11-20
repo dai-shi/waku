@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+// @ts-expect-error no exported member
 import { MDXRemote } from 'next-mdx-remote/rsc';
 
 import { Code } from './code.js';
