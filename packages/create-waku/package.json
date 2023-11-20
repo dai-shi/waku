@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "start": "node dist/cli.js",
-    "compile": "rm -rf template dist && pnpm run template && pnpm run build",
+    "compile": "rm -rf template dist *.tsbuildinfo && pnpm run template && pnpm run build",
     "template": "cp -r ../../examples template/",
     "build": "tsc -b"
   },
