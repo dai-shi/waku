@@ -1,7 +1,7 @@
 import { Counter } from './Counter.js';
-import './App.css'
-import { container } from './styles.css.js'
-console.log(container, import.meta.env.VITE_RSC_BUILD)
+import './App.css';
+import { container } from './styles.css.js';
+console.log(container, import.meta.env.VITE_RSC_BUILD);
 
 const App = ({ name }: { name: string }) => {
   return (

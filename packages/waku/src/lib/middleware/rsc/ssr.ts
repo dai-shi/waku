@@ -36,20 +36,30 @@ const getViteServer = async () => {
   );
 
   const config = await resolveConfig();
-  const resolvedConfig = await resolveViteConfig({
-    root: path.join(config.rootDir),
-  }, 'serve')
-  const viteServer = await viteCreateServer(mergeConfig({
-    plugins: [nonjsResolvePlugin()],
-    ssr: {
-      // HACK required for ServerRoot for waku/client
-      noExternal: ['waku'],
+  const resolvedConfig = await resolveViteConfig(
+    {
+      root: path.join(config.rootDir),
     },
-    appType: 'custom',
-    server: { middlewareMode: true, hmr: { server: dummyServer } },
-  },{
-    plugins: resolvedConfig.plugins.filter(plugin => !plugin.name.startsWith('vite:'))
-  }));
+    'serve',
+  );
+  const viteServer = await viteCreateServer(
+    mergeConfig(
+      {
+        plugins: [nonjsResolvePlugin()],
+        ssr: {
+          // HACK required for ServerRoot for waku/client
+          noExternal: ['waku'],
+        },
+        appType: 'custom',
+        server: { middlewareMode: true, hmr: { server: dummyServer } },
+      },
+      {
+        plugins: resolvedConfig.plugins.filter(
+          (plugin) => !plugin.name.startsWith('vite:'),
+        ),
+      },
+    ),
+  );
   await viteServer.watcher.close(); // TODO watch: null
   await viteServer.ws.close();
   lastViteServer = viteServer;

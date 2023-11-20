@@ -19,7 +19,7 @@ export function rscDelegatePlugin(
       base = config.base;
     },
     configureServer(_server) {
-      server = _server
+      server = _server;
     },
     async transform(code, id) {
       const ext = path.extname(id);
@@ -39,12 +39,17 @@ export function rscDelegatePlugin(
               // importCallback(source);
             } else if (CSS_LANGS_RE.test(item.source.value)) {
               // HACK this relies on Vite's internal implementation detail.
-              const resolvedSource = await server.pluginContainer.resolveId(item.source.value, id, {ssr:true})
+              const resolvedSource = await server.pluginContainer.resolveId(
+                item.source.value,
+                id,
+                { ssr: true },
+              );
               if (resolvedSource?.id) {
-                const transformedResult = await server.transformRequest(resolvedSource.id)
+                const transformedResult = await server.transformRequest(
+                  resolvedSource.id,
+                );
                 transformedResult && importCallback(transformedResult);
               }
-              
             }
           }
         }

@@ -52,30 +52,38 @@ export function rsc<Context>(options: {
     const { rscHmrPlugin, hotImport } = await import(
       '../vite-plugin/rsc-hmr-plugin.js'
     );
-    const resolvedConfig = await resolveViteConfig({
-      root: path.join(config.rootDir),
-    }, 'serve')
-    const viteServer = await viteCreateServer(
-mergeConfig(
- {
-      root: path.join(config.rootDir, config.srcDir),
-      optimizeDeps: {
-        include: ['react-server-dom-webpack/client'],
+    const resolvedConfig = await resolveViteConfig(
+      {
+        root: path.join(config.rootDir),
       },
-      plugins: [
-        patchReactRefresh(viteReact()),
-        rscIndexPlugin([]),
-        rscHmrPlugin(),
-      ],
-      server: { middlewareMode: true },
-    },{plugins: resolvedConfig.plugins.filter(plugin => !plugin.name.startsWith('vite:'))}
-    )
-     );
+      'serve',
+    );
+    const viteServer = await viteCreateServer(
+      mergeConfig(
+        {
+          root: path.join(config.rootDir, config.srcDir),
+          optimizeDeps: {
+            include: ['react-server-dom-webpack/client'],
+          },
+          plugins: [
+            patchReactRefresh(viteReact()),
+            rscIndexPlugin([]),
+            rscHmrPlugin(),
+          ],
+          server: { middlewareMode: true },
+        },
+        {
+          plugins: resolvedConfig.plugins.filter(
+            (plugin) => !plugin.name.startsWith('vite:'),
+          ),
+        },
+      ),
+    );
     registerReloadCallback((type) => viteServer.ws.send({ type }));
     registerImportCallback((source) => hotImport(viteServer, source));
     registerImportModule((module) => {
-      moduleImport(viteServer, module)
-    })
+      moduleImport(viteServer, module);
+    });
     lastViteServer = viteServer;
     return viteServer;
   };

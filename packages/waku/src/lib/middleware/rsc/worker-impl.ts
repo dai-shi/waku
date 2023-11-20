@@ -106,9 +106,12 @@ const getViteServer = async () => {
   }
 
   const config = await resolveConfig();
-  const resolvedConfig = await resolveViteConfig({
-    root: path.join(config.rootDir),
-  }, 'serve')
+  const resolvedConfig = await resolveViteConfig(
+    {
+      root: path.join(config.rootDir),
+    },
+    'serve',
+  );
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const { createServer: viteCreateServer } = await import('vite');
   const { rscTransformPlugin } = await import(
@@ -120,31 +123,38 @@ const getViteServer = async () => {
   const { rscDelegatePlugin } = await import(
     '../../vite-plugin/rsc-delegate-plugin.js'
   );
-  const viteServer = await viteCreateServer(mergeConfig({
-    plugins: [
-      rscTransformPlugin(),
-      rscReloadPlugin((type) => {
-        const mesg: MessageRes = { type };
-        parentPort!.postMessage(mesg);
-      }),
-      rscDelegatePlugin((result) => {
-        const mesg: MessageRes = { type: 'module', result };
-        parentPort!.postMessage(mesg);
-      }),
-    ],
-    ssr: {
-      resolve: {
-        conditions: ['react-server'],
-        externalConditions: ['react-server'],
+  const viteServer = await viteCreateServer(
+    mergeConfig(
+      {
+        plugins: [
+          rscTransformPlugin(),
+          rscReloadPlugin((type) => {
+            const mesg: MessageRes = { type };
+            parentPort!.postMessage(mesg);
+          }),
+          rscDelegatePlugin((result) => {
+            const mesg: MessageRes = { type: 'module', result };
+            parentPort!.postMessage(mesg);
+          }),
+        ],
+        ssr: {
+          resolve: {
+            conditions: ['react-server'],
+            externalConditions: ['react-server'],
+          },
+          external: ['react', 'react-server-dom-webpack', 'waku'],
+          noExternal: /^(?!node:)/,
+        },
+        appType: 'custom',
+        server: { middlewareMode: true, hmr: { server: dummyServer } },
       },
-      external: ['react', 'react-server-dom-webpack', 'waku'],
-      noExternal: /^(?!node:)/,
-    },
-    appType: 'custom',
-    server: { middlewareMode: true, hmr: { server: dummyServer } },
-  }, 
-  {plugins: resolvedConfig.plugins.filter(plugin => !plugin.name.startsWith('vite:'))}
-  ));
+      {
+        plugins: resolvedConfig.plugins.filter(
+          (plugin) => !plugin.name.startsWith('vite:'),
+        ),
+      },
+    ),
+  );
   await viteServer.ws.close();
   lastViteServer = viteServer;
   return viteServer;
@@ -162,14 +172,14 @@ const collectCssUrls = (mods: Set<ModuleNode>, styles: Map<string, string>) => {
   for (const mod of mods) {
     if (mod.ssrModule && mod.file && mod.id) {
       if (mod.file.endsWith('.css') || /\?vue&type=style/.test(mod.id)) {
-        styles.set(mod.url, mod.ssrModule.default)
+        styles.set(mod.url, mod.ssrModule.default);
       }
     }
     if (mod.importedModules.size > 0) {
-      collectCssUrls(mod.importedModules, styles)
+      collectCssUrls(mod.importedModules, styles);
     }
   }
-}
+};
 
 const loadServerFile = async (
   fname: string,
@@ -179,16 +189,20 @@ const loadServerFile = async (
     return import(fname);
   }
   const vite = await getViteServer();
-  
+
   const result = await vite.ssrLoadModule(fname);
   // console.log('transformResult', transformResult)
-  const stylesMap = new Map<string, string>()
-  console.log(collectCssUrls(new Set([...vite.moduleGraph.idToModuleMap.values()]), stylesMap) )
+  const stylesMap = new Map<string, string>();
+  console.log(
+    collectCssUrls(
+      new Set([...vite.moduleGraph.idToModuleMap.values()]),
+      stylesMap,
+    ),
+  );
   // console.log(vite.moduleGraph.idToModuleMap)
-  console.log(stylesMap)
+  console.log(stylesMap);
 
-
-  return result
+  return result;
 };
 
 parentPort!.on('message', (mesg: MessageReq) => {

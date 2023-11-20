@@ -9,7 +9,7 @@ export function rscTransformPlugin(): Plugin {
       if (!id.endsWith('.js')) {
         return id;
       }
-      console.log('transform', id)
+      console.log('transform', id);
       // FIXME This isn't necessary in production mode
       // (But, waku/router may depend on this.)
       for (const ext of ['.js', '.ts', '.tsx', '.jsx']) {
