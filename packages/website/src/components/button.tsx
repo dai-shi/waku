@@ -1,15 +1,9 @@
 import type { ComponentPropsWithoutRef, ElementType } from 'react';
-import cx from 'classnames';
 
 type ButtonProps = ComponentPropsWithoutRef<'button'> &
   ComponentPropsWithoutRef<'a'>;
 
-export const Button = ({
-  href,
-  className = '',
-  children,
-  ...rest
-}: ButtonProps) => {
+export const Button = ({ href, children, ...rest }: ButtonProps) => {
   let Element: ElementType = 'button';
   const props: ButtonProps = {};
 
@@ -25,10 +19,7 @@ export const Button = ({
 
   return (
     <Element
-      className={cx(
-        'rounded-md bg-red-900 px-4 py-3 text-base font-black uppercase leading-none tracking-wide text-red-50 transition duration-300 ease-in-out hover:bg-red-800',
-        className,
-      )}
+      className="rounded-md bg-red-900 px-4 py-3 text-base font-black uppercase leading-none tracking-wide text-red-50 transition duration-300 ease-in-out hover:bg-red-800"
       {...props}
       {...rest}
     >
