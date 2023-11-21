@@ -1,3 +1,5 @@
+'use client';
+
 import type { ComponentPropsWithoutRef, ElementType } from 'react';
 
 type ButtonProps = ComponentPropsWithoutRef<'button'> &

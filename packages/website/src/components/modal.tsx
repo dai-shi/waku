@@ -11,7 +11,7 @@ type ModalProps = {
 };
 
 export const Modal = ({ isOpen, onClose, children }: ModalProps) => {
-  const ref = useClickAway(onClose);
+  const ref: any = useClickAway(onClose);
 
   if (!isOpen) return <Fragment />;
 
@@ -19,7 +19,7 @@ export const Modal = ({ isOpen, onClose, children }: ModalProps) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-8">
       <div className="inline-block overflow-clip rounded-2xl border-8 border-gray-950 bg-gray-900 p-2">
         <div
-          ref={ref as any}
+          ref={ref}
           className="relative aspect-[1/1] w-full max-w-4xl overflow-y-auto p-6 text-left text-white sm:aspect-[4/3] lg:aspect-[16/9] lg:p-10"
         >
           {children}
