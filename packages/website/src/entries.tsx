@@ -1,6 +1,6 @@
 import { lazy } from 'react';
 import { defineEntries } from 'waku/server';
-import { Slot } from 'waku/client';
+// import { Slot } from 'waku/client';
 
 const App = lazy(() => import('./components/app.js'));
 
@@ -20,6 +20,8 @@ export default defineEntries(
     };
   },
   // getSsrConfig
+  // TODO ssr.ts has some issues, disable for now
+  /*
   async (pathStr) => {
     switch (pathStr) {
       case '/':
@@ -31,4 +33,5 @@ export default defineEntries(
         return null;
     }
   },
+  */
 );
