@@ -1,3 +1,4 @@
+// FIXME we should be able to remove this directive
 'use client';
 
 import type { ComponentPropsWithoutRef, ElementType } from 'react';
