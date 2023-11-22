@@ -12,7 +12,6 @@
   "dependencies": {
     "@uidotdev/usehooks": "^2.4.1",
     "bright": "^0.8.4",
-    "classnames": "^2.3.2",
     "express": "^4.18.2",
     "jotai": "^2.5.1",
     "next-mdx-remote": "^4.4.1",
