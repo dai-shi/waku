@@ -10,8 +10,6 @@ const rootElement = (
   </StrictMode>
 );
 
-console.log('root=', document.getElementById('root'));
-
 if ((globalThis as any).__WAKU_SSR_ENABLED__) {
   hydrateRoot(document.getElementById('root')!, rootElement);
 } else {
