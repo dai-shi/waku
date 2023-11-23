@@ -96,17 +96,6 @@ const getEntriesFile = (
   );
 };
 
-const getWakuClientFile = (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
-  command: 'dev' | 'build' | 'start',
-) => {
-  if (command !== 'dev') {
-    // HACK kind of hard coded to be sync with builder.ts
-    return path.join(config.rootDir, config.distDir, './assets/waku-client.js');
-  }
-  return 'waku/client';
-};
-
 const fakeFetchCode = `
 Promise.resolve({
   ok: true,
@@ -343,10 +332,7 @@ export const renderHtml = async <Context>(
   );
   const [copied, inject] = injectRscPayload(pipeable, ssrConfig.input);
   const elements = createFromNodeStream(copied, { moduleMap });
-  const { ServerRoot } = await loadServerFile(
-    getWakuClientFile(config, command),
-    command,
-  );
+  const { ServerRoot } = await loadServerFile('waku/client', command);
   const readable = renderToPipeableStream(
     createElement(ServerRoot, { elements }, ssrConfig.unstable_render()),
     {

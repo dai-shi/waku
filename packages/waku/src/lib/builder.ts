@@ -87,11 +87,6 @@ const analyzeEntries = async (entriesFile: string) => {
       ]),
     ),
   );
-  // HACK to expose Slot and ServerRoot for ssr.ts
-  clientEntryFiles['waku-client'] = path.join(
-    path.dirname(url.fileURLToPath(import.meta.url)),
-    '../client.js',
-  );
   const serverEntryFiles = Object.fromEntries(
     Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname]),
   );
@@ -114,6 +109,7 @@ const buildServerBundle = async (
         conditions: ['react-server'],
         externalConditions: ['react-server'],
       },
+      external: ['waku'],
       noExternal: Object.values(clientEntryFiles).flatMap((fname) => {
         const items = fname.split(path.sep);
         const index = items.lastIndexOf('node_modules');
