@@ -1,6 +1,7 @@
+import { Button } from './button.js';
+import { Content } from './content.js';
 import { Credits } from './credits.js';
-import { ShowHide } from './showhide.js';
-import { Code1 } from './code.js';
+import { Readme } from './readme.js';
 
 const App = () => {
   return (
@@ -27,35 +28,22 @@ const App = () => {
           The minimal React framework
         </h3>
         <div className="mt-12 flex flex-col justify-center gap-4 px-12 sm:mt-8 sm:flex-row sm:gap-6 sm:px-0">
+          <Readme>
+            <Content />
+          </Readme>
           {links.map((link) => (
-            <Link key={link.href} {...link} />
+            <Button key={link.href} {...link} />
           ))}
         </div>
       </div>
       <Credits />
-      <ShowHide>
-        <Code1 />
-      </ShowHide>
     </div>
-  );
-};
-
-const Link = ({ href, children }: any) => {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopenner noreferrer"
-      className="rounded-md bg-red-900 px-4 py-3 text-base font-black uppercase leading-none tracking-wide text-red-50"
-    >
-      {children}
-    </a>
   );
 };
 
 const links = [
   { href: 'https://github.com/dai-shi/waku', children: 'GitHub' },
-  { href: 'https://www.npmjs.com/package/waku', children: 'NPM' },
+  // { href: 'https://www.npmjs.com/package/waku', children: 'NPM' },
   { href: 'https://discord.gg/MrQdmzd', children: 'Discord' },
 ];
 
