@@ -18,6 +18,19 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
 
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'pnpm'
+          cache-dependency-path: '**/pnpm-lock.yaml'
+      # only try to install on windows for now, e2e will fail on windows
+      - run: pnpm install --frozen-lockfile
+
   e2e:
     runs-on: ubuntu-latest
     steps:
