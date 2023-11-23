@@ -54,6 +54,7 @@ export function rsc<Context>(options: {
       root: path.join(config.rootDir, config.srcDir),
       optimizeDeps: {
         include: ['react-server-dom-webpack/client'],
+        exclude: ['waku'],
       },
       plugins: [
         patchReactRefresh(viteReact()),
