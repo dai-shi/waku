@@ -1,6 +1,5 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import url from 'node:url';
 import { createHash } from 'node:crypto';
 import { pipeline } from 'node:stream/promises';
 
