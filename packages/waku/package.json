@@ -56,7 +56,7 @@
   ],
   "scripts": {
     "dev": "swc src -d dist -w",
-    "compile": "rm -rf dist && pnpm run compile:code && pnpm run compile:types && cp ../../README.md .",
+    "compile": "rm -rf dist *.tsbuildinfo && pnpm run compile:code && pnpm run compile:types && cp ../../README.md .",
     "compile:code": "swc src -d dist && swc src -d dist/cjs -C module.type=commonjs && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
     "compile:types": "tsc --project tsconfig.json"
   },
