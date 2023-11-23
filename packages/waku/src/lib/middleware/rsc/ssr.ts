@@ -12,7 +12,7 @@ import RDServer from 'react-dom/server';
 import RSDWClient from 'react-server-dom-webpack/client.node.unbundled';
 import type { ViteDevServer } from 'vite';
 
-import { resolveConfig } from '../../config.js';
+import { resolveConfig, viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
 import { renderRSC } from './worker-api.js';
 import { hasStatusCode } from './utils.js';
@@ -34,6 +34,7 @@ const getViteServer = async () => {
     '../../vite-plugin/nonjs-resolve-plugin.js'
   );
   const viteServer = await viteCreateServer({
+    ...viteInlineConfig(),
     plugins: [nonjsResolvePlugin()],
     ssr: {
       // HACK required for ServerRoot for waku/client

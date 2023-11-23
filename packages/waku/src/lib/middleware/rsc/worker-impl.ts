@@ -11,7 +11,7 @@ import RSDWServer from 'react-server-dom-webpack/server';
 import busboy from 'busboy';
 import type { ViteDevServer } from 'vite';
 
-import { resolveConfig } from '../../config.js';
+import { resolveConfig, viteInlineConfig } from '../../config.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
 import {
@@ -115,6 +115,7 @@ const getViteServer = async () => {
     '../../vite-plugin/rsc-delegate-plugin.js'
   );
   const viteServer = await viteCreateServer({
+    ...viteInlineConfig(),
     plugins: [
       rscTransformPlugin(),
       rscReloadPlugin((type) => {
