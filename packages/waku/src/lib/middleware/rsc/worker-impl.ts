@@ -29,7 +29,10 @@ if (IS_NODE_20) {
   register('react-server-dom-webpack/node-loader', url.pathToFileURL('./'));
 }
 
-type Entries = { default: ReturnType<typeof defineEntries> };
+type Entries = {
+  default: ReturnType<typeof defineEntries>;
+  resolveClientPath?: (filePath: string) => string | undefined;
+};
 type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 
 const streamMap = new Map<number, Writable>();
@@ -198,10 +201,12 @@ const resolveClientEntry = (
   filePath: string,
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
+  resolveClientPath: Entries['resolveClientPath'],
 ) => {
   if (filePath.startsWith('file://')) {
     filePath = filePath.slice(7);
   }
+  filePath = resolveClientPath?.(filePath) || filePath;
   let root = path.join(
     config.rootDir,
     command === 'dev' ? config.srcDir : config.distDir,
@@ -261,6 +266,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
   const entriesFile = getEntriesFile(config, rr.command);
   const {
     default: { renderEntries },
+    resolveClientPath,
   } = await (loadServerFile(entriesFile, rr.command) as Promise<Entries>);
 
   const render = async (input: string) => {
@@ -281,7 +287,12 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     {
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split('#') as [string, string];
-        const id = resolveClientEntry(filePath, config, rr.command);
+        const id = resolveClientEntry(
+          filePath,
+          config,
+          rr.command,
+          resolveClientPath,
+        );
         rr?.moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },
