@@ -36,10 +36,6 @@ const getViteServer = async () => {
   const viteServer = await viteCreateServer({
     ...viteInlineConfig(),
     plugins: [nonjsResolvePlugin()],
-    ssr: {
-      // HACK required for ServerRoot for waku/client
-      noExternal: ['waku'],
-    },
     appType: 'custom',
     server: { middlewareMode: true, hmr: { server: dummyServer } },
   });
@@ -117,14 +113,14 @@ const injectRscPayload = (stream: Readable, input: string) => {
   let notify: (() => void) | undefined;
   const copied = new PassThrough();
   stream.on('data', (chunk) => {
-    copied.write(chunk);
     chunks.push(chunk);
     notify?.();
+    copied.write(chunk);
   });
   stream.on('end', () => {
-    copied.end();
     closed = true;
     notify?.();
+    copied.end();
   });
   let prefetchedLines: string[] = [];
   let headSent = false;
