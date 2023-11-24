@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Changed
+- fix: ssr and bundling #176
 
 ## [0.17.0] - 2023-11-14
 ### Added
