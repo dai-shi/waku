@@ -32,13 +32,18 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
   e2e:
-    runs-on: ubuntu-latest
+    name: E2E on ${{ matrix.os }} (Node ${{ matrix.version }})
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        version: [18, 20]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: ${{ matrix.version }}
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
