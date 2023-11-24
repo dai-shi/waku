@@ -31,7 +31,10 @@ if (IS_NODE_20) {
 
 type Entries = {
   default: ReturnType<typeof defineEntries>;
-  resolveClientPath?: (filePath: string) => string | undefined;
+  resolveClientPath?: (
+    filePath: string,
+    invert?: boolean,
+  ) => string | undefined;
 };
 type PipeableStream = { pipe<T extends Writable>(destination: T): T };
 

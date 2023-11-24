@@ -184,6 +184,7 @@ export function rsc<Context>(options: {
     }
     if (command === 'dev') {
       const vite = await getViteServer();
+      // TODO Do we still need this?
       // HACK re-export "?v=..." URL to avoid dual module hazard.
       const fname = pathStr.startsWith(config.basePath + '@fs/')
         ? pathStr.slice(config.basePath.length + 3)

@@ -21,7 +21,13 @@ import { hasStatusCode } from './utils.js';
 const { renderToPipeableStream } = RDServer;
 const { createFromNodeStream } = RSDWClient;
 
-type Entries = { default: ReturnType<typeof defineEntries> };
+type Entries = {
+  default: ReturnType<typeof defineEntries>;
+  resolveClientPath?: (
+    filePath: string,
+    invert?: boolean,
+  ) => string | undefined;
+};
 
 let lastViteServer: ViteDevServer | undefined;
 const getViteServer = async () => {
@@ -275,6 +281,7 @@ export const renderHtml = async <Context>(
   const entriesFile = getEntriesFile(config, command);
   const {
     default: { getSsrConfig },
+    resolveClientPath,
   } = await (loadServerFile(entriesFile, command) as Promise<Entries>);
   const ssrConfig = await getSsrConfig?.(pathStr);
   if (!ssrConfig) {
@@ -309,17 +316,25 @@ export const renderHtml = async <Context>(
           {
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
-              if (command !== 'dev') {
-                return {
-                  specifier: path.join(config.rootDir, config.distDir, file),
-                  name,
-                };
+              if (command === 'dev') {
+                const f = file.startsWith('@fs/')
+                  ? file.slice(3)
+                  : path.join(config.rootDir, config.srcDir, file);
+                return { specifier: transpile!(f, name), name };
               }
-              // command === "dev"
-              const f = file.startsWith('@fs/')
-                ? file.slice(3)
-                : path.join(config.rootDir, config.srcDir, file);
-              return { specifier: transpile!(f, name), name };
+              const origFile = resolveClientPath?.(
+                path.join(config.rootDir, config.distDir, file),
+                true,
+              );
+              if (
+                !origFile?.startsWith(path.join(config.rootDir, config.srcDir))
+              ) {
+                return { specifier: origFile, name };
+              }
+              return {
+                specifier: path.join(config.rootDir, config.distDir, file),
+                name,
+              };
             },
           },
         );

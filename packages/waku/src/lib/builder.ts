@@ -165,7 +165,14 @@ const buildServerBundle = async (
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
-  const code = `export const resolveClientPath = (filePath) => (${JSON.stringify(
+  const code = `export const resolveClientPath = (filePath, invert) => (invert ? ${JSON.stringify(
+    Object.fromEntries(
+      Object.entries(clientEntryFiles).map(([key, val]) => [
+        path.join(config.rootDir, config.distDir, 'assets', key + '.js'),
+        val,
+      ]),
+    ),
+  )} : ${JSON.stringify(
     Object.fromEntries(
       Object.entries(clientEntryFiles).map(([key, val]) => [
         val,
