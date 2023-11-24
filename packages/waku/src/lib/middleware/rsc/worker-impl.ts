@@ -24,7 +24,9 @@ const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
 
 const IS_NODE_20 = Number(process.versions.node.split('.')[0]) >= 20;
 if (IS_NODE_20) {
-  const { register } = (await import('node:module')) as any;
+  const {
+    default: { register },
+  } = await import('node:module');
   register('waku/node-loader', url.pathToFileURL('./'));
   register('react-server-dom-webpack/node-loader', url.pathToFileURL('./'));
 }
