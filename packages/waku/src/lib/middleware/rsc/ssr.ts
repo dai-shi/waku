@@ -128,30 +128,23 @@ const injectRscPayload = (stream: Readable, input: string) => {
     notify?.();
     copied.end();
   });
-  let prefetchedLines: string[] = [];
-  let headSent = false;
-  let closedSent = false;
-  const inject = new Transform({
-    transform(chunk, encoding, callback) {
-      if (encoding !== ('buffer' as any)) {
-        throw new Error('Unknown encoding');
-      }
-      if (!headSent) {
-        let data: string = chunk.toString();
-        const matchPrefetched = data.match(
-          // HACK This is very brittle
-          /(.*)<script>\nglobalThis\.__WAKU_PREFETCHED__ = {\n(.*?)\n};(.*)/s,
-        );
-        if (matchPrefetched) {
-          prefetchedLines = matchPrefetched[2]!.split('\n');
-          data = matchPrefetched[1] + '<script>\n' + matchPrefetched[3];
-        }
-        const closingHeadIndex = data.indexOf('</head>');
-        if (closingHeadIndex >= 0) {
-          headSent = true;
-          data =
-            data.slice(0, closingHeadIndex) +
-            `
+  const modifyHead = (data: string) => {
+    const matchPrefetched = data.match(
+      // HACK This is very brittle
+      /(.*)<script>\nglobalThis\.__WAKU_PREFETCHED__ = {\n(.*?)\n};(.*)/s,
+    );
+    let prefetchedLines: string[] = [];
+    if (matchPrefetched) {
+      prefetchedLines = matchPrefetched[2]!.split('\n');
+      data = matchPrefetched[1] + '<script>\n' + matchPrefetched[3];
+    }
+    const closingHeadIndex = data.indexOf('</head>');
+    if (closingHeadIndex === -1) {
+      throw new Error('closing head not found');
+    }
+    data =
+      data.slice(0, closingHeadIndex) +
+      `
 <script>
 globalThis.__WAKU_PREFETCHED__ = {
 ${prefetchedLines
@@ -162,8 +155,32 @@ ${prefetchedLines
 globalThis.__WAKU_SSR_ENABLED__ = true;
 </script>
 ` +
-            data.slice(closingHeadIndex);
-          callback(null, Buffer.from(data));
+      data.slice(closingHeadIndex);
+    return data;
+  };
+  const interleave = (
+    preamble: string,
+    intermediate: string,
+    postamble: string,
+  ) => {
+    let preambleSent = false;
+    let closedSent = false;
+    return new Transform({
+      transform(chunk, encoding, callback) {
+        if (encoding !== ('buffer' as any)) {
+          throw new Error('Unknown encoding');
+        }
+        if (!preambleSent) {
+          const data = chunk.toString();
+          preambleSent = true;
+          callback(
+            null,
+            Buffer.concat([
+              Buffer.from(modifyHead(preamble)),
+              Buffer.from(data),
+              Buffer.from(intermediate),
+            ]),
+          );
           notify = () => {
             const scripts = chunks.splice(0).map((chunk) =>
               Buffer.from(`
@@ -180,71 +197,31 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
           };
           notify();
           return;
-        } else if (matchPrefetched) {
-          callback(null, Buffer.from(data));
-          return;
         }
-      }
-      callback(null, chunk);
-    },
-    final(callback) {
-      if (!closedSent) {
-        const notifyOrig = notify;
-        notify = () => {
-          notifyOrig?.();
-          if (closedSent) {
-            callback();
-          }
-        };
-      } else {
-        callback();
-      }
-    },
-  });
-  return [copied, inject] as const;
-};
-
-const interleaveHtmlSnippets = (
-  preamble: string,
-  intermediate: string,
-  postamble: string,
-) => {
-  let preambleSent = false;
-  return new Transform({
-    transform(chunk, encoding, callback) {
-      if (encoding !== ('buffer' as any)) {
-        throw new Error('Unknown encoding');
-      }
-      if (!preambleSent) {
-        const data = chunk.toString();
-        preambleSent = true;
-        callback(
-          null,
-          Buffer.concat([
-            Buffer.from(preamble),
-            Buffer.from(data),
-            Buffer.from(intermediate),
-          ]),
-        );
-        return;
-      }
-      callback(null, chunk);
-    },
-    final(callback) {
-      if (!preambleSent) {
-        this.push(
-          Buffer.concat([
-            Buffer.from(preamble),
-            Buffer.from(intermediate),
-            Buffer.from(postamble),
-          ]),
-        );
-      } else {
-        this.push(Buffer.from(postamble));
-      }
-      callback();
-    },
-  });
+        callback(null, chunk);
+      },
+      final(callback) {
+        if (!preambleSent) {
+          this.push(Buffer.from(preamble));
+          this.push(Buffer.from(intermediate));
+        }
+        if (!closedSent) {
+          const notifyOrig = notify;
+          notify = () => {
+            notifyOrig?.();
+            if (closedSent) {
+              this.push(Buffer.from(postamble));
+              callback();
+            }
+          };
+        } else {
+          this.push(Buffer.from(postamble));
+          callback();
+        }
+      },
+    });
+  };
+  return [copied, interleave] as const;
 };
 
 // HACK for now, do we want to use HTML parser?
@@ -341,7 +318,7 @@ export const renderHtml = async <Context>(
       },
     },
   );
-  const [copied, inject] = injectRscPayload(pipeable, ssrConfig.input);
+  const [copied, interleave] = injectRscPayload(pipeable, ssrConfig.input);
   const elements = createFromNodeStream(copied, { moduleMap });
   const { ServerRoot } = await loadServerFile('waku/client', command);
   const readable = renderToPipeableStream(
@@ -359,7 +336,6 @@ export const renderHtml = async <Context>(
     },
   )
     .pipe(rectifyHtml())
-    .pipe(interleaveHtmlSnippets(...splitHTML(htmlStr)))
-    .pipe(inject);
+    .pipe(interleave(...splitHTML(htmlStr)));
   return [readable, nextCtx];
 };
