@@ -369,7 +369,6 @@ async function getBuildConfigRSC() {
   const config = await resolveConfig();
 
   const entriesFile = getEntriesFile(config, 'build');
-  parentPort!.postMessage({ entriesFile })
   const {
     default: { getBuildConfig },
   } = await (loadServerFile(entriesFile, 'build') as Promise<Entries>);
