@@ -89,6 +89,7 @@ const analyzeEntries = async (entriesFile: string) => {
   const serverEntryFiles = Object.fromEntries(
     Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname]),
   );
+  debugger
   return {
     clientEntryFiles,
     serverEntryFiles,
@@ -168,7 +169,7 @@ const buildServerBundle = async (
   const code = `export const resolveClientPath = (filePath, invert) => (invert ? ${JSON.stringify(
     Object.fromEntries(
       Object.entries(clientEntryFiles).map(([key, val]) => [
-        path.join(config.rootDir, config.distDir, 'assets', key + '.js'),
+        path.posix.join(config.rootDir, config.distDir, 'assets', key + '.js'),
         val,
       ]),
     ),
@@ -176,7 +177,7 @@ const buildServerBundle = async (
     Object.fromEntries(
       Object.entries(clientEntryFiles).map(([key, val]) => [
         val,
-        path.join(config.rootDir, config.distDir, 'assets', key + '.js'),
+        path.posix.join(config.rootDir, config.distDir, 'assets', key + '.js'),
       ]),
     ),
   )})[filePath];

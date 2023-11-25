@@ -62,9 +62,13 @@ export const shutdown = async () => {
 export const loadServerFile = async (
   fname: string,
   command: 'dev' | 'build' | 'start',
+  isModule: boolean,
 ) => {
   if (command !== 'dev') {
-    return import(fname);
+    if (isModule) {
+      return import(fname);
+    }
+    return import(url.pathToFileURL(fname).toString());
   }
   const vite = await getViteServer();
   if (fname.startsWith('file://')) {
@@ -262,7 +266,7 @@ export const renderHtml = async <Context>(
   const {
     default: { getSsrConfig },
     resolveClientPath,
-  } = await (loadServerFile(entriesFile, command) as Promise<Entries>);
+  } = await (loadServerFile(entriesFile, command, false) as Promise<Entries>);
   const ssrConfig = await getSsrConfig?.(pathStr);
   if (!ssrConfig) {
     return null;
@@ -295,6 +299,7 @@ export const renderHtml = async <Context>(
           {},
           {
             get(_target, name: string) {
+              debugger
               const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
                 const f = url.pathToFileURL(file.startsWith('@fs/')
@@ -311,12 +316,13 @@ export const renderHtml = async <Context>(
                 true,
               );
               if (
+                origFile &&
                 !origFile?.startsWith(path.join(config.rootDir, config.srcDir))
               ) {
-                return { specifier: origFile, name };
+                return { specifier: url.pathToFileURL(origFile).toString(), name };
               }
               return {
-                specifier: path.join(config.rootDir, config.distDir, file),
+                specifier: url.pathToFileURL(path.join(config.rootDir, config.distDir, file)).toString(),
                 name,
               };
             },
@@ -327,7 +333,7 @@ export const renderHtml = async <Context>(
   );
   const [copied, interleave] = injectRscPayload(pipeable, ssrConfig.input);
   const elements = createFromNodeStream(copied, { moduleMap });
-  const { ServerRoot } = await loadServerFile('waku/client', command);
+  const { ServerRoot } = await loadServerFile('waku/client', command, true);
   const readable = renderToPipeableStream(
     createElement(ServerRoot, { elements }, ssrConfig.unstable_render()),
     {
