@@ -8,5 +8,8 @@ export default ({ mode }) => {
 
   return defineConfig({
     root: path.dirname(url.fileURLToPath(import.meta.url)),
+    ssr: {
+      external: ['next-mdx-remote'],
+    },
   });
 };
