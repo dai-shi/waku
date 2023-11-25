@@ -89,7 +89,6 @@ const analyzeEntries = async (entriesFile: string) => {
   const serverEntryFiles = Object.fromEntries(
     Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname]),
   );
-  debugger;
   return {
     clientEntryFiles,
     serverEntryFiles,

@@ -299,7 +299,6 @@ export const renderHtml = async <Context>(
           {},
           {
             get(_target, name: string) {
-              debugger;
               const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
                 const f = url.pathToFileURL(
