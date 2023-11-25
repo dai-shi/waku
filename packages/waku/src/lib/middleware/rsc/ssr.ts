@@ -67,17 +67,20 @@ export const loadServerFile = async (
     return import(fname);
   }
   const vite = await getViteServer();
+  if (fname.startsWith('file://')) {
+    fname = url.fileURLToPath(fname);
+  }
   return vite.ssrLoadModule(fname);
 };
 
 // FIXME this is very hacky
 const createTranspiler = async (cleanupFns: Set<() => void>) => {
-  return (file: string, name: string) => {
+  return (file: URL, name: string) => {
     const temp = path.resolve(
       `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
     );
     const code = `
-import { loadServerFile } from '${url.fileURLToPath(import.meta.url)}';
+const { loadServerFile } = await import('${import.meta.url}');
 const { ${name} } = await loadServerFile('${file}', 'dev');
 export { ${name} }
 `;
@@ -294,10 +297,14 @@ export const renderHtml = async <Context>(
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
-                const f = file.startsWith('@fs/')
+                const f = url.pathToFileURL(file.startsWith('@fs/')
                   ? file.slice(3)
-                  : path.join(config.rootDir, config.srcDir, file);
-                return { specifier: transpile!(f, name), name };
+                  : path.join(config.rootDir, config.srcDir, file));
+                const specifier = url.pathToFileURL(transpile!(f, name)).toString()
+                return {
+                  specifier,
+                  name
+                };
               }
               const origFile = resolveClientPath?.(
                 path.join(config.rootDir, config.distDir, file),
