@@ -208,8 +208,8 @@ const resolveClientEntry = (
   command: 'dev' | 'build' | 'start',
   resolveClientPath: Entries['resolveClientPath'],
 ) => {
-  if (filePath.startsWith('file:///')) {
-    filePath = filePath.slice('file:///'.length);
+  if (filePath.startsWith('file://')) {
+    filePath = filePath.slice('file://'.length);
   }
   filePath = resolveClientPath?.(filePath) || filePath;
   let root = path.join(
@@ -219,6 +219,9 @@ const resolveClientEntry = (
   if (path.sep !== '/') {
     // HACK to support windows filesystem
     root = root.replaceAll(path.sep, '/');
+    if (filePath[0] === '/') {
+      filePath = filePath.slice(1)
+    }
   }
   if (!filePath.startsWith(root)) {
     if (command === 'dev') {
