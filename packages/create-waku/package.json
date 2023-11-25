@@ -10,7 +10,9 @@
     "type": "git",
     "url": "https://github.com/dai-shi/waku.git"
   },
-  "bin": "./dist/cli.js",
+  "bin": {
+    "create-waku": "./dist/cli.js"
+  },
   "files": [
     "src",
     "dist",
