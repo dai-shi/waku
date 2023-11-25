@@ -195,11 +195,13 @@ const getEntriesFile = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
 ) => {
-  return url.pathToFileURL(path.join(
-    config.rootDir,
-    command === 'dev' ? config.srcDir : config.distDir,
-    config.entriesJs,
-  ))
+  return url.pathToFileURL(
+    path.join(
+      config.rootDir,
+      command === 'dev' ? config.srcDir : config.distDir,
+      config.entriesJs,
+    ),
+  );
 };
 
 const resolveClientEntry = (
@@ -220,7 +222,7 @@ const resolveClientEntry = (
     // HACK to support windows filesystem
     root = root.replaceAll(path.sep, '/');
     if (filePath[0] === '/') {
-      filePath = filePath.slice(1)
+      filePath = filePath.slice(1);
     }
   }
   if (!filePath.startsWith(root)) {

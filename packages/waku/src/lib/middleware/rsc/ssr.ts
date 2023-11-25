@@ -299,16 +299,20 @@ export const renderHtml = async <Context>(
           {},
           {
             get(_target, name: string) {
-              debugger
+              debugger;
               const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
-                const f = url.pathToFileURL(file.startsWith('@fs/')
-                  ? file.slice(3)
-                  : path.join(config.rootDir, config.srcDir, file));
-                const specifier = url.pathToFileURL(transpile!(f, name)).toString()
+                const f = url.pathToFileURL(
+                  file.startsWith('@fs/')
+                    ? file.slice(3)
+                    : path.join(config.rootDir, config.srcDir, file),
+                );
+                const specifier = url
+                  .pathToFileURL(transpile!(f, name))
+                  .toString();
                 return {
                   specifier,
-                  name
+                  name,
                 };
               }
               const origFile = resolveClientPath?.(
@@ -319,10 +323,17 @@ export const renderHtml = async <Context>(
                 origFile &&
                 !origFile?.startsWith(path.join(config.rootDir, config.srcDir))
               ) {
-                return { specifier: url.pathToFileURL(origFile).toString(), name };
+                return {
+                  specifier: url.pathToFileURL(origFile).toString(),
+                  name,
+                };
               }
               return {
-                specifier: url.pathToFileURL(path.join(config.rootDir, config.distDir, file)).toString(),
+                specifier: url
+                  .pathToFileURL(
+                    path.join(config.rootDir, config.distDir, file),
+                  )
+                  .toString(),
                 name,
               };
             },
