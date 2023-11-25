@@ -3,7 +3,7 @@ import fsPromises from 'node:fs/promises';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ViteDevServer } from 'vite';
 
-import { resolveConfig } from '../config.js';
+import { resolveConfig, viteInlineConfig } from '../config.js';
 import { renderHtml } from './rsc/ssr.js';
 import { decodeInput, hasStatusCode } from './rsc/utils.js';
 import {
@@ -50,9 +50,11 @@ export function rsc<Context>(options: {
       '../vite-plugin/rsc-hmr-plugin.js'
     );
     const viteServer = await viteCreateServer({
+      ...viteInlineConfig(),
       root: path.join(config.rootDir, config.srcDir),
       optimizeDeps: {
         include: ['react-server-dom-webpack/client'],
+        exclude: ['waku'],
       },
       plugins: [
         patchReactRefresh(viteReact()),
@@ -182,6 +184,7 @@ export function rsc<Context>(options: {
     }
     if (command === 'dev') {
       const vite = await getViteServer();
+      // TODO Do we still need this?
       // HACK re-export "?v=..." URL to avoid dual module hazard.
       const fname = pathStr.startsWith(config.basePath + '@fs/')
         ? pathStr.slice(config.basePath.length + 3)

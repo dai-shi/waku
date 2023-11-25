@@ -1,4 +1,4 @@
-import { createElement } from 'react';
+import ReactExports from 'react';
 import type { FunctionComponent, ReactNode } from 'react';
 
 import { defineEntries } from '../server.js';
@@ -6,6 +6,9 @@ import type { RenderEntries, GetBuildConfig, GetSsrConfig } from '../server.js';
 import { Children, Slot } from '../client.js';
 import { getComponentIds, getInputString, parseInputString } from './common.js';
 import type { RouteProps } from './common.js';
+
+// eslint-disable-next-line import/no-named-as-default-member
+const { createElement } = ReactExports;
 
 // We have to make prefetcher consistent with client behavior
 const prefetcher = (pathname: string) => {

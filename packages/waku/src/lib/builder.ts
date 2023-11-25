@@ -1,6 +1,5 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import url from 'node:url';
 import { createHash } from 'node:crypto';
 import { pipeline } from 'node:stream/promises';
 
@@ -8,7 +7,7 @@ import { build as viteBuild } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
-import { resolveConfig } from './config.js';
+import { resolveConfig, viteInlineConfig } from './config.js';
 import { encodeInput, generatePrefetchCode } from './middleware/rsc/utils.js';
 import {
   shutdown as shutdownRsc,
@@ -54,6 +53,7 @@ const analyzeEntries = async (entriesFile: string) => {
   const clientEntryFileSet = new Set<string>();
   const serverEntryFileSet = new Set<string>();
   await viteBuild({
+    ...viteInlineConfig(),
     plugins: [
       rscAnalyzePlugin(
         (id) => clientEntryFileSet.add(id),
@@ -86,11 +86,6 @@ const analyzeEntries = async (entriesFile: string) => {
       ]),
     ),
   );
-  // HACK to expose Slot and ServerRoot for ssr.ts
-  clientEntryFiles['waku-client'] = path.join(
-    path.dirname(url.fileURLToPath(import.meta.url)),
-    '../client.js',
-  );
   const serverEntryFiles = Object.fromEntries(
     Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname]),
   );
@@ -103,15 +98,18 @@ const analyzeEntries = async (entriesFile: string) => {
 const buildServerBundle = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   entriesFile: string,
+  distEntriesFile: string,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
 ) => {
   const serverBuildOutput = await viteBuild({
+    ...viteInlineConfig(),
     ssr: {
       resolve: {
         conditions: ['react-server'],
         externalConditions: ['react-server'],
       },
+      external: ['waku'],
       noExternal: Object.values(clientEntryFiles).flatMap((fname) => {
         const items = fname.split(path.sep);
         const index = items.lastIndexOf('node_modules');
@@ -167,6 +165,23 @@ const buildServerBundle = async (
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
+  const code = `export const resolveClientPath = (filePath, invert) => (invert ? ${JSON.stringify(
+    Object.fromEntries(
+      Object.entries(clientEntryFiles).map(([key, val]) => [
+        path.join(config.rootDir, config.distDir, 'assets', key + '.js'),
+        val,
+      ]),
+    ),
+  )} : ${JSON.stringify(
+    Object.fromEntries(
+      Object.entries(clientEntryFiles).map(([key, val]) => [
+        val,
+        path.join(config.rootDir, config.distDir, 'assets', key + '.js'),
+      ]),
+    ),
+  )})[filePath];
+`;
+  fs.appendFileSync(distEntriesFile, code);
   return serverBuildOutput;
 };
 
@@ -184,6 +199,7 @@ const buildClientBundle = async (
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
   const clientBuildOutput = await viteBuild({
+    ...viteInlineConfig(),
     root: path.join(config.rootDir, config.srcDir),
     plugins: [patchReactRefresh(viteReact()), rscIndexPlugin(cssAssets)],
     build: {
@@ -202,6 +218,8 @@ const buildClientBundle = async (
             }
             return 'assets/[name]-[hash].js';
           },
+          // FIXME This is simply to override for examples/07,10 vite configs
+          preserveModules: false,
         },
       },
     },
@@ -449,12 +467,16 @@ export async function build(options?: { ssr?: boolean }) {
   const entriesFile = resolveFileName(
     path.join(config.rootDir, config.srcDir, config.entriesJs),
   );
+  const distEntriesFile = resolveFileName(
+    path.join(config.rootDir, config.distDir, config.entriesJs),
+  );
 
   const { clientEntryFiles, serverEntryFiles } =
     await analyzeEntries(entriesFile);
   const serverBuildOutput = await buildServerBundle(
     config,
     entriesFile,
+    distEntriesFile,
     clientEntryFiles,
     serverEntryFiles,
   );

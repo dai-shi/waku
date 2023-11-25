@@ -23,7 +23,7 @@
     "examples:dev:09_cssmodules": "NAME=09_cssmodules pnpm run examples:dev",
     "examples:dev:10_dynamicroute": "NAME=10_dynamicroute pnpm run examples:dev",
     "examples:dev:11_form": "NAME=11_form pnpm run examples:dev",
-    "examples:build": "(cd ./examples/${NAME} && pnpm run build)",
+    "examples:build": "(cd ./examples/${NAME} && NODE_ENV=production pnpm run build)",
     "examples:prd": "pnpm run examples:build && (cd ./examples/${NAME} && pnpm start)",
     "examples:prd:01_counter": "NAME=01_counter pnpm run examples:prd",
     "examples:prd:02_async": "NAME=02_async pnpm run examples:prd",
@@ -38,7 +38,7 @@
     "examples:prd:11_form": "NAME=11_form pnpm run examples:prd",
     "website:dev": "(cd packages/website && pnpm run dev)",
     "website:build": "(cd packages/website && pnpm run build)",
-    "website:vercel": "cp -Lr ./node_modules/.pnpm/node_modules/* ./packages/website/node_modules/ ; rm -r ./packages/website/node_modules/@swc ; rm -r ./packages/website/node_modules/@esbuild ; rm -r ./packages/website/node_modules/webpack ; rm -r ./packages/website/node_modules/minimatch ; cp -Lr ./node_modules/.pnpm/minimatch@9.0.3/node_modules/minimatch ./packages/website/node_modules/ ; NODE_ENV=production pnpm run website:build && cp -Lr ./packages/website/dist/.vercel/output ./.vercel/",
+    "website:vercel": "cp -Lr ./node_modules/.pnpm/node_modules/* ./packages/website/node_modules/ ; rm -r ./packages/website/node_modules/@swc ; rm -r ./packages/website/node_modules/@esbuild ; rm -r ./packages/website/node_modules/webpack ; rm -r ./packages/website/node_modules/minimatch ; cp -Lr ./node_modules/.pnpm/minimatch@9.0.3/node_modules/minimatch ./packages/website/node_modules/ ; pnpm run website:build && cp -Lr ./packages/website/dist/.vercel/output ./.vercel/",
     "website:prd": "pnpm run website:build && (cd packages/website && pnpm start)"
   },
   "prettier": {
