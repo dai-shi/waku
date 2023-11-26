@@ -74,13 +74,8 @@ const wrap =
       req.method = c.req.method;
       // TODO we should support full URL string in our middleware
       req.url = c.req.url.slice(new URL(c.req.url).origin.length);
-      req.headers = new Proxy(
-        {},
-        {
-          get(_, name: string) {
-            return c.req.header(name);
-          },
-        },
+      req.headers = Object.fromEntries(
+        Array.from(c.req.raw.headers.entries()).map(([k, v]) => [k, v]),
       );
       const res = new PassThrough() as any; // HACK
       const stream = Readable.toWeb(res) as any;
