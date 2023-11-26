@@ -5,12 +5,12 @@ import * as swc from '@swc/core';
 
 export function rscAnalyzePlugin(
   commonFileSet: Set<string>,
-  clientEntryFileSet: Set<string>,
-  serverEntryFileSet: Set<string>,
+  clientFileSet: Set<string>,
+  serverFileSet: Set<string>,
 ): Plugin {
   const dependencyMap = new Map<string, Set<string>>();
-  const clientEntryCallback = (id: string) => clientEntryFileSet.add(id);
-  const serverEntryCallback = (id: string) => serverEntryFileSet.add(id);
+  const clientEntryCallback = (id: string) => clientFileSet.add(id);
+  const serverEntryCallback = (id: string) => serverFileSet.add(id);
   const dependencyCallback = (id: string, depId: string) => {
     let depSet = dependencyMap.get(id);
     if (!depSet) {
@@ -66,7 +66,7 @@ export function rscAnalyzePlugin(
           return;
         }
         seen.add(id);
-        isClient = isClient || clientEntryFileSet.has(id);
+        isClient = isClient || clientFileSet.has(id);
         dependencyMap.get(id)?.forEach((depId) => {
           if (!fs.existsSync(depId)) {
             // HACK is there a better way?
@@ -86,15 +86,15 @@ export function rscAnalyzePlugin(
         });
       };
       outputIds.forEach((id) => loop(id, false));
-      clientEntryFileSet.forEach((id) => loop(id, true));
-      serverEntryFileSet.forEach((id) => loop(id, false));
+      clientFileSet.forEach((id) => loop(id, true));
+      serverFileSet.forEach((id) => loop(id, false));
       for (const [id, val] of possibleCommonFileMap) {
         if (val.fromClient && val.notFromClient) {
           commonFileSet.add(id);
         }
       }
-      clientEntryFileSet.forEach((id) => commonFileSet.delete(id));
-      serverEntryFileSet.forEach((id) => commonFileSet.delete(id));
+      clientFileSet.forEach((id) => commonFileSet.delete(id));
+      serverFileSet.forEach((id) => commonFileSet.delete(id));
     },
   };
 }

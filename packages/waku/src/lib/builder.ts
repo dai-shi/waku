@@ -51,13 +51,11 @@ const hash = (fname: string) =>
 
 const analyzeEntries = async (entriesFile: string) => {
   const commonFileSet = new Set<string>();
-  const clientEntryFileSet = new Set<string>();
-  const serverEntryFileSet = new Set<string>();
+  const clientFileSet = new Set<string>();
+  const serverFileSet = new Set<string>();
   await viteBuild({
     ...viteInlineConfig(),
-    plugins: [
-      rscAnalyzePlugin(commonFileSet, clientEntryFileSet, serverEntryFileSet),
-    ],
+    plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
     ssr: {
       resolve: {
         conditions: ['react-server'],
@@ -86,14 +84,14 @@ const analyzeEntries = async (entriesFile: string) => {
   );
   const clientEntryFiles = Object.fromEntries(
     await Promise.all(
-      Array.from(clientEntryFileSet).map(async (fname, i) => [
+      Array.from(clientFileSet).map(async (fname, i) => [
         `rsc${i}-${await hash(fname)}`,
         fname,
       ]),
     ),
   );
   const serverEntryFiles = Object.fromEntries(
-    Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname]),
+    Array.from(serverFileSet).map((fname, i) => [`rsf${i}`, fname]),
   );
   return {
     commonEntryFiles,
