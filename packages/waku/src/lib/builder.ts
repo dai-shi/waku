@@ -50,16 +50,12 @@ const hash = (fname: string) =>
   });
 
 const analyzeEntries = async (entriesFile: string) => {
-  const clientEntryFileSet = new Set<string>();
-  const serverEntryFileSet = new Set<string>();
+  const commonFileSet = new Set<string>();
+  const clientFileSet = new Set<string>();
+  const serverFileSet = new Set<string>();
   await viteBuild({
     ...viteInlineConfig(),
-    plugins: [
-      rscAnalyzePlugin(
-        (id) => clientEntryFileSet.add(id),
-        (id) => serverEntryFileSet.add(id),
-      ),
-    ],
+    plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
     ssr: {
       resolve: {
         conditions: ['react-server'],
@@ -78,18 +74,27 @@ const analyzeEntries = async (entriesFile: string) => {
       },
     },
   });
+  const commonEntryFiles = Object.fromEntries(
+    await Promise.all(
+      Array.from(commonFileSet).map(async (fname, i) => [
+        `com${i}-${await hash(fname)}`,
+        fname,
+      ]),
+    ),
+  );
   const clientEntryFiles = Object.fromEntries(
     await Promise.all(
-      Array.from(clientEntryFileSet).map(async (fname, i) => [
+      Array.from(clientFileSet).map(async (fname, i) => [
         `rsc${i}-${await hash(fname)}`,
         fname,
       ]),
     ),
   );
   const serverEntryFiles = Object.fromEntries(
-    Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname]),
+    Array.from(serverFileSet).map((fname, i) => [`rsf${i}`, fname]),
   );
   return {
+    commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
   };
@@ -99,6 +104,7 @@ const buildServerBundle = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   entriesFile: string,
   distEntriesFile: string,
+  commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
 ) => {
@@ -126,6 +132,7 @@ const buildServerBundle = async (
         onwarn,
         input: {
           entries: entriesFile,
+          ...commonEntryFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
         },
@@ -151,6 +158,7 @@ const buildServerBundle = async (
           },
           entryFileNames: (chunkInfo) => {
             if (
+              commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name] ||
               serverEntryFiles[chunkInfo.name]
             ) {
@@ -187,6 +195,7 @@ const buildServerBundle = async (
 
 const buildClientBundle = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
+  commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
 ) => {
@@ -208,12 +217,16 @@ const buildClientBundle = async (
         onwarn,
         input: {
           main: indexHtmlFile,
+          ...commonEntryFiles,
           ...clientEntryFiles,
         },
         preserveEntrySignatures: 'exports-only',
         output: {
           entryFileNames: (chunkInfo) => {
-            if (clientEntryFiles[chunkInfo.name]) {
+            if (
+              commonEntryFiles[chunkInfo.name] ||
+              clientEntryFiles[chunkInfo.name]
+            ) {
               return 'assets/[name].js';
             }
             return 'assets/[name]-[hash].js';
@@ -471,17 +484,19 @@ export async function build(options?: { ssr?: boolean }) {
     path.join(config.rootDir, config.distDir, config.entriesJs),
   );
 
-  const { clientEntryFiles, serverEntryFiles } =
+  const { commonEntryFiles, clientEntryFiles, serverEntryFiles } =
     await analyzeEntries(entriesFile);
   const serverBuildOutput = await buildServerBundle(
     config,
     entriesFile,
     distEntriesFile,
+    commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
   );
   const clientBuildOutput = await buildClientBundle(
     config,
+    commonEntryFiles,
     clientEntryFiles,
     serverBuildOutput,
   );
