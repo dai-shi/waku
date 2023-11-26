@@ -59,6 +59,7 @@ type Middleware = (
   res: ServerResponse,
   next: (err?: unknown) => void,
 ) => void;
+
 const wrap =
   (m: Middleware): MiddlewareHandler =>
   (c, next) =>
@@ -71,7 +72,8 @@ const wrap =
         req.end();
       }
       req.method = c.req.method;
-      req.url = c.req.path;
+      // TODO we should support full URL string in our middleware
+      req.url = c.req.url.slice(new URL(c.req.url).origin.length);
       req.headers = new Proxy(
         {},
         {
