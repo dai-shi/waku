@@ -49,75 +49,14 @@ const hash = (fname: string) =>
     fs.createReadStream(fname).pipe(sha256);
   });
 
-// TODO this function should probably be redesigned.
-const collectPossibleCommonFileSet = (
-  outputIds: string[],
-  clientEntryFileSet: Set<string>,
-  serverEntryFileSet: Set<string>,
-  dependencyMap: Map<string, Set<string>>,
-): Set<string> => {
-  const possibleCommonFileMap = new Map<
-    string,
-    { fromClient?: true; notFromClient?: true }
-  >();
-  const seen = new Set<string>();
-  const loop = (id: string, isClient: boolean) => {
-    if (seen.has(id)) {
-      return;
-    }
-    seen.add(id);
-    isClient = isClient || clientEntryFileSet.has(id);
-    dependencyMap.get(id)?.forEach((depId) => {
-      if (!fs.existsSync(depId)) {
-        // HACK is there a better way?
-        return;
-      }
-      let value = possibleCommonFileMap.get(depId);
-      if (!value) {
-        value = {};
-        possibleCommonFileMap.set(depId, value);
-      }
-      if (isClient) {
-        value.fromClient = true;
-      } else {
-        value.notFromClient = true;
-      }
-      loop(depId, isClient);
-    });
-  };
-  outputIds.forEach((id) => loop(id, false));
-  clientEntryFileSet.forEach((id) => loop(id, true));
-  serverEntryFileSet.forEach((id) => loop(id, false));
-  const possibleCommonFileSet = new Set<string>();
-  for (const [id, val] of possibleCommonFileMap) {
-    if (val.fromClient && val.notFromClient) {
-      possibleCommonFileSet.add(id);
-    }
-  }
-  clientEntryFileSet.forEach((id) => possibleCommonFileSet.delete(id));
-  serverEntryFileSet.forEach((id) => possibleCommonFileSet.delete(id));
-  return possibleCommonFileSet;
-};
-
 const analyzeEntries = async (entriesFile: string) => {
+  const commonFileSet = new Set<string>();
   const clientEntryFileSet = new Set<string>();
   const serverEntryFileSet = new Set<string>();
-  const dependencyMap = new Map<string, Set<string>>();
-  const analysisBuildOutput = await viteBuild({
+  await viteBuild({
     ...viteInlineConfig(),
     plugins: [
-      rscAnalyzePlugin(
-        (id) => clientEntryFileSet.add(id),
-        (id) => serverEntryFileSet.add(id),
-        (id, depId) => {
-          let depSet = dependencyMap.get(id);
-          if (!depSet) {
-            depSet = new Set();
-            dependencyMap.set(id, depSet);
-          }
-          depSet.add(depId);
-        },
-      ),
+      rscAnalyzePlugin(commonFileSet, clientEntryFileSet, serverEntryFileSet),
     ],
     ssr: {
       resolve: {
@@ -137,22 +76,9 @@ const analyzeEntries = async (entriesFile: string) => {
       },
     },
   });
-  if (!('output' in analysisBuildOutput)) {
-    throw new Error('Unexpected vite analysis build output');
-  }
-  const possibleCommonFileSet = collectPossibleCommonFileSet(
-    analysisBuildOutput.output.flatMap((item) =>
-      'facadeModuleId' in item && item.facadeModuleId
-        ? [item.facadeModuleId]
-        : [],
-    ),
-    clientEntryFileSet,
-    serverEntryFileSet,
-    dependencyMap,
-  );
   const commonEntryFiles = Object.fromEntries(
     await Promise.all(
-      Array.from(possibleCommonFileSet).map(async (fname, i) => [
+      Array.from(commonFileSet).map(async (fname, i) => [
         `com${i}-${await hash(fname)}`,
         fname,
       ]),
