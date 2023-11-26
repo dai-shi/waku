@@ -300,7 +300,7 @@ export const renderHtml = async <Context>(
               if (command === 'dev') {
                 const filePath = file.startsWith('@fs/')
                   ? file.slice(3)
-                  : path.join(config.rootDir, config.srcDir, file);
+                  : path.join(config.rootDir, file);
                 const specifier = url
                   .pathToFileURL(transpile!(filePath, name))
                   .toString();
@@ -336,6 +336,7 @@ export const renderHtml = async <Context>(
       },
     },
   );
+  console.log('input', ssrConfig.input);
   const [copied, interleave] = injectRscPayload(pipeable, ssrConfig.input);
   const elements = createFromNodeStream(copied, { moduleMap });
   const { ServerRoot } = await loadServerFile('waku/client', command);

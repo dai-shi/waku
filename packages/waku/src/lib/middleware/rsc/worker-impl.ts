@@ -213,10 +213,7 @@ const resolveClientEntry = (
     filePath = filePath.slice('file://'.length);
   }
   filePath = resolveClientPath?.(filePath) || filePath;
-  let root = path.join(
-    config.rootDir,
-    command === 'dev' ? config.srcDir : config.distDir,
-  );
+  let root = path.join(config.rootDir, command === 'dev' ? '' : config.distDir);
   if (path.sep !== '/') {
     // HACK to support windows filesystem
     root = root.replaceAll(path.sep, '/');
@@ -296,6 +293,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     {
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split('#') as [string, string];
+
         const id = resolveClientEntry(
           filePath,
           config,

@@ -209,7 +209,7 @@ const buildClientBundle = async (
   );
   const clientBuildOutput = await viteBuild({
     ...viteInlineConfig(),
-    root: path.join(config.rootDir, config.srcDir),
+    // root: path.join(config.rootDir, config.srcDir),
     plugins: [patchReactRefresh(viteReact()), rscIndexPlugin(cssAssets)],
     build: {
       outDir: path.join(config.rootDir, config.distDir, config.publicDir),
