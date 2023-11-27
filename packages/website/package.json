@@ -14,9 +14,9 @@
     "bright": "^0.8.4",
     "express": "^4.18.2",
     "next-mdx-remote": "^4.4.1",
-    "react": "18.3.0-canary-0e352ea01-20231109",
-    "react-dom": "18.3.0-canary-0e352ea01-20231109",
-    "react-server-dom-webpack": "18.3.0-canary-0e352ea01-20231109",
+    "react": "18.3.0-canary-6c7b41da3-20231123",
+    "react-dom": "18.3.0-canary-6c7b41da3-20231123",
+    "react-server-dom-webpack": "18.3.0-canary-6c7b41da3-20231123",
     "waku": "workspace:*"
   },
   "devDependencies": {
