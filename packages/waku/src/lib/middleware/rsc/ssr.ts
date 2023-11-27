@@ -62,30 +62,23 @@ export const shutdown = async () => {
 export const loadServerFile = async (
   fname: string,
   command: 'dev' | 'build' | 'start',
-  isModule: boolean,
 ) => {
   if (command !== 'dev') {
-    if (isModule) {
-      return import(fname);
-    }
-    return import(url.pathToFileURL(fname).toString());
+    return import(fname);
   }
   const vite = await getViteServer();
-  if (fname.startsWith('file://')) {
-    fname = url.fileURLToPath(fname);
-  }
   return vite.ssrLoadModule(fname);
 };
 
 // FIXME this is very hacky
 const createTranspiler = async (cleanupFns: Set<() => void>) => {
-  return (fileURL: string, name: string) => {
+  return (filePath: string, name: string) => {
     const temp = path.resolve(
       `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
     );
     const code = `
 const { loadServerFile } = await import('${import.meta.url}');
-const { ${name} } = await loadServerFile('${fileURL}', 'dev');
+const { ${name} } = await loadServerFile('${filePath}', 'dev');
 export { ${name} }
 `;
     fs.writeFileSync(temp, code);
@@ -98,11 +91,12 @@ const getEntriesFile = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
 ) => {
-  return path.join(
+  const filePath = path.join(
     config.rootDir,
     command === 'dev' ? config.srcDir : config.distDir,
     config.entriesJs,
   );
+  return command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
 };
 
 const fakeFetchCode = `
@@ -266,7 +260,7 @@ export const renderHtml = async <Context>(
   const {
     default: { getSsrConfig },
     resolveClientPath,
-  } = await (loadServerFile(entriesFile, command, false) as Promise<Entries>);
+  } = await (loadServerFile(entriesFile, command) as Promise<Entries>);
   const ssrConfig = await getSsrConfig?.(pathStr);
   if (!ssrConfig) {
     return null;
@@ -301,15 +295,11 @@ export const renderHtml = async <Context>(
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
-                const f = url
-                  .pathToFileURL(
-                    file.startsWith('@fs/')
-                      ? file.slice(3)
-                      : path.join(config.rootDir, config.srcDir, file),
-                  )
-                  .toString();
+                const filePath = file.startsWith('@fs/')
+                  ? file.slice(3)
+                  : path.join(config.rootDir, config.srcDir, file);
                 const specifier = url
-                  .pathToFileURL(transpile!(f, name))
+                  .pathToFileURL(transpile!(filePath, name))
                   .toString();
                 return {
                   specifier,
@@ -345,7 +335,7 @@ export const renderHtml = async <Context>(
   );
   const [copied, interleave] = injectRscPayload(pipeable, ssrConfig.input);
   const elements = createFromNodeStream(copied, { moduleMap });
-  const { ServerRoot } = await loadServerFile('waku/client', command, true);
+  const { ServerRoot } = await loadServerFile('waku/client', command);
   const readable = renderToPipeableStream(
     createElement(ServerRoot, { elements }, ssrConfig.unstable_render()),
     {
