@@ -176,7 +176,7 @@ const buildServerBundle = async (
   const code = `export const resolveClientPath = (filePath, invert) => (invert ? ${JSON.stringify(
     Object.fromEntries(
       Object.entries(clientEntryFiles).map(([key, val]) => [
-        path.join(config.rootDir, config.distDir, 'assets', key + '.js'),
+        path.posix.join(config.rootDir, config.distDir, 'assets', key + '.js'),
         val,
       ]),
     ),
@@ -184,7 +184,7 @@ const buildServerBundle = async (
     Object.fromEntries(
       Object.entries(clientEntryFiles).map(([key, val]) => [
         val,
-        path.join(config.rootDir, config.distDir, 'assets', key + '.js'),
+        path.posix.join(config.rootDir, config.distDir, 'assets', key + '.js'),
       ]),
     ),
   )})[filePath];

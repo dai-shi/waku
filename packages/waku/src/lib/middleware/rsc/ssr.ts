@@ -72,13 +72,16 @@ export const loadServerFile = async (
 
 // FIXME this is very hacky
 const createTranspiler = async (cleanupFns: Set<() => void>) => {
-  return (file: string, name: string) => {
+  return (filePath: string, name: string) => {
     const temp = path.resolve(
       `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
     );
     const code = `
-import { loadServerFile } from '${url.fileURLToPath(import.meta.url)}';
-const { ${name} } = await loadServerFile('${file}', 'dev');
+const { loadServerFile } = await import('${import.meta.url}');
+const { ${name} } = await loadServerFile('${url
+      .pathToFileURL(filePath)
+      .toString()
+      .slice('file://'.length)}', 'dev');
 export { ${name} }
 `;
     fs.writeFileSync(temp, code);
@@ -91,11 +94,12 @@ const getEntriesFile = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
 ) => {
-  return path.join(
+  const filePath = path.join(
     config.rootDir,
     command === 'dev' ? config.srcDir : config.distDir,
     config.entriesJs,
   );
+  return command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
 };
 
 const fakeFetchCode = `
@@ -294,22 +298,36 @@ export const renderHtml = async <Context>(
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
-                const f = file.startsWith('@fs/')
+                const filePath = file.startsWith('@fs/')
                   ? file.slice(3)
                   : path.join(config.rootDir, config.srcDir, file);
-                return { specifier: transpile!(f, name), name };
+                const specifier = url
+                  .pathToFileURL(transpile!(filePath, name))
+                  .toString();
+                return {
+                  specifier,
+                  name,
+                };
               }
               const origFile = resolveClientPath?.(
                 path.join(config.rootDir, config.distDir, file),
                 true,
               );
               if (
-                !origFile?.startsWith(path.join(config.rootDir, config.srcDir))
+                origFile &&
+                !origFile.startsWith(path.join(config.rootDir, config.srcDir))
               ) {
-                return { specifier: origFile, name };
+                return {
+                  specifier: url.pathToFileURL(origFile).toString(),
+                  name,
+                };
               }
               return {
-                specifier: path.join(config.rootDir, config.distDir, file),
+                specifier: url
+                  .pathToFileURL(
+                    path.join(config.rootDir, config.distDir, file),
+                  )
+                  .toString(),
                 name,
               };
             },
