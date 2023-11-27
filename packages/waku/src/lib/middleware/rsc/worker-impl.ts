@@ -204,14 +204,12 @@ const getEntriesFile = (
 };
 
 const resolveClientEntry = (
-  filePath: string,
+  fname: string,
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
   resolveClientPath: Entries['resolveClientPath'],
 ) => {
-  if (filePath.startsWith('file://')) {
-    filePath = filePath.slice('file://'.length);
-  }
+  let filePath = fname.startsWith('file://') ? url.fileURLToPath(fname) : fname;
   filePath = resolveClientPath?.(filePath) || filePath;
   let root = path.join(
     config.rootDir,
