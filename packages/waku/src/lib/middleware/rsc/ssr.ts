@@ -292,7 +292,7 @@ export const renderHtml = async <Context>(
         return new Proxy(
           {},
           {
-            get(_target, name: string) {git
+            get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
                 const filePath = file.startsWith('@fs/')
