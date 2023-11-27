@@ -194,7 +194,7 @@ parentPort!.on('message', (mesg: MessageReq) => {
       message: string;
       stack: string;
       name: string;
-    }
+    };
     let err: Error;
     if (typeof parentError === 'string') {
       err = new Error(parentError);

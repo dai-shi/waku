@@ -155,7 +155,7 @@ export function renderRSC<Context>(
           message: string;
           stack: string;
           name: string;
-        }
+        };
         let err: Error;
         if (typeof workerError === 'string') {
           err = new Error(workerError);
