@@ -195,25 +195,23 @@ const getEntriesFile = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
 ) => {
-  const fileURL = url
-    .pathToFileURL(
-      path.join(
-        config.rootDir,
-        command === 'dev' ? config.srcDir : config.distDir,
-        config.entriesJs,
-      ),
-    )
-    .toString();
-  return command === 'dev' ? url.fileURLToPath(fileURL) : fileURL;
+  const filePath = path.join(
+    config.rootDir,
+    command === 'dev' ? config.srcDir : config.distDir,
+    config.entriesJs,
+  );
+  return command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
 };
 
 const resolveClientEntry = (
-  fname: string,
+  filePath: string,
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
   resolveClientPath: Entries['resolveClientPath'],
 ) => {
-  let filePath = fname.startsWith('file://') ? url.fileURLToPath(fname) : fname;
+  if (filePath.startsWith('file://')) {
+    filePath = filePath.slice('file://'.length);
+  }
   filePath = resolveClientPath?.(filePath) || filePath;
   let root = path.join(
     config.rootDir,
@@ -232,8 +230,7 @@ const resolveClientEntry = (
       return config.basePath + '@fs/' + filePath.replace(/^\//, '');
     } else {
       throw new Error(
-        'Resolving client module outside root is unsupported for now' +
-          JSON.stringify({ fname, command, root, filePath }),
+        'Resolving client module outside root is unsupported for now',
       );
     }
   }
