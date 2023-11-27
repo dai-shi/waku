@@ -213,7 +213,6 @@ const resolveClientEntry = (
   command: 'dev' | 'build' | 'start',
   resolveClientPath: Entries['resolveClientPath'],
 ) => {
-  console.log('DEBUGGING', fname, command);
   let filePath = fname.startsWith('file://') ? url.fileURLToPath(fname) : fname;
   filePath = resolveClientPath?.(filePath) || filePath;
   let root = path.join(
@@ -233,7 +232,8 @@ const resolveClientEntry = (
       return config.basePath + '@fs/' + filePath.replace(/^\//, '');
     } else {
       throw new Error(
-        'Resolving client module outside root is unsupported for now',
+        'Resolving client module outside root is unsupported for now' +
+          JSON.stringify({ fname, command, root, filePath }),
       );
     }
   }
