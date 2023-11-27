@@ -29,5 +29,15 @@ export default defineConfig({
         PORT: '3001',
       },
     },
+    {
+      command: 'pnpm exec waku dev',
+      cwd: resolve(rootDir, 'examples', '01_counter'),
+      port: 3002,
+      timeout: 10 * 1000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        PORT: '3002',
+      },
+    },
   ],
 });
