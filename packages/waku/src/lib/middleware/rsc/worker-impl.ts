@@ -195,11 +195,12 @@ const getEntriesFile = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
 ) => {
-  return path.join(
+  const filePath = path.join(
     config.rootDir,
     command === 'dev' ? config.srcDir : config.distDir,
     config.entriesJs,
   );
+  return command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
 };
 
 const resolveClientEntry = (
@@ -209,7 +210,7 @@ const resolveClientEntry = (
   resolveClientPath: Entries['resolveClientPath'],
 ) => {
   if (filePath.startsWith('file://')) {
-    filePath = filePath.slice(7);
+    filePath = filePath.slice('file://'.length);
   }
   filePath = resolveClientPath?.(filePath) || filePath;
   let root = path.join(
@@ -219,6 +220,9 @@ const resolveClientEntry = (
   if (path.sep !== '/') {
     // HACK to support windows filesystem
     root = root.replaceAll(path.sep, '/');
+    if (filePath[0] === '/') {
+      filePath = filePath.slice(1);
+    }
   }
   if (!filePath.startsWith(root)) {
     if (command === 'dev') {
@@ -326,7 +330,9 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
       }
     }
     const [fileId, name] = actionId.split('#');
-    const fname = path.join(config.rootDir, fileId!);
+    const filePath = path.join(config.rootDir, fileId!);
+    const fname =
+      rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
     const mod = await loadServerFile(fname, rr.command);
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
     const rerender = (input: string) => {
