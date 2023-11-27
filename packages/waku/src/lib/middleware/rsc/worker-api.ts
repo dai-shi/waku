@@ -151,8 +151,20 @@ export function renderRSC<Context>(
         passthrough.end();
         messageCallbacks.delete(id);
       } else if (mesg.type === 'err') {
-        const err =
-          mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err));
+        const workerError = mesg.err as {
+          message: string;
+          stack: string;
+          name: string;
+        }
+        let err: Error;
+        if (typeof workerError === 'string') {
+          err = new Error(workerError);
+        } else {
+          err = new Error(workerError.message);
+          err.stack = workerError.stack;
+          err.name = workerError.name;
+        }
+
         if (mesg.statusCode) {
           (err as any).statusCode = mesg.statusCode;
         }

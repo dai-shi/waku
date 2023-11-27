@@ -77,6 +77,13 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
     pipeable.pipe(writable);
   } catch (err) {
     const mesg: MessageRes = { id, type: 'err', err };
+    if (err instanceof Error) {
+      mesg.err = {
+        message: err.message,
+        stack: err.stack,
+        name: err.name,
+      };
+    }
     if (hasStatusCode(err)) {
       mesg.statusCode = err.statusCode;
     }
@@ -94,6 +101,13 @@ const handleGetBuildConfig = async (
     parentPort!.postMessage(mesg);
   } catch (err) {
     const mesg: MessageRes = { id, type: 'err', err };
+    if (err instanceof Error) {
+      mesg.err = {
+        message: err.message,
+        stack: err.stack,
+        name: err.name,
+      };
+    }
     parentPort!.postMessage(mesg);
   }
 };
@@ -176,8 +190,19 @@ parentPort!.on('message', (mesg: MessageReq) => {
     stream.end();
   } else if (mesg.type === 'err') {
     const stream = streamMap.get(mesg.id)!;
-    const err =
-      mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err));
+    const parentError = mesg.err as {
+      message: string;
+      stack: string;
+      name: string;
+    }
+    let err: Error;
+    if (typeof parentError === 'string') {
+      err = new Error(parentError);
+    } else {
+      err = new Error(parentError.message);
+      err.stack = parentError.stack;
+      err.name = parentError.name;
+    }
     stream.destroy(err);
   }
 });
