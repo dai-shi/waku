@@ -79,13 +79,13 @@ export const loadServerFile = async (
 
 // FIXME this is very hacky
 const createTranspiler = async (cleanupFns: Set<() => void>) => {
-  return (file: URL, name: string) => {
+  return (fileURL: string, name: string) => {
     const temp = path.resolve(
       `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
     );
     const code = `
 const { loadServerFile } = await import('${import.meta.url}');
-const { ${name} } = await loadServerFile('${file}', 'dev');
+const { ${name} } = await loadServerFile('${fileURL}', 'dev');
 export { ${name} }
 `;
     fs.writeFileSync(temp, code);
@@ -305,7 +305,7 @@ export const renderHtml = async <Context>(
                   file.startsWith('@fs/')
                     ? file.slice(3)
                     : path.join(config.rootDir, config.srcDir, file),
-                );
+                ).toString();
                 const specifier = url
                   .pathToFileURL(transpile!(f, name))
                   .toString();
