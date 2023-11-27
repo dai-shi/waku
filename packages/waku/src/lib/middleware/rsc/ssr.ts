@@ -312,7 +312,7 @@ export const renderHtml = async <Context>(
               );
               if (
                 origFile &&
-                !origFile?.startsWith(path.join(config.rootDir, config.srcDir))
+                !origFile.startsWith(path.join(config.rootDir, config.srcDir))
               ) {
                 return {
                   specifier: url.pathToFileURL(origFile).toString(),
