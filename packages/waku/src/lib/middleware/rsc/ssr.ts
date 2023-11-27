@@ -301,11 +301,13 @@ export const renderHtml = async <Context>(
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
-                const f = url.pathToFileURL(
-                  file.startsWith('@fs/')
-                    ? file.slice(3)
-                    : path.join(config.rootDir, config.srcDir, file),
-                ).toString();
+                const f = url
+                  .pathToFileURL(
+                    file.startsWith('@fs/')
+                      ? file.slice(3)
+                      : path.join(config.rootDir, config.srcDir, file),
+                  )
+                  .toString();
                 const specifier = url
                   .pathToFileURL(transpile!(f, name))
                   .toString();
