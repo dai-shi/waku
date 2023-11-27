@@ -160,14 +160,14 @@ const shutdown = async () => {
 };
 
 const loadServerFile = async (
-  fname: URL | string,
+  fname: string,
   command: 'dev' | 'build' | 'start',
 ) => {
   if (command !== 'dev') {
-    return import(fname.toString());
+    return import(fname);
   }
   const vite = await getViteServer();
-  return vite.ssrLoadModule(fname.toString());
+  return vite.ssrLoadModule(fname);
 };
 
 parentPort!.on('message', (mesg: MessageReq) => {
@@ -195,13 +195,12 @@ const getEntriesFile = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
 ) => {
-  return url.pathToFileURL(
-    path.join(
-      config.rootDir,
-      command === 'dev' ? config.srcDir : config.distDir,
-      config.entriesJs,
-    ),
+  const filePath = path.join(
+    config.rootDir,
+    command === 'dev' ? config.srcDir : config.distDir,
+    config.entriesJs,
   );
+  return command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
 };
 
 const resolveClientEntry = (
@@ -331,7 +330,9 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
       }
     }
     const [fileId, name] = actionId.split('#');
-    const fname = url.pathToFileURL(path.join(config.rootDir, fileId!));
+    const filePath = path.join(config.rootDir, fileId!);
+    const fname =
+      rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
     const mod = await loadServerFile(fname, rr.command);
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
     const rerender = (input: string) => {
