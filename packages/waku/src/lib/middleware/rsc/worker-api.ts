@@ -23,8 +23,6 @@ const worker = new Worker(new URL('worker-impl.js', import.meta.url), {
       ? [
           '--experimental-loader',
           'waku/node-loader',
-          '--experimental-loader',
-          'react-server-dom-webpack/node-loader',
         ]
       : []),
     '--conditions',
