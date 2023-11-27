@@ -21,7 +21,7 @@
   "scripts": {
     "start": "node dist/cli.js",
     "compile": "rm -rf template dist *.tsbuildinfo && pnpm run template && pnpm run build",
-    "template": "cp -r ../../examples template/ && rm -rf template/*/dist && rm -rf template/node_modules",
+    "template": "cp -r ../../examples template/ && rm -rf template/*/dist && rm -rf template/*/node_modules",
     "build": "tsc -b"
   },
   "dependencies": {
