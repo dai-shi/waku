@@ -4,6 +4,7 @@
 ### Changed
 - fix: ssr and bundling #176
 - fix: support common component that can be used both in RSC and RCC #180
+- fix: build error on windows #174
 
 ## [0.17.0] - 2023-11-14
 ### Added
