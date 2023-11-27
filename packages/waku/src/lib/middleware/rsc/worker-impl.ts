@@ -213,6 +213,7 @@ const resolveClientEntry = (
   command: 'dev' | 'build' | 'start',
   resolveClientPath: Entries['resolveClientPath'],
 ) => {
+  console.log('DEBUGGING', fname, command);
   let filePath = fname.startsWith('file://') ? url.fileURLToPath(fname) : fname;
   filePath = resolveClientPath?.(filePath) || filePath;
   let root = path.join(
