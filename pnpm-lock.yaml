@@ -90,7 +90,7 @@ importers:
         specifier: 18.3.0-canary-6c7b41da3-20231123
         version: 18.3.0-canary-6c7b41da3-20231123(react-dom@18.3.0-canary-6c7b41da3-20231123)(react@18.3.0-canary-6c7b41da3-20231123)(webpack@5.89.0)
       waku:
-        specifier: 0.17.0
+        specifier: 0.17.1
         version: link:../../packages/waku
     devDependencies:
       '@swc/core':
@@ -127,7 +127,7 @@ importers:
         specifier: 18.3.0-canary-6c7b41da3-20231123
         version: 18.3.0-canary-6c7b41da3-20231123(react-dom@18.3.0-canary-6c7b41da3-20231123)(react@18.3.0-canary-6c7b41da3-20231123)(webpack@5.89.0)
       waku:
-        specifier: 0.17.0
+        specifier: 0.17.1
         version: link:../../packages/waku
     devDependencies:
       '@swc/core':
@@ -164,7 +164,7 @@ importers:
         specifier: 18.3.0-canary-6c7b41da3-20231123
         version: 18.3.0-canary-6c7b41da3-20231123(react-dom@18.3.0-canary-6c7b41da3-20231123)(react@18.3.0-canary-6c7b41da3-20231123)(webpack@5.89.0)
       waku:
-        specifier: 0.17.0
+        specifier: 0.17.1
         version: link:../../packages/waku
     devDependencies:
       '@swc/core':
@@ -201,7 +201,7 @@ importers:
         specifier: 18.3.0-canary-6c7b41da3-20231123
         version: 18.3.0-canary-6c7b41da3-20231123(react-dom@18.3.0-canary-6c7b41da3-20231123)(react@18.3.0-canary-6c7b41da3-20231123)(webpack@5.89.0)
       waku:
-        specifier: 0.17.0
+        specifier: 0.17.1
         version: link:../../packages/waku
     devDependencies:
       '@swc/core':
@@ -241,7 +241,7 @@ importers:
         specifier: ^1.1.0
         version: 1.1.0(react@18.3.0-canary-6c7b41da3-20231123)
       waku:
-        specifier: 0.17.0
+        specifier: 0.17.1
         version: link:../../packages/waku
     devDependencies:
       '@swc/core':
@@ -278,7 +278,7 @@ importers:
         specifier: 18.3.0-canary-6c7b41da3-20231123
         version: 18.3.0-canary-6c7b41da3-20231123(react-dom@18.3.0-canary-6c7b41da3-20231123)(react@18.3.0-canary-6c7b41da3-20231123)(webpack@5.89.0)
       waku:
-        specifier: 0.17.0
+        specifier: 0.17.1
         version: link:../../packages/waku
     devDependencies:
       '@swc/core':
@@ -318,7 +318,7 @@ importers:
         specifier: 18.3.0-canary-6c7b41da3-20231123
         version: 18.3.0-canary-6c7b41da3-20231123(react-dom@18.3.0-canary-6c7b41da3-20231123)(react@18.3.0-canary-6c7b41da3-20231123)(webpack@5.89.0)
       waku:
-        specifier: 0.17.0
+        specifier: 0.17.1
         version: link:../../packages/waku
     devDependencies:
       '@swc/core':
@@ -358,7 +358,7 @@ importers:
         specifier: 18.3.0-canary-6c7b41da3-20231123
         version: 18.3.0-canary-6c7b41da3-20231123(react-dom@18.3.0-canary-6c7b41da3-20231123)(react@18.3.0-canary-6c7b41da3-20231123)(webpack@5.89.0)
       waku:
-        specifier: 0.17.0
+        specifier: 0.17.1
         version: link:../../packages/waku
     devDependencies:
       '@swc/core':
@@ -395,7 +395,7 @@ importers:
         specifier: 18.3.0-canary-6c7b41da3-20231123
         version: 18.3.0-canary-6c7b41da3-20231123(react-dom@18.3.0-canary-6c7b41da3-20231123)(react@18.3.0-canary-6c7b41da3-20231123)(webpack@5.89.0)
       waku:
-        specifier: 0.17.0
+        specifier: 0.17.1
         version: link:../../packages/waku
     devDependencies:
       '@swc/core':
@@ -435,7 +435,7 @@ importers:
         specifier: 18.3.0-canary-6c7b41da3-20231123
         version: 18.3.0-canary-6c7b41da3-20231123(react-dom@18.3.0-canary-6c7b41da3-20231123)(react@18.3.0-canary-6c7b41da3-20231123)(webpack@5.89.0)
       waku:
-        specifier: 0.17.0
+        specifier: 0.17.1
         version: link:../../packages/waku
     devDependencies:
       '@swc/core':
@@ -472,7 +472,7 @@ importers:
         specifier: 18.3.0-canary-6c7b41da3-20231123
         version: 18.3.0-canary-6c7b41da3-20231123(react-dom@18.3.0-canary-6c7b41da3-20231123)(react@18.3.0-canary-6c7b41da3-20231123)(webpack@5.89.0)
       waku:
-        specifier: 0.17.0
+        specifier: 0.17.1
         version: link:../../packages/waku
     devDependencies:
       '@swc/core':
