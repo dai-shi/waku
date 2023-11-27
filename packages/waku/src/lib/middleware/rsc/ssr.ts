@@ -73,9 +73,6 @@ export const loadServerFile = async (
 // FIXME this is very hacky
 const createTranspiler = async (cleanupFns: Set<() => void>) => {
   return (filePath: string, name: string) => {
-    if (path.sep === '\\') {
-      filePath = filePath.replace(/\\/g, '/');
-    }
     const temp = path.resolve(
       `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
     );
