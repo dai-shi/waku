@@ -1,6 +1,5 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import url from 'node:url';
 import { createHash } from 'node:crypto';
 import { pipeline } from 'node:stream/promises';
 
@@ -8,7 +7,7 @@ import { build as viteBuild } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
-import { resolveConfig } from './config.js';
+import { resolveConfig, viteInlineConfig } from './config.js';
 import { encodeInput, generatePrefetchCode } from './middleware/rsc/utils.js';
 import {
   shutdown as shutdownRsc,
@@ -51,15 +50,12 @@ const hash = (fname: string) =>
   });
 
 const analyzeEntries = async (entriesFile: string) => {
-  const clientEntryFileSet = new Set<string>();
-  const serverEntryFileSet = new Set<string>();
+  const commonFileSet = new Set<string>();
+  const clientFileSet = new Set<string>();
+  const serverFileSet = new Set<string>();
   await viteBuild({
-    plugins: [
-      rscAnalyzePlugin(
-        (id) => clientEntryFileSet.add(id),
-        (id) => serverEntryFileSet.add(id),
-      ),
-    ],
+    ...viteInlineConfig(),
+    plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
     ssr: {
       resolve: {
         conditions: ['react-server'],
@@ -78,23 +74,27 @@ const analyzeEntries = async (entriesFile: string) => {
       },
     },
   });
+  const commonEntryFiles = Object.fromEntries(
+    await Promise.all(
+      Array.from(commonFileSet).map(async (fname, i) => [
+        `com${i}-${await hash(fname)}`,
+        fname,
+      ]),
+    ),
+  );
   const clientEntryFiles = Object.fromEntries(
     await Promise.all(
-      Array.from(clientEntryFileSet).map(async (fname, i) => [
+      Array.from(clientFileSet).map(async (fname, i) => [
         `rsc${i}-${await hash(fname)}`,
         fname,
       ]),
     ),
   );
-  // HACK to expose Slot and ServerRoot for ssr.ts
-  clientEntryFiles['waku-client'] = path.join(
-    path.dirname(url.fileURLToPath(import.meta.url)),
-    '../client.js',
-  );
   const serverEntryFiles = Object.fromEntries(
-    Array.from(serverEntryFileSet).map((fname, i) => [`rsf${i}`, fname]),
+    Array.from(serverFileSet).map((fname, i) => [`rsf${i}`, fname]),
   );
   return {
+    commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
   };
@@ -103,15 +103,19 @@ const analyzeEntries = async (entriesFile: string) => {
 const buildServerBundle = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   entriesFile: string,
+  distEntriesFile: string,
+  commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
 ) => {
   const serverBuildOutput = await viteBuild({
+    ...viteInlineConfig(),
     ssr: {
       resolve: {
         conditions: ['react-server'],
         externalConditions: ['react-server'],
       },
+      external: ['waku'],
       noExternal: Object.values(clientEntryFiles).flatMap((fname) => {
         const items = fname.split(path.sep);
         const index = items.lastIndexOf('node_modules');
@@ -128,6 +132,7 @@ const buildServerBundle = async (
         onwarn,
         input: {
           entries: entriesFile,
+          ...commonEntryFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
         },
@@ -153,6 +158,7 @@ const buildServerBundle = async (
           },
           entryFileNames: (chunkInfo) => {
             if (
+              commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name] ||
               serverEntryFiles[chunkInfo.name]
             ) {
@@ -167,11 +173,29 @@ const buildServerBundle = async (
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
+  const code = `export const resolveClientPath = (filePath, invert) => (invert ? ${JSON.stringify(
+    Object.fromEntries(
+      Object.entries(clientEntryFiles).map(([key, val]) => [
+        path.join(config.rootDir, config.distDir, 'assets', key + '.js'),
+        val,
+      ]),
+    ),
+  )} : ${JSON.stringify(
+    Object.fromEntries(
+      Object.entries(clientEntryFiles).map(([key, val]) => [
+        val,
+        path.join(config.rootDir, config.distDir, 'assets', key + '.js'),
+      ]),
+    ),
+  )})[filePath];
+`;
+  fs.appendFileSync(distEntriesFile, code);
   return serverBuildOutput;
 };
 
 const buildClientBundle = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
+  commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
 ) => {
@@ -184,6 +208,7 @@ const buildClientBundle = async (
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
   const clientBuildOutput = await viteBuild({
+    ...viteInlineConfig(),
     root: path.join(config.rootDir, config.srcDir),
     plugins: [patchReactRefresh(viteReact()), rscIndexPlugin(cssAssets)],
     build: {
@@ -192,16 +217,22 @@ const buildClientBundle = async (
         onwarn,
         input: {
           main: indexHtmlFile,
+          ...commonEntryFiles,
           ...clientEntryFiles,
         },
         preserveEntrySignatures: 'exports-only',
         output: {
           entryFileNames: (chunkInfo) => {
-            if (clientEntryFiles[chunkInfo.name]) {
+            if (
+              commonEntryFiles[chunkInfo.name] ||
+              clientEntryFiles[chunkInfo.name]
+            ) {
               return 'assets/[name].js';
             }
             return 'assets/[name]-[hash].js';
           },
+          // FIXME This is simply to override for examples/07,10 vite configs
+          preserveModules: false,
         },
       },
     },
@@ -449,17 +480,23 @@ export async function build(options?: { ssr?: boolean }) {
   const entriesFile = resolveFileName(
     path.join(config.rootDir, config.srcDir, config.entriesJs),
   );
+  const distEntriesFile = resolveFileName(
+    path.join(config.rootDir, config.distDir, config.entriesJs),
+  );
 
-  const { clientEntryFiles, serverEntryFiles } =
+  const { commonEntryFiles, clientEntryFiles, serverEntryFiles } =
     await analyzeEntries(entriesFile);
   const serverBuildOutput = await buildServerBundle(
     config,
     entriesFile,
+    distEntriesFile,
+    commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
   );
   const clientBuildOutput = await buildClientBundle(
     config,
+    commonEntryFiles,
     clientEntryFiles,
     serverBuildOutput,
   );

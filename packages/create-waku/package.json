@@ -1,6 +1,6 @@
 {
   "name": "create-waku",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "author": "Daishi Kato",
   "type": "module",
   "contributors": [
@@ -10,7 +10,9 @@
     "type": "git",
     "url": "https://github.com/dai-shi/waku.git"
   },
-  "bin": "./dist/cli.js",
+  "bin": {
+    "create-waku": "./dist/cli.js"
+  },
   "files": [
     "src",
     "dist",
@@ -18,8 +20,8 @@
   ],
   "scripts": {
     "start": "node dist/cli.js",
-    "compile": "rm -rf template dist && pnpm run template && pnpm run build",
-    "template": "cp -r ../../examples template/",
+    "compile": "rm -rf template dist *.tsbuildinfo && pnpm run template && pnpm run build",
+    "template": "cp -r ../../examples template/ && rm -rf template/*/dist && rm -rf template/node_modules",
     "build": "tsc -b"
   },
   "dependencies": {

@@ -12,7 +12,7 @@ import RDServer from 'react-dom/server';
 import RSDWClient from 'react-server-dom-webpack/client.node.unbundled';
 import type { ViteDevServer } from 'vite';
 
-import { resolveConfig } from '../../config.js';
+import { resolveConfig, viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
 import { renderRSC } from './worker-api.js';
 import { hasStatusCode } from './utils.js';
@@ -21,7 +21,13 @@ import { hasStatusCode } from './utils.js';
 const { renderToPipeableStream } = RDServer;
 const { createFromNodeStream } = RSDWClient;
 
-type Entries = { default: ReturnType<typeof defineEntries> };
+type Entries = {
+  default: ReturnType<typeof defineEntries>;
+  resolveClientPath?: (
+    filePath: string,
+    invert?: boolean,
+  ) => string | undefined;
+};
 
 let lastViteServer: ViteDevServer | undefined;
 const getViteServer = async () => {
@@ -34,11 +40,8 @@ const getViteServer = async () => {
     '../../vite-plugin/nonjs-resolve-plugin.js'
   );
   const viteServer = await viteCreateServer({
+    ...viteInlineConfig(),
     plugins: [nonjsResolvePlugin()],
-    ssr: {
-      // HACK required for ServerRoot for waku/client
-      noExternal: ['waku'],
-    },
     appType: 'custom',
     server: { middlewareMode: true, hmr: { server: dummyServer } },
   });
@@ -95,17 +98,6 @@ const getEntriesFile = (
   );
 };
 
-const getWakuClientFile = (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
-  command: 'dev' | 'build' | 'start',
-) => {
-  if (command !== 'dev') {
-    // HACK kind of hard coded to be sync with builder.ts
-    return path.join(config.rootDir, config.distDir, './assets/waku-client.js');
-  }
-  return 'waku/client';
-};
-
 const fakeFetchCode = `
 Promise.resolve({
   ok: true,
@@ -127,39 +119,32 @@ const injectRscPayload = (stream: Readable, input: string) => {
   let notify: (() => void) | undefined;
   const copied = new PassThrough();
   stream.on('data', (chunk) => {
-    copied.write(chunk);
     chunks.push(chunk);
     notify?.();
+    copied.write(chunk);
   });
   stream.on('end', () => {
-    copied.end();
     closed = true;
     notify?.();
+    copied.end();
   });
-  let prefetchedLines: string[] = [];
-  let headSent = false;
-  let closedSent = false;
-  const inject = new Transform({
-    transform(chunk, encoding, callback) {
-      if (encoding !== ('buffer' as any)) {
-        throw new Error('Unknown encoding');
-      }
-      if (!headSent) {
-        let data: string = chunk.toString();
-        const matchPrefetched = data.match(
-          // HACK This is very brittle
-          /(.*)<script>\nglobalThis\.__WAKU_PREFETCHED__ = {\n(.*?)\n};(.*)/s,
-        );
-        if (matchPrefetched) {
-          prefetchedLines = matchPrefetched[2]!.split('\n');
-          data = matchPrefetched[1] + '<script>\n' + matchPrefetched[3];
-        }
-        const closingHeadIndex = data.indexOf('</head>');
-        if (closingHeadIndex >= 0) {
-          headSent = true;
-          data =
-            data.slice(0, closingHeadIndex) +
-            `
+  const modifyHead = (data: string) => {
+    const matchPrefetched = data.match(
+      // HACK This is very brittle
+      /(.*)<script>\nglobalThis\.__WAKU_PREFETCHED__ = {\n(.*?)\n};(.*)/s,
+    );
+    let prefetchedLines: string[] = [];
+    if (matchPrefetched) {
+      prefetchedLines = matchPrefetched[2]!.split('\n');
+      data = matchPrefetched[1] + '<script>\n' + matchPrefetched[3];
+    }
+    const closingHeadIndex = data.indexOf('</head>');
+    if (closingHeadIndex === -1) {
+      throw new Error('closing head not found');
+    }
+    data =
+      data.slice(0, closingHeadIndex) +
+      `
 <script>
 globalThis.__WAKU_PREFETCHED__ = {
 ${prefetchedLines
@@ -170,8 +155,32 @@ ${prefetchedLines
 globalThis.__WAKU_SSR_ENABLED__ = true;
 </script>
 ` +
-            data.slice(closingHeadIndex);
-          callback(null, Buffer.from(data));
+      data.slice(closingHeadIndex);
+    return data;
+  };
+  const interleave = (
+    preamble: string,
+    intermediate: string,
+    postamble: string,
+  ) => {
+    let preambleSent = false;
+    let closedSent = false;
+    return new Transform({
+      transform(chunk, encoding, callback) {
+        if (encoding !== ('buffer' as any)) {
+          throw new Error('Unknown encoding');
+        }
+        if (!preambleSent) {
+          const data = chunk.toString();
+          preambleSent = true;
+          callback(
+            null,
+            Buffer.concat([
+              Buffer.from(modifyHead(preamble)),
+              Buffer.from(data),
+              Buffer.from(intermediate),
+            ]),
+          );
           notify = () => {
             const scripts = chunks.splice(0).map((chunk) =>
               Buffer.from(`
@@ -188,71 +197,31 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
           };
           notify();
           return;
-        } else if (matchPrefetched) {
-          callback(null, Buffer.from(data));
-          return;
         }
-      }
-      callback(null, chunk);
-    },
-    final(callback) {
-      if (!closedSent) {
-        const notifyOrig = notify;
-        notify = () => {
-          notifyOrig?.();
-          if (closedSent) {
-            callback();
-          }
-        };
-      } else {
-        callback();
-      }
-    },
-  });
-  return [copied, inject] as const;
-};
-
-const interleaveHtmlSnippets = (
-  preamble: string,
-  intermediate: string,
-  postamble: string,
-) => {
-  let preambleSent = false;
-  return new Transform({
-    transform(chunk, encoding, callback) {
-      if (encoding !== ('buffer' as any)) {
-        throw new Error('Unknown encoding');
-      }
-      if (!preambleSent) {
-        const data = chunk.toString();
-        preambleSent = true;
-        callback(
-          null,
-          Buffer.concat([
-            Buffer.from(preamble),
-            Buffer.from(data),
-            Buffer.from(intermediate),
-          ]),
-        );
-        return;
-      }
-      callback(null, chunk);
-    },
-    final(callback) {
-      if (!preambleSent) {
-        this.push(
-          Buffer.concat([
-            Buffer.from(preamble),
-            Buffer.from(intermediate),
-            Buffer.from(postamble),
-          ]),
-        );
-      } else {
-        this.push(Buffer.from(postamble));
-      }
-      callback();
-    },
-  });
+        callback(null, chunk);
+      },
+      final(callback) {
+        if (!preambleSent) {
+          this.push(Buffer.from(preamble));
+          this.push(Buffer.from(intermediate));
+        }
+        if (!closedSent) {
+          const notifyOrig = notify;
+          notify = () => {
+            notifyOrig?.();
+            if (closedSent) {
+              this.push(Buffer.from(postamble));
+              callback();
+            }
+          };
+        } else {
+          this.push(Buffer.from(postamble));
+          callback();
+        }
+      },
+    });
+  };
+  return [copied, interleave] as const;
 };
 
 // HACK for now, do we want to use HTML parser?
@@ -289,6 +258,7 @@ export const renderHtml = async <Context>(
   const entriesFile = getEntriesFile(config, command);
   const {
     default: { getSsrConfig },
+    resolveClientPath,
   } = await (loadServerFile(entriesFile, command) as Promise<Entries>);
   const ssrConfig = await getSsrConfig?.(pathStr);
   if (!ssrConfig) {
@@ -323,29 +293,34 @@ export const renderHtml = async <Context>(
           {
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
-              if (command !== 'dev') {
-                return {
-                  specifier: path.join(config.rootDir, config.distDir, file),
-                  name,
-                };
+              if (command === 'dev') {
+                const f = file.startsWith('@fs/')
+                  ? file.slice(3)
+                  : path.join(config.rootDir, config.srcDir, file);
+                return { specifier: transpile!(f, name), name };
               }
-              // command === "dev"
-              const f = file.startsWith('@fs/')
-                ? file.slice(3)
-                : path.join(config.rootDir, config.srcDir, file);
-              return { specifier: transpile!(f, name), name };
+              const origFile = resolveClientPath?.(
+                path.join(config.rootDir, config.distDir, file),
+                true,
+              );
+              if (
+                !origFile?.startsWith(path.join(config.rootDir, config.srcDir))
+              ) {
+                return { specifier: origFile, name };
+              }
+              return {
+                specifier: path.join(config.rootDir, config.distDir, file),
+                name,
+              };
             },
           },
         );
       },
     },
   );
-  const [copied, inject] = injectRscPayload(pipeable, ssrConfig.input);
+  const [copied, interleave] = injectRscPayload(pipeable, ssrConfig.input);
   const elements = createFromNodeStream(copied, { moduleMap });
-  const { ServerRoot } = await loadServerFile(
-    getWakuClientFile(config, command),
-    command,
-  );
+  const { ServerRoot } = await loadServerFile('waku/client', command);
   const readable = renderToPipeableStream(
     createElement(ServerRoot, { elements }, ssrConfig.unstable_render()),
     {
@@ -361,7 +336,6 @@ export const renderHtml = async <Context>(
     },
   )
     .pipe(rectifyHtml())
-    .pipe(interleaveHtmlSnippets(...splitHTML(htmlStr)))
-    .pipe(inject);
+    .pipe(interleave(...splitHTML(htmlStr)));
   return [readable, nextCtx];
 };

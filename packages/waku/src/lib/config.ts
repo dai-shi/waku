@@ -51,3 +51,12 @@ export async function resolveConfig() {
   };
   return resolvedConfig;
 }
+
+export const viteInlineConfig = () => {
+  for (const file of ['vite.config.ts', 'vite.config.js']) {
+    if (fs.existsSync(file)) {
+      return { configFile: path.resolve(file) };
+    }
+  }
+  return {};
+};
