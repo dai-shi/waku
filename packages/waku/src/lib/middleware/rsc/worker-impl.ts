@@ -195,12 +195,16 @@ const getEntriesFile = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
 ) => {
-  const filePath = path.join(
-    config.rootDir,
-    command === 'dev' ? config.srcDir : config.distDir,
-    config.entriesJs,
-  );
-  return command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
+  const fileURL = url
+    .pathToFileURL(
+      path.join(
+        config.rootDir,
+        command === 'dev' ? config.srcDir : config.distDir,
+        config.entriesJs,
+      ),
+    )
+    .toString();
+  return command === 'dev' ? url.fileURLToPath(fileURL) : fileURL;
 };
 
 const resolveClientEntry = (
