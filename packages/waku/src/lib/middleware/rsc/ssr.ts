@@ -78,7 +78,10 @@ const createTranspiler = async (cleanupFns: Set<() => void>) => {
     );
     const code = `
 const { loadServerFile } = await import('${import.meta.url}');
-const { ${name} } = await loadServerFile('${filePath}', 'dev');
+const { ${name} } = await loadServerFile('${url
+      .pathToFileURL(filePath)
+      .toString()
+      .slice('file://'.length)}', 'dev');
 export { ${name} }
 `;
     fs.writeFileSync(temp, code);
