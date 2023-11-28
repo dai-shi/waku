@@ -93,6 +93,17 @@ export { ${name} }
   };
 };
 
+// FIXME this is a hack. don't know why we need this. possible Vite bug?
+const getWakuClient = async (cleanupFns: Set<() => void>) => {
+  const temp = path.resolve(
+    `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
+  );
+  const code = `export * from 'waku/client';`;
+  fs.writeFileSync(temp, code);
+  cleanupFns.add(() => fs.unlinkSync(temp));
+  return temp;
+};
+
 const getEntriesFile = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
@@ -341,7 +352,10 @@ export const renderHtml = async <Context>(
   );
   const [copied, interleave] = injectRscPayload(pipeable, ssrConfig.input);
   const elements = createFromNodeStream(copied, { moduleMap });
-  const { ServerRoot } = await loadServerFile('waku/client', command);
+  const { ServerRoot } = await loadServerFile(
+    await getWakuClient(cleanupFns),
+    command,
+  );
   const readable = renderToPipeableStream(
     createElement(ServerRoot, { elements }, ssrConfig.unstable_render()),
     {
