@@ -42,6 +42,9 @@ const getViteServer = async () => {
   const viteServer = await viteCreateServer({
     ...viteInlineConfig(),
     plugins: [nonjsResolvePlugin()],
+    ssr: {
+      external: ['waku'],
+    },
     appType: 'custom',
     server: { middlewareMode: true, hmr: { server: dummyServer } },
   });
