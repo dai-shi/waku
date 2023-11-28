@@ -1,10 +1,10 @@
-import { ConsoleMessage, test as basicTest } from "@playwright/test";
+import { ConsoleMessage, test as basicTest } from '@playwright/test';
 
 export const test = basicTest.extend({
   page: async ({ page }, use) => {
     const unexpectedErrors: RegExp[] = [
       /^You did not run Node.js with the `--conditions react-server` flag./,
-      /^\(node:14372\)/
+      /^\(node:14372\)/,
     ];
     const callback = (msg: ConsoleMessage) => {
       if (unexpectedErrors.some((re) => re.test(msg.text()))) {
@@ -12,8 +12,8 @@ export const test = basicTest.extend({
       }
       console.log(`${msg.type()}: ${msg.text()}`);
     };
-    page.on("console", callback);
+    page.on('console', callback);
     await use(page);
-    page.off("console", callback);
-  }
+    page.off('console', callback);
+  },
 });
