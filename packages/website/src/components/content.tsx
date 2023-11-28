@@ -16,28 +16,31 @@ export const Content = () => {
 const components = {
   h2: ({ children, ...rest }: any) => (
     <h2
-      className="mb-2 mt-16 text-[2.75rem] font-bold leading-none first-of-type:mt-0"
+      className="mb-2 mt-16 text-3xl font-bold leading-none first-of-type:mt-0 sm:text-[2.75rem]"
       {...rest}
     >
       {children}
     </h2>
   ),
   h3: ({ children, ...rest }: any) => (
-    <h3 className="mb-2 mt-8 text-3xl font-bold leading-none" {...rest}>
+    <h3
+      className="mb-2 mt-8 text-xl font-bold leading-none sm:text-3xl"
+      {...rest}
+    >
       {children}
     </h3>
   ),
   h4: ({ children, ...rest }: any) => (
     <h3
       {...rest}
-      className="mb-2 mt-8 text-xl font-bold uppercase leading-none tracking-wide"
+      className="mb-2 mt-8 text-lg font-bold uppercase leading-none tracking-wide sm:text-xl"
     >
       {children}
     </h3>
   ),
   p: ({ children, ...rest }: any) => (
     <p
-      className="mb-4 text-lg font-normal leading-normal text-white/60 lg:text-xl"
+      className="mb-4 text-base font-normal leading-normal text-white/60 sm:text-lg lg:text-xl"
       {...rest}
     >
       {children}
@@ -45,7 +48,7 @@ const components = {
   ),
   code: ({ children, ...rest }: any) => (
     <span
-      className="-my-0.5 inline-block rounded bg-gray-800 px-1.5 py-px font-mono text-base text-white/80"
+      className="-my-0.5 inline-block rounded bg-gray-800 px-1.5 py-px font-mono text-sm text-white/80 sm:text-base"
       {...rest}
     >
       {children}
