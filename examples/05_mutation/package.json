@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "waku dev",
+    "dev": "waku dev --with-ssr",
     "build": "waku build --with-ssr",
     "start": "waku start --with-ssr"
   },
