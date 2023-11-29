@@ -71,7 +71,7 @@ for (const { build, command } of commands) {
 
       if (os.platform() === 'win32') {
         // fixme: server action is not working on windows
-        return
+        return;
       }
       await expect(
         page.getByTestId('server-ping').getByTestId('pong'),
