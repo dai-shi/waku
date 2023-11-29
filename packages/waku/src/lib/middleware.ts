@@ -41,12 +41,11 @@ const createStreamPair = (
     write(chunk) {
       controller.enqueue(chunk);
       hasData = true;
+      callback(readable);
     },
     close() {
       controller.close();
-      if (hasData) {
-        callback(readable);
-      } else {
+      if (!hasData) {
         callback(null);
       }
     },
