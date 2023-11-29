@@ -4,5 +4,10 @@
     "outDir": "./dist/e2e",
     "types": ["node"]
   },
-  "include": ["playwright.config.base.ts", "playwright.config.ts", "./e2e"]
+  "include": ["playwright.config.base.ts", "playwright.config.ts", "./e2e"],
+  "references": [
+    {
+      "path": "./e2e/fixtures/rsc-basic/tsconfig.json"
+    }
+  ]
 }
