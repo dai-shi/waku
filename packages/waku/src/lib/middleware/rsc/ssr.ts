@@ -42,6 +42,9 @@ const getViteServer = async () => {
   const viteServer = await viteCreateServer({
     ...viteInlineConfig(),
     plugins: [nonjsResolvePlugin()],
+    ssr: {
+      external: ['waku'],
+    },
     appType: 'custom',
     server: { middlewareMode: true, hmr: { server: dummyServer } },
   });
@@ -71,7 +74,7 @@ export const loadServerFile = async (
 };
 
 // FIXME this is very hacky
-const createTranspiler = async (cleanupFns: Set<() => void>) => {
+const createTranspiler = (cleanupFns: Set<() => void>) => {
   return (filePath: string, name: string) => {
     const temp = path.resolve(
       `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
@@ -88,6 +91,17 @@ export { ${name} }
     cleanupFns.add(() => fs.unlinkSync(temp));
     return temp;
   };
+};
+
+// FIXME this is a hack. don't know why we need this. possible Vite bug?
+const getWakuClient = (cleanupFns: Set<() => void>) => {
+  const temp = path.resolve(
+    `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
+  );
+  const code = `export * from 'waku/client';`;
+  fs.writeFileSync(temp, code);
+  cleanupFns.add(() => fs.unlinkSync(temp));
+  return temp;
 };
 
 const getEntriesFile = (
@@ -287,7 +301,7 @@ export const renderHtml = async <Context>(
   const { splitHTML } = config.ssr;
   const cleanupFns = new Set<() => void>();
   const transpile =
-    command === 'dev' ? await createTranspiler(cleanupFns) : undefined;
+    command === 'dev' ? createTranspiler(cleanupFns) : undefined;
   const moduleMap = new Proxy(
     {},
     {
@@ -338,7 +352,10 @@ export const renderHtml = async <Context>(
   );
   const [copied, interleave] = injectRscPayload(pipeable, ssrConfig.input);
   const elements = createFromNodeStream(copied, { moduleMap });
-  const { ServerRoot } = await loadServerFile('waku/client', command);
+  const { ServerRoot } = await loadServerFile(
+    getWakuClient(cleanupFns),
+    command,
+  );
   const readable = renderToPipeableStream(
     createElement(ServerRoot, { elements }, ssrConfig.unstable_render()),
     {
