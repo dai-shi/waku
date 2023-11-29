@@ -1,6 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
+import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
 import { build as viteBuild } from 'vite';
@@ -293,7 +294,10 @@ const emitRscFiles = async (
             context,
             moduleIdCallback: (id) => addClientModule(input, id),
           });
-          await pipeline(readable, fs.createWriteStream(destFile));
+          await pipeline(
+            Readable.fromWeb(readable as any),
+            fs.createWriteStream(destFile),
+          );
         }
       }
     }),
@@ -361,7 +365,10 @@ const emitHtmlFiles = async (
           ssr && (await renderHtml(config, 'build', pathStr, htmlStr, context));
         if (htmlResult) {
           const [htmlReadable] = htmlResult;
-          await pipeline(htmlReadable, fs.createWriteStream(destFile));
+          await pipeline(
+            Readable.fromWeb(htmlReadable as any),
+            fs.createWriteStream(destFile),
+          );
         } else {
           fs.writeFileSync(destFile, htmlStr);
         }
