@@ -10,7 +10,7 @@ import { Server } from 'node:http';
 import { createElement } from 'react';
 import RDServer from 'react-dom/server';
 import RSDWClient from 'react-server-dom-webpack/client.node.unbundled';
-import { normalizePath, type ViteDevServer } from 'vite';
+import type { ViteDevServer } from 'vite';
 
 import { resolveConfig, viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';

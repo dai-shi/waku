@@ -40,7 +40,6 @@ export function rsc<Context>(options: {
     if (lastViteServer) {
       return lastViteServer;
     }
-    const config = await configPromise;
     const { createServer: viteCreateServer } = await import('vite');
     const { default: viteReact } = await import('@vitejs/plugin-react');
     const { rscIndexPlugin } = await import(
