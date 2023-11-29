@@ -189,7 +189,6 @@ export function rsc<Context>(options: {
       const fname = pathStr.startsWith(config.basePath + '@fs/')
         ? pathStr.slice(config.basePath.length + 3)
         : path.join(vite.config.root, pathStr);
-      console.log('fname', fname);
       for (const item of vite.moduleGraph.idToModuleMap.values()) {
         if (
           item.file === fname &&

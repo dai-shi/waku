@@ -67,14 +67,12 @@ export const loadServerFile = async (
     return import(fname);
   }
   const vite = await getViteServer();
-  console.log('fname', fname);
   return vite.ssrLoadModule(fname);
 };
 
 // FIXME this is very hacky
 const createTranspiler = async (cleanupFns: Set<() => void>) => {
   return (filePath: string, name: string) => {
-    console.log('createTranspiler', filePath);
     const temp = path.resolve(
       `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
     );
@@ -298,7 +296,6 @@ export const renderHtml = async <Context>(
           {},
           {
             get(_target, name: string) {
-              console.log('moduleMap', _filePath);
               if (command === 'dev') {
                 const filePath = _filePath.startsWith('/@fs/')
                   ? _filePath.slice(4)
@@ -311,7 +308,6 @@ export const renderHtml = async <Context>(
                   name,
                 };
               }
-              console.log('origFile', normalizePath(_filePath));
               const origFile = resolveClientPath?.(
                 path.join(config.rootDir, config.distDir, _filePath),
                 true,

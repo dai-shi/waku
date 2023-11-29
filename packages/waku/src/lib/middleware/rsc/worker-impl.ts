@@ -226,7 +226,6 @@ const resolveClientEntry = (
       );
     }
   }
-  console.log('/@id' + config.basePath + path.relative(root, filePath));
   return (
     (command === 'dev' ? '/@id' : '') +
     config.basePath +
