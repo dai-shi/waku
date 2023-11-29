@@ -74,7 +74,7 @@ export const loadServerFile = async (
 };
 
 // FIXME this is very hacky
-const createTranspiler = async (cleanupFns: Set<() => void>) => {
+const createTranspiler = (cleanupFns: Set<() => void>) => {
   return (filePath: string, name: string) => {
     const temp = path.resolve(
       `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
@@ -94,7 +94,7 @@ export { ${name} }
 };
 
 // FIXME this is a hack. don't know why we need this. possible Vite bug?
-const getWakuClient = async (cleanupFns: Set<() => void>) => {
+const getWakuClient = (cleanupFns: Set<() => void>) => {
   const temp = path.resolve(
     `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
   );
@@ -301,7 +301,7 @@ export const renderHtml = async <Context>(
   const { splitHTML } = config.ssr;
   const cleanupFns = new Set<() => void>();
   const transpile =
-    command === 'dev' ? await createTranspiler(cleanupFns) : undefined;
+    command === 'dev' ? createTranspiler(cleanupFns) : undefined;
   const moduleMap = new Proxy(
     {},
     {
@@ -353,7 +353,7 @@ export const renderHtml = async <Context>(
   const [copied, interleave] = injectRscPayload(pipeable, ssrConfig.input);
   const elements = createFromNodeStream(copied, { moduleMap });
   const { ServerRoot } = await loadServerFile(
-    await getWakuClient(cleanupFns),
+    getWakuClient(cleanupFns),
     command,
   );
   const readable = renderToPipeableStream(
