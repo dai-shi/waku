@@ -9,6 +9,7 @@ import { Buffer } from 'node:buffer';
 import type { ReactNode } from 'react';
 import RSDWServer from 'react-server-dom-webpack/server';
 import busboy from 'busboy';
+import { normalizePath } from 'vite';
 import type { ViteDevServer } from 'vite';
 
 import { resolveConfig, viteInlineConfig } from '../../config.js';
@@ -214,13 +215,7 @@ const resolveClientEntry = (
   }
   filePath = resolveClientPath?.(filePath) || filePath;
   let root = path.join(config.rootDir, command === 'dev' ? '' : config.distDir);
-  if (path.sep !== '/') {
-    // HACK to support windows filesystem
-    root = root.replaceAll(path.sep, '/');
-    if (filePath[0] === '/') {
-      filePath = filePath.slice(1);
-    }
-  }
+  root = normalizePath(root);
   if (!filePath.startsWith(root)) {
     if (command === 'dev') {
       // HACK this relies on Vite's internal implementation detail.
@@ -231,7 +226,12 @@ const resolveClientEntry = (
       );
     }
   }
-  return config.basePath + path.relative(root, filePath);
+  console.log('/@id' + config.basePath + path.relative(root, filePath));
+  return (
+    (command === 'dev' ? '/@id' : '') +
+    config.basePath +
+    path.relative(root, filePath)
+  );
 };
 
 // HACK Patching stream is very fragile.

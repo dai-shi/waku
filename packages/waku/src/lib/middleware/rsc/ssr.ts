@@ -10,7 +10,7 @@ import { Server } from 'node:http';
 import { createElement } from 'react';
 import RDServer from 'react-dom/server';
 import RSDWClient from 'react-server-dom-webpack/client.node.unbundled';
-import type { ViteDevServer } from 'vite';
+import { normalizePath, type ViteDevServer } from 'vite';
 
 import { resolveConfig, viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
@@ -67,12 +67,14 @@ export const loadServerFile = async (
     return import(fname);
   }
   const vite = await getViteServer();
+  console.log('fname', fname);
   return vite.ssrLoadModule(fname);
 };
 
 // FIXME this is very hacky
 const createTranspiler = async (cleanupFns: Set<() => void>) => {
   return (filePath: string, name: string) => {
+    console.log('createTranspiler', filePath);
     const temp = path.resolve(
       `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
     );
@@ -291,16 +293,16 @@ export const renderHtml = async <Context>(
   const moduleMap = new Proxy(
     {},
     {
-      get(_target, filePath: string) {
+      get(_target, _filePath: string) {
         return new Proxy(
           {},
           {
             get(_target, name: string) {
-              const file = filePath.slice(config.basePath.length);
+              console.log('moduleMap', _filePath);
               if (command === 'dev') {
-                const filePath = file.startsWith('@fs/')
-                  ? file.slice(3)
-                  : path.join(config.rootDir, file);
+                const filePath = _filePath.startsWith('/@fs/')
+                  ? _filePath.slice(4)
+                  : _filePath;
                 const specifier = url
                   .pathToFileURL(transpile!(filePath, name))
                   .toString();
@@ -309,8 +311,9 @@ export const renderHtml = async <Context>(
                   name,
                 };
               }
+              console.log('origFile', normalizePath(_filePath));
               const origFile = resolveClientPath?.(
-                path.join(config.rootDir, config.distDir, file),
+                path.join(config.rootDir, config.distDir, _filePath),
                 true,
               );
               if (
@@ -325,7 +328,7 @@ export const renderHtml = async <Context>(
               return {
                 specifier: url
                   .pathToFileURL(
-                    path.join(config.rootDir, config.distDir, file),
+                    path.join(config.rootDir, config.distDir, _filePath),
                   )
                   .toString(),
                 name,
