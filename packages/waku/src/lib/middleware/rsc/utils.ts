@@ -1,3 +1,5 @@
+// This file should not include Node specific code.
+
 export const encodeInput = (input: string) => {
   if (input === '') {
     return '_';
@@ -53,4 +55,14 @@ export const deepFreeze = (x: unknown): void => {
       deepFreeze(value);
     }
   }
+};
+
+export const endStream = (stream: WritableStream, message?: string) => {
+  const writer = stream.getWriter();
+  if (message) {
+    new TextEncoder().encode(message).forEach((chunk) => {
+      writer.ready.then(() => writer.write(chunk));
+    });
+  }
+  writer.ready.then(() => writer.close());
 };
