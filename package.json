@@ -72,6 +72,7 @@
     "react-dom": "18.3.0-canary-6c7b41da3-20231123",
     "react-server-dom-webpack": "18.3.0-canary-6c7b41da3-20231123",
     "typescript": "^5.2.2",
+    "wait-port": "^1.1.0",
     "waku": "workspace:*"
   }
 }
