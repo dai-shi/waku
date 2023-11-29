@@ -141,10 +141,6 @@ export function renderRSC<Context>(
         if (!started) {
           throw new Error('not yet started');
         }
-        console.log(
-          'mesg.buf',
-          Buffer.from(mesg.buf, mesg.offset, mesg.len).toString(),
-        );
         passthrough.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
       } else if (mesg.type === 'moduleId') {
         rr.moduleIdCallback?.(mesg.moduleId);

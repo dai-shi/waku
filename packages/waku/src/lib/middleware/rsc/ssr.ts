@@ -336,7 +336,6 @@ export const renderHtml = async <Context>(
       },
     },
   );
-  console.log('input', ssrConfig.input);
   const [copied, interleave] = injectRscPayload(pipeable, ssrConfig.input);
   const elements = createFromNodeStream(copied, { moduleMap });
   const { ServerRoot } = await loadServerFile('waku/client', command);
