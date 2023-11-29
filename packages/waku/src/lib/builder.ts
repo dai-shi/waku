@@ -312,6 +312,7 @@ const emitHtmlFiles = async (
     config.rootDir,
     config.distDir,
     config.publicDir,
+    config.srcDir,
     config.indexHtml,
   );
   const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
