@@ -3,5 +3,5 @@ import { config } from './playwright.config.base.js';
 
 export default defineConfig({
   ...config,
-  testDir: './e2e'
+  testDir: './e2e',
 });
