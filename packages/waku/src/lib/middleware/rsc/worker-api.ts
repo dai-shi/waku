@@ -104,16 +104,20 @@ export function renderRSC<Context>(
           result = await reader.read();
           if (result.value) {
             const buf = result.value;
-            if (!(buf instanceof ArrayBuffer)) {
-              throw new Error('Expected ArrayBuffer');
+            let mesg: MessageReq;
+            if (buf instanceof ArrayBuffer) {
+              mesg = { id, type: 'buf', buf, offset: 0, len: buf.byteLength };
+            } else if (buf instanceof Uint8Array) {
+              mesg = {
+                id,
+                type: 'buf',
+                buf: buf.buffer,
+                offset: buf.byteOffset,
+                len: buf.byteLength,
+              };
+            } else {
+              throw new Error('Unexepected buffer type');
             }
-            const mesg: MessageReq = {
-              id,
-              type: 'buf',
-              buf,
-              offset: 0,
-              len: buf.byteLength,
-            };
             worker.postMessage(mesg, [mesg.buf]);
           }
         } while (!result.done);

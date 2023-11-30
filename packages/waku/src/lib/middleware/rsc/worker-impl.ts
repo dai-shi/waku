@@ -356,7 +356,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
       async () => {
         const data = await (mod[name!] || mod)(...args);
         return renderToPipeableStream(
-          { ...(await elements), _value: data },
+          elements.then((resolved) => ({ ...resolved, _value: data })),
           bundlerConfig,
         ).pipe(transformRsfId(config.rootDir));
       },

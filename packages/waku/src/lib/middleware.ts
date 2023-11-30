@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 
 export type ReqObject = {
   stream: ReadableStream;
-  url: string; // Full URL like "https://example.com/foo/bar"
+  url: string; // Full URL like "https://example.com/foo/bar?baz=qux"
   method: string;
   headers: Record<string, string | string[] | undefined>;
 };
@@ -55,7 +55,7 @@ const createStreamPair = (
   return writable;
 };
 
-export function honoMiddleware(
+export function honoWrapper(
   m: Middleware<ReqObject, ResObject>,
 ): MiddlewareHandler {
   return (c, next) =>
@@ -80,7 +80,7 @@ export function honoMiddleware(
     });
 }
 
-export function connectMiddleware(m: Middleware<ReqObject, ResObject>) {
+export function connectWrapper(m: Middleware<ReqObject, ResObject>) {
   return async (
     connectReq: IncomingMessage,
     connectRes: ServerResponse,

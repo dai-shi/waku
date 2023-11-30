@@ -54,10 +54,10 @@ if (values.version) {
 
 async function runDev(options: { ssr: boolean }) {
   const { Hono } = await import('hono');
-  const { honoMiddleware } = await import('./lib/middleware.js');
+  const { honoWrapper } = await import('./lib/middleware.js');
   const { rsc } = await import('./lib/middleware/rsc.js');
   const app = new Hono();
-  app.use('*', honoMiddleware(rsc({ command: 'dev', ssr: options.ssr })));
+  app.use('*', honoWrapper(rsc({ command: 'dev', ssr: options.ssr })));
   const port = parseInt(process.env.PORT || '3000', 10);
   startServer(app, port);
 }
@@ -72,10 +72,10 @@ async function runStart(options: { ssr: boolean }) {
   const { serveStatic } = await import('@hono/node-server/serve-static');
   const { resolveConfig } = await import('./lib/config.js');
   const config = await resolveConfig();
-  const { honoMiddleware } = await import('./lib/middleware.js');
+  const { honoWrapper } = await import('./lib/middleware.js');
   const { rsc } = await import('./lib/middleware/rsc.js');
   const app = new Hono();
-  app.use('*', honoMiddleware(rsc({ command: 'start', ssr: options.ssr })));
+  app.use('*', honoWrapper(rsc({ command: 'start', ssr: options.ssr })));
   app.use(
     '*',
     serveStatic({
