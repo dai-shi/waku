@@ -28,7 +28,6 @@ if (IS_NODE_20) {
     default: { register },
   } = await import('node:module');
   register('waku/node-loader', url.pathToFileURL('./'));
-  register('react-server-dom-webpack/node-loader', url.pathToFileURL('./'));
 }
 
 type Entries = {
