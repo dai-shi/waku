@@ -1,8 +1,9 @@
-import { test, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
 import os from 'node:os';
+import { test } from './utils.js';
 
 const waku = fileURLToPath(
   new URL('../packages/waku/dist/cli.js', import.meta.url),
