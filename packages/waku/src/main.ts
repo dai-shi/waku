@@ -1,4 +1,4 @@
-export { connectMiddleware, honoMiddleware } from './lib/middleware.js';
+export { honoWrapper, connectWrapper } from './lib/middleware.js';
 export { rsc } from './lib/middleware/rsc.js';
 
 export async function build(options?: { ssr?: boolean }) {
