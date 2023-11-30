@@ -40,8 +40,10 @@ const createStreamPair = (
   const writable = new WritableStream({
     write(chunk) {
       controller.enqueue(chunk);
-      hasData = true;
-      callback(readable);
+      if (!hasData) {
+        hasData = true;
+        callback(readable);
+      }
     },
     close() {
       controller.close();
