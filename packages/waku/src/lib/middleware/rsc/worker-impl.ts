@@ -244,7 +244,7 @@ const transformRsfId = (prefixToRemove: string) =>
       for (let i = 0; i < lines.length; ++i) {
         const match = lines[i].match(
           new RegExp(
-            `^([0-9]+):{"id":"(?:file:///)?${prefixToRemove}(.*?)"(.*)$`,
+            `^([0-9]+):{"id":"(?:file://?/)?${prefixToRemove}(.*?)"(.*)$`,
           ),
         );
         if (match) {
@@ -291,7 +291,9 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split('#') as [string, string];
         const id = resolveClientEntry(
-          filePath.startsWith('file:///') ? url.fileURLToPath(filePath) : filePath,
+          filePath.startsWith('file:///')
+            ? url.fileURLToPath(filePath)
+            : filePath,
           config,
           rr.command,
           resolveClientPath,
