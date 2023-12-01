@@ -26,7 +26,7 @@ declare module 'react-server-dom-webpack/node-loader';
 declare module 'react-server-dom-webpack/server'; // TODO
 declare module 'react-server-dom-webpack/server.node.unbundled'; // TODO
 
-declare module 'react-server-dom-webpack/client.browser' {
+declare module 'react-server-dom-webpack/client' {
   export function createFromFetch<T>(
     promiseForResponse: Promise<Response>,
     options?: Options,

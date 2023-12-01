@@ -12,7 +12,7 @@ import {
   startTransition,
 } from 'react';
 import type { ReactNode } from 'react';
-import RSDWClient from 'react-server-dom-webpack/client.browser';
+import RSDWClient from 'react-server-dom-webpack/client';
 import { encodeInput } from './lib/middleware/rsc/utils.js';
 
 const { createFromFetch, encodeReply } = RSDWClient;
