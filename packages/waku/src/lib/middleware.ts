@@ -1,4 +1,4 @@
-import type { MiddlewareHandler } from 'hono';
+import type { MiddlewareHandler, Context, Env, Input } from 'hono';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 export type ReqObject = {
@@ -55,39 +55,54 @@ const createStreamPair = (
   return writable;
 };
 
-export function honoWrapper(
-  m: Middleware<ReqObject, ResObject>,
-): MiddlewareHandler {
+export function honoWrapper<
+  // FIXME type defaults are weird
+  E extends Env = never,
+  P extends string = string,
+  I extends Input = Record<string, never>,
+>(
+  m: Middleware<
+    ReqObject & { c: Context<E, P, I> },
+    ResObject & { c: Context<E, P, I> }
+  >,
+): MiddlewareHandler<E, P, I> {
   return (c, next) =>
     new Promise((resolve) => {
-      const req: ReqObject = {
+      const req: ReqObject & { c: Context<E, P, I> } = {
         stream: c.req.raw.body || createEmptyReadableStream(),
         method: c.req.method,
         url: c.req.url,
         headers: Object.fromEntries(
           Array.from(c.req.raw.headers.entries()).map(([k, v]) => [k, v]),
         ),
+        c,
       };
       const writable = createStreamPair((readable) => {
         resolve(c.body(readable));
       });
-      const res: ResObject = {
+      const res: ResObject & { c: Context<E, P, I> } = {
         stream: writable,
         setStatus: (code) => c.status(code),
         setHeader: (name, value) => c.header(name, value),
+        c,
       };
       m(req, res, () => next().then(resolve));
     });
 }
 
-export function connectWrapper(m: Middleware<ReqObject, ResObject>) {
+export function connectWrapper(
+  m: Middleware<
+    ReqObject & { orig: IncomingMessage },
+    ResObject & { orig: ServerResponse }
+  >,
+) {
   return async (
     connectReq: IncomingMessage,
     connectRes: ServerResponse,
     next: (err?: unknown) => void,
   ) => {
     const { Readable, Writable } = await import('node:stream');
-    const req: ReqObject = {
+    const req: ReqObject & { orig: IncomingMessage } = {
       stream: Readable.toWeb(connectReq) as any,
       method: connectReq.method || '',
       url: new URL(
@@ -95,11 +110,13 @@ export function connectWrapper(m: Middleware<ReqObject, ResObject>) {
         `http://${connectReq.headers.host}`,
       ).toString(),
       headers: connectReq.headers,
+      orig: connectReq,
     };
-    const res: ResObject = {
+    const res: ResObject & { orig: ServerResponse } = {
       stream: Writable.toWeb(connectRes),
       setStatus: (code) => (connectRes.statusCode = code),
       setHeader: (name, value) => connectRes.setHeader(name, value),
+      orig: connectRes,
     };
     m(req, res, next);
   };

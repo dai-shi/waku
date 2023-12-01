@@ -2,7 +2,7 @@ import url from 'node:url';
 import path from 'node:path';
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import { rsc } from 'waku';
+import { rsc, connectWrapper } from 'waku';
 
 const withSsr = process.argv[2] === '--with-ssr';
 
@@ -14,16 +14,18 @@ const root = path.join(
 const app = express();
 app.use(cookieParser());
 app.use(
-  rsc({
-    command: 'start',
-    unstable_prehook: (req) => {
-      return { count: Number(req.cookies.count) || 0 };
-    },
-    unstable_posthook: (req, res, ctx) => {
-      res.cookie('count', String(ctx.count));
-    },
-    ssr: withSsr,
-  }),
+  connectWrapper(
+    rsc({
+      command: 'start',
+      unstable_prehook: (req) => {
+        return { count: Number(req.orig.cookies.count) || 0 };
+      },
+      unstable_posthook: (req, res, ctx) => {
+        res.orig.cookie('count', String(ctx.count));
+      },
+      ssr: withSsr,
+    }),
+  ),
 );
 app.use(express.static(path.join(root, 'public')));
 express.static.mime.default_type = '';
