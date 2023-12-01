@@ -49,14 +49,11 @@ export const fetchRSC = cache(
   ): Elements => {
     const options = {
       async callServer(actionId: string, args: unknown[]) {
-        const input = basePath + encodeInput(encodeURIComponent(actionId))
-        const response = fetch(
-          input,
-          {
-            method: 'POST',
-            body: await encodeReply(args),
-          },
-        );
+        const input = basePath + encodeInput(encodeURIComponent(actionId));
+        const response = fetch(input, {
+          method: 'POST',
+          body: await encodeReply(args),
+        });
         const data = createFromFetch(checkStatus(response), options);
         startTransition(() => {
           // FIXME this causes rerenders even if data is empty

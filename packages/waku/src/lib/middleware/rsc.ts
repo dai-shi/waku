@@ -165,7 +165,6 @@ export function rsc<Context>(options: {
       if (method !== 'GET' && method !== 'POST') {
         throw new Error(`Unsupported method '${method}'`);
       }
-      console.log('RSC', pathStr, method)
       try {
         const input = decodeInput(pathStr.slice(basePrefix.length));
         const [readable, nextCtx] = await renderRSC({

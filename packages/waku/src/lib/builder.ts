@@ -176,7 +176,9 @@ const buildServerBundle = async (
   const code = `export const resolveClientPath = (filePath, invert) => (invert ? ${JSON.stringify(
     Object.fromEntries(
       Object.entries(clientEntryFiles).map(([key, val]) => [
-        normalizePath(path.join(config.rootDir, config.distDir, 'assets', key + '.js')),
+        normalizePath(
+          path.join(config.rootDir, config.distDir, 'assets', key + '.js'),
+        ),
         val,
       ]),
     ),
@@ -184,7 +186,9 @@ const buildServerBundle = async (
     Object.fromEntries(
       Object.entries(clientEntryFiles).map(([key, val]) => [
         val,
-        normalizePath(path.join(config.rootDir, config.distDir, 'assets', key + '.js')),
+        normalizePath(
+          path.join(config.rootDir, config.distDir, 'assets', key + '.js'),
+        ),
       ]),
     ),
   )})[filePath];
@@ -279,8 +283,7 @@ const emitRscFiles = async (
           config.distDir,
           config.publicDir,
           config.rscPath,
-          // HACK to support windows filesystem
-          encodeInput(input).replaceAll('/', path.sep),
+          encodeInput(normalizePath(input)),
         );
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);

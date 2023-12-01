@@ -200,7 +200,9 @@ const getEntriesFile = (
     command === 'dev' ? config.srcDir : config.distDir,
     config.entriesJs,
   );
-  return normalizePath(url.pathToFileURL(filePath).toString());
+  return normalizePath(
+    command === 'dev' ? filePath : url.pathToFileURL(filePath).toString(),
+  );
 };
 
 const resolveClientEntry = (
@@ -209,21 +211,11 @@ const resolveClientEntry = (
   command: 'dev' | 'build' | 'start',
   resolveClientPath: Entries['resolveClientPath'],
 ) => {
-  if (filePath.startsWith('file://')) {
-    filePath = filePath.slice('file://'.length);
-  }
   filePath = resolveClientPath?.(filePath) || filePath;
   let root = path.join(
     config.rootDir,
     command === 'dev' ? config.srcDir : config.distDir,
   );
-  if (path.sep !== '/') {
-    // HACK to support windows filesystem
-    root = root.replaceAll(path.sep, '/');
-    if (filePath[0] === '/') {
-      filePath = filePath.slice(1);
-    }
-  }
   if (!filePath.startsWith(root)) {
     if (command === 'dev') {
       // HACK this relies on Vite's internal implementation detail.
@@ -252,7 +244,7 @@ const transformRsfId = (prefixToRemove: string) =>
       for (let i = 0; i < lines.length; ++i) {
         const match = lines[i].match(
           new RegExp(
-            `^([0-9]+):{"id":"(?:file://)?${prefixToRemove}(.*?)"(.*)$`,
+            `^([0-9]+):{"id":"(?:file:\/\/\/)?${prefixToRemove}(.*?)"(.*)$`,
           ),
         );
         if (match) {
@@ -297,10 +289,10 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     {},
     {
       get(_target, encodedId: string) {
-        const [filePath, name] = encodedId.split('#') as [
-          string,
-          string,
-        ];
+        let [filePath, name] = encodedId.split('#') as [string, string];
+        if (filePath.startsWith('file:///')) {
+          filePath = url.fileURLToPath(filePath);
+        }
         const id = resolveClientEntry(
           filePath,
           config,
@@ -314,7 +306,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
   );
 
   if (rr.method === 'POST') {
-    const actionId = decodeURIComponent(rr.input);
+    let actionId = decodeURIComponent(rr.input);
     let args: unknown[] = [];
     const contentType = rr.headers['content-type'];
     if (
@@ -334,8 +326,12 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
         args = await decodeReply(body);
       }
     }
-    let [fileId, name] = actionId.split('#') as [string, string]
-    const fname = url.pathToFileURL(path.join(config.rootDir, fileId)).toString();
+    const [fileId, name] = actionId.split('#') as [string, string];
+    const filePath = normalizePath(
+      path.join(config.rootDir, normalizePath(fileId)),
+    );
+    const fname =
+      rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
     const mod = await loadServerFile(fname, rr.command);
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
     const rerender = (input: string) => {
