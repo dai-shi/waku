@@ -7,7 +7,7 @@ import { Server } from 'node:http';
 import { Buffer } from 'node:buffer';
 
 import type { ReactNode } from 'react';
-import RSDWServer from 'react-server-dom-webpack/server';
+import RSDWServer from 'react-server-dom-webpack/server.node.unbundled';
 import busboy from 'busboy';
 import type { ViteDevServer } from 'vite';
 
