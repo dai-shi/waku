@@ -306,6 +306,22 @@ export const renderHtml = async <Context>(
                 const filePath = file.startsWith('@fs/')
                   ? file.slice(3)
                   : path.join(config.rootDir, config.srcDir, file);
+                // FIXME This is ugly. We need to refactor it.
+                const wakuDist = path.join(
+                  url.fileURLToPath(import.meta.url),
+                  '..',
+                  '..',
+                  '..',
+                  '..',
+                );
+                if (filePath.startsWith(wakuDist)) {
+                  return {
+                    specifier:
+                      'waku' +
+                      filePath.slice(wakuDist.length).replace(/\.\w+$/, ''),
+                    name,
+                  };
+                }
                 const specifier = url
                   .pathToFileURL(transpile!(filePath, name))
                   .toString();
@@ -314,6 +330,7 @@ export const renderHtml = async <Context>(
                   name,
                 };
               }
+              // command !== 'dev'
               const origFile = resolveClientPath?.(
                 path.join(config.rootDir, config.distDir, file),
                 true,
