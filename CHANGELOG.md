@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Changed
+- switch to hono from express (still depends on node) #165
 
 ## [0.17.1] - 2023-11-27
 ### Changed
