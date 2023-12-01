@@ -222,8 +222,6 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
           controller.enqueue(encoder.encode(intermediate));
         }
         if (!closedSent) {
-          throw new Error('we missed to send closed');
-          /*
           const notifyOrig = notify;
           notify = () => {
             notifyOrig?.();
@@ -231,7 +229,6 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
               controller.enqueue(encoder.encode(postamble));
             }
           };
-          */
         } else {
           controller.enqueue(encoder.encode(postamble));
         }
