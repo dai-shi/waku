@@ -1,7 +1,7 @@
 import path from 'node:path';
 import url from 'node:url';
 import { parentPort } from 'node:worker_threads';
-import { PassThrough, Transform, Writable } from 'node:stream';
+import { PassThrough, Readable, Transform, Writable } from 'node:stream';
 import { finished } from 'node:stream/promises';
 import { Server } from 'node:http';
 import { Buffer } from 'node:buffer';
@@ -13,11 +13,20 @@ import type { ViteDevServer } from 'vite';
 
 import { resolveConfig, viteInlineConfig } from '../../config.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
-import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
+import type {
+  MessageReq,
+  MessageRes,
+  RenderRequest as RenderRequestOrig,
+} from './worker-api.js';
 import {
   defineEntries,
   runWithAsyncLocalStorage as runWithAsyncLocalStorageOrig,
 } from '../../../server.js';
+
+// TODO this is a temporary solution
+type RenderRequest = Omit<RenderRequestOrig, 'stream'> & {
+  stream?: Readable;
+};
 
 const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
   RSDWServer;
@@ -347,7 +356,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
       async () => {
         const data = await (mod[name!] || mod)(...args);
         return renderToPipeableStream(
-          { ...(await elements), _value: data },
+          elements.then((resolved) => ({ ...resolved, _value: data })),
           bundlerConfig,
         ).pipe(transformRsfId(config.rootDir));
       },

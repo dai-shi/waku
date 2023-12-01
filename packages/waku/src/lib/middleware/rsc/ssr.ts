@@ -2,8 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import url from 'node:url';
 import crypto from 'node:crypto';
-import { PassThrough, Transform } from 'node:stream';
-import type { Readable } from 'node:stream';
+import { PassThrough, Readable, Transform } from 'node:stream';
 import { Buffer } from 'node:buffer';
 import { Server } from 'node:http';
 
@@ -122,17 +121,17 @@ Promise.resolve({
   .map((line) => line.trim())
   .join('');
 
-const injectRscPayload = (stream: Readable, input: string) => {
+const injectRscPayload = (readable: Readable, input: string) => {
   const chunks: Buffer[] = [];
   let closed = false;
   let notify: (() => void) | undefined;
   const copied = new PassThrough();
-  stream.on('data', (chunk) => {
+  readable.on('data', (chunk) => {
     chunks.push(chunk);
     notify?.();
     copied.write(chunk);
   });
-  stream.on('end', () => {
+  readable.on('end', () => {
     closed = true;
     notify?.();
     copied.end();
@@ -263,7 +262,7 @@ export const renderHtml = async <Context>(
   pathStr: string,
   htmlStr: string, // Hope stream works, but it'd be too tricky
   context: Context,
-): Promise<readonly [Readable, Context] | null> => {
+): Promise<readonly [ReadableStream, Context] | null> => {
   const entriesFile = getEntriesFile(config, command);
   const {
     default: { getSsrConfig },
@@ -273,10 +272,10 @@ export const renderHtml = async <Context>(
   if (!ssrConfig) {
     return null;
   }
-  let pipeable: Readable;
+  let stream: ReadableStream;
   let nextCtx: Context;
   try {
-    [pipeable, nextCtx] = await renderRSC({
+    [stream, nextCtx] = await renderRSC({
       input: ssrConfig.input,
       method: 'GET',
       headers: {},
@@ -358,7 +357,10 @@ export const renderHtml = async <Context>(
       },
     },
   );
-  const [copied, interleave] = injectRscPayload(pipeable, ssrConfig.input);
+  const [copied, interleave] = injectRscPayload(
+    Readable.fromWeb(stream as any),
+    ssrConfig.input,
+  );
   const elements = createFromNodeStream(copied, { moduleMap });
   const readable = renderToPipeableStream(
     createElement(
@@ -382,5 +384,5 @@ export const renderHtml = async <Context>(
   )
     .pipe(rectifyHtml())
     .pipe(interleave(...splitHTML(htmlStr)));
-  return [readable, nextCtx];
+  return [Readable.toWeb(readable) as any, nextCtx];
 };

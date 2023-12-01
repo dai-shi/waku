@@ -1,34 +1,28 @@
 import path from 'node:path';
 import fsPromises from 'node:fs/promises';
-import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ViteDevServer } from 'vite';
 
 import { resolveConfig, viteInlineConfig } from '../config.js';
 import { renderHtml } from './rsc/ssr.js';
-import { decodeInput, hasStatusCode } from './rsc/utils.js';
+import { decodeInput, hasStatusCode, endStream } from './rsc/utils.js';
 import {
   registerReloadCallback,
   registerImportCallback,
   renderRSC,
 } from './rsc/worker-api.js';
 import { patchReactRefresh } from '../vite-plugin/patch-react-refresh.js';
+import type { ReqObject, ResObject, Middleware } from './types.js';
 
-type Middleware = (
-  req: IncomingMessage,
-  res: ServerResponse,
-  next: (err?: unknown) => void,
-) => void;
-
-export function rsc<Context>(options: {
+export function rsc<
+  Context,
+  Req extends ReqObject,
+  Res extends ResObject,
+>(options: {
   command: 'dev' | 'start';
   ssr?: boolean;
-  unstable_prehook?: (req: IncomingMessage, res: ServerResponse) => Context;
-  unstable_posthook?: (
-    req: IncomingMessage,
-    res: ServerResponse,
-    ctx: Context,
-  ) => void;
-}): Middleware {
+  unstable_prehook?: (req: Req, res: Res) => Context;
+  unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
+}): Middleware<Req, Res> {
   const { command, ssr, unstable_prehook, unstable_posthook } = options;
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
@@ -121,18 +115,18 @@ export function rsc<Context>(options: {
   return async (req, res, next) => {
     const config = await configPromise;
     const basePrefix = config.basePath + config.rscPath + '/';
-    const pathStr = req.url || '';
+    const pathStr = req.url.slice(new URL(req.url).origin.length);
     const handleError = (err: unknown) => {
       if (hasStatusCode(err)) {
-        res.statusCode = err.statusCode;
+        res.setStatus(err.statusCode);
       } else {
         console.info('Cannot render RSC', err);
-        res.statusCode = 500;
+        res.setStatus(500);
       }
       if (command === 'dev') {
-        res.end(String(err));
+        endStream(res.stream, String(err));
       } else {
-        res.end();
+        endStream(res.stream);
       }
     };
     let context: Context | undefined;
@@ -151,8 +145,7 @@ export function rsc<Context>(options: {
         if (result) {
           const [readable, nextCtx] = result;
           unstable_posthook?.(req, res, nextCtx as Context);
-          readable.on('error', handleError);
-          readable.pipe(res);
+          readable.pipeTo(res.stream);
           return;
         }
       } catch (e) {
@@ -172,11 +165,10 @@ export function rsc<Context>(options: {
           headers,
           command,
           context,
-          stream: req,
+          stream: req.stream,
         });
         unstable_posthook?.(req, res, nextCtx as Context);
-        readable.on('error', handleError);
-        readable.pipe(res);
+        readable.pipeTo(res.stream);
       } catch (e) {
         handleError(e);
       }
@@ -196,12 +188,32 @@ export function rsc<Context>(options: {
           !item.url.includes('?html-proxy')
         ) {
           res.setHeader('Content-Type', 'application/javascript');
-          res.statusCode = 200;
-          res.end(`export * from "${item.url}";`, 'utf8');
+          res.setStatus(200);
+          endStream(res.stream, `export * from "${item.url}";`);
           return;
         }
       }
-      vite.middlewares(req, res, next);
+      const { Readable, Writable } = await import('node:stream');
+      const viteReq: any = Readable.fromWeb(req.stream as any);
+      viteReq.method = req.method;
+      viteReq.url = pathStr;
+      viteReq.headers = req.headers;
+      const viteRes: any = Writable.fromWeb(res.stream as any);
+      Object.defineProperty(viteRes, 'statusCode', {
+        set(code) {
+          res.setStatus(code);
+        },
+      });
+      viteRes.setHeader = (name: string, value: string) => {
+        res.setHeader(name, value);
+      };
+      viteRes.writeHead = (code: number, headers?: Record<string, string>) => {
+        res.setStatus(code);
+        for (const [name, value] of Object.entries(headers || {})) {
+          res.setHeader(name, value);
+        }
+      };
+      vite.middlewares(viteReq, viteRes, next);
       return;
     }
     next();

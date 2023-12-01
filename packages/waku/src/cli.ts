@@ -3,9 +3,7 @@
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
-import { PassThrough, Readable } from 'node:stream';
-import type { IncomingMessage, ServerResponse } from 'node:http';
-import type { Hono, MiddlewareHandler } from 'hono';
+import type { Hono } from 'hono';
 
 const require = createRequire(new URL('.', import.meta.url));
 
@@ -54,67 +52,12 @@ if (values.version) {
   }
 }
 
-type Middleware = (
-  req: IncomingMessage,
-  res: ServerResponse,
-  next: (err?: unknown) => void,
-) => void;
-
-const wrap =
-  (m: Middleware): MiddlewareHandler =>
-  (c, next) =>
-    new Promise((resolve) => {
-      let req: any; // HACK
-      if (c.req.raw.body) {
-        req = Readable.fromWeb(c.req.raw.body as any);
-      } else {
-        req = new PassThrough();
-        req.end();
-      }
-      req.method = c.req.method;
-      // TODO we should support full URL string in our middleware
-      req.url = c.req.url.slice(new URL(c.req.url).origin.length);
-      req.headers = Object.fromEntries(
-        Array.from(c.req.raw.headers.entries()).map(([k, v]) => [k, v]),
-      );
-      const res = new PassThrough() as any; // HACK
-      const stream = Readable.toWeb(res) as any;
-      let resolved = false;
-      res.on('data', () => {
-        if (!resolved) {
-          resolved = true;
-          resolve(c.body(stream));
-        }
-      });
-      res.on('close', () => {
-        if (!resolved) {
-          resolved = true;
-          resolve(c.body(null));
-        }
-      });
-      Object.defineProperty(res, 'statusCode', {
-        set(code) {
-          c.status(code);
-        },
-      });
-      res.getHeader = (name: string) => c.res.headers.get(name);
-      res.setHeader = (name: string, value: string) => {
-        c.header(name, value);
-      };
-      res.writeHead = (code: number, headers?: Record<string, string>) => {
-        c.status(code);
-        for (const [name, value] of Object.entries(headers || {})) {
-          c.header(name, value);
-        }
-      };
-      m(req, res, () => next().then(resolve));
-    });
-
 async function runDev(options: { ssr: boolean }) {
   const { Hono } = await import('hono');
+  const { honoWrapper } = await import('./lib/middleware/honoWrapper.js');
   const { rsc } = await import('./lib/middleware/rsc.js');
   const app = new Hono();
-  app.use('*', wrap(rsc({ command: 'dev', ssr: options.ssr })));
+  app.use('*', honoWrapper(rsc({ command: 'dev', ssr: options.ssr })));
   const port = parseInt(process.env.PORT || '3000', 10);
   startServer(app, port);
 }
@@ -129,9 +72,10 @@ async function runStart(options: { ssr: boolean }) {
   const { serveStatic } = await import('@hono/node-server/serve-static');
   const { resolveConfig } = await import('./lib/config.js');
   const config = await resolveConfig();
+  const { honoWrapper } = await import('./lib/middleware/honoWrapper.js');
   const { rsc } = await import('./lib/middleware/rsc.js');
   const app = new Hono();
-  app.use('*', wrap(rsc({ command: 'start', ssr: options.ssr })));
+  app.use('*', honoWrapper(rsc({ command: 'start', ssr: options.ssr })));
   app.use(
     '*',
     serveStatic({

@@ -1,6 +1,3 @@
-import { PassThrough } from 'node:stream';
-import type { Readable } from 'node:stream';
-import { Buffer } from 'node:buffer';
 import { Worker } from 'node:worker_threads';
 
 import type { GetBuildConfig } from '../../../server.js';
@@ -11,7 +8,7 @@ export type RenderRequest = {
   headers: Record<string, string | string[] | undefined>;
   command: 'dev' | 'build' | 'start';
   context: unknown;
-  stream?: Readable;
+  stream?: ReadableStream;
   moduleIdCallback?: (id: string) => void;
 };
 
@@ -96,23 +93,36 @@ let nextId = 1;
 
 export function renderRSC<Context>(
   rr: RenderRequest,
-): Promise<readonly [Readable, Context]> {
+): Promise<readonly [ReadableStream, Context]> {
   const id = nextId++;
   const pipe = async () => {
     if (rr.stream) {
-      rr.stream.on('error', (err: unknown) => {
+      const reader = rr.stream.getReader();
+      try {
+        let result: ReadableStreamReadResult<unknown>;
+        do {
+          result = await reader.read();
+          if (result.value) {
+            const buf = result.value;
+            let mesg: MessageReq;
+            if (buf instanceof ArrayBuffer) {
+              mesg = { id, type: 'buf', buf, offset: 0, len: buf.byteLength };
+            } else if (buf instanceof Uint8Array) {
+              mesg = {
+                id,
+                type: 'buf',
+                buf: buf.buffer,
+                offset: buf.byteOffset,
+                len: buf.byteLength,
+              };
+            } else {
+              throw new Error('Unexepected buffer type');
+            }
+            worker.postMessage(mesg, [mesg.buf]);
+          }
+        } while (!result.done);
+      } catch (err) {
         const mesg: MessageReq = { id, type: 'err', err };
-        worker.postMessage(mesg);
-      });
-      for await (const chunk of rr.stream) {
-        const buffer: Buffer = chunk;
-        const mesg: MessageReq = {
-          id,
-          type: 'buf',
-          buf: buffer.buffer,
-          offset: buffer.byteOffset,
-          len: buffer.length,
-        };
         worker.postMessage(mesg);
       }
     }
@@ -121,12 +131,17 @@ export function renderRSC<Context>(
   };
   let started = false;
   return new Promise((resolve, reject) => {
-    const passthrough = new PassThrough();
+    let controller: ReadableStreamDefaultController<Uint8Array>;
+    const stream = new ReadableStream({
+      start(c) {
+        controller = c;
+      },
+    });
     messageCallbacks.set(id, (mesg) => {
       if (mesg.type === 'start') {
         if (!started) {
           started = true;
-          resolve([passthrough, mesg.context as Context]);
+          resolve([stream, mesg.context as Context]);
         } else {
           throw new Error('already started');
         }
@@ -134,14 +149,14 @@ export function renderRSC<Context>(
         if (!started) {
           throw new Error('not yet started');
         }
-        passthrough.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
+        controller.enqueue(new Uint8Array(mesg.buf, mesg.offset, mesg.len));
       } else if (mesg.type === 'moduleId') {
         rr.moduleIdCallback?.(mesg.moduleId);
       } else if (mesg.type === 'end') {
         if (!started) {
           throw new Error('not yet started');
         }
-        passthrough.end();
+        controller.close();
         messageCallbacks.delete(id);
       } else if (mesg.type === 'err') {
         const err =
@@ -152,7 +167,7 @@ export function renderRSC<Context>(
         if (!started) {
           reject(err);
         } else {
-          passthrough.destroy(err);
+          controller.error(err);
         }
         messageCallbacks.delete(id);
       }
