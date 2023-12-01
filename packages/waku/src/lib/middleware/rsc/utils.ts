@@ -66,3 +66,14 @@ export const endStream = (stream: WritableStream, message?: string) => {
   }
   writer.ready.then(() => writer.close());
 };
+
+export const concatUint8Arrays = (arrs: Uint8Array[]): Uint8Array => {
+  const len = arrs.reduce((acc, arr) => acc + arr.length, 0);
+  const array = new Uint8Array(len);
+  let offset = 0;
+  for (const arr of arrs) {
+    array.set(arr, offset);
+    offset += arr.length;
+  }
+  return array;
+};
