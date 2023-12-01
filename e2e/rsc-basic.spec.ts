@@ -2,7 +2,6 @@ import { expect } from '@playwright/test';
 import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
-import os from 'node:os';
 import { test } from './utils.js';
 
 const waku = fileURLToPath(
