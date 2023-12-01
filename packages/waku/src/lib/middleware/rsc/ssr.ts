@@ -2,14 +2,12 @@ import path from 'node:path';
 import fs from 'node:fs';
 import url from 'node:url';
 import crypto from 'node:crypto';
-import { PassThrough, Readable, Transform } from 'node:stream';
-import { Buffer } from 'node:buffer';
 import { Server } from 'node:http';
 
 import { createElement } from 'react';
-import type { FunctionComponent, ComponentProps } from 'react';
-import RDServer from 'react-dom/server';
-import RSDWClient from 'react-server-dom-webpack/client.node.unbundled';
+import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
+import RDServer from 'react-dom/server.edge';
+import RSDWClient from 'react-server-dom-webpack/client.edge';
 import type { ViteDevServer } from 'vite';
 
 import { resolveConfig, viteInlineConfig } from '../../config.js';
@@ -18,9 +16,8 @@ import { ServerRoot } from '../../../client.js';
 import { renderRSC } from './worker-api.js';
 import { hasStatusCode } from './utils.js';
 
-// eslint-disable-next-line import/no-named-as-default-member
-const { renderToPipeableStream } = RDServer;
-const { createFromNodeStream } = RSDWClient;
+const { renderToReadableStream } = RDServer;
+const { createFromReadableStream } = RSDWClient;
 
 type Entries = {
   default: ReturnType<typeof defineEntries>;
@@ -121,21 +118,27 @@ Promise.resolve({
   .map((line) => line.trim())
   .join('');
 
-const injectRscPayload = (readable: Readable, input: string) => {
-  const chunks: Buffer[] = [];
+const injectRscPayload = (readable: ReadableStream, input: string) => {
+  const chunks: Uint8Array[] = [];
   let closed = false;
   let notify: (() => void) | undefined;
-  const copied = new PassThrough();
-  readable.on('data', (chunk) => {
-    chunks.push(chunk);
-    notify?.();
-    copied.write(chunk);
-  });
-  readable.on('end', () => {
+  const [copied1, copied2] = readable.tee();
+  const reader = copied1.getReader();
+  (async () => {
+    let result: ReadableStreamReadResult<unknown>;
+    do {
+      result = await reader.read();
+      if (result.value) {
+        if (!(result.value instanceof Uint8Array)) {
+          throw new Error('Unknown chunk type');
+        }
+        chunks.push(result.value);
+        notify?.();
+      }
+    } while (!result.done);
     closed = true;
     notify?.();
-    copied.end();
-  });
+  })();
   const modifyHead = (data: string) => {
     const matchPrefetched = data.match(
       // HACK This is very brittle
@@ -173,85 +176,81 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
   ) => {
     let preambleSent = false;
     let closedSent = false;
-    return new Transform({
-      transform(chunk, encoding, callback) {
-        if (encoding !== ('buffer' as any)) {
-          throw new Error('Unknown encoding');
+    const encoder = new TextEncoder();
+    return new TransformStream({
+      transform(chunk, controller) {
+        if (!(chunk instanceof Uint8Array)) {
+          throw new Error('Unknown chunk type');
         }
         if (!preambleSent) {
-          const data = chunk.toString();
           preambleSent = true;
-          callback(
-            null,
-            Buffer.concat([
-              Buffer.from(modifyHead(preamble)),
-              Buffer.from(data),
-              Buffer.from(intermediate),
-            ]),
-          );
+          controller.enqueue(encoder.encode(modifyHead(preamble)));
+          controller.enqueue(chunk);
+          controller.enqueue(encoder.encode(intermediate));
           notify = () => {
-            const scripts = chunks.splice(0).map((chunk) =>
-              Buffer.from(`
-<script>globalThis.__WAKU_PUSH__("${encodeURI(chunk.toString())}")</script>`),
+            const scripts = chunks.splice(0).map(
+              (chunk) =>
+                `
+<script>globalThis.__WAKU_PUSH__("${encodeURI(chunk.toString())}")</script>`,
             );
             if (closed) {
               closedSent = true;
               scripts.push(
-                Buffer.from(`
-<script>globalThis.__WAKU_PUSH__()</script>`),
+                `
+<script>globalThis.__WAKU_PUSH__()</script>`,
               );
             }
-            this.push(Buffer.concat(scripts));
+            scripts.forEach((script) => {
+              controller.enqueue(encoder.encode(script));
+            });
           };
           notify();
           return;
         }
-        callback(null, chunk);
+        controller.enqueue(chunk);
       },
-      final(callback) {
+      flush(controller) {
         if (!preambleSent) {
-          this.push(Buffer.from(preamble));
-          this.push(Buffer.from(intermediate));
+          controller.enqueue(encoder.encode(preamble));
+          controller.enqueue(encoder.encode(intermediate));
         }
         if (!closedSent) {
+          throw new Error('we missed to send closed');
+          /*
           const notifyOrig = notify;
           notify = () => {
             notifyOrig?.();
             if (closedSent) {
-              this.push(Buffer.from(postamble));
-              callback();
+              controller.enqueue(encoder.encode(postamble));
             }
           };
+          */
         } else {
-          this.push(Buffer.from(postamble));
-          callback();
+          controller.enqueue(encoder.encode(postamble));
         }
       },
     });
   };
-  return [copied, interleave] as const;
+  return [copied2, interleave] as const;
 };
 
 // HACK for now, do we want to use HTML parser?
 const rectifyHtml = () => {
-  const pending: Buffer[] = [];
-  return new Transform({
-    transform(chunk, encoding, callback) {
-      if (encoding !== ('buffer' as any)) {
-        throw new Error('Unknown encoding');
+  const pending: Uint8Array[] = [];
+  return new TransformStream({
+    transform(chunk, controller) {
+      if (!(chunk instanceof Uint8Array)) {
+        throw new Error('Unknown chunk type');
       }
       pending.push(chunk);
       if (/<\/\w+>$/.test(chunk.toString())) {
-        callback(null, Buffer.concat(pending.splice(0)));
-      } else {
-        callback();
+        pending.splice(0).forEach((chunk) => controller.enqueue(chunk));
       }
     },
-    final(callback) {
+    flush(controller) {
       if (!pending.length) {
-        this.push(Buffer.concat(pending.splice(0)));
+        pending.splice(0).forEach((chunk) => controller.enqueue(chunk));
       }
-      callback();
     },
   });
 };
@@ -292,97 +291,93 @@ export const renderHtml = async <Context>(
   const cleanupFns = new Set<() => void>();
   const transpile =
     command === 'dev' ? createTranspiler(cleanupFns) : undefined;
-  const moduleMap = new Proxy(
-    {},
-    {
-      get(_target, filePath: string) {
-        return new Proxy(
-          {},
-          {
-            get(_target, name: string) {
-              const file = filePath.slice(config.basePath.length);
-              if (command === 'dev') {
-                const filePath = file.startsWith('@fs/')
-                  ? file.slice(3)
-                  : path.join(config.rootDir, config.srcDir, file);
-                // FIXME This is ugly. We need to refactor it.
-                const wakuDist = path.join(
-                  url.fileURLToPath(import.meta.url),
-                  '..',
-                  '..',
-                  '..',
-                  '..',
-                );
-                if (filePath.startsWith(wakuDist)) {
-                  return {
-                    specifier:
-                      'waku' +
-                      filePath.slice(wakuDist.length).replace(/\.\w+$/, ''),
-                    name,
-                  };
-                }
-                const specifier = url
-                  .pathToFileURL(transpile!(filePath, name))
-                  .toString();
-                return {
-                  specifier,
-                  name,
-                };
-              }
-              // command !== 'dev'
-              const origFile = resolveClientPath?.(
-                path.join(config.rootDir, config.distDir, file),
-                true,
+  const moduleMap = new Proxy({} as Record<string, Record<string, any>>, {
+    get(_target, filePath: string) {
+      return new Proxy(
+        {},
+        {
+          get(_target, name: string) {
+            const file = filePath.slice(config.basePath.length);
+            if (command === 'dev') {
+              const filePath = file.startsWith('@fs/')
+                ? file.slice(3)
+                : path.join(config.rootDir, config.srcDir, file);
+              // FIXME This is ugly. We need to refactor it.
+              const wakuDist = path.join(
+                url.fileURLToPath(import.meta.url),
+                '..',
+                '..',
+                '..',
+                '..',
               );
-              if (
-                origFile &&
-                !origFile.startsWith(path.join(config.rootDir, config.srcDir))
-              ) {
+              if (filePath.startsWith(wakuDist)) {
                 return {
-                  specifier: url.pathToFileURL(origFile).toString(),
+                  specifier:
+                    'waku' +
+                    filePath.slice(wakuDist.length).replace(/\.\w+$/, ''),
                   name,
                 };
               }
+              const specifier = url
+                .pathToFileURL(transpile!(filePath, name))
+                .toString();
               return {
-                specifier: url
-                  .pathToFileURL(
-                    path.join(config.rootDir, config.distDir, file),
-                  )
-                  .toString(),
+                specifier,
                 name,
               };
-            },
+            }
+            // command !== 'dev'
+            const origFile = resolveClientPath?.(
+              path.join(config.rootDir, config.distDir, file),
+              true,
+            );
+            if (
+              origFile &&
+              !origFile.startsWith(path.join(config.rootDir, config.srcDir))
+            ) {
+              return {
+                specifier: url.pathToFileURL(origFile).toString(),
+                name,
+              };
+            }
+            return {
+              specifier: url
+                .pathToFileURL(path.join(config.rootDir, config.distDir, file))
+                .toString(),
+              name,
+            };
           },
-        );
-      },
+        },
+      );
     },
-  );
-  const [copied, interleave] = injectRscPayload(
-    Readable.fromWeb(stream as any),
-    ssrConfig.input,
-  );
-  const elements = createFromNodeStream(copied, { moduleMap });
-  const readable = renderToPipeableStream(
-    createElement(
-      ServerRoot as FunctionComponent<
-        Omit<ComponentProps<typeof ServerRoot>, 'children'>
-      >,
-      { elements },
-      ssrConfig.unstable_render(),
-    ),
-    {
-      onAllReady: () => {
-        cleanupFns.forEach((fn) => fn());
-        cleanupFns.clear();
+  });
+  const [copied, interleave] = injectRscPayload(stream, ssrConfig.input);
+  const elements = createFromReadableStream<Record<string, ReactNode>>(copied, {
+    ssrManifest: { moduleMap, moduleLoading: null },
+  });
+  const readable = (
+    await renderToReadableStream(
+      createElement(
+        ServerRoot as FunctionComponent<
+          Omit<ComponentProps<typeof ServerRoot>, 'children'>
+        >,
+        { elements },
+        ssrConfig.unstable_render(),
+      ),
+      {
+        onAllReady: () => {
+          cleanupFns.forEach((fn) => fn());
+          cleanupFns.clear();
+        },
+        onError(err: unknown) {
+          cleanupFns.forEach((fn) => fn());
+          cleanupFns.clear();
+          console.error(err);
+        },
       },
-      onError(err) {
-        cleanupFns.forEach((fn) => fn());
-        cleanupFns.clear();
-        console.error(err);
-      },
-    },
+    )
   )
-    .pipe(rectifyHtml())
-    .pipe(interleave(...splitHTML(htmlStr)));
-  return [Readable.toWeb(readable) as any, nextCtx];
+    .pipeThrough(rectifyHtml())
+    .pipeThrough(interleave(...splitHTML(htmlStr)));
+  return [readable, nextCtx];
 };
