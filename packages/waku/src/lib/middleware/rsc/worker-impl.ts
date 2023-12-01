@@ -200,7 +200,7 @@ const getEntriesFile = (
     command === 'dev' ? config.srcDir : config.distDir,
     config.entriesJs,
   );
-  return normalizePath(command === 'dev' ? filePath : url.pathToFileURL(filePath).toString());
+  return normalizePath(url.pathToFileURL(filePath).toString());
 };
 
 const resolveClientEntry = (
@@ -334,10 +334,8 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
         args = await decodeReply(body);
       }
     }
-    const [fileId, name] = actionId.split('#');
-    const filePath = normalizePath(path.join(config.rootDir, fileId!));
-    const fname =
-      rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
+    let [fileId, name] = actionId.split('#') as [string, string]
+    const fname = url.pathToFileURL(path.join(config.rootDir, fileId)).toString();
     const mod = await loadServerFile(fname, rr.command);
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
     const rerender = (input: string) => {
@@ -351,7 +349,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
         rerender,
       },
       async () => {
-        const data = await (mod[name!] || mod)(...args);
+        const data = await (mod[name] || mod)(...args);
         return renderToPipeableStream(
           { ...(await elements), _value: data },
           bundlerConfig,
