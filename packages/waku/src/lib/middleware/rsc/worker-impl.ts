@@ -212,7 +212,7 @@ const resolveClientEntry = (
   resolveClientPath: Entries['resolveClientPath'],
 ) => {
   filePath = resolveClientPath?.(filePath) || filePath;
-  let root = path.join(
+  const root = path.join(
     config.rootDir,
     command === 'dev' ? config.srcDir : config.distDir,
   );
@@ -244,7 +244,7 @@ const transformRsfId = (prefixToRemove: string) =>
       for (let i = 0; i < lines.length; ++i) {
         const match = lines[i].match(
           new RegExp(
-            `^([0-9]+):{"id":"(?:file:\/\/\/)?${prefixToRemove}(.*?)"(.*)$`,
+            `^([0-9]+):{"id":"(?:file:///)?${prefixToRemove}(.*?)"(.*)$`,
           ),
         );
         if (match) {
@@ -289,12 +289,9 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     {},
     {
       get(_target, encodedId: string) {
-        let [filePath, name] = encodedId.split('#') as [string, string];
-        if (filePath.startsWith('file:///')) {
-          filePath = url.fileURLToPath(filePath);
-        }
+        const [filePath, name] = encodedId.split('#') as [string, string];
         const id = resolveClientEntry(
-          filePath,
+          filePath.startsWith('file:///') ? url.fileURLToPath(filePath) : filePath,
           config,
           rr.command,
           resolveClientPath,
@@ -306,7 +303,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
   );
 
   if (rr.method === 'POST') {
-    let actionId = decodeURIComponent(rr.input);
+    const actionId = decodeURIComponent(rr.input);
     let args: unknown[] = [];
     const contentType = rr.headers['content-type'];
     if (
