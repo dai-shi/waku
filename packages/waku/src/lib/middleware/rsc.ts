@@ -166,7 +166,7 @@ export function rsc<Context>(options: {
         throw new Error(`Unsupported method '${method}'`);
       }
       try {
-        const input = decodeURI(decodeInput(pathStr.slice(basePrefix.length)));
+        const input = decodeInput(pathStr.slice(basePrefix.length));
         const [readable, nextCtx] = await renderRSC({
           input,
           method,
