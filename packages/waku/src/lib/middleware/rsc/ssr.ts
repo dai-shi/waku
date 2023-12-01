@@ -8,12 +8,14 @@ import { Buffer } from 'node:buffer';
 import { Server } from 'node:http';
 
 import { createElement } from 'react';
+import type { FunctionComponent, ComponentProps } from 'react';
 import RDServer from 'react-dom/server';
 import RSDWClient from 'react-server-dom-webpack/client.node.unbundled';
 import type { ViteDevServer } from 'vite';
 
 import { resolveConfig, viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
+import { ServerRoot } from '../../../client.js';
 import { renderRSC } from './worker-api.js';
 import { hasStatusCode } from './utils.js';
 
@@ -91,17 +93,6 @@ export { ${name} }
     cleanupFns.add(() => fs.unlinkSync(temp));
     return temp;
   };
-};
-
-// FIXME this is a hack. don't know why we need this. possible Vite bug?
-const getWakuClient = (cleanupFns: Set<() => void>) => {
-  const temp = path.resolve(
-    `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
-  );
-  const code = `export * from 'waku/client';`;
-  fs.writeFileSync(temp, code);
-  cleanupFns.add(() => fs.unlinkSync(temp));
-  return temp;
 };
 
 const getEntriesFile = (
@@ -352,12 +343,14 @@ export const renderHtml = async <Context>(
   );
   const [copied, interleave] = injectRscPayload(pipeable, ssrConfig.input);
   const elements = createFromNodeStream(copied, { moduleMap });
-  const { ServerRoot } = await loadServerFile(
-    getWakuClient(cleanupFns),
-    command,
-  );
   const readable = renderToPipeableStream(
-    createElement(ServerRoot, { elements }, ssrConfig.unstable_render()),
+    createElement(
+      ServerRoot as FunctionComponent<
+        Omit<ComponentProps<typeof ServerRoot>, 'children'>
+      >,
+      { elements },
+      ssrConfig.unstable_render(),
+    ),
     {
       onAllReady: () => {
         cleanupFns.forEach((fn) => fn());
