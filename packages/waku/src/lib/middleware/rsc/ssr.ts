@@ -1,7 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import url from 'node:url';
-import crypto from 'node:crypto';
 import { Server } from 'node:http';
 
 import { createElement } from 'react';
@@ -79,11 +78,10 @@ export const loadServerFile = async (
 };
 
 // FIXME this is very hacky
-const createTranspiler = (cleanupFns: Set<() => void>) => {
+const createTranspiler = async (cleanupFns: Set<() => void>) => {
+  const { randomBytes } = await import('node:crypto');
   return (filePath: string, name: string) => {
-    const temp = path.resolve(
-      `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
-    );
+    const temp = path.resolve(`.temp-${randomBytes(8).toString('hex')}.js`);
     const code = `
 const { loadServerFile } = await import('${import.meta.url}');
 const { ${name} } = await loadServerFile('${url
@@ -294,7 +292,7 @@ export const renderHtml = async <Context>(
   const { splitHTML } = config.ssr;
   const cleanupFns = new Set<() => void>();
   const transpile =
-    command === 'dev' ? createTranspiler(cleanupFns) : undefined;
+    command === 'dev' ? await createTranspiler(cleanupFns) : undefined;
   const moduleMap = new Proxy(
     {} as Record<
       string,
