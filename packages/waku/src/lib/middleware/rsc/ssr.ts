@@ -304,17 +304,21 @@ export const renderHtml = async <Context>(
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
-                const filePath = normalizePath(file.startsWith('@fs/')
-                  ? file.slice('@fs/'.length)
-                  : path.join(config.rootDir, config.srcDir, file));
+                const filePath = normalizePath(
+                  file.startsWith('@fs/')
+                    ? file.slice('@fs/'.length)
+                    : path.join(config.rootDir, config.srcDir, file),
+                );
                 // FIXME This is ugly. We need to refactor it.
-                const wakuDist = normalizePath(path.join(
-                  url.fileURLToPath(import.meta.url),
-                  '..',
-                  '..',
-                  '..',
-                  '..',
-                ));
+                const wakuDist = normalizePath(
+                  path.join(
+                    url.fileURLToPath(import.meta.url),
+                    '..',
+                    '..',
+                    '..',
+                    '..',
+                  ),
+                );
                 if (filePath.startsWith(wakuDist)) {
                   return {
                     specifier:

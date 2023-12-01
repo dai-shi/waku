@@ -123,7 +123,7 @@ export function rsc<Context>(options: {
     const basePrefix = config.basePath + config.rscPath + '/';
     let pathStr = req.url || '';
     if (pathStr.startsWith('/@fs/')) {
-      pathStr = pathStr.slice("/@fs/".length);
+      pathStr = pathStr.slice('/@fs/'.length);
     }
     const handleError = (err: unknown) => {
       if (hasStatusCode(err)) {
