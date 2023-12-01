@@ -244,7 +244,7 @@ const transformRsfId = (prefixToRemove: string) =>
       for (let i = 0; i < lines.length; ++i) {
         const match = lines[i].match(
           new RegExp(
-            `^([0-9]+):{"id":"(?:file://?/)?${prefixToRemove}(.*?)"(.*)$`,
+            `^([0-9]+):{"id":"(?:file:///?)?${prefixToRemove}(.*?)"(.*)$`,
           ),
         );
         if (match) {
