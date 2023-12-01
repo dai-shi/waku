@@ -222,15 +222,17 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
           throw new Error('preamble not yet sent');
         }
         if (!closed) {
-          notify = () => {
-            controller.enqueue(encoder.encode(getScripts()));
-            if (closed) {
-              controller.enqueue(encoder.encode(postamble));
-            }
-          };
-        } else {
-          controller.enqueue(encoder.encode(postamble));
+          return new Promise<void>((resolve) => {
+            notify = () => {
+              controller.enqueue(encoder.encode(getScripts()));
+              if (closed) {
+                controller.enqueue(encoder.encode(postamble));
+                resolve();
+              }
+            };
+          });
         }
+        controller.enqueue(encoder.encode(postamble));
       },
     });
   };
