@@ -1,6 +1,5 @@
 import { lazy } from 'react';
 import { defineEntries } from 'waku/server';
-import { Slot } from 'waku/client';
 
 const App = lazy(() => import('./components/App.js'));
 
@@ -21,14 +20,6 @@ export default defineEntries(
   },
   // getSsrConfig
   async (pathStr) => {
-    switch (pathStr) {
-      case '/':
-        return {
-          input: '',
-          unstable_render: () => <Slot id="App" />,
-        };
-      default:
-        return null;
-    }
+    throw new Error('SSR is should not be used in this test.');
   },
 );

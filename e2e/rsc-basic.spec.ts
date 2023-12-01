@@ -70,10 +70,6 @@ for (const { build, command } of commands) {
         page.getByTestId('client-counter').getByTestId('count'),
       ).toHaveText('2');
 
-      if (os.platform() === 'win32') {
-        // fixme: server action is not working on windows
-        return;
-      }
       await expect(
         page.getByTestId('server-ping').getByTestId('pong'),
       ).toBeEmpty();

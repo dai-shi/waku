@@ -18,6 +18,7 @@ import {
   defineEntries,
   runWithAsyncLocalStorage as runWithAsyncLocalStorageOrig,
 } from '../../../server.js';
+import { normalizePath } from 'vite';
 
 const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
   RSDWServer;
@@ -226,14 +227,16 @@ const resolveClientEntry = (
   if (!filePath.startsWith(root)) {
     if (command === 'dev') {
       // HACK this relies on Vite's internal implementation detail.
-      return config.basePath + '@fs/' + filePath.replace(/^\//, '');
+      return normalizePath(
+        config.basePath + '@fs/' + filePath.replace(/^\//, ''),
+      );
     } else {
       throw new Error(
         'Resolving client module outside root is unsupported for now',
       );
     }
   }
-  return config.basePath + path.relative(root, filePath);
+  return normalizePath(config.basePath + path.relative(root, filePath));
 };
 
 // HACK Patching stream is very fragile.
@@ -294,7 +297,10 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     {},
     {
       get(_target, encodedId: string) {
-        const [filePath, name] = encodedId.split('#') as [string, string];
+        const [filePath, name] = normalizePath(encodedId).split('#') as [
+          string,
+          string,
+        ];
         const id = resolveClientEntry(
           filePath,
           config,
@@ -329,7 +335,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
       }
     }
     const [fileId, name] = actionId.split('#');
-    const filePath = path.join(config.rootDir, fileId!);
+    const filePath = path.relative(normalizePath(config.rootDir), fileId!);
     const fname =
       rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
     const mod = await loadServerFile(fname, rr.command);
