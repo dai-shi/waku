@@ -13,7 +13,7 @@ import { resolveConfig, viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
 import { ServerRoot } from '../../../client.js';
 import { renderRSC } from './worker-api.js';
-import { hasStatusCode } from './utils.js';
+import { hasStatusCode, concatUint8Arrays } from './utils.js';
 
 const { renderToReadableStream } = RDServer;
 const { createFromReadableStream } = RSDWClient;
@@ -127,17 +127,17 @@ const injectRscPayload = (readable: ReadableStream, input: string) => {
   const chunks: Uint8Array[] = [];
   let closed = false;
   let notify: (() => void) | undefined;
-  const [copied1, copied2] = readable.tee();
-  copied1.pipeTo(
-    new WritableStream({
-      write(chunk) {
+  const copied = readable.pipeThrough(
+    new TransformStream({
+      transform(chunk, controller) {
         if (!(chunk instanceof Uint8Array)) {
           throw new Error('Unknown chunk type');
         }
         chunks.push(chunk);
         notify?.();
+        controller.enqueue(chunk);
       },
-      close() {
+      flush() {
         closed = true;
         notify?.();
       },
@@ -173,41 +173,38 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
       data.slice(closingHeadIndex);
     return data;
   };
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  const getScripts = (): string => {
+    const scripts = chunks.splice(0).map(
+      (chunk) =>
+        `
+<script>globalThis.__WAKU_PUSH__("${encodeURI(
+          decoder.decode(chunk),
+        )}")</script>`,
+    );
+    if (closed) {
+      scripts.push(
+        `
+<script>globalThis.__WAKU_PUSH__()</script>`,
+      );
+    }
+    return scripts.join('');
+  };
   const interleave = (
     preamble: string,
     intermediate: string,
     postamble: string,
   ) => {
     let preambleSent = false;
-    let closedSent = false;
-    const encoder = new TextEncoder();
     return new TransformStream({
       transform(chunk, controller) {
-        if (!(chunk instanceof Uint8Array)) {
-          throw new Error('Unknown chunk type');
-        }
         if (!preambleSent) {
           preambleSent = true;
           controller.enqueue(encoder.encode(modifyHead(preamble)));
           controller.enqueue(chunk);
           controller.enqueue(encoder.encode(intermediate));
-          notify = () => {
-            const scripts = chunks.splice(0).map(
-              (chunk) =>
-                `
-<script>globalThis.__WAKU_PUSH__("${encodeURI(chunk.toString())}")</script>`,
-            );
-            if (closed) {
-              closedSent = true;
-              scripts.push(
-                `
-<script>globalThis.__WAKU_PUSH__()</script>`,
-              );
-            }
-            scripts.forEach((script) => {
-              controller.enqueue(encoder.encode(script));
-            });
-          };
+          notify = () => controller.enqueue(encoder.encode(getScripts()));
           notify();
           return;
         }
@@ -215,42 +212,37 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
       },
       flush(controller) {
         if (!preambleSent) {
-          controller.enqueue(encoder.encode(preamble));
-          controller.enqueue(encoder.encode(intermediate));
+          throw new Error('preamble not yet sent');
         }
-        if (!closedSent) {
-          const notifyOrig = notify;
-          notify = () => {
-            notifyOrig?.();
-            if (closedSent) {
-              controller.enqueue(encoder.encode(postamble));
-            }
-          };
-        } else {
-          controller.enqueue(encoder.encode(postamble));
+        if (!closed) {
+          notify = undefined;
+          closed = true;
+          controller.enqueue(encoder.encode(getScripts()));
         }
+        controller.enqueue(encoder.encode(postamble));
       },
     });
   };
-  return [copied2, interleave] as const;
+  return [copied, interleave] as const;
 };
 
 // HACK for now, do we want to use HTML parser?
 const rectifyHtml = () => {
   const pending: Uint8Array[] = [];
+  const decoder = new TextDecoder();
   return new TransformStream({
     transform(chunk, controller) {
       if (!(chunk instanceof Uint8Array)) {
         throw new Error('Unknown chunk type');
       }
       pending.push(chunk);
-      if (/<\/\w+>$/.test(chunk.toString())) {
-        pending.splice(0).forEach((chunk) => controller.enqueue(chunk));
+      if (/<\/\w+>$/.test(decoder.decode(chunk))) {
+        controller.enqueue(concatUint8Arrays(pending.splice(0)));
       }
     },
     flush(controller) {
       if (!pending.length) {
-        pending.splice(0).forEach((chunk) => controller.enqueue(chunk));
+        controller.enqueue(concatUint8Arrays(pending.splice(0)));
       }
     },
   });
@@ -369,20 +361,11 @@ export const renderHtml = async <Context>(
         { elements },
         ssrConfig.unstable_render(),
       ),
-      {
-        onAllReady: () => {
-          cleanupFns.forEach((fn) => fn());
-          cleanupFns.clear();
-        },
-        onError(err: unknown) {
-          cleanupFns.forEach((fn) => fn());
-          cleanupFns.clear();
-          console.error(err);
-        },
-      },
     )
   )
     .pipeThrough(rectifyHtml())
     .pipeThrough(interleave(...splitHTML(htmlStr)));
+  cleanupFns.forEach((fn) => fn());
+  cleanupFns.clear();
   return [readable, nextCtx];
 };

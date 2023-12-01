@@ -52,6 +52,6 @@ declare module 'react-dom/server.edge' {
   }
   export function renderToReadableStream(
     children: ReactNode,
-    options?: RenderToReadableStreamOptions,
+    options?: Options,
   ): Promise<ReactDOMServerReadableStream>;
 }
