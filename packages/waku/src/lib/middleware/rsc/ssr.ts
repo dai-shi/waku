@@ -18,6 +18,7 @@ import { defineEntries } from '../../../server.js';
 import { ServerRoot } from '../../../client.js';
 import { renderRSC } from './worker-api.js';
 import { hasStatusCode } from './utils.js';
+import { normalizePath } from 'vite';
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { renderToPipeableStream } = RDServer;
@@ -303,17 +304,17 @@ export const renderHtml = async <Context>(
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
-                const filePath = file.startsWith('@fs/')
-                  ? file.slice(3)
-                  : path.join(config.rootDir, config.srcDir, file);
+                const filePath = normalizePath(file.startsWith('@fs/')
+                  ? file.slice('@fs/'.length)
+                  : path.join(config.rootDir, config.srcDir, file));
                 // FIXME This is ugly. We need to refactor it.
-                const wakuDist = path.join(
+                const wakuDist = normalizePath(path.join(
                   url.fileURLToPath(import.meta.url),
                   '..',
                   '..',
                   '..',
                   '..',
-                );
+                ));
                 if (filePath.startsWith(wakuDist)) {
                   return {
                     specifier:
