@@ -19,6 +19,13 @@ import { hasStatusCode } from './utils.js';
 const { renderToReadableStream } = RDServer;
 const { createFromReadableStream } = RSDWClient;
 
+// HACK for react-server-dom-webpack without webpack
+(globalThis as any).__waku_module_cache__ ||= new Map();
+(globalThis as any).__webpack_chunk_load__ ||= (id: string) =>
+  import(id).then((m) => (globalThis as any).__waku_module_cache__.set(id, m));
+(globalThis as any).__webpack_require__ ||= (id: string) =>
+  (globalThis as any).__waku_module_cache__.get(id);
+
 type Entries = {
   default: ReturnType<typeof defineEntries>;
   resolveClientPath?: (
@@ -291,66 +298,70 @@ export const renderHtml = async <Context>(
   const cleanupFns = new Set<() => void>();
   const transpile =
     command === 'dev' ? createTranspiler(cleanupFns) : undefined;
-  const moduleMap = new Proxy({} as Record<string, Record<string, any>>, {
-    get(_target, filePath: string) {
-      return new Proxy(
-        {},
+  const moduleMap = new Proxy(
+    {} as Record<
+      string,
+      Record<
+        string,
         {
-          get(_target, name: string) {
-            const file = filePath.slice(config.basePath.length);
-            if (command === 'dev') {
-              const filePath = file.startsWith('@fs/')
-                ? file.slice(3)
-                : path.join(config.rootDir, config.srcDir, file);
-              // FIXME This is ugly. We need to refactor it.
-              const wakuDist = path.join(
-                url.fileURLToPath(import.meta.url),
-                '..',
-                '..',
-                '..',
-                '..',
-              );
-              if (filePath.startsWith(wakuDist)) {
-                return {
-                  specifier:
+          id: string;
+          chunks: string[];
+          name: string;
+        }
+      >
+    >,
+    {
+      get(_target, filePath: string) {
+        return new Proxy(
+          {},
+          {
+            get(_target, name: string) {
+              const file = filePath.slice(config.basePath.length);
+              if (command === 'dev') {
+                const filePath = file.startsWith('@fs/')
+                  ? file.slice(3)
+                  : path.join(config.rootDir, config.srcDir, file);
+                // FIXME This is ugly. We need to refactor it.
+                const wakuDist = path.join(
+                  url.fileURLToPath(import.meta.url),
+                  '..',
+                  '..',
+                  '..',
+                  '..',
+                );
+                if (filePath.startsWith(wakuDist)) {
+                  const id =
                     'waku' +
-                    filePath.slice(wakuDist.length).replace(/\.\w+$/, ''),
-                  name,
-                };
+                    filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
+                  return { id, chunks: [id], name };
+                }
+                const id = url
+                  .pathToFileURL(transpile!(filePath, name))
+                  .toString();
+                return { id, chunks: [id], name };
               }
-              const specifier = url
-                .pathToFileURL(transpile!(filePath, name))
-                .toString();
-              return {
-                specifier,
-                name,
-              };
-            }
-            // command !== 'dev'
-            const origFile = resolveClientPath?.(
-              path.join(config.rootDir, config.distDir, file),
-              true,
-            );
-            if (
-              origFile &&
-              !origFile.startsWith(path.join(config.rootDir, config.srcDir))
-            ) {
-              return {
-                specifier: url.pathToFileURL(origFile).toString(),
-                name,
-              };
-            }
-            return {
-              specifier: url
+              // command !== 'dev'
+              const origFile = resolveClientPath?.(
+                path.join(config.rootDir, config.distDir, file),
+                true,
+              );
+              if (
+                origFile &&
+                !origFile.startsWith(path.join(config.rootDir, config.srcDir))
+              ) {
+                const id = url.pathToFileURL(origFile).toString();
+                return { id, chunks: [id], name };
+              }
+              const id = url
                 .pathToFileURL(path.join(config.rootDir, config.distDir, file))
-                .toString(),
-              name,
-            };
+                .toString();
+              return { id, chunks: [id], name };
+            },
           },
-        },
-      );
+        );
+      },
     },
-  });
+  );
   const [copied, interleave] = injectRscPayload(stream, ssrConfig.input);
   const elements = createFromReadableStream<Record<string, ReactNode>>(copied, {
     ssrManifest: { moduleMap, moduleLoading: null },
