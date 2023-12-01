@@ -128,22 +128,21 @@ const injectRscPayload = (readable: ReadableStream, input: string) => {
   let closed = false;
   let notify: (() => void) | undefined;
   const [copied1, copied2] = readable.tee();
-  const reader = copied1.getReader();
-  (async () => {
-    let result: ReadableStreamReadResult<unknown>;
-    do {
-      result = await reader.read();
-      if (result.value) {
-        if (!(result.value instanceof Uint8Array)) {
+  copied1.pipeTo(
+    new WritableStream({
+      write(chunk) {
+        if (!(chunk instanceof Uint8Array)) {
           throw new Error('Unknown chunk type');
         }
-        chunks.push(result.value);
+        chunks.push(chunk);
         notify?.();
-      }
-    } while (!result.done);
-    closed = true;
-    notify?.();
-  })();
+      },
+      close() {
+        closed = true;
+        notify?.();
+      },
+    }),
+  );
   const modifyHead = (data: string) => {
     const matchPrefetched = data.match(
       // HACK This is very brittle
