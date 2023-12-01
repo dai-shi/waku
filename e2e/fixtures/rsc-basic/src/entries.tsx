@@ -19,7 +19,7 @@ export default defineEntries(
     };
   },
   // getSsrConfig
-  async (pathStr) => {
+  async () => {
     throw new Error('SSR is should not be used in this test.');
   },
 );
