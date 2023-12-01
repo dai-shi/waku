@@ -54,7 +54,7 @@ if (values.version) {
 
 async function runDev(options: { ssr: boolean }) {
   const { Hono } = await import('hono');
-  const { honoWrapper } = await import('./lib/middleware.js');
+  const { honoWrapper } = await import('./lib/middleware/honoWrapper.js');
   const { rsc } = await import('./lib/middleware/rsc.js');
   const app = new Hono();
   app.use('*', honoWrapper(rsc({ command: 'dev', ssr: options.ssr })));
@@ -72,7 +72,7 @@ async function runStart(options: { ssr: boolean }) {
   const { serveStatic } = await import('@hono/node-server/serve-static');
   const { resolveConfig } = await import('./lib/config.js');
   const config = await resolveConfig();
-  const { honoWrapper } = await import('./lib/middleware.js');
+  const { honoWrapper } = await import('./lib/middleware/honoWrapper.js');
   const { rsc } = await import('./lib/middleware/rsc.js');
   const app = new Hono();
   app.use('*', honoWrapper(rsc({ command: 'start', ssr: options.ssr })));

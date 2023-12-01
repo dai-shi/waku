@@ -1,24 +1,6 @@
 import type { MiddlewareHandler, Context, Env, Input } from 'hono';
-import type { IncomingMessage, ServerResponse } from 'node:http';
 
-export type ReqObject = {
-  stream: ReadableStream;
-  url: string; // Full URL like "https://example.com/foo/bar?baz=qux"
-  method: string;
-  headers: Record<string, string | string[] | undefined>;
-};
-
-export type ResObject = {
-  stream: WritableStream;
-  setHeader: (name: string, value: string) => void;
-  setStatus: (code: number) => void;
-};
-
-export type Middleware<Req extends ReqObject, Res extends ResObject> = (
-  req: Req,
-  res: Res,
-  next: (err?: unknown) => void,
-) => void;
+import type { ReqObject, ResObject, Middleware } from './types.js';
 
 const createEmptyReadableStream = () =>
   new ReadableStream({
@@ -88,36 +70,4 @@ export function honoWrapper<
       };
       m(req, res, () => next().then(resolve));
     });
-}
-
-export function connectWrapper(
-  m: Middleware<
-    ReqObject & { orig: IncomingMessage },
-    ResObject & { orig: ServerResponse }
-  >,
-) {
-  return async (
-    connectReq: IncomingMessage,
-    connectRes: ServerResponse,
-    next: (err?: unknown) => void,
-  ) => {
-    const { Readable, Writable } = await import('node:stream');
-    const req: ReqObject & { orig: IncomingMessage } = {
-      stream: Readable.toWeb(connectReq) as any,
-      method: connectReq.method || '',
-      url: new URL(
-        connectReq.url || '',
-        `http://${connectReq.headers.host}`,
-      ).toString(),
-      headers: connectReq.headers,
-      orig: connectReq,
-    };
-    const res: ResObject & { orig: ServerResponse } = {
-      stream: Writable.toWeb(connectRes),
-      setStatus: (code) => (connectRes.statusCode = code),
-      setHeader: (name, value) => connectRes.setHeader(name, value),
-      orig: connectRes,
-    };
-    m(req, res, next);
-  };
 }

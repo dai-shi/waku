@@ -11,7 +11,7 @@ import {
   renderRSC,
 } from './rsc/worker-api.js';
 import { patchReactRefresh } from '../vite-plugin/patch-react-refresh.js';
-import type { ReqObject, ResObject, Middleware } from '../middleware.js';
+import type { ReqObject, ResObject, Middleware } from './types.js';
 
 export function rsc<
   Context,
