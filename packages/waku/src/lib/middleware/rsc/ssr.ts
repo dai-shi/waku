@@ -199,11 +199,18 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
     let preambleSent = false;
     return new TransformStream({
       transform(chunk, controller) {
+        if (!(chunk instanceof Uint8Array)) {
+          throw new Error('Unknown chunk type');
+        }
         if (!preambleSent) {
           preambleSent = true;
-          controller.enqueue(encoder.encode(modifyHead(preamble)));
-          controller.enqueue(chunk);
-          controller.enqueue(encoder.encode(intermediate));
+          controller.enqueue(
+            concatUint8Arrays([
+              encoder.encode(modifyHead(preamble)),
+              chunk,
+              encoder.encode(intermediate),
+            ]),
+          );
           notify = () => controller.enqueue(encoder.encode(getScripts()));
           notify();
           return;
