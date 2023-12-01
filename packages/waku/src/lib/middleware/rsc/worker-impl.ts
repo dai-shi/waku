@@ -335,7 +335,7 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
       }
     }
     const [fileId, name] = actionId.split('#');
-    const filePath = path.relative(normalizePath(config.rootDir), fileId!);
+    const filePath = path.join(normalizePath(config.rootDir), fileId!);
     const fname =
       rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
     const mod = await loadServerFile(fname, rr.command);
