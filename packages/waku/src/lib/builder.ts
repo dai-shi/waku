@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import { pipeline } from 'node:stream/promises';
 
-import { build as viteBuild } from 'vite';
+import { build as viteBuild, normalizePath } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
@@ -176,7 +176,7 @@ const buildServerBundle = async (
   const code = `export const resolveClientPath = (filePath, invert) => (invert ? ${JSON.stringify(
     Object.fromEntries(
       Object.entries(clientEntryFiles).map(([key, val]) => [
-        path.posix.join(config.rootDir, config.distDir, 'assets', key + '.js'),
+        normalizePath(path.join(config.rootDir, config.distDir, 'assets', key + '.js')),
         val,
       ]),
     ),
@@ -184,7 +184,7 @@ const buildServerBundle = async (
     Object.fromEntries(
       Object.entries(clientEntryFiles).map(([key, val]) => [
         val,
-        path.posix.join(config.rootDir, config.distDir, 'assets', key + '.js'),
+        normalizePath(path.join(config.rootDir, config.distDir, 'assets', key + '.js')),
       ]),
     ),
   )})[filePath];
