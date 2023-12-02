@@ -3,6 +3,7 @@ import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
 import { test } from './utils.js';
+import { rm } from 'node:fs/promises';
 
 const waku = fileURLToPath(
   new URL('../packages/waku/dist/cli.js', import.meta.url),
@@ -49,6 +50,10 @@ for (const { build, command } of commands) {
     });
 
     test.afterAll(async () => {
+      await rm(`${cwd}/dist`, {
+        recursive: true,
+        force: true,
+      });
       cp.kill();
     });
 
