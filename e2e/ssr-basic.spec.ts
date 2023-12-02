@@ -73,6 +73,8 @@ for (const { build, command } of commands) {
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
       await expect(page.getByTestId('count')).toHaveText('0');
+      await page.getByTestId('increment').click();
+      await expect(page.getByTestId('count')).toHaveText('0');
     });
   });
 }
