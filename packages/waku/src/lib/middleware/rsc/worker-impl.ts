@@ -276,6 +276,12 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
     resolveClientPath,
   } = await (loadServerFile(entriesFile, rr.command) as Promise<Entries>);
 
+  const rsfPrefix =
+    path.posix.join(
+      config.rootDir,
+      rr.command === 'dev' ? config.srcDir : config.distDir,
+    ) + '/';
+
   const render = async (input: string) => {
     const elements = await renderEntries(input);
     if (elements === null) {
@@ -307,7 +313,7 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
   );
 
   if (rr.method === 'POST') {
-    const actionId = decodeURIComponent(rr.input);
+    const rsfId = decodeURIComponent(rr.input);
     let args: unknown[] = [];
     const contentType = rr.headers['content-type'];
     let body = '';
@@ -335,8 +341,8 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
     } else if (body) {
       args = await decodeReply(body);
     }
-    const [fileId, name] = actionId.split('#');
-    const filePath = path.join(config.rootDir, fileId!);
+    const [fileId, name] = rsfId.split('#') as [string, string];
+    const filePath = fileId.startsWith('/') ? fileId : rsfPrefix + fileId;
     const fname =
       rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
     const mod = await loadServerFile(fname, rr.command);
@@ -356,7 +362,7 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
         return renderToReadableStream(
           { ...(await elements), _value: data },
           bundlerConfig,
-        ).pipeThrough(transformRsfId(config.rootDir));
+        ).pipeThrough(transformRsfId(rsfPrefix));
       },
     );
   }
@@ -371,7 +377,7 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
     async () => {
       const elements = await render(rr.input);
       return renderToReadableStream(elements, bundlerConfig).pipeThrough(
-        transformRsfId(config.rootDir),
+        transformRsfId(rsfPrefix),
       );
     },
   );
