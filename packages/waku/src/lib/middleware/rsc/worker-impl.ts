@@ -348,7 +348,7 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
     }
     const [fileId, name] = rsfId.split('#') as [string, string];
     const filePath = normalizePath(
-      fileId.startsWith('/') ? fileId : rsfPrefix + fileId,
+      fileId.startsWith('/') ? fileId : rsfPrefix + normalizePath(fileId),
     );
     const fname =
       rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
