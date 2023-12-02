@@ -115,7 +115,10 @@ export function rsc<
   return async (req, res, next) => {
     const config = await configPromise;
     const basePrefix = config.basePath + config.rscPath + '/';
-    const pathStr = req.url.slice(new URL(req.url).origin.length);
+    let pathStr = req.url.slice(new URL(req.url).origin.length);
+    if (pathStr.startsWith('/@fs/')) {
+      pathStr = pathStr.slice('/@fs/'.length);
+    }
     const handleError = (err: unknown) => {
       if (hasStatusCode(err)) {
         res.setStatus(err.statusCode);
