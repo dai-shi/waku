@@ -233,14 +233,18 @@ const resolveClientEntry = (
 const transformRsfId = (prefixToRemove: string) => {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
+  let data = '';
   return new TransformStream({
     transform(chunk, controller) {
       if (!(chunk instanceof Uint8Array)) {
         throw new Error('Unknown chunk type');
       }
-      const data = decoder.decode(chunk);
+      data += decoder.decode(chunk);
+      if (!data.endsWith('\n')) {
+        return;
+      }
       const lines = data.split('\n');
-      let changed = false;
+      data = '';
       for (let i = 0; i < lines.length; ++i) {
         const match = lines[i]!.match(
           new RegExp(
@@ -249,10 +253,9 @@ const transformRsfId = (prefixToRemove: string) => {
         );
         if (match) {
           lines[i] = `${match[1]}:{"id":"${match[2]}"${match[3]}`;
-          changed = true;
         }
       }
-      controller.enqueue(changed ? encoder.encode(lines.join('\n')) : chunk);
+      controller.enqueue(encoder.encode(lines.join('\n')));
     },
   });
 };
@@ -351,7 +354,7 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
       async () => {
         const data = await (mod[name!] || mod)(...args);
         return renderToReadableStream(
-          elements.then((resolved) => ({ ...resolved, _value: data })),
+          { ...(await elements), _value: data },
           bundlerConfig,
         ).pipeThrough(transformRsfId(config.rootDir));
       },
