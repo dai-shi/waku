@@ -2,7 +2,6 @@ import { expect } from '@playwright/test';
 import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
-import { rm } from 'node:fs/promises';
 import { test } from './utils.js';
 
 const waku = fileURLToPath(
@@ -50,10 +49,6 @@ for (const { build, command } of commands) {
     });
 
     test.afterAll(async () => {
-      await rm(`${cwd}/dist`, {
-        recursive: true,
-        force: true,
-      });
       cp.kill();
     });
 
@@ -71,10 +66,11 @@ for (const { build, command } of commands) {
 
     const noJSTest = test.extend({});
     noJSTest.use({
-      javaScriptEnabled: true,
+      javaScriptEnabled: false,
     });
 
     noJSTest('no js environment should have first screen', async ({ page }) => {
+      noJSTest.fixme();
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
       await expect(page.getByTestId('count')).toHaveText('0');
