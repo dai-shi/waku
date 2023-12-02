@@ -298,7 +298,6 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
     {
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split('#') as [string, string];
-
         const id = resolveClientEntry(
           filePath,
           config,
