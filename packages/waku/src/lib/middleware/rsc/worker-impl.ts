@@ -339,7 +339,9 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
       args = await decodeReply(body);
     }
     const [fileId, name] = rsfId.split('#') as [string, string];
-    const filePath = normalizePath(fileId.startsWith('/') ? fileId : rsfPrefix + fileId);
+    const filePath = normalizePath(
+      fileId.startsWith('/') ? fileId : rsfPrefix + fileId,
+    );
     const fname =
       rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
     const mod = await loadServerFile(fname, rr.command);
