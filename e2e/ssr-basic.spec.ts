@@ -10,11 +10,11 @@ const waku = fileURLToPath(
 
 const commands = [
   {
-    command: 'dev',
+    command: 'dev --with-ssr',
   },
   {
-    build: 'build',
-    command: 'start',
+    build: 'build --with-ssr',
+    command: 'start --with-ssr',
   },
 ];
 
@@ -70,7 +70,6 @@ for (const { build, command } of commands) {
     });
 
     noJSTest('no js environment should have first screen', async ({ page }) => {
-      noJSTest.fixme();
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
       await expect(page.getByTestId('count')).toHaveText('0');
