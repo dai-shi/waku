@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
-import { test } from './utils.js';
+import { getFreePort, test } from './utils.js';
 
 const waku = fileURLToPath(
   new URL('../packages/waku/dist/cli.js', import.meta.url),
@@ -30,9 +30,7 @@ for (const { build, command } of commands) {
           cwd,
         });
       }
-      port = Math.floor(Math.random() * 10000) + 10000;
-      console.log(`node ${waku} ${command}`);
-      console.log('cwd: ', cwd);
+      port = await getFreePort();
       cp = exec(`node ${waku} ${command}`, {
         cwd,
         env: {
