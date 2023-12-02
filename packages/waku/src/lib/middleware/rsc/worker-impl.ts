@@ -357,8 +357,7 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
     const filePath = normalizePath(
       fileId.startsWith('/') ? fileId : rsfPrefix + normalizePath(fileId),
     );
-    const fname =
-      rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
+    const fname = url.pathToFileURL(filePath).toString();
     parentPort!.postMessage({
       type: 'debug',
       msg: `1: Loading ${fname} in ${rr.command}`,
