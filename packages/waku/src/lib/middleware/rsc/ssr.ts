@@ -2,10 +2,7 @@ import path from 'node:path'; // TODO no node dependency
 import fs from 'node:fs'; // TODO no node dependency
 import url from 'node:url'; // TODO no node dependency
 
-import { createElement } from 'react';
 import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
-import RDServer from 'react-dom/server.edge';
-import RSDWClient from 'react-server-dom-webpack/client.edge';
 import type { ViteDevServer } from 'vite';
 
 import { resolveConfig, viteInlineConfig } from '../../config.js';
@@ -14,8 +11,52 @@ import { ServerRoot } from '../../../client.js';
 import { renderRSC } from './worker-api.js';
 import { hasStatusCode, concatUint8Arrays } from './utils.js';
 
-const { renderToReadableStream } = RDServer;
-const { createFromReadableStream } = RSDWClient;
+const getReact = async (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  command: 'dev' | 'build' | 'start',
+) => {
+  if (command !== 'dev') {
+    return (
+      await import(
+        path.join(config.rootDir, config.distDir, config.ssrDir, 'React.js')
+      )
+    ).default;
+  }
+  return import('react');
+};
+
+const getRDServer = async (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  command: 'dev' | 'build' | 'start',
+) => {
+  if (command !== 'dev') {
+    return (
+      await import(
+        path.join(config.rootDir, config.distDir, config.ssrDir, 'RDServer.js')
+      )
+    ).default;
+  }
+  return import('react-dom/server.edge');
+};
+
+const getRSDWClient = async (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  command: 'dev' | 'build' | 'start',
+) => {
+  if (command !== 'dev') {
+    return (
+      await import(
+        path.join(
+          config.rootDir,
+          config.distDir,
+          config.ssrDir,
+          'RSDWClient.js',
+        )
+      )
+    ).default;
+  }
+  return import('react-server-dom-webpack/client.edge');
+};
 
 // HACK for react-server-dom-webpack without webpack
 (globalThis as any).__waku_module_cache__ ||= new Map();
@@ -268,6 +309,15 @@ export const renderHtml = async <Context>(
   htmlStr: string, // Hope stream works, but it'd be too tricky
   context: Context,
 ): Promise<readonly [ReadableStream, Context] | null> => {
+  const [
+    { createElement },
+    { renderToReadableStream },
+    { createFromReadableStream },
+  ] = await Promise.all([
+    getReact(config, command),
+    getRDServer(config, command),
+    getRSDWClient(config, command),
+  ]);
   const entriesFile = getEntriesFile(config, command);
   const {
     default: { getSsrConfig },
@@ -370,9 +420,12 @@ export const renderHtml = async <Context>(
     },
   );
   const [copied, interleave] = injectRscPayload(stream, ssrConfig.input);
-  const elements = createFromReadableStream<Record<string, ReactNode>>(copied, {
-    ssrManifest: { moduleMap, moduleLoading: null },
-  });
+  const elements: Promise<Record<string, ReactNode>> = createFromReadableStream(
+    copied,
+    {
+      ssrManifest: { moduleMap, moduleLoading: null },
+    },
+  );
   const readable = (
     await renderToReadableStream(
       createElement(

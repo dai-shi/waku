@@ -109,6 +109,7 @@ const buildServerBundle = async (
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
+  ssr: boolean,
 ) => {
   const serverBuildOutput = await viteBuild({
     ...viteInlineConfig(),
@@ -118,7 +119,7 @@ const buildServerBundle = async (
         conditions: ['react-server', 'workerd'],
         externalConditions: ['react-server', 'workerd'],
       },
-      external: ['waku'],
+      external: ['waku'], // TODO should be removed?
       noExternal: /^(?!node:)/,
     },
     publicDir: false,
@@ -150,35 +151,39 @@ const buildServerBundle = async (
       },
     },
   });
-  // Build client components for SSR
-  await viteBuild({
-    ...viteInlineConfig(),
-    ssr: {
-      resolve: {
-        // TODO do we need this for SSR build?
-        conditions: ['react-server', 'workerd'],
-        externalConditions: ['react-server', 'workerd'],
+  if (ssr) {
+    // Build client components for SSR
+    await viteBuild({
+      ...viteInlineConfig(),
+      ssr: {
+        external: ['waku'], // TODO should be removed?
+        noExternal: /^(?!node:)/,
       },
-      external: ['waku'],
-    },
-    publicDir: false,
-    build: {
-      ssr: true,
-      outDir: path.join(config.rootDir, config.distDir, config.ssrDir),
-      rollupOptions: {
-        onwarn,
-        input: clientEntryFiles,
-        output: {
-          entryFileNames: (chunkInfo) => {
-            if (clientEntryFiles[chunkInfo.name]) {
-              return 'assets/[name].js';
-            }
-            return '[name].js';
+      publicDir: false,
+      build: {
+        ssr: true,
+        ssrEmitAssets: true,
+        outDir: path.join(config.rootDir, config.distDir, config.ssrDir),
+        rollupOptions: {
+          onwarn,
+          input: {
+            React: 'react',
+            RDServer: 'react-dom/server.edge',
+            RSDWClient: 'react-server-dom-webpack/client.edge',
+            ...clientEntryFiles,
+          },
+          output: {
+            entryFileNames: (chunkInfo) => {
+              if (clientEntryFiles[chunkInfo.name]) {
+                return 'assets/[name].js';
+              }
+              return '[name].js';
+            },
           },
         },
       },
-    },
-  });
+    });
+  }
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
@@ -509,6 +514,7 @@ export async function build(options?: { ssr?: boolean }) {
     commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
+    !!options?.ssr,
   );
   const clientBuildOutput = await buildClientBundle(
     config,
