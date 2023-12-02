@@ -319,7 +319,7 @@ export const renderHtml = async <Context>(
               if (command === 'dev') {
                 const filePath = normalizePath(
                   file.startsWith('@fs/')
-                    ? file.slice('@fs/'.length)
+                    ? file.slice(3)
                     : path.join(config.rootDir, config.srcDir, file),
                 );
                 // FIXME This is ugly. We need to refactor it.
