@@ -38,8 +38,11 @@ for (const { build, command } of commands) {
           PORT: `${port}`,
         },
       });
-      cp.on('message', (message) => {
-        console.log('cp message: ', message);
+      cp.stdout?.on('data', (data) => {
+        console.log(`${port} stdout: `, `${data}`);
+      });
+      cp.stderr?.on('data', (data) => {
+        console.error(`${port} stderr: `, `${data}`);
       });
       await waitPort({
         port,
