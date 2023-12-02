@@ -65,7 +65,6 @@ for (const { build, command } of commands) {
     });
 
     test('no js environment should have first screen', async ({ browser }) => {
-      test.fixme();
       const noJSContext = await browser.newContext({
         javaScriptEnabled: false,
       });
