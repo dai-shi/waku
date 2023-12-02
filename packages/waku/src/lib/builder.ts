@@ -315,9 +315,11 @@ const emitHtmlFiles = async (
     config.srcDir,
     config.indexHtml,
   );
-  const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
+  const publicIndexHtml = await fs.promises.readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
+
+  await fs.promises.unlink(publicIndexHtmlFile);
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
       async ([pathStr, { entries, customCode, context }]) => {

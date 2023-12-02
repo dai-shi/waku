@@ -227,6 +227,7 @@ const resolveClientEntry = (
       );
     }
   }
+  // https://github.com/dai-shi/waku/pull/181#discussion_r1409274135
   return (
     (command === 'dev' ? '/@id' : '') +
     config.basePath +
