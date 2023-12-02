@@ -68,9 +68,52 @@ importers:
       typescript:
         specifier: ^5.2.2
         version: 5.2.2
+      wait-port:
+        specifier: ^1.1.0
+        version: 1.1.0
       waku:
         specifier: workspace:*
         version: link:packages/waku
+
+  e2e/fixtures/rsc-basic:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^1.2.2
+        version: 1.2.3
+      hono:
+        specifier: ^3.10.0
+        version: 3.10.2
+      react:
+        specifier: 18.3.0-canary-6c7b41da3-20231123
+        version: 18.3.0-canary-6c7b41da3-20231123
+      react-dom:
+        specifier: 18.3.0-canary-6c7b41da3-20231123
+        version: 18.3.0-canary-6c7b41da3-20231123(react@18.3.0-canary-6c7b41da3-20231123)
+      react-server-dom-webpack:
+        specifier: 18.3.0-canary-6c7b41da3-20231123
+        version: 18.3.0-canary-6c7b41da3-20231123(react-dom@18.3.0-canary-6c7b41da3-20231123)(react@18.3.0-canary-6c7b41da3-20231123)(webpack@5.89.0)
+      waku:
+        specifier: 0.17.1
+        version: link:../../../packages/waku
+    devDependencies:
+      '@swc/core':
+        specifier: 1.3.96
+        version: 1.3.96
+      '@types/react':
+        specifier: ^18.2.37
+        version: 18.2.37
+      '@types/react-dom':
+        specifier: ^18.2.15
+        version: 18.2.15
+      '@vitejs/plugin-react':
+        specifier: 4.1.1
+        version: 4.1.1(vite@4.5.0)
+      typescript:
+        specifier: ^5.2.2
+        version: 5.2.2
+      vite:
+        specifier: 4.5.0
+        version: 4.5.0(@types/node@20.9.0)
 
   examples/01_counter:
     dependencies:
@@ -542,9 +585,6 @@ importers:
 
   packages/waku:
     dependencies:
-      busboy:
-        specifier: ^1.6.0
-        version: 1.6.0
       react:
         specifier: 18.3.0-canary-6c7b41da3-20231123
         version: 18.3.0-canary-6c7b41da3-20231123
@@ -2259,13 +2299,6 @@ packages:
   /buffer-from@1.1.2:
     resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
 
-  /busboy@1.6.0:
-    resolution: {integrity: sha512-8SFQbg/0hQ9xy3UNTB0YEnsNBbWfhf7RtnzpL7TkBiTBRfrQ9Fxcnz7VJsleJpyp6rVLvXiuORqjlHi5q+PYuA==}
-    engines: {node: '>=10.16.0'}
-    dependencies:
-      streamsearch: 1.1.0
-    dev: false
-
   /bytes@3.1.2:
     resolution: {integrity: sha512-/Nf7TyzTx6S3yRJObOAV7956r8cr2+Oj8AC5dt8wSP3BQAoeX58NoHyCU8P8zGkNXStjTSi6fzO6F0pBdcYbEg==}
     engines: {node: '>= 0.8'}
@@ -2405,6 +2438,11 @@ packages:
   /commander@7.2.0:
     resolution: {integrity: sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw==}
     engines: {node: '>= 10'}
+    dev: true
+
+  /commander@9.5.0:
+    resolution: {integrity: sha512-KRs7WVDKg86PWiuAqhDrAQnTXZKraVcCc6vFdL14qrZ/DcWwuRo7VoiYXalXO7S5GKpqYiVEwCbgFDfxNHKJBQ==}
+    engines: {node: ^12.20.0 || >=14}
     dev: true
 
   /concat-map@0.0.1:
@@ -5508,11 +5546,6 @@ packages:
     engines: {node: '>= 0.8'}
     dev: false
 
-  /streamsearch@1.1.0:
-    resolution: {integrity: sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==}
-    engines: {node: '>=10.0.0'}
-    dev: false
-
   /string-width@4.2.3:
     resolution: {integrity: sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==}
     engines: {node: '>=8'}
@@ -6067,6 +6100,18 @@ packages:
       rollup: 3.29.4
     optionalDependencies:
       fsevents: 2.3.3
+    dev: true
+
+  /wait-port@1.1.0:
+    resolution: {integrity: sha512-3e04qkoN3LxTMLakdqeWth8nih8usyg+sf1Bgdf9wwUkp05iuK1eSY/QpLvscT/+F/gA89+LpUmmgBtesbqI2Q==}
+    engines: {node: '>=10'}
+    hasBin: true
+    dependencies:
+      chalk: 4.1.2
+      commander: 9.5.0
+      debug: 4.3.4
+    transitivePeerDependencies:
+      - supports-color
     dev: true
 
   /watchpack@2.4.0:

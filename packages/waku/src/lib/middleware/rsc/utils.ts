@@ -1,3 +1,5 @@
+// This file should not include Node specific code.
+
 export const encodeInput = (input: string) => {
   if (input === '') {
     return '_';
@@ -53,4 +55,59 @@ export const deepFreeze = (x: unknown): void => {
       deepFreeze(value);
     }
   }
+};
+
+export const endStream = (stream: WritableStream, message?: string) => {
+  const writer = stream.getWriter();
+  if (message) {
+    new TextEncoder().encode(message).forEach((chunk) => {
+      writer.ready.then(() => writer.write(chunk));
+    });
+  }
+  writer.ready.then(() => writer.close());
+};
+
+export const concatUint8Arrays = (arrs: Uint8Array[]): Uint8Array => {
+  const len = arrs.reduce((acc, arr) => acc + arr.length, 0);
+  const array = new Uint8Array(len);
+  let offset = 0;
+  for (const arr of arrs) {
+    array.set(arr, offset);
+    offset += arr.length;
+  }
+  return array;
+};
+
+// TODO is this correct? better to use a library?
+export const parseFormData = (body: string, contentType: string) => {
+  const boundary = contentType.split('boundary=')[1];
+  const parts = body.split(`--${boundary}`);
+  const formData = new FormData();
+  for (const part of parts) {
+    if (part.trim() === '' || part === '--') continue;
+    const [rawHeaders, content] = part.split('\r\n\r\n', 2);
+    const headers = rawHeaders!.split('\r\n').reduce(
+      (acc, currentHeader) => {
+        const [key, value] = currentHeader.split(': ');
+        acc[key!.toLowerCase()] = value!;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+    const contentDisposition = headers['content-disposition'];
+    const nameMatch = /name="([^"]+)"/.exec(contentDisposition!);
+    const filenameMatch = /filename="([^"]+)"/.exec(contentDisposition!);
+    if (nameMatch) {
+      const name = nameMatch[1];
+      if (filenameMatch) {
+        const filename = filenameMatch[1];
+        const type = headers['content-type'] || 'application/octet-stream';
+        const blob = new Blob([content!], { type });
+        formData.append(name!, blob, filename);
+      } else {
+        formData.append(name!, content!.trim());
+      }
+    }
+  }
+  return formData;
 };
