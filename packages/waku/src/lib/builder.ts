@@ -119,7 +119,6 @@ const buildServerBundle = async (
         conditions: ['react-server', 'workerd'],
         externalConditions: ['react-server', 'workerd'],
       },
-      external: ['waku'], // TODO should be removed?
       noExternal: /^(?!node:)/,
     },
     publicDir: false,
@@ -156,7 +155,6 @@ const buildServerBundle = async (
     await viteBuild({
       ...viteInlineConfig(),
       ssr: {
-        external: ['waku'], // TODO should be removed?
         noExternal: /^(?!node:)/,
       },
       publicDir: false,
@@ -167,9 +165,11 @@ const buildServerBundle = async (
         rollupOptions: {
           onwarn,
           input: {
+            entries: entriesFile,
             React: 'react',
             RDServer: 'react-dom/server.edge',
             RSDWClient: 'react-server-dom-webpack/client.edge',
+            WakuClient: 'waku/client',
             ...clientEntryFiles,
           },
           output: {

@@ -7,7 +7,6 @@ import type { ViteDevServer } from 'vite';
 
 import { resolveConfig, viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
-import { ServerRoot } from '../../../client.js';
 import { renderRSC } from './worker-api.js';
 import { hasStatusCode, concatUint8Arrays } from './utils.js';
 
@@ -56,6 +55,18 @@ const getRSDWClient = async (
     ).default;
   }
   return import('react-server-dom-webpack/client.edge');
+};
+
+const getWakuClient = async (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  command: 'dev' | 'build' | 'start',
+) => {
+  if (command !== 'dev') {
+    return import(
+      path.join(config.rootDir, config.distDir, config.ssrDir, 'WakuClient.js')
+    );
+  }
+  return import('waku/client');
 };
 
 // HACK for react-server-dom-webpack without webpack
@@ -143,7 +154,7 @@ const getEntriesFile = (
 ) => {
   const filePath = path.join(
     config.rootDir,
-    command === 'dev' ? config.srcDir : config.distDir,
+    ...(command === 'dev' ? [config.srcDir] : [config.distDir, config.ssrDir]),
     config.entriesJs,
   );
   return command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
@@ -313,10 +324,12 @@ export const renderHtml = async <Context>(
     { createElement },
     { renderToReadableStream },
     { createFromReadableStream },
+    { ServerRoot },
   ] = await Promise.all([
     getReact(config, command),
     getRDServer(config, command),
     getRSDWClient(config, command),
+    getWakuClient(config, command),
   ]);
   const entriesFile = getEntriesFile(config, command);
   const {
