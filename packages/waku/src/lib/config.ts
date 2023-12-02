@@ -48,7 +48,6 @@ export async function resolveConfig() {
     srcDir: 'src',
     distDir: 'dist',
     publicDir: 'public',
-    ssrDir: 'ssr',
     indexHtml: 'index.html',
     entriesJs: 'entries.js',
     rscPath: 'RSC',

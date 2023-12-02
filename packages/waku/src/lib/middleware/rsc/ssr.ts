@@ -17,7 +17,13 @@ const getReact = async (
   if (command !== 'dev') {
     return (
       await import(
-        path.join(config.rootDir, config.distDir, config.ssrDir, 'React.js')
+        path.join(
+          config.rootDir,
+          config.distDir,
+          config.publicDir,
+          'assets',
+          'react.js',
+        )
       )
     ).default;
   }
@@ -31,7 +37,13 @@ const getRDServer = async (
   if (command !== 'dev') {
     return (
       await import(
-        path.join(config.rootDir, config.distDir, config.ssrDir, 'RDServer.js')
+        path.join(
+          config.rootDir,
+          config.distDir,
+          config.publicDir,
+          'assets',
+          'rd-server.js',
+        )
       )
     ).default;
   }
@@ -48,8 +60,9 @@ const getRSDWClient = async (
         path.join(
           config.rootDir,
           config.distDir,
-          config.ssrDir,
-          'RSDWClient.js',
+          config.publicDir,
+          'assets',
+          'rsdw-client.js',
         )
       )
     ).default;
@@ -63,7 +76,13 @@ const getWakuClient = async (
 ) => {
   if (command !== 'dev') {
     return import(
-      path.join(config.rootDir, config.distDir, config.ssrDir, 'WakuClient.js')
+      path.join(
+        config.rootDir,
+        config.distDir,
+        config.publicDir,
+        'assets',
+        'waku-client.js',
+      )
     );
   }
   return import('waku/client');
@@ -154,7 +173,7 @@ const getEntriesFile = (
 ) => {
   const filePath = path.join(
     config.rootDir,
-    ...(command === 'dev' ? [config.srcDir] : [config.distDir, config.ssrDir]),
+    ...(command === 'dev' ? [config.srcDir] : [config.distDir]),
     config.entriesJs,
   );
   return command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
@@ -324,7 +343,7 @@ export const renderHtml = async <Context>(
     { createElement },
     { renderToReadableStream },
     { createFromReadableStream },
-    { ServerRoot },
+    { ServerRoot, Slot },
   ] = await Promise.all([
     getReact(config, command),
     getRDServer(config, command),
@@ -420,7 +439,7 @@ export const renderHtml = async <Context>(
                   path.join(
                     config.rootDir,
                     config.distDir,
-                    config.ssrDir,
+                    config.publicDir,
                     file,
                   ),
                 )
@@ -446,7 +465,7 @@ export const renderHtml = async <Context>(
           Omit<ComponentProps<typeof ServerRoot>, 'children'>
         >,
         { elements },
-        ssrConfig.unstable_render(),
+        ssrConfig.unstable_render({ createElement, Slot }),
       ),
       {
         onError(err: unknown) {

@@ -109,7 +109,6 @@ const buildServerBundle = async (
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
-  ssr: boolean,
 ) => {
   const serverBuildOutput = await viteBuild({
     ...viteInlineConfig(),
@@ -130,7 +129,8 @@ const buildServerBundle = async (
         onwarn,
         input: {
           entries: entriesFile,
-          RSDWServer: 'react-server-dom-webpack/server.edge',
+          'rsdw-server': 'react-server-dom-webpack/server.edge',
+          'waku-client': 'waku/client',
           ...commonEntryFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
@@ -138,6 +138,7 @@ const buildServerBundle = async (
         output: {
           entryFileNames: (chunkInfo) => {
             if (
+              ['waku-client'].includes(chunkInfo.name) ||
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name] ||
               serverEntryFiles[chunkInfo.name]
@@ -150,40 +151,6 @@ const buildServerBundle = async (
       },
     },
   });
-  if (ssr) {
-    // Build client components for SSR
-    await viteBuild({
-      ...viteInlineConfig(),
-      ssr: {
-        noExternal: /^(?!node:)/,
-      },
-      publicDir: false,
-      build: {
-        ssr: true,
-        ssrEmitAssets: true,
-        outDir: path.join(config.rootDir, config.distDir, config.ssrDir),
-        rollupOptions: {
-          onwarn,
-          input: {
-            entries: entriesFile,
-            React: 'react',
-            RDServer: 'react-dom/server.edge',
-            RSDWClient: 'react-server-dom-webpack/client.edge',
-            WakuClient: 'waku/client',
-            ...clientEntryFiles,
-          },
-          output: {
-            entryFileNames: (chunkInfo) => {
-              if (clientEntryFiles[chunkInfo.name]) {
-                return 'assets/[name].js';
-              }
-              return '[name].js';
-            },
-          },
-        },
-      },
-    });
-  }
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
@@ -232,6 +199,10 @@ const buildClientBundle = async (
         onwarn,
         input: {
           main: indexHtmlFile,
+          react: 'react',
+          'rd-server': 'react-dom/server.edge',
+          'rsdw-client': 'react-server-dom-webpack/client.edge',
+          'waku-client': 'waku/client',
           ...commonEntryFiles,
           ...clientEntryFiles,
         },
@@ -239,6 +210,9 @@ const buildClientBundle = async (
         output: {
           entryFileNames: (chunkInfo) => {
             if (
+              ['react', 'rd-server', 'rsdw-client', 'waku-client'].includes(
+                chunkInfo.name,
+              ) ||
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name]
             ) {
@@ -514,7 +488,6 @@ export async function build(options?: { ssr?: boolean }) {
     commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
-    !!options?.ssr,
   );
   const clientBuildOutput = await buildClientBundle(
     config,
