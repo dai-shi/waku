@@ -8,13 +8,12 @@ import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
 import RDServer from 'react-dom/server.edge';
 import RSDWClient from 'react-server-dom-webpack/client.edge';
 import type { ViteDevServer } from 'vite';
-import { normalizePath } from 'vite';
 
 import { resolveConfig, viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
 import { ServerRoot } from '../../../client.js';
 import { renderRSC } from './worker-api.js';
-import { hasStatusCode, concatUint8Arrays } from './utils.js';
+import { hasStatusCode, concatUint8Arrays, normalizePath } from './utils.js';
 
 const { renderToReadableStream } = RDServer;
 const { createFromReadableStream } = RSDWClient;

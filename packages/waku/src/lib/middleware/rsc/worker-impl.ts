@@ -8,13 +8,17 @@ import RSDWServer from 'react-server-dom-webpack/server.edge';
 import type { ViteDevServer } from 'vite';
 
 import { resolveConfig, viteInlineConfig } from '../../config.js';
-import { hasStatusCode, deepFreeze, parseFormData } from './utils.js';
+import {
+  hasStatusCode,
+  deepFreeze,
+  parseFormData,
+  normalizePath,
+} from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
 import {
   defineEntries,
   runWithAsyncLocalStorage as runWithAsyncLocalStorageOrig,
 } from '../../../server.js';
-import { normalizePath } from 'vite';
 
 const { renderToReadableStream, decodeReply } = RSDWServer;
 

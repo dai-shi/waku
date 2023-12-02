@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import type { Config } from '../config.js';
-import { normalizePath } from 'vite';
+import { normalizePath } from './middleware/rsc/utils.js';
 
 type DeepRequired<T> = T extends (...args: any[]) => any
   ? T
