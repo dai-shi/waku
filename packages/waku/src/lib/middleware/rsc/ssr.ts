@@ -1,28 +1,30 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import url from 'node:url';
-import crypto from 'node:crypto';
-import { PassThrough, Transform } from 'node:stream';
-import type { Readable } from 'node:stream';
-import { Buffer } from 'node:buffer';
 import { Server } from 'node:http';
 
 import { createElement } from 'react';
-import type { FunctionComponent, ComponentProps } from 'react';
-import RDServer from 'react-dom/server';
-import RSDWClient from 'react-server-dom-webpack/client.node.unbundled';
+import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
+import RDServer from 'react-dom/server.edge';
+import RSDWClient from 'react-server-dom-webpack/client.edge';
 import type { ViteDevServer } from 'vite';
+import { normalizePath } from 'vite';
 
 import { resolveConfig, viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
 import { ServerRoot } from '../../../client.js';
 import { renderRSC } from './worker-api.js';
-import { hasStatusCode } from './utils.js';
-import { normalizePath } from 'vite';
+import { hasStatusCode, concatUint8Arrays } from './utils.js';
 
-// eslint-disable-next-line import/no-named-as-default-member
-const { renderToPipeableStream } = RDServer;
-const { createFromNodeStream } = RSDWClient;
+const { renderToReadableStream } = RDServer;
+const { createFromReadableStream } = RSDWClient;
+
+// HACK for react-server-dom-webpack without webpack
+(globalThis as any).__waku_module_cache__ ||= new Map();
+(globalThis as any).__webpack_chunk_load__ ||= (id: string) =>
+  import(id).then((m) => (globalThis as any).__waku_module_cache__.set(id, m));
+(globalThis as any).__webpack_require__ ||= (id: string) =>
+  (globalThis as any).__waku_module_cache__.get(id);
 
 type Entries = {
   default: ReturnType<typeof defineEntries>;
@@ -77,11 +79,10 @@ export const loadServerFile = async (
 };
 
 // FIXME this is very hacky
-const createTranspiler = (cleanupFns: Set<() => void>) => {
+const createTranspiler = async (cleanupFns: Set<() => void>) => {
+  const { randomBytes } = await import('node:crypto');
   return (filePath: string, name: string) => {
-    const temp = path.resolve(
-      `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
-    );
+    const temp = path.resolve(`.temp-${randomBytes(8).toString('hex')}.js`);
     const code = `
 const { loadServerFile } = await import('${import.meta.url}');
 const { ${name} } = await loadServerFile('${url
@@ -123,21 +124,26 @@ Promise.resolve({
   .map((line) => line.trim())
   .join('');
 
-const injectRscPayload = (stream: Readable, input: string) => {
-  const chunks: Buffer[] = [];
+const injectRscPayload = (readable: ReadableStream, input: string) => {
+  const chunks: Uint8Array[] = [];
   let closed = false;
   let notify: (() => void) | undefined;
-  const copied = new PassThrough();
-  stream.on('data', (chunk) => {
-    chunks.push(chunk);
-    notify?.();
-    copied.write(chunk);
-  });
-  stream.on('end', () => {
-    closed = true;
-    notify?.();
-    copied.end();
-  });
+  const copied = readable.pipeThrough(
+    new TransformStream({
+      transform(chunk, controller) {
+        if (!(chunk instanceof Uint8Array)) {
+          throw new Error('Unknown chunk type');
+        }
+        chunks.push(chunk);
+        notify?.();
+        controller.enqueue(chunk);
+      },
+      flush() {
+        closed = true;
+        notify?.();
+      },
+    }),
+  );
   const modifyHead = (data: string) => {
     const matchPrefetched = data.match(
       // HACK This is very brittle
@@ -168,66 +174,66 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
       data.slice(closingHeadIndex);
     return data;
   };
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  const getScripts = (): string => {
+    const scripts = chunks.splice(0).map(
+      (chunk) =>
+        `
+<script>globalThis.__WAKU_PUSH__("${encodeURI(
+          decoder.decode(chunk),
+        )}")</script>`,
+    );
+    if (closed) {
+      scripts.push(
+        `
+<script>globalThis.__WAKU_PUSH__()</script>`,
+      );
+    }
+    return scripts.join('');
+  };
   const interleave = (
     preamble: string,
     intermediate: string,
     postamble: string,
   ) => {
     let preambleSent = false;
-    let closedSent = false;
-    return new Transform({
-      transform(chunk, encoding, callback) {
-        if (encoding !== ('buffer' as any)) {
-          throw new Error('Unknown encoding');
+    return new TransformStream({
+      transform(chunk, controller) {
+        if (!(chunk instanceof Uint8Array)) {
+          throw new Error('Unknown chunk type');
         }
         if (!preambleSent) {
-          const data = chunk.toString();
           preambleSent = true;
-          callback(
-            null,
-            Buffer.concat([
-              Buffer.from(modifyHead(preamble)),
-              Buffer.from(data),
-              Buffer.from(intermediate),
+          controller.enqueue(
+            concatUint8Arrays([
+              encoder.encode(modifyHead(preamble)),
+              chunk,
+              encoder.encode(intermediate),
             ]),
           );
-          notify = () => {
-            const scripts = chunks.splice(0).map((chunk) =>
-              Buffer.from(`
-<script>globalThis.__WAKU_PUSH__("${encodeURI(chunk.toString())}")</script>`),
-            );
-            if (closed) {
-              closedSent = true;
-              scripts.push(
-                Buffer.from(`
-<script>globalThis.__WAKU_PUSH__()</script>`),
-              );
-            }
-            this.push(Buffer.concat(scripts));
-          };
+          notify = () => controller.enqueue(encoder.encode(getScripts()));
           notify();
           return;
         }
-        callback(null, chunk);
+        controller.enqueue(chunk);
       },
-      final(callback) {
+      flush(controller) {
         if (!preambleSent) {
-          this.push(Buffer.from(preamble));
-          this.push(Buffer.from(intermediate));
+          throw new Error('preamble not yet sent');
         }
-        if (!closedSent) {
-          const notifyOrig = notify;
-          notify = () => {
-            notifyOrig?.();
-            if (closedSent) {
-              this.push(Buffer.from(postamble));
-              callback();
-            }
-          };
-        } else {
-          this.push(Buffer.from(postamble));
-          callback();
+        if (!closed) {
+          return new Promise<void>((resolve) => {
+            notify = () => {
+              controller.enqueue(encoder.encode(getScripts()));
+              if (closed) {
+                controller.enqueue(encoder.encode(postamble));
+                resolve();
+              }
+            };
+          });
         }
+        controller.enqueue(encoder.encode(postamble));
       },
     });
   };
@@ -236,24 +242,22 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
 
 // HACK for now, do we want to use HTML parser?
 const rectifyHtml = () => {
-  const pending: Buffer[] = [];
-  return new Transform({
-    transform(chunk, encoding, callback) {
-      if (encoding !== ('buffer' as any)) {
-        throw new Error('Unknown encoding');
+  const pending: Uint8Array[] = [];
+  const decoder = new TextDecoder();
+  return new TransformStream({
+    transform(chunk, controller) {
+      if (!(chunk instanceof Uint8Array)) {
+        throw new Error('Unknown chunk type');
       }
       pending.push(chunk);
-      if (/<\/\w+>$/.test(chunk.toString())) {
-        callback(null, Buffer.concat(pending.splice(0)));
-      } else {
-        callback();
+      if (/<\/\w+>$/.test(decoder.decode(chunk))) {
+        controller.enqueue(concatUint8Arrays(pending.splice(0)));
       }
     },
-    final(callback) {
+    flush(controller) {
       if (!pending.length) {
-        this.push(Buffer.concat(pending.splice(0)));
+        controller.enqueue(concatUint8Arrays(pending.splice(0)));
       }
-      callback();
     },
   });
 };
@@ -264,7 +268,7 @@ export const renderHtml = async <Context>(
   pathStr: string,
   htmlStr: string, // Hope stream works, but it'd be too tricky
   context: Context,
-): Promise<readonly [Readable, Context] | null> => {
+): Promise<readonly [ReadableStream, Context] | null> => {
   const entriesFile = getEntriesFile(config, command);
   const {
     default: { getSsrConfig },
@@ -274,10 +278,10 @@ export const renderHtml = async <Context>(
   if (!ssrConfig) {
     return null;
   }
-  let pipeable: Readable;
+  let stream: ReadableStream;
   let nextCtx: Context;
   try {
-    [pipeable, nextCtx] = await renderRSC({
+    [stream, nextCtx] = await renderRSC({
       input: ssrConfig.input,
       method: 'GET',
       headers: {},
@@ -293,9 +297,19 @@ export const renderHtml = async <Context>(
   const { splitHTML } = config.ssr;
   const cleanupFns = new Set<() => void>();
   const transpile =
-    command === 'dev' ? createTranspiler(cleanupFns) : undefined;
+    command === 'dev' ? await createTranspiler(cleanupFns) : undefined;
   const moduleMap = new Proxy(
-    {},
+    {} as Record<
+      string,
+      Record<
+        string,
+        {
+          id: string;
+          chunks: string[];
+          name: string;
+        }
+      >
+    >,
     {
       get(_target, filePath: string) {
         return new Proxy(
@@ -320,20 +334,15 @@ export const renderHtml = async <Context>(
                   ),
                 );
                 if (filePath.startsWith(wakuDist)) {
-                  return {
-                    specifier:
-                      'waku' +
-                      filePath.slice(wakuDist.length).replace(/\.\w+$/, ''),
-                    name,
-                  };
+                  const id =
+                    'waku' +
+                    filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
+                  return { id, chunks: [id], name };
                 }
-                const specifier = url
+                const id = url
                   .pathToFileURL(transpile!(filePath, name))
                   .toString();
-                return {
-                  specifier,
-                  name,
-                };
+                return { id, chunks: [id], name };
               }
               // command !== 'dev'
               const origFile = resolveClientPath?.(
@@ -344,48 +353,37 @@ export const renderHtml = async <Context>(
                 origFile &&
                 !origFile.startsWith(path.join(config.rootDir, config.srcDir))
               ) {
-                return {
-                  specifier: url.pathToFileURL(origFile).toString(),
-                  name,
-                };
+                const id = url.pathToFileURL(origFile).toString();
+                return { id, chunks: [id], name };
               }
-              return {
-                specifier: url
-                  .pathToFileURL(
-                    path.join(config.rootDir, config.distDir, file),
-                  )
-                  .toString(),
-                name,
-              };
+              const id = url
+                .pathToFileURL(path.join(config.rootDir, config.distDir, file))
+                .toString();
+              return { id, chunks: [id], name };
             },
           },
         );
       },
     },
   );
-  const [copied, interleave] = injectRscPayload(pipeable, ssrConfig.input);
-  const elements = createFromNodeStream(copied, { moduleMap });
-  const readable = renderToPipeableStream(
-    createElement(
-      ServerRoot as FunctionComponent<
-        Omit<ComponentProps<typeof ServerRoot>, 'children'>
-      >,
-      { elements },
-      ssrConfig.unstable_render(),
-    ),
-    {
-      onAllReady: () => {
-        cleanupFns.forEach((fn) => fn());
-        cleanupFns.clear();
-      },
-      onError(err) {
-        cleanupFns.forEach((fn) => fn());
-        cleanupFns.clear();
-        console.error(err);
-      },
-    },
+  const [copied, interleave] = injectRscPayload(stream, ssrConfig.input);
+  const elements = createFromReadableStream<Record<string, ReactNode>>(copied, {
+    ssrManifest: { moduleMap, moduleLoading: null },
+  });
+  const readable = (
+    await renderToReadableStream(
+      createElement(
+        ServerRoot as FunctionComponent<
+          Omit<ComponentProps<typeof ServerRoot>, 'children'>
+        >,
+        { elements },
+        ssrConfig.unstable_render(),
+      ),
+    )
   )
-    .pipe(rectifyHtml())
-    .pipe(interleave(...splitHTML(htmlStr)));
+    .pipeThrough(rectifyHtml())
+    .pipeThrough(interleave(...splitHTML(htmlStr)));
+  cleanupFns.forEach((fn) => fn());
+  cleanupFns.clear();
   return [readable, nextCtx];
 };

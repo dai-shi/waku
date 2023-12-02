@@ -1,18 +1,14 @@
 import path from 'node:path';
 import url from 'node:url';
 import { parentPort } from 'node:worker_threads';
-import { PassThrough, Transform, Writable } from 'node:stream';
-import { finished } from 'node:stream/promises';
 import { Server } from 'node:http';
-import { Buffer } from 'node:buffer';
 
 import type { ReactNode } from 'react';
-import RSDWServer from 'react-server-dom-webpack/server';
-import busboy from 'busboy';
+import RSDWServer from 'react-server-dom-webpack/server.edge';
 import type { ViteDevServer } from 'vite';
 
 import { resolveConfig, viteInlineConfig } from '../../config.js';
-import { hasStatusCode, deepFreeze } from './utils.js';
+import { hasStatusCode, deepFreeze, parseFormData } from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
 import {
   defineEntries,
@@ -20,8 +16,7 @@ import {
 } from '../../../server.js';
 import { normalizePath } from 'vite';
 
-const { renderToPipeableStream, decodeReply, decodeReplyFromBusboy } =
-  RSDWServer;
+const { renderToReadableStream, decodeReply } = RSDWServer;
 
 const IS_NODE_20 = Number(process.versions.node.split('.')[0]) >= 20;
 if (IS_NODE_20) {
@@ -38,17 +33,18 @@ type Entries = {
     invert?: boolean,
   ) => string | undefined;
 };
-type PipeableStream = { pipe<T extends Writable>(destination: T): T };
-
-const streamMap = new Map<number, Writable>();
+const controllerMap = new Map<number, ReadableStreamDefaultController>();
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id, type, hasModuleIdCallback, ...rest } = mesg;
   const rr: RenderRequest = rest;
   try {
-    const stream = new PassThrough();
-    streamMap.set(id, stream);
+    const stream = new ReadableStream({
+      start(controller) {
+        controllerMap.set(id, controller);
+      },
+    });
     rr.stream = stream;
     if (hasModuleIdCallback) {
       rr.moduleIdCallback = (moduleId: string) => {
@@ -56,33 +52,30 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         parentPort!.postMessage(mesg);
       };
     }
-    const pipeable = await renderRSC(rr);
+    const readable = await renderRSC(rr);
     const mesg: MessageRes = { id, type: 'start', context: rr.context };
     parentPort!.postMessage(mesg);
     deepFreeze(rr.context);
-    const writable = new Writable({
-      write(chunk, encoding, callback) {
-        if (encoding !== ('buffer' as any)) {
-          throw new Error('Unknown encoding');
+    const writable = new WritableStream({
+      write(chunk) {
+        if (!(chunk instanceof Uint8Array)) {
+          throw new Error('Unknown chunk type');
         }
-        const buffer: Buffer = chunk;
         const mesg: MessageRes = {
           id,
           type: 'buf',
-          buf: buffer.buffer,
-          offset: buffer.byteOffset,
-          len: buffer.length,
+          buf: chunk.buffer,
+          offset: chunk.byteOffset,
+          len: chunk.byteLength,
         };
         parentPort!.postMessage(mesg, [mesg.buf]);
-        callback();
       },
-      final(callback) {
+      close() {
         const mesg: MessageRes = { id, type: 'end' };
         parentPort!.postMessage(mesg);
-        callback();
       },
     });
-    pipeable.pipe(writable);
+    readable.pipeTo(writable);
   } catch (err) {
     const mesg: MessageRes = { id, type: 'err', err };
     if (hasStatusCode(err)) {
@@ -178,16 +171,16 @@ parentPort!.on('message', (mesg: MessageReq) => {
   } else if (mesg.type === 'getBuildConfig') {
     handleGetBuildConfig(mesg);
   } else if (mesg.type === 'buf') {
-    const stream = streamMap.get(mesg.id)!;
-    stream.write(Buffer.from(mesg.buf, mesg.offset, mesg.len));
+    const controller = controllerMap.get(mesg.id)!;
+    controller.enqueue(new Uint8Array(mesg.buf, mesg.offset, mesg.len));
   } else if (mesg.type === 'end') {
-    const stream = streamMap.get(mesg.id)!;
-    stream.end();
+    const controller = controllerMap.get(mesg.id)!;
+    controller.close();
   } else if (mesg.type === 'err') {
-    const stream = streamMap.get(mesg.id)!;
+    const controller = controllerMap.get(mesg.id)!;
     const err =
       mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err));
-    stream.destroy(err);
+    controller.error(err);
   }
 });
 
@@ -232,31 +225,37 @@ const resolveClientEntry = (
 };
 
 // HACK Patching stream is very fragile.
-const transformRsfId = (prefixToRemove: string) =>
-  new Transform({
-    transform(chunk, encoding, callback) {
-      if (encoding !== ('buffer' as any)) {
-        throw new Error('Unknown encoding');
+const transformRsfId = (prefixToRemove: string) => {
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  let data = '';
+  return new TransformStream({
+    transform(chunk, controller) {
+      if (!(chunk instanceof Uint8Array)) {
+        throw new Error('Unknown chunk type');
       }
-      const data = chunk.toString();
+      data += decoder.decode(chunk);
+      if (!data.endsWith('\n')) {
+        return;
+      }
       const lines = data.split('\n');
-      let changed = false;
+      data = '';
       for (let i = 0; i < lines.length; ++i) {
-        const match = lines[i].match(
+        const match = lines[i]!.match(
           new RegExp(
             `^([0-9]+):{"id":"(?:file:///?)?${prefixToRemove}(.*?)"(.*)$`,
           ),
         );
         if (match) {
           lines[i] = `${match[1]}:{"id":"${match[2]}"${match[3]}`;
-          changed = true;
         }
       }
-      callback(null, changed ? Buffer.from(lines.join('\n')) : chunk);
+      controller.enqueue(encoder.encode(lines.join('\n')));
     },
   });
+};
 
-async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
+async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
   const config = await resolveConfig();
 
   const { runWithAsyncLocalStorage } = await (loadServerFile(
@@ -271,6 +270,12 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     default: { renderEntries },
     resolveClientPath,
   } = await (loadServerFile(entriesFile, rr.command) as Promise<Entries>);
+
+  const rsfPrefix =
+    path.posix.join(
+      config.rootDir,
+      rr.command === 'dev' ? config.srcDir : config.distDir,
+    ) + '/';
 
   const render = async (input: string) => {
     const elements = await renderEntries(input);
@@ -305,30 +310,36 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
   );
 
   if (rr.method === 'POST') {
-    const actionId = decodeURIComponent(rr.input);
+    const rsfId = decodeURIComponent(rr.input);
     let args: unknown[] = [];
     const contentType = rr.headers['content-type'];
+    let body = '';
+    if (rr.stream) {
+      const decoder = new TextDecoder();
+      const reader = rr.stream.getReader();
+      let result: ReadableStreamReadResult<unknown>;
+      do {
+        result = await reader.read();
+        if (result.value) {
+          if (!(result.value instanceof Uint8Array)) {
+            throw new Error('Unexepected buffer type');
+          }
+          body += decoder.decode(result.value);
+        }
+      } while (!result.done);
+    }
     if (
       typeof contentType === 'string' &&
       contentType.startsWith('multipart/form-data')
     ) {
-      const bb = busboy({ headers: rr.headers });
-      const reply = decodeReplyFromBusboy(bb);
-      rr.stream?.pipe(bb);
-      args = await reply;
-    } else {
-      let body = '';
-      for await (const chunk of rr.stream || []) {
-        body += chunk;
-      }
-      if (body) {
-        args = await decodeReply(body);
-      }
+      // XXX This doesn't support streaming unlike busboy
+      const formData = parseFormData(body, contentType);
+      args = await decodeReply(formData);
+    } else if (body) {
+      args = await decodeReply(body);
     }
-    const [fileId, name] = actionId.split('#') as [string, string];
-    const filePath = normalizePath(
-      path.join(config.rootDir, normalizePath(fileId)),
-    );
+    const [fileId, name] = rsfId.split('#') as [string, string];
+    const filePath = normalizePath(fileId.startsWith('/') ? fileId : rsfPrefix + fileId);
     const fname =
       rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
     const mod = await loadServerFile(fname, rr.command);
@@ -345,10 +356,10 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
       },
       async () => {
         const data = await (mod[name] || mod)(...args);
-        return renderToPipeableStream(
+        return renderToReadableStream(
           { ...(await elements), _value: data },
           bundlerConfig,
-        ).pipe(transformRsfId(config.rootDir));
+        ).pipeThrough(transformRsfId(rsfPrefix));
       },
     );
   }
@@ -362,8 +373,8 @@ async function renderRSC(rr: RenderRequest): Promise<PipeableStream> {
     },
     async () => {
       const elements = await render(rr.input);
-      return renderToPipeableStream(elements, bundlerConfig).pipe(
-        transformRsfId(config.rootDir),
+      return renderToReadableStream(elements, bundlerConfig).pipeThrough(
+        transformRsfId(rsfPrefix),
       );
     },
   );
@@ -387,7 +398,7 @@ async function getBuildConfigRSC() {
     input: string,
   ): Promise<string[]> => {
     const idSet = new Set<string>();
-    const pipeable = await renderRSC({
+    const readable = await renderRSC({
       input,
       method: 'GET',
       headers: {},
@@ -395,13 +406,17 @@ async function getBuildConfigRSC() {
       context: null,
       moduleIdCallback: (id) => idSet.add(id),
     });
-    const stream = new Writable({
-      write(_chunk, _encoding, callback) {
-        callback();
-      },
+    await new Promise<void>((resolve, reject) => {
+      const writable = new WritableStream({
+        close() {
+          resolve();
+        },
+        abort(reason) {
+          reject(reason);
+        },
+      });
+      readable.pipeTo(writable);
     });
-    pipeable.pipe(stream);
-    await finished(stream);
     return Array.from(idSet);
   };
 
