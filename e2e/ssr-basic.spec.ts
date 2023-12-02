@@ -64,14 +64,15 @@ for (const { build, command } of commands) {
       await expect(page.getByTestId('count')).toHaveText('3');
     });
 
-    test('no js environment should have first screen', async ({ browser }) => {
-      const noJSContext = await browser.newContext({
-        javaScriptEnabled: false,
-      });
-      const noJSPage = await noJSContext.newPage();
-      await noJSPage.goto(`http://localhost:${port}/`);
-      await expect(noJSPage.getByTestId('app-name')).toHaveText('Waku');
-      await expect(noJSPage.getByTestId('count')).toHaveText('0');
+    const noJSTest = test.extend({});
+    noJSTest.use({
+      javaScriptEnabled: true,
+    });
+
+    noJSTest('no js environment should have first screen', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/`);
+      await expect(page.getByTestId('app-name')).toHaveText('Waku');
+      await expect(page.getByTestId('count')).toHaveText('0');
     });
   });
 }
