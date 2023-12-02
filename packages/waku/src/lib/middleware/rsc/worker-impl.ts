@@ -4,7 +4,7 @@ import { parentPort } from 'node:worker_threads';
 import { Server } from 'node:http';
 
 import type { ReactNode } from 'react';
-import RSDWServer from 'react-server-dom-webpack/server';
+import RSDWServer from 'react-server-dom-webpack/server.edge';
 import { normalizePath } from 'vite';
 import type { ViteDevServer } from 'vite';
 
