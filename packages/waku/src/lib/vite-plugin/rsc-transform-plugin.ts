@@ -59,8 +59,8 @@ export function rscTransformPlugin(isProduction: boolean): Plugin {
         ) {
           // HACK tweak registerClientReference for production
           source = source.replace(
-            / = registerClientReference\(function\(\) {throw new Error\("[^"]*"\);},"[^"]*","([^"]*)"\);/gs,
-            ' = registerClientReference(function() {}, import.meta.url, "$1");',
+            / = registerClientReference\(function\(\) {throw new Error\("([^"]*)"\);},"[^"]*","([^"]*)"\);/gs,
+            ' = registerClientReference(function() {return "$1";}, import.meta.url, "$2");',
           );
         }
       }

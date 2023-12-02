@@ -28,6 +28,12 @@ export interface Config {
    */
   publicDir?: string;
   /**
+   * The ssr directory relative to distDir.
+   * The directlry is mainly used for internal purpose.
+   * Defaults to  "ssr".
+   */
+  ssrDir?: string;
+  /**
    * The index.html file relative to srcDir or distDir.
    * Defaults to  "index.html".
    */

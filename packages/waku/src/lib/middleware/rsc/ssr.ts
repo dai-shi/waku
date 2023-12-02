@@ -348,11 +348,19 @@ export const renderHtml = async <Context>(
                 origFile &&
                 !origFile.startsWith(path.join(config.rootDir, config.srcDir))
               ) {
+                // TODO we no longer fall into this condition?
                 const id = url.pathToFileURL(origFile).toString();
                 return { id, chunks: [id], name };
               }
               const id = url
-                .pathToFileURL(path.join(config.rootDir, config.distDir, file))
+                .pathToFileURL(
+                  path.join(
+                    config.rootDir,
+                    config.distDir,
+                    config.ssrDir,
+                    file,
+                  ),
+                )
                 .toString();
               return { id, chunks: [id], name };
             },
@@ -374,6 +382,11 @@ export const renderHtml = async <Context>(
         { elements },
         ssrConfig.unstable_render(),
       ),
+      {
+        onError(err: unknown) {
+          console.error(err);
+        },
+      },
     )
   )
     .pipeThrough(rectifyHtml())

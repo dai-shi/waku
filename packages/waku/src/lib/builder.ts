@@ -136,25 +136,6 @@ const buildServerBundle = async (
           ...serverEntryFiles,
         },
         output: {
-          banner: (chunk) => {
-            // HACK to bring directives to the front
-            let code = '';
-            if (
-              chunk.moduleIds.some((id) =>
-                Object.values(clientEntryFiles).includes(id),
-              )
-            ) {
-              code += '"use client";';
-            }
-            if (
-              chunk.moduleIds.some((id) =>
-                Object.values(serverEntryFiles).includes(id),
-              )
-            ) {
-              code += '"use server";';
-            }
-            return code;
-          },
           entryFileNames: (chunkInfo) => {
             if (
               commonEntryFiles[chunkInfo.name] ||
@@ -169,9 +150,39 @@ const buildServerBundle = async (
       },
     },
   });
+  // Build client components for SSR
+  await viteBuild({
+    ...viteInlineConfig(),
+    ssr: {
+      resolve: {
+        // TODO do we need this for SSR build?
+        conditions: ['react-server', 'workerd'],
+        externalConditions: ['react-server', 'workerd'],
+      },
+      external: ['waku'],
+    },
+    publicDir: false,
+    build: {
+      ssr: true,
+      outDir: path.join(config.rootDir, config.distDir, config.ssrDir),
+      rollupOptions: {
+        onwarn,
+        input: clientEntryFiles,
+        output: {
+          entryFileNames: (chunkInfo) => {
+            if (clientEntryFiles[chunkInfo.name]) {
+              return 'assets/[name].js';
+            }
+            return '[name].js';
+          },
+        },
+      },
+    },
+  });
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
+  // TODO check if we still need this
   const code = `export const resolveClientPath = (filePath, invert) => (invert ? ${JSON.stringify(
     Object.fromEntries(
       Object.entries(clientEntryFiles).map(([key, val]) => [
