@@ -2,7 +2,7 @@ import path from 'node:path';
 import type { Plugin } from 'vite';
 import * as RSDWNodeLoader from 'react-server-dom-webpack/node-loader';
 
-export function rscTransformPlugin(): Plugin {
+export function rscTransformPlugin(isProduction: boolean): Plugin {
   return {
     name: 'rsc-transform-plugin',
     async resolveId(id, importer, options) {
@@ -46,10 +46,25 @@ export function rscTransformPlugin(): Plugin {
       };
       RSDWNodeLoader.resolve(
         '',
-        { conditions: ['react-server'], parentURL: '' },
+        { conditions: ['react-server', 'workerd'], parentURL: '' },
         resolve,
       );
-      return (await RSDWNodeLoader.load(id, null, load)).source;
+      let { source } = await RSDWNodeLoader.load(id, null, load);
+      if (isProduction) {
+        // TODO we should parse the source code by ourselves with SWC
+        if (
+          /^import {registerClientReference} from "react-server-dom-webpack\/server";/.test(
+            source,
+          )
+        ) {
+          // HACK tweak registerClientReference for production
+          source = source.replace(
+            / = registerClientReference\(function\(\) {throw new Error\("[^"]*"\);},"[^"]*","([^"]*)"\);/gs,
+            ' = registerClientReference(function() {}, import.meta.url, "$1");',
+          );
+        }
+      }
+      return source;
     },
   };
 }

@@ -17,6 +17,7 @@ import {
 } from './middleware/rsc/worker-api.js';
 import { rscIndexPlugin } from './vite-plugin/rsc-index-plugin.js';
 import { rscAnalyzePlugin } from './vite-plugin/rsc-analyze-plugin.js';
+import { rscTransformPlugin } from './vite-plugin/rsc-transform-plugin.js';
 import { patchReactRefresh } from './vite-plugin/patch-react-refresh.js';
 import { renderHtml, shutdown as shutdownSsr } from './middleware/rsc/ssr.js';
 
@@ -59,8 +60,8 @@ const analyzeEntries = async (entriesFile: string) => {
     plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
     ssr: {
       resolve: {
-        conditions: ['react-server'],
-        externalConditions: ['react-server'],
+        conditions: ['react-server', 'workerd'],
+        externalConditions: ['react-server', 'workerd'],
       },
       noExternal: /^(?!node:)/,
     },
@@ -111,18 +112,14 @@ const buildServerBundle = async (
 ) => {
   const serverBuildOutput = await viteBuild({
     ...viteInlineConfig(),
+    plugins: [rscTransformPlugin(true)],
     ssr: {
       resolve: {
-        conditions: ['react-server'],
-        externalConditions: ['react-server'],
+        conditions: ['react-server', 'workerd'],
+        externalConditions: ['react-server', 'workerd'],
       },
       external: ['waku'],
-      noExternal: Object.values(clientEntryFiles).flatMap((fname) => {
-        const items = fname.split(path.sep);
-        const index = items.lastIndexOf('node_modules');
-        const name = index >= 0 && items[index + 1];
-        return name ? [name] : [];
-      }),
+      noExternal: /^(?!node:)/,
     },
     publicDir: false,
     build: {
@@ -133,6 +130,7 @@ const buildServerBundle = async (
         onwarn,
         input: {
           entries: entriesFile,
+          RSDWServer: 'react-server-dom-webpack/server.edge',
           ...commonEntryFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
