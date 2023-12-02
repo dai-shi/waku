@@ -51,13 +51,17 @@ export type MessageRes =
       id: number;
       type: 'buildConfig';
       output: Awaited<ReturnType<GetBuildConfig>>;
-    };
+    }
+  | { type: 'debug'; msg: string };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
 worker.on('message', (mesg: MessageRes) => {
   if ('id' in mesg) {
     messageCallbacks.get(mesg.id)?.(mesg);
+  }
+  if (mesg.type === 'debug') {
+    console.debug(mesg.msg);
   }
 });
 

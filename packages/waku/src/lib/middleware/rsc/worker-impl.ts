@@ -160,6 +160,10 @@ const loadServerFile = async (
   fname: string,
   command: 'dev' | 'build' | 'start',
 ) => {
+  parentPort!.postMessage({
+    type: 'debug',
+    msg: `Loading ${fname} in ${command}`,
+  })
   if (command !== 'dev') {
     return import(fname);
   }
