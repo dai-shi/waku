@@ -64,9 +64,6 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "dependencies": {
-    "busboy": "^1.6.0"
-  },
   "devDependencies": {
     "@hono/node-server": "^1.2.2",
     "@swc/cli": "^0.1.62",

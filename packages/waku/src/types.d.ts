@@ -1,5 +1,3 @@
-type ReactServerValue = any; // any serializable value
-
 type ImportManifestEntry = {
   id: string;
   chunks: string[];
@@ -22,8 +20,27 @@ type SSRManifest = {
   moduleLoading: ModuleLoading;
 };
 
+type ServerManifest = {
+  [id: string]: ImportManifestEntry;
+};
+
+type ClientManifest = {
+  [id: string]: ImportManifestEntry;
+};
+
 declare module 'react-server-dom-webpack/node-loader';
-declare module 'react-server-dom-webpack/server.node.unbundled'; // TODO
+
+declare module 'react-server-dom-webpack/server.edge' {
+  export function renderToReadableStream(
+    model: ReactClientValue,
+    webpackMap: ClientManifest,
+    options?: Options,
+  ): ReadableStream;
+  export function decodeReply<T>(
+    body: string | FormData,
+    webpackMap?: ServerManifest,
+  ): Promise<T>;
+}
 
 declare module 'react-server-dom-webpack/client' {
   export function createFromFetch<T>(
