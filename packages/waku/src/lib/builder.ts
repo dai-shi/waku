@@ -338,7 +338,7 @@ const emitHtmlFiles = async (
           pathStr.endsWith('/') ? 'index.html' : '',
         );
         let htmlStr: string;
-        if (await fs.stat(destFile)) {
+        if (await fileExists(destFile)) {
           htmlStr = await fs.readFile(destFile, { encoding: 'utf8' });
         } else {
           await fs.mkdir(path.dirname(destFile), { recursive: true });
