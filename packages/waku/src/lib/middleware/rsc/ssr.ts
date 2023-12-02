@@ -291,15 +291,15 @@ export const renderHtml = async <Context>(
   const moduleMap = new Proxy(
     {},
     {
-      get(_target, _filePath: string) {
+      get(_target, resolvedFilePath: string) {
         return new Proxy(
           {},
           {
             get(_target, name: string) {
               if (command === 'dev') {
-                const filePath = _filePath.startsWith('/@fs/')
-                  ? _filePath.slice(4)
-                  : _filePath;
+                const filePath = resolvedFilePath.startsWith('/@fs/')
+                  ? resolvedFilePath.slice(4)
+                  : resolvedFilePath;
                 const specifier = url
                   .pathToFileURL(transpile!(filePath, name))
                   .toString();
@@ -309,7 +309,7 @@ export const renderHtml = async <Context>(
                 };
               }
               const origFile = resolveClientPath?.(
-                path.join(config.rootDir, config.distDir, _filePath),
+                path.join(config.rootDir, config.distDir, resolvedFilePath),
                 true,
               );
               if (
@@ -324,7 +324,7 @@ export const renderHtml = async <Context>(
               return {
                 specifier: url
                   .pathToFileURL(
-                    path.join(config.rootDir, config.distDir, _filePath),
+                    path.join(config.rootDir, config.distDir, resolvedFilePath),
                   )
                   .toString(),
                 name,
