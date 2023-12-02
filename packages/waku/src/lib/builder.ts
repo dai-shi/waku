@@ -4,12 +4,16 @@ import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
-import { build as viteBuild, normalizePath } from 'vite';
+import { build as viteBuild } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
 import { resolveConfig, viteInlineConfig } from './config.js';
-import { encodeInput, generatePrefetchCode } from './middleware/rsc/utils.js';
+import {
+  encodeInput,
+  generatePrefetchCode,
+  normalizePath,
+} from './middleware/rsc/utils.js';
 import {
   shutdown as shutdownRsc,
   renderRSC,
