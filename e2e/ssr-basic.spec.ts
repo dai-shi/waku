@@ -21,7 +21,7 @@ const commands = [
 const cwd = fileURLToPath(new URL('./fixtures/ssr-basic', import.meta.url));
 
 for (const { build, command } of commands) {
-  test.describe(`rsc-basic: ${command}`, () => {
+  test.describe(`ssr-basic: ${command}`, () => {
     let cp: ChildProcess;
     let port: number;
     test.beforeAll(async () => {
@@ -64,17 +64,18 @@ for (const { build, command } of commands) {
       await expect(page.getByTestId('count')).toHaveText('3');
     });
 
-    const noJSTest = test.extend({});
-    noJSTest.use({
-      javaScriptEnabled: false,
-    });
-
-    noJSTest('no js environment should have first screen', async ({ page }) => {
+    test('no js environment should have first screen', async ({ browser }) => {
+      const context = await browser.newContext({
+        javaScriptEnabled: false,
+      });
+      const page = await context.newPage();
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
       await expect(page.getByTestId('count')).toHaveText('0');
       await page.getByTestId('increment').click();
       await expect(page.getByTestId('count')).toHaveText('0');
+      await page.close();
+      await context.close();
     });
   });
 }
