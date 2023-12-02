@@ -5,7 +5,6 @@ import { Server } from 'node:http';
 
 import type { ReactNode } from 'react';
 import RSDWServer from 'react-server-dom-webpack/server.edge';
-import { normalizePath } from 'vite';
 import type { ViteDevServer } from 'vite';
 
 import { resolveConfig, viteInlineConfig } from '../../config.js';
@@ -208,7 +207,13 @@ const resolveClientEntry = (
   filePath = resolveClientPath?.(filePath) || filePath;
   // FIXME We want to make `root` symmetric for 'srcDir' and 'distDir', but we don't know how to achieve it.
   let root = path.join(config.rootDir, command === 'dev' ? '' : config.distDir);
-  root = normalizePath(root);
+  if (path.sep !== '/') {
+    // HACK to support windows filesystem
+    root = root.replaceAll(path.sep, '/');
+    if (filePath[0] === '/') {
+      filePath = filePath.slice(1);
+    }
+  }
   if (!filePath.startsWith(root)) {
     if (command === 'dev') {
       // HACK this relies on Vite's internal implementation detail.
