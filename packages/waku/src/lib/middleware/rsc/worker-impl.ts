@@ -168,7 +168,7 @@ const loadServerFile = async (
     return import(fname);
   }
   const vite = await getViteServer();
-  return vite.ssrLoadModule(url.pathToFileURL(fname).toString());
+  return vite.ssrLoadModule(fname);
 };
 
 parentPort!.on('message', (mesg: MessageReq) => {
@@ -350,13 +350,11 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
     const filePath = normalizePath(
       fileId.startsWith('/') ? fileId : rsfPrefix + normalizePath(fileId),
     );
-    const fname =
-      rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
     parentPort!.postMessage({
       type: 'debug',
-      msg: `1: Loading ${fname} in ${rr.command}`,
+      msg: `1: Loading ${filePath} in ${rr.command}`,
     })
-    const mod = await loadServerFile(fname, rr.command);
+    const mod = await loadServerFile(filePath, rr.command);
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
     const rerender = (input: string) => {
       elements = Promise.all([elements, render(input)]).then(
