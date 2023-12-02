@@ -168,14 +168,7 @@ const loadServerFile = async (
     return import(fname);
   }
   const vite = await getViteServer();
-  try {
-    return vite.ssrLoadModule(fname);
-  } catch (e) {
-    parentPort!.postMessage({
-      type: 'debug',
-      msg: `3: error loading ${fname} in ${command}: ${e}`,
-    })
-  }
+  return vite.ssrLoadModule(url.pathToFileURL(fname).toString());
 };
 
 parentPort!.on('message', (mesg: MessageReq) => {
@@ -357,7 +350,8 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
     const filePath = normalizePath(
       fileId.startsWith('/') ? fileId : rsfPrefix + normalizePath(fileId),
     );
-    const fname = url.pathToFileURL(filePath).toString();
+    const fname =
+      rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
     parentPort!.postMessage({
       type: 'debug',
       msg: `1: Loading ${fname} in ${rr.command}`,
