@@ -214,6 +214,7 @@ const resolveClientEntry = (
     filePath = filePath.slice('file://'.length);
   }
   filePath = resolveClientPath?.(filePath) || filePath;
+  // FIXME We want to make `root` symmetric for 'srcDir' and 'distDir', but we don't know how to achieve it.
   let root = path.join(config.rootDir, command === 'dev' ? '' : config.distDir);
   root = normalizePath(root);
   if (!filePath.startsWith(root)) {
