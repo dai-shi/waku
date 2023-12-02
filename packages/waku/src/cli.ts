@@ -7,6 +7,8 @@ import type { Hono } from 'hono';
 
 const require = createRequire(new URL('.', import.meta.url));
 
+(globalThis as any).__WAKU_CWD__ = process.cwd();
+
 const { values, positionals } = parseArgs({
   args: process.argv.splice(2),
   allowPositionals: true,

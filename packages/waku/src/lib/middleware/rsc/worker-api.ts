@@ -1,4 +1,4 @@
-import { Worker } from 'node:worker_threads';
+import { Worker } from 'node:worker_threads'; // TODO no node dependency
 
 import type { GetBuildConfig } from '../../../server.js';
 

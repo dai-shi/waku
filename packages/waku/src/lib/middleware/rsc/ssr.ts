@@ -1,7 +1,6 @@
-import path from 'node:path';
-import fs from 'node:fs';
-import url from 'node:url';
-import { Server } from 'node:http';
+import path from 'node:path'; // TODO no node dependency
+import fs from 'node:fs'; // TODO no node dependency
+import url from 'node:url'; // TODO no node dependency
 
 import { createElement } from 'react';
 import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
@@ -38,6 +37,7 @@ const getViteServer = async () => {
   if (lastViteServer) {
     return lastViteServer;
   }
+  const { Server } = await import('node:http');
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const { createServer: viteCreateServer } = await import('vite');
   const { nonjsResolvePlugin } = await import(

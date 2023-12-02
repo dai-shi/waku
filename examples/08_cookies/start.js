@@ -6,6 +6,8 @@ import { rsc, connectWrapper } from 'waku';
 
 const withSsr = process.argv[2] === '--with-ssr';
 
+global.__WAKU_CWD__ = process.cwd();
+
 const root = path.join(
   path.dirname(url.fileURLToPath(import.meta.url)),
   'dist',

@@ -1,6 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
-
 import type { Config } from '../config.js';
 
 type DeepRequired<T> = T extends (...args: any[]) => any
@@ -28,14 +25,25 @@ const splitHTML = (htmlStr: string): readonly [string, string, string] => {
   return match.slice(1) as [string, string, string];
 };
 
+export function cwd() {
+  if (typeof (globalThis as any).__WAKU_CWD__ === 'string') {
+    return (globalThis as any).__WAKU_CWD__;
+  }
+  throw new Error('Failed to get cwd');
+  // TODO Can we support "."?
+}
+
 export async function resolveConfig() {
-  const configFile = path.resolve('waku.config.js');
+  // TODO windows support
+  const configFile = cwd() + '/' + 'waku.config.js';
   let config: Config = {};
-  if (fs.existsSync(configFile)) {
+  try {
     config = (await import(configFile)).default;
+  } catch (e) {
+    // ignored
   }
   const resolvedConfig: DeepRequired<Config> = {
-    rootDir: path.resolve('.'),
+    rootDir: cwd(),
     basePath: '/',
     srcDir: 'src',
     distDir: 'dist',
@@ -52,7 +60,12 @@ export async function resolveConfig() {
   return resolvedConfig;
 }
 
-export const viteInlineConfig = () => {
+// TODO we hope to eliminate this in the near future
+export const viteInlineConfig = async () => {
+  const [fs, path] = await Promise.all([
+    import('node:fs'),
+    import('node:path'),
+  ]);
   for (const file of ['vite.config.ts', 'vite.config.js']) {
     if (fs.existsSync(file)) {
       return { configFile: path.resolve(file) };

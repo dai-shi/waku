@@ -1,4 +1,4 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
+import { AsyncLocalStorage } from 'node:async_hooks'; // TODO no node dependency
 import type { ReactNode } from 'react';
 
 type Elements = Record<string, ReactNode>;

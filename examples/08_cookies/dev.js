@@ -4,6 +4,8 @@ import { rsc, connectWrapper } from 'waku';
 
 const withSsr = process.argv[2] === '--with-ssr';
 
+global.__WAKU_CWD__ = process.cwd();
+
 const app = express();
 app.use(cookieParser());
 app.use(
