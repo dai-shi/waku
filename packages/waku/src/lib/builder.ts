@@ -311,9 +311,15 @@ const emitRscFiles = async (
 const emitHtmlFiles = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   buildConfig: Awaited<ReturnType<typeof getBuildConfigRSC>>,
+  clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
   getClientModules: (input: string) => string[],
   ssr: boolean,
 ) => {
+  console.log(
+    clientBuildOutput.output.map((o) => {
+      return o.fileName;
+    }),
+  );
   const basePrefix = config.basePath + config.rscPath + '/';
   const publicIndexHtmlFile = path.join(
     config.rootDir,
@@ -327,6 +333,17 @@ const emitHtmlFiles = async (
   });
 
   await fs.unlink(publicIndexHtmlFile);
+  clientBuildOutput.output.splice(
+    clientBuildOutput.output.findIndex(
+      (v) => v.fileName === path.join(config.srcDir, config.indexHtml),
+    ),
+    1,
+  );
+  console.log(
+    clientBuildOutput.output.map((o) => {
+      return o.fileName;
+    }),
+  );
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
       async ([pathStr, { entries, customCode, context }]) => {
@@ -394,6 +411,7 @@ const emitVercelOutput = async (
   const clientFiles = clientBuildOutput.output.map(({ fileName }) =>
     path.join(config.rootDir, config.distDir, config.publicDir, fileName),
   );
+  console.log(clientFiles);
   const srcDir = path.join(config.rootDir, config.distDir, config.publicDir);
   const dstDir = path.join(config.rootDir, config.distDir, '.vercel', 'output');
   for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
@@ -523,6 +541,7 @@ export async function build(options?: { ssr?: boolean }) {
   const { htmlFiles } = await emitHtmlFiles(
     config,
     buildConfig,
+    clientBuildOutput,
     getClientModules,
     !!options?.ssr,
   );
