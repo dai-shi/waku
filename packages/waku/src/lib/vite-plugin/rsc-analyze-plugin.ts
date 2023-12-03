@@ -1,7 +1,7 @@
 import path from 'node:path';
-import fs from 'node:fs';
 import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
+import { fileExists } from '../middleware/rsc/utils.node.js';
 
 export function rscAnalyzePlugin(
   commonFileSet: Set<string>,
@@ -49,7 +49,7 @@ export function rscAnalyzePlugin(
       }
       return code;
     },
-    generateBundle(_options, bundle) {
+    async generateBundle(_options, bundle) {
       // TODO the logic in this function should probably be redesigned.
       const outputIds = Object.values(bundle).flatMap((item) =>
         'facadeModuleId' in item && item.facadeModuleId
@@ -61,14 +61,14 @@ export function rscAnalyzePlugin(
         { fromClient?: true; notFromClient?: true }
       >();
       const seen = new Set<string>();
-      const loop = (id: string, isClient: boolean) => {
+      const loop = async (id: string, isClient: boolean) => {
         if (seen.has(id)) {
           return;
         }
         seen.add(id);
         isClient = isClient || clientFileSet.has(id);
-        dependencyMap.get(id)?.forEach((depId) => {
-          if (!fs.existsSync(depId)) {
+        for (const depId of dependencyMap.get(id) ?? []) {
+          if (!(await fileExists(depId))) {
             // HACK is there a better way?
             return;
           }
@@ -82,12 +82,18 @@ export function rscAnalyzePlugin(
           } else {
             value.notFromClient = true;
           }
-          loop(depId, isClient);
-        });
+          await loop(depId, isClient);
+        }
       };
-      outputIds.forEach((id) => loop(id, false));
-      clientFileSet.forEach((id) => loop(id, true));
-      serverFileSet.forEach((id) => loop(id, false));
+      for (const id of outputIds) {
+        await loop(id, false);
+      }
+      for (const id of clientFileSet) {
+        await loop(id, true);
+      }
+      for (const id of serverFileSet) {
+        await loop(id, false);
+      }
       for (const [id, val] of possibleCommonFileMap) {
         if (val.fromClient && val.notFromClient) {
           commonFileSet.add(id);
