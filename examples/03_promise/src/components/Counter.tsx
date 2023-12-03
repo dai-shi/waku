@@ -27,7 +27,6 @@ const Message = ({
   count: number;
   delayedMessage: Promise<string>;
 }) => {
-  const message = use(delayedMessage);
   return (
     <ul>
       <li>count: {count}</li>
