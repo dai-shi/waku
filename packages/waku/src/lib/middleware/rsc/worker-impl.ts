@@ -169,10 +169,10 @@ const loadServerFile = async (
   }
   const vite = await getViteServer();
   const id = await vite.pluginContainer.resolveId(fname)
-  if (id) {
-    return vite.ssrLoadModule(fname);
+  if (id?.external === "absolute") {
+    return vite.ssrLoadModule(path.relative(vite.config.root, fname));
   }
-  return vite.ssrLoadModule(path.relative(vite.config.root, fname));
+  return vite.ssrLoadModule(fname);
 };
 
 parentPort!.on('message', (mesg: MessageReq) => {
