@@ -319,9 +319,10 @@ export const renderHtml = async <Context>(
               if (command === 'dev') {
                 const filePath = normalizePath(
                   file.startsWith('@fs/')
-                    ? file.slice(3)
+                    ? file.slice('@fs/'.length)
                     : path.join(config.rootDir, config.srcDir, file),
                 );
+                console.log('filePath', filePath);
                 // FIXME This is ugly. We need to refactor it.
                 const wakuDist = normalizePath(
                   path.join(

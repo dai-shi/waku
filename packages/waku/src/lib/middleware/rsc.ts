@@ -109,6 +109,9 @@ export function rsc<
     } catch (e) {
       // does not exist
     }
+    if (pathStr.startsWith('/@fs')) {
+      return null;
+    }
     return vite.transformIndexHtml(pathStr, publicIndexHtml);
   };
 
