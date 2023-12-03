@@ -27,8 +27,12 @@ import { renderHtml, shutdown as shutdownSsr } from './middleware/rsc/ssr.js';
 import {
   createReadStream,
   createWriteStream,
+  existsSync,
   mkdirSync,
+  readdirSync,
   symlinkSync,
+  write,
+  writeFileSync,
 } from 'node:fs';
 import { fileExists } from './middleware/rsc/utils.node.js';
 
@@ -356,7 +360,7 @@ const emitHtmlFiles = async (
   return { htmlFiles };
 };
 
-const emitVercelOutput = async (
+const emitVercelOutput = (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
   rscFiles: string[],
@@ -369,7 +373,7 @@ const emitVercelOutput = async (
   const dstDir = path.join(config.rootDir, config.distDir, '.vercel', 'output');
   for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
     const dstFile = path.join(dstDir, 'static', path.relative(srcDir, file));
-    if (!(await fileExists(dstFile))) {
+    if (!existsSync(dstFile)) {
       mkdirSync(path.dirname(dstFile), { recursive: true });
       symlinkSync(path.relative(path.dirname(dstFile), file), dstFile);
     }
@@ -381,20 +385,18 @@ const emitVercelOutput = async (
     'functions',
     config.rscPath + '.func',
   );
-  await fsPromises.mkdir(path.join(serverlessDir, config.distDir), {
+  mkdirSync(path.join(serverlessDir, config.distDir), {
     recursive: true,
   });
-  await fsPromises.symlink(
+  symlinkSync(
     path.relative(serverlessDir, path.join(config.rootDir, 'node_modules')),
     path.join(serverlessDir, 'node_modules'),
   );
-  for (const file of await fsPromises.readdir(
-    path.join(config.rootDir, config.distDir),
-  )) {
+  for (const file of readdirSync(path.join(config.rootDir, config.distDir))) {
     if (['.vercel'].includes(file)) {
       return;
     }
-    await fsPromises.symlink(
+    symlinkSync(
       path.relative(
         path.join(serverlessDir, config.distDir),
         path.join(config.rootDir, config.distDir, file),
@@ -407,15 +409,15 @@ const emitVercelOutput = async (
     handler: 'serve.js',
     launcherType: 'Nodejs',
   };
-  await fsPromises.writeFile(
+  writeFileSync(
     path.join(serverlessDir, '.vc-config.json'),
     JSON.stringify(vcConfigJson, null, 2),
   );
-  await fsPromises.writeFile(
+  writeFileSync(
     path.join(serverlessDir, 'package.json'),
     JSON.stringify({ type: 'module' }, null, 2),
   );
-  await fsPromises.writeFile(
+  writeFileSync(
     path.join(serverlessDir, 'serve.js'),
     `
 export default async function handler(req, res) {
@@ -444,8 +446,8 @@ export default async function handler(req, res) {
   const basePrefix = config.basePath + config.rscPath + '/';
   const routes = [{ src: basePrefix + '(.*)', dest: basePrefix }];
   const configJson = { version: 3, overrides, routes };
-  await fsPromises.mkdir(dstDir, { recursive: true });
-  await fsPromises.writeFile(
+  mkdirSync(dstDir, { recursive: true });
+  writeFileSync(
     path.join(dstDir, 'config.json'),
     JSON.stringify(configJson, null, 2),
   );
