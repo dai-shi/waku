@@ -24,7 +24,12 @@ import { rscAnalyzePlugin } from './vite-plugin/rsc-analyze-plugin.js';
 import { rscTransformPlugin } from './vite-plugin/rsc-transform-plugin.js';
 import { patchReactRefresh } from './vite-plugin/patch-react-refresh.js';
 import { renderHtml, shutdown as shutdownSsr } from './middleware/rsc/ssr.js';
-import { createReadStream, createWriteStream } from 'node:fs';
+import {
+  createReadStream,
+  createWriteStream,
+  mkdirSync,
+  symlinkSync,
+} from 'node:fs';
 import { fileExists } from './middleware/rsc/utils.node.js';
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
@@ -365,11 +370,8 @@ const emitVercelOutput = async (
   for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
     const dstFile = path.join(dstDir, 'static', path.relative(srcDir, file));
     if (!(await fileExists(dstFile))) {
-      await fsPromises.mkdir(path.dirname(dstFile), { recursive: true });
-      await fsPromises.symlink(
-        path.relative(path.dirname(dstFile), file),
-        dstFile,
-      );
+      mkdirSync(path.dirname(dstFile), { recursive: true });
+      symlinkSync(path.relative(path.dirname(dstFile), file), dstFile);
     }
   }
 
@@ -492,7 +494,7 @@ export async function build(options: { cwd: string; ssr?: boolean }) {
   );
 
   // https://vercel.com/docs/build-output-api/v3
-  await emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
+  emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
 
   await shutdownSsr();
   await shutdownRsc();
