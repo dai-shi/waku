@@ -294,6 +294,7 @@ export const renderHtml = async <Context>(
           {
             get(_target, name: string) {
               if (command === 'dev') {
+                console.log('heeeeere', resolvedFilePath);
                 const filePath = normalizePath(
                   resolvedFilePath.startsWith('/@fs/')
                     ? resolvedFilePath.slice(4)
