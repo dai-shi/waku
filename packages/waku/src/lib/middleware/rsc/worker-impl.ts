@@ -168,6 +168,10 @@ const loadServerFile = async (
     return import(fname);
   }
   const vite = await getViteServer();
+  const id = await vite.pluginContainer.resolveId(fname)
+  if (id) {
+    return vite.ssrLoadModule(fname);
+  }
   return vite.ssrLoadModule(path.relative(vite.config.root, fname));
 };
 
