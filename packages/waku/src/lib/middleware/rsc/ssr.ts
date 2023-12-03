@@ -295,13 +295,11 @@ export const renderHtml = async <Context>(
             get(_target, name: string) {
               if (command === 'dev') {
                 const filePath = normalizePath(
-                  resolvedFilePath.startsWith('@fs/')
-                    ? // FIXME This is ugly. We need to refactor it.
-                      // remove '@fs'(3) on Unix and '@fs/'(4) on Windows
-                      resolvedFilePath.slice(2 + path.sep === '/' ? 3 : 4)
+                  resolvedFilePath.startsWith('/@fs/')
+                    ? resolvedFilePath.slice(4)
                     : resolvedFilePath,
                 );
-                // FIXME This is ugly. We need to refactor it.
+                // FIXME This is ugly. ,e need to refactor it.
                 const wakuDist = normalizePath(
                   path.join(
                     url.fileURLToPath(import.meta.url),
