@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import RSDWServer from 'react-server-dom-webpack/server.edge';
 import type { ViteDevServer } from 'vite';
 
-import { resolveConfig, viteInlineConfig } from '../../config.js';
+import { setCwd, resolveConfig, viteInlineConfig } from '../../config.js';
 import {
   hasStatusCode,
   deepFreeze,
@@ -29,7 +29,7 @@ if (IS_NODE_20) {
   register('waku/node-loader', url.pathToFileURL('./'));
 }
 
-(globalThis as any).__WAKU_CWD__ = process.cwd(); // TODO no node dependency
+setCwd(process.env.__WAKU_CWD__ || ''); // TODO no node dependency
 
 type Entries = {
   default: ReturnType<typeof defineEntries>;
