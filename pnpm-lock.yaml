@@ -14,9 +14,6 @@ importers:
       '@types/babel__core':
         specifier: ^7.20.4
         version: 7.20.4
-      '@types/busboy':
-        specifier: ^1.5.3
-        version: 1.5.3
       '@types/node':
         specifier: ^20.9.0
         version: 20.9.0
@@ -1626,12 +1623,6 @@ packages:
     resolution: {integrity: sha512-mSM/iKUk5fDDrEV/e83qY+Cr3I1+Q3qqTuEn++HAWYjEa1+NxZr6CNrcJGf2ZTnq4HoFGC3zaTPZTobCzCFukA==}
     dependencies:
       '@babel/types': 7.23.3
-    dev: true
-
-  /@types/busboy@1.5.3:
-    resolution: {integrity: sha512-YMBLFN/xBD8bnqywIlGyYqsNFXu6bsiY7h3Ae0kO17qEuTjsqeyYMRPSUDacIKIquws2Y6KjmxAyNx8xB3xQbw==}
-    dependencies:
-      '@types/node': 20.9.0
     dev: true
 
   /@types/cacheable-request@6.0.3:
