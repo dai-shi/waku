@@ -1,8 +1,8 @@
-import path from 'node:path';
-import fsPromises from 'node:fs/promises';
+import path from 'node:path'; // TODO no node dependency
+import fsPromises from 'node:fs/promises'; // TODO no node dependency
 import type { ViteDevServer } from 'vite';
 
-import { resolveConfig, viteInlineConfig } from '../config.js';
+import { setCwd, resolveConfig } from '../config.js';
 import { renderHtml } from './rsc/ssr.js';
 import { decodeInput, hasStatusCode, endStream } from './rsc/utils.js';
 import {
@@ -11,18 +11,20 @@ import {
   renderRSC,
 } from './rsc/worker-api.js';
 import { patchReactRefresh } from '../vite-plugin/patch-react-refresh.js';
-import type { ReqObject, ResObject, Middleware } from './types.js';
+import type { BaseReq, BaseRes, Middleware } from './types.js';
 
 export function rsc<
   Context,
-  Req extends ReqObject,
-  Res extends ResObject,
+  Req extends BaseReq,
+  Res extends BaseRes,
 >(options: {
+  cwd: string;
   command: 'dev' | 'start';
   ssr?: boolean;
   unstable_prehook?: (req: Req, res: Res) => Context;
   unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
 }): Middleware<Req, Res> {
+  setCwd(options.cwd);
   const { command, ssr, unstable_prehook, unstable_posthook } = options;
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
@@ -34,17 +36,23 @@ export function rsc<
     if (lastViteServer) {
       return lastViteServer;
     }
-    const config = await configPromise;
-    const { createServer: viteCreateServer } = await import('vite');
-    const { default: viteReact } = await import('@vitejs/plugin-react');
-    const { rscIndexPlugin } = await import(
-      '../vite-plugin/rsc-index-plugin.js'
-    );
-    const { rscHmrPlugin, hotImport } = await import(
-      '../vite-plugin/rsc-hmr-plugin.js'
-    );
+    const [
+      config,
+      { viteInlineConfig },
+      { createServer: viteCreateServer },
+      { default: viteReact },
+      { rscIndexPlugin },
+      { rscHmrPlugin, hotImport },
+    ] = await Promise.all([
+      configPromise,
+      import('../config.js'),
+      import('vite'),
+      import('@vitejs/plugin-react'),
+      import('../vite-plugin/rsc-index-plugin.js'),
+      import('../vite-plugin/rsc-hmr-plugin.js'),
+    ]);
     const viteServer = await viteCreateServer({
-      ...viteInlineConfig(),
+      ...(await viteInlineConfig()),
       root: path.join(config.rootDir, config.srcDir),
       optimizeDeps: {
         include: ['react-server-dom-webpack/client'],

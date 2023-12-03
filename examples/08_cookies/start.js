@@ -6,6 +6,8 @@ import { rsc, connectWrapper } from 'waku';
 
 const withSsr = process.argv[2] === '--with-ssr';
 
+const cwd = process.cwd();
+
 const root = path.join(
   path.dirname(url.fileURLToPath(import.meta.url)),
   'dist',
@@ -16,6 +18,7 @@ app.use(cookieParser());
 app.use(
   connectWrapper(
     rsc({
+      cwd,
       command: 'start',
       unstable_prehook: (req) => {
         return { count: Number(req.orig.cookies.count) || 0 };

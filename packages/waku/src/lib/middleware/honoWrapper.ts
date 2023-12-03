@@ -1,6 +1,6 @@
 import type { MiddlewareHandler, Context, Env, Input } from 'hono';
 
-import type { ReqObject, ResObject, Middleware } from './types.js';
+import type { BaseReq, BaseRes, Middleware } from './types.js';
 
 const createEmptyReadableStream = () =>
   new ReadableStream({
@@ -44,13 +44,13 @@ export function honoWrapper<
   I extends Input = Record<string, never>,
 >(
   m: Middleware<
-    ReqObject & { c: Context<E, P, I> },
-    ResObject & { c: Context<E, P, I> }
+    BaseReq & { c: Context<E, P, I> },
+    BaseRes & { c: Context<E, P, I> }
   >,
 ): MiddlewareHandler<E, P, I> {
   return (c, next) =>
     new Promise((resolve) => {
-      const req: ReqObject & { c: Context<E, P, I> } = {
+      const req: BaseReq & { c: Context<E, P, I> } = {
         stream: c.req.raw.body || createEmptyReadableStream(),
         method: c.req.method,
         url: c.req.url,
@@ -62,7 +62,7 @@ export function honoWrapper<
       const writable = createStreamPair((readable) => {
         resolve(c.body(readable));
       });
-      const res: ResObject & { c: Context<E, P, I> } = {
+      const res: BaseRes & { c: Context<E, P, I> } = {
         stream: writable,
         setStatus: (code) => c.status(code),
         setHeader: (name, value) => c.header(name, value),

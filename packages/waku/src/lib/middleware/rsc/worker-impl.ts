@@ -1,13 +1,12 @@
-import path from 'node:path';
-import url from 'node:url';
-import { parentPort } from 'node:worker_threads';
-import { Server } from 'node:http';
+import path from 'node:path'; // TODO no node dependency
+import url from 'node:url'; // TODO no node dependency
+import { parentPort } from 'node:worker_threads'; // TODO no node dependency
 
 import type { ReactNode } from 'react';
 import RSDWServer from 'react-server-dom-webpack/server.edge';
 import type { ViteDevServer } from 'vite';
 
-import { resolveConfig, viteInlineConfig } from '../../config.js';
+import { setCwd, resolveConfig, viteInlineConfig } from '../../config.js';
 import {
   hasStatusCode,
   deepFreeze,
@@ -29,6 +28,8 @@ if (IS_NODE_20) {
   } = await import('node:module');
   register('waku/node-loader', url.pathToFileURL('./'));
 }
+
+setCwd(process.env.__WAKU_CWD__ || ''); // TODO no node dependency
 
 type Entries = {
   default: ReturnType<typeof defineEntries>;
@@ -108,6 +109,7 @@ const getViteServer = async () => {
   if (lastViteServer) {
     return lastViteServer;
   }
+  const { Server } = await import('node:http');
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const { createServer: viteCreateServer } = await import('vite');
   const { rscTransformPlugin } = await import(

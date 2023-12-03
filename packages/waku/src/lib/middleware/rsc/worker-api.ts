@@ -1,5 +1,6 @@
-import { Worker } from 'node:worker_threads';
+import { Worker } from 'node:worker_threads'; // TODO no node dependency
 
+import { getCwd } from '../../config.js';
 import type { GetBuildConfig } from '../../../server.js';
 
 export type RenderRequest = {
@@ -11,16 +12,6 @@ export type RenderRequest = {
   stream?: ReadableStream;
   moduleIdCallback?: (id: string) => void;
 };
-
-const IS_NODE_18 = Number(process.versions.node.split('.')[0]) < 20;
-
-const worker = new Worker(new URL('worker-impl.js', import.meta.url), {
-  execArgv: [
-    ...(IS_NODE_18 ? ['--experimental-loader', 'waku/node-loader'] : []),
-    '--conditions',
-    'react-server',
-  ],
-});
 
 export type BuildOutput = {
   rscFiles: string[];
@@ -55,13 +46,36 @@ export type MessageRes =
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
-worker.on('message', (mesg: MessageRes) => {
-  if ('id' in mesg) {
-    messageCallbacks.get(mesg.id)?.(mesg);
+let lastCommand: 'dev' | 'build' | 'start' | undefined;
+let lastWorker: Worker | undefined;
+const getWorker = (command: 'dev' | 'build' | 'start') => {
+  if (lastWorker) {
+    if (lastCommand !== command) {
+      throw new Error('cannot create worker with different command');
+    }
+    return lastWorker;
   }
-});
+  const IS_NODE_18 = Number(process.versions.node.split('.')[0]) < 20;
+  const worker = new Worker(new URL('worker-impl.js', import.meta.url), {
+    env: { __WAKU_CWD__: getCwd() },
+    execArgv: [
+      ...(IS_NODE_18 ? ['--experimental-loader', 'waku/node-loader'] : []),
+      '--conditions',
+      'react-server',
+    ],
+  });
+  worker.on('message', (mesg: MessageRes) => {
+    if ('id' in mesg) {
+      messageCallbacks.get(mesg.id)?.(mesg);
+    }
+  });
+  lastCommand = command;
+  lastWorker = worker;
+  return worker;
+};
 
 export function registerReloadCallback(fn: (type: 'full-reload') => void) {
+  const worker = getWorker('dev');
   const listener = (mesg: MessageRes) => {
     if (mesg.type === 'full-reload') {
       fn(mesg.type);
@@ -72,6 +86,7 @@ export function registerReloadCallback(fn: (type: 'full-reload') => void) {
 }
 
 export function registerImportCallback(fn: (source: string) => void) {
+  const worker = getWorker('dev');
   const listener = (mesg: MessageRes) => {
     if (mesg.type === 'hot-import') {
       fn(mesg.source);
@@ -82,6 +97,10 @@ export function registerImportCallback(fn: (source: string) => void) {
 }
 
 export function shutdown(): Promise<void> {
+  const worker = lastWorker;
+  if (!worker) {
+    throw new Error('No worker to shutdown');
+  }
   return new Promise((resolve) => {
     worker.on('close', resolve);
     const mesg: MessageReq = { type: 'shutdown' };
@@ -94,6 +113,7 @@ let nextId = 1;
 export function renderRSC<Context>(
   rr: RenderRequest,
 ): Promise<readonly [ReadableStream, Context]> {
+  const worker = getWorker(rr.command);
   const id = nextId++;
   const pipe = async () => {
     if (rr.stream) {
@@ -187,6 +207,7 @@ export function renderRSC<Context>(
 }
 
 export function getBuildConfigRSC(): ReturnType<GetBuildConfig> {
+  const worker = getWorker('build');
   return new Promise((resolve, reject) => {
     const id = nextId++;
     messageCallbacks.set(id, (mesg) => {
