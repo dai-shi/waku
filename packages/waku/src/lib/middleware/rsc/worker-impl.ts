@@ -5,7 +5,8 @@ import { parentPort } from 'node:worker_threads'; // TODO no node dependency
 import type { ReactNode } from 'react';
 import type { ViteDevServer } from 'vite';
 
-import { setCwd, resolveConfig, viteInlineConfig } from '../../config.js';
+import type { ResolvedConfig } from '../../../config.js';
+import { viteInlineConfig } from '../../config.js';
 import {
   hasStatusCode,
   deepFreeze,
@@ -18,11 +19,9 @@ import {
   runWithAsyncLocalStorage as runWithAsyncLocalStorageOrig,
 } from '../../../server.js';
 
-(globalThis as any).__WAKU_CWD__ = process.cwd(); // TODO no node dependency
-
 let nodeLoaderRegistered = false;
 const loadRSDWServer = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: Omit<ResolvedConfig, 'ssr'>,
   command: 'dev' | 'build' | 'start',
 ) => {
   if (command !== 'dev') {
@@ -48,8 +47,6 @@ const loadRSDWServer = async (
   }
   return import('react-server-dom-webpack/server.edge');
 };
-
-setCwd(process.env.__WAKU_CWD__ || ''); // TODO no node dependency
 
 type Entries = {
   default: ReturnType<typeof defineEntries>;
@@ -109,9 +106,9 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
 const handleGetBuildConfig = async (
   mesg: MessageReq & { type: 'getBuildConfig' },
 ) => {
-  const { id } = mesg;
+  const { id, config } = mesg;
   try {
-    const output = await getBuildConfigRSC();
+    const output = await getBuildConfigRSC(config);
     const mesg: MessageRes = { id, type: 'buildConfig', output };
     parentPort!.postMessage(mesg);
   } catch (err) {
@@ -207,7 +204,7 @@ parentPort!.on('message', (mesg: MessageReq) => {
 });
 
 const getEntriesFile = (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: Omit<ResolvedConfig, 'ssr'>,
   command: 'dev' | 'build' | 'start',
 ) => {
   const filePath = path.join(
@@ -222,7 +219,7 @@ const getEntriesFile = (
 
 const resolveClientEntry = (
   filePath: string,
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: Omit<ResolvedConfig, 'ssr'>,
   command: 'dev' | 'build' | 'start',
 ) => {
   filePath = filePath.startsWith('file:///')
@@ -279,7 +276,7 @@ const transformRsfId = (prefixToRemove: string) => {
 };
 
 async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
-  const config = await resolveConfig();
+  const config = rr.config;
   const { renderToReadableStream, decodeReply } = await loadRSDWServer(
     config,
     rr.command,
@@ -399,9 +396,7 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
   );
 }
 
-async function getBuildConfigRSC() {
-  const config = await resolveConfig();
-
+async function getBuildConfigRSC(config: Omit<ResolvedConfig, 'ssr'>) {
   const entriesFile = getEntriesFile(config, 'build');
   const {
     default: { getBuildConfig },
@@ -421,6 +416,7 @@ async function getBuildConfigRSC() {
       input,
       method: 'GET',
       headers: {},
+      config,
       command: 'build',
       context: null,
       moduleIdCallback: (id) => idSet.add(id),

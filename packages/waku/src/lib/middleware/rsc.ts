@@ -2,7 +2,8 @@ import path from 'node:path'; // TODO no node dependency
 import fsPromises from 'node:fs/promises'; // TODO no node dependency
 import type { ViteDevServer } from 'vite';
 
-import { setCwd, resolveConfig } from '../config.js';
+import type { Config } from '../../config.js';
+import { resolveConfig } from '../config.js';
 import { renderHtml } from './rsc/ssr.js';
 import { decodeInput, hasStatusCode, endStream } from './rsc/utils.js';
 import {
@@ -18,18 +19,17 @@ export function rsc<
   Req extends BaseReq,
   Res extends BaseRes,
 >(options: {
-  cwd: string;
+  config: Config;
   command: 'dev' | 'start';
   ssr?: boolean;
   unstable_prehook?: (req: Req, res: Res) => Context;
   unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
 }): Middleware<Req, Res> {
-  setCwd(options.cwd);
   const { command, ssr, unstable_prehook, unstable_posthook } = options;
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
   }
-  const configPromise = resolveConfig();
+  const configPromise = resolveConfig(options.config);
 
   let lastViteServer: ViteDevServer | undefined;
   const getViteServer = async (): Promise<ViteDevServer> => {
@@ -176,6 +176,7 @@ export function rsc<
           input,
           method,
           headers,
+          config,
           command,
           context,
           stream: req.stream,

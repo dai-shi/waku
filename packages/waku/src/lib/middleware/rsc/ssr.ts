@@ -4,13 +4,14 @@ import url from 'node:url'; // TODO no node dependency
 import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
 import type { ViteDevServer } from 'vite';
 
-import { resolveConfig, viteInlineConfig } from '../../config.js';
+import type { ResolvedConfig } from '../../../config.js';
+import { viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
 import { renderRSC } from './worker-api.js';
 import { hasStatusCode, concatUint8Arrays, normalizePath } from './utils.js';
 
 const loadReact = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: ResolvedConfig,
   command: 'dev' | 'build' | 'start',
 ) => {
   if (command !== 'dev') {
@@ -34,7 +35,7 @@ const loadReact = async (
 };
 
 const loadRDServer = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: ResolvedConfig,
   command: 'dev' | 'build' | 'start',
 ) => {
   if (command !== 'dev') {
@@ -58,7 +59,7 @@ const loadRDServer = async (
 };
 
 const loadRSDWClient = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: ResolvedConfig,
   command: 'dev' | 'build' | 'start',
 ) => {
   if (command !== 'dev') {
@@ -82,7 +83,7 @@ const loadRSDWClient = async (
 };
 
 const loadWakuClient = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: ResolvedConfig,
   command: 'dev' | 'build' | 'start',
 ) => {
   if (command !== 'dev') {
@@ -161,7 +162,7 @@ const loadServerFile = async (
 };
 
 const getEntriesFile = (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: ResolvedConfig,
   command: 'dev' | 'build' | 'start',
 ) => {
   const filePath = path.join(
@@ -326,7 +327,7 @@ const rectifyHtml = () => {
 };
 
 export const renderHtml = async <Context>(
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: ResolvedConfig,
   command: 'dev' | 'build' | 'start',
   pathStr: string,
   htmlStr: string, // Hope stream works, but it'd be too tricky
@@ -358,6 +359,7 @@ export const renderHtml = async <Context>(
       input: ssrConfig.input,
       method: 'GET',
       headers: {},
+      config,
       command,
       context,
     });
