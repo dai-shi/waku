@@ -299,9 +299,10 @@ export const renderHtml = async <Context>(
                   resolvedFilePath.startsWith('/@fs/')
                     ? // FIXME This is ugly. We need to refactor it.
                       // remove '@fs'(3) on Unix and '@fs/'(4) on Windows
-                      resolvedFilePath.slice(2 + path.sep === '/' ? 4 : 5)
+                      resolvedFilePath.slice(4 + (path.sep === '/' ? 0 : 1))
                     : resolvedFilePath,
                 );
+                console.log('filepath', filePath);
                 // FIXME This is ugly. ,e need to refactor it.
                 const wakuDist = normalizePath(
                   path.join(
