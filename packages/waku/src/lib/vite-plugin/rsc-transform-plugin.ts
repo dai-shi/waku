@@ -63,6 +63,17 @@ export function rscTransformPlugin(isProduction: boolean): Plugin {
             ' = registerClientReference(function() {return "$1";}, import.meta.url, "$2");',
           );
         }
+        if (
+          /;import {registerServerReference} from "react-server-dom-webpack\/server";/.test(
+            source,
+          )
+        ) {
+          // HACK tweak registerServerReference for production
+          source = source.replace(
+            /\) registerServerReference\(([^,]*),"[^"]*","([^"]*)"\);/gs,
+            ') registerServerReference($1, import.meta.url, "$2");',
+          );
+        }
       }
       return source;
     },
