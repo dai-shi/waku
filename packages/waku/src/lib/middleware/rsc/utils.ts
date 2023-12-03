@@ -62,14 +62,13 @@ export const deepFreeze = (x: unknown): void => {
   }
 };
 
-export const endStream = (stream: WritableStream, message?: string) => {
+export const endStream = async (stream: WritableStream, message?: string) => {
   const writer = stream.getWriter();
+  await writer.ready;
   if (message) {
-    new TextEncoder().encode(message).forEach((chunk) => {
-      writer.ready.then(() => writer.write(chunk));
-    });
+    await writer.write(new TextEncoder().encode(message));
   }
-  writer.ready.then(() => writer.close());
+  await writer.close();
 };
 
 export const concatUint8Arrays = (arrs: Uint8Array[]): Uint8Array => {
