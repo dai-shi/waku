@@ -58,15 +58,15 @@ Our goal is to establish an ecosystem that covers a broader range of use cases.
 To start a new Waku project, you can use any of the following
 commands, depending on your preferred package manager:
 
-```bash
+```sh
 npm create waku@latest
 ```
 
-```bash
+```sh
 yarn create waku
 ```
 
-```bash
+```sh
 pnpm create waku
 ```
 
@@ -279,7 +279,7 @@ infinite depth of routes.
 You can try an example app in the repository by cloning it and running
 the following commands:
 
-```bash
+```sh
 git clone https://github.com/dai-shi/waku.git
 cd waku
 npm install

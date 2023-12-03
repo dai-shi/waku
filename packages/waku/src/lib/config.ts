@@ -1,4 +1,5 @@
 import type { Config } from '../config.js';
+import { normalizePath } from './middleware/rsc/utils.js';
 
 type DeepRequired<T> = T extends (...args: any[]) => any
   ? T
@@ -43,7 +44,7 @@ export async function resolveConfig() {
     // ignored
   }
   const resolvedConfig: DeepRequired<Config> = {
-    rootDir: cwd(),
+    rootDir: normalizePath(cwd()),
     basePath: '/',
     srcDir: 'src',
     distDir: 'dist',

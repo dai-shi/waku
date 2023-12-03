@@ -115,6 +115,10 @@ export function rsc<
     } catch (e) {
       // does not exist
     }
+    // fixme: otherwise SSR on Windows will fail
+    if (pathStr.startsWith('/@fs')) {
+      return null;
+    }
     return vite.transformIndexHtml(pathStr, publicIndexHtml);
   };
 
@@ -165,8 +169,9 @@ export function rsc<
         throw new Error(`Unsupported method '${method}'`);
       }
       try {
+        const input = decodeInput(pathStr.slice(basePrefix.length));
         const [readable, nextCtx] = await renderRSC({
-          input: decodeInput(pathStr.slice(basePrefix.length)),
+          input,
           method,
           headers,
           command,

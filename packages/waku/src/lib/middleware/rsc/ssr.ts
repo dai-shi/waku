@@ -1,5 +1,4 @@
 import path from 'node:path'; // TODO no node dependency
-import fs from 'node:fs'; // TODO no node dependency
 import url from 'node:url'; // TODO no node dependency
 
 import { createElement } from 'react';
@@ -12,17 +11,19 @@ import { resolveConfig, viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
 import { ServerRoot } from '../../../client.js';
 import { renderRSC } from './worker-api.js';
-import { hasStatusCode, concatUint8Arrays } from './utils.js';
+import { hasStatusCode, concatUint8Arrays, normalizePath } from './utils.js';
 
 const { renderToReadableStream } = RDServer;
 const { createFromReadableStream } = RSDWClient;
 
 // HACK for react-server-dom-webpack without webpack
-(globalThis as any).__waku_module_cache__ ||= new Map();
-(globalThis as any).__webpack_chunk_load__ ||= (id: string) =>
-  import(id).then((m) => (globalThis as any).__waku_module_cache__.set(id, m));
-(globalThis as any).__webpack_require__ ||= (id: string) =>
-  (globalThis as any).__waku_module_cache__.get(id);
+const moduleCache = new Map();
+(globalThis as any).__webpack_chunk_load__ ||= async (id: string) => {
+  const [filePath, command] = id.split('#');
+  const m = await loadServerFile(filePath!, (command as any) || 'start');
+  moduleCache.set(id, m);
+};
+(globalThis as any).__webpack_require__ ||= (id: string) => moduleCache.get(id);
 
 type Entries = {
   default: ReturnType<typeof defineEntries>;
@@ -65,8 +66,7 @@ export const shutdown = async () => {
   }
 };
 
-// This is exported only for createTranspiler
-export const loadServerFile = async (
+const loadServerFile = async (
   fname: string,
   command: 'dev' | 'build' | 'start',
 ) => {
@@ -75,25 +75,6 @@ export const loadServerFile = async (
   }
   const vite = await getViteServer();
   return vite.ssrLoadModule(fname);
-};
-
-// FIXME this is very hacky
-const createTranspiler = async (cleanupFns: Set<() => void>) => {
-  const { randomBytes } = await import('node:crypto');
-  return (filePath: string, name: string) => {
-    const temp = path.resolve(`.temp-${randomBytes(8).toString('hex')}.js`);
-    const code = `
-const { loadServerFile } = await import('${import.meta.url}');
-const { ${name} } = await loadServerFile('${url
-      .pathToFileURL(filePath)
-      .toString()
-      .slice('file://'.length)}', 'dev');
-export { ${name} }
-`;
-    fs.writeFileSync(temp, code);
-    cleanupFns.add(() => fs.unlinkSync(temp));
-    return temp;
-  };
 };
 
 const getEntriesFile = (
@@ -294,9 +275,6 @@ export const renderHtml = async <Context>(
     throw e;
   }
   const { splitHTML } = config.ssr;
-  const cleanupFns = new Set<() => void>();
-  const transpile =
-    command === 'dev' ? await createTranspiler(cleanupFns) : undefined;
   const moduleMap = new Proxy(
     {} as Record<
       string,
@@ -317,16 +295,22 @@ export const renderHtml = async <Context>(
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
-                const filePath = file.startsWith('@fs/')
-                  ? file.slice(3)
-                  : path.join(config.rootDir, config.srcDir, file);
+                const filePath = normalizePath(
+                  file.startsWith('@fs/')
+                    ? // FIXME This is ugly. We need to refactor it.
+                      // remove '@fs'(3) on Unix and '@fs/'(4) on Windows
+                      file.slice(2 + path.sep === '/' ? 3 : 4)
+                    : path.join(config.rootDir, config.srcDir, file),
+                );
                 // FIXME This is ugly. We need to refactor it.
-                const wakuDist = path.join(
-                  url.fileURLToPath(import.meta.url),
-                  '..',
-                  '..',
-                  '..',
-                  '..',
+                const wakuDist = normalizePath(
+                  path.join(
+                    url.fileURLToPath(import.meta.url),
+                    '..',
+                    '..',
+                    '..',
+                    '..',
+                  ),
                 );
                 if (filePath.startsWith(wakuDist)) {
                   const id =
@@ -334,9 +318,11 @@ export const renderHtml = async <Context>(
                     filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
                   return { id, chunks: [id], name };
                 }
-                const id = url
-                  .pathToFileURL(transpile!(filePath, name))
-                  .toString();
+                const id =
+                  url
+                    .pathToFileURL(filePath)
+                    .toString()
+                    .slice('file://'.length) + '#dev';
                 return { id, chunks: [id], name };
               }
               // command !== 'dev'
@@ -378,7 +364,5 @@ export const renderHtml = async <Context>(
   )
     .pipeThrough(rectifyHtml())
     .pipeThrough(interleave(...splitHTML(htmlStr)));
-  cleanupFns.forEach((fn) => fn());
-  cleanupFns.clear();
   return [readable, nextCtx];
 };

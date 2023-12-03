@@ -2,8 +2,7 @@ import { expect } from '@playwright/test';
 import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
-import os from 'node:os';
-import { test } from './utils.js';
+import { getFreePort, test } from './utils.js';
 
 const waku = fileURLToPath(
   new URL('../packages/waku/dist/cli.js', import.meta.url),
@@ -31,9 +30,7 @@ for (const { build, command } of commands) {
           cwd,
         });
       }
-      port = Math.floor(Math.random() * 10000) + 10000;
-      console.log(`node ${waku} ${command}`);
-      console.log('cwd: ', cwd);
+      port = await getFreePort();
       cp = exec(`node ${waku} ${command}`, {
         cwd,
         env: {
@@ -41,8 +38,11 @@ for (const { build, command } of commands) {
           PORT: `${port}`,
         },
       });
-      cp.on('message', (message) => {
-        console.log('cp message: ', message);
+      cp.stdout?.on('data', (data) => {
+        console.log(`${port} stdout: `, `${data}`);
+      });
+      cp.stderr?.on('data', (data) => {
+        console.error(`${port} stderr: `, `${data}`);
       });
       await waitPort({
         port,
@@ -70,10 +70,6 @@ for (const { build, command } of commands) {
         page.getByTestId('client-counter').getByTestId('count'),
       ).toHaveText('2');
 
-      if (os.platform() === 'win32') {
-        // fixme: server action is not working on windows
-        return;
-      }
       await expect(
         page.getByTestId('server-ping').getByTestId('pong'),
       ).toBeEmpty();
