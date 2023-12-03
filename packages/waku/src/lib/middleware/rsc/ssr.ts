@@ -299,7 +299,7 @@ export const renderHtml = async <Context>(
                   file.startsWith('@fs/')
                     ? // FIXME This is ugly. We need to refactor it.
                       // remove '@fs'(3) on Unix and '@fs/'(4) on Windows
-                      file.slice(2 + path.sep === '/' ? 3 : 4)
+                      file.slice(2 + (path.sep === '/' ? 1 : 2))
                     : path.join(config.rootDir, config.srcDir, file),
                 );
                 // FIXME This is ugly. We need to refactor it.
@@ -318,11 +318,7 @@ export const renderHtml = async <Context>(
                     filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
                   return { id, chunks: [id], name };
                 }
-                const id =
-                  url
-                    .pathToFileURL(filePath)
-                    .toString()
-                    .slice('file://'.length) + '#dev';
+                const id = filePath + '#dev';
                 return { id, chunks: [id], name };
               }
               // command !== 'dev'
