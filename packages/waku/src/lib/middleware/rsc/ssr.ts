@@ -18,14 +18,13 @@ const { renderToReadableStream } = RDServer;
 const { createFromReadableStream } = RSDWClient;
 
 // HACK for react-server-dom-webpack without webpack
-(globalThis as any).__waku_module_cache__ ||= new Map();
+const moduleCache = new Map();
 (globalThis as any).__webpack_chunk_load__ ||= async (id: string) => {
   const [filePath, command] = id.split('#');
   const m = await loadServerFile(filePath!, (command as any) || 'start');
-  (globalThis as any).__waku_module_cache__.set(id, m);
+  moduleCache.set(id, m);
 };
-(globalThis as any).__webpack_require__ ||= (id: string) =>
-  (globalThis as any).__waku_module_cache__.get(id);
+(globalThis as any).__webpack_require__ ||= (id: string) => moduleCache.get(id);
 
 type Entries = {
   default: ReturnType<typeof defineEntries>;
