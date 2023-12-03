@@ -1,7 +1,7 @@
 import path from 'node:path';
+import { existsSync } from 'node:fs';
 import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
-import { fileExists } from '../middleware/rsc/utils.node.js';
 
 export function rscAnalyzePlugin(
   commonFileSet: Set<string>,
@@ -68,7 +68,7 @@ export function rscAnalyzePlugin(
         seen.add(id);
         isClient = isClient || clientFileSet.has(id);
         for (const depId of dependencyMap.get(id) ?? []) {
-          if (!(await fileExists(depId))) {
+          if (!existsSync(depId)) {
             // HACK is there a better way?
             return;
           }

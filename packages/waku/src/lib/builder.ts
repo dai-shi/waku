@@ -1,4 +1,13 @@
 import path from 'node:path';
+import {
+  createReadStream,
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
@@ -24,16 +33,6 @@ import { rscAnalyzePlugin } from './vite-plugin/rsc-analyze-plugin.js';
 import { rscTransformPlugin } from './vite-plugin/rsc-transform-plugin.js';
 import { patchReactRefresh } from './vite-plugin/patch-react-refresh.js';
 import { renderHtml, shutdown as shutdownSsr } from './middleware/rsc/ssr.js';
-import {
-  createReadStream,
-  createWriteStream,
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
-import { fileExists } from './middleware/rsc/utils.node.js';
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
@@ -312,7 +311,7 @@ const emitHtmlFiles = async (
           pathStr.endsWith('/') ? 'index.html' : '',
         );
         let htmlStr: string;
-        if (await fileExists(destFile)) {
+        if (existsSync(destFile)) {
           htmlStr = await fsPromises.readFile(destFile, { encoding: 'utf8' });
         } else {
           await fsPromises.mkdir(path.dirname(destFile), { recursive: true });
@@ -455,7 +454,7 @@ export default async function handler(req, res) {
 const resolveFileName = async (fname: string) => {
   for (const ext of ['.js', '.ts', '.tsx', '.jsx']) {
     const resolvedName = fname.slice(0, -path.extname(fname).length) + ext;
-    if (await fileExists(resolvedName)) {
+    if (existsSync(resolvedName)) {
       return resolvedName;
     }
   }

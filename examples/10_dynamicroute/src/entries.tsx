@@ -1,10 +1,10 @@
 import url from 'node:url';
 import path from 'node:path';
+import { existsSync } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import { lazy } from 'react';
 import { glob } from 'glob';
 import { defineRouter } from 'waku/router/server';
-import { existsSync } from 'node:fs';
 
 const routesDir = path.join(
   path.dirname(url.fileURLToPath(import.meta.url)),
