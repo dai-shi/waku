@@ -1,11 +1,11 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
-import type { ReqObject, ResObject, Middleware } from './types.js';
+import type { BaseReq, BaseRes, Middleware } from './types.js';
 
 export function connectWrapper(
   m: Middleware<
-    ReqObject & { orig: IncomingMessage },
-    ResObject & { orig: ServerResponse }
+    BaseReq & { orig: IncomingMessage },
+    BaseRes & { orig: ServerResponse }
   >,
 ) {
   return async (
@@ -14,7 +14,7 @@ export function connectWrapper(
     next: (err?: unknown) => void,
   ) => {
     const { Readable, Writable } = await import('node:stream');
-    const req: ReqObject & { orig: IncomingMessage } = {
+    const req: BaseReq & { orig: IncomingMessage } = {
       stream: Readable.toWeb(connectReq) as any,
       method: connectReq.method || '',
       url: new URL(
@@ -24,7 +24,7 @@ export function connectWrapper(
       headers: connectReq.headers,
       orig: connectReq,
     };
-    const res: ResObject & { orig: ServerResponse } = {
+    const res: BaseRes & { orig: ServerResponse } = {
       stream: Writable.toWeb(connectRes),
       setStatus: (code) => (connectRes.statusCode = code),
       setHeader: (name, value) => connectRes.setHeader(name, value),

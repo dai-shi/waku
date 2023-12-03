@@ -1,6 +1,5 @@
-import path from 'node:path';
-import url from 'node:url';
-import { Server } from 'node:http';
+import path from 'node:path'; // TODO no node dependency
+import url from 'node:url'; // TODO no node dependency
 
 import { createElement } from 'react';
 import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
@@ -39,6 +38,7 @@ const getViteServer = async () => {
   if (lastViteServer) {
     return lastViteServer;
   }
+  const { Server } = await import('node:http');
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const { createServer: viteCreateServer } = await import('vite');
   const { nonjsResolvePlugin } = await import(
@@ -299,7 +299,7 @@ export const renderHtml = async <Context>(
                   file.startsWith('@fs/')
                     ? // FIXME This is ugly. We need to refactor it.
                       // remove '@fs'(3) on Unix and '@fs/'(4) on Windows
-                      file.slice(2 + path.sep === '/' ? 3 : 4)
+                      file.slice(path.sep === '/' ? 3 : 4)
                     : path.join(config.rootDir, config.srcDir, file),
                 );
                 // FIXME This is ugly. We need to refactor it.

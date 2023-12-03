@@ -1,6 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
-
 import type { Config } from '../config.js';
 import { normalizePath } from './middleware/rsc/utils.js';
 
@@ -29,14 +26,29 @@ const splitHTML = (htmlStr: string): readonly [string, string, string] => {
   return match.slice(1) as [string, string, string];
 };
 
+// HACK we hope to have a better solution soon.
+let cwd: string | undefined;
+export function setCwd(c: string) {
+  cwd = c;
+}
+export function getCwd() {
+  if (!cwd) {
+    throw new Error('Unable to get cwd');
+  }
+  return cwd;
+}
+
 export async function resolveConfig() {
-  const configFile = path.resolve('waku.config.js');
+  // TODO windows support
+  const configFile = getCwd() + '/' + 'waku.config.js';
   let config: Config = {};
-  if (fs.existsSync(configFile)) {
+  try {
     config = (await import(configFile)).default;
+  } catch (e) {
+    // ignored
   }
   const resolvedConfig: DeepRequired<Config> = {
-    rootDir: normalizePath(path.resolve('.')),
+    rootDir: normalizePath(getCwd()),
     basePath: '/',
     srcDir: 'src',
     distDir: 'dist',
@@ -53,7 +65,12 @@ export async function resolveConfig() {
   return resolvedConfig;
 }
 
-export const viteInlineConfig = () => {
+// TODO we hope to eliminate this in the near future
+export const viteInlineConfig = async () => {
+  const [fs, path] = await Promise.all([
+    import('node:fs'),
+    import('node:path'),
+  ]);
   for (const file of ['vite.config.ts', 'vite.config.js']) {
     if (fs.existsSync(file)) {
       return { configFile: path.resolve(file) };
