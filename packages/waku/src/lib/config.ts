@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import type { Config } from '../config.js';
+import { normalizePath } from './middleware/rsc/utils.js';
 
 type DeepRequired<T> = T extends (...args: any[]) => any
   ? T
@@ -35,7 +36,7 @@ export async function resolveConfig() {
     config = (await import(configFile)).default;
   }
   const resolvedConfig: DeepRequired<Config> = {
-    rootDir: path.resolve('.'),
+    rootDir: normalizePath(path.resolve('.')),
     basePath: '/',
     srcDir: 'src',
     distDir: 'dist',
