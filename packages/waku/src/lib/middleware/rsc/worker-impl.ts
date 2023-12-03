@@ -21,7 +21,7 @@ import {
 (globalThis as any).__WAKU_CWD__ = process.cwd(); // TODO no node dependency
 
 let nodeLoaderRegistered = false;
-const getRSDWServer = async (
+const loadRSDWServer = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
 ) => {
@@ -280,7 +280,7 @@ const transformRsfId = (prefixToRemove: string) => {
 
 async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
   const config = await resolveConfig();
-  const { renderToReadableStream, decodeReply } = await getRSDWServer(
+  const { renderToReadableStream, decodeReply } = await loadRSDWServer(
     config,
     rr.command,
   );

@@ -9,7 +9,7 @@ import { defineEntries } from '../../../server.js';
 import { renderRSC } from './worker-api.js';
 import { hasStatusCode, concatUint8Arrays, normalizePath } from './utils.js';
 
-const getReact = async (
+const loadReact = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
 ) => {
@@ -29,7 +29,7 @@ const getReact = async (
   return import('react');
 };
 
-const getRDServer = async (
+const loadRDServer = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
 ) => {
@@ -49,7 +49,7 @@ const getRDServer = async (
   return import('react-dom/server.edge');
 };
 
-const getRSDWClient = async (
+const loadRSDWClient = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
 ) => {
@@ -69,7 +69,7 @@ const getRSDWClient = async (
   return import('react-server-dom-webpack/client.edge');
 };
 
-const getWakuClient = async (
+const loadWakuClient = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
 ) => {
@@ -326,10 +326,10 @@ export const renderHtml = async <Context>(
     { createFromReadableStream },
     { ServerRoot, Slot },
   ] = await Promise.all([
-    getReact(config, command),
-    getRDServer(config, command),
-    getRSDWClient(config, command),
-    getWakuClient(config, command),
+    loadReact(config, command),
+    loadRDServer(config, command),
+    loadRSDWClient(config, command),
+    loadWakuClient(config, command),
   ]);
   const entriesFile = getEntriesFile(config, command);
   const {
