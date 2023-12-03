@@ -197,7 +197,9 @@ export function renderRSC<Context>(
         messageCallbacks.delete(id);
       }
     });
-    const copied = { ...rr };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { ssr: _removed, ...copiedConfig} = rr.config as any; // HACK type
+    const copied = { ...rr, config: copiedConfig };
     delete copied.stream;
     delete copied.moduleIdCallback;
     const mesg: MessageReq = {
@@ -214,6 +216,8 @@ export function renderRSC<Context>(
 export function getBuildConfigRSC(
   config: ResolvedConfig,
 ): ReturnType<GetBuildConfig> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { ssr: _removed, ...copiedConfig} = config ;
   const worker = getWorker('build');
   return new Promise((resolve, reject) => {
     const id = nextId++;
@@ -226,7 +230,7 @@ export function getBuildConfigRSC(
         messageCallbacks.delete(id);
       }
     });
-    const mesg: MessageReq = { id, type: 'getBuildConfig', config };
+    const mesg: MessageReq = { id, type: 'getBuildConfig', config: copiedConfig };
     worker.postMessage(mesg);
   });
 }
