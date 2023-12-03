@@ -31,7 +31,6 @@ import {
   mkdirSync,
   readdirSync,
   symlinkSync,
-  write,
   writeFileSync,
 } from 'node:fs';
 import { fileExists } from './middleware/rsc/utils.node.js';
