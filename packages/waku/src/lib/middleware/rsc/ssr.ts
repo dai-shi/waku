@@ -296,7 +296,9 @@ export const renderHtml = async <Context>(
               if (command === 'dev') {
                 const filePath = normalizePath(
                   resolvedFilePath.startsWith('/@fs/')
-                    ? resolvedFilePath.slice(4 + (path.sep === '/' ? 0 : 1))
+                    ? // FIXME This is ugly. We need to refactor it.
+                      // remove '/@fs' on Unix and '/@fs/'(4) on Windows
+                      resolvedFilePath.slice(4 + (path.sep === '/' ? 0 : 1))
                     : resolvedFilePath,
                 );
                 // FIXME This is ugly. ,e need to refactor it.
