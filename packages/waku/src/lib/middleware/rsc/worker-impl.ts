@@ -168,7 +168,7 @@ const loadServerFile = async (
     return import(fname);
   }
   const vite = await getViteServer();
-  return vite.ssrLoadModule(fname);
+  return vite.ssrLoadModule(path.relative(vite.config.root, fname));
 };
 
 parentPort!.on('message', (mesg: MessageReq) => {
