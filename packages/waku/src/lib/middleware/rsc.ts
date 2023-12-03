@@ -109,6 +109,7 @@ export function rsc<
     } catch (e) {
       // does not exist
     }
+    // fixme: otherwise SSR on Windows will fail
     if (pathStr.startsWith('/@fs')) {
       return null;
     }
