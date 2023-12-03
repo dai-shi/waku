@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, use } from 'react';
 
 export const Counter = ({
   delayedMessage,
@@ -26,9 +26,12 @@ const Message = ({
 }: {
   count: number;
   delayedMessage: Promise<string>;
-}) => (
-  <ul>
-    <li>count: {count}</li>
-    <li>delayedMessage: {delayedMessage as any}</li>
-  </ul>
-);
+}) => {
+  const message = use(delayedMessage);
+  return (
+    <ul>
+      <li>count: {count}</li>
+      <li>delayedMessage: {message}</li>
+    </ul>
+  );
+};

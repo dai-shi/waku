@@ -6,6 +6,7 @@
     "esModuleInterop": true,
     "module": "nodenext",
     "skipLibCheck": true,
+    "types": ["react/canary"],
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "jsx": "react-jsx",
