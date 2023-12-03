@@ -173,7 +173,7 @@ const getEntriesFile = (
 ) => {
   const filePath = path.join(
     config.rootDir,
-    ...(command === 'dev' ? [config.srcDir] : [config.distDir]),
+    command === 'dev' ? config.srcDir : config.distDir,
     config.entriesJs,
   );
   return command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
