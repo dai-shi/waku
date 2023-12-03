@@ -14,9 +14,6 @@ importers:
       '@types/babel__core':
         specifier: ^7.20.4
         version: 7.20.4
-      '@types/busboy':
-        specifier: ^1.5.3
-        version: 1.5.3
       '@types/node':
         specifier: ^20.9.0
         version: 20.9.0
@@ -76,6 +73,46 @@ importers:
         version: link:packages/waku
 
   e2e/fixtures/rsc-basic:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^1.2.2
+        version: 1.2.3
+      hono:
+        specifier: ^3.10.0
+        version: 3.10.2
+      react:
+        specifier: 18.3.0-canary-6c7b41da3-20231123
+        version: 18.3.0-canary-6c7b41da3-20231123
+      react-dom:
+        specifier: 18.3.0-canary-6c7b41da3-20231123
+        version: 18.3.0-canary-6c7b41da3-20231123(react@18.3.0-canary-6c7b41da3-20231123)
+      react-server-dom-webpack:
+        specifier: 18.3.0-canary-6c7b41da3-20231123
+        version: 18.3.0-canary-6c7b41da3-20231123(react-dom@18.3.0-canary-6c7b41da3-20231123)(react@18.3.0-canary-6c7b41da3-20231123)(webpack@5.89.0)
+      waku:
+        specifier: 0.17.1
+        version: link:../../../packages/waku
+    devDependencies:
+      '@swc/core':
+        specifier: 1.3.96
+        version: 1.3.96
+      '@types/react':
+        specifier: ^18.2.37
+        version: 18.2.37
+      '@types/react-dom':
+        specifier: ^18.2.15
+        version: 18.2.15
+      '@vitejs/plugin-react':
+        specifier: 4.1.1
+        version: 4.1.1(vite@4.5.0)
+      typescript:
+        specifier: ^5.2.2
+        version: 5.2.2
+      vite:
+        specifier: 4.5.0
+        version: 4.5.0(@types/node@20.9.0)
+
+  e2e/fixtures/ssr-basic:
     dependencies:
       '@hono/node-server':
         specifier: ^1.2.2
@@ -1586,12 +1623,6 @@ packages:
     resolution: {integrity: sha512-mSM/iKUk5fDDrEV/e83qY+Cr3I1+Q3qqTuEn++HAWYjEa1+NxZr6CNrcJGf2ZTnq4HoFGC3zaTPZTobCzCFukA==}
     dependencies:
       '@babel/types': 7.23.3
-    dev: true
-
-  /@types/busboy@1.5.3:
-    resolution: {integrity: sha512-YMBLFN/xBD8bnqywIlGyYqsNFXu6bsiY7h3Ae0kO17qEuTjsqeyYMRPSUDacIKIquws2Y6KjmxAyNx8xB3xQbw==}
-    dependencies:
-      '@types/node': 20.9.0
     dev: true
 
   /@types/cacheable-request@6.0.3:
