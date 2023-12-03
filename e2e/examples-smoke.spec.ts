@@ -29,6 +29,28 @@ const commands = [
   },
 ];
 
+const specialExamples = [
+  {
+    name: '08_cookies',
+    commands: [
+      {
+        command: 'node dev.js --with-ssr',
+      },
+      {
+        command: 'node dev.js',
+      },
+      {
+        build: 'waku build --with-ssr',
+        command: 'node start.js --with-ssr',
+      },
+      {
+        build: 'waku build',
+        command: 'node start.js',
+      },
+    ],
+  },
+];
+
 const examples = [
   ...(await readdir(examplesDir)).map((example) =>
     fileURLToPath(new URL(`../examples/${example}`, import.meta.url)),
@@ -36,44 +58,89 @@ const examples = [
 ];
 
 for (const cwd of examples) {
-  for (const { build, command } of commands) {
-    test.describe(`smoke test on ${basename(cwd)}: ${command}`, () => {
-      let cp: ChildProcess;
-      let port: number;
-      test.beforeAll(async () => {
-        if (build) {
-          execSync(`node ${waku} ${build}`, {
+  const specialExample = specialExamples.find(({ name }) => cwd.includes(name));
+  if (specialExample) {
+    for (const { build, command } of specialExample.commands) {
+      test.describe(`smoke test on ${basename(cwd)}: ${command}`, () => {
+        let cp: ChildProcess;
+        let port: number;
+        test.beforeAll(async () => {
+          if (build) {
+            execSync(build, {
+              cwd,
+              env: process.env,
+            });
+          }
+          port = await getFreePort();
+          cp = exec(command, {
             cwd,
+            env: {
+              ...process.env,
+              PORT: `${port}`,
+            },
           });
-        }
-        port = await getFreePort();
-        cp = exec(`node ${waku} ${command}`, {
-          cwd,
-          env: {
-            ...process.env,
-            PORT: `${port}`,
-          },
+          cp.stdout?.on('data', (data) => {
+            console.log(`${port} stdout: `, `${data}`);
+          });
+          cp.stderr?.on('data', (data) => {
+            console.error(`${port} stderr: `, `${data}`);
+          });
+          await waitPort({
+            port,
+          });
         });
-        cp.stdout?.on('data', (data) => {
-          console.log(`${port} stdout: `, `${data}`);
-        });
-        cp.stderr?.on('data', (data) => {
-          console.error(`${port} stderr: `, `${data}`);
-        });
-        await waitPort({
-          port,
-        });
-      });
 
-      test.afterAll(async () => {
-        cp.kill();
-      });
+        test.afterAll(async () => {
+          cp.kill();
+        });
 
-      test('check title', async ({ page }) => {
-        await page.goto(`http://localhost:${port}/`);
-        const title = await page.title();
-        expect(title).toBe('Waku example');
+        test('check title', async ({ page }) => {
+          await page.goto(`http://localhost:${port}/`);
+          const title = await page.title();
+          expect(title).toBe('Waku example');
+        });
       });
-    });
+    }
+  } else {
+    for (const { build, command } of commands) {
+      test.describe(`smoke test on ${basename(cwd)}: ${command}`, () => {
+        let cp: ChildProcess;
+        let port: number;
+        test.beforeAll(async () => {
+          if (build) {
+            execSync(`node ${waku} ${build}`, {
+              cwd,
+            });
+          }
+          port = await getFreePort();
+          cp = exec(`node ${waku} ${command}`, {
+            cwd,
+            env: {
+              ...process.env,
+              PORT: `${port}`,
+            },
+          });
+          cp.stdout?.on('data', (data) => {
+            console.log(`${port} stdout: `, `${data}`);
+          });
+          cp.stderr?.on('data', (data) => {
+            console.error(`${port} stderr: `, `${data}`);
+          });
+          await waitPort({
+            port,
+          });
+        });
+
+        test.afterAll(async () => {
+          cp.kill();
+        });
+
+        test('check title', async ({ page }) => {
+          await page.goto(`http://localhost:${port}/`);
+          const title = await page.title();
+          expect(title).toBe('Waku example');
+        });
+      });
+    }
   }
 }
