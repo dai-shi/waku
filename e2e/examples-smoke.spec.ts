@@ -1,3 +1,9 @@
+/**
+ * Smoke tests for all examples.
+ * This test will run all examples and check that the title is correct.
+ *
+ * If you want to run a specific example, you can use VSCode Playwright extension.
+ */
 import { expect } from '@playwright/test';
 import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
