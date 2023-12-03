@@ -348,7 +348,7 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
     }
     const [fileId, name] = rsfId.split('#') as [string, string];
     const filePath = normalizePath(
-      path.join(config.rootDir, fileId.startsWith('/') ? fileId : rsfPrefix + normalizePath(fileId))
+      fileId.startsWith('/') ? fileId : rsfPrefix + normalizePath(fileId),
     );
     parentPort!.postMessage({
       type: 'debug',
