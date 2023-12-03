@@ -73,11 +73,12 @@ async function runStart(options: { ssr: boolean }) {
   const { Hono } = await import('hono');
   const { serveStatic } = await import('@hono/node-server/serve-static');
   const { resolveConfig } = await import('./lib/config.js');
-  const config = await resolveConfig();
   const { honoWrapper } = await import('./lib/middleware/honoWrapper.js');
   const { rsc } = await import('./lib/middleware/rsc.js');
   const app = new Hono();
   app.use('*', honoWrapper(rsc({ cwd, command: 'start', ssr: options.ssr })));
+  // LIMITATION: resolveConfig has to be called after rsc
+  const config = await resolveConfig();
   app.use(
     '*',
     serveStatic({
