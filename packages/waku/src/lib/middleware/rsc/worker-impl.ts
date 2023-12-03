@@ -210,6 +210,9 @@ const resolveClientEntry = (
   command: 'dev' | 'build' | 'start',
   resolveClientPath: Entries['resolveClientPath'],
 ) => {
+  filePath = filePath.startsWith('file:///')
+    ? url.fileURLToPath(filePath)
+    : filePath;
   filePath = resolveClientPath?.(filePath) || filePath;
   const root = path.join(
     config.rootDir,
@@ -302,9 +305,7 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split('#') as [string, string];
         const id = resolveClientEntry(
-          filePath.startsWith('file:///')
-            ? url.fileURLToPath(filePath)
-            : filePath,
+          filePath,
           config,
           rr.command,
           resolveClientPath,

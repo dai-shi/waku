@@ -299,7 +299,7 @@ export const renderHtml = async <Context>(
                   file.startsWith('@fs/')
                     ? // FIXME This is ugly. We need to refactor it.
                       // remove '@fs'(3) on Unix and '@fs/'(4) on Windows
-                      file.slice(2 + path.sep === '/' ? 3 : 4)
+                      file.slice(path.sep === '/' ? 3 : 4)
                     : path.join(config.rootDir, config.srcDir, file),
                 );
                 // FIXME This is ugly. We need to refactor it.
