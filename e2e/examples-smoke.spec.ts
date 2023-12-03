@@ -11,6 +11,7 @@ import waitPort from 'wait-port';
 import { readdir } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { getFreePort, test } from './utils.js';
+import os from 'node:os';
 
 const examplesDir = fileURLToPath(new URL('../examples', import.meta.url));
 
@@ -119,6 +120,7 @@ for (const cwd of examples) {
     for (const { build, command } of commands) {
       test.describe(`smoke test on ${basename(cwd)}: ${command}`, () => {
         if (
+          os.platform() === 'win32' &&
           failureTests.find(
             ([name, cmd]) => basename(cwd) === name && cmd === command,
           )
