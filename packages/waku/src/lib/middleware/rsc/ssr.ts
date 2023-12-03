@@ -318,7 +318,11 @@ export const renderHtml = async <Context>(
                     filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
                   return { id, chunks: [id], name };
                 }
-                const id = filePath + '#dev';
+                const id =
+                  url
+                    .pathToFileURL(filePath)
+                    .toString()
+                    .slice('file://'.length) + '#dev';
                 return { id, chunks: [id], name };
               }
               // command !== 'dev'
