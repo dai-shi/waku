@@ -61,7 +61,7 @@ export const endStream = (stream: WritableStream, message?: string) => {
   const writer = stream.getWriter();
   if (message) {
     new TextEncoder().encode(message).forEach((chunk) => {
-      writer.ready.then(() => writer.write(chunk));
+      writer.ready.then(() => writer.write(new Uint8Array([chunk])));
     });
   }
   writer.ready.then(() => writer.close());

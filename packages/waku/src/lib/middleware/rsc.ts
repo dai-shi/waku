@@ -173,6 +173,13 @@ export function rsc<
       return;
     }
     if (command === 'dev') {
+      if (pathStr === '/') {
+        const htmlStr = await getHtmlStr(pathStr);
+        res.setHeader('Content-Type', 'text/html');
+        res.setStatus(200);
+        endStream(res.stream, htmlStr!);
+        return;
+      }
       const vite = await getViteServer();
       // TODO Do we still need this?
       // HACK re-export "?v=..." URL to avoid dual module hazard.
