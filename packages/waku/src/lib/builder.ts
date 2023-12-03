@@ -205,8 +205,6 @@ const buildClientBundle = async (
             }
             return 'assets/[name]-[hash].js';
           },
-          // FIXME This is simply to override for examples/07,10 vite configs
-          preserveModules: false,
         },
       },
     },
