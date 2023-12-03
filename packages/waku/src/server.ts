@@ -1,5 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks'; // TODO no node dependency
-import type { ReactNode } from 'react';
+import type { createElement, ReactNode } from 'react';
+
+import type { Slot } from './client.js';
 
 type Elements = Record<string, ReactNode>;
 
@@ -17,7 +19,10 @@ export type GetBuildConfig = (
 
 export type GetSsrConfig = (pathStr: string) => Promise<{
   input: string;
-  unstable_render: () => ReactNode;
+  unstable_render: (opts: {
+    createElement: typeof createElement;
+    Slot: typeof Slot;
+  }) => ReactNode;
 } | null>;
 
 export function defineEntries(

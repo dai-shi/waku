@@ -3,7 +3,6 @@ import url from 'node:url'; // TODO no node dependency
 import { parentPort } from 'node:worker_threads'; // TODO no node dependency
 
 import type { ReactNode } from 'react';
-import RSDWServer from 'react-server-dom-webpack/server.edge';
 import type { ViteDevServer } from 'vite';
 
 import { setCwd, resolveConfig, viteInlineConfig } from '../../config.js';
@@ -19,24 +18,41 @@ import {
   runWithAsyncLocalStorage as runWithAsyncLocalStorageOrig,
 } from '../../../server.js';
 
-const { renderToReadableStream, decodeReply } = RSDWServer;
+(globalThis as any).__WAKU_CWD__ = process.cwd(); // TODO no node dependency
 
-const IS_NODE_20 = Number(process.versions.node.split('.')[0]) >= 20;
-if (IS_NODE_20) {
-  const {
-    default: { register },
-  } = await import('node:module');
-  register('waku/node-loader', url.pathToFileURL('./'));
-}
+let nodeLoaderRegistered = false;
+const loadRSDWServer = async (
+  config: Awaited<ReturnType<typeof resolveConfig>>,
+  command: 'dev' | 'build' | 'start',
+) => {
+  if (command !== 'dev') {
+    return (
+      await import(
+        url
+          .pathToFileURL(
+            path.join(config.rootDir, config.distDir, 'rsdw-server.js'),
+          )
+          .toString()
+      )
+    ).default;
+  }
+  if (!nodeLoaderRegistered) {
+    nodeLoaderRegistered = true;
+    const IS_NODE_20 = Number(process.versions.node.split('.')[0]) >= 20;
+    if (IS_NODE_20) {
+      const {
+        default: { register },
+      } = await import('node:module');
+      register('waku/node-loader', url.pathToFileURL('./'));
+    }
+  }
+  return import('react-server-dom-webpack/server.edge');
+};
 
 setCwd(process.env.__WAKU_CWD__ || ''); // TODO no node dependency
 
 type Entries = {
   default: ReturnType<typeof defineEntries>;
-  resolveClientPath?: (
-    filePath: string,
-    invert?: boolean,
-  ) => string | undefined;
 };
 const controllerMap = new Map<number, ReadableStreamDefaultController>();
 
@@ -124,7 +140,7 @@ const getViteServer = async () => {
   const viteServer = await viteCreateServer({
     ...(await viteInlineConfig()),
     plugins: [
-      rscTransformPlugin(),
+      rscTransformPlugin(false),
       rscReloadPlugin((type) => {
         const mesg: MessageRes = { type };
         parentPort!.postMessage(mesg);
@@ -136,8 +152,8 @@ const getViteServer = async () => {
     ],
     ssr: {
       resolve: {
-        conditions: ['react-server'],
-        externalConditions: ['react-server'],
+        conditions: ['react-server', 'workerd'],
+        externalConditions: ['react-server', 'workerd'],
       },
       external: ['react', 'react-server-dom-webpack', 'waku'],
       noExternal: /^(?!node:)/,
@@ -208,12 +224,10 @@ const resolveClientEntry = (
   filePath: string,
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
-  resolveClientPath: Entries['resolveClientPath'],
 ) => {
   filePath = filePath.startsWith('file:///')
     ? url.fileURLToPath(filePath)
     : filePath;
-  filePath = resolveClientPath?.(filePath) || filePath;
   const root = path.join(
     config.rootDir,
     command === 'dev' ? config.srcDir : config.distDir,
@@ -266,6 +280,10 @@ const transformRsfId = (prefixToRemove: string) => {
 
 async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
   const config = await resolveConfig();
+  const { renderToReadableStream, decodeReply } = await loadRSDWServer(
+    config,
+    rr.command,
+  );
 
   const { runWithAsyncLocalStorage } = await (loadServerFile(
     'waku/server',
@@ -277,7 +295,6 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
   const entriesFile = getEntriesFile(config, rr.command);
   const {
     default: { renderEntries },
-    resolveClientPath,
   } = await (loadServerFile(entriesFile, rr.command) as Promise<Entries>);
 
   const rsfPrefix =
@@ -304,12 +321,7 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
     {
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split('#') as [string, string];
-        const id = resolveClientEntry(
-          filePath,
-          config,
-          rr.command,
-          resolveClientPath,
-        );
+        const id = resolveClientEntry(filePath, config, rr.command);
         rr?.moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },

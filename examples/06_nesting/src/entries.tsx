@@ -1,7 +1,6 @@
 import { lazy } from 'react';
 import type { ReactNode } from 'react';
 import { defineEntries } from 'waku/server';
-import { Slot } from 'waku/client';
 
 const App = lazy(() => import('./components/App.js'));
 const InnerApp = lazy(() => import('./components/InnerApp.js'));
@@ -40,7 +39,8 @@ export default defineEntries(
       case '/':
         return {
           input: '',
-          unstable_render: () => <Slot id="App" />,
+          unstable_render: ({ createElement, Slot }) =>
+            createElement(Slot, { id: 'App' }),
         };
       default:
         return null;

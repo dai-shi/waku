@@ -3,6 +3,8 @@
 ## [Unreleased]
 ### Changed
 - switch to hono from express (still depends on node) #165
+- fix: build error on windows #174
+- feat: build rsc so that react-server condition is unnecessary #204
 
 ## [0.17.1] - 2023-11-27
 ### Changed

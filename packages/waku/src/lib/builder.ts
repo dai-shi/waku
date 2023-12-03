@@ -21,6 +21,7 @@ import {
 } from './middleware/rsc/worker-api.js';
 import { rscIndexPlugin } from './vite-plugin/rsc-index-plugin.js';
 import { rscAnalyzePlugin } from './vite-plugin/rsc-analyze-plugin.js';
+import { rscTransformPlugin } from './vite-plugin/rsc-transform-plugin.js';
 import { patchReactRefresh } from './vite-plugin/patch-react-refresh.js';
 import { renderHtml, shutdown as shutdownSsr } from './middleware/rsc/ssr.js';
 
@@ -63,8 +64,8 @@ const analyzeEntries = async (entriesFile: string) => {
     plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
     ssr: {
       resolve: {
-        conditions: ['react-server'],
-        externalConditions: ['react-server'],
+        conditions: ['react-server', 'workerd'],
+        externalConditions: ['react-server', 'workerd'],
       },
       noExternal: /^(?!node:)/,
     },
@@ -108,25 +109,19 @@ const analyzeEntries = async (entriesFile: string) => {
 const buildServerBundle = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   entriesFile: string,
-  distEntriesFile: string,
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
 ) => {
   const serverBuildOutput = await viteBuild({
     ...(await viteInlineConfig()),
+    plugins: [rscTransformPlugin(true)],
     ssr: {
       resolve: {
-        conditions: ['react-server'],
-        externalConditions: ['react-server'],
+        conditions: ['react-server', 'workerd'],
+        externalConditions: ['react-server', 'workerd'],
       },
-      external: ['waku'],
-      noExternal: Object.values(clientEntryFiles).flatMap((fname) => {
-        const items = fname.split(path.sep);
-        const index = items.lastIndexOf('node_modules');
-        const name = index >= 0 && items[index + 1];
-        return name ? [name] : [];
-      }),
+      noExternal: /^(?!node:)/,
     },
     publicDir: false,
     build: {
@@ -137,32 +132,16 @@ const buildServerBundle = async (
         onwarn,
         input: {
           entries: entriesFile,
+          'rsdw-server': 'react-server-dom-webpack/server.edge',
+          'waku-client': 'waku/client',
           ...commonEntryFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
         },
         output: {
-          banner: (chunk) => {
-            // HACK to bring directives to the front
-            let code = '';
-            if (
-              chunk.moduleIds.some((id) =>
-                Object.values(clientEntryFiles).includes(id),
-              )
-            ) {
-              code += '"use client";';
-            }
-            if (
-              chunk.moduleIds.some((id) =>
-                Object.values(serverEntryFiles).includes(id),
-              )
-            ) {
-              code += '"use server";';
-            }
-            return code;
-          },
           entryFileNames: (chunkInfo) => {
             if (
+              ['waku-client'].includes(chunkInfo.name) ||
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name] ||
               serverEntryFiles[chunkInfo.name]
@@ -178,27 +157,6 @@ const buildServerBundle = async (
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
-  const code = `export const resolveClientPath = (filePath, invert) => (invert ? ${JSON.stringify(
-    Object.fromEntries(
-      Object.entries(clientEntryFiles).map(([key, val]) => [
-        normalizePath(
-          path.join(config.rootDir, config.distDir, 'assets', key + '.js'),
-        ),
-        val,
-      ]),
-    ),
-  )} : ${JSON.stringify(
-    Object.fromEntries(
-      Object.entries(clientEntryFiles).map(([key, val]) => [
-        val,
-        normalizePath(
-          path.join(config.rootDir, config.distDir, 'assets', key + '.js'),
-        ),
-      ]),
-    ),
-  )})[filePath];
-`;
-  fs.appendFileSync(distEntriesFile, code);
   return serverBuildOutput;
 };
 
@@ -226,6 +184,10 @@ const buildClientBundle = async (
         onwarn,
         input: {
           main: indexHtmlFile,
+          react: 'react',
+          'rd-server': 'react-dom/server.edge',
+          'rsdw-client': 'react-server-dom-webpack/client.edge',
+          'waku-client': 'waku/client',
           ...commonEntryFiles,
           ...clientEntryFiles,
         },
@@ -233,6 +195,9 @@ const buildClientBundle = async (
         output: {
           entryFileNames: (chunkInfo) => {
             if (
+              ['react', 'rd-server', 'rsdw-client', 'waku-client'].includes(
+                chunkInfo.name,
+              ) ||
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name]
             ) {
@@ -240,8 +205,6 @@ const buildClientBundle = async (
             }
             return 'assets/[name]-[hash].js';
           },
-          // FIXME This is simply to override for examples/07,10 vite configs
-          preserveModules: false,
         },
       },
     },
@@ -495,16 +458,12 @@ export async function build(options: { cwd: string; ssr?: boolean }) {
   const entriesFile = resolveFileName(
     path.join(config.rootDir, config.srcDir, config.entriesJs),
   );
-  const distEntriesFile = resolveFileName(
-    path.join(config.rootDir, config.distDir, config.entriesJs),
-  );
 
   const { commonEntryFiles, clientEntryFiles, serverEntryFiles } =
     await analyzeEntries(entriesFile);
   const serverBuildOutput = await buildServerBundle(
     config,
     entriesFile,
-    distEntriesFile,
     commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
