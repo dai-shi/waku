@@ -8,7 +8,12 @@ import RSDWServer from 'react-server-dom-webpack/server.edge';
 import type { ViteDevServer } from 'vite';
 
 import { resolveConfig, viteInlineConfig } from '../../config.js';
-import { hasStatusCode, deepFreeze, parseFormData } from './utils.js';
+import {
+  hasStatusCode,
+  deepFreeze,
+  parseFormData,
+  normalizePath,
+} from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
 import {
   defineEntries,
@@ -192,7 +197,9 @@ const getEntriesFile = (
     command === 'dev' ? config.srcDir : config.distDir,
     config.entriesJs,
   );
-  return command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
+  return normalizePath(
+    command === 'dev' ? filePath : url.pathToFileURL(filePath).toString(),
+  );
 };
 
 const resolveClientEntry = (
@@ -201,32 +208,24 @@ const resolveClientEntry = (
   command: 'dev' | 'build' | 'start',
   resolveClientPath: Entries['resolveClientPath'],
 ) => {
-  if (filePath.startsWith('file://')) {
-    filePath = filePath.slice('file://'.length);
-  }
   filePath = resolveClientPath?.(filePath) || filePath;
-  let root = path.join(
+  const root = path.join(
     config.rootDir,
     command === 'dev' ? config.srcDir : config.distDir,
   );
-  if (path.sep !== '/') {
-    // HACK to support windows filesystem
-    root = root.replaceAll(path.sep, '/');
-    if (filePath[0] === '/') {
-      filePath = filePath.slice(1);
-    }
-  }
   if (!filePath.startsWith(root)) {
     if (command === 'dev') {
       // HACK this relies on Vite's internal implementation detail.
-      return config.basePath + '@fs/' + filePath.replace(/^\//, '');
+      return normalizePath(
+        config.basePath + '@fs/' + filePath.replace(/^\//, ''),
+      );
     } else {
       throw new Error(
         'Resolving client module outside root is unsupported for now',
       );
     }
   }
-  return config.basePath + path.relative(root, filePath);
+  return normalizePath(config.basePath + path.relative(root, filePath));
 };
 
 // HACK Patching stream is very fragile.
@@ -248,7 +247,7 @@ const transformRsfId = (prefixToRemove: string) => {
       for (let i = 0; i < lines.length; ++i) {
         const match = lines[i]!.match(
           new RegExp(
-            `^([0-9]+):{"id":"(?:file://)?${prefixToRemove}(.*?)"(.*)$`,
+            `^([0-9]+):{"id":"(?:file:///?)?${prefixToRemove}(.*?)"(.*)$`,
           ),
         );
         if (match) {
@@ -301,7 +300,9 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split('#') as [string, string];
         const id = resolveClientEntry(
-          filePath,
+          filePath.startsWith('file:///')
+            ? url.fileURLToPath(filePath)
+            : filePath,
           config,
           rr.command,
           resolveClientPath,
@@ -358,7 +359,7 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
         rerender,
       },
       async () => {
-        const data = await (mod[name!] || mod)(...args);
+        const data = await (mod[name] || mod)(...args);
         return renderToReadableStream(
           { ...(await elements), _value: data },
           bundlerConfig,

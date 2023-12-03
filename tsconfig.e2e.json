@@ -8,6 +8,9 @@
   "references": [
     {
       "path": "./e2e/fixtures/rsc-basic/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/ssr-basic/tsconfig.json"
     }
   ]
 }
