@@ -1,4 +1,5 @@
 import type { Config } from '../config.js';
+import { normalizePath } from './middleware/rsc/utils.js';
 
 type DeepRequired<T> = T extends (...args: any[]) => any
   ? T
@@ -25,17 +26,21 @@ const splitHTML = (htmlStr: string): readonly [string, string, string] => {
   return match.slice(1) as [string, string, string];
 };
 
-export function cwd() {
-  if (typeof (globalThis as any).__WAKU_CWD__ === 'string') {
-    return (globalThis as any).__WAKU_CWD__;
+// HACK we hope to have a better solution soon.
+let cwd: string | undefined;
+export function setCwd(c: string) {
+  cwd = c;
+}
+export function getCwd() {
+  if (!cwd) {
+    throw new Error('Unable to get cwd');
   }
-  throw new Error('Failed to get cwd');
-  // TODO Can we support "."?
+  return cwd;
 }
 
 export async function resolveConfig() {
   // TODO windows support
-  const configFile = cwd() + '/' + 'waku.config.js';
+  const configFile = getCwd() + '/' + 'waku.config.js';
   let config: Config = {};
   try {
     config = (await import(configFile)).default;
@@ -43,7 +48,7 @@ export async function resolveConfig() {
     // ignored
   }
   const resolvedConfig: DeepRequired<Config> = {
-    rootDir: cwd(),
+    rootDir: normalizePath(getCwd()),
     basePath: '/',
     srcDir: 'src',
     distDir: 'dist',

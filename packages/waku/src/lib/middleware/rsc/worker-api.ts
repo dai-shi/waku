@@ -1,5 +1,6 @@
 import { Worker } from 'node:worker_threads'; // TODO no node dependency
 
+import { getCwd } from '../../config.js';
 import type { GetBuildConfig } from '../../../server.js';
 
 export type RenderRequest = {
@@ -56,6 +57,7 @@ const getWorker = (command: 'dev' | 'build' | 'start') => {
   }
   const IS_NODE_18 = Number(process.versions.node.split('.')[0]) < 20;
   const worker = new Worker(new URL('worker-impl.js', import.meta.url), {
+    env: { __WAKU_CWD__: getCwd() },
     execArgv:
       command !== 'dev'
         ? []

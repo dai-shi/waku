@@ -7,7 +7,7 @@ import type { Hono } from 'hono';
 
 const require = createRequire(new URL('.', import.meta.url));
 
-(globalThis as any).__WAKU_CWD__ = process.cwd();
+const cwd = process.cwd();
 
 const { values, positionals } = parseArgs({
   args: process.argv.splice(2),
@@ -59,25 +59,26 @@ async function runDev(options: { ssr: boolean }) {
   const { honoWrapper } = await import('./lib/middleware/honoWrapper.js');
   const { rsc } = await import('./lib/middleware/rsc.js');
   const app = new Hono();
-  app.use('*', honoWrapper(rsc({ command: 'dev', ssr: options.ssr })));
+  app.use('*', honoWrapper(rsc({ cwd, command: 'dev', ssr: options.ssr })));
   const port = parseInt(process.env.PORT || '3000', 10);
   startServer(app, port);
 }
 
 async function runBuild(options: { ssr: boolean }) {
   const { build } = await import('./lib/builder.js');
-  await build(options);
+  await build({ cwd, ssr: options.ssr });
 }
 
 async function runStart(options: { ssr: boolean }) {
   const { Hono } = await import('hono');
   const { serveStatic } = await import('@hono/node-server/serve-static');
   const { resolveConfig } = await import('./lib/config.js');
-  const config = await resolveConfig();
   const { honoWrapper } = await import('./lib/middleware/honoWrapper.js');
   const { rsc } = await import('./lib/middleware/rsc.js');
   const app = new Hono();
-  app.use('*', honoWrapper(rsc({ command: 'start', ssr: options.ssr })));
+  app.use('*', honoWrapper(rsc({ cwd, command: 'start', ssr: options.ssr })));
+  // LIMITATION: resolveConfig has to be called after rsc
+  const config = await resolveConfig();
   app.use(
     '*',
     serveStatic({
