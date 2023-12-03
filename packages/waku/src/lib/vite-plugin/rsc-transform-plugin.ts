@@ -2,7 +2,7 @@ import path from 'node:path';
 import type { Plugin } from 'vite';
 import * as RSDWNodeLoader from 'react-server-dom-webpack/node-loader';
 
-export function rscTransformPlugin(isProduction: boolean): Plugin {
+export function rscTransformPlugin(isBuild: boolean): Plugin {
   return {
     name: 'rsc-transform-plugin',
     async resolveId(id, importer, options) {
@@ -50,7 +50,7 @@ export function rscTransformPlugin(isProduction: boolean): Plugin {
         resolve,
       );
       let { source } = await RSDWNodeLoader.load(id, null, load);
-      if (isProduction) {
+      if (isBuild) {
         // TODO we should parse the source code by ourselves with SWC
         if (
           /^import {registerClientReference} from "react-server-dom-webpack\/server";/.test(
