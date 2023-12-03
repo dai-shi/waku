@@ -98,10 +98,6 @@ const moduleCache = new Map();
 
 type Entries = {
   default: ReturnType<typeof defineEntries>;
-  resolveClientPath?: (
-    filePath: string,
-    invert?: boolean,
-  ) => string | undefined;
 };
 
 let lastViteServer: ViteDevServer | undefined;
@@ -334,7 +330,6 @@ export const renderHtml = async <Context>(
   const entriesFile = getEntriesFile(config, command);
   const {
     default: { getSsrConfig },
-    resolveClientPath,
   } = await (loadServerFile(entriesFile, command) as Promise<Entries>);
   const ssrConfig = await getSsrConfig?.(pathStr);
   if (!ssrConfig) {
@@ -408,18 +403,6 @@ export const renderHtml = async <Context>(
                 return { id, chunks: [id], name };
               }
               // command !== 'dev'
-              const origFile = resolveClientPath?.(
-                path.join(config.rootDir, config.distDir, file),
-                true,
-              );
-              if (
-                origFile &&
-                !origFile.startsWith(path.join(config.rootDir, config.srcDir))
-              ) {
-                // TODO we no longer fall into this condition?
-                const id = url.pathToFileURL(origFile).toString();
-                return { id, chunks: [id], name };
-              }
               const id = url
                 .pathToFileURL(
                   path.join(

@@ -109,7 +109,6 @@ const analyzeEntries = async (entriesFile: string) => {
 const buildServerBundle = async (
   config: Awaited<ReturnType<typeof resolveConfig>>,
   entriesFile: string,
-  distEntriesFile: string,
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
@@ -158,28 +157,6 @@ const buildServerBundle = async (
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
-  // TODO check if we still need this
-  const code = `export const resolveClientPath = (filePath, invert) => (invert ? ${JSON.stringify(
-    Object.fromEntries(
-      Object.entries(clientEntryFiles).map(([key, val]) => [
-        normalizePath(
-          path.join(config.rootDir, config.distDir, 'assets', key + '.js'),
-        ),
-        val,
-      ]),
-    ),
-  )} : ${JSON.stringify(
-    Object.fromEntries(
-      Object.entries(clientEntryFiles).map(([key, val]) => [
-        val,
-        normalizePath(
-          path.join(config.rootDir, config.distDir, 'assets', key + '.js'),
-        ),
-      ]),
-    ),
-  )})[filePath];
-`;
-  fs.appendFileSync(distEntriesFile, code);
   return serverBuildOutput;
 };
 
@@ -483,16 +460,12 @@ export async function build(options: { cwd: string; ssr?: boolean }) {
   const entriesFile = resolveFileName(
     path.join(config.rootDir, config.srcDir, config.entriesJs),
   );
-  const distEntriesFile = resolveFileName(
-    path.join(config.rootDir, config.distDir, config.entriesJs),
-  );
 
   const { commonEntryFiles, clientEntryFiles, serverEntryFiles } =
     await analyzeEntries(entriesFile);
   const serverBuildOutput = await buildServerBundle(
     config,
     entriesFile,
-    distEntriesFile,
     commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,

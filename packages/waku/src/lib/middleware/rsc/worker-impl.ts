@@ -47,10 +47,6 @@ setCwd(process.env.__WAKU_CWD__ || ''); // TODO no node dependency
 
 type Entries = {
   default: ReturnType<typeof defineEntries>;
-  resolveClientPath?: (
-    filePath: string,
-    invert?: boolean,
-  ) => string | undefined;
 };
 const controllerMap = new Map<number, ReadableStreamDefaultController>();
 
@@ -222,12 +218,10 @@ const resolveClientEntry = (
   filePath: string,
   config: Awaited<ReturnType<typeof resolveConfig>>,
   command: 'dev' | 'build' | 'start',
-  resolveClientPath: Entries['resolveClientPath'],
 ) => {
   filePath = filePath.startsWith('file:///')
     ? url.fileURLToPath(filePath)
     : filePath;
-  filePath = resolveClientPath?.(filePath) || filePath;
   const root = path.join(
     config.rootDir,
     command === 'dev' ? config.srcDir : config.distDir,
@@ -295,7 +289,6 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
   const entriesFile = getEntriesFile(config, rr.command);
   const {
     default: { renderEntries },
-    resolveClientPath,
   } = await (loadServerFile(entriesFile, rr.command) as Promise<Entries>);
 
   const rsfPrefix =
@@ -322,12 +315,7 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
     {
       get(_target, encodedId: string) {
         const [filePath, name] = encodedId.split('#') as [string, string];
-        const id = resolveClientEntry(
-          filePath,
-          config,
-          rr.command,
-          resolveClientPath,
-        );
+        const id = resolveClientEntry(filePath, config, rr.command);
         rr?.moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },
