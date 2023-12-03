@@ -9,7 +9,7 @@ import { build as viteBuild } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
-import { resolveConfig, viteInlineConfig } from './config.js';
+import { setCwd, resolveConfig, viteInlineConfig } from './config.js';
 import {
   encodeInput,
   generatePrefetchCode,
@@ -517,7 +517,8 @@ const resolveFileName = async (fname: string) => {
   return fname; // returning the default one
 };
 
-export async function build(options?: { ssr?: boolean }) {
+export async function build(options: { cwd: string; ssr?: boolean }) {
+  setCwd(options.cwd);
   const config = await resolveConfig();
   const entriesFile = await resolveFileName(
     path.join(config.rootDir, config.srcDir, config.entriesJs),
