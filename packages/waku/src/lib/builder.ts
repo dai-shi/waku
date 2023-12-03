@@ -322,11 +322,6 @@ const emitHtmlFiles = async (
   getClientModules: (input: string) => string[],
   ssr: boolean,
 ) => {
-  console.log(
-    clientBuildOutput.output.map((o) => {
-      return o.fileName;
-    }),
-  );
   const basePrefix = config.basePath + config.rscPath + '/';
   const publicIndexHtmlFile = path.join(
     config.rootDir,
@@ -345,11 +340,6 @@ const emitHtmlFiles = async (
       (v) => v.fileName === path.join(config.srcDir, config.indexHtml),
     ),
     1,
-  );
-  console.log(
-    clientBuildOutput.output.map((o) => {
-      return o.fileName;
-    }),
   );
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
@@ -418,7 +408,6 @@ const emitVercelOutput = async (
   const clientFiles = clientBuildOutput.output.map(({ fileName }) =>
     path.join(config.rootDir, config.distDir, config.publicDir, fileName),
   );
-  console.log(clientFiles);
   const srcDir = path.join(config.rootDir, config.distDir, config.publicDir);
   const dstDir = path.join(config.rootDir, config.distDir, '.vercel', 'output');
   for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
