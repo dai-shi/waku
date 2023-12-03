@@ -1,11 +1,11 @@
-import fsPromises from 'node:fs/promises';
 // @ts-expect-error no exported member
 import { MDXRemote } from 'next-mdx-remote/rsc';
 
 import { Code } from './code.js';
+import { readFileSync } from 'fs';
 
-export const Content = async () => {
-  const file = await fsPromises.readFile('../../README.md', 'utf8');
+export const Content = () => {
+  const file = readFileSync('../../README.md', 'utf8');
   const source = `## Introduction${file
     .split('## Introduction')[1]
     ?.split('## Tweets')[0]}`;
