@@ -132,7 +132,7 @@ const getViteServer = async () => {
     '../../vite-plugin/rsc-delegate-plugin.js'
   );
   const viteServer = await viteCreateServer({
-    ...viteInlineConfig(),
+    ...(await viteInlineConfig()),
     plugins: [
       rscTransformPlugin(false),
       rscReloadPlugin((type) => {
