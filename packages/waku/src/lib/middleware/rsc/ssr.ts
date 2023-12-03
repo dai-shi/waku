@@ -17,14 +17,12 @@ const getReact = async (
   if (command !== 'dev') {
     return (
       await import(
-        url.fileURLToPath(
-          path.join(
-            config.rootDir,
-            config.distDir,
-            config.publicDir,
-            'assets',
-            'react.js',
-          ),
+        path.join(
+          config.rootDir,
+          config.distDir,
+          config.publicDir,
+          'assets',
+          'react.js',
         )
       )
     ).default;
@@ -39,14 +37,12 @@ const getRDServer = async (
   if (command !== 'dev') {
     return (
       await import(
-        url.fileURLToPath(
-          path.join(
-            config.rootDir,
-            config.distDir,
-            config.publicDir,
-            'assets',
-            'rd-server.js',
-          ),
+        path.join(
+          config.rootDir,
+          config.distDir,
+          config.publicDir,
+          'assets',
+          'rd-server.js',
         )
       )
     ).default;
@@ -61,14 +57,12 @@ const getRSDWClient = async (
   if (command !== 'dev') {
     return (
       await import(
-        url.fileURLToPath(
-          path.join(
-            config.rootDir,
-            config.distDir,
-            config.publicDir,
-            'assets',
-            'rsdw-client.js',
-          ),
+        path.join(
+          config.rootDir,
+          config.distDir,
+          config.publicDir,
+          'assets',
+          'rsdw-client.js',
         )
       )
     ).default;
@@ -82,14 +76,12 @@ const getWakuClient = async (
 ) => {
   if (command !== 'dev') {
     return import(
-      url.fileURLToPath(
-        path.join(
-          config.rootDir,
-          config.distDir,
-          config.publicDir,
-          'assets',
-          'waku-client.js',
-        ),
+      path.join(
+        config.rootDir,
+        config.distDir,
+        config.publicDir,
+        'assets',
+        'waku-client.js',
       )
     );
   }
