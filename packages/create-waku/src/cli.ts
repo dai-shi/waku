@@ -127,7 +127,7 @@ async function init() {
 
   fse.copySync(templateDir, root);
 
-  fsPromises.writeFile(
+  await fsPromises.writeFile(
     packageJsonPath,
     JSON.stringify(
       {

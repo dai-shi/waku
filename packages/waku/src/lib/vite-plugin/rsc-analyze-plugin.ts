@@ -61,7 +61,7 @@ export function rscAnalyzePlugin(
         { fromClient?: true; notFromClient?: true }
       >();
       const seen = new Set<string>();
-      const loop = async (id: string, isClient: boolean) => {
+      const loop = (id: string, isClient: boolean) => {
         if (seen.has(id)) {
           return;
         }
@@ -82,25 +82,29 @@ export function rscAnalyzePlugin(
           } else {
             value.notFromClient = true;
           }
-          await loop(depId, isClient);
+          loop(depId, isClient);
         }
       };
       for (const id of outputIds) {
-        await loop(id, false);
+        loop(id, false);
       }
       for (const id of clientFileSet) {
-        await loop(id, true);
+        loop(id, true);
       }
       for (const id of serverFileSet) {
-        await loop(id, false);
+        loop(id, false);
       }
       for (const [id, val] of possibleCommonFileMap) {
         if (val.fromClient && val.notFromClient) {
           commonFileSet.add(id);
         }
       }
-      clientFileSet.forEach((id) => commonFileSet.delete(id));
-      serverFileSet.forEach((id) => commonFileSet.delete(id));
+      for (const id of clientFileSet) {
+        commonFileSet.delete(id);
+      }
+      for (const id of serverFileSet) {
+        commonFileSet.delete(id);
+      }
     },
   };
 }

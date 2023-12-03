@@ -451,7 +451,7 @@ export default async function handler(req, res) {
   );
 };
 
-const resolveFileName = async (fname: string) => {
+const resolveFileName = (fname: string) => {
   for (const ext of ['.js', '.ts', '.tsx', '.jsx']) {
     const resolvedName = fname.slice(0, -path.extname(fname).length) + ext;
     if (existsSync(resolvedName)) {
@@ -464,7 +464,7 @@ const resolveFileName = async (fname: string) => {
 export async function build(options: { cwd: string; ssr?: boolean }) {
   setCwd(options.cwd);
   const config = await resolveConfig();
-  const entriesFile = await resolveFileName(
+  const entriesFile = resolveFileName(
     path.join(config.rootDir, config.srcDir, config.entriesJs),
   );
 
