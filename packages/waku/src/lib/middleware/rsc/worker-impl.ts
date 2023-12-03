@@ -27,7 +27,13 @@ const loadRSDWServer = async (
 ) => {
   if (command !== 'dev') {
     return (
-      await import(path.join(config.rootDir, config.distDir, 'rsdw-server.js'))
+      await import(
+        url
+          .pathToFileURL(
+            path.join(config.rootDir, config.distDir, 'rsdw-server.js'),
+          )
+          .toString()
+      )
     ).default;
   }
   if (!nodeLoaderRegistered) {

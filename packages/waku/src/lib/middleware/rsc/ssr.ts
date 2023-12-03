@@ -16,13 +16,17 @@ const loadReact = async (
   if (command !== 'dev') {
     return (
       await import(
-        path.join(
-          config.rootDir,
-          config.distDir,
-          config.publicDir,
-          'assets',
-          'react.js',
-        )
+        url
+          .pathToFileURL(
+            path.join(
+              config.rootDir,
+              config.distDir,
+              config.publicDir,
+              'assets',
+              'react.js',
+            ),
+          )
+          .toString()
       )
     ).default;
   }
@@ -36,13 +40,17 @@ const loadRDServer = async (
   if (command !== 'dev') {
     return (
       await import(
-        path.join(
-          config.rootDir,
-          config.distDir,
-          config.publicDir,
-          'assets',
-          'rd-server.js',
-        )
+        url
+          .pathToFileURL(
+            path.join(
+              config.rootDir,
+              config.distDir,
+              config.publicDir,
+              'assets',
+              'rd-server.js',
+            ),
+          )
+          .toString()
       )
     ).default;
   }
@@ -56,13 +64,17 @@ const loadRSDWClient = async (
   if (command !== 'dev') {
     return (
       await import(
-        path.join(
-          config.rootDir,
-          config.distDir,
-          config.publicDir,
-          'assets',
-          'rsdw-client.js',
-        )
+        url
+          .pathToFileURL(
+            path.join(
+              config.rootDir,
+              config.distDir,
+              config.publicDir,
+              'assets',
+              'rsdw-client.js',
+            ),
+          )
+          .toString()
       )
     ).default;
   }
@@ -75,13 +87,17 @@ const loadWakuClient = async (
 ) => {
   if (command !== 'dev') {
     return import(
-      path.join(
-        config.rootDir,
-        config.distDir,
-        config.publicDir,
-        'assets',
-        'waku-client.js',
-      )
+      url
+        .pathToFileURL(
+          path.join(
+            config.rootDir,
+            config.distDir,
+            config.publicDir,
+            'assets',
+            'waku-client.js',
+          ),
+        )
+        .toString()
     );
   }
   return import('waku/client');
