@@ -45,7 +45,7 @@ const getViteServer = async () => {
     '../../vite-plugin/nonjs-resolve-plugin.js'
   );
   const viteServer = await viteCreateServer({
-    ...viteInlineConfig(),
+    ...(await viteInlineConfig()),
     plugins: [nonjsResolvePlugin()],
     ssr: {
       external: ['waku'],

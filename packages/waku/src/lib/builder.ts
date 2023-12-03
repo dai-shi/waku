@@ -59,7 +59,7 @@ const analyzeEntries = async (entriesFile: string) => {
   const clientFileSet = new Set<string>();
   const serverFileSet = new Set<string>();
   await viteBuild({
-    ...viteInlineConfig(),
+    ...(await viteInlineConfig()),
     plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
     ssr: {
       resolve: {
@@ -114,7 +114,7 @@ const buildServerBundle = async (
   serverEntryFiles: Record<string, string>,
 ) => {
   const serverBuildOutput = await viteBuild({
-    ...viteInlineConfig(),
+    ...(await viteInlineConfig()),
     ssr: {
       resolve: {
         conditions: ['react-server'],
@@ -217,7 +217,7 @@ const buildClientBundle = async (
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
   const clientBuildOutput = await viteBuild({
-    ...viteInlineConfig(),
+    ...(await viteInlineConfig()),
     root: path.join(config.rootDir, config.srcDir),
     plugins: [patchReactRefresh(viteReact()), rscIndexPlugin(cssAssets)],
     build: {
