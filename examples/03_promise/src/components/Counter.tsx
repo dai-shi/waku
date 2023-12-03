@@ -31,7 +31,8 @@ const Message = ({
   return (
     <ul>
       <li>count: {count}</li>
-      <li>delayedMessage: {message}</li>
+     {/* We want show the usage without `use` but it causes a hydration error. https://github.com/dai-shi/waku/issues/202 */}
+      <li>delayedMessage: {use(delayedMessage)}</li>
     </ul>
   );
 };
