@@ -26,11 +26,11 @@ const splitHTML = (htmlStr: string): readonly [string, string, string] => {
   return match.slice(1) as [string, string, string];
 };
 
+// HACK we hope to have a better solution soon.
 let cwd: string | undefined;
 export function setCwd(c: string) {
   cwd = c;
 }
-
 export function getCwd() {
   if (!cwd) {
     throw new Error('Unable to get cwd');

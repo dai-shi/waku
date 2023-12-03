@@ -66,7 +66,7 @@ async function runDev(options: { ssr: boolean }) {
 
 async function runBuild(options: { ssr: boolean }) {
   const { build } = await import('./lib/builder.js');
-  await build(options);
+  await build({ cwd, ssr: options.ssr });
 }
 
 async function runStart(options: { ssr: boolean }) {
