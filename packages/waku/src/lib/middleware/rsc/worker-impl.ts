@@ -347,14 +347,14 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
       args = await decodeReply(body);
     }
     const [fileId, name] = rsfId.split('#') as [string, string];
-    const filePath = normalizePath(
-      fileId.startsWith('/') ? fileId : rsfPrefix + normalizePath(fileId),
-    );
+    const filePath = fileId.startsWith('/') ? fileId : rsfPrefix + fileId;
+    const fname =
+      rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
     parentPort!.postMessage({
       type: 'debug',
       msg: `1: Loading ${filePath} in ${rr.command}`,
     })
-    const mod = await loadServerFile(filePath, rr.command);
+    const mod = await loadServerFile(fname, rr.command);
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
     const rerender = (input: string) => {
       elements = Promise.all([elements, render(input)]).then(
