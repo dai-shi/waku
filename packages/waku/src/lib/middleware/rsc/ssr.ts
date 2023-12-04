@@ -105,8 +105,8 @@ const loadWakuClient = async (
 // HACK for react-server-dom-webpack without webpack
 const moduleCache = new Map();
 (globalThis as any).__webpack_chunk_load__ ||= async (id: string) => {
-  const [filePath, command] = id.split('#');
-  const m = await loadServerFile(filePath!, (command as any) || 'start');
+  const [fileURL, command] = id.split('#');
+  const m = await loadServerFile(fileURL!, (command as any) || 'start');
   moduleCache.set(id, m);
 };
 (globalThis as any).__webpack_require__ ||= (id: string) => moduleCache.get(id);
@@ -149,17 +149,17 @@ export const shutdown = async () => {
 };
 
 const loadServerFile = async (
-  fileURLOrFilePath: string,
+  fileURL: string,
   command: 'dev' | 'build' | 'start',
 ) => {
   if (command !== 'dev') {
-    return import(fileURLOrFilePath);
+    return import(fileURL);
   }
   const vite = await getViteServer();
-  return vite.ssrLoadModule(fileURLOrFilePath);
+  return vite.ssrLoadModule(fileURLToFilePath(fileURL));
 };
 
-const getEntriesFile = (
+const getEntriesFileURL = (
   config: ResolvedConfig,
   command: 'dev' | 'build' | 'start',
 ) => {
@@ -168,7 +168,7 @@ const getEntriesFile = (
     command === 'dev' ? config.srcDir : config.distDir,
     config.entriesJs,
   );
-  return command === 'dev' ? filePath : filePathToFileURL(filePath);
+  return filePathToFileURL(filePath);
 };
 
 const fakeFetchCode = `
@@ -342,10 +342,10 @@ export const renderHtml = async <Context>(
     loadRSDWClient(config, command),
     loadWakuClient(config, command),
   ]);
-  const entriesFile = getEntriesFile(config, command);
+  const entriesFileURL = getEntriesFileURL(config, command);
   const {
     default: { getSsrConfig },
-  } = await (loadServerFile(entriesFile, command) as Promise<Entries>);
+  } = await (loadServerFile(entriesFileURL, command) as Promise<Entries>);
   const ssrConfig = await getSsrConfig?.(pathStr);
   if (!ssrConfig) {
     return null;
@@ -421,8 +421,7 @@ export const renderHtml = async <Context>(
                     filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
                   return { id, chunks: [id], name };
                 }
-                const id =
-                  filePathToFileURL(filePath).slice('file://'.length) + '#dev';
+                const id = filePathToFileURL(filePath) + '#dev';
                 return { id, chunks: [id], name };
               }
               // command !== 'dev'

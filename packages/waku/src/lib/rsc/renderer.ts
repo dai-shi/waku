@@ -33,7 +33,7 @@ type Entries = {
   default: ReturnType<typeof defineEntries>;
 };
 
-const getEntriesFile = (
+const getEntriesFileURL = (
   config: Omit<ResolvedConfig, 'ssr'>,
   isDev: boolean,
 ) => {
@@ -42,9 +42,7 @@ const getEntriesFile = (
     isDev ? config.srcDir : config.distDir,
     config.entriesJs,
   );
-  return isDev
-    ? normalizePath(filePath)
-    : filePathToFileURL(normalizePath(filePath));
+  return filePathToFileURL(normalizePath(filePath));
 };
 
 const resolveClientEntry = (
@@ -114,7 +112,7 @@ export async function renderRSC(
     moduleIdCallback?: (id: string) => void;
   } & (
     | { isDev: false }
-    | { isDev: true; customImport: (id: string) => Promise<unknown> }
+    | { isDev: true; customImport: (fileURL: string) => Promise<unknown> }
   ),
 ): Promise<ReadableStream> {
   const {
@@ -127,17 +125,19 @@ export async function renderRSC(
     moduleIdCallback,
     isDev,
   } = opts;
-  const customImport = isDev ? opts.customImport : (id: string) => import(id);
+  const customImport = isDev
+    ? opts.customImport
+    : (fileURL: string) => import(fileURL);
 
   const { renderToReadableStream, decodeReply } = await loadRSDWServer(
     config,
     isDev,
   );
 
-  const entriesFile = getEntriesFile(config, isDev);
+  const entriesFileURL = getEntriesFileURL(config, isDev);
   const {
     default: { renderEntries },
-  } = await (customImport(entriesFile) as Promise<Entries>);
+  } = await (customImport(entriesFileURL) as Promise<Entries>);
 
   const rsfPrefix =
     joinPath(config.rootDir, isDev ? config.srcDir : config.distDir) + '/';
@@ -239,10 +239,10 @@ export async function getBuildConfigRSC(opts: {
 }) {
   const { config } = opts;
 
-  const entriesFile = getEntriesFile(config, false);
+  const entriesFileURL = getEntriesFileURL(config, false);
   const {
     default: { getBuildConfig },
-  } = await (import(entriesFile) as Promise<Entries>);
+  } = await (import(entriesFileURL) as Promise<Entries>);
   if (!getBuildConfig) {
     console.warn(
       "getBuildConfig is undefined. It's recommended for optimization and sometimes required.",
