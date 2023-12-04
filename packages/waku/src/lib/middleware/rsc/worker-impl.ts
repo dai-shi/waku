@@ -1,6 +1,7 @@
+// This file can depend on Node.js
+
 import url from 'node:url';
 import { parentPort } from 'node:worker_threads';
-import { register } from 'node:module';
 import { Server } from 'node:http';
 import { createServer as viteCreateServer } from 'vite';
 import type { ViteDevServer } from 'vite';
@@ -15,6 +16,9 @@ import { rscDelegatePlugin } from '../../vite-plugin/rsc-delegate-plugin.js';
 
 const IS_NODE_20 = Number(process.versions.node.split('.')[0]) >= 20;
 if (IS_NODE_20) {
+  const {
+    default: { register },
+  } = await import('node:module');
   register('waku/node-loader', url.pathToFileURL('./'));
 }
 const controllerMap = new Map<number, ReadableStreamDefaultController>();
