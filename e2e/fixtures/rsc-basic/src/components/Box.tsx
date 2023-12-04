@@ -1,4 +1,4 @@
-import { PropsWithChildren, HTMLAttributes } from 'react';
+import type { PropsWithChildren, HTMLAttributes } from 'react';
 
 export const ServerBox = ({
   children,
