@@ -1,36 +1,28 @@
-import url from 'node:url'; // TODO no node dependency
-import { parentPort } from 'node:worker_threads'; // TODO no node dependency
-
+import url from 'node:url';
+import { parentPort } from 'node:worker_threads';
+import { register } from 'node:module';
+import { Server } from 'node:http';
+import { createServer as viteCreateServer } from 'vite';
 import type { ViteDevServer } from 'vite';
 
 import { viteInlineConfig } from '../../config.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
-import { renderRSC, getBuildConfigRSC } from '../../rsc/renderer.js';
+import { renderRSC } from '../../rsc/renderer.js';
+import { rscTransformPlugin } from '../../vite-plugin/rsc-transform-plugin.js';
+import { rscReloadPlugin } from '../../vite-plugin/rsc-reload-plugin.js';
+import { rscDelegatePlugin } from '../../vite-plugin/rsc-delegate-plugin.js';
 
-let nodeLoaderRegistered = false;
-const registerNodeLoader = async () => {
-  if (!nodeLoaderRegistered) {
-    nodeLoaderRegistered = true;
-    const IS_NODE_20 = Number(process.versions.node.split('.')[0]) >= 20;
-    if (IS_NODE_20) {
-      const {
-        default: { register },
-      } = await import('node:module');
-      register('waku/node-loader', url.pathToFileURL('./'));
-    }
-  }
-};
-
+const IS_NODE_20 = Number(process.versions.node.split('.')[0]) >= 20;
+if (IS_NODE_20) {
+  register('waku/node-loader', url.pathToFileURL('./'));
+}
 const controllerMap = new Map<number, ReadableStreamDefaultController>();
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id, type, hasModuleIdCallback, ...rest } = mesg;
   const rr: RenderRequest = rest;
-  if (rr.command === 'dev') {
-    await registerNodeLoader();
-  }
   try {
     const stream = new ReadableStream({
       start(controller) {
@@ -52,14 +44,8 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
       body: rr.stream,
       contentType: rr.headers['content-type'] as string | undefined,
       ...(rr.moduleIdCallback ? { moduleIdCallback: rr.moduleIdCallback } : {}),
-      ...(rr.command === 'dev'
-        ? {
-            isDev: true,
-            customImport: loadServerFile,
-          }
-        : {
-            isDev: false,
-          }),
+      isDev: true,
+      customImport: loadServerFile,
     });
     const mesg: MessageRes = { id, type: 'start', context: rr.context };
     parentPort!.postMessage(mesg);
@@ -93,37 +79,12 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   }
 };
 
-const handleGetBuildConfig = async (
-  mesg: MessageReq & { type: 'getBuildConfig' },
-) => {
-  const { id, config } = mesg;
-  try {
-    const output = await getBuildConfigRSC({ config });
-    const mesg: MessageRes = { id, type: 'buildConfig', output };
-    parentPort!.postMessage(mesg);
-  } catch (err) {
-    const mesg: MessageRes = { id, type: 'err', err };
-    parentPort!.postMessage(mesg);
-  }
-};
-
 let lastViteServer: ViteDevServer | undefined;
 const getViteServer = async () => {
   if (lastViteServer) {
     return lastViteServer;
   }
-  const { Server } = await import('node:http');
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
-  const { createServer: viteCreateServer } = await import('vite');
-  const { rscTransformPlugin } = await import(
-    '../../vite-plugin/rsc-transform-plugin.js'
-  );
-  const { rscReloadPlugin } = await import(
-    '../../vite-plugin/rsc-reload-plugin.js'
-  );
-  const { rscDelegatePlugin } = await import(
-    '../../vite-plugin/rsc-delegate-plugin.js'
-  );
   const viteServer = await viteCreateServer({
     ...(await viteInlineConfig()),
     plugins: [
@@ -153,27 +114,14 @@ const getViteServer = async () => {
   return viteServer;
 };
 
-// TODO unused
-const shutdown = async () => {
-  if (lastViteServer) {
-    await lastViteServer.close();
-    lastViteServer = undefined;
-  }
-  parentPort!.close();
-};
-
 const loadServerFile = async (fname: string) => {
   const vite = await getViteServer();
   return vite.ssrLoadModule(fname);
 };
 
 parentPort!.on('message', (mesg: MessageReq) => {
-  if (mesg.type === 'shutdown') {
-    shutdown();
-  } else if (mesg.type === 'render') {
+  if (mesg.type === 'render') {
     handleRender(mesg);
-  } else if (mesg.type === 'getBuildConfig') {
-    handleGetBuildConfig(mesg);
   } else if (mesg.type === 'buf') {
     const controller = controllerMap.get(mesg.id)!;
     controller.enqueue(new Uint8Array(mesg.buf, mesg.offset, mesg.len));
