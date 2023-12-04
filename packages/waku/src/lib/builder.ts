@@ -294,6 +294,7 @@ const emitHtmlFiles = async (
     encoding: 'utf8',
   });
 
+  // https://github.com/dai-shi/waku/pull/181#discussion_r1412744262
   await fsPromises.unlink(publicIndexHtmlFile);
   clientBuildOutput.output.splice(
     clientBuildOutput.output.findIndex(

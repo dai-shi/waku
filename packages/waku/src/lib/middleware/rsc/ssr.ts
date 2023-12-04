@@ -404,7 +404,6 @@ export const renderHtml = async <Context>(
           {
             get(_target, name: string) {
               if (command === 'dev') {
-                console.log(resolvedFilePath);
                 const filePath = normalizePath(
                   resolvedFilePath.startsWith('/@fs/')
                     ? // FIXME This is ugly. We need to refactor it.
@@ -412,8 +411,7 @@ export const renderHtml = async <Context>(
                       resolvedFilePath.slice(4 + (path.sep === '/' ? 0 : 1))
                     : resolvedFilePath,
                 );
-                console.log(filePath);
-                // FIXME This is ugly. ,e need to refactor it.
+                // FIXME This is ugly. We need to refactor it.
                 const wakuDist = normalizePath(
                   path.join(
                     url.fileURLToPath(import.meta.url),
