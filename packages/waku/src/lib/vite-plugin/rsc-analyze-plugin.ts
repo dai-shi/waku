@@ -1,5 +1,5 @@
 import path from 'node:path';
-import fs from 'node:fs';
+import { existsSync } from 'node:fs';
 import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 
@@ -67,8 +67,8 @@ export function rscAnalyzePlugin(
         }
         seen.add(id);
         isClient = isClient || clientFileSet.has(id);
-        dependencyMap.get(id)?.forEach((depId) => {
-          if (!fs.existsSync(depId)) {
+        for (const depId of dependencyMap.get(id) ?? []) {
+          if (!existsSync(depId)) {
             // HACK is there a better way?
             return;
           }
@@ -83,18 +83,28 @@ export function rscAnalyzePlugin(
             value.notFromClient = true;
           }
           loop(depId, isClient);
-        });
+        }
       };
-      outputIds.forEach((id) => loop(id, false));
-      clientFileSet.forEach((id) => loop(id, true));
-      serverFileSet.forEach((id) => loop(id, false));
+      for (const id of outputIds) {
+        loop(id, false);
+      }
+      for (const id of clientFileSet) {
+        loop(id, true);
+      }
+      for (const id of serverFileSet) {
+        loop(id, false);
+      }
       for (const [id, val] of possibleCommonFileMap) {
         if (val.fromClient && val.notFromClient) {
           commonFileSet.add(id);
         }
       }
-      clientFileSet.forEach((id) => commonFileSet.delete(id));
-      serverFileSet.forEach((id) => commonFileSet.delete(id));
+      for (const id of clientFileSet) {
+        commonFileSet.delete(id);
+      }
+      for (const id of serverFileSet) {
+        commonFileSet.delete(id);
+      }
     },
   };
 }
