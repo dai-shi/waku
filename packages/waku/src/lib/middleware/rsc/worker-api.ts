@@ -1,4 +1,4 @@
-import { Worker } from 'node:worker_threads'; // TODO no node dependency
+import type { Worker as WorkerOrig } from 'node:worker_threads';
 
 import type { ResolvedConfig } from '../../../config.js';
 import type { GetBuildConfig } from '../../../server.js';
@@ -48,7 +48,7 @@ export type MessageRes =
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
 let lastCommand: 'dev' | 'build' | 'start' | undefined;
-let lastWorker: Worker | undefined;
+let lastWorker: Promise<WorkerOrig> | undefined;
 const getWorker = (command: 'dev' | 'build' | 'start') => {
   if (lastWorker) {
     if (lastCommand !== command) {
@@ -56,31 +56,36 @@ const getWorker = (command: 'dev' | 'build' | 'start') => {
     }
     return lastWorker;
   }
-  const IS_NODE_18 = Number(process.versions.node.split('.')[0]) < 20;
-  const worker = new Worker(new URL('worker-impl.js', import.meta.url), {
-    execArgv:
-      command !== 'dev'
-        ? []
-        : [
-            ...(IS_NODE_18
-              ? ['--experimental-loader', 'waku/node-loader']
-              : []),
-            '--conditions',
-            'react-server',
-          ],
-  });
-  worker.on('message', (mesg: MessageRes) => {
-    if ('id' in mesg) {
-      messageCallbacks.get(mesg.id)?.(mesg);
-    }
-  });
   lastCommand = command;
-  lastWorker = worker;
-  return worker;
+  return (lastWorker = new Promise<WorkerOrig>((resolve) => {
+    import('node:worker_threads').then(({ Worker }) => {
+      const IS_NODE_18 = Number(process.versions.node.split('.')[0]) < 20;
+      const worker = new Worker(new URL('worker-impl.js', import.meta.url), {
+        execArgv:
+          command !== 'dev'
+            ? []
+            : [
+                ...(IS_NODE_18
+                  ? ['--experimental-loader', 'waku/node-loader']
+                  : []),
+                '--conditions',
+                'react-server',
+              ],
+      });
+      worker.on('message', (mesg: MessageRes) => {
+        if ('id' in mesg) {
+          messageCallbacks.get(mesg.id)?.(mesg);
+        }
+      });
+      resolve(worker);
+    });
+  }));
 };
 
-export function registerReloadCallback(fn: (type: 'full-reload') => void) {
-  const worker = getWorker('dev');
+export async function registerReloadCallback(
+  fn: (type: 'full-reload') => void,
+) {
+  const worker = await getWorker('dev');
   const listener = (mesg: MessageRes) => {
     if (mesg.type === 'full-reload') {
       fn(mesg.type);
@@ -90,8 +95,8 @@ export function registerReloadCallback(fn: (type: 'full-reload') => void) {
   return () => worker.off('message', listener);
 }
 
-export function registerImportCallback(fn: (source: string) => void) {
-  const worker = getWorker('dev');
+export async function registerImportCallback(fn: (source: string) => void) {
+  const worker = await getWorker('dev');
   const listener = (mesg: MessageRes) => {
     if (mesg.type === 'hot-import') {
       fn(mesg.source);
@@ -103,23 +108,25 @@ export function registerImportCallback(fn: (source: string) => void) {
 
 // TODO unused
 export function shutdown(): Promise<void> {
-  const worker = lastWorker;
-  if (!worker) {
+  const workerPromise = lastWorker;
+  if (!workerPromise) {
     throw new Error('No worker to shutdown');
   }
   return new Promise((resolve) => {
-    worker.on('close', resolve);
-    const mesg: MessageReq = { type: 'shutdown' };
-    worker.postMessage(mesg);
+    workerPromise.then((worker) => {
+      worker.on('close', resolve);
+      const mesg: MessageReq = { type: 'shutdown' };
+      worker.postMessage(mesg);
+    });
   });
 }
 
 let nextId = 1;
 
-export function renderRSC<Context>(
+export async function renderRSC<Context>(
   rr: RenderRequest,
 ): Promise<readonly [ReadableStream, Context]> {
-  const worker = getWorker(rr.command);
+  const worker = await getWorker(rr.command);
   const id = nextId++;
   const pipe = async () => {
     if (rr.stream) {
@@ -215,12 +222,12 @@ export function renderRSC<Context>(
 }
 
 // TODO unused
-export function getBuildConfigRSC(
+export async function getBuildConfigRSC(
   config: ResolvedConfig,
 ): ReturnType<GetBuildConfig> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { ssr: _removed, ...copiedConfig } = config;
-  const worker = getWorker('build');
+  const worker = await getWorker('build');
   return new Promise((resolve, reject) => {
     const id = nextId++;
     messageCallbacks.set(id, (mesg) => {
