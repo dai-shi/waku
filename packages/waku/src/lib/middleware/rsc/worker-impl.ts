@@ -1,25 +1,18 @@
-import path from 'node:path'; // TODO no node dependency
-import url from 'node:url'; // TODO no node dependency
-import { parentPort } from 'node:worker_threads'; // TODO no node dependency
+// This file can depend on Node.js
 
-import type { ReactNode } from 'react';
-import RSDWServer from 'react-server-dom-webpack/server.edge';
+import url from 'node:url';
+import { parentPort } from 'node:worker_threads';
+import { Server } from 'node:http';
+import { createServer as viteCreateServer } from 'vite';
 import type { ViteDevServer } from 'vite';
 
-import { setCwd, resolveConfig, viteInlineConfig } from '../../config.js';
-import {
-  hasStatusCode,
-  deepFreeze,
-  parseFormData,
-  normalizePath,
-} from './utils.js';
+import { viteInlineConfig } from '../../config.js';
+import { hasStatusCode, deepFreeze } from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
-import {
-  defineEntries,
-  runWithAsyncLocalStorage as runWithAsyncLocalStorageOrig,
-} from '../../../server.js';
-
-const { renderToReadableStream, decodeReply } = RSDWServer;
+import { renderRSC } from '../../rsc/renderer.js';
+import { rscTransformPlugin } from '../../vite-plugin/rsc-transform-plugin.js';
+import { rscReloadPlugin } from '../../vite-plugin/rsc-reload-plugin.js';
+import { rscDelegatePlugin } from '../../vite-plugin/rsc-delegate-plugin.js';
 
 const IS_NODE_20 = Number(process.versions.node.split('.')[0]) >= 20;
 if (IS_NODE_20) {
@@ -28,16 +21,6 @@ if (IS_NODE_20) {
   } = await import('node:module');
   register('waku/node-loader', url.pathToFileURL('./'));
 }
-
-setCwd(process.env.__WAKU_CWD__ || ''); // TODO no node dependency
-
-type Entries = {
-  default: ReturnType<typeof defineEntries>;
-  resolveClientPath?: (
-    filePath: string,
-    invert?: boolean,
-  ) => string | undefined;
-};
 const controllerMap = new Map<number, ReadableStreamDefaultController>();
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
@@ -57,7 +40,17 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         parentPort!.postMessage(mesg);
       };
     }
-    const readable = await renderRSC(rr);
+    const readable = await renderRSC({
+      config: rr.config,
+      input: rr.input,
+      method: rr.method,
+      context: rr.context,
+      body: rr.stream,
+      contentType: rr.headers['content-type'] as string | undefined,
+      ...(rr.moduleIdCallback ? { moduleIdCallback: rr.moduleIdCallback } : {}),
+      isDev: true,
+      customImport: loadServerFile,
+    });
     const mesg: MessageRes = { id, type: 'start', context: rr.context };
     parentPort!.postMessage(mesg);
     deepFreeze(rr.context);
@@ -90,41 +83,16 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   }
 };
 
-const handleGetBuildConfig = async (
-  mesg: MessageReq & { type: 'getBuildConfig' },
-) => {
-  const { id } = mesg;
-  try {
-    const output = await getBuildConfigRSC();
-    const mesg: MessageRes = { id, type: 'buildConfig', output };
-    parentPort!.postMessage(mesg);
-  } catch (err) {
-    const mesg: MessageRes = { id, type: 'err', err };
-    parentPort!.postMessage(mesg);
-  }
-};
-
 let lastViteServer: ViteDevServer | undefined;
 const getViteServer = async () => {
   if (lastViteServer) {
     return lastViteServer;
   }
-  const { Server } = await import('node:http');
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
-  const { createServer: viteCreateServer } = await import('vite');
-  const { rscTransformPlugin } = await import(
-    '../../vite-plugin/rsc-transform-plugin.js'
-  );
-  const { rscReloadPlugin } = await import(
-    '../../vite-plugin/rsc-reload-plugin.js'
-  );
-  const { rscDelegatePlugin } = await import(
-    '../../vite-plugin/rsc-delegate-plugin.js'
-  );
   const viteServer = await viteCreateServer({
-    ...viteInlineConfig(),
+    ...(await viteInlineConfig()),
     plugins: [
-      rscTransformPlugin(),
+      rscTransformPlugin(false),
       rscReloadPlugin((type) => {
         const mesg: MessageRes = { type };
         parentPort!.postMessage(mesg);
@@ -136,8 +104,8 @@ const getViteServer = async () => {
     ],
     ssr: {
       resolve: {
-        conditions: ['react-server'],
-        externalConditions: ['react-server'],
+        conditions: ['react-server', 'workerd'],
+        externalConditions: ['react-server', 'workerd'],
       },
       external: ['react', 'react-server-dom-webpack', 'waku'],
       noExternal: /^(?!node:)/,
@@ -150,32 +118,14 @@ const getViteServer = async () => {
   return viteServer;
 };
 
-const shutdown = async () => {
-  if (lastViteServer) {
-    await lastViteServer.close();
-    lastViteServer = undefined;
-  }
-  parentPort!.close();
-};
-
-const loadServerFile = async (
-  fname: string,
-  command: 'dev' | 'build' | 'start',
-) => {
-  if (command !== 'dev') {
-    return import(fname);
-  }
+const loadServerFile = async (fname: string) => {
   const vite = await getViteServer();
   return vite.ssrLoadModule(fname);
 };
 
 parentPort!.on('message', (mesg: MessageReq) => {
-  if (mesg.type === 'shutdown') {
-    shutdown();
-  } else if (mesg.type === 'render') {
+  if (mesg.type === 'render') {
     handleRender(mesg);
-  } else if (mesg.type === 'getBuildConfig') {
-    handleGetBuildConfig(mesg);
   } else if (mesg.type === 'buf') {
     const controller = controllerMap.get(mesg.id)!;
     controller.enqueue(new Uint8Array(mesg.buf, mesg.offset, mesg.len));
@@ -189,250 +139,3 @@ parentPort!.on('message', (mesg: MessageReq) => {
     controller.error(err);
   }
 });
-
-const getEntriesFile = (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
-  command: 'dev' | 'build' | 'start',
-) => {
-  const filePath = path.join(
-    config.rootDir,
-    command === 'dev' ? config.srcDir : config.distDir,
-    config.entriesJs,
-  );
-  return normalizePath(
-    command === 'dev' ? filePath : url.pathToFileURL(filePath).toString(),
-  );
-};
-
-const resolveClientEntry = (
-  filePath: string,
-  config: Awaited<ReturnType<typeof resolveConfig>>,
-  command: 'dev' | 'build' | 'start',
-  resolveClientPath: Entries['resolveClientPath'],
-) => {
-  filePath = filePath.startsWith('file:///')
-    ? url.fileURLToPath(filePath)
-    : filePath;
-  filePath = resolveClientPath?.(filePath) || filePath;
-  // FIXME We want to make `root` symmetric for 'srcDir' and 'distDir', but we don't know how to achieve it.
-  const root = path.join(
-    config.rootDir,
-    command === 'dev' ? '' : config.distDir,
-  );
-  if (!filePath.startsWith(root)) {
-    if (command === 'dev') {
-      // HACK this relies on Vite's internal implementation detail.
-      return normalizePath(
-        config.basePath + '@fs/' + filePath.replace(/^\//, ''),
-      );
-    } else {
-      throw new Error(
-        'Resolving client module outside root is unsupported for now',
-      );
-    }
-  }
-  // https://github.com/dai-shi/waku/pull/181#discussion_r1409274135
-  return normalizePath(
-    (command === 'dev' ? '/@id' : '') +
-      config.basePath +
-      path.relative(root, filePath),
-  );
-};
-
-// HACK Patching stream is very fragile.
-const transformRsfId = (prefixToRemove: string) => {
-  const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
-  let data = '';
-  return new TransformStream({
-    transform(chunk, controller) {
-      if (!(chunk instanceof Uint8Array)) {
-        throw new Error('Unknown chunk type');
-      }
-      data += decoder.decode(chunk);
-      if (!data.endsWith('\n')) {
-        return;
-      }
-      const lines = data.split('\n');
-      data = '';
-      for (let i = 0; i < lines.length; ++i) {
-        const match = lines[i]!.match(
-          new RegExp(
-            `^([0-9]+):{"id":"(?:file:///?)?${prefixToRemove}(.*?)"(.*)$`,
-          ),
-        );
-        if (match) {
-          lines[i] = `${match[1]}:{"id":"${match[2]}"${match[3]}`;
-        }
-      }
-      controller.enqueue(encoder.encode(lines.join('\n')));
-    },
-  });
-};
-
-async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
-  const config = await resolveConfig();
-
-  const { runWithAsyncLocalStorage } = await (loadServerFile(
-    'waku/server',
-    rr.command,
-  ) as Promise<{
-    runWithAsyncLocalStorage: typeof runWithAsyncLocalStorageOrig;
-  }>);
-
-  const entriesFile = getEntriesFile(config, rr.command);
-  const {
-    default: { renderEntries },
-    resolveClientPath,
-  } = await (loadServerFile(entriesFile, rr.command) as Promise<Entries>);
-
-  const rsfPrefix =
-    path.posix.join(
-      config.rootDir,
-      rr.command === 'dev' ? config.srcDir : config.distDir,
-    ) + '/';
-
-  const render = async (input: string) => {
-    const elements = await renderEntries(input);
-    if (elements === null) {
-      const err = new Error('No function component found');
-      (err as any).statusCode = 404; // HACK our convention for NotFound
-      throw err;
-    }
-    if (Object.keys(elements).some((key) => key.startsWith('_'))) {
-      throw new Error('"_" prefix is reserved');
-    }
-    return elements;
-  };
-
-  const bundlerConfig = new Proxy(
-    {},
-    {
-      get(_target, encodedId: string) {
-        const [filePath, name] = encodedId.split('#') as [string, string];
-        const id = resolveClientEntry(
-          filePath,
-          config,
-          rr.command,
-          resolveClientPath,
-        );
-        rr?.moduleIdCallback?.(id);
-        return { id, chunks: [id], name, async: true };
-      },
-    },
-  );
-
-  if (rr.method === 'POST') {
-    const rsfId = decodeURIComponent(rr.input);
-    let args: unknown[] = [];
-    const contentType = rr.headers['content-type'];
-    let body = '';
-    if (rr.stream) {
-      const decoder = new TextDecoder();
-      const reader = rr.stream.getReader();
-      let result: ReadableStreamReadResult<unknown>;
-      do {
-        result = await reader.read();
-        if (result.value) {
-          if (!(result.value instanceof Uint8Array)) {
-            throw new Error('Unexepected buffer type');
-          }
-          body += decoder.decode(result.value);
-        }
-      } while (!result.done);
-    }
-    if (
-      typeof contentType === 'string' &&
-      contentType.startsWith('multipart/form-data')
-    ) {
-      // XXX This doesn't support streaming unlike busboy
-      const formData = parseFormData(body, contentType);
-      args = await decodeReply(formData);
-    } else if (body) {
-      args = await decodeReply(body);
-    }
-    const [fileId, name] = rsfId.split('#') as [string, string];
-    const filePath = fileId.startsWith('/') ? fileId : rsfPrefix + fileId;
-    const fname =
-      rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
-    const mod = await loadServerFile(fname, rr.command);
-    let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
-    const rerender = (input: string) => {
-      elements = Promise.all([elements, render(input)]).then(
-        ([oldElements, newElements]) => ({ ...oldElements, ...newElements }),
-      );
-    };
-    return runWithAsyncLocalStorage(
-      {
-        getContext: () => rr.context,
-        rerender,
-      },
-      async () => {
-        const data = await (mod[name] || mod)(...args);
-        return renderToReadableStream(
-          { ...(await elements), _value: data },
-          bundlerConfig,
-        ).pipeThrough(transformRsfId(rsfPrefix));
-      },
-    );
-  }
-
-  return runWithAsyncLocalStorage(
-    {
-      getContext: () => rr.context,
-      rerender: () => {
-        throw new Error('Cannot rerender');
-      },
-    },
-    async () => {
-      const elements = await render(rr.input);
-      return renderToReadableStream(elements, bundlerConfig).pipeThrough(
-        transformRsfId(rsfPrefix),
-      );
-    },
-  );
-}
-
-async function getBuildConfigRSC() {
-  const config = await resolveConfig();
-
-  const entriesFile = getEntriesFile(config, 'build');
-  const {
-    default: { getBuildConfig },
-  } = await (loadServerFile(entriesFile, 'build') as Promise<Entries>);
-  if (!getBuildConfig) {
-    console.warn(
-      "getBuildConfig is undefined. It's recommended for optimization and sometimes required.",
-    );
-    return {};
-  }
-
-  const unstable_collectClientModules = async (
-    input: string,
-  ): Promise<string[]> => {
-    const idSet = new Set<string>();
-    const readable = await renderRSC({
-      input,
-      method: 'GET',
-      headers: {},
-      command: 'build',
-      context: null,
-      moduleIdCallback: (id) => idSet.add(id),
-    });
-    await new Promise<void>((resolve, reject) => {
-      const writable = new WritableStream({
-        close() {
-          resolve();
-        },
-        abort(reason) {
-          reject(reason);
-        },
-      });
-      readable.pipeTo(writable);
-    });
-    return Array.from(idSet);
-  };
-
-  const output = await getBuildConfig(unstable_collectClientModules);
-  return output;
-}

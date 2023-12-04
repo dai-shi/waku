@@ -3,7 +3,8 @@ import type { FunctionComponent, ReactNode } from 'react';
 
 import { defineEntries } from '../server.js';
 import type { RenderEntries, GetBuildConfig, GetSsrConfig } from '../server.js';
-import { Children, Slot } from '../client.js';
+import { Children } from '../client.js';
+import type { Slot } from '../client.js';
 import { getComponentIds, getInputString, parseInputString } from './common.js';
 import type { RouteProps } from './common.js';
 
@@ -89,7 +90,11 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
       return null;
     }
     const input = getInputString(url.pathname, url.search);
-    const render = () =>
+    type Opts = {
+      createElement: typeof createElement;
+      Slot: typeof Slot;
+    };
+    const render = ({ createElement, Slot }: Opts) =>
       componentIds.reduceRight(
         (acc: ReactNode, id) => createElement(Slot, { id }, acc),
         null,

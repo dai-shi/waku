@@ -1,6 +1,7 @@
 import url from 'node:url';
 import path from 'node:path';
-import fs from 'node:fs';
+import { existsSync } from 'node:fs';
+import fsPromises from 'node:fs/promises';
 import { lazy } from 'react';
 import { glob } from 'glob';
 import { defineRouter } from 'waku/router/server';
@@ -40,10 +41,10 @@ export default defineRouter(
     const items = id.split('/');
     for (let i = 0; i < items.length - 1; ++i) {
       const dir = path.join(routesDir, ...items.slice(0, i));
-      if (!fs.existsSync(dir)) {
+      if (!existsSync(dir)) {
         return null;
       }
-      const files = fs.readdirSync(dir);
+      const files = await fsPromises.readdir(dir);
       if (!files.includes(items[i]!)) {
         const slug = files.find((file) => file.match(/^(\[\w+\]|_\w+_)$/));
         if (slug) {
@@ -53,8 +54,8 @@ export default defineRouter(
       }
     }
     if (
-      !fs.existsSync(path.join(routesDir, ...items) + '.js') &&
-      !fs.existsSync(path.join(routesDir, ...items) + '.tsx')
+      !existsSync(path.join(routesDir, ...items) + '.js') &&
+      !existsSync(path.join(routesDir, ...items) + '.tsx')
     ) {
       return null;
     }

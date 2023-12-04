@@ -2,14 +2,17 @@ import path from 'node:path'; // TODO no node dependency
 import fsPromises from 'node:fs/promises'; // TODO no node dependency
 import type { ViteDevServer } from 'vite';
 
-import { setCwd, resolveConfig } from '../config.js';
+import type { Config } from '../../config.js';
+import { resolveConfig } from '../config.js';
+import { endStream } from '../utils/stream.js';
 import { renderHtml } from './rsc/ssr.js';
-import { decodeInput, hasStatusCode, endStream } from './rsc/utils.js';
+import { decodeInput, hasStatusCode, deepFreeze } from './rsc/utils.js';
 import {
   registerReloadCallback,
   registerImportCallback,
-  renderRSC,
+  renderRSC as renderRSCWorker,
 } from './rsc/worker-api.js';
+import { renderRSC } from '../rsc/renderer.js';
 import { patchReactRefresh } from '../vite-plugin/patch-react-refresh.js';
 import type { BaseReq, BaseRes, Middleware } from './types.js';
 
@@ -18,18 +21,17 @@ export function rsc<
   Req extends BaseReq,
   Res extends BaseRes,
 >(options: {
-  cwd: string;
+  config: Config;
   command: 'dev' | 'start';
   ssr?: boolean;
   unstable_prehook?: (req: Req, res: Res) => Context;
   unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
 }): Middleware<Req, Res> {
-  setCwd(options.cwd);
   const { command, ssr, unstable_prehook, unstable_posthook } = options;
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
   }
-  const configPromise = resolveConfig();
+  const configPromise = resolveConfig(options.config);
 
   let lastViteServer: ViteDevServer | undefined;
   const getViteServer = async (): Promise<ViteDevServer> => {
@@ -162,34 +164,61 @@ export function rsc<
         return;
       }
     }
-    if (pathStr.startsWith(basePrefix)) {
-      const { method, headers } = req;
-      if (method !== 'GET' && method !== 'POST') {
-        throw new Error(`Unsupported method '${method}'`);
+    if (command !== 'dev') {
+      if (pathStr.startsWith(basePrefix)) {
+        const { method, headers } = req;
+        if (method !== 'GET' && method !== 'POST') {
+          throw new Error(`Unsupported method '${method}'`);
+        }
+        try {
+          const input = decodeInput(pathStr.slice(basePrefix.length));
+          const readable = await renderRSC({
+            config,
+            input,
+            method,
+            context,
+            body: req.stream,
+            contentType: headers['content-type'] as string | undefined,
+            isDev: false,
+          });
+          unstable_posthook?.(req, res, context as Context);
+          deepFreeze(context);
+          readable.pipeTo(res.stream);
+        } catch (e) {
+          handleError(e);
+        }
+        return;
       }
-      try {
-        const input = decodeInput(pathStr.slice(basePrefix.length));
-        const [readable, nextCtx] = await renderRSC({
-          input,
-          method,
-          headers,
-          command,
-          context,
-          stream: req.stream,
-        });
-        unstable_posthook?.(req, res, nextCtx as Context);
-        readable.pipeTo(res.stream);
-      } catch (e) {
-        handleError(e);
-      }
-      return;
-    }
-    if (command === 'dev') {
+    } else {
       if (pathStr === '/') {
         const htmlStr = await getHtmlStr(pathStr);
         res.setHeader('Content-Type', 'text/html');
         res.setStatus(200);
         endStream(res.stream, htmlStr!);
+        return;
+      }
+      // command === 'dev'
+      if (pathStr.startsWith(basePrefix)) {
+        const { method, headers } = req;
+        if (method !== 'GET' && method !== 'POST') {
+          throw new Error(`Unsupported method '${method}'`);
+        }
+        try {
+          const input = decodeInput(pathStr.slice(basePrefix.length));
+          const [readable, nextCtx] = await renderRSCWorker({
+            input,
+            method,
+            headers,
+            config,
+            command,
+            context,
+            stream: req.stream,
+          });
+          unstable_posthook?.(req, res, nextCtx as Context);
+          readable.pipeTo(res.stream);
+        } catch (e) {
+          handleError(e);
+        }
         return;
       }
       const vite = await getViteServer();

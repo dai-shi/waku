@@ -38,7 +38,7 @@
     "examples:prd:11_form": "NAME=11_form pnpm run examples:prd",
     "website:dev": "(cd packages/website && pnpm run dev)",
     "website:build": "(cd packages/website && pnpm run build)",
-    "website:vercel": "cp -Lr ./node_modules/.pnpm/node_modules/* ./packages/website/node_modules/ ; rm -r ./packages/website/node_modules/@swc ; rm -r ./packages/website/node_modules/@esbuild ; rm -r ./packages/website/node_modules/webpack ; rm -r ./packages/website/node_modules/minimatch ; cp -Lr ./node_modules/.pnpm/minimatch@9.0.3/node_modules/minimatch ./packages/website/node_modules/ ; pnpm run website:build && cp -Lr ./packages/website/dist/.vercel/output ./.vercel/",
+    "website:vercel": "pnpm run website:build && cp -Lr ./packages/website/dist/.vercel/output ./.vercel/",
     "website:prd": "pnpm run website:build && (cd packages/website && pnpm start)"
   },
   "prettier": {
