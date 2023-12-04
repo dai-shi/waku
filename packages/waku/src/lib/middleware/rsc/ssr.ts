@@ -9,8 +9,9 @@ import { viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
 import { concatUint8Arrays } from '../../utils/stream.js';
 import { normalizePath } from '../../utils/path.js';
-import { renderRSC } from './worker-api.js';
-import { hasStatusCode } from './utils.js';
+import { renderRSC as renderRSCWorker } from './worker-api.js';
+import { renderRSC } from '../../rsc/renderer.js';
+import { hasStatusCode, deepFreeze } from './utils.js';
 
 const loadReact = async (
   config: ResolvedConfig,
@@ -357,14 +358,26 @@ export const renderHtml = async <Context>(
   let stream: ReadableStream;
   let nextCtx: Context;
   try {
-    [stream, nextCtx] = await renderRSC({
-      input: ssrConfig.input,
-      method: 'GET',
-      headers: {},
-      config,
-      command,
-      context,
-    });
+    if (command !== 'dev') {
+      stream = await renderRSC({
+        config,
+        input: ssrConfig.input,
+        method: 'GET',
+        context,
+        isDev: false,
+      });
+      deepFreeze(context);
+      nextCtx = context;
+    } else {
+      [stream, nextCtx] = await renderRSCWorker({
+        input: ssrConfig.input,
+        method: 'GET',
+        headers: {},
+        config,
+        command,
+        context,
+      });
+    }
   } catch (e) {
     if (hasStatusCode(e) && e.statusCode === 404) {
       return null;
