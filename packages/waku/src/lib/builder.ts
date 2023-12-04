@@ -8,12 +8,10 @@ import { build as viteBuild } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
-import { setCwd, resolveConfig, viteInlineConfig } from './config.js';
-import {
-  encodeInput,
-  generatePrefetchCode,
-  normalizePath,
-} from './middleware/rsc/utils.js';
+import type { Config, ResolvedConfig } from '../config.js';
+import { resolveConfig, viteInlineConfig } from './config.js';
+import { normalizePath } from './utils/path.js';
+import { encodeInput, generatePrefetchCode } from './middleware/rsc/utils.js';
 import {
   shutdown as shutdownRsc,
   renderRSC,
@@ -107,7 +105,7 @@ const analyzeEntries = async (entriesFile: string) => {
 };
 
 const buildServerBundle = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: ResolvedConfig,
   entriesFile: string,
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
@@ -146,7 +144,7 @@ const buildServerBundle = async (
               clientEntryFiles[chunkInfo.name] ||
               serverEntryFiles[chunkInfo.name]
             ) {
-              return 'assets/[name].js';
+              return config.assetsDir + '/[name].js';
             }
             return '[name].js';
           },
@@ -161,7 +159,7 @@ const buildServerBundle = async (
 };
 
 const buildClientBundle = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: ResolvedConfig,
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
@@ -201,9 +199,9 @@ const buildClientBundle = async (
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name]
             ) {
-              return 'assets/[name].js';
+              return config.assetsDir + '/[name].js';
             }
-            return 'assets/[name]-[hash].js';
+            return config.assetsDir + '/[name]-[hash].js';
           },
         },
       },
@@ -225,10 +223,8 @@ const buildClientBundle = async (
   return clientBuildOutput;
 };
 
-const emitRscFiles = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
-) => {
-  const buildConfig = await getBuildConfigRSC();
+const emitRscFiles = async (config: ResolvedConfig) => {
+  const buildConfig = await getBuildConfigRSC(config);
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (input: string, id: string) => {
     let idSet = clientModuleMap.get(input);
@@ -260,6 +256,7 @@ const emitRscFiles = async (
             input,
             method: 'GET',
             headers: {},
+            config,
             command: 'build',
             context,
             moduleIdCallback: (id) => addClientModule(input, id),
@@ -276,7 +273,7 @@ const emitRscFiles = async (
 };
 
 const emitHtmlFiles = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: ResolvedConfig,
   buildConfig: Awaited<ReturnType<typeof getBuildConfigRSC>>,
   getClientModules: (input: string) => string[],
   ssr: boolean,
@@ -350,7 +347,7 @@ const emitHtmlFiles = async (
 };
 
 const emitVercelOutput = (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: ResolvedConfig,
   clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
   rscFiles: string[],
   htmlFiles: string[],
@@ -452,9 +449,8 @@ const resolveFileName = (fname: string) => {
   return fname; // returning the default one
 };
 
-export async function build(options: { cwd: string; ssr?: boolean }) {
-  setCwd(options.cwd);
-  const config = await resolveConfig();
+export async function build(options: { config: Config; ssr?: boolean }) {
+  const config = await resolveConfig(options.config);
   const entriesFile = resolveFileName(
     path.join(config.rootDir, config.srcDir, config.entriesJs),
   );

@@ -1,11 +1,5 @@
-import type { Config } from '../config.js';
-import { normalizePath } from './middleware/rsc/utils.js';
-
-type DeepRequired<T> = T extends (...args: any[]) => any
-  ? T
-  : T extends object
-  ? { [P in keyof T]-?: DeepRequired<T[P]> }
-  : T;
+import type { Config, ResolvedConfig } from '../config.js';
+import { normalizePath } from './utils/path.js';
 
 const splitHTML = (htmlStr: string): readonly [string, string, string] => {
   const P1 = [
@@ -26,33 +20,14 @@ const splitHTML = (htmlStr: string): readonly [string, string, string] => {
   return match.slice(1) as [string, string, string];
 };
 
-// HACK we hope to have a better solution soon.
-let cwd: string | undefined;
-export function setCwd(c: string) {
-  cwd = c;
-}
-export function getCwd() {
-  if (!cwd) {
-    throw new Error('Unable to get cwd');
-  }
-  return cwd;
-}
-
-export async function resolveConfig() {
-  // TODO windows support
-  const configFile = getCwd() + '/' + 'waku.config.js';
-  let config: Config = {};
-  try {
-    config = (await import(configFile)).default;
-  } catch (e) {
-    // ignored
-  }
-  const resolvedConfig: DeepRequired<Config> = {
-    rootDir: normalizePath(getCwd()),
+// Keep async function for future extension
+export async function resolveConfig(config: Config) {
+  const resolvedConfig: ResolvedConfig = {
     basePath: '/',
     srcDir: 'src',
     distDir: 'dist',
     publicDir: 'public',
+    assetsDir: 'assets',
     indexHtml: 'index.html',
     entriesJs: 'entries.js',
     rscPath: 'RSC',
@@ -61,6 +36,7 @@ export async function resolveConfig() {
       splitHTML,
       ...config?.ssr,
     },
+    rootDir: normalizePath(config.rootDir),
   };
   return resolvedConfig;
 }
