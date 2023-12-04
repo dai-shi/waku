@@ -389,7 +389,7 @@ const emitVercelOutput = (
   );
   for (const file of readdirSync(path.join(config.rootDir, config.distDir))) {
     if (['.vercel'].includes(file)) {
-      return;
+      continue;
     }
     symlinkSync(
       path.relative(
