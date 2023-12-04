@@ -25,7 +25,7 @@ const loadReact = async (
               config.rootDir,
               config.distDir,
               config.publicDir,
-              'assets',
+              config.assetsDir,
               'react.js',
             ),
           )
@@ -49,7 +49,7 @@ const loadRDServer = async (
               config.rootDir,
               config.distDir,
               config.publicDir,
-              'assets',
+              config.assetsDir,
               'rd-server.js',
             ),
           )
@@ -73,7 +73,7 @@ const loadRSDWClient = async (
               config.rootDir,
               config.distDir,
               config.publicDir,
-              'assets',
+              config.assetsDir,
               'rsdw-client.js',
             ),
           )
@@ -96,7 +96,7 @@ const loadWakuClient = async (
             config.rootDir,
             config.distDir,
             config.publicDir,
-            'assets',
+            config.assetsDir,
             'waku-client.js',
           ),
         )

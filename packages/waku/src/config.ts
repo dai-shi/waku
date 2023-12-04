@@ -28,6 +28,11 @@ export interface Config {
    */
   publicDir?: string;
   /**
+   * The assets directory relative to distDir and publicDir.
+   * Defaults to  "assets".
+   */
+  assetsDir?: string;
+  /**
    * The index.html file relative to srcDir or distDir.
    * Defaults to  "index.html".
    */

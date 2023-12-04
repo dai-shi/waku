@@ -144,7 +144,7 @@ const buildServerBundle = async (
               clientEntryFiles[chunkInfo.name] ||
               serverEntryFiles[chunkInfo.name]
             ) {
-              return 'assets/[name].js';
+              return config.assetsDir + '/[name].js';
             }
             return '[name].js';
           },
@@ -199,9 +199,9 @@ const buildClientBundle = async (
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name]
             ) {
-              return 'assets/[name].js';
+              return config.assetsDir + '/[name].js';
             }
-            return 'assets/[name]-[hash].js';
+            return config.assetsDir + '/[name]-[hash].js';
           },
         },
       },
