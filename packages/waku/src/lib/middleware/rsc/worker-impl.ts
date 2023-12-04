@@ -50,7 +50,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
       method: rr.method,
       context: rr.context,
       body: rr.stream,
-      contentType: rr.headers['content-type'] as string,
+      contentType: rr.headers['content-type'] as string | undefined,
       ...(rr.moduleIdCallback ? { moduleIdCallback: rr.moduleIdCallback } : {}),
       ...(rr.command === 'dev'
         ? {

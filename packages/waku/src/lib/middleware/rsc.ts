@@ -6,12 +6,13 @@ import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from './rsc/ssr.js';
-import { decodeInput, hasStatusCode } from './rsc/utils.js';
+import { decodeInput, hasStatusCode, deepFreeze } from './rsc/utils.js';
 import {
   registerReloadCallback,
   registerImportCallback,
-  renderRSC,
+  renderRSC as renderRSCWorker,
 } from './rsc/worker-api.js';
+import { renderRSC } from '../rsc/renderer.js';
 import { patchReactRefresh } from '../vite-plugin/patch-react-refresh.js';
 import type { BaseReq, BaseRes, Middleware } from './types.js';
 
@@ -166,30 +167,56 @@ export function rsc<
         return;
       }
     }
-    if (pathStr.startsWith(basePrefix)) {
-      const { method, headers } = req;
-      if (method !== 'GET' && method !== 'POST') {
-        throw new Error(`Unsupported method '${method}'`);
+    if (command !== 'dev') {
+      if (pathStr.startsWith(basePrefix)) {
+        const { method, headers } = req;
+        if (method !== 'GET' && method !== 'POST') {
+          throw new Error(`Unsupported method '${method}'`);
+        }
+        try {
+          const input = decodeInput(pathStr.slice(basePrefix.length));
+          const readable = await renderRSC({
+            config,
+            input,
+            method,
+            context,
+            body: req.stream,
+            contentType: headers['content-type'] as string | undefined,
+            isDev: false,
+          });
+          unstable_posthook?.(req, res, context as Context);
+          deepFreeze(context);
+          readable.pipeTo(res.stream);
+        } catch (e) {
+          handleError(e);
+        }
+        return;
       }
-      try {
-        const input = decodeInput(pathStr.slice(basePrefix.length));
-        const [readable, nextCtx] = await renderRSC({
-          input,
-          method,
-          headers,
-          config,
-          command,
-          context,
-          stream: req.stream,
-        });
-        unstable_posthook?.(req, res, nextCtx as Context);
-        readable.pipeTo(res.stream);
-      } catch (e) {
-        handleError(e);
+    } else {
+      // command === 'dev'
+      if (pathStr.startsWith(basePrefix)) {
+        const { method, headers } = req;
+        if (method !== 'GET' && method !== 'POST') {
+          throw new Error(`Unsupported method '${method}'`);
+        }
+        try {
+          const input = decodeInput(pathStr.slice(basePrefix.length));
+          const [readable, nextCtx] = await renderRSCWorker({
+            input,
+            method,
+            headers,
+            config,
+            command,
+            context,
+            stream: req.stream,
+          });
+          unstable_posthook?.(req, res, nextCtx as Context);
+          readable.pipeTo(res.stream);
+        } catch (e) {
+          handleError(e);
+        }
+        return;
       }
-      return;
-    }
-    if (command === 'dev') {
       const vite = await getViteServer();
       // TODO Do we still need this?
       // HACK re-export "?v=..." URL to avoid dual module hazard.

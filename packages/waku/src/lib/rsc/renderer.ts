@@ -109,7 +109,7 @@ export async function renderRSC(
     method: 'GET' | 'POST';
     context: unknown;
     body?: ReadableStream;
-    contentType?: string;
+    contentType?: string | undefined;
     moduleIdCallback?: (id: string) => void;
   } & (
     | { isDev: false }
