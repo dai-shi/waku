@@ -1,12 +1,13 @@
 import { Worker } from 'node:worker_threads'; // TODO no node dependency
 
-import { getCwd } from '../../config.js';
+import type { ResolvedConfig } from '../../../config.js';
 import type { GetBuildConfig } from '../../../server.js';
 
 export type RenderRequest = {
   input: string;
   method: 'GET' | 'POST';
   headers: Record<string, string | string[] | undefined>;
+  config: Omit<ResolvedConfig, 'ssr'>;
   command: 'dev' | 'build' | 'start';
   context: unknown;
   stream?: ReadableStream;
@@ -28,7 +29,7 @@ export type MessageReq =
   | { id: number; type: 'buf'; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: 'end' }
   | { id: number; type: 'err'; err: unknown }
-  | { id: number; type: 'getBuildConfig' };
+  | { id: number; type: 'getBuildConfig'; config: Omit<ResolvedConfig, 'ssr'> };
 
 export type MessageRes =
   | { type: 'full-reload' }
@@ -57,7 +58,6 @@ const getWorker = (command: 'dev' | 'build' | 'start') => {
   }
   const IS_NODE_18 = Number(process.versions.node.split('.')[0]) < 20;
   const worker = new Worker(new URL('worker-impl.js', import.meta.url), {
-    env: { __WAKU_CWD__: getCwd() },
     execArgv:
       command !== 'dev'
         ? []
@@ -197,7 +197,9 @@ export function renderRSC<Context>(
         messageCallbacks.delete(id);
       }
     });
-    const copied = { ...rr };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { ssr: _removed, ...copiedConfig } = rr.config as any; // HACK type
+    const copied = { ...rr, config: copiedConfig };
     delete copied.stream;
     delete copied.moduleIdCallback;
     const mesg: MessageReq = {
@@ -211,7 +213,11 @@ export function renderRSC<Context>(
   });
 }
 
-export function getBuildConfigRSC(): ReturnType<GetBuildConfig> {
+export function getBuildConfigRSC(
+  config: ResolvedConfig,
+): ReturnType<GetBuildConfig> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { ssr: _removed, ...copiedConfig } = config;
   const worker = getWorker('build');
   return new Promise((resolve, reject) => {
     const id = nextId++;
@@ -224,7 +230,11 @@ export function getBuildConfigRSC(): ReturnType<GetBuildConfig> {
         messageCallbacks.delete(id);
       }
     });
-    const mesg: MessageReq = { id, type: 'getBuildConfig' };
+    const mesg: MessageReq = {
+      id,
+      type: 'getBuildConfig',
+      config: copiedConfig,
+    };
     worker.postMessage(mesg);
   });
 }

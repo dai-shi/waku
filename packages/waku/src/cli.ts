@@ -7,7 +7,7 @@ import type { Hono } from 'hono';
 
 const require = createRequire(new URL('.', import.meta.url));
 
-const cwd = process.cwd();
+const config = { rootDir: process.cwd() };
 
 const { values, positionals } = parseArgs({
   args: process.argv.splice(2),
@@ -59,14 +59,14 @@ async function runDev(options: { ssr: boolean }) {
   const { honoWrapper } = await import('./lib/middleware/honoWrapper.js');
   const { rsc } = await import('./lib/middleware/rsc.js');
   const app = new Hono();
-  app.use('*', honoWrapper(rsc({ cwd, command: 'dev', ssr: options.ssr })));
+  app.use('*', honoWrapper(rsc({ config, command: 'dev', ssr: options.ssr })));
   const port = parseInt(process.env.PORT || '3000', 10);
   startServer(app, port);
 }
 
 async function runBuild(options: { ssr: boolean }) {
   const { build } = await import('./lib/builder.js');
-  await build({ cwd, ssr: options.ssr });
+  await build({ config, ssr: options.ssr });
 }
 
 async function runStart(options: { ssr: boolean }) {
@@ -76,15 +76,17 @@ async function runStart(options: { ssr: boolean }) {
   const { honoWrapper } = await import('./lib/middleware/honoWrapper.js');
   const { rsc } = await import('./lib/middleware/rsc.js');
   const app = new Hono();
-  app.use('*', honoWrapper(rsc({ cwd, command: 'start', ssr: options.ssr })));
-  // LIMITATION: resolveConfig has to be called after rsc
-  const config = await resolveConfig();
+  app.use(
+    '*',
+    honoWrapper(rsc({ config, command: 'start', ssr: options.ssr })),
+  );
+  const { rootDir, distDir, publicDir } = await resolveConfig(config);
   app.use(
     '*',
     serveStatic({
       root: path.relative(
         path.resolve('.'),
-        path.join(config.rootDir, config.distDir, config.publicDir),
+        path.join(rootDir, distDir, publicDir),
       ),
     }),
   );
