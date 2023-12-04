@@ -9,7 +9,7 @@ export const normalizePath = (path: string) => {
     throw new Error('Unexpected file URL');
   }
   return '/' + path.replace(/^\//, '').split('\\').join('/');
-}
+};
 
 export const filePathToWinPath = (filePath: string) =>
   filePath.replace(/^\//, '').replace(/\//g, '\\');
