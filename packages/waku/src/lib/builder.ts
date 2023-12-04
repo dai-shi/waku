@@ -10,7 +10,6 @@ import type { Config, ResolvedConfig } from '../config.js';
 import { resolveConfig, viteInlineConfig } from './config.js';
 import { joinPath, relativePath, extname } from './utils/path.js';
 import {
-  filePathToVitePath,
   createReadStream,
   createWriteStream,
   existsSync,
@@ -79,7 +78,7 @@ const analyzeEntries = async (entriesFile: string) => {
       rollupOptions: {
         onwarn,
         input: {
-          entries: filePathToVitePath(entriesFile),
+          entries: entriesFile,
         },
       },
     },
@@ -131,11 +130,11 @@ const buildServerBundle = async (
     build: {
       ssr: true,
       ssrEmitAssets: true,
-      outDir: filePathToVitePath(joinPath(config.rootDir, config.distDir)),
+      outDir: joinPath(config.rootDir, config.distDir),
       rollupOptions: {
         onwarn,
         input: {
-          entries: filePathToVitePath(entriesFile),
+          entries: entriesFile,
           'rsdw-server': 'react-server-dom-webpack/server.edge',
           'waku-client': 'waku/client',
           ...commonEntryFiles,
@@ -183,13 +182,11 @@ const buildClientBundle = async (
     root: joinPath(config.rootDir, config.srcDir),
     plugins: [patchReactRefresh(viteReact()), rscIndexPlugin(cssAssets)],
     build: {
-      outDir: filePathToVitePath(
-        joinPath(config.rootDir, config.distDir, config.publicDir),
-      ),
+      outDir: joinPath(config.rootDir, config.distDir, config.publicDir),
       rollupOptions: {
         onwarn,
         input: {
-          main: filePathToVitePath(indexHtmlFile),
+          main: indexHtmlFile,
           react: 'react',
           'rd-server': 'react-dom/server.edge',
           'rsdw-client': 'react-server-dom-webpack/client.edge',

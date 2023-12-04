@@ -4,6 +4,7 @@ import { defineEntries } from '../../server.js';
 import type { RenderContext } from '../../server.js';
 import type { ResolvedConfig } from '../../config.js';
 import {
+  encodeFilePathToAbsolute,
   normalizePath,
   relativePath,
   joinPath,
@@ -59,7 +60,7 @@ const resolveClientEntry = (
     if (isDev) {
       // HACK this relies on Vite's internal implementation detail.
       return normalizePath(
-        config.basePath + '@fs/' + filePath.replace(/^\//, ''),
+        config.basePath + '@fs' + encodeFilePathToAbsolute(filePath),
       );
     } else {
       throw new Error(

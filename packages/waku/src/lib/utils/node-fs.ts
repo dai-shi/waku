@@ -2,13 +2,6 @@ import path from 'node:path';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 
-export const filePathToVitePath = (filePath: string) => {
-  if (!filePath.startsWith('/')) {
-    throw new Error('filePath must be absolute');
-  }
-  return path.sep === '/' ? filePath : filePath.replace(/^\//g, '');
-};
-
 const filePathToOsPath = (filePath: string) =>
   path.sep === '/'
     ? filePath

@@ -6,6 +6,7 @@ import { viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
 import { concatUint8Arrays } from '../../utils/stream.js';
 import {
+  decodeFilePathFromAbsolute,
   normalizePath,
   joinPath,
   filePathToFileURL,
@@ -155,8 +156,7 @@ const loadServerFile = async (
     return import(fileURLOrFilePath);
   }
   const vite = await getViteServer();
-  const { filePathToVitePath } = await import('../../utils/node-fs.js');
-  return vite.ssrLoadModule(filePathToVitePath(fileURLOrFilePath));
+  return vite.ssrLoadModule(fileURLOrFilePath);
 };
 
 const getEntriesFile = (
@@ -402,7 +402,7 @@ export const renderHtml = async <Context>(
               if (command === 'dev') {
                 const filePath = normalizePath(
                   file.startsWith('@fs/')
-                    ? file.slice('@fs/'.length - 1)
+                    ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
                     : joinPath(config.rootDir, config.srcDir, file),
                 );
                 // FIXME This is ugly. We need to refactor it.

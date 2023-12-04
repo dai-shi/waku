@@ -7,7 +7,6 @@ import { createServer as viteCreateServer } from 'vite';
 import type { ViteDevServer } from 'vite';
 
 import { viteInlineConfig } from '../../config.js';
-import { filePathToVitePath } from '../../utils/node-fs.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
 import { renderRSC } from '../../rsc/renderer.js';
@@ -121,7 +120,7 @@ const getViteServer = async () => {
 
 const loadServerFile = async (filePath: string) => {
   const vite = await getViteServer();
-  return vite.ssrLoadModule(filePathToVitePath(filePath));
+  return vite.ssrLoadModule(filePath);
 };
 
 parentPort!.on('message', (mesg: MessageReq) => {

@@ -1,31 +1,51 @@
 // Terminology:
-// - filePath: posix file path, e.g. `/foo/bar.js` or `/c:/foo/bar.js`
-// - fileURL: file URL, e.g. `file:///foo/bar.js` or `file:///c:/foo/bar.js`
-// - vitePath: vite file path, e.g. `/foo/bar.js` or `c:/foo/bar.js`
-// - winPath: windows file path, e.g. `c:\foo\bar.js`
+// - filePath: posix-like file path, e.g. `/foo/bar.js` or `c:/foo/bar.js`
+//   This is used by Vite.
+// - fileURL: file URL, e.g. `file:///foo/bar.js` or `file://c:/foo/bar.js`
+//   This is used by import().
+// - osPath: os dependent path, e.g. `/foo/bar.js` or `c:\foo\bar.js`
+//   This is used by node:fs.
 
-// path is either filePath or winPath
+// path is either filePath or osPath
 export const normalizePath = (path: string) => {
   if (path.startsWith('file://')) {
     throw new Error('Unexpected file URL');
   }
-  return '/' + path.replace(/^\//, '').replace(/\\/g, '/');
+  return path.replace(/\\/g, '/');
 };
 
-export const filePathToFileURL = (filePath: string) => 'file://' + filePath;
+const WIN32_ROOT = '/__WIN32__/';
+
+export const encodeFilePathToAbsolute = (filePath: string) => {
+  if (filePath.startsWith(WIN32_ROOT)) {
+    throw new Error('Unsupported absolute file path');
+  }
+  if (filePath.startsWith('/')) {
+    return filePath;
+  }
+  return WIN32_ROOT + filePath;
+};
+
+export const decodeFilePathFromAbsolute = (filePath: string) => {
+  if (filePath.startsWith(WIN32_ROOT)) {
+    return filePath.slice(WIN32_ROOT.length);
+  }
+  return filePath;
+};
+
+export const filePathToFileURL = (filePath: string) =>
+  'file://' + encodeURI(filePath);
 
 export const fileURLToFilePath = (fileURL: string) => {
   if (!fileURL.startsWith('file://')) {
     throw new Error('Not a file URL');
   }
-  return fileURL.slice('file://'.length);
+  return decodeURI(fileURL.slice('file://'.length));
 };
 
 // for filePath
 export const joinPath = (...paths: string[]) => {
-  if (paths.length === 0 || !paths[0]!.startsWith('/')) {
-    throw new Error('First path must be absolute');
-  }
+  const isAbsolute = paths[0]?.startsWith('/');
   const items = ([] as string[]).concat(
     ...paths.map((path) => path.split('/')),
   );
@@ -44,7 +64,7 @@ export const joinPath = (...paths: string[]) => {
       ++i;
     }
   }
-  return '/' + items.join('/');
+  return (isAbsolute ? '/' : '') + items.join('/') || '.';
 };
 
 // for filePath
