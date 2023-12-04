@@ -11,21 +11,12 @@ import waitPort from 'wait-port';
 import { readdir } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { getFreePort, test } from './utils.js';
-import os from 'node:os';
 
 const examplesDir = fileURLToPath(new URL('../examples', import.meta.url));
 
 const waku = fileURLToPath(
   new URL('../packages/waku/dist/cli.js', import.meta.url),
 );
-
-const failureTests = [
-  ['03_promise', 'start --with-ssr'],
-  ['05_mutation', 'start'],
-  ['05_mutation', 'start --with-ssr'],
-  ['07_router', 'start --with-ssr'],
-  ['10_dynamicroute', 'start --with-ssr'],
-];
 
 const commands = [
   {
@@ -119,14 +110,6 @@ for (const cwd of examples) {
   } else {
     for (const { build, command } of commands) {
       test.describe(`smoke test on ${basename(cwd)}: ${command}`, () => {
-        if (
-          os.platform() === 'win32' &&
-          failureTests.find(
-            ([name, cmd]) => basename(cwd) === name && cmd === command,
-          )
-        ) {
-          test.skip();
-        }
         let cp: ChildProcess;
         let port: number;
         test.beforeAll(async () => {
