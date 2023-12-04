@@ -5,15 +5,13 @@ import { parentPort } from 'node:worker_threads'; // TODO no node dependency
 import type { ReactNode } from 'react';
 import type { ViteDevServer } from 'vite';
 
+import { defineEntries } from '../../../server.js';
+import type { RenderContext } from '../../../server.js';
 import type { ResolvedConfig } from '../../../config.js';
 import { viteInlineConfig } from '../../config.js';
 import { normalizePath } from '../../utils/path.js';
 import { hasStatusCode, deepFreeze, parseFormData } from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
-import {
-  defineEntries,
-  runWithAsyncLocalStorage as runWithAsyncLocalStorageOrig,
-} from '../../../server.js';
 
 let nodeLoaderRegistered = false;
 const loadRSDWServer = async (
@@ -278,13 +276,6 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
     rr.command,
   );
 
-  const { runWithAsyncLocalStorage } = await (loadServerFile(
-    'waku/server',
-    rr.command,
-  ) as Promise<{
-    runWithAsyncLocalStorage: typeof runWithAsyncLocalStorageOrig;
-  }>);
-
   const entriesFile = getEntriesFile(config, rr.command);
   const {
     default: { renderEntries },
@@ -296,8 +287,8 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
       rr.command === 'dev' ? config.srcDir : config.distDir,
     ) + '/';
 
-  const render = async (input: string) => {
-    const elements = await renderEntries(input);
+  const render = async (renderContext: RenderContext, input: string) => {
+    const elements = await renderEntries.call(renderContext, input);
     if (elements === null) {
       const err = new Error('No function component found');
       (err as any).statusCode = 404; // HACK our convention for NotFound
@@ -355,40 +346,38 @@ async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
     const fname =
       rr.command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
     const mod = await loadServerFile(fname, rr.command);
+    const fn = mod[name] || mod;
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
+    let rendered = false;
     const rerender = (input: string) => {
-      elements = Promise.all([elements, render(input)]).then(
+      if (rendered) {
+        throw new Error('already rendered');
+      }
+      const renderContext: RenderContext = { rerender, context: rr.context };
+      elements = Promise.all([elements, render(renderContext, input)]).then(
         ([oldElements, newElements]) => ({ ...oldElements, ...newElements }),
       );
     };
-    return runWithAsyncLocalStorage(
-      {
-        getContext: () => rr.context,
-        rerender,
-      },
-      async () => {
-        const data = await (mod[name] || mod)(...args);
-        return renderToReadableStream(
-          { ...(await elements), _value: data },
-          bundlerConfig,
-        ).pipeThrough(transformRsfId(rsfPrefix));
-      },
-    );
+    const renderContext: RenderContext = { rerender, context: rr.context };
+    const data = await fn.apply(renderContext, args);
+    const resolvedElements = await elements;
+    rendered = true;
+    return renderToReadableStream(
+      { ...resolvedElements, _value: data },
+      bundlerConfig,
+    ).pipeThrough(transformRsfId(rsfPrefix));
   }
 
-  return runWithAsyncLocalStorage(
-    {
-      getContext: () => rr.context,
-      rerender: () => {
-        throw new Error('Cannot rerender');
-      },
+  // rr.method === 'GET'
+  const renderContext: RenderContext = {
+    rerender: () => {
+      throw new Error('Cannot rerender');
     },
-    async () => {
-      const elements = await render(rr.input);
-      return renderToReadableStream(elements, bundlerConfig).pipeThrough(
-        transformRsfId(rsfPrefix),
-      );
-    },
+    context: rr.context,
+  };
+  const elements = await render(renderContext, rr.input);
+  return renderToReadableStream(elements, bundlerConfig).pipeThrough(
+    transformRsfId(rsfPrefix),
   );
 }
 
