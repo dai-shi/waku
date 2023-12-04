@@ -52,10 +52,7 @@ const resolveClientEntry = (
   filePath = filePath.startsWith('file:///')
     ? url.fileURLToPath(filePath)
     : filePath;
-  const root = path.join(
-    config.rootDir,
-    isDev ? config.srcDir : config.distDir,
-  );
+  const root = path.join(config.rootDir, !isDev ? config.distDir : '');
   if (!filePath.startsWith(root)) {
     if (isDev) {
       // HACK this relies on Vite's internal implementation detail.
@@ -68,7 +65,9 @@ const resolveClientEntry = (
       );
     }
   }
-  return normalizePath(config.basePath + path.relative(root, filePath));
+  return normalizePath(
+    (isDev ? '/@id' : '') + config.basePath + path.relative(root, filePath),
+  );
 };
 
 // HACK Patching stream is very fragile.
