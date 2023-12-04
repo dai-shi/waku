@@ -3,7 +3,7 @@ import type { ViteDevServer } from 'vite';
 import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
 import { joinPath } from '../utils/path.js';
-import { existsSync, readFile } from '../utils/node-fs.js'; // TODO no node dependency
+import { readFile, stat } from '../utils/node-fs.js'; // TODO no node dependency
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from './rsc/ssr.js';
 import { decodeInput, hasStatusCode, deepFreeze } from './rsc/utils.js';
@@ -79,9 +79,9 @@ export function rsc<
     if (!publicIndexHtml) {
       const publicIndexHtmlFile = joinPath(
         config.rootDir,
-        command === 'dev'
-          ? config.srcDir
-          : joinPath(config.distDir, config.publicDir),
+        ...(command === 'dev'
+          ? [config.srcDir]
+          : [config.distDir, config.publicDir]),
         config.indexHtml,
       );
       publicIndexHtml = await readFile(publicIndexHtmlFile, {
@@ -110,8 +110,14 @@ export function rsc<
       }
     }
     const destFile = joinPath(config.rootDir, config.srcDir, pathStr);
-    if (existsSync(destFile)) {
-      return null;
+    try {
+      // check if exists?
+      const stats = await stat(destFile);
+      if (stats.isFile()) {
+        return null;
+      }
+    } catch (e) {
+      // does not exist
     }
     // fixme: otherwise SSR on Windows will fail
     if (pathStr.startsWith('/@fs')) {

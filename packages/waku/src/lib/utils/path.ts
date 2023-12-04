@@ -4,8 +4,12 @@
 // - winPath: windows file path, e.g. `c:\foo\bar.js`
 
 // path is either filePath or winPath
-export const normalizePath = (path: string) =>
-  '/' + path.replace(/^\//, '').split('\\').join('/');
+export const normalizePath = (path: string) => {
+  if (path.startsWith('file://')) {
+    throw new Error('Unexpected file URL');
+  }
+  return '/' + path.replace(/^\//, '').split('\\').join('/');
+}
 
 export const filePathToWinPath = (filePath: string) =>
   filePath.replace(/^\//, '').replace(/\//g, '\\');

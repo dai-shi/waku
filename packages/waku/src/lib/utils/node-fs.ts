@@ -67,3 +67,6 @@ export const writeFile = (filePath: string, content: string) =>
     path.sep === '/' ? filePath : filePathToWinPath(filePath),
     content,
   );
+
+export const stat = (filePath: string) =>
+  fsPromises.stat(path.sep === '/' ? filePath : filePathToWinPath(filePath));

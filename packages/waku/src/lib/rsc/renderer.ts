@@ -41,7 +41,9 @@ const getEntriesFile = (
     isDev ? config.srcDir : config.distDir,
     config.entriesJs,
   );
-  return normalizePath(isDev ? filePath : filePathToFileURL(filePath));
+  return isDev
+    ? normalizePath(filePath)
+    : filePathToFileURL(normalizePath(filePath));
 };
 
 const resolveClientEntry = (
