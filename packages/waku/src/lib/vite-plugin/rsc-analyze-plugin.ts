@@ -49,7 +49,7 @@ export function rscAnalyzePlugin(
       }
       return code;
     },
-    async generateBundle(_options, bundle) {
+    generateBundle(_options, bundle) {
       // TODO the logic in this function should probably be redesigned.
       const outputIds = Object.values(bundle).flatMap((item) =>
         'facadeModuleId' in item && item.facadeModuleId
