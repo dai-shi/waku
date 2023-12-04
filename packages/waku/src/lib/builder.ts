@@ -10,11 +10,8 @@ import type { RollupLog, LoggingFunction } from 'rollup';
 
 import type { Config, ResolvedConfig } from '../config.js';
 import { resolveConfig, viteInlineConfig } from './config.js';
-import {
-  encodeInput,
-  generatePrefetchCode,
-  normalizePath,
-} from './middleware/rsc/utils.js';
+import { normalizePath } from './utils/path.js';
+import { encodeInput, generatePrefetchCode } from './middleware/rsc/utils.js';
 import {
   shutdown as shutdownRsc,
   renderRSC,

@@ -4,8 +4,9 @@ import type { ViteDevServer } from 'vite';
 
 import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
+import { endStream } from '../utils/stream.js';
 import { renderHtml } from './rsc/ssr.js';
-import { decodeInput, hasStatusCode, endStream } from './rsc/utils.js';
+import { decodeInput, hasStatusCode } from './rsc/utils.js';
 import {
   registerReloadCallback,
   registerImportCallback,

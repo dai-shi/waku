@@ -7,8 +7,10 @@ import type { ViteDevServer } from 'vite';
 import type { ResolvedConfig } from '../../../config.js';
 import { viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
+import { concatUint8Arrays } from '../../utils/stream.js';
+import { normalizePath } from '../../utils/path.js';
 import { renderRSC } from './worker-api.js';
-import { hasStatusCode, concatUint8Arrays, normalizePath } from './utils.js';
+import { hasStatusCode } from './utils.js';
 
 const loadReact = async (
   config: ResolvedConfig,

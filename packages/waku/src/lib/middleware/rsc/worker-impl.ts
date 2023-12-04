@@ -7,12 +7,8 @@ import type { ViteDevServer } from 'vite';
 
 import type { ResolvedConfig } from '../../../config.js';
 import { viteInlineConfig } from '../../config.js';
-import {
-  hasStatusCode,
-  deepFreeze,
-  parseFormData,
-  normalizePath,
-} from './utils.js';
+import { normalizePath } from '../../utils/path.js';
+import { hasStatusCode, deepFreeze, parseFormData } from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
 import {
   defineEntries,
