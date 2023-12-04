@@ -4,14 +4,14 @@ import { rsc, connectWrapper } from 'waku';
 
 const withSsr = process.argv[2] === '--with-ssr';
 
-const cwd = process.cwd();
+const config = { rootDir: process.cwd() };
 
 const app = express();
 app.use(cookieParser());
 app.use(
   connectWrapper(
     rsc({
-      cwd,
+      config,
       command: 'dev',
       unstable_prehook: (req) => {
         return { count: Number(req.orig.cookies.count) || 0 };
