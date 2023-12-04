@@ -268,6 +268,7 @@ const emitRscFiles = async (config: ResolvedConfig) => {
             config,
             command: 'build',
             context,
+            signal: null,
             moduleIdCallback: (id) => addClientModule(input, id),
           });
           await pipeline(
@@ -338,7 +339,8 @@ const emitHtmlFiles = async (
           );
         }
         const htmlResult =
-          ssr && (await renderHtml(config, 'build', pathStr, htmlStr, context));
+          ssr &&
+          (await renderHtml(config, 'build', pathStr, htmlStr, context, null));
         if (htmlResult) {
           const [htmlReadable] = htmlResult;
           await pipeline(

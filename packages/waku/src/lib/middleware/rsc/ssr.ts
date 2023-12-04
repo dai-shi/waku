@@ -334,6 +334,7 @@ export const renderHtml = async <Context>(
   pathStr: string,
   htmlStr: string, // Hope stream works, but it'd be too tricky
   context: Context,
+  signal: AbortSignal | null,
 ): Promise<readonly [ReadableStream, Context] | null> => {
   const [
     { createElement },
@@ -364,6 +365,7 @@ export const renderHtml = async <Context>(
       config,
       command,
       context,
+      signal,
     });
   } catch (e) {
     if (hasStatusCode(e) && e.statusCode === 404) {

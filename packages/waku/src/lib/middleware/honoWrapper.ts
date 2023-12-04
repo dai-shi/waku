@@ -67,6 +67,7 @@ export function honoWrapper<
         setStatus: (code) => c.status(code),
         setHeader: (name, value) => c.header(name, value),
         c,
+        signal: c.req.raw.signal,
       };
       m(req, res, () => next().then(resolve));
     });

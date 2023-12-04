@@ -10,6 +10,7 @@ export type RenderRequest = {
   config: Omit<ResolvedConfig, 'ssr'>;
   command: 'dev' | 'build' | 'start';
   context: unknown;
+  signal: AbortSignal | null;
   stream?: ReadableStream;
   moduleIdCallback?: (id: string) => void;
 };
@@ -25,7 +26,7 @@ export type MessageReq =
       id: number;
       type: 'render';
       hasModuleIdCallback: boolean;
-    } & Omit<RenderRequest, 'stream' | 'moduleIdCallback'>)
+    } & Omit<RenderRequest, 'stream' | 'moduleIdCallback' | 'signal'>)
   | { id: number; type: 'buf'; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: 'end' }
   | { id: number; type: 'err'; err: unknown }
@@ -120,6 +121,7 @@ export function renderRSC<Context>(
 ): Promise<readonly [ReadableStream, Context]> {
   const worker = getWorker(rr.command);
   const id = nextId++;
+  const signal = rr.signal;
   const pipe = async () => {
     if (rr.stream) {
       const reader = rr.stream.getReader();
@@ -174,7 +176,9 @@ export function renderRSC<Context>(
         if (!started) {
           throw new Error('not yet started');
         }
-        controller.enqueue(new Uint8Array(mesg.buf, mesg.offset, mesg.len));
+        if (!signal || !signal.aborted) {
+          controller.enqueue(new Uint8Array(mesg.buf, mesg.offset, mesg.len));
+        }
       } else if (mesg.type === 'moduleId') {
         rr.moduleIdCallback?.(mesg.moduleId);
       } else if (mesg.type === 'end') {

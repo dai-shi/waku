@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
 import { readdir } from 'node:fs/promises';
 import { basename } from 'node:path';
-import { getFreePort, test } from './utils.js';
+import { getFreePort, test, validateMessage } from './utils.js';
 
 const examplesDir = fileURLToPath(new URL('../examples', import.meta.url));
 
@@ -86,9 +86,11 @@ for (const cwd of examples) {
             },
           });
           cp.stdout?.on('data', (data) => {
+            validateMessage(`${data}`);
             console.log(`${port} stdout: `, `${data}`);
           });
           cp.stderr?.on('data', (data) => {
+            validateMessage(`${data}`);
             console.error(`${port} stderr: `, `${data}`);
           });
           await waitPort({

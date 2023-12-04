@@ -154,7 +154,14 @@ export function rsc<
         const htmlStr = await getHtmlStr(pathStr);
         const result =
           htmlStr &&
-          (await renderHtml(config, command, pathStr, htmlStr, context));
+          (await renderHtml(
+            config,
+            command,
+            pathStr,
+            htmlStr,
+            context,
+            res.signal,
+          ));
         if (result) {
           const [readable, nextCtx] = result;
           unstable_posthook?.(req, res, nextCtx as Context);
@@ -181,6 +188,7 @@ export function rsc<
           command,
           context,
           stream: req.stream,
+          signal: res.signal,
         });
         unstable_posthook?.(req, res, nextCtx as Context);
         readable.pipeTo(res.stream);

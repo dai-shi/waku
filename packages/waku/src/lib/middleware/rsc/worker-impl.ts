@@ -50,7 +50,7 @@ const controllerMap = new Map<number, ReadableStreamDefaultController>();
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id, type, hasModuleIdCallback, ...rest } = mesg;
-  const rr: RenderRequest = rest;
+  const rr: Omit<RenderRequest, 'signal'> = rest;
   try {
     const stream = new ReadableStream({
       start(controller) {
@@ -269,7 +269,9 @@ const transformRsfId = (prefixToRemove: string) => {
   });
 };
 
-async function renderRSC(rr: RenderRequest): Promise<ReadableStream> {
+async function renderRSC(
+  rr: Omit<RenderRequest, 'signal'>,
+): Promise<ReadableStream> {
   const config = rr.config;
   const { renderToReadableStream, decodeReply } = await loadRSDWServer(
     config,

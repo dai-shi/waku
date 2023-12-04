@@ -9,6 +9,7 @@ export type BaseRes = {
   stream: WritableStream;
   setHeader: (name: string, value: string) => void;
   setStatus: (code: number) => void;
+  signal: AbortSignal;
 };
 
 export type Middleware<Req extends BaseReq, Res extends BaseRes> = (

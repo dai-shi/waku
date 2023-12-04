@@ -11,16 +11,22 @@ export async function getFreePort(): Promise<number> {
   });
 }
 
+const unexpectedErrors: RegExp[] = [
+  /^You did not run Node.js with the `--conditions react-server` flag./,
+  /^\(node:14372\)/,
+  /Controller is already closed/,
+];
+
+export function validateMessage(message: string) {
+  if (unexpectedErrors.some((re) => re.test(message))) {
+    throw new Error(message);
+  }
+}
+
 export const test = basicTest.extend({
   page: async ({ page }, use) => {
-    const unexpectedErrors: RegExp[] = [
-      /^You did not run Node.js with the `--conditions react-server` flag./,
-      /^\(node:14372\)/,
-    ];
     const callback = (msg: ConsoleMessage) => {
-      if (unexpectedErrors.some((re) => re.test(msg.text()))) {
-        throw new Error(msg.text());
-      }
+      validateMessage(msg.text());
       console.log(`${msg.type()}: ${msg.text()}`);
     };
     page.on('console', callback);
