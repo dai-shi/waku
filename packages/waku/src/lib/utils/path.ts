@@ -20,12 +20,12 @@ export const fileURLToFilePath = (fileURL: string) => {
 };
 
 // for filePath
-export const joinPath = (filePaths: string[]) => {
-  if (filePaths.length === 0 || !filePaths[0]!.startsWith('/')) {
+export const joinPath = (...paths: string[]) => {
+  if (paths.length === 0 || !paths[0]!.startsWith('/')) {
     throw new Error('First path must be absolute');
   }
   const items = ([] as string[]).concat(
-    ...filePaths.map((filePath) => filePath.split('/')),
+    ...paths.map((path) => path.split('/')),
   );
   let i = 0;
   while (i < items.length) {
@@ -43,4 +43,27 @@ export const joinPath = (filePaths: string[]) => {
     }
   }
   return '/' + items.join('/');
+};
+
+// for filePath
+export const relativePath = (from: string, to: string) => {
+  const fromItems = from.split('/');
+  const toItems = to.split('/');
+  let i = 0;
+  while (
+    i < fromItems.length &&
+    i < toItems.length &&
+    fromItems[i] === toItems[i]
+  ) {
+    ++i;
+  }
+  return [
+    ...new Array(fromItems.length - i).fill('..'),
+    ...toItems.slice(i),
+  ].join('/');
+};
+
+export const extname = (filePath: string) => {
+  const index = filePath.lastIndexOf('.');
+  return index > 0 ? filePath.slice(index) : '';
 };
