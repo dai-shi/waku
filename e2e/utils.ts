@@ -19,7 +19,8 @@ const unexpectedErrors: RegExp[] = [
 
 export function validateMessage(message: string) {
   if (unexpectedErrors.some((re) => re.test(message))) {
-    throw new Error(message);
+    process.stderr.write(`Unexpected error: ${message}\n`);
+    process.exit(1);
   }
 }
 
