@@ -13,12 +13,10 @@ import {
   createReadStream,
   createWriteStream,
   existsSync,
-  mkdirSync,
-  readdirSync,
-  symlinkSync,
-  writeFileSync,
+  readdir,
   rename,
   mkdir,
+  symlink,
   readFile,
   writeFile,
 } from './utils/node-fs.js';
@@ -355,7 +353,7 @@ const emitHtmlFiles = async (
   return { htmlFiles };
 };
 
-const emitVercelOutput = (
+const emitVercelOutput = async (
   config: ResolvedConfig,
   clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
   rscFiles: string[],
@@ -369,25 +367,25 @@ const emitVercelOutput = (
   for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
     const dstFile = joinPath(dstDir, 'static', relativePath(srcDir, file));
     if (!existsSync(dstFile)) {
-      mkdirSync(joinPath(dstFile, '..'), { recursive: true });
-      symlinkSync(relativePath(joinPath(dstFile, '..'), file), dstFile);
+      await mkdir(joinPath(dstFile, '..'), { recursive: true });
+      await symlink(relativePath(joinPath(dstFile, '..'), file), dstFile);
     }
   }
 
   // for serverless function
   const serverlessDir = joinPath(dstDir, 'functions', config.rscPath + '.func');
-  mkdirSync(joinPath(serverlessDir, config.distDir), {
+  await mkdir(joinPath(serverlessDir, config.distDir), {
     recursive: true,
   });
-  symlinkSync(
+  await symlink(
     relativePath(serverlessDir, joinPath(config.rootDir, 'node_modules')),
     joinPath(serverlessDir, 'node_modules'),
   );
-  for (const file of readdirSync(joinPath(config.rootDir, config.distDir))) {
+  for (const file of await readdir(joinPath(config.rootDir, config.distDir))) {
     if (['.vercel'].includes(file)) {
       continue;
     }
-    symlinkSync(
+    await symlink(
       relativePath(
         joinPath(serverlessDir, config.distDir),
         joinPath(config.rootDir, config.distDir, file),
@@ -400,15 +398,15 @@ const emitVercelOutput = (
     handler: 'serve.js',
     launcherType: 'Nodejs',
   };
-  writeFileSync(
+  await writeFile(
     joinPath(serverlessDir, '.vc-config.json'),
     JSON.stringify(vcConfigJson, null, 2),
   );
-  writeFileSync(
+  await writeFile(
     joinPath(serverlessDir, 'package.json'),
     JSON.stringify({ type: 'module' }, null, 2),
   );
-  writeFileSync(
+  await writeFile(
     joinPath(serverlessDir, 'serve.js'),
     `
 export default async function handler(req, res) {
@@ -437,8 +435,8 @@ export default async function handler(req, res) {
   const basePrefix = config.basePath + config.rscPath + '/';
   const routes = [{ src: basePrefix + '(.*)', dest: basePrefix }];
   const configJson = { version: 3, overrides, routes };
-  mkdirSync(dstDir, { recursive: true });
-  writeFileSync(
+  await mkdir(dstDir, { recursive: true });
+  await writeFile(
     joinPath(dstDir, 'config.json'),
     JSON.stringify(configJson, null, 2),
   );
@@ -486,7 +484,7 @@ export async function build(options: { config: Config; ssr?: boolean }) {
   );
 
   // https://vercel.com/docs/build-output-api/v3
-  emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
+  await emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
 
   await shutdownSsr();
 }

@@ -17,29 +17,8 @@ export const createWriteStream = (filePath: string) =>
 export const existsSync = (filePath: string) =>
   fs.existsSync(path.sep === '/' ? filePath : filePathToWinPath(filePath));
 
-export const mkdirSync = (
-  filePath: string,
-  options?: { recursive?: boolean | undefined },
-) =>
-  fs.mkdirSync(
-    path.sep === '/' ? filePath : filePathToWinPath(filePath),
-    options,
-  );
-
-export const readdirSync = (filePath: string) =>
-  fs.readdirSync(path.sep === '/' ? filePath : filePathToWinPath(filePath));
-
-export const symlinkSync = (targetPath: string, filePath: string) =>
-  fs.symlinkSync(
-    path.sep === '/' ? targetPath : filePathToWinPath(targetPath),
-    path.sep === '/' ? filePath : filePathToWinPath(filePath),
-  );
-
-export const writeFileSync = (filePath: string, content: string) =>
-  fs.writeFileSync(
-    path.sep === '/' ? filePath : filePathToWinPath(filePath),
-    content,
-  );
+export const readdir = (filePath: string) =>
+  fsPromises.readdir(path.sep === '/' ? filePath : filePathToWinPath(filePath));
 
 export const rename = (filePath1: string, filePath2: string) =>
   fsPromises.rename(
@@ -54,6 +33,12 @@ export const mkdir = (
   fsPromises.mkdir(
     path.sep === '/' ? filePath : filePathToWinPath(filePath),
     options,
+  );
+
+export const symlink = (targetPath: string, filePath: string) =>
+  fsPromises.symlink(
+    path.sep === '/' ? targetPath : filePathToWinPath(targetPath),
+    path.sep === '/' ? filePath : filePathToWinPath(filePath),
   );
 
 export const readFile = (filePath: string, options: { encoding: 'utf8' }) =>
