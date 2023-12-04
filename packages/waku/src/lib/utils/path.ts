@@ -1,4 +1,4 @@
-// Terminilogy:
+// Terminology:
 // - filePath: posix file path, e.g. `/foo/bar.js` or `/c:/foo/bar.js`
 // - fileURL: file URL, e.g. `file:///foo/bar.js` or `file:///c:/foo/bar.js`
 // - vitePath: vite file path, e.g. `/foo/bar.js` or `c:/foo/bar.js`

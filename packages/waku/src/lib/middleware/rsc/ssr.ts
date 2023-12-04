@@ -148,14 +148,15 @@ export const shutdown = async () => {
 };
 
 const loadServerFile = async (
-  fname: string,
+  fileURLOrFilePath: string,
   command: 'dev' | 'build' | 'start',
 ) => {
   if (command !== 'dev') {
-    return import(fname);
+    return import(fileURLOrFilePath);
   }
   const vite = await getViteServer();
-  return vite.ssrLoadModule(fname);
+  const { filePathToVitePath } = await import('../../utils/node-fs.js');
+  return vite.ssrLoadModule(filePathToVitePath(fileURLOrFilePath));
 };
 
 const getEntriesFile = (
