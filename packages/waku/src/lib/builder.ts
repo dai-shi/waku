@@ -8,12 +8,7 @@ import type { RollupLog, LoggingFunction } from 'rollup';
 
 import type { Config, ResolvedConfig } from '../config.js';
 import { resolveConfig, viteInlineConfig } from './config.js';
-import {
-  normalizePath,
-  joinPath,
-  relativePath,
-  extname,
-} from './utils/path.js';
+import { joinPath, relativePath, extname } from './utils/path.js';
 import {
   createReadStream,
   createWriteStream,
@@ -259,7 +254,10 @@ const emitRscFiles = async (config: ResolvedConfig) => {
           config.distDir,
           config.publicDir,
           config.rscPath,
-          encodeInput(normalizePath(input)),
+          encodeInput(
+            // Should we do this here? Or waku/router or in entries.ts?
+            input.split('\\').join('/'),
+          ),
         );
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
