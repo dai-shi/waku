@@ -10,7 +10,8 @@ import type { RenderContext } from '../../../server.js';
 import type { ResolvedConfig } from '../../../config.js';
 import { viteInlineConfig } from '../../config.js';
 import { normalizePath } from '../../utils/path.js';
-import { hasStatusCode, deepFreeze, parseFormData } from './utils.js';
+import { hasStatusCode, deepFreeze } from './utils.js';
+import { parseFormData } from '../../utils/form.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
 
 let nodeLoaderRegistered = false;
