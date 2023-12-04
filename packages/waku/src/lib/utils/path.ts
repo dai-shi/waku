@@ -3,9 +3,9 @@
 // - fileURL: file URL, e.g. `file:///foo/bar.js` or `file:///c:/foo/bar.js`
 // - winPath: windows file path, e.g. `c:\foo\bar.js`
 
-// Refs: https://github.com/rollup/plugins/blob/d49bbe8dc5ec41157de5787c72c858f73be107ff/packages/pluginutils/src/normalizePath.ts
 // path is either filePath or winPath
-export const normalizePath = (path: string) => path.split('\\').join('/');
+export const normalizePath = (path: string) =>
+  '/' + path.replace(/^\//, '').split('\\').join('/');
 
 export const filePathToWinPath = (filePath: string) =>
   filePath.replace(/^\//, '').replace(/\//g, '\\');

@@ -1,6 +1,3 @@
-import path from 'node:path'; // TODO no node dependency
-import url from 'node:url'; // TODO no node dependency
-
 import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
 import type { ViteDevServer } from 'vite';
 
@@ -8,7 +5,12 @@ import type { ResolvedConfig } from '../../../config.js';
 import { viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
 import { concatUint8Arrays } from '../../utils/stream.js';
-import { normalizePath } from '../../utils/path.js';
+import {
+  normalizePath,
+  joinPath,
+  filePathToFileURL,
+  fileURLToFilePath,
+} from '../../utils/path.js';
 import { renderRSC as renderRSCWorker } from './worker-api.js';
 import { renderRSC } from '../../rsc/renderer.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
@@ -20,17 +22,15 @@ const loadReact = async (
   if (command !== 'dev') {
     return (
       await import(
-        url
-          .pathToFileURL(
-            path.join(
-              config.rootDir,
-              config.distDir,
-              config.publicDir,
-              config.assetsDir,
-              'react.js',
-            ),
-          )
-          .toString()
+        filePathToFileURL(
+          joinPath(
+            config.rootDir,
+            config.distDir,
+            config.publicDir,
+            config.assetsDir,
+            'react.js',
+          ),
+        )
       )
     ).default;
   }
@@ -44,17 +44,15 @@ const loadRDServer = async (
   if (command !== 'dev') {
     return (
       await import(
-        url
-          .pathToFileURL(
-            path.join(
-              config.rootDir,
-              config.distDir,
-              config.publicDir,
-              config.assetsDir,
-              'rd-server.js',
-            ),
-          )
-          .toString()
+        filePathToFileURL(
+          joinPath(
+            config.rootDir,
+            config.distDir,
+            config.publicDir,
+            config.assetsDir,
+            'rd-server.js',
+          ),
+        )
       )
     ).default;
   }
@@ -68,17 +66,15 @@ const loadRSDWClient = async (
   if (command !== 'dev') {
     return (
       await import(
-        url
-          .pathToFileURL(
-            path.join(
-              config.rootDir,
-              config.distDir,
-              config.publicDir,
-              config.assetsDir,
-              'rsdw-client.js',
-            ),
-          )
-          .toString()
+        filePathToFileURL(
+          joinPath(
+            config.rootDir,
+            config.distDir,
+            config.publicDir,
+            config.assetsDir,
+            'rsdw-client.js',
+          ),
+        )
       )
     ).default;
   }
@@ -91,17 +87,15 @@ const loadWakuClient = async (
 ) => {
   if (command !== 'dev') {
     return import(
-      url
-        .pathToFileURL(
-          path.join(
-            config.rootDir,
-            config.distDir,
-            config.publicDir,
-            config.assetsDir,
-            'waku-client.js',
-          ),
-        )
-        .toString()
+      filePathToFileURL(
+        joinPath(
+          config.rootDir,
+          config.distDir,
+          config.publicDir,
+          config.assetsDir,
+          'waku-client.js',
+        ),
+      )
     );
   }
   return import('waku/client');
@@ -168,12 +162,12 @@ const getEntriesFile = (
   config: ResolvedConfig,
   command: 'dev' | 'build' | 'start',
 ) => {
-  const filePath = path.join(
+  const filePath = joinPath(
     config.rootDir,
     command === 'dev' ? config.srcDir : config.distDir,
     config.entriesJs,
   );
-  return command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
+  return command === 'dev' ? filePath : filePathToFileURL(filePath);
 };
 
 const fakeFetchCode = `
@@ -407,15 +401,13 @@ export const renderHtml = async <Context>(
               if (command === 'dev') {
                 const filePath = normalizePath(
                   file.startsWith('@fs/')
-                    ? // FIXME This is ugly. We need to refactor it.
-                      // remove '@fs'(3) on Unix and '@fs/'(4) on Windows
-                      file.slice(path.sep === '/' ? 3 : 4)
-                    : path.join(config.rootDir, config.srcDir, file),
+                    ? file.slice('@fs/'.length - 1)
+                    : joinPath(config.rootDir, config.srcDir, file),
                 );
                 // FIXME This is ugly. We need to refactor it.
                 const wakuDist = normalizePath(
-                  path.join(
-                    url.fileURLToPath(import.meta.url),
+                  joinPath(
+                    fileURLToFilePath(import.meta.url),
                     '..',
                     '..',
                     '..',
@@ -429,23 +421,18 @@ export const renderHtml = async <Context>(
                   return { id, chunks: [id], name };
                 }
                 const id =
-                  url
-                    .pathToFileURL(filePath)
-                    .toString()
-                    .slice('file://'.length) + '#dev';
+                  filePathToFileURL(filePath).slice('file://'.length) + '#dev';
                 return { id, chunks: [id], name };
               }
               // command !== 'dev'
-              const id = url
-                .pathToFileURL(
-                  path.join(
-                    config.rootDir,
-                    config.distDir,
-                    config.publicDir,
-                    file,
-                  ),
-                )
-                .toString();
+              const id = filePathToFileURL(
+                joinPath(
+                  config.rootDir,
+                  config.distDir,
+                  config.publicDir,
+                  file,
+                ),
+              );
               return { id, chunks: [id], name };
             },
           },

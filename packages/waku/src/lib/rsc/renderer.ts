@@ -1,11 +1,15 @@
-import path from 'node:path'; // TODO no node dependency
-import url from 'node:url'; // TODO no node dependency
 import type { ReactNode } from 'react';
 
 import { defineEntries } from '../../server.js';
 import type { RenderContext } from '../../server.js';
 import type { ResolvedConfig } from '../../config.js';
-import { normalizePath } from '../utils/path.js';
+import {
+  normalizePath,
+  relativePath,
+  joinPath,
+  filePathToFileURL,
+  fileURLToFilePath,
+} from '../utils/path.js';
 import { parseFormData } from '../utils/form.js';
 
 const loadRSDWServer = async (
@@ -15,11 +19,9 @@ const loadRSDWServer = async (
   if (!isDev) {
     return (
       await import(
-        url
-          .pathToFileURL(
-            path.join(config.rootDir, config.distDir, 'rsdw-server.js'),
-          )
-          .toString()
+        filePathToFileURL(
+          joinPath(config.rootDir, config.distDir, 'rsdw-server.js'),
+        )
       )
     ).default;
   }
@@ -34,14 +36,12 @@ const getEntriesFile = (
   config: Omit<ResolvedConfig, 'ssr'>,
   isDev: boolean,
 ) => {
-  const filePath = path.join(
+  const filePath = joinPath(
     config.rootDir,
     isDev ? config.srcDir : config.distDir,
     config.entriesJs,
   );
-  return normalizePath(
-    isDev ? filePath : url.pathToFileURL(filePath).toString(),
-  );
+  return normalizePath(isDev ? filePath : filePathToFileURL(filePath));
 };
 
 const resolveClientEntry = (
@@ -49,13 +49,10 @@ const resolveClientEntry = (
   config: Omit<ResolvedConfig, 'ssr'>,
   isDev: boolean,
 ) => {
-  filePath = filePath.startsWith('file:///')
-    ? url.fileURLToPath(filePath)
+  filePath = filePath.startsWith('file://')
+    ? fileURLToFilePath(filePath)
     : filePath;
-  const root = path.join(
-    config.rootDir,
-    isDev ? config.srcDir : config.distDir,
-  );
+  const root = joinPath(config.rootDir, isDev ? config.srcDir : config.distDir);
   if (!filePath.startsWith(root)) {
     if (isDev) {
       // HACK this relies on Vite's internal implementation detail.
@@ -68,7 +65,7 @@ const resolveClientEntry = (
       );
     }
   }
-  return normalizePath(config.basePath + path.relative(root, filePath));
+  return normalizePath(config.basePath + relativePath(root, filePath));
 };
 
 // HACK Patching stream is very fragile.
@@ -139,8 +136,7 @@ export async function renderRSC(
   } = await (customImport(entriesFile) as Promise<Entries>);
 
   const rsfPrefix =
-    path.posix.join(config.rootDir, isDev ? config.srcDir : config.distDir) +
-    '/';
+    joinPath(config.rootDir, isDev ? config.srcDir : config.distDir) + '/';
 
   const render = async (renderContext: RenderContext, input: string) => {
     const elements = await renderEntries.call(renderContext, input);
@@ -197,7 +193,7 @@ export async function renderRSC(
     }
     const [fileId, name] = rsfId.split('#') as [string, string];
     const filePath = fileId.startsWith('/') ? fileId : rsfPrefix + fileId;
-    const fname = isDev ? filePath : url.pathToFileURL(filePath).toString();
+    const fname = isDev ? filePath : filePathToFileURL(filePath);
     const mod = await customImport(fname);
     const fn = mod[name] || mod;
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
