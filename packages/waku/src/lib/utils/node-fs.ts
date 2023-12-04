@@ -3,9 +3,7 @@ import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 
 const filePathToOsPath = (filePath: string) =>
-  path.sep === '/'
-    ? filePath
-    : filePath.replace(/^\//, '').replace(/\//g, '\\');
+  path.sep === '/' ? filePath : filePath.replace(/\//g, '\\');
 
 export const createReadStream = (filePath: string) =>
   fs.createReadStream(filePathToOsPath(filePath));

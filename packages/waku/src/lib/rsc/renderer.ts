@@ -52,6 +52,7 @@ const resolveClientEntry = (
   config: Omit<ResolvedConfig, 'ssr'>,
   isDev: boolean,
 ) => {
+  console.log('#################resolveClientEntry', filePath);
   filePath = filePath.startsWith('file://')
     ? fileURLToFilePath(filePath)
     : filePath;
