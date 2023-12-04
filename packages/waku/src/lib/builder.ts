@@ -21,11 +21,7 @@ import type { Config, ResolvedConfig } from '../config.js';
 import { resolveConfig, viteInlineConfig } from './config.js';
 import { normalizePath } from './utils/path.js';
 import { encodeInput, generatePrefetchCode } from './middleware/rsc/utils.js';
-import {
-  shutdown as shutdownRsc,
-  renderRSC,
-  getBuildConfigRSC,
-} from './middleware/rsc/worker-api.js';
+import { renderRSC, getBuildConfigRSC } from './rsc/renderer.js';
 import { rscIndexPlugin } from './vite-plugin/rsc-index-plugin.js';
 import { rscAnalyzePlugin } from './vite-plugin/rsc-analyze-plugin.js';
 import { rscTransformPlugin } from './vite-plugin/rsc-transform-plugin.js';
@@ -233,7 +229,7 @@ const buildClientBundle = async (
 };
 
 const emitRscFiles = async (config: ResolvedConfig) => {
-  const buildConfig = await getBuildConfigRSC(config);
+  const buildConfig = await getBuildConfigRSC({ config });
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (input: string, id: string) => {
     let idSet = clientModuleMap.get(input);
@@ -261,14 +257,13 @@ const emitRscFiles = async (config: ResolvedConfig) => {
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
           await fsPromises.mkdir(path.dirname(destFile), { recursive: true });
-          const [readable] = await renderRSC({
+          const readable = await renderRSC({
             input,
             method: 'GET',
-            headers: {},
             config,
-            command: 'build',
             context,
             moduleIdCallback: (id) => addClientModule(input, id),
+            isDev: false,
           });
           await pipeline(
             Readable.fromWeb(readable as any),
@@ -493,5 +488,4 @@ export async function build(options: { config: Config; ssr?: boolean }) {
   emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
 
   await shutdownSsr();
-  await shutdownRsc();
 }

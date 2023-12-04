@@ -59,8 +59,8 @@ export function rscTransformPlugin(isBuild: boolean): Plugin {
         ) {
           // HACK tweak registerClientReference for production
           source = source.replace(
-            / registerClientReference\(function\(\) {throw new Error\("([^"]*)"\);},"[^"]*","([^"]*)"\);/gs,
-            ' registerClientReference(function() {return "$1";}, import.meta.url, "$2");',
+            /registerClientReference\(function\(\) {throw new Error\("([^"]*)"\);},"[^"]*","([^"]*)"\);/gs,
+            'registerClientReference(function() {return "$1";}, import.meta.url, "$2");',
           );
         }
         if (
@@ -70,8 +70,8 @@ export function rscTransformPlugin(isBuild: boolean): Plugin {
         ) {
           // HACK tweak registerServerReference for production
           source = source.replace(
-            / registerServerReference\(([^,]*),"[^"]*","([^"]*)"\);/gs,
-            ' registerServerReference($1, import.meta.url, "$2");',
+            /registerServerReference\(([^,]*),"[^"]*","([^"]*)"\);/gs,
+            'registerServerReference($1, import.meta.url, "$2");',
           );
         }
       }

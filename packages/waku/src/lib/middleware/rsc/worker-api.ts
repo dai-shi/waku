@@ -1,14 +1,13 @@
-import { Worker } from 'node:worker_threads'; // TODO no node dependency
+import type { Worker as WorkerOrig } from 'node:worker_threads';
 
 import type { ResolvedConfig } from '../../../config.js';
-import type { GetBuildConfig } from '../../../server.js';
 
 export type RenderRequest = {
   input: string;
   method: 'GET' | 'POST';
   headers: Record<string, string | string[] | undefined>;
   config: Omit<ResolvedConfig, 'ssr'>;
-  command: 'dev' | 'build' | 'start';
+  command: 'dev'; // DEV only
   context: unknown;
   stream?: ReadableStream;
   moduleIdCallback?: (id: string) => void;
@@ -20,7 +19,6 @@ export type BuildOutput = {
 };
 
 export type MessageReq =
-  | { type: 'shutdown' }
   | ({
       id: number;
       type: 'render';
@@ -28,8 +26,7 @@ export type MessageReq =
     } & Omit<RenderRequest, 'stream' | 'moduleIdCallback'>)
   | { id: number; type: 'buf'; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: 'end' }
-  | { id: number; type: 'err'; err: unknown }
-  | { id: number; type: 'getBuildConfig'; config: Omit<ResolvedConfig, 'ssr'> };
+  | { id: number; type: 'err'; err: unknown };
 
 export type MessageRes =
   | { type: 'full-reload' }
@@ -38,49 +35,39 @@ export type MessageRes =
   | { id: number; type: 'buf'; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: 'end' }
   | { id: number; type: 'err'; err: unknown; statusCode?: number }
-  | { id: number; type: 'moduleId'; moduleId: string }
-  | {
-      id: number;
-      type: 'buildConfig';
-      output: Awaited<ReturnType<GetBuildConfig>>;
-    };
+  | { id: number; type: 'moduleId'; moduleId: string };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
-let lastCommand: 'dev' | 'build' | 'start' | undefined;
-let lastWorker: Worker | undefined;
-const getWorker = (command: 'dev' | 'build' | 'start') => {
+let lastWorker: Promise<WorkerOrig> | undefined;
+const getWorker = () => {
   if (lastWorker) {
-    if (lastCommand !== command) {
-      throw new Error('cannot create worker with different command');
-    }
     return lastWorker;
   }
-  const IS_NODE_18 = Number(process.versions.node.split('.')[0]) < 20;
-  const worker = new Worker(new URL('worker-impl.js', import.meta.url), {
-    execArgv:
-      command !== 'dev'
-        ? []
-        : [
-            ...(IS_NODE_18
-              ? ['--experimental-loader', 'waku/node-loader']
-              : []),
-            '--conditions',
-            'react-server',
-          ],
-  });
-  worker.on('message', (mesg: MessageRes) => {
-    if ('id' in mesg) {
-      messageCallbacks.get(mesg.id)?.(mesg);
-    }
-  });
-  lastCommand = command;
-  lastWorker = worker;
-  return worker;
+  return (lastWorker = new Promise<WorkerOrig>((resolve) => {
+    import('node:worker_threads').then(({ Worker }) => {
+      const IS_NODE_18 = Number(process.versions.node.split('.')[0]) < 20;
+      const worker = new Worker(new URL('worker-impl.js', import.meta.url), {
+        execArgv: [
+          ...(IS_NODE_18 ? ['--experimental-loader', 'waku/node-loader'] : []),
+          '--conditions',
+          'react-server',
+        ],
+      });
+      worker.on('message', (mesg: MessageRes) => {
+        if ('id' in mesg) {
+          messageCallbacks.get(mesg.id)?.(mesg);
+        }
+      });
+      resolve(worker);
+    });
+  }));
 };
 
-export function registerReloadCallback(fn: (type: 'full-reload') => void) {
-  const worker = getWorker('dev');
+export async function registerReloadCallback(
+  fn: (type: 'full-reload') => void,
+) {
+  const worker = await getWorker();
   const listener = (mesg: MessageRes) => {
     if (mesg.type === 'full-reload') {
       fn(mesg.type);
@@ -90,8 +77,8 @@ export function registerReloadCallback(fn: (type: 'full-reload') => void) {
   return () => worker.off('message', listener);
 }
 
-export function registerImportCallback(fn: (source: string) => void) {
-  const worker = getWorker('dev');
+export async function registerImportCallback(fn: (source: string) => void) {
+  const worker = await getWorker();
   const listener = (mesg: MessageRes) => {
     if (mesg.type === 'hot-import') {
       fn(mesg.source);
@@ -101,24 +88,12 @@ export function registerImportCallback(fn: (source: string) => void) {
   return () => worker.off('message', listener);
 }
 
-export function shutdown(): Promise<void> {
-  const worker = lastWorker;
-  if (!worker) {
-    throw new Error('No worker to shutdown');
-  }
-  return new Promise((resolve) => {
-    worker.on('close', resolve);
-    const mesg: MessageReq = { type: 'shutdown' };
-    worker.postMessage(mesg);
-  });
-}
-
 let nextId = 1;
 
-export function renderRSC<Context>(
+export async function renderRSC<Context>(
   rr: RenderRequest,
 ): Promise<readonly [ReadableStream, Context]> {
-  const worker = getWorker(rr.command);
+  const worker = await getWorker();
   const id = nextId++;
   const pipe = async () => {
     if (rr.stream) {
@@ -210,31 +185,5 @@ export function renderRSC<Context>(
     };
     worker.postMessage(mesg);
     pipe();
-  });
-}
-
-export function getBuildConfigRSC(
-  config: ResolvedConfig,
-): ReturnType<GetBuildConfig> {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { ssr: _removed, ...copiedConfig } = config;
-  const worker = getWorker('build');
-  return new Promise((resolve, reject) => {
-    const id = nextId++;
-    messageCallbacks.set(id, (mesg) => {
-      if (mesg.type === 'buildConfig') {
-        resolve(mesg.output);
-        messageCallbacks.delete(id);
-      } else if (mesg.type === 'err') {
-        reject(mesg.err);
-        messageCallbacks.delete(id);
-      }
-    });
-    const mesg: MessageReq = {
-      id,
-      type: 'getBuildConfig',
-      config: copiedConfig,
-    };
-    worker.postMessage(mesg);
   });
 }
