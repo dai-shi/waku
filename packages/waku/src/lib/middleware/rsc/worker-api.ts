@@ -8,7 +8,7 @@ export type RenderRequest = {
   method: 'GET' | 'POST';
   headers: Record<string, string | string[] | undefined>;
   config: Omit<ResolvedConfig, 'ssr'>;
-  command: 'dev' | 'build' | 'start';
+  command: 'dev'; // DEV only
   context: unknown;
   stream?: ReadableStream;
   moduleIdCallback?: (id: string) => void;
@@ -20,7 +20,7 @@ export type BuildOutput = {
 };
 
 export type MessageReq =
-  | { type: 'shutdown' }
+  | { type: 'shutdown' } // TODO unused
   | ({
       id: number;
       type: 'render';
@@ -101,6 +101,7 @@ export function registerImportCallback(fn: (source: string) => void) {
   return () => worker.off('message', listener);
 }
 
+// TODO unused
 export function shutdown(): Promise<void> {
   const worker = lastWorker;
   if (!worker) {
@@ -213,6 +214,7 @@ export function renderRSC<Context>(
   });
 }
 
+// TODO unused
 export function getBuildConfigRSC(
   config: ResolvedConfig,
 ): ReturnType<GetBuildConfig> {

@@ -153,6 +153,7 @@ const getViteServer = async () => {
   return viteServer;
 };
 
+// TODO unused
 const shutdown = async () => {
   if (lastViteServer) {
     await lastViteServer.close();
