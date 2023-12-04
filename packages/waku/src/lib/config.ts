@@ -1,4 +1,5 @@
 import type { Config, ResolvedConfig } from '../config.js';
+import { normalizePath } from './middleware/rsc/utils.js';
 
 const splitHTML = (htmlStr: string): readonly [string, string, string] => {
   const P1 = [
@@ -34,6 +35,7 @@ export async function resolveConfig(config: Config) {
       splitHTML,
       ...config?.ssr,
     },
+    rootDir: normalizePath(config.rootDir),
   };
   return resolvedConfig;
 }
