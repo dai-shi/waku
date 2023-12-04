@@ -5,7 +5,7 @@ import type { BaseReq, BaseRes, Middleware } from './types.js';
 export function connectWrapper(
   m: Middleware<
     BaseReq & { orig: IncomingMessage },
-    BaseRes & { orig: ServerResponse }
+    BaseRes & { orig: ServerResponse; signal: AbortSignal }
   >,
 ) {
   return async (
@@ -29,6 +29,12 @@ export function connectWrapper(
       setStatus: (code) => (connectRes.statusCode = code),
       setHeader: (name, value) => connectRes.setHeader(name, value),
       orig: connectRes,
+      signal: {
+        get aborted() {
+          return connectReq.aborted;
+        },
+        // fixme: just see if e2e passes
+      } as AbortSignal,
     };
     m(req, res, next);
   };
