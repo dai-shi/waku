@@ -1,6 +1,7 @@
 // Terminilogy:
-// - filePath: posix file path, e.g. `/foo/bar.js` or /c:/foo/bar.js`
+// - filePath: posix file path, e.g. `/foo/bar.js` or `/c:/foo/bar.js`
 // - fileURL: file URL, e.g. `file:///foo/bar.js` or `file:///c:/foo/bar.js`
+// - vitePath: vite file path, e.g. `/foo/bar.js` or `c:/foo/bar.js`
 // - winPath: windows file path, e.g. `c:\foo\bar.js`
 
 // path is either filePath or winPath
@@ -8,11 +9,8 @@ export const normalizePath = (path: string) => {
   if (path.startsWith('file://')) {
     throw new Error('Unexpected file URL');
   }
-  return '/' + path.replace(/^\//, '').split('\\').join('/');
+  return '/' + path.replace(/^\//, '').replace(/\\/g, '/');
 };
-
-export const filePathToWinPath = (filePath: string) =>
-  filePath.replace(/^\//, '').replace(/\//g, '\\');
 
 export const filePathToFileURL = (filePath: string) => 'file://' + filePath;
 
