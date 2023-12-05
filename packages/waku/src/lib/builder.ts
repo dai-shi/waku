@@ -8,15 +8,13 @@ import type { RollupLog, LoggingFunction } from 'rollup';
 
 import type { Config, ResolvedConfig } from '../config.js';
 import { resolveConfig, viteInlineConfig } from './config.js';
-import { joinPath, relativePath, extname } from './utils/path.js';
+import { joinPath, extname } from './utils/path.js';
 import {
   createReadStream,
   createWriteStream,
   existsSync,
-  readdirSync,
   renameSync,
   mkdirSync,
-  symlinkSync,
   readFile,
   writeFile,
 } from './utils/node-fs.js';
@@ -359,38 +357,47 @@ const emitVercelOutput = async (
   rscFiles: string[],
   htmlFiles: string[],
 ) => {
+  // FIXME somehow utils/(path,node-fs).ts doesn't work
+  const [
+    path,
+    { existsSync, mkdirSync, readdirSync, symlinkSync, writeFileSync },
+  ] = await Promise.all([import('node:path'), import('node:fs')]);
   const clientFiles = clientBuildOutput.output.map(({ fileName }) =>
-    joinPath(config.rootDir, config.distDir, config.publicDir, fileName),
+    path.join(config.rootDir, config.distDir, config.publicDir, fileName),
   );
-  const srcDir = joinPath(config.rootDir, config.distDir, config.publicDir);
-  const dstDir = joinPath(config.rootDir, config.distDir, '.vercel', 'output');
+  const srcDir = path.join(config.rootDir, config.distDir, config.publicDir);
+  const dstDir = path.join(config.rootDir, config.distDir, '.vercel', 'output');
   for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
-    const dstFile = joinPath(dstDir, 'static', relativePath(srcDir, file));
+    const dstFile = path.join(dstDir, 'static', path.relative(srcDir, file));
     if (!existsSync(dstFile)) {
-      mkdirSync(joinPath(dstFile, '..'), { recursive: true });
-      symlinkSync(relativePath(joinPath(dstFile, '..'), file), dstFile);
+      mkdirSync(path.dirname(dstFile), { recursive: true });
+      symlinkSync(path.relative(path.dirname(dstFile), file), dstFile);
     }
   }
 
   // for serverless function
-  const serverlessDir = joinPath(dstDir, 'functions', config.rscPath + '.func');
-  mkdirSync(joinPath(serverlessDir, config.distDir), {
+  const serverlessDir = path.join(
+    dstDir,
+    'functions',
+    config.rscPath + '.func',
+  );
+  mkdirSync(path.join(serverlessDir, config.distDir), {
     recursive: true,
   });
   symlinkSync(
-    relativePath(serverlessDir, joinPath(config.rootDir, 'node_modules')),
-    joinPath(serverlessDir, 'node_modules'),
+    path.relative(serverlessDir, path.join(config.rootDir, 'node_modules')),
+    path.join(serverlessDir, 'node_modules'),
   );
-  for (const file of readdirSync(joinPath(config.rootDir, config.distDir))) {
+  for (const file of readdirSync(path.join(config.rootDir, config.distDir))) {
     if (['.vercel'].includes(file)) {
       continue;
     }
     symlinkSync(
-      relativePath(
-        joinPath(serverlessDir, config.distDir),
-        joinPath(config.rootDir, config.distDir, file),
+      path.relative(
+        path.join(serverlessDir, config.distDir),
+        path.join(config.rootDir, config.distDir, file),
       ),
-      joinPath(serverlessDir, config.distDir, file),
+      path.join(serverlessDir, config.distDir, file),
     );
   }
   const vcConfigJson = {
@@ -398,16 +405,16 @@ const emitVercelOutput = async (
     handler: 'serve.js',
     launcherType: 'Nodejs',
   };
-  await writeFile(
-    joinPath(serverlessDir, '.vc-config.json'),
+  writeFileSync(
+    path.join(serverlessDir, '.vc-config.json'),
     JSON.stringify(vcConfigJson, null, 2),
   );
-  await writeFile(
-    joinPath(serverlessDir, 'package.json'),
+  writeFileSync(
+    path.join(serverlessDir, 'package.json'),
     JSON.stringify({ type: 'module' }, null, 2),
   );
-  await writeFile(
-    joinPath(serverlessDir, 'serve.js'),
+  writeFileSync(
+    path.join(serverlessDir, 'serve.js'),
     `
 export default async function handler(req, res) {
   const { rsc } = await import("waku");
@@ -420,15 +427,15 @@ export default async function handler(req, res) {
 
   const overrides = Object.fromEntries([
     ...rscFiles
-      .filter((file) => !extname(file))
+      .filter((file) => !path.extname(file))
       .map((file) => [
-        relativePath(srcDir, file),
+        path.relative(srcDir, file),
         { contentType: 'text/plain' },
       ]),
     ...htmlFiles
-      .filter((file) => !extname(file))
+      .filter((file) => !path.extname(file))
       .map((file) => [
-        relativePath(srcDir, file),
+        path.relative(srcDir, file),
         { contentType: 'text/html' },
       ]),
   ]);
@@ -436,8 +443,8 @@ export default async function handler(req, res) {
   const routes = [{ src: basePrefix + '(.*)', dest: basePrefix }];
   const configJson = { version: 3, overrides, routes };
   mkdirSync(dstDir, { recursive: true });
-  await writeFile(
-    joinPath(dstDir, 'config.json'),
+  writeFileSync(
+    path.join(dstDir, 'config.json'),
     JSON.stringify(configJson, null, 2),
   );
 };
