@@ -366,6 +366,12 @@ const emitVercelOutput = async (
   const dstDir = joinPath(config.rootDir, config.distDir, '.vercel', 'output');
   for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
     const dstFile = joinPath(dstDir, 'static', relativePath(srcDir, file));
+    console.log({ file, dstFile });
+    console.log('****** joinPath', joinPath(dstFile, '..'));
+    console.log(
+      '****** relativePath',
+      relativePath(joinPath(dstFile, '..'), file),
+    );
     if (!existsSync(dstFile)) {
       await mkdir(joinPath(dstFile, '..'), { recursive: true });
       await symlink(relativePath(joinPath(dstFile, '..'), file), dstFile);
