@@ -15,21 +15,19 @@ export const normalizePath = (path: string) => {
   return path.replace(/\\/g, '/');
 };
 
-const WIN32_ROOT = '/__WIN32__/';
-
 export const encodeFilePathToAbsolute = (filePath: string) => {
-  if (filePath.startsWith(WIN32_ROOT)) {
+  if (/^\/[a-zA-Z]:\//.test(filePath)) {
     throw new Error('Unsupported absolute file path');
   }
   if (filePath.startsWith('/')) {
     return filePath;
   }
-  return WIN32_ROOT + filePath;
+  return '/' + filePath;
 };
 
 export const decodeFilePathFromAbsolute = (filePath: string) => {
-  if (filePath.startsWith(WIN32_ROOT)) {
-    return filePath.slice(WIN32_ROOT.length);
+  if (/^\/[a-zA-Z]:\//.test(filePath)) {
+    return filePath.slice(1)
   }
   return filePath;
 };
