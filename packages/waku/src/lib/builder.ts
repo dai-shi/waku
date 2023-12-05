@@ -8,7 +8,7 @@ import type { RollupLog, LoggingFunction } from 'rollup';
 
 import type { Config, ResolvedConfig } from '../config.js';
 import { resolveConfig, viteInlineConfig } from './config.js';
-import { joinPath, extname, dirname } from './utils/path.js';
+import { joinPath, extname } from './utils/path.js';
 import {
   createReadStream,
   createWriteStream,
