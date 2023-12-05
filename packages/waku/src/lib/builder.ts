@@ -13,10 +13,10 @@ import {
   createReadStream,
   createWriteStream,
   existsSync,
-  readdir,
-  rename,
-  mkdir,
-  symlink,
+  readdirSync,
+  renameSync,
+  mkdirSync,
+  symlinkSync,
   readFile,
   writeFile,
 } from './utils/node-fs.js';
@@ -223,7 +223,7 @@ const buildClientBundle = async (
       config.publicDir,
       cssAsset,
     );
-    await rename(from, to);
+    renameSync(from, to);
   }
   return clientBuildOutput;
 };
@@ -259,7 +259,7 @@ const emitRscFiles = async (config: ResolvedConfig) => {
         );
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
-          await mkdir(joinPath(destFile, '..'), { recursive: true });
+          mkdirSync(joinPath(destFile, '..'), { recursive: true });
           const readable = await renderRSC({
             input,
             method: 'GET',
@@ -309,7 +309,7 @@ const emitHtmlFiles = async (
         if (existsSync(destFile)) {
           htmlStr = await readFile(destFile, { encoding: 'utf8' });
         } else {
-          await mkdir(joinPath(destFile, '..'), { recursive: true });
+          mkdirSync(joinPath(destFile, '..'), { recursive: true });
           htmlStr = publicIndexHtml;
         }
         const inputsForPrefetch = new Set<string>();
@@ -367,25 +367,25 @@ const emitVercelOutput = async (
   for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
     const dstFile = joinPath(dstDir, 'static', relativePath(srcDir, file));
     if (!existsSync(dstFile)) {
-      await mkdir(joinPath(dstFile, '..'), { recursive: true });
-      await symlink(relativePath(joinPath(dstFile, '..'), file), dstFile);
+      mkdirSync(joinPath(dstFile, '..'), { recursive: true });
+      symlinkSync(relativePath(joinPath(dstFile, '..'), file), dstFile);
     }
   }
 
   // for serverless function
   const serverlessDir = joinPath(dstDir, 'functions', config.rscPath + '.func');
-  await mkdir(joinPath(serverlessDir, config.distDir), {
+  mkdirSync(joinPath(serverlessDir, config.distDir), {
     recursive: true,
   });
-  await symlink(
+  symlinkSync(
     relativePath(serverlessDir, joinPath(config.rootDir, 'node_modules')),
     joinPath(serverlessDir, 'node_modules'),
   );
-  for (const file of await readdir(joinPath(config.rootDir, config.distDir))) {
+  for (const file of readdirSync(joinPath(config.rootDir, config.distDir))) {
     if (['.vercel'].includes(file)) {
       continue;
     }
-    await symlink(
+    symlinkSync(
       relativePath(
         joinPath(serverlessDir, config.distDir),
         joinPath(config.rootDir, config.distDir, file),
@@ -435,7 +435,7 @@ export default async function handler(req, res) {
   const basePrefix = config.basePath + config.rscPath + '/';
   const routes = [{ src: basePrefix + '(.*)', dest: basePrefix }];
   const configJson = { version: 3, overrides, routes };
-  await mkdir(dstDir, { recursive: true });
+  mkdirSync(dstDir, { recursive: true });
   await writeFile(
     joinPath(dstDir, 'config.json'),
     JSON.stringify(configJson, null, 2),
@@ -484,9 +484,7 @@ export async function build(options: { config: Config; ssr?: boolean }) {
   );
 
   // https://vercel.com/docs/build-output-api/v3
-  if (config.rootDir.startsWith('/')) {
-    await emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
-  }
+  await emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
 
   await shutdownSsr();
 }

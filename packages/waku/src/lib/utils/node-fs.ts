@@ -14,19 +14,19 @@ export const createWriteStream = (filePath: string) =>
 export const existsSync = (filePath: string) =>
   fs.existsSync(filePathToOsPath(filePath));
 
-export const readdir = (filePath: string) =>
-  fsPromises.readdir(filePathToOsPath(filePath));
+export const readdirSync = (filePath: string) =>
+  fs.readdirSync(filePathToOsPath(filePath));
 
-export const rename = (filePath1: string, filePath2: string) =>
-  fsPromises.rename(filePathToOsPath(filePath1), filePathToOsPath(filePath2));
+export const renameSync = (filePath1: string, filePath2: string) =>
+  fs.renameSync(filePathToOsPath(filePath1), filePathToOsPath(filePath2));
 
-export const mkdir = (
+export const mkdirSync = (
   filePath: string,
   options?: { recursive?: boolean | undefined },
-) => fsPromises.mkdir(filePathToOsPath(filePath), options);
+) => fs.mkdirSync(filePathToOsPath(filePath), options);
 
-export const symlink = (targetPath: string, filePath: string) =>
-  fsPromises.symlink(filePathToOsPath(targetPath), filePathToOsPath(filePath));
+export const symlinkSync = (targetPath: string, filePath: string) =>
+  fs.symlinkSync(filePathToOsPath(targetPath), filePathToOsPath(filePath));
 
 export const readFile = (filePath: string, options: { encoding: 'utf8' }) =>
   fsPromises.readFile(filePathToOsPath(filePath), options);
