@@ -2,6 +2,8 @@ import path from 'node:path';
 import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 
+import { encodeFilePathToAbsolute } from '../utils/path.js';
+
 // import { CSS_LANGS_RE } from "vite/dist/node/constants.js";
 const CSS_LANGS_RE =
   /\.(css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)/;
@@ -36,7 +38,7 @@ export function rscDelegatePlugin(
             } else if (CSS_LANGS_RE.test(item.source.value)) {
               const filePath = path.join(path.dirname(id), item.source.value);
               // HACK this relies on Vite's internal implementation detail.
-              const source = base + '@fs/' + filePath.replace(/^\//, '');
+              const source = base + '@fs' + encodeFilePathToAbsolute(filePath);
               importCallback(source);
             }
           }
