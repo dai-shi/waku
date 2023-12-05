@@ -4,6 +4,7 @@ import { defineEntries } from '../../server.js';
 import type { RenderContext } from '../../server.js';
 import type { ResolvedConfig } from '../../config.js';
 import {
+  encodeFilePathToAbsolute,
   relativePath,
   joinPath,
   filePathToFileURL,
@@ -56,7 +57,8 @@ const resolveClientEntry = (
   }
   if (!filePath.startsWith(root)) {
     if (isDev) {
-      return config.basePath + '@root_' + filePath;
+      // HACK this relies on Vite's internal implementation detail.
+      return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
     } else {
       throw new Error(
         'Resolving client module outside root is unsupported for now',
