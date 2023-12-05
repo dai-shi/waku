@@ -3,7 +3,6 @@ import type { ViteDevServer } from 'vite';
 import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
 import { joinPath } from '../utils/path.js';
-import { readFile, stat } from '../utils/node-fs.js'; // TODO no node dependency
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from './rsc/ssr.js';
 import { decodeInput, hasStatusCode, deepFreeze } from './rsc/utils.js';
@@ -76,33 +75,41 @@ export function rsc<
   let publicIndexHtml: string | undefined;
   const getHtmlStr = async (pathStr: string): Promise<string | null> => {
     const config = await configPromise;
+    if (command === 'start') {
+      if (!publicIndexHtml) {
+        const publicIndexHtmlJsFile = joinPath(
+          config.rootDir,
+          config.distDir,
+          config.htmlsDir,
+          config.indexHtml + '.js',
+        );
+        publicIndexHtml = (await import(publicIndexHtmlJsFile))
+          .default as string;
+      }
+      const destHtmlJsFile = joinPath(
+        config.rootDir,
+        config.distDir,
+        config.htmlsDir,
+        pathStr.endsWith('/') ? pathStr + 'index.html.js' : pathStr + '.js',
+      );
+      try {
+        return (await import(destHtmlJsFile)).default as string;
+      } catch (e) {
+        return publicIndexHtml;
+      }
+    }
+    // command === "dev"
+    const { readFile, stat } = await import('../utils/node-fs.js');
     if (!publicIndexHtml) {
       const publicIndexHtmlFile = joinPath(
         config.rootDir,
-        ...(command === 'dev'
-          ? [config.srcDir]
-          : [config.distDir, config.publicDir]),
+        config.srcDir,
         config.indexHtml,
       );
       publicIndexHtml = await readFile(publicIndexHtmlFile, {
         encoding: 'utf8',
       });
     }
-    if (command === 'start') {
-      const destFile = joinPath(
-        config.rootDir,
-        config.distDir,
-        config.publicDir,
-        pathStr,
-        pathStr.endsWith('/') ? 'index.html' : '',
-      );
-      try {
-        return await readFile(destFile, { encoding: 'utf8' });
-      } catch (e) {
-        return publicIndexHtml;
-      }
-    }
-    // command === "dev"
     const vite = await getViteServer();
     for (const item of vite.moduleGraph.idToModuleMap.values()) {
       if (item.url === pathStr) {
@@ -111,7 +118,7 @@ export function rsc<
     }
     const destFile = joinPath(config.rootDir, config.srcDir, pathStr);
     try {
-      // check if exists?
+      // check if destFile exists
       const stats = await stat(destFile);
       if (stats.isFile()) {
         return null;
@@ -119,7 +126,7 @@ export function rsc<
     } catch (e) {
       // does not exist
     }
-    // fixme: otherwise SSR on Windows will fail
+    // FIXME: otherwise SSR on Windows will fail
     if (pathStr.startsWith('/@fs')) {
       return null;
     }
