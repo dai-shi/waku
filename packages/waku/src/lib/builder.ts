@@ -17,7 +17,7 @@ import {
   mkdir,
   readFile,
   writeFile,
-  rmdir,
+  rm,
 } from './utils/node-fs.js';
 import { encodeInput, generatePrefetchCode } from './middleware/rsc/utils.js';
 import { renderRSC, getBuildConfigRSC } from './rsc/renderer.js';
@@ -297,7 +297,7 @@ const emitHtmlFiles = async (
   });
 
   // https://github.com/dai-shi/waku/pull/181#discussion_r1412744262
-  await rmdir(dirname(publicIndexHtmlFile));
+  await rm(dirname(publicIndexHtmlFile), { force: true, recursive: true });
   clientBuildOutput.output.splice(
     clientBuildOutput.output.findIndex(
       (v) => v.fileName === joinPath(config.srcDir, config.indexHtml),
