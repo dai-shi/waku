@@ -13,8 +13,8 @@ import {
   createReadStream,
   createWriteStream,
   existsSync,
-  renameSync,
-  mkdirSync,
+  rename,
+  mkdir,
   readFile,
   writeFile,
 } from './utils/node-fs.js';
@@ -221,7 +221,7 @@ const buildClientBundle = async (
       config.publicDir,
       cssAsset,
     );
-    renameSync(from, to);
+    await rename(from, to);
   }
   return clientBuildOutput;
 };
@@ -257,7 +257,7 @@ const emitRscFiles = async (config: ResolvedConfig) => {
         );
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
-          mkdirSync(joinPath(destFile, '..'), { recursive: true });
+          await mkdir(joinPath(destFile, '..'), { recursive: true });
           const readable = await renderRSC({
             input,
             method: 'GET',
@@ -307,7 +307,7 @@ const emitHtmlFiles = async (
         if (existsSync(destFile)) {
           htmlStr = await readFile(destFile, { encoding: 'utf8' });
         } else {
-          mkdirSync(joinPath(destFile, '..'), { recursive: true });
+          await mkdir(joinPath(destFile, '..'), { recursive: true });
           htmlStr = publicIndexHtml;
         }
         const inputsForPrefetch = new Set<string>();
