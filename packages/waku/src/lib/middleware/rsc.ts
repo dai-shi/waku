@@ -66,7 +66,6 @@ export function rsc<
         rscIndexPlugin([]),
         rscHmrPlugin(),
       ],
-      appType: 'custom',
       server: { middlewareMode: true },
     });
     registerReloadCallback((type) => viteServer.ws.send({ type }));
