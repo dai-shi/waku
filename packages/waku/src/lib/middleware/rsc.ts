@@ -56,6 +56,7 @@ export function rsc<
     const viteServer = await viteCreateServer({
       ...(await viteInlineConfig()),
       root: joinPath(config.rootDir, config.srcDir),
+      base: config.basePath,
       optimizeDeps: {
         include: ['react-server-dom-webpack/client'],
         exclude: ['waku'],
