@@ -5,7 +5,12 @@
  *      which will lead to a React warning on Node.js 20.
  *      Refs: https://github.com/nodejs/node/issues/50885
  */
-import type { LoadHook, ResolveHook, LoadFnOutput, LoadHookContext } from 'node:module';
+import type {
+  LoadFnOutput,
+  LoadHook,
+  LoadHookContext,
+  ResolveHook,
+} from 'node:module';
 import * as RSDWNodeLoader from 'react-server-dom-webpack/node-loader';
 
 export const load: LoadHook = async (url, context, nextLoad) => {
