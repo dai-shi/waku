@@ -295,7 +295,7 @@ const emitHtmlFiles = async (
   });
 
   // https://github.com/dai-shi/waku/pull/181#discussion_r1412744262
-  await fsPromises.unlink(publicIndexHtmlFile);
+  await fsPromises.rmdir(path.dirname(publicIndexHtmlFile));
   clientBuildOutput.output.splice(
     clientBuildOutput.output.findIndex(
       (v) => v.fileName === path.join(config.srcDir, config.indexHtml),
