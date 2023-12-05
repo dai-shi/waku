@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+import { symlinkSync } from 'node:fs';
 
 import { build as viteBuild } from 'vite';
 import viteReact from '@vitejs/plugin-react';
@@ -16,7 +17,6 @@ import {
   readdirSync,
   renameSync,
   mkdirSync,
-  symlinkSync,
   readFile,
   writeFile,
 } from './utils/node-fs.js';

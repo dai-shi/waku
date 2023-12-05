@@ -25,9 +25,6 @@ export const mkdirSync = (
   options?: { recursive?: boolean | undefined },
 ) => fs.mkdirSync(filePathToOsPath(filePath), options);
 
-export const symlinkSync = (targetPath: string, filePath: string) =>
-  fs.symlinkSync(filePathToOsPath(targetPath), filePathToOsPath(filePath));
-
 export const readFile = (filePath: string, options: { encoding: 'utf8' }) =>
   fsPromises.readFile(filePathToOsPath(filePath), options);
 
