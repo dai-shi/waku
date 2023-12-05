@@ -1,9 +1,9 @@
-import path from 'node:path'; // TODO no node dependency
-import fsPromises from 'node:fs/promises'; // TODO no node dependency
 import type { ViteDevServer } from 'vite';
 
 import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
+import { joinPath } from '../utils/path.js';
+import { readFile, stat } from '../utils/node-fs.js'; // TODO no node dependency
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from './rsc/ssr.js';
 import { decodeInput, hasStatusCode, deepFreeze } from './rsc/utils.js';
@@ -55,7 +55,7 @@ export function rsc<
     ]);
     const viteServer = await viteCreateServer({
       ...(await viteInlineConfig()),
-      root: path.join(config.rootDir, config.srcDir),
+      root: joinPath(config.rootDir, config.srcDir),
       optimizeDeps: {
         include: ['react-server-dom-webpack/client'],
         exclude: ['waku'],
@@ -77,19 +77,19 @@ export function rsc<
   const getHtmlStr = async (pathStr: string): Promise<string | null> => {
     const config = await configPromise;
     if (!publicIndexHtml) {
-      const publicIndexHtmlFile = path.join(
+      const publicIndexHtmlFile = joinPath(
         config.rootDir,
-        command === 'dev'
-          ? config.srcDir
-          : path.join(config.distDir, config.publicDir),
+        ...(command === 'dev'
+          ? [config.srcDir]
+          : [config.distDir, config.publicDir]),
         config.indexHtml,
       );
-      publicIndexHtml = await fsPromises.readFile(publicIndexHtmlFile, {
+      publicIndexHtml = await readFile(publicIndexHtmlFile, {
         encoding: 'utf8',
       });
     }
     if (command === 'start') {
-      const destFile = path.join(
+      const destFile = joinPath(
         config.rootDir,
         config.distDir,
         config.publicDir,
@@ -97,7 +97,7 @@ export function rsc<
         pathStr.endsWith('/') ? 'index.html' : '',
       );
       try {
-        return await fsPromises.readFile(destFile, { encoding: 'utf8' });
+        return await readFile(destFile, { encoding: 'utf8' });
       } catch (e) {
         return publicIndexHtml;
       }
@@ -109,10 +109,10 @@ export function rsc<
         return null;
       }
     }
-    const destFile = path.join(config.rootDir, config.srcDir, pathStr);
+    const destFile = joinPath(config.rootDir, config.srcDir, pathStr);
     try {
       // check if exists?
-      const stats = await fsPromises.stat(destFile);
+      const stats = await stat(destFile);
       if (stats.isFile()) {
         return null;
       }
@@ -222,7 +222,7 @@ export function rsc<
       // HACK re-export "?v=..." URL to avoid dual module hazard.
       const fname = pathStr.startsWith(config.basePath + '@fs/')
         ? pathStr.slice(config.basePath.length + 3)
-        : path.join(vite.config.root, pathStr);
+        : joinPath(vite.config.root, pathStr);
       for (const item of vite.moduleGraph.idToModuleMap.values()) {
         if (
           item.file === fname &&
