@@ -6,7 +6,6 @@
  *      Refs: https://github.com/nodejs/node/issues/50885
  */
 import type { LoadHook, ResolveHook } from 'node:module';
-import type { ResolveHook } from 'node:module';
 import * as RSDWNodeLoader from 'react-server-dom-webpack/node-loader';
 import type { LoadFnOutput, LoadHookContext } from 'module';
 
