@@ -50,12 +50,14 @@ const resolveClientEntry = (
   config: Omit<ResolvedConfig, 'ssr'>,
   isDev: boolean,
 ) => {
-  console.log('#################1 resolveClientEntry', filePath);
   filePath = filePath.startsWith('file://')
     ? fileURLToFilePath(filePath)
     : filePath;
   const root = joinPath(config.rootDir, isDev ? config.srcDir : config.distDir);
-  console.log('#################2 resolveClientEntry', filePath, root);
+  // HACK on windows file url looks like file:///C:/path/to/file
+  if (!root.startsWith('/') && filePath.startsWith('/')) {
+    filePath = filePath.slice(1);
+  }
   if (!filePath.startsWith(root)) {
     if (isDev) {
       // HACK this relies on Vite's internal implementation detail.
