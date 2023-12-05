@@ -18,6 +18,7 @@ import {
   readFile,
   writeFile,
 } from './utils/node-fs.js';
+import { streamToString } from './utils/stream.js';
 import { encodeInput, generatePrefetchCode } from './middleware/rsc/utils.js';
 import { renderRSC, getBuildConfigRSC } from './rsc/renderer.js';
 import { rscIndexPlugin } from './vite-plugin/rsc-index-plugin.js';
@@ -25,6 +26,8 @@ import { rscAnalyzePlugin } from './vite-plugin/rsc-analyze-plugin.js';
 import { rscTransformPlugin } from './vite-plugin/rsc-transform-plugin.js';
 import { patchReactRefresh } from './vite-plugin/patch-react-refresh.js';
 import { renderHtml, shutdown as shutdownSsr } from './middleware/rsc/ssr.js';
+
+// TODO this file and functions in it are too long. will fix.
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
@@ -246,7 +249,7 @@ const emitRscFiles = async (config: ResolvedConfig) => {
   await Promise.all(
     Object.entries(buildConfig).map(async ([, { entries, context }]) => {
       for (const [input] of entries || []) {
-        const destFile = joinPath(
+        const destRscFile = joinPath(
           config.rootDir,
           config.distDir,
           config.publicDir,
@@ -256,9 +259,9 @@ const emitRscFiles = async (config: ResolvedConfig) => {
             input.split('\\').join('/'),
           ),
         );
-        if (!rscFileSet.has(destFile)) {
-          rscFileSet.add(destFile);
-          await mkdir(joinPath(destFile, '..'), { recursive: true });
+        if (!rscFileSet.has(destRscFile)) {
+          rscFileSet.add(destRscFile);
+          await mkdir(joinPath(destRscFile, '..'), { recursive: true });
           const readable = await renderRSC({
             input,
             method: 'GET',
@@ -269,7 +272,7 @@ const emitRscFiles = async (config: ResolvedConfig) => {
           });
           await pipeline(
             Readable.fromWeb(readable as any),
-            createWriteStream(destFile),
+            createWriteStream(destRscFile),
           );
         }
       }
@@ -294,23 +297,40 @@ const emitHtmlFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
+  const publicIndexHtmlJsFile = joinPath(
+    config.rootDir,
+    config.distDir,
+    config.htmlsDir,
+    config.indexHtml + '.js',
+  );
+  await mkdir(joinPath(publicIndexHtmlJsFile, '..'), { recursive: true });
+  await writeFile(
+    publicIndexHtmlJsFile,
+    `export default ${JSON.stringify(publicIndexHtml)};`,
+  );
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
       async ([pathStr, { entries, customCode, context }]) => {
-        const destFile = joinPath(
+        const destHtmlFile = joinPath(
           config.rootDir,
           config.distDir,
           config.publicDir,
-          pathStr,
-          pathStr.endsWith('/') ? 'index.html' : '',
+          pathStr.endsWith('/') ? pathStr + 'index.html' : pathStr,
+        );
+        const destHtmlJsFile = joinPath(
+          config.rootDir,
+          config.distDir,
+          config.htmlsDir,
+          pathStr.endsWith('/') ? pathStr + 'index.html.js' : pathStr + '.js',
         );
         let htmlStr: string;
-        if (existsSync(destFile)) {
-          htmlStr = await readFile(destFile, { encoding: 'utf8' });
+        if (existsSync(destHtmlFile)) {
+          htmlStr = await readFile(destHtmlFile, { encoding: 'utf8' });
         } else {
-          await mkdir(joinPath(destFile, '..'), { recursive: true });
+          await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
           htmlStr = publicIndexHtml;
         }
+        await mkdir(joinPath(destHtmlJsFile, '..'), { recursive: true });
         const inputsForPrefetch = new Set<string>();
         const moduleIdsForPrefetch = new Set<string>();
         for (const [input, skipPrefetch] of entries || []) {
@@ -337,15 +357,29 @@ const emitHtmlFiles = async (
         const htmlResult =
           ssr && (await renderHtml(config, 'build', pathStr, htmlStr, context));
         if (htmlResult) {
-          const [htmlReadable] = htmlResult;
-          await pipeline(
-            Readable.fromWeb(htmlReadable as any),
-            createWriteStream(destFile),
-          );
+          const [htmlReadable1, htmlReadable2] = htmlResult[0].tee();
+          await Promise.all([
+            pipeline(
+              Readable.fromWeb(htmlReadable1 as any),
+              createWriteStream(destHtmlFile),
+            ),
+            streamToString(htmlReadable2).then((str) =>
+              writeFile(
+                destHtmlJsFile,
+                `export default ${JSON.stringify(str)};`,
+              ),
+            ),
+          ]);
         } else {
-          await writeFile(destFile, htmlStr);
+          await Promise.all([
+            writeFile(destHtmlFile, htmlStr),
+            writeFile(
+              destHtmlJsFile,
+              `export default ${JSON.stringify(htmlStr)};`,
+            ),
+          ]);
         }
-        return destFile;
+        return destHtmlFile;
       },
     ),
   );

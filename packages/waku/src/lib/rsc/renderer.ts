@@ -11,6 +11,7 @@ import {
   fileURLToFilePath,
 } from '../utils/path.js';
 import { parseFormData } from '../utils/form.js';
+import { streamToString } from '../utils/stream.js';
 
 const loadRSDWServer = async (
   config: Omit<ResolvedConfig, 'ssr'>,
@@ -170,18 +171,7 @@ export async function renderRSC(
     let args: unknown[] = [];
     let bodyStr = '';
     if (body) {
-      const decoder = new TextDecoder();
-      const reader = body.getReader();
-      let result: ReadableStreamReadResult<unknown>;
-      do {
-        result = await reader.read();
-        if (result.value) {
-          if (!(result.value instanceof Uint8Array)) {
-            throw new Error('Unexepected buffer type');
-          }
-          bodyStr += decoder.decode(result.value);
-        }
-      } while (!result.done);
+      bodyStr = await streamToString(body);
     }
     if (
       typeof contentType === 'string' &&
