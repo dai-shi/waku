@@ -5,7 +5,6 @@ import type { RenderContext } from '../../server.js';
 import type { ResolvedConfig } from '../../config.js';
 import {
   encodeFilePathToAbsolute,
-  normalizePath,
   relativePath,
   joinPath,
   filePathToFileURL,
@@ -42,17 +41,15 @@ const getEntriesFileURL = (
     isDev ? config.srcDir : config.distDir,
     config.entriesJs,
   );
-  return filePathToFileURL(normalizePath(filePath));
+  return filePathToFileURL(filePath);
 };
 
 const resolveClientEntry = (
-  filePath: string,
+  file: string, // filePath or fileURL
   config: Omit<ResolvedConfig, 'ssr'>,
   isDev: boolean,
 ) => {
-  filePath = filePath.startsWith('file://')
-    ? fileURLToFilePath(filePath)
-    : filePath;
+  let filePath = file.startsWith('file://') ? fileURLToFilePath(file) : file;
   const root = joinPath(config.rootDir, isDev ? config.srcDir : config.distDir);
   // HACK on windows file url looks like file:///C:/path/to/file
   if (!root.startsWith('/') && filePath.startsWith('/')) {
@@ -61,16 +58,14 @@ const resolveClientEntry = (
   if (!filePath.startsWith(root)) {
     if (isDev) {
       // HACK this relies on Vite's internal implementation detail.
-      return normalizePath(
-        config.basePath + '@fs' + encodeFilePathToAbsolute(filePath),
-      );
+      return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
     } else {
       throw new Error(
         'Resolving client module outside root is unsupported for now',
       );
     }
   }
-  return normalizePath(config.basePath + relativePath(root, filePath));
+  return config.basePath + relativePath(root, filePath);
 };
 
 // HACK Patching stream is very fragile.
@@ -162,8 +157,8 @@ export async function renderRSC(
     {},
     {
       get(_target, encodedId: string) {
-        const [filePath, name] = encodedId.split('#') as [string, string];
-        const id = resolveClientEntry(filePath, config, isDev);
+        const [file, name] = encodedId.split('#') as [string, string];
+        const id = resolveClientEntry(file, config, isDev);
         moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },
@@ -200,8 +195,7 @@ export async function renderRSC(
     }
     const [fileId, name] = rsfId.split('#') as [string, string];
     const filePath = fileId.startsWith('/') ? fileId : rsfPrefix + fileId;
-    const fname = isDev ? filePath : filePathToFileURL(filePath);
-    const mod = await customImport(fname);
+    const mod = await customImport(filePathToFileURL(filePath));
     const fn = mod[name] || mod;
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
     let rendered = false;

@@ -1,11 +1,12 @@
 // Terminology:
 // - filePath: posix-like file path, e.g. `/foo/bar.js` or `c:/foo/bar.js`
 //   This is used by Vite.
-// - fileURL: file URL, e.g. `file:///foo/bar.js` or `file://c:/foo/bar.js`
+// - fileURL: file URL, e.g. `file:///foo/bar.js` or `file:///c:/foo/bar.js`
 //   This is used by import().
 // - osPath: os dependent path, e.g. `/foo/bar.js` or `c:\foo\bar.js`
 //   This is used by node:fs.
 
+// Refs: https://github.com/rollup/plugins/blob/d49bbe8dc5ec41157de5787c72c858f73be107ff/packages/pluginutils/src/normalizePath.ts
 // path is either filePath or osPath
 export const normalizePath = (path: string) => {
   if (path.startsWith('file://')) {
