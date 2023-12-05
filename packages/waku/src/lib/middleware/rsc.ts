@@ -2,7 +2,7 @@ import type { ViteDevServer } from 'vite';
 
 import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
-import { joinPath } from '../utils/path.js';
+import { joinPath, filePathToFileURL } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from './rsc/ssr.js';
 import { decodeInput, hasStatusCode, deepFreeze } from './rsc/utils.js';
@@ -83,8 +83,9 @@ export function rsc<
           config.htmlsDir,
           config.indexHtml + '.js',
         );
-        publicIndexHtml = (await import(publicIndexHtmlJsFile))
-          .default as string;
+        publicIndexHtml = (
+          await import(filePathToFileURL(publicIndexHtmlJsFile))
+        ).default as string;
       }
       const destHtmlJsFile = joinPath(
         config.rootDir,
@@ -93,7 +94,8 @@ export function rsc<
         pathStr.endsWith('/') ? pathStr + 'index.html.js' : pathStr + '.js',
       );
       try {
-        return (await import(destHtmlJsFile)).default as string;
+        return (await import(filePathToFileURL(destHtmlJsFile)))
+          .default as string;
       } catch (e) {
         return publicIndexHtml;
       }
