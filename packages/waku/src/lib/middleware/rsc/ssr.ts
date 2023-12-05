@@ -7,7 +7,6 @@ import { defineEntries } from '../../../server.js';
 import { concatUint8Arrays } from '../../utils/stream.js';
 import {
   decodeFilePathFromAbsolute,
-  normalizePath,
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
@@ -400,20 +399,12 @@ export const renderHtml = async <Context>(
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
-                const filePath = normalizePath(
-                  file.startsWith('@fs/')
-                    ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
-                    : joinPath(config.rootDir, config.srcDir, file),
-                );
-                // FIXME This is ugly. We need to refactor it.
-                const wakuDist = normalizePath(
-                  joinPath(
-                    fileURLToFilePath(import.meta.url),
-                    '..',
-                    '..',
-                    '..',
-                    '..',
-                  ),
+                const filePath = file.startsWith('@fs/')
+                  ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
+                  : joinPath(config.rootDir, config.srcDir, file);
+                const wakuDist = joinPath(
+                  fileURLToFilePath(import.meta.url),
+                  '../../../..',
                 );
                 if (filePath.startsWith(wakuDist)) {
                   const id =
