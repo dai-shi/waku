@@ -35,6 +35,7 @@ export function rsc<
 
   let lastViteServer: ViteDevServer | undefined;
   const getViteServer = async (): Promise<ViteDevServer> => {
+    const config = await configPromise;
     if (lastViteServer) {
       return lastViteServer;
     }
@@ -50,6 +51,7 @@ export function rsc<
       import('../vite-plugin/rsc-hmr-plugin.js'),
     ]);
     const viteServer = await viteCreateServer({
+      base: config.basePath,
       optimizeDeps: {
         include: ['react-server-dom-webpack/client'],
         exclude: ['waku'],
