@@ -39,20 +39,17 @@ export function rsc<
       return lastViteServer;
     }
     const [
-      { viteInlineConfig },
       { createServer: viteCreateServer },
       { default: viteReact },
       { rscIndexPlugin },
       { rscHmrPlugin, hotImport },
     ] = await Promise.all([
-      import('../config.js'),
       import('vite'),
       import('@vitejs/plugin-react'),
       import('../vite-plugin/rsc-index-plugin.js'),
       import('../vite-plugin/rsc-hmr-plugin.js'),
     ]);
     const viteServer = await viteCreateServer({
-      ...(await viteInlineConfig()),
       optimizeDeps: {
         include: ['react-server-dom-webpack/client'],
         exclude: ['waku'],

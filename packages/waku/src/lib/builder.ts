@@ -7,7 +7,7 @@ import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
 import type { Config, ResolvedConfig } from '../config.js';
-import { resolveConfig, viteInlineConfig } from './config.js';
+import { resolveConfig } from './config.js';
 import { joinPath, extname } from './utils/path.js';
 import {
   createReadStream,
@@ -62,7 +62,6 @@ const analyzeEntries = async (entriesFile: string) => {
   const clientFileSet = new Set<string>();
   const serverFileSet = new Set<string>();
   await viteBuild({
-    ...(await viteInlineConfig()),
     plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
     ssr: {
       resolve: {
@@ -116,7 +115,6 @@ const buildServerBundle = async (
   serverEntryFiles: Record<string, string>,
 ) => {
   const serverBuildOutput = await viteBuild({
-    ...(await viteInlineConfig()),
     plugins: [rscTransformPlugin(true)],
     ssr: {
       resolve: {
@@ -177,7 +175,6 @@ const buildClientBundle = async (
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
   const clientBuildOutput = await viteBuild({
-    ...(await viteInlineConfig()),
     plugins: [patchReactRefresh(viteReact()), rscIndexPlugin(cssAssets)],
     build: {
       outDir: joinPath(config.rootDir, config.distDir, config.publicDir),
