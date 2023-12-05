@@ -15,8 +15,10 @@ export const normalizePath = (path: string) => {
   return path.replace(/\\/g, '/');
 };
 
+const ABSOLUTE_WIN32_PATH_REGEXP = /^\/[a-zA-Z]:\//;
+
 export const encodeFilePathToAbsolute = (filePath: string) => {
-  if (/^\/[a-zA-Z]:\//.test(filePath)) {
+  if (ABSOLUTE_WIN32_PATH_REGEXP.test(filePath)) {
     throw new Error('Unsupported absolute file path');
   }
   if (filePath.startsWith('/')) {
@@ -26,8 +28,8 @@ export const encodeFilePathToAbsolute = (filePath: string) => {
 };
 
 export const decodeFilePathFromAbsolute = (filePath: string) => {
-  if (/^\/[a-zA-Z]:\//.test(filePath)) {
-    return filePath.slice(1)
+  if (ABSOLUTE_WIN32_PATH_REGEXP.test(filePath)) {
+    return filePath.slice(1);
   }
   return filePath;
 };
