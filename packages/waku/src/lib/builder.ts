@@ -297,7 +297,10 @@ const emitHtmlFiles = async (
   });
 
   // https://github.com/dai-shi/waku/pull/181#discussion_r1412744262
-  await rm(dirname(publicIndexHtmlFile), { force: true, recursive: true });
+  await rm(joinPath(publicIndexHtmlFile, '..'), {
+    force: true,
+    recursive: true,
+  });
   clientBuildOutput.output.splice(
     clientBuildOutput.output.findIndex(
       (v) => v.fileName === joinPath(config.srcDir, config.indexHtml),

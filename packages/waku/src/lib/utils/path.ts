@@ -90,8 +90,3 @@ export const extname = (filePath: string) => {
   const index = filePath.lastIndexOf('.');
   return index > 0 ? filePath.slice(index) : '';
 };
-
-export const dirname = (filePath: string) => {
-  const index = filePath.lastIndexOf('/');
-  return index > 0 ? filePath.slice(0, index) : '.';
-};
