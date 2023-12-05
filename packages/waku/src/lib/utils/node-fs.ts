@@ -32,5 +32,5 @@ export const writeFile = (filePath: string, content: string) =>
 export const stat = (filePath: string) =>
   fsPromises.stat(filePathToOsPath(filePath));
 
-export const rm = (dirPath: string, options?: RmOptions) =>
-  fsPromises.rm(filePathToOsPath(dirPath), options);
+export const rm = (path: string, options?: RmOptions) =>
+  fsPromises.rm(filePathToOsPath(path), options);
