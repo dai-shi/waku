@@ -1,5 +1,6 @@
 import net from 'node:net';
-import { ConsoleMessage, test as basicTest } from '@playwright/test';
+import { test as basicTest } from '@playwright/test';
+import type { ConsoleMessage } from '@playwright/test';
 
 export async function getFreePort(): Promise<number> {
   return new Promise<number>((res) => {
