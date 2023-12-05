@@ -6,7 +6,6 @@ import { viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
 import { concatUint8Arrays } from '../../utils/stream.js';
 import {
-  decodeFilePathFromAbsolute,
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
@@ -399,8 +398,8 @@ export const renderHtml = async <Context>(
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
-                const filePath = file.startsWith('@fs/')
-                  ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
+                const filePath = file.startsWith('@root_')
+                  ? file.slice('@root_'.length)
                   : joinPath(config.rootDir, config.srcDir, file);
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
