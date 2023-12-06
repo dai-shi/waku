@@ -127,6 +127,9 @@ const buildServerBundle = async (
       },
       noExternal: /^(?!node:)/,
     },
+    define: {
+      'process.env.NODE_ENV': JSON.stringify('production'),
+    },
     publicDir: false,
     build: {
       ssr: true,
