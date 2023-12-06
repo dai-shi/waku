@@ -1,6 +1,5 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import type { RmOptions } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 
 const filePathToOsPath = (filePath: string) =>
@@ -31,6 +30,3 @@ export const writeFile = (filePath: string, content: string) =>
 
 export const stat = (filePath: string) =>
   fsPromises.stat(filePathToOsPath(filePath));
-
-export const rm = (path: string, options?: RmOptions) =>
-  fsPromises.rm(filePathToOsPath(path), options);
