@@ -396,6 +396,7 @@ export const renderHtml = async <Context>(
           {},
           {
             get(_target, name: string) {
+              console.log('get', filePath, name);
               const file = filePath.startsWith('/@id/')
                 ? filePath
                 : filePath.slice(config.basePath.length);

@@ -141,6 +141,7 @@ export async function renderRSC(
 
   const rsfPrefix =
     joinPath(config.rootDir, isDev ? config.srcDir : config.distDir) + '/';
+  console.log(rsfPrefix);
 
   const render = async (renderContext: RenderContext, input: string) => {
     const elements = await renderEntries.call(renderContext, input);
@@ -160,6 +161,7 @@ export async function renderRSC(
     {
       get(_target, encodedId: string) {
         const [file, name] = encodedId.split('#') as [string, string];
+        console.log('file', file, name);
         const id = resolveClientEntry(file, config, isDev);
         moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
