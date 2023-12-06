@@ -38,7 +38,7 @@ export interface Config {
    */
   htmlsDir?: string;
   /**
-   * The index.html file relative to srcDir or distDir.
+   * The index.html file for any directories.
    * Defaults to "index.html".
    */
   indexHtml?: string;
