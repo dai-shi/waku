@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
-import fs from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
+import fsPromises from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { default as prompts } from 'prompts';
 import { red, green, bold } from 'kolorist';
 import fse from 'fs-extra/esm';
-import { fileURLToPath } from 'node:url';
 
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
@@ -24,7 +25,7 @@ function toValidPackageName(projectName: string) {
 
 // if the dir is empty or not exist
 function canSafelyOverwrite(dir: string) {
-  return !fs.existsSync(dir) || fs.readdirSync(dir).length === 0;
+  return !existsSync(dir) || readdirSync(dir).length === 0;
 }
 
 async function init() {
@@ -32,7 +33,7 @@ async function init() {
   const defaultProjectName = 'waku-project';
 
   const templateRoot = fileURLToPath(new URL('../template', import.meta.url));
-  const CHOICES = fs.readdirSync(templateRoot);
+  const CHOICES = await fsPromises.readdir(templateRoot);
   let result: {
     packageName: string;
     shouldOverwrite: string;
@@ -102,8 +103,8 @@ async function init() {
 
   if (shouldOverwrite) {
     fse.emptyDirSync(root);
-  } else if (!fs.existsSync(root)) {
-    fs.mkdirSync(root, { recursive: true });
+  } else if (!existsSync(root)) {
+    await fsPromises.mkdir(root, { recursive: true });
   }
 
   const pkg = {
@@ -121,12 +122,12 @@ async function init() {
   // Read new package.json from the template directory
   const newPackageJsonPath = path.join(templateDir, 'package.json');
   const newPackageJson = JSON.parse(
-    fs.readFileSync(newPackageJsonPath, 'utf-8'),
+    await fsPromises.readFile(newPackageJsonPath, 'utf-8'),
   );
 
   fse.copySync(templateDir, root);
 
-  fs.writeFileSync(
+  await fsPromises.writeFile(
     packageJsonPath,
     JSON.stringify(
       {

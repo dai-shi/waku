@@ -38,7 +38,7 @@
     "examples:prd:11_form": "NAME=11_form pnpm run examples:prd",
     "website:dev": "(cd packages/website && pnpm run dev)",
     "website:build": "(cd packages/website && pnpm run build)",
-    "website:vercel": "cp -Lr ./node_modules/.pnpm/node_modules/* ./packages/website/node_modules/ ; rm -r ./packages/website/node_modules/@swc ; rm -r ./packages/website/node_modules/@esbuild ; rm -r ./packages/website/node_modules/webpack ; rm -r ./packages/website/node_modules/minimatch ; cp -Lr ./node_modules/.pnpm/minimatch@9.0.3/node_modules/minimatch ./packages/website/node_modules/ ; pnpm run website:build && cp -Lr ./packages/website/dist/.vercel/output ./.vercel/",
+    "website:vercel": "pnpm run website:build && cp -Lr ./packages/website/dist/.vercel/output ./.vercel/",
     "website:prd": "pnpm run website:build && (cd packages/website && pnpm start)"
   },
   "prettier": {
@@ -54,7 +54,6 @@
   "devDependencies": {
     "@playwright/test": "^1.39.0",
     "@types/babel__core": "^7.20.4",
-    "@types/busboy": "^1.5.3",
     "@types/node": "^20.9.0",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
@@ -72,6 +71,7 @@
     "react-dom": "18.3.0-canary-6c7b41da3-20231123",
     "react-server-dom-webpack": "18.3.0-canary-6c7b41da3-20231123",
     "typescript": "^5.2.2",
+    "wait-port": "^1.1.0",
     "waku": "workspace:*"
   }
 }

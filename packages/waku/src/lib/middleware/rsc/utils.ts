@@ -1,3 +1,5 @@
+// This file should not include Node specific code.
+
 export const encodeInput = (input: string) => {
   if (input === '') {
     return '_';

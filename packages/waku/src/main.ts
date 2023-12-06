@@ -1,5 +1,9 @@
+export { honoWrapper } from './lib/middleware/honoWrapper.js';
+export { connectWrapper } from './lib/middleware/connectWrapper.js';
 export { rsc } from './lib/middleware/rsc.js';
 
-export async function build(options?: { ssr?: boolean }) {
-  return (await import('./lib/builder.js')).build(options);
+import type { build as buildOrig } from './lib/builder.js';
+
+export async function build(...args: Parameters<typeof buildOrig>) {
+  return (await import('./lib/builder.js')).build(...args);
 }

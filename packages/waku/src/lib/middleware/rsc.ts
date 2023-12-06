@@ -1,57 +1,57 @@
-import path from 'node:path';
-import fsPromises from 'node:fs/promises';
-import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ViteDevServer } from 'vite';
 
-import { resolveConfig, viteInlineConfig } from '../config.js';
+import type { Config } from '../../config.js';
+import { resolveConfig } from '../config.js';
+import { joinPath } from '../utils/path.js';
+import { readFile, stat } from '../utils/node-fs.js'; // TODO no node dependency
+import { endStream } from '../utils/stream.js';
 import { renderHtml } from './rsc/ssr.js';
-import { decodeInput, hasStatusCode } from './rsc/utils.js';
+import { decodeInput, hasStatusCode, deepFreeze } from './rsc/utils.js';
 import {
   registerReloadCallback,
   registerImportCallback,
-  renderRSC,
+  renderRSC as renderRSCWorker,
 } from './rsc/worker-api.js';
+import { renderRSC } from '../rsc/renderer.js';
 import { patchReactRefresh } from '../vite-plugin/patch-react-refresh.js';
+import type { BaseReq, BaseRes, Middleware } from './types.js';
 
-type Middleware = (
-  req: IncomingMessage,
-  res: ServerResponse,
-  next: (err?: unknown) => void,
-) => void;
-
-export function rsc<Context>(options: {
+export function rsc<
+  Context,
+  Req extends BaseReq,
+  Res extends BaseRes,
+>(options: {
+  config: Config;
   command: 'dev' | 'start';
   ssr?: boolean;
-  unstable_prehook?: (req: IncomingMessage, res: ServerResponse) => Context;
-  unstable_posthook?: (
-    req: IncomingMessage,
-    res: ServerResponse,
-    ctx: Context,
-  ) => void;
-}): Middleware {
+  unstable_prehook?: (req: Req, res: Res) => Context;
+  unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
+}): Middleware<Req, Res> {
   const { command, ssr, unstable_prehook, unstable_posthook } = options;
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
   }
-  const configPromise = resolveConfig();
+  const configPromise = resolveConfig(options.config);
 
   let lastViteServer: ViteDevServer | undefined;
   const getViteServer = async (): Promise<ViteDevServer> => {
+    const config = await configPromise;
     if (lastViteServer) {
       return lastViteServer;
     }
-    const config = await configPromise;
-    const { createServer: viteCreateServer } = await import('vite');
-    const { default: viteReact } = await import('@vitejs/plugin-react');
-    const { rscIndexPlugin } = await import(
-      '../vite-plugin/rsc-index-plugin.js'
-    );
-    const { rscHmrPlugin, hotImport } = await import(
-      '../vite-plugin/rsc-hmr-plugin.js'
-    );
+    const [
+      { createServer: viteCreateServer },
+      { default: viteReact },
+      { rscIndexPlugin },
+      { rscHmrPlugin, hotImport },
+    ] = await Promise.all([
+      import('vite'),
+      import('@vitejs/plugin-react'),
+      import('../vite-plugin/rsc-index-plugin.js'),
+      import('../vite-plugin/rsc-hmr-plugin.js'),
+    ]);
     const viteServer = await viteCreateServer({
-      ...viteInlineConfig(),
-      // root: path.join(config.rootDir, config.srcDir),
+      base: config.basePath,
       optimizeDeps: {
         include: ['react-server-dom-webpack/client'],
         exclude: ['waku'],
@@ -73,19 +73,17 @@ export function rsc<Context>(options: {
   const getHtmlStr = async (pathStr: string): Promise<string | null> => {
     const config = await configPromise;
     if (!publicIndexHtml) {
-      const publicIndexHtmlFile = path.join(
+      const publicIndexHtmlFile = joinPath(
         config.rootDir,
-        command === 'dev'
-          ? config.srcDir
-          : path.join(config.distDir, config.publicDir),
+        ...(command === 'dev' ? [] : [config.distDir, config.publicDir]),
         config.indexHtml,
       );
-      publicIndexHtml = await fsPromises.readFile(publicIndexHtmlFile, {
+      publicIndexHtml = await readFile(publicIndexHtmlFile, {
         encoding: 'utf8',
       });
     }
     if (command === 'start') {
-      const destFile = path.join(
+      const destFile = joinPath(
         config.rootDir,
         config.distDir,
         config.publicDir,
@@ -93,7 +91,7 @@ export function rsc<Context>(options: {
         pathStr.endsWith('/') ? 'index.html' : '',
       );
       try {
-        return await fsPromises.readFile(destFile, { encoding: 'utf8' });
+        return await readFile(destFile, { encoding: 'utf8' });
       } catch (e) {
         return publicIndexHtml;
       }
@@ -105,15 +103,19 @@ export function rsc<Context>(options: {
         return null;
       }
     }
-    const destFile = path.join(config.rootDir, config.srcDir, pathStr);
+    const destFile = joinPath(config.rootDir, config.srcDir, pathStr);
     try {
       // check if exists?
-      const stats = await fsPromises.stat(destFile);
+      const stats = await stat(destFile);
       if (stats.isFile()) {
         return null;
       }
     } catch (e) {
       // does not exist
+    }
+    // fixme: otherwise SSR on Windows will fail
+    if (pathStr.startsWith('/@fs')) {
+      return null;
     }
     return vite.transformIndexHtml(pathStr, publicIndexHtml);
   };
@@ -121,18 +123,18 @@ export function rsc<Context>(options: {
   return async (req, res, next) => {
     const config = await configPromise;
     const basePrefix = config.basePath + config.rscPath + '/';
-    const pathStr = req.url || '';
+    const pathStr = req.url.slice(new URL(req.url).origin.length);
     const handleError = (err: unknown) => {
       if (hasStatusCode(err)) {
-        res.statusCode = err.statusCode;
+        res.setStatus(err.statusCode);
       } else {
         console.info('Cannot render RSC', err);
-        res.statusCode = 500;
+        res.setStatus(500);
       }
       if (command === 'dev') {
-        res.end(String(err));
+        endStream(res.stream, String(err));
       } else {
-        res.end();
+        endStream(res.stream);
       }
     };
     let context: Context | undefined;
@@ -151,8 +153,7 @@ export function rsc<Context>(options: {
         if (result) {
           const [readable, nextCtx] = result;
           unstable_posthook?.(req, res, nextCtx as Context);
-          readable.on('error', handleError);
-          readable.pipe(res);
+          readable.pipeTo(res.stream);
           return;
         }
       } catch (e) {
@@ -160,35 +161,62 @@ export function rsc<Context>(options: {
         return;
       }
     }
-    if (pathStr.startsWith(basePrefix)) {
-      const { method, headers } = req;
-      if (method !== 'GET' && method !== 'POST') {
-        throw new Error(`Unsupported method '${method}'`);
+    if (command !== 'dev') {
+      if (pathStr.startsWith(basePrefix)) {
+        const { method, headers } = req;
+        if (method !== 'GET' && method !== 'POST') {
+          throw new Error(`Unsupported method '${method}'`);
+        }
+        try {
+          const input = decodeInput(pathStr.slice(basePrefix.length));
+          const readable = await renderRSC({
+            config,
+            input,
+            method,
+            context,
+            body: req.stream,
+            contentType: headers['content-type'] as string | undefined,
+            isDev: false,
+          });
+          unstable_posthook?.(req, res, context as Context);
+          deepFreeze(context);
+          readable.pipeTo(res.stream);
+        } catch (e) {
+          handleError(e);
+        }
+        return;
       }
-      try {
-        const [readable, nextCtx] = await renderRSC({
-          input: decodeInput(pathStr.slice(basePrefix.length)),
-          method,
-          headers,
-          command,
-          context,
-          stream: req,
-        });
-        unstable_posthook?.(req, res, nextCtx as Context);
-        readable.on('error', handleError);
-        readable.pipe(res);
-      } catch (e) {
-        handleError(e);
+    } else {
+      // command === 'dev'
+      if (pathStr.startsWith(basePrefix)) {
+        const { method, headers } = req;
+        if (method !== 'GET' && method !== 'POST') {
+          throw new Error(`Unsupported method '${method}'`);
+        }
+        try {
+          const input = decodeInput(pathStr.slice(basePrefix.length));
+          const [readable, nextCtx] = await renderRSCWorker({
+            input,
+            method,
+            headers,
+            config,
+            command,
+            context,
+            stream: req.stream,
+          });
+          unstable_posthook?.(req, res, nextCtx as Context);
+          readable.pipeTo(res.stream);
+        } catch (e) {
+          handleError(e);
+        }
+        return;
       }
-      return;
-    }
-    if (command === 'dev') {
       const vite = await getViteServer();
       // TODO Do we still need this?
       // HACK re-export "?v=..." URL to avoid dual module hazard.
       const fname = pathStr.startsWith(config.basePath + '@fs/')
         ? pathStr.slice(config.basePath.length + 3)
-        : path.join(vite.config.root, pathStr);
+        : joinPath(vite.config.root, pathStr);
       for (const item of vite.moduleGraph.idToModuleMap.values()) {
         if (
           item.file === fname &&
@@ -196,12 +224,32 @@ export function rsc<Context>(options: {
           !item.url.includes('?html-proxy')
         ) {
           res.setHeader('Content-Type', 'application/javascript');
-          res.statusCode = 200;
-          res.end(`export * from "${item.url}";`, 'utf8');
+          res.setStatus(200);
+          endStream(res.stream, `export * from "${item.url}";`);
           return;
         }
       }
-      vite.middlewares(req, res, next);
+      const { Readable, Writable } = await import('node:stream');
+      const viteReq: any = Readable.fromWeb(req.stream as any);
+      viteReq.method = req.method;
+      viteReq.url = pathStr;
+      viteReq.headers = req.headers;
+      const viteRes: any = Writable.fromWeb(res.stream as any);
+      Object.defineProperty(viteRes, 'statusCode', {
+        set(code) {
+          res.setStatus(code);
+        },
+      });
+      viteRes.setHeader = (name: string, value: string) => {
+        res.setHeader(name, value);
+      };
+      viteRes.writeHead = (code: number, headers?: Record<string, string>) => {
+        res.setStatus(code);
+        for (const [name, value] of Object.entries(headers || {})) {
+          res.setHeader(name, value);
+        }
+      };
+      vite.middlewares(viteReq, viteRes, next);
       return;
     }
     next();

@@ -6,6 +6,7 @@
     "esModuleInterop": true,
     "module": "nodenext",
     "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,

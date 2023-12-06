@@ -56,7 +56,10 @@ export const fetchRSC = cache(
             body: await encodeReply(args),
           },
         );
-        const data = createFromFetch(checkStatus(response), options);
+        const data = createFromFetch<Awaited<Elements>>(
+          checkStatus(response),
+          options,
+        );
         startTransition(() => {
           // FIXME this causes rerenders even if data is empty
           rerender((prev) => mergeElements(prev, data));
@@ -67,7 +70,10 @@ export const fetchRSC = cache(
     const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
     const response = prefetched[input] || fetch(basePath + encodeInput(input));
     delete prefetched[input];
-    const data = createFromFetch(checkStatus(response), options);
+    const data = createFromFetch<Awaited<Elements>>(
+      checkStatus(response),
+      options,
+    );
     return data;
   },
 );

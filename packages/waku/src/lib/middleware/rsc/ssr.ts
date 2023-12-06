@@ -1,32 +1,116 @@
-import path from 'node:path';
-import fs from 'node:fs';
-import url from 'node:url';
-import crypto from 'node:crypto';
-import { PassThrough, Transform } from 'node:stream';
-import type { Readable } from 'node:stream';
-import { Buffer } from 'node:buffer';
-import { Server } from 'node:http';
-
-import { createElement } from 'react';
-import RDServer from 'react-dom/server';
-import RSDWClient from 'react-server-dom-webpack/client.node.unbundled';
+import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
 import type { ViteDevServer } from 'vite';
 
-import { resolveConfig, viteInlineConfig } from '../../config.js';
+import type { ResolvedConfig } from '../../../config.js';
 import { defineEntries } from '../../../server.js';
-import { renderRSC } from './worker-api.js';
-import { hasStatusCode } from './utils.js';
+import { concatUint8Arrays } from '../../utils/stream.js';
+import {
+  decodeFilePathFromAbsolute,
+  joinPath,
+  filePathToFileURL,
+  fileURLToFilePath,
+} from '../../utils/path.js';
+import { renderRSC as renderRSCWorker } from './worker-api.js';
+import { renderRSC } from '../../rsc/renderer.js';
+import { hasStatusCode, deepFreeze } from './utils.js';
 
-// eslint-disable-next-line import/no-named-as-default-member
-const { renderToPipeableStream } = RDServer;
-const { createFromNodeStream } = RSDWClient;
+const loadReact = async (
+  config: ResolvedConfig,
+  command: 'dev' | 'build' | 'start',
+) => {
+  if (command !== 'dev') {
+    return (
+      await import(
+        filePathToFileURL(
+          joinPath(
+            config.rootDir,
+            config.distDir,
+            config.publicDir,
+            config.assetsDir,
+            'react.js',
+          ),
+        )
+      )
+    ).default;
+  }
+  return import('react');
+};
+
+const loadRDServer = async (
+  config: ResolvedConfig,
+  command: 'dev' | 'build' | 'start',
+) => {
+  if (command !== 'dev') {
+    return (
+      await import(
+        filePathToFileURL(
+          joinPath(
+            config.rootDir,
+            config.distDir,
+            config.publicDir,
+            config.assetsDir,
+            'rd-server.js',
+          ),
+        )
+      )
+    ).default;
+  }
+  return import('react-dom/server.edge');
+};
+
+const loadRSDWClient = async (
+  config: ResolvedConfig,
+  command: 'dev' | 'build' | 'start',
+) => {
+  if (command !== 'dev') {
+    return (
+      await import(
+        filePathToFileURL(
+          joinPath(
+            config.rootDir,
+            config.distDir,
+            config.publicDir,
+            config.assetsDir,
+            'rsdw-client.js',
+          ),
+        )
+      )
+    ).default;
+  }
+  return import('react-server-dom-webpack/client.edge');
+};
+
+const loadWakuClient = async (
+  config: ResolvedConfig,
+  command: 'dev' | 'build' | 'start',
+) => {
+  if (command !== 'dev') {
+    return import(
+      filePathToFileURL(
+        joinPath(
+          config.rootDir,
+          config.distDir,
+          config.publicDir,
+          config.assetsDir,
+          'waku-client.js',
+        ),
+      )
+    );
+  }
+  return import('waku/client');
+};
+
+// HACK for react-server-dom-webpack without webpack
+const moduleCache = new Map();
+(globalThis as any).__webpack_chunk_load__ ||= async (id: string) => {
+  const [fileURL, command] = id.split('#');
+  const m = await loadServerFile(fileURL!, (command as any) || 'start');
+  moduleCache.set(id, m);
+};
+(globalThis as any).__webpack_require__ ||= (id: string) => moduleCache.get(id);
 
 type Entries = {
   default: ReturnType<typeof defineEntries>;
-  resolveClientPath?: (
-    filePath: string,
-    invert?: boolean,
-  ) => string | undefined;
 };
 
 let lastViteServer: ViteDevServer | undefined;
@@ -34,14 +118,17 @@ const getViteServer = async () => {
   if (lastViteServer) {
     return lastViteServer;
   }
+  const { Server } = await import('node:http');
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const { createServer: viteCreateServer } = await import('vite');
   const { nonjsResolvePlugin } = await import(
     '../../vite-plugin/nonjs-resolve-plugin.js'
   );
   const viteServer = await viteCreateServer({
-    ...viteInlineConfig(),
     plugins: [nonjsResolvePlugin()],
+    ssr: {
+      external: ['waku'],
+    },
     appType: 'custom',
     server: { middlewareMode: true, hmr: { server: dummyServer } },
   });
@@ -58,48 +145,27 @@ export const shutdown = async () => {
   }
 };
 
-// This is exported only for createTranspiler
-export const loadServerFile = async (
-  fname: string,
+const loadServerFile = async (
+  fileURL: string,
   command: 'dev' | 'build' | 'start',
 ) => {
   if (command !== 'dev') {
-    return import(fname);
+    return import(fileURL);
   }
   const vite = await getViteServer();
-  return vite.ssrLoadModule(fname);
+  return vite.ssrLoadModule(fileURLToFilePath(fileURL));
 };
 
-// FIXME this is very hacky
-const createTranspiler = async (cleanupFns: Set<() => void>) => {
-  return (filePath: string, name: string) => {
-    const temp = path.resolve(
-      `.temp-${crypto.randomBytes(8).toString('hex')}.js`,
-    );
-    const code = `
-const { loadServerFile } = await import('${import.meta.url}');
-const { ${name} } = await loadServerFile('${url
-      .pathToFileURL(filePath)
-      .toString()
-      .slice('file://'.length)}', 'dev');
-export { ${name} }
-`;
-    fs.writeFileSync(temp, code);
-    cleanupFns.add(() => fs.unlinkSync(temp));
-    return temp;
-  };
-};
-
-const getEntriesFile = (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+const getEntriesFileURL = (
+  config: ResolvedConfig,
   command: 'dev' | 'build' | 'start',
 ) => {
-  const filePath = path.join(
+  const filePath = joinPath(
     config.rootDir,
     command === 'dev' ? config.srcDir : config.distDir,
     config.entriesJs,
   );
-  return command === 'dev' ? filePath : url.pathToFileURL(filePath).toString();
+  return filePathToFileURL(filePath);
 };
 
 const fakeFetchCode = `
@@ -117,21 +183,26 @@ Promise.resolve({
   .map((line) => line.trim())
   .join('');
 
-const injectRscPayload = (stream: Readable, input: string) => {
-  const chunks: Buffer[] = [];
+const injectRscPayload = (readable: ReadableStream, input: string) => {
+  const chunks: Uint8Array[] = [];
   let closed = false;
   let notify: (() => void) | undefined;
-  const copied = new PassThrough();
-  stream.on('data', (chunk) => {
-    chunks.push(chunk);
-    notify?.();
-    copied.write(chunk);
-  });
-  stream.on('end', () => {
-    closed = true;
-    notify?.();
-    copied.end();
-  });
+  const copied = readable.pipeThrough(
+    new TransformStream({
+      transform(chunk, controller) {
+        if (!(chunk instanceof Uint8Array)) {
+          throw new Error('Unknown chunk type');
+        }
+        chunks.push(chunk);
+        notify?.();
+        controller.enqueue(chunk);
+      },
+      flush() {
+        closed = true;
+        notify?.();
+      },
+    }),
+  );
   const modifyHead = (data: string) => {
     const matchPrefetched = data.match(
       // HACK This is very brittle
@@ -162,66 +233,66 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
       data.slice(closingHeadIndex);
     return data;
   };
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  const getScripts = (): string => {
+    const scripts = chunks.splice(0).map(
+      (chunk) =>
+        `
+<script>globalThis.__WAKU_PUSH__("${encodeURI(
+          decoder.decode(chunk),
+        )}")</script>`,
+    );
+    if (closed) {
+      scripts.push(
+        `
+<script>globalThis.__WAKU_PUSH__()</script>`,
+      );
+    }
+    return scripts.join('');
+  };
   const interleave = (
     preamble: string,
     intermediate: string,
     postamble: string,
   ) => {
     let preambleSent = false;
-    let closedSent = false;
-    return new Transform({
-      transform(chunk, encoding, callback) {
-        if (encoding !== ('buffer' as any)) {
-          throw new Error('Unknown encoding');
+    return new TransformStream({
+      transform(chunk, controller) {
+        if (!(chunk instanceof Uint8Array)) {
+          throw new Error('Unknown chunk type');
         }
         if (!preambleSent) {
-          const data = chunk.toString();
           preambleSent = true;
-          callback(
-            null,
-            Buffer.concat([
-              Buffer.from(modifyHead(preamble)),
-              Buffer.from(data),
-              Buffer.from(intermediate),
+          controller.enqueue(
+            concatUint8Arrays([
+              encoder.encode(modifyHead(preamble)),
+              chunk,
+              encoder.encode(intermediate),
             ]),
           );
-          notify = () => {
-            const scripts = chunks.splice(0).map((chunk) =>
-              Buffer.from(`
-<script>globalThis.__WAKU_PUSH__("${encodeURI(chunk.toString())}")</script>`),
-            );
-            if (closed) {
-              closedSent = true;
-              scripts.push(
-                Buffer.from(`
-<script>globalThis.__WAKU_PUSH__()</script>`),
-              );
-            }
-            this.push(Buffer.concat(scripts));
-          };
+          notify = () => controller.enqueue(encoder.encode(getScripts()));
           notify();
           return;
         }
-        callback(null, chunk);
+        controller.enqueue(chunk);
       },
-      final(callback) {
+      flush(controller) {
         if (!preambleSent) {
-          this.push(Buffer.from(preamble));
-          this.push(Buffer.from(intermediate));
+          throw new Error('preamble not yet sent');
         }
-        if (!closedSent) {
-          const notifyOrig = notify;
-          notify = () => {
-            notifyOrig?.();
-            if (closedSent) {
-              this.push(Buffer.from(postamble));
-              callback();
-            }
-          };
-        } else {
-          this.push(Buffer.from(postamble));
-          callback();
+        if (!closed) {
+          return new Promise<void>((resolve) => {
+            notify = () => {
+              controller.enqueue(encoder.encode(getScripts()));
+              if (closed) {
+                controller.enqueue(encoder.encode(postamble));
+                resolve();
+              }
+            };
+          });
         }
+        controller.enqueue(encoder.encode(postamble));
       },
     });
   };
@@ -230,54 +301,75 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
 
 // HACK for now, do we want to use HTML parser?
 const rectifyHtml = () => {
-  const pending: Buffer[] = [];
-  return new Transform({
-    transform(chunk, encoding, callback) {
-      if (encoding !== ('buffer' as any)) {
-        throw new Error('Unknown encoding');
+  const pending: Uint8Array[] = [];
+  const decoder = new TextDecoder();
+  return new TransformStream({
+    transform(chunk, controller) {
+      if (!(chunk instanceof Uint8Array)) {
+        throw new Error('Unknown chunk type');
       }
       pending.push(chunk);
-      if (/<\/\w+>$/.test(chunk.toString())) {
-        callback(null, Buffer.concat(pending.splice(0)));
-      } else {
-        callback();
+      if (/<\/\w+>$/.test(decoder.decode(chunk))) {
+        controller.enqueue(concatUint8Arrays(pending.splice(0)));
       }
     },
-    final(callback) {
+    flush(controller) {
       if (!pending.length) {
-        this.push(Buffer.concat(pending.splice(0)));
+        controller.enqueue(concatUint8Arrays(pending.splice(0)));
       }
-      callback();
     },
   });
 };
 
 export const renderHtml = async <Context>(
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: ResolvedConfig,
   command: 'dev' | 'build' | 'start',
   pathStr: string,
   htmlStr: string, // Hope stream works, but it'd be too tricky
   context: Context,
-): Promise<readonly [Readable, Context] | null> => {
-  const entriesFile = getEntriesFile(config, command);
+): Promise<readonly [ReadableStream, Context] | null> => {
+  const [
+    { createElement },
+    { renderToReadableStream },
+    { createFromReadableStream },
+    { ServerRoot, Slot },
+  ] = await Promise.all([
+    loadReact(config, command),
+    loadRDServer(config, command),
+    loadRSDWClient(config, command),
+    loadWakuClient(config, command),
+  ]);
+  const entriesFileURL = getEntriesFileURL(config, command);
   const {
     default: { getSsrConfig },
-    resolveClientPath,
-  } = await (loadServerFile(entriesFile, command) as Promise<Entries>);
+  } = await (loadServerFile(entriesFileURL, command) as Promise<Entries>);
   const ssrConfig = await getSsrConfig?.(pathStr);
   if (!ssrConfig) {
     return null;
   }
-  let pipeable: Readable;
+  let stream: ReadableStream;
   let nextCtx: Context;
   try {
-    [pipeable, nextCtx] = await renderRSC({
-      input: ssrConfig.input,
-      method: 'GET',
-      headers: {},
-      command,
-      context,
-    });
+    if (command !== 'dev') {
+      stream = await renderRSC({
+        config,
+        input: ssrConfig.input,
+        method: 'GET',
+        context,
+        isDev: false,
+      });
+      deepFreeze(context);
+      nextCtx = context;
+    } else {
+      [stream, nextCtx] = await renderRSCWorker({
+        input: ssrConfig.input,
+        method: 'GET',
+        headers: {},
+        config,
+        command,
+        context,
+      });
+    }
   } catch (e) {
     if (hasStatusCode(e) && e.statusCode === 404) {
       return null;
@@ -285,76 +377,86 @@ export const renderHtml = async <Context>(
     throw e;
   }
   const { splitHTML } = config.ssr;
-  const cleanupFns = new Set<() => void>();
-  const transpile =
-    command === 'dev' ? await createTranspiler(cleanupFns) : undefined;
   const moduleMap = new Proxy(
-    {},
+    {} as Record<
+      string,
+      Record<
+        string,
+        {
+          id: string;
+          chunks: string[];
+          name: string;
+        }
+      >
+    >,
     {
       get(_target, filePath: string) {
         return new Proxy(
           {},
           {
             get(_target, name: string) {
-              const file = filePath.slice(config.basePath.length);
+              const file = filePath.startsWith('/@id/')
+                ? filePath
+                : filePath.slice(config.basePath.length);
               if (command === 'dev') {
-                const filePath = file.startsWith('@fs/')
-                  ? file.slice(3)
-                  : path.join(config.rootDir, file);
-                const specifier = url
-                  .pathToFileURL(transpile!(filePath, name))
-                  .toString();
-                return {
-                  specifier,
-                  name,
-                };
+                const resolvedFilePath = file.startsWith('/@fs/')
+                  ? decodeFilePathFromAbsolute(file.slice('/@fs'.length))
+                  : file;
+                const wakuDist = joinPath(
+                  fileURLToFilePath(import.meta.url),
+                  '../../../..',
+                );
+                if (resolvedFilePath.startsWith(wakuDist)) {
+                  const id =
+                    'waku' +
+                    resolvedFilePath
+                      .slice(wakuDist.length)
+                      .replace(/\.\w+$/, '');
+                  return { id, chunks: [id], name };
+                }
+                const id = filePathToFileURL(resolvedFilePath) + '#dev';
+                return { id, chunks: [id], name };
               }
-              const origFile = resolveClientPath?.(
-                path.join(config.rootDir, config.distDir, file),
-                true,
+              // command !== 'dev'
+              const id = filePathToFileURL(
+                joinPath(
+                  config.rootDir,
+                  config.distDir,
+                  config.publicDir,
+                  filePath,
+                ),
               );
-              if (
-                origFile &&
-                !origFile.startsWith(path.join(config.rootDir, config.srcDir))
-              ) {
-                return {
-                  specifier: url.pathToFileURL(origFile).toString(),
-                  name,
-                };
-              }
-              return {
-                specifier: url
-                  .pathToFileURL(
-                    path.join(config.rootDir, config.distDir, file),
-                  )
-                  .toString(),
-                name,
-              };
+              return { id, chunks: [id], name };
             },
           },
         );
       },
     },
   );
-  console.log('input', ssrConfig.input);
-  const [copied, interleave] = injectRscPayload(pipeable, ssrConfig.input);
-  const elements = createFromNodeStream(copied, { moduleMap });
-  const { ServerRoot } = await loadServerFile('waku/client', command);
-  const readable = renderToPipeableStream(
-    createElement(ServerRoot, { elements }, ssrConfig.unstable_render()),
+  const [copied, interleave] = injectRscPayload(stream, ssrConfig.input);
+  const elements: Promise<Record<string, ReactNode>> = createFromReadableStream(
+    copied,
     {
-      onAllReady: () => {
-        cleanupFns.forEach((fn) => fn());
-        cleanupFns.clear();
-      },
-      onError(err) {
-        cleanupFns.forEach((fn) => fn());
-        cleanupFns.clear();
-        console.error(err);
-      },
+      ssrManifest: { moduleMap, moduleLoading: null },
     },
+  );
+  const readable = (
+    await renderToReadableStream(
+      createElement(
+        ServerRoot as FunctionComponent<
+          Omit<ComponentProps<typeof ServerRoot>, 'children'>
+        >,
+        { elements },
+        ssrConfig.unstable_render({ createElement, Slot }),
+      ),
+      {
+        onError(err: unknown) {
+          console.error(err);
+        },
+      },
+    )
   )
-    .pipe(rectifyHtml())
-    .pipe(interleave(...splitHTML(htmlStr)));
+    .pipeThrough(rectifyHtml())
+    .pipeThrough(interleave(...splitHTML(htmlStr)));
   return [readable, nextCtx];
 };

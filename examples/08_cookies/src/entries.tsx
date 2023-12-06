@@ -2,15 +2,14 @@ import path from 'node:path';
 import url from 'node:url';
 import fsPromises from 'node:fs/promises';
 import { lazy } from 'react';
-import { defineEntries, getContext } from 'waku/server';
-import { Slot } from 'waku/client';
+import { defineEntries } from 'waku/server';
 
 const App = lazy(() => import('./components/App.js'));
 
 export default defineEntries(
   // renderEntries
-  async (input) => {
-    const ctx = getContext<{ count: number }>();
+  async function (input) {
+    const ctx = this.context as { count: number };
     ++ctx.count;
     const items = JSON.parse(
       await fsPromises.readFile(
@@ -22,7 +21,7 @@ export default defineEntries(
       ),
     );
     return {
-      App: <App name={input || 'Waku'} items={items} />,
+      App: <App name={input || 'Waku'} count={ctx.count} items={items} />,
     };
   },
   // getBuildConfig
@@ -40,7 +39,8 @@ export default defineEntries(
       case '/':
         return {
           input: '',
-          unstable_render: () => <Slot id="App" />,
+          unstable_render: ({ createElement, Slot }) =>
+            createElement(Slot, { id: 'App' }),
         };
       default:
         return null;

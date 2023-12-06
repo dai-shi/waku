@@ -1,21 +1,29 @@
-import path from 'node:path';
-import fs from 'node:fs';
 import { createHash } from 'node:crypto';
+import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
 import { build as viteBuild } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
-import { resolveConfig, viteInlineConfig } from './config.js';
-import { encodeInput, generatePrefetchCode } from './middleware/rsc/utils.js';
+import type { Config, ResolvedConfig } from '../config.js';
+import { resolveConfig } from './config.js';
+import { joinPath, extname } from './utils/path.js';
 import {
-  shutdown as shutdownRsc,
-  renderRSC,
-  getBuildConfigRSC,
-} from './middleware/rsc/worker-api.js';
+  createReadStream,
+  createWriteStream,
+  existsSync,
+  rename,
+  mkdir,
+  readFile,
+  writeFile,
+  rm,
+} from './utils/node-fs.js';
+import { encodeInput, generatePrefetchCode } from './middleware/rsc/utils.js';
+import { renderRSC, getBuildConfigRSC } from './rsc/renderer.js';
 import { rscIndexPlugin } from './vite-plugin/rsc-index-plugin.js';
 import { rscAnalyzePlugin } from './vite-plugin/rsc-analyze-plugin.js';
+import { rscTransformPlugin } from './vite-plugin/rsc-transform-plugin.js';
 import { patchReactRefresh } from './vite-plugin/patch-react-refresh.js';
 import { renderHtml, shutdown as shutdownSsr } from './middleware/rsc/ssr.js';
 
@@ -46,7 +54,7 @@ const hash = (fname: string) =>
         resolve(data.toString('hex').slice(0, 9));
       }
     });
-    fs.createReadStream(fname).pipe(sha256);
+    createReadStream(fname).pipe(sha256);
   });
 
 const analyzeEntries = async (entriesFile: string) => {
@@ -54,12 +62,11 @@ const analyzeEntries = async (entriesFile: string) => {
   const clientFileSet = new Set<string>();
   const serverFileSet = new Set<string>();
   await viteBuild({
-    ...viteInlineConfig(),
     plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
     ssr: {
       resolve: {
-        conditions: ['react-server'],
-        externalConditions: ['react-server'],
+        conditions: ['react-server', 'workerd'],
+        externalConditions: ['react-server', 'workerd'],
       },
       noExternal: /^(?!node:)/,
     },
@@ -101,68 +108,45 @@ const analyzeEntries = async (entriesFile: string) => {
 };
 
 const buildServerBundle = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: ResolvedConfig,
   entriesFile: string,
-  distEntriesFile: string,
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
 ) => {
   const serverBuildOutput = await viteBuild({
-    ...viteInlineConfig(),
+    plugins: [rscTransformPlugin(true)],
     ssr: {
       resolve: {
-        conditions: ['react-server'],
-        externalConditions: ['react-server'],
+        conditions: ['react-server', 'workerd'],
+        externalConditions: ['react-server', 'workerd'],
       },
-      external: ['waku'],
-      noExternal: Object.values(clientEntryFiles).flatMap((fname) => {
-        const items = fname.split(path.sep);
-        const index = items.lastIndexOf('node_modules');
-        const name = index >= 0 && items[index + 1];
-        return name ? [name] : [];
-      }),
+      noExternal: /^(?!node:)/,
     },
     publicDir: false,
     build: {
       ssr: true,
       ssrEmitAssets: true,
-      outDir: path.join(config.rootDir, config.distDir),
+      outDir: joinPath(config.rootDir, config.distDir),
       rollupOptions: {
         onwarn,
         input: {
           entries: entriesFile,
+          'rsdw-server': 'react-server-dom-webpack/server.edge',
+          'waku-client': 'waku/client',
           ...commonEntryFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
         },
         output: {
-          banner: (chunk) => {
-            // HACK to bring directives to the front
-            let code = '';
-            if (
-              chunk.moduleIds.some((id) =>
-                Object.values(clientEntryFiles).includes(id),
-              )
-            ) {
-              code += '"use client";';
-            }
-            if (
-              chunk.moduleIds.some((id) =>
-                Object.values(serverEntryFiles).includes(id),
-              )
-            ) {
-              code += '"use server";';
-            }
-            return code;
-          },
           entryFileNames: (chunkInfo) => {
             if (
+              ['waku-client'].includes(chunkInfo.name) ||
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name] ||
               serverEntryFiles[chunkInfo.name]
             ) {
-              return 'assets/[name].js';
+              return config.assetsDir + '/[name].js';
             }
             return '[name].js';
           },
@@ -173,50 +157,32 @@ const buildServerBundle = async (
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
-  const code = `export const resolveClientPath = (filePath, invert) => (invert ? ${JSON.stringify(
-    Object.fromEntries(
-      Object.entries(clientEntryFiles).map(([key, val]) => [
-        path.posix.join(config.rootDir, config.distDir, 'assets', key + '.js'),
-        val,
-      ]),
-    ),
-  )} : ${JSON.stringify(
-    Object.fromEntries(
-      Object.entries(clientEntryFiles).map(([key, val]) => [
-        val,
-        path.posix.join(config.rootDir, config.distDir, 'assets', key + '.js'),
-      ]),
-    ),
-  )})[filePath];
-`;
-  fs.appendFileSync(distEntriesFile, code);
   return serverBuildOutput;
 };
 
 const buildClientBundle = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: ResolvedConfig,
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
 ) => {
-  const indexHtmlFile = path.join(
-    config.rootDir,
-    config.srcDir,
-    config.indexHtml,
-  );
+  const indexHtmlFile = joinPath(config.rootDir, config.indexHtml);
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
   const clientBuildOutput = await viteBuild({
-    ...viteInlineConfig(),
-    // root: path.join(config.rootDir, config.srcDir),
+    base: config.basePath,
     plugins: [patchReactRefresh(viteReact()), rscIndexPlugin(cssAssets)],
     build: {
-      outDir: path.join(config.rootDir, config.distDir, config.publicDir),
+      outDir: joinPath(config.rootDir, config.distDir, config.publicDir),
       rollupOptions: {
         onwarn,
         input: {
           main: indexHtmlFile,
+          react: 'react',
+          'rd-server': 'react-dom/server.edge',
+          'rsdw-client': 'react-server-dom-webpack/client.edge',
+          'waku-client': 'waku/client',
           ...commonEntryFiles,
           ...clientEntryFiles,
         },
@@ -224,15 +190,16 @@ const buildClientBundle = async (
         output: {
           entryFileNames: (chunkInfo) => {
             if (
+              ['react', 'rd-server', 'rsdw-client', 'waku-client'].includes(
+                chunkInfo.name,
+              ) ||
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name]
             ) {
-              return 'assets/[name].js';
+              return config.assetsDir + '/[name].js';
             }
-            return 'assets/[name]-[hash].js';
+            return config.assetsDir + '/[name]-[hash].js';
           },
-          // FIXME This is simply to override for examples/07,10 vite configs
-          preserveModules: false,
         },
       },
     },
@@ -241,22 +208,20 @@ const buildClientBundle = async (
     throw new Error('Unexpected vite client build output');
   }
   for (const cssAsset of cssAssets) {
-    const from = path.join(config.rootDir, config.distDir, cssAsset);
-    const to = path.join(
+    const from = joinPath(config.rootDir, config.distDir, cssAsset);
+    const to = joinPath(
       config.rootDir,
       config.distDir,
       config.publicDir,
       cssAsset,
     );
-    fs.renameSync(from, to);
+    await rename(from, to);
   }
   return clientBuildOutput;
 };
 
-const emitRscFiles = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
-) => {
-  const buildConfig = await getBuildConfigRSC();
+const emitRscFiles = async (config: ResolvedConfig) => {
+  const buildConfig = await getBuildConfigRSC({ config });
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (input: string, id: string) => {
     let idSet = clientModuleMap.get(input);
@@ -274,26 +239,31 @@ const emitRscFiles = async (
   await Promise.all(
     Object.entries(buildConfig).map(async ([, { entries, context }]) => {
       for (const [input] of entries || []) {
-        const destFile = path.join(
+        const destFile = joinPath(
           config.rootDir,
           config.distDir,
           config.publicDir,
           config.rscPath,
-          // HACK to support windows filesystem
-          encodeInput(input).replaceAll('/', path.sep),
+          encodeInput(
+            // Should we do this here? Or waku/router or in entries.ts?
+            input.split('\\').join('/'),
+          ),
         );
         if (!rscFileSet.has(destFile)) {
           rscFileSet.add(destFile);
-          fs.mkdirSync(path.dirname(destFile), { recursive: true });
-          const [readable] = await renderRSC({
+          await mkdir(joinPath(destFile, '..'), { recursive: true });
+          const readable = await renderRSC({
             input,
             method: 'GET',
-            headers: {},
-            command: 'build',
+            config,
             context,
             moduleIdCallback: (id) => addClientModule(input, id),
+            isDev: false,
           });
-          await pipeline(readable, fs.createWriteStream(destFile));
+          await pipeline(
+            Readable.fromWeb(readable as any),
+            createWriteStream(destFile),
+          );
         }
       }
     }),
@@ -302,25 +272,33 @@ const emitRscFiles = async (
 };
 
 const emitHtmlFiles = async (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+  config: ResolvedConfig,
   buildConfig: Awaited<ReturnType<typeof getBuildConfigRSC>>,
+  clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
   getClientModules: (input: string) => string[],
   ssr: boolean,
 ) => {
   const basePrefix = config.basePath + config.rscPath + '/';
-  const publicIndexHtmlFile = path.join(
+  const publicIndexHtmlFile = joinPath(
     config.rootDir,
     config.distDir,
     config.publicDir,
     config.indexHtml,
   );
-  const publicIndexHtml = fs.readFileSync(publicIndexHtmlFile, {
+  const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
+
+  clientBuildOutput.output.splice(
+    clientBuildOutput.output.findIndex(
+      (v) => v.fileName === joinPath(config.srcDir, config.indexHtml),
+    ),
+    1,
+  );
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
       async ([pathStr, { entries, customCode, context }]) => {
-        const destFile = path.join(
+        const destFile = joinPath(
           config.rootDir,
           config.distDir,
           config.publicDir,
@@ -328,10 +306,10 @@ const emitHtmlFiles = async (
           pathStr.endsWith('/') ? 'index.html' : '',
         );
         let htmlStr: string;
-        if (fs.existsSync(destFile)) {
-          htmlStr = fs.readFileSync(destFile, { encoding: 'utf8' });
+        if (existsSync(destFile)) {
+          htmlStr = await readFile(destFile, { encoding: 'utf8' });
         } else {
-          fs.mkdirSync(path.dirname(destFile), { recursive: true });
+          await mkdir(joinPath(destFile, '..'), { recursive: true });
           htmlStr = publicIndexHtml;
         }
         const inputsForPrefetch = new Set<string>();
@@ -361,9 +339,12 @@ const emitHtmlFiles = async (
           ssr && (await renderHtml(config, 'build', pathStr, htmlStr, context));
         if (htmlResult) {
           const [htmlReadable] = htmlResult;
-          await pipeline(htmlReadable, fs.createWriteStream(destFile));
+          await pipeline(
+            Readable.fromWeb(htmlReadable as any),
+            createWriteStream(destFile),
+          );
         } else {
-          fs.writeFileSync(destFile, htmlStr);
+          await writeFile(destFile, htmlStr);
         }
         return destFile;
       },
@@ -372,12 +353,17 @@ const emitHtmlFiles = async (
   return { htmlFiles };
 };
 
-const emitVercelOutput = (
-  config: Awaited<ReturnType<typeof resolveConfig>>,
+const emitVercelOutput = async (
+  config: ResolvedConfig,
   clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
   rscFiles: string[],
   htmlFiles: string[],
 ) => {
+  // FIXME somehow utils/(path,node-fs).ts doesn't work
+  const [
+    path,
+    { existsSync, mkdirSync, readdirSync, symlinkSync, writeFileSync },
+  ] = await Promise.all([import('node:path'), import('node:fs')]);
   const clientFiles = clientBuildOutput.output.map(({ fileName }) =>
     path.join(config.rootDir, config.distDir, config.publicDir, fileName),
   );
@@ -385,9 +371,9 @@ const emitVercelOutput = (
   const dstDir = path.join(config.rootDir, config.distDir, '.vercel', 'output');
   for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
     const dstFile = path.join(dstDir, 'static', path.relative(srcDir, file));
-    if (!fs.existsSync(dstFile)) {
-      fs.mkdirSync(path.dirname(dstFile), { recursive: true });
-      fs.symlinkSync(path.relative(path.dirname(dstFile), file), dstFile);
+    if (!existsSync(dstFile)) {
+      mkdirSync(path.dirname(dstFile), { recursive: true });
+      symlinkSync(path.relative(path.dirname(dstFile), file), dstFile);
     }
   }
 
@@ -397,39 +383,39 @@ const emitVercelOutput = (
     'functions',
     config.rscPath + '.func',
   );
-  fs.mkdirSync(path.join(serverlessDir, config.distDir), {
+  mkdirSync(path.join(serverlessDir, config.distDir), {
     recursive: true,
   });
-  fs.symlinkSync(
+  symlinkSync(
     path.relative(serverlessDir, path.join(config.rootDir, 'node_modules')),
     path.join(serverlessDir, 'node_modules'),
   );
-  fs.readdirSync(path.join(config.rootDir, config.distDir)).forEach((file) => {
+  for (const file of readdirSync(path.join(config.rootDir, config.distDir))) {
     if (['.vercel'].includes(file)) {
-      return;
+      continue;
     }
-    fs.symlinkSync(
+    symlinkSync(
       path.relative(
         path.join(serverlessDir, config.distDir),
         path.join(config.rootDir, config.distDir, file),
       ),
       path.join(serverlessDir, config.distDir, file),
     );
-  });
+  }
   const vcConfigJson = {
     runtime: 'nodejs18.x',
     handler: 'serve.js',
     launcherType: 'Nodejs',
   };
-  fs.writeFileSync(
+  writeFileSync(
     path.join(serverlessDir, '.vc-config.json'),
     JSON.stringify(vcConfigJson, null, 2),
   );
-  fs.writeFileSync(
+  writeFileSync(
     path.join(serverlessDir, 'package.json'),
     JSON.stringify({ type: 'module' }, null, 2),
   );
-  fs.writeFileSync(
+  writeFileSync(
     path.join(serverlessDir, 'serve.js'),
     `
 export default async function handler(req, res) {
@@ -458,8 +444,8 @@ export default async function handler(req, res) {
   const basePrefix = config.basePath + config.rscPath + '/';
   const routes = [{ src: basePrefix + '(.*)', dest: basePrefix }];
   const configJson = { version: 3, overrides, routes };
-  fs.mkdirSync(dstDir, { recursive: true });
-  fs.writeFileSync(
+  mkdirSync(dstDir, { recursive: true });
+  writeFileSync(
     path.join(dstDir, 'config.json'),
     JSON.stringify(configJson, null, 2),
   );
@@ -467,21 +453,18 @@ export default async function handler(req, res) {
 
 const resolveFileName = (fname: string) => {
   for (const ext of ['.js', '.ts', '.tsx', '.jsx']) {
-    const resolvedName = fname.slice(0, -path.extname(fname).length) + ext;
-    if (fs.existsSync(resolvedName)) {
+    const resolvedName = fname.slice(0, -extname(fname).length) + ext;
+    if (existsSync(resolvedName)) {
       return resolvedName;
     }
   }
   return fname; // returning the default one
 };
 
-export async function build(options?: { ssr?: boolean }) {
-  const config = await resolveConfig();
+export async function build(options: { config: Config; ssr?: boolean }) {
+  const config = await resolveConfig(options.config);
   const entriesFile = resolveFileName(
-    path.join(config.rootDir, config.srcDir, config.entriesJs),
-  );
-  const distEntriesFile = resolveFileName(
-    path.join(config.rootDir, config.distDir, config.entriesJs),
+    joinPath(config.rootDir, config.srcDir, config.entriesJs),
   );
 
   const { commonEntryFiles, clientEntryFiles, serverEntryFiles } =
@@ -489,7 +472,6 @@ export async function build(options?: { ssr?: boolean }) {
   const serverBuildOutput = await buildServerBundle(
     config,
     entriesFile,
-    distEntriesFile,
     commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
@@ -506,13 +488,13 @@ export async function build(options?: { ssr?: boolean }) {
   const { htmlFiles } = await emitHtmlFiles(
     config,
     buildConfig,
+    clientBuildOutput,
     getClientModules,
     !!options?.ssr,
   );
 
   // https://vercel.com/docs/build-output-api/v3
-  emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
+  await emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
 
   await shutdownSsr();
-  await shutdownRsc();
 }

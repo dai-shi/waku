@@ -1,13 +1,5 @@
-import fs from 'node:fs';
-import path from 'node:path';
-
-import type { Config } from '../config.js';
-
-type DeepRequired<T> = T extends (...args: any[]) => any
-  ? T
-  : T extends object
-  ? { [P in keyof T]-?: DeepRequired<T[P]> }
-  : T;
+import type { Config, ResolvedConfig } from '../config.js';
+import { normalizePath } from './utils/path.js';
 
 const splitHTML = (htmlStr: string): readonly [string, string, string] => {
   const P1 = [
@@ -28,18 +20,14 @@ const splitHTML = (htmlStr: string): readonly [string, string, string] => {
   return match.slice(1) as [string, string, string];
 };
 
-export async function resolveConfig() {
-  const configFile = path.resolve('waku.config.js');
-  let config: Config = {};
-  if (fs.existsSync(configFile)) {
-    config = (await import(configFile)).default;
-  }
-  const resolvedConfig: DeepRequired<Config> = {
-    rootDir: path.resolve('.'),
+// Keep async function for future extension
+export async function resolveConfig(config: Config) {
+  const resolvedConfig: ResolvedConfig = {
     basePath: '/',
     srcDir: 'src',
     distDir: 'dist',
     publicDir: 'public',
+    assetsDir: 'assets',
     indexHtml: 'index.html',
     entriesJs: 'entries.js',
     rscPath: 'RSC',
@@ -48,15 +36,7 @@ export async function resolveConfig() {
       splitHTML,
       ...config?.ssr,
     },
+    rootDir: normalizePath(config.rootDir),
   };
   return resolvedConfig;
 }
-
-export const viteInlineConfig = () => {
-  for (const file of ['vite.config.ts', 'vite.config.js']) {
-    if (fs.existsSync(file)) {
-      return { configFile: path.resolve(file) };
-    }
-  }
-  return {};
-};
