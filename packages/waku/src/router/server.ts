@@ -20,10 +20,10 @@ const prefetcher = (pathname: string) => {
 
 const Default = ({ children }: { children: ReactNode }) => children;
 
-export function defineRouter(
+export function defineRouter<P>(
   getComponent: (
     componentId: string,
-  ) => Promise<FunctionComponent | { default: FunctionComponent } | null>,
+  ) => Promise<FunctionComponent<P> | { default: FunctionComponent<P> } | null>,
   getPathsForBuild: () => Promise<string[]>,
 ): ReturnType<typeof defineEntries> {
   const renderEntries: RenderEntries = async (input) => {
