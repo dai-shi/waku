@@ -315,13 +315,14 @@ const emitHtmlFiles = async (
           config.rootDir,
           config.distDir,
           config.publicDir,
-          pathStr.endsWith('/') ? pathStr + 'index.html' : pathStr,
+          extname(pathStr) ? pathStr : pathStr + '/' + config.indexHtml,
         );
         const destHtmlJsFile = joinPath(
           config.rootDir,
           config.distDir,
           config.htmlsDir,
-          pathStr.endsWith('/') ? pathStr + 'index.html.js' : pathStr + '.js',
+          (extname(pathStr) ? pathStr : pathStr + '/' + config.indexHtml) +
+            '.js',
         );
         let htmlStr: string;
         if (existsSync(destHtmlFile)) {
@@ -460,20 +461,14 @@ export default async function handler(req, res) {
 `,
   );
 
-  const overrides = Object.fromEntries([
-    ...rscFiles
+  const overrides = Object.fromEntries(
+    rscFiles
       .filter((file) => !path.extname(file))
       .map((file) => [
         path.relative(srcDir, file),
         { contentType: 'text/plain' },
       ]),
-    ...htmlFiles
-      .filter((file) => !path.extname(file))
-      .map((file) => [
-        path.relative(srcDir, file),
-        { contentType: 'text/html' },
-      ]),
-  ]);
+  );
   const basePrefix = config.basePath + config.rscPath + '/';
   const routes = [{ src: basePrefix + '(.*)', dest: basePrefix }];
   const configJson = { version: 3, overrides, routes };

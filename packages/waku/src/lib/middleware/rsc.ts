@@ -2,7 +2,7 @@ import type { ViteDevServer } from 'vite';
 
 import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
-import { joinPath, filePathToFileURL } from '../utils/path.js';
+import { joinPath, filePathToFileURL, extname } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from './rsc/ssr.js';
 import { decodeInput, hasStatusCode, deepFreeze } from './rsc/utils.js';
@@ -92,7 +92,7 @@ export function rsc<
         config.rootDir,
         config.distDir,
         config.htmlsDir,
-        pathStr.endsWith('/') ? pathStr + 'index.html.js' : pathStr + '.js',
+        (extname(pathStr) ? pathStr : pathStr + '/' + config.indexHtml) + '.js',
       );
       try {
         return (await import(filePathToFileURL(destHtmlJsFile)))
