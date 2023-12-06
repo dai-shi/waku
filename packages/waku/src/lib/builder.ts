@@ -7,7 +7,7 @@ import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
 import type { Config, ResolvedConfig } from '../config.js';
-import { resolveConfig, viteInlineConfig } from './config.js';
+import { resolveConfig } from './config.js';
 import { joinPath, extname } from './utils/path.js';
 import {
   createReadStream,
@@ -17,8 +17,8 @@ import {
   mkdir,
   readFile,
   writeFile,
+  rm,
 } from './utils/node-fs.js';
-import { streamToString } from './utils/stream.js';
 import { encodeInput, generatePrefetchCode } from './middleware/rsc/utils.js';
 import { renderRSC, getBuildConfigRSC } from './rsc/renderer.js';
 import { rscIndexPlugin } from './vite-plugin/rsc-index-plugin.js';
@@ -26,8 +26,6 @@ import { rscAnalyzePlugin } from './vite-plugin/rsc-analyze-plugin.js';
 import { rscTransformPlugin } from './vite-plugin/rsc-transform-plugin.js';
 import { patchReactRefresh } from './vite-plugin/patch-react-refresh.js';
 import { renderHtml, shutdown as shutdownSsr } from './middleware/rsc/ssr.js';
-
-// TODO this file and functions in it are too long. will fix.
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
@@ -64,7 +62,6 @@ const analyzeEntries = async (entriesFile: string) => {
   const clientFileSet = new Set<string>();
   const serverFileSet = new Set<string>();
   await viteBuild({
-    ...(await viteInlineConfig()),
     plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
     ssr: {
       resolve: {
@@ -118,7 +115,6 @@ const buildServerBundle = async (
   serverEntryFiles: Record<string, string>,
 ) => {
   const serverBuildOutput = await viteBuild({
-    ...(await viteInlineConfig()),
     plugins: [rscTransformPlugin(true)],
     ssr: {
       resolve: {
@@ -126,9 +122,6 @@ const buildServerBundle = async (
         externalConditions: ['react-server', 'workerd'],
       },
       noExternal: /^(?!node:)/,
-    },
-    define: {
-      'process.env.NODE_ENV': JSON.stringify('production'),
     },
     publicDir: false,
     build: {
@@ -173,17 +166,11 @@ const buildClientBundle = async (
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
 ) => {
-  const indexHtmlFile = joinPath(
-    config.rootDir,
-    config.srcDir,
-    config.indexHtml,
-  );
+  const indexHtmlFile = joinPath(config.rootDir, config.indexHtml);
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
   const clientBuildOutput = await viteBuild({
-    ...(await viteInlineConfig()),
-    root: joinPath(config.rootDir, config.srcDir),
     base: config.basePath,
     plugins: [patchReactRefresh(viteReact()), rscIndexPlugin(cssAssets)],
     build: {
@@ -252,7 +239,7 @@ const emitRscFiles = async (config: ResolvedConfig) => {
   await Promise.all(
     Object.entries(buildConfig).map(async ([, { entries, context }]) => {
       for (const [input] of entries || []) {
-        const destRscFile = joinPath(
+        const destFile = joinPath(
           config.rootDir,
           config.distDir,
           config.publicDir,
@@ -262,9 +249,9 @@ const emitRscFiles = async (config: ResolvedConfig) => {
             input.split('\\').join('/'),
           ),
         );
-        if (!rscFileSet.has(destRscFile)) {
-          rscFileSet.add(destRscFile);
-          await mkdir(joinPath(destRscFile, '..'), { recursive: true });
+        if (!rscFileSet.has(destFile)) {
+          rscFileSet.add(destFile);
+          await mkdir(joinPath(destFile, '..'), { recursive: true });
           const readable = await renderRSC({
             input,
             method: 'GET',
@@ -275,7 +262,7 @@ const emitRscFiles = async (config: ResolvedConfig) => {
           });
           await pipeline(
             Readable.fromWeb(readable as any),
-            createWriteStream(destRscFile),
+            createWriteStream(destFile),
           );
         }
       }
@@ -287,6 +274,7 @@ const emitRscFiles = async (config: ResolvedConfig) => {
 const emitHtmlFiles = async (
   config: ResolvedConfig,
   buildConfig: Awaited<ReturnType<typeof getBuildConfigRSC>>,
+  clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
   getClientModules: (input: string) => string[],
   ssr: boolean,
 ) => {
@@ -300,41 +288,30 @@ const emitHtmlFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  const publicIndexHtmlJsFile = joinPath(
-    config.rootDir,
-    config.distDir,
-    config.htmlsDir,
-    config.indexHtml + '.js',
-  );
-  await mkdir(joinPath(publicIndexHtmlJsFile, '..'), { recursive: true });
-  await writeFile(
-    publicIndexHtmlJsFile,
-    `export default ${JSON.stringify(publicIndexHtml)};`,
+
+  clientBuildOutput.output.splice(
+    clientBuildOutput.output.findIndex(
+      (v) => v.fileName === joinPath(config.srcDir, config.indexHtml),
+    ),
+    1,
   );
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
       async ([pathStr, { entries, customCode, context }]) => {
-        const destHtmlFile = joinPath(
+        const destFile = joinPath(
           config.rootDir,
           config.distDir,
           config.publicDir,
-          extname(pathStr) ? pathStr : pathStr + '/' + config.indexHtml,
-        );
-        const destHtmlJsFile = joinPath(
-          config.rootDir,
-          config.distDir,
-          config.htmlsDir,
-          (extname(pathStr) ? pathStr : pathStr + '/' + config.indexHtml) +
-            '.js',
+          pathStr,
+          pathStr.endsWith('/') ? 'index.html' : '',
         );
         let htmlStr: string;
-        if (existsSync(destHtmlFile)) {
-          htmlStr = await readFile(destHtmlFile, { encoding: 'utf8' });
+        if (existsSync(destFile)) {
+          htmlStr = await readFile(destFile, { encoding: 'utf8' });
         } else {
-          await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
+          await mkdir(joinPath(destFile, '..'), { recursive: true });
           htmlStr = publicIndexHtml;
         }
-        await mkdir(joinPath(destHtmlJsFile, '..'), { recursive: true });
         const inputsForPrefetch = new Set<string>();
         const moduleIdsForPrefetch = new Set<string>();
         for (const [input, skipPrefetch] of entries || []) {
@@ -361,29 +338,15 @@ const emitHtmlFiles = async (
         const htmlResult =
           ssr && (await renderHtml(config, 'build', pathStr, htmlStr, context));
         if (htmlResult) {
-          const [htmlReadable1, htmlReadable2] = htmlResult[0].tee();
-          await Promise.all([
-            pipeline(
-              Readable.fromWeb(htmlReadable1 as any),
-              createWriteStream(destHtmlFile),
-            ),
-            streamToString(htmlReadable2).then((str) =>
-              writeFile(
-                destHtmlJsFile,
-                `export default ${JSON.stringify(str)};`,
-              ),
-            ),
-          ]);
+          const [htmlReadable] = htmlResult;
+          await pipeline(
+            Readable.fromWeb(htmlReadable as any),
+            createWriteStream(destFile),
+          );
         } else {
-          await Promise.all([
-            writeFile(destHtmlFile, htmlStr),
-            writeFile(
-              destHtmlJsFile,
-              `export default ${JSON.stringify(htmlStr)};`,
-            ),
-          ]);
+          await writeFile(destFile, htmlStr);
         }
-        return destHtmlFile;
+        return destFile;
       },
     ),
   );
@@ -464,14 +427,20 @@ export default async function handler(req, res) {
 `,
   );
 
-  const overrides = Object.fromEntries(
-    rscFiles
+  const overrides = Object.fromEntries([
+    ...rscFiles
       .filter((file) => !path.extname(file))
       .map((file) => [
         path.relative(srcDir, file),
         { contentType: 'text/plain' },
       ]),
-  );
+    ...htmlFiles
+      .filter((file) => !path.extname(file))
+      .map((file) => [
+        path.relative(srcDir, file),
+        { contentType: 'text/html' },
+      ]),
+  ]);
   const basePrefix = config.basePath + config.rscPath + '/';
   const routes = [{ src: basePrefix + '(.*)', dest: basePrefix }];
   const configJson = { version: 3, overrides, routes };
@@ -519,6 +488,7 @@ export async function build(options: { config: Config; ssr?: boolean }) {
   const { htmlFiles } = await emitHtmlFiles(
     config,
     buildConfig,
+    clientBuildOutput,
     getClientModules,
     !!options?.ssr,
   );

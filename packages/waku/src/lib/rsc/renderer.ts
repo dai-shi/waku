@@ -11,7 +11,6 @@ import {
   fileURLToFilePath,
 } from '../utils/path.js';
 import { parseFormData } from '../utils/form.js';
-import { streamToString } from '../utils/stream.js';
 
 const loadRSDWServer = async (
   config: Omit<ResolvedConfig, 'ssr'>,
@@ -51,7 +50,7 @@ const resolveClientEntry = (
   isDev: boolean,
 ) => {
   let filePath = file.startsWith('file://') ? fileURLToFilePath(file) : file;
-  const root = joinPath(config.rootDir, isDev ? config.srcDir : config.distDir);
+  const root = joinPath(config.rootDir, !isDev ? config.distDir : '');
   // HACK on windows file url looks like file:///C:/path/to/file
   if (!root.startsWith('/') && filePath.startsWith('/')) {
     filePath = filePath.slice(1);
@@ -66,7 +65,8 @@ const resolveClientEntry = (
       );
     }
   }
-  return config.basePath + relativePath(root, filePath);
+  // https://github.com/dai-shi/waku/pull/181#discussion_r1409274135
+  return (isDev ? '/@id' : '') + config.basePath + relativePath(root, filePath);
 };
 
 // HACK Patching stream is very fragile.
@@ -171,7 +171,18 @@ export async function renderRSC(
     let args: unknown[] = [];
     let bodyStr = '';
     if (body) {
-      bodyStr = await streamToString(body);
+      const decoder = new TextDecoder();
+      const reader = body.getReader();
+      let result: ReadableStreamReadResult<unknown>;
+      do {
+        result = await reader.read();
+        if (result.value) {
+          if (!(result.value instanceof Uint8Array)) {
+            throw new Error('Unexepected buffer type');
+          }
+          bodyStr += decoder.decode(result.value);
+        }
+      } while (!result.done);
     }
     if (
       typeof contentType === 'string' &&

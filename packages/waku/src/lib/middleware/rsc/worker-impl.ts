@@ -6,7 +6,6 @@ import { Server } from 'node:http';
 import { createServer as viteCreateServer } from 'vite';
 import type { ViteDevServer } from 'vite';
 
-import { viteInlineConfig } from '../../config.js';
 import { fileURLToFilePath } from '../../utils/path.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
@@ -91,7 +90,6 @@ const getViteServer = async () => {
   }
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const viteServer = await viteCreateServer({
-    ...(await viteInlineConfig()),
     plugins: [
       rscTransformPlugin(false),
       rscReloadPlugin((type) => {

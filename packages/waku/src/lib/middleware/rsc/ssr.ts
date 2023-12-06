@@ -2,7 +2,6 @@ import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
 import type { ViteDevServer } from 'vite';
 
 import type { ResolvedConfig } from '../../../config.js';
-import { viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
 import { concatUint8Arrays } from '../../utils/stream.js';
 import {
@@ -126,7 +125,6 @@ const getViteServer = async () => {
     '../../vite-plugin/nonjs-resolve-plugin.js'
   );
   const viteServer = await viteCreateServer({
-    ...(await viteInlineConfig()),
     plugins: [nonjsResolvePlugin()],
     ssr: {
       external: ['waku'],
@@ -397,22 +395,26 @@ export const renderHtml = async <Context>(
           {},
           {
             get(_target, name: string) {
-              const file = filePath.slice(config.basePath.length);
+              const file = filePath.startsWith('/@id/')
+                ? filePath
+                : filePath.slice(config.basePath.length);
               if (command === 'dev') {
-                const filePath = file.startsWith('@fs/')
-                  ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
-                  : joinPath(config.rootDir, config.srcDir, file);
+                const resolvedFilePath = file.startsWith('/@fs/')
+                  ? decodeFilePathFromAbsolute(file.slice('/@fs'.length))
+                  : file;
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../../..',
                 );
-                if (filePath.startsWith(wakuDist)) {
+                if (resolvedFilePath.startsWith(wakuDist)) {
                   const id =
                     'waku' +
-                    filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
+                    resolvedFilePath
+                      .slice(wakuDist.length)
+                      .replace(/\.\w+$/, '');
                   return { id, chunks: [id], name };
                 }
-                const id = filePathToFileURL(filePath) + '#dev';
+                const id = filePathToFileURL(resolvedFilePath) + '#dev';
                 return { id, chunks: [id], name };
               }
               // command !== 'dev'
@@ -421,7 +423,7 @@ export const renderHtml = async <Context>(
                   config.rootDir,
                   config.distDir,
                   config.publicDir,
-                  file,
+                  filePath,
                 ),
               );
               return { id, chunks: [id], name };
