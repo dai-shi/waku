@@ -17,7 +17,6 @@ import {
   mkdir,
   readFile,
   writeFile,
-  rm,
 } from './utils/node-fs.js';
 import { encodeInput, generatePrefetchCode } from './middleware/rsc/utils.js';
 import { renderRSC, getBuildConfigRSC } from './rsc/renderer.js';
