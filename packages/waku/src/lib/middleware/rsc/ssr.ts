@@ -153,6 +153,7 @@ const loadServerFile = async (
     return import(fileURL);
   }
   const vite = await getViteServer();
+  console.log('fileURL', fileURL);
   return vite.ssrLoadModule(fileURLToFilePath(fileURL));
 };
 
