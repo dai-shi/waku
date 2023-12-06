@@ -10,8 +10,17 @@ const rootElement = (
   </StrictMode>
 );
 
-if ((globalThis as any).__WAKU_SSR_ENABLED__) {
-  hydrateRoot(document.getElementById('root')!, rootElement);
-} else {
-  createRoot(document.getElementById('root')!).render(rootElement);
+// FIXME temporary fix, doesn't feel ideal.
+function init() {
+  const root = document.getElementById('root');
+  if (!root) {
+    setTimeout(init);
+    return;
+  }
+  if ((globalThis as any).__WAKU_SSR_ENABLED__) {
+    hydrateRoot(root, rootElement);
+  } else {
+    createRoot(root).render(rootElement);
+  }
 }
+init();
