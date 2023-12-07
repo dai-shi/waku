@@ -28,6 +28,7 @@ export async function resolveConfig(config: Config) {
     distDir: 'dist',
     publicDir: 'public',
     assetsDir: 'assets',
+    htmlsDir: 'htmls',
     indexHtml: 'index.html',
     entriesJs: 'entries.js',
     rscPath: 'RSC',

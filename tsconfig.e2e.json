@@ -11,6 +11,9 @@
     },
     {
       "path": "./e2e/fixtures/ssr-basic/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/rsc-router/tsconfig.json"
     }
   ]
 }
