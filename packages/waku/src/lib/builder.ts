@@ -19,13 +19,13 @@ import {
   writeFile,
 } from './utils/node-fs.js';
 import { streamToString } from './utils/stream.js';
-import { encodeInput, generatePrefetchCode } from './middleware/rsc/utils.js';
+import { encodeInput, generatePrefetchCode } from './rsc/utils.js';
 import { renderRSC, getBuildConfigRSC } from './rsc/renderer.js';
+import { renderHtml, shutdown as shutdownSsr } from './rsc/ssr.js';
 import { rscIndexPlugin } from './vite-plugin/rsc-index-plugin.js';
 import { rscAnalyzePlugin } from './vite-plugin/rsc-analyze-plugin.js';
 import { rscTransformPlugin } from './vite-plugin/rsc-transform-plugin.js';
 import { patchReactRefresh } from './vite-plugin/patch-react-refresh.js';
-import { renderHtml, shutdown as shutdownSsr } from './middleware/rsc/ssr.js';
 
 // TODO this file and functions in it are too long. will fix.
 

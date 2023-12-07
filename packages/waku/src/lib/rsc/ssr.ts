@@ -1,17 +1,17 @@
 import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
 import type { ViteDevServer } from 'vite';
 
-import type { ResolvedConfig } from '../../../config.js';
-import { defineEntries } from '../../../server.js';
-import { concatUint8Arrays } from '../../utils/stream.js';
+import type { ResolvedConfig } from '../../config.js';
+import { defineEntries } from '../../server.js';
+import { concatUint8Arrays } from '../utils/stream.js';
 import {
   decodeFilePathFromAbsolute,
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
-} from '../../utils/path.js';
+} from '../utils/path.js';
 import { renderRSC as renderRSCWorker } from './worker-api.js';
-import { renderRSC } from '../../rsc/renderer.js';
+import { renderRSC } from './renderer.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 
 const loadReact = async (
@@ -122,7 +122,7 @@ const getViteServer = async () => {
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const { createServer: viteCreateServer } = await import('vite');
   const { nonjsResolvePlugin } = await import(
-    '../../vite-plugin/nonjs-resolve-plugin.js'
+    '../vite-plugin/nonjs-resolve-plugin.js'
   );
   const viteServer = await viteCreateServer({
     plugins: [nonjsResolvePlugin()],

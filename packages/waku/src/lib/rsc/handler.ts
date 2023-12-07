@@ -4,18 +4,18 @@ import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
 import { joinPath, filePathToFileURL, extname } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
-import { renderHtml } from './rsc/ssr.js';
-import { decodeInput, hasStatusCode, deepFreeze } from './rsc/utils.js';
+import { renderHtml } from './ssr.js';
+import { decodeInput, hasStatusCode, deepFreeze } from './utils.js';
 import {
   registerReloadCallback,
   registerImportCallback,
   renderRSC as renderRSCWorker,
-} from './rsc/worker-api.js';
+} from './worker-api.js';
 import { renderRSC } from '../rsc/renderer.js';
 import { patchReactRefresh } from '../vite-plugin/patch-react-refresh.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 
-export function rsc<
+export function createHandler<
   Context,
   Req extends BaseReq,
   Res extends BaseRes,
