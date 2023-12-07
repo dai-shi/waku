@@ -402,7 +402,7 @@ export const renderHtml = async <Context>(
                   : joinPath(config.rootDir, file);
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
-                  '../../../..',
+                  '../../..',
                 );
                 if (filePath.startsWith(wakuDist)) {
                   const id =
