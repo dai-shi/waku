@@ -21,7 +21,7 @@ export function connectWrapper(
         connectReq.url || '',
         `http://${connectReq.headers.host}`,
       ).toString(),
-      headers: connectReq.headers,
+      contentType: connectReq.headers['content-type'],
       orig: connectReq,
     };
     const res: BaseRes & { orig: ServerResponse } = {

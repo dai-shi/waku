@@ -171,7 +171,7 @@ export function rsc<
     }
     if (command !== 'dev') {
       if (pathStr.startsWith(basePrefix)) {
-        const { method, headers } = req;
+        const { method, contentType } = req;
         if (method !== 'GET' && method !== 'POST') {
           throw new Error(`Unsupported method '${method}'`);
         }
@@ -183,7 +183,7 @@ export function rsc<
             method,
             context,
             body: req.stream,
-            contentType: headers['content-type'] as string | undefined,
+            contentType,
             isDev: false,
           });
           unstable_posthook?.(req, res, context as Context);
@@ -197,7 +197,7 @@ export function rsc<
     } else {
       // command === 'dev'
       if (pathStr.startsWith(basePrefix)) {
-        const { method, headers } = req;
+        const { method, contentType } = req;
         if (method !== 'GET' && method !== 'POST') {
           throw new Error(`Unsupported method '${method}'`);
         }
@@ -206,7 +206,7 @@ export function rsc<
           const [readable, nextCtx] = await renderRSCWorker({
             input,
             method,
-            headers,
+            contentType,
             config,
             command,
             context,
@@ -241,7 +241,7 @@ export function rsc<
       const viteReq: any = Readable.fromWeb(req.stream as any);
       viteReq.method = req.method;
       viteReq.url = pathStr;
-      viteReq.headers = req.headers;
+      viteReq.headers = { 'content-type': req.contentType };
       const viteRes: any = Writable.fromWeb(res.stream as any);
       Object.defineProperty(viteRes, 'statusCode', {
         set(code) {

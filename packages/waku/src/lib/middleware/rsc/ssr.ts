@@ -364,7 +364,7 @@ export const renderHtml = async <Context>(
       [stream, nextCtx] = await renderRSCWorker({
         input: ssrConfig.input,
         method: 'GET',
-        headers: {},
+        contentType: undefined,
         config,
         command,
         context,

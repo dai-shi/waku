@@ -5,7 +5,7 @@ import type { ResolvedConfig } from '../../../config.js';
 export type RenderRequest = {
   input: string;
   method: 'GET' | 'POST';
-  headers: Record<string, string | string[] | undefined>;
+  contentType: string | undefined;
   config: Omit<ResolvedConfig, 'ssr'>;
   command: 'dev'; // DEV only
   context: unknown;

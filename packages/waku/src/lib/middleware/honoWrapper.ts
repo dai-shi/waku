@@ -54,9 +54,7 @@ export function honoWrapper<
         stream: c.req.raw.body || createEmptyReadableStream(),
         method: c.req.method,
         url: c.req.url,
-        headers: Object.fromEntries(
-          Array.from(c.req.raw.headers.entries()).map(([k, v]) => [k, v]),
-        ),
+        contentType: c.req.header('content-type'),
         c,
       };
       const writable = createStreamPair((readable) => {

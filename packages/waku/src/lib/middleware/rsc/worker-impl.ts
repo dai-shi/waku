@@ -46,7 +46,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
       method: rr.method,
       context: rr.context,
       body: rr.stream,
-      contentType: rr.headers['content-type'] as string | undefined,
+      contentType: rr.contentType,
       ...(rr.moduleIdCallback ? { moduleIdCallback: rr.moduleIdCallback } : {}),
       isDev: true,
       customImport: loadServerFile,
