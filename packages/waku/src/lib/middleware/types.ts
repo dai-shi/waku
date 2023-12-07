@@ -11,7 +11,7 @@ export type BaseRes = {
   setStatus: (code: number) => void;
 };
 
-export type Middleware<Req extends BaseReq, Res extends BaseRes> = (
+export type Handler<Req extends BaseReq, Res extends BaseRes> = (
   req: Req,
   res: Res,
   next: (err?: unknown) => void,

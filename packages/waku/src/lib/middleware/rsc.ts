@@ -13,7 +13,7 @@ import {
 } from './rsc/worker-api.js';
 import { renderRSC } from '../rsc/renderer.js';
 import { patchReactRefresh } from '../vite-plugin/patch-react-refresh.js';
-import type { BaseReq, BaseRes, Middleware } from './types.js';
+import type { BaseReq, BaseRes, Handler } from './types.js';
 
 export function rsc<
   Context,
@@ -25,7 +25,7 @@ export function rsc<
   ssr?: boolean;
   unstable_prehook?: (req: Req, res: Res) => Context;
   unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
-}): Middleware<Req, Res> {
+}): Handler<Req, Res> {
   const { command, ssr, unstable_prehook, unstable_posthook } = options;
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');

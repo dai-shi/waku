@@ -1,6 +1,6 @@
 import type { MiddlewareHandler, Context, Env, Input } from 'hono';
 
-import type { BaseReq, BaseRes, Middleware } from './types.js';
+import type { BaseReq, BaseRes, Handler } from './types.js';
 
 const createEmptyReadableStream = () =>
   new ReadableStream({
@@ -43,7 +43,7 @@ export function honoWrapper<
   P extends string = string,
   I extends Input = Record<string, never>,
 >(
-  m: Middleware<
+  m: Handler<
     BaseReq & { c: Context<E, P, I> },
     BaseRes & { c: Context<E, P, I> }
   >,

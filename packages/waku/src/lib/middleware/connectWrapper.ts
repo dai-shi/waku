@@ -1,9 +1,9 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
-import type { BaseReq, BaseRes, Middleware } from './types.js';
+import type { BaseReq, BaseRes, Handler } from './types.js';
 
 export function connectWrapper(
-  m: Middleware<
+  m: Handler<
     BaseReq & { orig: IncomingMessage },
     BaseRes & { orig: ServerResponse }
   >,
