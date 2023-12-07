@@ -153,7 +153,6 @@ const loadServerFile = async (
     return import(fileURL);
   }
   const vite = await getViteServer();
-  console.log('fileURL', fileURL);
   return vite.ssrLoadModule(fileURLToFilePath(fileURL));
 };
 
@@ -396,27 +395,22 @@ export const renderHtml = async <Context>(
           {},
           {
             get(_target, name: string) {
-              console.log('get', filePath, name);
-              const file = filePath.startsWith('/@id/')
-                ? filePath
-                : filePath.slice(config.basePath.length);
+              const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
-                const resolvedFilePath = file.startsWith('@fs/')
+                const filePath = file.startsWith('@fs/')
                   ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
                   : joinPath(config.rootDir, file);
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../../..',
                 );
-                if (resolvedFilePath.startsWith(wakuDist)) {
+                if (filePath.startsWith(wakuDist)) {
                   const id =
                     'waku' +
-                    resolvedFilePath
-                      .slice(wakuDist.length)
-                      .replace(/\.\w+$/, '');
+                    filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
                   return { id, chunks: [id], name };
                 }
-                const id = filePathToFileURL(resolvedFilePath) + '#dev';
+                const id = filePathToFileURL(filePath) + '#dev';
                 return { id, chunks: [id], name };
               }
               // command !== 'dev'

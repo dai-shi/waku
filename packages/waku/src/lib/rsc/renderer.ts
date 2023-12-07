@@ -61,9 +61,7 @@ const resolveClientEntry = (
     return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
   }
   if (!filePath.startsWith(root)) {
-    throw new Error(
-      'Resolving client module outside root is not supported.',
-    );
+    throw new Error('Resolving client module outside root is not supported.');
   }
   return config.basePath + relativePath(root, filePath);
 };
@@ -139,7 +137,6 @@ export async function renderRSC(
 
   const rsfPrefix =
     joinPath(config.rootDir, isDev ? config.srcDir : config.distDir) + '/';
-  console.log(rsfPrefix);
 
   const render = async (renderContext: RenderContext, input: string) => {
     const elements = await renderEntries.call(renderContext, input);
@@ -159,7 +156,6 @@ export async function renderRSC(
     {
       get(_target, encodedId: string) {
         const [file, name] = encodedId.split('#') as [string, string];
-        console.log('file', file, name);
         const id = resolveClientEntry(file, config, isDev);
         moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
