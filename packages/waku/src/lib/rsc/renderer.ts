@@ -56,18 +56,14 @@ const resolveClientEntry = (
   if (!root.startsWith('/') && filePath.startsWith('/')) {
     filePath = filePath.slice(1);
   }
-  if (!filePath.startsWith(root)) {
-    if (isDev) {
-      // HACK this relies on Vite's internal implementation detail.
-      return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
-    } else {
-      throw new Error(
-        'Resolving client module outside root is unsupported for now',
-      );
-    }
+  if (isDev) {
+    // HACK this relies on Vite's internal implementation detail.
+    return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
   }
-  // https://github.com/dai-shi/waku/pull/181#discussion_r1409274135
-  return (isDev ? '/@id' : '') + config.basePath + relativePath(root, filePath);
+  if (!filePath.startsWith(root)) {
+    throw new Error('Resolving client module outside root is not supported.');
+  }
+  return config.basePath + relativePath(root, filePath);
 };
 
 // HACK Patching stream is very fragile.

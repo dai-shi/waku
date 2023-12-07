@@ -397,22 +397,20 @@ export const renderHtml = async <Context>(
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
-                const resolvedFilePath = file.startsWith('@fs/')
+                const filePath = file.startsWith('@fs/')
                   ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
-                  : file;
+                  : joinPath(config.rootDir, file);
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../../..',
                 );
-                if (resolvedFilePath.startsWith(wakuDist)) {
+                if (filePath.startsWith(wakuDist)) {
                   const id =
                     'waku' +
-                    resolvedFilePath
-                      .slice(wakuDist.length)
-                      .replace(/\.\w+$/, '');
+                    filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
                   return { id, chunks: [id], name };
                 }
-                const id = filePathToFileURL(resolvedFilePath) + '#dev';
+                const id = filePathToFileURL(filePath) + '#dev';
                 return { id, chunks: [id], name };
               }
               // command !== 'dev'
@@ -421,7 +419,7 @@ export const renderHtml = async <Context>(
                   config.rootDir,
                   config.distDir,
                   config.publicDir,
-                  filePath,
+                  file,
                 ),
               );
               return { id, chunks: [id], name };
