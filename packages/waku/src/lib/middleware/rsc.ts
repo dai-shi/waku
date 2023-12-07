@@ -39,22 +39,18 @@ export function rsc<
     }
     const [
       config,
-      { viteInlineConfig },
       { createServer: viteCreateServer },
       { default: viteReact },
       { rscIndexPlugin },
       { rscHmrPlugin, hotImport },
     ] = await Promise.all([
       configPromise,
-      import('../config.js'),
       import('vite'),
       import('@vitejs/plugin-react'),
       import('../vite-plugin/rsc-index-plugin.js'),
       import('../vite-plugin/rsc-hmr-plugin.js'),
     ]);
     const viteServer = await viteCreateServer({
-      ...(await viteInlineConfig()),
-      root: joinPath(config.rootDir, config.srcDir),
       base: config.basePath,
       optimizeDeps: {
         include: ['react-server-dom-webpack/client'],
@@ -104,11 +100,7 @@ export function rsc<
     // command === "dev"
     const { readFile, stat } = await import('../utils/node-fs.js');
     if (!publicIndexHtml) {
-      const publicIndexHtmlFile = joinPath(
-        config.rootDir,
-        config.srcDir,
-        config.indexHtml,
-      );
+      const publicIndexHtmlFile = joinPath(config.rootDir, config.indexHtml);
       publicIndexHtml = await readFile(publicIndexHtmlFile, {
         encoding: 'utf8',
       });

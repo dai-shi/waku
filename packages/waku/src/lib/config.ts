@@ -41,17 +41,3 @@ export async function resolveConfig(config: Config) {
   };
   return resolvedConfig;
 }
-
-// TODO we hope to eliminate this in the near future
-export const viteInlineConfig = async () => {
-  const [{ existsSync }, path] = await Promise.all([
-    import('node:fs'),
-    import('node:path'),
-  ]);
-  for (const file of ['vite.config.ts', 'vite.config.js']) {
-    if (existsSync(file)) {
-      return { configFile: path.resolve(file) };
-    }
-  }
-  return {};
-};

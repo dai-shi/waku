@@ -51,20 +51,17 @@ const resolveClientEntry = (
   isDev: boolean,
 ) => {
   let filePath = file.startsWith('file://') ? fileURLToFilePath(file) : file;
-  const root = joinPath(config.rootDir, isDev ? config.srcDir : config.distDir);
+  const root = joinPath(config.rootDir, isDev ? '' : config.distDir);
   // HACK on windows file url looks like file:///C:/path/to/file
   if (!root.startsWith('/') && filePath.startsWith('/')) {
     filePath = filePath.slice(1);
   }
+  if (isDev) {
+    // HACK this relies on Vite's internal implementation detail.
+    return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
+  }
   if (!filePath.startsWith(root)) {
-    if (isDev) {
-      // HACK this relies on Vite's internal implementation detail.
-      return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
-    } else {
-      throw new Error(
-        'Resolving client module outside root is unsupported for now',
-      );
-    }
+    throw new Error('Resolving client module outside root is not supported.');
   }
   return config.basePath + relativePath(root, filePath);
 };

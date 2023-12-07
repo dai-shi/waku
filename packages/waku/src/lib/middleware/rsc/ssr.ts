@@ -2,7 +2,6 @@ import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
 import type { ViteDevServer } from 'vite';
 
 import type { ResolvedConfig } from '../../../config.js';
-import { viteInlineConfig } from '../../config.js';
 import { defineEntries } from '../../../server.js';
 import { concatUint8Arrays } from '../../utils/stream.js';
 import {
@@ -126,7 +125,6 @@ const getViteServer = async () => {
     '../../vite-plugin/nonjs-resolve-plugin.js'
   );
   const viteServer = await viteCreateServer({
-    ...(await viteInlineConfig()),
     plugins: [nonjsResolvePlugin()],
     ssr: {
       external: ['waku'],
@@ -401,7 +399,7 @@ export const renderHtml = async <Context>(
               if (command === 'dev') {
                 const filePath = file.startsWith('@fs/')
                   ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
-                  : joinPath(config.rootDir, config.srcDir, file);
+                  : joinPath(config.rootDir, file);
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../../..',
