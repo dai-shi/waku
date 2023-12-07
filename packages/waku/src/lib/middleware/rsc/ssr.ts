@@ -419,7 +419,7 @@ export const renderHtml = async <Context>(
                   config.rootDir,
                   config.distDir,
                   config.publicDir,
-                  filePath,
+                  file,
                 ),
               );
               return { id, chunks: [id], name };
