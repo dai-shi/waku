@@ -403,7 +403,7 @@ export const renderHtml = async <Context>(
               if (command === 'dev') {
                 const resolvedFilePath = file.startsWith('@fs/')
                   ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
-                  : file;
+                  : joinPath(config.rootDir, file);
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../../..',
