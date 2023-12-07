@@ -34,16 +34,17 @@ export function rsc<
 
   let lastViteServer: ViteDevServer | undefined;
   const getViteServer = async (): Promise<ViteDevServer> => {
-    const config = await configPromise;
     if (lastViteServer) {
       return lastViteServer;
     }
     const [
+      config,
       { createServer: viteCreateServer },
       { default: viteReact },
       { rscIndexPlugin },
       { rscHmrPlugin, hotImport },
     ] = await Promise.all([
+      configPromise,
       import('vite'),
       import('@vitejs/plugin-react'),
       import('../vite-plugin/rsc-index-plugin.js'),

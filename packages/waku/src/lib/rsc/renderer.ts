@@ -51,7 +51,7 @@ const resolveClientEntry = (
   isDev: boolean,
 ) => {
   let filePath = file.startsWith('file://') ? fileURLToFilePath(file) : file;
-  const root = joinPath(config.rootDir, !isDev ? config.distDir : '');
+  const root = joinPath(config.rootDir, isDev ? '' : config.distDir);
   // HACK on windows file url looks like file:///C:/path/to/file
   if (!root.startsWith('/') && filePath.startsWith('/')) {
     filePath = filePath.slice(1);

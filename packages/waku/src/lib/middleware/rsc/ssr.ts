@@ -397,8 +397,8 @@ export const renderHtml = async <Context>(
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
               if (command === 'dev') {
-                const resolvedFilePath = file.startsWith('/@fs/')
-                  ? decodeFilePathFromAbsolute(file.slice('/@fs'.length))
+                const resolvedFilePath = file.startsWith('@fs/')
+                  ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
                   : file;
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
