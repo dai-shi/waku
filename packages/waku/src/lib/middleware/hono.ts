@@ -33,6 +33,9 @@ const createStreamPair = (
       }
     },
     close() {
+      if (signal.aborted) {
+        return;
+      }
       controller.close();
       if (!hasData) {
         callback(null);
