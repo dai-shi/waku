@@ -1,8 +1,7 @@
+import { Readable, Writable } from 'node:stream';
 import type { ViteDevServer } from 'vite';
 import { createServer as viteCreateServer } from 'vite';
 import { default as viteReact } from '@vitejs/plugin-react';
-import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
-import { rscHmrPlugin, hotImport } from '../plugins/vite-plugin-rsc-hmr.js';
 
 import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
@@ -10,12 +9,15 @@ import { joinPath } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from './html-renderer.js';
 import { decodeInput, hasStatusCode } from './utils.js';
+import { readFile, stat } from '../utils/node-fs.js';
 import {
   registerReloadCallback,
   registerImportCallback,
   renderRscWithWorker,
 } from './worker-api.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
+import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
+import { rscHmrPlugin, hotImport } from '../plugins/vite-plugin-rsc-hmr.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 
 export function createDevHandler<
@@ -62,7 +64,6 @@ export function createDevHandler<
   let publicIndexHtml: string | undefined;
   const getHtmlStr = async (pathStr: string): Promise<string | null> => {
     const config = await configPromise;
-    const { readFile, stat } = await import('../utils/node-fs.js');
     if (!publicIndexHtml) {
       const publicIndexHtmlFile = joinPath(config.rootDir, config.indexHtml);
       publicIndexHtml = await readFile(publicIndexHtmlFile, {
@@ -152,24 +153,6 @@ export function createDevHandler<
       return;
     }
     const vite = await getViteServer();
-    // TODO Do we still need this?
-    // HACK re-export "?v=..." URL to avoid dual module hazard.
-    const fname = pathStr.startsWith(config.basePath + '@fs/')
-      ? pathStr.slice(config.basePath.length + 3)
-      : joinPath(vite.config.root, pathStr);
-    for (const item of vite.moduleGraph.idToModuleMap.values()) {
-      if (
-        item.file === fname &&
-        item.url !== pathStr &&
-        !item.url.includes('?html-proxy')
-      ) {
-        res.setHeader('Content-Type', 'application/javascript');
-        res.setStatus(200);
-        endStream(res.stream, `export * from "${item.url}";`);
-        return;
-      }
-    }
-    const { Readable, Writable } = await import('node:stream');
     const viteReq: any = Readable.fromWeb(req.stream as any);
     viteReq.method = req.method;
     viteReq.url = pathStr;
