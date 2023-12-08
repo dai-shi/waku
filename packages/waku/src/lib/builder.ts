@@ -450,8 +450,8 @@ const emitVercelOutput = async (
     `
 const config = { rootDir: process.cwd() };
 export default async function handler(req, res) {
-  const { connectPrdMiddleware } = await import("waku");
-  connectPrdMiddleware({ config, ssr: true })(req, res, () => {
+  const { connectMiddleware } = await import("waku");
+  connectMiddleware({ config, ssr: true })(req, res, () => {
     throw new Error("not handled");
   });
 }
