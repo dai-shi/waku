@@ -3,7 +3,14 @@
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
-import type { Hono } from 'hono';
+import { Hono } from 'hono';
+import { serve } from '@hono/node-server';
+import { serveStatic } from '@hono/node-server/serve-static';
+
+import { resolveConfig } from './lib/config.js';
+import { honoMiddleware as honoDevMiddleware } from './lib/middleware/hono-dev.js';
+import { honoMiddleware as honoPrdMiddleware } from './lib/middleware/hono-prd.js';
+import { build } from './lib/builder.js';
 
 const require = createRequire(new URL('.', import.meta.url));
 
@@ -55,26 +62,19 @@ if (values.version) {
 }
 
 async function runDev(options: { ssr: boolean }) {
-  const { Hono } = await import('hono');
-  const { honoMiddleware } = await import('./lib/middleware/hono.js');
   const app = new Hono();
-  app.use('*', honoMiddleware({ config, command: 'dev', ssr: options.ssr }));
+  app.use('*', honoDevMiddleware({ config, ssr: options.ssr }));
   const port = parseInt(process.env.PORT || '3000', 10);
   startServer(app, port);
 }
 
 async function runBuild(options: { ssr: boolean }) {
-  const { build } = await import('./lib/builder.js');
   await build({ config, ssr: options.ssr });
 }
 
 async function runStart(options: { ssr: boolean }) {
-  const { Hono } = await import('hono');
-  const { serveStatic } = await import('@hono/node-server/serve-static');
-  const { resolveConfig } = await import('./lib/config.js');
-  const { honoMiddleware } = await import('./lib/middleware/hono.js');
   const app = new Hono();
-  app.use('*', honoMiddleware({ config, command: 'start', ssr: options.ssr }));
+  app.use('*', honoPrdMiddleware({ config, ssr: options.ssr }));
   const { rootDir, distDir, publicDir } = await resolveConfig(config);
   app.use(
     '*',
@@ -90,7 +90,6 @@ async function runStart(options: { ssr: boolean }) {
 }
 
 async function startServer(app: Hono, port: number) {
-  const { serve } = await import('@hono/node-server');
   const server = serve({ ...app, port }, () => {
     console.log(`ready: Listening on http://localhost:${port}/`);
   });

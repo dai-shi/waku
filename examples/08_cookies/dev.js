@@ -1,6 +1,6 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import { connectMiddleware } from 'waku';
+import { connectMiddleware } from 'waku/dev';
 
 const withSsr = process.argv[2] === '--with-ssr';
 
@@ -11,7 +11,6 @@ app.use(cookieParser());
 app.use(
   connectMiddleware({
     config,
-    command: 'dev',
     unstable_prehook: (req) => {
       return { count: Number(req.orig.cookies.count) || 0 };
     },

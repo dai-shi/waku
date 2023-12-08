@@ -1,7 +1,6 @@
 import type { MiddlewareHandler, Context, Env, Input } from 'hono';
 
 import type { BaseReq, BaseRes, Handler } from '../rsc/types.js';
-import { createHandler } from '../rsc/handler.js';
 
 const createEmptyReadableStream = () =>
   new ReadableStream({
@@ -45,7 +44,7 @@ const createStreamPair = (
   return writable;
 };
 
-const honoWrapper = <E extends Env, P extends string, I extends Input>(
+export const honoWrapper = <E extends Env, P extends string, I extends Input>(
   m: Handler<
     BaseReq & { c: Context<E, P, I> },
     BaseRes & { c: Context<E, P, I> }
@@ -72,12 +71,3 @@ const honoWrapper = <E extends Env, P extends string, I extends Input>(
       m(req, res, () => next().then(resolve));
     });
 };
-
-export function honoMiddleware<
-  // FIXME type defaults are weird
-  E extends Env = never,
-  P extends string = string,
-  I extends Input = Record<string, never>,
->(...args: Parameters<typeof createHandler>) {
-  return honoWrapper<E, P, I>(createHandler(...args));
-}

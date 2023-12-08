@@ -18,7 +18,6 @@ app.use(cookieParser());
 app.use(
   connectMiddleware({
     config,
-    command: 'start',
     unstable_prehook: (req) => {
       return { count: Number(req.orig.cookies.count) || 0 };
     },

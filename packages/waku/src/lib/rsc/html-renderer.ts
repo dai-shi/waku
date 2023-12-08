@@ -14,11 +14,8 @@ import { renderRscWithWorker } from './worker-api.js';
 import { renderRsc } from './rsc-renderer.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 
-const loadReact = async (
-  config: ResolvedConfig,
-  command: 'dev' | 'build' | 'start',
-) => {
-  if (command !== 'dev') {
+const loadReact = async (config: ResolvedConfig, isDev: boolean) => {
+  if (!isDev) {
     return (
       await import(
         filePathToFileURL(
@@ -36,11 +33,8 @@ const loadReact = async (
   return import('react');
 };
 
-const loadRDServer = async (
-  config: ResolvedConfig,
-  command: 'dev' | 'build' | 'start',
-) => {
-  if (command !== 'dev') {
+const loadRDServer = async (config: ResolvedConfig, isDev: boolean) => {
+  if (!isDev) {
     return (
       await import(
         filePathToFileURL(
@@ -58,11 +52,8 @@ const loadRDServer = async (
   return import('react-dom/server.edge');
 };
 
-const loadRSDWClient = async (
-  config: ResolvedConfig,
-  command: 'dev' | 'build' | 'start',
-) => {
-  if (command !== 'dev') {
+const loadRSDWClient = async (config: ResolvedConfig, isDev: boolean) => {
+  if (!isDev) {
     return (
       await import(
         filePathToFileURL(
@@ -80,11 +71,8 @@ const loadRSDWClient = async (
   return import('react-server-dom-webpack/client.edge');
 };
 
-const loadWakuClient = async (
-  config: ResolvedConfig,
-  command: 'dev' | 'build' | 'start',
-) => {
-  if (command !== 'dev') {
+const loadWakuClient = async (config: ResolvedConfig, isDev: boolean) => {
+  if (!isDev) {
     return import(
       filePathToFileURL(
         joinPath(
@@ -103,8 +91,8 @@ const loadWakuClient = async (
 // HACK for react-server-dom-webpack without webpack
 const moduleCache = new Map();
 (globalThis as any).__webpack_chunk_load__ ||= async (id: string) => {
-  const [fileURL, command] = id.split('#');
-  const m = await loadServerFile(fileURL!, (command as any) || 'start');
+  const [fileURL, mode] = id.split('#');
+  const m = await loadServerFile(fileURL!, mode === 'dev');
   moduleCache.set(id, m);
 };
 (globalThis as any).__webpack_require__ ||= (id: string) => moduleCache.get(id);
@@ -138,24 +126,18 @@ const getViteServer = async () => {
   return viteServer;
 };
 
-const loadServerFile = async (
-  fileURL: string,
-  command: 'dev' | 'build' | 'start',
-) => {
-  if (command !== 'dev') {
+const loadServerFile = async (fileURL: string, isDev: boolean) => {
+  if (!isDev) {
     return import(fileURL);
   }
   const vite = await getViteServer();
   return vite.ssrLoadModule(fileURLToFilePath(fileURL));
 };
 
-const getEntriesFileURL = (
-  config: ResolvedConfig,
-  command: 'dev' | 'build' | 'start',
-) => {
+const getEntriesFileURL = (config: ResolvedConfig, isDev: boolean) => {
   const filePath = joinPath(
     config.rootDir,
-    command === 'dev' ? config.srcDir : config.distDir,
+    isDev ? config.srcDir : config.distDir,
     config.entriesJs,
   );
   return filePathToFileURL(filePath);
@@ -316,7 +298,7 @@ const rectifyHtml = () => {
 
 export const renderHtml = async <Context>(
   config: ResolvedConfig,
-  command: 'dev' | 'build' | 'start',
+  isDev: boolean,
   pathStr: string,
   htmlStr: string, // Hope stream works, but it'd be too tricky
   context: Context,
@@ -327,15 +309,15 @@ export const renderHtml = async <Context>(
     { createFromReadableStream },
     { ServerRoot, Slot },
   ] = await Promise.all([
-    loadReact(config, command),
-    loadRDServer(config, command),
-    loadRSDWClient(config, command),
-    loadWakuClient(config, command),
+    loadReact(config, isDev),
+    loadRDServer(config, isDev),
+    loadRSDWClient(config, isDev),
+    loadWakuClient(config, isDev),
   ]);
-  const entriesFileURL = getEntriesFileURL(config, command);
+  const entriesFileURL = getEntriesFileURL(config, isDev);
   const {
     default: { getSsrConfig },
-  } = await (loadServerFile(entriesFileURL, command) as Promise<Entries>);
+  } = await (loadServerFile(entriesFileURL, isDev) as Promise<Entries>);
   const ssrConfig = await getSsrConfig?.(pathStr);
   if (!ssrConfig) {
     return null;
@@ -343,7 +325,7 @@ export const renderHtml = async <Context>(
   let stream: ReadableStream;
   let nextCtx: Context;
   try {
-    if (command !== 'dev') {
+    if (!isDev) {
       stream = await renderRsc({
         config,
         input: ssrConfig.input,
@@ -359,7 +341,6 @@ export const renderHtml = async <Context>(
         method: 'GET',
         contentType: undefined,
         config,
-        command,
         context,
       });
     }
@@ -389,7 +370,7 @@ export const renderHtml = async <Context>(
           {
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
-              if (command === 'dev') {
+              if (isDev) {
                 const filePath = file.startsWith('@fs/')
                   ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
                   : joinPath(config.rootDir, file);
@@ -406,7 +387,7 @@ export const renderHtml = async <Context>(
                 const id = filePathToFileURL(filePath) + '#dev';
                 return { id, chunks: [id], name };
               }
-              // command !== 'dev'
+              // !isDev
               const id = filePathToFileURL(
                 joinPath(
                   config.rootDir,

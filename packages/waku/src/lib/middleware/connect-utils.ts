@@ -1,9 +1,8 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import type { BaseReq, BaseRes, Handler } from '../rsc/types.js';
-import { createHandler } from '../rsc/handler.js';
 
-const connectWrapper = (
+export const connectWrapper = (
   m: Handler<
     BaseReq & { orig: IncomingMessage },
     BaseRes & { orig: ServerResponse }
@@ -34,7 +33,3 @@ const connectWrapper = (
     m(req, res, next);
   };
 };
-
-export function connectMiddleware(...args: Parameters<typeof createHandler>) {
-  return connectWrapper(createHandler(...args));
-}

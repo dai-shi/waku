@@ -106,7 +106,7 @@ const getViteServer = async () => {
         conditions: ['react-server', 'workerd'],
         externalConditions: ['react-server', 'workerd'],
       },
-      external: ['react', 'react-server-dom-webpack', 'waku'],
+      external: ['react', 'react-server-dom-webpack'],
       noExternal: /^(?!node:)/,
     },
     appType: 'custom',
