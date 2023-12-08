@@ -1,11 +1,17 @@
-import type { Config } from '../../config.js';
+import type { EntriesPrd } from '../../server.js';
+import type { Config, ResolvedConfig } from '../../config.js';
 import { resolveConfig } from '../config.js';
-import { joinPath, filePathToFileURL, extname } from '../utils/path.js';
+import { joinPath, filePathToFileURL } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from './html-renderer.js';
 import { decodeInput, hasStatusCode, deepFreeze } from './utils.js';
 import { renderRsc } from '../rsc/rsc-renderer.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
+
+const getEntriesFileURL = (config: Omit<ResolvedConfig, 'ssr'>) => {
+  const filePath = joinPath(config.rootDir, config.distDir, config.entriesJs);
+  return filePathToFileURL(filePath);
+};
 
 export function createHandler<
   Context,
@@ -23,28 +29,20 @@ export function createHandler<
   }
   const configPromise = resolveConfig(options.config);
 
+  const loadHtmlPromise = configPromise.then(async (config) => {
+    const entriesFileURL = getEntriesFileURL(config);
+    const { loadHtml } = (await import(entriesFileURL)) as EntriesPrd;
+    return loadHtml;
+  });
+
   let publicIndexHtml: string | undefined;
   const getHtmlStr = async (pathStr: string): Promise<string | null> => {
-    const config = await configPromise;
+    const loadHtml = await loadHtmlPromise;
     if (!publicIndexHtml) {
-      const publicIndexHtmlJsFile = joinPath(
-        config.rootDir,
-        config.distDir,
-        config.htmlsDir,
-        config.indexHtml + '.js',
-      );
-      publicIndexHtml = (await import(filePathToFileURL(publicIndexHtmlJsFile)))
-        .default as string;
+      publicIndexHtml = await loadHtml('/');
     }
-    const destHtmlJsFile = joinPath(
-      config.rootDir,
-      config.distDir,
-      config.htmlsDir,
-      (extname(pathStr) ? pathStr : pathStr + '/' + config.indexHtml) + '.js',
-    );
     try {
-      return (await import(filePathToFileURL(destHtmlJsFile)))
-        .default as string;
+      return loadHtml(pathStr);
     } catch (e) {
       return publicIndexHtml;
     }

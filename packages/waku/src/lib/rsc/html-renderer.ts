@@ -2,7 +2,7 @@ import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
 import type { ViteDevServer } from 'vite';
 
 import type { ResolvedConfig } from '../../config.js';
-import { defineEntries } from '../../server.js';
+import type { EntriesDev, EntriesPrd } from '../../server.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import {
   decodeFilePathFromAbsolute,
@@ -29,11 +29,6 @@ const moduleCache = new Map();
 (globalThis as any).__webpack_chunk_load__ = async (id: string) =>
   moduleLoading.get(id);
 (globalThis as any).__webpack_require__ = (id: string) => moduleCache.get(id);
-
-type Entries = {
-  default: ReturnType<typeof defineEntries>;
-  loadModule?: (id: string) => Promise<unknown>;
-};
 
 let lastViteServer: ViteDevServer | undefined;
 const getViteServer = async () => {
@@ -239,8 +234,10 @@ export const renderHtml = async <Context>(
     default: { getSsrConfig },
     loadModule,
   } = await (isDev
-    ? loadServerFileDev(entriesFileURL)
-    : (import(entriesFileURL) as Promise<Entries>));
+    ? (loadServerFileDev(entriesFileURL) as Promise<
+        EntriesDev & { loadModule: undefined }
+      >)
+    : (import(entriesFileURL) as Promise<EntriesPrd>));
   const [
     { createElement },
     { renderToReadableStream },

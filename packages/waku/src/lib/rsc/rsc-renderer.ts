@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { defineEntries } from '../../server.js';
-import type { RenderContext } from '../../server.js';
+import type { RenderContext, EntriesDev, EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../../config.js';
 import {
   encodeFilePathToAbsolute,
@@ -14,11 +13,6 @@ import { streamToString } from '../utils/stream.js';
 
 export const RSDW_SERVER_MODULE = 'rsdw-server';
 export const RSDW_SERVER_MODULE_VALUE = 'react-server-dom-webpack/server.edge';
-
-type Entries = {
-  default: ReturnType<typeof defineEntries>;
-  loadModule?: (id: string) => Promise<unknown>;
-};
 
 const getEntriesFileURL = (
   config: Omit<ResolvedConfig, 'ssr'>,
@@ -79,9 +73,11 @@ export async function renderRsc(
   const {
     default: { renderEntries },
     loadModule,
-  } = (await (isDev
-    ? opts.customImport(entriesFileURL)
-    : import(entriesFileURL))) as Entries;
+  } = await (isDev
+    ? (opts.customImport(entriesFileURL) as Promise<
+        EntriesDev & { loadModule: undefined }
+      >)
+    : (import(entriesFileURL) as Promise<EntriesPrd>));
   const { renderToReadableStream, decodeReply } = await (isDev
     ? import(RSDW_SERVER_MODULE_VALUE)
     : loadModule!(RSDW_SERVER_MODULE).then((m: any) => m.default));
@@ -179,7 +175,7 @@ export async function getBuildConfig(opts: {
   const entriesFileURL = getEntriesFileURL(config, false);
   const {
     default: { getBuildConfig },
-  } = await (import(entriesFileURL) as Promise<Entries>);
+  } = await (import(entriesFileURL) as Promise<EntriesDev>);
   if (!getBuildConfig) {
     console.warn(
       "getBuildConfig is undefined. It's recommended for optimization and sometimes required.",

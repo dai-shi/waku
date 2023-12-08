@@ -39,3 +39,12 @@ export function defineEntries(
 ) {
   return { renderEntries, getBuildConfig, getSsrConfig };
 }
+
+export type EntriesDev = {
+  default: ReturnType<typeof defineEntries>;
+};
+
+export type EntriesPrd = EntriesDev & {
+  loadModule: (id: string) => Promise<unknown>;
+  loadHtml: (pathStr: string) => Promise<string>;
+};

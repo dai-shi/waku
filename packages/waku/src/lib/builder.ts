@@ -344,6 +344,7 @@ const emitRscFiles = async (config: ResolvedConfig) => {
 
 const emitHtmlFiles = async (
   config: ResolvedConfig,
+  distEntriesFile: string,
   buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
   getClientModules: (input: string) => string[],
   ssr: boolean,
@@ -358,17 +359,10 @@ const emitHtmlFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  const publicIndexHtmlJsFile = joinPath(
-    config.rootDir,
-    config.distDir,
-    config.htmlsDir,
-    config.indexHtml + '.js',
-  );
-  await mkdir(joinPath(publicIndexHtmlJsFile, '..'), { recursive: true });
-  await writeFile(
-    publicIndexHtmlJsFile,
-    `export default ${JSON.stringify(publicIndexHtml)};`,
-  );
+  let loadHtmlCode = `
+export function loadHtml(pathStr) {
+  switch (pathStr) {
+`;
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
       async ([pathStr, { entries, customCode, context }]) => {
@@ -385,6 +379,12 @@ const emitHtmlFiles = async (
           (extname(pathStr) ? pathStr : pathStr + '/' + config.indexHtml) +
             '.js',
         );
+        loadHtmlCode += `    case ${JSON.stringify(pathStr)}:
+      return import('./${joinPath(
+        config.htmlsDir,
+        (extname(pathStr) ? pathStr : pathStr + '/' + config.indexHtml) + '.js',
+      )}').then((m)=>m.default);
+`;
         let htmlStr: string;
         if (existsSync(destHtmlFile)) {
           htmlStr = await readFile(destHtmlFile, { encoding: 'utf8' });
@@ -445,6 +445,12 @@ const emitHtmlFiles = async (
       },
     ),
   );
+  loadHtmlCode += `
+    default:
+      throw new Error('Cannot find HTML for ' + pathStr);
+  }
+}`;
+  await appendFile(distEntriesFile, loadHtmlCode);
   return { htmlFiles };
 };
 
@@ -582,6 +588,7 @@ export async function build(options: { config: Config; ssr?: boolean }) {
     await emitRscFiles(config);
   const { htmlFiles } = await emitHtmlFiles(
     config,
+    distEntriesFile,
     buildConfig,
     getClientModules,
     !!options?.ssr,
