@@ -7,7 +7,6 @@ export type RenderRequest = {
   method: 'GET' | 'POST';
   contentType: string | undefined;
   config: Omit<ResolvedConfig, 'ssr'>;
-  command: 'dev'; // DEV only
   context: unknown;
   stream?: ReadableStream;
   moduleIdCallback?: (id: string) => void;
