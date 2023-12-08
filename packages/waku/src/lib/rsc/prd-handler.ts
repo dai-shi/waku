@@ -75,7 +75,7 @@ export function createPrdHandler<
         const htmlStr = await getHtmlStr(pathStr);
         const result =
           htmlStr &&
-          (await renderHtml(config, 'start', pathStr, htmlStr, context));
+          (await renderHtml(config, false, pathStr, htmlStr, context));
         if (result) {
           const [readable, nextCtx] = result;
           unstable_posthook?.(req, res, nextCtx as Context);

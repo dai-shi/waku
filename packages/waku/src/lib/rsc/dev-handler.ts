@@ -117,7 +117,7 @@ export function createDevHandler<
         const htmlStr = await getHtmlStr(pathStr);
         const result =
           htmlStr &&
-          (await renderHtml(config, 'dev', pathStr, htmlStr, context));
+          (await renderHtml(config, true, pathStr, htmlStr, context));
         if (result) {
           const [readable, nextCtx] = result;
           unstable_posthook?.(req, res, nextCtx as Context);

@@ -351,7 +351,7 @@ const emitHtmlFiles = async (
           );
         }
         const htmlResult =
-          ssr && (await renderHtml(config, 'build', pathStr, htmlStr, context));
+          ssr && (await renderHtml(config, false, pathStr, htmlStr, context));
         if (htmlResult) {
           const [htmlReadable1, htmlReadable2] = htmlResult[0].tee();
           await Promise.all([
