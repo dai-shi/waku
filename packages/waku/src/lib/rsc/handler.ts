@@ -12,7 +12,7 @@ import {
   renderRscWithWorker,
 } from './worker-api.js';
 import { renderRsc } from '../rsc/rsc-renderer.js';
-import { patchReactRefresh } from '../vite-plugin/patch-react-refresh.js';
+import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 
 export function createHandler<
@@ -47,8 +47,8 @@ export function createHandler<
       configPromise,
       import('vite'),
       import('@vitejs/plugin-react'),
-      import('../vite-plugin/rsc-index-plugin.js'),
-      import('../vite-plugin/rsc-hmr-plugin.js'),
+      import('../plugins/vite-plugin-rsc-index.js'),
+      import('../plugins/vite-plugin-rsc-hmr.js'),
     ]);
     const viteServer = await viteCreateServer({
       base: config.basePath,

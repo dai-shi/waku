@@ -10,9 +10,9 @@ import { fileURLToFilePath } from '../utils/path.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
 import { renderRsc } from './rsc-renderer.js';
-import { rscTransformPlugin } from '../vite-plugin/rsc-transform-plugin.js';
-import { rscReloadPlugin } from '../vite-plugin/rsc-reload-plugin.js';
-import { rscDelegatePlugin } from '../vite-plugin/rsc-delegate-plugin.js';
+import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
+import { rscReloadPlugin } from '../plugins/vite-plugin-rsc-reload.js';
+import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 
 const IS_NODE_20 = Number(process.versions.node.split('.')[0]) >= 20;
 if (IS_NODE_20) {

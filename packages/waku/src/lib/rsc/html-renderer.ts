@@ -122,7 +122,7 @@ const getViteServer = async () => {
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const { createServer: viteCreateServer } = await import('vite');
   const { nonjsResolvePlugin } = await import(
-    '../vite-plugin/nonjs-resolve-plugin.js'
+    '../plugins/vite-plugin-nonjs-resolve.js'
   );
   const viteServer = await viteCreateServer({
     plugins: [nonjsResolvePlugin()],

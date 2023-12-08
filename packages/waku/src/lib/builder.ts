@@ -22,10 +22,10 @@ import { streamToString } from './utils/stream.js';
 import { encodeInput, generatePrefetchCode } from './rsc/utils.js';
 import { renderRsc, getBuildConfig } from './rsc/rsc-renderer.js';
 import { renderHtml } from './rsc/html-renderer.js';
-import { rscIndexPlugin } from './vite-plugin/rsc-index-plugin.js';
-import { rscAnalyzePlugin } from './vite-plugin/rsc-analyze-plugin.js';
-import { rscTransformPlugin } from './vite-plugin/rsc-transform-plugin.js';
-import { patchReactRefresh } from './vite-plugin/patch-react-refresh.js';
+import { rscIndexPlugin } from './plugins/vite-plugin-rsc-index.js';
+import { rscAnalyzePlugin } from './plugins/vite-plugin-rsc-analyze.js';
+import { rscTransformPlugin } from './plugins/vite-plugin-rsc-transform.js';
+import { patchReactRefresh } from './plugins/patch-react-refresh.js';
 
 // TODO this file and functions in it are too long. will fix.
 
