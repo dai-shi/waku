@@ -14,10 +14,10 @@ import { renderRscWithWorker } from './worker-api.js';
 import { renderRsc } from './rsc-renderer.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 
-export const REACT_MODULE = 'react.js';
-export const RD_SERVER_MODULE = 'rd-server.js';
-export const RSDW_CLIENT_MODULE = 'rsdw-client.js';
-export const WAKU_CLIENT_MODULE = 'waku-client.js';
+export const REACT_MODULE = 'react';
+export const RD_SERVER_MODULE = 'rd-server';
+export const RSDW_CLIENT_MODULE = 'rsdw-client';
+export const WAKU_CLIENT_MODULE = 'waku-client';
 export const MODULE_MAP = {
   [REACT_MODULE]: 'react',
   [RD_SERVER_MODULE]: 'react-dom/server.edge',
@@ -31,19 +31,18 @@ const loadModule = async (
   id: keyof typeof MODULE_MAP,
 ) => {
   if (!isDev) {
-    return (
-      await import(
-        filePathToFileURL(
-          joinPath(
-            config.rootDir,
-            config.distDir,
-            config.publicDir,
-            config.assetsDir,
-            id as string,
-          ),
-        )
+    const mod = await import(
+      filePathToFileURL(
+        joinPath(
+          config.rootDir,
+          config.distDir,
+          config.publicDir,
+          config.assetsDir,
+          id + '.js',
+        ),
       )
-    ).default;
+    );
+    return id === WAKU_CLIENT_MODULE ? mod : mod.default;
   }
   return import(MODULE_MAP[id]);
 };

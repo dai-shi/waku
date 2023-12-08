@@ -21,10 +21,10 @@ import {
 import { streamToString } from './utils/stream.js';
 import { encodeInput, generatePrefetchCode } from './rsc/utils.js';
 import {
-  renderRsc,
-  getBuildConfig,
   RSDW_SERVER_MODULE,
   RSDW_SERVER_MODULE_VALUE,
+  renderRsc,
+  getBuildConfig,
 } from './rsc/rsc-renderer.js';
 import {
   REACT_MODULE,

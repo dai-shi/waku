@@ -13,7 +13,7 @@ import {
 import { parseFormData } from '../utils/form.js';
 import { streamToString } from '../utils/stream.js';
 
-export const RSDW_SERVER_MODULE = 'rsdw-server.js';
+export const RSDW_SERVER_MODULE = 'rsdw-server';
 export const RSDW_SERVER_MODULE_VALUE = 'react-server-dom-webpack/server.edge';
 
 const loadRSDWServer = async (
@@ -24,7 +24,7 @@ const loadRSDWServer = async (
     return (
       await import(
         filePathToFileURL(
-          joinPath(config.rootDir, config.distDir, RSDW_SERVER_MODULE),
+          joinPath(config.rootDir, config.distDir, RSDW_SERVER_MODULE + '.js'),
         )
       )
     ).default;
