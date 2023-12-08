@@ -38,17 +38,12 @@ const createStreamPair = (
   return writable;
 };
 
-function honoWrapper<
-  // FIXME type defaults are weird
-  E extends Env = never,
-  P extends string = string,
-  I extends Input = Record<string, never>,
->(
+const honoWrapper = <E extends Env, P extends string, I extends Input>(
   m: Handler<
     BaseReq & { c: Context<E, P, I> },
     BaseRes & { c: Context<E, P, I> }
   >,
-): MiddlewareHandler<E, P, I> {
+): MiddlewareHandler<E, P, I> => {
   return (c, next) =>
     new Promise((resolve) => {
       const req: BaseReq & { c: Context<E, P, I> } = {
@@ -69,7 +64,13 @@ function honoWrapper<
       };
       m(req, res, () => next().then(resolve));
     });
-}
+};
 
-export const honoMiddleware = (...args: Parameters<typeof createHandler>) =>
-  honoWrapper(createHandler(...args));
+export function honoMiddleware<
+  // FIXME type defaults are weird
+  E extends Env = never,
+  P extends string = string,
+  I extends Input = Record<string, never>,
+>(...args: Parameters<typeof createHandler>) {
+  return honoWrapper<E, P, I>(createHandler(...args));
+}
