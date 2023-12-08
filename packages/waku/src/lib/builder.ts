@@ -189,11 +189,13 @@ const buildServerBundle = async (
     throw new Error('Unexpected vite server build output');
   }
   const code = `
-export function loadFunction(id) {
+export function loadModule(id) {
   switch (id) {
+    case '${RSDW_SERVER_MODULE}':
+      return import('./${RSDW_SERVER_MODULE}.js');
 ${Object.entries(serverEntryFiles || {}).map(
   ([k]) => `
-    case "${config.assetsDir}/${k}.js":
+    case '${config.assetsDir}/${k}.js':
       return import('./${config.assetsDir}/${k}.js');`,
 )}
     default:
@@ -493,9 +495,9 @@ const emitVercelOutput = async (
     `
 const config = { rootDir: process.cwd() };
 export default async function handler(req, res) {
-  const { connectMiddleware } = await import("waku");
+  const { connectMiddleware } = await import('waku');
   connectMiddleware({ config, ssr: true })(req, res, () => {
-    throw new Error("not handled");
+    throw new Error('not handled');
   });
 }
 `,

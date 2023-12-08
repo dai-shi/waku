@@ -15,25 +15,9 @@ import { streamToString } from '../utils/stream.js';
 export const RSDW_SERVER_MODULE = 'rsdw-server';
 export const RSDW_SERVER_MODULE_VALUE = 'react-server-dom-webpack/server.edge';
 
-const loadRSDWServer = async (
-  config: Omit<ResolvedConfig, 'ssr'>,
-  isDev: boolean,
-) => {
-  if (isDev) {
-    return import(RSDW_SERVER_MODULE_VALUE);
-  }
-  return (
-    await import(
-      filePathToFileURL(
-        joinPath(config.rootDir, config.distDir, RSDW_SERVER_MODULE + '.js'),
-      )
-    )
-  ).default;
-};
-
 type Entries = {
   default: ReturnType<typeof defineEntries>;
-  loadFunction?: (id: string) => Promise<unknown>;
+  loadModule?: (id: string) => Promise<unknown>;
 };
 
 const getEntriesFileURL = (
@@ -90,18 +74,17 @@ export async function renderRsc(
     moduleIdCallback,
     isDev,
   } = opts;
-  const { renderToReadableStream, decodeReply } = await loadRSDWServer(
-    config,
-    isDev,
-  );
 
   const entriesFileURL = getEntriesFileURL(config, isDev);
   const {
     default: { renderEntries },
-    loadFunction,
+    loadModule,
   } = (await (isDev
     ? opts.customImport(entriesFileURL)
     : import(entriesFileURL))) as Entries;
+  const { renderToReadableStream, decodeReply } = isDev
+    ? await import(RSDW_SERVER_MODULE_VALUE)
+    : ((await loadModule!(RSDW_SERVER_MODULE)) as any).default;
 
   const render = async (renderContext: RenderContext, input: string) => {
     const elements = await renderEntries.call(renderContext, input);
@@ -153,10 +136,7 @@ export async function renderRsc(
       if (!fileId.startsWith('@id/')) {
         throw new Error('Unexpected server entry in PRD');
       }
-      if (!loadFunction) {
-        throw new Error('loadFunction must exist');
-      }
-      mod = await loadFunction(fileId.slice('@id/'.length));
+      mod = await loadModule!(fileId.slice('@id/'.length));
     }
     const fn = mod[name] || mod;
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
