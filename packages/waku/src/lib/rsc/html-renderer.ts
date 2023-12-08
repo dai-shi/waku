@@ -115,8 +115,7 @@ const getViteServer = async () => {
   const viteServer = await viteCreateServer({
     plugins: [nonjsResolvePlugin()],
     ssr: {
-      external: ['react', 'react-server-dom-webpack'],
-      noExternal: /^(?!node:)/,
+      external: ['waku'],
     },
     appType: 'custom',
     server: { middlewareMode: true, hmr: { server: dummyServer } },
