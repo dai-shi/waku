@@ -14,7 +14,22 @@ import { renderRscWithWorker } from './worker-api.js';
 import { renderRsc } from './rsc-renderer.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 
-const loadReact = async (config: ResolvedConfig, isDev: boolean) => {
+export const REACT_MODULE = 'react.js';
+export const RD_SERVER_MODULE = 'rd-server.js';
+export const RSDW_CLIENT_MODULE = 'rsdw-client.js';
+export const WAKU_CLIENT_MODULE = 'waku-client.js';
+export const MODULE_MAP = {
+  [REACT_MODULE]: 'react',
+  [RD_SERVER_MODULE]: 'react-dom/server.edge',
+  [RSDW_CLIENT_MODULE]: 'react-server-dom-webpack/client.edge',
+  [WAKU_CLIENT_MODULE]: 'waku/client',
+} as const;
+
+const loadModule = async (
+  config: ResolvedConfig,
+  isDev: boolean,
+  id: keyof typeof MODULE_MAP,
+) => {
   if (!isDev) {
     return (
       await import(
@@ -24,68 +39,13 @@ const loadReact = async (config: ResolvedConfig, isDev: boolean) => {
             config.distDir,
             config.publicDir,
             config.assetsDir,
-            'react.js',
+            id as string,
           ),
         )
       )
     ).default;
   }
-  return import('react');
-};
-
-const loadRDServer = async (config: ResolvedConfig, isDev: boolean) => {
-  if (!isDev) {
-    return (
-      await import(
-        filePathToFileURL(
-          joinPath(
-            config.rootDir,
-            config.distDir,
-            config.publicDir,
-            config.assetsDir,
-            'rd-server.js',
-          ),
-        )
-      )
-    ).default;
-  }
-  return import('react-dom/server.edge');
-};
-
-const loadRSDWClient = async (config: ResolvedConfig, isDev: boolean) => {
-  if (!isDev) {
-    return (
-      await import(
-        filePathToFileURL(
-          joinPath(
-            config.rootDir,
-            config.distDir,
-            config.publicDir,
-            config.assetsDir,
-            'rsdw-client.js',
-          ),
-        )
-      )
-    ).default;
-  }
-  return import('react-server-dom-webpack/client.edge');
-};
-
-const loadWakuClient = async (config: ResolvedConfig, isDev: boolean) => {
-  if (!isDev) {
-    return import(
-      filePathToFileURL(
-        joinPath(
-          config.rootDir,
-          config.distDir,
-          config.publicDir,
-          config.assetsDir,
-          'waku-client.js',
-        ),
-      )
-    );
-  }
-  return import('waku/client');
+  return import(MODULE_MAP[id]);
 };
 
 // HACK for react-server-dom-webpack without webpack
@@ -309,10 +269,10 @@ export const renderHtml = async <Context>(
     { createFromReadableStream },
     { ServerRoot, Slot },
   ] = await Promise.all([
-    loadReact(config, isDev),
-    loadRDServer(config, isDev),
-    loadRSDWClient(config, isDev),
-    loadWakuClient(config, isDev),
+    loadModule(config, isDev, REACT_MODULE),
+    loadModule(config, isDev, RD_SERVER_MODULE),
+    loadModule(config, isDev, RSDW_CLIENT_MODULE),
+    loadModule(config, isDev, WAKU_CLIENT_MODULE),
   ]);
   const entriesFileURL = getEntriesFileURL(config, isDev);
   const {

@@ -21,7 +21,14 @@ import {
 import { streamToString } from './utils/stream.js';
 import { encodeInput, generatePrefetchCode } from './rsc/utils.js';
 import { renderRsc, getBuildConfig } from './rsc/rsc-renderer.js';
-import { renderHtml } from './rsc/html-renderer.js';
+import {
+  REACT_MODULE,
+  RD_SERVER_MODULE,
+  RSDW_CLIENT_MODULE,
+  WAKU_CLIENT_MODULE,
+  MODULE_MAP,
+  renderHtml,
+} from './rsc/html-renderer.js';
 import { rscIndexPlugin } from './plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from './plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from './plugins/vite-plugin-nonjs-resolve.js';
@@ -124,7 +131,7 @@ const buildServerBundle = async (
         true,
         config.assetsDir,
         {
-          'waku-client': 'waku/client',
+          [WAKU_CLIENT_MODULE]: MODULE_MAP[WAKU_CLIENT_MODULE],
           ...clientEntryFiles,
         },
         serverEntryFiles,
@@ -149,8 +156,8 @@ const buildServerBundle = async (
         onwarn,
         input: {
           entries: entriesFile,
-          'rsdw-server': 'react-server-dom-webpack/server.edge',
-          'waku-client': 'waku/client',
+          [RSDW_CLIENT_MODULE]: MODULE_MAP[RSDW_CLIENT_MODULE],
+          [WAKU_CLIENT_MODULE]: MODULE_MAP[WAKU_CLIENT_MODULE],
           ...commonEntryFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
@@ -158,7 +165,7 @@ const buildServerBundle = async (
         output: {
           entryFileNames: (chunkInfo) => {
             if (
-              ['waku-client'].includes(chunkInfo.name) ||
+              [WAKU_CLIENT_MODULE].includes(chunkInfo.name) ||
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name] ||
               serverEntryFiles[chunkInfo.name]
@@ -196,10 +203,10 @@ const buildClientBundle = async (
         onwarn,
         input: {
           main: indexHtmlFile,
-          react: 'react',
-          'rd-server': 'react-dom/server.edge',
-          'rsdw-client': 'react-server-dom-webpack/client.edge',
-          'waku-client': 'waku/client',
+          [REACT_MODULE]: MODULE_MAP[REACT_MODULE],
+          [RD_SERVER_MODULE]: MODULE_MAP[RD_SERVER_MODULE],
+          [RSDW_CLIENT_MODULE]: MODULE_MAP[RSDW_CLIENT_MODULE],
+          [WAKU_CLIENT_MODULE]: MODULE_MAP[WAKU_CLIENT_MODULE],
           ...commonEntryFiles,
           ...clientEntryFiles,
         },
@@ -207,9 +214,12 @@ const buildClientBundle = async (
         output: {
           entryFileNames: (chunkInfo) => {
             if (
-              ['react', 'rd-server', 'rsdw-client', 'waku-client'].includes(
-                chunkInfo.name,
-              ) ||
+              [
+                REACT_MODULE,
+                RD_SERVER_MODULE,
+                RSDW_CLIENT_MODULE,
+                WAKU_CLIENT_MODULE,
+              ].includes(chunkInfo.name) ||
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name]
             ) {
