@@ -210,8 +210,13 @@ ${Object.entries(serverEntryFiles || {}).map(
     case '${config.assetsDir}/${k}.js':
       return import('./${config.assetsDir}/${k}.js');`,
 )}
+${Object.entries(clientEntryFiles || {}).map(
+  ([k]) => `
+    case 'public/${config.assetsDir}/${k}.js':
+      return import('./${psDir}/${k}.js');`,
+)}
     default:
-      throw new Error('Cannot find function: ' + id);
+      throw new Error('Cannot find module: ' + id);
   }
 }
 `;

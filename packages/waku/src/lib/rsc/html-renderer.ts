@@ -24,13 +24,11 @@ export const WAKU_CLIENT_MODULE = 'waku-client';
 export const WAKU_CLIENT_MODULE_VALUE = 'waku/client';
 
 // HACK for react-server-dom-webpack without webpack
+const moduleLoading = new Map();
 const moduleCache = new Map();
-(globalThis as any).__webpack_chunk_load__ ||= async (id: string) => {
-  const [fileURL, mode] = id.split('#');
-  const m = await loadServerFile(fileURL!, mode === 'dev');
-  moduleCache.set(id, m);
-};
-(globalThis as any).__webpack_require__ ||= (id: string) => moduleCache.get(id);
+(globalThis as any).__webpack_chunk_load__ = async (id: string) =>
+  moduleLoading.get(id);
+(globalThis as any).__webpack_require__ = (id: string) => moduleCache.get(id);
 
 type Entries = {
   default: ReturnType<typeof defineEntries>;
@@ -313,6 +311,7 @@ export const renderHtml = async <Context>(
           {
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
+              // TODO too long, we need to refactor this logic
               if (isDev) {
                 const filePath = file.startsWith('@fs/')
                   ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
@@ -325,20 +324,37 @@ export const renderHtml = async <Context>(
                   const id =
                     'waku' +
                     filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
+                  if (!moduleLoading.has(id)) {
+                    moduleLoading.set(
+                      id,
+                      import(id).then((m) => {
+                        moduleCache.set(id, m);
+                      }),
+                    );
+                  }
                   return { id, chunks: [id], name };
                 }
-                const id = filePathToFileURL(filePath) + '#dev';
+                const id = filePathToFileURL(filePath);
+                if (!moduleLoading.has(id)) {
+                  moduleLoading.set(
+                    id,
+                    loadServerFile(id, true).then((m) => {
+                      moduleCache.set(id, m);
+                    }),
+                  );
+                }
                 return { id, chunks: [id], name };
               }
               // !isDev
-              const id = filePathToFileURL(
-                joinPath(
-                  config.rootDir,
-                  config.distDir,
-                  config.publicDir,
-                  file,
-                ),
-              );
+              const id = file;
+              if (!moduleLoading.has(id)) {
+                moduleLoading.set(
+                  id,
+                  loadModule!('public/' + id).then((m) => {
+                    moduleCache.set(id, m);
+                  }),
+                );
+              }
               return { id, chunks: [id], name };
             },
           },
