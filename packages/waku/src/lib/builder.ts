@@ -21,7 +21,7 @@ import {
 import { streamToString } from './utils/stream.js';
 import { encodeInput, generatePrefetchCode } from './rsc/utils.js';
 import { renderRsc, getBuildConfig } from './rsc/rsc-renderer.js';
-import { renderHtml, shutdown as shutdownSsr } from './rsc/html-renderer.js';
+import { renderHtml } from './rsc/html-renderer.js';
 import { rscIndexPlugin } from './vite-plugin/rsc-index-plugin.js';
 import { rscAnalyzePlugin } from './vite-plugin/rsc-analyze-plugin.js';
 import { rscTransformPlugin } from './vite-plugin/rsc-transform-plugin.js';
@@ -517,6 +517,4 @@ export async function build(options: { config: Config; ssr?: boolean }) {
 
   // https://vercel.com/docs/build-output-api/v3
   await emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
-
-  await shutdownSsr();
 }

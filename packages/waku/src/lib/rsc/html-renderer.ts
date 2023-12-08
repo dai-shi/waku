@@ -138,13 +138,6 @@ const getViteServer = async () => {
   return viteServer;
 };
 
-export const shutdown = async () => {
-  if (lastViteServer) {
-    await lastViteServer.close();
-    lastViteServer = undefined;
-  }
-};
-
 const loadServerFile = async (
   fileURL: string,
   command: 'dev' | 'build' | 'start',
