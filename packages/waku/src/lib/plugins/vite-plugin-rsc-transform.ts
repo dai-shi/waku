@@ -1,27 +1,26 @@
-import path from 'node:path';
 import type { Plugin } from 'vite';
 import * as RSDWNodeLoader from 'react-server-dom-webpack/node-loader';
 
-export function rscTransformPlugin(isBuild: boolean): Plugin {
+export function rscTransformPlugin(
+  isBuild: boolean,
+  assetsDir?: string,
+  clientEntryFiles?: Record<string, string>,
+  serverEntryFiles?: Record<string, string>,
+): Plugin {
+  const clientFileMap = new Map(
+    Object.entries(clientEntryFiles || {}).map(([k, v]) => [
+      v,
+      `@id/${assetsDir}/${k}.js`,
+    ]),
+  );
+  const serverFileMap = new Map(
+    Object.entries(serverEntryFiles || {}).map(([k, v]) => [
+      v,
+      `@id/${assetsDir}/${k}.js`,
+    ]),
+  );
   return {
     name: 'rsc-transform-plugin',
-    async resolveId(id, importer, options) {
-      if (!id.endsWith('.js')) {
-        return id;
-      }
-      // FIXME This isn't necessary in production mode
-      // (But, waku/router may depend on this.)
-      for (const ext of ['.js', '.ts', '.tsx', '.jsx']) {
-        const resolved = await this.resolve(
-          id.slice(0, -path.extname(id).length) + ext,
-          importer,
-          { ...options, skipSelf: true },
-        );
-        if (resolved) {
-          return resolved;
-        }
-      }
-    },
     async transform(code, id) {
       const resolve = async (
         specifier: string,
@@ -57,10 +56,13 @@ export function rscTransformPlugin(isBuild: boolean): Plugin {
             source,
           )
         ) {
+          const clientId = clientFileMap.has(id)
+            ? `"${clientFileMap.get(id)}"`
+            : 'import.meta.url';
           // HACK tweak registerClientReference for production
           source = source.replace(
             /registerClientReference\(function\(\) {throw new Error\("([^"]*)"\);},"[^"]*","([^"]*)"\);/gs,
-            'registerClientReference(function() {return "$1";}, import.meta.url, "$2");',
+            `registerClientReference(function() {return "$1";}, ${clientId}, "$2");`,
           );
         }
         if (
@@ -68,10 +70,13 @@ export function rscTransformPlugin(isBuild: boolean): Plugin {
             source,
           )
         ) {
+          const serverId = serverFileMap.has(id)
+            ? `"${serverFileMap.get(id)}"`
+            : 'import.meta.url';
           // HACK tweak registerServerReference for production
           source = source.replace(
             /registerServerReference\(([^,]*),"[^"]*","([^"]*)"\);/gs,
-            'registerServerReference($1, import.meta.url, "$2");',
+            `registerServerReference($1, ${serverId}, "$2");`,
           );
         }
       }

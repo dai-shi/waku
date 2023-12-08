@@ -24,6 +24,7 @@ import { renderRsc, getBuildConfig } from './rsc/rsc-renderer.js';
 import { renderHtml } from './rsc/html-renderer.js';
 import { rscIndexPlugin } from './plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from './plugins/vite-plugin-rsc-analyze.js';
+import { nonjsResolvePlugin } from './plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from './plugins/vite-plugin-rsc-transform.js';
 import { patchReactRefresh } from './plugins/patch-react-refresh.js';
 
@@ -117,7 +118,15 @@ const buildServerBundle = async (
   serverEntryFiles: Record<string, string>,
 ) => {
   const serverBuildOutput = await viteBuild({
-    plugins: [rscTransformPlugin(true)],
+    plugins: [
+      nonjsResolvePlugin(),
+      rscTransformPlugin(
+        true,
+        config.assetsDir,
+        clientEntryFiles,
+        serverEntryFiles,
+      ),
+    ],
     ssr: {
       resolve: {
         conditions: ['react-server', 'workerd'],
