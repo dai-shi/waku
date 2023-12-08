@@ -60,12 +60,9 @@ const getViteServer = async () => {
   return viteServer;
 };
 
-const loadServerFile = async (fileURL: string, isDev: boolean) => {
-  if (isDev) {
-    const vite = await getViteServer();
-    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
-  }
-  return import(fileURL);
+const loadServerFileDev = async (fileURL: string) => {
+  const vite = await getViteServer();
+  return vite.ssrLoadModule(fileURLToFilePath(fileURL));
 };
 
 const getEntriesFileURL = (config: ResolvedConfig, isDev: boolean) => {
@@ -241,7 +238,9 @@ export const renderHtml = async <Context>(
   const {
     default: { getSsrConfig },
     loadModule,
-  } = await (loadServerFile(entriesFileURL, isDev) as Promise<Entries>);
+  } = await (isDev
+    ? loadServerFileDev(entriesFileURL)
+    : (import(entriesFileURL) as Promise<Entries>));
   const [
     { createElement },
     { renderToReadableStream },
@@ -340,7 +339,7 @@ export const renderHtml = async <Context>(
                 if (!moduleLoading.has(id)) {
                   moduleLoading.set(
                     id,
-                    loadServerFile(id, true).then((m) => {
+                    loadServerFileDev(id).then((m) => {
                       moduleCache.set(id, m);
                     }),
                   );
@@ -352,7 +351,7 @@ export const renderHtml = async <Context>(
               if (!moduleLoading.has(id)) {
                 moduleLoading.set(
                   id,
-                  loadModule!('public/' + id).then((m) => {
+                  loadModule!('public/' + id).then((m: any) => {
                     moduleCache.set(id, m);
                   }),
                 );
