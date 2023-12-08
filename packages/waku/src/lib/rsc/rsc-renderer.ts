@@ -109,7 +109,12 @@ export async function renderRsc(
   const entriesFileURL = getEntriesFileURL(config, isDev);
   const {
     default: { renderEntries },
-  } = await (customImport(entriesFileURL) as Promise<Entries>);
+    loadFunction,
+  } = await (customImport(entriesFileURL) as Promise<
+    Entries & {
+      loadFunction?: (id: string) => Promise<unknown>;
+    }
+  >);
 
   const render = async (renderContext: RenderContext, input: string) => {
     const elements = await renderEntries.call(renderContext, input);
@@ -156,13 +161,11 @@ export async function renderRsc(
     const [fileId, name] = rsfId.split('#') as [string, string];
     // TODO revisit to simplify this logic
     const filePath = fileId.startsWith('@id/')
-      ? joinPath(
-          config.rootDir,
-          isDev ? config.srcDir : config.distDir,
-          fileId.slice('@id/'.length),
-        )
+      ? fileId.slice('@id/'.length)
       : fileId;
-    const mod = await customImport(filePathToFileURL(filePath));
+    const mod = await (loadFunction
+      ? loadFunction(filePath)
+      : customImport(filePathToFileURL(filePath)));
     const fn = mod[name] || mod;
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
     let rendered = false;

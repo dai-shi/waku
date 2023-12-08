@@ -17,6 +17,7 @@ import {
   mkdir,
   readFile,
   writeFile,
+  appendFile,
 } from './utils/node-fs.js';
 import { streamToString } from './utils/stream.js';
 import { encodeInput, generatePrefetchCode } from './rsc/utils.js';
@@ -125,6 +126,7 @@ const analyzeEntries = async (entriesFile: string) => {
 const buildServerBundle = async (
   config: ResolvedConfig,
   entriesFile: string,
+  distEntriesFile: string,
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
@@ -186,6 +188,20 @@ const buildServerBundle = async (
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
+  const code = `
+export function loadFunction(id) {
+  switch (id) {
+${Object.entries(serverEntryFiles || {}).map(
+  ([k]) => `
+    case "${config.assetsDir}/${k}.js":
+      return import('./${config.assetsDir}/${k}.js');`,
+)}
+    default:
+      throw new Error('Cannot find function: ' + id);
+  }
+}
+`;
+  await appendFile(distEntriesFile, code);
   return serverBuildOutput;
 };
 
@@ -518,12 +534,16 @@ export async function build(options: { config: Config; ssr?: boolean }) {
   const entriesFile = resolveFileName(
     joinPath(config.rootDir, config.srcDir, config.entriesJs),
   );
+  const distEntriesFile = resolveFileName(
+    joinPath(config.rootDir, config.distDir, config.entriesJs),
+  );
 
   const { commonEntryFiles, clientEntryFiles, serverEntryFiles } =
     await analyzeEntries(entriesFile);
   const serverBuildOutput = await buildServerBundle(
     config,
     entriesFile,
+    distEntriesFile,
     commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,

@@ -28,5 +28,8 @@ export const readFile = (filePath: string, options: { encoding: 'utf8' }) =>
 export const writeFile = (filePath: string, content: string) =>
   fsPromises.writeFile(filePathToOsPath(filePath), content);
 
+export const appendFile = (filePath: string, content: string) =>
+  fsPromises.appendFile(filePathToOsPath(filePath), content);
+
 export const stat = (filePath: string) =>
   fsPromises.stat(filePathToOsPath(filePath));
