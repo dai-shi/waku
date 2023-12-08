@@ -250,14 +250,16 @@ export const renderHtml = async <Context>(
   ] = await Promise.all([
     isDev
       ? import(REACT_MODULE_VALUE)
-      : loadModule!(REACT_MODULE).then((m: any) => m.default),
+      : loadModule!('public/' + REACT_MODULE).then((m: any) => m.default),
     isDev
       ? import(RD_SERVER_MODULE_VALUE)
-      : loadModule!(RD_SERVER_MODULE).then((m: any) => m.default),
+      : loadModule!('public/' + RD_SERVER_MODULE).then((m: any) => m.default),
     isDev
       ? import(RSDW_CLIENT_MODULE_VALUE)
-      : loadModule!(RSDW_CLIENT_MODULE).then((m: any) => m.default),
-    isDev ? import(WAKU_CLIENT_MODULE_VALUE) : loadModule!(WAKU_CLIENT_MODULE),
+      : loadModule!('public/' + RSDW_CLIENT_MODULE).then((m: any) => m.default),
+    isDev
+      ? import(WAKU_CLIENT_MODULE_VALUE)
+      : loadModule!('public/' + WAKU_CLIENT_MODULE),
   ]);
   const ssrConfig = await getSsrConfig?.(pathStr);
   if (!ssrConfig) {

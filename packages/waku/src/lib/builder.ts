@@ -197,24 +197,28 @@ export function loadModule(id) {
   switch (id) {
     case '${RSDW_SERVER_MODULE}':
       return import('./${RSDW_SERVER_MODULE}.js');
-    case '${REACT_MODULE}':
+    case 'public/${REACT_MODULE}':
       return import('./${psDir}/${REACT_MODULE}.js');
-    case '${RD_SERVER_MODULE}':
+    case 'public/${RD_SERVER_MODULE}':
       return import('./${psDir}/${RD_SERVER_MODULE}.js');
-    case '${RSDW_CLIENT_MODULE}':
+    case 'public/${RSDW_CLIENT_MODULE}':
       return import('./${psDir}/${RSDW_CLIENT_MODULE}.js');
-    case '${WAKU_CLIENT_MODULE}':
+    case 'public/${WAKU_CLIENT_MODULE}':
       return import('./${psDir}/${WAKU_CLIENT_MODULE}.js');
-${Object.entries(serverEntryFiles || {}).map(
-  ([k]) => `
+${Object.entries(serverEntryFiles || {})
+  .map(
+    ([k]) => `
     case '${config.assetsDir}/${k}.js':
       return import('./${config.assetsDir}/${k}.js');`,
-)}
-${Object.entries(clientEntryFiles || {}).map(
-  ([k]) => `
+  )
+  .join('')}
+${Object.entries(clientEntryFiles || {})
+  .map(
+    ([k]) => `
     case 'public/${config.assetsDir}/${k}.js':
       return import('./${psDir}/${k}.js');`,
-)}
+  )
+  .join('')}
     default:
       throw new Error('Cannot find module: ' + id);
   }
