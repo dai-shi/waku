@@ -10,8 +10,8 @@ import {
   filePathToFileURL,
   fileURLToFilePath,
 } from '../utils/path.js';
-import { renderRSC as renderRSCWorker } from './worker-api.js';
-import { renderRSC } from './renderer.js';
+import { renderRscWithWorker } from './worker-api.js';
+import { renderRsc } from './rsc-renderer.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 
 const loadReact = async (
@@ -351,7 +351,7 @@ export const renderHtml = async <Context>(
   let nextCtx: Context;
   try {
     if (command !== 'dev') {
-      stream = await renderRSC({
+      stream = await renderRsc({
         config,
         input: ssrConfig.input,
         method: 'GET',
@@ -361,7 +361,7 @@ export const renderHtml = async <Context>(
       deepFreeze(context);
       nextCtx = context;
     } else {
-      [stream, nextCtx] = await renderRSCWorker({
+      [stream, nextCtx] = await renderRscWithWorker({
         input: ssrConfig.input,
         method: 'GET',
         contentType: undefined,

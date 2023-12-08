@@ -90,7 +90,7 @@ export async function registerImportCallback(fn: (source: string) => void) {
 
 let nextId = 1;
 
-export async function renderRSC<Context>(
+export async function renderRscWithWorker<Context>(
   rr: RenderRequest,
 ): Promise<readonly [ReadableStream, Context]> {
   const worker = await getWorker();

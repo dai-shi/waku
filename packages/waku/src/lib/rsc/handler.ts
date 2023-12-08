@@ -4,14 +4,14 @@ import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
 import { joinPath, filePathToFileURL, extname } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
-import { renderHtml } from './ssr.js';
+import { renderHtml } from './html-renderer.js';
 import { decodeInput, hasStatusCode, deepFreeze } from './utils.js';
 import {
   registerReloadCallback,
   registerImportCallback,
-  renderRSC as renderRSCWorker,
+  renderRscWithWorker,
 } from './worker-api.js';
-import { renderRSC } from '../rsc/renderer.js';
+import { renderRsc } from '../rsc/rsc-renderer.js';
 import { patchReactRefresh } from '../vite-plugin/patch-react-refresh.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 
@@ -177,7 +177,7 @@ export function createHandler<
         }
         try {
           const input = decodeInput(pathStr.slice(basePrefix.length));
-          const readable = await renderRSC({
+          const readable = await renderRsc({
             config,
             input,
             method,
@@ -203,7 +203,7 @@ export function createHandler<
         }
         try {
           const input = decodeInput(pathStr.slice(basePrefix.length));
-          const [readable, nextCtx] = await renderRSCWorker({
+          const [readable, nextCtx] = await renderRscWithWorker({
             input,
             method,
             contentType,

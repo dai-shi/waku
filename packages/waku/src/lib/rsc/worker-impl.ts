@@ -9,7 +9,7 @@ import type { ViteDevServer } from 'vite';
 import { fileURLToFilePath } from '../utils/path.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
-import { renderRSC } from './renderer.js';
+import { renderRsc } from './rsc-renderer.js';
 import { rscTransformPlugin } from '../vite-plugin/rsc-transform-plugin.js';
 import { rscReloadPlugin } from '../vite-plugin/rsc-reload-plugin.js';
 import { rscDelegatePlugin } from '../vite-plugin/rsc-delegate-plugin.js';
@@ -40,7 +40,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         parentPort!.postMessage(mesg);
       };
     }
-    const readable = await renderRSC({
+    const readable = await renderRsc({
       config: rr.config,
       input: rr.input,
       method: rr.method,
