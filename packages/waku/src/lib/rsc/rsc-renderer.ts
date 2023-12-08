@@ -82,9 +82,9 @@ export async function renderRsc(
   } = (await (isDev
     ? opts.customImport(entriesFileURL)
     : import(entriesFileURL))) as Entries;
-  const { renderToReadableStream, decodeReply } = isDev
-    ? await import(RSDW_SERVER_MODULE_VALUE)
-    : ((await loadModule!(RSDW_SERVER_MODULE)) as any).default;
+  const { renderToReadableStream, decodeReply } = await (isDev
+    ? import(RSDW_SERVER_MODULE_VALUE)
+    : loadModule!(RSDW_SERVER_MODULE).then((m: any) => m.default));
 
   const render = async (renderContext: RenderContext, input: string) => {
     const elements = await renderEntries.call(renderContext, input);

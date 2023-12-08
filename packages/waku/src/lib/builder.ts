@@ -29,10 +29,13 @@ import {
 } from './rsc/rsc-renderer.js';
 import {
   REACT_MODULE,
+  REACT_MODULE_VALUE,
   RD_SERVER_MODULE,
+  RD_SERVER_MODULE_VALUE,
   RSDW_CLIENT_MODULE,
+  RSDW_CLIENT_MODULE_VALUE,
   WAKU_CLIENT_MODULE,
-  MODULE_MAP,
+  WAKU_CLIENT_MODULE_VALUE,
   renderHtml,
 } from './rsc/html-renderer.js';
 import { rscIndexPlugin } from './plugins/vite-plugin-rsc-index.js';
@@ -138,7 +141,7 @@ const buildServerBundle = async (
         true,
         config.assetsDir,
         {
-          [WAKU_CLIENT_MODULE]: MODULE_MAP[WAKU_CLIENT_MODULE],
+          [WAKU_CLIENT_MODULE]: WAKU_CLIENT_MODULE_VALUE,
           ...clientEntryFiles,
         },
         serverEntryFiles,
@@ -164,7 +167,7 @@ const buildServerBundle = async (
         input: {
           entries: entriesFile,
           [RSDW_SERVER_MODULE]: RSDW_SERVER_MODULE_VALUE,
-          [WAKU_CLIENT_MODULE]: MODULE_MAP[WAKU_CLIENT_MODULE],
+          [WAKU_CLIENT_MODULE]: WAKU_CLIENT_MODULE_VALUE,
           ...commonEntryFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
@@ -188,11 +191,20 @@ const buildServerBundle = async (
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
+  const psDir = joinPath(config.publicDir, config.assetsDir);
   const code = `
 export function loadModule(id) {
   switch (id) {
     case '${RSDW_SERVER_MODULE}':
       return import('./${RSDW_SERVER_MODULE}.js');
+    case '${REACT_MODULE}':
+      return import('./${psDir}/${REACT_MODULE}.js');
+    case '${RD_SERVER_MODULE}':
+      return import('./${psDir}/${RD_SERVER_MODULE}.js');
+    case '${RSDW_CLIENT_MODULE}':
+      return import('./${psDir}/${RSDW_CLIENT_MODULE}.js');
+    case '${WAKU_CLIENT_MODULE}':
+      return import('./${psDir}/${WAKU_CLIENT_MODULE}.js');
 ${Object.entries(serverEntryFiles || {}).map(
   ([k]) => `
     case '${config.assetsDir}/${k}.js':
@@ -226,10 +238,10 @@ const buildClientBundle = async (
         onwarn,
         input: {
           main: indexHtmlFile,
-          [REACT_MODULE]: MODULE_MAP[REACT_MODULE],
-          [RD_SERVER_MODULE]: MODULE_MAP[RD_SERVER_MODULE],
-          [RSDW_CLIENT_MODULE]: MODULE_MAP[RSDW_CLIENT_MODULE],
-          [WAKU_CLIENT_MODULE]: MODULE_MAP[WAKU_CLIENT_MODULE],
+          [REACT_MODULE]: REACT_MODULE_VALUE,
+          [RD_SERVER_MODULE]: RD_SERVER_MODULE_VALUE,
+          [RSDW_CLIENT_MODULE]: RSDW_CLIENT_MODULE_VALUE,
+          [WAKU_CLIENT_MODULE]: WAKU_CLIENT_MODULE_VALUE,
           ...commonEntryFiles,
           ...clientEntryFiles,
         },

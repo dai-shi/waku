@@ -15,37 +15,13 @@ import { renderRsc } from './rsc-renderer.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 
 export const REACT_MODULE = 'react';
+export const REACT_MODULE_VALUE = 'react';
 export const RD_SERVER_MODULE = 'rd-server';
+export const RD_SERVER_MODULE_VALUE = 'react-dom/server.edge';
 export const RSDW_CLIENT_MODULE = 'rsdw-client';
+export const RSDW_CLIENT_MODULE_VALUE = 'react-server-dom-webpack/client.edge';
 export const WAKU_CLIENT_MODULE = 'waku-client';
-export const MODULE_MAP = {
-  [REACT_MODULE]: 'react',
-  [RD_SERVER_MODULE]: 'react-dom/server.edge',
-  [RSDW_CLIENT_MODULE]: 'react-server-dom-webpack/client.edge',
-  [WAKU_CLIENT_MODULE]: 'waku/client',
-} as const;
-
-const loadModule = async (
-  config: ResolvedConfig,
-  isDev: boolean,
-  id: keyof typeof MODULE_MAP,
-) => {
-  if (isDev) {
-    return import(MODULE_MAP[id]);
-  }
-  const mod = await import(
-    filePathToFileURL(
-      joinPath(
-        config.rootDir,
-        config.distDir,
-        config.publicDir,
-        config.assetsDir,
-        id + '.js',
-      ),
-    )
-  );
-  return id === WAKU_CLIENT_MODULE ? mod : mod.default;
-};
+export const WAKU_CLIENT_MODULE_VALUE = 'waku/client';
 
 // HACK for react-server-dom-webpack without webpack
 const moduleCache = new Map();
@@ -58,6 +34,7 @@ const moduleCache = new Map();
 
 type Entries = {
   default: ReturnType<typeof defineEntries>;
+  loadModule?: (id: string) => Promise<unknown>;
 };
 
 let lastViteServer: ViteDevServer | undefined;
@@ -262,21 +239,28 @@ export const renderHtml = async <Context>(
   htmlStr: string, // Hope stream works, but it'd be too tricky
   context: Context,
 ): Promise<readonly [ReadableStream, Context] | null> => {
+  const entriesFileURL = getEntriesFileURL(config, isDev);
+  const {
+    default: { getSsrConfig },
+    loadModule,
+  } = await (loadServerFile(entriesFileURL, isDev) as Promise<Entries>);
   const [
     { createElement },
     { renderToReadableStream },
     { createFromReadableStream },
     { ServerRoot, Slot },
   ] = await Promise.all([
-    loadModule(config, isDev, REACT_MODULE),
-    loadModule(config, isDev, RD_SERVER_MODULE),
-    loadModule(config, isDev, RSDW_CLIENT_MODULE),
-    loadModule(config, isDev, WAKU_CLIENT_MODULE),
+    isDev
+      ? import(REACT_MODULE_VALUE)
+      : loadModule!(REACT_MODULE).then((m: any) => m.default),
+    isDev
+      ? import(RD_SERVER_MODULE_VALUE)
+      : loadModule!(RD_SERVER_MODULE).then((m: any) => m.default),
+    isDev
+      ? import(RSDW_CLIENT_MODULE_VALUE)
+      : loadModule!(RSDW_CLIENT_MODULE).then((m: any) => m.default),
+    isDev ? import(WAKU_CLIENT_MODULE_VALUE) : loadModule!(WAKU_CLIENT_MODULE),
   ]);
-  const entriesFileURL = getEntriesFileURL(config, isDev);
-  const {
-    default: { getSsrConfig },
-  } = await (loadServerFile(entriesFileURL, isDev) as Promise<Entries>);
   const ssrConfig = await getSsrConfig?.(pathStr);
   if (!ssrConfig) {
     return null;
