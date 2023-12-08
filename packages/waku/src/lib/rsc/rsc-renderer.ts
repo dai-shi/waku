@@ -5,7 +5,6 @@ import type { RenderContext } from '../../server.js';
 import type { ResolvedConfig } from '../../config.js';
 import {
   encodeFilePathToAbsolute,
-  relativePath,
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
@@ -34,6 +33,7 @@ const loadRSDWServer = async (
 
 type Entries = {
   default: ReturnType<typeof defineEntries>;
+  loadFunction?: (id: string) => Promise<unknown>;
 };
 
 const getEntriesFileURL = (
@@ -53,24 +53,17 @@ const resolveClientEntry = (
   config: Omit<ResolvedConfig, 'ssr'>,
   isDev: boolean,
 ) => {
-  // TODO revisit to simplify this logic.
-  if (file.startsWith('@id/')) {
-    return config.basePath + file.slice('@id/'.length);
-  }
-  let filePath = file.startsWith('file://') ? fileURLToFilePath(file) : file;
-  const root = joinPath(config.rootDir, isDev ? '' : config.distDir);
-  // HACK on windows file url looks like file:///C:/path/to/file
-  if (!root.startsWith('/') && filePath.startsWith('/')) {
-    filePath = filePath.slice(1);
-  }
   if (isDev) {
+    const filePath = file.startsWith('file://')
+      ? fileURLToFilePath(file)
+      : file;
     // HACK this relies on Vite's internal implementation detail.
     return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
   }
-  if (!filePath.startsWith(root)) {
-    throw new Error('Resolving client module outside root is not supported.');
+  if (!file.startsWith('@id/')) {
+    throw new Error('Unexpected client entry in PRD');
   }
-  return config.basePath + relativePath(root, filePath);
+  return config.basePath + file.slice('@id/'.length);
 };
 
 export async function renderRsc(
@@ -110,11 +103,7 @@ export async function renderRsc(
   const {
     default: { renderEntries },
     loadFunction,
-  } = await (customImport(entriesFileURL) as Promise<
-    Entries & {
-      loadFunction?: (id: string) => Promise<unknown>;
-    }
-  >);
+  } = await (customImport(entriesFileURL) as Promise<Entries>);
 
   const render = async (renderContext: RenderContext, input: string) => {
     const elements = await renderEntries.call(renderContext, input);

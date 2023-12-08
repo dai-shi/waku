@@ -68,24 +68,6 @@ export const joinPath = (...paths: string[]) => {
   return (isAbsolute ? '/' : '') + items.join('/') || '.';
 };
 
-// for filePath
-export const relativePath = (from: string, to: string) => {
-  const fromItems = from.split('/');
-  const toItems = to.split('/');
-  let i = 0;
-  while (
-    i < fromItems.length &&
-    i < toItems.length &&
-    fromItems[i] === toItems[i]
-  ) {
-    ++i;
-  }
-  return [
-    ...new Array(fromItems.length - i).fill('..'),
-    ...toItems.slice(i),
-  ].join('/');
-};
-
 export const extname = (filePath: string) => {
   const index = filePath.lastIndexOf('.');
   return index > 0 ? filePath.slice(index) : '';
