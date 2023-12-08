@@ -20,16 +20,16 @@ const loadRSDWServer = async (
   config: Omit<ResolvedConfig, 'ssr'>,
   isDev: boolean,
 ) => {
-  if (!isDev) {
-    return (
-      await import(
-        filePathToFileURL(
-          joinPath(config.rootDir, config.distDir, RSDW_SERVER_MODULE + '.js'),
-        )
-      )
-    ).default;
+  if (isDev) {
+    return import(RSDW_SERVER_MODULE_VALUE);
   }
-  return import(RSDW_SERVER_MODULE_VALUE);
+  return (
+    await import(
+      filePathToFileURL(
+        joinPath(config.rootDir, config.distDir, RSDW_SERVER_MODULE + '.js'),
+      )
+    )
+  ).default;
 };
 
 type Entries = {

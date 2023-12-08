@@ -30,21 +30,21 @@ const loadModule = async (
   isDev: boolean,
   id: keyof typeof MODULE_MAP,
 ) => {
-  if (!isDev) {
-    const mod = await import(
-      filePathToFileURL(
-        joinPath(
-          config.rootDir,
-          config.distDir,
-          config.publicDir,
-          config.assetsDir,
-          id + '.js',
-        ),
-      )
-    );
-    return id === WAKU_CLIENT_MODULE ? mod : mod.default;
+  if (isDev) {
+    return import(MODULE_MAP[id]);
   }
-  return import(MODULE_MAP[id]);
+  const mod = await import(
+    filePathToFileURL(
+      joinPath(
+        config.rootDir,
+        config.distDir,
+        config.publicDir,
+        config.assetsDir,
+        id + '.js',
+      ),
+    )
+  );
+  return id === WAKU_CLIENT_MODULE ? mod : mod.default;
 };
 
 // HACK for react-server-dom-webpack without webpack
@@ -86,11 +86,11 @@ const getViteServer = async () => {
 };
 
 const loadServerFile = async (fileURL: string, isDev: boolean) => {
-  if (!isDev) {
-    return import(fileURL);
+  if (isDev) {
+    const vite = await getViteServer();
+    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
   }
-  const vite = await getViteServer();
-  return vite.ssrLoadModule(fileURLToFilePath(fileURL));
+  return import(fileURL);
 };
 
 const getEntriesFileURL = (config: ResolvedConfig, isDev: boolean) => {
@@ -284,7 +284,15 @@ export const renderHtml = async <Context>(
   let stream: ReadableStream;
   let nextCtx: Context;
   try {
-    if (!isDev) {
+    if (isDev) {
+      [stream, nextCtx] = await renderRscWithWorker({
+        input: ssrConfig.input,
+        method: 'GET',
+        contentType: undefined,
+        config,
+        context,
+      });
+    } else {
       stream = await renderRsc({
         config,
         input: ssrConfig.input,
@@ -294,14 +302,6 @@ export const renderHtml = async <Context>(
       });
       deepFreeze(context);
       nextCtx = context;
-    } else {
-      [stream, nextCtx] = await renderRscWithWorker({
-        input: ssrConfig.input,
-        method: 'GET',
-        contentType: undefined,
-        config,
-        context,
-      });
     }
   } catch (e) {
     if (hasStatusCode(e) && e.statusCode === 404) {
