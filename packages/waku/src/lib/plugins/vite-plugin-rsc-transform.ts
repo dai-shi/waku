@@ -7,20 +7,40 @@ export function rscTransformPlugin(
   clientEntryFiles?: Record<string, string>,
   serverEntryFiles?: Record<string, string>,
 ): Plugin {
-  const clientFileMap = new Map(
-    Object.entries(clientEntryFiles || {}).map(([k, v]) => [
-      v,
-      `@id/${assetsDir}/${k}.js`,
-    ]),
-  );
-  const serverFileMap = new Map(
-    Object.entries(serverEntryFiles || {}).map(([k, v]) => [
-      v,
-      `@id/${assetsDir}/${k}.js`,
-    ]),
-  );
+  const clientFileMap = new Map<string, string>();
+  const serverFileMap = new Map<string, string>();
+  const getClientId = (id: string) => {
+    if (!assetsDir) {
+      throw new Error('assetsDir is required');
+    }
+    if (!clientFileMap.has(id)) {
+      throw new Error(`Cannot find client id for ${id}`);
+    }
+    return `@id/${assetsDir}/${clientFileMap.get(id)}.js`;
+  };
+  const getServerId = (id: string) => {
+    if (!assetsDir) {
+      throw new Error('assetsDir is required');
+    }
+    if (!serverFileMap.has(id)) {
+      throw new Error(`Cannot find server id for ${id}`);
+    }
+    return `@id/${assetsDir}/${serverFileMap.get(id)}.js`;
+  };
   return {
     name: 'rsc-transform-plugin',
+    async buildStart() {
+      for (const [k, v] of Object.entries(clientEntryFiles || {})) {
+        const resolvedId = await this.resolve(v);
+        if (!resolvedId) {
+          throw new Error(`Cannot resolve ${v}`);
+        }
+        clientFileMap.set(resolvedId.id, k);
+      }
+      for (const [k, v] of Object.entries(serverEntryFiles || {})) {
+        serverFileMap.set(v, k);
+      }
+    },
     async transform(code, id) {
       const resolve = async (
         specifier: string,
@@ -56,13 +76,12 @@ export function rscTransformPlugin(
             source,
           )
         ) {
-          const clientId = clientFileMap.has(id)
-            ? `"${clientFileMap.get(id)}"`
-            : 'import.meta.url';
           // HACK tweak registerClientReference for production
           source = source.replace(
             /registerClientReference\(function\(\) {throw new Error\("([^"]*)"\);},"[^"]*","([^"]*)"\);/gs,
-            `registerClientReference(function() {return "$1";}, ${clientId}, "$2");`,
+            `registerClientReference(function() {return "$1";}, "${getClientId(
+              id,
+            )}", "$2");`,
           );
         }
         if (
@@ -70,13 +89,10 @@ export function rscTransformPlugin(
             source,
           )
         ) {
-          const serverId = serverFileMap.has(id)
-            ? `"${serverFileMap.get(id)}"`
-            : 'import.meta.url';
           // HACK tweak registerServerReference for production
           source = source.replace(
             /registerServerReference\(([^,]*),"[^"]*","([^"]*)"\);/gs,
-            `registerServerReference($1, ${serverId}, "$2");`,
+            `registerServerReference($1, "${getServerId(id)}", "$2");`,
           );
         }
       }

@@ -123,7 +123,10 @@ const buildServerBundle = async (
       rscTransformPlugin(
         true,
         config.assetsDir,
-        clientEntryFiles,
+        {
+          'waku-client': 'waku/client',
+          ...clientEntryFiles,
+        },
         serverEntryFiles,
       ),
     ],
