@@ -90,10 +90,6 @@ export async function renderRsc(
     moduleIdCallback,
     isDev,
   } = opts;
-  const customImport = isDev
-    ? opts.customImport
-    : (fileURL: string) => import(fileURL);
-
   const { renderToReadableStream, decodeReply } = await loadRSDWServer(
     config,
     isDev,
@@ -103,7 +99,9 @@ export async function renderRsc(
   const {
     default: { renderEntries },
     loadFunction,
-  } = await (customImport(entriesFileURL) as Promise<Entries>);
+  } = (await (isDev
+    ? opts.customImport(entriesFileURL)
+    : import(entriesFileURL))) as Entries;
 
   const render = async (renderContext: RenderContext, input: string) => {
     const elements = await renderEntries.call(renderContext, input);
@@ -148,13 +146,18 @@ export async function renderRsc(
       args = await decodeReply(bodyStr);
     }
     const [fileId, name] = rsfId.split('#') as [string, string];
-    // TODO revisit to simplify this logic
-    const filePath = fileId.startsWith('@id/')
-      ? fileId.slice('@id/'.length)
-      : fileId;
-    const mod = await (loadFunction
-      ? loadFunction(filePath)
-      : customImport(filePathToFileURL(filePath)));
+    let mod: any;
+    if (isDev) {
+      mod = await opts.customImport(filePathToFileURL(fileId));
+    } else {
+      if (!fileId.startsWith('@id/')) {
+        throw new Error('Unexpected server entry in PRD');
+      }
+      if (!loadFunction) {
+        throw new Error('loadFunction must exist');
+      }
+      mod = await loadFunction(fileId.slice('@id/'.length));
+    }
     const fn = mod[name] || mod;
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
     let rendered = false;
