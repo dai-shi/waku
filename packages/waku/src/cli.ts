@@ -8,7 +8,8 @@ import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 
 import { resolveConfig } from './lib/config.js';
-import { honoDevMiddleware, honoPrdMiddleware } from './lib/middleware/hono.js';
+import { honoMiddleware as honoDevMiddleware } from './lib/middleware/hono-dev.js';
+import { honoMiddleware as honoPrdMiddleware } from './lib/middleware/hono-prd.js';
 import { build } from './lib/builder.js';
 
 const require = createRequire(new URL('.', import.meta.url));

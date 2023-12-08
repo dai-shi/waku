@@ -20,7 +20,7 @@ import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscHmrPlugin, hotImport } from '../plugins/vite-plugin-rsc-hmr.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 
-export function createDevHandler<
+export function createHandler<
   Context,
   Req extends BaseReq,
   Res extends BaseRes,

@@ -15,6 +15,11 @@
       "require": "./dist/cjs/main.js",
       "default": "./dist/main.js"
     },
+    "./dev": {
+      "types": "./dist/dev.d.ts",
+      "require": "./dist/cjs/dev.js",
+      "default": "./dist/dev.js"
+    },
     "./node-loader": {
       "types": "./dist/node-loader.d.ts",
       "require": "./dist/cjs/node-loader.js",
@@ -64,16 +69,14 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "dependencies": {
-    "@swc/core": "1.3.96",
-    "@vitejs/plugin-react": "4.2.0",
-    "vite": "5.0.4"
-  },
   "devDependencies": {
     "@hono/node-server": "^1.2.2",
     "@swc/cli": "^0.1.62",
+    "@swc/core": "1.3.96",
+    "@vitejs/plugin-react": "4.2.0",
     "hono": "^3.10.0",
-    "rollup": "^4.3.0"
+    "rollup": "^4.3.0",
+    "vite": "5.0.4"
   },
   "peerDependencies": {
     "@hono/node-server": "^1.2.2",
@@ -88,7 +91,16 @@
     "@hono/node-server": {
       "optional": true
     },
+    "@swc/core": {
+      "optional": true
+    },
+    "@vitejs/plugin-react": {
+      "optional": true
+    },
     "hono": {
+      "optional": true
+    },
+    "vite": {
       "optional": true
     }
   }

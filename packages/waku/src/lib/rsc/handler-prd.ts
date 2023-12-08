@@ -7,7 +7,7 @@ import { decodeInput, hasStatusCode, deepFreeze } from './utils.js';
 import { renderRsc } from '../rsc/rsc-renderer.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 
-export function createPrdHandler<
+export function createHandler<
   Context,
   Req extends BaseReq,
   Res extends BaseRes,

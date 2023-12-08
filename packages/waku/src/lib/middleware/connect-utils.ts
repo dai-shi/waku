@@ -1,10 +1,8 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import type { BaseReq, BaseRes, Handler } from '../rsc/types.js';
-import { createDevHandler } from '../rsc/dev-handler.js';
-import { createPrdHandler } from '../rsc/prd-handler.js';
 
-const connectWrapper = (
+export const connectWrapper = (
   m: Handler<
     BaseReq & { orig: IncomingMessage },
     BaseRes & { orig: ServerResponse }
@@ -35,15 +33,3 @@ const connectWrapper = (
     m(req, res, next);
   };
 };
-
-export function connectDevMiddleware(
-  ...args: Parameters<typeof createDevHandler>
-) {
-  return connectWrapper(createDevHandler(...args));
-}
-
-export function connectPrdMiddleware(
-  ...args: Parameters<typeof createPrdHandler>
-) {
-  return connectWrapper(createPrdHandler(...args));
-}
