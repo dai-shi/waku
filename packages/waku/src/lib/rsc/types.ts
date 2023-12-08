@@ -2,7 +2,7 @@ export type BaseReq = {
   stream: ReadableStream;
   url: string; // Full URL like "https://example.com/foo/bar?baz=qux"
   method: string;
-  headers: Record<string, string | string[] | undefined>;
+  contentType: string | undefined;
 };
 
 export type BaseRes = {
@@ -11,7 +11,7 @@ export type BaseRes = {
   setStatus: (code: number) => void;
 };
 
-export type Middleware<Req extends BaseReq, Res extends BaseRes> = (
+export type Handler<Req extends BaseReq, Res extends BaseRes> = (
   req: Req,
   res: Res,
   next: (err?: unknown) => void,

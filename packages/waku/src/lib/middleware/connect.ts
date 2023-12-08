@@ -1,13 +1,14 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
-import type { BaseReq, BaseRes, Middleware } from './types.js';
+import type { BaseReq, BaseRes, Handler } from '../rsc/types.js';
+import { createHandler } from '../rsc/handler.js';
 
-export function connectWrapper(
-  m: Middleware<
+const connectWrapper = (
+  m: Handler<
     BaseReq & { orig: IncomingMessage },
     BaseRes & { orig: ServerResponse }
   >,
-) {
+) => {
   return async (
     connectReq: IncomingMessage,
     connectRes: ServerResponse,
@@ -21,7 +22,7 @@ export function connectWrapper(
         connectReq.url || '',
         `http://${connectReq.headers.host}`,
       ).toString(),
-      headers: connectReq.headers,
+      contentType: connectReq.headers['content-type'],
       orig: connectReq,
     };
     const res: BaseRes & { orig: ServerResponse } = {
@@ -32,4 +33,8 @@ export function connectWrapper(
     };
     m(req, res, next);
   };
+};
+
+export function connectMiddleware(...args: Parameters<typeof createHandler>) {
+  return connectWrapper(createHandler(...args));
 }

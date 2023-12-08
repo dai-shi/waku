@@ -19,13 +19,13 @@ import {
   writeFile,
 } from './utils/node-fs.js';
 import { streamToString } from './utils/stream.js';
-import { encodeInput, generatePrefetchCode } from './middleware/rsc/utils.js';
-import { renderRSC, getBuildConfigRSC } from './rsc/renderer.js';
-import { rscIndexPlugin } from './vite-plugin/rsc-index-plugin.js';
-import { rscAnalyzePlugin } from './vite-plugin/rsc-analyze-plugin.js';
-import { rscTransformPlugin } from './vite-plugin/rsc-transform-plugin.js';
-import { patchReactRefresh } from './vite-plugin/patch-react-refresh.js';
-import { renderHtml, shutdown as shutdownSsr } from './middleware/rsc/ssr.js';
+import { encodeInput, generatePrefetchCode } from './rsc/utils.js';
+import { renderRsc, getBuildConfig } from './rsc/rsc-renderer.js';
+import { renderHtml } from './rsc/html-renderer.js';
+import { rscIndexPlugin } from './plugins/vite-plugin-rsc-index.js';
+import { rscAnalyzePlugin } from './plugins/vite-plugin-rsc-analyze.js';
+import { rscTransformPlugin } from './plugins/vite-plugin-rsc-transform.js';
+import { patchReactRefresh } from './plugins/patch-react-refresh.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -226,7 +226,7 @@ const buildClientBundle = async (
 };
 
 const emitRscFiles = async (config: ResolvedConfig) => {
-  const buildConfig = await getBuildConfigRSC({ config });
+  const buildConfig = await getBuildConfig({ config });
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (input: string, id: string) => {
     let idSet = clientModuleMap.get(input);
@@ -257,7 +257,7 @@ const emitRscFiles = async (config: ResolvedConfig) => {
         if (!rscFileSet.has(destRscFile)) {
           rscFileSet.add(destRscFile);
           await mkdir(joinPath(destRscFile, '..'), { recursive: true });
-          const readable = await renderRSC({
+          const readable = await renderRsc({
             input,
             method: 'GET',
             config,
@@ -278,7 +278,7 @@ const emitRscFiles = async (config: ResolvedConfig) => {
 
 const emitHtmlFiles = async (
   config: ResolvedConfig,
-  buildConfig: Awaited<ReturnType<typeof getBuildConfigRSC>>,
+  buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
   getClientModules: (input: string) => string[],
   ssr: boolean,
 ) => {
@@ -517,6 +517,4 @@ export async function build(options: { config: Config; ssr?: boolean }) {
 
   // https://vercel.com/docs/build-output-api/v3
   await emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
-
-  await shutdownSsr();
 }

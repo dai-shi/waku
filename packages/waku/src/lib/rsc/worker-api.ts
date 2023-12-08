@@ -1,11 +1,11 @@
 import type { Worker as WorkerOrig } from 'node:worker_threads';
 
-import type { ResolvedConfig } from '../../../config.js';
+import type { ResolvedConfig } from '../../config.js';
 
 export type RenderRequest = {
   input: string;
   method: 'GET' | 'POST';
-  headers: Record<string, string | string[] | undefined>;
+  contentType: string | undefined;
   config: Omit<ResolvedConfig, 'ssr'>;
   command: 'dev'; // DEV only
   context: unknown;
@@ -90,7 +90,7 @@ export async function registerImportCallback(fn: (source: string) => void) {
 
 let nextId = 1;
 
-export async function renderRSC<Context>(
+export async function renderRscWithWorker<Context>(
   rr: RenderRequest,
 ): Promise<readonly [ReadableStream, Context]> {
   const worker = await getWorker();

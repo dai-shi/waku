@@ -6,13 +6,13 @@ import { Server } from 'node:http';
 import { createServer as viteCreateServer } from 'vite';
 import type { ViteDevServer } from 'vite';
 
-import { fileURLToFilePath } from '../../utils/path.js';
+import { fileURLToFilePath } from '../utils/path.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
-import { renderRSC } from '../../rsc/renderer.js';
-import { rscTransformPlugin } from '../../vite-plugin/rsc-transform-plugin.js';
-import { rscReloadPlugin } from '../../vite-plugin/rsc-reload-plugin.js';
-import { rscDelegatePlugin } from '../../vite-plugin/rsc-delegate-plugin.js';
+import { renderRsc } from './rsc-renderer.js';
+import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
+import { rscReloadPlugin } from '../plugins/vite-plugin-rsc-reload.js';
+import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 
 const IS_NODE_20 = Number(process.versions.node.split('.')[0]) >= 20;
 if (IS_NODE_20) {
@@ -40,13 +40,13 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         parentPort!.postMessage(mesg);
       };
     }
-    const readable = await renderRSC({
+    const readable = await renderRsc({
       config: rr.config,
       input: rr.input,
       method: rr.method,
       context: rr.context,
       body: rr.stream,
-      contentType: rr.headers['content-type'] as string | undefined,
+      contentType: rr.contentType,
       ...(rr.moduleIdCallback ? { moduleIdCallback: rr.moduleIdCallback } : {}),
       isDev: true,
       customImport: loadServerFile,

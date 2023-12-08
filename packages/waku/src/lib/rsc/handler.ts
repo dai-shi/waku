@@ -4,18 +4,18 @@ import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
 import { joinPath, filePathToFileURL, extname } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
-import { renderHtml } from './rsc/ssr.js';
-import { decodeInput, hasStatusCode, deepFreeze } from './rsc/utils.js';
+import { renderHtml } from './html-renderer.js';
+import { decodeInput, hasStatusCode, deepFreeze } from './utils.js';
 import {
   registerReloadCallback,
   registerImportCallback,
-  renderRSC as renderRSCWorker,
-} from './rsc/worker-api.js';
-import { renderRSC } from '../rsc/renderer.js';
-import { patchReactRefresh } from '../vite-plugin/patch-react-refresh.js';
-import type { BaseReq, BaseRes, Middleware } from './types.js';
+  renderRscWithWorker,
+} from './worker-api.js';
+import { renderRsc } from '../rsc/rsc-renderer.js';
+import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
+import type { BaseReq, BaseRes, Handler } from './types.js';
 
-export function rsc<
+export function createHandler<
   Context,
   Req extends BaseReq,
   Res extends BaseRes,
@@ -25,7 +25,7 @@ export function rsc<
   ssr?: boolean;
   unstable_prehook?: (req: Req, res: Res) => Context;
   unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
-}): Middleware<Req, Res> {
+}): Handler<Req, Res> {
   const { command, ssr, unstable_prehook, unstable_posthook } = options;
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
@@ -47,8 +47,8 @@ export function rsc<
       configPromise,
       import('vite'),
       import('@vitejs/plugin-react'),
-      import('../vite-plugin/rsc-index-plugin.js'),
-      import('../vite-plugin/rsc-hmr-plugin.js'),
+      import('../plugins/vite-plugin-rsc-index.js'),
+      import('../plugins/vite-plugin-rsc-hmr.js'),
     ]);
     const viteServer = await viteCreateServer({
       base: config.basePath,
@@ -171,19 +171,19 @@ export function rsc<
     }
     if (command !== 'dev') {
       if (pathStr.startsWith(basePrefix)) {
-        const { method, headers } = req;
+        const { method, contentType } = req;
         if (method !== 'GET' && method !== 'POST') {
           throw new Error(`Unsupported method '${method}'`);
         }
         try {
           const input = decodeInput(pathStr.slice(basePrefix.length));
-          const readable = await renderRSC({
+          const readable = await renderRsc({
             config,
             input,
             method,
             context,
             body: req.stream,
-            contentType: headers['content-type'] as string | undefined,
+            contentType,
             isDev: false,
           });
           unstable_posthook?.(req, res, context as Context);
@@ -197,16 +197,16 @@ export function rsc<
     } else {
       // command === 'dev'
       if (pathStr.startsWith(basePrefix)) {
-        const { method, headers } = req;
+        const { method, contentType } = req;
         if (method !== 'GET' && method !== 'POST') {
           throw new Error(`Unsupported method '${method}'`);
         }
         try {
           const input = decodeInput(pathStr.slice(basePrefix.length));
-          const [readable, nextCtx] = await renderRSCWorker({
+          const [readable, nextCtx] = await renderRscWithWorker({
             input,
             method,
-            headers,
+            contentType,
             config,
             command,
             context,
@@ -241,7 +241,7 @@ export function rsc<
       const viteReq: any = Readable.fromWeb(req.stream as any);
       viteReq.method = req.method;
       viteReq.url = pathStr;
-      viteReq.headers = req.headers;
+      viteReq.headers = { 'content-type': req.contentType };
       const viteRes: any = Writable.fromWeb(res.stream as any);
       Object.defineProperty(viteRes, 'statusCode', {
         set(code) {

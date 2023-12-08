@@ -97,7 +97,7 @@ const transformRsfId = (prefixToRemove: string) => {
   });
 };
 
-export async function renderRSC(
+export async function renderRsc(
   opts: {
     config: Omit<ResolvedConfig, 'ssr'>;
     input: string;
@@ -218,7 +218,7 @@ export async function renderRSC(
   );
 }
 
-export async function getBuildConfigRSC(opts: {
+export async function getBuildConfig(opts: {
   config: Omit<ResolvedConfig, 'ssr'>;
 }) {
   const { config } = opts;
@@ -238,7 +238,7 @@ export async function getBuildConfigRSC(opts: {
     input: string,
   ): Promise<string[]> => {
     const idSet = new Set<string>();
-    const readable = await renderRSC({
+    const readable = await renderRsc({
       input,
       method: 'GET',
       config,

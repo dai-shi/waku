@@ -1,17 +1,17 @@
 import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
 import type { ViteDevServer } from 'vite';
 
-import type { ResolvedConfig } from '../../../config.js';
-import { defineEntries } from '../../../server.js';
-import { concatUint8Arrays } from '../../utils/stream.js';
+import type { ResolvedConfig } from '../../config.js';
+import { defineEntries } from '../../server.js';
+import { concatUint8Arrays } from '../utils/stream.js';
 import {
   decodeFilePathFromAbsolute,
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
-} from '../../utils/path.js';
-import { renderRSC as renderRSCWorker } from './worker-api.js';
-import { renderRSC } from '../../rsc/renderer.js';
+} from '../utils/path.js';
+import { renderRscWithWorker } from './worker-api.js';
+import { renderRsc } from './rsc-renderer.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 
 const loadReact = async (
@@ -122,7 +122,7 @@ const getViteServer = async () => {
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const { createServer: viteCreateServer } = await import('vite');
   const { nonjsResolvePlugin } = await import(
-    '../../vite-plugin/nonjs-resolve-plugin.js'
+    '../plugins/vite-plugin-nonjs-resolve.js'
   );
   const viteServer = await viteCreateServer({
     plugins: [nonjsResolvePlugin()],
@@ -136,13 +136,6 @@ const getViteServer = async () => {
   await viteServer.ws.close();
   lastViteServer = viteServer;
   return viteServer;
-};
-
-export const shutdown = async () => {
-  if (lastViteServer) {
-    await lastViteServer.close();
-    lastViteServer = undefined;
-  }
 };
 
 const loadServerFile = async (
@@ -351,7 +344,7 @@ export const renderHtml = async <Context>(
   let nextCtx: Context;
   try {
     if (command !== 'dev') {
-      stream = await renderRSC({
+      stream = await renderRsc({
         config,
         input: ssrConfig.input,
         method: 'GET',
@@ -361,10 +354,10 @@ export const renderHtml = async <Context>(
       deepFreeze(context);
       nextCtx = context;
     } else {
-      [stream, nextCtx] = await renderRSCWorker({
+      [stream, nextCtx] = await renderRscWithWorker({
         input: ssrConfig.input,
         method: 'GET',
-        headers: {},
+        contentType: undefined,
         config,
         command,
         context,
@@ -402,7 +395,7 @@ export const renderHtml = async <Context>(
                   : joinPath(config.rootDir, file);
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
-                  '../../../..',
+                  '../../..',
                 );
                 if (filePath.startsWith(wakuDist)) {
                   const id =
