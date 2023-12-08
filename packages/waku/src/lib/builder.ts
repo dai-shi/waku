@@ -20,7 +20,12 @@ import {
 } from './utils/node-fs.js';
 import { streamToString } from './utils/stream.js';
 import { encodeInput, generatePrefetchCode } from './rsc/utils.js';
-import { renderRsc, getBuildConfig } from './rsc/rsc-renderer.js';
+import {
+  renderRsc,
+  getBuildConfig,
+  RSDW_SERVER_MODULE,
+  RSDW_SERVER_MODULE_VALUE,
+} from './rsc/rsc-renderer.js';
 import {
   REACT_MODULE,
   RD_SERVER_MODULE,
@@ -156,7 +161,7 @@ const buildServerBundle = async (
         onwarn,
         input: {
           entries: entriesFile,
-          [RSDW_CLIENT_MODULE]: MODULE_MAP[RSDW_CLIENT_MODULE],
+          [RSDW_SERVER_MODULE]: RSDW_SERVER_MODULE_VALUE,
           [WAKU_CLIENT_MODULE]: MODULE_MAP[WAKU_CLIENT_MODULE],
           ...commonEntryFiles,
           ...clientEntryFiles,
