@@ -70,37 +70,6 @@ const resolveClientEntry = (
   return config.basePath + relativePath(root, filePath);
 };
 
-// HACK Patching stream is very fragile.
-const transformRsfId = (prefixToRemove: string) => {
-  const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
-  let data = '';
-  return new TransformStream({
-    transform(chunk, controller) {
-      if (!(chunk instanceof Uint8Array)) {
-        throw new Error('Unknown chunk type');
-      }
-      data += decoder.decode(chunk);
-      if (!data.endsWith('\n')) {
-        return;
-      }
-      const lines = data.split('\n');
-      data = '';
-      for (let i = 0; i < lines.length; ++i) {
-        const match = lines[i]!.match(
-          new RegExp(
-            `^([0-9]+):{"id":"(?:file:///?)?${prefixToRemove}(.*?)"(.*)$`,
-          ),
-        );
-        if (match) {
-          lines[i] = `${match[1]}:{"id":"${match[2]}"${match[3]}`;
-        }
-      }
-      controller.enqueue(encoder.encode(lines.join('\n')));
-    },
-  });
-};
-
 export async function renderRsc(
   opts: {
     config: Omit<ResolvedConfig, 'ssr'>;
@@ -138,9 +107,6 @@ export async function renderRsc(
   const {
     default: { renderEntries },
   } = await (customImport(entriesFileURL) as Promise<Entries>);
-
-  const rsfPrefix =
-    joinPath(config.rootDir, isDev ? config.srcDir : config.distDir) + '/';
 
   const render = async (renderContext: RenderContext, input: string) => {
     const elements = await renderEntries.call(renderContext, input);
@@ -185,7 +151,14 @@ export async function renderRsc(
       args = await decodeReply(bodyStr);
     }
     const [fileId, name] = rsfId.split('#') as [string, string];
-    const filePath = fileId.startsWith('/') ? fileId : rsfPrefix + fileId;
+    // TODO revisit to simplify this logic
+    const filePath = fileId.startsWith('@id/')
+      ? joinPath(
+          config.rootDir,
+          isDev ? config.srcDir : config.distDir,
+          fileId.slice('@id/'.length),
+        )
+      : fileId;
     const mod = await customImport(filePathToFileURL(filePath));
     const fn = mod[name] || mod;
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
@@ -206,7 +179,7 @@ export async function renderRsc(
     return renderToReadableStream(
       { ...resolvedElements, _value: data },
       bundlerConfig,
-    ).pipeThrough(transformRsfId(rsfPrefix));
+    );
   }
 
   // rr.method === 'GET'
@@ -217,9 +190,7 @@ export async function renderRsc(
     context,
   };
   const elements = await render(renderContext, input);
-  return renderToReadableStream(elements, bundlerConfig).pipeThrough(
-    transformRsfId(rsfPrefix),
-  );
+  return renderToReadableStream(elements, bundlerConfig);
 }
 
 export async function getBuildConfig(opts: {
