@@ -574,7 +574,10 @@ const resolveFileName = (fname: string) => {
 
 export async function build(options: { config?: Config; ssr?: boolean }) {
   const config = await resolveConfig(options.config || {});
-  const rootDir = (await viteResolveConfig({}, 'build')).root;
+  const rootDir = (
+    await viteResolveConfig({}, 'build', 'production', 'production')
+  ).root;
+  // const rootDir = (await import('node:path')).resolve('.');
   const entriesFile = resolveFileName(
     joinPath(rootDir, config.srcDir, config.entriesJs),
   );
