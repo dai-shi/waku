@@ -15,6 +15,7 @@ import {
   registerImportCallback,
   renderRscWithWorker,
 } from './worker-api.js';
+import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscHmrPlugin, hotImport } from '../plugins/vite-plugin-rsc-hmr.js';
@@ -44,10 +45,14 @@ export function createHandler<
         exclude: ['waku'],
       },
       plugins: [
+        nonjsResolvePlugin(),
         patchReactRefresh(viteReact()),
         rscIndexPlugin([]),
         rscHmrPlugin(),
       ],
+      ssr: {
+        external: ['waku'],
+      },
       server: { middlewareMode: true },
     });
     registerReloadCallback((type) => viteServer.ws.send({ type }));
