@@ -533,8 +533,10 @@ const emitVercelOutput = async (
   writeFileSync(
     path.join(serverlessDir, 'serve.js'),
     `
+import path from 'node:path';
 import { connectMiddleware } from 'waku';
-const entries = import(path.resolve(distDir, entriesJs));
+consoel.log('===', path.resolve('${config.distDir}', '${config.entriesJs}'));
+const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
 export default async function handler(req, res) {
   connectMiddleware({ entries, ssr: false })(req, res, () => {
     throw new Error('not handled');
