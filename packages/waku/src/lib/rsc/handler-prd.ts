@@ -12,17 +12,17 @@ export function createHandler<
   Req extends BaseReq,
   Res extends BaseRes,
 >(options: {
-  entries: Promise<EntriesPrd>;
   config?: Config;
   ssr?: boolean;
   unstable_prehook?: (req: Req, res: Res) => Context;
   unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
+  entries: Promise<EntriesPrd>;
 }): Handler<Req, Res> {
-  const { ssr, unstable_prehook, unstable_posthook, entries } = options;
+  const { config, ssr, unstable_prehook, unstable_posthook, entries } = options;
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
   }
-  const configPromise = resolveConfig(options.config || {});
+  const configPromise = resolveConfig(config || {});
 
   const loadHtmlPromise = entries.then(({ loadHtml }) => loadHtml);
 

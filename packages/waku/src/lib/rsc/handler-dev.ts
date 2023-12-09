@@ -73,8 +73,7 @@ export function createHandler<
 
   let publicIndexHtml: string | undefined;
   const getHtmlStr = async (pathStr: string): Promise<string | null> => {
-    const config = await configPromise;
-    const vite = await vitePromise;
+    const [config, vite] = await Promise.all([configPromise, vitePromise]);
     const rootDir = vite.config.root;
     if (!publicIndexHtml) {
       const publicIndexHtmlFile = joinPath(rootDir, config.indexHtml);
@@ -105,7 +104,7 @@ export function createHandler<
   };
 
   return async (req, res, next) => {
-    const config = await configPromise;
+    const [config, vite] = await Promise.all([configPromise, vitePromise]);
     const basePrefix = config.basePath + config.rscPath + '/';
     const pathStr = req.url.slice(new URL(req.url).origin.length);
     const handleError = (err: unknown) => {
@@ -170,7 +169,6 @@ export function createHandler<
       }
       return;
     }
-    const vite = await vitePromise;
     const viteReq: any = Readable.fromWeb(req.stream as any);
     viteReq.method = req.method;
     viteReq.url = pathStr;
