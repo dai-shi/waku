@@ -6,15 +6,6 @@
 // - osPath: os dependent path, e.g. `/foo/bar.js` or `c:\foo\bar.js`
 //   This is used by node:fs.
 
-// Refs: https://github.com/rollup/plugins/blob/d49bbe8dc5ec41157de5787c72c858f73be107ff/packages/pluginutils/src/normalizePath.ts
-// path is either filePath or osPath
-export const normalizePath = (path: string) => {
-  if (path.startsWith('file://')) {
-    throw new Error('Unexpected file URL');
-  }
-  return path.replace(/\\/g, '/');
-};
-
 const ABSOLUTE_WIN32_PATH_REGEXP = /^\/[a-zA-Z]:\//;
 
 export const encodeFilePathToAbsolute = (filePath: string) => {

@@ -1,7 +1,7 @@
 import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
 import type { ViteDevServer } from 'vite';
 
-import type { ResolvedConfig } from '../../config.js';
+import type { ResolvedConfig } from '../config.js';
 import type { EntriesDev, EntriesPrd } from '../../server.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import {
@@ -58,15 +58,6 @@ const getViteServer = async () => {
 const loadServerFileDev = async (fileURL: string) => {
   const vite = await getViteServer();
   return vite.ssrLoadModule(fileURLToFilePath(fileURL));
-};
-
-const getEntriesFileURL = (config: ResolvedConfig, isDev: boolean) => {
-  const filePath = joinPath(
-    config.rootDir,
-    isDev ? config.srcDir : config.distDir,
-    config.entriesJs,
-  );
-  return filePathToFileURL(filePath);
 };
 
 const fakeFetchCode = `
@@ -223,21 +214,22 @@ const rectifyHtml = () => {
 };
 
 export const renderHtml = async <Context>(
-  config: ResolvedConfig,
-  isDev: boolean,
-  pathStr: string,
-  htmlStr: string, // Hope stream works, but it'd be too tricky
-  context: Context,
+  opts: {
+    config: ResolvedConfig;
+    pathStr: string;
+    htmlStr: string; // Hope stream works, but it'd be too tricky
+    context: Context;
+  } & (
+    | { isDev: false; entries: EntriesPrd }
+    | { isDev: true; entries: EntriesDev }
+  ),
 ): Promise<readonly [ReadableStream, Context] | null> => {
-  const entriesFileURL = getEntriesFileURL(config, isDev);
+  const { config, pathStr, htmlStr, context, isDev, entries } = opts;
+
   const {
     default: { getSsrConfig },
     loadModule,
-  } = await (isDev
-    ? (loadServerFileDev(entriesFileURL) as Promise<
-        EntriesDev & { loadModule: undefined }
-      >)
-    : (import(entriesFileURL) as Promise<EntriesPrd>));
+  } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
   const [
     { createElement },
     { renderToReadableStream },
@@ -261,6 +253,7 @@ export const renderHtml = async <Context>(
   if (!ssrConfig) {
     return null;
   }
+  const rootDirDev = isDev && (await getViteServer()).config.root;
   let stream: ReadableStream;
   let nextCtx: Context;
   try {
@@ -274,6 +267,7 @@ export const renderHtml = async <Context>(
       });
     } else {
       stream = await renderRsc({
+        entries,
         config,
         input: ssrConfig.input,
         method: 'GET',
@@ -311,9 +305,12 @@ export const renderHtml = async <Context>(
               const file = filePath.slice(config.basePath.length);
               // TODO too long, we need to refactor this logic
               if (isDev) {
+                if (!rootDirDev) {
+                  throw new Error('rootDirDev is not defined');
+                }
                 const filePath = file.startsWith('@fs/')
                   ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
-                  : joinPath(config.rootDir, file);
+                  : joinPath(rootDirDev, file);
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',

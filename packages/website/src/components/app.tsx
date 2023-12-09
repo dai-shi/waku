@@ -37,6 +37,7 @@ const App = () => {
         </div>
       </div>
       <Credits />
+      <div className="opacity-0">{new Date().toISOString()}</div>
     </div>
   );
 };

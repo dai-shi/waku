@@ -5,6 +5,9 @@ export function nonjsResolvePlugin(): Plugin {
   return {
     name: 'nonjs-resolve-plugin',
     async resolveId(id, importer, options) {
+      if (!options.ssr) {
+        return id;
+      }
       if (!id.endsWith('.js')) {
         return id;
       }

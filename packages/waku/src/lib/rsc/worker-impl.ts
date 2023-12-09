@@ -4,9 +4,10 @@ import url from 'node:url';
 import { parentPort } from 'node:worker_threads';
 import { Server } from 'node:http';
 import { createServer as viteCreateServer } from 'vite';
-import type { ViteDevServer } from 'vite';
 
-import { fileURLToFilePath } from '../utils/path.js';
+import type { EntriesDev } from '../../server.js';
+import type { ResolvedConfig } from '../config.js';
+import { joinPath, fileURLToFilePath } from '../utils/path.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
 import { renderRsc } from './rsc-renderer.js';
@@ -51,6 +52,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
       ...(rr.moduleIdCallback ? { moduleIdCallback: rr.moduleIdCallback } : {}),
       isDev: true,
       customImport: loadServerFile,
+      entries: await loadEntries(rr.config),
     });
     const mesg: MessageRes = { id, type: 'start', context: rr.context };
     parentPort!.postMessage(mesg);
@@ -84,44 +86,44 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   }
 };
 
-let lastViteServer: ViteDevServer | undefined;
-const getViteServer = async () => {
-  if (lastViteServer) {
-    return lastViteServer;
-  }
-  const dummyServer = new Server(); // FIXME we hope to avoid this hack
-  const viteServer = await viteCreateServer({
-    plugins: [
-      nonjsResolvePlugin(),
-      rscTransformPlugin(false),
-      rscReloadPlugin((type) => {
-        const mesg: MessageRes = { type };
-        parentPort!.postMessage(mesg);
-      }),
-      rscDelegatePlugin((source) => {
-        const mesg: MessageRes = { type: 'hot-import', source };
-        parentPort!.postMessage(mesg);
-      }),
-    ],
-    ssr: {
-      resolve: {
-        conditions: ['react-server', 'workerd'],
-        externalConditions: ['react-server', 'workerd'],
-      },
-      external: ['react', 'react-server-dom-webpack'],
-      noExternal: /^(?!node:)/,
+const dummyServer = new Server(); // FIXME we hope to avoid this hack
+const vitePromise = viteCreateServer({
+  plugins: [
+    nonjsResolvePlugin(),
+    rscTransformPlugin(false),
+    rscReloadPlugin((type) => {
+      const mesg: MessageRes = { type };
+      parentPort!.postMessage(mesg);
+    }),
+    rscDelegatePlugin((source) => {
+      const mesg: MessageRes = { type: 'hot-import', source };
+      parentPort!.postMessage(mesg);
+    }),
+  ],
+  ssr: {
+    resolve: {
+      conditions: ['react-server', 'workerd'],
+      externalConditions: ['react-server', 'workerd'],
     },
-    appType: 'custom',
-    server: { middlewareMode: true, hmr: { server: dummyServer } },
-  });
-  await viteServer.ws.close();
-  lastViteServer = viteServer;
-  return viteServer;
-};
+    external: ['react', 'react-server-dom-webpack'],
+    noExternal: /^(?!node:)/,
+  },
+  appType: 'custom',
+  server: { middlewareMode: true, hmr: { server: dummyServer } },
+}).then(async (vite) => {
+  await vite.ws.close();
+  return vite;
+});
 
 const loadServerFile = async (fileURL: string) => {
-  const vite = await getViteServer();
+  const vite = await vitePromise;
   return vite.ssrLoadModule(fileURLToFilePath(fileURL));
+};
+
+const loadEntries = async (config: Omit<ResolvedConfig, 'ssr'>) => {
+  const vite = await vitePromise;
+  const filePath = joinPath(vite.config.root, config.srcDir, config.entriesJs);
+  return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
 };
 
 parentPort!.on('message', (mesg: MessageReq) => {

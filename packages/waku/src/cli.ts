@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import path from 'node:path';
+import url from 'node:url';
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
 import { Hono } from 'hono';
@@ -13,8 +14,6 @@ import { honoMiddleware as honoPrdMiddleware } from './lib/middleware/hono-prd.j
 import { build } from './lib/builder.js';
 
 const require = createRequire(new URL('.', import.meta.url));
-
-const config = { rootDir: process.cwd() };
 
 const { values, positionals } = parseArgs({
   args: process.argv.splice(2),
@@ -63,28 +62,23 @@ if (values.version) {
 
 async function runDev(options: { ssr: boolean }) {
   const app = new Hono();
-  app.use('*', honoDevMiddleware({ config, ssr: options.ssr }));
+  app.use('*', honoDevMiddleware({ ssr: options.ssr }));
   const port = parseInt(process.env.PORT || '3000', 10);
   startServer(app, port);
 }
 
 async function runBuild(options: { ssr: boolean }) {
-  await build({ config, ssr: options.ssr });
+  await build({ ssr: options.ssr });
 }
 
 async function runStart(options: { ssr: boolean }) {
-  const app = new Hono();
-  app.use('*', honoPrdMiddleware({ config, ssr: options.ssr }));
-  const { rootDir, distDir, publicDir } = await resolveConfig(config);
-  app.use(
-    '*',
-    serveStatic({
-      root: path.relative(
-        path.resolve('.'),
-        path.join(rootDir, distDir, publicDir),
-      ),
-    }),
+  const { distDir, publicDir, entriesJs } = await resolveConfig({});
+  const entries = import(
+    url.pathToFileURL(path.resolve(distDir, entriesJs)).toString()
   );
+  const app = new Hono();
+  app.use('*', honoPrdMiddleware({ entries, ssr: options.ssr }));
+  app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
   const port = parseInt(process.env.PORT || '8080', 10);
   startServer(app, port);
 }

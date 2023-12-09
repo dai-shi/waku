@@ -2,13 +2,13 @@ import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
-import { build as viteBuild } from 'vite';
+import { build as viteBuild, resolveConfig as viteResolveConfig } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
-import type { Config, ResolvedConfig } from '../config.js';
 import { resolveConfig } from './config.js';
-import { joinPath, extname } from './utils/path.js';
+import type { Config, ResolvedConfig } from './config.js';
+import { joinPath, extname, filePathToFileURL } from './utils/path.js';
 import {
   createReadStream,
   createWriteStream,
@@ -127,6 +127,7 @@ const analyzeEntries = async (entriesFile: string) => {
 };
 
 const buildServerBundle = async (
+  rootDir: string,
   config: ResolvedConfig,
   entriesFile: string,
   distEntriesFile: string,
@@ -161,7 +162,7 @@ const buildServerBundle = async (
     build: {
       ssr: true,
       ssrEmitAssets: true,
-      outDir: joinPath(config.rootDir, config.distDir),
+      outDir: joinPath(rootDir, config.distDir),
       rollupOptions: {
         onwarn,
         input: {
@@ -229,12 +230,13 @@ ${Object.entries(clientEntryFiles || {})
 };
 
 const buildClientBundle = async (
+  rootDir: string,
   config: ResolvedConfig,
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
 ) => {
-  const indexHtmlFile = joinPath(config.rootDir, config.indexHtml);
+  const indexHtmlFile = joinPath(rootDir, config.indexHtml);
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
@@ -242,7 +244,7 @@ const buildClientBundle = async (
     base: config.basePath,
     plugins: [patchReactRefresh(viteReact()), rscIndexPlugin(cssAssets)],
     build: {
-      outDir: joinPath(config.rootDir, config.distDir, config.publicDir),
+      outDir: joinPath(rootDir, config.distDir, config.publicDir),
       rollupOptions: {
         onwarn,
         input: {
@@ -279,20 +281,20 @@ const buildClientBundle = async (
     throw new Error('Unexpected vite client build output');
   }
   for (const cssAsset of cssAssets) {
-    const from = joinPath(config.rootDir, config.distDir, cssAsset);
-    const to = joinPath(
-      config.rootDir,
-      config.distDir,
-      config.publicDir,
-      cssAsset,
-    );
+    const from = joinPath(rootDir, config.distDir, cssAsset);
+    const to = joinPath(rootDir, config.distDir, config.publicDir, cssAsset);
     await rename(from, to);
   }
   return clientBuildOutput;
 };
 
-const emitRscFiles = async (config: ResolvedConfig) => {
-  const buildConfig = await getBuildConfig({ config });
+const emitRscFiles = async (
+  rootDir: string,
+  config: ResolvedConfig,
+  distEntriesFile: string,
+) => {
+  const distEntries = await import(filePathToFileURL(distEntriesFile));
+  const buildConfig = await getBuildConfig({ config, entries: distEntries });
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (input: string, id: string) => {
     let idSet = clientModuleMap.get(input);
@@ -311,7 +313,7 @@ const emitRscFiles = async (config: ResolvedConfig) => {
     Object.entries(buildConfig).map(async ([, { entries, context }]) => {
       for (const [input] of entries || []) {
         const destRscFile = joinPath(
-          config.rootDir,
+          rootDir,
           config.distDir,
           config.publicDir,
           config.rscPath,
@@ -330,6 +332,7 @@ const emitRscFiles = async (config: ResolvedConfig) => {
             context,
             moduleIdCallback: (id) => addClientModule(input, id),
             isDev: false,
+            entries: distEntries,
           });
           await pipeline(
             Readable.fromWeb(readable as any),
@@ -343,15 +346,17 @@ const emitRscFiles = async (config: ResolvedConfig) => {
 };
 
 const emitHtmlFiles = async (
+  rootDir: string,
   config: ResolvedConfig,
   distEntriesFile: string,
   buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
   getClientModules: (input: string) => string[],
   ssr: boolean,
 ) => {
+  const distEntries = await import(filePathToFileURL(distEntriesFile));
   const basePrefix = config.basePath + config.rscPath + '/';
   const publicIndexHtmlFile = joinPath(
-    config.rootDir,
+    rootDir,
     config.distDir,
     config.publicDir,
     config.indexHtml,
@@ -367,13 +372,13 @@ export function loadHtml(pathStr) {
     Object.entries(buildConfig).map(
       async ([pathStr, { entries, customCode, context }]) => {
         const destHtmlFile = joinPath(
-          config.rootDir,
+          rootDir,
           config.distDir,
           config.publicDir,
           extname(pathStr) ? pathStr : pathStr + '/' + config.indexHtml,
         );
         const destHtmlJsFile = joinPath(
-          config.rootDir,
+          rootDir,
           config.distDir,
           config.htmlsDir,
           (extname(pathStr) ? pathStr : pathStr + '/' + config.indexHtml) +
@@ -417,7 +422,15 @@ export function loadHtml(pathStr) {
           );
         }
         const htmlResult =
-          ssr && (await renderHtml(config, false, pathStr, htmlStr, context));
+          ssr &&
+          (await renderHtml({
+            config,
+            pathStr,
+            htmlStr,
+            context,
+            isDev: false,
+            entries: distEntries,
+          }));
         if (htmlResult) {
           const [htmlReadable1, htmlReadable2] = htmlResult[0].tee();
           await Promise.all([
@@ -455,10 +468,12 @@ export function loadHtml(pathStr) {
 };
 
 const emitVercelOutput = async (
+  rootDir: string,
   config: ResolvedConfig,
   clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
   rscFiles: string[],
   htmlFiles: string[],
+  ssr: boolean,
 ) => {
   // FIXME somehow utils/(path,node-fs).ts doesn't work
   const [
@@ -466,10 +481,10 @@ const emitVercelOutput = async (
     { existsSync, mkdirSync, readdirSync, symlinkSync, writeFileSync },
   ] = await Promise.all([import('node:path'), import('node:fs')]);
   const clientFiles = clientBuildOutput.output.map(({ fileName }) =>
-    path.join(config.rootDir, config.distDir, config.publicDir, fileName),
+    path.join(rootDir, config.distDir, config.publicDir, fileName),
   );
-  const srcDir = path.join(config.rootDir, config.distDir, config.publicDir);
-  const dstDir = path.join(config.rootDir, config.distDir, '.vercel', 'output');
+  const srcDir = path.join(rootDir, config.distDir, config.publicDir);
+  const dstDir = path.join(rootDir, config.distDir, '.vercel', 'output');
   for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
     const dstFile = path.join(dstDir, 'static', path.relative(srcDir, file));
     if (!existsSync(dstFile)) {
@@ -488,17 +503,17 @@ const emitVercelOutput = async (
     recursive: true,
   });
   symlinkSync(
-    path.relative(serverlessDir, path.join(config.rootDir, 'node_modules')),
+    path.relative(serverlessDir, path.join(rootDir, 'node_modules')),
     path.join(serverlessDir, 'node_modules'),
   );
-  for (const file of readdirSync(path.join(config.rootDir, config.distDir))) {
+  for (const file of readdirSync(path.join(rootDir, config.distDir))) {
     if (['.vercel'].includes(file)) {
       continue;
     }
     symlinkSync(
       path.relative(
         path.join(serverlessDir, config.distDir),
-        path.join(config.rootDir, config.distDir, file),
+        path.join(rootDir, config.distDir, file),
       ),
       path.join(serverlessDir, config.distDir, file),
     );
@@ -516,14 +531,14 @@ const emitVercelOutput = async (
     path.join(serverlessDir, 'package.json'),
     JSON.stringify({ type: 'module' }, null, 2),
   );
-  // TODO check if serverless function works
   writeFileSync(
     path.join(serverlessDir, 'serve.js'),
     `
-const config = { rootDir: process.cwd() };
+import path from 'node:path';
+import { connectMiddleware } from 'waku';
+const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
 export default async function handler(req, res) {
-  const { connectMiddleware } = await import('waku');
-  connectMiddleware({ config, ssr: true })(req, res, () => {
+  connectMiddleware({ entries, ssr: true })(req, res, () => {
     throw new Error('not handled');
   });
 }
@@ -539,7 +554,18 @@ export default async function handler(req, res) {
       ]),
   );
   const basePrefix = config.basePath + config.rscPath + '/';
-  const routes = [{ src: basePrefix + '(.*)', dest: basePrefix }];
+  const routes = [
+    { src: basePrefix + '(.*)', dest: basePrefix },
+    ...(ssr
+      ? htmlFiles.map((htmlFile) => {
+          const file = config.basePath + path.relative(srcDir, htmlFile);
+          const src = file.endsWith('/' + config.indexHtml)
+            ? file.slice(0, -('/' + config.indexHtml).length) || '/'
+            : file;
+          return { src, dest: basePrefix };
+        })
+      : []),
+  ];
   const configJson = { version: 3, overrides, routes };
   mkdirSync(dstDir, { recursive: true });
   writeFileSync(
@@ -558,18 +584,22 @@ const resolveFileName = (fname: string) => {
   return fname; // returning the default one
 };
 
-export async function build(options: { config: Config; ssr?: boolean }) {
-  const config = await resolveConfig(options.config);
+export async function build(options: { config?: Config; ssr?: boolean }) {
+  const config = await resolveConfig(options.config || {});
+  const rootDir = (
+    await viteResolveConfig({}, 'build', 'production', 'production')
+  ).root;
   const entriesFile = resolveFileName(
-    joinPath(config.rootDir, config.srcDir, config.entriesJs),
+    joinPath(rootDir, config.srcDir, config.entriesJs),
   );
   const distEntriesFile = resolveFileName(
-    joinPath(config.rootDir, config.distDir, config.entriesJs),
+    joinPath(rootDir, config.distDir, config.entriesJs),
   );
 
   const { commonEntryFiles, clientEntryFiles, serverEntryFiles } =
     await analyzeEntries(entriesFile);
   const serverBuildOutput = await buildServerBundle(
+    rootDir,
     config,
     entriesFile,
     distEntriesFile,
@@ -578,15 +608,20 @@ export async function build(options: { config: Config; ssr?: boolean }) {
     serverEntryFiles,
   );
   const clientBuildOutput = await buildClientBundle(
+    rootDir,
     config,
     commonEntryFiles,
     clientEntryFiles,
     serverBuildOutput,
   );
 
-  const { buildConfig, getClientModules, rscFiles } =
-    await emitRscFiles(config);
+  const { buildConfig, getClientModules, rscFiles } = await emitRscFiles(
+    rootDir,
+    config,
+    distEntriesFile,
+  );
   const { htmlFiles } = await emitHtmlFiles(
+    rootDir,
     config,
     distEntriesFile,
     buildConfig,
@@ -595,5 +630,12 @@ export async function build(options: { config: Config; ssr?: boolean }) {
   );
 
   // https://vercel.com/docs/build-output-api/v3
-  await emitVercelOutput(config, clientBuildOutput, rscFiles, htmlFiles);
+  await emitVercelOutput(
+    rootDir,
+    config,
+    clientBuildOutput,
+    rscFiles,
+    htmlFiles,
+    !!options?.ssr,
+  );
 }

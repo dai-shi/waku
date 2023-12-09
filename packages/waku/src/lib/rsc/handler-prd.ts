@@ -1,39 +1,30 @@
 import type { EntriesPrd } from '../../server.js';
-import type { Config, ResolvedConfig } from '../../config.js';
 import { resolveConfig } from '../config.js';
-import { joinPath, filePathToFileURL } from '../utils/path.js';
+import type { Config } from '../config.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from './html-renderer.js';
 import { decodeInput, hasStatusCode, deepFreeze } from './utils.js';
 import { renderRsc } from '../rsc/rsc-renderer.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 
-const getEntriesFileURL = (config: Omit<ResolvedConfig, 'ssr'>) => {
-  const filePath = joinPath(config.rootDir, config.distDir, config.entriesJs);
-  return filePathToFileURL(filePath);
-};
-
 export function createHandler<
   Context,
   Req extends BaseReq,
   Res extends BaseRes,
 >(options: {
-  config: Config;
+  config?: Config;
   ssr?: boolean;
   unstable_prehook?: (req: Req, res: Res) => Context;
   unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
+  entries: Promise<EntriesPrd>;
 }): Handler<Req, Res> {
-  const { ssr, unstable_prehook, unstable_posthook } = options;
+  const { config, ssr, unstable_prehook, unstable_posthook, entries } = options;
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
   }
-  const configPromise = resolveConfig(options.config);
+  const configPromise = resolveConfig(config || {});
 
-  const loadHtmlPromise = configPromise.then(async (config) => {
-    const entriesFileURL = getEntriesFileURL(config);
-    const { loadHtml } = (await import(entriesFileURL)) as EntriesPrd;
-    return loadHtml;
-  });
+  const loadHtmlPromise = entries.then(({ loadHtml }) => loadHtml);
 
   let publicIndexHtml: string | undefined;
   const getHtmlStr = async (pathStr: string): Promise<string | null> => {
@@ -73,7 +64,14 @@ export function createHandler<
         const htmlStr = await getHtmlStr(pathStr);
         const result =
           htmlStr &&
-          (await renderHtml(config, false, pathStr, htmlStr, context));
+          (await renderHtml({
+            config,
+            pathStr,
+            htmlStr,
+            context,
+            isDev: false,
+            entries: await entries,
+          }));
         if (result) {
           const [readable, nextCtx] = result;
           unstable_posthook?.(req, res, nextCtx as Context);
@@ -100,6 +98,7 @@ export function createHandler<
           body: req.stream,
           contentType,
           isDev: false,
+          entries: await entries,
         });
         unstable_posthook?.(req, res, context as Context);
         deepFreeze(context);

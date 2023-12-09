@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react';
 
 import type { RenderContext, EntriesDev, EntriesPrd } from '../../server.js';
-import type { ResolvedConfig } from '../../config.js';
+import type { ResolvedConfig } from '../config.js';
 import {
   encodeFilePathToAbsolute,
-  joinPath,
   filePathToFileURL,
   fileURLToFilePath,
 } from '../utils/path.js';
@@ -13,18 +12,6 @@ import { streamToString } from '../utils/stream.js';
 
 export const RSDW_SERVER_MODULE = 'rsdw-server';
 export const RSDW_SERVER_MODULE_VALUE = 'react-server-dom-webpack/server.edge';
-
-const getEntriesFileURL = (
-  config: Omit<ResolvedConfig, 'ssr'>,
-  isDev: boolean,
-) => {
-  const filePath = joinPath(
-    config.rootDir,
-    isDev ? config.srcDir : config.distDir,
-    config.entriesJs,
-  );
-  return filePathToFileURL(filePath);
-};
 
 const resolveClientEntry = (
   file: string, // filePath or fileURL
@@ -54,8 +41,12 @@ export async function renderRsc(
     contentType?: string | undefined;
     moduleIdCallback?: (id: string) => void;
   } & (
-    | { isDev: false }
-    | { isDev: true; customImport: (fileURL: string) => Promise<unknown> }
+    | { isDev: false; entries: EntriesPrd }
+    | {
+        isDev: true;
+        entries: EntriesDev;
+        customImport: (fileURL: string) => Promise<unknown>;
+      }
   ),
 ): Promise<ReadableStream> {
   const {
@@ -67,17 +58,13 @@ export async function renderRsc(
     body,
     moduleIdCallback,
     isDev,
+    entries,
   } = opts;
 
-  const entriesFileURL = getEntriesFileURL(config, isDev);
   const {
     default: { renderEntries },
     loadModule,
-  } = await (isDev
-    ? (opts.customImport(entriesFileURL) as Promise<
-        EntriesDev & { loadModule: undefined }
-      >)
-    : (import(entriesFileURL) as Promise<EntriesPrd>));
+  } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
   const { renderToReadableStream, decodeReply } = await (isDev
     ? import(RSDW_SERVER_MODULE_VALUE)
     : loadModule!(RSDW_SERVER_MODULE).then((m: any) => m.default));
@@ -169,13 +156,13 @@ export async function renderRsc(
 
 export async function getBuildConfig(opts: {
   config: Omit<ResolvedConfig, 'ssr'>;
+  entries: EntriesPrd;
 }) {
-  const { config } = opts;
+  const { config, entries } = opts;
 
-  const entriesFileURL = getEntriesFileURL(config, false);
   const {
     default: { getBuildConfig },
-  } = await (import(entriesFileURL) as Promise<EntriesDev>);
+  } = entries;
   if (!getBuildConfig) {
     console.warn(
       "getBuildConfig is undefined. It's recommended for optimization and sometimes required.",
@@ -188,12 +175,13 @@ export async function getBuildConfig(opts: {
   ): Promise<string[]> => {
     const idSet = new Set<string>();
     const readable = await renderRsc({
+      config,
       input,
       method: 'GET',
-      config,
       context: null,
       moduleIdCallback: (id) => idSet.add(id),
       isDev: false,
+      entries,
     });
     await new Promise<void>((resolve, reject) => {
       const writable = new WritableStream({
