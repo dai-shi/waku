@@ -1,10 +1,13 @@
-import path from 'node:path';
 import type { Plugin } from 'vite';
 
 export function nonjsResolvePlugin(): Plugin {
   return {
     name: 'nonjs-resolve-plugin',
     async resolveId(id, importer, options) {
+      const path = await import('node:path').catch((e) => {
+        // XXX explicit catch to avoid bundle time error
+        throw e;
+      });
       if (!options.ssr) {
         return id;
       }

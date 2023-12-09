@@ -13,7 +13,10 @@ export const connectWrapper = (
     connectRes: ServerResponse,
     next: (err?: unknown) => void,
   ) => {
-    const { Readable, Writable } = await import('node:stream');
+    const { Readable, Writable } = await import('node:stream').catch((e) => {
+      // XXX explicit catch to avoid bundle time error
+      throw e;
+    });
     const req: BaseReq & { orig: IncomingMessage } = {
       stream: Readable.toWeb(connectReq) as any,
       method: connectReq.method || '',

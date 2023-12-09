@@ -43,23 +43,27 @@ const getWorker = () => {
   if (lastWorker) {
     return lastWorker;
   }
-  return (lastWorker = new Promise<WorkerOrig>((resolve) => {
-    import('node:worker_threads').then(({ Worker }) => {
-      const IS_NODE_18 = Number(process.versions.node.split('.')[0]) < 20;
-      const worker = new Worker(new URL('worker-impl.js', import.meta.url), {
-        execArgv: [
-          ...(IS_NODE_18 ? ['--experimental-loader', 'waku/node-loader'] : []),
-          '--conditions',
-          'react-server',
-        ],
-      });
-      worker.on('message', (mesg: MessageRes) => {
-        if ('id' in mesg) {
-          messageCallbacks.get(mesg.id)?.(mesg);
-        }
-      });
-      resolve(worker);
-    });
+  return (lastWorker = new Promise<WorkerOrig>((resolve, reject) => {
+    import('node:worker_threads')
+      .then(({ Worker }) => {
+        const IS_NODE_18 = Number(process.versions.node.split('.')[0]) < 20;
+        const worker = new Worker(new URL('worker-impl.js', import.meta.url), {
+          execArgv: [
+            ...(IS_NODE_18
+              ? ['--experimental-loader', 'waku/node-loader']
+              : []),
+            '--conditions',
+            'react-server',
+          ],
+        });
+        worker.on('message', (mesg: MessageRes) => {
+          if ('id' in mesg) {
+            messageCallbacks.get(mesg.id)?.(mesg);
+          }
+        });
+        resolve(worker);
+      })
+      .catch((e) => reject(e));
   }));
 };
 
