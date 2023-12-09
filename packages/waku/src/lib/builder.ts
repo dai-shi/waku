@@ -473,6 +473,7 @@ const emitVercelOutput = async (
   clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
   rscFiles: string[],
   htmlFiles: string[],
+  ssr: boolean,
 ) => {
   // FIXME somehow utils/(path,node-fs).ts doesn't work
   const [
@@ -535,9 +536,9 @@ const emitVercelOutput = async (
     `
 import path from 'node:path';
 import { connectMiddleware } from 'waku';
-console.log('===', path.resolve('${config.distDir}', '${config.entriesJs}'));
 const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
 export default async function handler(req, res) {
+  console.log('***', req);
   connectMiddleware({ entries, ssr: false })(req, res, () => {
     throw new Error('not handled');
   });
@@ -554,7 +555,18 @@ export default async function handler(req, res) {
       ]),
   );
   const basePrefix = config.basePath + config.rscPath + '/';
-  const routes = [{ src: basePrefix + '(.*)', dest: basePrefix }];
+  const routes = [
+    { src: basePrefix + '(.*)', dest: basePrefix },
+    ...(ssr
+      ? htmlFiles.map((htmlFile) => {
+          const file = config.basePath + path.relative(srcDir, htmlFile);
+          const src = file.endsWith('/' + config.indexHtml)
+            ? file.slice(0, -('/' + config.indexHtml).length) || '/'
+            : file;
+          return { src, dest: basePrefix };
+        })
+      : []),
+  ];
   const configJson = { version: 3, overrides, routes };
   mkdirSync(dstDir, { recursive: true });
   writeFileSync(
@@ -625,5 +637,6 @@ export async function build(options: { config?: Config; ssr?: boolean }) {
     clientBuildOutput,
     rscFiles,
     htmlFiles,
+    !!options?.ssr,
   );
 }
