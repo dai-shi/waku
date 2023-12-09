@@ -535,7 +535,7 @@ const emitVercelOutput = async (
     `
 import path from 'node:path';
 import { connectMiddleware } from 'waku';
-consoel.log('===', path.resolve('${config.distDir}', '${config.entriesJs}'));
+console.log('===', path.resolve('${config.distDir}', '${config.entriesJs}'));
 const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
 export default async function handler(req, res) {
   connectMiddleware({ entries, ssr: false })(req, res, () => {
