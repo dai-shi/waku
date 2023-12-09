@@ -9,13 +9,7 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "jsx": "react-jsx",
-    "outDir": "./dist",
-    "composite": true
-  },
-  "include": ["./src"],
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    }
-  ]
+    "rootDir": "./src",
+    "outDir": "./dist"
+  }
 }
