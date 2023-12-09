@@ -2,7 +2,6 @@ import type { EntriesPrd } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import type { Config } from '../config.js';
 import { endStream } from '../utils/stream.js';
-import { renderHtml } from './html-renderer.js';
 import { decodeInput, hasStatusCode, deepFreeze } from './utils.js';
 import { renderRsc } from '../rsc/rsc-renderer.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
@@ -22,8 +21,11 @@ export function createHandler<
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
   }
-  const configPromise = resolveConfig(config || {});
 
+  const configPromise = resolveConfig(config || {});
+  const htmlRendererPromise = import('./html-renderer.js').catch((e) => {
+    throw e;
+  });
   const loadHtmlPromise = entries.then(({ loadHtml }) => loadHtml);
 
   let publicIndexHtml: string | undefined;
@@ -40,7 +42,10 @@ export function createHandler<
   };
 
   return async (req, res, next) => {
-    const config = await configPromise;
+    const [config, { renderHtml }] = await Promise.all([
+      configPromise,
+      htmlRendererPromise,
+    ]);
     const basePrefix = config.basePath + config.rscPath + '/';
     const pathStr = req.url.slice(new URL(req.url).origin.length);
     const handleError = (err: unknown) => {
