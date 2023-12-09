@@ -293,7 +293,7 @@ const emitRscFiles = async (
   config: ResolvedConfig,
   distEntriesFile: string,
 ) => {
-  const distEntries = await import(distEntriesFile);
+  const distEntries = await import(filePathToFileURL(distEntriesFile));
   const buildConfig = await getBuildConfig({ config, entries: distEntries });
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (input: string, id: string) => {
