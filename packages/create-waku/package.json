@@ -25,12 +25,12 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "fs-extra": "^11.1.1",
+    "fs-extra": "^11.2.0",
     "kolorist": "^1.8.0",
     "prompts": "^2.4.2"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
-    "@types/prompts": "^2.4.8"
+    "@types/prompts": "^2.4.9"
   }
 }
