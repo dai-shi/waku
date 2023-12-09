@@ -66,8 +66,8 @@ export interface Config {
 type DeepRequired<T> = T extends (...args: any[]) => any
   ? T
   : T extends object
-  ? { [P in keyof T]-?: DeepRequired<T[P]> }
-  : T;
+    ? { [P in keyof T]-?: DeepRequired<T[P]> }
+    : T;
 
 export type ResolvedConfig = DeepRequired<Config>;
 
