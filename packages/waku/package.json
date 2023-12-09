@@ -25,11 +25,6 @@
       "require": "./dist/cjs/node-loader.js",
       "default": "./dist/node-loader.js"
     },
-    "./config": {
-      "types": "./dist/config.d.ts",
-      "require": "./dist/cjs/config.js",
-      "default": "./dist/config.js"
-    },
     "./client": {
       "types": "./dist/client.d.ts",
       "require": "./dist/cjs/client.js",

@@ -2,9 +2,9 @@ import { Readable, Writable } from 'node:stream';
 import { createServer as viteCreateServer } from 'vite';
 import { default as viteReact } from '@vitejs/plugin-react';
 
-import type { Config } from '../../config.js';
 import type { EntriesDev } from '../../server.js';
 import { resolveConfig } from '../config.js';
+import type { Config } from '../config.js';
 import { joinPath } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from './html-renderer.js';

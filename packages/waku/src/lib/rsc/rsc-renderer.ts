@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 import type { RenderContext, EntriesDev, EntriesPrd } from '../../server.js';
-import type { ResolvedConfig } from '../../config.js';
+import type { ResolvedConfig } from '../config.js';
 import {
   encodeFilePathToAbsolute,
   filePathToFileURL,

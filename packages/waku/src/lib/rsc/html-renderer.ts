@@ -1,7 +1,7 @@
 import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
 import type { ViteDevServer } from 'vite';
 
-import type { ResolvedConfig } from '../../config.js';
+import type { ResolvedConfig } from '../config.js';
 import type { EntriesDev, EntriesPrd } from '../../server.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import {

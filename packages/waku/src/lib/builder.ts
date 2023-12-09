@@ -6,8 +6,8 @@ import { build as viteBuild, resolveConfig as viteResolveConfig } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
-import type { Config, ResolvedConfig } from '../config.js';
 import { resolveConfig } from './config.js';
+import type { Config, ResolvedConfig } from './config.js';
 import { joinPath, extname } from './utils/path.js';
 import {
   createReadStream,

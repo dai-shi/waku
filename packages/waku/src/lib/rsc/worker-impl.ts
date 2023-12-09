@@ -6,7 +6,7 @@ import { Server } from 'node:http';
 import { createServer as viteCreateServer } from 'vite';
 
 import type { EntriesDev } from '../../server.js';
-import type { ResolvedConfig } from '../../config.js';
+import type { ResolvedConfig } from '../config.js';
 import { joinPath, fileURLToFilePath } from '../utils/path.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';

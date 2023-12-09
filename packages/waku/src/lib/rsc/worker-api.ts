@@ -1,6 +1,6 @@
 import type { Worker as WorkerOrig } from 'node:worker_threads';
 
-import type { ResolvedConfig } from '../../config.js';
+import type { ResolvedConfig } from '../config.js';
 
 export type RenderRequest = {
   input: string;
