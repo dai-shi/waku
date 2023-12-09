@@ -1,5 +1,11 @@
 import { Readable, Writable } from 'node:stream';
-import { createServer as viteCreateServer } from 'vite';
+import {
+  createServer as viteCreateServer,
+  resolveConfig as resolveViteConfig,
+  mergeConfig as mergeViteConfig,
+  type TransformResult,
+  type ViteDevServer,
+} from 'vite';
 import { default as viteReact } from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../../server.js';
@@ -14,11 +20,16 @@ import {
   registerReloadCallback,
   registerImportCallback,
   renderRscWithWorker,
+  registerModuleCallback,
 } from './worker-api.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
-import { rscHmrPlugin, hotImport } from '../plugins/vite-plugin-rsc-hmr.js';
+import {
+  rscHmrPlugin,
+  hotImport,
+  moduleImport,
+} from '../plugins/vite-plugin-rsc-hmr.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 
 export function createHandler<
@@ -36,27 +47,40 @@ export function createHandler<
     throw new Error('prehook is required if posthook is provided');
   }
   const configPromise = resolveConfig(options.config || {});
-
   const vitePromise = configPromise.then(async (config) => {
-    const viteServer = await viteCreateServer({
-      base: config.basePath,
-      optimizeDeps: {
-        include: ['react-server-dom-webpack/client'],
-        exclude: ['waku'],
+    const resolvedViteConfig = await resolveViteConfig({}, 'serve');
+    const mergedViteConfig = await mergeViteConfig(
+      {
+        ...resolvedViteConfig,
+
+        plugins: resolvedViteConfig.plugins.filter(
+          (plugin) => !plugin.name.startsWith('vite:'),
+        ),
       },
-      plugins: [
-        nonjsResolvePlugin(),
-        patchReactRefresh(viteReact()),
-        rscIndexPlugin([]),
-        rscHmrPlugin(),
-      ],
-      ssr: {
-        external: ['waku'],
+      {
+        base: config.basePath,
+        optimizeDeps: {
+          include: ['react-server-dom-webpack/client'],
+          exclude: ['waku'],
+        },
+        plugins: [
+          nonjsResolvePlugin(),
+          patchReactRefresh(viteReact()),
+          rscIndexPlugin([]),
+          rscHmrPlugin(),
+        ],
+        ssr: {
+          external: ['waku'],
+        },
+        server: { middlewareMode: true },
       },
-      server: { middlewareMode: true },
-    });
+    );
+    // HACK: Vite bug: TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received function assetsInclude
+    mergedViteConfig.assetsInclude = null;
+    const viteServer = await viteCreateServer(mergedViteConfig);
     registerReloadCallback((type) => viteServer.ws.send({ type }));
     registerImportCallback((source) => hotImport(viteServer, source));
+    registerModuleCallback((result) => moduleImport(viteServer, result));
     return viteServer;
   });
 

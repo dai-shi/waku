@@ -3,7 +3,11 @@
 import url from 'node:url';
 import { parentPort } from 'node:worker_threads';
 import { Server } from 'node:http';
-import { createServer as viteCreateServer } from 'vite';
+import {
+  createServer as viteCreateServer,
+  resolveConfig as resolveViteConfig,
+  mergeConfig as mergeViteConfig,
+} from 'vite';
 
 import type { EntriesDev } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
@@ -87,30 +91,47 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
 };
 
 const dummyServer = new Server(); // FIXME we hope to avoid this hack
-const vitePromise = viteCreateServer({
-  plugins: [
-    nonjsResolvePlugin(),
-    rscTransformPlugin(false),
-    rscReloadPlugin((type) => {
-      const mesg: MessageRes = { type };
-      parentPort!.postMessage(mesg);
-    }),
-    rscDelegatePlugin((source) => {
-      const mesg: MessageRes = { type: 'hot-import', source };
-      parentPort!.postMessage(mesg);
-    }),
-  ],
-  ssr: {
-    resolve: {
-      conditions: ['react-server', 'workerd'],
-      externalConditions: ['react-server', 'workerd'],
-    },
-    external: ['react', 'react-server-dom-webpack'],
-    noExternal: /^(?!node:)/,
+
+const resolvedViteConfig = await resolveViteConfig({}, 'serve');
+const mergedViteConfig = await mergeViteConfig(
+  {
+    ...resolvedViteConfig,
+
+    plugins: resolvedViteConfig.plugins.filter(
+      (plugin) => !plugin.name.startsWith('vite:'),
+    ),
   },
-  appType: 'custom',
-  server: { middlewareMode: true, hmr: { server: dummyServer } },
-}).then(async (vite) => {
+  {
+    plugins: [
+      nonjsResolvePlugin(),
+      rscTransformPlugin(false),
+      rscReloadPlugin((type) => {
+        const mesg: MessageRes = { type };
+        parentPort!.postMessage(mesg);
+      }),
+      rscDelegatePlugin((resultOrSource) => {
+        const mesg: MessageRes =
+          typeof resultOrSource === 'object'
+            ? { type: 'module', result: resultOrSource }
+            : { type: 'hot-import', source: resultOrSource };
+        parentPort!.postMessage(mesg);
+      }),
+    ],
+    ssr: {
+      resolve: {
+        conditions: ['react-server', 'workerd'],
+        externalConditions: ['react-server', 'workerd'],
+      },
+      external: ['react', 'react-server-dom-webpack'],
+      noExternal: /^(?!node:)/,
+    },
+    appType: 'custom',
+    server: { middlewareMode: true, hmr: { server: dummyServer } },
+  },
+);
+mergedViteConfig.assetsInclude = null;
+
+const vitePromise = viteCreateServer(mergedViteConfig).then(async (vite) => {
   await vite.ws.close();
   return vite;
 });

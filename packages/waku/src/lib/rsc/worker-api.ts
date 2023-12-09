@@ -1,6 +1,7 @@
 import type { Worker as WorkerOrig } from 'node:worker_threads';
 
 import type { ResolvedConfig } from '../config.js';
+import type { TransformResult } from 'vite';
 
 export type RenderRequest = {
   input: string;
@@ -30,11 +31,11 @@ export type MessageReq =
 export type MessageRes =
   | { type: 'full-reload' }
   | { type: 'hot-import'; source: string }
+  | { type: 'module'; result: TransformResult }
   | { id: number; type: 'start'; context: unknown }
   | { id: number; type: 'buf'; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: 'end' }
-  | { id: number; type: 'err'; err: unknown; statusCode?: number }
-  | { id: number; type: 'moduleId'; moduleId: string };
+  | { id: number; type: 'err'; err: unknown; statusCode?: number };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
@@ -85,6 +86,19 @@ export async function registerImportCallback(fn: (source: string) => void) {
   const listener = (mesg: MessageRes) => {
     if (mesg.type === 'hot-import') {
       fn(mesg.source);
+    }
+  };
+  worker.on('message', listener);
+  return () => worker.off('message', listener);
+}
+
+export async function registerModuleCallback(
+  fn: (result: TransformResult) => void,
+) {
+  const worker = await getWorker();
+  const listener = (mesg: MessageRes) => {
+    if (mesg.type === 'module') {
+      fn(mesg.result);
     }
   };
   worker.on('message', listener);
