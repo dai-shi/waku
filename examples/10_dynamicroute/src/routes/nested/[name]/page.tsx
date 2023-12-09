@@ -1,6 +1,6 @@
 const Page = ({ name }: { name: string }) => (
   <div>
-    <h2>{name}</h2>
+    <h2>Nested / {name}</h2>
   </div>
 );
 
