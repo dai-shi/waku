@@ -538,8 +538,7 @@ import path from 'node:path';
 import { connectMiddleware } from 'waku';
 const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
 export default async function handler(req, res) {
-  console.log('***', req.url);
-  connectMiddleware({ entries, ssr: false })(req, res, () => {
+  connectMiddleware({ entries, ssr: true })(req, res, () => {
     throw new Error('not handled');
   });
 }
