@@ -12,7 +12,9 @@ const app = express();
 app.use(cookieParser());
 app.use(
   connectMiddleware({
-    entries: import(path.join(root, 'dist', 'entries.js')),
+    entries: import(
+      url.pathToFileURL(path.join(root, 'dist', 'entries.js')).toString()
+    ),
     unstable_prehook: (req) => {
       return { count: Number(req.orig.cookies.count) || 0 };
     },
