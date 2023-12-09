@@ -245,18 +245,18 @@ const routesDir = path.join(
 export default defineRouter(
   // getComponent (id is '**/layout' or '**/page')
   async (id) => {
-    const files = await glob(${'`'}$\{id}.{tsx,js}${'`'}, { cwd: routesDir });
+    const files = await glob(`${id}.{tsx,js}`, { cwd: routesDir });
     if (files.length === 0) {
       return null;
     }
     const items = id.split('/');
     switch (items.length) {
       case 1:
-        return import(${'`'}./routes/$\{items[0]}.tsx${'`'});
+        return import(`./routes/${items[0]}.tsx`);
       case 2:
-        return import(${'`'}./routes/$\{items[0]}/$\{items[1]}.tsx${'`'});
+        return import(`./routes/${items[0]}/${items[1]}.tsx`);
       case 3:
-        return import(${'`'}./routes/$\{items[0]}/$\{items[1]}/$\{items[2]}.tsx${'`'});
+        return import(`./routes/${items[0]}/${items[1]}/${items[2]}.tsx`);
       default:
         throw new Error('too deep route');
     }
