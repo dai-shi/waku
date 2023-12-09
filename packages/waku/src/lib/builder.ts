@@ -8,7 +8,7 @@ import type { RollupLog, LoggingFunction } from 'rollup';
 
 import { resolveConfig } from './config.js';
 import type { Config, ResolvedConfig } from './config.js';
-import { joinPath, extname } from './utils/path.js';
+import { joinPath, extname, filePathToFileURL } from './utils/path.js';
 import {
   createReadStream,
   createWriteStream,
@@ -353,7 +353,7 @@ const emitHtmlFiles = async (
   getClientModules: (input: string) => string[],
   ssr: boolean,
 ) => {
-  const distEntries = await import(distEntriesFile);
+  const distEntries = await import(filePathToFileURL(distEntriesFile));
   const basePrefix = config.basePath + config.rscPath + '/';
   const publicIndexHtmlFile = joinPath(
     rootDir,
@@ -577,7 +577,6 @@ export async function build(options: { config?: Config; ssr?: boolean }) {
   const rootDir = (
     await viteResolveConfig({}, 'build', 'production', 'production')
   ).root;
-  // const rootDir = (await import('node:path')).resolve('.');
   const entriesFile = resolveFileName(
     joinPath(rootDir, config.srcDir, config.entriesJs),
   );
