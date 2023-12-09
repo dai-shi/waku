@@ -1,9 +1,9 @@
 import { Readable, Writable } from 'node:stream';
-import type { ViteDevServer } from 'vite';
 import { createServer as viteCreateServer } from 'vite';
 import { default as viteReact } from '@vitejs/plugin-react';
 
 import type { Config } from '../../config.js';
+import type { EntriesDev } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import { joinPath } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
@@ -25,7 +25,7 @@ export function createHandler<
   Req extends BaseReq,
   Res extends BaseRes,
 >(options: {
-  config: Config;
+  config?: Config;
   ssr?: boolean;
   unstable_prehook?: (req: Req, res: Res) => Context;
   unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
@@ -34,14 +34,9 @@ export function createHandler<
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
   }
-  const configPromise = resolveConfig(options.config);
+  const configPromise = resolveConfig(options.config || {});
 
-  let lastViteServer: ViteDevServer | undefined;
-  const getViteServer = async (): Promise<ViteDevServer> => {
-    if (lastViteServer) {
-      return lastViteServer;
-    }
-    const config = await configPromise;
+  const vitePromise = configPromise.then(async (config) => {
     const viteServer = await viteCreateServer({
       base: config.basePath,
       optimizeDeps: {
@@ -57,26 +52,37 @@ export function createHandler<
     });
     registerReloadCallback((type) => viteServer.ws.send({ type }));
     registerImportCallback((source) => hotImport(viteServer, source));
-    lastViteServer = viteServer;
     return viteServer;
-  };
+  });
+
+  const entries = Promise.all([configPromise, vitePromise]).then(
+    async ([config, vite]) => {
+      const filePath = joinPath(
+        vite.config.root,
+        config.srcDir,
+        config.entriesJs,
+      );
+      return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
+    },
+  );
 
   let publicIndexHtml: string | undefined;
   const getHtmlStr = async (pathStr: string): Promise<string | null> => {
     const config = await configPromise;
+    const vite = await vitePromise;
+    const rootDir = vite.config.root;
     if (!publicIndexHtml) {
-      const publicIndexHtmlFile = joinPath(config.rootDir, config.indexHtml);
+      const publicIndexHtmlFile = joinPath(rootDir, config.indexHtml);
       publicIndexHtml = await readFile(publicIndexHtmlFile, {
         encoding: 'utf8',
       });
     }
-    const vite = await getViteServer();
     for (const item of vite.moduleGraph.idToModuleMap.values()) {
       if (item.url === pathStr) {
         return null;
       }
     }
-    const destFile = joinPath(config.rootDir, config.srcDir, pathStr);
+    const destFile = joinPath(rootDir, config.srcDir, pathStr);
     try {
       // check if destFile exists
       const stats = await stat(destFile);
@@ -118,7 +124,14 @@ export function createHandler<
         const htmlStr = await getHtmlStr(pathStr);
         const result =
           htmlStr &&
-          (await renderHtml(config, true, pathStr, htmlStr, context));
+          (await renderHtml({
+            config,
+            pathStr,
+            htmlStr,
+            context,
+            isDev: true,
+            entries: await entries,
+          }));
         if (result) {
           const [readable, nextCtx] = result;
           unstable_posthook?.(req, res, nextCtx as Context);
@@ -152,7 +165,7 @@ export function createHandler<
       }
       return;
     }
-    const vite = await getViteServer();
+    const vite = await vitePromise;
     const viteReq: any = Readable.fromWeb(req.stream as any);
     viteReq.method = req.method;
     viteReq.url = pathStr;

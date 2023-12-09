@@ -1,10 +1,5 @@
 export interface Config {
   /**
-   * The project root directory.
-   * This is a required field.
-   */
-  rootDir: string;
-  /**
    * The base path for serve HTTP.
    * Defaults to  "/".
    */
@@ -75,19 +70,3 @@ type DeepRequired<T> = T extends (...args: any[]) => any
   : T;
 
 export type ResolvedConfig = DeepRequired<Config>;
-
-export const loadConfig = async () => {
-  const [fs, path, url] = await Promise.all([
-    import('node:fs'),
-    import('node:path'),
-    import('node:url'),
-  ]);
-  for (const file of ['waku.config.ts', 'waku.config.js']) {
-    if (fs.existsSync(file)) {
-      // XXX no schema check
-      return (await import(url.pathToFileURL(path.resolve(file)).toString()))
-        .default;
-    }
-  }
-  return {};
-};
