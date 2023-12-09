@@ -1,11 +1,9 @@
 import type { ReactNode } from 'react';
 
-import { defineEntries } from '../../server.js';
-import type { RenderContext } from '../../server.js';
+import type { RenderContext, EntriesDev, EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../../config.js';
 import {
   encodeFilePathToAbsolute,
-  relativePath,
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
@@ -13,25 +11,8 @@ import {
 import { parseFormData } from '../utils/form.js';
 import { streamToString } from '../utils/stream.js';
 
-const loadRSDWServer = async (
-  config: Omit<ResolvedConfig, 'ssr'>,
-  isDev: boolean,
-) => {
-  if (!isDev) {
-    return (
-      await import(
-        filePathToFileURL(
-          joinPath(config.rootDir, config.distDir, 'rsdw-server.js'),
-        )
-      )
-    ).default;
-  }
-  return import('react-server-dom-webpack/server.edge');
-};
-
-type Entries = {
-  default: ReturnType<typeof defineEntries>;
-};
+export const RSDW_SERVER_MODULE = 'rsdw-server';
+export const RSDW_SERVER_MODULE_VALUE = 'react-server-dom-webpack/server.edge';
 
 const getEntriesFileURL = (
   config: Omit<ResolvedConfig, 'ssr'>,
@@ -50,51 +31,17 @@ const resolveClientEntry = (
   config: Omit<ResolvedConfig, 'ssr'>,
   isDev: boolean,
 ) => {
-  let filePath = file.startsWith('file://') ? fileURLToFilePath(file) : file;
-  const root = joinPath(config.rootDir, isDev ? '' : config.distDir);
-  // HACK on windows file url looks like file:///C:/path/to/file
-  if (!root.startsWith('/') && filePath.startsWith('/')) {
-    filePath = filePath.slice(1);
-  }
   if (isDev) {
+    const filePath = file.startsWith('file://')
+      ? fileURLToFilePath(file)
+      : file;
     // HACK this relies on Vite's internal implementation detail.
     return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
   }
-  if (!filePath.startsWith(root)) {
-    throw new Error('Resolving client module outside root is not supported.');
+  if (!file.startsWith('@id/')) {
+    throw new Error('Unexpected client entry in PRD');
   }
-  return config.basePath + relativePath(root, filePath);
-};
-
-// HACK Patching stream is very fragile.
-const transformRsfId = (prefixToRemove: string) => {
-  const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
-  let data = '';
-  return new TransformStream({
-    transform(chunk, controller) {
-      if (!(chunk instanceof Uint8Array)) {
-        throw new Error('Unknown chunk type');
-      }
-      data += decoder.decode(chunk);
-      if (!data.endsWith('\n')) {
-        return;
-      }
-      const lines = data.split('\n');
-      data = '';
-      for (let i = 0; i < lines.length; ++i) {
-        const match = lines[i]!.match(
-          new RegExp(
-            `^([0-9]+):{"id":"(?:file:///?)?${prefixToRemove}(.*?)"(.*)$`,
-          ),
-        );
-        if (match) {
-          lines[i] = `${match[1]}:{"id":"${match[2]}"${match[3]}`;
-        }
-      }
-      controller.enqueue(encoder.encode(lines.join('\n')));
-    },
-  });
+  return config.basePath + file.slice('@id/'.length);
 };
 
 export async function renderRsc(
@@ -121,22 +68,19 @@ export async function renderRsc(
     moduleIdCallback,
     isDev,
   } = opts;
-  const customImport = isDev
-    ? opts.customImport
-    : (fileURL: string) => import(fileURL);
-
-  const { renderToReadableStream, decodeReply } = await loadRSDWServer(
-    config,
-    isDev,
-  );
 
   const entriesFileURL = getEntriesFileURL(config, isDev);
   const {
     default: { renderEntries },
-  } = await (customImport(entriesFileURL) as Promise<Entries>);
-
-  const rsfPrefix =
-    joinPath(config.rootDir, isDev ? config.srcDir : config.distDir) + '/';
+    loadModule,
+  } = await (isDev
+    ? (opts.customImport(entriesFileURL) as Promise<
+        EntriesDev & { loadModule: undefined }
+      >)
+    : (import(entriesFileURL) as Promise<EntriesPrd>));
+  const { renderToReadableStream, decodeReply } = await (isDev
+    ? import(RSDW_SERVER_MODULE_VALUE)
+    : loadModule!(RSDW_SERVER_MODULE).then((m: any) => m.default));
 
   const render = async (renderContext: RenderContext, input: string) => {
     const elements = await renderEntries.call(renderContext, input);
@@ -181,8 +125,15 @@ export async function renderRsc(
       args = await decodeReply(bodyStr);
     }
     const [fileId, name] = rsfId.split('#') as [string, string];
-    const filePath = fileId.startsWith('/') ? fileId : rsfPrefix + fileId;
-    const mod = await customImport(filePathToFileURL(filePath));
+    let mod: any;
+    if (isDev) {
+      mod = await opts.customImport(filePathToFileURL(fileId));
+    } else {
+      if (!fileId.startsWith('@id/')) {
+        throw new Error('Unexpected server entry in PRD');
+      }
+      mod = await loadModule!(fileId.slice('@id/'.length));
+    }
     const fn = mod[name] || mod;
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
     let rendered = false;
@@ -202,7 +153,7 @@ export async function renderRsc(
     return renderToReadableStream(
       { ...resolvedElements, _value: data },
       bundlerConfig,
-    ).pipeThrough(transformRsfId(rsfPrefix));
+    );
   }
 
   // rr.method === 'GET'
@@ -213,9 +164,7 @@ export async function renderRsc(
     context,
   };
   const elements = await render(renderContext, input);
-  return renderToReadableStream(elements, bundlerConfig).pipeThrough(
-    transformRsfId(rsfPrefix),
-  );
+  return renderToReadableStream(elements, bundlerConfig);
 }
 
 export async function getBuildConfig(opts: {
@@ -226,7 +175,7 @@ export async function getBuildConfig(opts: {
   const entriesFileURL = getEntriesFileURL(config, false);
   const {
     default: { getBuildConfig },
-  } = await (import(entriesFileURL) as Promise<Entries>);
+  } = await (import(entriesFileURL) as Promise<EntriesDev>);
   if (!getBuildConfig) {
     console.warn(
       "getBuildConfig is undefined. It's recommended for optimization and sometimes required.",

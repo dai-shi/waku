@@ -2,7 +2,7 @@ import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
 import type { ViteDevServer } from 'vite';
 
 import type { ResolvedConfig } from '../../config.js';
-import { defineEntries } from '../../server.js';
+import type { EntriesDev, EntriesPrd } from '../../server.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import {
   decodeFilePathFromAbsolute,
@@ -14,92 +14,21 @@ import { renderRscWithWorker } from './worker-api.js';
 import { renderRsc } from './rsc-renderer.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 
-const loadReact = async (config: ResolvedConfig, isDev: boolean) => {
-  if (!isDev) {
-    return (
-      await import(
-        filePathToFileURL(
-          joinPath(
-            config.rootDir,
-            config.distDir,
-            config.publicDir,
-            config.assetsDir,
-            'react.js',
-          ),
-        )
-      )
-    ).default;
-  }
-  return import('react');
-};
-
-const loadRDServer = async (config: ResolvedConfig, isDev: boolean) => {
-  if (!isDev) {
-    return (
-      await import(
-        filePathToFileURL(
-          joinPath(
-            config.rootDir,
-            config.distDir,
-            config.publicDir,
-            config.assetsDir,
-            'rd-server.js',
-          ),
-        )
-      )
-    ).default;
-  }
-  return import('react-dom/server.edge');
-};
-
-const loadRSDWClient = async (config: ResolvedConfig, isDev: boolean) => {
-  if (!isDev) {
-    return (
-      await import(
-        filePathToFileURL(
-          joinPath(
-            config.rootDir,
-            config.distDir,
-            config.publicDir,
-            config.assetsDir,
-            'rsdw-client.js',
-          ),
-        )
-      )
-    ).default;
-  }
-  return import('react-server-dom-webpack/client.edge');
-};
-
-const loadWakuClient = async (config: ResolvedConfig, isDev: boolean) => {
-  if (!isDev) {
-    return import(
-      filePathToFileURL(
-        joinPath(
-          config.rootDir,
-          config.distDir,
-          config.publicDir,
-          config.assetsDir,
-          'waku-client.js',
-        ),
-      )
-    );
-  }
-  return import('waku/client');
-};
+export const REACT_MODULE = 'react';
+export const REACT_MODULE_VALUE = 'react';
+export const RD_SERVER_MODULE = 'rd-server';
+export const RD_SERVER_MODULE_VALUE = 'react-dom/server.edge';
+export const RSDW_CLIENT_MODULE = 'rsdw-client';
+export const RSDW_CLIENT_MODULE_VALUE = 'react-server-dom-webpack/client.edge';
+export const WAKU_CLIENT_MODULE = 'waku-client';
+export const WAKU_CLIENT_MODULE_VALUE = 'waku/client';
 
 // HACK for react-server-dom-webpack without webpack
+const moduleLoading = new Map();
 const moduleCache = new Map();
-(globalThis as any).__webpack_chunk_load__ ||= async (id: string) => {
-  const [fileURL, mode] = id.split('#');
-  const m = await loadServerFile(fileURL!, mode === 'dev');
-  moduleCache.set(id, m);
-};
-(globalThis as any).__webpack_require__ ||= (id: string) => moduleCache.get(id);
-
-type Entries = {
-  default: ReturnType<typeof defineEntries>;
-};
+(globalThis as any).__webpack_chunk_load__ = async (id: string) =>
+  moduleLoading.get(id);
+(globalThis as any).__webpack_require__ = (id: string) => moduleCache.get(id);
 
 let lastViteServer: ViteDevServer | undefined;
 const getViteServer = async () => {
@@ -126,10 +55,7 @@ const getViteServer = async () => {
   return viteServer;
 };
 
-const loadServerFile = async (fileURL: string, isDev: boolean) => {
-  if (!isDev) {
-    return import(fileURL);
-  }
+const loadServerFileDev = async (fileURL: string) => {
   const vite = await getViteServer();
   return vite.ssrLoadModule(fileURLToFilePath(fileURL));
 };
@@ -303,21 +229,34 @@ export const renderHtml = async <Context>(
   htmlStr: string, // Hope stream works, but it'd be too tricky
   context: Context,
 ): Promise<readonly [ReadableStream, Context] | null> => {
+  const entriesFileURL = getEntriesFileURL(config, isDev);
+  const {
+    default: { getSsrConfig },
+    loadModule,
+  } = await (isDev
+    ? (loadServerFileDev(entriesFileURL) as Promise<
+        EntriesDev & { loadModule: undefined }
+      >)
+    : (import(entriesFileURL) as Promise<EntriesPrd>));
   const [
     { createElement },
     { renderToReadableStream },
     { createFromReadableStream },
     { ServerRoot, Slot },
   ] = await Promise.all([
-    loadReact(config, isDev),
-    loadRDServer(config, isDev),
-    loadRSDWClient(config, isDev),
-    loadWakuClient(config, isDev),
+    isDev
+      ? import(REACT_MODULE_VALUE)
+      : loadModule!('public/' + REACT_MODULE).then((m: any) => m.default),
+    isDev
+      ? import(RD_SERVER_MODULE_VALUE)
+      : loadModule!('public/' + RD_SERVER_MODULE).then((m: any) => m.default),
+    isDev
+      ? import(RSDW_CLIENT_MODULE_VALUE)
+      : loadModule!('public/' + RSDW_CLIENT_MODULE).then((m: any) => m.default),
+    isDev
+      ? import(WAKU_CLIENT_MODULE_VALUE)
+      : loadModule!('public/' + WAKU_CLIENT_MODULE),
   ]);
-  const entriesFileURL = getEntriesFileURL(config, isDev);
-  const {
-    default: { getSsrConfig },
-  } = await (loadServerFile(entriesFileURL, isDev) as Promise<Entries>);
   const ssrConfig = await getSsrConfig?.(pathStr);
   if (!ssrConfig) {
     return null;
@@ -325,7 +264,15 @@ export const renderHtml = async <Context>(
   let stream: ReadableStream;
   let nextCtx: Context;
   try {
-    if (!isDev) {
+    if (isDev) {
+      [stream, nextCtx] = await renderRscWithWorker({
+        input: ssrConfig.input,
+        method: 'GET',
+        contentType: undefined,
+        config,
+        context,
+      });
+    } else {
       stream = await renderRsc({
         config,
         input: ssrConfig.input,
@@ -335,14 +282,6 @@ export const renderHtml = async <Context>(
       });
       deepFreeze(context);
       nextCtx = context;
-    } else {
-      [stream, nextCtx] = await renderRscWithWorker({
-        input: ssrConfig.input,
-        method: 'GET',
-        contentType: undefined,
-        config,
-        context,
-      });
     }
   } catch (e) {
     if (hasStatusCode(e) && e.statusCode === 404) {
@@ -370,6 +309,7 @@ export const renderHtml = async <Context>(
           {
             get(_target, name: string) {
               const file = filePath.slice(config.basePath.length);
+              // TODO too long, we need to refactor this logic
               if (isDev) {
                 const filePath = file.startsWith('@fs/')
                   ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
@@ -382,20 +322,37 @@ export const renderHtml = async <Context>(
                   const id =
                     'waku' +
                     filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
+                  if (!moduleLoading.has(id)) {
+                    moduleLoading.set(
+                      id,
+                      import(id).then((m) => {
+                        moduleCache.set(id, m);
+                      }),
+                    );
+                  }
                   return { id, chunks: [id], name };
                 }
-                const id = filePathToFileURL(filePath) + '#dev';
+                const id = filePathToFileURL(filePath);
+                if (!moduleLoading.has(id)) {
+                  moduleLoading.set(
+                    id,
+                    loadServerFileDev(id).then((m) => {
+                      moduleCache.set(id, m);
+                    }),
+                  );
+                }
                 return { id, chunks: [id], name };
               }
               // !isDev
-              const id = filePathToFileURL(
-                joinPath(
-                  config.rootDir,
-                  config.distDir,
-                  config.publicDir,
-                  file,
-                ),
-              );
+              const id = file;
+              if (!moduleLoading.has(id)) {
+                moduleLoading.set(
+                  id,
+                  loadModule!('public/' + id).then((m: any) => {
+                    moduleCache.set(id, m);
+                  }),
+                );
+              }
               return { id, chunks: [id], name };
             },
           },

@@ -10,6 +10,7 @@ import { fileURLToFilePath } from '../utils/path.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
 import { renderRsc } from './rsc-renderer.js';
+import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscReloadPlugin } from '../plugins/vite-plugin-rsc-reload.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
@@ -91,6 +92,7 @@ const getViteServer = async () => {
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   const viteServer = await viteCreateServer({
     plugins: [
+      nonjsResolvePlugin(),
       rscTransformPlugin(false),
       rscReloadPlugin((type) => {
         const mesg: MessageRes = { type };

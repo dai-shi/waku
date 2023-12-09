@@ -1,25 +1,44 @@
-import path from 'node:path';
 import type { Plugin } from 'vite';
 import * as RSDWNodeLoader from 'react-server-dom-webpack/node-loader';
 
-export function rscTransformPlugin(isBuild: boolean): Plugin {
+export function rscTransformPlugin(
+  isBuild: boolean,
+  assetsDir?: string,
+  clientEntryFiles?: Record<string, string>,
+  serverEntryFiles?: Record<string, string>,
+): Plugin {
+  const clientFileMap = new Map<string, string>();
+  const serverFileMap = new Map<string, string>();
+  const getClientId = (id: string) => {
+    if (!assetsDir) {
+      throw new Error('assetsDir is required');
+    }
+    if (!clientFileMap.has(id)) {
+      throw new Error(`Cannot find client id for ${id}`);
+    }
+    return `@id/${assetsDir}/${clientFileMap.get(id)}.js`;
+  };
+  const getServerId = (id: string) => {
+    if (!assetsDir) {
+      throw new Error('assetsDir is required');
+    }
+    if (!serverFileMap.has(id)) {
+      throw new Error(`Cannot find server id for ${id}`);
+    }
+    return `@id/${assetsDir}/${serverFileMap.get(id)}.js`;
+  };
   return {
     name: 'rsc-transform-plugin',
-    async resolveId(id, importer, options) {
-      if (!id.endsWith('.js')) {
-        return id;
-      }
-      // FIXME This isn't necessary in production mode
-      // (But, waku/router may depend on this.)
-      for (const ext of ['.js', '.ts', '.tsx', '.jsx']) {
-        const resolved = await this.resolve(
-          id.slice(0, -path.extname(id).length) + ext,
-          importer,
-          { ...options, skipSelf: true },
-        );
-        if (resolved) {
-          return resolved;
+    async buildStart() {
+      for (const [k, v] of Object.entries(clientEntryFiles || {})) {
+        const resolvedId = await this.resolve(v);
+        if (!resolvedId) {
+          throw new Error(`Cannot resolve ${v}`);
         }
+        clientFileMap.set(resolvedId.id, k);
+      }
+      for (const [k, v] of Object.entries(serverEntryFiles || {})) {
+        serverFileMap.set(v, k);
       }
     },
     async transform(code, id) {
@@ -60,7 +79,9 @@ export function rscTransformPlugin(isBuild: boolean): Plugin {
           // HACK tweak registerClientReference for production
           source = source.replace(
             /registerClientReference\(function\(\) {throw new Error\("([^"]*)"\);},"[^"]*","([^"]*)"\);/gs,
-            'registerClientReference(function() {return "$1";}, import.meta.url, "$2");',
+            `registerClientReference(function() {return "$1";}, "${getClientId(
+              id,
+            )}", "$2");`,
           );
         }
         if (
@@ -71,7 +92,7 @@ export function rscTransformPlugin(isBuild: boolean): Plugin {
           // HACK tweak registerServerReference for production
           source = source.replace(
             /registerServerReference\(([^,]*),"[^"]*","([^"]*)"\);/gs,
-            'registerServerReference($1, import.meta.url, "$2");',
+            `registerServerReference($1, "${getServerId(id)}", "$2");`,
           );
         }
       }

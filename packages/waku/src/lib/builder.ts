@@ -17,13 +17,30 @@ import {
   mkdir,
   readFile,
   writeFile,
+  appendFile,
 } from './utils/node-fs.js';
 import { streamToString } from './utils/stream.js';
 import { encodeInput, generatePrefetchCode } from './rsc/utils.js';
-import { renderRsc, getBuildConfig } from './rsc/rsc-renderer.js';
-import { renderHtml } from './rsc/html-renderer.js';
+import {
+  RSDW_SERVER_MODULE,
+  RSDW_SERVER_MODULE_VALUE,
+  renderRsc,
+  getBuildConfig,
+} from './rsc/rsc-renderer.js';
+import {
+  REACT_MODULE,
+  REACT_MODULE_VALUE,
+  RD_SERVER_MODULE,
+  RD_SERVER_MODULE_VALUE,
+  RSDW_CLIENT_MODULE,
+  RSDW_CLIENT_MODULE_VALUE,
+  WAKU_CLIENT_MODULE,
+  WAKU_CLIENT_MODULE_VALUE,
+  renderHtml,
+} from './rsc/html-renderer.js';
 import { rscIndexPlugin } from './plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from './plugins/vite-plugin-rsc-analyze.js';
+import { nonjsResolvePlugin } from './plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from './plugins/vite-plugin-rsc-transform.js';
 import { patchReactRefresh } from './plugins/patch-react-refresh.js';
 
@@ -112,12 +129,24 @@ const analyzeEntries = async (entriesFile: string) => {
 const buildServerBundle = async (
   config: ResolvedConfig,
   entriesFile: string,
+  distEntriesFile: string,
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
 ) => {
   const serverBuildOutput = await viteBuild({
-    plugins: [rscTransformPlugin(true)],
+    plugins: [
+      nonjsResolvePlugin(),
+      rscTransformPlugin(
+        true,
+        config.assetsDir,
+        {
+          [WAKU_CLIENT_MODULE]: WAKU_CLIENT_MODULE_VALUE,
+          ...clientEntryFiles,
+        },
+        serverEntryFiles,
+      ),
+    ],
     ssr: {
       resolve: {
         conditions: ['react-server', 'workerd'],
@@ -137,8 +166,8 @@ const buildServerBundle = async (
         onwarn,
         input: {
           entries: entriesFile,
-          'rsdw-server': 'react-server-dom-webpack/server.edge',
-          'waku-client': 'waku/client',
+          [RSDW_SERVER_MODULE]: RSDW_SERVER_MODULE_VALUE,
+          [WAKU_CLIENT_MODULE]: WAKU_CLIENT_MODULE_VALUE,
           ...commonEntryFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
@@ -146,7 +175,7 @@ const buildServerBundle = async (
         output: {
           entryFileNames: (chunkInfo) => {
             if (
-              ['waku-client'].includes(chunkInfo.name) ||
+              [WAKU_CLIENT_MODULE].includes(chunkInfo.name) ||
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name] ||
               serverEntryFiles[chunkInfo.name]
@@ -162,6 +191,40 @@ const buildServerBundle = async (
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
+  const psDir = joinPath(config.publicDir, config.assetsDir);
+  const code = `
+export function loadModule(id) {
+  switch (id) {
+    case '${RSDW_SERVER_MODULE}':
+      return import('./${RSDW_SERVER_MODULE}.js');
+    case 'public/${REACT_MODULE}':
+      return import('./${psDir}/${REACT_MODULE}.js');
+    case 'public/${RD_SERVER_MODULE}':
+      return import('./${psDir}/${RD_SERVER_MODULE}.js');
+    case 'public/${RSDW_CLIENT_MODULE}':
+      return import('./${psDir}/${RSDW_CLIENT_MODULE}.js');
+    case 'public/${WAKU_CLIENT_MODULE}':
+      return import('./${psDir}/${WAKU_CLIENT_MODULE}.js');
+${Object.entries(serverEntryFiles || {})
+  .map(
+    ([k]) => `
+    case '${config.assetsDir}/${k}.js':
+      return import('./${config.assetsDir}/${k}.js');`,
+  )
+  .join('')}
+${Object.entries(clientEntryFiles || {})
+  .map(
+    ([k]) => `
+    case 'public/${config.assetsDir}/${k}.js':
+      return import('./${psDir}/${k}.js');`,
+  )
+  .join('')}
+    default:
+      throw new Error('Cannot find module: ' + id);
+  }
+}
+`;
+  await appendFile(distEntriesFile, code);
   return serverBuildOutput;
 };
 
@@ -184,10 +247,10 @@ const buildClientBundle = async (
         onwarn,
         input: {
           main: indexHtmlFile,
-          react: 'react',
-          'rd-server': 'react-dom/server.edge',
-          'rsdw-client': 'react-server-dom-webpack/client.edge',
-          'waku-client': 'waku/client',
+          [REACT_MODULE]: REACT_MODULE_VALUE,
+          [RD_SERVER_MODULE]: RD_SERVER_MODULE_VALUE,
+          [RSDW_CLIENT_MODULE]: RSDW_CLIENT_MODULE_VALUE,
+          [WAKU_CLIENT_MODULE]: WAKU_CLIENT_MODULE_VALUE,
           ...commonEntryFiles,
           ...clientEntryFiles,
         },
@@ -195,9 +258,12 @@ const buildClientBundle = async (
         output: {
           entryFileNames: (chunkInfo) => {
             if (
-              ['react', 'rd-server', 'rsdw-client', 'waku-client'].includes(
-                chunkInfo.name,
-              ) ||
+              [
+                REACT_MODULE,
+                RD_SERVER_MODULE,
+                RSDW_CLIENT_MODULE,
+                WAKU_CLIENT_MODULE,
+              ].includes(chunkInfo.name) ||
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name]
             ) {
@@ -278,6 +344,7 @@ const emitRscFiles = async (config: ResolvedConfig) => {
 
 const emitHtmlFiles = async (
   config: ResolvedConfig,
+  distEntriesFile: string,
   buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
   getClientModules: (input: string) => string[],
   ssr: boolean,
@@ -292,17 +359,10 @@ const emitHtmlFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  const publicIndexHtmlJsFile = joinPath(
-    config.rootDir,
-    config.distDir,
-    config.htmlsDir,
-    config.indexHtml + '.js',
-  );
-  await mkdir(joinPath(publicIndexHtmlJsFile, '..'), { recursive: true });
-  await writeFile(
-    publicIndexHtmlJsFile,
-    `export default ${JSON.stringify(publicIndexHtml)};`,
-  );
+  let loadHtmlCode = `
+export function loadHtml(pathStr) {
+  switch (pathStr) {
+`;
   const htmlFiles = await Promise.all(
     Object.entries(buildConfig).map(
       async ([pathStr, { entries, customCode, context }]) => {
@@ -319,6 +379,12 @@ const emitHtmlFiles = async (
           (extname(pathStr) ? pathStr : pathStr + '/' + config.indexHtml) +
             '.js',
         );
+        loadHtmlCode += `    case ${JSON.stringify(pathStr)}:
+      return import('./${joinPath(
+        config.htmlsDir,
+        (extname(pathStr) ? pathStr : pathStr + '/' + config.indexHtml) + '.js',
+      )}').then((m)=>m.default);
+`;
         let htmlStr: string;
         if (existsSync(destHtmlFile)) {
           htmlStr = await readFile(destHtmlFile, { encoding: 'utf8' });
@@ -379,6 +445,12 @@ const emitHtmlFiles = async (
       },
     ),
   );
+  loadHtmlCode += `
+    default:
+      throw new Error('Cannot find HTML for ' + pathStr);
+  }
+}`;
+  await appendFile(distEntriesFile, loadHtmlCode);
   return { htmlFiles };
 };
 
@@ -450,9 +522,9 @@ const emitVercelOutput = async (
     `
 const config = { rootDir: process.cwd() };
 export default async function handler(req, res) {
-  const { connectMiddleware } = await import("waku");
+  const { connectMiddleware } = await import('waku');
   connectMiddleware({ config, ssr: true })(req, res, () => {
-    throw new Error("not handled");
+    throw new Error('not handled');
   });
 }
 `,
@@ -491,12 +563,16 @@ export async function build(options: { config: Config; ssr?: boolean }) {
   const entriesFile = resolveFileName(
     joinPath(config.rootDir, config.srcDir, config.entriesJs),
   );
+  const distEntriesFile = resolveFileName(
+    joinPath(config.rootDir, config.distDir, config.entriesJs),
+  );
 
   const { commonEntryFiles, clientEntryFiles, serverEntryFiles } =
     await analyzeEntries(entriesFile);
   const serverBuildOutput = await buildServerBundle(
     config,
     entriesFile,
+    distEntriesFile,
     commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
@@ -512,6 +588,7 @@ export async function build(options: { config: Config; ssr?: boolean }) {
     await emitRscFiles(config);
   const { htmlFiles } = await emitHtmlFiles(
     config,
+    distEntriesFile,
     buildConfig,
     getClientModules,
     !!options?.ssr,
