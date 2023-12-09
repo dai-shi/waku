@@ -3,8 +3,6 @@ import {
   createServer as viteCreateServer,
   resolveConfig as resolveViteConfig,
   mergeConfig as mergeViteConfig,
-  type TransformResult,
-  type ViteDevServer,
 } from 'vite';
 import { default as viteReact } from '@vitejs/plugin-react';
 

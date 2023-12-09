@@ -1,4 +1,3 @@
-import path from 'node:path';
 import type { Plugin, TransformResult, ViteDevServer } from 'vite';
 
 const customCode = `

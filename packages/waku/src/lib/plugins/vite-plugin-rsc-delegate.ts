@@ -2,8 +2,6 @@ import path from 'node:path';
 import type { Plugin, TransformResult, ViteDevServer } from 'vite';
 import * as swc from '@swc/core';
 
-import { encodeFilePathToAbsolute } from '../utils/path.js';
-
 // import { CSS_LANGS_RE } from "vite/dist/node/constants.js";
 const CSS_LANGS_RE =
   /\.(css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)/;
