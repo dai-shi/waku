@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import path from 'node:path';
+import url from 'node:url';
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
 import { Hono } from 'hono';
@@ -72,7 +73,9 @@ async function runBuild(options: { ssr: boolean }) {
 
 async function runStart(options: { ssr: boolean }) {
   const { distDir, publicDir, entriesJs } = await resolveConfig({});
-  const entries = import(path.resolve(distDir, entriesJs));
+  const entries = import(
+    url.pathToFileURL(path.resolve(distDir, entriesJs)).toString()
+  );
   const app = new Hono();
   app.use('*', honoPrdMiddleware({ entries, ssr: options.ssr }));
   app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
