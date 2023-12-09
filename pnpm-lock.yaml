@@ -440,9 +440,6 @@ importers:
       '@hono/node-server':
         specifier: ^1.2.2
         version: 1.2.3
-      glob:
-        specifier: ^10.3.10
-        version: 10.3.10
       hono:
         specifier: ^3.10.0
         version: 3.10.2

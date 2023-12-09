@@ -11,7 +11,6 @@
   "dependencies": {
     "@hono/node-server": "^1.2.2",
     "hono": "^3.10.0",
-    "glob": "^10.3.10",
     "react": "18.3.0-canary-6c7b41da3-20231123",
     "react-dom": "18.3.0-canary-6c7b41da3-20231123",
     "react-server-dom-webpack": "18.3.0-canary-6c7b41da3-20231123",
