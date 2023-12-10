@@ -50,6 +50,7 @@ export function hotImport(vite: ViteDevServer, source: string) {
 }
 
 const modulePendingMap = new WeakMap<ViteDevServer, Set<TransformResult>>();
+
 export function moduleImport(
   viteServer: ViteDevServer,
   result: TransformResult,
