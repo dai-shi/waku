@@ -1,6 +1,5 @@
 import url from 'node:url';
 import path from 'node:path';
-// import { defineConfig } from 'waku/config'
 import { defineConfig } from 'vite';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 
