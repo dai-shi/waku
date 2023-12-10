@@ -143,8 +143,8 @@ async function init() {
   const packageManager = /pnpm/.test(manager)
     ? 'pnpm'
     : /yarn/.test(manager)
-    ? 'yarn'
-    : 'npm';
+      ? 'yarn'
+      : 'npm';
 
   const commandsMap = {
     install: {
