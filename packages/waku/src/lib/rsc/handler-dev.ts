@@ -139,6 +139,7 @@ export function createHandler<
         if (result) {
           const [readable, nextCtx] = result;
           unstable_posthook?.(req, res, nextCtx as Context);
+          res.setHeader('content-type', 'text/html; charset=utf-8');
           readable.pipeTo(res.stream);
           return;
         }
