@@ -1,34 +1,19 @@
-import { lazy } from 'react';
-import { defineEntries } from 'waku/server';
+import { defineRouter } from 'waku/router/server';
 
-const App = lazy(() => import('./components/app.js'));
-
-export default defineEntries(
-  // renderEntries
-  async () => {
-    return {
-      App: <App />,
-    };
-  },
-  // getBuildConfig
-  async () => {
-    return {
-      '/': {
-        entries: [['']],
-      },
-    };
-  },
-  // getSsrConfig
-  async (pathStr) => {
-    switch (pathStr) {
-      case '/':
-        return {
-          input: '',
-          unstable_render: ({ createElement, Slot }) =>
-            createElement(Slot, { id: 'App' }),
-        };
+export default defineRouter(
+  // getComponent (id is "**/layout" or "**/page")
+  async (id) => {
+    switch (id) {
+      case 'page':
+        return import('./routes/page.js');
+      case 'blog/introducing-waku/page':
+        return import('./routes/blog/introducing-waku/page.js');
       default:
         return null;
     }
+  },
+  // getPathsForBuild
+  async () => {
+    return ['/', '/blog/introducing-waku'];
   },
 );
