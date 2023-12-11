@@ -18,7 +18,7 @@ export function nonjsResolvePlugin(): Plugin {
         const resolved = await this.resolve(
           id.slice(0, -path.extname(id).length) + ext,
           importer,
-          { ...options, skipSelf: true },
+          options,
         );
         if (resolved) {
           return resolved;
