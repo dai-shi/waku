@@ -502,6 +502,10 @@ const emitVercelOutput = async (
   mkdirSync(path.join(serverlessDir, config.distDir), {
     recursive: true,
   });
+  symlinkSync(
+    path.relative(serverlessDir, path.join(rootDir, 'node_modules', 'waku')),
+    path.join(serverlessDir, 'node_modules', 'waku'),
+  );
   for (const file of readdirSync(path.join(rootDir, config.distDir))) {
     if (['.vercel'].includes(file)) {
       continue;
