@@ -19,6 +19,7 @@ The current version of Waku is based on Vite and leans on the Vite API and its e
 import { defineEntries } from 'waku/server';
 
 export default defineEntries(
+  // renderEntries
   async (input) => {
     return {
       App: <h1>Hello {input}!</h1>,
