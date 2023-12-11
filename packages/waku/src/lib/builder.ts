@@ -502,6 +502,7 @@ const emitVercelOutput = async (
   mkdirSync(path.join(serverlessDir, config.distDir), {
     recursive: true,
   });
+  mkdirSync(path.join(serverlessDir, 'node_modules'));
   symlinkSync(
     path.relative(serverlessDir, path.join(rootDir, 'node_modules', 'waku')),
     path.join(serverlessDir, 'node_modules', 'waku'),
