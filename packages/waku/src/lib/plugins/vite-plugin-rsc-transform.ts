@@ -27,6 +27,7 @@ export function rscTransformPlugin(
     }
     return `@id/${assetsDir}/${serverFileMap.get(id)}.js`;
   };
+  let buildStarted = false;
   return {
     name: 'rsc-transform-plugin',
     async buildStart() {
@@ -40,6 +41,9 @@ export function rscTransformPlugin(
       for (const [k, v] of Object.entries(serverEntryFiles || {})) {
         serverFileMap.set(v, k);
       }
+      // HACK Without checking buildStarted in transform,
+      // this.resolve calls transform, and getClientId throws an error.
+      buildStarted = true;
     },
     async transform(code, id) {
       const resolve = async (
@@ -49,9 +53,7 @@ export function rscTransformPlugin(
         if (!specifier) {
           return { url: '' };
         }
-        const url = (await this.resolve(specifier, parentURL, {
-          skipSelf: true,
-        }))!.id;
+        const url = (await this.resolve(specifier, parentURL))!.id;
         return { url };
       };
       const load = async (url: string) => {
@@ -69,7 +71,7 @@ export function rscTransformPlugin(
         resolve,
       );
       let { source } = await RSDWNodeLoader.load(id, null, load);
-      if (isBuild) {
+      if (isBuild && buildStarted) {
         // TODO we should parse the source code by ourselves with SWC
         if (
           /^import {registerClientReference} from "react-server-dom-webpack\/server";/.test(
