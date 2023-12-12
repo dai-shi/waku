@@ -112,7 +112,7 @@ const mergedViteConfig = await mergeViteConfig(
       rscDelegatePlugin((resultOrSource) => {
         const mesg: MessageRes =
           typeof resultOrSource === 'object'
-            ? { type: 'module', result: resultOrSource }
+            ? { type: 'module-import', result: resultOrSource }
             : { type: 'hot-import', source: resultOrSource };
         parentPort!.postMessage(mesg);
       }),

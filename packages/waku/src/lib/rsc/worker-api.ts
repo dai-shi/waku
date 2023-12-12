@@ -31,7 +31,7 @@ export type MessageReq =
 export type MessageRes =
   | { type: 'full-reload' }
   | { type: 'hot-import'; source: string }
-  | { type: 'module'; result: TransformResult }
+  | { type: 'module-import'; result: TransformResult }
   | { id: number; type: 'start'; context: unknown }
   | { id: number; type: 'buf'; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: 'end' }
@@ -94,7 +94,7 @@ export async function registerModuleCallback(
 ) {
   const worker = await getWorker();
   const listener = (mesg: MessageRes) => {
-    if (mesg.type === 'module') {
+    if (mesg.type === 'module-import') {
       fn(mesg.result);
     }
   };
