@@ -18,8 +18,8 @@ export function rscDelegatePlugin(
       mode = config.mode;
       base = config.base;
     },
-    configureServer(_server) {
-      server = _server;
+    configureServer(serverInstance) {
+      server = serverInstance;
     },
     async transform(code, id) {
       const ext = path.extname(id);
