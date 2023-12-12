@@ -3,7 +3,7 @@ import { Content } from './content.js';
 import { Credits } from './credits.js';
 import { Readme } from './readme.js';
 
-const App = () => {
+export const Home = () => {
   return (
     <div className="relative flex h-[100svh] w-full flex-col items-center justify-center overflow-clip font-sans">
       <div className="absolute inset-0 z-0 sm:-inset-8">
@@ -37,7 +37,7 @@ const App = () => {
         </div>
       </div>
       <Credits />
-      <div className="opacity-0">{new Date().toISOString()}</div>
+      <div className="sr-only">{new Date().toISOString()}</div>
     </div>
   );
 };
@@ -47,5 +47,3 @@ const links = [
   // { href: 'https://www.npmjs.com/package/waku', children: 'NPM' },
   { href: 'https://discord.gg/MrQdmzd', children: 'Discord' },
 ];
-
-export default App;

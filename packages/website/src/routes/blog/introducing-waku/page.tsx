@@ -1,7 +1,5 @@
-export default function Page() {
-  return (
-    <>
-      <h1>Blog post</h1>
-    </>
-  );
+import { Blog } from '../../../components/blog.js';
+
+export default function BlogPage() {
+  return <Blog />;
 }

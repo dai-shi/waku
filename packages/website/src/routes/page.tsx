@@ -1,9 +1,5 @@
-import App from '../components/app.js';
+import { Home } from '../components/home.js';
 
-export default function Page() {
-  return (
-    <>
-      <App />
-    </>
-  );
+export default function HomePage() {
+  return <Home />;
 }
