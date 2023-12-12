@@ -7,6 +7,7 @@ export const Credits = () => {
         position: 'fixed',
         bottom: 0,
         right: 0,
+        zIndex: '40',
         padding: '96px 0 0 256px',
         backgroundColor: 'transparent',
         backgroundImage:
@@ -24,7 +25,7 @@ export const Credits = () => {
         rel="noopener noreferrer"
         style={{
           position: 'relative',
-          zIndex: '20',
+          zIndex: '40',
           display: 'inline-flex',
           flexDirection: 'column',
           justifyContent: 'center',
