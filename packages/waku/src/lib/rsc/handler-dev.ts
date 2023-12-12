@@ -180,13 +180,16 @@ export function createHandler<
         res.setStatus(code);
       },
     });
+    const headers = new Map<string, string>();
     viteRes.setHeader = (name: string, value: string) => {
+      headers.set(name, value);
       res.setHeader(name, value);
     };
+    viteRes.getHeader = (name: string) => headers.get(name);
     viteRes.writeHead = (code: number, headers?: Record<string, string>) => {
       res.setStatus(code);
       for (const [name, value] of Object.entries(headers || {})) {
-        res.setHeader(name, value);
+        viteRes.setHeader(name, value);
       }
     };
     vite.middlewares(viteReq, viteRes, next);
