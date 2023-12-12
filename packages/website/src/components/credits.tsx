@@ -4,7 +4,7 @@ export const Credits = () => {
   return (
     <div
       style={{
-        position: 'absolute',
+        position: 'fixed',
         bottom: 0,
         right: 0,
         padding: '96px 0 0 256px',

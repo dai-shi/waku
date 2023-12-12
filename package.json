@@ -38,7 +38,7 @@
     "examples:prd:11_form": "NAME=11_form pnpm run examples:prd",
     "website:dev": "(cd packages/website && pnpm run dev)",
     "website:build": "(cd packages/website && pnpm run build)",
-    "website:vercel": "pnpm run website:build && mkdir -p ./.vercel && cp -Lr ./packages/website/dist/.vercel/output ./.vercel/ && cp ./README.md ./.vercel/output/functions/RSC.func/",
+    "website:vercel": "pnpm run website:build && mkdir -p .vercel && cp -Lr packages/website/dist/.vercel/output .vercel/ && cp -r README.md packages/website/src/contents .vercel/output/functions/RSC.func/",
     "website:prd": "pnpm run website:build && (cd packages/website && pnpm start)"
   },
   "prettier": {
