@@ -67,15 +67,12 @@ const loadServerFileDev = async (fileURL: string) => {
 };
 
 const fakeFetchCode = `
-Promise.resolve({
-  ok: true,
-  body: new ReadableStream({
-    start(c) {
-      const f = (s) => new TextEncoder().encode(decodeURI(s));
-      globalThis.__WAKU_PUSH__ = (s) => s ? c.enqueue(f(s)) : c.close();
-    }
-  })
-})
+Promise.resolve(new Response(new ReadableStream({
+  start(c) {
+    const f = (s) => new TextEncoder().encode(decodeURI(s));
+    globalThis.__WAKU_PUSH__ = (s) => s ? c.enqueue(f(s)) : c.close();
+  }
+})))
 `
   .split('\n')
   .map((line) => line.trim())
