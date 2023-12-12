@@ -1,3 +1,5 @@
+import { Link } from 'waku/router/client';
+
 import { Article } from './article.js';
 import { Credits } from './credits.js';
 
@@ -12,14 +14,13 @@ export const Blog = () => {
         />
       </div>
       <div className="fixed inset-0 z-10 h-full w-full bg-gradient-radial from-transparent to-black/25" />
-      <a
-        href="/"
-        className="fixed bottom-0 left-0 z-20 p-4 py-8 text-white sm:p-8 lg:top-0"
-      >
-        <h1 className="font-serif text-3xl font-extrabold leading-none transition duration-300 hover:opacity-100 lg:opacity-50">
-          ⛩️ Home
-        </h1>
-      </a>
+      <Link href="/">
+        <span className="fixed bottom-0 left-0 z-20 p-4 py-8 text-white sm:p-8 lg:top-0">
+          <h1 className="font-serif text-3xl font-extrabold leading-none transition duration-300 hover:opacity-100 lg:opacity-50">
+            ⛩️ Home
+          </h1>
+        </span>
+      </Link>
       <div className="relative z-50 p-4 pb-44 sm:p-8 lg:py-32">
         <div className="inline-block overflow-clip rounded-2xl border-8 border-gray-950 bg-gray-900/90 p-2 backdrop-blur">
           <div className="w-full max-w-sm p-3 text-left text-white sm:max-w-4xl sm:p-6 lg:p-10">
