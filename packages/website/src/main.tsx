@@ -15,7 +15,8 @@ function init() {
     setTimeout(init);
     return;
   }
-  if ((globalThis as any).__WAKU_SSR_ENABLED__) {
+  const ENABLE_SSR = false; // FIXME a temporary workaround for hydration error
+  if (ENABLE_SSR && (globalThis as any).__WAKU_SSR_ENABLED__) {
     hydrateRoot(root, rootElement);
   } else {
     createRoot(root).render(rootElement);
