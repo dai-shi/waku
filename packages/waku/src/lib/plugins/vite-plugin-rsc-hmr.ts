@@ -1,7 +1,7 @@
 import type { Plugin, TransformResult, ViteDevServer } from 'vite';
 
 const customCode = `
-import { createHotContext as __vite__createHotContext } from "/@vite/client"
+import { createHotContext as __vite__createHotContext } from "/@vite/client";
 import.meta.hot = __vite__createHotContext(import.meta.url);
 
 if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
@@ -10,11 +10,11 @@ if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
   import.meta.hot.on('hot-import', (data) => import(/* @vite-ignore */ data));
 
   import.meta.hot.on('module', (data) => {
-    const code = data.code
-    const script = document.createElement('script')
-    script.type = 'module'
-    script.text = code
-    document.head.appendChild(script)
+    const code = data.code;
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.text = code;
+    document.head.appendChild(script);
   });
 }
 `;
