@@ -3,7 +3,7 @@ import { Code } from './code.js';
 export const components = {
   h2: ({ children, ...rest }: any) => (
     <h2
-      className="mb-2 mt-16 text-3xl font-bold leading-none first-of-type:mt-0 sm:text-[2.75rem]"
+      className="mb-2 mt-16 text-3xl font-bold leading-none text-white first-of-type:mt-0 sm:text-[2.75rem]"
       {...rest}
     >
       {children}
@@ -11,7 +11,7 @@ export const components = {
   ),
   h3: ({ children, ...rest }: any) => (
     <h3
-      className="mb-2 mt-8 text-xl font-bold leading-none sm:text-3xl"
+      className="mb-2 mt-8 text-xl font-bold leading-none text-white sm:text-3xl"
       {...rest}
     >
       {children}
@@ -20,14 +20,14 @@ export const components = {
   h4: ({ children, ...rest }: any) => (
     <h3
       {...rest}
-      className="mb-2 mt-8 text-lg font-bold uppercase leading-none tracking-wide sm:text-xl"
+      className="mb-2 mt-8 text-lg font-bold uppercase leading-none tracking-wide text-white sm:text-xl"
     >
       {children}
     </h3>
   ),
   p: ({ children, ...rest }: any) => (
     <p
-      className="mb-4 text-base font-normal leading-normal text-white/60 sm:text-lg lg:text-xl"
+      className="mb-4 text-sm font-normal leading-normal text-white/60 sm:text-lg lg:text-xl"
       {...rest}
     >
       {children}
@@ -62,7 +62,7 @@ export const components = {
   pre: ({ children, ...rest }: any) => (
     <Code
       code={children.props.children}
-      className="!-mx-[0.75em] !overflow-clip !rounded-xl !bg-gray-800 !p-0 !font-mono !text-sm sm:!p-[0.5em] sm:!text-base [&>*]:!bg-gray-800"
+      className="!-mx-[0.75em] max-w-[calc(100%+1.5em)] !overflow-clip overflow-x-scroll !rounded-xl !bg-gray-800 !p-0 !font-mono !text-sm sm:!p-[0.5em] sm:!text-base [&>*]:!bg-gray-800"
       {...rest}
     />
   ),
