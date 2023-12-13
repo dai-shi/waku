@@ -15,7 +15,9 @@ export const decodeInput = (encodedInput: string) => {
   } else if (!encodedInput.startsWith('_')) {
     return encodedInput;
   }
-  throw new Error('Invalid encoded input');
+  const err = new Error('Invalid encoded input');
+  (err as any).statusCode = 400;
+  throw err;
 };
 
 export const hasStatusCode = (x: unknown): x is { statusCode: number } =>
