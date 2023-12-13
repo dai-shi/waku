@@ -108,6 +108,10 @@ export function createHandler<
         handleError(e);
       }
       return;
+    } else if (pathStr === config.basePath + config.rscPath) {
+      res.setStatus(404);
+      endStream(res.stream);
+      return;
     }
     next();
   };
