@@ -10,7 +10,6 @@ const rootElement = (
 
 // FIXME temporary fix, doesn't feel ideal.
 function init() {
-  console.log('init', Date.now());
   try {
     const DO_HYDRATION = false; // FIXME a temporary workaround for hydration error
     if (DO_HYDRATION && (globalThis as any).__WAKU_SSR_ENABLED__) {
