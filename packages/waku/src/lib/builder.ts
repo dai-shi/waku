@@ -543,7 +543,8 @@ import { connectMiddleware } from 'waku';
 const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
 export default async function handler(req, res) {
   connectMiddleware({ entries, ssr: ${ssr} })(req, res, () => {
-    res.status(404).send('Not Found');
+    res.statusCode = 404;
+    res.end();
   });
 }
 `,
