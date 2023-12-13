@@ -18,7 +18,7 @@ function init() {
       createRoot(document.getElementById('root')!).render(rootElement);
     }
   } catch (e) {
-    console.log('an error caught and retrying...', e);
+    console.log('retrying as an error is caught: ' + e);
     setTimeout(init);
   }
 }
