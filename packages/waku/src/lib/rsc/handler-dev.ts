@@ -1,9 +1,5 @@
 import { Readable, Writable } from 'node:stream';
-import {
-  createServer as viteCreateServer,
-  resolveConfig as resolveViteConfig,
-  mergeConfig as mergeViteConfig,
-} from 'vite';
+import { createServer as createViteServer } from 'vite';
 import { default as viteReact } from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../../server.js';
@@ -29,6 +25,7 @@ import {
   moduleImport,
 } from '../plugins/vite-plugin-rsc-hmr.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
+import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 
 export function createHandler<
   Context,
@@ -46,36 +43,24 @@ export function createHandler<
   }
   const configPromise = resolveConfig(options.config || {});
   const vitePromise = configPromise.then(async (config) => {
-    const resolvedViteConfig = await resolveViteConfig({}, 'serve');
-    const mergedViteConfig = await mergeViteConfig(
-      {
-        ...resolvedViteConfig,
-
-        plugins: resolvedViteConfig.plugins.filter(
-          (plugin) => !plugin.name.startsWith('vite:'),
-        ),
+    const mergedViteConfig = await mergeUserViteConfig({
+      base: config.basePath,
+      optimizeDeps: {
+        include: ['react-server-dom-webpack/client'],
+        exclude: ['waku'],
       },
-      {
-        base: config.basePath,
-        optimizeDeps: {
-          include: ['react-server-dom-webpack/client'],
-          exclude: ['waku'],
-        },
-        plugins: [
-          nonjsResolvePlugin(),
-          patchReactRefresh(viteReact()),
-          rscIndexPlugin([]),
-          rscHmrPlugin(),
-        ],
-        ssr: {
-          external: ['waku'],
-        },
-        server: { middlewareMode: true },
+      plugins: [
+        nonjsResolvePlugin(),
+        patchReactRefresh(viteReact()),
+        rscIndexPlugin([]),
+        rscHmrPlugin(),
+      ],
+      ssr: {
+        external: ['waku'],
       },
-    );
-    // HACK: Vite bug: TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received function assetsInclude
-    mergedViteConfig.assetsInclude = null;
-    const viteServer = await viteCreateServer(mergedViteConfig);
+      server: { middlewareMode: true },
+    });
+    const viteServer = await createViteServer(mergedViteConfig);
     registerReloadCallback((type) => viteServer.ws.send({ type }));
     registerImportCallback((source) => hotImport(viteServer, source));
     registerModuleCallback((result) => moduleImport(viteServer, result));
