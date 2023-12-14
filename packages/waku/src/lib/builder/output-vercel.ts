@@ -11,6 +11,7 @@ export const emitVercelOutput = async (
   htmlFiles: string[],
   ssr: boolean,
 ) => {
+  const publicDir = path.join(rootDir, config.distDir, config.publicDir);
   const outputDir = path.resolve('.vercel', 'output');
   cpSync(
     path.join(rootDir, config.distDir, config.publicDir),
@@ -72,7 +73,7 @@ export default async function handler(req, res) {
     rscFiles
       .filter((file) => !path.extname(file))
       .map((file) => [
-        path.relative(outputDir, file),
+        path.relative(publicDir, file),
         { contentType: 'text/plain' },
       ]),
   );
@@ -81,7 +82,7 @@ export default async function handler(req, res) {
     { src: basePrefix + '(.*)', dest: basePrefix },
     ...(ssr
       ? htmlFiles.map((htmlFile) => {
-          const file = config.basePath + path.relative(outputDir, htmlFile);
+          const file = config.basePath + path.relative(publicDir, htmlFile);
           const src = file.endsWith('/' + config.indexHtml)
             ? file.slice(0, -('/' + config.indexHtml).length) || '/'
             : file;
