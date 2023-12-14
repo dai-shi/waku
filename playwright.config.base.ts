@@ -2,7 +2,7 @@ import type {
   PlaywrightTestConfig,
   PlaywrightWorkerOptions,
 } from '@playwright/test';
-// import { devices } from '@playwright/test';
+import { devices } from '@playwright/test';
 
 /**
  * Read environment variables from file.
@@ -34,6 +34,20 @@ export const config: PlaywrightTestConfig = {
     // Record video only when retrying a test for the first time.
     video: 'on-first-retry',
   },
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+  ],
   forbidOnly: !!process.env.CI,
   workers: 4,
   retries: 1,
