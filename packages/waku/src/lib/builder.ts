@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
-import { build as buildVite, resolveConfig as resolveViteConfig } from 'vite';
+import { build as viteBuild, resolveConfig as viteResolveConfig } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
@@ -80,7 +80,7 @@ const analyzeEntries = async (entriesFile: string) => {
   const commonFileSet = new Set<string>();
   const clientFileSet = new Set<string>();
   const serverFileSet = new Set<string>();
-  await buildVite({
+  await viteBuild({
     plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
     ssr: {
       resolve: {
@@ -135,7 +135,7 @@ const buildServerBundle = async (
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
 ) => {
-  const serverBuildOutput = await buildVite({
+  const serverBuildOutput = await viteBuild({
     plugins: [
       nonjsResolvePlugin(),
       rscTransformPlugin(
@@ -240,7 +240,7 @@ const buildClientBundle = async (
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
-  const clientBuildOutput = await buildVite({
+  const clientBuildOutput = await viteBuild({
     base: config.basePath,
     plugins: [patchReactRefresh(viteReact()), rscIndexPlugin(cssAssets)],
     build: {
@@ -591,7 +591,7 @@ const resolveFileName = (fname: string) => {
 export async function build(options: { config?: Config; ssr?: boolean }) {
   const config = await resolveConfig(options.config || {});
   const rootDir = (
-    await resolveViteConfig({}, 'build', 'production', 'production')
+    await viteResolveConfig({}, 'build', 'production', 'production')
   ).root;
   const entriesFile = resolveFileName(
     joinPath(rootDir, config.srcDir, config.entriesJs),

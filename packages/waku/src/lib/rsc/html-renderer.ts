@@ -13,7 +13,6 @@ import {
 import { renderRscWithWorker } from './worker-api.js';
 import { renderRsc } from './rsc-renderer.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
-import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 
 export const REACT_MODULE = 'react';
 export const REACT_MODULE_VALUE = 'react';
@@ -41,23 +40,21 @@ const getViteServer = async () => {
     throw e;
   });
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
-  const { createServer: createViteServer } = await import('vite').catch((e) => {
+  const { createServer: viteCreateServer } = await import('vite').catch((e) => {
     // XXX explicit catch to avoid bundle time error
     throw e;
   });
   const { nonjsResolvePlugin } = await import(
     '../plugins/vite-plugin-nonjs-resolve.js'
   );
-  const viteServer = await createViteServer(
-    await mergeUserViteConfig({
-      plugins: [nonjsResolvePlugin()],
-      ssr: {
-        external: ['waku'],
-      },
-      appType: 'custom',
-      server: { middlewareMode: true, hmr: { server: dummyServer } },
-    }),
-  );
+  const viteServer = await viteCreateServer({
+    plugins: [nonjsResolvePlugin()],
+    ssr: {
+      external: ['waku'],
+    },
+    appType: 'custom',
+    server: { middlewareMode: true, hmr: { server: dummyServer } },
+  });
   await viteServer.watcher.close(); // TODO watch: null
   await viteServer.ws.close();
   lastViteServer = viteServer;
