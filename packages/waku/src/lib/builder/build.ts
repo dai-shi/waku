@@ -6,9 +6,9 @@ import { build as buildVite, resolveConfig as resolveViteConfig } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
-import { resolveConfig } from './config.js';
-import type { Config, ResolvedConfig } from './config.js';
-import { joinPath, extname, filePathToFileURL } from './utils/path.js';
+import { resolveConfig } from '../config.js';
+import type { Config, ResolvedConfig } from '../config.js';
+import { joinPath, extname, filePathToFileURL } from '../utils/path.js';
 import {
   createReadStream,
   createWriteStream,
@@ -18,15 +18,15 @@ import {
   readFile,
   writeFile,
   appendFile,
-} from './utils/node-fs.js';
-import { streamToString } from './utils/stream.js';
-import { encodeInput, generatePrefetchCode } from './rsc/utils.js';
+} from '../utils/node-fs.js';
+import { streamToString } from '../utils/stream.js';
+import { encodeInput, generatePrefetchCode } from '../rsc/utils.js';
 import {
   RSDW_SERVER_MODULE,
   RSDW_SERVER_MODULE_VALUE,
   renderRsc,
   getBuildConfig,
-} from './rsc/rsc-renderer.js';
+} from '../rsc/rsc-renderer.js';
 import {
   REACT_MODULE,
   REACT_MODULE_VALUE,
@@ -37,12 +37,12 @@ import {
   WAKU_CLIENT_MODULE,
   WAKU_CLIENT_MODULE_VALUE,
   renderHtml,
-} from './rsc/html-renderer.js';
-import { rscIndexPlugin } from './plugins/vite-plugin-rsc-index.js';
-import { rscAnalyzePlugin } from './plugins/vite-plugin-rsc-analyze.js';
-import { nonjsResolvePlugin } from './plugins/vite-plugin-nonjs-resolve.js';
-import { rscTransformPlugin } from './plugins/vite-plugin-rsc-transform.js';
-import { patchReactRefresh } from './plugins/patch-react-refresh.js';
+} from '../rsc/html-renderer.js';
+import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
+import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
+import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
+import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
+import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 
 // TODO this file and functions in it are too long. will fix.
 
