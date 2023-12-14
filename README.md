@@ -296,7 +296,11 @@ folder in the repository.
 
 ### Vercel
 
-TODO
+```sh
+vercel
+```
+
+Then change the setting as follows (needs redeploy for the first time):
 
 ![vercel](https://github.com/dai-shi/waku/assets/490574/6bd317a8-2772-42f4-92d4-b508af7d7460)
 
