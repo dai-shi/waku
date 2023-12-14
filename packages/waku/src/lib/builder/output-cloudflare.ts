@@ -29,7 +29,7 @@ import { honoMiddleware } from 'waku';
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/cloudflare-workers';
 
-const entries = import('${entriesFile}');
+const entries = import('./${entriesFile}');
 
 const app = new Hono();
 app.use('*', honoMiddleware({ entries, ssr: ${ssr} }));
@@ -47,7 +47,7 @@ main = "serve.js"
 compatibility_date = "2023-12-06"
 
 [site]
-bucket = "${publicDir}"
+bucket = "./${publicDir}"
 `,
     );
   }
