@@ -1,5 +1,6 @@
 import path from 'node:path';
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -27,7 +28,7 @@ export const emitVercelOutput = async (
     const dstFile = path.join(dstDir, 'static', path.relative(srcDir, file));
     if (!existsSync(dstFile)) {
       mkdirSync(path.dirname(dstFile), { recursive: true });
-      symlinkSync(path.relative(path.dirname(dstFile), file), dstFile);
+      copyFileSync(file, dstFile);
     }
   }
 
