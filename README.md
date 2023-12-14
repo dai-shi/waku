@@ -302,8 +302,9 @@ TODO
 
 ```sh
 npm run build -- --with-cloudflare
-npx wrangler dev
-npx wrangler deploy
+rm -r node_modules
+npm install --omit=dev --omit=peer
+npx wrangler dev # or deploy
 ```
 
 ## Tweets
