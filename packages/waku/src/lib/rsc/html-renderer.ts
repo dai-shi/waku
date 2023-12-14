@@ -40,14 +40,14 @@ const getViteServer = async () => {
     throw e;
   });
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
-  const { createServer: viteCreateServer } = await import('vite').catch((e) => {
+  const { createServer: createViteServer } = await import('vite').catch((e) => {
     // XXX explicit catch to avoid bundle time error
     throw e;
   });
   const { nonjsResolvePlugin } = await import(
     '../plugins/vite-plugin-nonjs-resolve.js'
   );
-  const viteServer = await viteCreateServer({
+  const viteServer = await createViteServer({
     plugins: [nonjsResolvePlugin()],
     ssr: {
       external: ['waku'],
