@@ -54,7 +54,7 @@ if (values.version) {
     case 'build':
       runBuild({
         ssr: !!values['with-ssr'],
-        vercel: !!values['with-vercel'],
+        vercel: values['with-vercel'],
         cloudflare: !!values['with-cloudflare'],
       });
       break;
@@ -79,10 +79,14 @@ async function runDev(options: { ssr: boolean }) {
 
 async function runBuild(options: {
   ssr: boolean;
-  vercel: boolean;
+  vercel: boolean | undefined;
   cloudflare: boolean;
 }) {
-  await build(options);
+  const { vercel, ...rest } = options;
+  await build({
+    ...rest,
+    ...(typeof vercel === 'boolean' && { vercel }),
+  });
 }
 
 async function runStart(options: { ssr: boolean }) {
