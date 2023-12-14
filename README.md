@@ -301,7 +301,7 @@ TODO
 ### Cloudflare
 
 ```sh
-npm run build --with-cloudflare
+npm run build -- --with-cloudflare
 npx wrangler dev
 npx wrangler deploy
 ```

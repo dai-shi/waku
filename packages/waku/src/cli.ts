@@ -82,11 +82,7 @@ async function runBuild(options: {
   vercel: boolean | undefined;
   cloudflare: boolean;
 }) {
-  const { vercel, ...rest } = options;
-  await build({
-    ...rest,
-    ...(typeof vercel === 'boolean' && { vercel }),
-  });
+  await build(options);
 }
 
 async function runStart(options: { ssr: boolean }) {

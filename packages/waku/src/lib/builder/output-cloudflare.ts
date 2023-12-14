@@ -30,11 +30,11 @@ import { Hono } from 'hono';
 import { serveStatic } from 'hono/cloudflare-workers';
 
 const entries = import('${entriesFile}');
-                               
+
 const app = new Hono();
 app.use('*', honoMiddleware({ entries, ssr: ${ssr} }));
 app.use('*', serveStatic({ root: './' }));
-export default app;                         
+export default app;
 `,
     );
   }
@@ -42,11 +42,11 @@ export default app;
     writeFileSync(
       path.join(outputDir, 'wrangler.toml'),
       `
-name = "waku-project"                 
-main = "src/index.js"       
-compatibility_date = "2023-12-06"                     
+name = "waku-project"
+main = "serve.js"
+compatibility_date = "2023-12-06"
 
-[site]                                         
+[site]
 bucket = "${publicDir}"
 `,
     );

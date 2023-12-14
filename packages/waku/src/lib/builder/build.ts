@@ -482,8 +482,8 @@ const resolveFileName = (fname: string) => {
 export async function build(options: {
   config?: Config;
   ssr?: boolean;
-  vercel?: boolean;
-  clouflare?: boolean;
+  vercel?: boolean | undefined;
+  cloudflare?: boolean;
 }) {
   const config = await resolveConfig(options.config || {});
   const rootDir = (
@@ -539,7 +539,7 @@ export async function build(options: {
     );
   }
 
-  if (options?.clouflare) {
+  if (options?.cloudflare) {
     await emitCloudflareOutput(rootDir, config, !!options?.ssr);
   }
 }
