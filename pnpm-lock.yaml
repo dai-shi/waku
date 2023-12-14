@@ -75,10 +75,10 @@ importers:
   e2e/fixtures/rsc-basic:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.3.1
+        specifier: 1.3.1
         version: 1.3.1
       hono:
-        specifier: ^3.11.4
+        specifier: 3.11.4
         version: 3.11.4
       react:
         specifier: 18.3.0-canary-5bcade5fc-20231208
@@ -97,16 +97,16 @@ importers:
         specifier: 1.3.100
         version: 1.3.100
       '@types/react':
-        specifier: ^18.2.43
+        specifier: 18.2.43
         version: 18.2.43
       '@types/react-dom':
-        specifier: ^18.2.17
+        specifier: 18.2.17
         version: 18.2.17
       '@vitejs/plugin-react':
         specifier: 4.2.1
         version: 4.2.1(vite@5.0.7)
       typescript:
-        specifier: ^5.3.3
+        specifier: 5.3.3
         version: 5.3.3
       vite:
         specifier: 5.0.7
@@ -115,10 +115,10 @@ importers:
   e2e/fixtures/rsc-router:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.3.1
+        specifier: 1.3.1
         version: 1.3.1
       hono:
-        specifier: ^3.11.4
+        specifier: 3.11.4
         version: 3.11.4
       react:
         specifier: 18.3.0-canary-5bcade5fc-20231208
@@ -137,16 +137,16 @@ importers:
         specifier: 1.3.100
         version: 1.3.100
       '@types/react':
-        specifier: ^18.2.43
+        specifier: 18.2.43
         version: 18.2.43
       '@types/react-dom':
-        specifier: ^18.2.17
+        specifier: 18.2.17
         version: 18.2.17
       '@vitejs/plugin-react':
         specifier: 4.2.1
         version: 4.2.1(vite@5.0.7)
       typescript:
-        specifier: ^5.3.3
+        specifier: 5.3.3
         version: 5.3.3
       vite:
         specifier: 5.0.7
@@ -155,10 +155,10 @@ importers:
   e2e/fixtures/ssr-basic:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.3.1
+        specifier: 1.3.1
         version: 1.3.1
       hono:
-        specifier: ^3.11.4
+        specifier: 3.11.4
         version: 3.11.4
       react:
         specifier: 18.3.0-canary-5bcade5fc-20231208
@@ -177,16 +177,16 @@ importers:
         specifier: 1.3.100
         version: 1.3.100
       '@types/react':
-        specifier: ^18.2.43
+        specifier: 18.2.43
         version: 18.2.43
       '@types/react-dom':
-        specifier: ^18.2.17
+        specifier: 18.2.17
         version: 18.2.17
       '@vitejs/plugin-react':
         specifier: 4.2.1
         version: 4.2.1(vite@5.0.7)
       typescript:
-        specifier: ^5.3.3
+        specifier: 5.3.3
         version: 5.3.3
       vite:
         specifier: 5.0.7
@@ -195,10 +195,10 @@ importers:
   examples/01_counter:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.3.1
+        specifier: 1.3.1
         version: 1.3.1
       hono:
-        specifier: ^3.11.4
+        specifier: 3.11.4
         version: 3.11.4
       react:
         specifier: 18.3.0-canary-5bcade5fc-20231208
@@ -217,16 +217,16 @@ importers:
         specifier: 1.3.100
         version: 1.3.100
       '@types/react':
-        specifier: ^18.2.43
+        specifier: 18.2.43
         version: 18.2.43
       '@types/react-dom':
-        specifier: ^18.2.17
+        specifier: 18.2.17
         version: 18.2.17
       '@vitejs/plugin-react':
         specifier: 4.2.1
         version: 4.2.1(vite@5.0.7)
       typescript:
-        specifier: ^5.3.3
+        specifier: 5.3.3
         version: 5.3.3
       vite:
         specifier: 5.0.7
@@ -235,10 +235,10 @@ importers:
   examples/02_async:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.3.1
+        specifier: 1.3.1
         version: 1.3.1
       hono:
-        specifier: ^3.11.4
+        specifier: 3.11.4
         version: 3.11.4
       react:
         specifier: 18.3.0-canary-5bcade5fc-20231208
@@ -257,16 +257,16 @@ importers:
         specifier: 1.3.100
         version: 1.3.100
       '@types/react':
-        specifier: ^18.2.43
+        specifier: 18.2.43
         version: 18.2.43
       '@types/react-dom':
-        specifier: ^18.2.17
+        specifier: 18.2.17
         version: 18.2.17
       '@vitejs/plugin-react':
         specifier: 4.2.1
         version: 4.2.1(vite@5.0.7)
       typescript:
-        specifier: ^5.3.3
+        specifier: 5.3.3
         version: 5.3.3
       vite:
         specifier: 5.0.7
@@ -275,10 +275,10 @@ importers:
   examples/03_promise:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.3.1
+        specifier: 1.3.1
         version: 1.3.1
       hono:
-        specifier: ^3.11.4
+        specifier: 3.11.4
         version: 3.11.4
       react:
         specifier: 18.3.0-canary-5bcade5fc-20231208
@@ -297,16 +297,16 @@ importers:
         specifier: 1.3.100
         version: 1.3.100
       '@types/react':
-        specifier: ^18.2.43
+        specifier: 18.2.43
         version: 18.2.43
       '@types/react-dom':
-        specifier: ^18.2.17
+        specifier: 18.2.17
         version: 18.2.17
       '@vitejs/plugin-react':
         specifier: 4.2.1
         version: 4.2.1(vite@5.0.7)
       typescript:
-        specifier: ^5.3.3
+        specifier: 5.3.3
         version: 5.3.3
       vite:
         specifier: 5.0.7
@@ -315,10 +315,10 @@ importers:
   examples/04_callserver:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.3.1
+        specifier: 1.3.1
         version: 1.3.1
       hono:
-        specifier: ^3.11.4
+        specifier: 3.11.4
         version: 3.11.4
       react:
         specifier: 18.3.0-canary-5bcade5fc-20231208
@@ -337,16 +337,16 @@ importers:
         specifier: 1.3.100
         version: 1.3.100
       '@types/react':
-        specifier: ^18.2.43
+        specifier: 18.2.43
         version: 18.2.43
       '@types/react-dom':
-        specifier: ^18.2.17
+        specifier: 18.2.17
         version: 18.2.17
       '@vitejs/plugin-react':
         specifier: 4.2.1
         version: 4.2.1(vite@5.0.7)
       typescript:
-        specifier: ^5.3.3
+        specifier: 5.3.3
         version: 5.3.3
       vite:
         specifier: 5.0.7
@@ -355,10 +355,10 @@ importers:
   examples/05_mutation:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.3.1
+        specifier: 1.3.1
         version: 1.3.1
       hono:
-        specifier: ^3.11.4
+        specifier: 3.11.4
         version: 3.11.4
       react:
         specifier: 18.3.0-canary-5bcade5fc-20231208
@@ -370,7 +370,7 @@ importers:
         specifier: 18.3.0-canary-5bcade5fc-20231208
         version: 18.3.0-canary-5bcade5fc-20231208(react-dom@18.3.0-canary-5bcade5fc-20231208)(react@18.3.0-canary-5bcade5fc-20231208)(webpack@5.89.0)
       react-wrap-balancer:
-        specifier: ^1.1.0
+        specifier: 1.1.0
         version: 1.1.0(react@18.3.0-canary-5bcade5fc-20231208)
       waku:
         specifier: 0.18.0
@@ -380,16 +380,16 @@ importers:
         specifier: 1.3.100
         version: 1.3.100
       '@types/react':
-        specifier: ^18.2.43
+        specifier: 18.2.43
         version: 18.2.43
       '@types/react-dom':
-        specifier: ^18.2.17
+        specifier: 18.2.17
         version: 18.2.17
       '@vitejs/plugin-react':
         specifier: 4.2.1
         version: 4.2.1(vite@5.0.7)
       typescript:
-        specifier: ^5.3.3
+        specifier: 5.3.3
         version: 5.3.3
       vite:
         specifier: 5.0.7
@@ -398,10 +398,10 @@ importers:
   examples/06_nesting:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.3.1
+        specifier: 1.3.1
         version: 1.3.1
       hono:
-        specifier: ^3.11.4
+        specifier: 3.11.4
         version: 3.11.4
       react:
         specifier: 18.3.0-canary-5bcade5fc-20231208
@@ -420,16 +420,16 @@ importers:
         specifier: 1.3.100
         version: 1.3.100
       '@types/react':
-        specifier: ^18.2.43
+        specifier: 18.2.43
         version: 18.2.43
       '@types/react-dom':
-        specifier: ^18.2.17
+        specifier: 18.2.17
         version: 18.2.17
       '@vitejs/plugin-react':
         specifier: 4.2.1
         version: 4.2.1(vite@5.0.7)
       typescript:
-        specifier: ^5.3.3
+        specifier: 5.3.3
         version: 5.3.3
       vite:
         specifier: 5.0.7
@@ -438,10 +438,10 @@ importers:
   examples/07_router:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.3.1
+        specifier: 1.3.1
         version: 1.3.1
       hono:
-        specifier: ^3.11.4
+        specifier: 3.11.4
         version: 3.11.4
       react:
         specifier: 18.3.0-canary-5bcade5fc-20231208
@@ -460,16 +460,16 @@ importers:
         specifier: 1.3.100
         version: 1.3.100
       '@types/react':
-        specifier: ^18.2.43
+        specifier: 18.2.43
         version: 18.2.43
       '@types/react-dom':
-        specifier: ^18.2.17
+        specifier: 18.2.17
         version: 18.2.17
       '@vitejs/plugin-react':
         specifier: 4.2.1
         version: 4.2.1(vite@5.0.7)
       typescript:
-        specifier: ^5.3.3
+        specifier: 5.3.3
         version: 5.3.3
       vite:
         specifier: 5.0.7
@@ -478,10 +478,10 @@ importers:
   examples/08_cookies:
     dependencies:
       cookie-parser:
-        specifier: ^1.4.6
+        specifier: 1.4.6
         version: 1.4.6
       express:
-        specifier: ^4.18.2
+        specifier: 4.18.2
         version: 4.18.2
       react:
         specifier: 18.3.0-canary-5bcade5fc-20231208
@@ -500,16 +500,16 @@ importers:
         specifier: 1.3.100
         version: 1.3.100
       '@types/react':
-        specifier: ^18.2.43
+        specifier: 18.2.43
         version: 18.2.43
       '@types/react-dom':
-        specifier: ^18.2.17
+        specifier: 18.2.17
         version: 18.2.17
       '@vitejs/plugin-react':
         specifier: 4.2.1
         version: 4.2.1(vite@5.0.7)
       typescript:
-        specifier: ^5.3.3
+        specifier: 5.3.3
         version: 5.3.3
       vite:
         specifier: 5.0.7
@@ -518,10 +518,10 @@ importers:
   examples/09_cssmodules:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.3.1
+        specifier: 1.3.1
         version: 1.3.1
       hono:
-        specifier: ^3.11.4
+        specifier: 3.11.4
         version: 3.11.4
       react:
         specifier: 18.3.0-canary-5bcade5fc-20231208
@@ -540,16 +540,16 @@ importers:
         specifier: 1.3.100
         version: 1.3.100
       '@types/react':
-        specifier: ^18.2.43
+        specifier: 18.2.43
         version: 18.2.43
       '@types/react-dom':
-        specifier: ^18.2.17
+        specifier: 18.2.17
         version: 18.2.17
       '@vitejs/plugin-react':
         specifier: 4.2.1
         version: 4.2.1(vite@5.0.7)
       typescript:
-        specifier: ^5.3.3
+        specifier: 5.3.3
         version: 5.3.3
       vite:
         specifier: 5.0.7
@@ -558,13 +558,13 @@ importers:
   examples/10_dynamicroute:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.3.1
+        specifier: 1.3.1
         version: 1.3.1
       glob:
-        specifier: ^10.3.10
+        specifier: 10.3.10
         version: 10.3.10
       hono:
-        specifier: ^3.11.4
+        specifier: 3.11.4
         version: 3.11.4
       react:
         specifier: 18.3.0-canary-5bcade5fc-20231208
@@ -583,16 +583,16 @@ importers:
         specifier: 1.3.100
         version: 1.3.100
       '@types/react':
-        specifier: ^18.2.43
+        specifier: 18.2.43
         version: 18.2.43
       '@types/react-dom':
-        specifier: ^18.2.17
+        specifier: 18.2.17
         version: 18.2.17
       '@vitejs/plugin-react':
         specifier: 4.2.1
         version: 4.2.1(vite@5.0.7)
       typescript:
-        specifier: ^5.3.3
+        specifier: 5.3.3
         version: 5.3.3
       vite:
         specifier: 5.0.7
@@ -601,10 +601,10 @@ importers:
   examples/11_form:
     dependencies:
       '@hono/node-server':
-        specifier: ^1.3.1
+        specifier: 1.3.1
         version: 1.3.1
       hono:
-        specifier: ^3.11.4
+        specifier: 3.11.4
         version: 3.11.4
       react:
         specifier: 18.3.0-canary-5bcade5fc-20231208
@@ -623,16 +623,62 @@ importers:
         specifier: 1.3.100
         version: 1.3.100
       '@types/react':
-        specifier: ^18.2.43
+        specifier: 18.2.43
         version: 18.2.43
       '@types/react-dom':
-        specifier: ^18.2.17
+        specifier: 18.2.17
         version: 18.2.17
       '@vitejs/plugin-react':
         specifier: 4.2.1
         version: 4.2.1(vite@5.0.7)
       typescript:
-        specifier: ^5.3.3
+        specifier: 5.3.3
+        version: 5.3.3
+      vite:
+        specifier: 5.0.7
+        version: 5.0.7(@types/node@20.10.4)
+
+  examples/12_css:
+    dependencies:
+      '@hono/node-server':
+        specifier: 1.3.1
+        version: 1.3.1
+      hono:
+        specifier: 3.11.4
+        version: 3.11.4
+      react:
+        specifier: 18.3.0-canary-5bcade5fc-20231208
+        version: 18.3.0-canary-5bcade5fc-20231208
+      react-dom:
+        specifier: 18.3.0-canary-5bcade5fc-20231208
+        version: 18.3.0-canary-5bcade5fc-20231208(react@18.3.0-canary-5bcade5fc-20231208)
+      react-server-dom-webpack:
+        specifier: 18.3.0-canary-5bcade5fc-20231208
+        version: 18.3.0-canary-5bcade5fc-20231208(react-dom@18.3.0-canary-5bcade5fc-20231208)(react@18.3.0-canary-5bcade5fc-20231208)(webpack@5.89.0)
+      waku:
+        specifier: 0.18.0
+        version: link:../../packages/waku
+    devDependencies:
+      '@swc/core':
+        specifier: 1.3.100
+        version: 1.3.100
+      '@types/react':
+        specifier: 18.2.43
+        version: 18.2.43
+      '@types/react-dom':
+        specifier: 18.2.17
+        version: 18.2.17
+      '@vanilla-extract/css':
+        specifier: 1.14.0
+        version: 1.14.0
+      '@vanilla-extract/vite-plugin':
+        specifier: 3.9.2
+        version: 3.9.2(@types/node@20.10.4)(vite@5.0.7)
+      '@vitejs/plugin-react':
+        specifier: 4.2.1
+        version: 4.2.1(vite@5.0.7)
+      typescript:
+        specifier: 5.3.3
         version: 5.3.3
       vite:
         specifier: 5.0.7
