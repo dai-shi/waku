@@ -505,7 +505,7 @@ export async function build(options: {
     clientEntryFiles,
     serverEntryFiles,
   );
-  const clientBuildOutput = await buildClientBundle(
+  await buildClientBundle(
     rootDir,
     config,
     commonEntryFiles,
