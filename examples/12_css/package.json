@@ -1,0 +1,29 @@
+{
+  "name": "waku-example",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "waku dev --with-ssr",
+    "build": "waku build --with-ssr",
+    "start": "waku start --with-ssr"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.3.1",
+    "hono": "^3.11.4",
+    "react": "18.3.0-canary-5bcade5fc-20231208",
+    "react-dom": "18.3.0-canary-5bcade5fc-20231208",
+    "react-server-dom-webpack": "18.3.0-canary-5bcade5fc-20231208",
+    "waku": "0.18.0"
+  },
+  "devDependencies": {
+    "@swc/core": "1.3.100",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vanilla-extract/css": "^1.14.0",
+    "@vanilla-extract/vite-plugin": "^3.9.2",
+    "@vitejs/plugin-react": "4.2.1",
+    "typescript": "^5.3.3",
+    "vite": "5.0.7"
+  }
+}
