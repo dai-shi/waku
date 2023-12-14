@@ -48,16 +48,14 @@ const getViteServer = async () => {
   const { nonjsResolvePlugin } = await import(
     '../plugins/vite-plugin-nonjs-resolve.js'
   );
-  const viteServer = await createViteServer(
-    await mergeUserViteConfig({
-      plugins: [nonjsResolvePlugin()],
-      ssr: {
-        external: ['waku'],
-      },
-      appType: 'custom',
-      server: { middlewareMode: true, hmr: { server: dummyServer } },
-    }),
-  );
+  const viteServer = await createViteServer({
+    plugins: [nonjsResolvePlugin()],
+    ssr: {
+      external: ['waku'],
+    },
+    appType: 'custom',
+    server: { middlewareMode: true, hmr: { server: dummyServer } },
+  });
   await viteServer.watcher.close(); // TODO watch: null
   await viteServer.ws.close();
   lastViteServer = viteServer;
