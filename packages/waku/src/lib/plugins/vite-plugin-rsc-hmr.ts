@@ -26,7 +26,7 @@ export function rscHmrPlugin(): Plugin {
     transformIndexHtml(html) {
       return html.replace(
         '</body>',
-        `<script type="module">${customCode}</script></body>`,
+        `<script type="module" async>${customCode}</script></body>`,
       );
     },
   };
