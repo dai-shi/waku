@@ -684,52 +684,6 @@ importers:
         specifier: 5.0.7
         version: 5.0.7(@types/node@20.10.4)
 
-  examples/12_css:
-    dependencies:
-      '@hono/node-server':
-        specifier: ^1.3.1
-        version: 1.3.1
-      hono:
-        specifier: ^3.11.4
-        version: 3.11.4
-      react:
-        specifier: 18.3.0-canary-5bcade5fc-20231208
-        version: 18.3.0-canary-5bcade5fc-20231208
-      react-dom:
-        specifier: 18.3.0-canary-5bcade5fc-20231208
-        version: 18.3.0-canary-5bcade5fc-20231208(react@18.3.0-canary-5bcade5fc-20231208)
-      react-server-dom-webpack:
-        specifier: 18.3.0-canary-5bcade5fc-20231208
-        version: 18.3.0-canary-5bcade5fc-20231208(react-dom@18.3.0-canary-5bcade5fc-20231208)(react@18.3.0-canary-5bcade5fc-20231208)(webpack@5.89.0)
-      waku:
-        specifier: 0.18.0
-        version: link:../../packages/waku
-    devDependencies:
-      '@swc/core':
-        specifier: 1.3.100
-        version: 1.3.100
-      '@types/react':
-        specifier: ^18.2.43
-        version: 18.2.43
-      '@types/react-dom':
-        specifier: ^18.2.17
-        version: 18.2.17
-      '@vanilla-extract/css':
-        specifier: ^1.14.0
-        version: 1.14.0
-      '@vanilla-extract/vite-plugin':
-        specifier: ^3.9.2
-        version: 3.9.2(@types/node@20.10.4)(vite@5.0.7)
-      '@vitejs/plugin-react':
-        specifier: 4.2.1
-        version: 4.2.1(vite@5.0.7)
-      typescript:
-        specifier: ^5.3.3
-        version: 5.3.3
-      vite:
-        specifier: 5.0.7
-        version: 5.0.7(@types/node@20.10.4)
-
   packages/create-waku:
     dependencies:
       fs-extra:
@@ -1048,8 +1002,8 @@ packages:
       '@babel/helper-plugin-utils': 7.22.5
     dev: true
 
-  /@babel/runtime@7.23.5:
-    resolution: {integrity: sha512-NdUTHcPe4C99WxPub+K9l9tK5/lV4UXIoaHSYgzco9BCyjKAAwzdBI+wWtYqHt7LJdbo74ZjRPJgzVweq1sz0w==}
+  /@babel/runtime@7.23.6:
+    resolution: {integrity: sha512-zHd0eUrf5GZoOWVCXp6koAKQTfZV07eit6bGPmJgnZdnSAvvZee6zniW2XMF7Cmc4ISOOnPy3QaSiIJGJkVEDQ==}
     engines: {node: '>=6.9.0'}
     dependencies:
       regenerator-runtime: 0.14.0
@@ -2016,6 +1970,7 @@ packages:
     cpu: [arm64]
     os: [darwin]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@swc/core-darwin-x64@1.3.100:
@@ -2024,6 +1979,7 @@ packages:
     cpu: [x64]
     os: [darwin]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@swc/core-linux-arm64-gnu@1.3.100:
@@ -2032,6 +1988,7 @@ packages:
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@swc/core-linux-arm64-musl@1.3.100:
@@ -2040,6 +1997,7 @@ packages:
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@swc/core-linux-x64-gnu@1.3.100:
@@ -2048,6 +2006,7 @@ packages:
     cpu: [x64]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@swc/core-linux-x64-musl@1.3.100:
@@ -2056,6 +2015,7 @@ packages:
     cpu: [x64]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@swc/core-win32-arm64-msvc@1.3.100:
@@ -2064,6 +2024,7 @@ packages:
     cpu: [arm64]
     os: [win32]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@swc/core-win32-ia32-msvc@1.3.100:
@@ -2072,6 +2033,7 @@ packages:
     cpu: [ia32]
     os: [win32]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@swc/core-win32-x64-msvc@1.3.100:
@@ -2080,6 +2042,7 @@ packages:
     cpu: [x64]
     os: [win32]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@swc/core@1.3.100:
@@ -2104,12 +2067,15 @@ packages:
       '@swc/core-win32-arm64-msvc': 1.3.100
       '@swc/core-win32-ia32-msvc': 1.3.100
       '@swc/core-win32-x64-msvc': 1.3.100
+    dev: true
 
   /@swc/counter@0.1.2:
     resolution: {integrity: sha512-9F4ys4C74eSTEUNndnER3VJ15oru2NumfQxS8geE+f3eB5xvfxpWyqE5XlVnxb/R14uoXi6SLbBwwiDSkv+XEw==}
+    dev: true
 
   /@swc/types@0.1.5:
     resolution: {integrity: sha512-myfUej5naTBWnqOCc/MdVOLVjXUXtIA+NpDrDBKJtLLg2shUjBu3cZmB/85RyitKc55+lUUyl7oRfLOvkr2hsw==}
+    dev: true
 
   /@szmarczak/http-timer@4.0.6:
     resolution: {integrity: sha512-4BAffykYOgO+5nzBWYwE3W90sBgLJoUPRWWcL8wlyiM8IB8ipJz3UMJ9KXQd1RKQXpKp8Tutn80HZtWsu2u76w==}
@@ -4966,7 +4932,7 @@ packages:
   /media-query-parser@2.0.2:
     resolution: {integrity: sha512-1N4qp+jE0pL5Xv4uEcwVUhIkwdUO3S/9gML90nqKA7v7FcOS5vUtatfzok9S9U1EJU8dHWlcv95WLnKmmxZI9w==}
     dependencies:
-      '@babel/runtime': 7.23.5
+      '@babel/runtime': 7.23.6
     dev: true
 
   /media-typer@0.3.0:
@@ -5922,7 +5888,7 @@ packages:
       neo-async: 2.6.2
       react: 18.3.0-canary-5bcade5fc-20231208
       react-dom: 18.3.0-canary-5bcade5fc-20231208(react@18.3.0-canary-5bcade5fc-20231208)
-      webpack: 5.89.0(@swc/core@1.3.100)
+      webpack: 5.89.0
 
   /react-wrap-balancer@1.1.0(react@18.3.0-canary-5bcade5fc-20231208):
     resolution: {integrity: sha512-EhF3jOZm5Fjx+Cx41e423qOv2c2aOvXAtym2OHqrGeMUnwERIyNsRBgnfT3plB170JmuYvts8K2KSPEIerKr5A==}
@@ -6527,7 +6493,7 @@ packages:
     resolution: {integrity: sha512-GNzQvQTOIP6RyTfE2Qxb8ZVlNmw0n88vp1szwWRimP02mnTsx3Wtn5qRdqY9w2XduFNUgvOwhNnQsjwCp+kqaQ==}
     engines: {node: '>=6'}
 
-  /terser-webpack-plugin@5.3.9(@swc/core@1.3.100)(webpack@5.89.0):
+  /terser-webpack-plugin@5.3.9(webpack@5.89.0):
     resolution: {integrity: sha512-ZuXsqE07EcggTWQjXUj+Aot/OMcD0bMKGgF63f7UxYcu5/AJF53aIpK1YoP5xR9l6s/Hy2b+t1AM0bLNPRuhwA==}
     engines: {node: '>= 10.13.0'}
     peerDependencies:
@@ -6544,12 +6510,11 @@ packages:
         optional: true
     dependencies:
       '@jridgewell/trace-mapping': 0.3.20
-      '@swc/core': 1.3.100
       jest-worker: 27.5.1
       schema-utils: 3.3.0
       serialize-javascript: 6.0.1
       terser: 5.26.0
-      webpack: 5.89.0(@swc/core@1.3.100)
+      webpack: 5.89.0
 
   /terser@5.26.0:
     resolution: {integrity: sha512-dytTGoE2oHgbNV9nTzgBEPaqAWvcJNl66VZ0BkJqlvp71IjO8CxdBx/ykCNb47cLnCmCvRZ6ZR0tLkqvZCdVBQ==}
@@ -6975,7 +6940,7 @@ packages:
     resolution: {integrity: sha512-/DyMEOrDgLKKIG0fmvtz+4dUX/3Ghozwgm6iPp8KRhvn+eQf9+Q7GWxVNMk3+uCPWfdXYC4ExGBckIXdFEfH1w==}
     engines: {node: '>=10.13.0'}
 
-  /webpack@5.89.0(@swc/core@1.3.100):
+  /webpack@5.89.0:
     resolution: {integrity: sha512-qyfIC10pOr70V+jkmud8tMfajraGCZMBWJtrmuBymQKCrLTRejBI8STDp1MCyZu/QTdZSeacCQYpYNQVOzX5kw==}
     engines: {node: '>=10.13.0'}
     hasBin: true
@@ -7006,7 +6971,7 @@ packages:
       neo-async: 2.6.2
       schema-utils: 3.3.0
       tapable: 2.2.1
-      terser-webpack-plugin: 5.3.9(@swc/core@1.3.100)(webpack@5.89.0)
+      terser-webpack-plugin: 5.3.9(webpack@5.89.0)
       watchpack: 2.4.0
       webpack-sources: 3.2.3
     transitivePeerDependencies:
