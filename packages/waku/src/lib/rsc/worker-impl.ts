@@ -17,12 +17,10 @@ import { rscReloadPlugin } from '../plugins/vite-plugin-rsc-reload.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 
-const IS_NODE_20 = Number(process.versions.node.split('.')[0]) >= 20;
-if (IS_NODE_20) {
-  const {
-    default: { register },
-  } = await import('node:module');
-  register('waku/node-loader', url.pathToFileURL('./'));
+const { default: module } = await import('node:module');
+const HAS_MODULE_REGISTER = typeof module.register === 'function';
+if (HAS_MODULE_REGISTER) {
+  module.register('waku/node-loader', url.pathToFileURL('./'));
 }
 const controllerMap = new Map<number, ReadableStreamDefaultController>();
 

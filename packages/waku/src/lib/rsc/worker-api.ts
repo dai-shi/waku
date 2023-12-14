@@ -46,14 +46,14 @@ const getWorker = () => {
     return lastWorker;
   }
   return (lastWorker = new Promise<WorkerOrig>((resolve, reject) => {
-    import('node:worker_threads')
-      .then(({ Worker }) => {
-        const IS_NODE_18 = Number(process.versions.node.split('.')[0]) < 20;
+    Promise.all([import('node:worker_threads'), import('node:module')])
+      .then(([{ Worker }, { default: module }]) => {
+        const HAS_MODULE_REGISTER = typeof module.register === 'function';
         const worker = new Worker(new URL('worker-impl.js', import.meta.url), {
           execArgv: [
-            ...(IS_NODE_18
-              ? ['--experimental-loader', 'waku/node-loader']
-              : []),
+            ...(HAS_MODULE_REGISTER
+              ? []
+              : ['--experimental-loader', 'waku/node-loader']),
             '--conditions',
             'react-server',
           ],
