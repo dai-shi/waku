@@ -18,6 +18,10 @@ export async function mergeUserViteConfig(config: UserConfig) {
     },
     config,
   );
+  // vite sets terserOptions to {} in resolveViteConfig and minify to 'esbuild' at the same time which shows a warning
+  if (!Object.keys(mergedViteConfig.build.terserOptions).length) {
+    mergedViteConfig.build.terserOptions = null;
+  }
 
   // HACK: Vite bug: TypeError [ERR_INVALID_ARG_TYPE]: The "path" argument must be of type string. Received function assetsInclude
   mergedViteConfig.assetsInclude = null;
