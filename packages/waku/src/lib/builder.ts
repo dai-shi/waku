@@ -418,7 +418,7 @@ export function loadHtml(pathStr) {
           // HACK is this too naive to inject script code?
           htmlStr = htmlStr.replace(
             /<\/head>/,
-            `<script>${code}</script></head>`,
+            `<script type="module" async>${code}</script></head>`,
           );
         }
         const htmlResult =

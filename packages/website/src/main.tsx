@@ -10,16 +10,16 @@ const rootElement = (
 
 // FIXME temporary fix, doesn't feel ideal.
 function init() {
-  const root = document.getElementById('root');
-  if (!root) {
+  try {
+    const DO_HYDRATION = false; // FIXME a temporary workaround for hydration error
+    if (DO_HYDRATION && (globalThis as any).__WAKU_SSR_ENABLED__) {
+      hydrateRoot(document.getElementById('root')!, rootElement);
+    } else {
+      createRoot(document.getElementById('root')!).render(rootElement);
+    }
+  } catch (e) {
+    console.log('retrying as an error is caught: ' + e);
     setTimeout(init);
-    return;
-  }
-  const ENABLE_SSR = false; // FIXME a temporary workaround for hydration error
-  if (ENABLE_SSR && (globalThis as any).__WAKU_SSR_ENABLED__) {
-    hydrateRoot(root, rootElement);
-  } else {
-    createRoot(root).render(rootElement);
   }
 }
 init();
