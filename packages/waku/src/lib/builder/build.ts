@@ -6,9 +6,9 @@ import { build as buildVite, resolveConfig as resolveViteConfig } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
-import { resolveConfig } from './config.js';
-import type { Config, ResolvedConfig } from './config.js';
-import { joinPath, extname, filePathToFileURL } from './utils/path.js';
+import { resolveConfig } from '../config.js';
+import type { Config, ResolvedConfig } from '../config.js';
+import { joinPath, extname, filePathToFileURL } from '../utils/path.js';
 import {
   createReadStream,
   createWriteStream,
@@ -18,15 +18,15 @@ import {
   readFile,
   writeFile,
   appendFile,
-} from './utils/node-fs.js';
-import { streamToString } from './utils/stream.js';
-import { encodeInput, generatePrefetchCode } from './rsc/utils.js';
+} from '../utils/node-fs.js';
+import { streamToString } from '../utils/stream.js';
+import { encodeInput, generatePrefetchCode } from '../rsc/utils.js';
 import {
   RSDW_SERVER_MODULE,
   RSDW_SERVER_MODULE_VALUE,
   renderRsc,
   getBuildConfig,
-} from './rsc/rsc-renderer.js';
+} from '../rsc/rsc-renderer.js';
 import {
   REACT_MODULE,
   REACT_MODULE_VALUE,
@@ -37,12 +37,13 @@ import {
   WAKU_CLIENT_MODULE,
   WAKU_CLIENT_MODULE_VALUE,
   renderHtml,
-} from './rsc/html-renderer.js';
-import { rscIndexPlugin } from './plugins/vite-plugin-rsc-index.js';
-import { rscAnalyzePlugin } from './plugins/vite-plugin-rsc-analyze.js';
-import { nonjsResolvePlugin } from './plugins/vite-plugin-nonjs-resolve.js';
-import { rscTransformPlugin } from './plugins/vite-plugin-rsc-transform.js';
-import { patchReactRefresh } from './plugins/patch-react-refresh.js';
+} from '../rsc/html-renderer.js';
+import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
+import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
+import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
+import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
+import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
+import { emitVercelOutput } from './output-vercel.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -467,118 +468,6 @@ export function loadHtml(pathStr) {
   return { htmlFiles };
 };
 
-const emitVercelOutput = async (
-  rootDir: string,
-  config: ResolvedConfig,
-  clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
-  rscFiles: string[],
-  htmlFiles: string[],
-  ssr: boolean,
-) => {
-  // FIXME somehow utils/(path,node-fs).ts doesn't work
-  const [
-    path,
-    { existsSync, mkdirSync, readdirSync, symlinkSync, writeFileSync },
-  ] = await Promise.all([import('node:path'), import('node:fs')]);
-  const clientFiles = clientBuildOutput.output.map(({ fileName }) =>
-    path.join(rootDir, config.distDir, config.publicDir, fileName),
-  );
-  const srcDir = path.join(rootDir, config.distDir, config.publicDir);
-  const dstDir = path.join(rootDir, config.distDir, '.vercel', 'output');
-  for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
-    const dstFile = path.join(dstDir, 'static', path.relative(srcDir, file));
-    if (!existsSync(dstFile)) {
-      mkdirSync(path.dirname(dstFile), { recursive: true });
-      symlinkSync(path.relative(path.dirname(dstFile), file), dstFile);
-    }
-  }
-
-  // for serverless function
-  const serverlessDir = path.join(
-    dstDir,
-    'functions',
-    config.rscPath + '.func',
-  );
-  mkdirSync(path.join(serverlessDir, config.distDir), {
-    recursive: true,
-  });
-  mkdirSync(path.join(serverlessDir, 'node_modules'));
-  symlinkSync(
-    path.relative(
-      path.join(serverlessDir, 'node_modules'),
-      path.join(rootDir, 'node_modules', 'waku'),
-    ),
-    path.join(serverlessDir, 'node_modules', 'waku'),
-  );
-  for (const file of readdirSync(path.join(rootDir, config.distDir))) {
-    if (['.vercel'].includes(file)) {
-      continue;
-    }
-    symlinkSync(
-      path.relative(
-        path.join(serverlessDir, config.distDir),
-        path.join(rootDir, config.distDir, file),
-      ),
-      path.join(serverlessDir, config.distDir, file),
-    );
-  }
-  const vcConfigJson = {
-    runtime: 'nodejs18.x',
-    handler: 'serve.js',
-    launcherType: 'Nodejs',
-  };
-  writeFileSync(
-    path.join(serverlessDir, '.vc-config.json'),
-    JSON.stringify(vcConfigJson, null, 2),
-  );
-  writeFileSync(
-    path.join(serverlessDir, 'package.json'),
-    JSON.stringify({ type: 'module' }, null, 2),
-  );
-  writeFileSync(
-    path.join(serverlessDir, 'serve.js'),
-    `
-import path from 'node:path';
-import { connectMiddleware } from 'waku';
-const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
-export default async function handler(req, res) {
-  connectMiddleware({ entries, ssr: ${ssr} })(req, res, () => {
-    res.statusCode = 404;
-    res.end();
-  });
-}
-`,
-  );
-
-  const overrides = Object.fromEntries(
-    rscFiles
-      .filter((file) => !path.extname(file))
-      .map((file) => [
-        path.relative(srcDir, file),
-        { contentType: 'text/plain' },
-      ]),
-  );
-  const basePrefix = config.basePath + config.rscPath + '/';
-  const routes = [
-    { src: basePrefix + '(.*)', dest: basePrefix },
-    ...(ssr
-      ? htmlFiles.map((htmlFile) => {
-          const file = config.basePath + path.relative(srcDir, htmlFile);
-          const src = file.endsWith('/' + config.indexHtml)
-            ? file.slice(0, -('/' + config.indexHtml).length) || '/'
-            : file;
-          return { src, dest: basePrefix };
-        })
-      : []),
-  ];
-  const configJson = { version: 3, overrides, routes };
-  mkdirSync(dstDir, { recursive: true });
-  writeFileSync(
-    path.join(dstDir, 'config.json'),
-    JSON.stringify(configJson, null, 2),
-  );
-};
-
 const resolveFileName = (fname: string) => {
   for (const ext of ['.js', '.ts', '.tsx', '.jsx']) {
     const resolvedName = fname.slice(0, -extname(fname).length) + ext;
@@ -589,7 +478,11 @@ const resolveFileName = (fname: string) => {
   return fname; // returning the default one
 };
 
-export async function build(options: { config?: Config; ssr?: boolean }) {
+export async function build(options: {
+  config?: Config;
+  ssr?: boolean;
+  vercel?: boolean;
+}) {
   const config = await resolveConfig(options.config || {});
   const rootDir = (
     await resolveViteConfig({}, 'build', 'production', 'production')
@@ -612,7 +505,7 @@ export async function build(options: { config?: Config; ssr?: boolean }) {
     clientEntryFiles,
     serverEntryFiles,
   );
-  const clientBuildOutput = await buildClientBundle(
+  await buildClientBundle(
     rootDir,
     config,
     commonEntryFiles,
@@ -634,13 +527,13 @@ export async function build(options: { config?: Config; ssr?: boolean }) {
     !!options?.ssr,
   );
 
-  // https://vercel.com/docs/build-output-api/v3
-  await emitVercelOutput(
-    rootDir,
-    config,
-    clientBuildOutput,
-    rscFiles,
-    htmlFiles,
-    !!options?.ssr,
-  );
+  if (options?.vercel ?? process.env.VERCEL) {
+    await emitVercelOutput(
+      rootDir,
+      config,
+      rscFiles,
+      htmlFiles,
+      !!options?.ssr,
+    );
+  }
 }

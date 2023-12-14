@@ -11,7 +11,7 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { resolveConfig } from './lib/config.js';
 import { honoMiddleware as honoDevMiddleware } from './lib/middleware/hono-dev.js';
 import { honoMiddleware as honoPrdMiddleware } from './lib/middleware/hono-prd.js';
-import { build } from './lib/builder.js';
+import { build } from './lib/builder/build.js';
 
 const require = createRequire(new URL('.', import.meta.url));
 
