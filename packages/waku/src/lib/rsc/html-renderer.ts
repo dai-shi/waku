@@ -101,7 +101,7 @@ const injectRscPayload = (readable: ReadableStream, input: string) => {
   const modifyHead = (data: string) => {
     const matchPrefetched = data.match(
       // HACK This is very brittle
-      /(.*)<script>\nglobalThis\.__WAKU_PREFETCHED__ = {\n(.*?)\n};(.*)/s,
+      /(.*)<script[^>]*>\nglobalThis\.__WAKU_PREFETCHED__ = {\n(.*?)\n};(.*)/s,
     );
     let prefetchedLines: string[] = [];
     if (matchPrefetched) {
