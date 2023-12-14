@@ -478,7 +478,11 @@ const resolveFileName = (fname: string) => {
   return fname; // returning the default one
 };
 
-export async function build(options: { config?: Config; ssr?: boolean }) {
+export async function build(options: {
+  config?: Config;
+  ssr?: boolean;
+  vercel?: boolean;
+}) {
   const config = await resolveConfig(options.config || {});
   const rootDir = (
     await resolveViteConfig({}, 'build', 'production', 'production')
@@ -523,13 +527,14 @@ export async function build(options: { config?: Config; ssr?: boolean }) {
     !!options?.ssr,
   );
 
-  // https://vercel.com/docs/build-output-api/v3
-  await emitVercelOutput(
-    rootDir,
-    config,
-    clientBuildOutput,
-    rscFiles,
-    htmlFiles,
-    !!options?.ssr,
-  );
+  if (options?.vercel ?? process.env.VERCEL) {
+    await emitVercelOutput(
+      rootDir,
+      config,
+      clientBuildOutput,
+      rscFiles,
+      htmlFiles,
+      !!options?.ssr,
+    );
+  }
 }

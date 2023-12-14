@@ -1,5 +1,15 @@
+import path from 'node:path';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
+
 import type { ResolvedConfig } from '../config.js';
 
+// https://vercel.com/docs/build-output-api/v3
 export const emitVercelOutput = async (
   rootDir: string,
   config: ResolvedConfig,
@@ -8,16 +18,11 @@ export const emitVercelOutput = async (
   htmlFiles: string[],
   ssr: boolean,
 ) => {
-  // FIXME somehow utils/(path,node-fs).ts doesn't work
-  const [
-    path,
-    { existsSync, mkdirSync, readdirSync, symlinkSync, writeFileSync },
-  ] = await Promise.all([import('node:path'), import('node:fs')]);
   const clientFiles = clientBuildOutput.output.map(({ fileName }) =>
     path.join(rootDir, config.distDir, config.publicDir, fileName),
   );
   const srcDir = path.join(rootDir, config.distDir, config.publicDir);
-  const dstDir = path.join(rootDir, config.distDir, '.vercel', 'output');
+  const dstDir = path.resolve('.vercel', 'output');
   for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
     const dstFile = path.join(dstDir, 'static', path.relative(srcDir, file));
     if (!existsSync(dstFile)) {
