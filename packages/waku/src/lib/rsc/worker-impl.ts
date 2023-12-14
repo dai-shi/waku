@@ -3,7 +3,7 @@
 import url from 'node:url';
 import { parentPort } from 'node:worker_threads';
 import { Server } from 'node:http';
-import { createServer as viteCreateServer } from 'vite';
+import { createServer as createViteServer } from 'vite';
 
 import type { EntriesDev } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
@@ -15,6 +15,7 @@ import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscReloadPlugin } from '../plugins/vite-plugin-rsc-reload.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
+import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 
 const IS_NODE_20 = Number(process.versions.node.split('.')[0]) >= 20;
 if (IS_NODE_20) {
@@ -87,7 +88,8 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
 };
 
 const dummyServer = new Server(); // FIXME we hope to avoid this hack
-const vitePromise = viteCreateServer({
+
+const mergedViteConfig = await mergeUserViteConfig({
   plugins: [
     nonjsResolvePlugin(),
     rscTransformPlugin(false),
@@ -95,8 +97,11 @@ const vitePromise = viteCreateServer({
       const mesg: MessageRes = { type };
       parentPort!.postMessage(mesg);
     }),
-    rscDelegatePlugin((source) => {
-      const mesg: MessageRes = { type: 'hot-import', source };
+    rscDelegatePlugin((resultOrSource) => {
+      const mesg: MessageRes =
+        typeof resultOrSource === 'object'
+          ? { type: 'module-import', result: resultOrSource }
+          : { type: 'hot-import', source: resultOrSource };
       parentPort!.postMessage(mesg);
     }),
   ],
@@ -110,7 +115,9 @@ const vitePromise = viteCreateServer({
   },
   appType: 'custom',
   server: { middlewareMode: true, hmr: { server: dummyServer } },
-}).then(async (vite) => {
+});
+
+const vitePromise = createViteServer(mergedViteConfig).then(async (vite) => {
   await vite.ws.close();
   return vite;
 });

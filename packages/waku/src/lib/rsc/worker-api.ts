@@ -1,6 +1,7 @@
 import type { Worker as WorkerOrig } from 'node:worker_threads';
 
 import type { ResolvedConfig } from '../config.js';
+import type { TransformResult } from 'vite';
 
 export type RenderRequest = {
   input: string;
@@ -30,6 +31,7 @@ export type MessageReq =
 export type MessageRes =
   | { type: 'full-reload' }
   | { type: 'hot-import'; source: string }
+  | { type: 'module-import'; result: TransformResult }
   | { id: number; type: 'start'; context: unknown }
   | { id: number; type: 'buf'; buf: ArrayBuffer; offset: number; len: number }
   | { id: number; type: 'end' }
@@ -85,6 +87,19 @@ export async function registerImportCallback(fn: (source: string) => void) {
   const listener = (mesg: MessageRes) => {
     if (mesg.type === 'hot-import') {
       fn(mesg.source);
+    }
+  };
+  worker.on('message', listener);
+  return () => worker.off('message', listener);
+}
+
+export async function registerModuleCallback(
+  fn: (result: TransformResult) => void,
+) {
+  const worker = await getWorker();
+  const listener = (mesg: MessageRes) => {
+    if (mesg.type === 'module-import') {
+      fn(mesg.result);
     }
   };
   worker.on('message', listener);

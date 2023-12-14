@@ -1,5 +1,5 @@
 import { Readable, Writable } from 'node:stream';
-import { createServer as viteCreateServer } from 'vite';
+import { createServer as createViteServer } from 'vite';
 import { default as viteReact } from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../../server.js';
@@ -14,12 +14,18 @@ import {
   registerReloadCallback,
   registerImportCallback,
   renderRscWithWorker,
+  registerModuleCallback,
 } from './worker-api.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
-import { rscHmrPlugin, hotImport } from '../plugins/vite-plugin-rsc-hmr.js';
+import {
+  rscHmrPlugin,
+  hotImport,
+  moduleImport,
+} from '../plugins/vite-plugin-rsc-hmr.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
+import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 
 export function createHandler<
   Context,
@@ -36,9 +42,8 @@ export function createHandler<
     throw new Error('prehook is required if posthook is provided');
   }
   const configPromise = resolveConfig(options.config || {});
-
   const vitePromise = configPromise.then(async (config) => {
-    const viteServer = await viteCreateServer({
+    const mergedViteConfig = await mergeUserViteConfig({
       base: config.basePath,
       optimizeDeps: {
         include: ['react-server-dom-webpack/client'],
@@ -55,8 +60,10 @@ export function createHandler<
       },
       server: { middlewareMode: true },
     });
+    const viteServer = await createViteServer(mergedViteConfig);
     registerReloadCallback((type) => viteServer.ws.send({ type }));
     registerImportCallback((source) => hotImport(viteServer, source));
+    registerModuleCallback((result) => moduleImport(viteServer, result));
     return viteServer;
   });
 
