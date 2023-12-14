@@ -8,6 +8,8 @@
 
 <!-- [![size](https://img.shields.io/bundlephobia/minzip/waku)](https://bundlephobia.com/result?p=waku) -->
 
+Waku means "frame" in Japanese. Waku-Waku means being exited. https://github.com/dai-shi/waku/discussions/260
+
 ## Project status
 
 We are working toward v1-alpha: https://github.com/dai-shi/waku/issues/24
