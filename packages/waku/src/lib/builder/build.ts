@@ -531,7 +531,6 @@ export async function build(options: {
     await emitVercelOutput(
       rootDir,
       config,
-      clientBuildOutput,
       rscFiles,
       htmlFiles,
       !!options?.ssr,

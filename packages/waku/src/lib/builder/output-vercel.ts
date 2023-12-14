@@ -1,12 +1,5 @@
 import path from 'node:path';
-import {
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
+import { cpSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 
 import type { ResolvedConfig } from '../config.js';
 
@@ -14,27 +7,20 @@ import type { ResolvedConfig } from '../config.js';
 export const emitVercelOutput = async (
   rootDir: string,
   config: ResolvedConfig,
-  clientBuildOutput: { output: { fileName: string }[] },
   rscFiles: string[],
   htmlFiles: string[],
   ssr: boolean,
 ) => {
-  const clientFiles = clientBuildOutput.output.map(({ fileName }) =>
-    path.join(rootDir, config.distDir, config.publicDir, fileName),
+  const outputDir = path.resolve('.vercel', 'output');
+  cpSync(
+    path.join(rootDir, config.distDir, config.publicDir),
+    path.join(outputDir, 'static'),
+    { recursive: true },
   );
-  const srcDir = path.join(rootDir, config.distDir, config.publicDir);
-  const dstDir = path.resolve('.vercel', 'output');
-  for (const file of [...clientFiles, ...rscFiles, ...htmlFiles]) {
-    const dstFile = path.join(dstDir, 'static', path.relative(srcDir, file));
-    if (!existsSync(dstFile)) {
-      mkdirSync(path.dirname(dstFile), { recursive: true });
-      copyFileSync(file, dstFile);
-    }
-  }
 
   // for serverless function
   const serverlessDir = path.join(
-    dstDir,
+    outputDir,
     'functions',
     config.rscPath + '.func',
   );
@@ -42,22 +28,16 @@ export const emitVercelOutput = async (
     recursive: true,
   });
   mkdirSync(path.join(serverlessDir, 'node_modules'));
-  symlinkSync(
-    path.relative(
-      path.join(serverlessDir, 'node_modules'),
-      path.join(rootDir, 'node_modules', 'waku'),
-    ),
+  cpSync(
+    path.join(rootDir, 'node_modules', 'waku'),
     path.join(serverlessDir, 'node_modules', 'waku'),
   );
   for (const file of readdirSync(path.join(rootDir, config.distDir))) {
     if (['.vercel'].includes(file)) {
       continue;
     }
-    symlinkSync(
-      path.relative(
-        path.join(serverlessDir, config.distDir),
-        path.join(rootDir, config.distDir, file),
-      ),
+    cpSync(
+      path.join(rootDir, config.distDir, file),
       path.join(serverlessDir, config.distDir, file),
     );
   }
@@ -93,7 +73,7 @@ export default async function handler(req, res) {
     rscFiles
       .filter((file) => !path.extname(file))
       .map((file) => [
-        path.relative(srcDir, file),
+        path.relative(outputDir, file),
         { contentType: 'text/plain' },
       ]),
   );
@@ -102,7 +82,7 @@ export default async function handler(req, res) {
     { src: basePrefix + '(.*)', dest: basePrefix },
     ...(ssr
       ? htmlFiles.map((htmlFile) => {
-          const file = config.basePath + path.relative(srcDir, htmlFile);
+          const file = config.basePath + path.relative(outputDir, htmlFile);
           const src = file.endsWith('/' + config.indexHtml)
             ? file.slice(0, -('/' + config.indexHtml).length) || '/'
             : file;
@@ -111,9 +91,9 @@ export default async function handler(req, res) {
       : []),
   ];
   const configJson = { version: 3, overrides, routes };
-  mkdirSync(dstDir, { recursive: true });
+  mkdirSync(outputDir, { recursive: true });
   writeFileSync(
-    path.join(dstDir, 'config.json'),
+    path.join(outputDir, 'config.json'),
     JSON.stringify(configJson, null, 2),
   );
 };
