@@ -107,7 +107,6 @@ Commands:
   start       Start the production server
 
 Options:
-  -c, --config <path>   Path to the configuration file
   --with-ssr            Use opt-in SSR
   -v, --version         Display the version number
   -h, --help            Display this help message
