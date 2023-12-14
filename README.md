@@ -292,6 +292,27 @@ Alternatively, you could create a project with something like
 `npm create waku@latest` and copy files from the example
 folder in the repository.
 
+## Deploy
+
+### Vercel
+
+```sh
+vercel
+```
+
+Then change the setting as follows (needs redeploy for the first time):
+
+![vercel](https://github.com/dai-shi/waku/assets/490574/6bd317a8-2772-42f4-92d4-b508af7d7460)
+
+### Cloudflare
+
+```sh
+npm run build -- --with-cloudflare
+rm -r node_modules
+npm install --omit=dev --omit=peer
+npx wrangler dev # or deploy
+```
+
 ## Tweets
 
 <https://github.com/dai-shi/waku/discussions/150>
