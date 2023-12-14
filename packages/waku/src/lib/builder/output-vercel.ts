@@ -27,7 +27,9 @@ export const emitVercelOutput = async (
   mkdirSync(path.join(serverlessDir, config.distDir), {
     recursive: true,
   });
-  mkdirSync(path.join(serverlessDir, 'node_modules'));
+  mkdirSync(path.join(serverlessDir, 'node_modules'), {
+    recursive: true,
+  });
   cpSync(
     path.join(rootDir, 'node_modules', 'waku'),
     path.join(serverlessDir, 'node_modules', 'waku'),
