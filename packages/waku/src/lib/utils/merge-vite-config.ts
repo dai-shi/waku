@@ -4,10 +4,11 @@ import {
   mergeConfig as mergeViteConfig,
 } from 'vite';
 
+// TODO add background and motivation https://github.com/dai-shi/waku/pull/240/files#r1426032865
 export async function mergeUserViteConfig(config: UserConfig) {
   const resolvedViteConfig = await resolveViteConfig({}, 'serve');
 
-  const mergedViteConfig = await mergeViteConfig(
+  const mergedViteConfig = mergeViteConfig(
     {
       ...resolvedViteConfig,
 
