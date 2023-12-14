@@ -13,7 +13,6 @@ import {
 import { renderRscWithWorker } from './worker-api.js';
 import { renderRsc } from './rsc-renderer.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
-import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 
 export const REACT_MODULE = 'react';
 export const REACT_MODULE_VALUE = 'react';
