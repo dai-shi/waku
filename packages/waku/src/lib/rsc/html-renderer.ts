@@ -129,9 +129,7 @@ globalThis.__WAKU_PREFETCHED__ = {
     if (code) {
       data =
         data.slice(0, closingHeadIndex) +
-        '<script type="module" async>' +
-        code +
-        '</script>' +
+        `<script type="module" async>${code}</script>` +
         data.slice(closingHeadIndex);
     }
     return data;
