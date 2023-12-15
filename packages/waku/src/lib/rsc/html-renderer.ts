@@ -78,6 +78,8 @@ Promise.resolve(new Response(new ReadableStream({
   .map((line) => line.trim())
   .join('');
 
+const enableSsrCode = 'globalThis.__WAKU_SSR_ENABLED__ = true;';
+
 const injectRscPayload = (readable: ReadableStream, input: string) => {
   const chunks: Uint8Array[] = [];
   let closed = false;
@@ -101,31 +103,35 @@ const injectRscPayload = (readable: ReadableStream, input: string) => {
   const modifyHead = (data: string) => {
     const matchPrefetched = data.match(
       // HACK This is very brittle
-      /(.*)<script[^>]*>\nglobalThis\.__WAKU_PREFETCHED__ = {\n(.*?)\n};(.*)/s,
+      /(.*<script[^>]*>\nglobalThis\.__WAKU_PREFETCHED__ = {\n)(.*?)(\n};.*)/s,
     );
-    let prefetchedLines: string[] = [];
     if (matchPrefetched) {
-      prefetchedLines = matchPrefetched[2]!.split('\n');
-      data = matchPrefetched[1] + '<script>\n' + matchPrefetched[3];
+      data =
+        matchPrefetched[1] +
+        `  '${input}': ${fakeFetchCode},` +
+        matchPrefetched[3];
     }
     const closingHeadIndex = data.indexOf('</head>');
     if (closingHeadIndex === -1) {
       throw new Error('closing head not found');
     }
-    data =
-      data.slice(0, closingHeadIndex) +
-      `
-<script>
+    let code = '';
+    if (!matchPrefetched) {
+      code += `
 globalThis.__WAKU_PREFETCHED__ = {
-${prefetchedLines
-  .filter((line) => !line.startsWith(`  '${input}':`))
-  .join('\n')}
   '${input}': ${fakeFetchCode},
 };
-globalThis.__WAKU_SSR_ENABLED__ = true;
-</script>
-` +
-      data.slice(closingHeadIndex);
+`;
+    }
+    if (!data.includes(enableSsrCode)) {
+      code += enableSsrCode;
+    }
+    if (code) {
+      data =
+        data.slice(0, closingHeadIndex) +
+        `<script type="module" async>${code}</script>` +
+        data.slice(closingHeadIndex);
+    }
     return data;
   };
   const encoder = new TextEncoder();
@@ -134,14 +140,14 @@ globalThis.__WAKU_SSR_ENABLED__ = true;
     const scripts = chunks.splice(0).map(
       (chunk) =>
         `
-<script>globalThis.__WAKU_PUSH__("${encodeURI(
+<script type="module" async>globalThis.__WAKU_PUSH__("${encodeURI(
           decoder.decode(chunk),
         )}")</script>`,
     );
     if (closed) {
       scripts.push(
         `
-<script>globalThis.__WAKU_PUSH__()</script>`,
+<script type="module" async>globalThis.__WAKU_PUSH__()</script>`,
       );
     }
     return scripts.join('');

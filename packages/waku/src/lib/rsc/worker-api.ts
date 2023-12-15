@@ -46,7 +46,14 @@ const getWorker = () => {
     return lastWorker;
   }
   return (lastWorker = new Promise<WorkerOrig>((resolve, reject) => {
-    Promise.all([import('node:worker_threads'), import('node:module')])
+    Promise.all([
+      import('node:worker_threads').catch((e) => {
+        throw e;
+      }),
+      import('node:module').catch((e) => {
+        throw e;
+      }),
+    ])
       .then(([{ Worker }, { default: module }]) => {
         const HAS_MODULE_REGISTER = typeof module.register === 'function';
         const worker = new Worker(new URL('worker-impl.js', import.meta.url), {

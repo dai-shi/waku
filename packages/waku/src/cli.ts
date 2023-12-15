@@ -22,6 +22,15 @@ const { values, positionals } = parseArgs({
     'with-ssr': {
       type: 'boolean',
     },
+    'with-vercel': {
+      type: 'boolean',
+    },
+    'with-cloudflare': {
+      type: 'boolean',
+    },
+    'with-deno': {
+      type: 'boolean',
+    },
     version: {
       type: 'boolean',
       short: 'v',
@@ -47,7 +56,12 @@ if (values.version) {
       runDev({ ssr: withSsr });
       break;
     case 'build':
-      runBuild({ ssr: withSsr });
+      runBuild({
+        ssr: withSsr,
+        vercel: values['with-vercel'],
+        cloudflare: !!values['with-cloudflare'],
+        deno: !!values['with-deno'],
+      });
       break;
     case 'start':
       runStart({ ssr: withSsr });
@@ -63,13 +77,18 @@ if (values.version) {
 
 async function runDev(options: { ssr: boolean }) {
   const app = new Hono();
-  app.use('*', honoDevMiddleware({ ssr: options.ssr }));
+  app.use('*', honoDevMiddleware(options));
   const port = parseInt(process.env.PORT || '3000', 10);
   startServer(app, port);
 }
 
-async function runBuild(options: { ssr: boolean }) {
-  await build({ ssr: options.ssr });
+async function runBuild(options: {
+  ssr: boolean;
+  vercel: boolean | undefined;
+  cloudflare: boolean;
+  deno: boolean;
+}) {
+  await build(options);
 }
 
 async function runStart(options: { ssr: boolean }) {
@@ -78,7 +97,7 @@ async function runStart(options: { ssr: boolean }) {
     url.pathToFileURL(path.resolve(distDir, entriesJs)).toString()
   );
   const app = new Hono();
-  app.use('*', honoPrdMiddleware({ entries, ssr: options.ssr }));
+  app.use('*', honoPrdMiddleware({ entries, ...options }));
   app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
   const port = parseInt(process.env.PORT || '8080', 10);
   startServer(app, port);
@@ -109,6 +128,9 @@ Commands:
 
 Options:
   --with-ssr            Use opt-in SSR
+  --with-vercel         Output for Vercel on build
+  --with-cloudflare     Output for Cloudflare on build
+  --with-deno           Output for Deno on build
   -v, --version         Display the version number
   -h, --help            Display this help message
 `);

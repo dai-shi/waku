@@ -39,8 +39,8 @@ export const generatePrefetchCode = (
     code += `
 globalThis.__WAKU_PREFETCHED__ = {
 ${inputsArray
-  .map((input) => `  '${input}': fetch('${basePrefix}${encodeInput(input)}')`)
-  .join(',\n')}
+  .map((input) => `  '${input}': fetch('${basePrefix}${encodeInput(input)}'),`)
+  .join('\n')}
 };`;
   }
   for (const moduleId of moduleIds) {
