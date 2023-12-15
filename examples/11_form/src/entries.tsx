@@ -20,7 +20,8 @@ export default defineEntries(
   },
   // getSsrConfig
   async (pathStr) => {
-    switch (pathStr) {
+    const { pathname } = new URL(pathStr, 'http://localhost');
+    switch (pathname) {
       case '/':
         return {
           input: '',
