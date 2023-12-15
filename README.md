@@ -13,7 +13,7 @@ https://github.com/dai-shi/waku/discussions/260
 
 ## Project status
 
-We are working toward v1-alpha: https://github.com/dai-shi/waku/issues/24
+Roadmap: See https://github.com/dai-shi/waku/issues/24 (working towards v1-alpha)
 
 Feel free to try it _seriously_ with non-production projects and give us feedback.
 
