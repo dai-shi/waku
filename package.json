@@ -23,6 +23,7 @@
     "examples:dev:09_cssmodules": "NAME=09_cssmodules pnpm run examples:dev",
     "examples:dev:10_dynamicroute": "NAME=10_dynamicroute pnpm run examples:dev",
     "examples:dev:11_form": "NAME=11_form pnpm run examples:dev",
+    "examples:dev:12_css": "NAME=12_css pnpm run examples:dev",
     "examples:build": "(cd ./examples/${NAME} && pnpm run build)",
     "examples:prd": "pnpm run examples:build && (cd ./examples/${NAME} && pnpm start)",
     "examples:prd:01_counter": "NAME=01_counter pnpm run examples:prd",
@@ -36,9 +37,10 @@
     "examples:prd:09_cssmodules": "NAME=09_cssmodules pnpm run examples:prd",
     "examples:prd:10_dynamicroute": "NAME=10_dynamicroute pnpm run examples:prd",
     "examples:prd:11_form": "NAME=11_form pnpm run examples:prd",
+    "examples:prd:12_css": "NAME=12_css pnpm run examples:prd",
     "website:dev": "(cd packages/website && pnpm run dev)",
     "website:build": "(cd packages/website && pnpm run build)",
-    "website:vercel": "pnpm run website:build && mkdir -p .vercel && cp -Lr packages/website/dist/.vercel/output .vercel/ && cp -r README.md packages/website/src/contents .vercel/output/functions/RSC.func/",
+    "website:vercel": "pnpm run website:build && mv packages/website/.vercel/output .vercel/ && cp -r README.md packages/website/src/contents .vercel/output/functions/RSC.func/",
     "website:prd": "pnpm run website:build && (cd packages/website && pnpm start)"
   },
   "prettier": {
@@ -67,9 +69,9 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "prettier": "^3.1.0",
     "prettier-plugin-tailwindcss": "^0.5.9",
-    "react": "18.3.0-canary-5bcade5fc-20231208",
-    "react-dom": "18.3.0-canary-5bcade5fc-20231208",
-    "react-server-dom-webpack": "18.3.0-canary-5bcade5fc-20231208",
+    "react": "18.3.0-canary-0cdfef19b-20231211",
+    "react-dom": "18.3.0-canary-0cdfef19b-20231211",
+    "react-server-dom-webpack": "18.3.0-canary-0cdfef19b-20231211",
     "typescript": "^5.3.3",
     "wait-port": "^1.1.0",
     "waku": "workspace:*"

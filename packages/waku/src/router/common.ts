@@ -56,6 +56,8 @@ export function parseInputString(input: string): {
       ...(skip ? { skip } : {}),
     };
   } else {
-    throw new Error('Invalid input string');
+    const err = new Error('Invalid input string');
+    (err as any).statusCode = 400;
+    throw err;
   }
 }

@@ -16,9 +16,9 @@
     "express": "^4.18.2",
     "hono": "^3.11.4",
     "next-mdx-remote": "^4.4.1",
-    "react": "18.3.0-canary-5bcade5fc-20231208",
-    "react-dom": "18.3.0-canary-5bcade5fc-20231208",
-    "react-server-dom-webpack": "18.3.0-canary-5bcade5fc-20231208",
+    "react": "18.3.0-canary-0cdfef19b-20231211",
+    "react-dom": "18.3.0-canary-0cdfef19b-20231211",
+    "react-server-dom-webpack": "18.3.0-canary-0cdfef19b-20231211",
     "waku": "workspace:*"
   },
   "devDependencies": {

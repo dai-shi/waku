@@ -8,9 +8,12 @@
 
 <!-- [![size](https://img.shields.io/bundlephobia/minzip/waku)](https://bundlephobia.com/result?p=waku) -->
 
+Waku means "frame" in Japanese. Waku-Waku means being excited.
+https://github.com/dai-shi/waku/discussions/260
+
 ## Project status
 
-We are working toward v1-alpha: https://github.com/dai-shi/waku/issues/24
+Roadmap: See https://github.com/dai-shi/waku/issues/24 (working towards v1-alpha)
 
 Feel free to try it _seriously_ with non-production projects and give us feedback.
 
@@ -73,7 +76,7 @@ pnpm create waku
 These commands will create an example app that you can use as a
 starting point for your project.
 
-Minimum requirement: Node.js 18
+Minimum requirement: Node.js 18.3.0
 
 ## Practices
 
@@ -289,6 +292,34 @@ npm run examples:dev:07_router
 Alternatively, you could create a project with something like
 `npm create waku@latest` and copy files from the example
 folder in the repository.
+
+## Deploy
+
+### Vercel
+
+```sh
+vercel
+```
+
+Then change the setting as follows (needs redeploy for the first time):
+
+![vercel](https://github.com/dai-shi/waku/assets/490574/6bd317a8-2772-42f4-92d4-b508af7d7460)
+
+### Cloudflare (experimental)
+
+```sh
+npm run build -- --with-cloudflare
+rm -r node_modules
+npm install --omit=dev --omit=peer
+npx wrangler dev # or deploy
+```
+
+### Deno Deploy (experimental)
+
+```sh
+npm run build -- --with-deno
+DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod serve.ts --exclude node_modules
+```
 
 ## Tweets
 
