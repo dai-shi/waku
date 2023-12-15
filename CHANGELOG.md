@@ -1,6 +1,13 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.18.1] - 2023-12-15
+### Changed
+- improve vercel deploy script
+- improve css handling
+
+## [0.18.0] - 2023-12-12
 ### Changed
 - switch to hono from express (still depends on node) #165
 - fix: build error on windows #174

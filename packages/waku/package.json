@@ -1,7 +1,7 @@
 {
   "name": "waku",
   "description": "⛩️ The minimal React framework",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "type": "module",
   "author": "Daishi Kato",
   "repository": {
