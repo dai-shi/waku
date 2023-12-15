@@ -129,7 +129,7 @@ globalThis.__WAKU_PREFETCHED__ = {
     if (code) {
       data =
         data.slice(0, closingHeadIndex) +
-        '<script>' +
+        '<script type="module" async>' +
         code +
         '</script>' +
         data.slice(closingHeadIndex);
@@ -142,14 +142,14 @@ globalThis.__WAKU_PREFETCHED__ = {
     const scripts = chunks.splice(0).map(
       (chunk) =>
         `
-<script>globalThis.__WAKU_PUSH__("${encodeURI(
+<script type="module" async>globalThis.__WAKU_PUSH__("${encodeURI(
           decoder.decode(chunk),
         )}")</script>`,
     );
     if (closed) {
       scripts.push(
         `
-<script>globalThis.__WAKU_PUSH__()</script>`,
+<script type="module" async>globalThis.__WAKU_PUSH__()</script>`,
       );
     }
     return scripts.join('');
