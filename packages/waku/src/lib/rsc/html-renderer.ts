@@ -118,9 +118,9 @@ const injectRscPayload = (readable: ReadableStream, input: string) => {
 <script>
 globalThis.__WAKU_PREFETCHED__ = {
 ${prefetchedLines
-  .filter((line) => !line.startsWith(`  '${input}':`))
+  .filter((line) => !line.endsWith('// SSR'))
   .join('\n')}
-  '${input}': ${fakeFetchCode},
+  '${input}': ${fakeFetchCode}, // SSR
 };
 globalThis.__WAKU_SSR_ENABLED__ = true;
 </script>
