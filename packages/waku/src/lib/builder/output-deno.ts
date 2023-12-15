@@ -21,13 +21,13 @@ export const emitDenoOutput = async (
     config.distDir,
     config.publicDir,
   );
-  if (!existsSync(path.join(outputDir, 'serve.js'))) {
+  if (!existsSync(path.join(outputDir, 'serve.ts'))) {
     writeFileSync(
-      path.join(outputDir, 'serve.js'),
+      path.join(outputDir, 'serve.ts'),
       `
 import { Hono } from "https://deno.land/x/hono/mod.ts";
 import { serveStatic } from "https://deno.land/x/hono/middleware.ts";
-import { honoMiddleware } from "npm:waku";
+import { honoMiddleware } from "npm:waku@0.18.0";
 
 const entries = import('./${entriesFile}');
 

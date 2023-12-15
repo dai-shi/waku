@@ -318,7 +318,7 @@ npx wrangler dev # or deploy
 
 ```sh
 npm run build -- --with-deno
-DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod serve.ts
+DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod serve.ts --exclude node_modules
 ```
 
 ## Tweets
