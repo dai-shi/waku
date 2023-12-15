@@ -45,6 +45,7 @@ import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { emitVercelOutput } from './output-vercel.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
+import { emitDenoOutput } from './output-deno.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -484,6 +485,7 @@ export async function build(options: {
   ssr?: boolean;
   vercel?: boolean | undefined;
   cloudflare?: boolean;
+  deno?: boolean;
 }) {
   const config = await resolveConfig(options.config || {});
   const rootDir = (
@@ -541,5 +543,9 @@ export async function build(options: {
 
   if (options?.cloudflare) {
     await emitCloudflareOutput(rootDir, config, !!options?.ssr);
+  }
+
+  if (options?.deno) {
+    await emitDenoOutput(rootDir, config, !!options?.ssr);
   }
 }
