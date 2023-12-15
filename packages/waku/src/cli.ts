@@ -28,6 +28,9 @@ const { values, positionals } = parseArgs({
     'with-cloudflare': {
       type: 'boolean',
     },
+    'with-deno': {
+      type: 'boolean',
+    },
     version: {
       type: 'boolean',
       short: 'v',
@@ -56,6 +59,7 @@ if (values.version) {
         ssr: !!values['with-ssr'],
         vercel: values['with-vercel'],
         cloudflare: !!values['with-cloudflare'],
+        deno: !!values['with-deno'],
       });
       break;
     case 'start':
@@ -81,6 +85,7 @@ async function runBuild(options: {
   ssr: boolean;
   vercel: boolean | undefined;
   cloudflare: boolean;
+  deno: boolean;
 }) {
   await build(options);
 }
@@ -124,6 +129,7 @@ Options:
   --with-ssr            Use opt-in SSR
   --with-vercel         Output for Vercel on build
   --with-cloudflare     Output for Cloudflare on build
+  --with-deno           Output for Deno on build
   -v, --version         Display the version number
   -h, --help            Display this help message
 `);
