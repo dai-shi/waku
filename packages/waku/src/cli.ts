@@ -50,20 +50,21 @@ if (values.version) {
 } else if (values.help) {
   displayUsage();
 } else {
+  const withSsr = !!values['with-ssr'];
   switch (cmd) {
     case 'dev':
-      runDev({ ssr: !!values['with-ssr'] });
+      runDev({ ssr: withSsr });
       break;
     case 'build':
       runBuild({
-        ssr: !!values['with-ssr'],
+        ssr: withSsr,
         vercel: values['with-vercel'],
         cloudflare: !!values['with-cloudflare'],
         deno: !!values['with-deno'],
       });
       break;
     case 'start':
-      runStart({ ssr: !!values['with-ssr'] });
+      runStart({ ssr: withSsr });
       break;
     default:
       if (cmd) {
@@ -111,7 +112,7 @@ async function startServer(app: Hono, port: number) {
       console.log(`warn: Port ${port} is in use, trying ${port + 1} instead.`);
       startServer(app, port + 1);
     } else {
-      console.error('Failed to start server');
+      console.error(`Failed to start server: ${err.message}`);
     }
   });
 }

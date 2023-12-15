@@ -76,7 +76,7 @@ pnpm create waku
 These commands will create an example app that you can use as a
 starting point for your project.
 
-Minimum requirement: Node.js 18
+Minimum requirement: Node.js 18.3.0
 
 ## Practices
 
