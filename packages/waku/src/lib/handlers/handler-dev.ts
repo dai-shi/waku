@@ -79,7 +79,10 @@ export function createHandler<
   );
 
   let publicIndexHtml: string | undefined;
-  const getHtmlStr = async (pathname: string): Promise<string | null> => {
+  const getHtmlStr = async (
+    pathname: string,
+    search: string,
+  ): Promise<string | null> => {
     const [config, vite] = await Promise.all([configPromise, vitePromise]);
     const rootDir = vite.config.root;
     if (!publicIndexHtml) {
@@ -89,7 +92,7 @@ export function createHandler<
       });
     }
     for (const item of vite.moduleGraph.idToModuleMap.values()) {
-      if (item.url === pathname) {
+      if (item.url === pathname + (search ? '?' + search : '')) {
         return null;
       }
     }
@@ -107,7 +110,10 @@ export function createHandler<
     if (pathname.startsWith('/@fs')) {
       return null;
     }
-    return vite.transformIndexHtml(pathname, publicIndexHtml);
+    return vite.transformIndexHtml(
+      pathname + (search ? '?' + search : ''),
+      publicIndexHtml,
+    );
   };
 
   return async (req, res, next) => {
@@ -131,7 +137,7 @@ export function createHandler<
     }
     if (ssr) {
       try {
-        const htmlStr = await getHtmlStr(req.url.pathname);
+        const htmlStr = await getHtmlStr(req.url.pathname, req.url.search);
         const readable =
           htmlStr &&
           (await renderHtml({
@@ -189,10 +195,10 @@ export function createHandler<
     }
     const viteReq: any = Readable.fromWeb(req.stream as any);
     viteReq.method = req.method;
-    (viteReq.url = req.url
+    viteReq.url = req.url
       .toString()
-      .slice(req.url.origin.length + basePrefix.length)),
-      (viteReq.headers = { 'content-type': req.contentType });
+      .slice(req.url.origin.length + basePrefix.length);
+    viteReq.headers = { 'content-type': req.contentType };
     const viteRes: any = Writable.fromWeb(res.stream as any);
     Object.defineProperty(viteRes, 'statusCode', {
       set(code) {
