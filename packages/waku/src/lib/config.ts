@@ -28,6 +28,7 @@ export interface Config {
    */
   assetsDir?: string;
   /**
+   * TODO: remove
    * The htmls directory relative to distDir.
    * Defaults to "htmls".
    */
@@ -37,6 +38,11 @@ export interface Config {
    * Defaults to "index.html".
    */
   indexHtml?: string;
+  /**
+   * The client main file relative to srcDir.
+   * Defaults to "main.tsx".
+   */
+  mainJs?: string;
   /**
    * The entries.js file relative to srcDir or distDir.
    * The extension should be `.js`,
@@ -50,6 +56,15 @@ export interface Config {
    */
   rscPath?: string;
   /**
+   * HTML headers to inject.
+   * Defaults to:
+   * <title>Waku App</title>
+   * <meta charset="utf-8" />
+   * <meta name="viewport" content="width=device-width, initial-scale=1" />
+   */
+  htmlHead?: string;
+  /**
+   * TODO: remove
    * ssr middleware specific configs.
    */
   ssr?: {
@@ -70,6 +85,12 @@ type DeepRequired<T> = T extends (...args: any[]) => any
     : T;
 
 export type ResolvedConfig = DeepRequired<Config>;
+
+const DEFAULT_HTML_HEAD = `
+<title>Waku App</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+`.trim();
 
 const splitHTML = (htmlStr: string): readonly [string, string, string] => {
   const P1 = [
@@ -100,8 +121,10 @@ export async function resolveConfig(config: Config) {
     assetsDir: 'assets',
     htmlsDir: 'htmls',
     indexHtml: 'index.html',
+    mainJs: 'main.tsx',
     entriesJs: 'entries.js',
     rscPath: 'RSC',
+    htmlHead: DEFAULT_HTML_HEAD,
     ...config,
     ssr: {
       splitHTML,

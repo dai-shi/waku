@@ -52,7 +52,11 @@ export function createHandler<
       plugins: [
         nonjsResolvePlugin(),
         patchReactRefresh(viteReact()),
-        rscIndexPlugin([]),
+        rscIndexPlugin({
+          srcDir: config.srcDir,
+          mainJs: config.mainJs,
+          htmlHead: config.htmlHead,
+        }),
         rscHmrPlugin(),
       ],
       ssr: {

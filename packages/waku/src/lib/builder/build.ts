@@ -245,7 +245,15 @@ const buildClientBundle = async (
   );
   const clientBuildOutput = await buildVite({
     base: config.basePath,
-    plugins: [patchReactRefresh(viteReact()), rscIndexPlugin(cssAssets)],
+    plugins: [
+      patchReactRefresh(viteReact()),
+      rscIndexPlugin({
+        srcDir: config.srcDir,
+        mainJs: config.mainJs,
+        htmlHead: config.htmlHead,
+        cssAssets,
+      }),
+    ],
     build: {
       outDir: joinPath(rootDir, config.distDir, config.publicDir),
       rollupOptions: {
