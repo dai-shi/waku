@@ -74,22 +74,20 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
     import(id);
   }
 };`;
-    return Object.fromEntries(
-      pathnames.map((pathname) => [
-        pathname,
-        { entries: prefetcher(pathname), customCode },
-      ]),
-    );
+    return pathnames.map((pathname) => ({
+      pathname,
+      entries: prefetcher(pathname),
+      customCode,
+    }));
   };
 
-  const getSsrConfig: GetSsrConfig = async (pathStr) => {
-    const url = new URL(pathStr, 'http://localhost');
-    const componentIds = getComponentIds(url.pathname);
+  const getSsrConfig: GetSsrConfig = async (reqUrl) => {
+    const componentIds = getComponentIds(reqUrl.pathname);
     const leafComponentId = componentIds[componentIds.length - 1];
     if (!leafComponentId || (await getComponent(leafComponentId)) === null) {
       return null;
     }
-    const input = getInputString(url.pathname, url.search);
+    const input = getInputString(reqUrl.pathname, reqUrl.search);
     type Opts = {
       createElement: typeof createElement;
       Slot: typeof Slot;

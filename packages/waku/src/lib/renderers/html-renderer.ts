@@ -223,7 +223,7 @@ const rectifyHtml = () => {
 export const renderHtml = async (
   opts: {
     config: ResolvedConfig;
-    pathStr: string;
+    reqUrl: URL;
     htmlStr: string; // Hope stream works, but it'd be too tricky
     renderRscForHtml: (input: string) => Promise<ReadableStream>;
   } & (
@@ -231,7 +231,7 @@ export const renderHtml = async (
     | { isDev: true; entries: EntriesDev }
   ),
 ): Promise<ReadableStream | null> => {
-  const { config, pathStr, htmlStr, renderRscForHtml, isDev, entries } = opts;
+  const { config, reqUrl, htmlStr, renderRscForHtml, isDev, entries } = opts;
 
   const {
     default: { getSsrConfig },
@@ -256,7 +256,7 @@ export const renderHtml = async (
       ? import(WAKU_CLIENT_MODULE_VALUE)
       : loadModule!('public/' + WAKU_CLIENT_MODULE),
   ]);
-  const ssrConfig = await getSsrConfig?.(pathStr);
+  const ssrConfig = await getSsrConfig?.(reqUrl);
   if (!ssrConfig) {
     return null;
   }

@@ -20,10 +20,7 @@ export const connectWrapper = (
     const req: BaseReq & { orig: IncomingMessage } = {
       stream: Readable.toWeb(connectReq) as any,
       method: connectReq.method || '',
-      url: new URL(
-        connectReq.url || '',
-        `http://${connectReq.headers.host}`,
-      ).toString(),
+      url: new URL(connectReq.url || '', `http://${connectReq.headers.host}`),
       contentType: connectReq.headers['content-type'],
       orig: connectReq,
     };

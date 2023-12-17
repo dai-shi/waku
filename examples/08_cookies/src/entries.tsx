@@ -25,17 +25,9 @@ export default defineEntries(
     };
   },
   // getBuildConfig
-  async () => {
-    return {
-      '/': {
-        entries: [['']],
-        context: { count: 0 },
-      },
-    };
-  },
+  async () => [{ pathname: '/', entries: [['']], context: { count: 0 } }],
   // getSsrConfig
-  async (pathStr) => {
-    const { pathname } = new URL(pathStr, 'http://localhost');
+  async ({ pathname }) => {
     switch (pathname) {
       case '/':
         return {

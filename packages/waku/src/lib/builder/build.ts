@@ -313,7 +313,7 @@ const emitRscFiles = async (
   };
   const rscFileSet = new Set<string>(); // XXX could be implemented better
   await Promise.all(
-    Object.entries(buildConfig).map(async ([, { entries, context }]) => {
+    Array.from(buildConfig).map(async ({ entries, context }) => {
       for (const [input] of entries || []) {
         const destRscFile = joinPath(
           rootDir,
@@ -368,29 +368,31 @@ const emitHtmlFiles = async (
     encoding: 'utf8',
   });
   let loadHtmlCode = `
-export function loadHtml(pathStr) {
-  switch (pathStr) {
+export function loadHtml(pathname) {
+  switch (pathname) {
 `;
+  // TODO check duplicated files like rscFileSet
   const htmlFiles = await Promise.all(
-    Object.entries(buildConfig).map(
-      async ([pathStr, { entries, customCode, context }]) => {
+    Array.from(buildConfig).map(
+      async ({ pathname, entries, customCode, context }) => {
         const destHtmlFile = joinPath(
           rootDir,
           config.distDir,
           config.publicDir,
-          extname(pathStr) ? pathStr : pathStr + '/' + config.indexHtml,
+          extname(pathname) ? pathname : pathname + '/' + config.indexHtml,
         );
         const destHtmlJsFile = joinPath(
           rootDir,
           config.distDir,
           config.htmlsDir,
-          (extname(pathStr) ? pathStr : pathStr + '/' + config.indexHtml) +
+          (extname(pathname) ? pathname : pathname + '/' + config.indexHtml) +
             '.js',
         );
-        loadHtmlCode += `    case ${JSON.stringify(pathStr)}:
+        loadHtmlCode += `    case ${JSON.stringify(pathname)}:
       return import('./${joinPath(
         config.htmlsDir,
-        (extname(pathStr) ? pathStr : pathStr + '/' + config.indexHtml) + '.js',
+        (extname(pathname) ? pathname : pathname + '/' + config.indexHtml) +
+          '.js',
       )}').then((m)=>m.default);
 `;
         let htmlStr: string;
@@ -428,7 +430,7 @@ export function loadHtml(pathStr) {
           ssr &&
           (await renderHtml({
             config,
-            pathStr,
+            reqUrl: new URL(pathname, 'http://localhost'),
             htmlStr,
             renderRscForHtml: (input) =>
               renderRsc({

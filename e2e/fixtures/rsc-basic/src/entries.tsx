@@ -11,13 +11,7 @@ export default defineEntries(
     };
   },
   // getBuildConfig
-  async () => {
-    return {
-      '/': {
-        entries: [['']],
-      },
-    };
-  },
+  async () => [{ pathname: '/', entries: [['']] }],
   // getSsrConfig
   async () => {
     throw new Error('SSR is should not be used in this test.');

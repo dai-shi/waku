@@ -1,6 +1,6 @@
 export type BaseReq = {
   stream: ReadableStream;
-  url: string; // Full URL like "https://example.com/foo/bar?baz=qux"
+  url: URL;
   method: string;
   contentType: string | undefined;
 };

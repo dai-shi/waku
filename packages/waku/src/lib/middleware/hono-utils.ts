@@ -55,7 +55,7 @@ export const honoWrapper = <E extends Env, P extends string, I extends Input>(
       const req: BaseReq & { c: Context<E, P, I> } = {
         stream: c.req.raw.body || createEmptyReadableStream(),
         method: c.req.method,
-        url: c.req.url,
+        url: new URL(c.req.url),
         contentType: c.req.header('content-type'),
         c,
       };

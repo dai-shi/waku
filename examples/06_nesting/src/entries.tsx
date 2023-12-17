@@ -19,23 +19,21 @@ export default defineEntries(
     return result;
   },
   // getBuildConfig
-  async () => {
-    return {
-      '/': {
-        entries: [
-          [''],
-          ['InnerApp=1', true],
-          ['InnerApp=2', true],
-          ['InnerApp=3', true],
-          ['InnerApp=4', true],
-          ['InnerApp=5', true],
-        ],
-      },
-    };
-  },
+  async () => [
+    {
+      pathname: '/',
+      entries: [
+        [''],
+        ['InnerApp=1', true],
+        ['InnerApp=2', true],
+        ['InnerApp=3', true],
+        ['InnerApp=4', true],
+        ['InnerApp=5', true],
+      ],
+    },
+  ],
   // getSsrConfig
-  async (pathStr) => {
-    const { pathname } = new URL(pathStr, 'http://localhost');
+  async ({ pathname }) => {
     switch (pathname) {
       case '/':
         return {

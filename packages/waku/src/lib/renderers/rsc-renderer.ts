@@ -167,7 +167,7 @@ export async function getBuildConfig(opts: {
     console.warn(
       "getBuildConfig is undefined. It's recommended for optimization and sometimes required.",
     );
-    return {};
+    return [];
   }
 
   const unstable_collectClientModules = async (
