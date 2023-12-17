@@ -25,13 +25,21 @@ for (const { build, command } of commands) {
   test.describe(`rsc-router: ${command}`, () => {
     let cp: ChildProcess;
     let port: number;
-    test.beforeAll(async () => {
+    test.beforeEach('remove cache', async () => {
       // remove the .vite cache
       // Refs: https://github.com/vitejs/vite/discussions/8146
       await rm(`${cwd}/node_modules/.vite`, {
         recursive: true,
         force: true,
       });
+
+      await rm(`${cwd}/dist`, {
+        recursive: true,
+        force: true,
+      });
+    });
+
+    test.beforeAll(async () => {
       if (build) {
         execSync(`node ${waku} ${build}`, {
           cwd,

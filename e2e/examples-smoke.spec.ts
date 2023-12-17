@@ -112,7 +112,7 @@ for (const cwd of examples) {
       test.describe(`smoke test on ${basename(cwd)}: ${command}`, () => {
         let cp: ChildProcess;
         let port: number;
-        test.beforeAll(async () => {
+        test.beforeEach('remove cache', async () => {
           // remove the .vite cache
           // Refs: https://github.com/vitejs/vite/discussions/8146
           await rm(`${cwd}/node_modules/.vite`, {
@@ -120,6 +120,13 @@ for (const cwd of examples) {
             force: true,
           });
 
+          await rm(`${cwd}/dist`, {
+            recursive: true,
+            force: true,
+          });
+        });
+
+        test.beforeAll(async () => {
           if (build) {
             execSync(`node ${waku} ${build}`, {
               cwd,
