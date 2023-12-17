@@ -1,6 +1,10 @@
 import { defineRouter } from 'waku/router/server';
 
 export default defineRouter(
+  // getRoutePaths
+  async () => ({
+    static: ['/', '/foo'].map((pathname) => ({ pathname })),
+  }),
   // getComponent (id is "**/layout" or "**/page")
   async (id) => {
     switch (id) {
@@ -13,9 +17,5 @@ export default defineRouter(
       default:
         return null;
     }
-  },
-  // getPathsForBuild
-  async () => {
-    return ['/', '/foo'];
   },
 );

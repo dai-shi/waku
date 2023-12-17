@@ -27,49 +27,62 @@ const getRoute = (items: string[]) =>
     }
   });
 
-// HACK for vite dev server
-const isReservedId = (id: string) =>
-  id.startsWith('@') || id.startsWith('main.tsx/');
+const getMappingAndItems = async (id: string) => {
+  const mapping: Record<string, string> = {};
+  const items = id.split('/');
+  for (let i = 0; i < items.length - 1; ++i) {
+    const dir = path.join(routesDir, ...items.slice(0, i));
+    if (!existsSync(dir)) {
+      return null;
+    }
+    const files = await fsPromises.readdir(dir);
+    if (!files.includes(items[i]!)) {
+      const slug = files.find((file) => file.match(/^(\[\w+\]|_\w+_)$/));
+      if (slug) {
+        mapping[slug.slice(1, -1)] = items[i]!;
+        items[i] = slug;
+      }
+    }
+  }
+  if (
+    !existsSync(path.join(routesDir, ...items) + '.js') &&
+    !existsSync(path.join(routesDir, ...items) + '.tsx')
+  ) {
+    return null;
+  }
+
+  return { mapping, items };
+};
 
 export default defineRouter(
+  // getRoutePaths
+  async () => {
+    const files = await glob('**/page.{tsx,js}', { cwd: routesDir });
+    const staticRoutes = files
+      .filter((file) => !/(^|\/)(\[\w+\]|_\w+_)\//.test(file))
+      .map((file) => ({
+        pathname: '/' + file.slice(0, Math.max(0, file.lastIndexOf('/'))),
+      }));
+    const dynamicRoutes = async (pathname: string) => {
+      const result = await getMappingAndItems(pathname + '/page');
+      return result !== null;
+    };
+    return {
+      static: staticRoutes,
+      dynamic: dynamicRoutes,
+    };
+  },
   // getComponent (id is "**/layout" or "**/page")
   async (id) => {
-    if (isReservedId(id)) {
+    const result = await getMappingAndItems(id);
+    if (result === null) {
       return null;
     }
-    const mapping: Record<string, string> = {};
-    const items = id.split('/');
-    for (let i = 0; i < items.length - 1; ++i) {
-      const dir = path.join(routesDir, ...items.slice(0, i));
-      if (!existsSync(dir)) {
-        return null;
-      }
-      const files = await fsPromises.readdir(dir);
-      if (!files.includes(items[i]!)) {
-        const slug = files.find((file) => file.match(/^(\[\w+\]|_\w+_)$/));
-        if (slug) {
-          mapping[slug.slice(1, -1)] = items[i]!;
-          items[i] = slug;
-        }
-      }
-    }
-    if (
-      !existsSync(path.join(routesDir, ...items) + '.js') &&
-      !existsSync(path.join(routesDir, ...items) + '.tsx')
-    ) {
-      return null;
-    }
+    const { mapping, items } = result;
     const Route = getRoute(items);
     const Component = (props: Record<string, unknown>) => (
       <Route {...props} {...mapping} />
     );
     return Component;
-  },
-  // getPathsForBuild
-  async () => {
-    const files = await glob('**/page.{tsx,js}', { cwd: routesDir });
-    return files
-      .filter((file) => !/(^|\/)(\[\w+\]|_\w+_)\//.test(file))
-      .map((file) => '/' + file.slice(0, Math.max(0, file.lastIndexOf('/'))));
   },
 );

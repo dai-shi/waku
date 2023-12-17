@@ -481,7 +481,7 @@ export function loadHtml(pathname, search) {
   );
   loadHtmlCode += `
     default:
-      throw new Error('Cannot find HTML for ' + pathStr);
+      throw new Error('Cannot find HTML for ' + pathname + (search ? '?' + search : ''));
   }
 }`;
   await appendFile(distEntriesFile, loadHtmlCode);
