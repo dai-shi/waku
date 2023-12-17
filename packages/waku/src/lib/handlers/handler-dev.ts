@@ -15,7 +15,7 @@ import {
   registerImportCallback,
   renderRscWithWorker,
   registerModuleCallback,
-} from '../rsc/worker-api.js';
+} from './dev-worker-api.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
