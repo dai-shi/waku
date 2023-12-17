@@ -1,4 +1,4 @@
-import url from 'node:url';
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { existsSync } from 'node:fs';
 import fsPromises from 'node:fs/promises';
@@ -7,7 +7,7 @@ import { glob } from 'glob';
 import { defineRouter } from 'waku/router/server';
 
 const routesDir = path.join(
-  path.dirname(url.fileURLToPath(import.meta.url)),
+  path.dirname(fileURLToPath(import.meta.url)),
   'routes',
 );
 

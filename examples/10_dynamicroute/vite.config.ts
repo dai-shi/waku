@@ -1,11 +1,8 @@
-import url from 'node:url';
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { glob } from 'glob';
 
-const rootDir = path.join(
-  path.dirname(url.fileURLToPath(import.meta.url)),
-  'src',
-);
+const rootDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'src');
 const routeFiles = glob.sync('routes/**/*.{tsx,js}', { cwd: rootDir });
 
 /** @type {import('vite').UserConfig} */
