@@ -195,9 +195,7 @@ export function createHandler<
     }
     const viteReq: any = Readable.fromWeb(req.stream as any);
     viteReq.method = req.method;
-    viteReq.url = req.url
-      .toString()
-      .slice(req.url.origin.length + basePrefix.length);
+    viteReq.url = req.url.toString().slice(req.url.origin.length);
     viteReq.headers = { 'content-type': req.contentType };
     const viteRes: any = Writable.fromWeb(res.stream as any);
     Object.defineProperty(viteRes, 'statusCode', {
