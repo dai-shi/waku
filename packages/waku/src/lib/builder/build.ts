@@ -368,30 +368,35 @@ const emitHtmlFiles = async (
     encoding: 'utf8',
   });
   let loadHtmlCode = `
-export function loadHtml(pathname) {
-  switch (pathname) {
+export function loadHtml(pathname, search) {
+  switch (pathname + (search ? '?' + search: '')) {
 `;
   // TODO check duplicated files like rscFileSet
   const htmlFiles = await Promise.all(
     Array.from(buildConfig).map(
-      async ({ pathname, entries, customCode, context }) => {
+      async ({ pathname, search, entries, customCode, context }) => {
         const destHtmlFile = joinPath(
           rootDir,
           config.distDir,
           config.publicDir,
-          extname(pathname) ? pathname : pathname + '/' + config.indexHtml,
+          (extname(pathname) ? pathname : pathname + '/' + config.indexHtml) +
+            (search ? '?' + search : ''),
         );
         const destHtmlJsFile = joinPath(
           rootDir,
           config.distDir,
           config.htmlsDir,
           (extname(pathname) ? pathname : pathname + '/' + config.indexHtml) +
+            (search ? '?' + search : '') +
             '.js',
         );
-        loadHtmlCode += `    case ${JSON.stringify(pathname)}:
+        loadHtmlCode += `    case ${JSON.stringify(
+          pathname + (search ? '?' + search : ''),
+        )}:
       return import('./${joinPath(
         config.htmlsDir,
         (extname(pathname) ? pathname : pathname + '/' + config.indexHtml) +
+          (search ? '?' + search : '') +
           '.js',
       )}').then((m)=>m.default);
 `;
@@ -430,7 +435,10 @@ export function loadHtml(pathname) {
           ssr &&
           (await renderHtml({
             config,
-            reqUrl: new URL(pathname, 'http://localhost'),
+            reqUrl: new URL(
+              pathname + (search ? '?' + search : ''),
+              'http://localhost',
+            ),
             htmlStr,
             renderRscForHtml: (input) =>
               renderRsc({

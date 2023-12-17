@@ -12,8 +12,7 @@ import type { RouteProps } from './common.js';
 const { createElement } = ReactExports;
 
 // We have to make prefetcher consistent with client behavior
-const prefetcher = (pathname: string) => {
-  const search = ''; // XXX this is a limitation
+const prefetcher = (pathname: string, search: string) => {
   const input = getInputString(pathname, search);
   return [[input]] as const;
 };
@@ -58,27 +57,31 @@ export function defineRouter<P>(
   const getBuildConfig: GetBuildConfig = async (
     unstable_collectClientModules,
   ) => {
-    const pathnames = await getPathsForBuild();
+    const paths = await getPathsForBuild();
     const path2moduleIds: Record<string, string[]> = {};
-    for (const pathname of pathnames) {
-      const search = ''; // XXX this is a limitation
-      const input = getInputString(pathname, search);
+    for (const path of paths) {
+      const url = new URL(path, 'http://localhost');
+      const input = getInputString(url.pathname, url.search);
       const moduleIds = await unstable_collectClientModules(input);
-      path2moduleIds[pathname] = moduleIds;
+      path2moduleIds[path] = moduleIds;
     }
     const customCode = `
 globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
-  const path = search ? pathname + "?" + search : pathname;
+  const path = pathname + (search ? '?' + search : '');
   const path2ids = ${JSON.stringify(path2moduleIds)};
   for (const id of path2ids[path] || []) {
     import(id);
   }
 };`;
-    return pathnames.map((pathname) => ({
-      pathname,
-      entries: prefetcher(pathname),
-      customCode,
-    }));
+    return paths.map((path) => {
+      const url = new URL(path, 'http://localhost');
+      return {
+        pathname: url.pathname,
+        search: url.search || undefined,
+        entries: prefetcher(url.pathname, url.search),
+        customCode,
+      };
+    });
   };
 
   const getSsrConfig: GetSsrConfig = async (reqUrl) => {

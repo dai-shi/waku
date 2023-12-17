@@ -27,13 +27,16 @@ export function createHandler<
   const loadHtmlPromise = entries.then(({ loadHtml }) => loadHtml);
 
   let publicIndexHtml: string | undefined;
-  const getHtmlStr = async (pathname: string): Promise<string | null> => {
+  const getHtmlStr = async (
+    pathname: string,
+    search: string,
+  ): Promise<string | null> => {
     const loadHtml = await loadHtmlPromise;
     if (!publicIndexHtml) {
-      publicIndexHtml = await loadHtml('/');
+      publicIndexHtml = await loadHtml('/', '');
     }
     try {
-      return loadHtml(pathname);
+      return loadHtml(pathname, search);
     } catch (e) {
       return publicIndexHtml;
     }
@@ -60,7 +63,7 @@ export function createHandler<
     }
     if (ssr) {
       try {
-        const htmlStr = await getHtmlStr(req.url.pathname);
+        const htmlStr = await getHtmlStr(req.url.pathname, req.url.search);
         const resolvedEntries = await entries;
         const readable =
           htmlStr &&
