@@ -3,6 +3,7 @@ import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
 import { getFreePort, test } from './utils.js';
+import { rm } from 'node:fs/promises';
 
 const waku = fileURLToPath(
   new URL('../packages/waku/dist/cli.js', import.meta.url),
@@ -25,6 +26,12 @@ for (const { build, command } of commands) {
     let cp: ChildProcess;
     let port: number;
     test.beforeAll(async () => {
+      // remove the .vite cache
+      // Refs: https://github.com/vitejs/vite/discussions/8146
+      await rm(`${cwd}/node_modules/.vite`, {
+        recursive: true,
+        force: true,
+      });
       if (build) {
         execSync(`node ${waku} ${build}`, {
           cwd,

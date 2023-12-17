@@ -8,7 +8,7 @@ import { expect } from '@playwright/test';
 import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
-import { readdir } from 'node:fs/promises';
+import { readdir, rm } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { getFreePort, test } from './utils.js';
 
@@ -113,6 +113,13 @@ for (const cwd of examples) {
         let cp: ChildProcess;
         let port: number;
         test.beforeAll(async () => {
+          // remove the .vite cache
+          // Refs: https://github.com/vitejs/vite/discussions/8146
+          await rm(`${cwd}/node_modules/.vite`, {
+            recursive: true,
+            force: true,
+          });
+
           if (build) {
             execSync(`node ${waku} ${build}`, {
               cwd,
@@ -143,6 +150,8 @@ for (const cwd of examples) {
 
         test('check title', async ({ page }) => {
           await page.goto(`http://localhost:${port}/`);
+          // title maybe doesn't ready yet
+          await page.waitForLoadState('load');
           const title = await page.title();
           expect(title).toBe('Waku example');
         });
