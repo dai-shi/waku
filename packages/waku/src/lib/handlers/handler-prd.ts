@@ -62,19 +62,28 @@ export function createHandler<
     if (ssr) {
       try {
         const htmlStr = await getHtmlStr(pathStr);
-        const result =
+        const resolvedEntries = await entries;
+        const readable =
           htmlStr &&
           (await renderHtml({
             config,
             pathStr,
             htmlStr,
-            context,
+            renderRscForHtml: (input) =>
+              renderRsc({
+                entries: resolvedEntries,
+                config,
+                input,
+                method: 'GET',
+                context,
+                isDev: false,
+              }),
             isDev: false,
-            entries: await entries,
+            entries: resolvedEntries,
           }));
-        if (result) {
-          const [readable, nextCtx] = result;
-          unstable_posthook?.(req, res, nextCtx as Context);
+        if (readable) {
+          unstable_posthook?.(req, res, context as Context);
+          deepFreeze(context);
           res.setHeader('content-type', 'text/html; charset=utf-8');
           readable.pipeTo(res.stream);
           return;

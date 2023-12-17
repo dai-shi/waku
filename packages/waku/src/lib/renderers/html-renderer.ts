@@ -10,9 +10,7 @@ import {
   filePathToFileURL,
   fileURLToFilePath,
 } from '../utils/path.js';
-import { renderRscWithWorker } from '../rsc/worker-api.js';
-import { renderRsc } from './rsc-renderer.js';
-import { hasStatusCode, deepFreeze } from './utils.js';
+import { hasStatusCode } from './utils.js';
 
 export const REACT_MODULE = 'react';
 export const REACT_MODULE_VALUE = 'react';
@@ -222,18 +220,18 @@ const rectifyHtml = () => {
   });
 };
 
-export const renderHtml = async <Context>(
+export const renderHtml = async (
   opts: {
     config: ResolvedConfig;
     pathStr: string;
     htmlStr: string; // Hope stream works, but it'd be too tricky
-    context: Context;
+    renderRscForHtml: (input: string) => Promise<ReadableStream>;
   } & (
     | { isDev: false; entries: EntriesPrd }
     | { isDev: true; entries: EntriesDev }
   ),
-): Promise<readonly [ReadableStream, Context] | null> => {
-  const { config, pathStr, htmlStr, context, isDev, entries } = opts;
+): Promise<ReadableStream | null> => {
+  const { config, pathStr, htmlStr, renderRscForHtml, isDev, entries } = opts;
 
   const {
     default: { getSsrConfig },
@@ -264,28 +262,8 @@ export const renderHtml = async <Context>(
   }
   const rootDirDev = isDev && (await getViteServer()).config.root;
   let stream: ReadableStream;
-  let nextCtx: Context;
   try {
-    if (isDev) {
-      [stream, nextCtx] = await renderRscWithWorker({
-        input: ssrConfig.input,
-        method: 'GET',
-        contentType: undefined,
-        config,
-        context,
-      });
-    } else {
-      stream = await renderRsc({
-        entries,
-        config,
-        input: ssrConfig.input,
-        method: 'GET',
-        context,
-        isDev: false,
-      });
-      deepFreeze(context);
-      nextCtx = context;
-    }
+    stream = await renderRscForHtml(ssrConfig.input);
   } catch (e) {
     if (hasStatusCode(e) && e.statusCode === 404) {
       return null;
@@ -391,5 +369,5 @@ export const renderHtml = async <Context>(
   )
     .pipeThrough(rectifyHtml())
     .pipeThrough(interleave(...splitHTML(htmlStr)));
-  return [readable, nextCtx];
+  return readable;
 };
