@@ -16,15 +16,17 @@ export type RenderEntries = (
 
 export type GetBuildConfig = (
   unstable_collectClientModules: (input: string) => Promise<string[]>,
-) => Promise<{
-  [pathStr: string]: {
+) => Promise<
+  Iterable<{
+    pathname: string;
+    search?: string | undefined;
     entries?: Iterable<readonly [input: string, skipPrefetch?: boolean]>;
-    customCode?: string; // optional code to inject
+    customCode?: string; // optional code to inject TODO hope to remove this
     context?: unknown;
-  };
-}>;
+  }>
+>;
 
-export type GetSsrConfig = (pathStr: string) => Promise<{
+export type GetSsrConfig = (reqUrl: URL) => Promise<{
   input: string;
   unstable_render: (opts: {
     createElement: typeof createElement;
@@ -46,5 +48,5 @@ export type EntriesDev = {
 
 export type EntriesPrd = EntriesDev & {
   loadModule: (id: string) => Promise<unknown>;
-  loadHtml: (pathStr: string) => Promise<string>;
+  loadHtml: (pathname: string, search: string) => Promise<string>;
 };

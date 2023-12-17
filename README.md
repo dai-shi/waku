@@ -235,13 +235,13 @@ However, it isn't too difficult to make a file-based router.
 Here's a file-based example code with builder:
 
 ```tsx
-import url from 'node:url';
+import { fileURLtoPath } from 'node:url';
 import path from 'node:path';
 import { glob } from 'glob';
 import { defineRouter } from 'waku/router/server';
 
 const routesDir = path.join(
-  path.dirname(url.fileURLToPath(import.meta.url)),
+  path.dirname(fileURLToPath(import.meta.url)),
   'routes',
 );
 

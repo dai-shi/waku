@@ -27,13 +27,16 @@ export function createHandler<
   const loadHtmlPromise = entries.then(({ loadHtml }) => loadHtml);
 
   let publicIndexHtml: string | undefined;
-  const getHtmlStr = async (pathStr: string): Promise<string | null> => {
+  const getHtmlStr = async (
+    pathname: string,
+    search: string,
+  ): Promise<string | null> => {
     const loadHtml = await loadHtmlPromise;
     if (!publicIndexHtml) {
-      publicIndexHtml = await loadHtml('/');
+      publicIndexHtml = await loadHtml('/', '');
     }
     try {
-      return loadHtml(pathStr);
+      return loadHtml(pathname, search);
     } catch (e) {
       return publicIndexHtml;
     }
@@ -42,7 +45,6 @@ export function createHandler<
   return async (req, res, next) => {
     const config = await configPromise;
     const basePrefix = config.basePath + config.rscPath + '/';
-    const pathStr = req.url.slice(new URL(req.url).origin.length);
     const handleError = (err: unknown) => {
       if (hasStatusCode(err)) {
         res.setStatus(err.statusCode);
@@ -61,13 +63,13 @@ export function createHandler<
     }
     if (ssr) {
       try {
-        const htmlStr = await getHtmlStr(pathStr);
+        const htmlStr = await getHtmlStr(req.url.pathname, req.url.search);
         const resolvedEntries = await entries;
         const readable =
           htmlStr &&
           (await renderHtml({
             config,
-            pathStr,
+            reqUrl: req.url,
             htmlStr,
             renderRscForHtml: (input) =>
               renderRsc({
@@ -93,13 +95,15 @@ export function createHandler<
         return;
       }
     }
-    if (pathStr.startsWith(basePrefix)) {
+    if (req.url.pathname.startsWith(basePrefix)) {
       const { method, contentType } = req;
       if (method !== 'GET' && method !== 'POST') {
         throw new Error(`Unsupported method '${method}'`);
       }
       try {
-        const input = decodeInput(pathStr.slice(basePrefix.length));
+        const input = decodeInput(
+          req.url.toString().slice(req.url.origin.length + basePrefix.length),
+        );
         const readable = await renderRsc({
           config,
           input,

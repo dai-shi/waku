@@ -1,6 +1,6 @@
 // This file can depend on Node.js
 
-import url from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { parentPort } from 'node:worker_threads';
 import { Server } from 'node:http';
 import { createServer as createViteServer } from 'vite';
@@ -24,7 +24,7 @@ import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 const { default: module } = await import('node:module');
 const HAS_MODULE_REGISTER = typeof module.register === 'function';
 if (HAS_MODULE_REGISTER) {
-  module.register('waku/node-loader', url.pathToFileURL('./'));
+  module.register('waku/node-loader', pathToFileURL('./'));
 }
 const controllerMap = new Map<number, ReadableStreamDefaultController>();
 

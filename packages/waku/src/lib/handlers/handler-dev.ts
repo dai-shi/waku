@@ -79,7 +79,10 @@ export function createHandler<
   );
 
   let publicIndexHtml: string | undefined;
-  const getHtmlStr = async (pathStr: string): Promise<string | null> => {
+  const getHtmlStr = async (
+    pathname: string,
+    search: string,
+  ): Promise<string | null> => {
     const [config, vite] = await Promise.all([configPromise, vitePromise]);
     const rootDir = vite.config.root;
     if (!publicIndexHtml) {
@@ -89,11 +92,11 @@ export function createHandler<
       });
     }
     for (const item of vite.moduleGraph.idToModuleMap.values()) {
-      if (item.url === pathStr) {
+      if (item.url === pathname + (search ? '?' + search : '')) {
         return null;
       }
     }
-    const destFile = joinPath(rootDir, config.srcDir, pathStr);
+    const destFile = joinPath(rootDir, config.srcDir, pathname);
     try {
       // check if destFile exists
       const stats = await stat(destFile);
@@ -104,16 +107,18 @@ export function createHandler<
       // does not exist
     }
     // FIXME: otherwise SSR on Windows will fail
-    if (pathStr.startsWith('/@fs')) {
+    if (pathname.startsWith('/@fs')) {
       return null;
     }
-    return vite.transformIndexHtml(pathStr, publicIndexHtml);
+    return vite.transformIndexHtml(
+      pathname + (search ? '?' + search : ''),
+      publicIndexHtml,
+    );
   };
 
   return async (req, res, next) => {
     const [config, vite] = await Promise.all([configPromise, vitePromise]);
     const basePrefix = config.basePath + config.rscPath + '/';
-    const pathStr = req.url.slice(new URL(req.url).origin.length);
     const handleError = (err: unknown) => {
       if (hasStatusCode(err)) {
         res.setStatus(err.statusCode);
@@ -132,12 +137,12 @@ export function createHandler<
     }
     if (ssr) {
       try {
-        const htmlStr = await getHtmlStr(pathStr);
+        const htmlStr = await getHtmlStr(req.url.pathname, req.url.search);
         const readable =
           htmlStr &&
           (await renderHtml({
             config,
-            pathStr,
+            reqUrl: req.url,
             htmlStr,
             renderRscForHtml: async (input) => {
               const [readable, nextCtx] = await renderRscWithWorker({
@@ -164,13 +169,15 @@ export function createHandler<
         return;
       }
     }
-    if (pathStr.startsWith(basePrefix)) {
+    if (req.url.pathname.startsWith(basePrefix)) {
       const { method, contentType } = req;
       if (method !== 'GET' && method !== 'POST') {
         throw new Error(`Unsupported method '${method}'`);
       }
       try {
-        const input = decodeInput(pathStr.slice(basePrefix.length));
+        const input = decodeInput(
+          req.url.toString().slice(req.url.origin.length + basePrefix.length),
+        );
         const [readable, nextCtx] = await renderRscWithWorker({
           input,
           method,
@@ -188,7 +195,7 @@ export function createHandler<
     }
     const viteReq: any = Readable.fromWeb(req.stream as any);
     viteReq.method = req.method;
-    viteReq.url = pathStr;
+    viteReq.url = req.url.toString().slice(req.url.origin.length);
     viteReq.headers = { 'content-type': req.contentType };
     const viteRes: any = Writable.fromWeb(res.stream as any);
     Object.defineProperty(viteRes, 'statusCode', {

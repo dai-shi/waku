@@ -1,5 +1,5 @@
 import path from 'node:path';
-import url from 'node:url';
+import { fileURLToPath } from 'node:url';
 import fsPromises from 'node:fs/promises';
 import { lazy } from 'react';
 import { defineEntries } from 'waku/server';
@@ -14,7 +14,7 @@ export default defineEntries(
     const items = JSON.parse(
       await fsPromises.readFile(
         path.join(
-          path.dirname(url.fileURLToPath(import.meta.url)),
+          path.dirname(fileURLToPath(import.meta.url)),
           '../db/items.json',
         ),
         'utf8',
@@ -25,17 +25,9 @@ export default defineEntries(
     };
   },
   // getBuildConfig
-  async () => {
-    return {
-      '/': {
-        entries: [['']],
-        context: { count: 0 },
-      },
-    };
-  },
+  async () => [{ pathname: '/', entries: [['']], context: { count: 0 } }],
   // getSsrConfig
-  async (pathStr) => {
-    const { pathname } = new URL(pathStr, 'http://localhost');
+  async ({ pathname }) => {
     switch (pathname) {
       case '/':
         return {
