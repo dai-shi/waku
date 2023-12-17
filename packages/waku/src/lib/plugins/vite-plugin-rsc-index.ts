@@ -1,6 +1,6 @@
 import type { Plugin } from 'vite';
 
-import { codeToInject } from '../rsc/utils.js';
+import { codeToInject } from '../renderers/utils.js';
 
 export function rscIndexPlugin(cssAssets: string[]): Plugin {
   return {
