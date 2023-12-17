@@ -60,7 +60,7 @@ const HomeLayout = ({ children }: { children: ReactNode }) => (
           pending={<Pending isPending />}
           notPending={<Pending isPending={false} />}
         >
-          Nested / Baz
+          Nested / Qux
         </Link>
       </li>
     </ul>

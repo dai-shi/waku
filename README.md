@@ -225,7 +225,7 @@ export default defineRouter((id) => {
     case 'foo/page':
       return import('./routes/foo.tsx');
     default:
-      throw new Error('no such route');
+      return null;
   }
 });
 ```

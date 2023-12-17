@@ -19,19 +19,42 @@ const prefetcher = (pathname: string, search: string) => {
 
 const Default = ({ children }: { children: ReactNode }) => children;
 
+type RoutePaths = {
+  static?: Iterable<{ pathname: string; search?: string }>;
+  dynamic?: (pathname: string, search?: string) => Promise<boolean>;
+};
+
 export function defineRouter<P>(
+  getRoutePaths: () => Promise<RoutePaths>,
   getComponent: (
     componentId: string,
   ) => Promise<FunctionComponent<P> | { default: FunctionComponent<P> } | null>,
-  getPathsForBuild: () => Promise<string[]>,
 ): ReturnType<typeof defineEntries> {
+  const routePathsPromise = getRoutePaths();
+  const existsRoutePathPromise = routePathsPromise.then((routePaths) => {
+    const staticPathSet = new Set<string>();
+    for (const { pathname, search } of routePaths.static || []) {
+      staticPathSet.add(pathname + (search ? '?' + search : ''));
+    }
+    const existsRoutePath = async (pathname: string, search: string) => {
+      if (staticPathSet.has(pathname + (search ? '?' + search : ''))) {
+        return true;
+      }
+      if (await routePaths.dynamic?.(pathname, search)) {
+        return true;
+      }
+      return false;
+    };
+    return existsRoutePath;
+  });
+
   const renderEntries: RenderEntries = async (input) => {
     const { pathname, search, skip } = parseInputString(input);
-    const componentIds = getComponentIds(pathname);
-    const leafComponentId = componentIds[componentIds.length - 1];
-    if (!leafComponentId || (await getComponent(leafComponentId)) === null) {
+    const existsRoutePath = await existsRoutePathPromise;
+    if (!(await existsRoutePath(pathname, search))) {
       return null;
     }
+    const componentIds = getComponentIds(pathname);
     const props: RouteProps = { path: pathname, search };
     const entries = (
       await Promise.all(
@@ -57,13 +80,12 @@ export function defineRouter<P>(
   const getBuildConfig: GetBuildConfig = async (
     unstable_collectClientModules,
   ) => {
-    const paths = await getPathsForBuild();
+    const routePaths = await routePathsPromise;
     const path2moduleIds: Record<string, string[]> = {};
-    for (const path of paths) {
-      const url = new URL(path, 'http://localhost');
-      const input = getInputString(url.pathname, url.search);
+    for (const { pathname, search } of routePaths.static || []) {
+      const input = getInputString(pathname, search || '');
       const moduleIds = await unstable_collectClientModules(input);
-      path2moduleIds[path] = moduleIds;
+      path2moduleIds[pathname + (search ? '?' + search : '')] = moduleIds;
     }
     const customCode = `
 globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
@@ -73,23 +95,22 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
     import(id);
   }
 };`;
-    return paths.map((path) => {
-      const url = new URL(path, 'http://localhost');
+    return Array.from(routePaths.static || []).map(({ pathname, search }) => {
       return {
-        pathname: url.pathname,
-        search: url.search || undefined,
-        entries: prefetcher(url.pathname, url.search),
+        pathname,
+        search,
+        entries: prefetcher(pathname, search || ''),
         customCode,
       };
     });
   };
 
   const getSsrConfig: GetSsrConfig = async (reqUrl) => {
-    const componentIds = getComponentIds(reqUrl.pathname);
-    const leafComponentId = componentIds[componentIds.length - 1];
-    if (!leafComponentId || (await getComponent(leafComponentId)) === null) {
+    const existsRoutePath = await existsRoutePathPromise;
+    if (!(await existsRoutePath(reqUrl.pathname, reqUrl.search))) {
       return null;
     }
+    const componentIds = getComponentIds(reqUrl.pathname);
     const input = getInputString(reqUrl.pathname, reqUrl.search);
     type Opts = {
       createElement: typeof createElement;
