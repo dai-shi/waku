@@ -10,7 +10,7 @@ import {
   filePathToFileURL,
   fileURLToFilePath,
 } from '../utils/path.js';
-import { renderRscWithWorker } from './worker-api.js';
+import { renderRscWithWorker } from '../rsc/worker-api.js';
 import { renderRsc } from './rsc-renderer.js';
 import { hasStatusCode, deepFreeze } from './utils.js';
 

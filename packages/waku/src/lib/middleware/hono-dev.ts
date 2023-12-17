@@ -1,7 +1,7 @@
 import type { Env, Input } from 'hono';
 
 import { honoWrapper } from './hono-utils.js';
-import { createHandler } from '../rsc/handler-dev.js';
+import { createHandler } from '../handlers/handler-dev.js';
 
 export function honoMiddleware<
   // FIXME type defaults are weird

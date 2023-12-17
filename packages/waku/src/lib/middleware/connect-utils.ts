@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
-import type { BaseReq, BaseRes, Handler } from '../rsc/types.js';
+import type { BaseReq, BaseRes, Handler } from '../handlers/types.js';
 
 export const connectWrapper = (
   m: Handler<

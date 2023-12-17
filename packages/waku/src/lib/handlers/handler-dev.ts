@@ -7,15 +7,15 @@ import { resolveConfig } from '../config.js';
 import type { Config } from '../config.js';
 import { joinPath } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
-import { renderHtml } from './html-renderer.js';
-import { decodeInput, hasStatusCode } from './utils.js';
+import { renderHtml } from '../renderers/html-renderer.js';
+import { decodeInput, hasStatusCode } from '../renderers/utils.js';
 import { readFile, stat } from '../utils/node-fs.js';
 import {
   registerReloadCallback,
   registerImportCallback,
   renderRscWithWorker,
   registerModuleCallback,
-} from './worker-api.js';
+} from '../rsc/worker-api.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';

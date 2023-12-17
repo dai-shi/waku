@@ -20,13 +20,13 @@ import {
   appendFile,
 } from '../utils/node-fs.js';
 import { streamToString } from '../utils/stream.js';
-import { encodeInput, generatePrefetchCode } from '../rsc/utils.js';
+import { encodeInput, generatePrefetchCode } from '../renderers/utils.js';
 import {
   RSDW_SERVER_MODULE,
   RSDW_SERVER_MODULE_VALUE,
   renderRsc,
   getBuildConfig,
-} from '../rsc/rsc-renderer.js';
+} from '../renderers/rsc-renderer.js';
 import {
   REACT_MODULE,
   REACT_MODULE_VALUE,
@@ -37,7 +37,7 @@ import {
   WAKU_CLIENT_MODULE,
   WAKU_CLIENT_MODULE_VALUE,
   renderHtml,
-} from '../rsc/html-renderer.js';
+} from '../renderers/html-renderer.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';

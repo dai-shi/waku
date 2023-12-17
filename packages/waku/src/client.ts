@@ -13,7 +13,7 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
-import { encodeInput } from './lib/rsc/utils.js';
+import { encodeInput } from './lib/renderers/utils.js';
 
 const { createFromFetch, encodeReply } = RSDWClient;
 
