@@ -9,7 +9,11 @@ import type { EntriesDev } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { joinPath, fileURLToFilePath } from '../utils/path.js';
 import { hasStatusCode, deepFreeze } from '../renderers/utils.js';
-import type { MessageReq, MessageRes, RenderRequest } from './worker-api.js';
+import type {
+  MessageReq,
+  MessageRes,
+  RenderRequest,
+} from './dev-worker-api.js';
 import { renderRsc } from '../renderers/rsc-renderer.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';

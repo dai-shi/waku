@@ -424,18 +424,26 @@ export function loadHtml(pathStr) {
             `<script type="module" async>${code}</script></head>`,
           );
         }
-        const htmlResult =
+        const htmlReadable =
           ssr &&
           (await renderHtml({
             config,
             pathStr,
             htmlStr,
-            context,
+            renderRscForHtml: (input) =>
+              renderRsc({
+                entries: distEntries,
+                config,
+                input,
+                method: 'GET',
+                context,
+                isDev: false,
+              }),
             isDev: false,
             entries: distEntries,
           }));
-        if (htmlResult) {
-          const [htmlReadable1, htmlReadable2] = htmlResult[0].tee();
+        if (htmlReadable) {
+          const [htmlReadable1, htmlReadable2] = htmlReadable.tee();
           await Promise.all([
             pipeline(
               Readable.fromWeb(htmlReadable1 as any),

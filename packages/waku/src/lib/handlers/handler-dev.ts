@@ -15,7 +15,7 @@ import {
   registerImportCallback,
   renderRscWithWorker,
   registerModuleCallback,
-} from '../rsc/worker-api.js';
+} from './dev-worker-api.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
@@ -133,19 +133,28 @@ export function createHandler<
     if (ssr) {
       try {
         const htmlStr = await getHtmlStr(pathStr);
-        const result =
+        const readable =
           htmlStr &&
           (await renderHtml({
             config,
             pathStr,
             htmlStr,
-            context,
+            renderRscForHtml: async (input) => {
+              const [readable, nextCtx] = await renderRscWithWorker({
+                input,
+                method: 'GET',
+                contentType: undefined,
+                config,
+                context,
+              });
+              context = nextCtx as Context;
+              return readable;
+            },
             isDev: true,
             entries: await entries,
           }));
-        if (result) {
-          const [readable, nextCtx] = result;
-          unstable_posthook?.(req, res, nextCtx as Context);
+        if (readable) {
+          unstable_posthook?.(req, res, context as Context);
           res.setHeader('content-type', 'text/html; charset=utf-8');
           readable.pipeTo(res.stream);
           return;

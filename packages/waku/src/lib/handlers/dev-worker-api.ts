@@ -56,15 +56,18 @@ const getWorker = () => {
     ])
       .then(([{ Worker }, { default: module }]) => {
         const HAS_MODULE_REGISTER = typeof module.register === 'function';
-        const worker = new Worker(new URL('worker-impl.js', import.meta.url), {
-          execArgv: [
-            ...(HAS_MODULE_REGISTER
-              ? []
-              : ['--experimental-loader', 'waku/node-loader']),
-            '--conditions',
-            'react-server',
-          ],
-        });
+        const worker = new Worker(
+          new URL('dev-worker-impl.js', import.meta.url),
+          {
+            execArgv: [
+              ...(HAS_MODULE_REGISTER
+                ? []
+                : ['--experimental-loader', 'waku/node-loader']),
+              '--conditions',
+              'react-server',
+            ],
+          },
+        );
         worker.on('message', (mesg: MessageRes) => {
           if ('id' in mesg) {
             messageCallbacks.get(mesg.id)?.(mesg);
