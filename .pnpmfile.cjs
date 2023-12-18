@@ -1,4 +1,5 @@
 // make sure every example has the same version of these packages
+// Refs: https://github.com/pnpm/pnpm/issues/2713#issuecomment-1141000426
 const enforceSingleVersion = [
   '@hono/node-server',
   'hono',
