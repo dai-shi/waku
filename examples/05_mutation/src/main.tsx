@@ -11,7 +11,7 @@ const rootElement = (
 );
 
 if ((globalThis as any).__WAKU_SSR_ENABLED__) {
-  hydrateRoot(document.getElementById('root')!, rootElement);
+  hydrateRoot(document.body, rootElement);
 } else {
-  createRoot(document.getElementById('root')!).render(rootElement);
+  createRoot(document.body).render(rootElement);
 }
