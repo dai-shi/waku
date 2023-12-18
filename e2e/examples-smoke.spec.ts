@@ -8,7 +8,7 @@ import { expect } from '@playwright/test';
 import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
-import { readdir } from 'node:fs/promises';
+import { readdir, rm } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { getFreePort, test } from './utils.js';
 
@@ -70,6 +70,20 @@ for (const cwd of examples) {
       test.describe(`smoke test on ${basename(cwd)}: ${command}`, () => {
         let cp: ChildProcess;
         let port: number;
+        test.beforeAll('remove cache', async () => {
+          // remove the .vite cache
+          // Refs: https://github.com/vitejs/vite/discussions/8146
+          await rm(`${cwd}/node_modules/.vite`, {
+            recursive: true,
+            force: true,
+          });
+
+          await rm(`${cwd}/dist`, {
+            recursive: true,
+            force: true,
+          });
+        });
+
         test.beforeAll(async () => {
           if (build) {
             execSync(build, {
@@ -112,6 +126,20 @@ for (const cwd of examples) {
       test.describe(`smoke test on ${basename(cwd)}: ${command}`, () => {
         let cp: ChildProcess;
         let port: number;
+        test.beforeAll('remove cache', async () => {
+          // remove the .vite cache
+          // Refs: https://github.com/vitejs/vite/discussions/8146
+          await rm(`${cwd}/node_modules/.vite`, {
+            recursive: true,
+            force: true,
+          });
+
+          await rm(`${cwd}/dist`, {
+            recursive: true,
+            force: true,
+          });
+        });
+
         test.beforeAll(async () => {
           if (build) {
             execSync(`node ${waku} ${build}`, {
@@ -143,6 +171,8 @@ for (const cwd of examples) {
 
         test('check title', async ({ page }) => {
           await page.goto(`http://localhost:${port}/`);
+          // title maybe doesn't ready yet
+          await page.waitForLoadState('load');
           const title = await page.title();
           expect(title).toBe('Waku example');
         });
