@@ -1,6 +1,6 @@
-import stylex from '@stylexjs/stylex';
+import { create, props } from '@stylexjs/stylex';
 
-const styles = stylex.create({
+const styles = create({
   root: {
     backgroundColor: '#000',
     color: '#fff',
@@ -11,6 +11,6 @@ const styles = stylex.create({
 
 export const Banner = () => {
   return (
-    <div {...stylex.props(styles.root)}>This is a banner by StyleX CSS</div>
+    <div {...props(styles.root)}>This is a banner by StyleX CSS</div>
   );
 };
