@@ -11,10 +11,10 @@ const enforceSingleVersion = [
   '@types/react',
   '@types/react-dom',
   '@vitejs/plugin-react',
-  'typescript'
+  'typescript',
 ];
 
-function afterAllResolved (lockfile, context) {
+function afterAllResolved(lockfile, context) {
   console.log(`Checking duplicate packages`);
   const packagesKeys = Object.keys(lockfile.packages);
   const found = {};
@@ -44,6 +44,6 @@ function afterAllResolved (lockfile, context) {
 
 module.exports = {
   hooks: {
-    afterAllResolved
-  }
+    afterAllResolved,
+  },
 };
