@@ -41,9 +41,10 @@ jobs:
       - name: Install Playwright's dependencies
         run: pnpm playwright install --with-deps
       - run: pnpm run e2e
-      - uses: actions/upload-artifact@v2
-        if: ${{ failure() }}
+      - uses: actions/upload-artifact@v3
+        if: always()
         with:
-          name: test-results-main
-          path: ./test-results
+          name: playwright-report
+          path: test-results/
+          retention-days: 30
           if-no-files-found: ignore

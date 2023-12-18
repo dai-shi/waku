@@ -285,7 +285,7 @@ the following commands:
 ```sh
 git clone https://github.com/dai-shi/waku.git
 cd waku
-npm install
+pnpm install
 npm run examples:dev:07_router
 ```
 
