@@ -28,12 +28,6 @@ export interface Config {
    */
   assetsDir?: string;
   /**
-   * TODO: remove
-   * The htmls directory relative to distDir.
-   * Defaults to "htmls".
-   */
-  htmlsDir?: string;
-  /**
    * The index.html file for any directories.
    * Defaults to "index.html".
    */
@@ -58,7 +52,6 @@ export interface Config {
   /**
    * HTML headers to inject.
    * Defaults to:
-   * <title>Waku App</title>
    * <meta charset="utf-8" />
    * <meta name="viewport" content="width=device-width, initial-scale=1" />
    */
@@ -87,7 +80,6 @@ type DeepRequired<T> = T extends (...args: any[]) => any
 export type ResolvedConfig = DeepRequired<Config>;
 
 const DEFAULT_HTML_HEAD = `
-<title>Waku App</title>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 `.trim();
@@ -119,7 +111,6 @@ export async function resolveConfig(config: Config) {
     distDir: 'dist',
     publicDir: 'public',
     assetsDir: 'assets',
-    htmlsDir: 'htmls',
     indexHtml: 'index.html',
     mainJs: 'main.tsx',
     entriesJs: 'entries.js',

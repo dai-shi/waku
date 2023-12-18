@@ -19,7 +19,6 @@ import {
   writeFile,
   appendFile,
 } from '../utils/node-fs.js';
-import { streamToString } from '../utils/stream.js';
 import { encodeInput, generatePrefetchCode } from '../renderers/utils.js';
 import {
   RSDW_SERVER_MODULE,
@@ -370,10 +369,7 @@ const emitHtmlFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  let loadHtmlCode = `
-export function loadHtml(pathname, search) {
-  switch (pathname + (search ? '?' + search: '')) {
-`;
+  const htmlHead = publicIndexHtml.replace(/.*?<head>(.*?)<\/head>.*/s, '$1');
   // TODO check duplicated files like rscFileSet
   const htmlFiles = await Promise.all(
     Array.from(buildConfig).map(
@@ -385,24 +381,6 @@ export function loadHtml(pathname, search) {
           (extname(pathname) ? pathname : pathname + '/' + config.indexHtml) +
             (search ? '?' + search : ''),
         );
-        const destHtmlJsFile = joinPath(
-          rootDir,
-          config.distDir,
-          config.htmlsDir,
-          (extname(pathname) ? pathname : pathname + '/' + config.indexHtml) +
-            (search ? '?' + search : '') +
-            '.js',
-        );
-        loadHtmlCode += `    case ${JSON.stringify(
-          pathname + (search ? '?' + search : ''),
-        )}:
-      return import('./${joinPath(
-        config.htmlsDir,
-        (extname(pathname) ? pathname : pathname + '/' + config.indexHtml) +
-          (search ? '?' + search : '') +
-          '.js',
-      )}').then((m)=>m.default);
-`;
         let htmlStr: string;
         if (existsSync(destHtmlFile)) {
           htmlStr = await readFile(destHtmlFile, { encoding: 'utf8' });
@@ -410,7 +388,6 @@ export function loadHtml(pathname, search) {
           await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
           htmlStr = publicIndexHtml;
         }
-        await mkdir(joinPath(destHtmlJsFile, '..'), { recursive: true });
         const inputsForPrefetch = new Set<string>();
         const moduleIdsForPrefetch = new Set<string>();
         for (const [input, skipPrefetch] of entries || []) {
@@ -442,7 +419,7 @@ export function loadHtml(pathname, search) {
               pathname + (search ? '?' + search : ''),
               'http://localhost',
             ),
-            htmlStr,
+            htmlHead,
             renderRscForHtml: (input) =>
               renderRsc({
                 entries: distEntries,
@@ -456,38 +433,23 @@ export function loadHtml(pathname, search) {
             entries: distEntries,
           }));
         if (htmlReadable) {
-          const [htmlReadable1, htmlReadable2] = htmlReadable.tee();
-          await Promise.all([
-            pipeline(
-              Readable.fromWeb(htmlReadable1 as any),
-              createWriteStream(destHtmlFile),
-            ),
-            streamToString(htmlReadable2).then((str) =>
-              writeFile(
-                destHtmlJsFile,
-                `export default ${JSON.stringify(str)};`,
-              ),
-            ),
-          ]);
+          await pipeline(
+            Readable.fromWeb(htmlReadable as any),
+            createWriteStream(destHtmlFile),
+          );
         } else {
-          await Promise.all([
-            writeFile(destHtmlFile, htmlStr),
-            writeFile(
-              destHtmlJsFile,
-              `export default ${JSON.stringify(htmlStr)};`,
-            ),
-          ]);
+          await writeFile(destHtmlFile, htmlStr);
         }
         return destHtmlFile;
       },
     ),
   );
-  loadHtmlCode += `
-    default:
-      throw new Error('Cannot find HTML for ' + pathname + (search ? '?' + search : ''));
-  }
-}`;
-  await appendFile(distEntriesFile, loadHtmlCode);
+  const loadHtmlHeadCode = `
+export function loadHtmlHead() {
+  return ${JSON.stringify(htmlHead)};
+}
+`;
+  await appendFile(distEntriesFile, loadHtmlHeadCode);
   return { htmlFiles };
 };
 
