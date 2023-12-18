@@ -25,7 +25,7 @@ for (const { build, command } of commands) {
   test.describe(`ssr-basic: ${command}`, () => {
     let cp: ChildProcess;
     let port: number;
-    test.beforeEach('remove cache', async () => {
+    test.beforeAll('remove cache', async () => {
       // remove the .vite cache
       // Refs: https://github.com/vitejs/vite/discussions/8146
       await rm(`${cwd}/node_modules/.vite`, {
