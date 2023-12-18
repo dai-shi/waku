@@ -23,11 +23,15 @@ export function rscHmrPlugin(): Plugin {
   return {
     name: 'rsc-hmr-plugin',
     enforce: 'post',
-    transformIndexHtml(html) {
-      return html.replace(
-        '</body>',
-        `<script type="module" async>${customCode}</script></body>`,
-      );
+    transformIndexHtml() {
+      return [
+        {
+          tag: 'script',
+          attrs: { type: 'module', async: true },
+          children: customCode,
+          injectTo: 'head',
+        },
+      ];
     },
   };
 }
