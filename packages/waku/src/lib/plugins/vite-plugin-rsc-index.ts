@@ -33,11 +33,20 @@ ${config.htmlHead}
         });
       };
     },
-    buildStart(options) {
+    options(options) {
+      if (typeof options.input === 'string') {
+        throw new Error('string input is unsupported');
+      }
       if (Array.isArray(options.input)) {
         throw new Error('array input is unsupported');
       }
-      options.input.indexHtml = config.indexHtml;
+      return {
+        ...options,
+        input: {
+          indexHtml: config.indexHtml,
+          ...options.input,
+        },
+      };
     },
     resolveId(id) {
       if (id === config.indexHtml) {

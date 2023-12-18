@@ -116,6 +116,38 @@ export function createHandler<
     );
   };
 
+  const transformIndexHtml = async (pathname: string, search: string) => {
+    const vite = await vitePromise;
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    let headSent = false;
+    return new TransformStream({
+      transform(chunk, controller) {
+        if (!(chunk instanceof Uint8Array)) {
+          throw new Error('Unknown chunk type');
+        }
+        if (!headSent) {
+          headSent = true;
+          const data = decoder.decode(chunk);
+          return new Promise<void>((resolve) => {
+            vite
+              .transformIndexHtml(pathname + (search ? '?' + search : ''), data)
+              .then((result) => {
+                controller.enqueue(encoder.encode(result));
+                resolve();
+              });
+          });
+        }
+        controller.enqueue(chunk);
+      },
+      flush() {
+        if (!headSent) {
+          throw new Error('head not yet sent');
+        }
+      },
+    });
+  };
+
   return async (req, res, next) => {
     const [config, vite] = await Promise.all([configPromise, vitePromise]);
     const basePrefix = config.basePath + config.rscPath + '/';
@@ -137,31 +169,33 @@ export function createHandler<
     }
     if (ssr) {
       try {
-        const htmlStr = await getHtmlStr(req.url.pathname, req.url.search);
-        const readable =
-          htmlStr &&
-          (await renderHtml({
-            config,
-            reqUrl: req.url,
-            htmlStr,
-            renderRscForHtml: async (input) => {
-              const [readable, nextCtx] = await renderRscWithWorker({
-                input,
-                method: 'GET',
-                contentType: undefined,
-                config,
-                context,
-              });
-              context = nextCtx as Context;
-              return readable;
-            },
-            isDev: true,
-            entries: await entries,
-          }));
+        const readable = await renderHtml({
+          config,
+          reqUrl: req.url,
+          htmlHead: `${config.htmlHead}
+<script src="/${config.srcDir}/${config.mainJs}" async type="module"></script>`,
+          renderRscForHtml: async (input) => {
+            const [readable, nextCtx] = await renderRscWithWorker({
+              input,
+              method: 'GET',
+              contentType: undefined,
+              config,
+              context,
+            });
+            context = nextCtx as Context;
+            return readable;
+          },
+          isDev: true,
+          entries: await entries,
+        });
         if (readable) {
           unstable_posthook?.(req, res, context as Context);
           res.setHeader('content-type', 'text/html; charset=utf-8');
-          readable.pipeTo(res.stream);
+          readable
+            .pipeThrough(
+              await transformIndexHtml(req.url.pathname, req.url.search),
+            )
+            .pipeTo(res.stream);
           return;
         }
       } catch (e) {
