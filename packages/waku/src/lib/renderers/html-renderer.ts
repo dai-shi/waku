@@ -132,10 +132,7 @@ globalThis.__WAKU_PREFETCHED__ = {
     if (code) {
       data =
         data.slice(0, closingHeadIndex) +
-        // FIXME We should probably add `type="module" async`
-        // but Vite's transformIndexHtml does something weired.
-        // Otherwise remove it with __WAKU_PUSH__ below too?
-        `<script>${code}</script>` +
+        `<script type="module" async>${code}</script>` +
         data.slice(closingHeadIndex);
     }
     return data;

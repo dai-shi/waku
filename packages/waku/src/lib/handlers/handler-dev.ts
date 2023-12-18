@@ -89,7 +89,10 @@ export function createHandler<
         }
         if (!headSent) {
           headSent = true;
-          const data = decoder.decode(chunk);
+          let data = decoder.decode(chunk);
+          // FIXME without removing async, Vite will move it
+          // to the proxy cache, which breaks __WAKU_PUSH__.
+          data = data.replace(/<script type="module" async>/, '<script>');
           return new Promise<void>((resolve) => {
             vite
               .transformIndexHtml(pathname + (search ? '?' + search : ''), data)
