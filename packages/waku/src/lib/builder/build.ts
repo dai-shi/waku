@@ -239,7 +239,7 @@ const buildClientBundle = async (
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
 ) => {
-  const indexHtmlFile = joinPath(rootDir, config.indexHtml);
+  const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
@@ -247,19 +247,14 @@ const buildClientBundle = async (
     base: config.basePath,
     plugins: [
       patchReactRefresh(viteReact()),
-      rscIndexPlugin({
-        srcDir: config.srcDir,
-        mainJs: config.mainJs,
-        htmlHead: config.htmlHead,
-        cssAssets,
-      }),
+      rscIndexPlugin({ ...config, cssAssets }),
     ],
     build: {
       outDir: joinPath(rootDir, config.distDir, config.publicDir),
       rollupOptions: {
         onwarn,
         input: {
-          main: indexHtmlFile,
+          main: mainJsFile,
           [REACT_MODULE]: REACT_MODULE_VALUE,
           [RD_SERVER_MODULE]: RD_SERVER_MODULE_VALUE,
           [RSDW_CLIENT_MODULE]: RSDW_CLIENT_MODULE_VALUE,

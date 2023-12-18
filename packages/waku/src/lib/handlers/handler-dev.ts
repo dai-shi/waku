@@ -52,12 +52,7 @@ export function createHandler<
       plugins: [
         nonjsResolvePlugin(),
         patchReactRefresh(viteReact()),
-        rscIndexPlugin({
-          srcDir: config.srcDir,
-          mainJs: config.mainJs,
-          htmlHead: config.htmlHead,
-        }),
-        rscHmrPlugin(),
+        rscIndexPlugin(config),
       ],
       ssr: {
         external: ['waku'],
