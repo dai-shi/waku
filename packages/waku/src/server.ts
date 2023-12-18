@@ -48,5 +48,5 @@ export type EntriesDev = {
 
 export type EntriesPrd = EntriesDev & {
   loadModule: (id: string) => Promise<unknown>;
-  loadHtmlHead: () => string;
+  loadHtmlHead: (pathname: string, search: string) => string;
 };

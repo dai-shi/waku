@@ -369,11 +369,18 @@ const emitHtmlFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  const htmlHead = publicIndexHtml.replace(/.*?<head>(.*?)<\/head>.*/s, '$1');
+  const publicIndexHtmlHead = publicIndexHtml.replace(
+    /.*?<head>(.*?)<\/head>.*/s,
+    '$1',
+  );
+  const htmlHeadMap: Record<string, string> = { '/': publicIndexHtmlHead };
   // TODO check duplicated files like rscFileSet
   const htmlFiles = await Promise.all(
     Array.from(buildConfig).map(
       async ({ pathname, search, entries, customCode, context }) => {
+        const pathStr = pathname + (search ? '?' + search : '');
+        let htmlStr = publicIndexHtml;
+        let htmlHead = publicIndexHtmlHead;
         const destHtmlFile = joinPath(
           rootDir,
           config.distDir,
@@ -381,13 +388,6 @@ const emitHtmlFiles = async (
           (extname(pathname) ? pathname : pathname + '/' + config.indexHtml) +
             (search ? '?' + search : ''),
         );
-        let htmlStr: string;
-        if (existsSync(destHtmlFile)) {
-          htmlStr = await readFile(destHtmlFile, { encoding: 'utf8' });
-        } else {
-          await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
-          htmlStr = publicIndexHtml;
-        }
         const inputsForPrefetch = new Set<string>();
         const moduleIdsForPrefetch = new Set<string>();
         for (const [input, skipPrefetch] of entries || []) {
@@ -410,15 +410,14 @@ const emitHtmlFiles = async (
             /<\/head>/,
             `<script type="module" async>${code}</script></head>`,
           );
+          htmlHead += `<script type="module" async>${code}</script>`;
         }
+        htmlHeadMap[pathStr] = htmlHead;
         const htmlReadable =
           ssr &&
           (await renderHtml({
             config,
-            reqUrl: new URL(
-              pathname + (search ? '?' + search : ''),
-              'http://localhost',
-            ),
+            reqUrl: new URL(pathStr, 'http://localhost'),
             htmlHead,
             renderRscForHtml: (input) =>
               renderRsc({
@@ -432,6 +431,7 @@ const emitHtmlFiles = async (
             isDev: false,
             entries: distEntries,
           }));
+        await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
         if (htmlReadable) {
           await pipeline(
             Readable.fromWeb(htmlReadable as any),
@@ -445,8 +445,11 @@ const emitHtmlFiles = async (
     ),
   );
   const loadHtmlHeadCode = `
-export function loadHtmlHead() {
-  return ${JSON.stringify(htmlHead)};
+export function loadHtmlHead(pathname, search) {
+  const pathStr = pathname + (search ? '?' + search : '');
+  return ${JSON.stringify(htmlHeadMap)}[pathStr] || ${JSON.stringify(
+    publicIndexHtmlHead,
+  )};
 }
 `;
   await appendFile(distEntriesFile, loadHtmlHeadCode);

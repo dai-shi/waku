@@ -52,7 +52,7 @@ export function createHandler<
         const readable = await renderHtml({
           config,
           reqUrl: req.url,
-          htmlHead: loadHtmlHead(),
+          htmlHead: loadHtmlHead(req.url.pathname, req.url.search),
           renderRscForHtml: (input) =>
             renderRsc({
               entries: resolvedEntries,

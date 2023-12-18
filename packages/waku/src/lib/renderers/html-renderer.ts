@@ -157,14 +157,20 @@ globalThis.__WAKU_PREFETCHED__ = {
   };
   const interleave = () => {
     let headSent = false;
+    let data = '';
     return new TransformStream({
       transform(chunk, controller) {
         if (!(chunk instanceof Uint8Array)) {
           throw new Error('Unknown chunk type');
         }
         if (!headSent) {
+          data += decoder.decode(chunk);
+          if (!data.includes('</head>')) {
+            return;
+          }
           headSent = true;
-          controller.enqueue(encoder.encode(modifyHead(decoder.decode(chunk))));
+          controller.enqueue(encoder.encode(modifyHead(data)));
+          data = '';
           notify = () => controller.enqueue(encoder.encode(getScripts()));
           notify();
           return;
