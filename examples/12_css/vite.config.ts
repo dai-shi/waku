@@ -6,8 +6,5 @@ export default defineConfig({
   ssr: {
     external: ['@stylexjs/stylex'],
   },
-  plugins: [
-    vanillaExtractPlugin({ emitCssInSsr: true }),
-    styleX(),
-  ],
+  plugins: [vanillaExtractPlugin({ emitCssInSsr: true }), styleX()],
 });

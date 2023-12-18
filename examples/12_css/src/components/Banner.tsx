@@ -10,7 +10,5 @@ const styles = create({
 });
 
 export const Banner = () => {
-  return (
-    <div {...props(styles.root)}>This is a banner by StyleX CSS</div>
-  );
+  return <div {...props(styles.root)}>This is a banner by StyleX CSS</div>;
 };
