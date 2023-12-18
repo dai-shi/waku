@@ -2,8 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist/node",
-    "types": ["node"],
-    "moduleResolution": "bundler"
+    "types": ["node"]
   },
   "include": ["vite.config.ts"]
 }
