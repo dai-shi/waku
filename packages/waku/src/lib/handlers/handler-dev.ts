@@ -53,6 +53,7 @@ export function createHandler<
         nonjsResolvePlugin(),
         patchReactRefresh(viteReact()),
         rscIndexPlugin(config),
+        rscHmrPlugin(),
       ],
       ssr: {
         external: ['waku'],
