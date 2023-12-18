@@ -9,7 +9,6 @@ import { joinPath } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from '../renderers/html-renderer.js';
 import { decodeInput, hasStatusCode } from '../renderers/utils.js';
-import { readFile, stat } from '../utils/node-fs.js';
 import {
   registerReloadCallback,
   registerImportCallback,
@@ -77,44 +76,6 @@ export function createHandler<
       return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
     },
   );
-
-  let publicIndexHtml: string | undefined;
-  const getHtmlStr = async (
-    pathname: string,
-    search: string,
-  ): Promise<string | null> => {
-    const [config, vite] = await Promise.all([configPromise, vitePromise]);
-    const rootDir = vite.config.root;
-    if (!publicIndexHtml) {
-      const publicIndexHtmlFile = joinPath(rootDir, config.indexHtml);
-      publicIndexHtml = await readFile(publicIndexHtmlFile, {
-        encoding: 'utf8',
-      });
-    }
-    for (const item of vite.moduleGraph.idToModuleMap.values()) {
-      if (item.url === pathname + (search ? '?' + search : '')) {
-        return null;
-      }
-    }
-    const destFile = joinPath(rootDir, config.srcDir, pathname);
-    try {
-      // check if destFile exists
-      const stats = await stat(destFile);
-      if (stats.isFile()) {
-        return null;
-      }
-    } catch (e) {
-      // does not exist
-    }
-    // FIXME: otherwise SSR on Windows will fail
-    if (pathname.startsWith('/@fs')) {
-      return null;
-    }
-    return vite.transformIndexHtml(
-      pathname + (search ? '?' + search : ''),
-      publicIndexHtml,
-    );
-  };
 
   const transformIndexHtml = async (pathname: string, search: string) => {
     const vite = await vitePromise;
