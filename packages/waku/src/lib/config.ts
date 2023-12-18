@@ -56,19 +56,6 @@ export interface Config {
    * <meta name="viewport" content="width=device-width, initial-scale=1" />
    */
   htmlHead?: string;
-  /**
-   * TODO: remove
-   * ssr middleware specific configs.
-   */
-  ssr?: {
-    /**
-     * A function to split HTML string into three parts.
-     * The default function is to split with
-     * <!--placeholder1-->...<!--/placeholder1--> and
-     * <!--placeholder2-->...<!--/placeholder2-->.
-     */
-    splitHTML?: (htmlStr: string) => readonly [string, string, string];
-  };
 }
 
 type DeepRequired<T> = T extends (...args: any[]) => any
@@ -84,25 +71,6 @@ const DEFAULT_HTML_HEAD = `
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 `.trim();
 
-const splitHTML = (htmlStr: string): readonly [string, string, string] => {
-  const P1 = [
-    '<!--placeholder1-->\\s*<div[^>]*>',
-    '</div>\\s*<!--/placeholder1-->',
-  ] as const;
-  const P2 = ['<!--placeholder2-->', '<!--/placeholder2-->'] as const;
-  const anyRE = '[\\s\\S]*';
-  const match = htmlStr.match(
-    new RegExp(
-      // prettier-ignore
-      "^(" + anyRE + P1[0] + ")" + anyRE + "(" + P1[1] + anyRE + P2[0] + ")" + anyRE + "(" + P2[1] + anyRE + ")$",
-    ),
-  );
-  if (match?.length !== 1 + 3) {
-    throw new Error('Failed to split HTML');
-  }
-  return match.slice(1) as [string, string, string];
-};
-
 // Keep async function for future extension
 export async function resolveConfig(config: Config) {
   const resolvedConfig: ResolvedConfig = {
@@ -117,10 +85,6 @@ export async function resolveConfig(config: Config) {
     rscPath: 'RSC',
     htmlHead: DEFAULT_HTML_HEAD,
     ...config,
-    ssr: {
-      splitHTML,
-      ...config?.ssr,
-    },
   };
   return resolvedConfig;
 }
