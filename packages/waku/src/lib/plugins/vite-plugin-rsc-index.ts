@@ -34,6 +34,13 @@ ${config.htmlHead}
         });
       };
     },
+    config() {
+      return {
+        optimizeDeps: {
+          entries: [`${config.srcDir}/${config.mainJs}`],
+        },
+      };
+    },
     options(options) {
       if (typeof options.input === 'string') {
         throw new Error('string input is unsupported');
