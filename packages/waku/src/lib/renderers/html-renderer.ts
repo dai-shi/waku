@@ -52,6 +52,8 @@ const getViteServer = async () => {
   );
   const viteServer = await createViteServer({
     plugins: [nonjsResolvePlugin()],
+    // HACK to suppress 'Skipping dependency pre-bundling' warning
+    optimizeDeps: { include: [], },
     ssr: {
       external: ['waku'],
     },
