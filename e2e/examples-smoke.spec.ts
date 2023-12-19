@@ -172,8 +172,6 @@ for (const cwd of examples) {
 
         test('check title', async ({ page }) => {
           await page.goto(`http://localhost:${port}/`);
-          await page.waitForLoadState('load');
-          await page.reload(); // HACK for 11_form error on ubuntu and windows
           // title maybe doesn't ready yet
           await page.waitForLoadState('load');
           await expect.poll(() => page.title()).toBe('Waku example');
