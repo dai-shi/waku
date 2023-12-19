@@ -22,9 +22,9 @@ Playground: https://codesandbox.io/p/sandbox/waku-example-counter-mdc1yb
 ## Introduction
 
 Waku is a React framework that supports React Server Components
-(RSCs), a new feature that will be available in a future version of
-React. RSCs allow developers to render UI components on the server,
-improving performance and enabling server-side features. To use RSCs,
+(RSC), a new feature that will be available in a future version of
+React. RSC allows developers to render UI components on the server,
+improving performance and enabling server-side features. To use RSC,
 a framework is necessary for bundling, optionally server, router and
 so on.
 
@@ -36,23 +36,23 @@ router. This flexibility makes it easier to build new features.
 Waku uses Vite internally, and while it is still a work in progress,
 it will eventually support all of Vite's features. It can even
 work as a replacement for Vite + React client components. While using
-RSCs is optional, it is highly recommended for improved user and
+RSC is optional, it is highly recommended for improved user and
 developer experiences.
 
 ## Why develop a React framework?
 
-We believe that React Server Components (RSCs) are the future of React.
-The challenge is that we can't utilize RSCs with the React library alone.
+We believe that React Server Components (RSC) are the future of React.
+The challenge is that we can't utilize RSC with the React library alone.
 Instead, they require a React framework for bundling, at the very least.
 
-Currently, only a few React frameworks support RSCs, and
-they often come with more features than RSCs.
-It would be nice to have a minimal framework that implements RSCs,
-which should help learning how RSCs work.
+Currently, only a few React frameworks support RSC, and
+they often come with more features than RSC.
+It would be nice to have a minimal framework that implements RSC,
+which should help learning how RSC works.
 
 Learning is the start, but it's not what we aim at.
 Our assumption is that RSC best practices are still to explore.
-The minimal implementation should clarify the fundamentals of RSCs
+The minimal implementation should clarify the fundamentals of RSC
 and enable the creation of additional features.
 Our goal is to establish an ecosystem that covers a broader range of use cases.
 
@@ -78,15 +78,24 @@ starting point for your project.
 
 Minimum requirement: Node.js 18.3.0
 
-## Practices
+## API
 
-### Minimal
+### Minimal API
+
+The minimal API doesn't provide many capabilities.
+It's useful to learn RSC behaviors.
+It is good to build SPA too.
+
+Another good reason to have the minimal API is for library authors.
+We can develop libraries on top of it to provide more capabilities.
 
 #### Server API
 
 To use React Server Components in Waku, you need to create an
-`entries.ts` file in the project root directory with a
-`renderEntries` function that returns a server component module.
+`entries.tsx` file in `src` directry right under the project root directory.
+It should default export with a `renderEntries` function.
+`defineEntries` helps for type inference.
+
 Here's an example:
 
 ```tsx
@@ -105,9 +114,9 @@ export default defineEntries(
 );
 ```
 
-The `id` parameter is the ID of the React Server Component
-that you want to load on the server. You specify the RSC ID from the
-client.
+The `renderEntries` returns a set of server components (elements).
+The `input` parameter is any URL path embeddable string
+that you can specify from the client.
 
 #### Client API
 
@@ -121,19 +130,20 @@ import { Root, Slot } from 'waku/client';
 
 const rootElement = (
   <StrictMode>
-    <Root>
+    <Root initialInput="Waku Waku">
       <Slot id="App" />
     </Root>
   </StrictMode>
 );
 
-createRoot(document.getElementById('root')!).render(rootElement);
+createRoot(document.body).render(rootElement);
 ```
 
 The `initialInput` prop can be passed to the `Root` Component,
 overriding the default input which is `""`.
 You can also re-render a React Server Component with new input.
-Here's an example just to illustrate the idea:
+
+Here's an example incomplete code:
 
 ```tsx
 import { useRefetch } from 'waku/client';
@@ -151,7 +161,9 @@ const Component = () => {
 
 In addition to the `renderEntries` function, you can also
 optionally specify `getBuildConfig` function in
-`entries.ts`. Here's an example:
+`entries.tsx`.
+
+Here's an example:
 
 ```tsx
 import { defineEntries } from 'waku/server';
@@ -164,13 +176,7 @@ export default defineEntries(
     };
   },
   // getBuildConfig
-  async () => {
-    return {
-      '/': {
-        entries: [['']],
-      },
-    };
-  },
+  async () => [{ pathname: '/', entries: [['']] }],
 );
 ```
 
@@ -185,10 +191,11 @@ If you create a project with something like
 `npm create waku@latest`, it will create the minimal
 example app.
 
-### Router
+### Router API
 
-Waku provides a router built on top of the minimal API, and it serves
-as a reference implementation.
+Unlike Minimal API, Router API is primarily designed for
+developing apps with MPA in mind.
+Router API is completely developed on Minimal API.
 
 #### Client API
 
@@ -201,9 +208,7 @@ the `Router` component as the root component:
 import { createRoot } from 'react-dom/client';
 import { Router } from 'waku/router/client';
 
-const root = createRoot(document.getElementById('root')!);
-
-root.render(<Router />);
+createRoot(document.body).render(<Router />);
 ```
 
 The `Router` component internally uses `Root` and `Slot`
@@ -211,71 +216,36 @@ and handles nested routes.
 
 #### Server API
 
-In `entries.ts`, we use `defineRouter` to export
-`getEntry` and `getBuildConfig` at once.
-Here's a simple example code without builder:
+There are two kinds of Server API.
+The first is `defineRouter`, which is low level.
+The second is `createPages`, which is a wrapper around `defineRouter`.
+We can use either of them in `entries.tsx`
+instead of `defineEntries` with Minimal API.
+
+Here's an incomplete example with `createPages`:
 
 ```tsx
-import { defineRouter } from 'waku/router/server';
+import { lazy } from 'react';
+import { createPages } from 'waku/router/server';
 
-export default defineRouter((id) => {
-  switch (id) {
-    case 'index/page':
-      return import('./routes/index.tsx');
-    case 'foo/page':
-      return import('./routes/foo.tsx');
-    default:
-      return null;
-  }
+const Index = lazy(() => import('./routes/index.js'));
+const Foo = lazy(() => import('./routes/foo.js'));
+
+export default createPages(async ({ createPage }) => {
+  createPage({ path: '/', component: Index });
+  createPage({ path: '/foo', component: Foo });
 });
 ```
 
-The implementation of the `defineRouter` is config-based.
-However, it isn't too difficult to make a file-based router.
-Here's a file-based example code with builder:
-
-```tsx
-import { fileURLtoPath } from 'node:url';
-import path from 'node:path';
-import { glob } from 'glob';
-import { defineRouter } from 'waku/router/server';
-
-const routesDir = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  'routes',
-);
-
-export default defineRouter(
-  // getComponent (id is '**/layout' or '**/page')
-  async (id) => {
-    const files = await glob(`${id}.{tsx,js}`, { cwd: routesDir });
-    if (files.length === 0) {
-      return null;
-    }
-    const items = id.split('/');
-    switch (items.length) {
-      case 1:
-        return import(`./routes/${items[0]}.tsx`);
-      case 2:
-        return import(`./routes/${items[0]}/${items[1]}.tsx`);
-      case 3:
-        return import(`./routes/${items[0]}/${items[1]}/${items[2]}.tsx`);
-      default:
-        throw new Error('too deep route');
-    }
-  },
-  // getPathsForBuild
-  async () => {
-    const files = await glob('**/page.{tsx,js}', { cwd: routesDir });
-    return files.map(
-      (file) => '/' + file.slice(0, Math.max(0, file.lastIndexOf('/'))),
-    );
-  },
-);
-```
-
-Due to the limitation of bundler, we cannot automatically allow
-infinite depth of routes.
+`createPages` is a config-based router.
+If you want a file-based router,
+you could use the low-level `defineRouter`.
+However, it's a little bit tricky to implement.
+See [`10_dynamicroute` example](./examples/10_dynamicroute)
+as a reference implementation.
+By the way, it might be a good opportunity for a Waku library author
+to provide a file-based router.
+(Minimal API can also be used to develop a router with more control.)
 
 #### How to try it
 
@@ -292,6 +262,18 @@ npm run examples:dev:07_router
 Alternatively, you could create a project with something like
 `npm create waku@latest` and copy files from the example
 folder in the repository.
+
+## SSR (HTML generation for initial page)
+
+Waku comes with SSR for initial page load performance,
+but it's not enabled by default.
+That's because learning RSC is easier without SSR,
+and SSR might be confusing for app development
+(because client components render on server and `window === undefined`).
+
+To enable SSR, we need to use `--with-ssr` option
+and provide `getSsrConfig` function in `entries.tsx`.
+(Router API already implements `getSsrConfig`.)
 
 ## Deploy
 
