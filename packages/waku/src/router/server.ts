@@ -1,4 +1,4 @@
-import ReactExports from 'react';
+import { createElement } from 'react';
 import type { FunctionComponent, ReactNode } from 'react';
 
 import { defineEntries } from '../server.js';
@@ -7,9 +7,7 @@ import { Children } from '../client.js';
 import type { Slot } from '../client.js';
 import { getComponentIds, getInputString, parseInputString } from './common.js';
 import type { RouteProps } from './common.js';
-
-// eslint-disable-next-line import/no-named-as-default-member
-const { createElement } = ReactExports;
+import { joinPath } from '../lib/utils/path.js';
 
 // We have to make prefetcher consistent with client behavior
 const prefetcher = (pathname: string, search: string) => {
@@ -125,4 +123,40 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
   };
 
   return { renderEntries, getBuildConfig, getSsrConfig };
+}
+
+type CreatePage = (page: {
+  dynamic?: boolean;
+  path: string;
+  component: FunctionComponent;
+}) => void;
+
+export function createPages(
+  fn: (createPage: CreatePage) => Promise<void>,
+): ReturnType<typeof defineEntries> {
+  const staticPaths: { pathname: string; search?: string }[] = [];
+  const componentMap = new Map<string, FunctionComponent>();
+  const createPage: CreatePage = (page) => {
+    if (page.dynamic) {
+      throw new Error('TODO not implemented yet');
+    }
+    const [pathname, search] = page.path.split('?') as [string, string?];
+    staticPaths.push(search ? { pathname, search } : { pathname });
+    const id = joinPath(pathname, 'page');
+    if (componentMap.has(id) && componentMap.get(id) !== page.component) {
+      throw new Error(`Duplicated component for: ${pathname}`);
+    }
+    componentMap.set(id, page.component);
+  };
+  const ready = fn(createPage);
+  return defineRouter(
+    async () => {
+      await ready;
+      return { static: staticPaths };
+    },
+    async (id) => {
+      await ready;
+      return componentMap.get(id) || null;
+    },
+  );
 }
