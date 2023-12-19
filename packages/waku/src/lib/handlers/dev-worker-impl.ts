@@ -108,7 +108,7 @@ const mergedViteConfig = await mergeUserViteConfig({
     }),
   ],
   // HACK to suppress 'Skipping dependency pre-bundling' warning
-  optimizeDeps: { include: [], },
+  optimizeDeps: { include: [] },
   ssr: {
     resolve: {
       conditions: ['react-server', 'workerd'],
