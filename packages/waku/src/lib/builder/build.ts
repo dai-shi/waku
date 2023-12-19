@@ -373,7 +373,7 @@ const emitHtmlFiles = async (
     /.*?<head>(.*?)<\/head>.*/s,
     '$1',
   );
-  const htmlHeadMap: Record<string, string> = { '/': publicIndexHtmlHead };
+  const htmlHeadMap: Record<string, string> = {};
   // TODO check duplicated files like rscFileSet
   const htmlFiles = await Promise.all(
     Array.from(buildConfig).map(
