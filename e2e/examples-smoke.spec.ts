@@ -118,10 +118,7 @@ for (const cwd of examples) {
           await page.goto(`http://localhost:${port}/`);
           // title maybe doesn't ready yet
           await page.waitForLoadState('load');
-          // we need to wait more for cases without ssr
-          await page.waitForFunction(() => !!document.querySelector('title'));
-          const title = await page.title();
-          expect(title).toBe('Waku example');
+          await expect.poll(() => page.title()).toBe('Waku example');
         });
       });
     }
@@ -177,10 +174,7 @@ for (const cwd of examples) {
           await page.goto(`http://localhost:${port}/`);
           // title maybe doesn't ready yet
           await page.waitForLoadState('load');
-          // we need to wait more for cases without ssr
-          await page.waitForFunction(() => !!document.querySelector('title'));
-          const title = await page.title();
-          expect(title).toBe('Waku example');
+          await expect.poll(() => page.title()).toBe('Waku example');
         });
       });
     }
