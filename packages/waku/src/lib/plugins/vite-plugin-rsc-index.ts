@@ -3,6 +3,7 @@ import type { Plugin } from 'vite';
 import { codeToInject } from '../renderers/utils.js';
 
 export function rscIndexPlugin(config: {
+  basePath: string;
   srcDir: string;
   mainJs: string;
   htmlHead: string;
@@ -60,11 +61,13 @@ ${config.htmlHead}
     },
     transformIndexHtml() {
       return [
+        // HACK without <base>, some relative assets don't work.
+        // FIXME ideally, we should avoid this.
+        { tag: 'base', attrs: { href: config.basePath } },
         {
           tag: 'script',
           attrs: { type: 'module', async: true },
           children: codeToInject,
-          injectTo: 'head-prepend',
         },
         ...(config.cssAssets || []).map((href) => ({
           tag: 'link',
