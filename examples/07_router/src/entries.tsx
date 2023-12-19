@@ -8,54 +8,40 @@ import NestedLayout from './routes/nested/layout.js';
 import Baz from './routes/nested/baz/page.js';
 import Qux from './routes/nested/qux/page.js';
 
-export default createPages(async (createPage) => {
+export default createPages(async ({ createPage, createLayout }) => {
+  createLayout({
+    pathname: '/',
+    component: HomeLayout,
+  });
+
   createPage({
     path: '/',
-    component: () => (
-      <HomeLayout>
-        <Home />
-      </HomeLayout>
-    ),
+    component: Home,
   });
 
   createPage({
     path: '/foo',
-    component: () => (
-      <HomeLayout>
-        <Foo />
-      </HomeLayout>
-    ),
+    component: Foo,
   });
 
   createPage({
     path: '/bar',
-    component: () => (
-      <HomeLayout>
-        <Bar />
-      </HomeLayout>
-    ),
+    component: Bar,
+  });
+
+  createLayout({
+    pathname: '/nested',
+    component: NestedLayout,
   });
 
   createPage({
     path: '/nested/baz',
-    component: () => (
-      <HomeLayout>
-        <NestedLayout>
-          <Baz />
-        </NestedLayout>
-      </HomeLayout>
-    ),
+    component: Baz,
   });
 
   createPage({
     path: '/nested/qux',
-    component: () => (
-      <HomeLayout>
-        <NestedLayout>
-          <Qux />
-        </NestedLayout>
-      </HomeLayout>
-    ),
+    component: Qux,
   });
 });
 

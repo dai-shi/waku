@@ -15,18 +15,25 @@ const prefetcher = (pathname: string, search: string) => {
   return [[input]] as const;
 };
 
-const Default = ({ children }: { children: ReactNode }) => children;
+const Default = ({ children }: RouteProps & { children: ReactNode }) =>
+  children;
 
 type RoutePaths = {
   static?: Iterable<{ pathname: string; search?: string }>;
   dynamic?: (pathname: string, search?: string) => Promise<boolean>;
 };
 
-export function defineRouter<P>(
+export function defineRouter(
   getRoutePaths: () => Promise<RoutePaths>,
   getComponent: (
     componentId: string,
-  ) => Promise<FunctionComponent<P> | { default: FunctionComponent<P> } | null>,
+  ) => Promise<
+    | FunctionComponent<RouteProps & { children?: ReactNode }>
+    | FunctionComponent<RouteProps & { children: ReactNode }>
+    | { default: FunctionComponent<RouteProps & { children?: ReactNode }> }
+    | { default: FunctionComponent<RouteProps & { children: ReactNode }> }
+    | null
+  >,
 ): ReturnType<typeof defineEntries> {
   const routePathsPromise = getRoutePaths();
   const existsRoutePathPromise = routePathsPromise.then((routePaths) => {
@@ -125,18 +132,30 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
   return { renderEntries, getBuildConfig, getSsrConfig };
 }
 
-// LIMITATION: No layout supported. Layout can be a performance benefit.
+// createPages API (a wrapper around defineRouter)
+
 type CreatePage = (page: {
   dynamic?: boolean;
   path: string;
-  component: FunctionComponent;
+  component: FunctionComponent<RouteProps>;
+}) => void;
+
+type CreateLayout = (layout: {
+  pathname: string;
+  component: FunctionComponent<RouteProps & { children: ReactNode }>;
 }) => void;
 
 export function createPages(
-  fn: (createPage: CreatePage) => Promise<void>,
+  fn: (fns: {
+    createPage: CreatePage;
+    createLayout: CreateLayout;
+  }) => Promise<void>,
 ): ReturnType<typeof defineEntries> {
   const staticPaths: { pathname: string; search?: string }[] = [];
-  const componentMap = new Map<string, FunctionComponent>();
+  const componentMap = new Map<
+    string,
+    FunctionComponent<RouteProps & { children: ReactNode }>
+  >();
   let finished = false;
   const createPage: CreatePage = (page) => {
     if (finished) {
@@ -154,7 +173,17 @@ export function createPages(
     }
     componentMap.set(id, page.component);
   };
-  const ready = fn(createPage).then(() => {
+  const createLayout: CreateLayout = (layout) => {
+    if (finished) {
+      throw new Error('no longer available');
+    }
+    const id = joinPath(layout.pathname, 'layout').replace(/^\//, '');
+    if (componentMap.has(id) && componentMap.get(id) !== layout.component) {
+      throw new Error(`Duplicated component for: ${layout.component}`);
+    }
+    componentMap.set(id, layout.component);
+  };
+  const ready = fn({ createPage, createLayout }).then(() => {
     finished = true;
   });
   return defineRouter(
