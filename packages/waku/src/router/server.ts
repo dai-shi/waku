@@ -125,6 +125,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
   return { renderEntries, getBuildConfig, getSsrConfig };
 }
 
+// LIMITATION: No layout supported. Layout can be a performance benefit.
 type CreatePage = (page: {
   dynamic?: boolean;
   path: string;
@@ -136,19 +137,26 @@ export function createPages(
 ): ReturnType<typeof defineEntries> {
   const staticPaths: { pathname: string; search?: string }[] = [];
   const componentMap = new Map<string, FunctionComponent>();
+  let finished = false;
   const createPage: CreatePage = (page) => {
+    if (finished) {
+      throw new Error('no longer available');
+    }
     if (page.dynamic) {
-      throw new Error('TODO not implemented yet');
+      // TODO implement
+      throw new Error('not implemented yet');
     }
     const [pathname, search] = page.path.split('?') as [string, string?];
     staticPaths.push(search ? { pathname, search } : { pathname });
-    const id = joinPath(pathname, 'page');
+    const id = joinPath(pathname, 'page').replace(/^\//, '');
     if (componentMap.has(id) && componentMap.get(id) !== page.component) {
       throw new Error(`Duplicated component for: ${pathname}`);
     }
     componentMap.set(id, page.component);
   };
-  const ready = fn(createPage);
+  const ready = fn(createPage).then(() => {
+    finished = true;
+  });
   return defineRouter(
     async () => {
       await ready;
