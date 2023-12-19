@@ -16,6 +16,7 @@ const Pending = ({ isPending }: { isPending: boolean }) => (
 
 const HomeLayout = ({ children }: { children: ReactNode }) => (
   <div>
+    <title>Waku example</title>
     <ul>
       <li>
         <Link

@@ -8,4 +8,4 @@ const rootElement = (
   </StrictMode>
 );
 
-createRoot(document.getElementById('root')!).render(rootElement);
+createRoot(document.body).render(rootElement);

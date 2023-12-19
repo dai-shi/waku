@@ -107,6 +107,8 @@ const mergedViteConfig = await mergeUserViteConfig({
       parentPort!.postMessage(mesg);
     }),
   ],
+  // HACK to suppress 'Skipping dependency pre-bundling' warning
+  optimizeDeps: { include: [] },
   ssr: {
     resolve: {
       conditions: ['react-server', 'workerd'],
