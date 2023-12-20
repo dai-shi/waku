@@ -8,6 +8,7 @@ import { ServerBox } from './Box.js';
 const App = ({ name }: { name: string }) => {
   return (
     <ServerBox>
+      <title>Waku example</title>
       <p data-testid="app-name">{name}</p>
       <ClientCounter />
       <ServerPing />

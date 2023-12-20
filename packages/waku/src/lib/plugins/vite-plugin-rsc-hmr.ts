@@ -6,9 +6,7 @@ import.meta.hot = __vite__createHotContext(import.meta.url);
 
 if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
   globalThis.__WAKU_HMR_CONFIGURED__ = true;
-
   import.meta.hot.on('hot-import', (data) => import(/* @vite-ignore */ data));
-
   import.meta.hot.on('module', (data) => {
     const code = data.code;
     const script = document.createElement('script');
@@ -23,11 +21,15 @@ export function rscHmrPlugin(): Plugin {
   return {
     name: 'rsc-hmr-plugin',
     enforce: 'post',
-    transformIndexHtml(html) {
-      return html.replace(
-        '</body>',
-        `<script type="module" async>${customCode}</script></body>`,
-      );
+    transformIndexHtml() {
+      return [
+        {
+          tag: 'script',
+          attrs: { type: 'module' },
+          children: customCode,
+          injectTo: 'head',
+        },
+      ];
     },
   };
 }

@@ -28,15 +28,15 @@ export interface Config {
    */
   assetsDir?: string;
   /**
-   * The htmls directory relative to distDir.
-   * Defaults to "htmls".
-   */
-  htmlsDir?: string;
-  /**
    * The index.html file for any directories.
    * Defaults to "index.html".
    */
   indexHtml?: string;
+  /**
+   * The client main file relative to srcDir.
+   * Defaults to "main.tsx".
+   */
+  mainJs?: string;
   /**
    * The entries.js file relative to srcDir or distDir.
    * The extension should be `.js`,
@@ -50,17 +50,12 @@ export interface Config {
    */
   rscPath?: string;
   /**
-   * ssr middleware specific configs.
+   * HTML headers to inject.
+   * Defaults to:
+   * <meta charset="utf-8" />
+   * <meta name="viewport" content="width=device-width, initial-scale=1" />
    */
-  ssr?: {
-    /**
-     * A function to split HTML string into three parts.
-     * The default function is to split with
-     * <!--placeholder1-->...<!--/placeholder1--> and
-     * <!--placeholder2-->...<!--/placeholder2-->.
-     */
-    splitHTML?: (htmlStr: string) => readonly [string, string, string];
-  };
+  htmlHead?: string;
 }
 
 type DeepRequired<T> = T extends (...args: any[]) => any
@@ -71,24 +66,10 @@ type DeepRequired<T> = T extends (...args: any[]) => any
 
 export type ResolvedConfig = DeepRequired<Config>;
 
-const splitHTML = (htmlStr: string): readonly [string, string, string] => {
-  const P1 = [
-    '<!--placeholder1-->\\s*<div[^>]*>',
-    '</div>\\s*<!--/placeholder1-->',
-  ] as const;
-  const P2 = ['<!--placeholder2-->', '<!--/placeholder2-->'] as const;
-  const anyRE = '[\\s\\S]*';
-  const match = htmlStr.match(
-    new RegExp(
-      // prettier-ignore
-      "^(" + anyRE + P1[0] + ")" + anyRE + "(" + P1[1] + anyRE + P2[0] + ")" + anyRE + "(" + P2[1] + anyRE + ")$",
-    ),
-  );
-  if (match?.length !== 1 + 3) {
-    throw new Error('Failed to split HTML');
-  }
-  return match.slice(1) as [string, string, string];
-};
+const DEFAULT_HTML_HEAD = `
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+`.trim();
 
 // Keep async function for future extension
 export async function resolveConfig(config: Config) {
@@ -98,15 +79,12 @@ export async function resolveConfig(config: Config) {
     distDir: 'dist',
     publicDir: 'public',
     assetsDir: 'assets',
-    htmlsDir: 'htmls',
     indexHtml: 'index.html',
+    mainJs: 'main.tsx',
     entriesJs: 'entries.js',
     rscPath: 'RSC',
+    htmlHead: DEFAULT_HTML_HEAD,
     ...config,
-    ssr: {
-      splitHTML,
-      ...config?.ssr,
-    },
   };
   return resolvedConfig;
 }

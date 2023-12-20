@@ -24,23 +24,7 @@ export function createHandler<
   }
   const configPromise = resolveConfig(config || {});
 
-  const loadHtmlPromise = entries.then(({ loadHtml }) => loadHtml);
-
-  let publicIndexHtml: string | undefined;
-  const getHtmlStr = async (
-    pathname: string,
-    search: string,
-  ): Promise<string | null> => {
-    const loadHtml = await loadHtmlPromise;
-    if (!publicIndexHtml) {
-      publicIndexHtml = await loadHtml('/', '');
-    }
-    try {
-      return loadHtml(pathname, search);
-    } catch (e) {
-      return publicIndexHtml;
-    }
-  };
+  const loadHtmlHeadPromise = entries.then(({ loadHtmlHead }) => loadHtmlHead);
 
   return async (req, res, next) => {
     const config = await configPromise;
@@ -63,26 +47,24 @@ export function createHandler<
     }
     if (ssr) {
       try {
-        const htmlStr = await getHtmlStr(req.url.pathname, req.url.search);
+        const loadHtmlHead = await loadHtmlHeadPromise;
         const resolvedEntries = await entries;
-        const readable =
-          htmlStr &&
-          (await renderHtml({
-            config,
-            reqUrl: req.url,
-            htmlStr,
-            renderRscForHtml: (input) =>
-              renderRsc({
-                entries: resolvedEntries,
-                config,
-                input,
-                method: 'GET',
-                context,
-                isDev: false,
-              }),
-            isDev: false,
-            entries: resolvedEntries,
-          }));
+        const readable = await renderHtml({
+          config,
+          reqUrl: req.url,
+          htmlHead: loadHtmlHead(req.url.pathname, req.url.search),
+          renderRscForHtml: (input) =>
+            renderRsc({
+              entries: resolvedEntries,
+              config,
+              input,
+              method: 'GET',
+              context,
+              isDev: false,
+            }),
+          isDev: false,
+          entries: resolvedEntries,
+        });
         if (readable) {
           unstable_posthook?.(req, res, context as Context);
           deepFreeze(context);
