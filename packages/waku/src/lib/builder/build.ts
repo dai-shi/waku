@@ -469,7 +469,7 @@ const resolveFileName = (fname: string) => {
 export async function build(options: {
   config?: Config;
   ssr?: boolean;
-  vercel?: boolean | undefined;
+  vercel?: boolean;
   cloudflare?: boolean;
   deno?: boolean;
 }) {
@@ -517,7 +517,7 @@ export async function build(options: {
     !!options?.ssr,
   );
 
-  if (options?.vercel ?? process.env.VERCEL) {
+  if (options?.vercel) {
     await emitVercelOutput(
       rootDir,
       config,
