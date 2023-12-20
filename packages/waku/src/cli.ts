@@ -58,7 +58,7 @@ if (values.version) {
     case 'build':
       runBuild({
         ssr: withSsr,
-        vercel: values['with-vercel'],
+        vercel: values['with-vercel'] ?? !!process.env.VERCEL,
         cloudflare: !!values['with-cloudflare'],
         deno: !!values['with-deno'],
       });
