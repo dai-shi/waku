@@ -9,8 +9,7 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "jsx": "react-jsx",
-    "outDir": "./dist",
-    "composite": true
+    "outDir": "./dist"
   },
   "include": ["./src"]
 }
