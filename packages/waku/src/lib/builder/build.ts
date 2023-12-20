@@ -469,7 +469,7 @@ const resolveFileName = (fname: string) => {
 export async function build(options: {
   config?: Config;
   ssr?: boolean;
-  vercel?: boolean | undefined;
+  vercel?: boolean;
   cloudflare?: boolean;
   deno?: boolean;
 }) {
