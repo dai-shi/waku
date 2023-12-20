@@ -517,7 +517,7 @@ export async function build(options: {
     !!options?.ssr,
   );
 
-  if (options?.vercel ?? process.env.VERCEL) {
+  if (options?.vercel) {
     await emitVercelOutput(
       rootDir,
       config,
