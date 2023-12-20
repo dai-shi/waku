@@ -19,7 +19,6 @@ import {
   writeFile,
   appendFile,
 } from '../utils/node-fs.js';
-import { streamToString } from '../utils/stream.js';
 import { encodeInput, generatePrefetchCode } from '../renderers/utils.js';
 import {
   RSDW_SERVER_MODULE,
@@ -239,19 +238,22 @@ const buildClientBundle = async (
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
 ) => {
-  const indexHtmlFile = joinPath(rootDir, config.indexHtml);
+  const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
   const clientBuildOutput = await buildVite({
     base: config.basePath,
-    plugins: [patchReactRefresh(viteReact()), rscIndexPlugin(cssAssets)],
+    plugins: [
+      patchReactRefresh(viteReact()),
+      rscIndexPlugin({ ...config, cssAssets }),
+    ],
     build: {
       outDir: joinPath(rootDir, config.distDir, config.publicDir),
       rollupOptions: {
         onwarn,
         input: {
-          main: indexHtmlFile,
+          main: mainJsFile,
           [REACT_MODULE]: REACT_MODULE_VALUE,
           [RD_SERVER_MODULE]: RD_SERVER_MODULE_VALUE,
           [RSDW_CLIENT_MODULE]: RSDW_CLIENT_MODULE_VALUE,
@@ -367,14 +369,18 @@ const emitHtmlFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  let loadHtmlCode = `
-export function loadHtml(pathname, search) {
-  switch (pathname + (search ? '?' + search: '')) {
-`;
+  const publicIndexHtmlHead = publicIndexHtml.replace(
+    /.*?<head>(.*?)<\/head>.*/s,
+    '$1',
+  );
+  const htmlHeadMap: Record<string, string> = {};
   // TODO check duplicated files like rscFileSet
   const htmlFiles = await Promise.all(
     Array.from(buildConfig).map(
       async ({ pathname, search, entries, customCode, context }) => {
+        const pathStr = pathname + (search ? '?' + search : '');
+        let htmlStr = publicIndexHtml;
+        let htmlHead = publicIndexHtmlHead;
         const destHtmlFile = joinPath(
           rootDir,
           config.distDir,
@@ -382,32 +388,6 @@ export function loadHtml(pathname, search) {
           (extname(pathname) ? pathname : pathname + '/' + config.indexHtml) +
             (search ? '?' + search : ''),
         );
-        const destHtmlJsFile = joinPath(
-          rootDir,
-          config.distDir,
-          config.htmlsDir,
-          (extname(pathname) ? pathname : pathname + '/' + config.indexHtml) +
-            (search ? '?' + search : '') +
-            '.js',
-        );
-        loadHtmlCode += `    case ${JSON.stringify(
-          pathname + (search ? '?' + search : ''),
-        )}:
-      return import('./${joinPath(
-        config.htmlsDir,
-        (extname(pathname) ? pathname : pathname + '/' + config.indexHtml) +
-          (search ? '?' + search : '') +
-          '.js',
-      )}').then((m)=>m.default);
-`;
-        let htmlStr: string;
-        if (existsSync(destHtmlFile)) {
-          htmlStr = await readFile(destHtmlFile, { encoding: 'utf8' });
-        } else {
-          await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
-          htmlStr = publicIndexHtml;
-        }
-        await mkdir(joinPath(destHtmlJsFile, '..'), { recursive: true });
         const inputsForPrefetch = new Set<string>();
         const moduleIdsForPrefetch = new Set<string>();
         for (const [input, skipPrefetch] of entries || []) {
@@ -430,16 +410,15 @@ export function loadHtml(pathname, search) {
             /<\/head>/,
             `<script type="module" async>${code}</script></head>`,
           );
+          htmlHead += `<script type="module" async>${code}</script>`;
         }
+        htmlHeadMap[pathStr] = htmlHead;
         const htmlReadable =
           ssr &&
           (await renderHtml({
             config,
-            reqUrl: new URL(
-              pathname + (search ? '?' + search : ''),
-              'http://localhost',
-            ),
-            htmlStr,
+            reqUrl: new URL(pathStr, 'http://localhost'),
+            htmlHead,
             renderRscForHtml: (input) =>
               renderRsc({
                 entries: distEntries,
@@ -452,39 +431,28 @@ export function loadHtml(pathname, search) {
             isDev: false,
             entries: distEntries,
           }));
+        await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
         if (htmlReadable) {
-          const [htmlReadable1, htmlReadable2] = htmlReadable.tee();
-          await Promise.all([
-            pipeline(
-              Readable.fromWeb(htmlReadable1 as any),
-              createWriteStream(destHtmlFile),
-            ),
-            streamToString(htmlReadable2).then((str) =>
-              writeFile(
-                destHtmlJsFile,
-                `export default ${JSON.stringify(str)};`,
-              ),
-            ),
-          ]);
+          await pipeline(
+            Readable.fromWeb(htmlReadable as any),
+            createWriteStream(destHtmlFile),
+          );
         } else {
-          await Promise.all([
-            writeFile(destHtmlFile, htmlStr),
-            writeFile(
-              destHtmlJsFile,
-              `export default ${JSON.stringify(htmlStr)};`,
-            ),
-          ]);
+          await writeFile(destHtmlFile, htmlStr);
         }
         return destHtmlFile;
       },
     ),
   );
-  loadHtmlCode += `
-    default:
-      throw new Error('Cannot find HTML for ' + pathname + (search ? '?' + search : ''));
-  }
-}`;
-  await appendFile(distEntriesFile, loadHtmlCode);
+  const loadHtmlHeadCode = `
+export function loadHtmlHead(pathname, search) {
+  const pathStr = pathname + (search ? '?' + search : '');
+  return ${JSON.stringify(htmlHeadMap)}[pathStr] || ${JSON.stringify(
+    publicIndexHtmlHead,
+  )};
+}
+`;
+  await appendFile(distEntriesFile, loadHtmlHeadCode);
   return { htmlFiles };
 };
 

@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Added
+- breaking: no index html #289
 
 ## [0.18.1] - 2023-12-15
 ### Changed

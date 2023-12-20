@@ -1,4 +1,9 @@
-import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
+import type {
+  createElement as createElementType,
+  ReactNode,
+  FunctionComponent,
+  ComponentProps,
+} from 'react';
 import type { ViteDevServer } from 'vite';
 
 import type { ResolvedConfig } from '../config.js';
@@ -47,6 +52,8 @@ const getViteServer = async () => {
   );
   const viteServer = await createViteServer({
     plugins: [nonjsResolvePlugin()],
+    // HACK to suppress 'Skipping dependency pre-bundling' warning
+    optimizeDeps: { include: [] },
     ssr: {
       external: ['waku'],
     },
@@ -76,6 +83,7 @@ Promise.resolve(new Response(new ReadableStream({
   .map((line) => line.trim())
   .join('');
 
+// TODO this is an easy solution. we could do it better at the build time.
 const enableSsrCode = 'globalThis.__WAKU_SSR_ENABLED__ = true;';
 
 const injectRscPayload = (readable: ReadableStream, input: string) => {
@@ -150,26 +158,22 @@ globalThis.__WAKU_PREFETCHED__ = {
     }
     return scripts.join('');
   };
-  const interleave = (
-    preamble: string,
-    intermediate: string,
-    postamble: string,
-  ) => {
-    let preambleSent = false;
+  const interleave = () => {
+    let headSent = false;
+    let data = '';
     return new TransformStream({
       transform(chunk, controller) {
         if (!(chunk instanceof Uint8Array)) {
           throw new Error('Unknown chunk type');
         }
-        if (!preambleSent) {
-          preambleSent = true;
-          controller.enqueue(
-            concatUint8Arrays([
-              encoder.encode(modifyHead(preamble)),
-              chunk,
-              encoder.encode(intermediate),
-            ]),
-          );
+        if (!headSent) {
+          data += decoder.decode(chunk);
+          if (!data.includes('</head>')) {
+            return;
+          }
+          headSent = true;
+          controller.enqueue(encoder.encode(modifyHead(data)));
+          data = '';
           notify = () => controller.enqueue(encoder.encode(getScripts()));
           notify();
           return;
@@ -177,21 +181,19 @@ globalThis.__WAKU_PREFETCHED__ = {
         controller.enqueue(chunk);
       },
       flush(controller) {
-        if (!preambleSent) {
-          throw new Error('preamble not yet sent');
+        if (!headSent) {
+          throw new Error('head not yet sent');
         }
         if (!closed) {
           return new Promise<void>((resolve) => {
             notify = () => {
               controller.enqueue(encoder.encode(getScripts()));
               if (closed) {
-                controller.enqueue(encoder.encode(postamble));
                 resolve();
               }
             };
           });
         }
-        controller.enqueue(encoder.encode(postamble));
       },
     });
   };
@@ -220,18 +222,30 @@ const rectifyHtml = () => {
   });
 };
 
+const buildHtml = (
+  createElement: typeof createElementType,
+  head: string,
+  body: ReactNode,
+) =>
+  createElement(
+    'html',
+    null,
+    createElement('head', { dangerouslySetInnerHTML: { __html: head } }),
+    createElement('body', null, body),
+  );
+
 export const renderHtml = async (
   opts: {
     config: ResolvedConfig;
     reqUrl: URL;
-    htmlStr: string; // Hope stream works, but it'd be too tricky
+    htmlHead: string;
     renderRscForHtml: (input: string) => Promise<ReadableStream>;
   } & (
     | { isDev: false; entries: EntriesPrd }
     | { isDev: true; entries: EntriesDev }
   ),
 ): Promise<ReadableStream | null> => {
-  const { config, reqUrl, htmlStr, renderRscForHtml, isDev, entries } = opts;
+  const { config, reqUrl, htmlHead, renderRscForHtml, isDev, entries } = opts;
 
   const {
     default: { getSsrConfig },
@@ -270,7 +284,6 @@ export const renderHtml = async (
     }
     throw e;
   }
-  const { splitHTML } = config.ssr;
   const moduleMap = new Proxy(
     {} as Record<
       string,
@@ -353,12 +366,16 @@ export const renderHtml = async (
   );
   const readable = (
     await renderToReadableStream(
-      createElement(
-        ServerRoot as FunctionComponent<
-          Omit<ComponentProps<typeof ServerRoot>, 'children'>
-        >,
-        { elements },
-        ssrConfig.unstable_render({ createElement, Slot }),
+      buildHtml(
+        createElement,
+        htmlHead,
+        createElement(
+          ServerRoot as FunctionComponent<
+            Omit<ComponentProps<typeof ServerRoot>, 'children'>
+          >,
+          { elements },
+          ssrConfig.unstable_render({ createElement, Slot }),
+        ),
       ),
       {
         onError(err: unknown) {
@@ -368,6 +385,6 @@ export const renderHtml = async (
     )
   )
     .pipeThrough(rectifyHtml())
-    .pipeThrough(interleave(...splitHTML(htmlStr)));
+    .pipeThrough(interleave());
   return readable;
 };

@@ -9,7 +9,6 @@ import { joinPath } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from '../renderers/html-renderer.js';
 import { decodeInput, hasStatusCode } from '../renderers/utils.js';
-import { readFile, stat } from '../utils/node-fs.js';
 import {
   registerReloadCallback,
   registerImportCallback,
@@ -52,7 +51,7 @@ export function createHandler<
       plugins: [
         nonjsResolvePlugin(),
         patchReactRefresh(viteReact()),
-        rscIndexPlugin([]),
+        rscIndexPlugin(config),
         rscHmrPlugin(),
       ],
       ssr: {
@@ -78,42 +77,39 @@ export function createHandler<
     },
   );
 
-  let publicIndexHtml: string | undefined;
-  const getHtmlStr = async (
-    pathname: string,
-    search: string,
-  ): Promise<string | null> => {
-    const [config, vite] = await Promise.all([configPromise, vitePromise]);
-    const rootDir = vite.config.root;
-    if (!publicIndexHtml) {
-      const publicIndexHtmlFile = joinPath(rootDir, config.indexHtml);
-      publicIndexHtml = await readFile(publicIndexHtmlFile, {
-        encoding: 'utf8',
-      });
-    }
-    for (const item of vite.moduleGraph.idToModuleMap.values()) {
-      if (item.url === pathname + (search ? '?' + search : '')) {
-        return null;
-      }
-    }
-    const destFile = joinPath(rootDir, config.srcDir, pathname);
-    try {
-      // check if destFile exists
-      const stats = await stat(destFile);
-      if (stats.isFile()) {
-        return null;
-      }
-    } catch (e) {
-      // does not exist
-    }
-    // FIXME: otherwise SSR on Windows will fail
-    if (pathname.startsWith('/@fs')) {
-      return null;
-    }
-    return vite.transformIndexHtml(
-      pathname + (search ? '?' + search : ''),
-      publicIndexHtml,
-    );
+  const transformIndexHtml = async (pathname: string, search: string) => {
+    const vite = await vitePromise;
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    let headSent = false;
+    return new TransformStream({
+      transform(chunk, controller) {
+        if (!(chunk instanceof Uint8Array)) {
+          throw new Error('Unknown chunk type');
+        }
+        if (!headSent) {
+          headSent = true;
+          let data = decoder.decode(chunk);
+          // FIXME without removing async, Vite will move it
+          // to the proxy cache, which breaks __WAKU_PUSH__.
+          data = data.replace(/<script type="module" async>/, '<script>');
+          return new Promise<void>((resolve) => {
+            vite
+              .transformIndexHtml(pathname + (search ? '?' + search : ''), data)
+              .then((result) => {
+                controller.enqueue(encoder.encode(result));
+                resolve();
+              });
+          });
+        }
+        controller.enqueue(chunk);
+      },
+      flush() {
+        if (!headSent) {
+          throw new Error('head not yet sent');
+        }
+      },
+    });
   };
 
   return async (req, res, next) => {
@@ -137,31 +133,33 @@ export function createHandler<
     }
     if (ssr) {
       try {
-        const htmlStr = await getHtmlStr(req.url.pathname, req.url.search);
-        const readable =
-          htmlStr &&
-          (await renderHtml({
-            config,
-            reqUrl: req.url,
-            htmlStr,
-            renderRscForHtml: async (input) => {
-              const [readable, nextCtx] = await renderRscWithWorker({
-                input,
-                method: 'GET',
-                contentType: undefined,
-                config,
-                context,
-              });
-              context = nextCtx as Context;
-              return readable;
-            },
-            isDev: true,
-            entries: await entries,
-          }));
+        const readable = await renderHtml({
+          config,
+          reqUrl: req.url,
+          htmlHead: `${config.htmlHead}
+<script src="/${config.srcDir}/${config.mainJs}" async type="module"></script>`,
+          renderRscForHtml: async (input) => {
+            const [readable, nextCtx] = await renderRscWithWorker({
+              input,
+              method: 'GET',
+              contentType: undefined,
+              config,
+              context,
+            });
+            context = nextCtx as Context;
+            return readable;
+          },
+          isDev: true,
+          entries: await entries,
+        });
         if (readable) {
           unstable_posthook?.(req, res, context as Context);
           res.setHeader('content-type', 'text/html; charset=utf-8');
-          readable.pipeTo(res.stream);
+          readable
+            .pipeThrough(
+              await transformIndexHtml(req.url.pathname, req.url.search),
+            )
+            .pipeTo(res.stream);
           return;
         }
       } catch (e) {
