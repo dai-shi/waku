@@ -2,18 +2,18 @@
 
 export const encodeInput = (input: string) => {
   if (input === '') {
-    return '_';
-  } else if (!input.startsWith('_')) {
-    return input;
+    return 'index.txt';
+  } else if (!input.endsWith('/')) {
+    return input + '.txt';
   }
-  throw new Error("Input must not start with '_'");
+  throw new Error("Input must not ends with '/'");
 };
 
 export const decodeInput = (encodedInput: string) => {
-  if (encodedInput === '_') {
+  if (encodedInput === 'index.txt') {
     return '';
-  } else if (!encodedInput.startsWith('_')) {
-    return encodedInput;
+  } else if (encodedInput.endsWith('.txt')) {
+    return encodedInput.slice(0, -'.txt'.length);
   }
   const err = new Error('Invalid encoded input');
   (err as any).statusCode = 400;

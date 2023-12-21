@@ -23,8 +23,10 @@ export function createHandler<
     throw new Error('prehook is required if posthook is provided');
   }
   const configPromise = resolveConfig(config || {});
-
   const loadHtmlHeadPromise = entries.then(({ loadHtmlHead }) => loadHtmlHead);
+  const skipRenderRscPromise = entries.then(
+    ({ skipRenderRsc }) => skipRenderRsc,
+  );
 
   return async (req, res, next) => {
     const config = await configPromise;
@@ -82,27 +84,31 @@ export function createHandler<
       if (method !== 'GET' && method !== 'POST') {
         throw new Error(`Unsupported method '${method}'`);
       }
+      const skipRenderRsc = await skipRenderRscPromise;
       try {
         const input = decodeInput(
           req.url.toString().slice(req.url.origin.length + basePrefix.length),
         );
-        const readable = await renderRsc({
-          config,
-          input,
-          method,
-          context,
-          body: req.stream,
-          contentType,
-          isDev: false,
-          entries: await entries,
-        });
-        unstable_posthook?.(req, res, context as Context);
-        deepFreeze(context);
-        readable.pipeTo(res.stream);
+        if (!skipRenderRsc(input)) {
+          const readable = await renderRsc({
+            config,
+            input,
+            method,
+            context,
+            body: req.stream,
+            contentType,
+            isDev: false,
+            entries: await entries,
+          });
+          unstable_posthook?.(req, res, context as Context);
+          deepFreeze(context);
+          readable.pipeTo(res.stream);
+          return;
+        }
       } catch (e) {
         handleError(e);
+        return;
       }
-      return;
     }
     next();
   };

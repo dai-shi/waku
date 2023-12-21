@@ -16,9 +16,9 @@ const prefetcher = (
   path: string,
   searchParamsList: Iterable<URLSearchParams> | undefined,
 ) =>
-  Array.from(searchParamsList || []).map(
-    (searchParams) => [getInputString(path, searchParams)] as const,
-  );
+  Array.from(searchParamsList || []).map((searchParams) => ({
+    input: getInputString(path, searchParams),
+  }));
 
 const Default = ({ children }: { children: ReactNode }) => children;
 
