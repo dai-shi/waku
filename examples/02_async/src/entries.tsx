@@ -13,7 +13,10 @@ export default defineEntries(
   // getBuildConfig
   async () => [{ pathname: '/', entries: [{ input: '', isStatic: true }] }],
   // getSsrConfig
-  async ({ pathname }) => {
+  async ({ pathname }, isBuild) => {
+    if (!isBuild) {
+      return null;
+    }
     switch (pathname) {
       case '/':
         return {

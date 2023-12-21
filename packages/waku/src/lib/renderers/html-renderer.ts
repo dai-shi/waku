@@ -241,7 +241,7 @@ export const renderHtml = async (
     htmlHead: string;
     renderRscForHtml: (input: string) => Promise<ReadableStream>;
   } & (
-    | { isDev: false; entries: EntriesPrd }
+    | { isDev: false; entries: EntriesPrd; isBuild: boolean }
     | { isDev: true; entries: EntriesDev }
   ),
 ): Promise<ReadableStream | null> => {
@@ -270,7 +270,7 @@ export const renderHtml = async (
       ? import(WAKU_CLIENT_MODULE_VALUE)
       : loadModule!('public/' + WAKU_CLIENT_MODULE),
   ]);
-  const ssrConfig = await getSsrConfig?.(reqUrl);
+  const ssrConfig = await getSsrConfig?.(reqUrl, !isDev && opts.isBuild);
   if (!ssrConfig) {
     return null;
   }

@@ -66,6 +66,7 @@ export function createHandler<
             }),
           isDev: false,
           entries: resolvedEntries,
+          isBuild: false,
         });
         if (readable) {
           unstable_posthook?.(req, res, context as Context);

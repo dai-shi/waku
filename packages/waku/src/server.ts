@@ -29,7 +29,10 @@ export type GetBuildConfig = (
   }>
 >;
 
-export type GetSsrConfig = (reqUrl: URL) => Promise<{
+export type GetSsrConfig = (
+  reqUrl: URL,
+  isBuild: boolean,
+) => Promise<{
   input: string;
   unstable_render: (opts: {
     createElement: typeof createElement;

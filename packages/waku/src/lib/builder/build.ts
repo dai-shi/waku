@@ -439,6 +439,7 @@ const emitHtmlFiles = async (
               }),
             isDev: false,
             entries: distEntries,
+            isBuild: true,
           }));
         await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
         if (htmlReadable) {
