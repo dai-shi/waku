@@ -377,16 +377,14 @@ const emitHtmlFiles = async (
   // TODO check duplicated files like rscFileSet
   const htmlFiles = await Promise.all(
     Array.from(buildConfig).map(
-      async ({ pathname, search, entries, customCode, context }) => {
-        const pathStr = pathname + (search ? '?' + search : '');
+      async ({ pathname, entries, customCode, context }) => {
         let htmlStr = publicIndexHtml;
         let htmlHead = publicIndexHtmlHead;
         const destHtmlFile = joinPath(
           rootDir,
           config.distDir,
           config.publicDir,
-          (extname(pathname) ? pathname : pathname + '/' + config.indexHtml) +
-            (search ? '?' + search : ''),
+          extname(pathname) ? pathname : pathname + '/' + config.indexHtml,
         );
         const inputsForPrefetch = new Set<string>();
         const moduleIdsForPrefetch = new Set<string>();
@@ -412,12 +410,12 @@ const emitHtmlFiles = async (
           );
           htmlHead += `<script type="module" async>${code}</script>`;
         }
-        htmlHeadMap[pathStr] = htmlHead;
+        htmlHeadMap[pathname] = htmlHead;
         const htmlReadable =
           ssr &&
           (await renderHtml({
             config,
-            reqUrl: new URL(pathStr, 'http://localhost'),
+            reqUrl: new URL(pathname, 'http://localhost'),
             htmlHead,
             renderRscForHtml: (input) =>
               renderRsc({
@@ -445,9 +443,8 @@ const emitHtmlFiles = async (
     ),
   );
   const loadHtmlHeadCode = `
-export function loadHtmlHead(pathname, search) {
-  const pathStr = pathname + (search ? '?' + search : '');
-  return ${JSON.stringify(htmlHeadMap)}[pathStr] || ${JSON.stringify(
+export function loadHtmlHead(pathname) {
+  return ${JSON.stringify(htmlHeadMap)}[pathname] || ${JSON.stringify(
     publicIndexHtmlHead,
   )};
 }

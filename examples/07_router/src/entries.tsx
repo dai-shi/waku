@@ -3,9 +3,7 @@ import { defineRouter } from 'waku/router/server';
 export default defineRouter(
   // getRoutePaths
   async () => ({
-    static: ['/', '/foo', '/bar', '/nested/baz', '/nested/qux'].map(
-      (pathname) => ({ pathname }),
-    ),
+    static: ['/', '/foo', '/bar', '/nested/baz', '/nested/qux'],
   }),
   // getComponent (id is "**/layout" or "**/page")
   async (id) => {
