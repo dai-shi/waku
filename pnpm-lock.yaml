@@ -690,7 +690,7 @@ importers:
         specifier: 5.0.9
         version: 5.0.9(@types/node@20.10.4)
       vite-plugin-stylex:
-        specifier: ^0.4.0
+        specifier: 0.4.0
         version: 0.4.0(@babel/traverse@7.23.6)(@babel/types@7.23.6)(vite@5.0.9)
 
   packages/create-waku:

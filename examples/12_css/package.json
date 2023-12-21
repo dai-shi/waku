@@ -26,6 +26,6 @@
     "@vitejs/plugin-react": "4.2.1",
     "typescript": "5.3.3",
     "vite": "5.0.9",
-    "vite-plugin-stylex": "^0.4.0"
+    "vite-plugin-stylex": "0.4.0"
   }
 }
