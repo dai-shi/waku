@@ -3,6 +3,7 @@ import styles from './App.module.css';
 import './App.css';
 import { container } from './styles.css.js';
 import { Counter } from './Counter.js';
+import { Banner } from './Banner.js';
 
 const App = ({ name }: { name: string }) => {
   return (
@@ -12,6 +13,7 @@ const App = ({ name }: { name: string }) => {
       <h1 className={styles.title}>Hello {name}!!</h1>
       <h3 className={container}>This is a server component.</h3>
       <Counter />
+      <Banner />
     </div>
   );
 };
