@@ -77,7 +77,7 @@ export function createHandler<
     },
   );
 
-  const transformIndexHtml = async (pathname: string, search: string) => {
+  const transformIndexHtml = async (pathname: string) => {
     const vite = await vitePromise;
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
@@ -94,12 +94,10 @@ export function createHandler<
           // to the proxy cache, which breaks __WAKU_PUSH__.
           data = data.replace(/<script type="module" async>/, '<script>');
           return new Promise<void>((resolve) => {
-            vite
-              .transformIndexHtml(pathname + (search ? '?' + search : ''), data)
-              .then((result) => {
-                controller.enqueue(encoder.encode(result));
-                resolve();
-              });
+            vite.transformIndexHtml(pathname, data).then((result) => {
+              controller.enqueue(encoder.encode(result));
+              resolve();
+            });
           });
         }
         controller.enqueue(chunk);
@@ -156,9 +154,7 @@ export function createHandler<
           unstable_posthook?.(req, res, context as Context);
           res.setHeader('content-type', 'text/html; charset=utf-8');
           readable
-            .pipeThrough(
-              await transformIndexHtml(req.url.pathname, req.url.search),
-            )
+            .pipeThrough(await transformIndexHtml(req.url.pathname))
             .pipeTo(res.stream);
           return;
         }

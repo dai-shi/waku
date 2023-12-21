@@ -17,18 +17,18 @@ import { Root, Slot, useRefetch } from '../client.js';
 import { getComponentIds, getInputString } from './common.js';
 import type { RouteProps } from './common.js';
 
-const parseLocation = () => {
+const parseLocation = (): RouteProps => {
   const { pathname, search } = window.location;
-  return { pathname, search };
+  return { path: pathname, searchParams: new URLSearchParams(search) };
 };
 
 type ChangeLocation = (
-  pathname?: string,
-  search?: string,
+  path?: string,
+  searchParams?: URLSearchParams,
   mode?: 'push' | 'replace' | false,
 ) => void;
 
-type PrefetchLocation = (pathname: string, search: string) => void;
+type PrefetchLocation = (path: string, searchParams: URLSearchParams) => void;
 
 const RouterContext = createContext<{
   loc: ReturnType<typeof parseLocation>;
@@ -83,9 +83,9 @@ export function Link({
     event.preventDefault();
     const url = new URL(href, window.location.href);
     if (url.href !== window.location.href) {
-      prefetchLocation(url.pathname, url.search);
+      prefetchLocation(url.pathname, url.searchParams);
       startTransition(() => {
-        changeLocation(url.pathname, url.search);
+        changeLocation(url.pathname, url.searchParams);
       });
     }
   };
@@ -93,7 +93,7 @@ export function Link({
     ? () => {
         const url = new URL(href, window.location.href);
         if (url.href !== window.location.href) {
-          prefetchLocation(url.pathname, url.search);
+          prefetchLocation(url.pathname, url.searchParams);
         }
       }
     : undefined;
@@ -136,14 +136,10 @@ function InnerRouter({
   const refetch = useRefetch();
 
   const [loc, setLoc] = useState(parseLocation);
-  const componentIds = getComponentIds(loc.pathname);
+  const componentIds = getComponentIds(loc.path);
 
   const [cached, setCached] = useState<Record<string, RouteProps>>(() => {
-    const routeProps: RouteProps = {
-      path: loc.pathname,
-      search: loc.search,
-    };
-    return Object.fromEntries(componentIds.map((id) => [id, routeProps]));
+    return Object.fromEntries(componentIds.map((id) => [id, loc]));
   });
   const cachedRef = useRef(cached);
   useEffect(() => {
@@ -151,13 +147,13 @@ function InnerRouter({
   }, [cached]);
 
   const changeLocation: ChangeLocation = useCallback(
-    (pathname, search, mode = 'push') => {
+    (path, searchParams, mode = 'push') => {
       const url = new URL(window.location.href);
-      if (pathname) {
-        url.pathname = pathname;
+      if (path) {
+        url.pathname = path;
       }
-      if (search) {
-        url.search = search;
+      if (searchParams) {
+        url.search = '?' + searchParams.toString();
       }
       if (mode === 'replace') {
         window.history.replaceState(window.history.state, '', url);
@@ -166,28 +162,22 @@ function InnerRouter({
       }
       const loc = parseLocation();
       setLoc(loc);
-      const componentIds = getComponentIds(loc.pathname);
-      const routeProps: RouteProps = {
-        path: loc.pathname,
-        search: loc.search,
-      };
+      const componentIds = getComponentIds(loc.path);
       const skip = getSkipList(
         componentIds,
-        routeProps,
+        loc,
         cachedRef.current,
         shouldSkip,
       );
       if (skip.length === componentIds.length) {
         return; // everything is cached
       }
-      const input = getInputString(loc.pathname, loc.search, skip);
+      const input = getInputString(loc.path, loc.searchParams, skip);
       refetch(input);
       setCached((prev) => ({
         ...prev,
         ...Object.fromEntries(
-          componentIds.flatMap((id) =>
-            skip.includes(id) ? [] : [[id, routeProps]],
-          ),
+          componentIds.flatMap((id) => (skip.includes(id) ? [] : [[id, loc]])),
         ),
       }));
     },
@@ -195,12 +185,9 @@ function InnerRouter({
   );
 
   const prefetchLocation: PrefetchLocation = useCallback(
-    (pathname, search) => {
-      const componentIds = getComponentIds(pathname);
-      const routeProps: RouteProps = {
-        path: pathname,
-        search: search,
-      };
+    (path, searchParams) => {
+      const componentIds = getComponentIds(path);
+      const routeProps: RouteProps = { path, searchParams };
       const skip = getSkipList(
         componentIds,
         routeProps,
@@ -210,12 +197,12 @@ function InnerRouter({
       if (skip.length === componentIds.length) {
         return; // everything is cached
       }
-      const input = getInputString(pathname, search, skip);
+      const input = getInputString(path, searchParams, skip);
       const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
       if (!prefetched[input]) {
         prefetched[input] = fetch(basePath + input);
       }
-      (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(pathname, search);
+      (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(path, searchParams);
     },
     [basePath, shouldSkip],
   );
@@ -223,8 +210,8 @@ function InnerRouter({
   useEffect(() => {
     const callback = () => {
       const loc = parseLocation();
-      prefetchLocation(loc.pathname, loc.search);
-      changeLocation(loc.pathname, loc.search, false);
+      prefetchLocation(loc.path, loc.searchParams);
+      changeLocation(loc.path, loc.searchParams, false);
     };
     window.addEventListener('popstate', callback);
     return () => window.removeEventListener('popstate', callback);
@@ -249,8 +236,8 @@ export function Router({
   basePath?: string;
   shouldSkip?: ShouldSkip;
 }) {
-  const { pathname, search } = parseLocation();
-  const initialInput = getInputString(pathname, search);
+  const loc = parseLocation();
+  const initialInput = getInputString(loc.path, loc.searchParams);
   return createElement(
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
     { initialInput, basePath },

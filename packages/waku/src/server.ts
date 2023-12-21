@@ -19,7 +19,6 @@ export type GetBuildConfig = (
 ) => Promise<
   Iterable<{
     pathname: string;
-    search?: string | undefined;
     entries?: Iterable<readonly [input: string, skipPrefetch?: boolean]>;
     customCode?: string; // optional code to inject TODO hope to remove this
     context?: unknown;
@@ -48,5 +47,5 @@ export type EntriesDev = {
 
 export type EntriesPrd = EntriesDev & {
   loadModule: (id: string) => Promise<unknown>;
-  loadHtmlHead: (pathname: string, search: string) => string;
+  loadHtmlHead: (pathname: string) => string;
 };

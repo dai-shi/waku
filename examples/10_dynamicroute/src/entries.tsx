@@ -60,11 +60,9 @@ export default defineRouter(
     const files = await glob('**/page.{tsx,js}', { cwd: routesDir });
     const staticRoutes = files
       .filter((file) => !/(^|\/)(\[\w+\]|_\w+_)\//.test(file))
-      .map((file) => ({
-        pathname: '/' + file.slice(0, Math.max(0, file.lastIndexOf('/'))),
-      }));
-    const dynamicRoutes = async (pathname: string) => {
-      const result = await getMappingAndItems(pathname + '/page');
+      .map((file) => '/' + file.slice(0, Math.max(0, file.lastIndexOf('/'))));
+    const dynamicRoutes = async (path: string) => {
+      const result = await getMappingAndItems(path + '/page');
       return result !== null;
     };
     return {

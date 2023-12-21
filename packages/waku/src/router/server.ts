@@ -12,16 +12,21 @@ import type { RouteProps } from './common.js';
 const { createElement } = ReactExports;
 
 // We have to make prefetcher consistent with client behavior
-const prefetcher = (pathname: string, search: string) => {
-  const input = getInputString(pathname, search);
-  return [[input]] as const;
-};
+const prefetcher = (
+  path: string,
+  searchParamsList: Iterable<URLSearchParams> | undefined,
+) =>
+  Array.from(searchParamsList || []).map(
+    (searchParams) => [getInputString(path, searchParams)] as const,
+  );
 
 const Default = ({ children }: { children: ReactNode }) => children;
 
+// TODO will review this again
 type RoutePaths = {
-  static?: Iterable<{ pathname: string; search?: string }>;
-  dynamic?: (pathname: string, search?: string) => Promise<boolean>;
+  static?: Iterable<string>;
+  staticSearchParams?: (path: string) => Iterable<URLSearchParams>;
+  dynamic?: (path: string) => Promise<boolean>;
 };
 
 export function defineRouter<P>(
@@ -33,14 +38,14 @@ export function defineRouter<P>(
   const routePathsPromise = getRoutePaths();
   const existsRoutePathPromise = routePathsPromise.then((routePaths) => {
     const staticPathSet = new Set<string>();
-    for (const { pathname, search } of routePaths.static || []) {
-      staticPathSet.add(pathname + (search ? '?' + search : ''));
+    for (const path of routePaths.static || []) {
+      staticPathSet.add(path);
     }
-    const existsRoutePath = async (pathname: string, search: string) => {
-      if (staticPathSet.has(pathname + (search ? '?' + search : ''))) {
+    const existsRoutePath = async (path: string) => {
+      if (staticPathSet.has(path)) {
         return true;
       }
-      if (await routePaths.dynamic?.(pathname, search)) {
+      if (await routePaths.dynamic?.(path)) {
         return true;
       }
       return false;
@@ -49,13 +54,13 @@ export function defineRouter<P>(
   });
 
   const renderEntries: RenderEntries = async (input) => {
-    const { pathname, search, skip } = parseInputString(input);
+    const { path, searchParams, skip } = parseInputString(input);
     const existsRoutePath = await existsRoutePathPromise;
-    if (!(await existsRoutePath(pathname, search))) {
+    if (!(await existsRoutePath(path))) {
       return null;
     }
-    const componentIds = getComponentIds(pathname);
-    const props: RouteProps = { path: pathname, search };
+    const componentIds = getComponentIds(path);
+    const props: RouteProps = { path, searchParams };
     const entries = (
       await Promise.all(
         componentIds.map(async (id) => {
@@ -82,24 +87,30 @@ export function defineRouter<P>(
   ) => {
     const routePaths = await routePathsPromise;
     const path2moduleIds: Record<string, string[]> = {};
-    for (const { pathname, search } of routePaths.static || []) {
-      const input = getInputString(pathname, search || '');
-      const moduleIds = await unstable_collectClientModules(input);
-      path2moduleIds[pathname + (search ? '?' + search : '')] = moduleIds;
+    for (const path of routePaths.static || []) {
+      for (const searchParams of [
+        new URLSearchParams(),
+        ...(routePaths.staticSearchParams?.(path) || []),
+      ]) {
+        const input = getInputString(path, searchParams);
+        const moduleIds = await unstable_collectClientModules(input);
+        const search = searchParams.toString();
+        path2moduleIds[path + (search ? '?' + search : '')] = moduleIds;
+      }
     }
     const customCode = `
-globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
-  const path = pathname + (search ? '?' + search : '');
+globalThis.__WAKU_ROUTER_PREFETCH__ = (path, searchParams) => {
+  const search = searchParams.toString();
+  const pathStr = path + (search ? '?' + search : '');
   const path2ids = ${JSON.stringify(path2moduleIds)};
-  for (const id of path2ids[path] || []) {
+  for (const id of path2ids[pathStr] || []) {
     import(id);
   }
 };`;
-    return Array.from(routePaths.static || []).map(({ pathname, search }) => {
+    return Array.from(routePaths.static || []).map((path) => {
       return {
-        pathname,
-        search,
-        entries: prefetcher(pathname, search || ''),
+        pathname: path,
+        entries: prefetcher(path, routePaths.staticSearchParams?.(path)),
         customCode,
       };
     });
@@ -107,11 +118,11 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (pathname, search) => {
 
   const getSsrConfig: GetSsrConfig = async (reqUrl) => {
     const existsRoutePath = await existsRoutePathPromise;
-    if (!(await existsRoutePath(reqUrl.pathname, reqUrl.search))) {
+    if (!(await existsRoutePath(reqUrl.pathname))) {
       return null;
     }
     const componentIds = getComponentIds(reqUrl.pathname);
-    const input = getInputString(reqUrl.pathname, reqUrl.search);
+    const input = getInputString(reqUrl.pathname, reqUrl.searchParams);
     type Opts = {
       createElement: typeof createElement;
       Slot: typeof Slot;

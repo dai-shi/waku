@@ -1,10 +1,10 @@
 export type RouteProps = {
   path: string;
-  search: string;
+  searchParams: URLSearchParams;
 };
 
-export function getComponentIds(pathname: string): readonly string[] {
-  const pathItems = pathname.split('/').filter(Boolean);
+export function getComponentIds(path: string): readonly string[] {
+  const pathItems = path.split('/').filter(Boolean);
   const idSet = new Set<string>();
   for (let index = 0; index <= pathItems.length; ++index) {
     const id = [...pathItems.slice(0, index), 'layout'].join('/');
@@ -17,16 +17,17 @@ export function getComponentIds(pathname: string): readonly string[] {
 // XXX This custom encoding might not work in some edge cases.
 
 export function getInputString(
-  pathname: string,
-  search: string,
+  path: string,
+  searchParams: URLSearchParams,
   skip?: string[],
 ): string {
+  const search = searchParams.toString() || '';
   if (search.includes('/')) {
-    throw new Error('Invalid search');
+    throw new Error('Invalid search params');
   }
   let input = search
-    ? '=' + pathname.replace(/\/$/, '/__INDEX__') + '/' + search
-    : '-' + pathname.replace(/\/$/, '/__INDEX__');
+    ? '=' + path.replace(/\/$/, '/__INDEX__') + '/' + search
+    : '-' + path.replace(/\/$/, '/__INDEX__');
   if (skip) {
     const params = new URLSearchParams();
     skip.forEach((id) => params.append('skip', id));
@@ -36,8 +37,8 @@ export function getInputString(
 }
 
 export function parseInputString(input: string): {
-  pathname: string;
-  search: string;
+  path: string;
+  searchParams: URLSearchParams;
   skip?: string[];
 } {
   const [first, second] = input.split('?', 2);
@@ -45,14 +46,14 @@ export function parseInputString(input: string): {
   if (first?.startsWith('=')) {
     const index = first.lastIndexOf('/');
     return {
-      pathname: first.slice(1, index).replace(/\/__INDEX__$/, '/'),
-      search: first.slice(index + 1),
+      path: first.slice(1, index).replace(/\/__INDEX__$/, '/'),
+      searchParams: new URLSearchParams(first.slice(index + 1)),
       ...(skip ? { skip } : {}),
     };
   } else if (first?.startsWith('-')) {
     return {
-      pathname: first.slice(1).replace(/\/__INDEX__$/, '/'),
-      search: '',
+      path: first.slice(1).replace(/\/__INDEX__$/, '/'),
+      searchParams: new URLSearchParams(),
       ...(skip ? { skip } : {}),
     };
   } else {
