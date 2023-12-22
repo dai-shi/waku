@@ -109,44 +109,38 @@ export function Link({
   return ele;
 }
 
-let shouldSkip: ShouldSkip | undefined;
 const getSkipList = (
   componentIds: readonly string[],
   props: RouteProps,
   cached: Record<string, RouteProps>,
 ): string[] => {
-  if (!shouldSkip) {
-    const ele = document.getElementById('__WAKU_ROUTER_SHOULD_SKIP__');
-    if (!ele) {
-      return [];
-    }
-    shouldSkip = JSON.parse(ele.textContent!);
+  const ele: any = document.querySelector('meta[name="waku-should-skip"]')
+  if (!ele) {
+    return [];
   }
-  return [
-    ...componentIds.filter((id) => {
-      const prevProps = cached[id];
-      if (!prevProps) {
-        return false;
-      }
-      const shouldCheck = shouldSkip?.[id];
-      if (!shouldCheck) {
-        return false;
-      }
-      if (shouldCheck.path && props.path !== prevProps.path) {
-        return false;
-      }
-      if (
-        shouldCheck.keys?.some(
-          (key) =>
-            props.searchParams.get(key) !== prevProps.searchParams.get(key),
-        )
-      ) {
-        return false;
-      }
-      return true;
-    }),
-    SHOULD_SKIP_ID,
-  ];
+  const shouldSkip: ShouldSkip = JSON.parse(ele.content);
+  return componentIds.filter((id) => {
+    const prevProps = cached[id];
+    if (!prevProps) {
+      return false;
+    }
+    const shouldCheck = shouldSkip?.[id];
+    if (!shouldCheck) {
+      return false;
+    }
+    if (shouldCheck.path && props.path !== prevProps.path) {
+      return false;
+    }
+    if (
+      shouldCheck.keys?.some(
+        (key) =>
+          props.searchParams.get(key) !== prevProps.searchParams.get(key),
+      )
+    ) {
+      return false;
+    }
+    return true;
+  });
 };
 
 function InnerRouter({ basePath }: { basePath: string }) {

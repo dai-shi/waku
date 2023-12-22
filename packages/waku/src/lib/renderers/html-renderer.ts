@@ -252,7 +252,7 @@ export const renderHtml = async (
     loadModule,
   } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
   const [
-    { createElement },
+    { createElement, Fragment },
     { renderToReadableStream },
     { createFromReadableStream },
     { ServerRoot, Slot },
@@ -374,7 +374,7 @@ export const renderHtml = async (
             Omit<ComponentProps<typeof ServerRoot>, 'children'>
           >,
           { elements },
-          ssrConfig.unstable_render({ createElement, Slot }),
+          ssrConfig.unstable_render({ createElement, Fragment, Slot }),
         ),
       ),
       {

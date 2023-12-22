@@ -1,4 +1,4 @@
-import type { createElement, ReactNode } from 'react';
+import type { createElement, Fragment, ReactNode } from 'react';
 
 import type { Slot } from './client.js';
 
@@ -36,6 +36,7 @@ export type GetSsrConfig = (
   input: string;
   unstable_render: (opts: {
     createElement: typeof createElement;
+    Fragment: typeof Fragment;
     Slot: typeof Slot;
   }) => ReactNode;
 } | null>;

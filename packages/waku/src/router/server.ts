@@ -1,5 +1,5 @@
-import ReactExports from 'react';
-import type { FunctionComponent, ReactNode } from 'react';
+import { createElement } from 'react';
+import type { Fragment, FunctionComponent, ReactNode } from 'react';
 
 import { defineEntries } from '../server.js';
 import type { RenderEntries, GetBuildConfig, GetSsrConfig } from '../server.js';
@@ -13,28 +13,26 @@ import {
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
 
-// eslint-disable-next-line import/no-named-as-default-member
-const { createElement } = ReactExports;
-
 const Default = ({ children }: { children: ReactNode }) => children;
 
-// TODO implement
 const ShoudSkipComponent = ({ shouldSkip }: { shouldSkip: ShouldSkip }) =>
-  createElement(
-    'script',
-    { id: '__WAKU_ROUTER_SHOULD_SKIP__', type: 'application/json' },
-    JSON.stringify(shouldSkip),
-  );
+  createElement('meta', {
+    name: 'waku-should-skip',
+    content: JSON.stringify(shouldSkip),
+  });
 
 export function defineRouter<P>(
   existsPath: (path: string) => Promise<'static' | 'dynamic' | null>,
   getComponent: (
     componentId: string, // "**/layout" or "**/page"
+    unstable_setShouldSkip: (val: ShouldSkip[string]) => void,
   ) => Promise<FunctionComponent<P> | { default: FunctionComponent<P> } | null>,
   getPathsForBuild?: () => Promise<
     Iterable<{ path: string; searchParams?: URLSearchParams }>
   >,
 ): ReturnType<typeof defineEntries> {
+  const shouldSkip: ShouldSkip = {};
+
   const renderEntries: RenderEntries = async (input) => {
     const { path, searchParams, skip } = parseInputString(input);
     if (!(await existsPath(path))) {
@@ -48,7 +46,9 @@ export function defineRouter<P>(
           if (skip?.includes(id)) {
             return [];
           }
-          const mod = await getComponent(id);
+          const mod = await getComponent(id, (val) => {
+            shouldSkip[id] = val;
+          });
           const component =
             typeof mod === 'function' ? mod : mod?.default || Default;
           const element = createElement(
@@ -60,13 +60,10 @@ export function defineRouter<P>(
         }),
       )
     ).flat();
-    if (!skip?.includes(SHOULD_SKIP_ID)) {
-      const shouldSkip: ShouldSkip = { layout: {}, page: {} };
-      entries.push([
-        SHOULD_SKIP_ID,
-        createElement(ShoudSkipComponent, { shouldSkip }) as any,
-      ]);
-    }
+    entries.push([
+      SHOULD_SKIP_ID,
+      createElement(ShoudSkipComponent, { shouldSkip }) as any,
+    ]);
     return Object.fromEntries(entries);
   };
 
@@ -127,12 +124,18 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path, searchParams) => {
     const input = getInputString(reqUrl.pathname, reqUrl.searchParams);
     type Opts = {
       createElement: typeof createElement;
+      Fragment: typeof Fragment;
       Slot: typeof Slot;
     };
-    const render = ({ createElement, Slot }: Opts) =>
-      componentIds.reduceRight(
-        (acc: ReactNode, id) => createElement(Slot, { id }, acc),
+    const render = ({ createElement, Fragment, Slot }: Opts) =>
+      createElement(
+        Fragment,
         null,
+        createElement(Slot, { id: SHOULD_SKIP_ID }),
+        componentIds.reduceRight(
+          (acc: ReactNode, id) => createElement(Slot, { id }, acc),
+          null,
+        ),
       );
     return { input, unstable_render: render };
   };

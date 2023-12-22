@@ -63,9 +63,10 @@ export function parseInputString(input: string): {
   }
 }
 
+// It starts with "/" to avoid conflicing with normal component ids.
 export const SHOULD_SKIP_ID = '/SHOULD_SKIP';
 
-// the key is componentId
+// The key is componentId
 export type ShouldSkip = Record<
   string,
   {
