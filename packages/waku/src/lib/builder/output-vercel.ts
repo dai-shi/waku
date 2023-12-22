@@ -69,8 +69,6 @@ export default function handler(req, res) {
       req.url,
       path.extname(req.url) ? '' : '${config.indexHtml}',
     );
-    console.log('req.url', req.url, 'fname', fname);
-    console.log('exists', fs.existsSync(fname));
     if (fs.existsSync(fname)) {
       if (fname.endsWith('.html')) {
         res.setHeader('content-type', 'text/html; charset=utf-8');
