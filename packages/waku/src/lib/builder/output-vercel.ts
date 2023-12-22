@@ -67,7 +67,7 @@ export default function handler(req, res) {
       '${config.distDir}',
       '${config.publicDir}',
       req.url,
-      extname(req.url) ? '' : '${config.indexHtml}',
+      path.extname(req.url) ? '' : '${config.indexHtml}',
     );
     console.log('req.url', req.url, 'fname', fname);
     console.log('exists', fs.existsSync(fname));
