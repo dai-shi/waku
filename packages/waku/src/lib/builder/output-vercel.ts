@@ -63,8 +63,12 @@ import { connectMiddleware } from 'waku';
 const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
 export default function handler(req, res) {
   connectMiddleware({ entries, ssr: ${ssr} })(req, res, () => {
-    const fname = path.join('${config.distDir}', '${config.publicDir}', req.url);
+    let fname = path.join('${config.distDir}', '${config.publicDir}', req.url);
+    if (fname.endsWith('/')) {
+      fname += '${config.indexHtml}';
+    }
     console.log('req.url', req.url, 'fname', fname);
+    console.log('exists', fs.existsSync(fname));
     /*
     if (fs.existsSync(fname)) {
       if (fname.endsWith('.html')) {
