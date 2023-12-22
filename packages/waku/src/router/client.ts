@@ -109,38 +109,44 @@ export function Link({
   return ele;
 }
 
+let shouldSkip: ShouldSkip | undefined;
 const getSkipList = (
   componentIds: readonly string[],
   props: RouteProps,
   cached: Record<string, RouteProps>,
 ): string[] => {
-  const ele = document.getElementById('__WAKU_ROUTER_SHOULD_SKIP__');
-  if (!ele) {
-    return [];
+  if (!shouldSkip) {
+    const ele = document.getElementById('__WAKU_ROUTER_SHOULD_SKIP__');
+    if (!ele) {
+      return [];
+    }
+    shouldSkip = JSON.parse(ele.textContent!);
   }
-  const shouldSkip: ShouldSkip = JSON.parse(ele.textContent!);
-  return componentIds.filter((id) => {
-    const prevProps = cached[id];
-    if (!prevProps) {
-      return false;
-    }
-    const shouldCheck = shouldSkip[id];
-    if (!shouldCheck) {
-      return false;
-    }
-    if (shouldCheck.path && props.path !== prevProps.path) {
-      return false;
-    }
-    if (
-      shouldCheck.keys?.some(
-        (key) =>
-          props.searchParams.get(key) !== prevProps.searchParams.get(key),
-      )
-    ) {
-      return false;
-    }
-    return true;
-  });
+  return [
+    ...componentIds.filter((id) => {
+      const prevProps = cached[id];
+      if (!prevProps) {
+        return false;
+      }
+      const shouldCheck = shouldSkip?.[id];
+      if (!shouldCheck) {
+        return false;
+      }
+      if (shouldCheck.path && props.path !== prevProps.path) {
+        return false;
+      }
+      if (
+        shouldCheck.keys?.some(
+          (key) =>
+            props.searchParams.get(key) !== prevProps.searchParams.get(key),
+        )
+      ) {
+        return false;
+      }
+      return true;
+    }),
+    SHOULD_SKIP_ID,
+  ];
 };
 
 function InnerRouter({ basePath }: { basePath: string }) {
@@ -175,7 +181,7 @@ function InnerRouter({ basePath }: { basePath: string }) {
       setLoc(loc);
       const componentIds = getComponentIds(loc.path);
       const skip = getSkipList(componentIds, loc, cachedRef.current);
-      if (skip.length === componentIds.length) {
+      if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is cached
       }
       const input = getInputString(loc.path, loc.searchParams, skip);
@@ -195,7 +201,7 @@ function InnerRouter({ basePath }: { basePath: string }) {
       const componentIds = getComponentIds(path);
       const routeProps: RouteProps = { path, searchParams };
       const skip = getSkipList(componentIds, routeProps, cachedRef.current);
-      if (skip.length === componentIds.length) {
+      if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is cached
       }
       const input = getInputString(path, searchParams, skip);

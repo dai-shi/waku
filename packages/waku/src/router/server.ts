@@ -11,7 +11,7 @@ import {
   parseInputString,
   SHOULD_SKIP_ID,
 } from './common.js';
-import type { RouteProps } from './common.js';
+import type { RouteProps, ShouldSkip } from './common.js';
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { createElement } = ReactExports;
@@ -19,12 +19,11 @@ const { createElement } = ReactExports;
 const Default = ({ children }: { children: ReactNode }) => children;
 
 // TODO implement
-const ShoudSkipComponent = () =>
+const ShoudSkipComponent = ({ shouldSkip }: { shouldSkip: ShouldSkip }) =>
   createElement(
     'script',
     { id: '__WAKU_ROUTER_SHOULD_SKIP__', type: 'application/json' },
-    `
-{ "layout": {} }`,
+    JSON.stringify(shouldSkip),
   );
 
 export function defineRouter<P>(
@@ -61,8 +60,13 @@ export function defineRouter<P>(
         }),
       )
     ).flat();
-    // TODO should we skip this for the second time?
-    entries.push([SHOULD_SKIP_ID, createElement(ShoudSkipComponent)]);
+    if (!skip?.includes(SHOULD_SKIP_ID)) {
+      const shouldSkip: ShouldSkip = { layout: {}, page: {} };
+      entries.push([
+        SHOULD_SKIP_ID,
+        createElement(ShoudSkipComponent, { shouldSkip }) as any,
+      ]);
+    }
     return Object.fromEntries(entries);
   };
 

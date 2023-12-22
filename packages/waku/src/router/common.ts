@@ -69,7 +69,7 @@ export const SHOULD_SKIP_ID = '/SHOULD_SKIP';
 export type ShouldSkip = Record<
   string,
   {
-    path: boolean; // if we compare path
+    path?: boolean; // if we compare path
     keys?: string[]; // searchParams keys to compare
   }
 >;
