@@ -1,10 +1,10 @@
 import { defineRouter } from 'waku/router/server';
 
+const STATIC_PATHS = ['/', '/foo'];
+
 export default defineRouter(
-  // getRoutePaths
-  async () => ({
-    static: ['/', '/foo'],
-  }),
+  // existsPath
+  async (path: string) => (STATIC_PATHS.includes(path) ? 'static' : null),
   // getComponent (id is "**/layout" or "**/page")
   async (id) => {
     switch (id) {
@@ -18,4 +18,6 @@ export default defineRouter(
         return null;
     }
   },
+  // getPathsForBuild
+  async () => STATIC_PATHS.map((path) => ({ path })),
 );
