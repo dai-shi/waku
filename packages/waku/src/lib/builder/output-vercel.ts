@@ -63,13 +63,14 @@ import { connectMiddleware } from 'waku';
 const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
 export default function handler(req, res) {
   connectMiddleware({ entries, ssr: ${ssr} })(req, res, () => {
-    let fname = path.join('${config.distDir}', '${config.publicDir}', req.url);
-    if (fname.endsWith('/')) {
-      fname += '${config.indexHtml}';
-    }
+    const fname = path.join(
+      '${config.distDir}',
+      '${config.publicDir}',
+      req.url,
+      extname(req.url) ? '' : '${config.indexHtml}',
+    );
     console.log('req.url', req.url, 'fname', fname);
     console.log('exists', fs.existsSync(fname));
-    /*
     if (fs.existsSync(fname)) {
       if (fname.endsWith('.html')) {
         res.setHeader('content-type', 'text/html; charset=utf-8');
@@ -79,7 +80,6 @@ export default function handler(req, res) {
       fs.createReadStream(fname).pipe(res);
       return;
     }
-    */
     res.statusCode = 404;
     res.end();
   });
