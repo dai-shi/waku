@@ -11,12 +11,9 @@ export default defineEntries(
     };
   },
   // getBuildConfig
-  async () => [{ pathname: '/', entries: [{ input: '', isStatic: true }] }],
+  async () => [{ pathname: '/', entries: [{ input: '' }] }],
   // getSsrConfig
-  async ({ pathname }, isPrd) => {
-    if (isPrd) {
-      return null;
-    }
+  async ({ pathname }) => {
     switch (pathname) {
       case '/':
         return {

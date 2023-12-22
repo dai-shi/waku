@@ -12,6 +12,7 @@ const App = ({ name }: { name: string }) => {
       <h1>Hello {name}!!</h1>
       <h3>This is a server component.</h3>
       <Counter greet={greet as unknown as ServerFunction<typeof greet>} />
+      <div>{new Date().toISOString()}</div>
     </div>
   );
 };

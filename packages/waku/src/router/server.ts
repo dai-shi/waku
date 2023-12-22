@@ -25,7 +25,7 @@ export function defineRouter<P>(
   existsPath: (path: string) => Promise<'static' | 'dynamic' | null>,
   getComponent: (
     componentId: string, // "**/layout" or "**/page"
-    unstable_setShouldSkip: (val: ShouldSkip[string]) => void,
+    unstable_setShouldSkip: (val?: ShouldSkip[string]) => void,
   ) => Promise<FunctionComponent<P> | { default: FunctionComponent<P> } | null>,
   getPathsForBuild?: () => Promise<
     Iterable<{ path: string; searchParams?: URLSearchParams }>
@@ -47,7 +47,11 @@ export function defineRouter<P>(
             return [];
           }
           const mod = await getComponent(id, (val) => {
-            shouldSkip[id] = val;
+            if (val) {
+              shouldSkip[id] = val;
+            } else {
+              delete shouldSkip[id];
+            }
           });
           const component =
             typeof mod === 'function' ? mod : mod?.default || Default;

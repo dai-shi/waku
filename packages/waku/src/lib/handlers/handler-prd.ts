@@ -23,10 +23,6 @@ export function createHandler<
     throw new Error('prehook is required if posthook is provided');
   }
   const configPromise = resolveConfig(config || {});
-  const loadHtmlHeadPromise = entries.then(({ loadHtmlHead }) => loadHtmlHead);
-  const skipRenderRscPromise = entries.then(
-    ({ skipRenderRsc }) => skipRenderRsc,
-  );
 
   return async (req, res, next) => {
     const config = await configPromise;
@@ -49,8 +45,8 @@ export function createHandler<
     }
     if (ssr) {
       try {
-        const loadHtmlHead = await loadHtmlHeadPromise;
         const resolvedEntries = await entries;
+        const { loadHtmlHead } = resolvedEntries;
         const readable = await renderHtml({
           config,
           reqUrl: req.url,
@@ -85,7 +81,7 @@ export function createHandler<
       if (method !== 'GET' && method !== 'POST') {
         throw new Error(`Unsupported method '${method}'`);
       }
-      const skipRenderRsc = await skipRenderRscPromise;
+      const { skipRenderRsc } = await entries;
       try {
         const input = decodeInput(
           req.url.toString().slice(req.url.origin.length + basePrefix.length),
