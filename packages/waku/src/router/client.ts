@@ -114,7 +114,7 @@ const getSkipList = (
   props: RouteProps,
   cached: Record<string, RouteProps>,
 ): string[] => {
-  const ele: any = document.querySelector('meta[name="waku-should-skip"]')
+  const ele: any = document.querySelector('meta[name="waku-should-skip"]');
   if (!ele) {
     return [];
   }

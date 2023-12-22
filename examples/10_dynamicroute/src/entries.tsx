@@ -73,7 +73,8 @@ export default defineRouter(
     return null;
   },
   // getComponent (id is "**/layout" or "**/page")
-  async (id) => {
+  async (id, unstable_setShouldSkip) => {
+    unstable_setShouldSkip({}); // always skip if possible
     const result = await getMappingAndItems(id);
     if (result === null) {
       return null;
