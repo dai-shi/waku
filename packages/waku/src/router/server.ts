@@ -5,7 +5,12 @@ import { defineEntries } from '../server.js';
 import type { RenderEntries, GetBuildConfig, GetSsrConfig } from '../server.js';
 import { Children } from '../client.js';
 import type { Slot } from '../client.js';
-import { getComponentIds, getInputString, parseInputString } from './common.js';
+import {
+  getComponentIds,
+  getInputString,
+  parseInputString,
+  SHOULD_SKIP_ID,
+} from './common.js';
 import type { RouteProps } from './common.js';
 
 // eslint-disable-next-line import/no-named-as-default-member
@@ -17,11 +22,9 @@ const Default = ({ children }: { children: ReactNode }) => children;
 const ShoudSkipComponent = () =>
   createElement(
     'script',
-    null,
+    { id: '__WAKU_ROUTER_SHOULD_SKIP__', type: 'application/json' },
     `
-globalThis.__WAKU_ROUTER_SHOULD_SKIP__ = {
-  'layout': { path: true },
-};`,
+{ "layout": {} }`,
   );
 
 export function defineRouter<P>(
@@ -59,7 +62,7 @@ export function defineRouter<P>(
       )
     ).flat();
     // TODO should we skip this for the second time?
-    entries.push(['/SHOULD_SKIP', createElement(ShoudSkipComponent)]);
+    entries.push([SHOULD_SKIP_ID, createElement(ShoudSkipComponent)]);
     return Object.fromEntries(entries);
   };
 
@@ -112,7 +115,8 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path, searchParams) => {
 
   // TODO this API is not very understandable and not consistent with RSC
   const getSsrConfig: GetSsrConfig = async (reqUrl, isPrd) => {
-    if ((await existsPath(reqUrl.pathname)) !== (isPrd ? 'dynamic' : null)) {
+    const pathType = await existsPath(reqUrl.pathname);
+    if (isPrd ? pathType !== 'dynamic' : pathType === null) {
       return null;
     }
     const componentIds = getComponentIds(reqUrl.pathname);

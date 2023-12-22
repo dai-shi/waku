@@ -14,8 +14,10 @@ import {
 import type { ComponentProps, FunctionComponent, ReactNode } from 'react';
 
 import { Root, Slot, useRefetch } from '../client.js';
-import { getComponentIds, getInputString } from './common.js';
+import { getComponentIds, getInputString, SHOULD_SKIP_ID } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
+// FIXME this depends on an internal function
+import { encodeInput } from '../lib/renderers/utils.js';
 
 const parseLocation = (): RouteProps => {
   const { pathname, search } = window.location;
@@ -111,33 +113,35 @@ const getSkipList = (
   componentIds: readonly string[],
   props: RouteProps,
   cached: Record<string, RouteProps>,
-): string[] =>
-  (globalThis as any).__WAKU_ROUTER_SHOULD_SKIP__
-    ? componentIds.filter((id) => {
-        const prevProps = cached[id];
-        if (!prevProps) {
-          return false;
-        }
-        const shouldCheck = (
-          (globalThis as any).__WAKU_ROUTER_SHOULD_SKIP__ as ShouldSkip
-        )[id];
-        if (!shouldCheck) {
-          return false;
-        }
-        if (shouldCheck.path && props.path !== prevProps.path) {
-          return false;
-        }
-        if (
-          shouldCheck.keys?.some(
-            (key) =>
-              props.searchParams.get(key) !== prevProps.searchParams.get(key),
-          )
-        ) {
-          return false;
-        }
-        return true;
-      })
-    : [];
+): string[] => {
+  const ele = document.getElementById('__WAKU_ROUTER_SHOULD_SKIP__');
+  if (!ele) {
+    return [];
+  }
+  const shouldSkip: ShouldSkip = JSON.parse(ele.textContent!);
+  return componentIds.filter((id) => {
+    const prevProps = cached[id];
+    if (!prevProps) {
+      return false;
+    }
+    const shouldCheck = shouldSkip[id];
+    if (!shouldCheck) {
+      return false;
+    }
+    if (shouldCheck.path && props.path !== prevProps.path) {
+      return false;
+    }
+    if (
+      shouldCheck.keys?.some(
+        (key) =>
+          props.searchParams.get(key) !== prevProps.searchParams.get(key),
+      )
+    ) {
+      return false;
+    }
+    return true;
+  });
+};
 
 function InnerRouter({ basePath }: { basePath: string }) {
   const refetch = useRefetch();
@@ -197,7 +201,7 @@ function InnerRouter({ basePath }: { basePath: string }) {
       const input = getInputString(path, searchParams, skip);
       const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
       if (!prefetched[input]) {
-        prefetched[input] = fetch(basePath + input);
+        prefetched[input] = fetch(basePath + encodeInput(input));
       }
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(path, searchParams);
     },
@@ -220,9 +224,14 @@ function InnerRouter({ basePath }: { basePath: string }) {
   );
 
   return createElement(
-    RouterContext.Provider,
-    { value: { loc, changeLocation, prefetchLocation } },
-    children,
+    Fragment,
+    null,
+    createElement(Slot, { id: SHOULD_SKIP_ID }),
+    createElement(
+      RouterContext.Provider,
+      { value: { loc, changeLocation, prefetchLocation } },
+      children,
+    ),
   );
 }
 

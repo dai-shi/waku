@@ -28,7 +28,7 @@ export function getInputString(
   let input = search
     ? '=' + path.replace(/\/$/, '/__INDEX__') + '/' + search
     : '-' + path.replace(/\/$/, '/__INDEX__');
-  if (skip) {
+  if (skip && skip.length) {
     const params = new URLSearchParams();
     skip.forEach((id) => params.append('skip', id));
     input += '?' + params;
@@ -62,6 +62,8 @@ export function parseInputString(input: string): {
     throw err;
   }
 }
+
+export const SHOULD_SKIP_ID = '/SHOULD_SKIP';
 
 // the key is componentId
 export type ShouldSkip = Record<
