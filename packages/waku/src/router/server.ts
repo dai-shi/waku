@@ -11,52 +11,20 @@ import type { RouteProps } from './common.js';
 // eslint-disable-next-line import/no-named-as-default-member
 const { createElement } = ReactExports;
 
-// We have to make prefetcher consistent with client behavior
-const prefetcher = (
-  path: string,
-  searchParamsList: Iterable<URLSearchParams> | undefined,
-) =>
-  Array.from(searchParamsList || []).map((searchParams) => ({
-    input: getInputString(path, searchParams),
-  }));
-
 const Default = ({ children }: { children: ReactNode }) => children;
 
-// TODO will review this again
-type RoutePaths = {
-  static?: Iterable<string>;
-  staticSearchParams?: (path: string) => Iterable<URLSearchParams>;
-  dynamic?: (path: string) => Promise<boolean>;
-};
-
 export function defineRouter<P>(
-  getRoutePaths: () => Promise<RoutePaths>,
+  existsPath: (path: string) => Promise<'static' | 'dynamic' | null>,
   getComponent: (
-    componentId: string,
+    componentId: string, // "**/layout" or "**/page"
   ) => Promise<FunctionComponent<P> | { default: FunctionComponent<P> } | null>,
+  getPathsForBuild?: () => Promise<
+    Iterable<{ path: string; searchParams?: URLSearchParams }>
+  >,
 ): ReturnType<typeof defineEntries> {
-  const routePathsPromise = getRoutePaths();
-  const existsRoutePathPromise = routePathsPromise.then((routePaths) => {
-    const staticPathSet = new Set<string>();
-    for (const path of routePaths.static || []) {
-      staticPathSet.add(path);
-    }
-    const existsRoutePath = async (path: string) => {
-      if (staticPathSet.has(path)) {
-        return true;
-      }
-      if (await routePaths.dynamic?.(path)) {
-        return true;
-      }
-      return false;
-    };
-    return existsRoutePath;
-  });
-
   const renderEntries: RenderEntries = async (input) => {
     const { path, searchParams, skip } = parseInputString(input);
-    const existsRoutePath = await existsRoutePathPromise;
-    if (!(await existsRoutePath(path))) {
+    if (!(await existsPath(path))) {
       return null;
     }
     const componentIds = getComponentIds(path);
@@ -85,18 +53,29 @@ export function defineRouter<P>(
   const getBuildConfig: GetBuildConfig = async (
     unstable_collectClientModules,
   ) => {
-    const routePaths = await routePathsPromise;
+    const pathsForBuild = await getPathsForBuild?.();
+    const pathMap = new Map<
+      string,
+      { isStatic: boolean; searchParamsList: URLSearchParams[] }
+    >();
     const path2moduleIds: Record<string, string[]> = {};
-    for (const path of routePaths.static || []) {
-      for (const searchParams of [
-        new URLSearchParams(),
-        ...(routePaths.staticSearchParams?.(path) || []),
-      ]) {
-        const input = getInputString(path, searchParams);
-        const moduleIds = await unstable_collectClientModules(input);
-        const search = searchParams.toString();
-        path2moduleIds[path + (search ? '?' + search : '')] = moduleIds;
+    for (const {
+      path,
+      searchParams = new URLSearchParams(),
+    } of pathsForBuild || []) {
+      let item = pathMap.get(path);
+      if (!item) {
+        item = {
+          isStatic: (await existsPath(path)) === 'static',
+          searchParamsList: [],
+        };
+        pathMap.set(path, item);
       }
+      item.searchParamsList.push(searchParams);
+      const input = getInputString(path, searchParams);
+      const moduleIds = await unstable_collectClientModules(input);
+      const search = searchParams.toString();
+      path2moduleIds[path + (search ? '?' + search : '')] = moduleIds;
     }
     const customCode = `
 globalThis.__WAKU_ROUTER_PREFETCH__ = (path, searchParams) => {
@@ -107,18 +86,21 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path, searchParams) => {
     import(id);
   }
 };`;
-    return Array.from(routePaths.static || []).map((path) => {
-      return {
-        pathname: path,
-        entries: prefetcher(path, routePaths.staticSearchParams?.(path)),
-        customCode,
-      };
-    });
+    return Array.from(pathMap.entries()).map(
+      ([path, { isStatic, searchParamsList }]) => {
+        const entries = searchParamsList.map((searchParams) => ({
+          input: getInputString(path, searchParams),
+          isStatic,
+        }));
+        return { pathname: path, entries, customCode };
+      },
+    );
   };
 
-  const getSsrConfig: GetSsrConfig = async (reqUrl) => {
-    const existsRoutePath = await existsRoutePathPromise;
-    if (!(await existsRoutePath(reqUrl.pathname))) {
+  const getSsrConfig: GetSsrConfig = async (reqUrl, isBuild) => {
+    if (
+      (await existsPath(reqUrl.pathname)) !== (isBuild ? 'static' : 'dynamic')
+    ) {
       return null;
     }
     const componentIds = getComponentIds(reqUrl.pathname);
