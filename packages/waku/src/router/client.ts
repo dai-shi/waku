@@ -15,7 +15,7 @@ import type { ComponentProps, FunctionComponent, ReactNode } from 'react';
 
 import { Root, Slot, useRefetch } from '../client.js';
 import { getComponentIds, getInputString } from './common.js';
-import type { RouteProps } from './common.js';
+import type { RouteProps, ShouldSkip } from './common.js';
 
 const parseLocation = (): RouteProps => {
   const { pathname, search } = window.location;
@@ -107,32 +107,39 @@ export function Link({
   return ele;
 }
 
-type ShouldSkip = (
-  componentId: string,
-  props: RouteProps,
-  prevProps: RouteProps,
-) => boolean;
-
 const getSkipList = (
   componentIds: readonly string[],
   props: RouteProps,
   cached: Record<string, RouteProps>,
-  shouldSkip?: ShouldSkip,
 ): string[] =>
-  shouldSkip
+  (globalThis as any).__WAKU_ROUTER_SHOULD_SKIP__
     ? componentIds.filter((id) => {
         const prevProps = cached[id];
-        return prevProps && shouldSkip(id, props, prevProps);
+        if (!prevProps) {
+          return false;
+        }
+        const shouldCheck = (
+          (globalThis as any).__WAKU_ROUTER_SHOULD_SKIP__ as ShouldSkip
+        )[id];
+        if (!shouldCheck) {
+          return false;
+        }
+        if (shouldCheck.path && props.path !== prevProps.path) {
+          return false;
+        }
+        if (
+          shouldCheck.keys?.some(
+            (key) =>
+              props.searchParams.get(key) !== prevProps.searchParams.get(key),
+          )
+        ) {
+          return false;
+        }
+        return true;
       })
     : [];
 
-function InnerRouter({
-  basePath,
-  shouldSkip,
-}: {
-  basePath: string;
-  shouldSkip?: ShouldSkip | undefined;
-}) {
+function InnerRouter({ basePath }: { basePath: string }) {
   const refetch = useRefetch();
 
   const [loc, setLoc] = useState(parseLocation);
@@ -163,12 +170,7 @@ function InnerRouter({
       const loc = parseLocation();
       setLoc(loc);
       const componentIds = getComponentIds(loc.path);
-      const skip = getSkipList(
-        componentIds,
-        loc,
-        cachedRef.current,
-        shouldSkip,
-      );
+      const skip = getSkipList(componentIds, loc, cachedRef.current);
       if (skip.length === componentIds.length) {
         return; // everything is cached
       }
@@ -181,19 +183,14 @@ function InnerRouter({
         ),
       }));
     },
-    [refetch, shouldSkip],
+    [refetch],
   );
 
   const prefetchLocation: PrefetchLocation = useCallback(
     (path, searchParams) => {
       const componentIds = getComponentIds(path);
       const routeProps: RouteProps = { path, searchParams };
-      const skip = getSkipList(
-        componentIds,
-        routeProps,
-        cachedRef.current,
-        shouldSkip,
-      );
+      const skip = getSkipList(componentIds, routeProps, cachedRef.current);
       if (skip.length === componentIds.length) {
         return; // everything is cached
       }
@@ -204,7 +201,7 @@ function InnerRouter({
       }
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(path, searchParams);
     },
-    [basePath, shouldSkip],
+    [basePath],
   );
 
   useEffect(() => {
@@ -229,18 +226,12 @@ function InnerRouter({
   );
 }
 
-export function Router({
-  basePath = '/RSC/',
-  shouldSkip,
-}: {
-  basePath?: string;
-  shouldSkip?: ShouldSkip;
-}) {
+export function Router({ basePath = '/RSC/' }: { basePath?: string }) {
   const loc = parseLocation();
   const initialInput = getInputString(loc.path, loc.searchParams);
   return createElement(
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
     { initialInput, basePath },
-    createElement(InnerRouter, { basePath, shouldSkip }),
+    createElement(InnerRouter, { basePath }),
   );
 }

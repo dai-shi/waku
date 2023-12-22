@@ -62,3 +62,12 @@ export function parseInputString(input: string): {
     throw err;
   }
 }
+
+// the key is componentId
+export type ShouldSkip = Record<
+  string,
+  {
+    path: boolean; // if we compare path
+    keys?: string[]; // searchParams keys to compare
+  }
+>;
