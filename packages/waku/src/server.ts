@@ -31,7 +31,7 @@ export type GetBuildConfig = (
 
 export type GetSsrConfig = (
   reqUrl: URL,
-  isBuild: boolean,
+  isPrd: boolean,
 ) => Promise<{
   input: string;
   unstable_render: (opts: {

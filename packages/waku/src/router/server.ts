@@ -13,6 +13,17 @@ const { createElement } = ReactExports;
 
 const Default = ({ children }: { children: ReactNode }) => children;
 
+// TODO implement
+const ShoudSkipComponent = () =>
+  createElement(
+    'script',
+    null,
+    `
+globalThis.__WAKU_ROUTER_SHOULD_SKIP__ = {
+  'layout': { path: true },
+};`,
+  );
+
 export function defineRouter<P>(
   existsPath: (path: string) => Promise<'static' | 'dynamic' | null>,
   getComponent: (
@@ -47,6 +58,8 @@ export function defineRouter<P>(
         }),
       )
     ).flat();
+    // TODO should we skip this for the second time?
+    entries.push(['/SHOULD_SKIP', createElement(ShoudSkipComponent)]);
     return Object.fromEntries(entries);
   };
 
@@ -97,10 +110,9 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path, searchParams) => {
     );
   };
 
-  const getSsrConfig: GetSsrConfig = async (reqUrl, isBuild) => {
-    if (
-      (await existsPath(reqUrl.pathname)) !== (isBuild ? 'static' : 'dynamic')
-    ) {
+  // TODO this API is not very understandable and not consistent with RSC
+  const getSsrConfig: GetSsrConfig = async (reqUrl, isPrd) => {
+    if ((await existsPath(reqUrl.pathname)) !== (isPrd ? 'dynamic' : null)) {
       return null;
     }
     const componentIds = getComponentIds(reqUrl.pathname);

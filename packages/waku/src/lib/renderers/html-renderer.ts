@@ -270,7 +270,7 @@ export const renderHtml = async (
       ? import(WAKU_CLIENT_MODULE_VALUE)
       : loadModule!('public/' + WAKU_CLIENT_MODULE),
   ]);
-  const ssrConfig = await getSsrConfig?.(reqUrl, !isDev && opts.isBuild);
+  const ssrConfig = await getSsrConfig?.(reqUrl, !isDev && !opts.isBuild);
   if (!ssrConfig) {
     return null;
   }

@@ -7,7 +7,7 @@ import { ErrorBoundary } from './components/ErrorBoundary.js';
 const rootElement = (
   <StrictMode>
     <ErrorBoundary fallback={(error) => <h1>{String(error)}</h1>}>
-      <Router shouldSkip={() => true} />
+      <Router />
     </ErrorBoundary>
   </StrictMode>
 );

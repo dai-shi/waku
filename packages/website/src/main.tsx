@@ -4,7 +4,7 @@ import { Router } from 'waku/router/client';
 
 const rootElement = (
   <StrictMode>
-    <Router shouldSkip={() => true} />
+    <Router />
   </StrictMode>
 );
 
