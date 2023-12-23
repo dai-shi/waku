@@ -1,79 +1,56 @@
+import { lazy } from 'react';
 import { createPages } from 'waku/router/server';
 
-import HomeLayout from './routes/layout.js';
-import Home from './routes/page.js';
-import Foo from './routes/foo/page.js';
-import Bar from './routes/bar/page.js';
-import NestedLayout from './routes/nested/layout.js';
-import Baz from './routes/nested/baz/page.js';
-import Qux from './routes/nested/qux/page.js';
+const HomeLayout = lazy(() => import('./components/HomeLayout.js'));
+const HomePage = lazy(() => import('./components/HomePage.js'));
+const FooPage = lazy(() => import('./components/FooPage.js'));
+const BarPage = lazy(() => import('./components/BarPage.js'));
+const NestedBazPage = lazy(() => import('./components/NestedBazPage.js'));
+const NestedQuxPage = lazy(() => import('./components/NestedQuxPage.js'));
 
-export default createPages(async ({ createPage, createLayout }) => {
-  createLayout({
-    pathname: '/',
-    component: HomeLayout,
-  });
-
+export default createPages(async ({ createPage }) => {
   createPage({
     path: '/',
-    component: Home,
+    component: () => (
+      <HomeLayout>
+        <HomePage />
+      </HomeLayout>
+    ),
   });
 
   createPage({
     path: '/foo',
-    component: Foo,
+    component: () => (
+      <HomeLayout>
+        <FooPage />
+      </HomeLayout>
+    ),
   });
 
   createPage({
     path: '/bar',
-    component: Bar,
-  });
-
-  createLayout({
-    pathname: '/nested',
-    component: NestedLayout,
+    component: () => (
+      <HomeLayout>
+        <BarPage />
+      </HomeLayout>
+    ),
   });
 
   createPage({
     path: '/nested/baz',
-    component: Baz,
+    component: () => (
+      <HomeLayout>
+        <NestedBazPage />
+      </HomeLayout>
+    ),
   });
 
   createPage({
     path: '/nested/qux',
-    component: Qux,
+    component: () => (
+      <HomeLayout>
+        <NestedQuxPage />
+      </HomeLayout>
+    ),
   });
 });
-
-// import { defineRouter } from 'waku/router/server';
-//
-// const STATIC_PATHS = ['/', '/foo', '/bar', '/nested/baz', '/nested/qux'];
-// 
-// export default defineRouter(
-//   // existsPath
-//   async (path: string) => (STATIC_PATHS.includes(path) ? 'static' : null),
-//   // getComponent (id is "**/layout" or "**/page")
-//   async (id, unstable_setShouldSkip) => {
-//     unstable_setShouldSkip({}); // always skip if possible
-//     switch (id) {
-//       case 'layout':
-//         return import('./routes/layout.js');
-//       case 'page':
-//         return import('./routes/page.js');
-//       case 'foo/page':
-//         return import('./routes/foo/page.js');
-//       case 'bar/page':
-//         return import('./routes/bar/page.js');
-//       case 'nested/layout':
-//         return import('./routes/nested/layout.js');
-//       case 'nested/baz/page':
-//         return import('./routes/nested/baz/page.js');
-//       case 'nested/qux/page':
-//         return import('./routes/nested/qux/page.js');
-//       default:
-//         return null;
-//     }
-//   },
-//   // getPathsForBuild
-//   async () => STATIC_PATHS.map((path) => ({ path })),
-// );
