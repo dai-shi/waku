@@ -48,7 +48,7 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-1.40.1
+          key: ${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - name: Install Playwright
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm playwright install --with-deps
