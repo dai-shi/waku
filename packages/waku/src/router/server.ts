@@ -151,15 +151,67 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path, searchParams) => {
 
 // createPages API (a wrapper around defineRouter)
 
-type CreatePage = (page: {
-  dynamic?: boolean;
-  path: string;
-  component: FunctionComponent<RouteProps>;
-}) => void;
+type NonEmpty<T> = T extends '' ? false : true;
+type IsValidPath<T> = T extends `${infer L}/${infer R}`
+  ? NonEmpty<L> extends true
+    ? IsValidPath<R>
+    : false
+  : NonEmpty<T>;
+type IsSlug<T> = T extends `[${infer U}]` ? NonEmpty<U> : false;
+type IsNotSlug<T> = T extends `[${string}]` ? false : NonEmpty<T>;
+type IsPathElementWithSlug<T> = T extends `${infer L}/${infer R}`
+  ? IsSlug<L> extends true
+    ? IsValidPath<R>
+    : IsPathElementWithSlug<R>
+  : IsSlug<T>;
+type IsPathElementWithoutSlug<T> = T extends `${infer L}/${infer R}`
+  ? IsNotSlug<L> extends true
+    ? IsPathElementWithoutSlug<R>
+    : IsSlug<L> extends true
+      ? false
+      : IsValidPath<R>
+  : IsNotSlug<T>;
+type PathWithSlug<T> = T extends '/'
+  ? T
+  : T extends `/${infer U}`
+    ? IsPathElementWithSlug<U> extends true
+      ? T
+      : never
+    : never;
+type PathWithoutSlug<T> = T extends '/'
+  ? T
+  : T extends `/${infer U}`
+    ? IsPathElementWithoutSlug<U> extends true
+      ? T
+      : never
+    : never;
 
-type CreateLayout = (layout: {
-  pathname: string;
-  component: FunctionComponent<RouteProps & { children: ReactNode }>;
+type CreatePage = <T extends string>(
+  page:
+    | {
+        render: 'static';
+        path: PathWithoutSlug<T>;
+        component: FunctionComponent<RouteProps>;
+      }
+    | {
+        render: 'static';
+        path: PathWithSlug<T>;
+        staticPaths: string[] | string[][];
+        component: FunctionComponent<RouteProps>;
+      }
+    | {
+        render: 'dynamic';
+        path: PathWithoutSlug<T> | PathWithSlug<T>;
+        component: FunctionComponent<RouteProps>;
+      },
+) => void;
+
+type CreateLayout = <T extends string>(layout: {
+  render: 'static';
+  path: PathWithoutSlug<T>;
+  component: FunctionComponent<
+    Omit<RouteProps, 'searchParams'> & { children: ReactNode }
+  >;
 }) => void;
 
 export function createPages(
@@ -168,7 +220,10 @@ export function createPages(
     createLayout: CreateLayout;
   }) => Promise<void>,
 ): ReturnType<typeof defineEntries> {
-  const staticPaths: { pathname: string; search?: string }[] = [];
+  const staticPathSet = new Set<string>();
+  // TODO dynamic & wildcard
+  // const dynamicPaths: { item: string; isSlug: boolean }[] = [];
+  // const wildcardPaths: { item: string; isSlug: boolean }[] = [];
   const componentMap = new Map<
     string,
     FunctionComponent<RouteProps & { children: ReactNode }>
@@ -178,15 +233,10 @@ export function createPages(
     if (finished) {
       throw new Error('no longer available');
     }
-    if (page.dynamic) {
-      // TODO implement
-      throw new Error('not implemented yet');
-    }
-    const [pathname, search] = page.path.split('?') as [string, string?];
-    staticPaths.push(search ? { pathname, search } : { pathname });
-    const id = joinPath(pathname, 'page').replace(/^\//, '');
+    staticPathSet.add(page.path);
+    const id = joinPath(page.path, 'page').replace(/^\//, '');
     if (componentMap.has(id) && componentMap.get(id) !== page.component) {
-      throw new Error(`Duplicated component for: ${pathname}`);
+      throw new Error(`Duplicated component for: ${page.path}`);
     }
     componentMap.set(id, page.component);
   };
@@ -194,7 +244,7 @@ export function createPages(
     if (finished) {
       throw new Error('no longer available');
     }
-    const id = joinPath(layout.pathname, 'layout').replace(/^\//, '');
+    const id = joinPath(layout.path, 'layout').replace(/^\//, '');
     if (componentMap.has(id) && componentMap.get(id) !== layout.component) {
       throw new Error(`Duplicated component for: ${layout.component}`);
     }
@@ -206,14 +256,13 @@ export function createPages(
   return defineRouter(
     async (path: string) => {
       await ready;
-      return staticPaths.some(({ pathname }) => pathname === path)
-        ? 'static'
-        : null;
+      return staticPathSet.has(path) ? 'static' : null;
     },
-    async (id) => {
+    async (id, unstable_setShouldSkip) => {
       await ready;
+      unstable_setShouldSkip({}); // for static paths
       return componentMap.get(id) || null;
     },
-    async () => staticPaths.map(({ pathname }) => ({ path: pathname })),
+    async () => Array.from(staticPathSet).map((path) => ({ path })),
   );
 }

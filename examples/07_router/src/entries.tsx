@@ -10,6 +10,7 @@ const NestedQuxPage = lazy(() => import('./components/NestedQuxPage.js'));
 
 export default createPages(async ({ createPage }) => {
   createPage({
+    render: 'static',
     path: '/',
     component: () => (
       <HomeLayout>
@@ -19,6 +20,7 @@ export default createPages(async ({ createPage }) => {
   });
 
   createPage({
+    render: 'static',
     path: '/foo',
     component: () => (
       <HomeLayout>
@@ -28,6 +30,7 @@ export default createPages(async ({ createPage }) => {
   });
 
   createPage({
+    render: 'static',
     path: '/bar',
     component: () => (
       <HomeLayout>
@@ -37,6 +40,7 @@ export default createPages(async ({ createPage }) => {
   });
 
   createPage({
+    render: 'static',
     path: '/nested/baz',
     component: () => (
       <HomeLayout>
@@ -46,6 +50,7 @@ export default createPages(async ({ createPage }) => {
   });
 
   createPage({
+    render: 'static',
     path: '/nested/qux',
     component: () => (
       <HomeLayout>
