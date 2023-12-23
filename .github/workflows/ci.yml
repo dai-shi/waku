@@ -25,7 +25,7 @@ jobs:
       - run: pnpm test
 
   e2e:
-    name: E2E on ${{ matrix.os }} (Node ${{ matrix.version }}) - shard ${{ matrix.shard }}/4
+    name: E2E on ${{ matrix.os }} (Node ${{ matrix.version }}) - (${{ matrix.shared }}/4)
     strategy:
       fail-fast: false
       matrix:
