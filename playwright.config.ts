@@ -14,6 +14,7 @@ import { devices } from '@playwright/test';
  * See https://playwright.dev/docs/test-configuration.
  */
 export const config: PlaywrightTestConfig = {
+  testDir: './e2e',
   fullyParallel: true,
   timeout: process.env.CI ? 60_000 : 30_000,
   expect: {
