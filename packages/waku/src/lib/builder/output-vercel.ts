@@ -8,7 +8,7 @@ export const emitVercelOutput = async (
   rootDir: string,
   config: ResolvedConfig,
   rscFiles: string[],
-  // htmlFiles: string[],
+  htmlFiles: string[],
   ssr: boolean,
 ) => {
   const publicDir = path.join(rootDir, config.distDir, config.publicDir);
@@ -116,4 +116,7 @@ export const emitVercelOutput = async (
     path.join(outputDir, 'config.json'),
     JSON.stringify(configJson, null, 2),
   );
+
+  // @TODO remove log
+  console.log(htmlFiles);
 };
