@@ -5,9 +5,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "waku dev",
-    "build": "waku build",
-    "start": "waku start"
+    "dev": "waku dev --with-ssr",
+    "build": "waku build --with-ssr",
+    "start": "waku start --with-ssr"
   },
   "dependencies": {
     "@hono/node-server": "^1.3.3",
