@@ -43,20 +43,15 @@ jobs:
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run compile
-      - name: Store Playwright's Version
-        run: |
-          PLAYWRIGHT_VERSION=$(npm ls @playwright/test | grep -o '@playwright/test@[0-9]*\.[0-9]*\.[0-9]*' | awk -F@ '{print $3}')
-          echo "Playwright's Version: $PLAYWRIGHT_VERSION"
-          echo "PLAYWRIGHT_VERSION=$PLAYWRIGHT_VERSION" >> $GITHUB_ENV
       - name: Cache Playwright
         uses: actions/cache@v3
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ env.PLAYWRIGHT_VERSION }}
+          key: ${{ runner.os }}-playwright-1.40.1
       - name: Install Playwright
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm dlx playwright@${{ env.PLAYWRIGHT_VERSION }} install --with-deps
+        run: pnpm dlx playwright@1.40.1 install --with-deps
       - run: pnpm exec playwright test --forbid-only --shard=${{ matrix.shared }}/4
       - uses: actions/upload-artifact@v3
         if: always()
