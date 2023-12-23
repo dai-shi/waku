@@ -52,7 +52,7 @@ jobs:
       - name: Install Playwright
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm dlx playwright@1.40.1 install --with-deps
-      - run: pnpm run e2e --forbid-only --shard=${{ matrix.shard }}/4
+      - run: pnpm exec playwright --forbid-only --shard=${{ matrix.shard }}/4
       - uses: actions/upload-artifact@v3
         if: always()
         with:
