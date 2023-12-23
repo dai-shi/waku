@@ -13,20 +13,24 @@ import {
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
 
-const Default = ({ children }: { children: ReactNode }) => children;
-
 const ShoudSkipComponent = ({ shouldSkip }: { shouldSkip: ShouldSkip }) =>
   createElement('meta', {
     name: 'waku-should-skip',
     content: JSON.stringify(shouldSkip),
   });
 
-export function defineRouter<P>(
+export function defineRouter(
   existsPath: (path: string) => Promise<'static' | 'dynamic' | null>,
   getComponent: (
     componentId: string, // "**/layout" or "**/page"
     unstable_setShouldSkip: (val?: ShouldSkip[string]) => void,
-  ) => Promise<FunctionComponent<P> | { default: FunctionComponent<P> } | null>,
+  ) => Promise<
+    | FunctionComponent<RouteProps>
+    | FunctionComponent<RouteProps & { children: ReactNode }>
+    | { default: FunctionComponent<RouteProps> }
+    | { default: FunctionComponent<RouteProps & { children: ReactNode }> }
+    | null
+  >,
   getPathsForBuild?: () => Promise<
     Iterable<{ path: string; searchParams?: URLSearchParams }>
   >,
@@ -53,8 +57,10 @@ export function defineRouter<P>(
               delete shouldSkip[id];
             }
           });
-          const component =
-            typeof mod === 'function' ? mod : mod?.default || Default;
+          const component = typeof mod === 'function' ? mod : mod?.default;
+          if (!component) {
+            return [];
+          }
           const element = createElement(
             component as FunctionComponent<RouteProps>,
             props,
@@ -137,7 +143,8 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path, searchParams) => {
         null,
         createElement(Slot, { id: SHOULD_SKIP_ID }),
         componentIds.reduceRight(
-          (acc: ReactNode, id) => createElement(Slot, { id }, acc),
+          (acc: ReactNode, id) =>
+            createElement(Slot, { id, fallback: (children) => children }, acc),
           null,
         ),
       );
