@@ -11,18 +11,20 @@ const createEmptyReadableStream = () =>
 
 const createStreamPair = (
   callback: (redable: ReadableStream | null) => void,
-  signal: AbortSignal,
 ) => {
-  let controller: ReadableStreamDefaultController;
+  let controller: ReadableStreamDefaultController | undefined;
   const readable = new ReadableStream({
     start(c) {
       controller = c;
+    },
+    cancel() {
+      controller = undefined;
     },
   });
   let hasData = false;
   const writable = new WritableStream({
     write(chunk) {
-      if (signal.aborted) {
+      if (!controller) {
         return;
       }
       controller.enqueue(chunk);
@@ -32,7 +34,7 @@ const createStreamPair = (
       }
     },
     close() {
-      if (signal.aborted) {
+      if (!controller) {
         return;
       }
       controller.close();
@@ -61,7 +63,7 @@ export const honoWrapper = <E extends Env, P extends string, I extends Input>(
       };
       const writable = createStreamPair((readable) => {
         resolve(c.body(readable));
-      }, c.req.raw.signal);
+      });
       const res: BaseRes & { c: Context<E, P, I> } = {
         stream: writable,
         setStatus: (code) => c.status(code),
