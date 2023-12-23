@@ -151,40 +151,35 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path, searchParams) => {
 
 // createPages API (a wrapper around defineRouter)
 
-type NonEmpty<T> = T extends '' ? false : true;
-type IsValidPath<T> = T extends `${infer L}/${infer R}`
-  ? NonEmpty<L> extends true
-    ? IsValidPath<R>
+type IsValidPathItem<T> = T extends `/${infer _}`
+  ? false
+  : T extends '[]' | ''
+    ? false
+    : true;
+type IsValidPath<T> = T extends `/${infer L}/${infer R}`
+  ? IsValidPathItem<L> extends true
+    ? IsValidPath<`/${R}`>
     : false
-  : NonEmpty<T>;
-type IsSlug<T> = T extends `[${infer U}]` ? NonEmpty<U> : false;
-type IsNotSlug<T> = T extends `[${string}]` ? false : NonEmpty<T>;
-type IsPathElementWithSlug<T> = T extends `${infer L}/${infer R}`
-  ? IsSlug<L> extends true
-    ? IsValidPath<R>
-    : IsPathElementWithSlug<R>
-  : IsSlug<T>;
-type IsPathElementWithoutSlug<T> = T extends `${infer L}/${infer R}`
-  ? IsNotSlug<L> extends true
-    ? IsPathElementWithoutSlug<R>
-    : IsSlug<L> extends true
-      ? false
-      : IsValidPath<R>
-  : IsNotSlug<T>;
-type PathWithSlug<T> = T extends '/'
-  ? T
-  : T extends `/${infer U}`
-    ? IsPathElementWithSlug<U> extends true
-      ? T
-      : never
-    : never;
-type PathWithoutSlug<T> = T extends '/'
-  ? T
-  : T extends `/${infer U}`
-    ? IsPathElementWithoutSlug<U> extends true
-      ? T
-      : never
-    : never;
+  : T extends `/${infer _}`
+    ? IsValidPathItem<T>
+    : T extends '/'
+      ? true
+      : false;
+type HasSlugInPath<T> = T extends `/[${string}]/${infer _}`
+  ? true
+  : T extends `/${infer _}/${infer U}`
+    ? HasSlugInPath<`/${U}`>
+    : false;
+type PathWithSlug<T> = IsValidPath<T> extends true
+  ? HasSlugInPath<T> extends true
+    ? T
+    : never
+  : never;
+type PathWithoutSlug<T> = IsValidPath<T> extends true
+  ? HasSlugInPath<T> extends true
+    ? never
+    : T
+  : never;
 
 type CreatePage = <T extends string>(
   page:
