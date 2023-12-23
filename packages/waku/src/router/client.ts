@@ -219,7 +219,8 @@ function InnerRouter({ basePath }: { basePath: string }) {
   }, [changeLocation, prefetchLocation]);
 
   const children = componentIds.reduceRight(
-    (acc: ReactNode, id) => createElement(Slot, { id }, acc),
+    (acc: ReactNode, id) =>
+      createElement(Slot, { id, fallback: (children) => children }, acc),
     null,
   );
 

@@ -132,9 +132,11 @@ const ChildrenContextProvider = memo(ChildrenContext.Provider);
 export const Slot = ({
   id,
   children,
+  fallback,
 }: {
   id: string;
   children?: ReactNode;
+  fallback?: (children?: ReactNode) => ReactNode;
 }) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
@@ -142,6 +144,9 @@ export const Slot = ({
   }
   const elements = use(elementsPromise);
   if (!(id in elements)) {
+    if (fallback) {
+      return fallback(children);
+    }
     throw new Error('Not found: ' + id);
   }
   return createElement(
