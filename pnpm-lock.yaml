@@ -12,7 +12,7 @@ importers:
   .:
     devDependencies:
       '@playwright/test':
-        specifier: ^1.40.1
+        specifier: 1.40.1
         version: 1.40.1
       '@types/babel__core':
         specifier: ^7.20.5
