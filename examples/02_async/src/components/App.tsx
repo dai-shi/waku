@@ -14,6 +14,7 @@ const App = ({ name }: { name: string }) => {
         <ServerMessage />
       </Suspense>
       <Counter />
+      <div>{new Date().toISOString()}</div>
     </div>
   );
 };

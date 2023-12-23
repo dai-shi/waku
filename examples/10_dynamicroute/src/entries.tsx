@@ -54,24 +54,27 @@ const getMappingAndItems = async (id: string) => {
   return { mapping, items };
 };
 
+const getStaticPaths = async () => {
+  const files = await glob('**/page.{tsx,js}', { cwd: routesDir });
+  return files
+    .filter((file) => !/(^|\/)(\[\w+\]|_\w+_)\//.test(file))
+    .map((file) => '/' + file.slice(0, Math.max(0, file.lastIndexOf('/'))));
+};
+
 export default defineRouter(
-  // getRoutePaths
-  async () => {
-    const files = await glob('**/page.{tsx,js}', { cwd: routesDir });
-    const staticRoutes = files
-      .filter((file) => !/(^|\/)(\[\w+\]|_\w+_)\//.test(file))
-      .map((file) => '/' + file.slice(0, Math.max(0, file.lastIndexOf('/'))));
-    const dynamicRoutes = async (path: string) => {
-      const result = await getMappingAndItems(path + '/page');
-      return result !== null;
-    };
-    return {
-      static: staticRoutes,
-      dynamic: dynamicRoutes,
-    };
+  // existsPath
+  async (path: string) => {
+    if ((await getStaticPaths()).includes(path)) {
+      return 'static';
+    }
+    if ((await getMappingAndItems(path + '/page')) !== null) {
+      return 'dynamic';
+    }
+    return null;
   },
   // getComponent (id is "**/layout" or "**/page")
-  async (id) => {
+  async (id, unstable_setShouldSkip) => {
+    unstable_setShouldSkip({}); // always skip if possible
     const result = await getMappingAndItems(id);
     if (result === null) {
       return null;
@@ -83,4 +86,6 @@ export default defineRouter(
     );
     return Component;
   },
+  // getPathsForBuild
+  async () => (await getStaticPaths()).map((path) => ({ path })),
 );

@@ -25,7 +25,9 @@ export default defineEntries(
     };
   },
   // getBuildConfig
-  async () => [{ pathname: '/', entries: [['']], context: { count: 0 } }],
+  async () => [
+    { pathname: '/', entries: [{ input: '' }], context: { count: 0 } },
+  ],
   // getSsrConfig
   async ({ pathname }) => {
     switch (pathname) {

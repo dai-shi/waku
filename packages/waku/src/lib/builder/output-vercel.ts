@@ -58,10 +58,26 @@ export const emitVercelOutput = async (
     path.join(serverlessDir, 'serve.js'),
     `
 import path from 'node:path';
+import fs from 'node:fs';
 import { connectMiddleware } from 'waku';
 const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
-export default async function handler(req, res) {
+export default function handler(req, res) {
   connectMiddleware({ entries, ssr: ${ssr} })(req, res, () => {
+    const fname = path.join(
+      '${config.distDir}',
+      '${config.publicDir}',
+      req.url,
+      path.extname(req.url) ? '' : '${config.indexHtml}',
+    );
+    if (fs.existsSync(fname)) {
+      if (fname.endsWith('.html')) {
+        res.setHeader('content-type', 'text/html; charset=utf-8');
+      } else if (fname.endsWith('.txt')) {
+        res.setHeader('content-type', 'text/plain');
+      }
+      fs.createReadStream(fname).pipe(res);
+      return;
+    }
     res.statusCode = 404;
     res.end();
   });

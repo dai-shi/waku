@@ -314,9 +314,13 @@ const emitRscFiles = async (
     return Array.from(idSet || []);
   };
   const rscFileSet = new Set<string>(); // XXX could be implemented better
+  const staticInputSet = new Set<string>();
   await Promise.all(
     Array.from(buildConfig).map(async ({ entries, context }) => {
-      for (const [input] of entries || []) {
+      for (const { input, isStatic } of entries || []) {
+        if (isStatic) {
+          staticInputSet.add(input);
+        }
         const destRscFile = joinPath(
           rootDir,
           config.distDir,
@@ -347,6 +351,13 @@ const emitRscFiles = async (
       }
     }),
   );
+  const skipRenderRscCode = `
+const staticInputSet = new Set(${JSON.stringify(Array.from(staticInputSet))});
+export function skipRenderRsc(input) {
+  return staticInputSet.has(input);
+}
+`;
+  await appendFile(distEntriesFile, skipRenderRscCode);
   return { buildConfig, getClientModules, rscFiles: Array.from(rscFileSet) };
 };
 
@@ -388,7 +399,7 @@ const emitHtmlFiles = async (
         );
         const inputsForPrefetch = new Set<string>();
         const moduleIdsForPrefetch = new Set<string>();
-        for (const [input, skipPrefetch] of entries || []) {
+        for (const { input, skipPrefetch } of entries || []) {
           if (!skipPrefetch) {
             inputsForPrefetch.add(input);
             for (const id of getClientModules(input)) {
@@ -428,6 +439,7 @@ const emitHtmlFiles = async (
               }),
             isDev: false,
             entries: distEntries,
+            isBuild: true,
           }));
         await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
         if (htmlReadable) {

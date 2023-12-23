@@ -23,12 +23,12 @@ export default defineEntries(
     {
       pathname: '/',
       entries: [
-        [''],
-        ['InnerApp=1', true],
-        ['InnerApp=2', true],
-        ['InnerApp=3', true],
-        ['InnerApp=4', true],
-        ['InnerApp=5', true],
+        { input: '' },
+        { input: 'InnerApp=1', skipPrefetch: true },
+        { input: 'InnerApp=2', skipPrefetch: true },
+        { input: 'InnerApp=3', skipPrefetch: true },
+        { input: 'InnerApp=4', skipPrefetch: true },
+        { input: 'InnerApp=5', skipPrefetch: true },
       ],
     },
   ],

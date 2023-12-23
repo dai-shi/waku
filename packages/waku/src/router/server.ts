@@ -1,62 +1,41 @@
-import ReactExports from 'react';
-import type { FunctionComponent, ReactNode } from 'react';
+import { createElement } from 'react';
+import type { Fragment, FunctionComponent, ReactNode } from 'react';
 
 import { defineEntries } from '../server.js';
 import type { RenderEntries, GetBuildConfig, GetSsrConfig } from '../server.js';
 import { Children } from '../client.js';
 import type { Slot } from '../client.js';
-import { getComponentIds, getInputString, parseInputString } from './common.js';
-import type { RouteProps } from './common.js';
-
-// eslint-disable-next-line import/no-named-as-default-member
-const { createElement } = ReactExports;
-
-// We have to make prefetcher consistent with client behavior
-const prefetcher = (
-  path: string,
-  searchParamsList: Iterable<URLSearchParams> | undefined,
-) =>
-  Array.from(searchParamsList || []).map(
-    (searchParams) => [getInputString(path, searchParams)] as const,
-  );
+import {
+  getComponentIds,
+  getInputString,
+  parseInputString,
+  SHOULD_SKIP_ID,
+} from './common.js';
+import type { RouteProps, ShouldSkip } from './common.js';
 
 const Default = ({ children }: { children: ReactNode }) => children;
 
-// TODO will review this again
-type RoutePaths = {
-  static?: Iterable<string>;
-  staticSearchParams?: (path: string) => Iterable<URLSearchParams>;
-  dynamic?: (path: string) => Promise<boolean>;
-};
+const ShoudSkipComponent = ({ shouldSkip }: { shouldSkip: ShouldSkip }) =>
+  createElement('meta', {
+    name: 'waku-should-skip',
+    content: JSON.stringify(shouldSkip),
+  });
 
 export function defineRouter<P>(
-  getRoutePaths: () => Promise<RoutePaths>,
+  existsPath: (path: string) => Promise<'static' | 'dynamic' | null>,
   getComponent: (
-    componentId: string,
+    componentId: string, // "**/layout" or "**/page"
+    unstable_setShouldSkip: (val?: ShouldSkip[string]) => void,
   ) => Promise<FunctionComponent<P> | { default: FunctionComponent<P> } | null>,
+  getPathsForBuild?: () => Promise<
+    Iterable<{ path: string; searchParams?: URLSearchParams }>
+  >,
 ): ReturnType<typeof defineEntries> {
-  const routePathsPromise = getRoutePaths();
-  const existsRoutePathPromise = routePathsPromise.then((routePaths) => {
-    const staticPathSet = new Set<string>();
-    for (const path of routePaths.static || []) {
-      staticPathSet.add(path);
-    }
-    const existsRoutePath = async (path: string) => {
-      if (staticPathSet.has(path)) {
-        return true;
-      }
-      if (await routePaths.dynamic?.(path)) {
-        return true;
-      }
-      return false;
-    };
-    return existsRoutePath;
-  });
+  const shouldSkip: ShouldSkip = {};
 
   const renderEntries: RenderEntries = async (input) => {
     const { path, searchParams, skip } = parseInputString(input);
-    const existsRoutePath = await existsRoutePathPromise;
-    if (!(await existsRoutePath(path))) {
+    if (!(await existsPath(path))) {
       return null;
     }
     const componentIds = getComponentIds(path);
@@ -67,7 +46,13 @@ export function defineRouter<P>(
           if (skip?.includes(id)) {
             return [];
           }
-          const mod = await getComponent(id);
+          const mod = await getComponent(id, (val) => {
+            if (val) {
+              shouldSkip[id] = val;
+            } else {
+              delete shouldSkip[id];
+            }
+          });
           const component =
             typeof mod === 'function' ? mod : mod?.default || Default;
           const element = createElement(
@@ -79,24 +64,39 @@ export function defineRouter<P>(
         }),
       )
     ).flat();
+    entries.push([
+      SHOULD_SKIP_ID,
+      createElement(ShoudSkipComponent, { shouldSkip }) as any,
+    ]);
     return Object.fromEntries(entries);
   };
 
   const getBuildConfig: GetBuildConfig = async (
     unstable_collectClientModules,
   ) => {
-    const routePaths = await routePathsPromise;
+    const pathsForBuild = await getPathsForBuild?.();
+    const pathMap = new Map<
+      string,
+      { isStatic: boolean; searchParamsList: URLSearchParams[] }
+    >();
     const path2moduleIds: Record<string, string[]> = {};
-    for (const path of routePaths.static || []) {
-      for (const searchParams of [
-        new URLSearchParams(),
-        ...(routePaths.staticSearchParams?.(path) || []),
-      ]) {
-        const input = getInputString(path, searchParams);
-        const moduleIds = await unstable_collectClientModules(input);
-        const search = searchParams.toString();
-        path2moduleIds[path + (search ? '?' + search : '')] = moduleIds;
+    for (const {
+      path,
+      searchParams = new URLSearchParams(),
+    } of pathsForBuild || []) {
+      let item = pathMap.get(path);
+      if (!item) {
+        item = {
+          isStatic: (await existsPath(path)) === 'static',
+          searchParamsList: [],
+        };
+        pathMap.set(path, item);
       }
+      item.searchParamsList.push(searchParams);
+      const input = getInputString(path, searchParams);
+      const moduleIds = await unstable_collectClientModules(input);
+      const search = searchParams.toString();
+      path2moduleIds[path + (search ? '?' + search : '')] = moduleIds;
     }
     const customCode = `
 globalThis.__WAKU_ROUTER_PREFETCH__ = (path, searchParams) => {
@@ -107,30 +107,39 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path, searchParams) => {
     import(id);
   }
 };`;
-    return Array.from(routePaths.static || []).map((path) => {
-      return {
-        pathname: path,
-        entries: prefetcher(path, routePaths.staticSearchParams?.(path)),
-        customCode,
-      };
-    });
+    return Array.from(pathMap.entries()).map(
+      ([path, { isStatic, searchParamsList }]) => {
+        const entries = searchParamsList.map((searchParams) => ({
+          input: getInputString(path, searchParams),
+          isStatic,
+        }));
+        return { pathname: path, entries, customCode };
+      },
+    );
   };
 
-  const getSsrConfig: GetSsrConfig = async (reqUrl) => {
-    const existsRoutePath = await existsRoutePathPromise;
-    if (!(await existsRoutePath(reqUrl.pathname))) {
+  // TODO this API is not very understandable and not consistent with RSC
+  const getSsrConfig: GetSsrConfig = async (reqUrl, isPrd) => {
+    const pathType = await existsPath(reqUrl.pathname);
+    if (isPrd ? pathType !== 'dynamic' : pathType === null) {
       return null;
     }
     const componentIds = getComponentIds(reqUrl.pathname);
     const input = getInputString(reqUrl.pathname, reqUrl.searchParams);
     type Opts = {
       createElement: typeof createElement;
+      Fragment: typeof Fragment;
       Slot: typeof Slot;
     };
-    const render = ({ createElement, Slot }: Opts) =>
-      componentIds.reduceRight(
-        (acc: ReactNode, id) => createElement(Slot, { id }, acc),
+    const render = ({ createElement, Fragment, Slot }: Opts) =>
+      createElement(
+        Fragment,
         null,
+        createElement(Slot, { id: SHOULD_SKIP_ID }),
+        componentIds.reduceRight(
+          (acc: ReactNode, id) => createElement(Slot, { id }, acc),
+          null,
+        ),
       );
     return { input, unstable_render: render };
   };

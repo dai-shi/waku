@@ -1,19 +1,23 @@
 // This file should not include Node specific code.
 
+// TODO This might be too naive.
+// Should we use pathname and searchParams instead of input string?
+
 export const encodeInput = (input: string) => {
   if (input === '') {
-    return '_';
-  } else if (!input.startsWith('_')) {
-    return input;
+    return 'index.txt';
   }
-  throw new Error("Input must not start with '_'");
+  const [first, second] = input.split('?', 2);
+  return first + '.txt' + (second ? '?' + second : '');
 };
 
 export const decodeInput = (encodedInput: string) => {
-  if (encodedInput === '_') {
+  if (encodedInput === 'index.txt') {
     return '';
-  } else if (!encodedInput.startsWith('_')) {
-    return encodedInput;
+  }
+  const [first, second] = encodedInput.split('?', 2);
+  if (first?.endsWith('.txt')) {
+    return first.slice(0, -'.txt'.length) + (second ? '?' + second : '');
   }
   const err = new Error('Invalid encoded input');
   (err as any).statusCode = 400;

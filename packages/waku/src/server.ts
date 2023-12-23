@@ -1,4 +1,4 @@
-import type { createElement, ReactNode } from 'react';
+import type { createElement, Fragment, ReactNode } from 'react';
 
 import type { Slot } from './client.js';
 
@@ -19,16 +19,24 @@ export type GetBuildConfig = (
 ) => Promise<
   Iterable<{
     pathname: string;
-    entries?: Iterable<readonly [input: string, skipPrefetch?: boolean]>;
+    entries?: Iterable<{
+      input: string;
+      skipPrefetch?: boolean;
+      isStatic?: boolean;
+    }>;
     customCode?: string; // optional code to inject TODO hope to remove this
     context?: unknown;
   }>
 >;
 
-export type GetSsrConfig = (reqUrl: URL) => Promise<{
+export type GetSsrConfig = (
+  reqUrl: URL,
+  isPrd: boolean,
+) => Promise<{
   input: string;
   unstable_render: (opts: {
     createElement: typeof createElement;
+    Fragment: typeof Fragment;
     Slot: typeof Slot;
   }) => ReactNode;
 } | null>;
@@ -48,4 +56,5 @@ export type EntriesDev = {
 export type EntriesPrd = EntriesDev & {
   loadModule: (id: string) => Promise<unknown>;
   loadHtmlHead: (pathname: string) => string;
+  skipRenderRsc: (input: string) => boolean;
 };
