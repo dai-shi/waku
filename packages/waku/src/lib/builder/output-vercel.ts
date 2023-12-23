@@ -110,7 +110,7 @@ export const emitVercelOutput = async (
   // ];
 
   // @TODO restore routes
-  const configJson = { version: 3, overrides, routes: [] };
+  const configJson = { version: 3, overrides };
   mkdirSync(outputDir, { recursive: true });
   writeFileSync(
     path.join(outputDir, 'config.json'),
