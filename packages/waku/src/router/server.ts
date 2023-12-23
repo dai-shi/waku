@@ -160,11 +160,9 @@ type IsValidPath<T> = T extends `/${infer L}/${infer R}`
   ? IsValidPathItem<L> extends true
     ? IsValidPath<`/${R}`>
     : false
-  : T extends `/${infer _}`
-    ? IsValidPathItem<T>
-    : T extends '/'
-      ? true
-      : false;
+  : T extends `/${infer U}`
+    ? IsValidPathItem<U>
+    : false;
 type HasSlugInPath<T> = T extends `/[${string}]/${infer _}`
   ? true
   : T extends `/${infer _}/${infer U}`
@@ -175,11 +173,13 @@ type PathWithSlug<T> = IsValidPath<T> extends true
     ? T
     : never
   : never;
-type PathWithoutSlug<T> = IsValidPath<T> extends true
-  ? HasSlugInPath<T> extends true
-    ? never
-    : T
-  : never;
+type PathWithoutSlug<T> = T extends '/'
+  ? T
+  : IsValidPath<T> extends true
+    ? HasSlugInPath<T> extends true
+      ? never
+      : T
+    : never;
 
 type CreatePage = <T extends string>(
   page:
