@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hono/node-server": "1.3.3",
+    "@stylexjs/stylex": "0.3.0",
     "hono": "3.11.7",
     "react": "18.3.0-canary-0cdfef19b-20231211",
     "react-dom": "18.3.0-canary-0cdfef19b-20231211",
@@ -24,6 +25,7 @@
     "@vanilla-extract/vite-plugin": "3.9.3",
     "@vitejs/plugin-react": "4.2.1",
     "typescript": "5.3.3",
-    "vite": "5.0.9"
+    "vite": "5.0.9",
+    "vite-plugin-stylex": "0.4.0"
   }
 }

@@ -241,7 +241,7 @@ export const renderHtml = async (
     htmlHead: string;
     renderRscForHtml: (input: string) => Promise<ReadableStream>;
   } & (
-    | { isDev: false; entries: EntriesPrd }
+    | { isDev: false; entries: EntriesPrd; isBuild: boolean }
     | { isDev: true; entries: EntriesDev }
   ),
 ): Promise<ReadableStream | null> => {
@@ -252,7 +252,7 @@ export const renderHtml = async (
     loadModule,
   } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
   const [
-    { createElement },
+    { createElement, Fragment },
     { renderToReadableStream },
     { createFromReadableStream },
     { ServerRoot, Slot },
@@ -270,7 +270,7 @@ export const renderHtml = async (
       ? import(WAKU_CLIENT_MODULE_VALUE)
       : loadModule!('public/' + WAKU_CLIENT_MODULE),
   ]);
-  const ssrConfig = await getSsrConfig?.(reqUrl);
+  const ssrConfig = await getSsrConfig?.(reqUrl, !isDev && !opts.isBuild);
   if (!ssrConfig) {
     return null;
   }
@@ -374,7 +374,7 @@ export const renderHtml = async (
             Omit<ComponentProps<typeof ServerRoot>, 'children'>
           >,
           { elements },
-          ssrConfig.unstable_render({ createElement, Slot }),
+          ssrConfig.unstable_render({ createElement, Fragment, Slot }),
         ),
       ),
       {

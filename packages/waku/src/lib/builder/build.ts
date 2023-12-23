@@ -314,9 +314,13 @@ const emitRscFiles = async (
     return Array.from(idSet || []);
   };
   const rscFileSet = new Set<string>(); // XXX could be implemented better
+  const staticInputSet = new Set<string>();
   await Promise.all(
     Array.from(buildConfig).map(async ({ entries, context }) => {
-      for (const [input] of entries || []) {
+      for (const { input, isStatic } of entries || []) {
+        if (isStatic) {
+          staticInputSet.add(input);
+        }
         const destRscFile = joinPath(
           rootDir,
           config.distDir,
@@ -347,6 +351,13 @@ const emitRscFiles = async (
       }
     }),
   );
+  const skipRenderRscCode = `
+const staticInputSet = new Set(${JSON.stringify(Array.from(staticInputSet))});
+export function skipRenderRsc(input) {
+  return staticInputSet.has(input);
+}
+`;
+  await appendFile(distEntriesFile, skipRenderRscCode);
   return { buildConfig, getClientModules, rscFiles: Array.from(rscFileSet) };
 };
 
@@ -377,20 +388,18 @@ const emitHtmlFiles = async (
   // TODO check duplicated files like rscFileSet
   const htmlFiles = await Promise.all(
     Array.from(buildConfig).map(
-      async ({ pathname, search, entries, customCode, context }) => {
-        const pathStr = pathname + (search ? '?' + search : '');
+      async ({ pathname, entries, customCode, context }) => {
         let htmlStr = publicIndexHtml;
         let htmlHead = publicIndexHtmlHead;
         const destHtmlFile = joinPath(
           rootDir,
           config.distDir,
           config.publicDir,
-          (extname(pathname) ? pathname : pathname + '/' + config.indexHtml) +
-            (search ? '?' + search : ''),
+          extname(pathname) ? pathname : pathname + '/' + config.indexHtml,
         );
         const inputsForPrefetch = new Set<string>();
         const moduleIdsForPrefetch = new Set<string>();
-        for (const [input, skipPrefetch] of entries || []) {
+        for (const { input, skipPrefetch } of entries || []) {
           if (!skipPrefetch) {
             inputsForPrefetch.add(input);
             for (const id of getClientModules(input)) {
@@ -412,12 +421,12 @@ const emitHtmlFiles = async (
           );
           htmlHead += `<script type="module" async>${code}</script>`;
         }
-        htmlHeadMap[pathStr] = htmlHead;
+        htmlHeadMap[pathname] = htmlHead;
         const htmlReadable =
           ssr &&
           (await renderHtml({
             config,
-            reqUrl: new URL(pathStr, 'http://localhost'),
+            reqUrl: new URL(pathname, 'http://localhost'),
             htmlHead,
             renderRscForHtml: (input) =>
               renderRsc({
@@ -430,6 +439,7 @@ const emitHtmlFiles = async (
               }),
             isDev: false,
             entries: distEntries,
+            isBuild: true,
           }));
         await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
         if (htmlReadable) {
@@ -445,9 +455,8 @@ const emitHtmlFiles = async (
     ),
   );
   const loadHtmlHeadCode = `
-export function loadHtmlHead(pathname, search) {
-  const pathStr = pathname + (search ? '?' + search : '');
-  return ${JSON.stringify(htmlHeadMap)}[pathStr] || ${JSON.stringify(
+export function loadHtmlHead(pathname) {
+  return ${JSON.stringify(htmlHeadMap)}[pathname] || ${JSON.stringify(
     publicIndexHtmlHead,
   )};
 }
@@ -469,7 +478,7 @@ const resolveFileName = (fname: string) => {
 export async function build(options: {
   config?: Config;
   ssr?: boolean;
-  vercel?: boolean | undefined;
+  vercel?: boolean;
   cloudflare?: boolean;
   deno?: boolean;
 }) {
@@ -517,7 +526,7 @@ export async function build(options: {
     !!options?.ssr,
   );
 
-  if (options?.vercel ?? process.env.VERCEL) {
+  if (options?.vercel) {
     await emitVercelOutput(
       rootDir,
       config,
