@@ -51,7 +51,7 @@ jobs:
           key: ${{ runner.os }}-playwright-1.40.1
       - name: Install Playwright
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm dlx playwright@1.40.1 install --with-deps
+        run: pnpm playwright install --with-deps
       - run: pnpm exec playwright test --forbid-only --shard=${{ matrix.shared }}/4
       - uses: actions/upload-artifact@v3
         if: always()
