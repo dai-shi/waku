@@ -63,7 +63,7 @@ import { connectMiddleware } from 'waku';
 const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
 export default function handler(req, res) {
   connectMiddleware({ entries, ssr: ${ssr} })(req, res, () => {
-    const { pathname ] = new URL(req.url, 'http://localhost');
+    const { pathname } = new URL(req.url, 'http://localhost');
     const fname = path.join(
       '${config.distDir}',
       '${config.publicDir}',
