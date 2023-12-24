@@ -1,23 +1,27 @@
 // This file should not include Node specific code.
 
-// TODO This might be too naive.
-// Should we use pathname and searchParams instead of input string?
-
 export const encodeInput = (input: string) => {
   if (input === '') {
     return 'index.txt';
   }
-  const [first, second] = input.split('?', 2);
-  return first + '.txt' + (second ? '?' + second : '');
+  if (input === 'index') {
+    throw new Error('Input should not be `index`');
+  }
+  if (input.startsWith('/')) {
+    throw new Error('Input should not start with `/`');
+  }
+  if (input.endsWith('/')) {
+    throw new Error('Input should not end with `/`');
+  }
+  return input + '.txt';
 };
 
 export const decodeInput = (encodedInput: string) => {
   if (encodedInput === 'index.txt') {
     return '';
   }
-  const [first, second] = encodedInput.split('?', 2);
-  if (first?.endsWith('.txt')) {
-    return first.slice(0, -'.txt'.length) + (second ? '?' + second : '');
+  if (encodedInput?.endsWith('.txt')) {
+    return encodedInput.slice(0, -'.txt'.length);
   }
   const err = new Error('Invalid encoded input');
   (err as any).statusCode = 400;
@@ -43,7 +47,10 @@ export const generatePrefetchCode = (
     code += `
 globalThis.__WAKU_PREFETCHED__ = {
 ${inputsArray
-  .map((input) => `  '${input}': fetch('${basePrefix}${encodeInput(input)}'),`)
+  .map((input) => {
+    const url = basePrefix + encodeInput(input);
+    return `  '${url}': fetch('${url}'),`;
+  })
   .join('\n')}
 };`;
   }

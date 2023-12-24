@@ -44,6 +44,7 @@ const mergeElements = cache(
 export const fetchRSC = cache(
   (
     input: string,
+    searchParamsString: string,
     rerender: (fn: (prev: Elements) => Elements) => void,
     basePath = '/RSC/',
   ): Elements => {
@@ -68,7 +69,11 @@ export const fetchRSC = cache(
       },
     };
     const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-    const response = prefetched[input] || fetch(basePath + encodeInput(input));
+    const url =
+      basePath +
+      encodeInput(input) +
+      (searchParamsString ? '?' + searchParamsString : '');
+    const response = prefetched[url] || fetch(url);
     delete prefetched[input];
     const data = createFromFetch<Awaited<Elements>>(
       checkStatus(response),
@@ -78,7 +83,22 @@ export const fetchRSC = cache(
   },
 );
 
-const RefetchContext = createContext<(input: string) => void>(() => {
+export const prefetchRSC = cache(
+  (input: string, searchParamsString: string, basePath = '/RSC/'): void => {
+    const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
+    const url =
+      basePath +
+      encodeInput(input) +
+      (searchParamsString ? '?' + searchParamsString : '');
+    if (!(url in prefetched)) {
+      prefetched[url] = fetch(url);
+    }
+  },
+);
+
+const RefetchContext = createContext<
+  (input: string, searchParams?: URLSearchParams) => void
+>(() => {
   throw new Error('Missing Root component');
 });
 const ElementsContext = createContext<Elements | null>(null);
@@ -98,21 +118,33 @@ const createRerender = cache(() => {
 
 export const Root = ({
   initialInput,
+  initialSearchParamsString,
   children,
   basePath,
 }: {
   initialInput?: string;
+  initialSearchParamsString?: string;
   children: ReactNode;
   basePath?: string;
 }) => {
   const [getRerender, setRerender] = createRerender();
   const [elements, setElements] = useState(() =>
-    fetchRSC(initialInput || '', getRerender(), basePath),
+    fetchRSC(
+      initialInput || '',
+      initialSearchParamsString || '',
+      getRerender(),
+      basePath,
+    ),
   );
   setRerender(setElements);
   const refetch = useCallback(
-    (input: string) => {
-      const data = fetchRSC(input, getRerender(), basePath);
+    (input: string, searchParams?: URLSearchParams) => {
+      const data = fetchRSC(
+        input,
+        searchParams?.toString() || '',
+        getRerender(),
+        basePath,
+      );
       setElements((prev) => mergeElements(prev, data));
     },
     [getRerender, basePath],

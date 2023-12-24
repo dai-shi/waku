@@ -5,6 +5,7 @@ import type { TransformResult } from 'vite';
 
 export type RenderRequest = {
   input: string;
+  searchParamsString: string;
   method: 'GET' | 'POST';
   contentType: string | undefined;
   config: Omit<ResolvedConfig, 'ssr'>;

@@ -33,7 +33,7 @@ export default defineEntries(
     },
   ],
   // getSsrConfig
-  async ({ pathname }) => {
+  async (pathname) => {
     switch (pathname) {
       case '/':
         return {

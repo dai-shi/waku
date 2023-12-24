@@ -5,13 +5,14 @@ import type { Slot } from './client.js';
 type Elements = Record<string, ReactNode>;
 
 export interface RenderContext<T = unknown> {
-  rerender: (name: string) => void;
+  rerender: (input: string, searchParams?: URLSearchParams) => void;
   context: T;
 }
 
 export type RenderEntries = (
   this: RenderContext,
   input: string,
+  searchParams: URLSearchParams,
 ) => Promise<Elements | null>;
 
 export type GetBuildConfig = (
@@ -30,10 +31,14 @@ export type GetBuildConfig = (
 >;
 
 export type GetSsrConfig = (
-  reqUrl: URL,
-  isPrd: boolean,
+  pathname: string,
+  options: {
+    searchParams: URLSearchParams;
+    isPrd: boolean;
+  },
 ) => Promise<{
   input: string;
+  searchParams?: URLSearchParams;
   unstable_render: (opts: {
     createElement: typeof createElement;
     Fragment: typeof Fragment;

@@ -14,54 +14,18 @@ export function getComponentIds(path: string): readonly string[] {
   return Array.from(idSet);
 }
 
-// XXX This custom encoding might not work in some edge cases.
-
-export function getInputString(
-  path: string,
-  searchParams: URLSearchParams,
-  skip?: string[],
-): string {
-  const search = searchParams.toString() || '';
-  if (search.includes('/')) {
-    throw new Error('Invalid search params');
+export function getInputString(path: string): string {
+  if (!path.startsWith('/')) {
+    throw new Error('Path should start with `/`');
   }
-  let input = search
-    ? '=' + path.replace(/\/$/, '/__INDEX__') + '/' + search
-    : '-' + path.replace(/\/$/, '/__INDEX__');
-  if (skip && skip.length) {
-    const params = new URLSearchParams();
-    skip.forEach((id) => params.append('skip', id));
-    input += '?' + params;
-  }
-  return input;
+  return path.slice(1);
 }
 
-export function parseInputString(input: string): {
-  path: string;
-  searchParams: URLSearchParams;
-  skip?: string[];
-} {
-  const [first, second] = input.split('?', 2);
-  const skip = second && new URLSearchParams(second).getAll('skip');
-  if (first?.startsWith('=')) {
-    const index = first.lastIndexOf('/');
-    return {
-      path: first.slice(1, index).replace(/\/__INDEX__$/, '/'),
-      searchParams: new URLSearchParams(first.slice(index + 1)),
-      ...(skip ? { skip } : {}),
-    };
-  } else if (first?.startsWith('-')) {
-    return {
-      path: first.slice(1).replace(/\/__INDEX__$/, '/'),
-      searchParams: new URLSearchParams(),
-      ...(skip ? { skip } : {}),
-    };
-  } else {
-    const err = new Error('Invalid input string');
-    (err as any).statusCode = 400;
-    throw err;
-  }
+export function parseInputString(input: string): string {
+  return '/' + input;
 }
+
+export const PARAM_KEY_SKIP = 'waku_router_skip';
 
 // It starts with "/" to avoid conflicing with normal component ids.
 export const SHOULD_SKIP_ID = '/SHOULD_SKIP';
