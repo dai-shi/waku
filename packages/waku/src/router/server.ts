@@ -108,7 +108,6 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
     return buildConfig;
   };
 
-  // TODO this API is not very understandable and not consistent with RSC
   const getSsrConfig: GetSsrConfig = async (pathname, { isPrd }) => {
     const pathType = await existsPath(pathname);
     if (isPrd ? pathType !== 'dynamic' : pathType === null) {
