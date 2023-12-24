@@ -62,6 +62,8 @@ import fs from 'node:fs';
 import { connectMiddleware } from 'waku';
 const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
 export default function handler(req, res) {
+  // FIXME this is just a workaround for now
+  req.url = req.url.replace(/\\?.*$/, '');
   connectMiddleware({ entries, ssr: ${ssr} })(req, res, () => {
     const fname = path.join(
       '${config.distDir}',
