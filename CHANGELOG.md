@@ -4,6 +4,7 @@
 ### Added
 - breaking: no index html #289
 - fix(vercel): option for static build #310
+- feat(router): createPages #293
 
 ## [0.18.1] - 2023-12-15
 ### Changed
