@@ -156,46 +156,48 @@ type IsValidPath<T> = T extends `/${infer L}/${infer R}`
   : T extends `/${infer U}`
     ? IsValidPathItem<U>
     : false;
-type HasSlugInPath<T> = T extends `/[${string}]/${infer _}`
+type HasSlugInPath<T, K extends string> = T extends `/[${K}]/${infer _}`
   ? true
   : T extends `/${infer _}/${infer U}`
-    ? HasSlugInPath<`/${U}`>
-    : T extends `/[${string}]`
+    ? HasSlugInPath<`/${U}`, K>
+    : T extends `/[${K}]`
       ? true
       : false;
-type PathWithSlug<T> = IsValidPath<T> extends true
-  ? HasSlugInPath<T> extends true
+type PathWithSlug<T, K extends string> = IsValidPath<T> extends true
+  ? HasSlugInPath<T, K | { [KK in K]: `...${KK}` }[K]> extends true
     ? T
     : never
   : never;
 type PathWithoutSlug<T> = T extends '/'
   ? T
   : IsValidPath<T> extends true
-    ? HasSlugInPath<T> extends true
+    ? HasSlugInPath<T, string> extends true
       ? never
       : T
     : never;
 
-type CreatePage = <
-  T extends string,
-  CustomProps extends Record<string, string>,
->(
+type CreatePage = <Path extends string, SlugKey extends string>(
   page:
     | {
         render: 'static';
-        path: PathWithoutSlug<T>;
+        path: PathWithoutSlug<Path>;
         component: FunctionComponent<RouteProps>;
       }
     | {
         render: 'static';
-        path: PathWithSlug<T>;
+        path: PathWithSlug<Path, SlugKey>;
         staticPaths: string[] | string[][];
-        component: FunctionComponent<RouteProps & CustomProps>;
+        component: FunctionComponent<RouteProps & Record<SlugKey, string>>;
       }
     | {
         render: 'dynamic';
-        path: PathWithoutSlug<T> | PathWithSlug<T>;
-        component: FunctionComponent<RouteProps & CustomProps>;
+        path: PathWithoutSlug<Path>;
+        component: FunctionComponent<RouteProps>;
+      }
+    | {
+        render: 'dynamic';
+        path: PathWithSlug<Path, SlugKey>;
+        component: FunctionComponent<RouteProps & Record<SlugKey, string>>;
       },
 ) => void;
 
