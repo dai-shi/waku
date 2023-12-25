@@ -29,8 +29,7 @@ if (HAS_MODULE_REGISTER) {
 const controllerMap = new Map<number, ReadableStreamDefaultController>();
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { id, type, hasModuleIdCallback, ...rest } = mesg;
+  const { id, type: _removed, hasModuleIdCallback, ...rest } = mesg;
   const rr: RenderRequest = rest;
   try {
     const stream = new ReadableStream({

@@ -201,7 +201,6 @@ export async function renderRscWithWorker<Context>(
         messageCallbacks.delete(id);
       }
     });
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { ssr: _removed, ...copiedConfig } = rr.config as any; // HACK type
     const copied = { ...rr, config: copiedConfig };
     delete copied.stream;

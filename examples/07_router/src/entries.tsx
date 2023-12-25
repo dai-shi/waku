@@ -1,32 +1,84 @@
-import { defineRouter } from 'waku/router/server';
+import { lazy } from 'react';
+import { createPages } from 'waku/router/server';
 
-const STATIC_PATHS = ['/', '/foo', '/bar', '/nested/baz', '/nested/qux'];
+// The use of `lazy` is optional and you can use import statements too.
+const HomeLayout = lazy(() => import('./components/HomeLayout.js'));
+const HomePage = lazy(() => import('./components/HomePage.js'));
+const FooPage = lazy(() => import('./components/FooPage.js'));
+const BarPage = lazy(() => import('./components/BarPage.js'));
+const NestedBazPage = lazy(() => import('./components/NestedBazPage.js'));
+const NestedQuxPage = lazy(() => import('./components/NestedQuxPage.js'));
 
-export default defineRouter(
-  // existsPath
-  async (path: string) => (STATIC_PATHS.includes(path) ? 'static' : null),
-  // getComponent (id is "**/layout" or "**/page")
-  async (id, unstable_setShouldSkip) => {
-    unstable_setShouldSkip({}); // always skip if possible
-    switch (id) {
-      case 'layout':
-        return import('./routes/layout.js');
-      case 'page':
-        return import('./routes/page.js');
-      case 'foo/page':
-        return import('./routes/foo/page.js');
-      case 'bar/page':
-        return import('./routes/bar/page.js');
-      case 'nested/layout':
-        return import('./routes/nested/layout.js');
-      case 'nested/baz/page':
-        return import('./routes/nested/baz/page.js');
-      case 'nested/qux/page':
-        return import('./routes/nested/qux/page.js');
-      default:
-        return null;
-    }
-  },
-  // getPathsForBuild
-  async () => STATIC_PATHS,
-);
+export default createPages(async ({ createPage, createLayout }) => {
+  createLayout({
+    render: 'static',
+    path: '/',
+    component: HomeLayout,
+  });
+
+  createPage({
+    render: 'static',
+    path: '/',
+    component: HomePage,
+  });
+
+  createPage({
+    render: 'static',
+    path: '/foo',
+    component: FooPage,
+  });
+
+  createPage({
+    render: 'static',
+    path: '/bar',
+    component: BarPage,
+  });
+
+  createPage({
+    render: 'dynamic',
+    path: '/baz',
+    // Inline component is also possible.
+    component: () => <h2>Baz</h2>,
+  });
+
+  createPage({
+    render: 'static',
+    path: '/nested/baz',
+    component: NestedBazPage,
+  });
+
+  createPage({
+    render: 'static',
+    path: '/nested/qux',
+    component: NestedQuxPage,
+  });
+
+  createPage({
+    render: 'static',
+    path: '/nested/[id]',
+    staticPaths: ['foo', 'bar'],
+    component: ({ id }: { id: string }) => (
+      <>
+        <h2>Nested</h2>
+        <h3>Static: {id}</h3>
+      </>
+    ),
+  });
+
+  createPage({
+    render: 'dynamic',
+    path: '/nested/[id]',
+    component: ({ id }: { id: string }) => (
+      <>
+        <h2>Nested</h2>
+        <h3>Dynamic: {id}</h3>
+      </>
+    ),
+  });
+
+  createPage({
+    render: 'dynamic',
+    path: '/any/[...all]', // `/[...all]` is impossible.
+    component: ({ all }: { all: string }) => <h2>Catch-all: {all}</h2>,
+  });
+});

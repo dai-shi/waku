@@ -74,7 +74,7 @@ export const fetchRSC = cache(
       encodeInput(input) +
       (searchParamsString ? '?' + searchParamsString : '');
     const response = prefetched[url] || fetch(url);
-    delete prefetched[input];
+    delete prefetched[url];
     const data = createFromFetch<Awaited<Elements>>(
       checkStatus(response),
       options,
