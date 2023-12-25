@@ -101,7 +101,10 @@ const injectRscPayload = (
         }
         controller.enqueue(chunk);
         chunks.push(chunk);
-        notify?.();
+        // HACK delay a little bit to avoid hydration mismatch
+        setTimeout(() => {
+          notify?.();
+        });
       },
       flush() {
         closed = true;
@@ -192,6 +195,7 @@ globalThis.__WAKU_PREFETCHED__ = {
             notify = () => {
               controller.enqueue(encoder.encode(getScripts()));
               if (closed) {
+                notify = undefined;
                 resolve();
               }
             };
