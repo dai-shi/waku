@@ -99,9 +99,9 @@ const injectRscPayload = (
         if (!(chunk instanceof Uint8Array)) {
           throw new Error('Unknown chunk type');
         }
+        controller.enqueue(chunk);
         chunks.push(chunk);
         notify?.();
-        controller.enqueue(chunk);
       },
       flush() {
         closed = true;
