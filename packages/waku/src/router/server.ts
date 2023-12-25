@@ -140,6 +140,10 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
 
 // createPages API (a wrapper around defineRouter)
 
+// FIXME we should extract some functions (and type utils)
+// out of this file, and add unit tests for them.
+// Like: `src/router/utils.ts` and `src/router/utils.test.ts`
+
 type IsValidPathItem<T> = T extends `/${infer _}`
   ? false
   : T extends '[]' | ''
@@ -196,45 +200,177 @@ type CreateLayout = <T extends string>(layout: {
   component: FunctionComponent<RouteProps & { children: ReactNode }>;
 }) => void;
 
+type ParsedPath = { name: string; isSlug: boolean; isWildcard: boolean }[];
+const parsePath = (path: string): ParsedPath =>
+  path
+    .replace(/^\//, '')
+    .split('/')
+    .map((name) => {
+      const isSlug = name.startsWith('[') && name.endsWith(']');
+      if (isSlug) {
+        name = name.slice(1, -1);
+      }
+      const isWildcard = name.startsWith('...');
+      if (isWildcard) {
+        name = name.slice(3);
+      }
+      return { name, isSlug, isWildcard };
+    });
+
+const getDynamicMapping = (parsedPath: ParsedPath, actual: string[]) => {
+  if (parsedPath.length !== actual.length) {
+    return null;
+  }
+  const mapping: Record<string, string> = {};
+  for (let i = 0; i < parsedPath.length; i++) {
+    const { name, isSlug } = parsedPath[i]!;
+    if (isSlug) {
+      mapping[name] = actual[i]!;
+    } else {
+      if (name !== actual[i]) {
+        return null;
+      }
+    }
+  }
+  return mapping;
+};
+
+const getWildcardMapping = (parsedPath: ParsedPath, actual: string[]) => {
+  if (parsedPath.length > actual.length) {
+    return null;
+  }
+  const mapping: Record<string, string> = {};
+  let wildcardStartIndex = -1;
+  for (let i = 0; i < parsedPath.length; i++) {
+    const { name, isSlug, isWildcard } = parsedPath[i]!;
+    if (isWildcard) {
+      wildcardStartIndex = i;
+      break;
+    } else if (isSlug) {
+      mapping[name] = actual[i]!;
+    } else {
+      if (name !== actual[i]) {
+        return null;
+      }
+    }
+  }
+  let wildcardEndIndex = -1;
+  for (let i = 0; i < parsedPath.length; i++) {
+    const { name, isSlug, isWildcard } = parsedPath[parsedPath.length - i]!;
+    if (isWildcard) {
+      wildcardEndIndex = actual.length - i - 1;
+      break;
+    } else if (isSlug) {
+      mapping[name] = actual[actual.length - i]!;
+    } else {
+      if (name !== actual[actual.length - i]) {
+        return null;
+      }
+    }
+  }
+  if (wildcardStartIndex === -1 || wildcardEndIndex === -1) {
+    throw new Error('Invalid wildcard path');
+  }
+  mapping[parsedPath[wildcardStartIndex]!.name] = actual
+    .slice(wildcardStartIndex, wildcardEndIndex + 1)
+    .join('/');
+  return mapping;
+};
+
 export function createPages(
   fn: (fns: {
     createPage: CreatePage;
     createLayout: CreateLayout;
   }) => Promise<void>,
 ): ReturnType<typeof defineEntries> {
+  let configured = false;
   const staticPathSet = new Set<string>();
-  // TODO dynamic & wildcard
-  // const dynamicPaths: { item: string; isSlug: boolean }[] = [];
-  // const wildcardPaths: { item: string; isSlug: boolean }[] = [];
-  const componentMap = new Map<
+  const dynamicPathMap = new Map<
+    string,
+    [ParsedPath, FunctionComponent<RouteProps & { children: ReactNode }>]
+  >();
+  const wildcardPathMap = new Map<
+    string,
+    [ParsedPath, FunctionComponent<RouteProps & { children: ReactNode }>]
+  >();
+  const staticComponentMap = new Map<
     string,
     FunctionComponent<RouteProps & { children: ReactNode }>
   >();
-  let finished = false;
+  const registerStaticComponent = (
+    id: string,
+    component: FunctionComponent<RouteProps & { children: ReactNode }>,
+  ) => {
+    if (
+      staticComponentMap.has(id) &&
+      staticComponentMap.get(id) !== component
+    ) {
+      throw new Error(`Duplicated component for: ${id}`);
+    }
+    staticComponentMap.set(id, component);
+  };
+
   const createPage: CreatePage = (page) => {
-    if (finished) {
+    if (configured) {
       throw new Error('no longer available');
     }
-    staticPathSet.add(page.path);
-    const id = joinPath(page.path, 'page').replace(/^\//, '');
-    if (componentMap.has(id) && componentMap.get(id) !== page.component) {
-      throw new Error(`Duplicated component for: ${page.path}`);
+    const parsedPath = parsePath(page.path);
+    const numSlugs = parsedPath.filter(({ isSlug }) => isSlug).length;
+    const numWildcards = parsedPath.filter(
+      ({ isWildcard }) => isWildcard,
+    ).length;
+    if (page.render === 'static' && numSlugs === 0) {
+      staticPathSet.add(page.path);
+      const id = joinPath(page.path, 'page').replace(/^\//, '');
+      registerStaticComponent(id, page.component);
     }
-    componentMap.set(id, page.component);
+    if (page.render === 'static' && numSlugs > 0 && numWildcards === 0) {
+      const staticPaths = (
+        page as {
+          staticPaths: string[] | string[][];
+        }
+      ).staticPaths.map((item) => (Array.isArray(item) ? item : [item]));
+      for (const staticPath of staticPaths) {
+        if (staticPath.length !== numSlugs) {
+          throw new Error('staticPaths does not match with slug pattern');
+        }
+        const pathItems = parsedPath.map(({ name, isSlug }, index) =>
+          isSlug ? staticPath[index]! : name,
+        );
+        staticPathSet.add('/' + joinPath(...pathItems));
+        const id = joinPath(...pathItems, 'page');
+        registerStaticComponent(id, page.component);
+      }
+    }
+    if (page.render === 'dynamic' && numWildcards === 0) {
+      if (dynamicPathMap.has(page.path)) {
+        throw new Error(`Duplicated dynamic path: ${page.path}`);
+      }
+      parsedPath.push({ name: 'page', isSlug: false, isWildcard: false });
+      dynamicPathMap.set(page.path, [parsedPath, page.component]);
+    }
+    if (page.render === 'dynamic' && numWildcards === 1) {
+      if (wildcardPathMap.has(page.path)) {
+        throw new Error(`Duplicated dynamic path: ${page.path}`);
+      }
+      parsedPath.push({ name: 'page', isSlug: false, isWildcard: false });
+      wildcardPathMap.set(page.path, [parsedPath, page.component]);
+    }
+    throw new Error('Invalid page configuration');
   };
+
   const createLayout: CreateLayout = (layout) => {
-    if (finished) {
+    if (configured) {
       throw new Error('no longer available');
     }
     const id = joinPath(layout.path, 'layout').replace(/^\//, '');
-    if (componentMap.has(id) && componentMap.get(id) !== layout.component) {
-      throw new Error(`Duplicated component for: ${layout.component}`);
-    }
-    componentMap.set(id, layout.component);
+    registerStaticComponent(id, layout.component);
   };
+
   const ready = fn({ createPage, createLayout }).then(() => {
-    finished = true;
+    configured = true;
   });
+
   return defineRouter(
     async (path: string) => {
       await ready;
@@ -242,8 +378,31 @@ export function createPages(
     },
     async (id, unstable_setShouldSkip) => {
       await ready;
-      unstable_setShouldSkip({}); // for static paths
-      return componentMap.get(id) || null;
+      const staticComponent = staticComponentMap.get(id);
+      if (staticComponent) {
+        unstable_setShouldSkip({});
+        return staticComponent;
+      }
+      for (const [parsedPath, Component] of dynamicPathMap.values()) {
+        const mapping = getDynamicMapping(parsedPath, id.split('/'));
+        if (mapping) {
+          if (Object.keys(mapping).length === 0) {
+            return Component;
+          }
+          const WrappedComponent = (props: Record<string, unknown>) =>
+            createElement(Component as any, { ...props, ...mapping });
+          return WrappedComponent;
+        }
+      }
+      for (const [parsedPath, Component] of wildcardPathMap.values()) {
+        const mapping = getWildcardMapping(parsedPath, id.split('/'));
+        if (mapping) {
+          const WrappedComponent = (props: Record<string, unknown>) =>
+            createElement(Component as any, { ...props, ...mapping });
+          return WrappedComponent;
+        }
+      }
+      return null; // not found
     },
     async () => staticPathSet,
   );
