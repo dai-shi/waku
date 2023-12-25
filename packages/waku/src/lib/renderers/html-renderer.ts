@@ -99,9 +99,7 @@ const injectRscPayload = (
         if (!(chunk instanceof Uint8Array)) {
           throw new Error('Unknown chunk type');
         }
-        Promise.resolve().then(() => {
-          controller.enqueue(chunk);
-        }); // TEMP experimenting the intentional hydration mismatch
+        controller.enqueue(chunk);
         chunks.push(chunk);
         notify?.();
       },
