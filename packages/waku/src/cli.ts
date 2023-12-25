@@ -25,6 +25,9 @@ const { values, positionals } = parseArgs({
     'with-vercel': {
       type: 'boolean',
     },
+    'with-vercel-static': {
+      type: 'boolean',
+    },
     'with-cloudflare': {
       type: 'boolean',
     },
@@ -58,9 +61,6 @@ if (values.version) {
     case 'build':
       runBuild({
         ssr,
-        vercel: values['with-vercel'] ?? !!process.env.VERCEL,
-        cloudflare: !!values['with-cloudflare'],
-        deno: !!values['with-deno'],
       });
       break;
     case 'start':
@@ -82,13 +82,18 @@ async function runDev(options: { ssr: boolean }) {
   startServer(app, port);
 }
 
-async function runBuild(options: {
-  ssr: boolean;
-  vercel: boolean;
-  cloudflare: boolean;
-  deno: boolean;
-}) {
-  await build(options);
+async function runBuild(options: { ssr: boolean }) {
+  await build({
+    ssr: options.ssr,
+    vercel:
+      values['with-vercel'] ?? !!process.env.VERCEL
+        ? {
+            type: values['with-vercel-static'] ? 'static' : 'serverless',
+          }
+        : undefined,
+    cloudflare: !!values['with-cloudflare'],
+    deno: !!values['with-deno'],
+  });
 }
 
 async function runStart(options: { ssr: boolean }) {
