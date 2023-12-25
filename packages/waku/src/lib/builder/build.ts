@@ -536,6 +536,7 @@ export async function build(options: {
       rscFiles,
       htmlFiles,
       !!options?.ssr,
+      'static',
     );
   }
 
