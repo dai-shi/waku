@@ -228,14 +228,16 @@ Here's an incomplete example with `createPages`:
 import { lazy } from 'react';
 import { createPages } from 'waku/router/server';
 
-const Index = lazy(() => import('./routes/index.js'));
-const Foo = lazy(() => import('./routes/foo.js'));
+const Index = lazy(() => import('./components/index.js'));
+const Foo = lazy(() => import('./components/foo.js'));
 
 export default createPages(async ({ createPage }) => {
-  createPage({ path: '/', component: Index });
-  createPage({ path: '/foo', component: Foo });
+  createPage({ render: 'static', path: '/', component: Index });
+  createPage({ render: 'dynamic', path: '/foo', component: Foo });
 });
 ```
+
+For more usage, check out [`07_router` example](./examples/07_router).
 
 `createPages` is a config-based router.
 If you want a file-based router,
@@ -260,8 +262,7 @@ npm run examples:dev:07_router
 ```
 
 Alternatively, you could create a project with something like
-`npm create waku@latest` and copy files from the example
-folder in the repository.
+`npm create waku@latest` and choose "router-template".
 
 ## SSR (HTML generation for initial page)
 
