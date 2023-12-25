@@ -481,7 +481,7 @@ const resolveFileName = (fname: string) => {
 export async function build(options: {
   config?: Config;
   ssr?: boolean;
-  vercel?: boolean;
+  vercel?: { type: 'static' | 'serverless' } | undefined;
   cloudflare?: boolean;
   deno?: boolean;
 }) {
@@ -536,6 +536,7 @@ export async function build(options: {
       rscFiles,
       htmlFiles,
       !!options?.ssr,
+      options.vercel.type,
     );
   }
 
