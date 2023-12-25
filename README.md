@@ -295,7 +295,7 @@ will produce static sites without serverless functions.
 ```json
 {
   "scripts": {
-    "build": "waku build --with-ssr --with-vercel-static",
+    "build": "waku build --with-ssr --with-vercel-static"
   }
 }
 ```
