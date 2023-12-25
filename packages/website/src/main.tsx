@@ -12,17 +12,8 @@ const rootElement = (
   </StrictMode>
 );
 
-// FIXME temporary fix, doesn't feel ideal.
-function init() {
-  try {
-    if ((globalThis as any).__WAKU_SSR_ENABLED__) {
-      hydrateRoot(document.body, rootElement);
-    } else {
-      createRoot(document.body).render(rootElement);
-    }
-  } catch (e) {
-    console.log('retrying as an error is caught: ' + e);
-    setTimeout(init);
-  }
+if ((globalThis as any).__WAKU_SSR_ENABLED__) {
+  hydrateRoot(document.body, rootElement);
+} else {
+  createRoot(document.body).render(rootElement);
 }
-init();
