@@ -58,7 +58,7 @@ export function defineRouter(
               delete shouldSkip[id];
             }
           });
-          const component = typeof mod === 'function' ? mod : mod?.default;
+          const component = mod && 'default' in mod ? mod.default : mod;
           if (!component) {
             return [];
           }
@@ -193,9 +193,7 @@ type CreatePage = <T extends string>(
 type CreateLayout = <T extends string>(layout: {
   render: 'static';
   path: PathWithoutSlug<T>;
-  component: FunctionComponent<
-    Omit<RouteProps, 'searchParams'> & { children: ReactNode }
-  >;
+  component: FunctionComponent<RouteProps & { children: ReactNode }>;
 }) => void;
 
 export function createPages(
@@ -247,6 +245,6 @@ export function createPages(
       unstable_setShouldSkip({}); // for static paths
       return componentMap.get(id) || null;
     },
-    async () => Array.from(staticPathSet).map((path) => ({ path })),
+    async () => staticPathSet,
   );
 }
