@@ -57,4 +57,10 @@ export default createPages(async ({ createPage, createLayout }) => {
       </>
     ),
   });
+
+  createPage({
+    render: 'dynamic',
+    path: '/any/[...all]', // `/[...all]` is impossible.
+    component: ({ all }: { all: string }) => <h2>Catch-all: {all}</h2>,
+  });
 });

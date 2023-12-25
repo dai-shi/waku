@@ -259,14 +259,14 @@ const getWildcardMapping = (parsedPath: ParsedPath, actual: string[]) => {
   }
   let wildcardEndIndex = -1;
   for (let i = 0; i < parsedPath.length; i++) {
-    const { name, isSlug, isWildcard } = parsedPath[parsedPath.length - i]!;
+    const { name, isSlug, isWildcard } = parsedPath[parsedPath.length - i - 1]!;
     if (isWildcard) {
       wildcardEndIndex = actual.length - i - 1;
       break;
     } else if (isSlug) {
-      mapping[name] = actual[actual.length - i]!;
+      mapping[name] = actual[actual.length - i - 1]!;
     } else {
-      if (name !== actual[actual.length - i]) {
+      if (name !== actual[actual.length - i - 1]) {
         return null;
       }
     }
@@ -376,11 +376,17 @@ export function createPages(
       if (staticPathSet.has(path)) {
         return 'static';
       }
-      for (const [parsedPath] of [
-        ...dynamicPathMap.values(),
-        ...wildcardPathMap.values(),
-      ]) {
+      for (const [parsedPath] of dynamicPathMap.values()) {
         const mapping = getDynamicMapping(parsedPath, path.split('/').slice(1));
+        if (mapping) {
+          return 'dynamic';
+        }
+      }
+      for (const [parsedPath] of wildcardPathMap.values()) {
+        const mapping = getWildcardMapping(
+          parsedPath,
+          path.split('/').slice(1),
+        );
         if (mapping) {
           return 'dynamic';
         }
