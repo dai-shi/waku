@@ -29,7 +29,7 @@ export default defineEntries(
     { pathname: '/', entries: [{ input: '' }], context: { count: 0 } },
   ],
   // getSsrConfig
-  async ({ pathname }) => {
+  async (pathname) => {
     switch (pathname) {
       case '/':
         return {

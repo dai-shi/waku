@@ -15,7 +15,7 @@ import {
   filePathToFileURL,
   fileURLToFilePath,
 } from '../utils/path.js';
-import { hasStatusCode } from './utils.js';
+import { encodeInput, hasStatusCode } from './utils.js';
 
 export const REACT_MODULE = 'react';
 export const REACT_MODULE_VALUE = 'react';
@@ -86,7 +86,10 @@ Promise.resolve(new Response(new ReadableStream({
 // TODO this is an easy solution. we could do it better at the build time.
 const enableSsrCode = 'globalThis.__WAKU_SSR_ENABLED__ = true;';
 
-const injectRscPayload = (readable: ReadableStream, input: string) => {
+const injectRscPayload = (
+  readable: ReadableStream,
+  urlForFakeFetch: string,
+) => {
   const chunks: Uint8Array[] = [];
   let closed = false;
   let notify: (() => void) | undefined;
@@ -114,7 +117,7 @@ const injectRscPayload = (readable: ReadableStream, input: string) => {
     if (matchPrefetched) {
       data =
         matchPrefetched[1] +
-        `  '${input}': ${fakeFetchCode},` +
+        `  '${urlForFakeFetch}': ${fakeFetchCode},` +
         matchPrefetched[3];
     }
     const closingHeadIndex = data.indexOf('</head>');
@@ -125,7 +128,7 @@ const injectRscPayload = (readable: ReadableStream, input: string) => {
     if (!matchPrefetched) {
       code += `
 globalThis.__WAKU_PREFETCHED__ = {
-  '${input}': ${fakeFetchCode},
+  '${urlForFakeFetch}': ${fakeFetchCode},
 };
 `;
     }
@@ -237,15 +240,27 @@ const buildHtml = (
 export const renderHtml = async (
   opts: {
     config: ResolvedConfig;
-    reqUrl: URL;
+    pathname: string;
+    searchParams: URLSearchParams;
     htmlHead: string;
-    renderRscForHtml: (input: string) => Promise<ReadableStream>;
+    renderRscForHtml: (
+      input: string,
+      searchParams: URLSearchParams,
+    ) => Promise<ReadableStream>;
   } & (
     | { isDev: false; entries: EntriesPrd; isBuild: boolean }
     | { isDev: true; entries: EntriesDev }
   ),
 ): Promise<ReadableStream | null> => {
-  const { config, reqUrl, htmlHead, renderRscForHtml, isDev, entries } = opts;
+  const {
+    config,
+    pathname,
+    searchParams,
+    htmlHead,
+    renderRscForHtml,
+    isDev,
+    entries,
+  } = opts;
 
   const {
     default: { getSsrConfig },
@@ -270,14 +285,20 @@ export const renderHtml = async (
       ? import(WAKU_CLIENT_MODULE_VALUE)
       : loadModule!('public/' + WAKU_CLIENT_MODULE),
   ]);
-  const ssrConfig = await getSsrConfig?.(reqUrl, !isDev && !opts.isBuild);
+  const ssrConfig = await getSsrConfig?.(pathname, {
+    searchParams,
+    isPrd: !isDev && !opts.isBuild,
+  });
   if (!ssrConfig) {
     return null;
   }
   const rootDirDev = isDev && (await getViteServer()).config.root;
   let stream: ReadableStream;
   try {
-    stream = await renderRscForHtml(ssrConfig.input);
+    stream = await renderRscForHtml(
+      ssrConfig.input,
+      ssrConfig.searchParams || searchParams,
+    );
   } catch (e) {
     if (hasStatusCode(e) && e.statusCode === 404) {
       return null;
@@ -357,7 +378,10 @@ export const renderHtml = async (
       },
     },
   );
-  const [copied, interleave] = injectRscPayload(stream, ssrConfig.input);
+  const [copied, interleave] = injectRscPayload(
+    stream,
+    config.basePath + config.rscPath + '/' + encodeInput(ssrConfig.input),
+  );
   const elements: Promise<Record<string, ReactNode>> = createFromReadableStream(
     copied,
     {

@@ -87,5 +87,5 @@ export default defineRouter(
     return Component;
   },
   // getPathsForBuild
-  async () => (await getStaticPaths()).map((path) => ({ path })),
+  () => getStaticPaths(),
 );

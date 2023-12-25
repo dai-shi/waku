@@ -62,14 +62,13 @@ import fs from 'node:fs';
 import { connectMiddleware } from 'waku';
 const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
 export default function handler(req, res) {
-  // FIXME this is just a workaround for now
-  req.url = req.url.replace(/\\?.*$/, '');
   connectMiddleware({ entries, ssr: ${ssr} })(req, res, () => {
+    const { pathname } = new URL(req.url, 'http://localhost');
     const fname = path.join(
       '${config.distDir}',
       '${config.publicDir}',
-      req.url,
-      path.extname(req.url) ? '' : '${config.indexHtml}',
+      pathname,
+      path.extname(pathname) ? '' : '${config.indexHtml}',
     );
     if (fs.existsSync(fname)) {
       if (fname.endsWith('.html')) {

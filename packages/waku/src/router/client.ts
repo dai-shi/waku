@@ -13,15 +13,22 @@ import {
 } from 'react';
 import type { ComponentProps, FunctionComponent, ReactNode } from 'react';
 
-import { Root, Slot, useRefetch } from '../client.js';
-import { getComponentIds, getInputString, SHOULD_SKIP_ID } from './common.js';
+import { prefetchRSC, Root, Slot, useRefetch } from '../client.js';
+import {
+  getComponentIds,
+  getInputString,
+  PARAM_KEY_SKIP,
+  SHOULD_SKIP_ID,
+} from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
-// FIXME this depends on an internal function
-import { encodeInput } from '../lib/renderers/utils.js';
 
 const parseLocation = (): RouteProps => {
   const { pathname, search } = window.location;
-  return { path: pathname, searchParams: new URLSearchParams(search) };
+  const searchParams = new URLSearchParams(search);
+  if (searchParams.has(PARAM_KEY_SKIP)) {
+    console.warn(`The search param "${PARAM_KEY_SKIP}" is reserved`);
+  }
+  return { path: pathname, searchParams };
 };
 
 type ChangeLocation = (
@@ -178,8 +185,14 @@ function InnerRouter({ basePath }: { basePath: string }) {
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is cached
       }
-      const input = getInputString(loc.path, loc.searchParams, skip);
-      refetch(input);
+      const input = getInputString(loc.path);
+      refetch(
+        input,
+        new URLSearchParams([
+          ...Array.from(loc.searchParams.entries()),
+          ...skip.map((id) => [PARAM_KEY_SKIP, id]),
+        ]),
+      );
       setCached((prev) => ({
         ...prev,
         ...Object.fromEntries(
@@ -198,12 +211,13 @@ function InnerRouter({ basePath }: { basePath: string }) {
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is cached
       }
-      const input = getInputString(path, searchParams, skip);
-      const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-      if (!prefetched[input]) {
-        prefetched[input] = fetch(basePath + encodeInput(input));
-      }
-      (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(path, searchParams);
+      const input = getInputString(path);
+      const searchParamsString = new URLSearchParams([
+        ...Array.from(searchParams.entries()),
+        ...skip.map((id) => [PARAM_KEY_SKIP, id]),
+      ]).toString();
+      prefetchRSC(input, searchParamsString, basePath);
+      (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(path);
     },
     [basePath],
   );
@@ -236,12 +250,15 @@ function InnerRouter({ basePath }: { basePath: string }) {
   );
 }
 
+// TODO get basePath from config
+
 export function Router({ basePath = '/RSC/' }: { basePath?: string }) {
   const loc = parseLocation();
-  const initialInput = getInputString(loc.path, loc.searchParams);
+  const initialInput = getInputString(loc.path);
+  const initialSearchParamsString = loc.searchParams.toString();
   return createElement(
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
-    { initialInput, basePath },
+    { initialInput, initialSearchParamsString, basePath },
     createElement(InnerRouter, { basePath }),
   );
 }

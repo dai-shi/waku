@@ -9,6 +9,7 @@ import {
   getComponentIds,
   getInputString,
   parseInputString,
+  PARAM_KEY_SKIP,
   SHOULD_SKIP_ID,
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
@@ -31,17 +32,16 @@ export function defineRouter(
     | { default: FunctionComponent<RouteProps & { children: ReactNode }> }
     | null
   >,
-  getPathsForBuild?: () => Promise<
-    Iterable<{ path: string; searchParams?: URLSearchParams }>
-  >,
+  getPathsForBuild?: () => Promise<Iterable<string>>,
 ): ReturnType<typeof defineEntries> {
   const shouldSkip: ShouldSkip = {};
 
-  const renderEntries: RenderEntries = async (input) => {
-    const { path, searchParams, skip } = parseInputString(input);
+  const renderEntries: RenderEntries = async (input, searchParams) => {
+    const path = parseInputString(input);
     if (!(await existsPath(path))) {
       return null;
     }
+    const skip = searchParams.getAll(PARAM_KEY_SKIP) || [];
     const componentIds = getComponentIds(path);
     const props: RouteProps = { path, searchParams };
     const entries = (
@@ -81,57 +81,40 @@ export function defineRouter(
     unstable_collectClientModules,
   ) => {
     const pathsForBuild = await getPathsForBuild?.();
-    const pathMap = new Map<
-      string,
-      { isStatic: boolean; searchParamsList: URLSearchParams[] }
-    >();
     const path2moduleIds: Record<string, string[]> = {};
-    for (const {
-      path,
-      searchParams = new URLSearchParams(),
-    } of pathsForBuild || []) {
-      let item = pathMap.get(path);
-      if (!item) {
-        item = {
-          isStatic: (await existsPath(path)) === 'static',
-          searchParamsList: [],
-        };
-        pathMap.set(path, item);
-      }
-      item.searchParamsList.push(searchParams);
-      const input = getInputString(path, searchParams);
+    for (const path of pathsForBuild || []) {
+      const input = getInputString(path);
       const moduleIds = await unstable_collectClientModules(input);
-      const search = searchParams.toString();
-      path2moduleIds[path + (search ? '?' + search : '')] = moduleIds;
+      path2moduleIds[path] = moduleIds;
     }
     const customCode = `
-globalThis.__WAKU_ROUTER_PREFETCH__ = (path, searchParams) => {
-  const search = searchParams.toString();
-  const pathStr = path + (search ? '?' + search : '');
+globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   const path2ids = ${JSON.stringify(path2moduleIds)};
-  for (const id of path2ids[pathStr] || []) {
+  for (const id of path2ids[path] || []) {
     import(id);
   }
 };`;
-    return Array.from(pathMap.entries()).map(
-      ([path, { isStatic, searchParamsList }]) => {
-        const entries = searchParamsList.map((searchParams) => ({
-          input: getInputString(path, searchParams),
-          isStatic,
-        }));
-        return { pathname: path, entries, customCode };
-      },
-    );
+    const buildConfig: {
+      pathname: string;
+      entries: { input: string; isStatic: boolean }[];
+      customCode: string;
+    }[] = [];
+    for (const path of pathsForBuild || []) {
+      const isStatic = (await existsPath(path)) === 'static';
+      const input = getInputString(path);
+      const entries = [{ input, isStatic }];
+      buildConfig.push({ pathname: path, entries, customCode });
+    }
+    return buildConfig;
   };
 
-  // TODO this API is not very understandable and not consistent with RSC
-  const getSsrConfig: GetSsrConfig = async (reqUrl, isPrd) => {
-    const pathType = await existsPath(reqUrl.pathname);
+  const getSsrConfig: GetSsrConfig = async (pathname, { isPrd }) => {
+    const pathType = await existsPath(pathname);
     if (isPrd ? pathType !== 'dynamic' : pathType === null) {
       return null;
     }
-    const componentIds = getComponentIds(reqUrl.pathname);
-    const input = getInputString(reqUrl.pathname, reqUrl.searchParams);
+    const componentIds = getComponentIds(pathname);
+    const input = getInputString(pathname);
     type Opts = {
       createElement: typeof createElement;
       Fragment: typeof Fragment;

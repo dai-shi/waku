@@ -28,5 +28,5 @@ export default defineRouter(
     }
   },
   // getPathsForBuild
-  async () => STATIC_PATHS.map((path) => ({ path })),
+  async () => STATIC_PATHS,
 );

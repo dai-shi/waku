@@ -336,6 +336,7 @@ const emitRscFiles = async (
           await mkdir(joinPath(destRscFile, '..'), { recursive: true });
           const readable = await renderRsc({
             input,
+            searchParams: new URLSearchParams(),
             method: 'GET',
             config,
             context,
@@ -426,13 +427,15 @@ const emitHtmlFiles = async (
           ssr &&
           (await renderHtml({
             config,
-            reqUrl: new URL(pathname, 'http://localhost'),
+            pathname,
+            searchParams: new URLSearchParams(),
             htmlHead,
-            renderRscForHtml: (input) =>
+            renderRscForHtml: (input, searchParams) =>
               renderRsc({
                 entries: distEntries,
                 config,
                 input,
+                searchParams,
                 method: 'GET',
                 context,
                 isDev: false,
