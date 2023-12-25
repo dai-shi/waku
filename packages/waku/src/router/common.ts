@@ -1,10 +1,10 @@
 export type RouteProps = {
   path: string;
-  search: string;
+  searchParams: URLSearchParams;
 };
 
-export function getComponentIds(pathname: string): readonly string[] {
-  const pathItems = pathname.split('/').filter(Boolean);
+export function getComponentIds(path: string): readonly string[] {
+  const pathItems = path.split('/').filter(Boolean);
   const idSet = new Set<string>();
   for (let index = 0; index <= pathItems.length; ++index) {
     const id = [...pathItems.slice(0, index), 'layout'].join('/');
@@ -14,50 +14,27 @@ export function getComponentIds(pathname: string): readonly string[] {
   return Array.from(idSet);
 }
 
-// XXX This custom encoding might not work in some edge cases.
-
-export function getInputString(
-  pathname: string,
-  search: string,
-  skip?: string[],
-): string {
-  if (search.includes('/')) {
-    throw new Error('Invalid search');
+export function getInputString(path: string): string {
+  if (!path.startsWith('/')) {
+    throw new Error('Path should start with `/`');
   }
-  let input = search
-    ? '=' + pathname.replace(/\/$/, '/__INDEX__') + '/' + search
-    : '-' + pathname.replace(/\/$/, '/__INDEX__');
-  if (skip) {
-    const params = new URLSearchParams();
-    skip.forEach((id) => params.append('skip', id));
-    input += '?' + params;
-  }
-  return input;
+  return path.slice(1);
 }
 
-export function parseInputString(input: string): {
-  pathname: string;
-  search: string;
-  skip?: string[];
-} {
-  const [first, second] = input.split('?', 2);
-  const skip = second && new URLSearchParams(second).getAll('skip');
-  if (first?.startsWith('=')) {
-    const index = first.lastIndexOf('/');
-    return {
-      pathname: first.slice(1, index).replace(/\/__INDEX__$/, '/'),
-      search: first.slice(index + 1),
-      ...(skip ? { skip } : {}),
-    };
-  } else if (first?.startsWith('-')) {
-    return {
-      pathname: first.slice(1).replace(/\/__INDEX__$/, '/'),
-      search: '',
-      ...(skip ? { skip } : {}),
-    };
-  } else {
-    const err = new Error('Invalid input string');
-    (err as any).statusCode = 400;
-    throw err;
-  }
+export function parseInputString(input: string): string {
+  return '/' + input;
 }
+
+export const PARAM_KEY_SKIP = 'waku_router_skip';
+
+// It starts with "/" to avoid conflicing with normal component ids.
+export const SHOULD_SKIP_ID = '/SHOULD_SKIP';
+
+// The key is componentId
+export type ShouldSkip = Record<
+  string,
+  {
+    path?: boolean; // if we compare path
+    keys?: string[]; // searchParams keys to compare
+  }
+>;

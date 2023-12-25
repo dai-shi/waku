@@ -1,14 +1,13 @@
 import { defineRouter } from 'waku/router/server';
 
+const STATIC_PATHS = ['/', '/foo', '/bar', '/nested/baz', '/nested/qux'];
+
 export default defineRouter(
-  // getRoutePaths
-  async () => ({
-    static: ['/', '/foo', '/bar', '/nested/baz', '/nested/qux'].map(
-      (pathname) => ({ pathname }),
-    ),
-  }),
+  // existsPath
+  async (path: string) => (STATIC_PATHS.includes(path) ? 'static' : null),
   // getComponent (id is "**/layout" or "**/page")
-  async (id) => {
+  async (id, unstable_setShouldSkip) => {
+    unstable_setShouldSkip({}); // always skip if possible
     switch (id) {
       case 'layout':
         return import('./routes/layout.js');
@@ -28,4 +27,6 @@ export default defineRouter(
         return null;
     }
   },
+  // getPathsForBuild
+  async () => STATIC_PATHS,
 );

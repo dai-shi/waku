@@ -35,6 +35,7 @@ export async function renderRsc(
   opts: {
     config: Omit<ResolvedConfig, 'ssr'>;
     input: string;
+    searchParams: URLSearchParams;
     method: 'GET' | 'POST';
     context: unknown;
     body?: ReadableStream;
@@ -52,6 +53,7 @@ export async function renderRsc(
   const {
     config,
     input,
+    searchParams,
     method,
     contentType,
     context,
@@ -69,8 +71,16 @@ export async function renderRsc(
     ? import(RSDW_SERVER_MODULE_VALUE)
     : loadModule!(RSDW_SERVER_MODULE).then((m: any) => m.default));
 
-  const render = async (renderContext: RenderContext, input: string) => {
-    const elements = await renderEntries.call(renderContext, input);
+  const render = async (
+    renderContext: RenderContext,
+    input: string,
+    searchParams: URLSearchParams,
+  ) => {
+    const elements = await renderEntries.call(
+      renderContext,
+      input,
+      searchParams,
+    );
     if (elements === null) {
       const err = new Error('No function component found');
       (err as any).statusCode = 404; // HACK our convention for NotFound
@@ -124,14 +134,18 @@ export async function renderRsc(
     const fn = mod[name] || mod;
     let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
     let rendered = false;
-    const rerender = (input: string) => {
+    const rerender = (input: string, searchParams = new URLSearchParams()) => {
       if (rendered) {
         throw new Error('already rendered');
       }
       const renderContext: RenderContext = { rerender, context };
-      elements = Promise.all([elements, render(renderContext, input)]).then(
-        ([oldElements, newElements]) => ({ ...oldElements, ...newElements }),
-      );
+      elements = Promise.all([
+        elements,
+        render(renderContext, input, searchParams),
+      ]).then(([oldElements, newElements]) => ({
+        ...oldElements,
+        ...newElements,
+      }));
     };
     const renderContext: RenderContext = { rerender, context };
     const data = await fn.apply(renderContext, args);
@@ -150,7 +164,7 @@ export async function renderRsc(
     },
     context,
   };
-  const elements = await render(renderContext, input);
+  const elements = await render(renderContext, input, searchParams);
   return renderToReadableStream(elements, bundlerConfig);
 }
 
@@ -177,6 +191,7 @@ export async function getBuildConfig(opts: {
     const readable = await renderRsc({
       config,
       input,
+      searchParams: new URLSearchParams(),
       method: 'GET',
       context: null,
       moduleIdCallback: (id) => idSet.add(id),

@@ -50,21 +50,21 @@ if (values.version) {
 } else if (values.help) {
   displayUsage();
 } else {
-  const withSsr = !!values['with-ssr'];
+  const ssr = !!values['with-ssr'];
   switch (cmd) {
     case 'dev':
-      runDev({ ssr: withSsr });
+      runDev({ ssr });
       break;
     case 'build':
       runBuild({
-        ssr: withSsr,
-        vercel: values['with-vercel'],
+        ssr,
+        vercel: values['with-vercel'] ?? !!process.env.VERCEL,
         cloudflare: !!values['with-cloudflare'],
         deno: !!values['with-deno'],
       });
       break;
     case 'start':
-      runStart({ ssr: withSsr });
+      runStart({ ssr });
       break;
     default:
       if (cmd) {
@@ -84,7 +84,7 @@ async function runDev(options: { ssr: boolean }) {
 
 async function runBuild(options: {
   ssr: boolean;
-  vercel: boolean | undefined;
+  vercel: boolean;
   cloudflare: boolean;
   deno: boolean;
 }) {

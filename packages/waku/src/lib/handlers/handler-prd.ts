@@ -24,8 +24,6 @@ export function createHandler<
   }
   const configPromise = resolveConfig(config || {});
 
-  const loadHtmlHeadPromise = entries.then(({ loadHtmlHead }) => loadHtmlHead);
-
   return async (req, res, next) => {
     const config = await configPromise;
     const basePrefix = config.basePath + config.rscPath + '/';
@@ -47,23 +45,26 @@ export function createHandler<
     }
     if (ssr) {
       try {
-        const loadHtmlHead = await loadHtmlHeadPromise;
         const resolvedEntries = await entries;
+        const { loadHtmlHead } = resolvedEntries;
         const readable = await renderHtml({
           config,
-          reqUrl: req.url,
-          htmlHead: loadHtmlHead(req.url.pathname, req.url.search),
-          renderRscForHtml: (input) =>
+          pathname: req.url.pathname,
+          searchParams: req.url.searchParams,
+          htmlHead: loadHtmlHead(req.url.pathname),
+          renderRscForHtml: (input, searchParams) =>
             renderRsc({
               entries: resolvedEntries,
               config,
               input,
+              searchParams,
               method: 'GET',
               context,
               isDev: false,
             }),
           isDev: false,
           entries: resolvedEntries,
+          isBuild: false,
         });
         if (readable) {
           unstable_posthook?.(req, res, context as Context);
@@ -82,27 +83,30 @@ export function createHandler<
       if (method !== 'GET' && method !== 'POST') {
         throw new Error(`Unsupported method '${method}'`);
       }
+      const { skipRenderRsc } = await entries;
       try {
-        const input = decodeInput(
-          req.url.toString().slice(req.url.origin.length + basePrefix.length),
-        );
-        const readable = await renderRsc({
-          config,
-          input,
-          method,
-          context,
-          body: req.stream,
-          contentType,
-          isDev: false,
-          entries: await entries,
-        });
-        unstable_posthook?.(req, res, context as Context);
-        deepFreeze(context);
-        readable.pipeTo(res.stream);
+        const input = decodeInput(req.url.pathname.slice(basePrefix.length));
+        if (!skipRenderRsc(input)) {
+          const readable = await renderRsc({
+            config,
+            input,
+            searchParams: req.url.searchParams,
+            method,
+            context,
+            body: req.stream,
+            contentType,
+            isDev: false,
+            entries: await entries,
+          });
+          unstable_posthook?.(req, res, context as Context);
+          deepFreeze(context);
+          readable.pipeTo(res.stream);
+          return;
+        }
       } catch (e) {
         handleError(e);
+        return;
       }
-      return;
     }
     next();
   };

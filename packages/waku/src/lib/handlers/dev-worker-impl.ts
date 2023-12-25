@@ -48,6 +48,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
     const readable = await renderRsc({
       config: rr.config,
       input: rr.input,
+      searchParams: new URLSearchParams(rr.searchParamsString),
       method: rr.method,
       context: rr.context,
       body: rr.stream,
