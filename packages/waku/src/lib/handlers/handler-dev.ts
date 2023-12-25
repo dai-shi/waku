@@ -133,12 +133,14 @@ export function createHandler<
       try {
         const readable = await renderHtml({
           config,
-          reqUrl: req.url,
+          pathname: req.url.pathname,
+          searchParams: req.url.searchParams,
           htmlHead: `${config.htmlHead}
 <script src="/${config.srcDir}/${config.mainJs}" async type="module"></script>`,
-          renderRscForHtml: async (input) => {
+          renderRscForHtml: async (input, searchParams) => {
             const [readable, nextCtx] = await renderRscWithWorker({
               input,
+              searchParamsString: searchParams.toString(),
               method: 'GET',
               contentType: undefined,
               config,
@@ -169,11 +171,10 @@ export function createHandler<
         throw new Error(`Unsupported method '${method}'`);
       }
       try {
-        const input = decodeInput(
-          req.url.toString().slice(req.url.origin.length + basePrefix.length),
-        );
+        const input = decodeInput(req.url.pathname.slice(basePrefix.length));
         const [readable, nextCtx] = await renderRscWithWorker({
           input,
+          searchParamsString: req.url.searchParams.toString(),
           method,
           contentType,
           config,

@@ -49,13 +49,15 @@ export function createHandler<
         const { loadHtmlHead } = resolvedEntries;
         const readable = await renderHtml({
           config,
-          reqUrl: req.url,
+          pathname: req.url.pathname,
+          searchParams: req.url.searchParams,
           htmlHead: loadHtmlHead(req.url.pathname),
-          renderRscForHtml: (input) =>
+          renderRscForHtml: (input, searchParams) =>
             renderRsc({
               entries: resolvedEntries,
               config,
               input,
+              searchParams,
               method: 'GET',
               context,
               isDev: false,
@@ -83,13 +85,12 @@ export function createHandler<
       }
       const { skipRenderRsc } = await entries;
       try {
-        const input = decodeInput(
-          req.url.toString().slice(req.url.origin.length + basePrefix.length),
-        );
+        const input = decodeInput(req.url.pathname.slice(basePrefix.length));
         if (!skipRenderRsc(input)) {
           const readable = await renderRsc({
             config,
             input,
+            searchParams: req.url.searchParams,
             method,
             context,
             body: req.stream,

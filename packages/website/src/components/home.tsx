@@ -37,7 +37,9 @@ export const Home = () => {
         </div>
       </div>
       <Credits />
-      <div className="sr-only">{new Date().toISOString()}</div>
+      <div className="sr-only" suppressHydrationWarning>
+        {new Date().toISOString()}
+      </div>
     </div>
   );
 };

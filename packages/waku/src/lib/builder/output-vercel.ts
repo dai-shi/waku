@@ -10,6 +10,7 @@ export const emitVercelOutput = async (
   rscFiles: string[],
   htmlFiles: string[],
   ssr: boolean,
+  type: 'static' | 'serverless',
 ) => {
   const publicDir = path.join(rootDir, config.distDir, config.publicDir);
   const outputDir = path.resolve('.vercel', 'output');
@@ -19,55 +20,57 @@ export const emitVercelOutput = async (
     { recursive: true },
   );
 
-  // for serverless function
-  const serverlessDir = path.join(
-    outputDir,
-    'functions',
-    config.rscPath + '.func',
-  );
-  mkdirSync(path.join(serverlessDir, config.distDir), {
-    recursive: true,
-  });
-  mkdirSync(path.join(serverlessDir, 'node_modules'), {
-    recursive: true,
-  });
-  cpSync(
-    path.join(rootDir, 'node_modules', 'waku'),
-    path.join(serverlessDir, 'node_modules', 'waku'),
-    { dereference: true, recursive: true },
-  );
-  cpSync(
-    path.join(rootDir, config.distDir),
-    path.join(serverlessDir, config.distDir),
-    { recursive: true },
-  );
-  const vcConfigJson = {
-    runtime: 'nodejs18.x',
-    handler: 'serve.js',
-    launcherType: 'Nodejs',
-  };
-  writeFileSync(
-    path.join(serverlessDir, '.vc-config.json'),
-    JSON.stringify(vcConfigJson, null, 2),
-  );
-  writeFileSync(
-    path.join(serverlessDir, 'package.json'),
-    JSON.stringify({ type: 'module' }, null, 2),
-  );
-  writeFileSync(
-    path.join(serverlessDir, 'serve.js'),
-    `
+  if (type === 'serverless') {
+    // for serverless function
+    const serverlessDir = path.join(
+      outputDir,
+      'functions',
+      config.rscPath + '.func',
+    );
+    mkdirSync(path.join(serverlessDir, config.distDir), {
+      recursive: true,
+    });
+    mkdirSync(path.join(serverlessDir, 'node_modules'), {
+      recursive: true,
+    });
+    cpSync(
+      path.join(rootDir, 'node_modules', 'waku'),
+      path.join(serverlessDir, 'node_modules', 'waku'),
+      { dereference: true, recursive: true },
+    );
+    cpSync(
+      path.join(rootDir, config.distDir),
+      path.join(serverlessDir, config.distDir),
+      { recursive: true },
+    );
+    const vcConfigJson = {
+      runtime: 'nodejs18.x',
+      handler: 'serve.js',
+      launcherType: 'Nodejs',
+    };
+    writeFileSync(
+      path.join(serverlessDir, '.vc-config.json'),
+      JSON.stringify(vcConfigJson, null, 2),
+    );
+    writeFileSync(
+      path.join(serverlessDir, 'package.json'),
+      JSON.stringify({ type: 'module' }, null, 2),
+    );
+    writeFileSync(
+      path.join(serverlessDir, 'serve.js'),
+      `
 import path from 'node:path';
 import fs from 'node:fs';
 import { connectMiddleware } from 'waku';
 const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
 export default function handler(req, res) {
   connectMiddleware({ entries, ssr: ${ssr} })(req, res, () => {
+    const { pathname } = new URL(req.url, 'http://localhost');
     const fname = path.join(
       '${config.distDir}',
       '${config.publicDir}',
-      req.url,
-      path.extname(req.url) ? '' : '${config.indexHtml}',
+      pathname,
+      path.extname(pathname) ? '' : '${config.indexHtml}',
     );
     if (fs.existsSync(fname)) {
       if (fname.endsWith('.html')) {
@@ -83,7 +86,8 @@ export default function handler(req, res) {
   });
 }
 `,
-  );
+    );
+  }
 
   const overrides = Object.fromEntries(
     rscFiles
@@ -94,18 +98,22 @@ export default function handler(req, res) {
       ]),
   );
   const basePrefix = config.basePath + config.rscPath + '/';
-  const routes = [
-    { src: basePrefix + '(.*)', dest: basePrefix },
-    ...(ssr
-      ? htmlFiles.map((htmlFile) => {
-          const file = config.basePath + path.relative(publicDir, htmlFile);
-          const src = file.endsWith('/' + config.indexHtml)
-            ? file.slice(0, -('/' + config.indexHtml).length) || '/'
-            : file;
-          return { src, dest: basePrefix };
-        })
-      : []),
-  ];
+  const routes =
+    type === 'serverless'
+      ? [
+          { src: basePrefix + '(.*)', dest: basePrefix },
+          ...(ssr
+            ? htmlFiles.map((htmlFile) => {
+                const file =
+                  config.basePath + path.relative(publicDir, htmlFile);
+                const src = file.endsWith('/' + config.indexHtml)
+                  ? file.slice(0, -('/' + config.indexHtml).length) || '/'
+                  : file;
+                return { src, dest: basePrefix };
+              })
+            : []),
+        ]
+      : undefined;
   const configJson = { version: 3, overrides, routes };
   mkdirSync(outputDir, { recursive: true });
   writeFileSync(
