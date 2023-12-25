@@ -35,6 +35,13 @@ export default createPages(async ({ createPage, createLayout }) => {
   });
 
   createPage({
+    render: 'dynamic',
+    path: '/baz',
+    // Inline component is also possible.
+    component: () => <h2>Baz</h2>,
+  });
+
+  createPage({
     render: 'static',
     path: '/nested/baz',
     component: NestedBazPage,
@@ -43,8 +50,19 @@ export default createPages(async ({ createPage, createLayout }) => {
   createPage({
     render: 'static',
     path: '/nested/qux',
-    // Inline component is also possible.
-    component: () => <NestedQuxPage />,
+    component: NestedQuxPage,
+  });
+
+  createPage({
+    render: 'static',
+    path: '/nested/[id]',
+    staticPaths: ['foo', 'bar'],
+    component: ({ id }: { id: string }) => (
+      <>
+        <h2>Nested</h2>
+        <h3>Static: {id}</h3>
+      </>
+    ),
   });
 
   createPage({

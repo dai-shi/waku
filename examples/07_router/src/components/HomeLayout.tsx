@@ -42,6 +42,15 @@ const HomeLayout = ({ children }: { children: ReactNode }) => (
         </Link>
       </li>
       <li>
+        <Link href="/baz">Baz</Link>
+      </li>
+      <li>
+        <Link href="/nested/foo">Nested / Foo</Link>
+      </li>
+      <li>
+        <Link href="/nested/bar">Nested / Bar</Link>
+      </li>
+      <li>
         <Link href="/nested/baz">Nested / Baz</Link>
       </li>
       <li>

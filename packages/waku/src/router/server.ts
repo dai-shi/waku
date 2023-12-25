@@ -160,7 +160,9 @@ type HasSlugInPath<T> = T extends `/[${string}]/${infer _}`
   ? true
   : T extends `/${infer _}/${infer U}`
     ? HasSlugInPath<`/${U}`>
-    : false;
+    : T extends `/[${string}]`
+      ? true
+      : false;
 type PathWithSlug<T> = IsValidPath<T> extends true
   ? HasSlugInPath<T> extends true
     ? T
@@ -188,7 +190,7 @@ type CreatePage = <
         render: 'static';
         path: PathWithSlug<T>;
         staticPaths: string[] | string[][];
-        component: FunctionComponent<RouteProps>;
+        component: FunctionComponent<RouteProps & CustomProps>;
       }
     | {
         render: 'dynamic';
@@ -296,13 +298,10 @@ export function createPages(
     string,
     [ParsedPath, FunctionComponent<any>]
   >();
-  const staticComponentMap = new Map<
-    string,
-    FunctionComponent<RouteProps & { children: ReactNode }>
-  >();
+  const staticComponentMap = new Map<string, FunctionComponent<any>>();
   const registerStaticComponent = (
     id: string,
-    component: FunctionComponent<RouteProps & { children: ReactNode }>,
+    component: FunctionComponent<any>,
   ) => {
     if (
       staticComponentMap.has(id) &&
@@ -336,12 +335,19 @@ export function createPages(
         if (staticPath.length !== numSlugs) {
           throw new Error('staticPaths does not match with slug pattern');
         }
-        const pathItems = parsedPath.map(({ name, isSlug }, index) =>
-          isSlug ? staticPath[index]! : name,
-        );
+        const mapping: Record<string, string> = {};
+        let slugIndex = 0;
+        const pathItems = parsedPath.map(({ name, isSlug }) => {
+          if (isSlug) {
+            return (mapping[name] = staticPath[slugIndex++]!);
+          }
+          return name;
+        });
         staticPathSet.add('/' + joinPath(...pathItems));
         const id = joinPath(...pathItems, 'page');
-        registerStaticComponent(id, page.component);
+        const WrappedComponent = (props: Record<string, unknown>) =>
+          createElement(page.component as any, { ...props, ...mapping });
+        registerStaticComponent(id, WrappedComponent);
       }
     } else if (page.render === 'dynamic' && numWildcards === 0) {
       if (dynamicPathMap.has(page.path)) {
@@ -407,10 +413,12 @@ export function createPages(
         );
         if (mapping) {
           if (Object.keys(mapping).length === 0) {
+            unstable_setShouldSkip();
             return Component;
           }
           const WrappedComponent = (props: Record<string, unknown>) =>
             createElement(Component, { ...props, ...mapping });
+          unstable_setShouldSkip();
           return WrappedComponent;
         }
       }
@@ -422,9 +430,11 @@ export function createPages(
         if (mapping) {
           const WrappedComponent = (props: Record<string, unknown>) =>
             createElement(Component, { ...props, ...mapping });
+          unstable_setShouldSkip();
           return WrappedComponent;
         }
       }
+      unstable_setShouldSkip({}); // negative cache
       return null; // not found
     },
     async () => staticPathSet,
