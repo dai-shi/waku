@@ -43,7 +43,18 @@ export default createPages(async ({ createPage, createLayout }) => {
   createPage({
     render: 'static',
     path: '/nested/qux',
-    // Inline component is also supported.
+    // Inline component is also possible.
     component: () => <NestedQuxPage />,
+  });
+
+  createPage({
+    render: 'dynamic',
+    path: '/nested/[id]',
+    component: ({ id }: { id: string }) => (
+      <>
+        <h2>Nested</h2>
+        <h3>Dynamic: {id}</h3>
+      </>
+    ),
   });
 });
