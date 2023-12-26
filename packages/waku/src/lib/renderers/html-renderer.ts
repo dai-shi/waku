@@ -136,16 +136,19 @@ globalThis.__WAKU_PREFETCHED__ = {
     }
     return data;
   };
-  const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
   const interleave = () => {
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
     let headSent = false;
     let data = '';
-    let closeSent = false;
+    let scriptsClosed = false;
     const sendScripts = (
       controller: TransformStreamDefaultController,
       close?: boolean,
     ) => {
+      if (scriptsClosed) {
+        return;
+      }
       const scripts = chunks.splice(0).map(
         (chunk) =>
           `
@@ -153,8 +156,8 @@ globalThis.__WAKU_PREFETCHED__ = {
             decoder.decode(chunk),
           )}")</script>`,
       );
-      if (close && !closeSent) {
-        closeSent = true;
+      if (close) {
+        scriptsClosed = true;
         scripts.push(
           `
 <script type="module" async>globalThis.__WAKU_PUSH__()</script>`,
