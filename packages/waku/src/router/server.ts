@@ -164,7 +164,7 @@ type HasSlugInPath<T, K extends string> = T extends `/[${K}]/${infer _}`
       ? true
       : false;
 type PathWithSlug<T, K extends string> = IsValidPath<T> extends true
-  ? HasSlugInPath<T, K | { [KK in K]: `...${KK}` }[K]> extends true
+  ? HasSlugInPath<T, K | `...${K}`> extends true
     ? T
     : never
   : never;

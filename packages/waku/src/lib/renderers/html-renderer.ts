@@ -91,7 +91,6 @@ const injectRscPayload = (
   urlForFakeFetch: string,
 ) => {
   const chunks: Uint8Array[] = [];
-  let closed = false;
   const copied = readable.pipeThrough(
     new TransformStream({
       transform(chunk, controller) {
@@ -100,9 +99,6 @@ const injectRscPayload = (
         }
         chunks.push(chunk);
         controller.enqueue(chunk);
-      },
-      flush() {
-        closed = true;
       },
     }),
   );
@@ -145,8 +141,11 @@ globalThis.__WAKU_PREFETCHED__ = {
   const interleave = () => {
     let headSent = false;
     let data = '';
-    let closedSent = false;
-    const sendScripts = (controller: TransformStreamDefaultController) => {
+    let closeSent = false;
+    const sendScripts = (
+      controller: TransformStreamDefaultController,
+      close?: boolean,
+    ) => {
       const scripts = chunks.splice(0).map(
         (chunk) =>
           `
@@ -154,8 +153,8 @@ globalThis.__WAKU_PREFETCHED__ = {
             decoder.decode(chunk),
           )}")</script>`,
       );
-      if (closed && !closedSent) {
-        closedSent = true;
+      if (close && !closeSent) {
+        closeSent = true;
         scripts.push(
           `
 <script type="module" async>globalThis.__WAKU_PUSH__()</script>`,
@@ -170,8 +169,8 @@ globalThis.__WAKU_PREFETCHED__ = {
         if (!(chunk instanceof Uint8Array)) {
           throw new Error('Unknown chunk type');
         }
+        data += decoder.decode(chunk);
         if (!headSent) {
-          data += decoder.decode(chunk);
           if (!data.includes('</head>')) {
             return;
           }
@@ -181,18 +180,16 @@ globalThis.__WAKU_PREFETCHED__ = {
           sendScripts(controller);
           return;
         }
-        controller.enqueue(chunk);
-        if (headSent) {
+        const closingBodyIndex = data.indexOf('</body>');
+        if (closingBodyIndex === -1) {
+          controller.enqueue(chunk);
+          data = '';
           sendScripts(controller);
-        }
-      },
-      flush(controller) {
-        if (!headSent) {
-          throw new Error('head not yet sent');
-        }
-        sendScripts(controller);
-        if (!closedSent) {
-          throw new Error('closed not yet sent');
+        } else {
+          controller.enqueue(encoder.encode(data.slice(0, closingBodyIndex)));
+          sendScripts(controller, true);
+          controller.enqueue(encoder.encode(data.slice(closingBodyIndex)));
+          data = '';
         }
       },
     });

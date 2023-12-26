@@ -5,9 +5,7 @@ export default defineConfig(({ mode }) => {
   if (mode === 'development') {
     return {
       optimizeDeps: {
-        include: [
-          // '@uidotdev/usehooks',
-        ],
+        include: ['@uidotdev/usehooks'],
       },
       ssr: {
         external: ['next-mdx-remote'],
