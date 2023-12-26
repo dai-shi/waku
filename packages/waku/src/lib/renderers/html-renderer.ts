@@ -178,14 +178,11 @@ globalThis.__WAKU_PREFETCHED__ = {
             return;
           }
           headSent = true;
-          controller.enqueue(encoder.encode(modifyHead(data)));
-          data = '';
-          sendScripts(controller);
-          return;
+          data = modifyHead(data);
         }
-        const closingBodyIndex = data.indexOf('</body>');
+        const closingBodyIndex = data.lastIndexOf('</body>');
         if (closingBodyIndex === -1) {
-          controller.enqueue(chunk);
+          controller.enqueue(encoder.encode(data));
           data = '';
           sendScripts(controller);
         } else {
