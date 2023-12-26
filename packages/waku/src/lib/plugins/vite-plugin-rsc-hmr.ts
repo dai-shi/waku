@@ -9,7 +9,7 @@ if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
   globalThis.__WAKU_HMR_CONFIGURED__ = true;
   import.meta.hot.on('hot-import', (data) => import(/* @vite-ignore */ data));
   import.meta.hot.on('module', (data) => {
-    // remove elment with the same 'waku-module-id'
+    // remove element with the same 'waku-module-id'
     let script = document.querySelector(
       'script[waku-module-id="' + data.id + '"]',
     );
