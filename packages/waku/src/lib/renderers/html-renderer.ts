@@ -92,23 +92,17 @@ const injectRscPayload = (
 ) => {
   const chunks: Uint8Array[] = [];
   let closed = false;
-  let notify: (() => void) | undefined;
   const copied = readable.pipeThrough(
     new TransformStream({
       transform(chunk, controller) {
         if (!(chunk instanceof Uint8Array)) {
           throw new Error('Unknown chunk type');
         }
-        controller.enqueue(chunk);
         chunks.push(chunk);
-        // HACK delay a little bit to avoid hydration mismatch
-        setTimeout(() => {
-          notify?.();
-        });
+        controller.enqueue(chunk);
       },
       flush() {
         closed = true;
-        notify?.();
       },
     }),
   );
@@ -148,25 +142,29 @@ globalThis.__WAKU_PREFETCHED__ = {
   };
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
-  const getScripts = (): string => {
-    const scripts = chunks.splice(0).map(
-      (chunk) =>
-        `
-<script type="module" async>globalThis.__WAKU_PUSH__("${encodeURI(
-          decoder.decode(chunk),
-        )}")</script>`,
-    );
-    if (closed) {
-      scripts.push(
-        `
-<script type="module" async>globalThis.__WAKU_PUSH__()</script>`,
-      );
-    }
-    return scripts.join('');
-  };
   const interleave = () => {
     let headSent = false;
     let data = '';
+    let closedSent = false;
+    const sendScripts = (controller: TransformStreamDefaultController) => {
+      const scripts = chunks.splice(0).map(
+        (chunk) =>
+          `
+<script type="module" async>globalThis.__WAKU_PUSH__("${encodeURI(
+            decoder.decode(chunk),
+          )}")</script>`,
+      );
+      if (closed && !closedSent) {
+        closedSent = true;
+        scripts.push(
+          `
+<script type="module" async>globalThis.__WAKU_PUSH__()</script>`,
+        );
+      }
+      if (scripts.length) {
+        controller.enqueue(encoder.encode(scripts.join('')));
+      }
+    };
     return new TransformStream({
       transform(chunk, controller) {
         if (!(chunk instanceof Uint8Array)) {
@@ -180,26 +178,21 @@ globalThis.__WAKU_PREFETCHED__ = {
           headSent = true;
           controller.enqueue(encoder.encode(modifyHead(data)));
           data = '';
-          notify = () => controller.enqueue(encoder.encode(getScripts()));
-          notify();
+          sendScripts(controller);
           return;
         }
         controller.enqueue(chunk);
+        if (headSent) {
+          sendScripts(controller);
+        }
       },
       flush(controller) {
         if (!headSent) {
           throw new Error('head not yet sent');
         }
-        if (!closed) {
-          return new Promise<void>((resolve) => {
-            notify = () => {
-              controller.enqueue(encoder.encode(getScripts()));
-              if (closed) {
-                notify = undefined;
-                resolve();
-              }
-            };
-          });
+        sendScripts(controller);
+        if (!closedSent) {
+          throw new Error('closed not yet sent');
         }
       },
     });
