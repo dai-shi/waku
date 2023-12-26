@@ -1,3 +1,5 @@
+import type { TransformResult } from 'vite';
+
 export type BaseReq = {
   stream: ReadableStream;
   url: URL;
@@ -16,3 +18,7 @@ export type Handler<Req extends BaseReq, Res extends BaseRes> = (
   res: Res,
   next: (err?: unknown) => void,
 ) => void;
+
+export type ModuleImportResult = TransformResult & {
+  id: string;
+};

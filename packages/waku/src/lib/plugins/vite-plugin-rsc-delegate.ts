@@ -1,17 +1,19 @@
 import path from 'node:path';
-import type { Plugin, TransformResult, ViteDevServer } from 'vite';
+import type { Plugin, ViteDevServer } from 'vite';
 import * as swc from '@swc/core';
+import type { ModuleImportResult } from '../handlers/types.js';
 
 // import { CSS_LANGS_RE } from "vite/dist/node/constants.js";
 const CSS_LANGS_RE =
   /\.(css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)/;
 
 export function rscDelegatePlugin(
-  importCallback: (source: string | TransformResult) => void,
+  importCallback: (source: string | ModuleImportResult) => void,
 ): Plugin {
   let mode = 'development';
   let base = '/';
   let server: ViteDevServer;
+  const moduleImports: Set<string> = new Set();
   return {
     name: 'rsc-delegate-plugin',
     configResolved(config) {
@@ -20,6 +22,14 @@ export function rscDelegatePlugin(
     },
     configureServer(serverInstance) {
       server = serverInstance;
+    },
+    async handleHotUpdate({ file }) {
+      if (moduleImports.has(file)) {
+        // re-inject
+        const transformedResult = await server.transformRequest(file);
+        console.log('re-inject');
+        transformedResult && importCallback({ ...transformedResult, id: file });
+      }
     },
     async transform(code, id) {
       const ext = path.extname(id);
@@ -43,11 +53,18 @@ export function rscDelegatePlugin(
                 id,
                 { ssr: true },
               );
+              console.log('resolved id', resolvedSource?.id);
               if (resolvedSource?.id) {
                 const transformedResult = await server.transformRequest(
                   resolvedSource.id,
                 );
-                transformedResult && importCallback(transformedResult);
+                if (transformedResult) {
+                  moduleImports.add(resolvedSource.id);
+                  importCallback({
+                    ...transformedResult,
+                    id: resolvedSource.id,
+                  });
+                }
               }
             }
           }

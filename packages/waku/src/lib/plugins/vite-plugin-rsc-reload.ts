@@ -31,14 +31,14 @@ export function rscReloadPlugin(fn: (type: 'full-reload') => void): Plugin {
       }
     },
     async handleHotUpdate(ctx) {
-      if (!enabled) {
-        return [];
-      }
-      if (ctx.modules.length && !isClientEntry(ctx.file, await ctx.read())) {
-        fn('full-reload');
-      } else {
-        return [];
-      }
+      // if (!enabled) {
+      //   return [];
+      // }
+      // if (ctx.modules.length && !isClientEntry(ctx.file, await ctx.read())) {
+      //   fn('full-reload');
+      // } else {
+      //   return [];
+      // }
     },
   };
 }
