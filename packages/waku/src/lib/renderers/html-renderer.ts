@@ -204,6 +204,7 @@ globalThis.__WAKU_PREFETCHED__ = {
 const rectifyHtml = () => {
   const pending: Uint8Array[] = [];
   const decoder = new TextDecoder();
+  let timer: ReturnType<typeof setTimeout> | undefined;
   return new TransformStream({
     transform(chunk, controller) {
       if (!(chunk instanceof Uint8Array)) {
@@ -211,11 +212,15 @@ const rectifyHtml = () => {
       }
       pending.push(chunk);
       if (/<\/\w+>$/.test(decoder.decode(chunk))) {
-        controller.enqueue(concatUint8Arrays(pending.splice(0)));
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          controller.enqueue(concatUint8Arrays(pending.splice(0)));
+        });
       }
     },
     flush(controller) {
-      if (!pending.length) {
+      clearTimeout(timer);
+      if (pending.length) {
         controller.enqueue(concatUint8Arrays(pending.splice(0)));
       }
     },
