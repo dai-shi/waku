@@ -157,7 +157,7 @@ export async function renderRsc(
     );
   }
 
-  // rr.method === 'GET'
+  // method === 'GET'
   const renderContext: RenderContext = {
     rerender: () => {
       throw new Error('Cannot rerender');
