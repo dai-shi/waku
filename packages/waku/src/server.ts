@@ -1,5 +1,6 @@
 import type { createElement, Fragment, ReactNode } from 'react';
 
+import './global.js';
 import type { Slot } from './client.js';
 
 type Elements = Record<string, ReactNode>;

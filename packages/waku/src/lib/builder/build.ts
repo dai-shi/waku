@@ -237,6 +237,7 @@ const buildClientBundle = async (
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
+  ssr: boolean,
 ) => {
   const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
@@ -248,6 +249,18 @@ const buildClientBundle = async (
       patchReactRefresh(viteReact()),
       rscIndexPlugin({ ...config, cssAssets }),
     ],
+    define: {
+      __WAKU_ENV__: JSON.stringify(
+        Object.fromEntries([
+          ...Object.entries(__WAKU_ENV__).flatMap(([k, v]) =>
+            k.startsWith('WAKU_PUBLIC_') ? [[k, v]] : [],
+          ),
+          ['CONFIG_BASE_PATH', config.basePath],
+          ['CONFIG_RSC_PATH', config.rscPath],
+          ...(ssr ? [['SSR_ENABLED', 'true']] : []),
+        ]),
+      ),
+    },
     build: {
       outDir: joinPath(rootDir, config.distDir, config.publicDir),
       rollupOptions: {
@@ -481,10 +494,12 @@ const resolveFileName = (fname: string) => {
 export async function build(options: {
   config?: Config;
   ssr?: boolean;
+  env?: Record<string, string>;
   vercel?: { type: 'static' | 'serverless' } | undefined;
   cloudflare?: boolean;
   deno?: boolean;
 }) {
+  globalThis.__WAKU_ENV__ = options.env || {};
   const config = await resolveConfig(options.config || {});
   const rootDir = (
     await resolveViteConfig({}, 'build', 'production', 'production')
@@ -513,6 +528,7 @@ export async function build(options: {
     commonEntryFiles,
     clientEntryFiles,
     serverBuildOutput,
+    !!options.ssr,
   );
 
   const { buildConfig, getClientModules, rscFiles } = await emitRscFiles(
@@ -526,25 +542,25 @@ export async function build(options: {
     distEntriesFile,
     buildConfig,
     getClientModules,
-    !!options?.ssr,
+    !!options.ssr,
   );
 
-  if (options?.vercel) {
+  if (options.vercel) {
     await emitVercelOutput(
       rootDir,
       config,
       rscFiles,
       htmlFiles,
-      !!options?.ssr,
+      !!options.ssr,
       options.vercel.type,
     );
   }
 
-  if (options?.cloudflare) {
-    await emitCloudflareOutput(rootDir, config, !!options?.ssr);
+  if (options.cloudflare) {
+    await emitCloudflareOutput(rootDir, config, !!options.ssr);
   }
 
-  if (options?.deno) {
-    await emitDenoOutput(rootDir, config, !!options?.ssr);
+  if (options.deno) {
+    await emitDenoOutput(rootDir, config, !!options.ssr);
   }
 }

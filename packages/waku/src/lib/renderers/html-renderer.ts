@@ -83,9 +83,6 @@ Promise.resolve(new Response(new ReadableStream({
   .map((line) => line.trim())
   .join('');
 
-// TODO this is an easy solution. we could do it better at the build time.
-const enableSsrCode = 'globalThis.__WAKU_SSR_ENABLED__ = true;';
-
 const injectRscPayload = (
   readable: ReadableStream,
   urlForFakeFetch: string,
@@ -124,9 +121,6 @@ globalThis.__WAKU_PREFETCHED__ = {
   '${urlForFakeFetch}': ${fakeFetchCode},
 };
 `;
-    }
-    if (!data.includes(enableSsrCode)) {
-      code += enableSsrCode;
     }
     if (code) {
       data =

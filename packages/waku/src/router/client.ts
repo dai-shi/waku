@@ -150,7 +150,7 @@ const getSkipList = (
   });
 };
 
-function InnerRouter({ basePath }: { basePath: string }) {
+function InnerRouter() {
   const refetch = useRefetch();
 
   const [loc, setLoc] = useState(parseLocation);
@@ -216,10 +216,10 @@ function InnerRouter({ basePath }: { basePath: string }) {
         ...Array.from(searchParams.entries()),
         ...skip.map((id) => [PARAM_KEY_SKIP, id]),
       ]).toString();
-      prefetchRSC(input, searchParamsString, basePath);
+      prefetchRSC(input, searchParamsString);
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(path);
     },
-    [basePath],
+    [],
   );
 
   useEffect(() => {
@@ -250,15 +250,13 @@ function InnerRouter({ basePath }: { basePath: string }) {
   );
 }
 
-// TODO get basePath from config
-
-export function Router({ basePath = '/RSC/' }: { basePath?: string }) {
+export function Router() {
   const loc = parseLocation();
   const initialInput = getInputString(loc.path);
   const initialSearchParamsString = loc.searchParams.toString();
   return createElement(
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
-    { initialInput, initialSearchParamsString, basePath },
-    createElement(InnerRouter, { basePath }),
+    { initialInput, initialSearchParamsString },
+    createElement(InnerRouter),
   );
 }
