@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
     return {
       optimizeDeps: {
         include: [
-          // '@uidotdev/usehooks',
+          '@uidotdev/usehooks',
         ],
       },
       ssr: {
