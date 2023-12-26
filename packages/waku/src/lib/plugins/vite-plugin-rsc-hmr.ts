@@ -13,13 +13,13 @@ if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
     let script = document.querySelector(
       'script[waku-module-id="' + data.id + '"]',
     );
-    script?.remove()
+    script?.remove();
 
     const code = data.code;
     script = document.createElement('script');
     script.type = 'module';
     script.text = code;
-    script.setAttribute('waku-module-id', data.id)
+    script.setAttribute('waku-module-id', data.id);
     document.head.appendChild(script);
   });
 }
