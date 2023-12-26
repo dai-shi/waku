@@ -8,12 +8,12 @@ const CSS_LANGS_RE =
   /\.(css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)/;
 
 export function rscDelegatePlugin(
+  moduleImports: Set<string>,
   importCallback: (source: string | ModuleImportResult) => void,
 ): Plugin {
   let mode = 'development';
   let base = '/';
   let server: ViteDevServer;
-  const moduleImports: Set<string> = new Set();
   return {
     name: 'rsc-delegate-plugin',
     configResolved(config) {
@@ -27,7 +27,6 @@ export function rscDelegatePlugin(
       if (moduleImports.has(file)) {
         // re-inject
         const transformedResult = await server.transformRequest(file);
-        console.log('re-inject');
         transformedResult && importCallback({ ...transformedResult, id: file });
       }
     },
@@ -53,7 +52,6 @@ export function rscDelegatePlugin(
                 id,
                 { ssr: true },
               );
-              console.log('resolved id', resolvedSource?.id);
               if (resolvedSource?.id) {
                 const transformedResult = await server.transformRequest(
                   resolvedSource.id,

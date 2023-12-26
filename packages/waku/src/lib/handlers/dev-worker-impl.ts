@@ -91,15 +91,17 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
 
 const dummyServer = new Server(); // FIXME we hope to avoid this hack
 
+const moduleImports: Set<string> = new Set();
+
 const mergedViteConfig = await mergeUserViteConfig({
   plugins: [
     nonjsResolvePlugin(),
     rscTransformPlugin(false),
-    rscReloadPlugin((type) => {
+    rscReloadPlugin(moduleImports, (type) => {
       const mesg: MessageRes = { type };
       parentPort!.postMessage(mesg);
     }),
-    rscDelegatePlugin((resultOrSource) => {
+    rscDelegatePlugin(moduleImports, (resultOrSource) => {
       const mesg: MessageRes =
         typeof resultOrSource === 'object'
           ? { type: 'module-import', result: resultOrSource }
