@@ -142,7 +142,10 @@ globalThis.__WAKU_PREFETCHED__ = {
     let headSent = false;
     let data = '';
     let closeSent = false;
-    const sendScripts = (controller: TransformStreamDefaultController, close?: boolean) => {
+    const sendScripts = (
+      controller: TransformStreamDefaultController,
+      close?: boolean,
+    ) => {
       const scripts = chunks.splice(0).map(
         (chunk) =>
           `
