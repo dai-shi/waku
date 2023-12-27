@@ -1,5 +1,5 @@
 export const Credits = () => {
-  if (process.env.VITE_SHOW_CREDITS !== 'YES') return null;
+  if (__WAKU_ENV__.SHOW_CREDITS !== 'YES') return null;
 
   return (
     <div
