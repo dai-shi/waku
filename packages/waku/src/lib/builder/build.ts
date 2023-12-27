@@ -8,7 +8,12 @@ import type { RollupLog, LoggingFunction } from 'rollup';
 
 import { resolveConfig } from '../config.js';
 import type { Config, ResolvedConfig } from '../config.js';
-import { joinPath, extname, filePathToFileURL } from '../utils/path.js';
+import {
+  joinPath,
+  extname,
+  filePathToFileURL,
+  fileURLToFilePath,
+} from '../utils/path.js';
 import {
   createReadStream,
   createWriteStream,
@@ -143,7 +148,14 @@ const buildServerBundle = async (
       rscTransformPlugin({
         isBuild: true,
         assetsDir: config.assetsDir,
-        clientEntryFiles,
+        clientEntryFiles: {
+          // FIXME this seems very ad-hoc
+          [WAKU_CLIENT_MODULE]: joinPath(
+            fileURLToFilePath(import.meta.url),
+            '../../../client.js',
+          ),
+          ...clientEntryFiles,
+        },
         serverEntryFiles,
       }),
     ],

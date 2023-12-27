@@ -22,7 +22,7 @@ export function rscTransformPlugin(
         return `@id/${opts.assetsDir}/${k}.js`;
       }
     }
-    throw new Error('client id not found');
+    throw new Error('client id not found: ' + id);
   };
   const getServerId = (id: string) => {
     if (!opts.isBuild) {
@@ -33,7 +33,7 @@ export function rscTransformPlugin(
         return `@id/${opts.assetsDir}/${k}.js`;
       }
     }
-    throw new Error('server id not found');
+    throw new Error('server id not found: ' + id);
   };
   return {
     name: 'rsc-transform-plugin',
