@@ -1,14 +1,32 @@
-import { test } from './utils.js';
+import { getFreePort, test } from './utils.js';
 import { fileURLToPath } from 'node:url';
 import { cp, mkdir, rm } from 'node:fs/promises';
-import { execSync } from 'node:child_process';
+import { exec, execSync } from 'node:child_process';
+import { expect, type Page } from '@playwright/test';
 import crypto from 'node:crypto';
+import waitPort from 'wait-port';
 
 const cacheDir = fileURLToPath(new URL('./.cache', import.meta.url));
 const exampleDir = fileURLToPath(
   new URL('../examples/07_router', import.meta.url),
 );
 const wakuDir = fileURLToPath(new URL('../packages/waku', import.meta.url));
+
+async function testRouterExample(page: Page, port: number) {
+  await waitPort({
+    port,
+  });
+
+  await page.goto(`http://localhost:${port}`);
+  await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
+
+  await page.click("a[href='/foo']");
+
+  await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
+
+  await page.goto(`http://localhost:${port}/foo`);
+  await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
+}
 
 test.describe('07_router standalone', () => {
   const dirname = crypto.randomUUID();
@@ -33,12 +51,35 @@ test.describe('07_router standalone', () => {
     });
   });
 
-  test('should prod work', async () => {
-    // todo: fix this
-    execSync('pnpm build', { cwd: `${cacheDir}/${dirname}`, stdio: 'inherit' });
+  test('should prod work', async ({ page }) => {
+    execSync('pnpm run build', {
+      cwd: `${cacheDir}/${dirname}`,
+      stdio: 'inherit',
+    });
+    const port = await getFreePort();
+    const cp = exec('pnpm run start', {
+      cwd: `${cacheDir}/${dirname}`,
+      env: {
+        ...process.env,
+        PORT: `${port}`,
+      },
+    });
+
+    await testRouterExample(page, port);
+
+    cp.kill();
   });
 
-  test('should dev work', async () => {
-    // todo: add dev test
+  test('should dev work', async ({ page }) => {
+    const port = await getFreePort();
+    const cp = exec('pnpm run dev', {
+      cwd: `${cacheDir}/${dirname}`,
+      env: {
+        ...process.env,
+        PORT: `${port}`,
+      },
+    });
+    await testRouterExample(page, port);
+    cp.kill();
   });
 });
