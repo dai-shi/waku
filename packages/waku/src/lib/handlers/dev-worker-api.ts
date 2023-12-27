@@ -33,9 +33,7 @@ export type MessageRes =
   | { type: 'full-reload' }
   | { type: 'hot-import'; source: string }
   | { type: 'module-import'; result: ModuleImportResult }
-  | { id: number; type: 'start'; context: unknown }
-  | { id: number; type: 'buf'; buf: ArrayBuffer; offset: number; len: number }
-  | { id: number; type: 'end' }
+  | { id: number; type: 'start'; context: unknown; stream: ReadableStream }
   | { id: number; type: 'err'; err: unknown; statusCode?: number }
   | { id: number; type: 'moduleId'; moduleId: string };
 
@@ -69,7 +67,7 @@ const getWorker = () => {
             ],
           },
         );
-        worker.on('message', (mesg: MessageRes) => {
+        worker.on('message', async (mesg: MessageRes) => {
           if ('id' in mesg) {
             messageCallbacks.get(mesg.id)?.(mesg);
           }
@@ -161,32 +159,16 @@ export async function renderRscWithWorker<Context>(
   let started = false;
   return new Promise((resolve, reject) => {
     let controller: ReadableStreamDefaultController<Uint8Array>;
-    const stream = new ReadableStream({
-      start(c) {
-        controller = c;
-      },
-    });
     messageCallbacks.set(id, (mesg) => {
       if (mesg.type === 'start') {
         if (!started) {
           started = true;
-          resolve([stream, mesg.context as Context]);
+          resolve([mesg.stream, mesg.context as Context]);
         } else {
           throw new Error('already started');
         }
-      } else if (mesg.type === 'buf') {
-        if (!started) {
-          throw new Error('not yet started');
-        }
-        controller.enqueue(new Uint8Array(mesg.buf, mesg.offset, mesg.len));
       } else if (mesg.type === 'moduleId') {
         rr.moduleIdCallback?.(mesg.moduleId);
-      } else if (mesg.type === 'end') {
-        if (!started) {
-          throw new Error('not yet started');
-        }
-        controller.close();
-        messageCallbacks.delete(id);
       } else if (mesg.type === 'err') {
         const err =
           mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err));

@@ -1,14 +1,14 @@
 // This file can depend on Node.js
 
 import { pathToFileURL } from 'node:url';
-import { parentPort } from 'node:worker_threads';
+import { parentPort, type TransferListItem } from 'node:worker_threads';
 import { Server } from 'node:http';
 import { createServer as createViteServer } from 'vite';
 
 import type { EntriesDev } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { joinPath, fileURLToFilePath } from '../utils/path.js';
-import { hasStatusCode, deepFreeze } from '../renderers/utils.js';
+import { hasStatusCode } from '../renderers/utils.js';
 import type {
   MessageReq,
   MessageRes,
@@ -57,29 +57,13 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
       customImport: loadServerFile,
       entries: await loadEntries(rr.config),
     });
-    const mesg: MessageRes = { id, type: 'start', context: rr.context };
-    parentPort!.postMessage(mesg);
-    deepFreeze(rr.context);
-    const writable = new WritableStream({
-      write(chunk) {
-        if (!(chunk instanceof Uint8Array)) {
-          throw new Error('Unknown chunk type');
-        }
-        const mesg: MessageRes = {
-          id,
-          type: 'buf',
-          buf: chunk.buffer,
-          offset: chunk.byteOffset,
-          len: chunk.byteLength,
-        };
-        parentPort!.postMessage(mesg, [mesg.buf]);
-      },
-      close() {
-        const mesg: MessageRes = { id, type: 'end' };
-        parentPort!.postMessage(mesg);
-      },
-    });
-    readable.pipeTo(writable);
+    const mesg: MessageRes = {
+      id,
+      type: 'start',
+      context: rr.context,
+      stream: readable,
+    };
+    parentPort!.postMessage(mesg, [readable as unknown as TransferListItem]);
   } catch (err) {
     const mesg: MessageRes = { id, type: 'err', err };
     if (hasStatusCode(err)) {
