@@ -13,6 +13,7 @@ import {
   extname,
   filePathToFileURL,
   fileURLToFilePath,
+  decodeFilePathFromAbsolute,
 } from '../utils/path.js';
 import {
   createReadStream,
@@ -150,9 +151,8 @@ const buildServerBundle = async (
         assetsDir: config.assetsDir,
         clientEntryFiles: {
           // FIXME this seems very ad-hoc
-          [WAKU_CLIENT_MODULE]: joinPath(
-            fileURLToFilePath(import.meta.url),
-            '../../../client.js',
+          [WAKU_CLIENT_MODULE]: decodeFilePathFromAbsolute(
+            joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
           ),
           ...clientEntryFiles,
         },
