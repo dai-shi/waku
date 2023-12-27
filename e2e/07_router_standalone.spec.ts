@@ -2,6 +2,7 @@ import { test } from './utils.js';
 import { fileURLToPath } from 'node:url';
 import { cp, mkdir, rm } from 'node:fs/promises';
 import { execSync } from 'node:child_process';
+import crypto from 'node:crypto';
 
 const cacheDir = fileURLToPath(new URL('./.cache', import.meta.url));
 const exampleDir = fileURLToPath(
@@ -32,12 +33,12 @@ test.describe('07_router standalone', () => {
     });
   });
 
-  test('should prod work', async ({ page }) => {
+  test('should prod work', async () => {
     // todo: fix this
     execSync('pnpm build', { cwd: `${cacheDir}/${dirname}`, stdio: 'inherit' });
   });
 
-  test('should dev work', async ({ page }) => {
+  test('should dev work', async () => {
     // todo: add dev test
   });
 });
