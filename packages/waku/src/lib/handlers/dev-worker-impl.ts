@@ -96,7 +96,7 @@ const moduleImports: Set<string> = new Set();
 const mergedViteConfig = await mergeUserViteConfig({
   plugins: [
     nonjsResolvePlugin(),
-    rscTransformPlugin(false),
+    rscTransformPlugin({ isBuild: false }),
     rscReloadPlugin(moduleImports, (type) => {
       const mesg: MessageRes = { type };
       parentPort!.postMessage(mesg);

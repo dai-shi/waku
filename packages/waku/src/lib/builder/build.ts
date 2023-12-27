@@ -140,15 +140,12 @@ const buildServerBundle = async (
   const serverBuildOutput = await buildVite({
     plugins: [
       nonjsResolvePlugin(),
-      rscTransformPlugin(
-        true,
-        config.assetsDir,
-        {
-          [WAKU_CLIENT_MODULE]: WAKU_CLIENT_MODULE_VALUE,
-          ...clientEntryFiles,
-        },
+      rscTransformPlugin({
+        isBuild: true,
+        assetsDir: config.assetsDir,
+        clientEntryFiles,
         serverEntryFiles,
-      ),
+      }),
     ],
     ssr: {
       resolve: {
