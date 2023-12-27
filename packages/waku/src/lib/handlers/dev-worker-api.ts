@@ -67,7 +67,7 @@ const getWorker = () => {
             ],
           },
         );
-        worker.on('message', async (mesg: MessageRes) => {
+        worker.on('message', (mesg: MessageRes) => {
           if ('id' in mesg) {
             messageCallbacks.get(mesg.id)?.(mesg);
           }
