@@ -163,7 +163,13 @@ export async function renderRscWithWorker<Context>(
       if (mesg.type === 'start') {
         if (!started) {
           started = true;
-          resolve([mesg.stream, mesg.context as Context]);
+          const bridge = new TransformStream({
+            flush() {
+              messageCallbacks.delete(id);
+            },
+          });
+          mesg.stream.pipeThrough(bridge);
+          resolve([bridge.readable, mesg.context as Context]);
         } else {
           throw new Error('already started');
         }
