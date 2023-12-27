@@ -217,6 +217,8 @@ export function loadModule(id) {
       return import('./${psDir}/${RSDW_CLIENT_MODULE}.js');
     case 'public/${WAKU_CLIENT_MODULE}':
       return import('./${psDir}/${WAKU_CLIENT_MODULE}.js');
+    case '${psDir}/${WAKU_CLIENT_MODULE}.js':
+      return import('./${psDir}/${WAKU_CLIENT_MODULE}.js');
 ${Object.entries(serverEntryFiles || {})
   .map(
     ([k]) => `
