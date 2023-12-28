@@ -45,7 +45,7 @@ export function createHandler<
     const mergedViteConfig = await mergeUserViteConfig({
       base: config.basePath,
       optimizeDeps: {
-        disabled: true,
+        include: ['react-server-dom-webpack/client', 'react', 'react-dom'],
       },
       plugins: [
         nonjsResolvePlugin(),
@@ -53,9 +53,6 @@ export function createHandler<
         rscIndexPlugin(config),
         rscHmrPlugin(),
       ],
-      ssr: {
-        external: ['waku'],
-      },
       server: { middlewareMode: true },
     });
     const viteServer = await createViteServer(mergedViteConfig);
