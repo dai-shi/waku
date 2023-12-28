@@ -5,6 +5,7 @@ import { exec, execSync } from 'node:child_process';
 import { expect, type Page } from '@playwright/test';
 import crypto from 'node:crypto';
 import waitPort from 'wait-port';
+import path from 'node:path';
 
 const cacheDir = fileURLToPath(new URL('./.cache', import.meta.url));
 const exampleDir = fileURLToPath(
@@ -41,9 +42,13 @@ test.describe('07_router standalone', () => {
       force: true,
     });
     await rm(`${cacheDir}/${dirname}/dist`, { recursive: true, force: true });
-    execSync('pnpm install', {
+    execSync('pnpm --ignore-workspace install', {
       cwd: `${cacheDir}/${dirname}`,
       stdio: 'inherit',
+    });
+    await rm(`${cacheDir}/${dirname}/node_modules/waku`, {
+      recursive: true,
+      force: true,
     });
     // copy waku
     await cp(wakuDir, `${cacheDir}/${dirname}/node_modules/waku`, {
@@ -52,18 +57,21 @@ test.describe('07_router standalone', () => {
   });
 
   test('should prod work', async ({ page }) => {
-    execSync('pnpm run build', {
+    execSync(`node ${path.join('./node_modules/waku/dist/cli.js')} build`, {
       cwd: `${cacheDir}/${dirname}`,
       stdio: 'inherit',
     });
     const port = await getFreePort();
-    const cp = exec('pnpm run start', {
-      cwd: `${cacheDir}/${dirname}`,
-      env: {
-        ...process.env,
-        PORT: `${port}`,
+    const cp = exec(
+      `node ${path.join('./node_modules/waku/dist/cli.js')} start`,
+      {
+        cwd: `${cacheDir}/${dirname}`,
+        env: {
+          ...process.env,
+          PORT: `${port}`,
+        },
       },
-    });
+    );
     debugChildProcess(cp);
     await testRouterExample(page, port);
     cp.kill();
@@ -71,13 +79,16 @@ test.describe('07_router standalone', () => {
 
   test('should dev work', async ({ page }) => {
     const port = await getFreePort();
-    const cp = exec('pnpm run dev', {
-      cwd: `${cacheDir}/${dirname}`,
-      env: {
-        ...process.env,
-        PORT: `${port}`,
+    const cp = exec(
+      `node ${path.join('./node_modules/waku/dist/cli.js')} dev`,
+      {
+        cwd: `${cacheDir}/${dirname}`,
+        env: {
+          ...process.env,
+          PORT: `${port}`,
+        },
       },
-    });
+    );
     debugChildProcess(cp);
     await testRouterExample(page, port);
     cp.kill();
