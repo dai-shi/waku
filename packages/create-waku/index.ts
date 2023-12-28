@@ -5,7 +5,6 @@ import path, { dirname } from 'node:path';
 import { default as prompts } from 'prompts';
 import { red, green, bold } from 'kolorist';
 import fse from 'fs-extra/esm';
-import * as console from 'console';
 import { fileURLToPath } from 'node:url';
 
 function isValidPackageName(projectName: string) {
