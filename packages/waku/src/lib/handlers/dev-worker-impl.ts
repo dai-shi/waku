@@ -3,9 +3,9 @@
 import { pathToFileURL } from 'node:url';
 import { parentPort } from 'node:worker_threads';
 import { Server } from 'node:http';
+import type { TransferListItem } from 'node:worker_threads';
 import { createServer as createViteServer } from 'vite';
 
-import type { TransferListItem } from 'node:worker_threads';
 import type { EntriesDev } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { joinPath, fileURLToFilePath } from '../utils/path.js';
