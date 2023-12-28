@@ -5,7 +5,7 @@ import { default as viteReact } from '@vitejs/plugin-react';
 import type { EntriesDev } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import type { Config } from '../config.js';
-import { joinPath } from '../utils/path.js';
+import { joinPath, decodeFilePathFromAbsolute } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from '../renderers/html-renderer.js';
 import { decodeInput, hasStatusCode } from '../renderers/utils.js';
@@ -188,9 +188,28 @@ export function createHandler<
       }
       return;
     }
+    // HACK re-export "?v=..." URL to avoid dual module hazard.
+    const viteUrl = req.url.toString().slice(req.url.origin.length);
+    const fname = viteUrl.startsWith(config.basePath + '@fs/')
+      ? decodeFilePathFromAbsolute(
+          viteUrl.slice(config.basePath.length + '@fs'.length),
+        )
+      : joinPath(vite.config.root, viteUrl);
+    for (const item of vite.moduleGraph.idToModuleMap.values()) {
+      if (
+        item.file === fname &&
+        item.url !== viteUrl &&
+        !item.url.includes('?html-proxy')
+      ) {
+        res.setHeader('Content-Type', 'application/javascript');
+        res.setStatus(200);
+        endStream(res.stream, `export * from "${item.url}";`);
+        return;
+      }
+    }
     const viteReq: any = Readable.fromWeb(req.stream as any);
     viteReq.method = req.method;
-    viteReq.url = req.url.toString().slice(req.url.origin.length);
+    viteReq.url = viteUrl;
     viteReq.headers = { 'content-type': req.contentType };
     const viteRes: any = Writable.fromWeb(res.stream as any);
     Object.defineProperty(viteRes, 'statusCode', {

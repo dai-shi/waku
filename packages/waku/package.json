@@ -6,7 +6,8 @@
   "author": "Daishi Kato",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dai-shi/waku.git"
+    "url": "https://github.com/dai-shi/waku.git",
+    "directory": "packages/waku"
   },
   "exports": {
     "./package.json": "./package.json",

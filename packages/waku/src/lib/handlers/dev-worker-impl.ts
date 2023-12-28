@@ -82,7 +82,7 @@ const moduleImports: Set<string> = new Set();
 const mergedViteConfig = await mergeUserViteConfig({
   plugins: [
     nonjsResolvePlugin(),
-    rscTransformPlugin(false),
+    rscTransformPlugin({ isBuild: false }),
     rscReloadPlugin(moduleImports, (type) => {
       const mesg: MessageRes = { type };
       parentPort!.postMessage(mesg);
@@ -119,7 +119,7 @@ const loadServerFile = async (fileURL: string) => {
   return vite.ssrLoadModule(fileURLToFilePath(fileURL));
 };
 
-const loadEntries = async (config: Omit<ResolvedConfig, 'ssr'>) => {
+const loadEntries = async (config: ResolvedConfig) => {
   const vite = await vitePromise;
   const filePath = joinPath(vite.config.root, config.srcDir, config.entriesJs);
   return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
