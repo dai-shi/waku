@@ -9,7 +9,7 @@ import { createServer as createViteServer } from 'vite';
 import type { EntriesDev } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { joinPath, fileURLToFilePath } from '../utils/path.js';
-import { hasStatusCode } from '../renderers/utils.js';
+import { deepFreeze, hasStatusCode } from '../renderers/utils.js';
 import type {
   MessageReq,
   MessageRes,
@@ -65,6 +65,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
       stream: readable,
     };
     parentPort!.postMessage(mesg, [readable as unknown as TransferListItem]);
+    deepFreeze(rr.context);
   } catch (err) {
     const mesg: MessageRes = { id, type: 'err', err };
     if (hasStatusCode(err)) {
