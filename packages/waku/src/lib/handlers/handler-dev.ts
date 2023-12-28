@@ -45,7 +45,12 @@ export function createHandler<
     const mergedViteConfig = await mergeUserViteConfig({
       base: config.basePath,
       optimizeDeps: {
-        include: ['react-server-dom-webpack/client', 'react', 'react-dom', 'waku/client'],
+        include: [
+          'react-server-dom-webpack/client',
+          'react',
+          'react-dom',
+          'waku/client',
+        ],
         exclude: ['waku'],
       },
       plugins: [
