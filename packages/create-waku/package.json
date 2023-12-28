@@ -12,18 +12,18 @@
     "directory": "packages/create-waku"
   },
   "bin": {
-    "create-waku": "./dist/cli.js"
+    "create-waku": "./dist/index.js"
   },
   "files": [
     "dist",
     "template"
   ],
   "scripts": {
-    "start": "node ./dist/cli.js",
-    "dev": "ncc build ./src/cli.ts -w -o ./dist/",
+    "start": "node ./dist/index.js",
+    "dev": "ncc build ./src/index.ts -w -o ./dist/",
     "compile": "rm -rf template dist *.tsbuildinfo && pnpm run template && pnpm run build",
     "template": "cp -r ../../examples template/ && rm -rf template/*/dist && rm -rf template/*/node_modules",
-    "build": "ncc build ./src/cli.ts -o ./dist/ --minify --no-cache --no-source-map-register"
+    "build": "ncc build ./src/index.ts -o ./dist/ --minify --no-cache --no-source-map-register"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
