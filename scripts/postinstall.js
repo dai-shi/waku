@@ -20,17 +20,3 @@ if (!fs.existsSync(directory)) {
     process.exit(1);
   }
 }
-
-if (!fs.existsSync('./packages/create-waku/dist')) {
-  try {
-    execSync('pnpm -r --filter="./packages/create-waku" run compile', {
-      stdio: 'inherit',
-    });
-  } catch (error) {
-    console.error(
-      'An error occurred while running postinstall scripts:',
-      error,
-    );
-    process.exit(1);
-  }
-}
