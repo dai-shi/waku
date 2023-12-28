@@ -14,12 +14,19 @@ import {
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
 
-import './global.js';
 import { encodeInput } from './lib/renderers/utils.js';
 
 const { createFromFetch, encodeReply } = RSDWClient;
 
-const BASE_PATH = `${__WAKU_ENV__.CONFIG_BASE_PATH}${__WAKU_ENV__.CONFIG_RSC_PATH}/`;
+declare global {
+  interface ImportMeta {
+    readonly env: Record<string, string>;
+  }
+}
+
+const BASE_PATH = `${import.meta.env.WAKU_CONFIG_BASE_PATH}${
+  import.meta.env.WAKU_CONFIG_RSC_PATH
+}/`;
 
 const checkStatus = async (
   responsePromise: Promise<Response>,

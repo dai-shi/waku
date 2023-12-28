@@ -23,6 +23,7 @@ import {
   hotImport,
   moduleImport,
 } from '../plugins/vite-plugin-rsc-hmr.js';
+import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 
@@ -41,7 +42,7 @@ export function createHandler<
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
   }
-  globalThis.__WAKU_ENV__ = options.env || {};
+  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(options.config || {});
   const vitePromise = configPromise.then(async (config) => {
     const mergedViteConfig = await mergeUserViteConfig({
@@ -55,21 +56,10 @@ export function createHandler<
         patchReactRefresh(viteReact()),
         rscIndexPlugin(config),
         rscHmrPlugin(),
+        rscEnvPlugin({ config, ssr }),
       ],
       ssr: {
         external: ['waku'],
-      },
-      define: {
-        __WAKU_ENV__: JSON.stringify(
-          Object.fromEntries([
-            ...Object.entries(__WAKU_ENV__).flatMap(([k, v]) =>
-              k.startsWith('WAKU_PUBLIC_') ? [[k, v]] : [],
-            ),
-            ['CONFIG_BASE_PATH', config.basePath],
-            ['CONFIG_RSC_PATH', config.rscPath],
-            ...(ssr ? [['SSR_ENABLED', 'true']] : []),
-          ]),
-        ),
       },
       server: { middlewareMode: true },
     });

@@ -12,7 +12,7 @@ const rootElement = (
   </StrictMode>
 );
 
-if (__WAKU_ENV__.SSR_ENABLED) {
+if (import.meta.env.WAKU_SSR_ENABLED) {
   hydrateRoot(document.body, rootElement);
 } else {
   createRoot(document.body).render(rootElement);

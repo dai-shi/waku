@@ -1,6 +1,5 @@
 import type { createElement, Fragment, ReactNode } from 'react';
 
-import './global.js';
 import type { Slot } from './client.js';
 
 type Elements = Record<string, ReactNode>;
@@ -64,3 +63,8 @@ export type EntriesPrd = EntriesDev & {
   loadHtmlHead: (pathname: string) => string;
   skipRenderRsc: (input: string) => boolean;
 };
+
+export function getEnv(key: string): string | undefined {
+  // HACK we may want to use a server-side context or something
+  return (globalThis as any).__WAKU_PRIVATE_ENV__[key];
+}

@@ -47,6 +47,7 @@ import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
+import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { emitVercelOutput } from './output-vercel.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
@@ -259,19 +260,8 @@ const buildClientBundle = async (
     plugins: [
       patchReactRefresh(viteReact()),
       rscIndexPlugin({ ...config, cssAssets }),
+      rscEnvPlugin({ config, ssr }),
     ],
-    define: {
-      __WAKU_ENV__: JSON.stringify(
-        Object.fromEntries([
-          ...Object.entries(__WAKU_ENV__).flatMap(([k, v]) =>
-            k.startsWith('WAKU_PUBLIC_') ? [[k, v]] : [],
-          ),
-          ['CONFIG_BASE_PATH', config.basePath],
-          ['CONFIG_RSC_PATH', config.rscPath],
-          ...(ssr ? [['SSR_ENABLED', 'true']] : []),
-        ]),
-      ),
-    },
     build: {
       outDir: joinPath(rootDir, config.distDir, config.publicDir),
       rollupOptions: {
@@ -510,7 +500,7 @@ export async function build(options: {
   cloudflare?: boolean;
   deno?: boolean;
 }) {
-  globalThis.__WAKU_ENV__ = options.env || {};
+  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const config = await resolveConfig(options.config || {});
   const rootDir = (
     await resolveViteConfig({}, 'build', 'production', 'production')

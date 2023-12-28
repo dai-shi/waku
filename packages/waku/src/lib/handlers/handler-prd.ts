@@ -23,7 +23,7 @@ export function createHandler<
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
   }
-  globalThis.__WAKU_ENV__ = options.env || {};
+  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(config || {});
 
   return async (req, res, next) => {
