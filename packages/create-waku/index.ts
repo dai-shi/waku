@@ -1,9 +1,7 @@
 #!/usr/bin/env node
-
 import { existsSync, readdirSync } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { default as prompts } from 'prompts';
 import { red, green, bold } from 'kolorist';
 import fse from 'fs-extra/esm';
@@ -32,7 +30,7 @@ async function init() {
   let targetDir = '';
   const defaultProjectName = 'waku-project';
 
-  const templateRoot = fileURLToPath(new URL('../template', import.meta.url));
+  const templateRoot = path.resolve(path.dirname(process.argv[1] as string), './template')
   const CHOICES = await fsPromises.readdir(templateRoot);
   let result: {
     packageName: string;
