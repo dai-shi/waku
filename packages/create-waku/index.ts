@@ -5,6 +5,7 @@ import path from 'node:path';
 import { default as prompts } from 'prompts';
 import { red, green, bold } from 'kolorist';
 import fse from 'fs-extra/esm';
+import * as console from 'console';
 
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
@@ -30,8 +31,14 @@ async function init() {
   let targetDir = '';
   const defaultProjectName = 'waku-project';
 
-  const templateRoot = path.resolve(path.dirname(process.argv[1] as string), './template')
-  const CHOICES = await fsPromises.readdir(templateRoot);
+  const templateRoot = path.resolve(
+    path.dirname(process.argv[1] as string),
+    '../template',
+  );
+  // maybe include `.DS_Store` on macOS
+  const CHOICES = (await fsPromises.readdir(templateRoot)).filter(
+    (dir) => !dir.startsWith('.'),
+  );
   let result: {
     packageName: string;
     shouldOverwrite: string;
