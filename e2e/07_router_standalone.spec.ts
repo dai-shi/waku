@@ -42,9 +42,13 @@ test.describe('07_router standalone', () => {
       force: true,
     });
     await rm(`${cacheDir}/${dirname}/dist`, { recursive: true, force: true });
-    execSync('pnpm install', {
+    execSync('pnpm --ignore-workspace install', {
       cwd: `${cacheDir}/${dirname}`,
       stdio: 'inherit',
+    });
+    await rm(`${cacheDir}/${dirname}/node_modules/waku`, {
+      recursive: true,
+      force: true,
     });
     // copy waku
     await cp(wakuDir, `${cacheDir}/${dirname}/node_modules/waku`, {
