@@ -1,12 +1,11 @@
 import { Readable, Writable } from 'node:stream';
 import { createServer as createViteServer } from 'vite';
 import { default as viteReact } from '@vitejs/plugin-react';
-import { platform } from 'node:os';
 
 import type { EntriesDev } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import type { Config } from '../config.js';
-import { joinPath } from '../utils/path.js';
+import { joinPath, decodeFilePathFromAbsolute } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from '../renderers/html-renderer.js';
 import { decodeInput, hasStatusCode } from '../renderers/utils.js';
@@ -192,9 +191,8 @@ export function createHandler<
     // HACK re-export "?v=..." URL to avoid dual module hazard.
     const viteUrl = req.url.toString().slice(req.url.origin.length);
     const fname = viteUrl.startsWith(config.basePath + '@fs/')
-      ? viteUrl.slice(
-          config.basePath.length +
-            (platform() !== 'win32' ? '@fs'.length : '@fs/'.length),
+      ? decodeFilePathFromAbsolute(
+          viteUrl.slice(config.basePath.length + '@fs'.length),
         )
       : joinPath(vite.config.root, viteUrl);
     for (const item of vite.moduleGraph.idToModuleMap.values()) {
