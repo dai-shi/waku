@@ -5,7 +5,7 @@ import { mkdir, readdir } from 'node:fs/promises';
 import { test, debugChildProcess } from './utils.js';
 import { expect } from '@playwright/test';
 
-test('should create waku with all enter work', async () => {
+test('should create waku with default setup work', async () => {
   const cliPath = fileURLToPath(
     new URL('../packages/create-waku/dist/index.js', import.meta.url),
   );
