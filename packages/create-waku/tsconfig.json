@@ -1,12 +1,12 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "rootDir": ".",
+    "rootDir": "./src",
     "outDir": "./dist",
     "lib": ["esnext"],
     "emitDeclarationOnly": false
   },
-  "include": ["./index.ts"],
+  "include": ["./src"],
   "exclude": ["./template"],
   "references": [
     {
