@@ -44,6 +44,8 @@ jobs:
 
   e2e:
     name: E2E on ${{ matrix.os }} (Node ${{ matrix.version }}) - (${{ matrix.shared }}/4)
+    needs:
+      - build-create-waku
     strategy:
       fail-fast: false
       matrix:
