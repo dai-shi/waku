@@ -8,7 +8,7 @@ export type RenderRequest = {
   searchParamsString: string;
   method: 'GET' | 'POST';
   contentType: string | undefined;
-  config: Omit<ResolvedConfig, 'ssr'>;
+  config: ResolvedConfig;
   context: unknown;
   stream?: ReadableStream;
   moduleIdCallback?: (id: string) => void;
