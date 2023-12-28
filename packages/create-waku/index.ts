@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import { existsSync, readdirSync } from 'node:fs';
 import fsPromises from 'node:fs/promises';
-import path from 'node:path';
+import path, { dirname } from 'node:path';
 import { default as prompts } from 'prompts';
 import { red, green, bold } from 'kolorist';
 import fse from 'fs-extra/esm';
 import * as console from 'console';
+import { fileURLToPath } from 'node:url';
 
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
@@ -30,11 +31,8 @@ function canSafelyOverwrite(dir: string) {
 async function init() {
   let targetDir = '';
   const defaultProjectName = 'waku-project';
-
-  const templateRoot = path.resolve(
-    path.dirname(process.argv[1] as string),
-    '../template',
-  );
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const templateRoot = path.resolve(__dirname, './template');
   // maybe include `.DS_Store` on macOS
   const CHOICES = (await fsPromises.readdir(templateRoot)).filter(
     (dir) => !dir.startsWith('.'),

@@ -15,8 +15,7 @@
     "create-waku": "./dist/index.js"
   },
   "files": [
-    "dist",
-    "template"
+    "dist"
   ],
   "scripts": {
     "start": "node ./dist/index.js",
