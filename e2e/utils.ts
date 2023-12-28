@@ -1,6 +1,7 @@
 import net from 'node:net';
 import { test as basicTest } from '@playwright/test';
 import type { ConsoleMessage } from '@playwright/test';
+import type { ChildProcess } from 'node:child_process';
 
 export async function getFreePort(): Promise<number> {
   return new Promise<number>((res) => {
@@ -9,6 +10,16 @@ export async function getFreePort(): Promise<number> {
       const port = (srv.address() as net.AddressInfo).port;
       srv.close(() => res(port));
     });
+  });
+}
+
+export function debugChildProcess(cp: ChildProcess) {
+  cp.stdout?.on('data', (data) => {
+    console.log(`stdout: ${data}`);
+  });
+
+  cp.stderr?.on('data', (data) => {
+    console.error(`stderr: ${data}`);
   });
 }
 
