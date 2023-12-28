@@ -8,7 +8,13 @@ import type { RollupLog, LoggingFunction } from 'rollup';
 
 import { resolveConfig } from '../config.js';
 import type { Config, ResolvedConfig } from '../config.js';
-import { joinPath, extname, filePathToFileURL } from '../utils/path.js';
+import {
+  joinPath,
+  extname,
+  filePathToFileURL,
+  fileURLToFilePath,
+  decodeFilePathFromAbsolute,
+} from '../utils/path.js';
 import {
   createReadStream,
   createWriteStream,
@@ -140,15 +146,18 @@ const buildServerBundle = async (
   const serverBuildOutput = await buildVite({
     plugins: [
       nonjsResolvePlugin(),
-      rscTransformPlugin(
-        true,
-        config.assetsDir,
-        {
-          [WAKU_CLIENT_MODULE]: WAKU_CLIENT_MODULE_VALUE,
+      rscTransformPlugin({
+        isBuild: true,
+        assetsDir: config.assetsDir,
+        clientEntryFiles: {
+          // FIXME this seems very ad-hoc
+          [WAKU_CLIENT_MODULE]: decodeFilePathFromAbsolute(
+            joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
+          ),
           ...clientEntryFiles,
         },
         serverEntryFiles,
-      ),
+      }),
     ],
     ssr: {
       resolve: {
@@ -207,6 +216,8 @@ export function loadModule(id) {
     case 'public/${RSDW_CLIENT_MODULE}':
       return import('./${psDir}/${RSDW_CLIENT_MODULE}.js');
     case 'public/${WAKU_CLIENT_MODULE}':
+      return import('./${psDir}/${WAKU_CLIENT_MODULE}.js');
+    case '${psDir}/${WAKU_CLIENT_MODULE}.js':
       return import('./${psDir}/${WAKU_CLIENT_MODULE}.js');
 ${Object.entries(serverEntryFiles || {})
   .map(
