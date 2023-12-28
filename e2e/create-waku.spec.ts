@@ -15,7 +15,6 @@ test('should create waku with default setup work', async () => {
     recursive: true,
   });
   const cwd = fileURLToPath(new URL(`./.cache/${dirname}`, import.meta.url));
-  console.log(`Creating waku in ${cwd}`);
   const cp = spawn(process.execPath, [cliPath], {
     cwd,
     env: process.env,
