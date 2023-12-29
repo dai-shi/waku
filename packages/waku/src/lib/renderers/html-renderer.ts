@@ -91,8 +91,6 @@ const injectRscPayload = (
   urlForFakeFetch: string,
 ) => {
   const chunks: Uint8Array[] = [];
-  let closed = false;
-  let notify: (() => void) | undefined;
   const copied = readable.pipeThrough(
     new TransformStream({
       transform(chunk, controller) {
@@ -100,12 +98,7 @@ const injectRscPayload = (
           throw new Error('Unknown chunk type');
         }
         chunks.push(chunk);
-        notify?.();
         controller.enqueue(chunk);
-      },
-      flush() {
-        closed = true;
-        notify?.();
       },
     }),
   );
@@ -143,59 +136,60 @@ globalThis.__WAKU_PREFETCHED__ = {
     }
     return data;
   };
-  const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
-  const getScripts = (): string => {
-    const scripts = chunks.splice(0).map(
-      (chunk) =>
-        `
-<script type="module" async>globalThis.__WAKU_PUSH__("${encodeURI(
-          decoder.decode(chunk),
-        )}")</script>`,
-    );
-    if (closed) {
-      scripts.push(
-        `
-<script type="module" async>globalThis.__WAKU_PUSH__()</script>`,
-      );
-    }
-    return scripts.join('');
-  };
   const interleave = () => {
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
     let headSent = false;
     let data = '';
+    let scriptsClosed = false;
+    const sendScripts = (
+      controller: TransformStreamDefaultController,
+      close?: boolean,
+    ) => {
+      if (scriptsClosed) {
+        return;
+      }
+      const scripts = chunks.splice(0).map(
+        (chunk) =>
+          `
+<script type="module" async>globalThis.__WAKU_PUSH__("${encodeURI(
+            decoder.decode(chunk),
+          )}")</script>`,
+      );
+      if (close) {
+        scriptsClosed = true;
+        scripts.push(
+          `
+<script type="module" async>globalThis.__WAKU_PUSH__()</script>`,
+        );
+      }
+      if (scripts.length) {
+        controller.enqueue(encoder.encode(scripts.join('')));
+      }
+    };
     return new TransformStream({
       transform(chunk, controller) {
         if (!(chunk instanceof Uint8Array)) {
           throw new Error('Unknown chunk type');
         }
+        data += decoder.decode(chunk);
         if (!headSent) {
-          data += decoder.decode(chunk);
           if (!data.includes('</head>')) {
             return;
           }
           headSent = true;
-          controller.enqueue(encoder.encode(modifyHead(data)));
+          data = modifyHead(data);
+        }
+        const closingBodyIndex = data.lastIndexOf('</body>');
+        if (closingBodyIndex === -1) {
+          controller.enqueue(encoder.encode(data));
           data = '';
-          notify = () => controller.enqueue(encoder.encode(getScripts()));
-          notify();
-          return;
-        }
-        controller.enqueue(chunk);
-      },
-      flush(controller) {
-        if (!headSent) {
-          throw new Error('head not yet sent');
-        }
-        if (!closed) {
-          return new Promise<void>((resolve) => {
-            notify = () => {
-              controller.enqueue(encoder.encode(getScripts()));
-              if (closed) {
-                resolve();
-              }
-            };
-          });
+          sendScripts(controller);
+        } else {
+          controller.enqueue(encoder.encode(data.slice(0, closingBodyIndex)));
+          sendScripts(controller, true);
+          controller.enqueue(encoder.encode(data.slice(closingBodyIndex)));
+          data = '';
         }
       },
     });
@@ -207,6 +201,7 @@ globalThis.__WAKU_PREFETCHED__ = {
 const rectifyHtml = () => {
   const pending: Uint8Array[] = [];
   const decoder = new TextDecoder();
+  let timer: ReturnType<typeof setTimeout> | undefined;
   return new TransformStream({
     transform(chunk, controller) {
       if (!(chunk instanceof Uint8Array)) {
@@ -214,11 +209,15 @@ const rectifyHtml = () => {
       }
       pending.push(chunk);
       if (/<\/\w+>$/.test(decoder.decode(chunk))) {
-        controller.enqueue(concatUint8Arrays(pending.splice(0)));
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          controller.enqueue(concatUint8Arrays(pending.splice(0)));
+        });
       }
     },
     flush(controller) {
-      if (!pending.length) {
+      clearTimeout(timer);
+      if (pending.length) {
         controller.enqueue(concatUint8Arrays(pending.splice(0)));
       }
     },

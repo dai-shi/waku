@@ -1,4 +1,5 @@
-import type { Plugin, TransformResult, ViteDevServer } from 'vite';
+import type { Plugin, ViteDevServer } from 'vite';
+import type { ModuleImportResult } from '../handlers/types.js';
 
 const customCode = `
 import { createHotContext as __vite__createHotContext } from "/@vite/client";
@@ -8,10 +9,17 @@ if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
   globalThis.__WAKU_HMR_CONFIGURED__ = true;
   import.meta.hot.on('hot-import', (data) => import(/* @vite-ignore */ data));
   import.meta.hot.on('module', (data) => {
+    // remove element with the same 'waku-module-id'
+    let script = document.querySelector(
+      'script[waku-module-id="' + data.id + '"]',
+    );
+    script?.remove();
+
     const code = data.code;
-    const script = document.createElement('script');
+    script = document.createElement('script');
     script.type = 'module';
     script.text = code;
+    script.setAttribute('waku-module-id', data.id);
     document.head.appendChild(script);
   });
 }
@@ -51,11 +59,11 @@ export function hotImport(vite: ViteDevServer, source: string) {
   vite.ws.send({ type: 'custom', event: 'hot-import', data: source });
 }
 
-const modulePendingMap = new WeakMap<ViteDevServer, Set<TransformResult>>();
+const modulePendingMap = new WeakMap<ViteDevServer, Set<ModuleImportResult>>();
 
 export function moduleImport(
   viteServer: ViteDevServer,
-  result: TransformResult,
+  result: ModuleImportResult,
 ) {
   let sourceSet = modulePendingMap.get(viteServer);
   if (!sourceSet) {

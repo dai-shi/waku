@@ -2,7 +2,10 @@ import path from 'node:path';
 import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 
-export function rscReloadPlugin(fn: (type: 'full-reload') => void): Plugin {
+export function rscReloadPlugin(
+  moduleImports: Set<string>,
+  fn: (type: 'full-reload') => void,
+): Plugin {
   let enabled = false;
   const isClientEntry = (id: string, code: string) => {
     const ext = path.extname(id);
@@ -34,7 +37,11 @@ export function rscReloadPlugin(fn: (type: 'full-reload') => void): Plugin {
       if (!enabled) {
         return [];
       }
-      if (ctx.modules.length && !isClientEntry(ctx.file, await ctx.read())) {
+      if (
+        ctx.modules.length &&
+        !isClientEntry(ctx.file, await ctx.read()) &&
+        !moduleImports.has(ctx.file)
+      ) {
         fn('full-reload');
       } else {
         return [];
