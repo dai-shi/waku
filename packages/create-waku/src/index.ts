@@ -87,6 +87,8 @@ async function init() {
             { title: 'promise-template', value: CHOICES[2] },
             { title: 'callserver-template', value: CHOICES[3] },
             { title: 'mutation-template', value: CHOICES[4] },
+            { title: 'nesting-template', value: CHOICES[5] },
+            { title: 'router-template', value: CHOICES[6] },
           ],
         },
       ],
