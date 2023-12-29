@@ -30,7 +30,10 @@ function canSafelyOverwrite(dir: string) {
 async function init() {
   let targetDir = '';
   const defaultProjectName = 'waku-project';
-  const templateRoot = path.join(fileURLToPath(import.meta.url), '../../template');
+  const templateRoot = path.join(
+    fileURLToPath(import.meta.url),
+    '../../template',
+  );
   // maybe include `.DS_Store` on macOS
   const CHOICES = (await fsPromises.readdir(templateRoot)).filter(
     (dir) => !dir.startsWith('.'),
