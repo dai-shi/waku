@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import { existsSync, readdirSync } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
@@ -31,9 +30,14 @@ function canSafelyOverwrite(dir: string) {
 async function init() {
   let targetDir = '';
   const defaultProjectName = 'waku-project';
-
-  const templateRoot = fileURLToPath(new URL('../template', import.meta.url));
-  const CHOICES = await fsPromises.readdir(templateRoot);
+  const templateRoot = path.join(
+    fileURLToPath(import.meta.url),
+    '../../template',
+  );
+  // maybe include `.DS_Store` on macOS
+  const CHOICES = (await fsPromises.readdir(templateRoot)).filter(
+    (dir) => !dir.startsWith('.'),
+  );
   let result: {
     packageName: string;
     shouldOverwrite: string;
@@ -83,6 +87,8 @@ async function init() {
             { title: 'promise-template', value: CHOICES[2] },
             { title: 'callserver-template', value: CHOICES[3] },
             { title: 'mutation-template', value: CHOICES[4] },
+            { title: 'nesting-template', value: CHOICES[5] },
+            { title: 'router-template', value: CHOICES[6] },
           ],
         },
       ],
