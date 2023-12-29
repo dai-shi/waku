@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { parentPort } from 'node:worker_threads';
 import { Server } from 'node:http';
 import { createServer as createViteServer } from 'vite';
+import type { ViteDevServer } from 'vite';
 
 import type { EntriesDev } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
@@ -17,6 +18,7 @@ import type {
 import { renderRsc } from '../renderers/rsc-renderer.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
+import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscReloadPlugin } from '../plugins/vite-plugin-rsc-reload.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
@@ -31,6 +33,7 @@ const controllerMap = new Map<number, ReadableStreamDefaultController>();
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   const { id, type: _removed, hasModuleIdCallback, ...rest } = mesg;
   const rr: RenderRequest = rest;
+  (globalThis as any).__WAKU_PRIVATE_ENV__ = rr.env || {};
   try {
     const stream = new ReadableStream({
       start(controller) {
@@ -89,52 +92,56 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   }
 };
 
-const dummyServer = new Server(); // FIXME we hope to avoid this hack
-
-const moduleImports: Set<string> = new Set();
-
-const mergedViteConfig = await mergeUserViteConfig({
-  plugins: [
-    nonjsResolvePlugin(),
-    rscTransformPlugin({ isBuild: false }),
-    rscReloadPlugin(moduleImports, (type) => {
-      const mesg: MessageRes = { type };
-      parentPort!.postMessage(mesg);
-    }),
-    rscDelegatePlugin(moduleImports, (resultOrSource) => {
-      const mesg: MessageRes =
-        typeof resultOrSource === 'object'
-          ? { type: 'module-import', result: resultOrSource }
-          : { type: 'hot-import', source: resultOrSource };
-      parentPort!.postMessage(mesg);
-    }),
-  ],
-  // HACK to suppress 'Skipping dependency pre-bundling' warning
-  optimizeDeps: { include: [] },
-  ssr: {
-    resolve: {
-      conditions: ['react-server', 'workerd'],
-      externalConditions: ['react-server', 'workerd'],
+let lastViteServer: ViteDevServer | undefined;
+const getViteServer = async () => {
+  if (lastViteServer) {
+    return lastViteServer;
+  }
+  const dummyServer = new Server(); // FIXME we hope to avoid this hack
+  const moduleImports: Set<string> = new Set();
+  const mergedViteConfig = await mergeUserViteConfig({
+    plugins: [
+      nonjsResolvePlugin(),
+      rscTransformPlugin({ isBuild: false }),
+      rscEnvPlugin({}),
+      rscReloadPlugin(moduleImports, (type) => {
+        const mesg: MessageRes = { type };
+        parentPort!.postMessage(mesg);
+      }),
+      rscDelegatePlugin(moduleImports, (resultOrSource) => {
+        const mesg: MessageRes =
+          typeof resultOrSource === 'object'
+            ? { type: 'module-import', result: resultOrSource }
+            : { type: 'hot-import', source: resultOrSource };
+        parentPort!.postMessage(mesg);
+      }),
+    ],
+    // HACK to suppress 'Skipping dependency pre-bundling' warning
+    optimizeDeps: { include: [] },
+    ssr: {
+      resolve: {
+        conditions: ['react-server', 'workerd'],
+        externalConditions: ['react-server', 'workerd'],
+      },
+      external: ['react', 'react-server-dom-webpack'],
+      noExternal: /^(?!node:)/,
     },
-    external: ['react', 'react-server-dom-webpack'],
-    noExternal: /^(?!node:)/,
-  },
-  appType: 'custom',
-  server: { middlewareMode: true, hmr: { server: dummyServer } },
-});
-
-const vitePromise = createViteServer(mergedViteConfig).then(async (vite) => {
-  await vite.ws.close();
-  return vite;
-});
+    appType: 'custom',
+    server: { middlewareMode: true, hmr: { server: dummyServer } },
+  });
+  const viteServer = await createViteServer(mergedViteConfig);
+  await viteServer.ws.close();
+  lastViteServer = viteServer;
+  return viteServer;
+};
 
 const loadServerFile = async (fileURL: string) => {
-  const vite = await vitePromise;
+  const vite = await getViteServer();
   return vite.ssrLoadModule(fileURLToFilePath(fileURL));
 };
 
 const loadEntries = async (config: ResolvedConfig) => {
-  const vite = await vitePromise;
+  const vite = await getViteServer();
   const filePath = joinPath(vite.config.root, config.srcDir, config.entriesJs);
   return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
 };

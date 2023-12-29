@@ -56,7 +56,7 @@ export function createHandler<
         patchReactRefresh(viteReact()),
         rscIndexPlugin(config),
         rscHmrPlugin(),
-        rscEnvPlugin({ config, ssr }),
+        rscEnvPlugin({ config, hydrate: ssr }),
       ],
       ssr: {
         external: ['waku'],
@@ -149,6 +149,7 @@ export function createHandler<
               contentType: undefined,
               config,
               context,
+              env: (globalThis as any).__WAKU_PRIVATE_ENV__,
             });
             context = nextCtx as Context;
             return readable;
@@ -184,6 +185,7 @@ export function createHandler<
           config,
           context,
           stream: req.stream,
+          env: (globalThis as any).__WAKU_PRIVATE_ENV__,
         });
         unstable_posthook?.(req, res, nextCtx as Context);
         readable.pipeTo(res.stream);

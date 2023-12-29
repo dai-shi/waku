@@ -159,6 +159,7 @@ const buildServerBundle = async (
         },
         serverEntryFiles,
       }),
+      rscEnvPlugin({ config }),
     ],
     ssr: {
       resolve: {
@@ -260,7 +261,7 @@ const buildClientBundle = async (
     plugins: [
       patchReactRefresh(viteReact()),
       rscIndexPlugin({ ...config, cssAssets }),
-      rscEnvPlugin({ config, ssr }),
+      rscEnvPlugin({ config, hydrate: ssr }),
     ],
     build: {
       outDir: joinPath(rootDir, config.distDir, config.publicDir),

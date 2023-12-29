@@ -12,6 +12,7 @@ export type RenderRequest = {
   context: unknown;
   stream?: ReadableStream;
   moduleIdCallback?: (id: string) => void;
+  env: Record<string, string>;
 };
 
 export type BuildOutput = {

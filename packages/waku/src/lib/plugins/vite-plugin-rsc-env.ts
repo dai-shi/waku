@@ -2,13 +2,13 @@ import type { Plugin } from 'vite';
 
 export function rscEnvPlugin({
   config,
-  ssr,
+  hydrate,
 }: {
-  config: {
+  config?: {
     basePath: string;
     rscPath: string;
   };
-  ssr: boolean | undefined;
+  hydrate?: boolean | undefined;
 }): Plugin {
   return {
     name: 'rsc-env-plugin',
@@ -22,16 +22,20 @@ export function rscEnvPlugin({
                 ? [[`import.meta.env.${k}`, JSON.stringify(v)]]
                 : [],
           ),
-          [
-            'import.meta.env.WAKU_CONFIG_BASE_PATH',
-            JSON.stringify(config.basePath),
-          ],
-          [
-            'import.meta.env.WAKU_CONFIG_RSC_PATH',
-            JSON.stringify(config.rscPath),
-          ],
-          ...(ssr
-            ? [['import.meta.env.WAKU_SSR_ENABLED', JSON.stringify('true')]]
+          ...(config
+            ? [
+                [
+                  'import.meta.env.WAKU_CONFIG_BASE_PATH',
+                  JSON.stringify(config.basePath),
+                ],
+                [
+                  'import.meta.env.WAKU_CONFIG_RSC_PATH',
+                  JSON.stringify(config.rscPath),
+                ],
+              ]
+            : []),
+          ...(hydrate
+            ? [['import.meta.env.WAKU_HYDRATE', JSON.stringify('true')]]
             : []),
         ]),
       };

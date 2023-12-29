@@ -50,8 +50,9 @@ const getViteServer = async () => {
   const { nonjsResolvePlugin } = await import(
     '../plugins/vite-plugin-nonjs-resolve.js'
   );
+  const { rscEnvPlugin } = await import('../plugins/vite-plugin-rsc-env.js');
   const viteServer = await createViteServer({
-    plugins: [nonjsResolvePlugin()],
+    plugins: [nonjsResolvePlugin(), rscEnvPlugin({})],
     // HACK to suppress 'Skipping dependency pre-bundling' warning
     optimizeDeps: { include: [] },
     ssr: {
