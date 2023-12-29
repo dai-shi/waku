@@ -24,8 +24,28 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
 
+  build-create-waku:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'pnpm'
+          cache-dependency-path: '**/pnpm-lock.yaml'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r --filter="./packages/create-waku" run compile
+      - uses: actions/upload-artifact@v4
+        with:
+          name: create-waku
+          path: packages/create-waku
+          if-no-files-found: error
+
   e2e:
     name: E2E on ${{ matrix.os }} (Node ${{ matrix.version }}) - (${{ matrix.shared }}/4)
+    needs:
+      - build-create-waku
     strategy:
       fail-fast: false
       matrix:
@@ -41,6 +61,10 @@ jobs:
           node-version: ${{ matrix.version }}
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
+      - uses: actions/download-artifact@v4
+        with:
+          name: create-waku
+          path: packages/create-waku
       - run: pnpm install --frozen-lockfile
       - run: pnpm run compile
       - name: Cache Playwright
