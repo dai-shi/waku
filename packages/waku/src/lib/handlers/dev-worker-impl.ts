@@ -141,7 +141,7 @@ parentPort!.on('message', (mesg: MessageReq) => {
             controller.error(new Error('Unexepected buffer type'));
           }
         },
-        close: controller.close,
+        close: () => controller.close(),
       }),
     );
   }
