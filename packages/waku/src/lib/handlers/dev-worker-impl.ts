@@ -125,7 +125,7 @@ const loadEntries = async (config: ResolvedConfig) => {
   return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
 };
 
-parentPort!.on('message', async (mesg: MessageReq) => {
+parentPort!.on('message', (mesg: MessageReq) => {
   if (mesg.type === 'render') {
     handleRender(mesg);
 
