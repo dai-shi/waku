@@ -125,8 +125,9 @@ export async function renderRscWithWorker<Context>(
   const id = nextId++;
   const pipe = async () => {
     if (rr.stream) {
+      const mesg: MessageReq = { id, type: 'pipe', stream: rr.stream };
       worker.postMessage(
-        { id, type: 'pipe', stream: rr.stream } as MessageReq,
+        mesg,
         [rr.stream as unknown as TransferListItem],
       );
     }
