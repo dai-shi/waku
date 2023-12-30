@@ -21,10 +21,10 @@ export type BuildOutput = {
 
 export type MessageReq =
   | ({
-    id: number;
-    type: 'render';
-    hasModuleIdCallback: boolean;
-  } & Omit<RenderRequest, 'stream' | 'moduleIdCallback'>)
+      id: number;
+      type: 'render';
+      hasModuleIdCallback: boolean;
+    } & Omit<RenderRequest, 'stream' | 'moduleIdCallback'>)
   | { id: number; type: 'pipe'; stream: ReadableStream };
 
 export type MessageRes =
@@ -122,7 +122,7 @@ export async function renderRscWithWorker<Context>(
   const id = nextId++;
   const pipe = async () => {
     if (rr.stream) {
-      worker.postMessage({ id, type: 'pipe', stream: rr.stream } as MessageReq)
+      worker.postMessage({ id, type: 'pipe', stream: rr.stream } as MessageReq);
     }
   };
   let started = false;

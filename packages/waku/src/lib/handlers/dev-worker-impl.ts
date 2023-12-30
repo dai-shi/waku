@@ -130,17 +130,19 @@ parentPort!.on('message', (mesg: MessageReq) => {
     handleRender(mesg);
   } else if (mesg.type === 'pipe') {
     const controller = controllerMap.get(mesg.id)!;
-    mesg.stream.pipeTo(new WritableStream({
-      write: (chunk) => {
-        if (chunk instanceof Uint8Array) {
-          controller.enqueue(chunk)
-        } else if (chunk instanceof ArrayBuffer) {
-          controller.enqueue(new Uint8Array(chunk, 0, chunk.byteLength))
-        } else {
-          controller.error(new Error('Unexepected buffer type'));
-        }
-      },
-      close: controller.close
-    }))
+    mesg.stream.pipeTo(
+      new WritableStream({
+        write: (chunk) => {
+          if (chunk instanceof Uint8Array) {
+            controller.enqueue(chunk);
+          } else if (chunk instanceof ArrayBuffer) {
+            controller.enqueue(new Uint8Array(chunk, 0, chunk.byteLength));
+          } else {
+            controller.error(new Error('Unexepected buffer type'));
+          }
+        },
+        close: controller.close,
+      }),
+    );
   }
 });
