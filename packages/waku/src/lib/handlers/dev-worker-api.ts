@@ -161,6 +161,9 @@ export async function renderRscWithWorker<Context>(
       ...(rr.stream ? { stream: rr.stream } : {}),
       ...copied,
     };
-    worker.postMessage(mesg, [rr.stream as unknown as TransferListItem]);
+    worker.postMessage(
+      mesg,
+      rr.stream ? [rr.stream as unknown as TransferListItem] : undefined,
+    );
   });
 }
