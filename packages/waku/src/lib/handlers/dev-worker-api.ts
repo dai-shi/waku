@@ -1,4 +1,7 @@
-import type { Worker as WorkerOrig } from 'node:worker_threads';
+import type {
+  TransferListItem,
+  Worker as WorkerOrig,
+} from 'node:worker_threads';
 
 import type { ResolvedConfig } from '../config.js';
 import type { ModuleImportResult } from './types.js';
@@ -122,7 +125,10 @@ export async function renderRscWithWorker<Context>(
   const id = nextId++;
   const pipe = async () => {
     if (rr.stream) {
-      worker.postMessage({ id, type: 'pipe', stream: rr.stream } as MessageReq);
+      worker.postMessage(
+        { id, type: 'pipe', stream: rr.stream } as MessageReq,
+        [rr.stream as unknown as TransferListItem],
+      );
     }
   };
   let started = false;
