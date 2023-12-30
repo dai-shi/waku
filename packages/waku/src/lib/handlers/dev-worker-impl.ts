@@ -125,12 +125,12 @@ const loadEntries = async (config: ResolvedConfig) => {
   return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
 };
 
-parentPort!.on('message', (mesg: MessageReq) => {
+parentPort!.on('message', async (mesg: MessageReq) => {
   if (mesg.type === 'render') {
     handleRender(mesg);
-  } else if (mesg.type === 'pipe') {
+
     const controller = controllerMap.get(mesg.id)!;
-    mesg.stream.pipeTo(
+    mesg.stream?.pipeTo(
       new WritableStream({
         write: (chunk) => {
           if (chunk instanceof Uint8Array) {

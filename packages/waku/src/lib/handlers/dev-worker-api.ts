@@ -1,6 +1,6 @@
 import type {
   TransferListItem,
-  Worker as WorkerOrig,
+  Worker as WorkerType,
 } from 'node:worker_threads';
 
 import type { ResolvedConfig } from '../config.js';
@@ -22,13 +22,11 @@ export type BuildOutput = {
   htmlFiles: string[];
 };
 
-export type MessageReq =
-  | ({
-      id: number;
-      type: 'render';
-      hasModuleIdCallback: boolean;
-    } & Omit<RenderRequest, 'stream' | 'moduleIdCallback'>)
-  | { id: number; type: 'pipe'; stream: ReadableStream };
+export type MessageReq = {
+  id: number;
+  type: 'render';
+  hasModuleIdCallback: boolean;
+} & Omit<RenderRequest, 'moduleIdCallback'>;
 
 export type MessageRes =
   | { type: 'full-reload' }
@@ -40,12 +38,12 @@ export type MessageRes =
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
-let lastWorker: Promise<WorkerOrig> | undefined;
+let lastWorker: Promise<WorkerType> | undefined;
 const getWorker = () => {
   if (lastWorker) {
     return lastWorker;
   }
-  return (lastWorker = new Promise<WorkerOrig>((resolve, reject) => {
+  return (lastWorker = new Promise<WorkerType>((resolve, reject) => {
     Promise.all([
       import('node:worker_threads').catch((e) => {
         throw e;
@@ -123,15 +121,6 @@ export async function renderRscWithWorker<Context>(
 ): Promise<readonly [ReadableStream, Context]> {
   const worker = await getWorker();
   const id = nextId++;
-  const pipe = async () => {
-    if (rr.stream) {
-      const mesg: MessageReq = { id, type: 'pipe', stream: rr.stream };
-      worker.postMessage(
-        mesg,
-        [rr.stream as unknown as TransferListItem],
-      );
-    }
-  };
   let started = false;
   return new Promise((resolve, reject) => {
     messageCallbacks.set(id, (mesg) => {
@@ -143,7 +132,6 @@ export async function renderRscWithWorker<Context>(
               messageCallbacks.delete(id);
             },
           });
-          mesg.stream.pipeThrough(bridge);
           resolve([mesg.stream.pipeThrough(bridge), mesg.context as Context]);
         } else {
           throw new Error('already started');
@@ -170,9 +158,9 @@ export async function renderRscWithWorker<Context>(
       id,
       type: 'render',
       hasModuleIdCallback: !!rr.moduleIdCallback,
+      ...(rr.stream ? { stream: rr.stream } : {}),
       ...copied,
     };
-    worker.postMessage(mesg);
-    pipe();
+    worker.postMessage(mesg, [rr.stream as unknown as TransferListItem]);
   });
 }
