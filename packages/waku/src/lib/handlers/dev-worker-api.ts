@@ -144,7 +144,7 @@ export async function renderRscWithWorker<Context>(
             },
           });
           mesg.stream.pipeThrough(bridge);
-          resolve([bridge.readable, mesg.context as Context]);
+          resolve([mesg.stream.pipeThrough(bridge), mesg.context as Context]);
         } else {
           throw new Error('already started');
         }
