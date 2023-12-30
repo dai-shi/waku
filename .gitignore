@@ -8,3 +8,4 @@ dist
 .devcontainer
 .vscode
 *.tsbuildinfo
+.cache

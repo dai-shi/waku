@@ -15,7 +15,7 @@ export const RSDW_SERVER_MODULE_VALUE = 'react-server-dom-webpack/server.edge';
 
 const resolveClientEntry = (
   file: string, // filePath or fileURL
-  config: Omit<ResolvedConfig, 'ssr'>,
+  config: ResolvedConfig,
   isDev: boolean,
 ) => {
   if (isDev) {
@@ -33,7 +33,7 @@ const resolveClientEntry = (
 
 export async function renderRsc(
   opts: {
-    config: Omit<ResolvedConfig, 'ssr'>;
+    config: ResolvedConfig;
     input: string;
     searchParams: URLSearchParams;
     method: 'GET' | 'POST';
@@ -169,7 +169,7 @@ export async function renderRsc(
 }
 
 export async function getBuildConfig(opts: {
-  config: Omit<ResolvedConfig, 'ssr'>;
+  config: ResolvedConfig;
   entries: EntriesPrd;
 }) {
   const { config, entries } = opts;
