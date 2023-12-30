@@ -8,7 +8,7 @@
     "skipLibCheck": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    "types": ["react/experimental"],
+    "types": ["node", "react/experimental"],
     "jsx": "react-jsx",
     "rootDir": "./src",
     "outDir": "./dist"
