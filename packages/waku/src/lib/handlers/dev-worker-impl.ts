@@ -128,16 +128,19 @@ const loadEntries = async (config: Omit<ResolvedConfig, 'ssr'>) => {
 parentPort!.on('message', (mesg: MessageReq) => {
   if (mesg.type === 'render') {
     handleRender(mesg);
-  } else if (mesg.type === 'buf') {
+  } else if (mesg.type === 'pipe') {
     const controller = controllerMap.get(mesg.id)!;
-    controller.enqueue(new Uint8Array(mesg.buf, mesg.offset, mesg.len));
-  } else if (mesg.type === 'end') {
-    const controller = controllerMap.get(mesg.id)!;
-    controller.close();
-  } else if (mesg.type === 'err') {
-    const controller = controllerMap.get(mesg.id)!;
-    const err =
-      mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err));
-    controller.error(err);
+    mesg.stream.pipeTo(new WritableStream({
+      write: (chunk) => {
+        if (chunk instanceof Uint8Array) {
+          controller.enqueue(chunk)
+        } else if (chunk instanceof ArrayBuffer) {
+          controller.enqueue(new Uint8Array(chunk, 0, chunk.byteLength))
+        } else {
+          controller.error(new Error('Unexepected buffer type'));
+        }
+      },
+      close: controller.close
+    }))
   }
 });

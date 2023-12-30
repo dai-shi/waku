@@ -21,13 +21,11 @@ export type BuildOutput = {
 
 export type MessageReq =
   | ({
-      id: number;
-      type: 'render';
-      hasModuleIdCallback: boolean;
-    } & Omit<RenderRequest, 'stream' | 'moduleIdCallback'>)
-  | { id: number; type: 'buf'; buf: ArrayBuffer; offset: number; len: number }
-  | { id: number; type: 'end' }
-  | { id: number; type: 'err'; err: unknown };
+    id: number;
+    type: 'render';
+    hasModuleIdCallback: boolean;
+  } & Omit<RenderRequest, 'stream' | 'moduleIdCallback'>)
+  | { id: number; type: 'pipe'; stream: ReadableStream };
 
 export type MessageRes =
   | { type: 'full-reload' }
@@ -124,41 +122,11 @@ export async function renderRscWithWorker<Context>(
   const id = nextId++;
   const pipe = async () => {
     if (rr.stream) {
-      const reader = rr.stream.getReader();
-      try {
-        let result: ReadableStreamReadResult<unknown>;
-        do {
-          result = await reader.read();
-          if (result.value) {
-            const buf = result.value;
-            let mesg: MessageReq;
-            if (buf instanceof ArrayBuffer) {
-              mesg = { id, type: 'buf', buf, offset: 0, len: buf.byteLength };
-            } else if (buf instanceof Uint8Array) {
-              mesg = {
-                id,
-                type: 'buf',
-                buf: buf.buffer,
-                offset: buf.byteOffset,
-                len: buf.byteLength,
-              };
-            } else {
-              throw new Error('Unexepected buffer type');
-            }
-            worker.postMessage(mesg, [mesg.buf]);
-          }
-        } while (!result.done);
-      } catch (err) {
-        const mesg: MessageReq = { id, type: 'err', err };
-        worker.postMessage(mesg);
-      }
+      worker.postMessage({ id, type: 'pipe', stream: rr.stream } as MessageReq)
     }
-    const mesg: MessageReq = { id, type: 'end' };
-    worker.postMessage(mesg);
   };
   let started = false;
   return new Promise((resolve, reject) => {
-    let controller: ReadableStreamDefaultController<Uint8Array>;
     messageCallbacks.set(id, (mesg) => {
       if (mesg.type === 'start') {
         if (!started) {
@@ -183,8 +151,6 @@ export async function renderRscWithWorker<Context>(
         }
         if (!started) {
           reject(err);
-        } else {
-          controller.error(err);
         }
         messageCallbacks.delete(id);
       }
