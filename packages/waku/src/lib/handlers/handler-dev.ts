@@ -48,9 +48,7 @@ export function createHandler<
     const mergedViteConfig = await mergeUserViteConfig({
       base: config.basePath,
       optimizeDeps: {
-        // FIXME adding `react-dom` makes more sense.
-        include: ['react-server-dom-webpack/client'],
-        // include: ['react-server-dom-webpack/client', 'react', 'react-dom'],
+        include: ['react-server-dom-webpack/client', 'react', 'react-dom'],
         exclude: ['waku'],
       },
       plugins: [
