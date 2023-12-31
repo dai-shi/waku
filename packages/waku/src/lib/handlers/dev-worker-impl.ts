@@ -27,17 +27,11 @@ const HAS_MODULE_REGISTER = typeof module.register === 'function';
 if (HAS_MODULE_REGISTER) {
   module.register('waku/node-loader', pathToFileURL('./'));
 }
-const controllerMap = new Map<number, ReadableStreamDefaultController>();
 
-const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
+const handleRender = async (mesg: MessageReq & { type: 'render' }, stream: ReadableStream) => {
   const { id, type: _removed, hasModuleIdCallback, ...rest } = mesg;
   const rr: RenderRequest = rest;
   try {
-    const stream = new ReadableStream({
-      start(controller) {
-        controllerMap.set(id, controller);
-      },
-    });
     rr.stream = stream;
     if (hasModuleIdCallback) {
       rr.moduleIdCallback = (moduleId: string) => {
@@ -127,22 +121,19 @@ const loadEntries = async (config: ResolvedConfig) => {
 
 parentPort!.on('message', (mesg: MessageReq) => {
   if (mesg.type === 'render') {
-    handleRender(mesg);
+    const bridge = new TransformStream({
+      transform(chunk, controller) {
+        if (chunk instanceof Uint8Array) {
+          controller.enqueue(chunk);
+        } else if (chunk instanceof ArrayBuffer) {
+          controller.enqueue(new Uint8Array(chunk, 0, chunk.byteLength));
+        } else {
+          controller.error(new Error('Unexepected buffer type'));
+        }
+      }
+    })
 
-    const controller = controllerMap.get(mesg.id)!;
-    mesg.stream?.pipeTo(
-      new WritableStream({
-        write: (chunk) => {
-          if (chunk instanceof Uint8Array) {
-            controller.enqueue(chunk);
-          } else if (chunk instanceof ArrayBuffer) {
-            controller.enqueue(new Uint8Array(chunk, 0, chunk.byteLength));
-          } else {
-            controller.error(new Error('Unexepected buffer type'));
-          }
-        },
-        close: () => controller.close(),
-      }),
-    );
+    mesg.stream?.pipeThrough(bridge)
+    handleRender(mesg, bridge.readable);
   }
 });
