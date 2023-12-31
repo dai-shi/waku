@@ -53,7 +53,8 @@ export function createHandler<
           'react',
           'react/jsx-runtime',
           'react/jsx-dev-runtime',
-        ]
+        ],
+        exclude: ['waku'],
       },
       resolve: {
         dedupe: ['react', 'react-dom'],
