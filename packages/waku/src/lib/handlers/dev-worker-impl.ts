@@ -28,7 +28,10 @@ if (HAS_MODULE_REGISTER) {
   module.register('waku/node-loader', pathToFileURL('./'));
 }
 
-const handleRender = async (mesg: MessageReq & { type: 'render' }, stream: ReadableStream) => {
+const handleRender = async (
+  mesg: MessageReq & { type: 'render' },
+  stream: ReadableStream,
+) => {
   const { id, type: _removed, hasModuleIdCallback, ...rest } = mesg;
   const rr: RenderRequest = rest;
   try {
@@ -130,10 +133,10 @@ parentPort!.on('message', (mesg: MessageReq) => {
         } else {
           controller.error(new Error('Unexepected buffer type'));
         }
-      }
-    })
+      },
+    });
 
-    mesg.stream?.pipeThrough(bridge)
+    mesg.stream?.pipeThrough(bridge);
     handleRender(mesg, bridge.readable);
   }
 });
