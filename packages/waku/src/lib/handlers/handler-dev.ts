@@ -51,15 +51,12 @@ export function createHandler<
         include: [
           'react-server-dom-webpack/client',
           'react',
-          'react/jsx-runtime',
-          'react/jsx-dev-runtime',
           'react-dom',
-          'react-dom/client',
+          'waku > react-dom',
+          'waku > react',
+          'waku > react-server-dom-webpack/client',
         ],
         exclude: ['waku'],
-      },
-      resolve: {
-        dedupe: ['react', 'react-dom'],
       },
       plugins: [
         nonjsResolvePlugin(),
