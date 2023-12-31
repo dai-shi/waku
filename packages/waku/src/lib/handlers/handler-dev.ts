@@ -56,7 +56,7 @@ export function createHandler<
         ]
       },
       resolve: {
-        dedupe: ['react', 'react-dom', 'react-server-dom-webpack'],
+        dedupe: ['react', 'react-dom'],
       },
       plugins: [
         nonjsResolvePlugin(),
