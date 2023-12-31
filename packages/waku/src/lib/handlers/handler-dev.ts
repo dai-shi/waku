@@ -52,7 +52,7 @@ export function createHandler<
           'react-server-dom-webpack/client',
           'react',
           'react/jsx-runtime',
-          'react/jsx-dev-runtime',
+          'react/jsx-dev-runtime'
         ]
       },
       resolve: {
