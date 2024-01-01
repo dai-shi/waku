@@ -276,9 +276,7 @@ export const renderHtml = async (
       ? import(RSDW_CLIENT_MODULE_VALUE)
       : loadModule!('public/' + RSDW_CLIENT_MODULE).then((m: any) => m.default),
     isDev
-      ? (getViteServer().then((vite) =>
-          vite.ssrLoadModule(WAKU_CLIENT_MODULE_VALUE),
-        ) as any)
+      ? import(WAKU_CLIENT_MODULE_VALUE)
       : loadModule!('public/' + WAKU_CLIENT_MODULE),
   ]);
   const ssrConfig = await getSsrConfig?.(pathname, {
