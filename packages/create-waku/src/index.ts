@@ -34,7 +34,7 @@ async function notifyUpdate() {
   const packageJson = nodeRequire('../package.json');
   const result = await checkForUpdate(packageJson).catch(() => null);
   if (result?.latest) {
-    console.log('A new version of `create-waku` is available!');
+    console.log(`A new version of 'create-waku' is available!`);
     console.log('You can update by running: ');
     console.log();
     console.log(`    npm i -g create-waku`);
