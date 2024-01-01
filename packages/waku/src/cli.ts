@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import path from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
@@ -77,14 +78,15 @@ if (values.version) {
 
 async function runDev(options: { ssr: boolean }) {
   const app = new Hono();
-  app.use('*', honoDevMiddleware(options));
+  app.use('*', honoDevMiddleware({ ...options, env: loadEnv() }));
   const port = parseInt(process.env.PORT || '3000', 10);
   startServer(app, port);
 }
 
 async function runBuild(options: { ssr: boolean }) {
   await build({
-    ssr: options.ssr,
+    ...options,
+    env: loadEnv(),
     vercel:
       values['with-vercel'] ?? !!process.env.VERCEL
         ? {
@@ -102,7 +104,7 @@ async function runStart(options: { ssr: boolean }) {
     pathToFileURL(path.resolve(distDir, entriesJs)).toString()
   );
   const app = new Hono();
-  app.use('*', honoPrdMiddleware({ entries, ...options }));
+  app.use('*', honoPrdMiddleware({ ...options, entries, env: loadEnv() }));
   app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
   const port = parseInt(process.env.PORT || '8080', 10);
   startServer(app, port);
@@ -139,4 +141,25 @@ Options:
   -v, --version         Display the version number
   -h, --help            Display this help message
 `);
+}
+
+function loadEnv() {
+  const env: Record<string, string> = {
+    ...(process.env as Record<string, string>),
+  };
+  if (existsSync('.env.local')) {
+    for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
+      const [key, value] = line.split('=');
+      if (key && value) {
+        if (value.startsWith('"') && value.endsWith('"')) {
+          env[key.trim()] = value.slice(1, -1);
+        } else if (value.startsWith("'") && value.endsWith("'")) {
+          env[key.trim()] = value.slice(1, -1);
+        } else {
+          env[key.trim()] = value.trim();
+        }
+      }
+    }
+  }
+  return env;
 }

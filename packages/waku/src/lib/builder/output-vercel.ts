@@ -62,9 +62,12 @@ export const emitVercelOutput = async (
 import path from 'node:path';
 import fs from 'node:fs';
 import { connectMiddleware } from 'waku';
+
 const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
+const env = process.env;
+
 export default function handler(req, res) {
-  connectMiddleware({ entries, ssr: ${ssr} })(req, res, () => {
+  connectMiddleware({ entries, ssr: ${ssr}, env })(req, res, () => {
     const { pathname } = new URL(req.url, 'http://localhost');
     const fname = path.join(
       '${config.distDir}',

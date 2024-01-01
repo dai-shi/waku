@@ -17,6 +17,7 @@ import type {
 import { renderRsc } from '../renderers/rsc-renderer.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
+import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscReloadPlugin } from '../plugins/vite-plugin-rsc-reload.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
@@ -27,6 +28,10 @@ if (HAS_MODULE_REGISTER) {
   module.register('waku/node-loader', pathToFileURL('./'));
 }
 const controllerMap = new Map<number, ReadableStreamDefaultController>();
+
+(globalThis as any).__WAKU_PRIVATE_ENV__ = JSON.parse(
+  process.env.__WAKU_PRIVATE_ENV__!,
+);
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   const { id, type: _removed, hasModuleIdCallback, ...rest } = mesg;
@@ -97,6 +102,7 @@ const mergedViteConfig = await mergeUserViteConfig({
   plugins: [
     nonjsResolvePlugin(),
     rscTransformPlugin({ isBuild: false }),
+    rscEnvPlugin({}),
     rscReloadPlugin(moduleImports, (type) => {
       const mesg: MessageRes = { type };
       parentPort!.postMessage(mesg);

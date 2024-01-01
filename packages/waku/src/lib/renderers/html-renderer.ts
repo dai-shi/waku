@@ -50,8 +50,9 @@ const getViteServer = async () => {
   const { nonjsResolvePlugin } = await import(
     '../plugins/vite-plugin-nonjs-resolve.js'
   );
+  const { rscEnvPlugin } = await import('../plugins/vite-plugin-rsc-env.js');
   const viteServer = await createViteServer({
-    plugins: [nonjsResolvePlugin()],
+    plugins: [nonjsResolvePlugin(), rscEnvPlugin({})],
     // HACK to suppress 'Skipping dependency pre-bundling' warning
     optimizeDeps: { include: [] },
     ssr: {
@@ -82,9 +83,6 @@ Promise.resolve(new Response(new ReadableStream({
   .split('\n')
   .map((line) => line.trim())
   .join('');
-
-// TODO this is an easy solution. we could do it better at the build time.
-const enableSsrCode = 'globalThis.__WAKU_SSR_ENABLED__ = true;';
 
 const injectRscPayload = (
   readable: ReadableStream,
@@ -124,9 +122,6 @@ globalThis.__WAKU_PREFETCHED__ = {
   '${urlForFakeFetch}': ${fakeFetchCode},
 };
 `;
-    }
-    if (!data.includes(enableSsrCode)) {
-      code += enableSsrCode;
     }
     if (code) {
       data =

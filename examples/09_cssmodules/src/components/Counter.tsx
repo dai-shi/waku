@@ -9,6 +9,7 @@ export const Counter = () => {
       <p>Count: {count}</p>
       <button onClick={() => setCount((c) => c + 1)}>Increment</button>
       <h3>This is a client component.</h3>
+      Env: {import.meta.env.WAKU_PUBLIC_HELLO}
     </div>
   );
 };
