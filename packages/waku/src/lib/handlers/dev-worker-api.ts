@@ -12,7 +12,6 @@ export type RenderRequest = {
   context: unknown;
   stream?: ReadableStream;
   moduleIdCallback?: (id: string) => void;
-  env: Record<string, string>;
 };
 
 export type BuildOutput = {
@@ -68,6 +67,11 @@ const getWorker = () => {
               '--conditions',
               'react-server',
             ],
+            env: {
+              __WAKU_PRIVATE_ENV__: JSON.stringify(
+                (globalThis as any).__WAKU_PRIVATE_ENV__,
+              ),
+            },
           },
         );
         worker.on('message', (mesg: MessageRes) => {

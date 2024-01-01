@@ -48,7 +48,7 @@ export function createHandler<
     const mergedViteConfig = await mergeUserViteConfig({
       base: config.basePath,
       optimizeDeps: {
-        include: ['react-server-dom-webpack/client', 'react', 'react-dom'],
+        include: ['react-server-dom-webpack/client', 'react-dom'],
         exclude: ['waku'],
       },
       plugins: [
@@ -149,7 +149,6 @@ export function createHandler<
               contentType: undefined,
               config,
               context,
-              env: (globalThis as any).__WAKU_PRIVATE_ENV__,
             });
             context = nextCtx as Context;
             return readable;
@@ -185,7 +184,6 @@ export function createHandler<
           config,
           context,
           stream: req.stream,
-          env: (globalThis as any).__WAKU_PRIVATE_ENV__,
         });
         unstable_posthook?.(req, res, nextCtx as Context);
         readable.pipeTo(res.stream);
