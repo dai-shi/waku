@@ -4,6 +4,8 @@ import type {
 } from '@playwright/test';
 import { devices } from '@playwright/test';
 
+const browserUnrelatedTests = ['create-waku.spec.ts', 'waku-cli.spec.ts'];
+
 /**
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
@@ -42,10 +44,12 @@ export const config: PlaywrightTestConfig = {
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
+      testIgnore: browserUnrelatedTests,
     },
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
+      testIgnore: browserUnrelatedTests,
     },
   ],
   forbidOnly: !!process.env.CI,

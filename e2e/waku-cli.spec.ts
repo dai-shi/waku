@@ -2,8 +2,10 @@
 import { execSync } from 'node:child_process';
 import { test, wakuCliPath } from './utils.js';
 import { expect } from '@playwright/test';
+import { platform } from 'node:os';
 
 test('waku --help', () => {
+  test.skip(platform() === 'win32', 'snapshot are different on Windows');
   const helperDescription = execSync(`node ${wakuCliPath} --help`, {
     stdio: 'pipe',
   }).toString();
@@ -13,6 +15,7 @@ test('waku --help', () => {
 });
 
 test('waku dev --help', () => {
+  test.skip(platform() === 'win32', 'snapshot are different on Windows');
   const helperDescription = execSync(`node ${wakuCliPath} dev --help`, {
     stdio: 'pipe',
   }).toString();
@@ -22,6 +25,7 @@ test('waku dev --help', () => {
 });
 
 test('waku build --help', () => {
+  test.skip(platform() === 'win32', 'snapshot are different on Windows');
   const helperDescription = execSync(`node ${wakuCliPath} build --help`, {
     stdio: 'pipe',
   }).toString();
@@ -31,6 +35,7 @@ test('waku build --help', () => {
 });
 
 test('waku start --help', () => {
+  test.skip(platform() === 'win32', 'snapshot are different on Windows');
   const helperDescription = execSync(`node ${wakuCliPath} start --help`, {
     stdio: 'pipe',
   }).toString();
