@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import { mkdir, readdir, cp, readFile, writeFile } from 'node:fs/promises';
-import { test, debugChildProcess } from './utils.js';
+import { test, collectChildProcess } from './utils.js';
 import { expect } from '@playwright/test';
 
 test('should create waku with default setup work', async () => {
@@ -19,7 +19,7 @@ test('should create waku with default setup work', async () => {
     cwd,
     env: process.env,
   });
-  debugChildProcess(cp);
+  collectChildProcess(cp);
   const stdin = cp.stdin!;
   await new Promise<void>((resolve) => {
     cp.stdout!.on('data', (data) => {
@@ -71,7 +71,7 @@ test('should create waku with update notify work', async () => {
     cwd,
     env: process.env,
   });
-  debugChildProcess(childProcess);
+  collectChildProcess(childProcess);
   const stdin = childProcess.stdin!;
   await new Promise<void>((resolve) => {
     childProcess.stdout!.on('data', (data) => {
