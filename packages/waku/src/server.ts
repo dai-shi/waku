@@ -63,3 +63,8 @@ export type EntriesPrd = EntriesDev & {
   loadHtmlHead: (pathname: string) => string;
   skipRenderRsc: (input: string) => boolean;
 };
+
+export function getEnv(key: string): string | undefined {
+  // HACK we may want to use a server-side context or something
+  return (globalThis as any).__WAKU_PRIVATE_ENV__[key];
+}

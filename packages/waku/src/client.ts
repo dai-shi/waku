@@ -13,9 +13,19 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
+
 import { encodeInput } from './lib/renderers/utils.js';
 
 const { createFromFetch, encodeReply } = RSDWClient;
+
+declare global {
+  interface ImportMeta {
+    readonly env: Record<string, string>;
+  }
+}
+
+const BASE_PATH = `${import.meta.env?.WAKU_CONFIG_BASE_PATH}${import.meta.env
+  ?.WAKU_CONFIG_RSC_PATH}/`;
 
 const checkStatus = async (
   responsePromise: Promise<Response>,
@@ -39,19 +49,16 @@ const mergeElements = cache(
   },
 );
 
-// TODO get basePath from config
-
 export const fetchRSC = cache(
   (
     input: string,
     searchParamsString: string,
     rerender: (fn: (prev: Elements) => Elements) => void,
-    basePath = '/RSC/',
   ): Elements => {
     const options = {
       async callServer(actionId: string, args: unknown[]) {
         const response = fetch(
-          basePath + encodeInput(encodeURIComponent(actionId)),
+          BASE_PATH + encodeInput(encodeURIComponent(actionId)),
           {
             method: 'POST',
             body: await encodeReply(args),
@@ -70,7 +77,7 @@ export const fetchRSC = cache(
     };
     const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
     const url =
-      basePath +
+      BASE_PATH +
       encodeInput(input) +
       (searchParamsString ? '?' + searchParamsString : '');
     const response = prefetched[url] || fetch(url);
@@ -84,10 +91,10 @@ export const fetchRSC = cache(
 );
 
 export const prefetchRSC = cache(
-  (input: string, searchParamsString: string, basePath = '/RSC/'): void => {
+  (input: string, searchParamsString: string): void => {
     const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
     const url =
-      basePath +
+      BASE_PATH +
       encodeInput(input) +
       (searchParamsString ? '?' + searchParamsString : '');
     if (!(url in prefetched)) {
@@ -120,12 +127,10 @@ export const Root = ({
   initialInput,
   initialSearchParamsString,
   children,
-  basePath,
 }: {
   initialInput?: string;
   initialSearchParamsString?: string;
   children: ReactNode;
-  basePath?: string;
 }) => {
   const [getRerender, setRerender] = createRerender();
   const [elements, setElements] = useState(() =>
@@ -133,7 +138,6 @@ export const Root = ({
       initialInput || '',
       initialSearchParamsString || '',
       getRerender(),
-      basePath,
     ),
   );
   setRerender(setElements);
@@ -143,11 +147,10 @@ export const Root = ({
         input,
         searchParams?.toString() || '',
         getRerender(),
-        basePath,
       );
       setElements((prev) => mergeElements(prev, data));
     },
-    [getRerender, basePath],
+    [getRerender],
   );
   return createElement(
     RefetchContext.Provider,

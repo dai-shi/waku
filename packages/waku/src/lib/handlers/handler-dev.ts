@@ -23,6 +23,7 @@ import {
   hotImport,
   moduleImport,
 } from '../plugins/vite-plugin-rsc-hmr.js';
+import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 
@@ -33,6 +34,7 @@ export function createHandler<
 >(options: {
   config?: Config;
   ssr?: boolean;
+  env?: Record<string, string>;
   unstable_prehook?: (req: Req, res: Res) => Context;
   unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
 }): Handler<Req, Res> {
@@ -40,12 +42,13 @@ export function createHandler<
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
   }
+  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(options.config || {});
   const vitePromise = configPromise.then(async (config) => {
     const mergedViteConfig = await mergeUserViteConfig({
       base: config.basePath,
       optimizeDeps: {
-        include: ['react-server-dom-webpack/client', 'react', 'react-dom'],
+        include: ['react-server-dom-webpack/client', 'react-dom'],
         exclude: ['waku'],
       },
       plugins: [
@@ -53,6 +56,7 @@ export function createHandler<
         patchReactRefresh(viteReact()),
         rscIndexPlugin(config),
         rscHmrPlugin(),
+        rscEnvPlugin({ config, hydrate: ssr }),
       ],
       ssr: {
         external: ['waku'],

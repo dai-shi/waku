@@ -67,6 +67,11 @@ const getWorker = () => {
               '--conditions',
               'react-server',
             ],
+            env: {
+              __WAKU_PRIVATE_ENV__: JSON.stringify(
+                (globalThis as any).__WAKU_PRIVATE_ENV__,
+              ),
+            },
           },
         );
         worker.on('message', (mesg: MessageRes) => {
