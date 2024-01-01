@@ -3,12 +3,13 @@
 import { pathToFileURL } from 'node:url';
 import { parentPort } from 'node:worker_threads';
 import { Server } from 'node:http';
+import type { TransferListItem } from 'node:worker_threads';
 import { createServer as createViteServer } from 'vite';
 
 import type { EntriesDev } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { joinPath, fileURLToFilePath } from '../utils/path.js';
-import { hasStatusCode, deepFreeze } from '../renderers/utils.js';
+import { deepFreeze, hasStatusCode } from '../renderers/utils.js';
 import type {
   MessageReq,
   MessageRes,
@@ -27,7 +28,6 @@ const HAS_MODULE_REGISTER = typeof module.register === 'function';
 if (HAS_MODULE_REGISTER) {
   module.register('waku/node-loader', pathToFileURL('./'));
 }
-const controllerMap = new Map<number, ReadableStreamDefaultController>();
 
 (globalThis as any).__WAKU_PRIVATE_ENV__ = JSON.parse(
   process.env.__WAKU_PRIVATE_ENV__!,
@@ -37,12 +37,6 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   const { id, type: _removed, hasModuleIdCallback, ...rest } = mesg;
   const rr: RenderRequest = rest;
   try {
-    const stream = new ReadableStream({
-      start(controller) {
-        controllerMap.set(id, controller);
-      },
-    });
-    rr.stream = stream;
     if (hasModuleIdCallback) {
       rr.moduleIdCallback = (moduleId: string) => {
         const mesg: MessageRes = { id, type: 'moduleId', moduleId };
@@ -55,36 +49,21 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
       searchParams: new URLSearchParams(rr.searchParamsString),
       method: rr.method,
       context: rr.context,
-      body: rr.stream,
+      ...(rr.stream ? { body: rr.stream } : {}),
       contentType: rr.contentType,
       ...(rr.moduleIdCallback ? { moduleIdCallback: rr.moduleIdCallback } : {}),
       isDev: true,
       customImport: loadServerFile,
       entries: await loadEntries(rr.config),
     });
-    const mesg: MessageRes = { id, type: 'start', context: rr.context };
-    parentPort!.postMessage(mesg);
+    const mesg: MessageRes = {
+      id,
+      type: 'start',
+      context: rr.context,
+      stream: readable,
+    };
+    parentPort!.postMessage(mesg, [readable as unknown as TransferListItem]);
     deepFreeze(rr.context);
-    const writable = new WritableStream({
-      write(chunk) {
-        if (!(chunk instanceof Uint8Array)) {
-          throw new Error('Unknown chunk type');
-        }
-        const mesg: MessageRes = {
-          id,
-          type: 'buf',
-          buf: chunk.buffer,
-          offset: chunk.byteOffset,
-          len: chunk.byteLength,
-        };
-        parentPort!.postMessage(mesg, [mesg.buf]);
-      },
-      close() {
-        const mesg: MessageRes = { id, type: 'end' };
-        parentPort!.postMessage(mesg);
-      },
-    });
-    readable.pipeTo(writable);
   } catch (err) {
     const mesg: MessageRes = { id, type: 'err', err };
     if (hasStatusCode(err)) {
@@ -148,16 +127,5 @@ const loadEntries = async (config: ResolvedConfig) => {
 parentPort!.on('message', (mesg: MessageReq) => {
   if (mesg.type === 'render') {
     handleRender(mesg);
-  } else if (mesg.type === 'buf') {
-    const controller = controllerMap.get(mesg.id)!;
-    controller.enqueue(new Uint8Array(mesg.buf, mesg.offset, mesg.len));
-  } else if (mesg.type === 'end') {
-    const controller = controllerMap.get(mesg.id)!;
-    controller.close();
-  } else if (mesg.type === 'err') {
-    const controller = controllerMap.get(mesg.id)!;
-    const err =
-      mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err));
-    controller.error(err);
   }
 });
