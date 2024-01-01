@@ -38,7 +38,7 @@ export default createPages(async ({ createPage, createLayout }) => {
     render: 'dynamic',
     path: '/baz',
     // Inline component is also possible.
-    component: () => <h2>Baz</h2>,
+    component: () => <h2>Dynamic: Baz</h2>,
   });
 
   createPage({
