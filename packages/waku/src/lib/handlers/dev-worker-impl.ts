@@ -49,7 +49,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
       searchParams: new URLSearchParams(rr.searchParamsString),
       method: rr.method,
       context: rr.context,
-      body: rr.stream!,
+      ...(rr.stream ? { body: rr.stream } : {}),
       contentType: rr.contentType,
       ...(rr.moduleIdCallback ? { moduleIdCallback: rr.moduleIdCallback } : {}),
       isDev: true,
