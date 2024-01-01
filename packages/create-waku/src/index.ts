@@ -2,6 +2,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { default as prompts } from 'prompts';
 import { red, green, bold } from 'kolorist';
@@ -25,6 +26,20 @@ function toValidPackageName(projectName: string) {
 // if the dir is empty or not exist
 function canSafelyOverwrite(dir: string) {
   return !existsSync(dir) || readdirSync(dir).length === 0;
+}
+
+async function notifyUpdate() {
+  const nodeRequire = createRequire(import.meta.url);
+  // `update-check` is a CSJ module.
+  const checkForUpdate = nodeRequire('update-check');
+  const packageJson = nodeRequire('../package.json');
+  const result = await checkForUpdate(packageJson).catch(() => null);
+  if (result?.latest) {
+    console.log(`A new version of 'create-waku' is available!`);
+    console.log('You can update by running: ');
+    console.log();
+    console.log(`    npm i -g create-waku`);
+  }
 }
 
 async function init() {
@@ -174,6 +189,8 @@ async function init() {
   console.log();
 }
 
-init().catch((e) => {
-  console.error(e);
-});
+init()
+  .then(notifyUpdate)
+  .catch((e) => {
+    console.error(e);
+  });

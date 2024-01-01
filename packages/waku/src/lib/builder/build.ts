@@ -47,6 +47,7 @@ import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
+import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { emitVercelOutput } from './output-vercel.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
@@ -158,6 +159,7 @@ const buildServerBundle = async (
         },
         serverEntryFiles,
       }),
+      rscEnvPlugin({ config }),
     ],
     ssr: {
       resolve: {
@@ -248,6 +250,7 @@ const buildClientBundle = async (
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
+  ssr: boolean,
 ) => {
   const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
@@ -258,6 +261,7 @@ const buildClientBundle = async (
     plugins: [
       patchReactRefresh(viteReact()),
       rscIndexPlugin({ ...config, cssAssets }),
+      rscEnvPlugin({ config, hydrate: ssr }),
     ],
     build: {
       outDir: joinPath(rootDir, config.distDir, config.publicDir),
@@ -492,10 +496,12 @@ const resolveFileName = (fname: string) => {
 export async function build(options: {
   config?: Config;
   ssr?: boolean;
+  env?: Record<string, string>;
   vercel?: { type: 'static' | 'serverless' } | undefined;
   cloudflare?: boolean;
   deno?: boolean;
 }) {
+  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const config = await resolveConfig(options.config || {});
   const rootDir = (
     await resolveViteConfig({}, 'build', 'production', 'production')
@@ -524,6 +530,7 @@ export async function build(options: {
     commonEntryFiles,
     clientEntryFiles,
     serverBuildOutput,
+    !!options.ssr,
   );
 
   const { buildConfig, getClientModules, rscFiles } = await emitRscFiles(
@@ -537,25 +544,25 @@ export async function build(options: {
     distEntriesFile,
     buildConfig,
     getClientModules,
-    !!options?.ssr,
+    !!options.ssr,
   );
 
-  if (options?.vercel) {
+  if (options.vercel) {
     await emitVercelOutput(
       rootDir,
       config,
       rscFiles,
       htmlFiles,
-      !!options?.ssr,
+      !!options.ssr,
       options.vercel.type,
     );
   }
 
-  if (options?.cloudflare) {
-    await emitCloudflareOutput(rootDir, config, !!options?.ssr);
+  if (options.cloudflare) {
+    await emitCloudflareOutput(rootDir, config, !!options.ssr);
   }
 
-  if (options?.deno) {
-    await emitDenoOutput(rootDir, config, !!options?.ssr);
+  if (options.deno) {
+    await emitDenoOutput(rootDir, config, !!options.ssr);
   }
 }

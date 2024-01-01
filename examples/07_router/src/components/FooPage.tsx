@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { Counter } from './Counter.js';
 
 const Foo = () => (

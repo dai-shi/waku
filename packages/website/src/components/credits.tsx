@@ -1,5 +1,7 @@
+import { getEnv } from 'waku/server';
+
 export const Credits = () => {
-  if (process.env.VITE_SHOW_CREDITS !== 'YES') return null;
+  if (getEnv('SHOW_CREDITS') !== 'YES') return null;
 
   return (
     <div

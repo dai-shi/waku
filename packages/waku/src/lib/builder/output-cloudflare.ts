@@ -30,11 +30,19 @@ import { Hono } from 'hono';
 import { serveStatic } from 'hono/cloudflare-workers';
 
 const entries = import('./${entriesFile}');
+let serveWaku;
 
 const app = new Hono();
-app.use('*', honoMiddleware({ entries, ssr: ${ssr} }));
+app.use('*', (c, next) => serveWaku(c, next));
 app.use('*', serveStatic({ root: './' }));
-export default app;
+export default {
+  async fetch(request, env, ctx) {
+    if (!serveWaku) {
+      serveWaku = honoMiddleware({ entries, ssr: ${ssr}, env });
+    }
+    return app.fetch(request, env, ctx);
+  }
+}
 `,
     );
   }

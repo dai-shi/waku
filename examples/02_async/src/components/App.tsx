@@ -1,5 +1,3 @@
-/// Async Server Component
-/// <reference types="react/experimental" />
 import { Suspense } from 'react';
 
 import { Counter } from './Counter.js';
