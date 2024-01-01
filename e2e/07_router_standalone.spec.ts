@@ -1,4 +1,4 @@
-import { collectChildProcess, getFreePort, test } from './utils.js';
+import { debugChildProcess, getFreePort, test } from './utils.js';
 import { fileURLToPath } from 'node:url';
 import { cp, mkdir, rm } from 'node:fs/promises';
 import { exec, execSync } from 'node:child_process';
@@ -72,7 +72,7 @@ test.describe('07_router standalone', () => {
         },
       },
     );
-    collectChildProcess(cp);
+    debugChildProcess(cp);
     await testRouterExample(page, port);
     cp.kill();
   });
@@ -89,7 +89,7 @@ test.describe('07_router standalone', () => {
         },
       },
     );
-    collectChildProcess(cp);
+    debugChildProcess(cp);
     await testRouterExample(page, port);
     cp.kill();
   });
