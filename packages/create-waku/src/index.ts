@@ -30,6 +30,7 @@ function canSafelyOverwrite(dir: string) {
 
 async function notifyUpdate() {
   const nodeRequire = createRequire(import.meta.url);
+  // `update-check` is a CSJ module.
   const checkForUpdate = nodeRequire('update-check');
   const packageJson = nodeRequire('../package.json');
   const result = await checkForUpdate(packageJson).catch(() => null);
