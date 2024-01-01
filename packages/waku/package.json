@@ -99,5 +99,8 @@
     "vite": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "commander": "^11.1.0"
   }
 }

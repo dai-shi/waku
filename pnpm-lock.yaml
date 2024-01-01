@@ -722,6 +722,9 @@ importers:
 
   packages/waku:
     dependencies:
+      commander:
+        specifier: ^11.1.0
+        version: 11.1.0
       react:
         specifier: 18.3.0-canary-0cdfef19b-20231211
         version: 18.3.0-canary-0cdfef19b-20231211
@@ -2908,6 +2911,11 @@ packages:
 
   /comma-separated-tokens@2.0.3:
     resolution: {integrity: sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg==}
+    dev: false
+
+  /commander@11.1.0:
+    resolution: {integrity: sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ==}
+    engines: {node: '>=16'}
     dev: false
 
   /commander@2.20.3:
