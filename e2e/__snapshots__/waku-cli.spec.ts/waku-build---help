@@ -1,0 +1,11 @@
+Usage: waku build [options]
+
+Build the application for production
+
+Options:
+  --with-ssr            Use opt-in SSR
+  --with-vercel         Output for Vercel on build
+  --with-vercel-static  Output for Vercel static on build
+  --with-cloudflare     Output for Cloudflare on build
+  --with-deno           Output for Deno on build
+  -h, --help            display help for command

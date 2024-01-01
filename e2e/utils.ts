@@ -2,6 +2,14 @@ import net from 'node:net';
 import { test as basicTest } from '@playwright/test';
 import type { ConsoleMessage } from '@playwright/test';
 import type { ChildProcess } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+export const createWakuCliPath = fileURLToPath(
+  new URL('../packages/create-waku/dist/index.js', import.meta.url),
+);
+export const wakuCliPath = fileURLToPath(
+  new URL('../packages/waku/dist/cli.js', import.meta.url),
+);
 
 export async function getFreePort(): Promise<number> {
   return new Promise<number>((res) => {

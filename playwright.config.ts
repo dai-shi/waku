@@ -56,6 +56,7 @@ export const config: PlaywrightTestConfig = {
   // default 'list' when running locally
   // See https://playwright.dev/docs/test-reporters#github-actions-annotations
   reporter: process.env.CI ? 'github' : 'list',
+  snapshotPathTemplate: './e2e/__snapshots__/{testFilePath}/{arg}{ext}',
 };
 
 if (process.env.CI) {

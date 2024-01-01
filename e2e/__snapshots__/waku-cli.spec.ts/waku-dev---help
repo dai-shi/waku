@@ -1,0 +1,7 @@
+Usage: waku dev [options]
+
+Start the development server
+
+Options:
+  --with-ssr  Use opt-in SSR
+  -h, --help  display help for command

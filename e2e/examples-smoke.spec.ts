@@ -10,13 +10,9 @@ import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
 import { readdir, rm } from 'node:fs/promises';
 import { basename } from 'node:path';
-import { getFreePort, test } from './utils.js';
+import { getFreePort, test, wakuCliPath } from './utils.js';
 
 const examplesDir = fileURLToPath(new URL('../examples', import.meta.url));
-
-const waku = fileURLToPath(
-  new URL('../packages/waku/dist/cli.js', import.meta.url),
-);
 
 const commands = [
   {
@@ -143,12 +139,12 @@ for (const cwd of examples) {
 
         test.beforeAll(async () => {
           if (build) {
-            execSync(`node ${waku} ${build}`, {
+            execSync(`node ${wakuCliPath} ${build}`, {
               cwd,
             });
           }
           port = await getFreePort();
-          cp = exec(`node ${waku} ${command}`, {
+          cp = exec(`node ${wakuCliPath} ${command}`, {
             cwd,
             env: {
               ...process.env,

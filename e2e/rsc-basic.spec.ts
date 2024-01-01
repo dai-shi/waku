@@ -2,12 +2,8 @@ import { expect } from '@playwright/test';
 import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
-import { getFreePort, test } from './utils.js';
+import { getFreePort, test, wakuCliPath } from './utils.js';
 import { rm } from 'node:fs/promises';
-
-const waku = fileURLToPath(
-  new URL('../packages/waku/dist/cli.js', import.meta.url),
-);
 
 const commands = [
   {
@@ -41,12 +37,12 @@ for (const { build, command } of commands) {
 
     test.beforeAll(async () => {
       if (build) {
-        execSync(`node ${waku} ${build}`, {
+        execSync(`node ${wakuCliPath} ${build}`, {
           cwd,
         });
       }
       port = await getFreePort();
-      cp = exec(`node ${waku} ${command}`, {
+      cp = exec(`node ${wakuCliPath} ${command}`, {
         cwd,
         env: {
           ...process.env,

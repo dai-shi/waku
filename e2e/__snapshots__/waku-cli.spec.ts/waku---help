@@ -1,0 +1,11 @@
+Usage: waku [options] [command]
+
+Options:
+  -V, --version    output the version number
+  -h, --help       display help for command
+
+Commands:
+  build [options]  Build the application for production
+  dev [options]    Start the development server
+  start [options]  Start the production server
+  help [command]   display help for command

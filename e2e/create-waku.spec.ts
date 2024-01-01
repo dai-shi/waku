@@ -2,20 +2,16 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import { mkdir, readdir, cp, readFile, writeFile } from 'node:fs/promises';
-import { test, debugChildProcess } from './utils.js';
+import { test, debugChildProcess, createWakuCliPath } from './utils.js';
 import { expect } from '@playwright/test';
 
 test('should create waku with default setup work', async () => {
-  const cliPath = fileURLToPath(
-    new URL('../packages/create-waku/dist/index.js', import.meta.url),
-  );
-
   const dirname = crypto.randomUUID();
   await mkdir(new URL(`./.cache/${dirname}/`, import.meta.url), {
     recursive: true,
   });
   const cwd = fileURLToPath(new URL(`./.cache/${dirname}`, import.meta.url));
-  const cp = spawn(process.execPath, [cliPath], {
+  const cp = spawn(process.execPath, [createWakuCliPath], {
     cwd,
     env: process.env,
   });

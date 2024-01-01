@@ -1,0 +1,7 @@
+Usage: waku start [options]
+
+Start the production server
+
+Options:
+  --with-ssr  Use opt-in SSR
+  -h, --help  display help for command
