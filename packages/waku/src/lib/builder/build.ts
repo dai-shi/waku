@@ -497,7 +497,7 @@ export async function build(options: {
   config?: Config;
   ssr?: boolean;
   env?: Record<string, string>;
-  vercel?: { type: 'static' | 'serverless' | false };
+  vercel?: 'static' | 'serverless' | false;
   cloudflare?: boolean;
   deno?: boolean;
 }) {
@@ -554,7 +554,7 @@ export async function build(options: {
       rscFiles,
       htmlFiles,
       !!options.ssr,
-      options.vercel.type,
+      options.vercel,
     );
   }
 

@@ -76,9 +76,7 @@ async function runBuild(options: {
   await build({
     ...options,
     env: loadEnv(),
-    vercel: {
-      type: options.vercel ?? false,
-    },
+    vercel: options.vercel ?? false,
     cloudflare: !!options.cloudflare,
     deno: !!options.deno,
   });
