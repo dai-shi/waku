@@ -79,8 +79,8 @@
     "@swc/core": "^1.3.100",
     "@vitejs/plugin-react": "^4.2.1",
     "hono": "^3.11.4",
-    "react": "18.3.0-canary-0cdfef19b-20231211",
-    "react-server-dom-webpack": "18.3.0-canary-0cdfef19b-20231211",
+    "react": "18.3.0-canary-c5b937576-20231219",
+    "react-server-dom-webpack": "18.3.0-canary-c5b937576-20231219",
     "vite": "^5.0.7"
   },
   "peerDependenciesMeta": {
