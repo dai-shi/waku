@@ -68,9 +68,6 @@ const getViteServer = async () => {
 };
 
 const loadServerFileDev = async (fileURL: string) => {
-  if (fileURL.endsWith('waku/dist/client.js')) {
-    return import(WAKU_CLIENT_MODULE_VALUE);
-  }
   const vite = await getViteServer();
   return vite.ssrLoadModule(fileURLToFilePath(fileURL));
 };
