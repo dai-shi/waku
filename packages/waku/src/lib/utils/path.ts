@@ -37,16 +37,7 @@ export const fileURLToFilePath = (fileURL: string) => {
 
 // for filePath
 export const joinPath = (...paths: [...string[]]) => {
-  if (paths.length === 0) {
-    return '.';
-  }
-  const firstPath = paths[0] as string;
-  let absolutePrefix: string;
-  if (ABSOLUTE_WIN32_PATH_REGEXP.test(firstPath)) {
-    absolutePrefix = '';
-  } else {
-    absolutePrefix = firstPath.startsWith('/') ? '/' : '';
-  }
+  const isAbsolute = paths[0]?.startsWith('/');
   const items = ([] as string[]).concat(
     ...paths.map((path) => path.split('/')),
   );
@@ -65,7 +56,7 @@ export const joinPath = (...paths: [...string[]]) => {
       ++i;
     }
   }
-  return absolutePrefix + items.join('/');
+  return (isAbsolute ? '/' : '') + items.join('/') || '.';
 };
 
 export const extname = (filePath: string) => {
