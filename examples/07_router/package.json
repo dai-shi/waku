@@ -9,20 +9,20 @@
     "start": "waku start --with-ssr"
   },
   "dependencies": {
-    "@hono/node-server": "1.3.3",
-    "hono": "3.11.7",
+    "@hono/node-server": "1.4.0",
+    "hono": "3.11.12",
     "react": "18.3.0-canary-c5b937576-20231219",
     "react-dom": "18.3.0-canary-c5b937576-20231219",
     "react-server-dom-webpack": "18.3.0-canary-c5b937576-20231219",
     "waku": "0.18.1"
   },
   "devDependencies": {
-    "@swc/core": "1.3.100",
-    "@types/react": "18.2.45",
-    "@types/react-dom": "18.2.17",
+    "@swc/core": "1.3.102",
+    "@types/react": "18.2.46",
+    "@types/react-dom": "18.2.18",
     "@vitejs/plugin-react": "4.2.1",
     "server-only": "0.0.1",
     "typescript": "5.3.3",
-    "vite": "5.0.9"
+    "vite": "5.0.10"
   }
 }
