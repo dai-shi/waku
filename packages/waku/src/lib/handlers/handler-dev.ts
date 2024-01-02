@@ -63,7 +63,10 @@ export function createHandler<
       },
       server: { middlewareMode: true },
     });
-    const viteServer = await createViteServer(mergedViteConfig);
+    const viteServer = await createViteServer({
+      configFile: false,
+      ...mergedViteConfig,
+    });
     registerReloadCallback((type) => viteServer.ws.send({ type }));
     registerImportCallback((source) => hotImport(viteServer, source));
     registerModuleCallback((result) => moduleImport(viteServer, result));

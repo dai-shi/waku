@@ -108,7 +108,10 @@ const mergedViteConfig = await mergeUserViteConfig({
   server: { middlewareMode: true, hmr: { server: dummyServer } },
 });
 
-const vitePromise = createViteServer(mergedViteConfig).then(async (vite) => {
+const vitePromise = createViteServer({
+  configFile: false,
+  ...mergedViteConfig,
+}).then(async (vite) => {
   await vite.ws.close();
   return vite;
 });
