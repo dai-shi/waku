@@ -36,7 +36,7 @@ export const fileURLToFilePath = (fileURL: string) => {
 };
 
 // for filePath
-export const joinPath = (...paths: [...string[]]) => {
+export const joinPath = (...paths: string[]) => {
   const isAbsolute = paths[0]?.startsWith('/');
   const items = ([] as string[]).concat(
     ...paths.map((path) => path.split('/')),
