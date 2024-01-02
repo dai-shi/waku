@@ -11,6 +11,7 @@ export async function mergeUserViteConfig(config: UserConfig) {
   const mergedViteConfig = mergeViteConfig(
     {
       ...resolvedViteConfig,
+      configFile: false,
 
       plugins: resolvedViteConfig.plugins.filter(
         (plugin) => !plugin.name.startsWith('vite:'),
