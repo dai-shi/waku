@@ -52,7 +52,6 @@ const getViteServer = async () => {
   );
   const { rscEnvPlugin } = await import('../plugins/vite-plugin-rsc-env.js');
   const viteServer = await createViteServer({
-    configFile: false,
     plugins: [nonjsResolvePlugin(), rscEnvPlugin({})],
     // HACK to suppress 'Skipping dependency pre-bundling' warning
     optimizeDeps: { include: [] },
