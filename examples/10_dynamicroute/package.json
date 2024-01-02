@@ -12,9 +12,9 @@
     "@hono/node-server": "1.3.3",
     "glob": "10.3.10",
     "hono": "3.11.7",
-    "react": "18.3.0-canary-0cdfef19b-20231211",
-    "react-dom": "18.3.0-canary-0cdfef19b-20231211",
-    "react-server-dom-webpack": "18.3.0-canary-0cdfef19b-20231211",
+    "react": "18.3.0-canary-c5b937576-20231219",
+    "react-dom": "18.3.0-canary-c5b937576-20231219",
+    "react-server-dom-webpack": "18.3.0-canary-c5b937576-20231219",
     "waku": "0.18.1"
   },
   "devDependencies": {
