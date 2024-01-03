@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import fsPromises from 'node:fs/promises';
 import { lazy } from 'react';
 import { defineEntries } from 'waku/server';
+import { Slot } from 'waku/client';
 
 const App = lazy(() => import('./components/App.js'));
 
@@ -34,8 +35,7 @@ export default defineEntries(
       case '/':
         return {
           input: '',
-          unstable_render: ({ createElement, Slot }) =>
-            createElement(Slot, { id: 'App' }),
+          body: <Slot id="App" />,
         };
       default:
         return null;
