@@ -7,7 +7,7 @@ import type {
 import type { ViteDevServer } from 'vite';
 
 import type { ResolvedConfig } from '../config.js';
-import type { GetSsrConfig, EntriesPrd } from '../../server.js';
+import type { EntriesPrd } from '../../server.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import {
   decodeFilePathFromAbsolute,
@@ -244,12 +244,11 @@ export const renderHtml = async (
     getSsrConfigForHtml: (
       pathname: string,
       searchParams: URLSearchParams,
-    ) => Promise<
-      | (Omit<NonNullable<Awaited<ReturnType<GetSsrConfig>>>, 'body'> & {
-          body: ReadableStream;
-        })
-      | null
-    >;
+    ) => Promise<{
+      input: string;
+      searchParams?: URLSearchParams;
+      body: ReadableStream;
+    } | null>;
   } & (
     | { isDev: false; loadModule: EntriesPrd['loadModule']; isBuild: boolean }
     | { isDev: true; loadModule?: undefined }

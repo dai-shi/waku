@@ -49,9 +49,9 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
       searchParams: new URLSearchParams(rr.searchParamsString),
       method: rr.method,
       context: rr.context,
-      ...(rr.stream ? { body: rr.stream } : {}),
+      body: rr.stream,
       contentType: rr.contentType,
-      ...(rr.moduleIdCallback ? { moduleIdCallback: rr.moduleIdCallback } : {}),
+      moduleIdCallback: rr.moduleIdCallback,
       isDev: true,
       customImport: loadServerFile,
       entries: await loadEntries(rr.config),
@@ -87,11 +87,7 @@ const handleGetSsrConfig = async (
       entries: await loadEntries(config),
     });
     const mesg: MessageRes = ssrConfig
-      ? {
-          id,
-          type: 'ssrConfig',
-          ...ssrConfig,
-        }
+      ? { id, type: 'ssrConfig', ...ssrConfig }
       : { id, type: 'noSsrConfig' };
     parentPort!.postMessage(
       mesg,

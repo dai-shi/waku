@@ -38,9 +38,9 @@ export async function renderRsc(
     searchParams: URLSearchParams;
     method: 'GET' | 'POST';
     context: unknown;
-    body?: ReadableStream;
+    body?: ReadableStream | undefined;
     contentType?: string | undefined;
-    moduleIdCallback?: (id: string) => void;
+    moduleIdCallback?: ((id: string) => void) | undefined;
   } & (
     | { isDev: false; entries: EntriesPrd }
     | {
@@ -253,9 +253,8 @@ export async function getSsrConfig(
       },
     },
   );
-  const readable = renderToReadableStream(ssrConfig.body, bundlerConfig);
   return {
     ...ssrConfig,
-    body: readable,
+    body: renderToReadableStream(ssrConfig.body, bundlerConfig),
   };
 }

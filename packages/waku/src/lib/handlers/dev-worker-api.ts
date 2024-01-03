@@ -3,7 +3,6 @@ import type {
   Worker as WorkerType,
 } from 'node:worker_threads';
 
-import type { GetSsrConfig } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import type { ModuleImportResult } from './types.js';
 
@@ -14,7 +13,7 @@ export type RenderRequest = {
   contentType: string | undefined;
   config: ResolvedConfig;
   context: unknown;
-  stream?: ReadableStream;
+  stream?: ReadableStream | undefined;
   moduleIdCallback?: (id: string) => void;
 };
 
@@ -48,7 +47,7 @@ export type MessageRes =
       id: number;
       type: 'ssrConfig';
       input: string;
-      searchParamsString?: string;
+      searchParamsString?: string | undefined;
       body: ReadableStream;
     }
   | { id: number; type: 'noSsrConfig' };
@@ -181,7 +180,7 @@ export async function renderRscWithWorker<Context>(
       id,
       type: 'render',
       hasModuleIdCallback: !!rr.moduleIdCallback,
-      ...(rr.stream ? { stream: rr.stream } : {}),
+      stream: rr.stream,
       ...copied,
     };
     worker.postMessage(
@@ -195,12 +194,11 @@ export async function getSsrConfigWithWorker(
   config: ResolvedConfig,
   pathname: string,
   searchParams: URLSearchParams,
-): Promise<
-  | (Omit<NonNullable<Awaited<ReturnType<GetSsrConfig>>>, 'body'> & {
-      body: ReadableStream;
-    })
-  | null
-> {
+): Promise<{
+  input: string;
+  searchParams?: URLSearchParams;
+  body: ReadableStream;
+} | null> {
   const worker = await getWorker();
   const id = nextId++;
   return new Promise((resolve, reject) => {
