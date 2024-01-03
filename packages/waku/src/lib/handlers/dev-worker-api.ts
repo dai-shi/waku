@@ -63,6 +63,7 @@ const getWorker = () => {
                 : ['--experimental-loader', 'waku/node-loader']),
               '--conditions',
               'react-server',
+              'workerd',
             ],
             env: {
               __WAKU_PRIVATE_ENV__: JSON.stringify(
