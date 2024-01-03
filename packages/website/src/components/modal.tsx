@@ -1,6 +1,5 @@
 'use client';
 
-import { Fragment } from 'react';
 import type { ReactNode } from 'react';
 import { useClickAway } from '@uidotdev/usehooks';
 
@@ -13,7 +12,7 @@ type ModalProps = {
 export const Modal = ({ isOpen, onClose, children }: ModalProps) => {
   const ref: any = useClickAway(onClose);
 
-  if (!isOpen) return <Fragment />;
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8">
