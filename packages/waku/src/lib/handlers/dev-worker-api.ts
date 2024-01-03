@@ -3,6 +3,7 @@ import type {
   Worker as WorkerType,
 } from 'node:worker_threads';
 
+import type { GetSsrConfig } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import type { ModuleImportResult } from './types.js';
 
@@ -22,11 +23,19 @@ export type BuildOutput = {
   htmlFiles: string[];
 };
 
-export type MessageReq = {
-  id: number;
-  type: 'render';
-  hasModuleIdCallback: boolean;
-} & Omit<RenderRequest, 'moduleIdCallback'>;
+export type MessageReq =
+  | ({
+      id: number;
+      type: 'render';
+      hasModuleIdCallback: boolean;
+    } & Omit<RenderRequest, 'moduleIdCallback'>)
+  | {
+      id: number;
+      type: 'getSsrConfig';
+      config: ResolvedConfig;
+      pathname: string;
+      searchParamsString: string;
+    };
 
 export type MessageRes =
   | { type: 'full-reload' }
@@ -34,7 +43,15 @@ export type MessageRes =
   | { type: 'module-import'; result: ModuleImportResult }
   | { id: number; type: 'start'; context: unknown; stream: ReadableStream }
   | { id: number; type: 'err'; err: unknown; statusCode?: number }
-  | { id: number; type: 'moduleId'; moduleId: string };
+  | { id: number; type: 'moduleId'; moduleId: string }
+  | {
+      id: number;
+      type: 'ssrConfig';
+      input: string;
+      searchParamsString?: string;
+      body: ReadableStream;
+    }
+  | { id: number; type: 'noSsrConfig' };
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
@@ -171,5 +188,52 @@ export async function renderRscWithWorker<Context>(
       mesg,
       rr.stream ? [rr.stream as unknown as TransferListItem] : undefined,
     );
+  });
+}
+
+export async function getSsrConfigWithWorker(
+  config: ResolvedConfig,
+  pathname: string,
+  searchParams: URLSearchParams,
+): Promise<
+  | (Omit<NonNullable<Awaited<ReturnType<GetSsrConfig>>>, 'body'> & {
+      body: ReadableStream;
+    })
+  | null
+> {
+  const worker = await getWorker();
+  const id = nextId++;
+  return new Promise((resolve, reject) => {
+    messageCallbacks.set(id, (mesg) => {
+      if (mesg.type === 'ssrConfig') {
+        resolve({
+          input: mesg.input,
+          ...(mesg.searchParamsString
+            ? { searchParams: new URLSearchParams(mesg.searchParamsString) }
+            : {}),
+          body: mesg.body,
+        });
+        messageCallbacks.delete(id);
+      } else if (mesg.type === 'noSsrConfig') {
+        resolve(null);
+        messageCallbacks.delete(id);
+      } else if (mesg.type === 'err') {
+        const err =
+          mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err));
+        if (mesg.statusCode) {
+          (err as any).statusCode = mesg.statusCode;
+        }
+        reject(err);
+        messageCallbacks.delete(id);
+      }
+    });
+    const mesg: MessageReq = {
+      id,
+      type: 'getSsrConfig',
+      config,
+      pathname,
+      searchParamsString: searchParams.toString(),
+    };
+    worker.postMessage(mesg);
   });
 }

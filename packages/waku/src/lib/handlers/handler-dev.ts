@@ -2,7 +2,6 @@ import { Readable, Writable } from 'node:stream';
 import { createServer as createViteServer } from 'vite';
 import { default as viteReact } from '@vitejs/plugin-react';
 
-import type { EntriesDev } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import type { Config } from '../config.js';
 import { joinPath, decodeFilePathFromAbsolute } from '../utils/path.js';
@@ -13,6 +12,7 @@ import {
   registerReloadCallback,
   registerImportCallback,
   renderRscWithWorker,
+  getSsrConfigWithWorker,
   registerModuleCallback,
 } from './dev-worker-api.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
@@ -58,9 +58,6 @@ export function createHandler<
         rscHmrPlugin(),
         rscEnvPlugin({ config, hydrate: ssr }),
       ],
-      ssr: {
-        external: ['waku'],
-      },
       server: { middlewareMode: true },
     });
     const vite = await createViteServer(mergedViteConfig);
@@ -69,17 +66,6 @@ export function createHandler<
     registerModuleCallback((result) => moduleImport(vite, result));
     return vite;
   });
-
-  const entries = Promise.all([configPromise, vitePromise]).then(
-    async ([config, vite]) => {
-      const filePath = joinPath(
-        vite.config.root,
-        config.srcDir,
-        config.entriesJs,
-      );
-      return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
-    },
-  );
 
   const transformIndexHtml = async (pathname: string) => {
     const vite = await vitePromise;
@@ -153,8 +139,9 @@ export function createHandler<
             context = nextCtx as Context;
             return readable;
           },
+          getSsrConfigForHtml: (pathname, options) =>
+            getSsrConfigWithWorker(config, pathname, options),
           isDev: true,
-          entries: await entries,
         });
         if (readable) {
           unstable_posthook?.(req, res, context as Context);

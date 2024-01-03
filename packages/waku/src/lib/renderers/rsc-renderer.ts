@@ -215,3 +215,47 @@ export async function getBuildConfig(opts: {
   const output = await getBuildConfig(unstable_collectClientModules);
   return output;
 }
+
+export async function getSsrConfig(
+  opts: {
+    config: ResolvedConfig;
+    pathname: string;
+    searchParams: URLSearchParams;
+  } & (
+    | { isDev: false; entries: EntriesPrd; isBuild: boolean }
+    | { isDev: true; entries: EntriesDev }
+  ),
+) {
+  const { config, pathname, searchParams, isDev, entries } = opts;
+
+  const {
+    default: { getSsrConfig },
+    loadModule,
+  } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
+  const { renderToReadableStream } = await (isDev
+    ? import(RSDW_SERVER_MODULE_VALUE)
+    : loadModule!(RSDW_SERVER_MODULE).then((m: any) => m.default));
+
+  const ssrConfig = await getSsrConfig?.(pathname, {
+    searchParams,
+    isPrd: !isDev && !opts.isBuild,
+  });
+  if (!ssrConfig) {
+    return null;
+  }
+  const bundlerConfig = new Proxy(
+    {},
+    {
+      get(_target, encodedId: string) {
+        const [file, name] = encodedId.split('#') as [string, string];
+        const id = resolveClientEntry(file, config, isDev);
+        return { id, chunks: [id], name, async: true };
+      },
+    },
+  );
+  const readable = renderToReadableStream(ssrConfig.body, bundlerConfig);
+  return {
+    ...ssrConfig,
+    body: readable,
+  };
+}

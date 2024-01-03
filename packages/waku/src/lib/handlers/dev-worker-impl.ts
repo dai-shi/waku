@@ -15,7 +15,7 @@ import type {
   MessageRes,
   RenderRequest,
 } from './dev-worker-api.js';
-import { renderRsc } from '../renderers/rsc-renderer.js';
+import { renderRsc, getSsrConfig } from '../renderers/rsc-renderer.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
@@ -64,6 +64,39 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
     };
     parentPort!.postMessage(mesg, [readable as unknown as TransferListItem]);
     deepFreeze(rr.context);
+  } catch (err) {
+    const mesg: MessageRes = { id, type: 'err', err };
+    if (hasStatusCode(err)) {
+      mesg.statusCode = err.statusCode;
+    }
+    parentPort!.postMessage(mesg);
+  }
+};
+
+const handleGetSsrConfig = async (
+  mesg: MessageReq & { type: 'getSsrConfig' },
+) => {
+  const { id, config, pathname, searchParamsString } = mesg;
+  const searchParams = new URLSearchParams(searchParamsString);
+  try {
+    const ssrConfig = await getSsrConfig({
+      config,
+      pathname,
+      searchParams,
+      isDev: true,
+      entries: await loadEntries(config),
+    });
+    const mesg: MessageRes = ssrConfig
+      ? {
+          id,
+          type: 'ssrConfig',
+          ...ssrConfig,
+        }
+      : { id, type: 'noSsrConfig' };
+    parentPort!.postMessage(
+      mesg,
+      ssrConfig ? [ssrConfig.body as unknown as TransferListItem] : undefined,
+    );
   } catch (err) {
     const mesg: MessageRes = { id, type: 'err', err };
     if (hasStatusCode(err)) {
@@ -127,5 +160,7 @@ const loadEntries = async (config: ResolvedConfig) => {
 parentPort!.on('message', (mesg: MessageReq) => {
   if (mesg.type === 'render') {
     handleRender(mesg);
+  } else if (mesg.type === 'getSsrConfig') {
+    handleGetSsrConfig(mesg);
   }
 });
