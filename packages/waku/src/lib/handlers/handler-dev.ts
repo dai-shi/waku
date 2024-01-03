@@ -63,11 +63,11 @@ export function createHandler<
       },
       server: { middlewareMode: true },
     });
-    const viteServer = await createViteServer(mergedViteConfig);
-    registerReloadCallback((type) => viteServer.ws.send({ type }));
-    registerImportCallback((source) => hotImport(viteServer, source));
-    registerModuleCallback((result) => moduleImport(viteServer, result));
-    return viteServer;
+    const vite = await createViteServer(mergedViteConfig);
+    registerReloadCallback((type) => vite.ws.send({ type }));
+    registerImportCallback((source) => hotImport(vite, source));
+    registerModuleCallback((result) => moduleImport(vite, result));
+    return vite;
   });
 
   const entries = Promise.all([configPromise, vitePromise]).then(
