@@ -463,7 +463,7 @@ const emitHtmlFiles = async (
                 searchParams,
                 isDev: false,
                 entries: distEntries,
-                isBuild: false,
+                isBuild: true,
               }),
             isDev: false,
             loadModule: distEntries.loadModule,
