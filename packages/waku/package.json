@@ -66,22 +66,22 @@
     "node": ">=18.16.0"
   },
   "devDependencies": {
-    "@hono/node-server": "^1.3.3",
+    "@hono/node-server": "^1.4.0",
     "@swc/cli": "^0.1.63",
-    "@swc/core": "^1.3.100",
+    "@swc/core": "^1.3.102",
     "@vitejs/plugin-react": "^4.2.1",
-    "hono": "^3.11.7",
-    "rollup": "^4.9.0",
-    "vite": "^5.0.9"
+    "hono": "^3.11.12",
+    "rollup": "^4.9.2",
+    "vite": "5.0.10"
   },
   "peerDependencies": {
-    "@hono/node-server": "^1.3.1",
-    "@swc/core": "^1.3.100",
+    "@hono/node-server": "^1.4.0",
+    "@swc/core": "^1.3.102",
     "@vitejs/plugin-react": "^4.2.1",
-    "hono": "^3.11.4",
+    "hono": "^3.11.12",
     "react": "18.3.0-canary-c5b937576-20231219",
     "react-server-dom-webpack": "18.3.0-canary-c5b937576-20231219",
-    "vite": "^5.0.7"
+    "vite": "5.0.10"
   },
   "peerDependenciesMeta": {
     "@hono/node-server": {
