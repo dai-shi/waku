@@ -1,6 +1,4 @@
-import type { createElement, Fragment, ReactNode } from 'react';
-
-import type { Slot } from './client.js';
+import type { ReactNode } from 'react';
 
 type Elements = Record<string, ReactNode>;
 
@@ -39,11 +37,7 @@ export type GetSsrConfig = (
 ) => Promise<{
   input: string;
   searchParams?: URLSearchParams;
-  unstable_render: (opts: {
-    createElement: typeof createElement;
-    Fragment: typeof Fragment;
-    Slot: typeof Slot;
-  }) => ReactNode;
+  body: ReactNode;
 } | null>;
 
 export function defineEntries(

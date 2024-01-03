@@ -31,6 +31,7 @@ import {
   RSDW_SERVER_MODULE_VALUE,
   renderRsc,
   getBuildConfig,
+  getSsrConfig,
 } from '../renderers/rsc-renderer.js';
 import {
   REACT_MODULE,
@@ -455,8 +456,17 @@ const emitHtmlFiles = async (
                 context,
                 isDev: false,
               }),
+            getSsrConfigForHtml: (pathname, searchParams) =>
+              getSsrConfig({
+                config,
+                pathname,
+                searchParams,
+                isDev: false,
+                entries: distEntries,
+                isBuild: true,
+              }),
             isDev: false,
-            entries: distEntries,
+            loadModule: distEntries.loadModule,
             isBuild: true,
           }));
         await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });

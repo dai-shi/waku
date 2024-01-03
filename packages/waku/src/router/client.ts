@@ -22,6 +22,12 @@ import {
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
 
+declare global {
+  interface ImportMeta {
+    readonly env: Record<string, string>;
+  }
+}
+
 const parseLocation = (): RouteProps => {
   const { pathname, search } = window.location;
   const searchParams = new URLSearchParams(search);
@@ -233,8 +239,7 @@ function InnerRouter() {
   }, [changeLocation, prefetchLocation]);
 
   const children = componentIds.reduceRight(
-    (acc: ReactNode, id) =>
-      createElement(Slot, { id, fallback: (children) => children }, acc),
+    (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
     null,
   );
 

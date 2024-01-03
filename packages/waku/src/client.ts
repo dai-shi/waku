@@ -171,7 +171,7 @@ export const Slot = ({
 }: {
   id: string;
   children?: ReactNode;
-  fallback?: (children?: ReactNode) => ReactNode;
+  fallback?: ReactNode;
 }) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
@@ -180,7 +180,7 @@ export const Slot = ({
   const elements = use(elementsPromise);
   if (!(id in elements)) {
     if (fallback) {
-      return fallback(children);
+      return fallback;
     }
     throw new Error('Not found: ' + id);
   }
