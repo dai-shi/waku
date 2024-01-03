@@ -1,10 +1,11 @@
 import { lazy } from 'react';
 import { createPages } from 'waku/router/server';
 
+import FooPage from './components/FooPage.js';
+
 // The use of `lazy` is optional and you can use import statements too.
 const HomeLayout = lazy(() => import('./components/HomeLayout.js'));
 const HomePage = lazy(() => import('./components/HomePage.js'));
-const FooPage = lazy(() => import('./components/FooPage.js'));
 const BarPage = lazy(() => import('./components/BarPage.js'));
 const NestedBazPage = lazy(() => import('./components/NestedBazPage.js'));
 const NestedQuxPage = lazy(() => import('./components/NestedQuxPage.js'));
