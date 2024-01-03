@@ -7,7 +7,7 @@ import type {
 import type { ViteDevServer } from 'vite';
 
 import type { ResolvedConfig } from '../config.js';
-import type { EntriesDev, EntriesPrd } from '../../server.js';
+import type { EntriesPrd } from '../../server.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import {
   decodeFilePathFromAbsolute,
@@ -222,13 +222,13 @@ const rectifyHtml = () => {
 const buildHtml = (
   createElement: typeof createElementType,
   head: string,
-  body: ReactNode,
+  body: Promise<ReactNode>,
 ) =>
   createElement(
     'html',
     null,
     createElement('head', { dangerouslySetInnerHTML: { __html: head } }),
-    createElement('body', null, body),
+    createElement('body', null, body as any),
   );
 
 export const renderHtml = async (
@@ -241,9 +241,17 @@ export const renderHtml = async (
       input: string,
       searchParams: URLSearchParams,
     ) => Promise<ReadableStream>;
+    getSsrConfigForHtml: (
+      pathname: string,
+      searchParams: URLSearchParams,
+    ) => Promise<{
+      input: string;
+      searchParams?: URLSearchParams;
+      body: ReadableStream;
+    } | null>;
   } & (
-    | { isDev: false; entries: EntriesPrd; isBuild: boolean }
-    | { isDev: true; entries: EntriesDev }
+    | { isDev: false; loadModule: EntriesPrd['loadModule']; isBuild: boolean }
+    | { isDev: true; loadModule?: undefined }
   ),
 ): Promise<ReadableStream | null> => {
   const {
@@ -252,19 +260,16 @@ export const renderHtml = async (
     searchParams,
     htmlHead,
     renderRscForHtml,
+    getSsrConfigForHtml,
     isDev,
-    entries,
+    loadModule,
   } = opts;
 
-  const {
-    default: { getSsrConfig },
-    loadModule,
-  } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
   const [
-    { createElement, Fragment },
+    { createElement },
     { renderToReadableStream },
     { createFromReadableStream },
-    { ServerRoot, Slot },
+    { ServerRoot },
   ] = await Promise.all([
     isDev
       ? import(REACT_MODULE_VALUE)
@@ -279,10 +284,7 @@ export const renderHtml = async (
       ? import(WAKU_CLIENT_MODULE_VALUE)
       : loadModule!('public/' + WAKU_CLIENT_MODULE),
   ]);
-  const ssrConfig = await getSsrConfig?.(pathname, {
-    searchParams,
-    isPrd: !isDev && !opts.isBuild,
-  });
+  const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
   if (!ssrConfig) {
     return null;
   }
@@ -381,6 +383,9 @@ export const renderHtml = async (
       ssrManifest: { moduleMap, moduleLoading: null },
     },
   );
+  const body: Promise<ReactNode> = createFromReadableStream(ssrConfig.body, {
+    ssrManifest: { moduleMap, moduleLoading: null },
+  });
   const readable = (
     await renderToReadableStream(
       buildHtml(
@@ -391,7 +396,7 @@ export const renderHtml = async (
             Omit<ComponentProps<typeof ServerRoot>, 'children'>
           >,
           { elements },
-          ssrConfig.unstable_render({ createElement, Fragment, Slot }),
+          body,
         ),
       ),
       {
