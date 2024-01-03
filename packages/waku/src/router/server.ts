@@ -1,10 +1,9 @@
-import { createElement } from 'react';
-import type { Fragment, FunctionComponent, ReactNode } from 'react';
+import { createElement, Fragment } from 'react';
+import type { FunctionComponent, ReactNode } from 'react';
 
 import { defineEntries } from '../server.js';
 import type { RenderEntries, GetBuildConfig, GetSsrConfig } from '../server.js';
-import { Children } from '../client.js';
-import type { Slot } from '../client.js';
+import { Children, Slot } from '../client.js';
 import {
   getComponentIds,
   getInputString,
@@ -116,23 +115,16 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
     }
     const componentIds = getComponentIds(pathname);
     const input = getInputString(pathname);
-    type Opts = {
-      createElement: typeof createElement;
-      Fragment: typeof Fragment;
-      Slot: typeof Slot;
-    };
-    const render = ({ createElement, Fragment, Slot }: Opts) =>
-      createElement(
-        Fragment,
+    const body = createElement(
+      Fragment,
+      null,
+      createElement(Slot, { id: SHOULD_SKIP_ID }),
+      componentIds.reduceRight(
+        (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
         null,
-        createElement(Slot, { id: SHOULD_SKIP_ID }),
-        componentIds.reduceRight(
-          (acc: ReactNode, id) =>
-            createElement(Slot, { id, fallback: (children) => children }, acc),
-          null,
-        ),
-      );
-    return { input, unstable_render: render };
+      ),
+    );
+    return { input, body };
   };
 
   return { renderEntries, getBuildConfig, getSsrConfig };

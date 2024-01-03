@@ -234,7 +234,7 @@ function InnerRouter() {
 
   const children = componentIds.reduceRight(
     (acc: ReactNode, id) =>
-      createElement(Slot, { id, fallback: (children) => children }, acc),
+      createElement(Slot, { id, fallback: acc }, acc),
     null,
   );
 
