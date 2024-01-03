@@ -15,7 +15,6 @@ import {
   getSsrConfigWithWorker,
   registerModuleCallback,
 } from './dev-worker-api.js';
-import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import {
@@ -52,7 +51,6 @@ export function createHandler<
         exclude: ['waku'],
       },
       plugins: [
-        nonjsResolvePlugin(),
         patchReactRefresh(viteReact()),
         rscIndexPlugin(config),
         rscHmrPlugin(),

@@ -37,7 +37,10 @@ export function rscTransformPlugin(
   };
   return {
     name: 'rsc-transform-plugin',
-    async transform(code, id) {
+    async transform(code, id, options) {
+      if (!options?.ssr) {
+        return;
+      }
       const resolve = async (
         specifier: string,
         { parentURL }: { parentURL: string },
