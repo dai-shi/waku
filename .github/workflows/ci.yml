@@ -36,6 +36,8 @@ jobs:
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r --filter="./packages/create-waku" run compile
+      # cleanup node_modules for testing
+      - run: rm -rf packages/create-waku/node_modules
       - uses: actions/upload-artifact@v4
         with:
           name: create-waku
