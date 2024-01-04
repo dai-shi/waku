@@ -32,7 +32,7 @@ function canSafelyOverwrite(dir: string) {
 async function notifyUpdate() {
   // keep original require to avoid
   //  bundling the whole package.json by `@vercel/ncc`
-  const packageJson = createRequire(import.meta.url)('../package.json')
+  const packageJson = createRequire(import.meta.url)('../package.json');
   const result = await checkForUpdate(packageJson).catch(() => null);
   if (result?.latest) {
     console.log(`A new version of 'create-waku' is available!`);
