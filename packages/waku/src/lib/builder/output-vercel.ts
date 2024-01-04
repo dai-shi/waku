@@ -61,9 +61,9 @@ export const emitVercelOutput = async (
       `
 import path from 'node:path';
 import fs from 'node:fs';
-import { connectMiddleware } from 'waku';
 
 const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
+const { connectMiddleware } = await entries;
 const env = process.env;
 
 export default function handler(req, res) {

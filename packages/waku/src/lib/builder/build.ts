@@ -144,6 +144,7 @@ const buildServerBundle = async (
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
+  reexport: { honoMiddleware: boolean; connectMiddleware: boolean },
 ) => {
   const serverBuildOutput = await buildVite({
     plugins: [
@@ -207,7 +208,7 @@ const buildServerBundle = async (
     throw new Error('Unexpected vite server build output');
   }
   const psDir = joinPath(config.publicDir, config.assetsDir);
-  const code = `
+  let code = `
 export function loadModule(id) {
   switch (id) {
     case '${RSDW_SERVER_MODULE}':
@@ -241,6 +242,14 @@ ${Object.entries(clientEntryFiles || {})
   }
 }
 `;
+  if (reexport.honoMiddleware) {
+    code += `
+export { honoMiddleware } from 'waku';`;
+  }
+  if (reexport.connectMiddleware) {
+    code += `
+export { connectMiddleware } from 'waku';`;
+  }
   await appendFile(distEntriesFile, code);
   return serverBuildOutput;
 };
@@ -533,6 +542,10 @@ export async function build(options: {
     commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
+    {
+      honoMiddleware: !!options.cloudflare || !!options.deno,
+      connectMiddleware: !!options.vercel,
+    },
   );
   await buildClientBundle(
     rootDir,
