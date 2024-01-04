@@ -7,17 +7,17 @@ import { Button } from './button.js';
 import { Modal } from './modal.js';
 
 type ReadmeProps = {
-  children: ReactNode;
+  readme: ReactNode;
 };
 
-export const Readme = ({ children }: ReadmeProps) => {
+export const Readme = ({ readme }: ReadmeProps) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   return (
     <Fragment>
       <Button onClick={() => setIsOpen(true)}>Readme</Button>
       <Modal isOpen={isOpen} onClose={() => setIsOpen(false)}>
-        {children}
+        {readme}
       </Modal>
     </Fragment>
   );

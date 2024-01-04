@@ -1,24 +1,57 @@
-import { defineRouter } from 'waku/router/server';
+import { readdirSync, readFileSync } from 'node:fs';
+import { createPages } from 'waku/router/server';
+// @ts-expect-error no exported member
+import { compileMDX } from 'next-mdx-remote/rsc';
 
-const STATIC_PATHS = ['/', '/blog/introducing-waku'];
+import { RootLayout } from './templates/root-layout.js';
+import { HomePage } from './templates/home-page.js';
+import { BlogArticlePage } from './templates/blog-article-page.js';
 
-export default defineRouter(
-  // existsPath
-  async (path: string) => (STATIC_PATHS.includes(path) ? 'static' : null),
-  // getComponent (id is "**/layout" or "**/page")
-  async (id, unstable_setShouldSkip) => {
-    unstable_setShouldSkip({}); // always skip if possible
-    switch (id) {
-      case 'layout':
-        return import('./routes/layout.js');
-      case 'page':
-        return import('./routes/page.js');
-      case 'blog/introducing-waku/page':
-        return import('./routes/blog/introducing-waku/page.js');
-      default:
-        return null;
-    }
-  },
-  // getPathsForBuild
-  async () => STATIC_PATHS,
-);
+export default createPages(async ({ createPage, createLayout }) => {
+  createLayout({
+    render: 'static',
+    path: '/',
+    component: RootLayout,
+  });
+
+  createPage({
+    render: 'static',
+    path: '/',
+    component: HomePage,
+  });
+
+  const [blogPaths, blogSlugToFileName] = await getBlogData();
+
+  createPage({
+    render: 'static',
+    path: '/blog/[slug]',
+    staticPaths: blogPaths,
+    component: ({ slug }: { slug: string }) => (
+      <BlogArticlePage slug={slug} blogSlugToFileName={blogSlugToFileName} />
+    ),
+  });
+});
+
+async function getBlogData() {
+  const blogPaths: Array<string> = [];
+  const blogFileNames: Array<string> = [];
+  const blogSlugToFileName: Record<string, string> = {};
+
+  readdirSync('./contents').forEach((fileName) => {
+    blogFileNames.push(fileName);
+  });
+
+  for await (const fileName of blogFileNames) {
+    const path = `./contents/${fileName}`;
+    const source = readFileSync(path, 'utf8');
+    const mdx = await compileMDX({
+      source,
+      options: { parseFrontmatter: true },
+    });
+    const { frontmatter } = mdx;
+    blogPaths.push(frontmatter.slug);
+    blogSlugToFileName[frontmatter.slug] = fileName;
+  }
+
+  return [blogPaths, blogSlugToFileName] as const;
+}
