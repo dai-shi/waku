@@ -40,7 +40,7 @@
     "examples:prd:12_css": "NAME=12_css pnpm run examples:prd",
     "website:dev": "(cd packages/website && pnpm run dev)",
     "website:build": "cd packages/website && pnpm run build",
-    "website:vercel": "pnpm run website:build --with-vercel-static && mv packages/website/.vercel/output .vercel/ && (cp -r README.md packages/website/src/contents .vercel/output/functions/RSC.func/ ; true)",
+    "website:vercel": "pnpm run website:build --with-vercel-static && mv packages/website/.vercel/output .vercel/ && (cp -r README.md packages/website/contents .vercel/output/functions/RSC.func/ ; true)",
     "website:prd": "pnpm run website:build && (cd packages/website && pnpm start)"
   },
   "prettier": {
