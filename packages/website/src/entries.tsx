@@ -30,7 +30,7 @@ export default createPages(async ({ createPage, createLayout }) => {
 
 async function getBlogPaths() {
   const blogPaths: Array<string> = [];
-  readdirSync('../contents').forEach((file) => {
+  readdirSync('./contents').forEach((file) => {
     // parse frontmatter, push frontmatter.slug to blogPaths
     console.log(file);
   });
