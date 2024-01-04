@@ -4,7 +4,7 @@ import type { Config } from '../config.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from '../renderers/html-renderer.js';
 import { decodeInput, hasStatusCode, deepFreeze } from '../renderers/utils.js';
-import { renderRsc } from '../renderers/rsc-renderer.js';
+import { renderRsc, getSsrConfig } from '../renderers/rsc-renderer.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 
 export function createHandler<
@@ -14,6 +14,7 @@ export function createHandler<
 >(options: {
   config?: Config;
   ssr?: boolean;
+  env?: Record<string, string>;
   unstable_prehook?: (req: Req, res: Res) => Context;
   unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
   entries: Promise<EntriesPrd>;
@@ -22,6 +23,7 @@ export function createHandler<
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
   }
+  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(config || {});
 
   return async (req, res, next) => {
@@ -62,8 +64,17 @@ export function createHandler<
               context,
               isDev: false,
             }),
+          getSsrConfigForHtml: (pathname, searchParams) =>
+            getSsrConfig({
+              config,
+              pathname,
+              searchParams,
+              isDev: false,
+              entries: resolvedEntries,
+              isBuild: false,
+            }),
           isDev: false,
-          entries: resolvedEntries,
+          loadModule: resolvedEntries.loadModule,
           isBuild: false,
         });
         if (readable) {

@@ -27,12 +27,13 @@ export const emitDenoOutput = async (
       `
 import { Hono } from "https://deno.land/x/hono/mod.ts";
 import { serveStatic } from "https://deno.land/x/hono/middleware.ts";
-import { honoMiddleware } from "npm:waku@0.18.1";
+import { honoMiddleware } from "npm:waku@0.19.0-alpha.0";
 
 const entries = import('./${entriesFile}');
+const env = Deno.env.toObject();
 
 const app = new Hono();
-app.use('*', honoMiddleware({ entries, ssr: ${ssr} }));
+app.use('*', honoMiddleware({ entries, ssr: ${ssr}, env }));
 app.use("*", serveStatic({ root: "${publicDir}" }));
 
 Deno.serve(app.fetch);

@@ -9,6 +9,7 @@ const App = ({ name }: { name: string }) => {
       <h1 className={styles.title}>Hello {name}!!</h1>
       <h3>This is a server component.</h3>
       <Counter />
+      Env: {import.meta.env.WAKU_PUBLIC_HELLO}
     </div>
   );
 };

@@ -2,7 +2,6 @@ import { Readable, Writable } from 'node:stream';
 import { createServer as createViteServer } from 'vite';
 import { default as viteReact } from '@vitejs/plugin-react';
 
-import type { EntriesDev } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import type { Config } from '../config.js';
 import { joinPath, decodeFilePathFromAbsolute } from '../utils/path.js';
@@ -13,9 +12,9 @@ import {
   registerReloadCallback,
   registerImportCallback,
   renderRscWithWorker,
+  getSsrConfigWithWorker,
   registerModuleCallback,
 } from './dev-worker-api.js';
-import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import {
@@ -23,6 +22,7 @@ import {
   hotImport,
   moduleImport,
 } from '../plugins/vite-plugin-rsc-hmr.js';
+import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 
@@ -33,6 +33,7 @@ export function createHandler<
 >(options: {
   config?: Config;
   ssr?: boolean;
+  env?: Record<string, string>;
   unstable_prehook?: (req: Req, res: Res) => Context;
   unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
 }): Handler<Req, Res> {
@@ -40,42 +41,29 @@ export function createHandler<
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
   }
+  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(options.config || {});
   const vitePromise = configPromise.then(async (config) => {
     const mergedViteConfig = await mergeUserViteConfig({
       base: config.basePath,
       optimizeDeps: {
-        include: ['react-server-dom-webpack/client', 'react', 'react-dom'],
+        include: ['react-server-dom-webpack/client', 'react-dom'],
         exclude: ['waku'],
       },
       plugins: [
-        nonjsResolvePlugin(),
         patchReactRefresh(viteReact()),
         rscIndexPlugin(config),
         rscHmrPlugin(),
+        rscEnvPlugin({ config, hydrate: ssr }),
       ],
-      ssr: {
-        external: ['waku'],
-      },
       server: { middlewareMode: true },
     });
-    const viteServer = await createViteServer(mergedViteConfig);
-    registerReloadCallback((type) => viteServer.ws.send({ type }));
-    registerImportCallback((source) => hotImport(viteServer, source));
-    registerModuleCallback((result) => moduleImport(viteServer, result));
-    return viteServer;
+    const vite = await createViteServer(mergedViteConfig);
+    registerReloadCallback((type) => vite.ws.send({ type }));
+    registerImportCallback((source) => hotImport(vite, source));
+    registerModuleCallback((result) => moduleImport(vite, result));
+    return vite;
   });
-
-  const entries = Promise.all([configPromise, vitePromise]).then(
-    async ([config, vite]) => {
-      const filePath = joinPath(
-        vite.config.root,
-        config.srcDir,
-        config.entriesJs,
-      );
-      return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
-    },
-  );
 
   const transformIndexHtml = async (pathname: string) => {
     const vite = await vitePromise;
@@ -149,8 +137,9 @@ export function createHandler<
             context = nextCtx as Context;
             return readable;
           },
+          getSsrConfigForHtml: (pathname, options) =>
+            getSsrConfigWithWorker(config, pathname, options),
           isDev: true,
-          entries: await entries,
         });
         if (readable) {
           unstable_posthook?.(req, res, context as Context);

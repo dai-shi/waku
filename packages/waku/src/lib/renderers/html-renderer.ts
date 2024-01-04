@@ -7,7 +7,7 @@ import type {
 import type { ViteDevServer } from 'vite';
 
 import type { ResolvedConfig } from '../config.js';
-import type { EntriesDev, EntriesPrd } from '../../server.js';
+import type { EntriesPrd } from '../../server.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import {
   decodeFilePathFromAbsolute,
@@ -50,8 +50,9 @@ const getViteServer = async () => {
   const { nonjsResolvePlugin } = await import(
     '../plugins/vite-plugin-nonjs-resolve.js'
   );
+  const { rscEnvPlugin } = await import('../plugins/vite-plugin-rsc-env.js');
   const viteServer = await createViteServer({
-    plugins: [nonjsResolvePlugin()],
+    plugins: [nonjsResolvePlugin(), rscEnvPlugin({})],
     // HACK to suppress 'Skipping dependency pre-bundling' warning
     optimizeDeps: { include: [] },
     ssr: {
@@ -82,9 +83,6 @@ Promise.resolve(new Response(new ReadableStream({
   .split('\n')
   .map((line) => line.trim())
   .join('');
-
-// TODO this is an easy solution. we could do it better at the build time.
-const enableSsrCode = 'globalThis.__WAKU_SSR_ENABLED__ = true;';
 
 const injectRscPayload = (
   readable: ReadableStream,
@@ -124,9 +122,6 @@ globalThis.__WAKU_PREFETCHED__ = {
   '${urlForFakeFetch}': ${fakeFetchCode},
 };
 `;
-    }
-    if (!data.includes(enableSsrCode)) {
-      code += enableSsrCode;
     }
     if (code) {
       data =
@@ -227,13 +222,13 @@ const rectifyHtml = () => {
 const buildHtml = (
   createElement: typeof createElementType,
   head: string,
-  body: ReactNode,
+  body: Promise<ReactNode>,
 ) =>
   createElement(
     'html',
     null,
     createElement('head', { dangerouslySetInnerHTML: { __html: head } }),
-    createElement('body', null, body),
+    createElement('body', null, body as any),
   );
 
 export const renderHtml = async (
@@ -246,9 +241,17 @@ export const renderHtml = async (
       input: string,
       searchParams: URLSearchParams,
     ) => Promise<ReadableStream>;
+    getSsrConfigForHtml: (
+      pathname: string,
+      searchParams: URLSearchParams,
+    ) => Promise<{
+      input: string;
+      searchParams?: URLSearchParams;
+      body: ReadableStream;
+    } | null>;
   } & (
-    | { isDev: false; entries: EntriesPrd; isBuild: boolean }
-    | { isDev: true; entries: EntriesDev }
+    | { isDev: false; loadModule: EntriesPrd['loadModule']; isBuild: boolean }
+    | { isDev: true; loadModule?: undefined }
   ),
 ): Promise<ReadableStream | null> => {
   const {
@@ -257,19 +260,16 @@ export const renderHtml = async (
     searchParams,
     htmlHead,
     renderRscForHtml,
+    getSsrConfigForHtml,
     isDev,
-    entries,
+    loadModule,
   } = opts;
 
-  const {
-    default: { getSsrConfig },
-    loadModule,
-  } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
   const [
-    { createElement, Fragment },
+    { createElement },
     { renderToReadableStream },
     { createFromReadableStream },
-    { ServerRoot, Slot },
+    { ServerRoot },
   ] = await Promise.all([
     isDev
       ? import(REACT_MODULE_VALUE)
@@ -284,10 +284,7 @@ export const renderHtml = async (
       ? import(WAKU_CLIENT_MODULE_VALUE)
       : loadModule!('public/' + WAKU_CLIENT_MODULE),
   ]);
-  const ssrConfig = await getSsrConfig?.(pathname, {
-    searchParams,
-    isPrd: !isDev && !opts.isBuild,
-  });
+  const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
   if (!ssrConfig) {
     return null;
   }
@@ -331,9 +328,8 @@ export const renderHtml = async (
                 const filePath = file.startsWith('@fs/')
                   ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
                   : joinPath(rootDirDev, file);
-                const wakuDist = joinPath(
-                  fileURLToFilePath(import.meta.url),
-                  '../../..',
+                const wakuDist = decodeFilePathFromAbsolute(
+                  joinPath(fileURLToFilePath(import.meta.url), '../../..'),
                 );
                 if (filePath.startsWith(wakuDist)) {
                   const id =
@@ -387,6 +383,9 @@ export const renderHtml = async (
       ssrManifest: { moduleMap, moduleLoading: null },
     },
   );
+  const body: Promise<ReactNode> = createFromReadableStream(ssrConfig.body, {
+    ssrManifest: { moduleMap, moduleLoading: null },
+  });
   const readable = (
     await renderToReadableStream(
       buildHtml(
@@ -397,7 +396,7 @@ export const renderHtml = async (
             Omit<ComponentProps<typeof ServerRoot>, 'children'>
           >,
           { elements },
-          ssrConfig.unstable_render({ createElement, Fragment, Slot }),
+          body,
         ),
       ),
       {
