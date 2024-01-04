@@ -7,7 +7,7 @@ import { default as prompts } from 'prompts';
 import { red, green, bold } from 'kolorist';
 import fse from 'fs-extra/esm';
 import checkForUpdate from 'update-check';
-import packageJson from '../package.json';
+import { createRequire } from 'node:module';
 
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
@@ -30,6 +30,9 @@ function canSafelyOverwrite(dir: string) {
 }
 
 async function notifyUpdate() {
+  // keep original require to avoid
+  //  bundling the whole package.json by `@vercel/ncc`
+  const packageJson = createRequire(import.meta.url)('../package.json')
   const result = await checkForUpdate(packageJson).catch(() => null);
   if (result?.latest) {
     console.log(`A new version of 'create-waku' is available!`);
