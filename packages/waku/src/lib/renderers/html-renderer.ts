@@ -43,10 +43,13 @@ const getViteServer = async () => {
     throw e;
   });
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
-  const { createServer: createViteServer } = await import('vite').catch((e) => {
-    // XXX explicit catch to avoid bundle time error
-    throw e;
-  });
+  const VITE_MODULE_VALUE = 'vite'; // HACK compile error without variable
+  const { createServer: createViteServer } = await import(VITE_MODULE_VALUE).catch(
+    (e) => {
+      // XXX explicit catch to avoid bundle time error
+      throw e;
+    },
+  );
   const { nonjsResolvePlugin } = await import(
     '../plugins/vite-plugin-nonjs-resolve.js'
   );

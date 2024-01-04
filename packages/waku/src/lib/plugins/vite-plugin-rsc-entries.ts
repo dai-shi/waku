@@ -21,7 +21,6 @@ export { honoMiddleware } from 'waku';`;
           code += `
 export { connectMiddleware } from 'waku';`;
         }
-        console.log(code);
         return code;
       }
     },
