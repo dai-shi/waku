@@ -4,7 +4,8 @@
     "rootDir": "./src",
     "outDir": "./dist",
     "resolveJsonModule": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["node", "react/experimental"]
   },
   "include": ["src", "src/theme.json"],
   "references": [
