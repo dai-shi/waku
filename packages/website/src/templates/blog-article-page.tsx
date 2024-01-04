@@ -8,11 +8,19 @@ import { components } from '../components/mdx.js';
 
 type BlogArticlePageProps = {
   slug: string;
+  blogSlugToFileName: Record<string, string>;
 };
 
-export const BlogArticlePage = async ({ slug }: BlogArticlePageProps) => {
-  const fileName = await getFileName(slug);
-  const source = readFileSync(fileName, 'utf8');
+export const BlogArticlePage = async ({
+  slug,
+  blogSlugToFileName,
+}: BlogArticlePageProps) => {
+  const fileName = blogSlugToFileName[slug];
+
+  if (!fileName) return null;
+
+  const path = `./contents/${fileName}`;
+  const source = readFileSync(path, 'utf8');
   const mdx = await compileMDX({
     source,
     components,
@@ -74,10 +82,6 @@ export const BlogArticlePage = async ({ slug }: BlogArticlePageProps) => {
       </div>
     </>
   );
-};
-
-const getFileName = async (slug: string) => {
-  return './contents/post-001.mdx';
 };
 
 const getAuthor = (author: string) => {
