@@ -305,8 +305,6 @@ will produce static sites without serverless functions.
 
 ```sh
 npm run build -- --with-cloudflare
-rm -r node_modules
-npm install --omit=dev --omit=peer
 npx wrangler dev # or deploy
 ```
 
