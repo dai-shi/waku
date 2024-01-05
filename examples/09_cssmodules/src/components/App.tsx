@@ -1,3 +1,5 @@
+import { getEnv } from 'waku/server';
+
 // @ts-expect-error no types
 import styles from './App.module.css';
 import { Counter } from './Counter.js';
@@ -9,7 +11,7 @@ const App = ({ name }: { name: string }) => {
       <h1 className={styles.title}>Hello {name}!!</h1>
       <h3>This is a server component.</h3>
       <Counter />
-      Env: {import.meta.env.WAKU_PUBLIC_HELLO}
+      Env: {import.meta.env.WAKU_PUBLIC_HELLO} ({getEnv('GREETING')})
     </div>
   );
 };
