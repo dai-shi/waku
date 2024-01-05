@@ -10,15 +10,11 @@
     "start": "waku start --with-ssr"
   },
   "dependencies": {
-    "@hono/node-server": "^1.4.0",
     "@uidotdev/usehooks": "^2.4.1",
     "bright": "^0.8.4",
-    "express": "^4.18.2",
-    "hono": "^3.11.12",
     "next-mdx-remote": "^4.4.1",
     "react": "18.3.0-canary-c5b937576-20231219",
     "react-dom": "18.3.0-canary-c5b937576-20231219",
-    "react-server-dom-webpack": "18.3.0-canary-c5b937576-20231219",
     "waku": "workspace:*"
   },
   "devDependencies": {
