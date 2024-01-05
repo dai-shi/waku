@@ -45,7 +45,10 @@ const getViteServer = async (createViteServer: CreateViteServer) => {
   if (lastViteServer) {
     return lastViteServer;
   }
-  const { Server } = await import('node:http');
+  const { Server } = await import('node:http').catch((e) => {
+    // XXX explicit catch to avoid bundle time error
+    throw e;
+  });
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   // HACK to avoid bundling
   const VITE_PLUGIN_NONJS_RESOLVE_MODULE_VALUE =
