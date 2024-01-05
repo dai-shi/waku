@@ -4,7 +4,7 @@ import type {
   FunctionComponent,
   ComponentProps,
 } from 'react';
-import type { ViteDevServer } from 'vite';
+import type { ViteDevServer, InlineConfig } from 'vite';
 
 import type { ResolvedConfig } from '../config.js';
 import type { EntriesPrd } from '../../server.js';
@@ -33,8 +33,12 @@ const moduleCache = new Map();
   moduleLoading.get(id);
 (globalThis as any).__webpack_require__ = (id: string) => moduleCache.get(id);
 
+type CreateViteServer = (
+  inlineConfig?: InlineConfig | undefined,
+) => Promise<ViteDevServer>;
+
 let lastViteServer: ViteDevServer | undefined;
-const getViteServer = async () => {
+const getViteServer = async (createViteServer: CreateViteServer) => {
   if (lastViteServer) {
     return lastViteServer;
   }
@@ -43,13 +47,6 @@ const getViteServer = async () => {
     throw e;
   });
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
-  const VITE_MODULE_VALUE = 'vite'; // HACK compile error without variable
-  const { createServer: createViteServer } = await import(VITE_MODULE_VALUE).catch(
-    (e) => {
-      // XXX explicit catch to avoid bundle time error
-      throw e;
-    },
-  );
   const { nonjsResolvePlugin } = await import(
     '../plugins/vite-plugin-nonjs-resolve.js'
   );
@@ -70,8 +67,11 @@ const getViteServer = async () => {
   return viteServer;
 };
 
-const loadServerFileDev = async (fileURL: string) => {
-  const vite = await getViteServer();
+const loadServerFileDev = async (
+  fileURL: string,
+  createViteServer: CreateViteServer,
+) => {
+  const vite = await getViteServer(createViteServer);
   return vite.ssrLoadModule(fileURLToFilePath(fileURL));
 };
 
@@ -254,7 +254,7 @@ export const renderHtml = async (
     } | null>;
   } & (
     | { isDev: false; loadModule: EntriesPrd['loadModule']; isBuild: boolean }
-    | { isDev: true; loadModule?: undefined }
+    | { isDev: true; createViteServer: CreateViteServer }
   ),
 ): Promise<ReadableStream | null> => {
   const {
@@ -265,7 +265,6 @@ export const renderHtml = async (
     renderRscForHtml,
     getSsrConfigForHtml,
     isDev,
-    loadModule,
   } = opts;
 
   const [
@@ -276,22 +275,27 @@ export const renderHtml = async (
   ] = await Promise.all([
     isDev
       ? import(REACT_MODULE_VALUE)
-      : loadModule!('public/' + REACT_MODULE).then((m: any) => m.default),
+      : opts.loadModule('public/' + REACT_MODULE).then((m: any) => m.default),
     isDev
       ? import(RD_SERVER_MODULE_VALUE)
-      : loadModule!('public/' + RD_SERVER_MODULE).then((m: any) => m.default),
+      : opts
+          .loadModule('public/' + RD_SERVER_MODULE)
+          .then((m: any) => m.default),
     isDev
       ? import(RSDW_CLIENT_MODULE_VALUE)
-      : loadModule!('public/' + RSDW_CLIENT_MODULE).then((m: any) => m.default),
+      : opts
+          .loadModule('public/' + RSDW_CLIENT_MODULE)
+          .then((m: any) => m.default),
     isDev
       ? import(WAKU_CLIENT_MODULE_VALUE)
-      : loadModule!('public/' + WAKU_CLIENT_MODULE),
+      : opts.loadModule('public/' + WAKU_CLIENT_MODULE),
   ]);
   const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
   if (!ssrConfig) {
     return null;
   }
-  const rootDirDev = isDev && (await getViteServer()).config.root;
+  const rootDirDev =
+    isDev && (await getViteServer(opts.createViteServer)).config.root;
   let stream: ReadableStream;
   try {
     stream = await renderRscForHtml(
@@ -352,7 +356,7 @@ export const renderHtml = async (
                 if (!moduleLoading.has(id)) {
                   moduleLoading.set(
                     id,
-                    loadServerFileDev(id).then((m) => {
+                    loadServerFileDev(id, opts.createViteServer).then((m) => {
                       moduleCache.set(id, m);
                     }),
                   );
@@ -364,7 +368,7 @@ export const renderHtml = async (
               if (!moduleLoading.has(id)) {
                 moduleLoading.set(
                   id,
-                  loadModule!('public/' + id).then((m: any) => {
+                  opts.loadModule('public/' + id).then((m: any) => {
                     moduleCache.set(id, m);
                   }),
                 );

@@ -140,6 +140,7 @@ export function createHandler<
           getSsrConfigForHtml: (pathname, options) =>
             getSsrConfigWithWorker(config, pathname, options),
           isDev: true,
+          createViteServer: (await import('vite')).createServer,
         });
         if (readable) {
           unstable_posthook?.(req, res, context as Context);
