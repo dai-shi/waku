@@ -15,11 +15,11 @@ export function rscEntriesPlugin(opts: {
       if (id === opts.entriesFile) {
         if (opts.reExportHonoMiddleware) {
           code += `
-export { honoMiddleware } from 'waku';`;
+export { honoMiddleware } from 'waku/prd';`;
         }
         if (opts.reExportConnectMiddleware) {
           code += `
-export { connectMiddleware } from 'waku';`;
+export { connectMiddleware } from 'waku/prd';`;
         }
         return code;
       }
