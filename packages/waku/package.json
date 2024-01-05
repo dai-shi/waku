@@ -16,42 +16,34 @@
     "./package.json": "./package.json",
     ".": {
       "types": "./dist/main.d.ts",
-      "require": "./dist/cjs/main.js",
       "default": "./dist/main.js"
     },
     "./prd": {
       "types": "./dist/prd.d.ts",
-      "require": "./dist/cjs/prd.js",
       "default": "./dist/prd.js"
     },
     "./dev": {
       "types": "./dist/dev.d.ts",
-      "require": "./dist/cjs/dev.js",
       "default": "./dist/dev.js"
     },
     "./node-loader": {
       "types": "./dist/node-loader.d.ts",
-      "require": "./dist/cjs/node-loader.js",
       "default": "./dist/node-loader.js"
     },
     "./client": {
       "types": "./dist/client.d.ts",
-      "require": "./dist/cjs/client.js",
       "default": "./dist/client.js"
     },
     "./server": {
       "types": "./dist/server.d.ts",
-      "require": "./dist/cjs/server.js",
       "default": "./dist/server.js"
     },
     "./router/client": {
       "types": "./dist/router/client.d.ts",
-      "require": "./dist/cjs/router/client.js",
       "default": "./dist/router/client.js"
     },
     "./router/server": {
       "types": "./dist/router/server.d.ts",
-      "require": "./dist/cjs/router/server.js",
       "default": "./dist/router/server.js"
     }
   },
@@ -66,7 +58,7 @@
   "scripts": {
     "dev": "swc src -d dist -w",
     "compile": "rm -rf dist *.tsbuildinfo && pnpm run compile:code && pnpm run compile:types && cp ../../README.md .",
-    "compile:code": "swc src -d dist && swc src -d dist/cjs -C module.type=commonjs && echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
+    "compile:code": "swc src -d dist",
     "compile:types": "tsc --project tsconfig.json"
   },
   "license": "MIT",
