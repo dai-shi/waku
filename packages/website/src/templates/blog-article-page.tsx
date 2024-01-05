@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { Link } from 'waku/router/client';
 // @ts-expect-error no exported member
 import { compileMDX } from 'next-mdx-remote/rsc';
@@ -8,14 +8,10 @@ import { components } from '../components/mdx.js';
 
 type BlogArticlePageProps = {
   slug: string;
-  blogSlugToFileName: Record<string, string>;
 };
 
-export const BlogArticlePage = async ({
-  slug,
-  blogSlugToFileName,
-}: BlogArticlePageProps) => {
-  const fileName = blogSlugToFileName[slug];
+export const BlogArticlePage = async ({ slug }: BlogArticlePageProps) => {
+  const fileName = await getFileName(slug);
 
   if (!fileName) return null;
 
@@ -100,4 +96,28 @@ const getAuthor = (author: string) => {
         avatar: ``,
       };
   }
+};
+
+const getFileName = async (slug: string) => {
+  const blogFileNames: Array<string> = [];
+  const blogSlugToFileName: Record<string, string> = {};
+
+  readdirSync('./contents').forEach((fileName) => {
+    blogFileNames.push(fileName);
+  });
+
+  for await (const fileName of blogFileNames) {
+    const path = `./contents/${fileName}`;
+    const source = readFileSync(path, 'utf8');
+    const mdx = await compileMDX({
+      source,
+      options: { parseFrontmatter: true },
+    });
+    const { frontmatter } = mdx;
+    blogSlugToFileName[frontmatter.slug] = fileName;
+  }
+
+  const fileName = blogSlugToFileName[slug];
+
+  return fileName;
 };

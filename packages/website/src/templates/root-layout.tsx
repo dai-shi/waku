@@ -7,6 +7,7 @@ type RootLayoutProps = { children: ReactNode };
 export const RootLayout = async ({ children }: RootLayoutProps) => {
   return (
     <>
+      <html lang="en" />
       <meta property="description" content="⛩️ The minimal React framework" />
       <meta property="og:locale" content="en" />
       <meta property="og:site_name" content="Waku" />

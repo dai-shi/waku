@@ -5,6 +5,9 @@
 :root {
   @apply bg-black;
 }
+#__waku {
+  @apply bg-gray-900;
+}
 *::-webkit-scrollbar {
   @apply h-full w-4 bg-gray-900;
 }
