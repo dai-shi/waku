@@ -19,6 +19,11 @@
       "require": "./dist/cjs/main.js",
       "default": "./dist/main.js"
     },
+    "./prd": {
+      "types": "./dist/prd.d.ts",
+      "require": "./dist/cjs/prd.js",
+      "default": "./dist/prd.js"
+    },
     "./dev": {
       "types": "./dist/dev.d.ts",
       "require": "./dist/cjs/dev.js",

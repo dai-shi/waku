@@ -2,11 +2,12 @@
 import { existsSync, readdirSync } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
-import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { default as prompts } from 'prompts';
 import { red, green, bold } from 'kolorist';
 import fse from 'fs-extra/esm';
+import checkForUpdate from 'update-check';
+import { createRequire } from 'node:module';
 
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
@@ -29,10 +30,9 @@ function canSafelyOverwrite(dir: string) {
 }
 
 async function notifyUpdate() {
-  const nodeRequire = createRequire(import.meta.url);
-  // `update-check` is a CSJ module.
-  const checkForUpdate = nodeRequire('update-check');
-  const packageJson = nodeRequire('../package.json');
+  // keep original require to avoid
+  //  bundling the whole package.json by `@vercel/ncc`
+  const packageJson = createRequire(import.meta.url)('../package.json');
   const result = await checkForUpdate(packageJson).catch(() => null);
   if (result?.latest) {
     console.log(`A new version of 'create-waku' is available!`);
