@@ -75,7 +75,7 @@ export const fetchRSC = cache(
         return (await data)._value;
       },
     };
-    const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
+    const prefetched = (globalThis as any).__WAKU_PREFETCHED__;
     const url =
       BASE_PATH +
       encodeInput(input) +
@@ -92,7 +92,7 @@ export const fetchRSC = cache(
 
 export const prefetchRSC = cache(
   (input: string, searchParamsString: string): void => {
-    const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
+    const prefetched = (globalThis as any).__WAKU_PREFETCHED__;
     const url =
       BASE_PATH +
       encodeInput(input) +

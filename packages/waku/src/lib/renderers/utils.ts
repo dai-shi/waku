@@ -32,6 +32,7 @@ export const hasStatusCode = (x: unknown): x is { statusCode: number } =>
   typeof (x as any)?.statusCode === 'number';
 
 export const codeToInject = `
+globalThis.__WAKU_PREFETCHED__ = {};
 globalThis.__waku_module_cache__ = new Map();
 globalThis.__webpack_chunk_load__ = (id) => import(id).then((m) => globalThis.__waku_module_cache__.set(id, m));
 globalThis.__webpack_require__ = (id) => globalThis.__waku_module_cache__.get(id);`;
@@ -45,14 +46,12 @@ export const generatePrefetchCode = (
   let code = '';
   if (inputsArray.length) {
     code += `
-globalThis.__WAKU_PREFETCHED__ = {
 ${inputsArray
-  .map((input) => {
-    const url = basePrefix + encodeInput(input);
-    return `  '${url}': fetch('${url}'),`;
-  })
-  .join('\n')}
-};`;
+    .map((input) => {
+      const url = basePrefix + encodeInput(input);
+      return `globalThis.__WAKU_PREFETCHED__['${url}'] = fetch('${url}');`;
+    })
+    .join('\n')}`;
   }
   for (const moduleId of moduleIds) {
     code += `
