@@ -4,10 +4,7 @@ export function nonjsResolvePlugin(): Plugin {
   return {
     name: 'nonjs-resolve-plugin',
     async resolveId(id, importer, options) {
-      const path = await import('node:path').catch((e) => {
-        // XXX explicit catch to avoid bundle time error
-        throw e;
-      });
+      const path = await import('node:path');
       if (!options.ssr) {
         return id;
       }

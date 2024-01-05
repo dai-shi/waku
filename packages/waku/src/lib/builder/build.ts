@@ -48,6 +48,7 @@ import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
+import { rscEntriesPlugin } from '../plugins/vite-plugin-rsc-entries.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { emitVercelOutput } from './output-vercel.js';
@@ -144,6 +145,8 @@ const buildServerBundle = async (
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
+  reExportHonoMiddleware: boolean,
+  reExportConnectMiddleware: boolean,
 ) => {
   const serverBuildOutput = await buildVite({
     plugins: [
@@ -159,6 +162,11 @@ const buildServerBundle = async (
           ...clientEntryFiles,
         },
         serverEntryFiles,
+      }),
+      rscEntriesPlugin({
+        entriesFile,
+        reExportHonoMiddleware,
+        reExportConnectMiddleware,
       }),
       rscEnvPlugin({ config }),
     ],
@@ -533,6 +541,8 @@ export async function build(options: {
     commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
+    !!options.cloudflare || !!options.deno,
+    !!options.vercel,
   );
   await buildClientBundle(
     rootDir,
