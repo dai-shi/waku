@@ -27,11 +27,14 @@ export const WAKU_CLIENT_MODULE = 'waku-client';
 export const WAKU_CLIENT_MODULE_VALUE = 'waku/client';
 
 // HACK for react-server-dom-webpack without webpack
-const moduleLoading = new Map();
-const moduleCache = new Map();
-(globalThis as any).__webpack_chunk_load__ = async (id: string) =>
-  moduleLoading.get(id);
-(globalThis as any).__webpack_require__ = (id: string) => moduleCache.get(id);
+(globalThis as any).__webpack_module_loading__ ||= new Map();
+(globalThis as any).__webpack_module_cache__ ||= new Map();
+(globalThis as any).__webpack_chunk_load__ ||= async (id: string) =>
+  (globalThis as any).__webpack_module_loading__.get(id);
+(globalThis as any).__webpack_require__ ||= (id: string) =>
+  (globalThis as any).__webpack_module_cache__.get(id);
+const moduleLoading = (globalThis as any).__webpack_module_loading__;
+const moduleCache = (globalThis as any).__webpack_module_cache__;
 
 type CreateViteServer = (
   inlineConfig?: InlineConfig | undefined,
@@ -47,10 +50,14 @@ const getViteServer = async (createViteServer: CreateViteServer) => {
     throw e;
   });
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
+  // HACK to avoid bundling
+  const VITE_PLUGIN_NONJS_RESOLVE_MODULE_VALUE =
+    '../plugins/vite-plugin-nonjs-resolve.js';
+  const VITE_PLUGIN_RSC_ENV_MODULE_VALUE = '../plugins/vite-plugin-rsc-env.js';
   const { nonjsResolvePlugin } = await import(
-    '../plugins/vite-plugin-nonjs-resolve.js'
+    VITE_PLUGIN_NONJS_RESOLVE_MODULE_VALUE
   );
-  const { rscEnvPlugin } = await import('../plugins/vite-plugin-rsc-env.js');
+  const { rscEnvPlugin } = await import(VITE_PLUGIN_RSC_ENV_MODULE_VALUE);
   const viteServer = await createViteServer({
     plugins: [nonjsResolvePlugin(), rscEnvPlugin({})],
     // HACK to suppress 'Skipping dependency pre-bundling' warning
