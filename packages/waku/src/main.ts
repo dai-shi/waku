@@ -1,4 +1,3 @@
-export { honoMiddleware } from './lib/middleware/hono-prd.js';
-export { connectMiddleware } from './lib/middleware/connect-prd.js';
+export { Link } from 'waku/router/client';
 
-export { createHandler as unstable_createHandler } from './lib/handlers/handler-prd.js';
+export { createPages } from 'waku/router/server';
