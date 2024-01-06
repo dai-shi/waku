@@ -25,11 +25,11 @@ export const emitCloudflareOutput = async (
     writeFileSync(
       path.join(outputDir, 'serve.js'),
       `
-import { honoMiddleware } from 'waku';
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/cloudflare-workers';
 
 const entries = import('./${entriesFile}');
+const { honoMiddleware } = await entries;
 let serveWaku;
 
 const app = new Hono();
