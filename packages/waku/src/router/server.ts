@@ -156,7 +156,7 @@ type HasSlugInPath<T, K extends string> = T extends `/[${K}]/${infer _}`
       ? true
       : false;
 type PathWithSlug<T, K extends string> = IsValidPath<T> extends true
-  ? HasSlugInPath<T, K | `...${K}`> extends true
+  ? HasSlugInPath<T, K> extends true
     ? T
     : never
   : never;
@@ -168,7 +168,11 @@ type PathWithoutSlug<T> = T extends '/'
       : T
     : never;
 
-type CreatePage = <Path extends string, SlugKey extends string>(
+type CreatePage = <
+  Path extends string,
+  SlugKey extends string,
+  WildSlugKey extends string,
+>(
   page:
     | {
         render: 'static';
@@ -188,8 +192,10 @@ type CreatePage = <Path extends string, SlugKey extends string>(
       }
     | {
         render: 'dynamic';
-        path: PathWithSlug<Path, SlugKey>;
-        component: FunctionComponent<RouteProps & Record<SlugKey, string>>;
+        path: PathWithSlug<Path, SlugKey | `...${WildSlugKey}`>;
+        component: FunctionComponent<
+          RouteProps & Record<SlugKey, string> & Record<WildSlugKey, string[]>
+        >;
       },
 ) => void;
 
@@ -199,22 +205,27 @@ type CreateLayout = <T extends string>(layout: {
   component: FunctionComponent<RouteProps & { children: ReactNode }>;
 }) => void;
 
+const splitPath = (path: string): string[] => {
+  const p = path.replace(/^\//, '');
+  if (!p) {
+    return [];
+  }
+  return p.split('/');
+};
+
 type ParsedPath = { name: string; isSlug: boolean; isWildcard: boolean }[];
 const parsePath = (path: string): ParsedPath =>
-  path
-    .replace(/^\//, '')
-    .split('/')
-    .map((name) => {
-      const isSlug = name.startsWith('[') && name.endsWith(']');
-      if (isSlug) {
-        name = name.slice(1, -1);
-      }
-      const isWildcard = name.startsWith('...');
-      if (isWildcard) {
-        name = name.slice(3);
-      }
-      return { name, isSlug, isWildcard };
-    });
+  splitPath(path).map((name) => {
+    const isSlug = name.startsWith('[') && name.endsWith(']');
+    if (isSlug) {
+      name = name.slice(1, -1);
+    }
+    const isWildcard = name.startsWith('...');
+    if (isWildcard) {
+      name = name.slice(3);
+    }
+    return { name, isSlug, isWildcard };
+  });
 
 const getDynamicMapping = (parsedPath: ParsedPath, actual: string[]) => {
   if (parsedPath.length !== actual.length) {
@@ -238,7 +249,7 @@ const getWildcardMapping = (parsedPath: ParsedPath, actual: string[]) => {
   if (parsedPath.length > actual.length) {
     return null;
   }
-  const mapping: Record<string, string> = {};
+  const mapping: Record<string, string | string[]> = {};
   let wildcardStartIndex = -1;
   for (let i = 0; i < parsedPath.length; i++) {
     const { name, isSlug, isWildcard } = parsedPath[i]!;
@@ -270,9 +281,10 @@ const getWildcardMapping = (parsedPath: ParsedPath, actual: string[]) => {
   if (wildcardStartIndex === -1 || wildcardEndIndex === -1) {
     throw new Error('Invalid wildcard path');
   }
-  mapping[parsedPath[wildcardStartIndex]!.name] = actual
-    .slice(wildcardStartIndex, wildcardEndIndex + 1)
-    .join('/');
+  mapping[parsedPath[wildcardStartIndex]!.name] = actual.slice(
+    wildcardStartIndex,
+    wildcardEndIndex + 1,
+  );
   return mapping;
 };
 
@@ -377,16 +389,13 @@ export function createPages(
         return 'static';
       }
       for (const [parsedPath] of dynamicPathMap.values()) {
-        const mapping = getDynamicMapping(parsedPath, path.split('/').slice(1));
+        const mapping = getDynamicMapping(parsedPath, splitPath(path));
         if (mapping) {
           return 'dynamic';
         }
       }
       for (const [parsedPath] of wildcardPathMap.values()) {
-        const mapping = getWildcardMapping(
-          parsedPath,
-          path.split('/').slice(1),
-        );
+        const mapping = getWildcardMapping(parsedPath, splitPath(path));
         if (mapping) {
           return 'dynamic';
         }
