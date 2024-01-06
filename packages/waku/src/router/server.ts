@@ -156,7 +156,7 @@ type HasSlugInPath<T, K extends string> = T extends `/[${K}]/${infer _}`
       ? true
       : false;
 type PathWithSlug<T, K extends string> = IsValidPath<T> extends true
-  ? HasSlugInPath<T, K | `...${K}`> extends true
+  ? HasSlugInPath<T, K> extends true
     ? T
     : never
   : never;
@@ -168,7 +168,11 @@ type PathWithoutSlug<T> = T extends '/'
       : T
     : never;
 
-type CreatePage = <Path extends string, SlugKey extends string>(
+type CreatePage = <
+  Path extends string,
+  SlugKey extends string,
+  WildSlugKey extends string,
+>(
   page:
     | {
         render: 'static';
@@ -188,8 +192,10 @@ type CreatePage = <Path extends string, SlugKey extends string>(
       }
     | {
         render: 'dynamic';
-        path: PathWithSlug<Path, SlugKey>;
-        component: FunctionComponent<RouteProps & Record<SlugKey, string>>;
+        path: PathWithSlug<Path, SlugKey | `...${WildSlugKey}`>;
+        component: FunctionComponent<
+          RouteProps & Record<SlugKey, string> & Record<WildSlugKey, string[]>
+        >;
       },
 ) => void;
 
@@ -243,7 +249,7 @@ const getWildcardMapping = (parsedPath: ParsedPath, actual: string[]) => {
   if (parsedPath.length > actual.length) {
     return null;
   }
-  const mapping: Record<string, string> = {};
+  const mapping: Record<string, string | string[]> = {};
   let wildcardStartIndex = -1;
   for (let i = 0; i < parsedPath.length; i++) {
     const { name, isSlug, isWildcard } = parsedPath[i]!;
@@ -275,9 +281,10 @@ const getWildcardMapping = (parsedPath: ParsedPath, actual: string[]) => {
   if (wildcardStartIndex === -1 || wildcardEndIndex === -1) {
     throw new Error('Invalid wildcard path');
   }
-  mapping[parsedPath[wildcardStartIndex]!.name] = actual
-    .slice(wildcardStartIndex, wildcardEndIndex + 1)
-    .join('/');
+  mapping[parsedPath[wildcardStartIndex]!.name] = actual.slice(
+    wildcardStartIndex,
+    wildcardEndIndex + 1,
+  );
   return mapping;
 };
 
