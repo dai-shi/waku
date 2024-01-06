@@ -19,12 +19,14 @@ export default createPages(async ({ createPage, createLayout }) => {
 
   createPage({
     render: 'static',
+    // render: 'dynamic',
     path: '/',
     component: HomePage,
   });
 
   createPage({
     render: 'static',
+    // render: 'dynamic',
     path: '/foo',
     component: FooPage,
   });
@@ -80,6 +82,8 @@ export default createPages(async ({ createPage, createLayout }) => {
   createPage({
     render: 'dynamic',
     path: '/any/[...all]', // `/[...all]` is impossible.
-    component: ({ all }: { all: string }) => <h2>Catch-all: {all}</h2>,
+    component: ({ all }: { all: string[] }) => (
+      <h2>Catch-all: {all.join('/')}</h2>
+    ),
   });
 });
