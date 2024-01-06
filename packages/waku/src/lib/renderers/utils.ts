@@ -47,11 +47,11 @@ export const generatePrefetchCode = (
   if (inputsArray.length) {
     code += `
 ${inputsArray
-    .map((input) => {
-      const url = basePrefix + encodeInput(input);
-      return `globalThis.__WAKU_PREFETCHED__['${url}'] = fetch('${url}');`;
-    })
-    .join('\n')}`;
+  .map((input) => {
+    const url = basePrefix + encodeInput(input);
+    return `globalThis.__WAKU_PREFETCHED__['${url}'] = fetch('${url}');`;
+  })
+  .join('\n')}`;
   }
   for (const moduleId of moduleIds) {
     code += `
