@@ -2,7 +2,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import { connectMiddleware } from 'waku';
+import { connectMiddleware } from 'waku/prd';
 
 const withSsr = process.argv[2] === '--with-ssr';
 

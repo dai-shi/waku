@@ -27,9 +27,9 @@ export const emitDenoOutput = async (
       `
 import { Hono } from "https://deno.land/x/hono/mod.ts";
 import { serveStatic } from "https://deno.land/x/hono/middleware.ts";
-import { honoMiddleware } from "npm:waku@0.19.0-alpha.0";
 
 const entries = import('./${entriesFile}');
+const { honoMiddleware } = await entries;
 const env = Deno.env.toObject();
 
 const app = new Hono();

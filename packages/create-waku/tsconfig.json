@@ -1,10 +1,12 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "module": "ESNext",
     "rootDir": "./src",
     "outDir": "./dist",
     "lib": ["esnext"],
-    "emitDeclarationOnly": false
+    "emitDeclarationOnly": false,
+    "moduleResolution": "bundler"
   },
   "include": ["./src"],
   "exclude": ["./template"],
