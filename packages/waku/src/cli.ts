@@ -46,6 +46,8 @@ const { values, positionals } = parseArgs({
   },
 });
 
+loadEnv();
+
 const cmd = positionals[0];
 
 if (values.version) {
@@ -78,7 +80,7 @@ if (values.version) {
 
 async function runDev(options: { ssr: boolean }) {
   const app = new Hono();
-  app.use('*', honoDevMiddleware({ ...options, env: loadEnv() }));
+  app.use('*', honoDevMiddleware({ ...options, env: process.env as any }));
   const port = parseInt(process.env.PORT || '3000', 10);
   startServer(app, port);
 }
@@ -86,7 +88,7 @@ async function runDev(options: { ssr: boolean }) {
 async function runBuild(options: { ssr: boolean }) {
   await build({
     ...options,
-    env: loadEnv(),
+    env: process.env as any,
     vercel:
       values['with-vercel'] ?? !!process.env.VERCEL
         ? {
@@ -104,7 +106,10 @@ async function runStart(options: { ssr: boolean }) {
     pathToFileURL(path.resolve(distDir, entriesJs)).toString()
   );
   const app = new Hono();
-  app.use('*', honoPrdMiddleware({ ...options, entries, env: loadEnv() }));
+  app.use(
+    '*',
+    honoPrdMiddleware({ ...options, entries, env: process.env as any }),
+  );
   app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
   const port = parseInt(process.env.PORT || '8080', 10);
   startServer(app, port);
@@ -143,23 +148,20 @@ Options:
 `);
 }
 
+// TODO consider using a library such as `dotenv`
 function loadEnv() {
-  const env: Record<string, string> = {
-    ...(process.env as Record<string, string>),
-  };
   if (existsSync('.env.local')) {
     for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
       const [key, value] = line.split('=');
       if (key && value) {
         if (value.startsWith('"') && value.endsWith('"')) {
-          env[key.trim()] = value.slice(1, -1);
+          process.env[key.trim()] = value.slice(1, -1);
         } else if (value.startsWith("'") && value.endsWith("'")) {
-          env[key.trim()] = value.slice(1, -1);
+          process.env[key.trim()] = value.slice(1, -1);
         } else {
-          env[key.trim()] = value.trim();
+          process.env[key.trim()] = value.trim();
         }
       }
     }
   }
-  return env;
 }
