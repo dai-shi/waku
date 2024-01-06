@@ -20,22 +20,19 @@ export default createPages(async ({ createPage, createLayout }) => {
     component: HomePage,
   });
 
-  const [blogPaths, blogSlugToFileName] = await getBlogData();
+  const blogPaths = await getBlogPaths();
 
   createPage({
     render: 'static',
     path: '/blog/[slug]',
     staticPaths: blogPaths,
-    component: ({ slug }: { slug: string }) => (
-      <BlogArticlePage slug={slug} blogSlugToFileName={blogSlugToFileName} />
-    ),
+    component: BlogArticlePage,
   });
 });
 
-async function getBlogData() {
+async function getBlogPaths() {
   const blogPaths: Array<string> = [];
   const blogFileNames: Array<string> = [];
-  const blogSlugToFileName: Record<string, string> = {};
 
   readdirSync('./contents').forEach((fileName) => {
     blogFileNames.push(fileName);
@@ -50,8 +47,7 @@ async function getBlogData() {
     });
     const { frontmatter } = mdx;
     blogPaths.push(frontmatter.slug);
-    blogSlugToFileName[frontmatter.slug] = fileName;
   }
 
-  return [blogPaths, blogSlugToFileName] as const;
+  return blogPaths;
 }
