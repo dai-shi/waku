@@ -1,7 +1,7 @@
 // This file can depend on Node.js
 
 import { pathToFileURL } from 'node:url';
-import { parentPort } from 'node:worker_threads';
+import { parentPort, getEnvironmentData } from 'node:worker_threads';
 import { Server } from 'node:http';
 import type { TransferListItem } from 'node:worker_threads';
 import { createServer as createViteServer } from 'vite';
@@ -29,8 +29,8 @@ if (HAS_MODULE_REGISTER) {
   module.register('waku/node-loader', pathToFileURL('./'));
 }
 
-(globalThis as any).__WAKU_PRIVATE_ENV__ = JSON.parse(
-  process.env.__WAKU_PRIVATE_ENV__!,
+(globalThis as any).__WAKU_PRIVATE_ENV__ = getEnvironmentData(
+  '__WAKU_PRIVATE_ENV__',
 );
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {

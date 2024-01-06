@@ -68,8 +68,12 @@ const getWorker = () => {
         throw e;
       }),
     ])
-      .then(([{ Worker }, { default: module }]) => {
+      .then(([{ Worker, setEnvironmentData }, { default: module }]) => {
         const HAS_MODULE_REGISTER = typeof module.register === 'function';
+        setEnvironmentData(
+          '__WAKU_PRIVATE_ENV__',
+          (globalThis as any).__WAKU_PRIVATE_ENV__,
+        );
         const worker = new Worker(
           new URL('dev-worker-impl.js', import.meta.url),
           {
@@ -81,11 +85,6 @@ const getWorker = () => {
               'react-server',
               'workerd',
             ],
-            env: {
-              __WAKU_PRIVATE_ENV__: JSON.stringify(
-                (globalThis as any).__WAKU_PRIVATE_ENV__,
-              ),
-            },
           },
         );
         worker.on('message', (mesg: MessageRes) => {
