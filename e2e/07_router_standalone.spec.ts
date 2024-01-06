@@ -54,6 +54,10 @@ test.describe('07_router standalone', () => {
     await cp(wakuDir, `${cacheDir}/${dirname}/node_modules/waku`, {
       recursive: true,
     });
+    execSync('pnpm --ignore-workspace install --prod', {
+      cwd: `${cacheDir}/${dirname}/node_modules/waku`,
+      stdio: 'inherit',
+    });
   });
 
   test('should prod work', async ({ page }) => {
