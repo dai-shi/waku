@@ -34,7 +34,7 @@ async function getBlogPaths() {
   const blogPaths: Array<string> = [];
   const blogFileNames: Array<string> = [];
 
-  readdirSync('./contents').forEach((fileName: string) => {
+  readdirSync('./contents').forEach((fileName) => {
     blogFileNames.push(fileName);
   });
 
