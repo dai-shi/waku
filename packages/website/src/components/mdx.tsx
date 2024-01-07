@@ -62,7 +62,7 @@ export const components = {
   pre: ({ children, ...rest }: any) => (
     <Code
       code={children.props.children}
-      className="!-mx-[0.75em] max-w-[calc(100%+1.5em)] !overflow-clip overflow-x-scroll !rounded-xl !bg-gray-800 !p-0 !font-mono !text-sm sm:!p-[0.5em] sm:!text-base [&>*]:!bg-gray-800"
+      className="max-w-full !overflow-clip overflow-x-scroll !rounded-xl !bg-gray-800 !p-0 !font-mono !text-sm sm:!-mx-[0.75em] sm:max-w-[calc(100%+1.5em)] sm:!p-[0.5em] sm:!text-base [&>*]:!bg-gray-800"
       {...rest}
     />
   ),
