@@ -20,7 +20,7 @@ export const Menu = () => {
       <div className="fixed bottom-0 left-0 z-100 p-8 sm:bottom-auto sm:left-auto sm:right-0 sm:top-0">
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="focus:ring-primary-300 inline-flex aspect-square h-16 w-16 items-center justify-center overflow-clip rounded-full border-4 border-gray-950 bg-gray-900 text-3xl transition duration-300 ease-in-out hover:bg-gray-800 focus:ring-4"
+          className="inline-flex aspect-square h-16 w-16 items-center justify-center overflow-clip rounded-full border-4 border-gray-950 bg-gray-900 text-3xl transition duration-300 ease-in-out hover:bg-gray-800 focus:ring-4 focus:ring-primary-300"
         >
           <div className="h-full w-full p-3">
             {!isMenuOpen ? (
@@ -89,7 +89,7 @@ export const MenuLink = ({ link }: MenuLinkProps) => {
         {...props}
         onClick={() => setIsMenuOpen(false)}
         className={cx(
-          'focus:ring-primary-300 flex items-center gap-4 rounded-md focus:ring-4',
+          'flex items-center gap-4 rounded-md focus:ring-4 focus:ring-primary-300',
           !link.disabled
             ? 'text-white transition-colors duration-300 ease-in-out hover:text-primary'
             : 'cursor-not-allowed text-white/40',

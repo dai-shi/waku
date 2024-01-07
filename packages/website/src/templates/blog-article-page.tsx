@@ -39,7 +39,7 @@ export const BlogArticlePage = async ({ slug }: BlogArticlePageProps) => {
             href={author.url}
             target="_blank"
             rel="noreferrer"
-            className="mx-auto mb-8 mt-4 inline-flex items-center justify-center gap-2 text-red-400 hover:underline sm:mb-12 sm:mt-4"
+            className="text-red-400 mx-auto mb-8 mt-4 inline-flex items-center justify-center gap-2 hover:underline sm:mb-12 sm:mt-4"
           >
             <div className="relative h-8 w-8 overflow-clip rounded-full border border-gray-500">
               <img
