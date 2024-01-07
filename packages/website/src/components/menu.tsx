@@ -91,7 +91,7 @@ export const MenuLink = ({ link }: MenuLinkProps) => {
         className={cx(
           'focus:ring-primary-300 flex items-center gap-4 rounded-md focus:ring-4',
           !link.disabled
-            ? 'text-white  transition-colors duration-300 ease-in-out hover:text-primary'
+            ? 'text-white transition-colors duration-300 ease-in-out hover:text-primary'
             : 'cursor-not-allowed text-white/40',
         )}
       >
