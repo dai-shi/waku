@@ -49,7 +49,11 @@ const Meta = () => {
       <meta property="og:image:height" content="630" />
       <meta property="og:url" content="https://waku.gg" />
       <meta property="twitter:card" content="summary_large_image" />
-      <link rel="icon" type="image/png" href="/images/shinto-shrine.png" />
+      <link
+        rel="icon"
+        type="image/png"
+        href="https://cdn.candycode.com/waku/shinto-shrine.png"
+      />
     </>
   );
 };

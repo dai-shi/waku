@@ -15,8 +15,8 @@ export const Page = ({ hero = null, children }: PageProps) => {
         </div>
         <div className="relative z-20 flex justify-center px-4">
           <div
-            id="readme"
-            className="mx-auto mt-4 inline-block max-w-full scroll-mt-4 overflow-clip rounded-2xl border-4 border-gray-950 bg-gray-900/90 p-4 text-white backdrop-blur sm:p-8 only:sm:mt-32 only:sm:scroll-mt-32 lg:p-12"
+            id="content"
+            className="mx-auto mt-4 inline-block max-w-full scroll-mt-4 overflow-clip rounded-2xl border-4 border-gray-950 bg-gray-900/90 p-4 text-white backdrop-blur sm:p-8 lg:mt-32 lg:scroll-mt-32 lg:p-12"
           >
             <div className="w-full max-w-[80ch]">{children}</div>
           </div>

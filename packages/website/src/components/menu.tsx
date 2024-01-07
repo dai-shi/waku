@@ -17,7 +17,7 @@ export const Menu = () => {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 z-100 p-8 sm:bottom-auto sm:left-auto sm:right-0 sm:top-0">
+      <div className="fixed bottom-0 left-0 z-100 p-8 sm:left-auto xl:bottom-auto xl:right-0 xl:top-0">
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className="inline-flex aspect-square h-16 w-16 items-center justify-center overflow-clip rounded-full border-4 border-gray-950 bg-gray-900 text-3xl transition duration-300 ease-in-out hover:bg-gray-800 focus:ring-4 focus:ring-primary-300"
@@ -25,15 +25,17 @@ export const Menu = () => {
           <div className="h-full w-full p-3">
             {!isMenuOpen ? (
               <img
-                src="/images/shinto-shrine.png"
+                key="menu"
+                src="https://cdn.candycode.com/waku/shinto-shrine.png"
                 alt="Menu"
                 className="h-full w-full object-contain"
               />
             ) : (
               <img
-                src="/images/back.png"
+                key="close"
+                src="https://cdn.candycode.com/waku/back.png"
                 alt="Close"
-                className="h-full w-full object-contain"
+                className="h-full w-full object-contain grayscale invert"
               />
             )}
           </div>
@@ -97,7 +99,7 @@ export const MenuLink = ({ link }: MenuLinkProps) => {
       >
         <span className="text-5xl font-bold sm:text-6xl">{link.label}</span>
         {link.disabled && (
-          <span className="inline-block rounded-md bg-white px-2 py-1 text-xs font-black uppercase tracking-wide text-black sm:text-sm">
+          <span className="inline-block rounded-md bg-white px-2 py-1 text-[0.625rem] font-black uppercase tracking-wide text-black sm:text-xs">
             Coming soon
           </span>
         )}
@@ -108,8 +110,8 @@ export const MenuLink = ({ link }: MenuLinkProps) => {
 
 const links = [
   { href: '/', label: 'Home' },
-  { href: 'https://github.com/dai-shi/waku/issues/24', label: 'Roadmap' },
   { href: '/docs', label: 'Docs', disabled: true },
+  { href: 'https://github.com/dai-shi/waku/issues/24', label: 'Roadmap' },
   { href: '/blog', label: 'Blog', disabled: true },
   { href: 'https://github.com/dai-shi/waku', label: 'GitHub' },
   { href: 'https://discord.gg/MrQdmzd', label: 'Discord' },

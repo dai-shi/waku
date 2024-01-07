@@ -32,5 +32,10 @@ body {
 ::selection {
   @apply bg-primary text-black;
 }
+@layer utilities {
+  .text-shadow {
+    text-shadow: 0.03125em 0.03125em 0px black;
+  }
+}
 @tailwind components;
 @tailwind utilities;

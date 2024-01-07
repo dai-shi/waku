@@ -21,21 +21,15 @@ export const HomePage = async () => {
 
   return (
     <>
-      <title>Waku, the minimal React framework</title>
+      <title>Waku</title>
       <Page
         hero={
           <div className="relative flex h-[100svh] w-full flex-col items-center justify-center overflow-clip font-sans">
             <div className="pt-8 text-center text-white">
-              <h1
-                className="-ml-4 font-serif text-8xl font-extrabold leading-none sm:text-[10rem]"
-                style={{ textShadow: '0.375rem 0.375rem 0px black' }}
-              >
+              <h1 className="text-shadow -ml-4 font-serif text-8xl font-extrabold leading-none sm:text-[10rem]">
                 Waku
               </h1>
-              <h3
-                className="text-xl font-bold leading-none text-white/80 sm:-mt-2 sm:text-3xl"
-                style={{ textShadow: '0.075rem 0.075rem 0px black' }}
-              >
+              <h3 className="text-shadow text-xl font-bold leading-none text-white/80 sm:-mt-2 sm:text-3xl">
                 The minimal React framework
               </h3>
               <div className="mt-4 px-12 sm:mt-4 sm:px-0">
