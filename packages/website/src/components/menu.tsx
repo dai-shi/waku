@@ -46,7 +46,7 @@ export const Menu = () => {
           isMenuOpen
             ? 'pointer-events-auto opacity-100'
             : 'pointer-events-none opacity-0',
-          'fixed inset-0 z-90 flex items-center justify-center overscroll-none bg-gray-950/90 text-white backdrop-blur transition-opacity duration-700 ease-in-out',
+          'fixed inset-0 z-90 flex items-center justify-center overscroll-none bg-gray-950/90 pb-32 text-white backdrop-blur transition-opacity duration-700 ease-in-out lg:pb-0',
         )}
       >
         <ul className="flex flex-col gap-6 sm:gap-8">
@@ -97,7 +97,7 @@ export const MenuLink = ({ link }: MenuLinkProps) => {
             : 'cursor-not-allowed text-white/40',
         )}
       >
-        <span className="text-5xl font-bold sm:text-6xl">{link.label}</span>
+        <span className="text-4xl font-bold sm:text-6xl">{link.label}</span>
         {link.disabled && (
           <span className="inline-block rounded-md bg-white px-2 py-1 text-[0.625rem] font-black uppercase tracking-wide text-black sm:text-xs">
             Coming soon
