@@ -10,12 +10,16 @@ import {
   useState,
   useTransition,
   Fragment,
-  type AnchorHTMLAttributes,
-  type ReactElement,
-  type PropsWithChildren,
-  type MouseEvent,
 } from 'react';
-import type { ComponentProps, FunctionComponent, ReactNode } from 'react';
+import type {
+  ComponentProps,
+  FunctionComponent,
+  ReactNode,
+  AnchorHTMLAttributes,
+  ReactElement,
+  PropsWithChildren,
+  MouseEvent,
+} from 'react';
 
 import { prefetchRSC, Root, Slot, useRefetch } from '../client.js';
 import {
