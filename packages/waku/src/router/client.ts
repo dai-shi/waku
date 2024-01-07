@@ -10,6 +10,10 @@ import {
   useState,
   useTransition,
   Fragment,
+  type AnchorHTMLAttributes,
+  type ReactElement,
+  type PropsWithChildren,
+  type MouseEvent,
 } from 'react';
 import type { ComponentProps, FunctionComponent, ReactNode } from 'react';
 
@@ -69,19 +73,23 @@ export function useLocation() {
   return value.loc;
 }
 
+export type LinkProps = PropsWithChildren<
+  {
+    href: string;
+    pending?: ReactNode;
+    notPending?: ReactNode;
+    unstable_prefetchOnEnter?: boolean;
+  } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>
+>;
+
 export function Link({
   href,
   children,
   pending,
   notPending,
   unstable_prefetchOnEnter,
-}: {
-  href: string;
-  children: ReactNode;
-  pending?: ReactNode;
-  notPending?: ReactNode;
-  unstable_prefetchOnEnter?: boolean;
-}) {
+  ...props
+}: LinkProps): ReactElement {
   const value = useContext(RouterContext);
   const changeLocation = value
     ? value.changeLocation
@@ -94,7 +102,7 @@ export function Link({
         throw new Error('Missing Router');
       };
   const [isPending, startTransition] = useTransition();
-  const onClick = (event: MouseEvent) => {
+  const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     const url = new URL(href, window.location.href);
     if (url.href !== window.location.href) {
@@ -103,16 +111,22 @@ export function Link({
         changeLocation(url.pathname, url.searchParams);
       });
     }
+    props.onClick?.(event);
   };
   const onMouseEnter = unstable_prefetchOnEnter
-    ? () => {
+    ? (event: MouseEvent<HTMLAnchorElement>) => {
         const url = new URL(href, window.location.href);
         if (url.href !== window.location.href) {
           prefetchLocation(url.pathname, url.searchParams);
         }
+        props.onMouseEnter?.(event);
       }
-    : undefined;
-  const ele = createElement('a', { href, onClick, onMouseEnter }, children);
+    : props.onMouseEnter;
+  const ele = createElement(
+    'a',
+    { ...props, href, onClick, onMouseEnter },
+    children,
+  );
   if (isPending && pending !== undefined) {
     return createElement(Fragment, null, ele, pending);
   }
