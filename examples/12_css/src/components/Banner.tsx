@@ -1,4 +1,6 @@
 import { create, props } from '@stylexjs/stylex';
+// eslint-disable-next-line import/no-unresolved
+import '@stylex-dev.css';
 
 const styles = create({
   root: {

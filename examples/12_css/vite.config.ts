@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
-import styleX from 'vite-plugin-stylex';
 import commonjs from 'vite-plugin-commonjs';
+import { stylexPlugin } from 'vite-plugin-stylex-dev';
 
 export default defineConfig({
   ssr: {
@@ -9,7 +9,6 @@ export default defineConfig({
   },
   plugins: [
     vanillaExtractPlugin({ emitCssInSsr: true }),
-    styleX(),
     // @ts-expect-error not callable FIXME why not callable?
     commonjs({
       filter(id: string) {
@@ -20,5 +19,6 @@ export default defineConfig({
         }
       },
     }),
+    stylexPlugin(),
   ],
 });
