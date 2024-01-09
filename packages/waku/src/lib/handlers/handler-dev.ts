@@ -49,6 +49,9 @@ export function createHandler<
       optimizeDeps: {
         include: ['react-server-dom-webpack/client', 'react-dom'],
         exclude: ['waku'],
+        entries: [
+          // `${config.srcDir}/${config.entriesJs}`.replace(/\.js$/, '.*'),
+        ],
       },
       plugins: [
         patchReactRefresh(viteReact()),

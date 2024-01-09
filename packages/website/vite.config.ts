@@ -5,8 +5,10 @@ export default defineConfig(({ mode }) => {
     return {
       optimizeDeps: {
         // FIXME this causes an error with `--with-ssr`
-        // include: ['@uidotdev/usehooks'],
+        // include: ['jotai', 'clsx'],
+        include: ['jotai', 'clsx'],
       },
+
       ssr: {
         external: ['next-mdx-remote'],
       },
