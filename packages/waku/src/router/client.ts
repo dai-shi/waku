@@ -17,7 +17,6 @@ import type {
   ReactNode,
   AnchorHTMLAttributes,
   ReactElement,
-  PropsWithChildren,
   MouseEvent,
 } from 'react';
 
@@ -77,23 +76,25 @@ export function useLocation() {
   return value.loc;
 }
 
-export type LinkProps = PropsWithChildren<
-  {
-    href: string;
-    pending?: ReactNode;
-    notPending?: ReactNode;
-    unstable_prefetchOnEnter?: boolean;
-  } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>
->;
+export type LinkProps = {
+  to: string;
+  pending?: ReactNode;
+  notPending?: ReactNode;
+  children: ReactNode;
+  unstable_prefetchOnEnter?: boolean;
+} & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>;
 
 export function Link({
-  href,
+  to,
   children,
   pending,
   notPending,
   unstable_prefetchOnEnter,
   ...props
 }: LinkProps): ReactElement {
+  if (!to.startsWith('/')) {
+    throw new Error('Link must start with "/"');
+  }
   const value = useContext(RouterContext);
   const changeLocation = value
     ? value.changeLocation
@@ -108,7 +109,7 @@ export function Link({
   const [isPending, startTransition] = useTransition();
   const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
-    const url = new URL(href, window.location.href);
+    const url = new URL(to, window.location.href);
     if (url.href !== window.location.href) {
       prefetchLocation(url.pathname, url.searchParams);
       startTransition(() => {
@@ -119,7 +120,7 @@ export function Link({
   };
   const onMouseEnter = unstable_prefetchOnEnter
     ? (event: MouseEvent<HTMLAnchorElement>) => {
-        const url = new URL(href, window.location.href);
+        const url = new URL(to, window.location.href);
         if (url.href !== window.location.href) {
           prefetchLocation(url.pathname, url.searchParams);
         }
@@ -128,7 +129,7 @@ export function Link({
     : props.onMouseEnter;
   const ele = createElement(
     'a',
-    { ...props, href, onClick, onMouseEnter },
+    { ...props, href: to, onClick, onMouseEnter },
     children,
   );
   if (isPending && pending !== undefined) {

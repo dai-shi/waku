@@ -20,7 +20,7 @@ const HomeLayout = ({ children }: { children: ReactNode }) => (
     <ul>
       <li>
         <Link
-          href="/"
+          to="/"
           pending={<Pending isPending />}
           notPending={<Pending isPending={false} />}
         >
@@ -29,7 +29,7 @@ const HomeLayout = ({ children }: { children: ReactNode }) => (
       </li>
       <li>
         <Link
-          href="/foo"
+          to="/foo"
           pending={<Pending isPending />}
           notPending={<Pending isPending={false} />}
         >

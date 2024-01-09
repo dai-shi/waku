@@ -37,7 +37,7 @@ export const BlogArticlePage = async ({ slug }: BlogArticlePageProps) => {
           />
         </div>
         <div className="fixed inset-0 z-10 h-full w-full bg-gradient-radial from-transparent to-black/25" />
-        <Link href="/">
+        <Link to="/">
           <span className="fixed bottom-0 left-0 z-50 p-4 py-8 text-white sm:p-8 lg:top-0">
             <h1 className="font-serif text-3xl font-extrabold leading-none transition duration-300 hover:opacity-100 lg:opacity-50">
               ⛩️ Home
