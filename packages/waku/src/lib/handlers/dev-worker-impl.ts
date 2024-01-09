@@ -130,7 +130,8 @@ const mergedViteConfig = await mergeUserViteConfig({
       conditions: ['react-server', 'workerd'],
       externalConditions: ['react-server', 'workerd'],
     },
-    external: ['react', 'react-server-dom-webpack'],
+    // FIXME adding `classnames` here seems very ad-hoc.
+    external: ['react', 'react-server-dom-webpack', 'classnames'],
     noExternal: /^(?!node:)/,
   },
   appType: 'custom',
