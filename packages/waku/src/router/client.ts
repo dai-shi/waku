@@ -11,7 +11,14 @@ import {
   useTransition,
   Fragment,
 } from 'react';
-import type { ComponentProps, FunctionComponent, ReactNode } from 'react';
+import type {
+  ComponentProps,
+  FunctionComponent,
+  ReactNode,
+  AnchorHTMLAttributes,
+  ReactElement,
+  MouseEvent,
+} from 'react';
 
 import { prefetchRSC, Root, Slot, useRefetch } from '../client.js';
 import {
@@ -69,19 +76,25 @@ export function useLocation() {
   return value.loc;
 }
 
+export type LinkProps = {
+  to: string;
+  pending?: ReactNode;
+  notPending?: ReactNode;
+  children: ReactNode;
+  unstable_prefetchOnEnter?: boolean;
+} & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>;
+
 export function Link({
-  href,
+  to,
   children,
   pending,
   notPending,
   unstable_prefetchOnEnter,
-}: {
-  href: string;
-  children: ReactNode;
-  pending?: ReactNode;
-  notPending?: ReactNode;
-  unstable_prefetchOnEnter?: boolean;
-}) {
+  ...props
+}: LinkProps): ReactElement {
+  if (!to.startsWith('/')) {
+    throw new Error('Link must start with "/"');
+  }
   const value = useContext(RouterContext);
   const changeLocation = value
     ? value.changeLocation
@@ -94,25 +107,31 @@ export function Link({
         throw new Error('Missing Router');
       };
   const [isPending, startTransition] = useTransition();
-  const onClick = (event: MouseEvent) => {
+  const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
-    const url = new URL(href, window.location.href);
+    const url = new URL(to, window.location.href);
     if (url.href !== window.location.href) {
       prefetchLocation(url.pathname, url.searchParams);
       startTransition(() => {
         changeLocation(url.pathname, url.searchParams);
       });
     }
+    props.onClick?.(event);
   };
   const onMouseEnter = unstable_prefetchOnEnter
-    ? () => {
-        const url = new URL(href, window.location.href);
+    ? (event: MouseEvent<HTMLAnchorElement>) => {
+        const url = new URL(to, window.location.href);
         if (url.href !== window.location.href) {
           prefetchLocation(url.pathname, url.searchParams);
         }
+        props.onMouseEnter?.(event);
       }
-    : undefined;
-  const ele = createElement('a', { href, onClick, onMouseEnter }, children);
+    : props.onMouseEnter;
+  const ele = createElement(
+    'a',
+    { ...props, href: to, onClick, onMouseEnter },
+    children,
+  );
   if (isPending && pending !== undefined) {
     return createElement(Fragment, null, ele, pending);
   }
