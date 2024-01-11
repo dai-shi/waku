@@ -11,7 +11,7 @@ export const Counter = () => {
       <p>Count: {count}</p>
       <button onClick={() => setCount((c) => c + 1)}>Increment</button>
       <h3>This is a client component.</h3>
-      <Link href="/">Go to Home</Link>
+      <Link to="/">Go to Home</Link>
     </div>
   );
 };
