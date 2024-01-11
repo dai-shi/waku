@@ -1,7 +1,6 @@
 'use client';
 
-import type { ComponentPropsWithoutRef } from 'react';
-// import { Link } from 'waku';
+import { Link } from 'waku';
 import { useAtom, useSetAtom } from 'jotai';
 import cx from 'clsx';
 
@@ -70,15 +69,16 @@ type MenuLinkProps = {
 export const MenuLink = ({ link }: MenuLinkProps) => {
   const setIsMenuOpen = useSetAtom(menuAtom);
 
-  let Element: any = 'a'; // Switch to <Link>: ElementType
-  const props: ComponentPropsWithoutRef<'a'> = {};
-
-  props.href = link.href;
+  let Element: any = Link;
+  const props: any = {};
 
   if (link.href.startsWith('http')) {
     Element = 'a';
     props.target = '_blank';
     props.rel = 'noopener noreferrer';
+    props.href = link.href;
+  } else {
+    props.to = link.href;
   }
 
   if (link.disabled) {
