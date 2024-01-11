@@ -22,7 +22,7 @@
     "@vanilla-extract/vite-plugin": "3.9.3",
     "typescript": "5.3.3",
     "vite": "5.0.10",
-    "vite-plugin-commonjs": "^0.10.1",
+    "vite-plugin-commonjs": "0.10.1",
     "vite-plugin-stylex": "0.4.1"
   }
 }
