@@ -20,7 +20,7 @@ const HomeLayout = ({ children }: { children: ReactNode }) => (
     <ul>
       <li>
         <Link
-          href="/"
+          to="/"
           pending={<Pending isPending />}
           notPending={<Pending isPending={false} />}
         >
@@ -29,7 +29,7 @@ const HomeLayout = ({ children }: { children: ReactNode }) => (
       </li>
       <li>
         <Link
-          href="/foo"
+          to="/foo"
           pending={<Pending isPending />}
           notPending={<Pending isPending={false} />}
         >
@@ -37,24 +37,24 @@ const HomeLayout = ({ children }: { children: ReactNode }) => (
         </Link>
       </li>
       <li>
-        <Link href="/bar" unstable_prefetchOnEnter>
+        <Link to="/bar" unstable_prefetchOnEnter>
           Bar
         </Link>
       </li>
       <li>
-        <Link href="/baz">Baz</Link>
+        <Link to="/baz">Baz</Link>
       </li>
       <li>
-        <Link href="/nested/foo">Nested / Foo</Link>
+        <Link to="/nested/foo">Nested / Foo</Link>
       </li>
       <li>
-        <Link href="/nested/bar">Nested / Bar</Link>
+        <Link to="/nested/bar">Nested / Bar</Link>
       </li>
       <li>
-        <Link href="/nested/baz">Nested / Baz</Link>
+        <Link to="/nested/baz">Nested / Baz</Link>
       </li>
       <li>
-        <Link href="/nested/qux">Nested / Qux</Link>
+        <Link to="/nested/qux">Nested / Qux</Link>
       </li>
     </ul>
     {children}
