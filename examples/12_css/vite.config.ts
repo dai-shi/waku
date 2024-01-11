@@ -10,6 +10,7 @@ export default defineConfig({
   plugins: [
     vanillaExtractPlugin({ emitCssInSsr: true }),
     styleX(),
+    // @ts-expect-error not callable FIXME why not callable?
     commonjs({
       filter(id: string) {
         // `node_modules` is exclude by default, so we need to include it explicitly
