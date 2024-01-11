@@ -14,7 +14,7 @@ export default defineConfig({
     commonjs({
       filter(id: string) {
         // `node_modules` is exclude by default, so we need to include it explicitly
-        // https://github.com/vite-plugin/vite-plugin-commonjs/blob/v0.7.0/src/index.ts#L125-L127
+        // https://github.com/vite-plugin/vite-plugin-commonjs/blob/v0.10.1/src/index.ts#L141-L142
         if (id.includes('node_modules/classnames')) {
           return true;
         }
