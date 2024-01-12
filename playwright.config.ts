@@ -47,16 +47,6 @@ export const config: PlaywrightTestConfig = {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
     },
-    {
-      command: 'pnpm run build && pnpm run start',
-      cwd: resolve(rootDir, 'examples', '12_path-alias'),
-      port: 3011,
-      timeout: 10 * 1000,
-      reuseExistingServer: !process.env.CI,
-      env: {
-        PORT: '3011',
-      },
-    },
   ],
   forbidOnly: !!process.env.CI,
   // no parallelization, otherwise the `waku` command will have race conditions
