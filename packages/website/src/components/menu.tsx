@@ -69,41 +69,53 @@ type MenuLinkProps = {
 export const MenuLink = ({ link }: MenuLinkProps) => {
   const setIsMenuOpen = useSetAtom(menuAtom);
 
-  let Element: any = Link;
-  const props: any = {};
+  const props = {
+    onClick: () => setIsMenuOpen(false),
+    className: cx(
+      'flex items-center gap-4 rounded-md focus:ring-4 focus:ring-primary-300',
+      !link.disabled
+        ? 'text-white transition-colors duration-300 ease-in-out hover:text-primary'
+        : 'cursor-not-allowed text-white/40',
+    ),
+  };
 
-  if (link.href.startsWith('http')) {
-    Element = 'a';
-    props.target = '_blank';
-    props.rel = 'noopener noreferrer';
-    props.href = link.href;
-  } else {
-    props.to = link.href;
-  }
+  const label = (
+    <span className="text-4xl font-bold sm:text-6xl">{link.label}</span>
+  );
 
   if (link.disabled) {
-    Element = 'div';
+    return (
+      <li>
+        <div {...props}>
+          {label}
+          <span className="inline-block rounded-md bg-white px-2 py-1 text-[0.625rem] font-black uppercase tracking-wide text-black sm:text-xs">
+            Coming soon
+          </span>
+        </div>
+      </li>
+    );
+  }
+
+  if (link.href.startsWith('http')) {
+    return (
+      <li>
+        <a
+          {...props}
+          target="_blank"
+          rel="noopener noreferrer"
+          href={link.href}
+        >
+          {label}
+        </a>
+      </li>
+    );
   }
 
   return (
     <li>
-      <Element
-        {...props}
-        onClick={() => setIsMenuOpen(false)}
-        className={cx(
-          'flex items-center gap-4 rounded-md focus:ring-4 focus:ring-primary-300',
-          !link.disabled
-            ? 'text-white transition-colors duration-300 ease-in-out hover:text-primary'
-            : 'cursor-not-allowed text-white/40',
-        )}
-      >
-        <span className="text-4xl font-bold sm:text-6xl">{link.label}</span>
-        {link.disabled && (
-          <span className="inline-block rounded-md bg-white px-2 py-1 text-[0.625rem] font-black uppercase tracking-wide text-black sm:text-xs">
-            Coming soon
-          </span>
-        )}
-      </Element>
+      <Link {...props} to={link.href}>
+        {label}
+      </Link>
     </li>
   );
 };
