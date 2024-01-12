@@ -5,13 +5,12 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "waku dev",
+    "dev": "waku dev --with-ssr",
     "build": "waku build --with-ssr",
     "start": "waku start --with-ssr"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
-    "@uidotdev/usehooks": "^2.4.1",
     "bright": "^0.8.4",
     "clsx": "^2.1.0",
     "jotai": "^2.6.1",

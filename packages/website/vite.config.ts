@@ -4,8 +4,7 @@ export default defineConfig(({ mode }) => {
   if (mode === 'development') {
     return {
       optimizeDeps: {
-        // FIXME this causes an error with `--with-ssr`
-        // include: ['@uidotdev/usehooks'],
+        include: ['react', 'jotai', 'clsx'],
       },
       ssr: {
         external: ['next-mdx-remote'],
