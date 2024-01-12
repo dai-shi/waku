@@ -48,13 +48,13 @@ export const config: PlaywrightTestConfig = {
       use: { ...devices['Desktop Safari'] },
     },
     {
-      command: "pnpm run build && pnpm run start",
-      cwd: resolve(rootDir, "examples", "12_path-alias"),
+      command: 'pnpm run build && pnpm run start',
+      cwd: resolve(rootDir, 'examples', '12_path-alias'),
       port: 3011,
       timeout: 10 * 1000,
       reuseExistingServer: !process.env.CI,
       env: {
-        PORT: "3011",
+        PORT: '3011',
       },
     },
   ],

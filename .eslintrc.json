@@ -47,7 +47,7 @@
       }
     },
     {
-      "files": ["examples/12_path-alias/**/*.tsx"],
+      "files": ["examples/13_path-alias/**/*.tsx"],
       "rules": {
         "import/no-unresolved": "off"
       }
