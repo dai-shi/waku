@@ -54,12 +54,13 @@ export type MessageRes =
 
 const messageCallbacks = new Map<number, (mesg: MessageRes) => void>();
 
-let lastWorker: Promise<WorkerType> | undefined;
-const getWorker = () => {
-  if (lastWorker) {
-    return lastWorker;
+let workerPromise: Promise<WorkerType> | undefined;
+
+export function initializeWorker(config: ResolvedConfig) {
+  if (workerPromise) {
+    throw new Error('Worker already initialized');
   }
-  return (lastWorker = new Promise<WorkerType>((resolve, reject) => {
+  workerPromise = new Promise<WorkerType>((resolve, reject) => {
     Promise.all([
       import('node:worker_threads').catch((e) => {
         throw e;
@@ -74,6 +75,8 @@ const getWorker = () => {
           '__WAKU_PRIVATE_ENV__',
           (globalThis as any).__WAKU_PRIVATE_ENV__,
         );
+        setEnvironmentData('CONFIG_SRC_DIR', config.srcDir);
+        setEnvironmentData('CONFIG_ENTRIES_JS', config.entriesJs);
         const worker = new Worker(
           new URL('dev-worker-impl.js', import.meta.url),
           {
@@ -95,7 +98,14 @@ const getWorker = () => {
         resolve(worker);
       })
       .catch((e) => reject(e));
-  }));
+  });
+}
+
+const getWorker = () => {
+  if (!workerPromise) {
+    throw new Error('Worker not initialized');
+  }
+  return workerPromise;
 };
 
 export async function registerReloadCallback(
