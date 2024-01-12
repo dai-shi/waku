@@ -5,6 +5,7 @@ import { parentPort, getEnvironmentData } from 'node:worker_threads';
 import { Server } from 'node:http';
 import type { TransferListItem } from 'node:worker_threads';
 import { createServer as createViteServer } from 'vite';
+import { default as viteReact } from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
@@ -32,6 +33,8 @@ if (HAS_MODULE_REGISTER) {
 (globalThis as any).__WAKU_PRIVATE_ENV__ = getEnvironmentData(
   '__WAKU_PRIVATE_ENV__',
 );
+const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR');
+const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS');
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   const { id, type: _removed, hasModuleIdCallback, ...rest } = mesg;
@@ -108,6 +111,7 @@ const moduleImports: Set<string> = new Set();
 
 const mergedViteConfig = await mergeUserViteConfig({
   plugins: [
+    viteReact(),
     nonjsResolvePlugin(),
     rscTransformPlugin({ isBuild: false }),
     rscEnvPlugin({}),
@@ -123,8 +127,11 @@ const mergedViteConfig = await mergeUserViteConfig({
       parentPort!.postMessage(mesg);
     }),
   ],
-  // HACK to suppress 'Skipping dependency pre-bundling' warning
-  optimizeDeps: { include: [] },
+  optimizeDeps: {
+    include: ['react-server-dom-webpack/client', 'react-dom'],
+    exclude: ['waku'],
+    entries: [`${configSrcDir}/${configEntriesJs}`.replace(/\.js$/, '.*')],
+  },
   ssr: {
     resolve: {
       conditions: ['react-server', 'workerd'],

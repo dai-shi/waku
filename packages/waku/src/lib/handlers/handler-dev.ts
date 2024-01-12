@@ -9,6 +9,7 @@ import { endStream } from '../utils/stream.js';
 import { renderHtml } from '../renderers/html-renderer.js';
 import { decodeInput, hasStatusCode } from '../renderers/utils.js';
 import {
+  initializeWorker,
   registerReloadCallback,
   registerImportCallback,
   renderRscWithWorker,
@@ -49,6 +50,9 @@ export function createHandler<
       optimizeDeps: {
         include: ['react-server-dom-webpack/client', 'react-dom'],
         exclude: ['waku'],
+        entries: [
+          `${config.srcDir}/${config.entriesJs}`.replace(/\.js$/, '.*'),
+        ],
       },
       plugins: [
         patchReactRefresh(viteReact()),
@@ -59,6 +63,7 @@ export function createHandler<
       server: { middlewareMode: true },
     });
     const vite = await createViteServer(mergedViteConfig);
+    initializeWorker(config);
     registerReloadCallback((type) => vite.ws.send({ type }));
     registerImportCallback((source) => hotImport(vite, source));
     registerModuleCallback((result) => moduleImport(vite, result));
