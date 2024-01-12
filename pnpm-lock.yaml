@@ -469,7 +469,7 @@ importers:
         specifier: 5.0.10
         version: 5.0.10(@types/node@20.10.6)
       vite-tsconfig-paths:
-        specifier: ^4.2.3
+        specifier: 4.2.3
         version: 4.2.3(typescript@5.3.3)(vite@5.0.10)
 
   packages/create-waku:
