@@ -72,6 +72,9 @@
     {
       "path": "./examples/12_css"
     },
+    {
+      "path": "./examples/13_path-alias"
+    },
     // E2E
     {
       "path": "./tsconfig.e2e.json"
