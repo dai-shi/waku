@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   createContext,
@@ -10,25 +10,47 @@ import {
   useState,
   useTransition,
   Fragment,
-} from "react";
-import type { ComponentProps, FunctionComponent, ReactNode } from "react";
+} from 'react';
+import type {
+  ComponentProps,
+  FunctionComponent,
+  ReactNode,
+  AnchorHTMLAttributes,
+  ReactElement,
+  MouseEvent,
+} from 'react';
 
-import { Root, Slot, useRefetch } from "../client.js";
-import { getComponentIds, getInputString } from "./common.js";
-import type { RouteProps, LinkProps } from "./common.js";
+import { prefetchRSC, Root, Slot, useRefetch } from '../client.js';
+import {
+  getComponentIds,
+  getInputString,
+  PARAM_KEY_SKIP,
+  SHOULD_SKIP_ID,
+} from './common.js';
+import type { RouteProps, ShouldSkip } from './common.js';
 
-const parseLocation = () => {
+declare global {
+  interface ImportMeta {
+    readonly env: Record<string, string>;
+  }
+}
+
+const parseLocation = (): RouteProps => {
   const { pathname, search } = window.location;
-  return { pathname, search };
+  const searchParams = new URLSearchParams(search);
+  if (searchParams.has(PARAM_KEY_SKIP)) {
+    console.warn(`The search param "${PARAM_KEY_SKIP}" is reserved`);
+  }
+  return { path: pathname, searchParams };
 };
 
 type ChangeLocation = (
-  pathname?: string,
-  search?: string,
-  replace?: boolean,
+  path?: string,
+  searchParams?: URLSearchParams,
+  mode?: 'push' | 'replace' | false,
 ) => void;
 
-type PrefetchLocation = (pathname: string, search: string) => void;
+type PrefetchLocation = (path: string, searchParams: URLSearchParams) => void;
 
 const RouterContext = createContext<{
   loc: ReturnType<typeof parseLocation>;
@@ -40,7 +62,7 @@ export function useChangeLocation() {
   const value = useContext(RouterContext);
   if (!value) {
     return () => {
-      throw new Error("Missing Router");
+      throw new Error('Missing Router');
     };
   }
   return value.changeLocation;
@@ -49,49 +71,67 @@ export function useChangeLocation() {
 export function useLocation() {
   const value = useContext(RouterContext);
   if (!value) {
-    throw new Error("Missing Router");
+    throw new Error('Missing Router');
   }
   return value.loc;
 }
 
+export type LinkProps = {
+  to: string;
+  pending?: ReactNode;
+  notPending?: ReactNode;
+  children: ReactNode;
+  unstable_prefetchOnEnter?: boolean;
+} & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>;
+
 export function Link({
-  href,
+  to,
   children,
   pending,
   notPending,
   unstable_prefetchOnEnter,
-}: LinkProps) {
+  ...props
+}: LinkProps): ReactElement {
+  if (!to.startsWith('/')) {
+    throw new Error('Link must start with "/"');
+  }
   const value = useContext(RouterContext);
   const changeLocation = value
     ? value.changeLocation
     : () => {
-        throw new Error("Missing Router");
+        throw new Error('Missing Router');
       };
   const prefetchLocation = value
     ? value.prefetchLocation
     : () => {
-        throw new Error("Missing Router");
+        throw new Error('Missing Router');
       };
   const [isPending, startTransition] = useTransition();
-  const onClick = (event: MouseEvent) => {
+  const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
-    const url = new URL(href, window.location.href);
+    const url = new URL(to, window.location.href);
     if (url.href !== window.location.href) {
-      prefetchLocation(url.pathname, url.search);
+      prefetchLocation(url.pathname, url.searchParams);
       startTransition(() => {
-        changeLocation(url.pathname, url.search);
+        changeLocation(url.pathname, url.searchParams);
       });
     }
+    props.onClick?.(event);
   };
   const onMouseEnter = unstable_prefetchOnEnter
-    ? () => {
-        const url = new URL(href, window.location.href);
+    ? (event: MouseEvent<HTMLAnchorElement>) => {
+        const url = new URL(to, window.location.href);
         if (url.href !== window.location.href) {
-          prefetchLocation(url.pathname, url.search);
+          prefetchLocation(url.pathname, url.searchParams);
         }
+        props.onMouseEnter?.(event);
       }
-    : undefined;
-  const ele = createElement("a", { href, onClick, onMouseEnter }, children);
+    : props.onMouseEnter;
+  const ele = createElement(
+    'a',
+    { ...props, href: to, onClick, onMouseEnter },
+    children,
+  );
   if (isPending && pending !== undefined) {
     return createElement(Fragment, null, ele, pending);
   }
@@ -101,43 +141,48 @@ export function Link({
   return ele;
 }
 
-type ShouldSkip = (
-  componentId: string,
-  props: RouteProps,
-  prevProps: RouteProps,
-) => boolean;
-
 const getSkipList = (
   componentIds: readonly string[],
   props: RouteProps,
   cached: Record<string, RouteProps>,
-  shouldSkip?: ShouldSkip,
-): string[] =>
-  shouldSkip
-    ? componentIds.filter((id) => {
-        const prevProps = cached[id];
-        return prevProps && shouldSkip(id, props, prevProps);
-      })
-    : [];
+): string[] => {
+  const ele: any = document.querySelector('meta[name="waku-should-skip"]');
+  if (!ele) {
+    return [];
+  }
+  const shouldSkip: ShouldSkip = JSON.parse(ele.content);
+  return componentIds.filter((id) => {
+    const prevProps = cached[id];
+    if (!prevProps) {
+      return false;
+    }
+    const shouldCheck = shouldSkip?.[id];
+    if (!shouldCheck) {
+      return false;
+    }
+    if (shouldCheck.path && props.path !== prevProps.path) {
+      return false;
+    }
+    if (
+      shouldCheck.keys?.some(
+        (key) =>
+          props.searchParams.get(key) !== prevProps.searchParams.get(key),
+      )
+    ) {
+      return false;
+    }
+    return true;
+  });
+};
 
-function InnerRouter({
-  basePath,
-  shouldSkip,
-}: {
-  basePath: string;
-  shouldSkip?: ShouldSkip | undefined;
-}) {
+function InnerRouter() {
   const refetch = useRefetch();
 
   const [loc, setLoc] = useState(parseLocation);
-  const componentIds = getComponentIds(loc.pathname);
+  const componentIds = getComponentIds(loc.path);
 
   const [cached, setCached] = useState<Record<string, RouteProps>>(() => {
-    const routeProps: RouteProps = {
-      path: loc.pathname,
-      search: loc.search,
-    };
-    return Object.fromEntries(componentIds.map((id) => [id, routeProps]));
+    return Object.fromEntries(componentIds.map((id) => [id, loc]));
   });
   const cachedRef = useRef(cached);
   useEffect(() => {
@@ -145,119 +190,97 @@ function InnerRouter({
   }, [cached]);
 
   const changeLocation: ChangeLocation = useCallback(
-    (pathname, search, replace) => {
+    (path, searchParams, mode = 'push') => {
       const url = new URL(window.location.href);
-      if (pathname) {
-        url.pathname = pathname;
+      if (path) {
+        url.pathname = path;
       }
-      if (search) {
-        url.search = search;
+      if (searchParams) {
+        url.search = '?' + searchParams.toString();
       }
-      if (replace) {
-        window.history.replaceState(null, "", url);
-      } else {
-        window.history.pushState(null, "", url);
+      if (mode === 'replace') {
+        window.history.replaceState(window.history.state, '', url);
+      } else if (mode === 'push') {
+        window.history.pushState(window.history.state, '', url);
       }
       const loc = parseLocation();
       setLoc(loc);
-      const componentIds = getComponentIds(loc.pathname);
-      const routeProps: RouteProps = {
-        path: loc.pathname,
-        search: loc.search,
-      };
-      const skip = getSkipList(
-        componentIds,
-        routeProps,
-        cachedRef.current,
-        shouldSkip,
-      );
-      if (skip.length === componentIds.length) {
+      const componentIds = getComponentIds(loc.path);
+      const skip = getSkipList(componentIds, loc, cachedRef.current);
+      if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is cached
       }
-      const input = getInputString(loc.pathname, loc.search, skip);
-      refetch(input);
+      const input = getInputString(loc.path);
+      refetch(
+        input,
+        new URLSearchParams([
+          ...Array.from(loc.searchParams.entries()),
+          ...skip.map((id) => [PARAM_KEY_SKIP, id]),
+        ]),
+      );
       setCached((prev) => ({
         ...prev,
         ...Object.fromEntries(
-          componentIds.flatMap((id) =>
-            skip.includes(id) ? [] : [[id, routeProps]],
-          ),
+          componentIds.flatMap((id) => (skip.includes(id) ? [] : [[id, loc]])),
         ),
       }));
     },
-    [refetch, shouldSkip],
+    [refetch],
   );
 
   const prefetchLocation: PrefetchLocation = useCallback(
-    (pathname, search) => {
-      const componentIds = getComponentIds(pathname);
-      const routeProps: RouteProps = {
-        path: pathname,
-        search: search,
-      };
-      const skip = getSkipList(
-        componentIds,
-        routeProps,
-        cachedRef.current,
-        shouldSkip,
-      );
-      if (skip.length === componentIds.length) {
+    (path, searchParams) => {
+      const componentIds = getComponentIds(path);
+      const routeProps: RouteProps = { path, searchParams };
+      const skip = getSkipList(componentIds, routeProps, cachedRef.current);
+      if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is cached
       }
-      const input = getInputString(pathname, search, skip);
-      const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-      if (!prefetched[input]) {
-        prefetched[input] = fetch(basePath + input);
-      }
-      (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(pathname, search);
+      const input = getInputString(path);
+      const searchParamsString = new URLSearchParams([
+        ...Array.from(searchParams.entries()),
+        ...skip.map((id) => [PARAM_KEY_SKIP, id]),
+      ]).toString();
+      prefetchRSC(input, searchParamsString);
+      (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(path);
     },
-    [basePath, shouldSkip],
+    [],
   );
 
   useEffect(() => {
     const callback = () => {
       const loc = parseLocation();
-      prefetchLocation(loc.pathname, loc.search);
-      changeLocation(loc.pathname, loc.search);
+      prefetchLocation(loc.path, loc.searchParams);
+      changeLocation(loc.path, loc.searchParams, false);
     };
-    window.addEventListener("popstate", callback);
-    return () => window.removeEventListener("popstate", callback);
+    window.addEventListener('popstate', callback);
+    return () => window.removeEventListener('popstate', callback);
   }, [changeLocation, prefetchLocation]);
 
   const children = componentIds.reduceRight(
-    (acc: ReactNode, id) =>
-      createElement(
-        Slot as FunctionComponent<
-          Omit<ComponentProps<typeof Slot>, "children">
-        >,
-        { id },
-        acc,
-      ),
+    (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
     null,
   );
 
   return createElement(
-    RouterContext.Provider,
-    { value: { loc, changeLocation, prefetchLocation } },
-    children,
+    Fragment,
+    null,
+    createElement(Slot, { id: SHOULD_SKIP_ID }),
+    createElement(
+      RouterContext.Provider,
+      { value: { loc, changeLocation, prefetchLocation } },
+      children,
+    ),
   );
 }
 
-export function Router({
-  basePath = "/RSC/",
-  shouldSkip,
-}: {
-  basePath?: string;
-  shouldSkip?: ShouldSkip;
-}) {
-  const { pathname, search } = parseLocation();
-  const initialInput = getInputString(pathname, search);
+export function Router() {
+  const loc = parseLocation();
+  const initialInput = getInputString(loc.path);
+  const initialSearchParamsString = loc.searchParams.toString();
   return createElement(
-    Root as FunctionComponent<Omit<ComponentProps<typeof Root>, "children">>,
-    { initialInput, basePath },
-    createElement(InnerRouter, { basePath, shouldSkip }),
+    Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
+    { initialInput, initialSearchParamsString },
+    createElement(InnerRouter),
   );
 }
-
-// This is a trick to trigger fallback identified by the name.
-export const Waku_SSR_Capable_Link = Link;

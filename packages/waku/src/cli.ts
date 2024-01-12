@@ -1,126 +1,130 @@
 #!/usr/bin/env node
 
-import fs from "node:fs";
-import path from "node:path";
-import { parseArgs } from "node:util";
-import { createRequire } from "node:module";
+import path from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+import { parseArgs } from 'node:util';
+import { createRequire } from 'node:module';
+import { Hono } from 'hono';
+import { serve } from '@hono/node-server';
+import { serveStatic } from '@hono/node-server/serve-static';
 
-import type { Express } from "express";
+import { resolveConfig } from './lib/config.js';
+import { honoMiddleware as honoDevMiddleware } from './lib/middleware/hono-dev.js';
+import { honoMiddleware as honoPrdMiddleware } from './lib/middleware/hono-prd.js';
+import { build } from './lib/builder/build.js';
 
-const require = createRequire(new URL(".", import.meta.url));
+const require = createRequire(new URL('.', import.meta.url));
 
 const { values, positionals } = parseArgs({
   args: process.argv.splice(2),
   allowPositionals: true,
   options: {
-    config: {
-      type: "string",
+    'with-ssr': {
+      type: 'boolean',
     },
-    "with-ssr": {
-      type: "boolean",
+    'with-vercel': {
+      type: 'boolean',
+    },
+    'with-vercel-static': {
+      type: 'boolean',
+    },
+    'with-cloudflare': {
+      type: 'boolean',
+    },
+    'with-deno': {
+      type: 'boolean',
     },
     version: {
-      type: "boolean",
-      short: "v",
+      type: 'boolean',
+      short: 'v',
     },
     help: {
-      type: "boolean",
-      short: "h",
+      type: 'boolean',
+      short: 'h',
     },
   },
 });
 
+loadEnv();
+
 const cmd = positionals[0];
 
-if (values.config) {
-  if (!fs.existsSync(values.config)) {
-    throw new Error("config file does not exist");
-  } else {
-    process.env.CONFIG_FILE = values.config;
-  }
-}
-
 if (values.version) {
-  const { version } = require("../package.json");
+  const { version } = require('../package.json');
   console.log(version);
 } else if (values.help) {
   displayUsage();
 } else {
+  const ssr = !!values['with-ssr'];
   switch (cmd) {
-    case "dev":
-      runDev({ ssr: !!values["with-ssr"] });
+    case 'dev':
+      runDev({ ssr });
       break;
-    case "build":
-      runBuild();
+    case 'build':
+      runBuild({
+        ssr,
+      });
       break;
-    case "start":
-      runStart({ ssr: !!values["with-ssr"] });
+    case 'start':
+      runStart({ ssr });
       break;
     default:
       if (cmd) {
-        console.error("Unknown command:", cmd);
+        console.error('Unknown command:', cmd);
       }
       displayUsage();
       break;
   }
 }
 
-async function runDev(options?: { ssr?: boolean }) {
-  const { default: express } = await import("express");
-  const { rsc } = await import("./lib/middleware/rsc.js");
-  const { devServer } = await import("./lib/middleware/devServer.js");
-  const app = express();
-  app.use(rsc({ command: "dev" }));
-  if (options?.ssr) {
-    const { ssr } = await import("./lib/middleware/ssr.js");
-    app.use(ssr({ command: "dev" }));
-  }
-  app.use(devServer());
-  const port = parseInt(process.env.PORT || "3000", 10);
+async function runDev(options: { ssr: boolean }) {
+  const app = new Hono();
+  app.use('*', honoDevMiddleware({ ...options, env: process.env as any }));
+  const port = parseInt(process.env.PORT || '3000', 10);
   startServer(app, port);
 }
 
-async function runBuild() {
-  const { build } = await import("./lib/builder.js");
-  await build();
+async function runBuild(options: { ssr: boolean }) {
+  await build({
+    ...options,
+    env: process.env as any,
+    vercel:
+      values['with-vercel'] ?? !!process.env.VERCEL
+        ? {
+            type: values['with-vercel-static'] ? 'static' : 'serverless',
+          }
+        : undefined,
+    cloudflare: !!values['with-cloudflare'],
+    deno: !!values['with-deno'],
+  });
 }
 
-async function runStart(options?: { ssr?: boolean }) {
-  const { default: express } = await import("express");
-  const { resolveConfig } = await import("./lib/config.js");
-  const config = await resolveConfig("serve");
-  const { rsc } = await import("./lib/middleware/rsc.js");
-  const app = express();
-  app.use(rsc({ command: "start" }));
-  if (options?.ssr) {
-    const { ssr } = await import("./lib/middleware/ssr.js");
-    app.use(ssr({ command: "start" }));
-  }
-  app.use(
-    express.static(
-      path.join(
-        config.root,
-        config.framework.distDir,
-        config.framework.publicDir,
-      ),
-    ),
+async function runStart(options: { ssr: boolean }) {
+  const { distDir, publicDir, entriesJs } = await resolveConfig({});
+  const entries = import(
+    pathToFileURL(path.resolve(distDir, entriesJs)).toString()
   );
-  (express.static.mime as any).default_type = "";
-  const port = parseInt(process.env.PORT || "8080", 10);
+  const app = new Hono();
+  app.use(
+    '*',
+    honoPrdMiddleware({ ...options, entries, env: process.env as any }),
+  );
+  app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
+  const port = parseInt(process.env.PORT || '8080', 10);
   startServer(app, port);
 }
 
-function startServer(app: Express, port: number) {
-  const server = app.listen(port, () => {
+async function startServer(app: Hono, port: number) {
+  const server = serve({ ...app, port }, () => {
     console.log(`ready: Listening on http://localhost:${port}/`);
   });
-
-  server.on("error", (err: NodeJS.ErrnoException) => {
-    if (err.code === "EADDRINUSE") {
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
       console.log(`warn: Port ${port} is in use, trying ${port + 1} instead.`);
       startServer(app, port + 1);
     } else {
-      console.error("Failed to start server");
+      console.error(`Failed to start server: ${err.message}`);
     }
   });
 }
@@ -135,9 +139,29 @@ Commands:
   start       Start the production server
 
 Options:
-  -c, --config <path>   Path to the configuration file
   --with-ssr            Use opt-in SSR
+  --with-vercel         Output for Vercel on build
+  --with-cloudflare     Output for Cloudflare on build
+  --with-deno           Output for Deno on build
   -v, --version         Display the version number
   -h, --help            Display this help message
 `);
+}
+
+// TODO consider using a library such as `dotenv`
+function loadEnv() {
+  if (existsSync('.env.local')) {
+    for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
+      const [key, value] = line.split('=');
+      if (key && value) {
+        if (value.startsWith('"') && value.endsWith('"')) {
+          process.env[key.trim()] = value.slice(1, -1);
+        } else if (value.startsWith("'") && value.endsWith("'")) {
+          process.env[key.trim()] = value.slice(1, -1);
+        } else {
+          process.env[key.trim()] = value.trim();
+        }
+      }
+    }
+  }
 }

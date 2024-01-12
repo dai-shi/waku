@@ -1,6 +1,36 @@
 # Change Log
 
 ## [Unreleased]
+### Added
+- breaking: no index html #289
+- fix(vercel): option for static build #310
+- feat(router): createPages #293
+- feat: environment variables #321
+
+## [0.18.1] - 2023-12-15
+### Changed
+- improve vercel deploy script
+- improve css handling
+
+## [0.18.0] - 2023-12-12
+### Changed
+- switch to hono from express (still depends on node) #165
+- fix: build error on windows #174
+- feat: build rsc so that react-server condition is unnecessary #204
+- feat: separate dev and prd apis #233
+
+## [0.17.1] - 2023-11-27
+### Changed
+- fix: ssr and bundling #176
+- fix: support common component that can be used both in RSC and RCC #180
+- fix: build error on windows #174
+
+## [0.17.0] - 2023-11-14
+### Added
+- breaking: switch to full SSR from RSC-only SSR #147
+### Changed
+- fix: support node 20 #159
+- rename rscPrefix to rscPath #160
 
 ## [0.16.0] - 2023-10-25
 ### Changed

@@ -6,6 +6,7 @@
     "esModuleInterop": true,
     "module": "nodenext",
     "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,
@@ -67,6 +68,9 @@
     },
     {
       "path": "./examples/11_form"
+    },
+    {
+      "path": "./examples/12_css"
     },
     {
       "path": "./examples/12_path-alias"

@@ -1,22 +1,23 @@
-import url from "node:url";
-import path from "node:path";
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import { glob } from 'glob';
 
-import { defineConfig } from "waku/config";
+const rootDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'src');
+const routeFiles = glob.sync('routes/**/*.{tsx,js}', { cwd: rootDir });
 
-const modulesRoot = path.join(
-  path.dirname(url.fileURLToPath(import.meta.url)),
-  "src",
-);
-
-export default defineConfig({
+/** @type {import('vite').UserConfig} */
+export default {
+  ssr: {
+    external: ['glob'],
+  },
   build: {
     rollupOptions: {
-      output: {
-        // FIXME this doesn't seem to provide nice output.
-        // TODO we should use `input` instead.
-        preserveModules: true,
-        preserveModulesRoot: modulesRoot,
-      },
+      input: Object.fromEntries(
+        routeFiles.map((fname) => [
+          fname.replace(/\.\w+$/, ''),
+          path.join(rootDir, fname),
+        ]),
+      ),
     },
   },
-});
+};

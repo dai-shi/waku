@@ -1,0 +1,7 @@
+{
+  "github": {
+    "silent": true
+  },
+  "regions": ["sfo1"],
+  "trailingSlash": false
+}

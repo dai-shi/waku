@@ -1,5 +1,5 @@
 /// <reference types="react/canary" />
-"use client";
+'use client';
 
 import {
   cache,
@@ -10,11 +10,22 @@ import {
   useCallback,
   useState,
   startTransition,
-} from "react";
-import type { ReactNode } from "react";
-import RSDWClient from "react-server-dom-webpack/client";
+} from 'react';
+import type { ReactNode } from 'react';
+import RSDWClient from 'react-server-dom-webpack/client';
+
+import { encodeInput } from './lib/renderers/utils.js';
 
 const { createFromFetch, encodeReply } = RSDWClient;
+
+declare global {
+  interface ImportMeta {
+    readonly env: Record<string, string>;
+  }
+}
+
+const BASE_PATH = `${import.meta.env?.WAKU_CONFIG_BASE_PATH}${import.meta.env
+  ?.WAKU_CONFIG_RSC_PATH}/`;
 
 const checkStatus = async (
   responsePromise: Promise<Response>,
@@ -38,21 +49,25 @@ const mergeElements = cache(
   },
 );
 
-// TODO get basePath from vite config
-
 export const fetchRSC = cache(
   (
     input: string,
+    searchParamsString: string,
     rerender: (fn: (prev: Elements) => Elements) => void,
-    basePath = "/RSC/",
   ): Elements => {
     const options = {
       async callServer(actionId: string, args: unknown[]) {
-        const response = fetch(basePath + encodeURIComponent(actionId), {
-          method: "POST",
-          body: await encodeReply(args),
-        });
-        const data = createFromFetch(checkStatus(response), options);
+        const response = fetch(
+          BASE_PATH + encodeInput(encodeURIComponent(actionId)),
+          {
+            method: 'POST',
+            body: await encodeReply(args),
+          },
+        );
+        const data = createFromFetch<Awaited<Elements>>(
+          checkStatus(response),
+          options,
+        );
         startTransition(() => {
           // FIXME this causes rerenders even if data is empty
           rerender((prev) => mergeElements(prev, data));
@@ -61,15 +76,38 @@ export const fetchRSC = cache(
       },
     };
     const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-    const response =
-      prefetched[input] || fetch(basePath + (input || "__DEFAULT__"));
-    delete prefetched[input];
-    const data = createFromFetch(checkStatus(response), options);
+    const url =
+      BASE_PATH +
+      encodeInput(input) +
+      (searchParamsString ? '?' + searchParamsString : '');
+    const response = prefetched[url] || fetch(url);
+    delete prefetched[url];
+    const data = createFromFetch<Awaited<Elements>>(
+      checkStatus(response),
+      options,
+    );
     return data;
   },
 );
 
-const RefetchContext = createContext<((input: string) => void) | null>(null);
+export const prefetchRSC = cache(
+  (input: string, searchParamsString: string): void => {
+    const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
+    const url =
+      BASE_PATH +
+      encodeInput(input) +
+      (searchParamsString ? '?' + searchParamsString : '');
+    if (!(url in prefetched)) {
+      prefetched[url] = fetch(url);
+    }
+  },
+);
+
+const RefetchContext = createContext<
+  (input: string, searchParams?: URLSearchParams) => void
+>(() => {
+  throw new Error('Missing Root component');
+});
 const ElementsContext = createContext<Elements | null>(null);
 
 // HACK there should be a better way...
@@ -87,24 +125,32 @@ const createRerender = cache(() => {
 
 export const Root = ({
   initialInput,
+  initialSearchParamsString,
   children,
-  basePath,
 }: {
   initialInput?: string;
+  initialSearchParamsString?: string;
   children: ReactNode;
-  basePath?: string;
 }) => {
   const [getRerender, setRerender] = createRerender();
   const [elements, setElements] = useState(() =>
-    fetchRSC(initialInput || "", getRerender(), basePath),
+    fetchRSC(
+      initialInput || '',
+      initialSearchParamsString || '',
+      getRerender(),
+    ),
   );
   setRerender(setElements);
   const refetch = useCallback(
-    (input: string) => {
-      const data = fetchRSC(input, getRerender(), basePath);
+    (input: string, searchParams?: URLSearchParams) => {
+      const data = fetchRSC(
+        input,
+        searchParams?.toString() || '',
+        getRerender(),
+      );
       setElements((prev) => mergeElements(prev, data));
     },
-    [getRerender, basePath],
+    [getRerender],
   );
   return createElement(
     RefetchContext.Provider,
@@ -113,13 +159,7 @@ export const Root = ({
   );
 };
 
-export const useRefetch = () => {
-  const refetch = use(RefetchContext);
-  if (!refetch) {
-    throw new Error("Missing Root component");
-  }
-  return refetch;
-};
+export const useRefetch = () => use(RefetchContext);
 
 const ChildrenContext = createContext<ReactNode>(undefined);
 const ChildrenContextProvider = memo(ChildrenContext.Provider);
@@ -127,17 +167,22 @@ const ChildrenContextProvider = memo(ChildrenContext.Provider);
 export const Slot = ({
   id,
   children,
+  fallback,
 }: {
   id: string;
   children?: ReactNode;
+  fallback?: ReactNode;
 }) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
-    throw new Error("Missing Root component");
+    throw new Error('Missing Root component');
   }
   const elements = use(elementsPromise);
   if (!(id in elements)) {
-    throw new Error("Not found: " + id);
+    if (fallback) {
+      return fallback;
+    }
+    throw new Error('Not found: ' + id);
   }
   return createElement(
     ChildrenContextProvider,
@@ -147,3 +192,11 @@ export const Slot = ({
 };
 
 export const Children = () => use(ChildrenContext);
+
+export const ServerRoot = ({
+  elements,
+  children,
+}: {
+  elements: Elements;
+  children: ReactNode;
+}) => createElement(ElementsContext.Provider, { value: elements }, children);

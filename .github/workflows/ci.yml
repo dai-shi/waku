@@ -2,7 +2,13 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+    types: [opened, synchronize]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -18,7 +24,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
 
-  e2e:
+  build-create-waku:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -29,27 +35,54 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run compile
-      - name: Get installed Playwright version
-        id: playwright-version
-        run: |
-          PLAYWRIGHT_VERSION=$(pnpm playwright -V)
-          echo "PLAYWRIGHT_VERSION=${PLAYWRIGHT_VERSION##Version }" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
-        id: playwright-cache
-        if: ${{ inputs.playwright-install == 'true' }}
+      - run: pnpm -r --filter="./packages/create-waku" run compile
+      # cleanup node_modules for testing
+      - run: rm -rf packages/create-waku/node_modules
+      - uses: actions/upload-artifact@v4
         with:
-          path: '~/.cache/ms-playwright'
-          key: '${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.PLAYWRIGHT_VERSION }}'
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-      - name: Install Playwright's dependencies
+          name: create-waku
+          path: packages/create-waku
+          if-no-files-found: error
+
+  e2e:
+    name: E2E on ${{ matrix.os }} (Node ${{ matrix.version }}) - (${{ matrix.shared }}/4)
+    needs:
+      - build-create-waku
+    strategy:
+      fail-fast: false
+      matrix:
+        shared: [1, 2, 3, 4]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        version: [18, 20]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.version }}
+          cache: 'pnpm'
+          cache-dependency-path: '**/pnpm-lock.yaml'
+      - uses: actions/download-artifact@v4
+        with:
+          name: create-waku
+          path: packages/create-waku
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run compile
+      - name: Cache Playwright
+        uses: actions/cache@v3
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Install Playwright
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm playwright install --with-deps
-      - run: pnpm run e2e
-      - uses: actions/upload-artifact@v2
-        if: ${{ failure() }}
+      - run: pnpm exec playwright test --forbid-only --shard=${{ matrix.shared }}/4
+      - uses: actions/upload-artifact@v3
+        if: always()
         with:
-          name: test-results-main
-          path: ./test-results
+          name: playwright-report
+          path: test-results/
+          retention-days: 30
           if-no-files-found: ignore

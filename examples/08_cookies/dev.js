@@ -1,29 +1,24 @@
-import express from "express";
-import cookieParser from "cookie-parser";
-import {
-  rsc,
-  //ssr,
-  devServer,
-} from "waku";
+import express from 'express';
+import cookieParser from 'cookie-parser';
+import { connectMiddleware } from 'waku/dev';
+
+const withSsr = process.argv[2] === '--with-ssr';
 
 const app = express();
 app.use(cookieParser());
 app.use(
-  rsc({
-    command: "dev",
+  connectMiddleware({
     unstable_prehook: (req) => {
-      return { count: Number(req.cookies.count) || 0 };
+      return { count: Number(req.orig.cookies.count) || 0 };
     },
     unstable_posthook: (req, res, ctx) => {
-      res.cookie("count", String(ctx.count));
+      res.orig.cookie('count', String(ctx.count));
     },
+    ssr: withSsr,
   }),
 );
-// Passing cookies through SSR server isn't supported (yet).
-// app.use(ssr({ command: "dev" }));
-app.use(await devServer());
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.info("Listening on", port);
+  console.info('Listening on', port);
 });

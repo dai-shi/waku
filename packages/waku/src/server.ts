@@ -1,37 +1,44 @@
-import type { Readable } from "node:stream";
-import { AsyncLocalStorage } from "node:async_hooks";
-import { createElement } from "react";
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
 type Elements = Record<string, ReactNode>;
 
-export type RenderEntries = (input: string) => Promise<Elements | null>;
+export interface RenderContext<T = unknown> {
+  rerender: (input: string, searchParams?: URLSearchParams) => void;
+  context: T;
+}
 
-export type RenderRequest = {
-  pathStr: string; // url path without rsc prefix
-  method: "GET" | "POST";
-  headers: Record<string, string | string[] | undefined>;
-  command: "dev" | "build" | "start";
-  stream: Readable;
-  context: unknown;
-  moduleIdCallback?: (id: string) => void;
-};
+export type RenderEntries = (
+  this: RenderContext,
+  input: string,
+  searchParams: URLSearchParams,
+) => Promise<Elements | null>;
 
 export type GetBuildConfig = (
-  unstable_collectClientModules: (pathStr: string) => Promise<string[]>,
-) => Promise<{
-  [pathStr: string]: {
-    entries?: Iterable<readonly [input: string, skipPrefetch?: boolean]>;
-    customCode?: string; // optional code to inject
+  unstable_collectClientModules: (input: string) => Promise<string[]>,
+) => Promise<
+  Iterable<{
+    pathname: string;
+    entries?: Iterable<{
+      input: string;
+      skipPrefetch?: boolean;
+      isStatic?: boolean;
+    }>;
+    customCode?: string; // optional code to inject TODO hope to remove this
     context?: unknown;
-    skipSsr?: boolean;
-  };
-}>;
+  }>
+>;
 
-export type GetSsrConfig = () => {
-  getInput: (pathStr: string) => Promise<string | null>;
-  filter: (elements: Elements) => ReactNode;
-};
+export type GetSsrConfig = (
+  pathname: string,
+  options: {
+    searchParams: URLSearchParams;
+    isPrd: boolean;
+  },
+) => Promise<{
+  input: string;
+  searchParams?: URLSearchParams;
+  body: ReactNode;
+} | null>;
 
 export function defineEntries(
   renderEntries: RenderEntries,
@@ -41,51 +48,17 @@ export function defineEntries(
   return { renderEntries, getBuildConfig, getSsrConfig };
 }
 
-// For internal use only
-export function ClientFallback() {
-  return createElement("div", { className: "spinner" });
-}
-
-// For internal use only
-export function ClientOnly() {
-  throw new Error("Client-only component");
-}
-
-type Store = {
-  getContext: () => unknown;
-  rerender: (input: string) => void;
+export type EntriesDev = {
+  default: ReturnType<typeof defineEntries>;
 };
 
-const asl = new AsyncLocalStorage<Store>();
-// FIXME this is not what we want
-(globalThis as any).WAKU_SERVER_ASYNC_LOCAL_STORAGE ||= asl;
+export type EntriesPrd = EntriesDev & {
+  loadModule: (id: string) => Promise<unknown>;
+  loadHtmlHead: (pathname: string) => string;
+  skipRenderRsc: (input: string) => boolean;
+};
 
-export function getContext<T = unknown>() {
-  const asl: AsyncLocalStorage<Store> = (globalThis as any)
-    .WAKU_SERVER_ASYNC_LOCAL_STORAGE;
-  const store = asl.getStore();
-  if (store === undefined) {
-    throw new Error("Missing runWithAsyncLocalStorage");
-  }
-  return store.getContext() as T;
-}
-
-export function rerender(input: string) {
-  const asl: AsyncLocalStorage<Store> = (globalThis as any)
-    .WAKU_SERVER_ASYNC_LOCAL_STORAGE;
-  const store = asl.getStore();
-  if (store === undefined) {
-    throw new Error("Missing runWithAsyncLocalStorage");
-  }
-  return store.rerender(input);
-}
-
-// For internal use only
-export function runWithAsyncLocalStorage<Result>(
-  store: Store,
-  fn: () => Result,
-): Result {
-  const asl: AsyncLocalStorage<Store> = (globalThis as any)
-    .WAKU_SERVER_ASYNC_LOCAL_STORAGE;
-  return asl.run(store, fn);
+export function getEnv(key: string): string | undefined {
+  // HACK we may want to use a server-side context or something
+  return (globalThis as any).__WAKU_PRIVATE_ENV__[key];
 }

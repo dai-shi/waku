@@ -1,37 +1,25 @@
-/// Async Server Component
-/// <reference types="react/experimental" />
-import { Suspense } from "react";
+import { Suspense } from 'react';
 
-import { Counter } from "./Counter.js";
+import { Counter } from './Counter.js';
 
 const App = ({ name }: { name: string }) => {
   return (
-    <div style={{ border: "3px red dashed", margin: "1em", padding: "1em" }}>
+    <div style={{ border: '3px red dashed', margin: '1em', padding: '1em' }}>
+      <title>Waku example</title>
       <h1>Hello {name}!!</h1>
       <h3>This is a server component.</h3>
       <Suspense fallback="Pending...">
         <ServerMessage />
       </Suspense>
-      <Suspense fallback={<CounterSkeleton />}>
-        <Counter />
-      </Suspense>
+      <Counter />
+      <div>{new Date().toISOString()}</div>
     </div>
   );
 };
 
 const ServerMessage = async () => {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 2000));
   return <p>Hello from server!</p>;
-};
-
-const CounterSkeleton = () => {
-  return (
-    <div style={{ border: "3px blue dashed", margin: "1em", padding: "1em" }}>
-      <p>Count: {0}</p>
-      <button disabled>Increment</button>
-      <h3>This is a skeleton component.</h3>
-    </div>
-  );
 };
 
 export default App;

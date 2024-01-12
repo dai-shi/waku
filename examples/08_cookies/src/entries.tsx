@@ -1,38 +1,44 @@
-import { lazy } from "react";
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import fsPromises from 'node:fs/promises';
+import { lazy } from 'react';
+import { defineEntries } from 'waku/server';
+import { Slot } from 'waku/client';
 
-import { defineEntries, getContext } from "waku/server";
-
-const App = lazy(() => import("./components/App.js"));
+const App = lazy(() => import('./components/App.js'));
 
 export default defineEntries(
   // renderEntries
-  async (input) => {
-    const ctx = getContext<{ count: number }>();
+  async function (input) {
+    const ctx = this.context as { count: number };
     ++ctx.count;
+    const items = JSON.parse(
+      await fsPromises.readFile(
+        path.join(
+          path.dirname(fileURLToPath(import.meta.url)),
+          '../db/items.json',
+        ),
+        'utf8',
+      ),
+    );
     return {
-      App: <App name={input || "Waku"} />,
+      App: <App name={input || 'Waku'} count={ctx.count} items={items} />,
     };
   },
   // getBuildConfig
-  async () => {
-    return {
-      "/": {
-        entries: [[""]],
-        context: { count: 0 },
-      },
-    };
-  },
+  async () => [
+    { pathname: '/', entries: [{ input: '' }], context: { count: 0 } },
+  ],
   // getSsrConfig
-  // Passing cookies through SSR server isn't supported (yet).
-  // () => ({
-  //   getInput: async (pathStr) => {
-  //     switch (pathStr) {
-  //       case "/":
-  //         return "";
-  //       default:
-  //         return null;
-  //     }
-  //   },
-  //   filter: (elements) => elements.App,
-  // }),
+  async (pathname) => {
+    switch (pathname) {
+      case '/':
+        return {
+          input: '',
+          body: <Slot id="App" />,
+        };
+      default:
+        return null;
+    }
+  },
 );

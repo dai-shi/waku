@@ -1,72 +1,90 @@
-import fs from "node:fs";
-import path from "node:path";
-import { resolveConfig as viteResolveConfig } from "vite";
-
-import type { FrameworkConfig } from "../config.js";
+export interface Config {
+  /**
+   * The base path for serve HTTP.
+   * Defaults to  "/".
+   */
+  basePath?: string;
+  /**
+   * The source directory relative to root.
+   * This will be the actual root in the development mode.
+   * Defaults to  "src".
+   */
+  srcDir?: string;
+  /**
+   * The dist directory relative to root.
+   * This will be the actual root in the production mode.
+   * Defaults to  "dist".
+   */
+  distDir?: string;
+  /**
+   * The public directory relative to distDir.
+   * It's different from Vite's build.publicDir config.
+   * Defaults to "public".
+   */
+  publicDir?: string;
+  /**
+   * The assets directory relative to distDir and publicDir.
+   * Defaults to "assets".
+   */
+  assetsDir?: string;
+  /**
+   * The index.html file for any directories.
+   * Defaults to "index.html".
+   */
+  indexHtml?: string;
+  /**
+   * The client main file relative to srcDir.
+   * Defaults to "main.tsx".
+   */
+  mainJs?: string;
+  /**
+   * The entries.js file relative to srcDir or distDir.
+   * The extension should be `.js`,
+   * but resolved with `.ts`, `.tsx` and `.jsx` in the development mode.
+   * Defaults to "entries.js".
+   */
+  entriesJs?: string;
+  /**
+   * Prefix for HTTP requests to indicate RSC requests.
+   * Defaults to "RSC".
+   */
+  rscPath?: string;
+  /**
+   * HTML headers to inject.
+   * Defaults to:
+   * <meta charset="utf-8" />
+   * <meta name="viewport" content="width=device-width, initial-scale=1" />
+   */
+  htmlHead?: string;
+}
 
 type DeepRequired<T> = T extends (...args: any[]) => any
   ? T
   : T extends object
-  ? { [P in keyof T]-?: DeepRequired<T[P]> }
-  : T;
+    ? { [P in keyof T]-?: DeepRequired<T[P]> }
+    : T;
 
-const splitHTML = (htmlStr: string): readonly [string, string, string] => {
-  const P1 = [
-    "<!--placeholder1-->\\s*<div[^>]*>",
-    "</div>\\s*<!--/placeholder1-->",
-  ] as const;
-  const P2 = ["<!--placeholder2-->", "<!--/placeholder2-->"] as const;
-  const anyRE = "[\\s\\S]*";
-  const match = htmlStr.match(
-    new RegExp(
-      // prettier-ignore
-      "^(" + anyRE + P1[0] + ")" + anyRE + "(" + P1[1] + anyRE + P2[0] + ")" + anyRE + "(" + P2[1] + anyRE + ")$",
-    ),
-  );
-  if (match?.length !== 1 + 3) {
-    throw new Error("Failed to split HTML");
-  }
-  return match.slice(1) as [string, string, string];
-};
+export type ResolvedConfig = DeepRequired<Config>;
 
-const getFallback = (id: string) => {
-  if (id.endsWith("#Waku_SSR_Capable_Link")) {
-    return "waku/server#ClientOnly";
-  }
-  return "waku/server#ClientFallback";
-};
+const DEFAULT_HTML_HEAD = `
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+`.trim();
 
-export const configFileConfig = () => {
-  if (process.env.CONFIG_FILE) {
-    return { configFile: path.resolve(process.env.CONFIG_FILE) };
-  }
-  for (const file of ["vite.config.ts", "vite.config.js"]) {
-    if (fs.existsSync(file)) {
-      return { configFile: path.resolve(file) };
-    }
-  }
-  return {};
-};
-
-export async function resolveConfig(command: "build" | "serve") {
-  const origConfig = await viteResolveConfig(configFileConfig(), command);
-  const origFramework = (origConfig as { framework?: FrameworkConfig })
-    .framework;
-  const framework: DeepRequired<FrameworkConfig> = {
-    srcDir: "src",
-    distDir: "dist",
-    publicDir: "public",
-    indexHtml: "index.html",
-    entriesJs: "entries.js",
-    rscPrefix: "RSC/",
-    ...origFramework,
-    ssr: {
-      rscServer: "/",
-      splitHTML,
-      getFallback,
-      ...origFramework?.ssr,
-    },
+// Keep async function for future extension
+export async function resolveConfig(config: Config) {
+  const resolvedConfig: ResolvedConfig = {
+    basePath: '/',
+    srcDir: 'src',
+    distDir: 'dist',
+    publicDir: 'public',
+    assetsDir: 'assets',
+    indexHtml: 'index.html',
+    mainJs: 'main.tsx',
+    entriesJs: 'entries.js',
+    rscPath: 'RSC',
+    htmlHead: DEFAULT_HTML_HEAD,
+    ...config,
   };
-  const config = { ...origConfig, framework };
-  return config;
+  return resolvedConfig;
 }

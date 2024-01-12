@@ -1,6 +1,7 @@
-"use client";
+/// <reference types="react/canary" />
+'use client';
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, use } from 'react';
 
 export const Counter = ({
   delayedMessage,
@@ -9,7 +10,7 @@ export const Counter = ({
 }) => {
   const [count, setCount] = useState(0);
   return (
-    <div style={{ border: "3px blue dashed", margin: "1em", padding: "1em" }}>
+    <div style={{ border: '3px blue dashed', margin: '1em', padding: '1em' }}>
       <p>Count: {count}</p>
       <button onClick={() => setCount((c) => c + 1)}>Increment</button>
       <h3>This is a client component.</h3>
@@ -26,9 +27,12 @@ const Message = ({
 }: {
   count: number;
   delayedMessage: Promise<string>;
-}) => (
-  <ul>
-    <li>count: {count}</li>
-    <li>delayedMessage: {delayedMessage as any}</li>
-  </ul>
-);
+}) => {
+  return (
+    <ul>
+      <li>count: {count}</li>
+      {/* We want show the usage without `use` but it causes a hydration error. https://github.com/dai-shi/waku/issues/202 */}
+      <li>delayedMessage: {use(delayedMessage)}</li>
+    </ul>
+  );
+};

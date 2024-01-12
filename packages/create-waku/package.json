@@ -1,6 +1,9 @@
 {
   "name": "create-waku",
-  "version": "0.6.0",
+  "version": "0.7.0-alpha.2",
+  "publishConfig": {
+    "tag": "next"
+  },
   "author": "Daishi Kato",
   "type": "module",
   "contributors": [
@@ -8,27 +11,30 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/dai-shi/waku.git"
+    "url": "https://github.com/dai-shi/waku.git",
+    "directory": "packages/create-waku"
   },
-  "bin": "./dist/cli.js",
+  "bin": {
+    "create-waku": "./dist/index.js"
+  },
   "files": [
-    "src",
     "dist",
     "template"
   ],
   "scripts": {
-    "start": "node dist/cli.js",
-    "compile": "rm -rf template dist && pnpm run template && pnpm run build",
-    "template": "cp -r ../../examples template/",
-    "build": "tsc -b"
-  },
-  "dependencies": {
-    "fs-extra": "^11.1.1",
-    "kolorist": "^1.8.0",
-    "prompts": "^2.4.2"
+    "start": "node ./dist/index.js",
+    "dev": "ncc build ./src/index.ts -w -o ./dist/",
+    "compile": "rm -rf template dist *.tsbuildinfo && pnpm run template && pnpm run build",
+    "template": "cp -r ../../examples template/ && rm -rf template/*/dist && rm -rf template/*/node_modules",
+    "build": "ncc build ./src/index.ts -o ./dist/ --minify --no-cache --no-source-map-register"
   },
   "devDependencies": {
-    "@types/fs-extra": "^11.0.2",
-    "@types/prompts": "^2.4.5"
+    "@types/fs-extra": "^11.0.4",
+    "@types/prompts": "^2.4.9",
+    "@vercel/ncc": "^0.38.1",
+    "fs-extra": "^11.2.0",
+    "kolorist": "^1.8.0",
+    "prompts": "^2.4.2",
+    "update-check": "^1.5.4"
   }
 }

@@ -8,15 +8,9 @@
     "skipLibCheck": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
+    "types": ["react/experimental"],
     "jsx": "react-jsx",
-    "outDir": "./dist",
-    "tsBuildInfoFile": "./dist/.tsbuildinfo",
-    "composite": true
-  },
-  "include": ["./src"],
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    }
-  ]
+    "rootDir": "./src",
+    "outDir": "./dist"
+  }
 }

@@ -1,33 +1,51 @@
-import { defineConfig } from "@playwright/test";
-import { resolve } from "node:path";
-import { config } from "./playwright.config.base.js";
-import { fileURLToPath } from "node:url";
+import type {
+  PlaywrightTestConfig,
+  PlaywrightWorkerOptions,
+} from '@playwright/test';
+import { devices } from '@playwright/test';
 
-const rootDir = fileURLToPath(new URL(".", import.meta.url));
+/**
+ * Read environment variables from file.
+ * https://github.com/motdotla/dotenv
+ */
+// require('dotenv').config();
 
-export default defineConfig({
-  ...config,
-  testDir: "./e2e",
-  webServer: [
+/**
+ * See https://playwright.dev/docs/test-configuration.
+ */
+export const config: PlaywrightTestConfig = {
+  testDir: './e2e',
+  fullyParallel: true,
+  timeout: process.env.CI ? 60_000 : 30_000,
+  expect: {
+    timeout: process.env.CI ? 10_000 : 5_000,
+  },
+  use: {
+    browserName:
+      (process.env.BROWSER as PlaywrightWorkerOptions['browserName']) ??
+      'chromium',
+    viewport: { width: 1440, height: 800 },
+    actionTimeout: process.env.CI ? 10_000 : 5_000,
+    locale: 'en-US',
+    // Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer
+    // You can open traces locally(`npx playwright show-trace trace.zip`)
+    // or in your browser on [Playwright Trace Viewer](https://trace.playwright.dev/).
+    trace: 'on-first-retry',
+    // Record video only when retrying a test for the first time.
+    video: 'on-first-retry',
+  },
+  projects: [
     {
-      command: "pnpm run build && pnpm run start",
-      cwd: resolve(rootDir, "examples", "01_counter"),
-      port: 3000,
-      timeout: 10 * 1000,
-      reuseExistingServer: !process.env.CI,
-      env: {
-        PORT: "3000",
-      },
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
     },
     {
-      command: "pnpm run build && pnpm run start",
-      cwd: resolve(rootDir, "examples", "02_async"),
-      port: 3001,
-      timeout: 10 * 1000,
-      reuseExistingServer: !process.env.CI,
-      env: {
-        PORT: "3001",
-      },
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
     },
     {
       command: "pnpm run build && pnpm run start",
@@ -40,4 +58,18 @@ export default defineConfig({
       },
     },
   ],
-});
+  forbidOnly: !!process.env.CI,
+  // no parallelization, otherwise the `waku` command will have race conditions
+  workers: 1,
+  retries: 0,
+  // 'github' for GitHub Actions CI to generate annotations, plus a concise 'dot'
+  // default 'list' when running locally
+  // See https://playwright.dev/docs/test-reporters#github-actions-annotations
+  reporter: process.env.CI ? 'github' : 'list',
+};
+
+if (process.env.CI) {
+  config.retries = 3;
+}
+
+export default config;

@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&display=block');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&display=block');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=block');
+@tailwind base;
+:root {
+  @apply scroll-smooth bg-black;
+}
+body {
+  @apply overflow-x-clip overscroll-none;
+}
+#__waku {
+  @apply bg-gray-950;
+}
+*::-webkit-scrollbar {
+  @apply h-full w-4 bg-gray-950;
+}
+*::-webkit-scrollbar-track {
+  @apply bg-gray-950;
+}
+*::-webkit-scrollbar-thumb {
+  @apply rounded-2xl border-4 border-solid border-gray-950 bg-gray-600;
+}
+*::-webkit-scrollbar-button {
+  @apply hidden;
+}
+*:focus {
+  @apply !outline-none;
+}
+:focus:not(:focus-visible) {
+  @apply !outline-none;
+}
+::selection {
+  @apply bg-primary text-black;
+}
+@layer utilities {
+  .text-shadow {
+    text-shadow: 0.03125em 0.03125em 0px black;
+  }
+}
+@tailwind components;
+@tailwind utilities;
