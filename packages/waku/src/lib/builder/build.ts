@@ -50,7 +50,6 @@ import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscEntriesPlugin } from '../plugins/vite-plugin-rsc-entries.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
-import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { emitVercelOutput } from './output-vercel.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
 import { emitDenoOutput } from './output-deno.js';
@@ -268,7 +267,7 @@ const buildClientBundle = async (
   const clientBuildOutput = await buildVite({
     base: config.basePath,
     plugins: [
-      patchReactRefresh(viteReact()),
+      viteReact(),
       rscIndexPlugin({ ...config, cssAssets }),
       rscEnvPlugin({ config, hydrate: ssr }),
     ],
