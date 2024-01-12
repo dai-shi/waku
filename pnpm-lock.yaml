@@ -443,9 +443,6 @@ importers:
 
   examples/13_path-alias:
     dependencies:
-      '@stylexjs/stylex':
-        specifier: 0.4.1
-        version: 0.4.1
       react:
         specifier: 18.3.0-canary-c5b937576-20231219
         version: 18.3.0-canary-c5b937576-20231219
