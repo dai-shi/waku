@@ -51,24 +51,20 @@ const getViteServer = async (createViteServer: CreateViteServer) => {
   });
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
   // HACK to avoid bundling
-  const VITE_PLUGIN_NONJS_RESOLVE_MODULE_VALUE =
-    '../plugins/vite-plugin-nonjs-resolve.js';
+  const VITE_PLUGIN_REACT_VALUE = '@vitejs/plugin-react';
   const VITE_PLUGIN_RSC_ENV_MODULE_VALUE = '../plugins/vite-plugin-rsc-env.js';
-  const { nonjsResolvePlugin } = await import(
-    VITE_PLUGIN_NONJS_RESOLVE_MODULE_VALUE
-  );
+  const { default: viteReact } = await import(VITE_PLUGIN_REACT_VALUE);
   const { rscEnvPlugin } = await import(VITE_PLUGIN_RSC_ENV_MODULE_VALUE);
   const viteServer = await createViteServer({
-    plugins: [nonjsResolvePlugin(), rscEnvPlugin({})],
+    plugins: [viteReact(), rscEnvPlugin({})],
     // HACK to suppress 'Skipping dependency pre-bundling' warning
     optimizeDeps: { include: [] },
     ssr: {
       external: ['waku'],
     },
     appType: 'custom',
-    server: { middlewareMode: true, hmr: { server: dummyServer } },
+    server: { middlewareMode: true, hmr: { server: dummyServer }, watch: null },
   });
-  await viteServer.watcher.close(); // TODO watch: null
   await viteServer.ws.close();
   lastViteServer = viteServer;
   return viteServer;
