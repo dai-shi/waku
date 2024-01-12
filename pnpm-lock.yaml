@@ -438,7 +438,7 @@ importers:
         specifier: 0.10.1
         version: 0.10.1
       vite-plugin-stylex-dev:
-        specifier: ^0.2.3
+        specifier: 0.2.3
         version: 0.2.3
 
   examples/13_path-alias:
