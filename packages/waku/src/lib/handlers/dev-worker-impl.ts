@@ -33,6 +33,8 @@ if (HAS_MODULE_REGISTER) {
 (globalThis as any).__WAKU_PRIVATE_ENV__ = getEnvironmentData(
   '__WAKU_PRIVATE_ENV__',
 );
+const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR');
+const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS');
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   const { id, type: _removed, hasModuleIdCallback, ...rest } = mesg;
@@ -128,10 +130,7 @@ const mergedViteConfig = await mergeUserViteConfig({
   optimizeDeps: {
     include: ['react-server-dom-webpack/client', 'react-dom'],
     exclude: ['waku'],
-    entries: [
-      // `${config.srcDir}/${config.entriesJs}`.replace(/\.js$/, '.*'),
-      'src/entries.*', // TODO use config
-    ],
+    entries: [`${configSrcDir}/${configEntriesJs}`.replace(/\.js$/, '.*')],
   },
   ssr: {
     resolve: {
