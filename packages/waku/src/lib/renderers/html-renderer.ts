@@ -1,12 +1,17 @@
 import type {
+  default as ReactType,
   createElement as createElementType,
   ReactNode,
   FunctionComponent,
   ComponentProps,
 } from 'react';
+import type * as RDServerType from 'react-dom/server.edge';
+import type { default as RSDWClientType } from 'react-server-dom-webpack/client.edge';
 
-import type { ResolvedConfig } from '../config.js';
+import type * as WakuClientType from '../../client.js';
 import type { EntriesPrd } from '../../server.js';
+import type { ResolvedConfig } from '../config.js';
+import type { CLIENT_MODULE_KEY } from '../handlers/handler-dev.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import {
   decodeFilePathFromAbsolute,
@@ -15,15 +20,6 @@ import {
   fileURLToFilePath,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
-
-export const REACT_MODULE = 'react';
-export const REACT_MODULE_VALUE = 'react';
-export const RD_SERVER_MODULE = 'rd-server';
-export const RD_SERVER_MODULE_VALUE = 'react-dom/server.edge';
-export const RSDW_CLIENT_MODULE = 'rsdw-client';
-export const RSDW_CLIENT_MODULE_VALUE = 'react-server-dom-webpack/client.edge';
-export const WAKU_CLIENT_MODULE = 'waku-client';
-export const WAKU_CLIENT_MODULE_VALUE = 'waku/client';
 
 // HACK for react-server-dom-webpack without webpack
 (globalThis as any).__webpack_module_loading__ ||= new Map();
@@ -185,13 +181,13 @@ const rectifyHtml = () => {
 const buildHtml = (
   createElement: typeof createElementType,
   head: string,
-  body: Promise<ReactNode>,
+  body: ReactNode,
 ) =>
   createElement(
     'html',
     null,
     createElement('head', { dangerouslySetInnerHTML: { __html: head } }),
-    createElement('body', null, body as any),
+    createElement('body', null, body),
   );
 
 export const renderHtml = async (
@@ -212,6 +208,7 @@ export const renderHtml = async (
       searchParams?: URLSearchParams;
       body: ReadableStream;
     } | null>;
+    loadClientModule: (key: CLIENT_MODULE_KEY) => Promise<unknown>;
   } & (
     | { isDev: false; loadModule: EntriesPrd['loadModule']; isBuild: boolean }
     | {
@@ -228,6 +225,7 @@ export const renderHtml = async (
     htmlHead,
     renderRscForHtml,
     getSsrConfigForHtml,
+    loadClientModule,
     isDev,
   } = opts;
 
@@ -243,18 +241,12 @@ export const renderHtml = async (
     },
     { ServerRoot },
   ] = await Promise.all([
-    isDev
-      ? import(REACT_MODULE_VALUE)
-      : opts.loadModule('public/' + REACT_MODULE),
-    isDev
-      ? import(RD_SERVER_MODULE_VALUE)
-      : opts.loadModule('public/' + RD_SERVER_MODULE),
-    isDev
-      ? import(RSDW_CLIENT_MODULE_VALUE)
-      : opts.loadModule('public/' + RSDW_CLIENT_MODULE),
-    isDev
-      ? import(WAKU_CLIENT_MODULE_VALUE)
-      : opts.loadModule('public/' + WAKU_CLIENT_MODULE),
+    loadClientModule('react') as Promise<{ default: typeof ReactType }>,
+    loadClientModule('rd-server') as Promise<{ default: typeof RDServerType }>,
+    loadClientModule('rsdw-client') as Promise<{
+      default: typeof RSDWClientType;
+    }>,
+    loadClientModule('waku-client') as Promise<typeof WakuClientType>,
   ]);
   const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
   if (!ssrConfig) {
@@ -329,9 +321,11 @@ export const renderHtml = async (
               if (!moduleLoading.has(id)) {
                 moduleLoading.set(
                   id,
-                  opts.loadModule('public/' + id).then((m: any) => {
-                    moduleCache.set(id, m);
-                  }),
+                  opts
+                    .loadModule(joinPath(config.publicDir, id))
+                    .then((m: any) => {
+                      moduleCache.set(id, m);
+                    }),
                 );
               }
               return { id, chunks: [id], name };
@@ -364,7 +358,7 @@ export const renderHtml = async (
             Omit<ComponentProps<typeof ServerRoot>, 'children'>
           >,
           { elements },
-          body,
+          body as any,
         ),
       ),
       {

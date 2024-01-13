@@ -31,6 +31,14 @@ import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 
+export const CLIENT_MODULE_MAP = {
+  react: 'react',
+  'rd-server': 'react-dom/server.edge',
+  'rsdw-client': 'react-server-dom-webpack/client.edge',
+  'waku-client': 'waku/client',
+};
+export type CLIENT_MODULE_KEY = keyof typeof CLIENT_MODULE_MAP;
+
 export function createHandler<
   Context,
   Req extends BaseReq,
@@ -156,6 +164,7 @@ export function createHandler<
           },
           getSsrConfigForHtml: (pathname, options) =>
             getSsrConfigWithWorker(config, pathname, options),
+          loadClientModule: (key) => import(CLIENT_MODULE_MAP[key]),
           isDev: true,
           rootDir: vite.config.root,
           loadServerFile,
