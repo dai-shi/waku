@@ -93,7 +93,9 @@ export function createHandler<
 
   const loadServerFile = async (fileURL: string) => {
     const vite = await vitePromise;
-    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
+    return vite.ssrLoadModule(
+      decodeFilePathFromAbsolute(fileURLToFilePath(fileURL)),
+    );
   };
 
   const transformIndexHtml = async (pathname: string) => {
