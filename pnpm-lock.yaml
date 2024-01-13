@@ -437,9 +437,9 @@ importers:
       vite-plugin-commonjs:
         specifier: 0.10.1
         version: 0.10.1
-      vite-plugin-stylex:
-        specifier: 0.4.1
-        version: 0.4.1(@babel/traverse@7.23.7)(@babel/types@7.23.6)(vite@5.0.10)
+      vite-plugin-stylex-dev:
+        specifier: 0.2.3
+        version: 0.2.3
 
   examples/13_path-alias:
     dependencies:
@@ -1509,21 +1509,21 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  /@stylexjs/babel-plugin@0.3.0(@babel/core@7.23.7)(@babel/traverse@7.23.7)(@babel/types@7.23.6):
-    resolution: {integrity: sha512-OwViUP78aOMt3zJ9Uhrk2UMveMocyuZ/9Lhru+4j71aarimi2syIas20NpBeNUgzjzcmQXzLkSxVQizUGkGGbA==}
-    peerDependencies:
-      '@babel/core': ^7.19.6
-      '@babel/traverse': ^7.0.0-0
-      '@babel/types': ^7.15.6
+  /@stylexjs/babel-plugin@0.4.1:
+    resolution: {integrity: sha512-usG7HFvq04ELD44BAukQlTzKwmw3B0isOgsYzO97iGTkHMi7CJN4hniag7Fj96hrTob8Kq6MBbbQkLeKzbjqIg==}
     dependencies:
       '@babel/core': 7.23.7
+      '@babel/helper-module-imports': 7.22.15
       '@babel/traverse': 7.23.7
       '@babel/types': 7.23.6
-      '@stylexjs/shared': 0.3.0
+      '@stylexjs/shared': 0.4.1
+      '@stylexjs/stylex': 0.4.1
+    transitivePeerDependencies:
+      - supports-color
     dev: true
 
-  /@stylexjs/shared@0.3.0:
-    resolution: {integrity: sha512-Pw47Nm0SB9baLmbR5LvWnH+9WEGXWaMf0QDsNAGUJuC0JAD5oK7pSwQFhM06QHZIxGMh10CjGhSsQgmvPCYQ0Q==}
+  /@stylexjs/shared@0.4.1:
+    resolution: {integrity: sha512-4h1rVuwE9iPN0yor0kvtHhMo7XjWrG3DdPYWZI9c6V4AquAbh53KxN6v6X9woM2HKUbt0GzjyCsEjc6Ci6Lo4w==}
     dependencies:
       postcss-value-parser: 4.2.0
     dev: true
@@ -1535,7 +1535,6 @@ packages:
       invariant: 2.2.4
       styleq: 0.1.3
       utility-types: 3.10.0
-    dev: false
 
   /@swc/cli@0.1.63(@swc/core@1.3.102):
     resolution: {integrity: sha512-EM9oxxHzmmsprYRbGqsS2M4M/Gr5Gkcl0ROYYIdlUyTkhOiX822EQiRCpPCwdutdnzH2GyaTN7wc6i0Y+CKd3A==}
@@ -2698,7 +2697,6 @@ packages:
 
   /css-mediaquery@0.1.2:
     resolution: {integrity: sha512-COtn4EROW5dBGlE/4PiKnh6rZpAPxDeFLaEEwt4i10jpDMFt2EhQGS79QmmrO+iKCHv0PU/HrOWEhijFd1x99Q==}
-    dev: false
 
   /css-what@6.1.0:
     resolution: {integrity: sha512-HTUrgRJ7r4dsZKU6GjmpfRK1O76h97Z8MfS1G0FozR+oF2kG6Vfe8JE6zwrkbxigziPHinCJ+gCPjA9EaBDtRw==}
@@ -3925,7 +3923,6 @@ packages:
     resolution: {integrity: sha512-phJfQVBuaJM5raOpJjSfkiD6BpbCE4Ns//LaXl6wGYtUBY83nWS6Rf9tXm2e8VaK60JEjYldbPif/A2B1C2gNA==}
     dependencies:
       loose-envify: 1.4.0
-    dev: false
 
   /ipaddr.js@1.9.1:
     resolution: {integrity: sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==}
@@ -5995,7 +5992,6 @@ packages:
 
   /styleq@0.1.3:
     resolution: {integrity: sha512-3ZUifmCDCQanjeej1f6kyl/BeP/Vae5EYkQ9iJfUm/QwZvlgnZzyflqAsAWYURdtea8Vkvswu2GrC57h3qffcA==}
-    dev: false
 
   /sucrase@3.35.0:
     resolution: {integrity: sha512-8EbVDiu9iN/nESwxeSxDKe0dunta1GOlHufmSSXxMD2z2/tMZpDMpvXQGsc+ajGo8y2uYUmixaSRUc/QPoQ0GA==}
@@ -6374,7 +6370,6 @@ packages:
   /utility-types@3.10.0:
     resolution: {integrity: sha512-O11mqxmi7wMKCo6HKFt5AhO4BwY3VV68YU07tgxfz8zJTIxr4BpsezN49Ffwy9j3ZpwwJp4fkRwjRzq3uWE6Rg==}
     engines: {node: '>= 4'}
-    dev: false
 
   /utils-merge@1.0.1:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
@@ -6463,20 +6458,17 @@ packages:
       magic-string: 0.30.5
     dev: true
 
-  /vite-plugin-stylex@0.4.1(@babel/traverse@7.23.7)(@babel/types@7.23.6)(vite@5.0.10):
-    resolution: {integrity: sha512-QBkZYZyf1Hj1pUGYejF2rR3nuZyHt3YrkwPPu3dr/algyurtps+YTJ5Db2zVSd8sSPkHURT9UB1CQaJYnMshWg==}
-    peerDependencies:
-      vite: 5.0.10
+  /vite-plugin-stylex-dev@0.2.3:
+    resolution: {integrity: sha512-VM+hcGgAimg1g3M/eUTDl98SrE60CrPakDaD79a4EmBtn1WPKfu20Q3j/pdP/zIQlNMvEvFpCmrx3Itobc8efQ==}
     dependencies:
       '@babel/core': 7.23.7
       '@babel/plugin-syntax-flow': 7.23.3(@babel/core@7.23.7)
       '@babel/plugin-syntax-jsx': 7.23.3(@babel/core@7.23.7)
       '@babel/plugin-syntax-typescript': 7.23.3(@babel/core@7.23.7)
-      '@stylexjs/babel-plugin': 0.3.0(@babel/core@7.23.7)(@babel/traverse@7.23.7)(@babel/types@7.23.6)
-      vite: 5.0.10(@types/node@20.10.6)
+      '@stylexjs/babel-plugin': 0.4.1
+      es-module-lexer: 1.4.1
+      magic-string: 0.30.5
     transitivePeerDependencies:
-      - '@babel/traverse'
-      - '@babel/types'
       - supports-color
     dev: true
 
