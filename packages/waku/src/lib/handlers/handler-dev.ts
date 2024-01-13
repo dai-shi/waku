@@ -4,7 +4,11 @@ import { default as viteReact } from '@vitejs/plugin-react';
 
 import { resolveConfig } from '../config.js';
 import type { Config } from '../config.js';
-import { joinPath, decodeFilePathFromAbsolute } from '../utils/path.js';
+import {
+  joinPath,
+  decodeFilePathFromAbsolute,
+  fileURLToFilePath,
+} from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from '../renderers/html-renderer.js';
 import { decodeInput, hasStatusCode } from '../renderers/utils.js';
@@ -60,6 +64,9 @@ export function createHandler<
         rscHmrPlugin(),
         rscEnvPlugin({ config, hydrate: ssr }),
       ],
+      ssr: {
+        external: ['waku'],
+      },
       server: { middlewareMode: true },
     });
     const vite = await createViteServer(mergedViteConfig);
@@ -69,6 +76,11 @@ export function createHandler<
     registerModuleCallback((result) => moduleImport(vite, result));
     return vite;
   });
+
+  const loadServerFile = async (fileURL: string) => {
+    const vite = await vitePromise;
+    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
+  };
 
   const transformIndexHtml = async (pathname: string) => {
     const vite = await vitePromise;
@@ -145,7 +157,8 @@ export function createHandler<
           getSsrConfigForHtml: (pathname, options) =>
             getSsrConfigWithWorker(config, pathname, options),
           isDev: true,
-          createViteServer: (await import('vite')).createServer,
+          rootDir: vite.config.root,
+          loadServerFile,
         });
         if (readable) {
           unstable_posthook?.(req, res, context as Context);
