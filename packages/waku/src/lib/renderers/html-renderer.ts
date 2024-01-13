@@ -271,24 +271,26 @@ export const renderHtml = async (
   } = opts;
 
   const [
-    { createElement },
-    { renderToReadableStream },
-    { createFromReadableStream },
+    {
+      default: { createElement },
+    },
+    {
+      default: { renderToReadableStream },
+    },
+    {
+      default: { createFromReadableStream },
+    },
     { ServerRoot },
   ] = await Promise.all([
     isDev
       ? import(REACT_MODULE_VALUE)
-      : opts.loadModule('public/' + REACT_MODULE).then((m: any) => m.default),
+      : opts.loadModule('public/' + REACT_MODULE),
     isDev
       ? import(RD_SERVER_MODULE_VALUE)
-      : opts
-          .loadModule('public/' + RD_SERVER_MODULE)
-          .then((m: any) => m.default),
+      : opts.loadModule('public/' + RD_SERVER_MODULE),
     isDev
       ? import(RSDW_CLIENT_MODULE_VALUE)
-      : opts
-          .loadModule('public/' + RSDW_CLIENT_MODULE)
-          .then((m: any) => m.default),
+      : opts.loadModule('public/' + RSDW_CLIENT_MODULE),
     isDev
       ? import(WAKU_CLIENT_MODULE_VALUE)
       : opts.loadModule('public/' + WAKU_CLIENT_MODULE),
