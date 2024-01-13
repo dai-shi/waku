@@ -15,7 +15,7 @@ export function rscIndexPlugin(config: {
 <html>
   <head>
 ${config.htmlHead}
-<script src="/${config.srcDir}/${config.mainJs}" async type="module"></script>
+<script src="${config.basePath}${config.srcDir}/${config.mainJs}" async type="module"></script>
   </head>
   <body>
   </body>
