@@ -129,7 +129,7 @@ export function createHandler<
           pathname: req.url.pathname,
           searchParams: req.url.searchParams,
           htmlHead: `${config.htmlHead}
-<script src="/${config.srcDir}/${config.mainJs}" async type="module"></script>`,
+<script src="${config.basePath}${config.srcDir}/${config.mainJs}" async type="module"></script>`,
           renderRscForHtml: async (input, searchParams) => {
             const [readable, nextCtx] = await renderRscWithWorker({
               input,
