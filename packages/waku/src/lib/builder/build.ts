@@ -239,7 +239,7 @@ ${Object.entries(serverEntryFiles || {})
 ${Object.entries(clientEntryFiles || {})
   .map(
     ([k]) => `
-    case 'public/${config.assetsDir}/${k}.js':
+    case '${psDir}/${k}.js':
       return import('./${psDir}/${k}.js');`,
   )
   .join('')}
