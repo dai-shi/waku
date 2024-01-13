@@ -11,6 +11,5 @@
     "types": ["react/experimental"],
     "jsx": "react-jsx",
     "outDir": "./dist"
-  },
-  "include": ["./src", "tsconfig.json"]
+  }
 }

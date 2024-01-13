@@ -14,6 +14,5 @@
     "paths": {
       "@/*": ["./src/*"]
     }
-  },
-  "include": ["./src", "tsconfig.json"]
+  }
 }

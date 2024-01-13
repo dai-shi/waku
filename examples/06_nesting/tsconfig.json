@@ -10,7 +10,6 @@
     "exactOptionalPropertyTypes": true,
     "types": ["react/experimental"],
     "jsx": "react-jsx",
-    "rootDir": "./src",
     "outDir": "./dist"
   }
 }
