@@ -307,6 +307,7 @@ export const renderHtml = async (
                 }
                 const id = filePathToFileURL(filePath);
                 if (!moduleLoading.has(id)) {
+                  console.log('DEBUG html-renderer: loading server file', id);
                   moduleLoading.set(
                     id,
                     opts.loadServerFile(id).then((m) => {
