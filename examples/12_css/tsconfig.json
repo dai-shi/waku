@@ -10,8 +10,7 @@
     "exactOptionalPropertyTypes": true,
     "types": ["react/experimental"],
     "jsx": "react-jsx",
-    "outDir": "./dist",
-    "composite": true
+    "outDir": "./dist"
   },
   "include": ["./src", "tsconfig.json"]
 }
