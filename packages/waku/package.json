@@ -18,6 +18,10 @@
       "types": "./dist/main.d.ts",
       "default": "./dist/main.js"
     },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "default": "./dist/config.js"
+    },
     "./prd": {
       "types": "./dist/prd.d.ts",
       "default": "./dist/prd.js"
@@ -52,8 +56,7 @@
   },
   "files": [
     "src",
-    "dist",
-    "patches"
+    "dist"
   ],
   "scripts": {
     "dev": "swc src -d dist -w",
