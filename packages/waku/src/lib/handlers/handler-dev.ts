@@ -73,7 +73,7 @@ export function createHandler<
         rscEnvPlugin({ config, hydrate: ssr }),
       ],
       ssr: {
-        // external: ['waku'],
+        external: ['waku'],
       },
       server: { middlewareMode: true },
     });
