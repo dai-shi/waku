@@ -5,6 +5,7 @@ import { default as viteReact } from '@vitejs/plugin-react';
 
 import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
+import type { ResolvedConfig } from '../config.js';
 import {
   joinPath,
   decodeFilePathFromAbsolute,
@@ -93,17 +94,29 @@ export function createHandler<
   });
 
   let lastViteServer: Awaited<ReturnType<typeof createViteServer>> | undefined;
-  const getViteServer = async () => {
+  const getViteServer = async (config: ResolvedConfig) => {
     if (lastViteServer) {
       return lastViteServer;
     }
     const dummyServer = new Server(); // FIXME we hope to avoid this hack
     const viteServer = await createViteServer({
+      base: config.basePath,
+      optimizeDeps: {
+        include: ['react-server-dom-webpack/client', 'react-dom'],
+        exclude: ['waku'],
+        entries: [
+          `${config.srcDir}/${config.entriesJs}`.replace(/\.js$/, '.*'),
+        ],
+      },
       plugins: [viteReact(), rscEnvPlugin({})],
-      // HACK to suppress 'Skipping dependency pre-bundling' warning
-      optimizeDeps: { include: [] },
       ssr: {
-        external: ['waku'],
+        external: [
+          'waku',
+          'waku/client',
+          'waku/server',
+          'waku/router/client',
+          'waku/router/server',
+        ],
       },
       appType: 'custom',
       server: {
@@ -119,7 +132,8 @@ export function createHandler<
 
   const loadServerFile = async (fileURL: string) => {
     // const vite = await vitePromise;
-    const vite = await getViteServer();
+    const config = await configPromise;
+    const vite = await getViteServer(config);
     return vite.ssrLoadModule(fileURLToFilePath(fileURL));
   };
 
