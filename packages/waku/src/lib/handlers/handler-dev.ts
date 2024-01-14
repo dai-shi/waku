@@ -108,7 +108,12 @@ export function createHandler<
           `${config.srcDir}/${config.entriesJs}`.replace(/\.js$/, '.*'),
         ],
       },
-      plugins: [viteReact(), rscEnvPlugin({})],
+      plugins: [
+        patchReactRefresh(viteReact()),
+        rscIndexPlugin(config),
+        rscHmrPlugin(),
+        rscEnvPlugin({ config, hydrate: ssr }),
+      ],
       ssr: {
         external: [
           'waku',
@@ -130,10 +135,13 @@ export function createHandler<
     return viteServer;
   };
 
+  const vitePromise2 = configPromise.then(async (config) =>
+    getViteServer(config),
+  );
+
   const loadServerFile = async (fileURL: string) => {
     // const vite = await vitePromise;
-    const config = await configPromise;
-    const vite = await getViteServer(config);
+    const vite = await vitePromise2;
     return vite.ssrLoadModule(fileURLToFilePath(fileURL));
   };
 
