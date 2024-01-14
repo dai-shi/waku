@@ -1,4 +1,5 @@
 import { Readable, Writable } from 'node:stream';
+import { Server } from 'node:http';
 import { createServer as createViteServer } from 'vite';
 import { default as viteReact } from '@vitejs/plugin-react';
 
@@ -96,17 +97,7 @@ export function createHandler<
     if (lastViteServer) {
       return lastViteServer;
     }
-    const { Server } = await import('node:http').catch((e) => {
-      // XXX explicit catch to avoid bundle time error
-      throw e;
-    });
     const dummyServer = new Server(); // FIXME we hope to avoid this hack
-    // HACK to avoid bundling
-    const VITE_PLUGIN_REACT_VALUE = '@vitejs/plugin-react';
-    const VITE_PLUGIN_RSC_ENV_MODULE_VALUE =
-      '../plugins/vite-plugin-rsc-env.js';
-    const { default: viteReact } = await import(VITE_PLUGIN_REACT_VALUE);
-    const { rscEnvPlugin } = await import(VITE_PLUGIN_RSC_ENV_MODULE_VALUE);
     const viteServer = await createViteServer({
       plugins: [viteReact(), rscEnvPlugin({})],
       // HACK to suppress 'Skipping dependency pre-bundling' warning
