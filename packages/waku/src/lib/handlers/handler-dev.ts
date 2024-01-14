@@ -91,8 +91,44 @@ export function createHandler<
     return vite;
   });
 
+  let lastViteServer: Awaited<ReturnType<typeof createViteServer>> | undefined;
+  const getViteServer = async () => {
+    if (lastViteServer) {
+      return lastViteServer;
+    }
+    const { Server } = await import('node:http').catch((e) => {
+      // XXX explicit catch to avoid bundle time error
+      throw e;
+    });
+    const dummyServer = new Server(); // FIXME we hope to avoid this hack
+    // HACK to avoid bundling
+    const VITE_PLUGIN_REACT_VALUE = '@vitejs/plugin-react';
+    const VITE_PLUGIN_RSC_ENV_MODULE_VALUE =
+      '../plugins/vite-plugin-rsc-env.js';
+    const { default: viteReact } = await import(VITE_PLUGIN_REACT_VALUE);
+    const { rscEnvPlugin } = await import(VITE_PLUGIN_RSC_ENV_MODULE_VALUE);
+    const viteServer = await createViteServer({
+      plugins: [viteReact(), rscEnvPlugin({})],
+      // HACK to suppress 'Skipping dependency pre-bundling' warning
+      optimizeDeps: { include: [] },
+      ssr: {
+        external: ['waku'],
+      },
+      appType: 'custom',
+      server: {
+        middlewareMode: true,
+        hmr: { server: dummyServer },
+        watch: null,
+      },
+    });
+    await viteServer.ws.close();
+    lastViteServer = viteServer;
+    return viteServer;
+  };
+
   const loadServerFile = async (fileURL: string) => {
-    const vite = await vitePromise;
+    // const vite = await vitePromise;
+    const vite = await getViteServer();
     return vite.ssrLoadModule(fileURLToFilePath(fileURL));
   };
 
