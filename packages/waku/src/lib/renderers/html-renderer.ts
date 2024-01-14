@@ -14,8 +14,6 @@ import type { ResolvedConfig } from '../config.js';
 import type { CLIENT_MODULE_KEY } from '../handlers/handler-dev.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import {
-  encodeFilePathToAbsolute,
-  decodeFilePathFromAbsolute,
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
