@@ -1,6 +1,6 @@
 import type { EntriesPrd } from '../../server.js';
+import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
-import type { Config } from '../config.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from '../renderers/html-renderer.js';
 import { decodeInput, hasStatusCode, deepFreeze } from '../renderers/utils.js';

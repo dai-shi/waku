@@ -141,7 +141,7 @@ importers:
         specifier: 5.3.3
         version: 5.3.3
 
-  examples/01_counter:
+  examples/01_template:
     dependencies:
       react:
         specifier: 18.3.0-canary-c5b937576-20231219
@@ -163,7 +163,7 @@ importers:
         specifier: 5.3.3
         version: 5.3.3
 
-  examples/02_async:
+  examples/02_minimal:
     dependencies:
       react:
         specifier: 18.3.0-canary-c5b937576-20231219
