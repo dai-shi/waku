@@ -56,6 +56,43 @@ export function createHandler<
   }
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(options.config || {});
+  /*
+  const vitePromise = configPromise.then(async (config) => {
+    const mergedViteConfig = await mergeUserViteConfig({
+      base: config.basePath,
+      optimizeDeps: {
+        include: ['react-server-dom-webpack/client', 'react-dom'],
+        exclude: ['waku'],
+        entries: [
+          `${config.srcDir}/${config.entriesJs}`.replace(/\.js$/, '.*'),
+        ],
+      },
+      plugins: [
+        patchReactRefresh(viteReact()),
+        rscIndexPlugin(config),
+        rscHmrPlugin(),
+        rscEnvPlugin({ config, hydrate: ssr }),
+      ],
+      ssr: {
+        external: [
+          'waku',
+          'waku/client',
+          'waku/server',
+          'waku/router/client',
+          'waku/router/server',
+        ],
+      },
+      server: { middlewareMode: true },
+    });
+    const vite = await createViteServer(mergedViteConfig);
+    // initializeWorker(config);
+    // registerReloadCallback((type) => vite.ws.send({ type }));
+    // registerImportCallback((source) => hotImport(vite, source));
+    // registerModuleCallback((result) => moduleImport(vite, result));
+    return vite;
+  });
+  */
+
   const vitePromise = configPromise.then(async (config) => {
     const mergedViteConfig = await mergeUserViteConfig({
       base: config.basePath,
@@ -85,46 +122,11 @@ export function createHandler<
     });
     const vite = await createViteServer(mergedViteConfig);
     initializeWorker(config);
-    // registerReloadCallback((type) => vite.ws.send({ type }));
-    // registerImportCallback((source) => hotImport(vite, source));
-    // registerModuleCallback((result) => moduleImport(vite, result));
-    return vite;
-  });
-
-  const vitePromise2 = configPromise.then(async (config) => {
-    const mergedViteConfig = await mergeUserViteConfig({
-      base: config.basePath,
-      optimizeDeps: {
-        include: ['react-server-dom-webpack/client', 'react-dom'],
-        exclude: ['waku'],
-        entries: [
-          `${config.srcDir}/${config.entriesJs}`.replace(/\.js$/, '.*'),
-        ],
-      },
-      plugins: [
-        patchReactRefresh(viteReact()),
-        rscIndexPlugin(config),
-        rscHmrPlugin(),
-        rscEnvPlugin({ config, hydrate: ssr }),
-      ],
-      ssr: {
-        external: [
-          'waku',
-          'waku/client',
-          'waku/server',
-          'waku/router/client',
-          'waku/router/server',
-        ],
-      },
-      server: { middlewareMode: true },
-    });
-    const vite = await createViteServer(mergedViteConfig);
     return vite;
   });
 
   const loadServerFile = async (fileURL: string) => {
-    // const vite = await vitePromise;
-    const vite = await vitePromise2;
+    const vite = await vitePromise;
     return vite.ssrLoadModule(fileURLToFilePath(fileURL));
   };
 
