@@ -111,12 +111,7 @@ async function init() {
                 message: 'Choose a starter template',
                 choices: [
                   { title: 'basic-template', value: CHOICES[0] },
-                  { title: 'async-example', value: CHOICES[1] },
-                  { title: 'promise-example', value: CHOICES[2] },
-                  { title: 'callserver-example', value: CHOICES[3] },
-                  { title: 'mutation-example', value: CHOICES[4] },
-                  { title: 'nesting-example', value: CHOICES[5] },
-                  { title: 'router-example', value: CHOICES[6] },
+                  { title: 'minimal-example', value: CHOICES[1] },
                 ],
               } as prompts.PromptObject<string>,
             ]
