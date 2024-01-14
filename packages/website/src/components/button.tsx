@@ -19,7 +19,7 @@ export const Button = ({ href, children, ...rest }: ButtonProps) => {
 
   return (
     <Element
-      className="text-red-50 rounded-md bg-primary px-4 py-3 text-base font-black uppercase  leading-none transition duration-300 ease-in-out hover:bg-secondary focus:ring-4 focus:ring-primary-300"
+      className="text-red-50 rounded-md bg-primary px-4 py-3 text-base font-black uppercase leading-none transition-colors duration-300 ease-in-out hover:bg-secondary focus:ring-4 focus:ring-primary-300"
       {...props}
       {...rest}
     >
