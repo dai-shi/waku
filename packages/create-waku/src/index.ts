@@ -3,11 +3,22 @@ import { existsSync, readdirSync } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 import { default as prompts } from 'prompts';
 import { red, green, bold } from 'kolorist';
 import fse from 'fs-extra/esm';
 import checkForUpdate from 'update-check';
 import { createRequire } from 'node:module';
+
+// FIXME is there a better way with prompts?
+const { values } = parseArgs({
+  args: process.argv.slice(2),
+  options: {
+    'choose-template': {
+      type: 'boolean',
+    },
+  },
+});
 
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
@@ -56,11 +67,11 @@ async function init() {
   let result: {
     packageName: string;
     shouldOverwrite: string;
-    chooseProject: string;
+    chooseTemplate?: string;
   };
 
   try {
-    result = await prompts(
+    result = (await prompts(
       [
         {
           name: 'projectName',
@@ -92,27 +103,26 @@ async function init() {
           validate: (dir: string) =>
             isValidPackageName(dir) || 'Invalid package.json name',
         },
-        {
-          name: 'chooseProject',
-          type: 'select',
-          message: 'Choose a starter template',
-          choices: [
-            { title: 'basic-template', value: CHOICES[0] },
-            { title: 'async-template', value: CHOICES[1] },
-            { title: 'promise-template', value: CHOICES[2] },
-            { title: 'callserver-template', value: CHOICES[3] },
-            { title: 'mutation-template', value: CHOICES[4] },
-            { title: 'nesting-template', value: CHOICES[5] },
-            { title: 'router-template', value: CHOICES[6] },
-          ],
-        },
+        ...(values['choose-template']
+          ? [
+              {
+                name: 'chooseTemplate',
+                type: 'select',
+                message: 'Choose a starter template',
+                choices: [
+                  { title: 'basic-template', value: CHOICES[0] },
+                  { title: 'minimal-example', value: CHOICES[1] },
+                ],
+              } as prompts.PromptObject<string>,
+            ]
+          : []),
       ],
       {
         onCancel: () => {
           throw new Error(red('✖') + ' Operation cancelled');
         },
       },
-    );
+    )) as any; // FIXME no-any
   } catch (cancelled) {
     if (cancelled instanceof Error) {
       console.log(cancelled.message);
@@ -120,7 +130,7 @@ async function init() {
     process.exit(1);
   }
 
-  const { packageName, shouldOverwrite, chooseProject } = result;
+  const { packageName, shouldOverwrite, chooseTemplate } = result;
 
   const root = path.resolve(targetDir);
 
@@ -137,7 +147,7 @@ async function init() {
 
   console.log('Setting up project...');
 
-  const templateDir = path.join(templateRoot, chooseProject);
+  const templateDir = path.join(templateRoot, chooseTemplate || CHOICES[0]!);
 
   // Read existing package.json from the root directory
   const packageJsonPath = path.join(root, 'package.json');

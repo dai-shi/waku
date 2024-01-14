@@ -20,7 +20,7 @@ import { build } from './lib/builder/build.js';
 const require = createRequire(new URL('.', import.meta.url));
 
 const { values, positionals } = parseArgs({
-  args: process.argv.splice(2),
+  args: process.argv.slice(2),
   allowPositionals: true,
   options: {
     'with-ssr': {
