@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 
 import path from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
+import { randomBytes } from 'node:crypto';
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
+import * as swc from '@swc/core';
 
+import type { Config } from './config.js';
 import { resolveConfig } from './lib/config.js';
 import { honoMiddleware as honoDevMiddleware } from './lib/middleware/hono-dev.js';
 import { honoMiddleware as honoPrdMiddleware } from './lib/middleware/hono-prd.js';
@@ -47,6 +50,7 @@ const { values, positionals } = parseArgs({
 });
 
 loadEnv();
+const config = await loadConfig();
 
 const cmd = positionals[0];
 
@@ -80,7 +84,10 @@ if (values.version) {
 
 async function runDev(options: { ssr: boolean }) {
   const app = new Hono();
-  app.use('*', honoDevMiddleware({ ...options, env: process.env as any }));
+  app.use(
+    '*',
+    honoDevMiddleware({ ...options, config, env: process.env as any }),
+  );
   const port = parseInt(process.env.PORT || '3000', 10);
   startServer(app, port);
 }
@@ -88,6 +95,7 @@ async function runDev(options: { ssr: boolean }) {
 async function runBuild(options: { ssr: boolean }) {
   await build({
     ...options,
+    config,
     env: process.env as any,
     vercel:
       values['with-vercel'] ?? !!process.env.VERCEL
@@ -101,14 +109,14 @@ async function runBuild(options: { ssr: boolean }) {
 }
 
 async function runStart(options: { ssr: boolean }) {
-  const { distDir, publicDir, entriesJs } = await resolveConfig({});
+  const { distDir, publicDir, entriesJs } = await resolveConfig(config);
   const entries = import(
     pathToFileURL(path.resolve(distDir, entriesJs)).toString()
   );
   const app = new Hono();
   app.use(
     '*',
-    honoPrdMiddleware({ ...options, entries, env: process.env as any }),
+    honoPrdMiddleware({ ...options, config, entries, env: process.env as any }),
   );
   app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
   const port = parseInt(process.env.PORT || '8080', 10);
@@ -163,5 +171,26 @@ function loadEnv() {
         }
       }
     }
+  }
+}
+
+// TODO is this a good idea?
+async function loadConfig(): Promise<Config> {
+  if (!existsSync('waku.config.ts')) {
+    return {};
+  }
+  const { code } = swc.transformFileSync('waku.config.ts', {
+    swcrc: false,
+    jsc: {
+      parser: { syntax: 'typescript' },
+      target: 'es2022',
+    },
+  });
+  const temp = path.resolve(`.temp-${randomBytes(8).toString('hex')}.js`);
+  try {
+    writeFileSync(temp, code);
+    return (await import(pathToFileURL(temp).toString())).default;
+  } finally {
+    unlinkSync(temp);
   }
 }

@@ -6,8 +6,9 @@ import { build as buildVite, resolveConfig as resolveViteConfig } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
+import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
-import type { Config, ResolvedConfig } from '../config.js';
+import type { ResolvedConfig } from '../config.js';
 import {
   joinPath,
   extname,
