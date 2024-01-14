@@ -1,5 +1,4 @@
 import { Readable, Writable } from 'node:stream';
-import { Server } from 'node:http';
 import { createServer as createViteServer } from 'vite';
 import { default as viteReact } from '@vitejs/plugin-react';
 
@@ -15,18 +14,18 @@ import { renderHtml } from '../renderers/html-renderer.js';
 import { decodeInput, hasStatusCode } from '../renderers/utils.js';
 import {
   initializeWorker,
-  registerReloadCallback,
-  registerImportCallback,
+  // registerReloadCallback,
+  // registerImportCallback,
+  // registerModuleCallback,
   renderRscWithWorker,
   getSsrConfigWithWorker,
-  registerModuleCallback,
 } from './dev-worker-api.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import {
   rscHmrPlugin,
-  hotImport,
-  moduleImport,
+  // hotImport,
+  // moduleImport,
 } from '../plugins/vite-plugin-rsc-hmr.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
@@ -86,14 +85,13 @@ export function createHandler<
     });
     const vite = await createViteServer(mergedViteConfig);
     initializeWorker(config);
-    registerReloadCallback((type) => vite.ws.send({ type }));
-    registerImportCallback((source) => hotImport(vite, source));
-    registerModuleCallback((result) => moduleImport(vite, result));
+    // registerReloadCallback((type) => vite.ws.send({ type }));
+    // registerImportCallback((source) => hotImport(vite, source));
+    // registerModuleCallback((result) => moduleImport(vite, result));
     return vite;
   });
 
   const vitePromise2 = configPromise.then(async (config) => {
-    const dummyServer = new Server(); // FIXME we hope to avoid this hack
     const mergedViteConfig = await mergeUserViteConfig({
       base: config.basePath,
       optimizeDeps: {
@@ -118,15 +116,9 @@ export function createHandler<
           'waku/router/server',
         ],
       },
-      appType: 'custom',
-      server: {
-        middlewareMode: true,
-        hmr: { server: dummyServer },
-        watch: null,
-      },
+      server: { middlewareMode: true },
     });
     const vite = await createViteServer(mergedViteConfig);
-    await vite.ws.close();
     return vite;
   });
 
