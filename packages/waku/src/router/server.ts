@@ -20,7 +20,7 @@ const ShoudSkipComponent = ({ shouldSkip }: { shouldSkip: ShouldSkip }) =>
     content: JSON.stringify(shouldSkip),
   });
 
-export function defineRouter(
+export function unstable_defineRouter(
   existsPath: (path: string) => Promise<'static' | 'dynamic' | null>,
   getComponent: (
     componentId: string, // "**/layout" or "**/page"
@@ -130,7 +130,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   return { renderEntries, getBuildConfig, getSsrConfig };
 }
 
-// createPages API (a wrapper around defineRouter)
+// createPages API (a wrapper around unstable_defineRouter)
 
 // FIXME we should extract some functions (and type utils)
 // out of this file, and add unit tests for them.
@@ -382,7 +382,7 @@ export function createPages(
     configured = true;
   });
 
-  return defineRouter(
+  return unstable_defineRouter(
     async (path: string) => {
       await ready;
       if (staticPathSet.has(path)) {
