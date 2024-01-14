@@ -88,12 +88,15 @@ export function createHandler<
     registerReloadCallback((type) => vite.ws.send({ type }));
     registerImportCallback((source) => hotImport(vite, source));
     registerModuleCallback((result) => moduleImport(vite, result));
-    return vite
+    return vite;
   });
 
   const loadServerFile = async (fileURL: string) => {
     const vite = await vitePromise;
-    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
+    // return vite.ssrLoadModule(fileURLToFilePath(fileURL));
+    const result = await  vite.ssrLoadModule(fileURLToFilePath(fileURL));
+    console.log('loadServerFile', fileURL, result.Counter?.toString?.());
+    return result;
   };
 
   const transformIndexHtml = async (pathname: string) => {
