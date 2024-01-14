@@ -289,10 +289,9 @@ export const renderHtml = async (
                 const filePath = file.startsWith('@fs/')
                   ? file.slice('@fs'.length)
                   : joinPath(opts.rootDir, file);
-                const wakuDist = encodeFilePathToAbsolute(
-                  decodeFilePathFromAbsolute(
-                    joinPath(fileURLToFilePath(import.meta.url), '../../..'),
-                  ),
+                const wakuDist = joinPath(
+                  fileURLToFilePath(import.meta.url),
+                  '../../..',
                 );
                 if (filePath.startsWith(wakuDist)) {
                   const id =
