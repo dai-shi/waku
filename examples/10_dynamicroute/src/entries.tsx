@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import { lazy } from 'react';
 import { glob } from 'glob';
-import { defineRouter } from 'waku/router/server';
+import { unstable_defineRouter as defineRouter } from 'waku/router/server';
 
 const routesDir = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
