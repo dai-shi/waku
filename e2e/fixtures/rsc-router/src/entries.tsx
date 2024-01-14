@@ -1,4 +1,4 @@
-import { defineRouter } from 'waku/router/server';
+import { unstable_defineRouter as defineRouter } from 'waku/router/server';
 
 const STATIC_PATHS = ['/', '/foo'];
 
