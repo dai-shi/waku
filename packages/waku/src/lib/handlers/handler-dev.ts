@@ -57,7 +57,7 @@ export function createHandler<
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(options.config || {});
   const vitePromise = configPromise.then(async (config) => {
-    const userConfig = {
+    const mergedViteConfig = await mergeUserViteConfig({
       base: config.basePath,
       optimizeDeps: {
         include: ['react-server-dom-webpack/client', 'react-dom'],
@@ -82,13 +82,13 @@ export function createHandler<
         ],
       },
       server: { middlewareMode: true },
-    };
+    });
+    const vite = await createViteServer(mergedViteConfig);
     initializeWorker(config);
-    const vite = await createViteServer(await mergeUserViteConfig(userConfig));
     registerReloadCallback((type) => vite.ws.send({ type }));
     registerImportCallback((source) => hotImport(vite, source));
     registerModuleCallback((result) => moduleImport(vite, result));
-    const vite2 = await createViteServer(await mergeUserViteConfig(userConfig));
+    const vite2 = await createViteServer(mergedViteConfig);
     return [vite, vite2] as const;
   });
 
