@@ -57,7 +57,7 @@ export function createHandler<
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(options.config || {});
   const vitePromise = configPromise.then(async (config) => {
-    const mergedViteConfig = await mergeUserViteConfig({
+    const userConfig = {
       base: config.basePath,
       optimizeDeps: {
         include: ['react-server-dom-webpack/client', 'react-dom'],
@@ -82,45 +82,19 @@ export function createHandler<
         ],
       },
       server: { middlewareMode: true },
-    });
+    };
     initializeWorker(config);
-    const vite = await createViteServer(mergedViteConfig);
+    const vite = await createViteServer(await mergeUserViteConfig(userConfig));
     registerReloadCallback((type) => vite.ws.send({ type }));
     registerImportCallback((source) => hotImport(vite, source));
     registerModuleCallback((result) => moduleImport(vite, result));
-    const mergedViteConfig2 = await mergeUserViteConfig({
-      base: config.basePath,
-      optimizeDeps: {
-        include: ['react-server-dom-webpack/client', 'react-dom'],
-        exclude: ['waku'],
-        entries: [
-          `${config.srcDir}/${config.entriesJs}`.replace(/\.js$/, '.*'),
-        ],
-      },
-      plugins: [
-        patchReactRefresh(viteReact()),
-        rscIndexPlugin(config),
-        rscHmrPlugin(),
-        rscEnvPlugin({ config, hydrate: ssr }),
-      ],
-      ssr: {
-        external: [
-          'waku',
-          'waku/client',
-          'waku/server',
-          'waku/router/client',
-          'waku/router/server',
-        ],
-      },
-      server: { middlewareMode: true },
-    });
-    const vite2 = await createViteServer(mergedViteConfig2);
+    const vite2 = await createViteServer(await mergeUserViteConfig(userConfig));
     return [vite, vite2] as const;
   });
 
   const loadServerFile = async (fileURL: string) => {
-    const [, vite] = await vitePromise;
-    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
+    const [, vite2] = await vitePromise;
+    return vite2.ssrLoadModule(fileURLToFilePath(fileURL));
   };
 
   const transformIndexHtml = async (pathname: string) => {
