@@ -5,7 +5,6 @@ import { default as viteReact } from '@vitejs/plugin-react';
 
 import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
-import type { ResolvedConfig } from '../config.js';
 import {
   joinPath,
   decodeFilePathFromAbsolute,
@@ -93,13 +92,9 @@ export function createHandler<
     return vite;
   });
 
-  let lastViteServer: Awaited<ReturnType<typeof createViteServer>> | undefined;
-  const getViteServer = async (config: ResolvedConfig) => {
-    if (lastViteServer) {
-      return lastViteServer;
-    }
+  const vitePromise2 = configPromise.then(async (config) => {
     const dummyServer = new Server(); // FIXME we hope to avoid this hack
-    const viteServer = await createViteServer({
+    const mergedViteConfig = await mergeUserViteConfig({
       base: config.basePath,
       optimizeDeps: {
         include: ['react-server-dom-webpack/client', 'react-dom'],
@@ -130,14 +125,10 @@ export function createHandler<
         watch: null,
       },
     });
-    await viteServer.ws.close();
-    lastViteServer = viteServer;
-    return viteServer;
-  };
-
-  const vitePromise2 = configPromise.then(async (config) =>
-    getViteServer(config),
-  );
+    const vite = await createViteServer(mergedViteConfig);
+    await vite.ws.close();
+    return vite;
+  });
 
   const loadServerFile = async (fileURL: string) => {
     // const vite = await vitePromise;
