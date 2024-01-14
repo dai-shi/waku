@@ -88,15 +88,38 @@ export function createHandler<
     registerReloadCallback((type) => vite.ws.send({ type }));
     registerImportCallback((source) => hotImport(vite, source));
     registerModuleCallback((result) => moduleImport(vite, result));
-    const vite2 = await createViteServer(mergedViteConfig);
-    registerReloadCallback((type) => vite2.ws.send({ type }));
-    registerImportCallback((source) => hotImport(vite2, source));
-    registerModuleCallback((result) => moduleImport(vite2, result));
+    const mergedViteConfig2 = await mergeUserViteConfig({
+      base: config.basePath,
+      optimizeDeps: {
+        include: ['react-server-dom-webpack/client', 'react-dom'],
+        exclude: ['waku'],
+        entries: [
+          `${config.srcDir}/${config.entriesJs}`.replace(/\.js$/, '.*'),
+        ],
+      },
+      plugins: [
+        patchReactRefresh(viteReact()),
+        rscIndexPlugin(config),
+        rscHmrPlugin(),
+        rscEnvPlugin({ config, hydrate: ssr }),
+      ],
+      ssr: {
+        external: [
+          'waku',
+          'waku/client',
+          'waku/server',
+          'waku/router/client',
+          'waku/router/server',
+        ],
+      },
+      server: { middlewareMode: true },
+    });
+    const vite2 = await createViteServer(mergedViteConfig2);
     return [vite, vite2] as const;
   });
 
   const loadServerFile = async (fileURL: string) => {
-    const [vite] = await vitePromise;
+    const [, vite] = await vitePromise;
     return vite.ssrLoadModule(fileURLToFilePath(fileURL));
   };
 
