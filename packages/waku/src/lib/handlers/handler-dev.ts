@@ -6,8 +6,8 @@ import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
 import {
   joinPath,
-  decodeFilePathFromAbsolute,
   fileURLToFilePath,
+  decodeFilePathFromAbsolute,
 } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from '../renderers/html-renderer.js';
@@ -93,10 +93,7 @@ export function createHandler<
 
   const loadServerFile = async (fileURL: string) => {
     const vite = await vitePromise;
-    // return vite.ssrLoadModule(fileURLToFilePath(fileURL));
-    const result = await  vite.ssrLoadModule(fileURLToFilePath(fileURL));
-    console.log('loadServerFile', fileURL, result.Counter?.toString?.());
-    return result;
+    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
   };
 
   const transformIndexHtml = async (pathname: string) => {

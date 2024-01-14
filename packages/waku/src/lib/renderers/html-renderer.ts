@@ -14,6 +14,7 @@ import type { ResolvedConfig } from '../config.js';
 import type { CLIENT_MODULE_KEY } from '../handlers/handler-dev.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import {
+  encodeFilePathToAbsolute,
   decodeFilePathFromAbsolute,
   joinPath,
   filePathToFileURL,
@@ -286,10 +287,12 @@ export const renderHtml = async (
               // TODO too long, we need to refactor this logic
               if (isDev) {
                 const filePath = file.startsWith('@fs/')
-                  ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
+                  ? file.slice('@fs'.length)
                   : joinPath(opts.rootDir, file);
-                const wakuDist = decodeFilePathFromAbsolute(
-                  joinPath(fileURLToFilePath(import.meta.url), '../../..'),
+                const wakuDist = encodeFilePathToAbsolute(
+                  decodeFilePathFromAbsolute(
+                    joinPath(fileURLToFilePath(import.meta.url), '../../..'),
+                  ),
                 );
                 if (filePath.startsWith(wakuDist)) {
                   const id =
