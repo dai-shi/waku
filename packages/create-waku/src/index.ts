@@ -14,7 +14,7 @@ import { createRequire } from 'node:module';
 const { values } = parseArgs({
   args: process.argv.slice(2),
   options: {
-    'select-template': {
+    'choose-template': {
       type: 'boolean',
     },
   },
@@ -67,7 +67,7 @@ async function init() {
   let result: {
     packageName: string;
     shouldOverwrite: string;
-    chooseProject?: string;
+    chooseTemplate?: string;
   };
 
   try {
@@ -103,10 +103,10 @@ async function init() {
           validate: (dir: string) =>
             isValidPackageName(dir) || 'Invalid package.json name',
         },
-        ...(values['select-template']
+        ...(values['choose-template']
           ? [
               {
-                name: 'chooseProject',
+                name: 'chooseTemplate',
                 type: 'select',
                 message: 'Choose a starter template',
                 choices: [
@@ -135,7 +135,7 @@ async function init() {
     process.exit(1);
   }
 
-  const { packageName, shouldOverwrite, chooseProject } = result;
+  const { packageName, shouldOverwrite, chooseTemplate } = result;
 
   const root = path.resolve(targetDir);
 
@@ -152,7 +152,7 @@ async function init() {
 
   console.log('Setting up project...');
 
-  const templateDir = path.join(templateRoot, chooseProject || CHOICES[0]!);
+  const templateDir = path.join(templateRoot, chooseTemplate || CHOICES[0]!);
 
   // Read existing package.json from the root directory
   const packageJsonPath = path.join(root, 'package.json');
