@@ -88,49 +88,17 @@ export function createHandler<
     registerReloadCallback((type) => vite.ws.send({ type }));
     registerImportCallback((source) => hotImport(vite, source));
     registerModuleCallback((result) => moduleImport(vite, result));
-    return vite;
-  });
-
-  const vitePromise2 = configPromise.then(async (config) => {
-    const mergedViteConfig = await mergeUserViteConfig({
-      base: config.basePath,
-      optimizeDeps: {
-        include: ['react-server-dom-webpack/client', 'react-dom'],
-        exclude: ['waku'],
-        entries: [
-          `${config.srcDir}/${config.entriesJs}`.replace(/\.js$/, '.*'),
-        ],
-      },
-      plugins: [
-        patchReactRefresh(viteReact()),
-        rscIndexPlugin(config),
-        rscHmrPlugin(),
-        rscEnvPlugin({ config, hydrate: ssr }),
-      ],
-      ssr: {
-        external: [
-          'waku',
-          'waku/client',
-          'waku/server',
-          'waku/router/client',
-          'waku/router/server',
-        ],
-      },
-      server: { middlewareMode: true },
-    });
-    const vite = await createViteServer(mergedViteConfig);
-    return vite;
+    const vite2 = await createViteServer(mergedViteConfig);
+    return [vite, vite2] as const;
   });
 
   const loadServerFile = async (fileURL: string) => {
-    // const vite = await vitePromise;
-    const vite = await vitePromise2;
-    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
+    const [, vite2] = await vitePromise;
+    return vite2.ssrLoadModule(fileURLToFilePath(fileURL));
   };
 
   const transformIndexHtml = async (pathname: string) => {
-    // const vite = await vitePromise;
-    const vite = await vitePromise2;
+    const [vite] = await vitePromise;
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     let headSent = false;
@@ -163,7 +131,7 @@ export function createHandler<
   };
 
   return async (req, res, next) => {
-    const [config, vite] = await Promise.all([configPromise, vitePromise]);
+    const [config, [vite]] = await Promise.all([configPromise, vitePromise]);
     const basePrefix = config.basePath + config.rscPath + '/';
     const handleError = (err: unknown) => {
       if (hasStatusCode(err)) {
