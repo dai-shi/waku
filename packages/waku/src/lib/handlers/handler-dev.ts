@@ -14,9 +14,9 @@ import { renderHtml } from '../renderers/html-renderer.js';
 import { decodeInput, hasStatusCode } from '../renderers/utils.js';
 import {
   initializeWorker,
-  // registerReloadCallback,
-  // registerImportCallback,
-  // registerModuleCallback,
+  registerReloadCallback,
+  registerImportCallback,
+  registerModuleCallback,
   renderRscWithWorker,
   getSsrConfigWithWorker,
 } from './dev-worker-api.js';
@@ -24,8 +24,8 @@ import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import {
   rscHmrPlugin,
-  // hotImport,
-  // moduleImport,
+  hotImport,
+  moduleImport,
 } from '../plugins/vite-plugin-rsc-hmr.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
@@ -56,8 +56,7 @@ export function createHandler<
   }
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(options.config || {});
-  /*
-  const vitePromise = configPromise.then(async (config) => {
+  const vitePromise2 = configPromise.then(async (config) => {
     const mergedViteConfig = await mergeUserViteConfig({
       base: config.basePath,
       optimizeDeps: {
@@ -85,13 +84,8 @@ export function createHandler<
       server: { middlewareMode: true },
     });
     const vite = await createViteServer(mergedViteConfig);
-    // initializeWorker(config);
-    // registerReloadCallback((type) => vite.ws.send({ type }));
-    // registerImportCallback((source) => hotImport(vite, source));
-    // registerModuleCallback((result) => moduleImport(vite, result));
     return vite;
   });
-  */
 
   const vitePromise = configPromise.then(async (config) => {
     const mergedViteConfig = await mergeUserViteConfig({
@@ -122,11 +116,15 @@ export function createHandler<
     });
     const vite = await createViteServer(mergedViteConfig);
     initializeWorker(config);
+    registerReloadCallback((type) => vite.ws.send({ type }));
+    registerImportCallback((source) => hotImport(vite, source));
+    registerModuleCallback((result) => moduleImport(vite, result));
     return vite;
   });
 
   const loadServerFile = async (fileURL: string) => {
-    const vite = await vitePromise;
+    // const vite = await vitePromise;
+    const vite = await vitePromise2;
     return vite.ssrLoadModule(fileURLToFilePath(fileURL));
   };
 
