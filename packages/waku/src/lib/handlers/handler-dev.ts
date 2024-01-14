@@ -83,18 +83,21 @@ export function createHandler<
       },
       server: { middlewareMode: true },
     });
-    const vite = await createViteServer(mergedViteConfig);
     initializeWorker(config);
+    const vite = await createViteServer(mergedViteConfig);
     registerReloadCallback((type) => vite.ws.send({ type }));
     registerImportCallback((source) => hotImport(vite, source));
     registerModuleCallback((result) => moduleImport(vite, result));
     const vite2 = await createViteServer(mergedViteConfig);
+    registerReloadCallback((type) => vite2.ws.send({ type }));
+    registerImportCallback((source) => hotImport(vite2, source));
+    registerModuleCallback((result) => moduleImport(vite2, result));
     return [vite, vite2] as const;
   });
 
   const loadServerFile = async (fileURL: string) => {
-    const [, vite2] = await vitePromise;
-    return vite2.ssrLoadModule(fileURLToFilePath(fileURL));
+    const [vite] = await vitePromise;
+    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
   };
 
   const transformIndexHtml = async (pathname: string) => {
@@ -131,7 +134,7 @@ export function createHandler<
   };
 
   return async (req, res, next) => {
-    const [config, [vite]] = await Promise.all([configPromise, vitePromise]);
+    const [config, [, vite]] = await Promise.all([configPromise, vitePromise]);
     const basePrefix = config.basePath + config.rscPath + '/';
     const handleError = (err: unknown) => {
       if (hasStatusCode(err)) {
