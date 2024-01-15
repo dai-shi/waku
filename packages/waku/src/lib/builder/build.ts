@@ -34,17 +34,9 @@ import {
   getBuildConfig,
   getSsrConfig,
 } from '../renderers/rsc-renderer.js';
-import {
-  REACT_MODULE,
-  REACT_MODULE_VALUE,
-  RD_SERVER_MODULE,
-  RD_SERVER_MODULE_VALUE,
-  RSDW_CLIENT_MODULE,
-  RSDW_CLIENT_MODULE_VALUE,
-  WAKU_CLIENT_MODULE,
-  WAKU_CLIENT_MODULE_VALUE,
-  renderHtml,
-} from '../renderers/html-renderer.js';
+import { renderHtml } from '../renderers/html-renderer.js';
+import { CLIENT_MODULE_MAP } from '../handlers/handler-dev.js';
+import { CLIENT_PREFIX } from '../handlers/handler-prd.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
@@ -56,6 +48,8 @@ import { emitCloudflareOutput } from './output-cloudflare.js';
 import { emitDenoOutput } from './output-deno.js';
 
 // TODO this file and functions in it are too long. will fix.
+
+const WAKU_CLIENT = 'waku-client';
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
@@ -156,7 +150,7 @@ const buildServerBundle = async (
         assetsDir: config.assetsDir,
         clientEntryFiles: {
           // FIXME this seems very ad-hoc
-          [WAKU_CLIENT_MODULE]: decodeFilePathFromAbsolute(
+          [WAKU_CLIENT]: decodeFilePathFromAbsolute(
             joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
           ),
           ...clientEntryFiles,
@@ -190,7 +184,7 @@ const buildServerBundle = async (
         input: {
           entries: entriesFile,
           [RSDW_SERVER_MODULE]: RSDW_SERVER_MODULE_VALUE,
-          [WAKU_CLIENT_MODULE]: WAKU_CLIENT_MODULE_VALUE,
+          [WAKU_CLIENT]: CLIENT_MODULE_MAP[WAKU_CLIENT],
           ...commonEntryFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
@@ -198,7 +192,7 @@ const buildServerBundle = async (
         output: {
           entryFileNames: (chunkInfo) => {
             if (
-              [WAKU_CLIENT_MODULE].includes(chunkInfo.name) ||
+              [WAKU_CLIENT].includes(chunkInfo.name) ||
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name] ||
               serverEntryFiles[chunkInfo.name]
@@ -220,16 +214,16 @@ export function loadModule(id) {
   switch (id) {
     case '${RSDW_SERVER_MODULE}':
       return import('./${RSDW_SERVER_MODULE}.js');
-    case 'public/${REACT_MODULE}':
-      return import('./${psDir}/${REACT_MODULE}.js');
-    case 'public/${RD_SERVER_MODULE}':
-      return import('./${psDir}/${RD_SERVER_MODULE}.js');
-    case 'public/${RSDW_CLIENT_MODULE}':
-      return import('./${psDir}/${RSDW_CLIENT_MODULE}.js');
-    case 'public/${WAKU_CLIENT_MODULE}':
-      return import('./${psDir}/${WAKU_CLIENT_MODULE}.js');
-    case '${psDir}/${WAKU_CLIENT_MODULE}.js':
-      return import('./${psDir}/${WAKU_CLIENT_MODULE}.js');
+${Object.keys(CLIENT_MODULE_MAP)
+  .map(
+    (key) => `
+    case '${CLIENT_PREFIX}${key}':
+      return import('./${psDir}/${key}.js');
+  `,
+  )
+  .join('')}
+    case '${psDir}/${WAKU_CLIENT}.js':
+      return import('./${psDir}/${WAKU_CLIENT}.js');
 ${Object.entries(serverEntryFiles || {})
   .map(
     ([k]) => `
@@ -278,10 +272,7 @@ const buildClientBundle = async (
         onwarn,
         input: {
           main: mainJsFile,
-          [REACT_MODULE]: REACT_MODULE_VALUE,
-          [RD_SERVER_MODULE]: RD_SERVER_MODULE_VALUE,
-          [RSDW_CLIENT_MODULE]: RSDW_CLIENT_MODULE_VALUE,
-          [WAKU_CLIENT_MODULE]: WAKU_CLIENT_MODULE_VALUE,
+          ...CLIENT_MODULE_MAP,
           ...commonEntryFiles,
           ...clientEntryFiles,
         },
@@ -289,12 +280,9 @@ const buildClientBundle = async (
         output: {
           entryFileNames: (chunkInfo) => {
             if (
-              [
-                REACT_MODULE,
-                RD_SERVER_MODULE,
-                RSDW_CLIENT_MODULE,
-                WAKU_CLIENT_MODULE,
-              ].includes(chunkInfo.name) ||
+              CLIENT_MODULE_MAP[
+                chunkInfo.name as keyof typeof CLIENT_MODULE_MAP
+              ] ||
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name]
             ) {
@@ -473,6 +461,8 @@ const emitHtmlFiles = async (
                 entries: distEntries,
                 isBuild: true,
               }),
+            loadClientModule: (key) =>
+              distEntries.loadModule(CLIENT_PREFIX + key),
             isDev: false,
             loadModule: distEntries.loadModule,
             isBuild: true,

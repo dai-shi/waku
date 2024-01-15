@@ -1,30 +1,24 @@
 import type {
+  default as ReactType,
   createElement as createElementType,
   ReactNode,
   FunctionComponent,
   ComponentProps,
 } from 'react';
-import type { ViteDevServer, InlineConfig } from 'vite';
+import type * as RDServerType from 'react-dom/server.edge';
+import type { default as RSDWClientType } from 'react-server-dom-webpack/client.edge';
 
-import type { ResolvedConfig } from '../config.js';
+import type * as WakuClientType from '../../client.js';
 import type { EntriesPrd } from '../../server.js';
+import type { ResolvedConfig } from '../config.js';
+import type { CLIENT_MODULE_KEY } from '../handlers/handler-dev.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import {
-  decodeFilePathFromAbsolute,
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
-
-export const REACT_MODULE = 'react';
-export const REACT_MODULE_VALUE = 'react';
-export const RD_SERVER_MODULE = 'rd-server';
-export const RD_SERVER_MODULE_VALUE = 'react-dom/server.edge';
-export const RSDW_CLIENT_MODULE = 'rsdw-client';
-export const RSDW_CLIENT_MODULE_VALUE = 'react-server-dom-webpack/client.edge';
-export const WAKU_CLIENT_MODULE = 'waku-client';
-export const WAKU_CLIENT_MODULE_VALUE = 'waku/client';
 
 // HACK for react-server-dom-webpack without webpack
 (globalThis as any).__webpack_module_loading__ ||= new Map();
@@ -35,48 +29,6 @@ export const WAKU_CLIENT_MODULE_VALUE = 'waku/client';
   (globalThis as any).__webpack_module_cache__.get(id);
 const moduleLoading = (globalThis as any).__webpack_module_loading__;
 const moduleCache = (globalThis as any).__webpack_module_cache__;
-
-type CreateViteServer = (
-  inlineConfig?: InlineConfig | undefined,
-) => Promise<ViteDevServer>;
-
-let lastViteServer: ViteDevServer | undefined;
-const getViteServer = async (createViteServer: CreateViteServer) => {
-  if (lastViteServer) {
-    return lastViteServer;
-  }
-  const { Server } = await import('node:http').catch((e) => {
-    // XXX explicit catch to avoid bundle time error
-    throw e;
-  });
-  const dummyServer = new Server(); // FIXME we hope to avoid this hack
-  // HACK to avoid bundling
-  const VITE_PLUGIN_REACT_VALUE = '@vitejs/plugin-react';
-  const VITE_PLUGIN_RSC_ENV_MODULE_VALUE = '../plugins/vite-plugin-rsc-env.js';
-  const { default: viteReact } = await import(VITE_PLUGIN_REACT_VALUE);
-  const { rscEnvPlugin } = await import(VITE_PLUGIN_RSC_ENV_MODULE_VALUE);
-  const viteServer = await createViteServer({
-    plugins: [viteReact(), rscEnvPlugin({})],
-    // HACK to suppress 'Skipping dependency pre-bundling' warning
-    optimizeDeps: { include: [] },
-    ssr: {
-      external: ['waku'],
-    },
-    appType: 'custom',
-    server: { middlewareMode: true, hmr: { server: dummyServer }, watch: null },
-  });
-  await viteServer.ws.close();
-  lastViteServer = viteServer;
-  return viteServer;
-};
-
-const loadServerFileDev = async (
-  fileURL: string,
-  createViteServer: CreateViteServer,
-) => {
-  const vite = await getViteServer(createViteServer);
-  return vite.ssrLoadModule(fileURLToFilePath(fileURL));
-};
 
 const fakeFetchCode = `
 Promise.resolve(new Response(new ReadableStream({
@@ -228,13 +180,13 @@ const rectifyHtml = () => {
 const buildHtml = (
   createElement: typeof createElementType,
   head: string,
-  body: Promise<ReactNode>,
+  body: ReactNode,
 ) =>
   createElement(
     'html',
     null,
     createElement('head', { dangerouslySetInnerHTML: { __html: head } }),
-    createElement('body', null, body as any),
+    createElement('body', null, body),
   );
 
 export const renderHtml = async (
@@ -255,9 +207,14 @@ export const renderHtml = async (
       searchParams?: URLSearchParams;
       body: ReadableStream;
     } | null>;
+    loadClientModule: (key: CLIENT_MODULE_KEY) => Promise<unknown>;
   } & (
     | { isDev: false; loadModule: EntriesPrd['loadModule']; isBuild: boolean }
-    | { isDev: true; createViteServer: CreateViteServer }
+    | {
+        isDev: true;
+        rootDir: string;
+        loadServerFile: (fileURL: string) => Promise<unknown>;
+      }
   ),
 ): Promise<ReadableStream | null> => {
   const {
@@ -267,38 +224,33 @@ export const renderHtml = async (
     htmlHead,
     renderRscForHtml,
     getSsrConfigForHtml,
+    loadClientModule,
     isDev,
   } = opts;
 
   const [
-    { createElement },
-    { renderToReadableStream },
-    { createFromReadableStream },
+    {
+      default: { createElement },
+    },
+    {
+      default: { renderToReadableStream },
+    },
+    {
+      default: { createFromReadableStream },
+    },
     { ServerRoot },
   ] = await Promise.all([
-    isDev
-      ? import(REACT_MODULE_VALUE)
-      : opts.loadModule('public/' + REACT_MODULE).then((m: any) => m.default),
-    isDev
-      ? import(RD_SERVER_MODULE_VALUE)
-      : opts
-          .loadModule('public/' + RD_SERVER_MODULE)
-          .then((m: any) => m.default),
-    isDev
-      ? import(RSDW_CLIENT_MODULE_VALUE)
-      : opts
-          .loadModule('public/' + RSDW_CLIENT_MODULE)
-          .then((m: any) => m.default),
-    isDev
-      ? import(WAKU_CLIENT_MODULE_VALUE)
-      : opts.loadModule('public/' + WAKU_CLIENT_MODULE),
+    loadClientModule('react') as Promise<{ default: typeof ReactType }>,
+    loadClientModule('rd-server') as Promise<{ default: typeof RDServerType }>,
+    loadClientModule('rsdw-client') as Promise<{
+      default: typeof RSDWClientType;
+    }>,
+    loadClientModule('waku-client') as Promise<typeof WakuClientType>,
   ]);
   const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
   if (!ssrConfig) {
     return null;
   }
-  const rootDirDev =
-    isDev && (await getViteServer(opts.createViteServer)).config.root;
   let stream: ReadableStream;
   try {
     stream = await renderRscForHtml(
@@ -332,14 +284,12 @@ export const renderHtml = async (
               const file = filePath.slice(config.basePath.length);
               // TODO too long, we need to refactor this logic
               if (isDev) {
-                if (!rootDirDev) {
-                  throw new Error('rootDirDev is not defined');
-                }
                 const filePath = file.startsWith('@fs/')
-                  ? decodeFilePathFromAbsolute(file.slice('@fs'.length))
-                  : joinPath(rootDirDev, file);
-                const wakuDist = decodeFilePathFromAbsolute(
-                  joinPath(fileURLToFilePath(import.meta.url), '../../..'),
+                  ? file.slice('@fs'.length)
+                  : joinPath(opts.rootDir, file);
+                const wakuDist = joinPath(
+                  fileURLToFilePath(import.meta.url),
+                  '../../..',
                 );
                 if (filePath.startsWith(wakuDist)) {
                   const id =
@@ -359,7 +309,7 @@ export const renderHtml = async (
                 if (!moduleLoading.has(id)) {
                   moduleLoading.set(
                     id,
-                    loadServerFileDev(id, opts.createViteServer).then((m) => {
+                    opts.loadServerFile(id).then((m) => {
                       moduleCache.set(id, m);
                     }),
                   );
@@ -371,9 +321,11 @@ export const renderHtml = async (
               if (!moduleLoading.has(id)) {
                 moduleLoading.set(
                   id,
-                  opts.loadModule('public/' + id).then((m: any) => {
-                    moduleCache.set(id, m);
-                  }),
+                  opts
+                    .loadModule(joinPath(config.publicDir, id))
+                    .then((m: any) => {
+                      moduleCache.set(id, m);
+                    }),
                 );
               }
               return { id, chunks: [id], name };
@@ -406,7 +358,7 @@ export const renderHtml = async (
             Omit<ComponentProps<typeof ServerRoot>, 'children'>
           >,
           { elements },
-          body,
+          body as any,
         ),
       ),
       {

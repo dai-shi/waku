@@ -7,6 +7,8 @@ import { decodeInput, hasStatusCode, deepFreeze } from '../renderers/utils.js';
 import { renderRsc, getSsrConfig } from '../renderers/rsc-renderer.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 
+export const CLIENT_PREFIX = 'client/';
+
 export function createHandler<
   Context,
   Req extends BaseReq,
@@ -73,6 +75,8 @@ export function createHandler<
               entries: resolvedEntries,
               isBuild: false,
             }),
+          loadClientModule: (key) =>
+            resolvedEntries.loadModule(CLIENT_PREFIX + key),
           isDev: false,
           loadModule: resolvedEntries.loadModule,
           isBuild: false,

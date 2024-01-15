@@ -4,7 +4,11 @@ import { default as viteReact } from '@vitejs/plugin-react';
 
 import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
-import { joinPath, decodeFilePathFromAbsolute } from '../utils/path.js';
+import {
+  joinPath,
+  fileURLToFilePath,
+  decodeFilePathFromAbsolute,
+} from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from '../renderers/html-renderer.js';
 import { decodeInput, hasStatusCode } from '../renderers/utils.js';
@@ -12,9 +16,9 @@ import {
   initializeWorker,
   registerReloadCallback,
   registerImportCallback,
+  registerModuleCallback,
   renderRscWithWorker,
   getSsrConfigWithWorker,
-  registerModuleCallback,
 } from './dev-worker-api.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
@@ -26,6 +30,14 @@ import {
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
+
+export const CLIENT_MODULE_MAP = {
+  react: 'react',
+  'rd-server': 'react-dom/server.edge',
+  'rsdw-client': 'react-server-dom-webpack/client.edge',
+  'waku-client': 'waku/client',
+};
+export type CLIENT_MODULE_KEY = keyof typeof CLIENT_MODULE_MAP;
 
 export function createHandler<
   Context,
@@ -60,6 +72,15 @@ export function createHandler<
         rscHmrPlugin(),
         rscEnvPlugin({ config, hydrate: ssr }),
       ],
+      ssr: {
+        external: [
+          'waku',
+          'waku/client',
+          'waku/server',
+          'waku/router/client',
+          'waku/router/server',
+        ],
+      },
       server: { middlewareMode: true },
     });
     const vite = await createViteServer(mergedViteConfig);
@@ -69,6 +90,11 @@ export function createHandler<
     registerModuleCallback((result) => moduleImport(vite, result));
     return vite;
   });
+
+  const loadServerFile = async (fileURL: string) => {
+    const vite = await vitePromise;
+    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
+  };
 
   const transformIndexHtml = async (pathname: string) => {
     const vite = await vitePromise;
@@ -144,8 +170,10 @@ export function createHandler<
           },
           getSsrConfigForHtml: (pathname, options) =>
             getSsrConfigWithWorker(config, pathname, options),
+          loadClientModule: (key) => import(CLIENT_MODULE_MAP[key]),
           isDev: true,
-          createViteServer: (await import('vite')).createServer,
+          rootDir: vite.config.root,
+          loadServerFile,
         });
         if (readable) {
           unstable_posthook?.(req, res, context as Context);

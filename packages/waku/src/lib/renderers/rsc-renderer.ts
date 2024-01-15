@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { default as RSDWServerType } from 'react-server-dom-webpack/server.edge';
 
 import type { RenderContext, EntriesDev, EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
@@ -67,9 +68,13 @@ export async function renderRsc(
     default: { renderEntries },
     loadModule,
   } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
-  const { renderToReadableStream, decodeReply } = await (isDev
+  const {
+    default: { renderToReadableStream, decodeReply },
+  } = await ((isDev
     ? import(RSDW_SERVER_MODULE_VALUE)
-    : loadModule!(RSDW_SERVER_MODULE).then((m: any) => m.default));
+    : loadModule!(RSDW_SERVER_MODULE)) as Promise<{
+    default: typeof RSDWServerType;
+  }>);
 
   const render = async (
     renderContext: RenderContext,
