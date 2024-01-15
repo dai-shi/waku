@@ -112,9 +112,11 @@ const moduleImports: Set<string> = new Set();
 const mergedViteConfig = await mergeUserViteConfig({
   plugins: [
     viteReact(),
+    rscEnvPlugin({}),
+    { name: 'rsc-index-plugin' }, // dummy to match with handler-dev.ts
+    { name: 'rsc-hmr-plugin', enforce: 'post' }, // dummy to match with handler-dev.ts
     nonjsResolvePlugin(),
     rscTransformPlugin({ isBuild: false }),
-    rscEnvPlugin({}),
     rscReloadPlugin(moduleImports, (type) => {
       const mesg: MessageRes = { type };
       parentPort!.postMessage(mesg);
