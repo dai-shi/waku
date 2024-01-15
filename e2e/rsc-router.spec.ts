@@ -26,13 +26,6 @@ for (const { build, command } of commands) {
     let cp: ChildProcess;
     let port: number;
     test.beforeAll('remove cache', async () => {
-      // remove the .vite cache
-      // Refs: https://github.com/vitejs/vite/discussions/8146
-      await rm(`${cwd}/node_modules/.vite`, {
-        recursive: true,
-        force: true,
-      });
-
       await rm(`${cwd}/dist`, {
         recursive: true,
         force: true,
