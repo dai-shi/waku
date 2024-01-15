@@ -59,6 +59,16 @@ export function createHandler<
   const vitePromise = configPromise.then(async (config) => {
     const mergedViteConfig = await mergeUserViteConfig({
       base: config.basePath,
+      plugins: [
+        patchReactRefresh(viteReact()),
+        rscEnvPlugin({ config, hydrate: ssr }),
+        rscIndexPlugin(config),
+        rscHmrPlugin(),
+        { name: 'nonjs-resolve-plugin' }, // dummy to match with dev-worker-impl.ts
+        { name: 'rsc-transform-plugin' }, // dummy to match with dev-worker-impl.ts
+        { name: 'rsc-reload-plugin' }, // dummy to match with dev-worker-impl.ts
+        { name: 'rsc-delegate-plugin' }, // dummy to match with dev-worker-impl.ts
+      ],
       optimizeDeps: {
         include: ['react-server-dom-webpack/client', 'react-dom'],
         exclude: ['waku'],
@@ -66,12 +76,6 @@ export function createHandler<
           `${config.srcDir}/${config.entriesJs}`.replace(/\.js$/, '.*'),
         ],
       },
-      plugins: [
-        patchReactRefresh(viteReact()),
-        rscIndexPlugin(config),
-        rscHmrPlugin(),
-        rscEnvPlugin({ config, hydrate: ssr }),
-      ],
       ssr: {
         external: [
           'waku',
