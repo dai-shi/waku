@@ -482,9 +482,6 @@ importers:
       vite:
         specifier: 5.0.10
         version: 5.0.10(@types/node@20.10.6)
-      vite-plugin-commonjs:
-        specifier: 0.10.1
-        version: 0.10.1
       vite-plugin-stylex-dev:
         specifier: 0.2.3
         version: 0.2.3
@@ -6570,24 +6567,6 @@ packages:
       - sugarss
       - supports-color
       - terser
-    dev: true
-
-  /vite-plugin-commonjs@0.10.1:
-    resolution: {integrity: sha512-taP8R9kYGlCW5OzkVR0UIWRCnG6rSxeWWuA7tnU5b9t5MniibOnDY219NhisTeDhJAeGT8cEnrhVWZ9A5yD+vg==}
-    dependencies:
-      acorn: 8.11.3
-      fast-glob: 3.3.2
-      magic-string: 0.30.5
-      vite-plugin-dynamic-import: 1.5.0
-    dev: true
-
-  /vite-plugin-dynamic-import@1.5.0:
-    resolution: {integrity: sha512-Qp85c+AVJmLa8MLni74U4BDiWpUeFNx7NJqbGZyR2XJOU7mgW0cb7nwlAMucFyM4arEd92Nfxp4j44xPi6Fu7g==}
-    dependencies:
-      acorn: 8.11.3
-      es-module-lexer: 1.4.1
-      fast-glob: 3.3.2
-      magic-string: 0.30.5
     dev: true
 
   /vite-plugin-stylex-dev@0.2.3:
