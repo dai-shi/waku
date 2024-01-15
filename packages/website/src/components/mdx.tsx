@@ -39,7 +39,11 @@ export const components = {
     </b>
   ),
   a: ({ children, ...rest }: any) => (
-    <a className="text-white/80 underline" target="_blank" {...rest}>
+    <a
+      className="text-white/80 underline transition-colors duration-300 ease-in-out hover:text-white"
+      target="_blank"
+      {...rest}
+    >
       {children}
     </a>
   ),
@@ -53,7 +57,7 @@ export const components = {
   ),
   code: ({ children, ...rest }: any) => (
     <span
-      className="-my-0.5 inline-block rounded bg-gray-800 px-1.5 py-px font-mono text-sm text-white/80 sm:text-base"
+      className="-my-0.5 inline-block rounded bg-gray-900 px-1.5 py-px font-mono text-sm text-white/80 sm:text-base"
       {...rest}
     >
       {children}
@@ -62,7 +66,7 @@ export const components = {
   pre: ({ children, ...rest }: any) => (
     <Code
       code={children.props.children}
-      className="max-w-full !overflow-clip overflow-x-scroll !rounded-xl !bg-gray-800 !p-0 !font-mono !text-sm sm:!-mx-[0.75em] sm:max-w-[calc(100%+1.5em)] sm:!p-[0.5em] sm:!text-base [&>*]:!bg-gray-800"
+      className="max-w-full !overflow-clip overflow-x-scroll !rounded-xl !bg-gray-900 !p-0 !font-mono !text-sm sm:!-mx-[0.75em] sm:max-w-[calc(100%+1.5em)] sm:!p-[0.5em] sm:!text-base [&>*]:!bg-gray-900"
       {...rest}
     />
   ),

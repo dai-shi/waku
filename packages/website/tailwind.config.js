@@ -43,6 +43,7 @@ export default {
       serif: ['"Alegreya"', 'serif'],
       sans: ['"Nunito"', 'sans-serif'],
       mono: ['"Fira Code"', 'monospace'],
+      simple: ['"Inter"', 'sans-serif'],
     },
     extend: {
       backgroundImage: {

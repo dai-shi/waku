@@ -1,27 +1,47 @@
 import type { ReactNode } from 'react';
 
+import { Menu } from '../components/menu.js';
+import { Fade } from './fade.js';
+import { Credits } from '../components/credits.js';
+import { Scroll } from './scroll.js';
+
 type PageProps = {
-  hero?: ReactNode;
+  isFaded?: boolean;
   children: ReactNode;
 };
 
-export const Page = ({ hero = null, children }: PageProps) => {
+export const Page = ({ isFaded = true, children }: PageProps) => {
   return (
     <>
-      {hero}
-      <div className="relative pb-32">
-        <div className="sticky top-0 z-10 h-0 w-full overflow-visible">
-          <div className="left-0 right-0 top-0 z-10 flex h-[100svh] w-full bg-gradient-to-b from-transparent via-gray-950/75 to-gray-950" />
-        </div>
-        <div className="relative z-20 flex justify-center px-4">
-          <div
-            id="content"
-            className="mx-auto mt-4 inline-block max-w-full scroll-mt-4 overflow-clip rounded-2xl border-4 border-gray-950 bg-gray-900/90 p-4 text-white backdrop-blur sm:p-8 lg:mt-32 lg:scroll-mt-32 lg:p-12"
-          >
-            <div className="w-full max-w-[80ch]">{children}</div>
-          </div>
-        </div>
-      </div>
+      <Menu />
+      <Background />
+      <Fade always={isFaded} />
+      <Main>{children}</Main>
+      <Credits />
+      <Scroll />
     </>
+  );
+};
+
+type MainProps = {
+  children: ReactNode;
+};
+
+const Main = ({ children }: MainProps) => {
+  return <main className="px-8 pb-24 lg:pb-32">{children}</main>;
+};
+
+const Background = () => {
+  return (
+    <div className="fixed inset-0 z-0">
+      <div className="absolute inset-0 z-0 sm:-inset-8">
+        <img
+          src="https://cdn.candycode.com/waku/background.jpg"
+          alt=""
+          className="h-full w-full object-cover object-center"
+        />
+      </div>
+      <div className="absolute inset-0 z-10 bg-gradient-radial from-transparent to-black/25" />
+    </div>
   );
 };
