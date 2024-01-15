@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { createPages } from 'waku/router/server';
+import { createPages } from 'waku';
 // @ts-expect-error no exported member
 import { compileMDX } from 'next-mdx-remote/rsc';
 
