@@ -2,6 +2,13 @@
   "github": {
     "silent": true
   },
+  "redirects": [
+    {
+      "source": "/discord",
+      "destination": "https://discord.gg/MrQdmzd",
+      "permanent": false
+    }
+  ],
   "regions": ["sfo1"],
   "trailingSlash": false
 }
