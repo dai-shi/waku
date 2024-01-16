@@ -1,0 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+@tailwind base;
+h1 {
+  @apply text-4xl font-bold tracking-tight;
+}
+section {
+  @apply border-blue-400 -mx-4 mt-4 rounded border border-dashed p-4;
+}
+a {
+  @apply mt-4 inline-block underline;
+}
+button {
+  @apply rounded-sm bg-black px-2 py-0.5 text-sm text-white;
+}
+@tailwind components;
+@tailwind utilities;
