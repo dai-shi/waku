@@ -47,7 +47,7 @@ const parseLocation = (): RouteProps => {
 type ChangeLocation = (
   path?: string,
   searchParams?: URLSearchParams,
-  mode?: 'push' | 'replace' | false,
+  method?: 'pushState' | 'replaceState' | false,
   scrollTo?: ScrollToOptions | false,
 ) => void;
 
@@ -191,7 +191,12 @@ function InnerRouter() {
   }, [cached]);
 
   const changeLocation: ChangeLocation = useCallback(
-    (path, searchParams, mode = 'push', scrollTo = { top: 0, left: 0 }) => {
+    (
+      path,
+      searchParams,
+      method = 'pushState',
+      scrollTo = { top: 0, left: 0 },
+    ) => {
       const url = new URL(window.location.href);
       if (path) {
         url.pathname = path;
@@ -199,10 +204,8 @@ function InnerRouter() {
       if (searchParams) {
         url.search = '?' + searchParams.toString();
       }
-      if (mode === 'replace') {
-        window.history.replaceState(window.history.state, '', url);
-      } else if (mode === 'push') {
-        window.history.pushState(window.history.state, '', url);
+      if (method) {
+        window.history[method](window.history.state, '', url);
       }
       const loc = parseLocation();
       setLoc(loc);
