@@ -110,8 +110,8 @@ async function init() {
                 type: 'select',
                 message: 'Choose a starter template',
                 choices: [
-                  { title: 'basic-template', value: CHOICES[0] },
-                  { title: 'minimal-example', value: CHOICES[1] },
+                  { title: 'Basic Template', value: CHOICES[0] },
+                  { title: 'Minimal Template', value: CHOICES[1] },
                 ],
               } as prompts.PromptObject<string>,
             ]

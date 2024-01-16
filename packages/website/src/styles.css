@@ -4,7 +4,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=block');
 @tailwind base;
 :root {
-  @apply scroll-smooth bg-black;
+  @apply bg-black;
 }
 body {
   @apply overflow-x-clip overscroll-none;
@@ -32,6 +32,9 @@ body {
 }
 ::selection {
   @apply bg-primary text-black;
+}
+.code + .code {
+  @apply !-mt-8;
 }
 @layer utilities {
   .text-shadow {
