@@ -15,7 +15,7 @@ visit [waku.gg](https://waku.gg) or `npm create waku@latest`
 
 **Waku** _(wah-ku)_ or **わく** means “framework” in Japanese. As the minimal React framework, it aims to accelerate the work of developers at startups and agencies building small to medium-sized React projects. These include marketing websites, light ecommerce, and web applications.
 
-We recommend other frameworks for heavy ecommerce or enterprise applications. Waku is a lightweight alternative designed to bring a fun developer experience to the modern React server components era. Yes, let’s make React development fun again!
+We recommend other frameworks for heavy ecommerce or enterprise applications. Waku is a lightweight alternative designed to bring a fun developer experience to the modern React server components era. Yes, let’s make React development fun!
 
 > Waku is in rapid development and some features are currently missing. Please try it on non-production projects and report any issues you may encounter. Expect that there will be some breaking changes on the road towards a stable v1 release. Contributors are welcome.
 
