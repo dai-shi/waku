@@ -17,7 +17,7 @@ visit [waku.gg](https://waku.gg) or `npm create waku@latest`
 
 We recommend other frameworks for heavy ecommerce or enterprise applications. Waku is a lightweight alternative designed to bring a fun developer experience to the modern React server components era. Yes, let’s make React development fun again!
 
-> Waku is in rapid development and some features are currently missing. Please try it on non-production projects and report any issues you may encounter. Expect that there will be some breaking changes on the road towards a stable v1 release. Contributors are welcome. Thanks.
+> Waku is in rapid development and some features are currently missing. Please try it on non-production projects and report any issues you may encounter. Expect that there will be some breaking changes on the road towards a stable v1 release. Contributors are welcome.
 
 ## Getting started
 
@@ -37,7 +37,7 @@ Future versions of Waku may provide additional APIs to abstract away some of the
 
 #### Server components
 
-Waku follows React conventions including support for [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md) and [server actions](https://react.dev/reference/react/use-server). Server components can be made async to perform secure server-side logic and data fetching, but have no interactivity.
+Waku follows React conventions including support for [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md) and [server actions](https://react.dev/reference/react/use-server). Server components can be made async to securely perform server-side logic and data fetching, but have no interactivity.
 
 ```tsx
 // server component
@@ -559,14 +559,23 @@ Waku projects can be deployed to Vercel with the [Vercel CLI](https://vercel.com
 vercel
 ```
 
+#### Pure SSG
+
+Adding the `--with-vercel-static` flag to the build script will produce static sites without serverless functions.
+
+```
+{
+  "scripts": {
+    "build": "waku build --with-ssr --with-vercel-static"
+  }
+}
+```
+
 ### Cloudflare (experimental)
 
 ```
 npm run build -- --with-cloudflare
-rm -r node_modules
-npm install --omit=dev --omit=peer
 npx wrangler dev # or deploy
-
 ```
 
 ### Deno Deploy (experimental)
