@@ -48,6 +48,7 @@ type ChangeLocation = (
   path?: string,
   searchParams?: URLSearchParams,
   mode?: 'push' | 'replace' | false,
+  scrollToTop?: boolean,
 ) => void;
 
 type PrefetchLocation = (path: string, searchParams: URLSearchParams) => void;
@@ -190,7 +191,7 @@ function InnerRouter() {
   }, [cached]);
 
   const changeLocation: ChangeLocation = useCallback(
-    (path, searchParams, mode = 'push') => {
+    (path, searchParams, mode = 'push', scrollToTop = true) => {
       const url = new URL(window.location.href);
       if (path) {
         url.pathname = path;
@@ -205,6 +206,9 @@ function InnerRouter() {
       }
       const loc = parseLocation();
       setLoc(loc);
+      if (scrollToTop) {
+        window.scrollTo(0, 0);
+      }
       const componentIds = getComponentIds(loc.path);
       const skip = getSkipList(componentIds, loc, cachedRef.current);
       if (componentIds.every((id) => skip.includes(id))) {
