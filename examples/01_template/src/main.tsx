@@ -1,12 +1,14 @@
 import { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
-import { Root, Slot } from 'waku/client';
+import { Router } from 'waku/router/client';
+
+import { ErrorBoundary } from './components/error-boundary.js';
 
 const rootElement = (
   <StrictMode>
-    <Root>
-      <Slot id="App" />
-    </Root>
+    <ErrorBoundary fallback={(error) => <h1>{String(error)}</h1>}>
+      <Router />
+    </ErrorBoundary>
   </StrictMode>
 );
 
