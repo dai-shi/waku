@@ -50,7 +50,6 @@ export const StorePage = async () => {
 
   return <Gallery products={products} />;
 };
-
 ```
 
 #### Client components
@@ -320,7 +319,6 @@ const store = createStore();
 export const Providers = ({ children }) => {
   return <Provider store={store}>{children}</Provider>;
 };
-
 ```
 
 #### Other layouts
@@ -457,9 +455,7 @@ Install any required dev dependencies (e.g., `npm i -D tailwindcss autoprefixer`
 import '../styles.css';
 
 export const RootLayout = async ({ children }) => {
-  return (
-    <main>{children}</main>
-  );
+  return <main>{children}</main>;
 };
 ```
 

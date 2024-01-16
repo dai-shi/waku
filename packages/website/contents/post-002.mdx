@@ -16,6 +16,7 @@ For example you can statically prerender a global header and footer in the root 
 Let's explore the details of the new Waku API.
 
 ## Low-level routing API
+
 The entry point for routing in Waku projects is `./src/entries.tsx`. Export the `createPages` function to create your layouts and pages programatically.
 
 Both `createLayout` and `createPage` accept a configuration object to specify the route path, React component, and render method (`'static'` for SSG or `'dynamic'` for SSR). Layout components must accept a `children` prop.
@@ -247,7 +248,6 @@ const store = createStore();
 export const Providers = ({ children }) => {
   return <Provider store={store}>{children}</Provider>;
 };
-
 ```
 
 #### Other layouts
