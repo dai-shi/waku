@@ -4,7 +4,7 @@ import { Code } from './code.js';
 export const components = {
   h2: ({ children, ...rest }: any) => (
     <h2
-      className="mb-2 mt-16 text-3xl font-bold leading-none text-white first:mt-0 sm:text-[2.75rem] xl:mt-32"
+      className="mb-2 mt-16 text-balance text-3xl font-bold leading-none text-white first:mt-0 sm:text-[2.75rem] xl:mt-32"
       {...rest}
     >
       {children}
@@ -12,7 +12,7 @@ export const components = {
   ),
   h3: ({ children, ...rest }: any) => (
     <h3
-      className="mb-2 mt-8 text-xl font-bold leading-none text-white sm:text-3xl"
+      className="mb-2 mt-8 text-balance text-xl font-bold leading-none text-white sm:text-3xl"
       {...rest}
     >
       {children}
@@ -21,14 +21,14 @@ export const components = {
   h4: ({ children, ...rest }: any) => (
     <h3
       {...rest}
-      className="mb-2 mt-8 text-lg font-bold uppercase leading-none tracking-wide text-white sm:text-xl"
+      className="mb-2 mt-8 text-balance text-lg font-bold uppercase leading-none tracking-wide text-white sm:text-xl"
     >
       {children}
     </h3>
   ),
   p: ({ children, ...rest }: any) => (
     <p
-      className="mb-4 text-sm font-normal leading-normal text-white/60 sm:text-lg lg:text-xl"
+      className="mb-4 text-pretty text-sm font-normal leading-normal text-white/60 sm:text-lg lg:text-xl"
       {...rest}
     >
       {children}
