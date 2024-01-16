@@ -80,7 +80,7 @@ Server components can import client components and doing so will create a server
 
 #### Server-side rendering
 
-Waku provides static prerendering (SSG) or server-side rendering (SSR) options for layouts and pages including their server _and_ client components. Client components are just _also_ hydrated in the browser to support events, effects, etc.
+Waku provides static prerendering (SSG) or server-side rendering (SSR) options for layouts and pages including their server _and_ client components. Client components are then hydrated in the browser to support events, effects, and so on.
 
 #### Further reading
 
