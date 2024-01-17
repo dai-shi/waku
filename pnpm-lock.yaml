@@ -7,6 +7,11 @@ settings:
 overrides:
   vite: 5.0.10
 
+patchedDependencies:
+  '@code-hike/lighter@0.8.1':
+    hash: kvib6gtovhadwhyswhmfgncj3i
+    path: patches/@code-hike__lighter@0.8.1.patch
+
 importers:
 
   .:
@@ -882,9 +887,10 @@ packages:
       '@babel/helper-validator-identifier': 7.22.20
       to-fast-properties: 2.0.0
 
-  /@code-hike/lighter@0.8.1:
+  /@code-hike/lighter@0.8.1(patch_hash=kvib6gtovhadwhyswhmfgncj3i):
     resolution: {integrity: sha512-St4rPmB7C2EWmAK1sAbvD3lZeM7UDInVDMjQDzEDsu4Q3B3AqF25vXedQK51U0UO0MCOASgBBdTiNwvJAfIqMQ==}
     dev: false
+    patched: true
 
   /@emotion/hash@0.9.1:
     resolution: {integrity: sha512-gJB6HLm5rYwSLI6PQa+X1t5CFGrv1J1TWG+sOyMCeKz2ojaj6Fnl/rZEspogG+cvqbt4AE/2eIyD2QfLKTBNlQ==}
@@ -2520,7 +2526,7 @@ packages:
     peerDependencies:
       react: ^18
     dependencies:
-      '@code-hike/lighter': 0.8.1
+      '@code-hike/lighter': 0.8.1(patch_hash=kvib6gtovhadwhyswhmfgncj3i)
       react: 18.3.0-canary-c5b937576-20231219
       server-only: 0.0.1
     dev: false

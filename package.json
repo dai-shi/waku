@@ -81,6 +81,9 @@
   "pnpm": {
     "overrides": {
       "vite": "5.0.10"
+    },
+    "patchedDependencies": {
+      "@code-hike/lighter@0.8.1": "patches/@code-hike__lighter@0.8.1.patch"
     }
   }
 }
