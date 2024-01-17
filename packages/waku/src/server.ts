@@ -1,4 +1,4 @@
-import { getEnv } from 'waku/environment'
+import { getEnv } from 'waku/environment';
 import type { ReactNode } from 'react';
 
 type Elements = Record<string, ReactNode>;
@@ -59,6 +59,4 @@ export type EntriesPrd = EntriesDev & {
   skipRenderRsc: (input: string) => boolean;
 };
 
-export {
-  getEnv,
-}
+export { getEnv };

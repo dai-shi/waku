@@ -30,9 +30,6 @@ if (HAS_MODULE_REGISTER) {
   module.register('waku/node-loader', pathToFileURL('./'));
 }
 
-(globalThis as any).__WAKU_PRIVATE_ENV__ = getEnvironmentData(
-  '__WAKU_PRIVATE_ENV__',
-);
 const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR');
 const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS');
 

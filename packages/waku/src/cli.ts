@@ -84,10 +84,7 @@ if (values.version) {
 
 async function runDev(options: { ssr: boolean }) {
   const app = new Hono();
-  app.use(
-    '*',
-    honoDevMiddleware({ ...options, config, env: process.env as any }),
-  );
+  app.use('*', honoDevMiddleware({ ...options, config }));
   const port = parseInt(process.env.PORT || '3000', 10);
   startServer(app, port);
 }
@@ -96,7 +93,6 @@ async function runBuild(options: { ssr: boolean }) {
   await build({
     ...options,
     config,
-    env: process.env as any,
     vercel:
       values['with-vercel'] ?? !!process.env.VERCEL
         ? {
@@ -114,10 +110,7 @@ async function runStart(options: { ssr: boolean }) {
     pathToFileURL(path.resolve(distDir, entriesJs)).toString()
   );
   const app = new Hono();
-  app.use(
-    '*',
-    honoPrdMiddleware({ ...options, config, entries, env: process.env as any }),
-  );
+  app.use('*', honoPrdMiddleware({ ...options, config, entries }));
   app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
   const port = parseInt(process.env.PORT || '8080', 10);
   startServer(app, port);

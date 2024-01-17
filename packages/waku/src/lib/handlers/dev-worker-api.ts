@@ -71,10 +71,6 @@ export function initializeWorker(config: ResolvedConfig) {
     ])
       .then(([{ Worker, setEnvironmentData }, { default: module }]) => {
         const HAS_MODULE_REGISTER = typeof module.register === 'function';
-        setEnvironmentData(
-          '__WAKU_PRIVATE_ENV__',
-          (globalThis as any).__WAKU_PRIVATE_ENV__,
-        );
         setEnvironmentData('CONFIG_SRC_DIR', config.srcDir);
         setEnvironmentData('CONFIG_ENTRIES_JS', config.entriesJs);
         const worker = new Worker(

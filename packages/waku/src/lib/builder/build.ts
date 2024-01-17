@@ -141,6 +141,7 @@ const buildServerBundle = async (
   serverEntryFiles: Record<string, string>,
   reExportHonoMiddleware: boolean,
   reExportConnectMiddleware: boolean,
+  conditions: string[],
 ) => {
   const serverBuildOutput = await buildVite({
     plugins: [
@@ -164,10 +165,13 @@ const buildServerBundle = async (
       }),
       rscEnvPlugin({ config }),
     ],
+    resolve: {
+      conditions,
+    },
     ssr: {
       resolve: {
-        conditions: ['react-server', 'workerd'],
-        externalConditions: ['react-server', 'workerd'],
+        conditions: ['react-server', 'workerd', ...conditions],
+        externalConditions: ['react-server', 'workerd', ...conditions],
       },
       noExternal: /^(?!node:)/,
     },
@@ -254,6 +258,7 @@ const buildClientBundle = async (
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
   ssr: boolean,
+  conditions: string[],
 ) => {
   const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
@@ -266,6 +271,9 @@ const buildClientBundle = async (
       rscIndexPlugin({ ...config, cssAssets }),
       rscEnvPlugin({ config, hydrate: ssr }),
     ],
+    resolve: {
+      conditions,
+    },
     build: {
       outDir: joinPath(rootDir, config.distDir, config.publicDir),
       rollupOptions: {
@@ -504,12 +512,20 @@ const resolveFileName = (fname: string) => {
 export async function build(options: {
   config?: Config;
   ssr?: boolean;
-  env?: Record<string, string>;
   vercel?: { type: 'static' | 'serverless' } | undefined;
   cloudflare?: boolean;
   deno?: boolean;
 }) {
-  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
+  const conditions: string[] = [];
+  if (options.vercel?.type === 'serverless') {
+    conditions.push('edge-flight');
+  }
+  if (options.cloudflare) {
+    conditions.push('worker');
+  }
+  if (options.deno) {
+    conditions.push('deno');
+  }
   const config = await resolveConfig(options.config || {});
   const rootDir = (
     await resolveViteConfig({}, 'build', 'production', 'production')
@@ -533,6 +549,7 @@ export async function build(options: {
     serverEntryFiles,
     !!options.cloudflare || !!options.deno,
     !!options.vercel,
+    conditions,
   );
   await buildClientBundle(
     rootDir,
@@ -541,6 +558,7 @@ export async function build(options: {
     clientEntryFiles,
     serverBuildOutput,
     !!options.ssr,
+    conditions,
   );
 
   const { buildConfig, getClientModules, rscFiles } = await emitRscFiles(
