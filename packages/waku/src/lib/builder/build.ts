@@ -521,7 +521,7 @@ export async function build(options: {
     conditions.push('edge-flight');
   }
   if (options.cloudflare) {
-    conditions.push('worker');
+    conditions.push('workerd');
   }
   if (options.deno) {
     conditions.push('deno');
