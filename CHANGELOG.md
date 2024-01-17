@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.19.0] - 2024-01-16
 ### Added
 - breaking: no index html #289
 - fix(vercel): option for static build #310

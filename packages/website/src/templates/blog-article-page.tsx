@@ -4,6 +4,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { compileMDX } from 'next-mdx-remote/rsc';
 
 import { Page } from '../components/page.js';
+import { Meta } from '../components/meta.js';
 import { components } from '../components/mdx.js';
 
 type BlogArticlePageProps = {
@@ -33,7 +34,7 @@ export const BlogArticlePage = async ({ slug }: BlogArticlePageProps) => {
 
   return (
     <Page>
-      <title>{frontmatter.title}</title>
+      <Meta title={frontmatter.title} description={frontmatter.description} />
       <div className="relative z-10 mx-auto w-full max-w-[80ch] pt-16 text-white lg:pt-64">
         <div className="mb-8 flex items-center gap-4">
           {frontmatter.release && (

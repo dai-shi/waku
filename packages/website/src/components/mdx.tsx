@@ -71,7 +71,7 @@ export const components = {
   ),
   code: ({ children, ...rest }: any) => (
     <span
-      className="-my-0.5 inline-block rounded bg-gray-900 px-1.5 py-px font-mono text-sm text-white/80 sm:text-base"
+      className="-my-0.5 inline-block rounded bg-gray-900 px-1.5 py-px font-mono text-[13px] text-white/80 sm:text-base"
       {...rest}
     >
       {children}
