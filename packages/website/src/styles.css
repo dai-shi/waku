@@ -11,6 +11,19 @@ body {
 }
 #__waku {
   @apply bg-gray-950;
+  opacity: 0;
+  animation: fadeIn cubic-bezier(0.4, 0, 0.2, 1) 0.5s;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards !important;
+  animation-delay: 0.7s;
+}
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 *::-webkit-scrollbar {
   @apply h-full w-4 bg-gray-950;

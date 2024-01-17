@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { compileMDX } from 'next-mdx-remote/rsc';
 
 import { Page } from '../components/page.js';
+import { Meta } from '../components/meta.js';
 import { components } from '../components/mdx.js';
 import { Start } from '../components/start.js';
 
@@ -21,7 +22,7 @@ export const HomePage = async () => {
 
   return (
     <Page isFaded={false}>
-      <title>Waku</title>
+      <Meta title="Waku" description="The minimal React framework" />
       <div className="relative flex h-svh w-full flex-col items-center justify-center overflow-clip font-sans">
         <Start />
         <div className="sr-only" suppressHydrationWarning>
