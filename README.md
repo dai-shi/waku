@@ -15,7 +15,7 @@ visit [waku.gg](https://waku.gg) or `npm create waku@latest`
 
 **Waku** _(wah-ku)_ or **わく** means “framework” in Japanese. As the minimal React framework, it aims to accelerate the work of developers at startups and agencies building small to medium-sized React projects. These include marketing websites, light ecommerce, and web applications.
 
-We recommend other frameworks for heavy ecommerce or enterprise applications. Waku is a lightweight alternative designed to bring a fun developer experience to the modern React server components era. Yes, let’s make React development fun again!
+We recommend other frameworks for heavy ecommerce or enterprise applications. Waku is a lightweight alternative designed to bring a fun developer experience to the modern React server components era. Yes, let’s make React development fun!
 
 > Waku is in rapid development and some features are currently missing. Please try it on non-production projects and report any issues you may encounter. Expect that there will be some breaking changes on the road towards a stable v1 release. Contributors are welcome.
 
@@ -37,7 +37,7 @@ Future versions of Waku may provide additional APIs to abstract away some of the
 
 #### Server components
 
-Waku follows React conventions including support for [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md) and [server actions](https://react.dev/reference/react/use-server). Server components can be made async to securely perform server-side logic and data fetching, but have no interactivity.
+Waku follows React conventions including [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md) and [server actions](https://react.dev/reference/react/use-server). Server components can be made async and can securely perform server-side logic and data fetching. They have no interactivity since they run exclusively on the server.
 
 ```tsx
 // server component
@@ -54,7 +54,7 @@ export const StorePage = async () => {
 
 #### Client components
 
-Client components are specified with the `'use client'` directive at the top of the file. They can use all traditional React features such as state, effects, and event handlers.
+A `'use client'` directive placed at the top of a file will create a server-client boundary when the module is imported into a server component. All components imported below the boundary will be hydrated and run in the browser. They can use all traditional React features such as state, effects, and event handlers.
 
 ```tsx
 // client component
@@ -74,13 +74,17 @@ export const Counter = () => {
 };
 ```
 
+#### Shared components
+
+Simple React components that [meet all of the rules](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md#sharing-code-between-server-and-client) of both server and client components can be imported to either server or client components without affecting the server-client boundary.
+
 #### Weaving patterns
 
 Server components can import client components and doing so will create a server-client boundary. Client components cannot import server components, but they can accept server components as props such as `children`.
 
 #### Server-side rendering
 
-Waku provides static prerendering (SSG) or server-side rendering (SSR) options for layouts and pages including their server _and_ client components. Client components are then hydrated in the browser to support events, effects, and so on.
+Waku provides static prerendering (SSG) or server-side rendering (SSR) options for layouts and pages including both their server and client components.
 
 #### Further reading
 
@@ -90,7 +94,9 @@ To learn more about the modern React architecture, we recommend [Making Sense of
 
 The entry point for routing in Waku projects is `./src/entries.tsx`. Export the `createPages` function to create your layouts and pages programatically.
 
-Both `createLayout` and `createPage` accept a configuration object to specify the route path, React component, and render method (`'static'` for SSG or `'dynamic'` for SSR). Layout components must accept a `children` prop.
+Both `createLayout` and `createPage` accept a configuration object to specify the route path, React component, and render method. Waku currently supports two options: `'static'` for static prerendering (SSG) or `'dynamic'` for server-side rendering (SSR).
+
+For example you can statically prerender a global header and footer in the root layout at build time, but dynamically render the rest of a home page at request time for personalized user experiences.
 
 ```tsx
 // ./src/entries.tsx
