@@ -1,0 +1,90 @@
+---
+slug: minimal-api
+title: Minimal API
+description: The minimal Waku API for library authors.
+---
+
+## Minimal
+
+### Server API
+
+To use React Server Components in Waku, you need to create an `entries.ts` file in the project root directory with a `renderEntries` function that returns a server component module.
+
+```tsx
+import { lazy } from 'react';
+import { defineEntries } from 'waku/server';
+
+const App = lazy(() => import('./components/App.js'));
+
+export default defineEntries(
+  // renderEntries
+  async (input) => {
+    return {
+      App: <App name={input || 'Waku'} />,
+    };
+  },
+);
+```
+
+The `id` parameter is the ID of the React Server Component that you want to load on the server. You specify the RSC ID from the client.
+
+### Client API
+
+To render a React Server Component on the client, you can use the `Root` and `Slot` components from `waku/client` with the RSC ID to create a wrapper component.
+
+```tsx
+import { createRoot } from 'react-dom/client';
+import { Root, Slot } from 'waku/client';
+
+const rootElement = (
+  <StrictMode>
+    <Root>
+      <Slot id="App" />
+    </Root>
+  </StrictMode>
+);
+
+createRoot(document.getElementById('root')!).render(rootElement);
+```
+
+The `initialInput` prop can be passed to the `Root` Component, overriding the default input which is `""`. You can also re-render a React Server Component with new input.
+
+```tsx
+import { useRefetch } from 'waku/client';
+
+const Component = () => {
+  const refetch = useRefetch();
+  const handleClick = () => {
+    refetch('...');
+  };
+  // ...
+};
+```
+
+### Additional Server API
+
+In addition to the `renderEntries` function, you can also optionally specify `getBuildConfig` function in
+`entries.ts`.
+
+```tsx
+import { defineEntries } from 'waku/server';
+
+export default defineEntries(
+  // renderEntries
+  async (input) => {
+    return {
+      App: <App name={input || 'Waku'} />,
+    };
+  },
+  // getBuildConfig
+  async () => {
+    return {
+      '/': {
+        entries: [['']],
+      },
+    };
+  },
+);
+```
+
+The `getBuildConfig` function is used for build-time optimization. It renders React Server Components during the build process to produce the output that will be sent to the client. Note that rendering here means to produce RSC payload not HTML content.
