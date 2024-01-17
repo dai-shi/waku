@@ -20,11 +20,8 @@ export const RootLayout = async ({ children }: RootLayoutProps) => {
 const Meta = () => {
   return (
     <>
-      <meta property="description" content="The minimal React framework" />
       <meta property="og:locale" content="en" />
       <meta property="og:site_name" content="Waku" />
-      <meta property="og:title" content="Waku" />
-      <meta property="og:description" content="The minimal React framework" />
       <meta property="og:type" content="website" />
       <meta
         property="og:image"
