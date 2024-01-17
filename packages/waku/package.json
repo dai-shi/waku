@@ -19,6 +19,13 @@
       "types": "./dist/config.d.ts",
       "default": "./dist/config.js"
     },
+    "./environment": {
+      "types": "./dist/environment/index.d.ts",
+      "deno": "./dist/environment/index.deno.js",
+      "worker": "./dist/environment/index.worker.js",
+      "edge-light": "./dist/environment/index.edge-light.js",
+      "default": "./dist/environment/index.js"
+    },
     "./prd": {
       "types": "./dist/prd.d.ts",
       "default": "./dist/prd.js"

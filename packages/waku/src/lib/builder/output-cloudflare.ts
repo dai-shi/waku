@@ -28,8 +28,6 @@ export const emitCloudflareOutput = async (
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/cloudflare-workers';
 
-const entries = import('./${entriesFile}');
-const { honoMiddleware } = await entries;
 let serveWaku;
 
 const app = new Hono();
@@ -38,6 +36,12 @@ app.use('*', serveStatic({ root: './' }));
 export default {
   async fetch(request, env, ctx) {
     if (!serveWaku) {
+      const entries = await import('./${entriesFile}');
+      globalThis.__WAKU_PRIVATE_ENV__ = Object.assign(
+        Object.create(null),
+        env,
+      );
+      const { honoMiddleware } = await entries;
       serveWaku = honoMiddleware({ entries, ssr: ${ssr}, env });
     }
     return app.fetch(request, env, ctx);

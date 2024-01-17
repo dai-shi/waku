@@ -16,7 +16,6 @@ export function createHandler<
 >(options: {
   config?: Config;
   ssr?: boolean;
-  env?: Record<string, string>;
   unstable_prehook?: (req: Req, res: Res) => Context;
   unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
   entries: Promise<EntriesPrd>;
@@ -25,7 +24,6 @@ export function createHandler<
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
   }
-  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(config || {});
 
   return async (req, res, next) => {

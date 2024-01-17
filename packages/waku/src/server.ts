@@ -1,3 +1,4 @@
+import { getEnv } from 'waku/environment'
 import type { ReactNode } from 'react';
 
 type Elements = Record<string, ReactNode>;
@@ -58,7 +59,6 @@ export type EntriesPrd = EntriesDev & {
   skipRenderRsc: (input: string) => boolean;
 };
 
-export function getEnv(key: string): string | undefined {
-  // HACK we may want to use a server-side context or something
-  return (globalThis as any).__WAKU_PRIVATE_ENV__[key];
+export {
+  getEnv,
 }
