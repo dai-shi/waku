@@ -62,7 +62,7 @@ export function rscTransformPlugin(
       };
       RSDWNodeLoader.resolve(
         '',
-        { conditions: ['react-server', 'workerd'], parentURL: '' },
+        { conditions: ['react-server', 'worker'], parentURL: '' },
         resolve,
       );
       let { source } = await RSDWNodeLoader.load(id, null, load);

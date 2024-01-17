@@ -89,8 +89,8 @@ const analyzeEntries = async (entriesFile: string) => {
     plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
     ssr: {
       resolve: {
-        conditions: ['react-server', 'workerd'],
-        externalConditions: ['react-server', 'workerd'],
+        conditions: ['react-server', 'worker'],
+        externalConditions: ['react-server', 'worker'],
       },
       noExternal: /^(?!node:)/,
     },
@@ -166,8 +166,8 @@ const buildServerBundle = async (
     ],
     ssr: {
       resolve: {
-        conditions: ['react-server', 'workerd'],
-        externalConditions: ['react-server', 'workerd'],
+        conditions: ['react-server', 'worker'],
+        externalConditions: ['react-server', 'worker'],
       },
       noExternal: /^(?!node:)/,
     },

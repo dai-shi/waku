@@ -136,8 +136,8 @@ const mergedViteConfig = await mergeUserViteConfig({
   },
   ssr: {
     resolve: {
-      conditions: ['react-server', 'workerd'],
-      externalConditions: ['react-server', 'workerd'],
+      conditions: ['react-server', 'worker'],
+      externalConditions: ['react-server', 'worker'],
     },
     external: ['react', 'react-server-dom-webpack'],
     noExternal: /^(?!node:)/,

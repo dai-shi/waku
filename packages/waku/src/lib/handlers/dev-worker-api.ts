@@ -86,7 +86,7 @@ export function initializeWorker(config: ResolvedConfig) {
                 : ['--experimental-loader', 'waku/node-loader']),
               '--conditions',
               'react-server',
-              'workerd',
+              'worker',
             ],
           },
         );
