@@ -13,7 +13,7 @@ export function rscServePlugin(opts: {
     config(viteConfig) {
       const { input } = viteConfig.build?.rollupOptions ?? {};
       if (input && !(typeof input === 'string') && !(input instanceof Array)) {
-        input[opts.serveJs] = opts.srcServeFile;
+        input[opts.serveJs.replace(/\.js$/, '')] = opts.srcServeFile;
       }
       viteConfig.define = {
         ...viteConfig.define,
