@@ -36,11 +36,11 @@ app.use('*', serveStatic({ root: './' }));
 export default {
   async fetch(request, env, ctx) {
     if (!serveWaku) {
-      const entries = await import('./${entriesFile}');
       globalThis.__WAKU_PRIVATE_ENV__ = Object.assign(
         Object.create(null),
         env,
       );
+      const entries = await import('./${entriesFile}');
       const { honoMiddleware } = await entries;
       serveWaku = honoMiddleware({ entries, ssr: ${ssr}, env });
     }
