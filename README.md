@@ -37,7 +37,7 @@ Future versions of Waku may provide additional APIs to abstract away some of the
 
 #### Server components
 
-Waku follows React conventions including [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md) and [server actions](https://react.dev/reference/react/use-server). Server components can be made async and can securely perform server-side logic and data fetching. Feel free to use heavy dependencies since they aren't included in the client bundle. That also means they have no interactivity.
+Waku follows React conventions including [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md) and [server actions](https://react.dev/reference/react/use-server). Server components can be made async and can securely perform server-side logic and data fetching. Feel free to use heavy dependencies since they aren't included in the client bundle. They have no interactivity or access to browser APIs since they run exclusively on the server.
 
 ```tsx
 // server component
@@ -54,7 +54,7 @@ export const StorePage = async () => {
 
 #### Client components
 
-A `'use client'` directive placed at the top of a file will create a server-client boundary when the module is imported into a server component. All components imported below the boundary will be hydrated and run in the browser. They can use all traditional React features such as state, effects, and event handlers.
+A `'use client'` directive placed at the top of a file will create a server-client boundary when the module is imported into a server component. All components imported below the boundary will be hydrated to run in the browser as well. They can use all traditional React features such as state, effects, and event handlers.
 
 ```tsx
 // client component
