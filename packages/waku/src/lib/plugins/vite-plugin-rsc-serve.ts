@@ -3,6 +3,7 @@ import type { Plugin } from 'vite';
 export function rscServePlugin(opts: {
   serveJs: string;
   entriesJs: string;
+  distDir: string;
   publicDir: string;
   indexHtml: string;
   srcServeFile: string;
@@ -21,6 +22,7 @@ export function rscServePlugin(opts: {
         'import.meta.env.WAKU_CONFIG_ENTRIES_JS': JSON.stringify(
           opts.entriesJs,
         ),
+        'import.meta.env.WAKU_CONFIG_DIST_DIR': JSON.stringify(opts.distDir),
         'import.meta.env.WAKU_CONFIG_PUBLIC_DIR': JSON.stringify(
           opts.publicDir,
         ),

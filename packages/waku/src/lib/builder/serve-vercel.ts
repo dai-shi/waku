@@ -6,6 +6,7 @@ import { connectMiddleware } from '../middleware/connect-prd.js';
 
 const ssr = !!import.meta.env.WAKU_BUILD_SSR;
 const entriesJs = import.meta.env.WAKU_CONFIG_ENTRIES_JS;
+const distDir = import.meta.env.WAKU_CONFIG_DIST_DIR;
 const publicDir = import.meta.env.WAKU_CONFIG_PUBLIC_DIR;
 const indexHtml = import.meta.env.WAKU_CONFIG_INDEX_HTML;
 const loadEntries = () => import(`./${entriesJs}`);
@@ -15,6 +16,7 @@ export default function handler(req: IncomingMessage, res: ServerResponse) {
   connectMiddleware({ loadEntries, ssr, env })(req, res, () => {
     const { pathname } = new URL(req.url!, 'http://localhost');
     const fname = path.join(
+      `${distDir}`,
       `${publicDir}`,
       pathname,
       path.extname(pathname) ? '' : `${indexHtml}`,

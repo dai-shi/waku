@@ -14,11 +14,7 @@ export const emitVercelOutput = async (
 ) => {
   const publicDir = path.join(rootDir, config.distDir, config.publicDir);
   const outputDir = path.resolve('.vercel', 'output');
-  cpSync(
-    path.join(rootDir, config.distDir, config.publicDir),
-    path.join(outputDir, 'static'),
-    { recursive: true },
-  );
+  cpSync(publicDir, path.join(outputDir, 'static'), { recursive: true });
 
   if (type === 'serverless') {
     // for serverless function
