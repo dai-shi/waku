@@ -161,6 +161,7 @@ const buildServerBundle = async (
         ? [
             rscServePlugin({
               ...config,
+              entriesFile,
               srcServeFile: decodeFilePathFromAbsolute(
                 joinPath(
                   fileURLToFilePath(import.meta.url),
