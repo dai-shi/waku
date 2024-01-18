@@ -164,7 +164,7 @@ const buildServerBundle = async (
               srcServeFile: decodeFilePathFromAbsolute(
                 joinPath(
                   fileURLToFilePath(import.meta.url),
-                  `serve-${serve}.ts`,
+                  `../serve-${serve}.ts`,
                 ),
               ),
               ssr,
