@@ -8,7 +8,7 @@ const ssr = !!import.meta.env.WAKU_BUILD_SSR;
 const distDir = import.meta.env.WAKU_CONFIG_DIST_DIR;
 const publicDir = import.meta.env.WAKU_CONFIG_PUBLIC_DIR;
 const indexHtml = import.meta.env.WAKU_CONFIG_INDEX_HTML;
-const loadEntries = () => import(`./${import.meta.env.WAKU_CONFIG_ENTRIES_JS}`);
+const loadEntries = () => import(import.meta.env.WAKU_CONFIG_ENTRIES_JS!);
 const env: Record<string, string> = process.env as any;
 
 export default function handler(req: IncomingMessage, res: ServerResponse) {
