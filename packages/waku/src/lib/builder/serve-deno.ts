@@ -8,6 +8,7 @@ import { serveStatic } from 'https://deno.land/x/hono/middleware.ts';
 import { honoMiddleware } from '../middleware/hono-prd.js';
 
 const ssr = !!import.meta.env.WAKU_BUILD_SSR;
+const distDir = import.meta.env.WAKU_CONFIG_DIST_DIR;
 const publicDir = import.meta.env.WAKU_CONFIG_PUBLIC_DIR;
 const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
 // @ts-expect-error no types
@@ -15,7 +16,7 @@ const env = Deno.env.toObject();
 
 const app = new Hono();
 app.use('*', honoMiddleware({ loadEntries, ssr, env }));
-app.use('*', serveStatic({ root: publicDir }));
+app.use('*', serveStatic({ root: `${distDir}/${publicDir}` }));
 
 // @ts-expect-error no types
 Deno.serve(app.fetch);
