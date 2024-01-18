@@ -173,7 +173,9 @@ export default createPages(async ({ createPage }) => {
 
 #### Catch-all routes
 
-Catch-all or "wildcard" routes (e.g., `/app/[...catchAll]`) have indefinite segments. Wildcard routes receive a prop with segment values as an ordered array. For example, the `/app/profile/settings` route would receive a `catchAll` prop with the value `['profile', 'settings']`. These values can then be used to determine what to render in the component.
+Catch-all or "wildcard" routes (e.g., `/app/[...catchAll]`) have indefinite segments. Wildcard routes receive a prop with segment values as an ordered array.
+
+For example, the `/app/profile/settings` route would receive a `catchAll` prop with the value `['profile', 'settings']`. These values can then be used to determine what to render in the component.
 
 ```tsx
 // ./src/entries.tsx
@@ -276,10 +278,10 @@ import { Sidebar } from '../components/sidebar.js';
 
 export const BlogLayout = async ({ children }) => {
   return (
-    <>
+    <div className="flex">
       <div>{children}</div>
       <Sidebar />
-    </>
+    </div>
   );
 };
 ```
