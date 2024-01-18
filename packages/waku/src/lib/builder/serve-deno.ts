@@ -9,7 +9,7 @@ import { honoMiddleware } from '../middleware/hono-prd.js';
 
 const ssr = !!import.meta.env.WAKU_BUILD_SSR;
 const publicDir = import.meta.env.WAKU_CONFIG_PUBLIC_DIR;
-const loadEntries = () => import(import.meta.env.WAKU_CONFIG_ENTRIES_JS!);
+const loadEntries = () => import(import.meta.env.WAKU_LOCAL_ENTRIES_JS!);
 // @ts-expect-error no types
 const env = Deno.env.toObject();
 
