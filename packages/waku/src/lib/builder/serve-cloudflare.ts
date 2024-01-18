@@ -4,8 +4,7 @@ import { serveStatic } from 'hono/cloudflare-workers';
 import { honoMiddleware } from '../middleware/hono-prd.js';
 
 const ssr = !!import.meta.env.WAKU_BUILD_SSR;
-const entriesJs = import.meta.env.WAKU_CONFIG_ENTRIES_JS;
-const loadEntries = () => import(`./${entriesJs}`);
+const loadEntries = () => import(`./${import.meta.env.WAKU_CONFIG_ENTRIES_JS}`);
 let serveWaku: ReturnType<typeof honoMiddleware> | undefined;
 
 const app = new Hono();

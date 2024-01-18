@@ -5,11 +5,10 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { connectMiddleware } from '../middleware/connect-prd.js';
 
 const ssr = !!import.meta.env.WAKU_BUILD_SSR;
-const entriesJs = import.meta.env.WAKU_CONFIG_ENTRIES_JS;
 const distDir = import.meta.env.WAKU_CONFIG_DIST_DIR;
 const publicDir = import.meta.env.WAKU_CONFIG_PUBLIC_DIR;
 const indexHtml = import.meta.env.WAKU_CONFIG_INDEX_HTML;
-const loadEntries = () => import(`./${entriesJs}`);
+const loadEntries = () => import(`./${import.meta.env.WAKU_CONFIG_ENTRIES_JS}`);
 const env: Record<string, string> = process.env as any;
 
 export default function handler(req: IncomingMessage, res: ServerResponse) {
