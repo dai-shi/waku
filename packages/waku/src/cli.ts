@@ -97,26 +97,30 @@ async function runBuild(options: { ssr: boolean }) {
     ...options,
     config,
     env: process.env as any,
-    vercel:
-      values['with-vercel'] ?? !!process.env.VERCEL
-        ? {
-            type: values['with-vercel-static'] ? 'static' : 'serverless',
-          }
-        : undefined,
-    cloudflare: !!values['with-cloudflare'],
-    deno: !!values['with-deno'],
+    deploy:
+      (values['with-vercel'] ?? !!process.env.VERCEL
+        ? values['with-vercel-static']
+          ? 'vercel-static'
+          : 'vercel-serverless'
+        : undefined) ||
+      (values['with-cloudflare'] ? 'cloudflare' : undefined) ||
+      (values['with-deno'] ? 'deno' : undefined),
   });
 }
 
 async function runStart(options: { ssr: boolean }) {
   const { distDir, publicDir, entriesJs } = await resolveConfig(config);
-  const entries = import(
-    pathToFileURL(path.resolve(distDir, entriesJs)).toString()
-  );
+  const loadEntries = () =>
+    import(pathToFileURL(path.resolve(distDir, entriesJs)).toString());
   const app = new Hono();
   app.use(
     '*',
-    honoPrdMiddleware({ ...options, config, entries, env: process.env as any }),
+    honoPrdMiddleware({
+      ...options,
+      config,
+      loadEntries,
+      env: process.env as any,
+    }),
   );
   app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
   const port = parseInt(process.env.PORT || '8080', 10);
