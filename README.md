@@ -31,13 +31,13 @@ npm create waku@latest
 
 Let's face it: React is getting complicated. But not without good reason!
 
-While there's a bit of a learning curve to modern React rendering, it introduces powerful new patterns of composability that are only made possible with the advent of React server components. So stick with us.
+While there's a bit of a learning curve to modern React rendering, it introduces powerful new patterns of composability that are only possible with the advent of React server components. So stick with us.
 
 Future versions of Waku may provide additional APIs to abstract away some of the complexity for an improved developer experience.
 
 #### Server components
 
-Waku follows React conventions including [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md) and [server actions](https://react.dev/reference/react/use-server). Server components can be made async and can securely perform server-side logic and data fetching. They have no interactivity since they run exclusively on the server.
+Waku follows React conventions including [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md) and [server actions](https://react.dev/reference/react/use-server). Server components can be made async and can securely perform server-side logic and data fetching. Feel free to use heavy dependencies since they aren't included in the client bundle. They have no interactivity or access to browser APIs since they run exclusively on the server.
 
 ```tsx
 // server component
@@ -54,7 +54,7 @@ export const StorePage = async () => {
 
 #### Client components
 
-A `'use client'` directive placed at the top of a file will create a server-client boundary when the module is imported into a server component. All components imported below the boundary will be hydrated and run in the browser. They can use all traditional React features such as state, effects, and event handlers.
+A `'use client'` directive placed at the top of a file will create a server-client boundary when the module is imported into a server component. All components imported below the boundary will be hydrated to run in the browser as well. They can use all traditional React features such as state, effects, and event handlers.
 
 ```tsx
 // client component
@@ -76,7 +76,14 @@ export const Counter = () => {
 
 #### Shared components
 
-Simple React components that [meet all of the rules](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md#sharing-code-between-server-and-client) of both server and client components can be imported to either server or client components without affecting the server-client boundary.
+Simple React components that [meet all of the rules](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md#sharing-code-between-server-and-client) of both server and client components can be imported into either server or client components without affecting the server-client boundary.
+
+```tsx
+// shared component
+export const Headline = ({ children }) => {
+  return <h3>{children}</h3>;
+};
+```
 
 #### Weaving patterns
 
@@ -250,7 +257,9 @@ export default createPages(async ({ createPage }) => {
 
 #### Catch-all routes
 
-Catch-all or "wildcard" routes (e.g., `/app/[...catchAll]`) have indefinite segments. Wildcard routes receive a prop with segment values as an ordered array. For example, the `/app/profile/settings` route would receive a `catchAll` prop with the value `['profile', 'settings']`. These values can then be used to determine what to render in the component.
+Catch-all or "wildcard" routes (e.g., `/app/[...catchAll]`) have indefinite segments. Wildcard routes receive a prop with segment values as an ordered array.
+
+For example, the `/app/profile/settings` route would receive a `catchAll` prop with the value `['profile', 'settings']`. These values can then be used to determine what to render in the component.
 
 ```tsx
 // ./src/entries.tsx
@@ -353,10 +362,10 @@ import { Sidebar } from '../components/sidebar.js';
 
 export const BlogLayout = async ({ children }) => {
   return (
-    <>
+    <div className="flex">
       <div>{children}</div>
       <Sidebar />
-    </>
+    </div>
   );
 };
 ```
@@ -401,8 +410,8 @@ export const BlogArticlePage = async ({ slug }) => {
 
   return (
     <>
-      <title>{article.frontmatter.title}</h3>
-      <h1>{article.frontmatter.title}</h3>
+      <title>{article.frontmatter.title}</title>
+      <h1>{article.frontmatter.title}</h1>
       <MDX>{article.content}</MDX>
     </>
   );
