@@ -14,11 +14,7 @@ export const emitVercelOutput = async (
 ) => {
   const publicDir = path.join(rootDir, config.distDir, config.publicDir);
   const outputDir = path.resolve('.vercel', 'output');
-  cpSync(
-    path.join(rootDir, config.distDir, config.publicDir),
-    path.join(outputDir, 'static'),
-    { recursive: true },
-  );
+  cpSync(publicDir, path.join(outputDir, 'static'), { recursive: true });
 
   if (type === 'serverless') {
     // for serverless function
@@ -37,7 +33,7 @@ export const emitVercelOutput = async (
     );
     const vcConfigJson = {
       runtime: 'nodejs18.x',
-      handler: 'serve.js',
+      handler: `${config.distDir}/${config.serveJs}`,
       launcherType: 'Nodejs',
     };
     writeFileSync(
@@ -47,40 +43,6 @@ export const emitVercelOutput = async (
     writeFileSync(
       path.join(serverlessDir, 'package.json'),
       JSON.stringify({ type: 'module' }, null, 2),
-    );
-    writeFileSync(
-      path.join(serverlessDir, 'serve.js'),
-      `
-import path from 'node:path';
-import fs from 'node:fs';
-
-const entries = import(path.resolve('${config.distDir}', '${config.entriesJs}'));
-const { connectMiddleware } = await entries;
-const env = process.env;
-
-export default function handler(req, res) {
-  connectMiddleware({ entries, ssr: ${ssr}, env })(req, res, () => {
-    const { pathname } = new URL(req.url, 'http://localhost');
-    const fname = path.join(
-      '${config.distDir}',
-      '${config.publicDir}',
-      pathname,
-      path.extname(pathname) ? '' : '${config.indexHtml}',
-    );
-    if (fs.existsSync(fname)) {
-      if (fname.endsWith('.html')) {
-        res.setHeader('content-type', 'text/html; charset=utf-8');
-      } else if (fname.endsWith('.txt')) {
-        res.setHeader('content-type', 'text/plain');
-      }
-      fs.createReadStream(fname).pipe(res);
-      return;
-    }
-    res.statusCode = 404;
-    res.end();
-  });
-}
-`,
     );
   }
 

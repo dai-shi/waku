@@ -41,11 +41,10 @@ import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
-import { rscEntriesPlugin } from '../plugins/vite-plugin-rsc-entries.js';
+import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { emitVercelOutput } from './output-vercel.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
-import { emitDenoOutput } from './output-deno.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -139,8 +138,8 @@ const buildServerBundle = async (
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
-  reExportHonoMiddleware: boolean,
-  reExportConnectMiddleware: boolean,
+  ssr: boolean,
+  serve: 'vercel' | 'cloudflare' | 'deno' | false,
 ) => {
   const serverBuildOutput = await buildVite({
     plugins: [
@@ -157,18 +156,29 @@ const buildServerBundle = async (
         },
         serverEntryFiles,
       }),
-      rscEntriesPlugin({
-        entriesFile,
-        reExportHonoMiddleware,
-        reExportConnectMiddleware,
-      }),
       rscEnvPlugin({ config }),
+      ...(serve
+        ? [
+            rscServePlugin({
+              ...config,
+              entriesFile,
+              srcServeFile: decodeFilePathFromAbsolute(
+                joinPath(
+                  fileURLToFilePath(import.meta.url),
+                  `../serve-${serve}.js`,
+                ),
+              ),
+              ssr,
+            }),
+          ]
+        : []),
     ],
     ssr: {
       resolve: {
         conditions: ['react-server', 'workerd'],
         externalConditions: ['react-server', 'workerd'],
       },
+      external: ['hono', 'hono/cloudflare-workers'],
       noExternal: /^(?!node:)/,
     },
     define: {
@@ -505,9 +515,12 @@ export async function build(options: {
   config?: Config;
   ssr?: boolean;
   env?: Record<string, string>;
-  vercel?: { type: 'static' | 'serverless' } | undefined;
-  cloudflare?: boolean;
-  deno?: boolean;
+  deploy?:
+    | 'vercel-static'
+    | 'vercel-serverless'
+    | 'cloudflare'
+    | 'deno'
+    | undefined;
 }) {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const config = await resolveConfig(options.config || {});
@@ -531,8 +544,10 @@ export async function build(options: {
     commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
-    !!options.cloudflare || !!options.deno,
-    !!options.vercel,
+    !!options.ssr,
+    (options.deploy === 'vercel-serverless' ? 'vercel' : false) ||
+      (options.deploy === 'cloudflare' ? 'cloudflare' : false) ||
+      (options.deploy === 'deno' ? 'deno' : false),
   );
   await buildClientBundle(
     rootDir,
@@ -557,22 +572,16 @@ export async function build(options: {
     !!options.ssr,
   );
 
-  if (options.vercel) {
+  if (options.deploy?.startsWith('vercel-')) {
     await emitVercelOutput(
       rootDir,
       config,
       rscFiles,
       htmlFiles,
       !!options.ssr,
-      options.vercel.type,
+      options.deploy.slice('vercel-'.length) as 'static' | 'serverless',
     );
-  }
-
-  if (options.cloudflare) {
-    await emitCloudflareOutput(rootDir, config, !!options.ssr);
-  }
-
-  if (options.deno) {
-    await emitDenoOutput(rootDir, config, !!options.ssr);
+  } else if (options.deploy === 'cloudflare') {
+    await emitCloudflareOutput(rootDir, config);
   }
 }

@@ -45,6 +45,12 @@ export interface Config {
    */
   entriesJs?: string;
   /**
+   * The serve.js file relative distDir.
+   * This file is used for deployment.
+   * Defaults to "serve.js".
+   */
+  serveJs?: string;
+  /**
    * Prefix for HTTP requests to indicate RSC requests.
    * Defaults to "RSC".
    */
