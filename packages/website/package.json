@@ -15,8 +15,8 @@
     "framer-motion": "^10.18.0",
     "jotai": "^2.6.1",
     "next-mdx-remote": "^4.4.1",
-    "react": "18.3.0-canary-c5b937576-20231219",
-    "react-dom": "18.3.0-canary-c5b937576-20231219",
+    "react": "18.3.0-canary-b30030471-20240117",
+    "react-dom": "18.3.0-canary-b30030471-20240117",
     "waku": "workspace:*"
   },
   "devDependencies": {

@@ -71,9 +71,9 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "prettier": "^3.1.1",
     "prettier-plugin-tailwindcss": "^0.5.10",
-    "react": "18.3.0-canary-c5b937576-20231219",
-    "react-dom": "18.3.0-canary-c5b937576-20231219",
-    "react-server-dom-webpack": "18.3.0-canary-c5b937576-20231219",
+    "react": "18.3.0-canary-b30030471-20240117",
+    "react-dom": "18.3.0-canary-b30030471-20240117",
+    "react-server-dom-webpack": "18.3.0-canary-b30030471-20240117",
     "typescript": "^5.3.3",
     "wait-port": "^1.1.0",
     "waku": "workspace:*"
