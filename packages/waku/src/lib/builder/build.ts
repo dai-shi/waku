@@ -490,6 +490,7 @@ const emitHtmlFiles = async (
       },
     ),
   );
+  htmlFiles.unshift(publicIndexHtmlFile);
   const loadHtmlHeadCode = `
 export function loadHtmlHead(pathname) {
   return ${JSON.stringify(htmlHeadMap)}[pathname] || ${JSON.stringify(
