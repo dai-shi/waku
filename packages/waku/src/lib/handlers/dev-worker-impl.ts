@@ -68,7 +68,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
     parentPort!.postMessage(mesg, [readable as unknown as TransferListItem]);
     deepFreeze(rr.context);
   } catch (err) {
-    const mesg: MessageRes = { id, type: 'err', err };
+    const mesg: MessageRes = { id, type: 'err', err: `${err}` };
     if (hasStatusCode(err)) {
       mesg.statusCode = err.statusCode;
     }
@@ -97,7 +97,7 @@ const handleGetSsrConfig = async (
       ssrConfig ? [ssrConfig.body as unknown as TransferListItem] : undefined,
     );
   } catch (err) {
-    const mesg: MessageRes = { id, type: 'err', err };
+    const mesg: MessageRes = { id, type: 'err', err: `${err}` };
     if (hasStatusCode(err)) {
       mesg.statusCode = err.statusCode;
     }
