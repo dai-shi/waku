@@ -195,5 +195,6 @@ export const ServerRoot = ({
   createElement(
     ElementsContext.Provider,
     { value: elements },
-    createElement(Suspense, null, children),
+    // DEBUG this causes hydration mismatch, but just testing
+    children, // createElement(Suspense, null, children),
   );
