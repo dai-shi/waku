@@ -2,7 +2,6 @@
 'use client';
 
 import {
-  Suspense,
   createContext,
   createElement,
   memo,
@@ -10,6 +9,7 @@ import {
   useCallback,
   useState,
   startTransition,
+  Suspense,
 } from 'react';
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
@@ -27,6 +27,19 @@ declare global {
 const BASE_PATH = `${import.meta.env?.WAKU_CONFIG_BASE_PATH}${import.meta.env
   ?.WAKU_CONFIG_RSC_PATH}/`;
 
+function cache<T extends (...args: any[]) => any>(fn: T): T {
+  const cache = new Map();
+  return ((...args: any[]) => {
+    const key = JSON.stringify(args);
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+    const value = fn(...args);
+    cache.set(key, value);
+    return value;
+  }) as T;
+}
+
 const checkStatus = async (
   responsePromise: Promise<Response>,
 ): Promise<Response> => {
@@ -41,74 +54,67 @@ const checkStatus = async (
 
 type Elements = Promise<Record<string, ReactNode>>;
 
-const getCached = <T>(c: () => T, m: WeakMap<object, T>, k: object): T =>
-  (m.has(k) ? m : m.set(k, c())).get(k) as T;
-const cache1 = new WeakMap();
-const mergeElements = (
-  a: Elements,
-  b: Elements | Awaited<Elements>,
-): Elements => {
-  const getResult = async () => {
+const mergeElements = cache(
+  async (a: Elements, b: Elements | Awaited<Elements>): Elements => {
     const nextElements = { ...(await a), ...(await b) };
     delete nextElements._value;
     return nextElements;
-  };
-  const cache2 = getCached(() => new WeakMap(), cache1, a);
-  return getCached(getResult, cache2, b);
-};
+  },
+);
 
-export const fetchRSC = (
-  input: string,
-  searchParamsString: string,
-  setElements: (fn: (prev: Elements) => Elements) => void,
-): Elements => {
-  const options = {
-    async callServer(actionId: string, args: unknown[]) {
-      const response = fetch(
-        BASE_PATH + encodeInput(encodeURIComponent(actionId)),
-        {
-          method: 'POST',
-          body: await encodeReply(args),
-        },
-      );
-      const data = createFromFetch<Awaited<Elements>>(
-        checkStatus(response),
-        options,
-      );
-      startTransition(() => {
-        // FIXME this causes rerenders even if data is empty
-        setElements((prev) => mergeElements(prev, data));
-      });
-      return (await data)._value;
-    },
-  };
-  const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-  const url =
-    BASE_PATH +
-    encodeInput(input) +
-    (searchParamsString ? '?' + searchParamsString : '');
-  const response = prefetched[url] || fetch(url);
-  delete prefetched[url];
-  const data = createFromFetch<Awaited<Elements>>(
-    checkStatus(response),
-    options,
-  );
-  return data;
-};
+export const fetchRSC = cache(
+  (
+    input: string,
+    searchParamsString: string,
+    rerender: (fn: (prev: Elements) => Elements) => void,
+  ): Elements => {
+    const options = {
+      async callServer(actionId: string, args: unknown[]) {
+        const response = fetch(
+          BASE_PATH + encodeInput(encodeURIComponent(actionId)),
+          {
+            method: 'POST',
+            body: await encodeReply(args),
+          },
+        );
+        const data = createFromFetch<Awaited<Elements>>(
+          checkStatus(response),
+          options,
+        );
+        startTransition(() => {
+          // FIXME this causes rerenders even if data is empty
+          rerender((prev) => mergeElements(prev, data));
+        });
+        return (await data)._value;
+      },
+    };
+    const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
+    const url =
+      BASE_PATH +
+      encodeInput(input) +
+      (searchParamsString ? '?' + searchParamsString : '');
+    const response = prefetched[url] || fetch(url);
+    delete prefetched[url];
+    const data = createFromFetch<Awaited<Elements>>(
+      checkStatus(response),
+      options,
+    );
+    return data;
+  },
+);
 
-export const prefetchRSC = (
-  input: string,
-  searchParamsString: string,
-): void => {
-  const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-  const url =
-    BASE_PATH +
-    encodeInput(input) +
-    (searchParamsString ? '?' + searchParamsString : '');
-  if (!(url in prefetched)) {
-    prefetched[url] = fetch(url);
-  }
-};
+export const prefetchRSC = cache(
+  (input: string, searchParamsString: string): void => {
+    const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
+    const url =
+      BASE_PATH +
+      encodeInput(input) +
+      (searchParamsString ? '?' + searchParamsString : '');
+    if (!(url in prefetched)) {
+      prefetched[url] = fetch(url);
+    }
+  },
+);
 
 const RefetchContext = createContext<
   (input: string, searchParams?: URLSearchParams) => void
@@ -116,6 +122,19 @@ const RefetchContext = createContext<
   throw new Error('Missing Root component');
 });
 const ElementsContext = createContext<Elements | null>(null);
+
+// HACK there should be a better way...
+const createRerender = cache(() => {
+  let rerender: ((fn: (prev: Elements) => Elements) => void) | undefined;
+  const stableRerender = (fn: Parameters<NonNullable<typeof rerender>>[0]) => {
+    rerender?.(fn);
+  };
+  const getRerender = () => stableRerender;
+  const setRerender = (newRerender: NonNullable<typeof rerender>) => {
+    rerender = newRerender;
+  };
+  return [getRerender, setRerender] as const;
+});
 
 export const Root = ({
   initialInput,
@@ -126,19 +145,25 @@ export const Root = ({
   initialSearchParamsString?: string;
   children: ReactNode;
 }) => {
+  const [getRerender, setRerender] = createRerender();
   const [elements, setElements] = useState(() =>
     fetchRSC(
       initialInput || '',
       initialSearchParamsString || '',
-      (fn: (prev: Elements) => Elements) => setElements(fn),
+      getRerender(),
     ),
   );
+  setRerender(setElements);
   const refetch = useCallback(
     (input: string, searchParams?: URLSearchParams) => {
-      const data = fetchRSC(input, searchParams?.toString() || '', setElements);
+      const data = fetchRSC(
+        input,
+        searchParams?.toString() || '',
+        getRerender(),
+      );
       setElements((prev) => mergeElements(prev, data));
     },
-    [],
+    [getRerender],
   );
   return createElement(
     RefetchContext.Provider,
