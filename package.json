@@ -14,7 +14,7 @@
     "examples:dev": "(cd ./examples/${NAME} && pnpm run dev)",
     "examples:dev:01_template": "NAME=01_template pnpm run examples:dev",
     "examples:dev:03_minimal": "NAME=03_minimal pnpm run examples:dev",
-    "examples:dev:03_promise": "NAME=03_promise pnpm run examples:dev",
+    "examples:dev:04_promise": "NAME=04_promise pnpm run examples:dev",
     "examples:dev:04_callserver": "NAME=04_callserver pnpm run examples:dev",
     "examples:dev:05_mutation": "NAME=05_mutation pnpm run examples:dev",
     "examples:dev:06_nesting": "NAME=06_nesting pnpm run examples:dev",
