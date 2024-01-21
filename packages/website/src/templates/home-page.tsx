@@ -10,9 +10,9 @@ import { Start } from '../components/start.js';
 export const HomePage = async () => {
   const fileName = '../../README.md';
   const file = readFileSync(fileName, 'utf8');
-  const source = `## Introduction${
-    file.split('## Introduction')[1]?.split('## Tweets')[0]
-  }`;
+  const source = `## Introduction${file
+    .split('## Introduction')[1]
+    ?.split('## Tweets')[0]}`;
   const mdx = await compileMDX({
     source,
     components,
@@ -21,7 +21,7 @@ export const HomePage = async () => {
   const { content } = mdx;
 
   return (
-    <Page isFaded={false}>
+    <Page isHome={true}>
       <Meta title="Waku" description="The minimal React framework" />
       <div className="relative flex h-svh w-full flex-col items-center justify-center overflow-clip font-sans">
         <Start />
