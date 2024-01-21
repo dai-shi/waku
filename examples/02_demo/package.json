@@ -1,5 +1,5 @@
 {
-  "name": "waku-example",
+  "name": "waku-demo",
   "version": "0.1.0",
   "type": "module",
   "private": true,
@@ -9,14 +9,21 @@
     "start": "waku start --with-ssr"
   },
   "dependencies": {
+    "bright": "0.8.4",
+    "clsx": "2.1.0",
+    "framer-motion": "10.18.0",
+    "jotai": "2.6.2",
+    "next-mdx-remote": "4.4.1",
     "react": "18.3.0-canary-b30030471-20240117",
     "react-dom": "18.3.0-canary-b30030471-20240117",
-    "react-server-dom-webpack": "18.3.0-canary-b30030471-20240117",
     "waku": "0.19.0"
   },
   "devDependencies": {
     "@types/react": "18.2.48",
     "@types/react-dom": "18.2.18",
-    "typescript": "5.3.3"
+    "autoprefixer": "10.4.17",
+    "tailwindcss": "3.4.1",
+    "typescript": "5.3.3",
+    "vite": "5.0.12"
   }
 }

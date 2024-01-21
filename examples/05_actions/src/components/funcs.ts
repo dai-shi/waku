@@ -2,6 +2,8 @@
 
 import type { RenderContext } from 'waku/server';
 
+export const greet = (name: string) => `Hello ${name} from server!`;
+
 // module state on server
 let counter = 0;
 
