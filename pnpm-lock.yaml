@@ -252,7 +252,7 @@ importers:
         specifier: 5.3.3
         version: 5.3.3
 
-  examples/04_prommise:
+  examples/04_promise:
     dependencies:
       react:
         specifier: 18.3.0-canary-b30030471-20240117
