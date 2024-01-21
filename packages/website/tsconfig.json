@@ -5,12 +5,12 @@
     "outDir": "./dist",
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "types": ["node", "react/experimental"]
+    "types": ["node", "react/experimental"],
   },
   "include": ["src", "src/theme.json"],
   "references": [
     {
-      "path": "../waku"
-    }
-  ]
+      "path": "../waku",
+    },
+  ],
 }

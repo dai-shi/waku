@@ -56,21 +56,21 @@
     ]
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.1",
+    "@playwright/test": "^1.41.1",
     "@types/babel__core": "^7.20.5",
-    "@types/node": "^20.10.6",
-    "@types/react": "^18.2.46",
+    "@types/node": "^20.11.5",
+    "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
-    "@typescript-eslint/eslint-plugin": "^6.17.0",
-    "@typescript-eslint/parser": "^6.17.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "prettier": "^3.1.1",
-    "prettier-plugin-tailwindcss": "^0.5.10",
+    "prettier": "^3.2.4",
+    "prettier-plugin-tailwindcss": "^0.5.11",
     "react": "18.3.0-canary-b30030471-20240117",
     "react-dom": "18.3.0-canary-b30030471-20240117",
     "react-server-dom-webpack": "18.3.0-canary-b30030471-20240117",
@@ -80,7 +80,7 @@
   },
   "pnpm": {
     "overrides": {
-      "vite": "5.0.10"
+      "vite": "5.0.12"
     }
   }
 }

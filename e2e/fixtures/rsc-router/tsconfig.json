@@ -11,6 +11,6 @@
     "exactOptionalPropertyTypes": true,
     "jsx": "react-jsx",
     "rootDir": "./src",
-    "outDir": "./dist"
-  }
+    "outDir": "./dist",
+  },
 }

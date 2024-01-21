@@ -155,11 +155,12 @@ type HasSlugInPath<T, K extends string> = T extends `/[${K}]/${infer _}`
     : T extends `/[${K}]`
       ? true
       : false;
-type PathWithSlug<T, K extends string> = IsValidPath<T> extends true
-  ? HasSlugInPath<T, K> extends true
-    ? T
-    : never
-  : never;
+type PathWithSlug<T, K extends string> =
+  IsValidPath<T> extends true
+    ? HasSlugInPath<T, K> extends true
+      ? T
+      : never
+    : never;
 type PathWithoutSlug<T> = T extends '/'
   ? T
   : IsValidPath<T> extends true

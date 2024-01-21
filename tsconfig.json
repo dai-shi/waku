@@ -19,25 +19,25 @@
     "incremental": true,
     "paths": {
       "waku": ["./packages/waku/src/main.ts"],
-      "waku/*": ["./packages/waku/src/*.ts"]
-    }
+      "waku/*": ["./packages/waku/src/*.ts"],
+    },
   },
   "files": [],
   "include": [],
   "references": [
     // Packages
     {
-      "path": "./packages/waku"
+      "path": "./packages/waku",
     },
     {
-      "path": "./packages/create-waku"
+      "path": "./packages/create-waku",
     },
     {
-      "path": "./packages/website"
+      "path": "./packages/website",
     },
     // E2E
     {
-      "path": "./tsconfig.e2e.json"
-    }
-  ]
+      "path": "./tsconfig.e2e.json",
+    },
+  ],
 }
