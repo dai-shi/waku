@@ -24,7 +24,7 @@ const resolveClientEntry = (
       ? fileURLToFilePath(file)
       : file;
     // HACK this relies on Vite's internal implementation detail.
-    return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
+    return config.basePath + filePath.replace(/^\//, '');
   }
   if (!file.startsWith('@id/')) {
     throw new Error('Unexpected client entry in PRD');

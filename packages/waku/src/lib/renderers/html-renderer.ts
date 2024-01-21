@@ -284,9 +284,7 @@ export const renderHtml = async (
               const file = filePath.slice(config.basePath.length);
               // TODO too long, we need to refactor this logic
               if (isDev) {
-                const filePath = file.startsWith('@fs/')
-                  ? file.slice('@fs'.length)
-                  : joinPath(opts.rootDir, file);
+                const filePath = '/' + file;
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
