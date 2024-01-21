@@ -3,11 +3,7 @@ import type { default as RSDWServerType } from 'react-server-dom-webpack/server.
 
 import type { RenderContext, EntriesDev, EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
-import {
-  encodeFilePathToAbsolute,
-  filePathToFileURL,
-  fileURLToFilePath,
-} from '../utils/path.js';
+import { filePathToFileURL, fileURLToFilePath } from '../utils/path.js';
 import { parseFormData } from '../utils/form.js';
 import { streamToString } from '../utils/stream.js';
 
