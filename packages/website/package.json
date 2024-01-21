@@ -17,7 +17,7 @@
     "next-mdx-remote": "^4.4.1",
     "react": "18.3.0-canary-b30030471-20240117",
     "react-dom": "18.3.0-canary-b30030471-20240117",
-    "waku": "workspace:*"
+    "waku": "https://pkg.csb.dev/dai-shi/waku/commit/e5791fa5/waku"
   },
   "devDependencies": {
     "@types/react": "^18.2.48",

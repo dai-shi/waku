@@ -605,8 +605,8 @@ importers:
         specifier: 18.3.0-canary-b30030471-20240117
         version: 18.3.0-canary-b30030471-20240117(react@18.3.0-canary-b30030471-20240117)
       waku:
-        specifier: workspace:*
-        version: link:../waku
+        specifier: https://pkg.csb.dev/dai-shi/waku/commit/e5791fa5/waku
+        version: '@pkg.csb.dev/dai-shi/waku/commit/e5791fa5/waku(@types/node@20.11.5)(react-dom@18.3.0-canary-b30030471-20240117)(react-server-dom-webpack@18.3.0-canary-b30030471-20240117)(react@18.3.0-canary-b30030471-20240117)'
     devDependencies:
       '@types/react':
         specifier: ^18.2.48
@@ -6751,4 +6751,36 @@ packages:
 
   /zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
+    dev: false
+
+  '@pkg.csb.dev/dai-shi/waku/commit/e5791fa5/waku(@types/node@20.11.5)(react-dom@18.3.0-canary-b30030471-20240117)(react-server-dom-webpack@18.3.0-canary-b30030471-20240117)(react@18.3.0-canary-b30030471-20240117)':
+    resolution: {tarball: https://pkg.csb.dev/dai-shi/waku/commit/e5791fa5/waku}
+    id: '@pkg.csb.dev/dai-shi/waku/commit/e5791fa5/waku'
+    name: waku
+    version: 0.19.0
+    engines: {node: '>=18.16.0'}
+    hasBin: true
+    peerDependencies:
+      react: 18.3.0-canary-b30030471-20240117
+      react-dom: 18.3.0-canary-b30030471-20240117
+      react-server-dom-webpack: 18.3.0-canary-b30030471-20240117
+    dependencies:
+      '@hono/node-server': 1.4.0
+      '@swc/core': 1.3.105
+      '@vitejs/plugin-react': 4.2.1(vite@5.0.12)
+      hono: 3.12.6
+      react: 18.3.0-canary-b30030471-20240117
+      react-dom: 18.3.0-canary-b30030471-20240117(react@18.3.0-canary-b30030471-20240117)
+      react-server-dom-webpack: 18.3.0-canary-b30030471-20240117(react-dom@18.3.0-canary-b30030471-20240117)(react@18.3.0-canary-b30030471-20240117)(webpack@5.89.0)
+      vite: 5.0.12(@types/node@20.11.5)
+    transitivePeerDependencies:
+      - '@swc/helpers'
+      - '@types/node'
+      - less
+      - lightningcss
+      - sass
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
     dev: false
