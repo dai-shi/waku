@@ -6,13 +6,13 @@
     "outDir": "./dist",
     "lib": ["esnext"],
     "emitDeclarationOnly": false,
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
   },
   "include": ["./src"],
   "exclude": ["./template"],
   "references": [
     {
-      "path": "../waku"
-    }
-  ]
+      "path": "../waku",
+    },
+  ],
 }

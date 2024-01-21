@@ -2,7 +2,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import { connectMiddleware } from 'waku/prd';
+import { unstable_connectMiddleware as connectMiddleware } from 'waku/prd';
 
 const withSsr = process.argv[2] === '--with-ssr';
 
@@ -12,9 +12,8 @@ const app = express();
 app.use(cookieParser());
 app.use(
   connectMiddleware({
-    entries: import(
-      pathToFileURL(path.join(root, 'dist', 'entries.js')).toString()
-    ),
+    loadEntries: () =>
+      import(pathToFileURL(path.join(root, 'dist', 'entries.js')).toString()),
     unstable_prehook: (req) => {
       return { count: Number(req.orig.cookies.count) || 0 };
     },

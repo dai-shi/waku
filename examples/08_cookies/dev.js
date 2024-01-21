@@ -1,6 +1,6 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import { connectMiddleware } from 'waku/dev';
+import { unstable_connectMiddleware as connectMiddleware } from 'waku/dev';
 
 const withSsr = process.argv[2] === '--with-ssr';
 

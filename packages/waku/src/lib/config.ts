@@ -24,6 +24,7 @@ export async function resolveConfig(config: Config) {
     indexHtml: 'index.html',
     mainJs: 'main.tsx',
     entriesJs: 'entries.js',
+    serveJs: 'serve.js',
     rscPath: 'RSC',
     htmlHead: DEFAULT_HTML_HEAD,
     ...config,

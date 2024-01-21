@@ -67,18 +67,18 @@
   },
   "dependencies": {
     "@hono/node-server": "1.4.0",
-    "@swc/core": "1.3.102",
+    "@swc/core": "1.3.105",
     "@vitejs/plugin-react": "4.2.1",
-    "hono": "3.11.12",
-    "vite": "5.0.10"
+    "hono": "3.12.6",
+    "vite": "5.0.12"
   },
   "devDependencies": {
     "@swc/cli": "^0.1.63",
-    "rollup": "^4.9.2"
+    "rollup": "^4.9.5"
   },
   "peerDependencies": {
-    "react": "18.3.0-canary-c5b937576-20231219",
-    "react-dom": "18.3.0-canary-c5b937576-20231219",
-    "react-server-dom-webpack": "18.3.0-canary-c5b937576-20231219"
+    "react": "18.3.0-canary-b30030471-20240117",
+    "react-dom": "18.3.0-canary-b30030471-20240117",
+    "react-server-dom-webpack": "18.3.0-canary-b30030471-20240117"
   }
 }

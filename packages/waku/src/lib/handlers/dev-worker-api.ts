@@ -171,7 +171,7 @@ export async function renderRscWithWorker<Context>(
         rr.moduleIdCallback?.(mesg.moduleId);
       } else if (mesg.type === 'err') {
         const err =
-          mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err));
+          typeof mesg.err === 'string' ? new Error(mesg.err) : mesg.err;
         if (mesg.statusCode) {
           (err as any).statusCode = mesg.statusCode;
         }
@@ -226,7 +226,7 @@ export async function getSsrConfigWithWorker(
         messageCallbacks.delete(id);
       } else if (mesg.type === 'err') {
         const err =
-          mesg.err instanceof Error ? mesg.err : new Error(String(mesg.err));
+          typeof mesg.err === 'string' ? new Error(mesg.err) : mesg.err;
         if (mesg.statusCode) {
           (err as any).statusCode = mesg.statusCode;
         }

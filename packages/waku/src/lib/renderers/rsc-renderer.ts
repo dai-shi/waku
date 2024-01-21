@@ -70,9 +70,9 @@ export async function renderRsc(
   } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
   const {
     default: { renderToReadableStream, decodeReply },
-  } = await ((isDev
-    ? import(RSDW_SERVER_MODULE_VALUE)
-    : loadModule!(RSDW_SERVER_MODULE)) as Promise<{
+  } = await ((
+    isDev ? import(RSDW_SERVER_MODULE_VALUE) : loadModule!(RSDW_SERVER_MODULE)
+  ) as Promise<{
     default: typeof RSDWServerType;
   }>);
 
