@@ -2,7 +2,6 @@
 'use client';
 
 import {
-  Suspense,
   createContext,
   createElement,
   memo,
@@ -57,11 +56,27 @@ const mergeElements = (
   return getCached(getResult, cache2, b);
 };
 
+type SetElements = (fn: (prev: Elements) => Elements) => void;
+type CacheEntry = [
+  input: string,
+  searchParamsString: string,
+  setElements: SetElements,
+  elements: Elements,
+];
+
+const fetchCache: [CacheEntry?] = [];
+
 export const fetchRSC = (
   input: string,
   searchParamsString: string,
-  setElements: (fn: (prev: Elements) => Elements) => void,
+  setElements: SetElements,
+  cache = fetchCache,
 ): Elements => {
+  let entry: CacheEntry | undefined = cache[0];
+  if (entry && entry[0] === input && entry[1] === searchParamsString) {
+    entry[2] = setElements;
+    return entry[3];
+  }
   const options = {
     async callServer(actionId: string, args: unknown[]) {
       const response = fetch(
@@ -75,6 +90,7 @@ export const fetchRSC = (
         checkStatus(response),
         options,
       );
+      const setElements = entry![2];
       startTransition(() => {
         // FIXME this causes rerenders even if data is empty
         setElements((prev) => mergeElements(prev, data));
@@ -93,6 +109,7 @@ export const fetchRSC = (
     checkStatus(response),
     options,
   );
+  cache[0] = entry = [input, searchParamsString, setElements, data];
   return data;
 };
 
@@ -120,34 +137,38 @@ const ElementsContext = createContext<Elements | null>(null);
 export const Root = ({
   initialInput,
   initialSearchParamsString,
+  cache,
   children,
 }: {
   initialInput?: string;
   initialSearchParamsString?: string;
+  cache?: typeof fetchCache;
   children: ReactNode;
 }) => {
   const [elements, setElements] = useState(() =>
     fetchRSC(
       initialInput || '',
       initialSearchParamsString || '',
-      (fn: (prev: Elements) => Elements) => setElements(fn),
+      (fn) => setElements(fn),
+      cache,
     ),
   );
   const refetch = useCallback(
     (input: string, searchParams?: URLSearchParams) => {
-      const data = fetchRSC(input, searchParams?.toString() || '', setElements);
+      const data = fetchRSC(
+        input,
+        searchParams?.toString() || '',
+        setElements,
+        cache,
+      );
       setElements((prev) => mergeElements(prev, data));
     },
-    [],
+    [cache],
   );
   return createElement(
     RefetchContext.Provider,
     { value: refetch },
-    createElement(
-      ElementsContext.Provider,
-      { value: elements },
-      createElement(Suspense, null, children),
-    ),
+    createElement(ElementsContext.Provider, { value: elements }, children),
   );
 };
 
@@ -191,9 +212,4 @@ export const ServerRoot = ({
 }: {
   elements: Elements;
   children: ReactNode;
-}) =>
-  createElement(
-    ElementsContext.Provider,
-    { value: elements },
-    createElement(Suspense, null, children),
-  );
+}) => createElement(ElementsContext.Provider, { value: elements }, children);
