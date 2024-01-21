@@ -11,7 +11,7 @@ Until now, [Waku](https://waku.gg) has been helpful as a reference implementatio
 
 The first building block is the new `createPages` function, a low-level routing API which allows Waku developers to create layouts and pages programatically. Both static prerendering (SSG) and server-side rendering (SSR) options are available and are selected at the layout and page level.
 
-For example you can statically prerender a global header and footer in the root layout at build time, but dynamically render the rest of a home page at request time for personalized user experiences.
+For example, you can statically prerender a global header and footer in the root layout at build time, but dynamically render the rest of a home page at request time for personalized user experiences.
 
 Let's explore the details of the new Waku API.
 
@@ -254,7 +254,7 @@ export const Providers = ({ children }) => {
 
 #### Other layouts
 
-Layouts are also helpful further down the tree. For example you could add a layout at `path: '/blog` to add a sidebar to both the blog index and all blog article pages.
+Layouts are also helpful further down the tree. For example, you could add a layout at `path: '/blog` to add a sidebar to both the blog index and all blog article pages.
 
 ```tsx
 // ./src/entries.tsx
