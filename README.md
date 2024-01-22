@@ -507,7 +507,9 @@ const Head = async () => {
   );
 };
 
-const getMetadata = async () => { /* ... */ };
+const getMetadata = async () => {
+  /* ... */
+};
 ```
 
 ## Styling
