@@ -121,13 +121,17 @@ const mergedViteConfig = await mergeUserViteConfig({
       const mesg: MessageRes = { type };
       parentPort!.postMessage(mesg);
     }),
-    rscDelegatePlugin(moduleImports, (resultOrSource) => {
-      const mesg: MessageRes =
-        typeof resultOrSource === 'object'
-          ? { type: 'module-import', result: resultOrSource }
-          : { type: 'hot-import', source: resultOrSource };
-      parentPort!.postMessage(mesg);
-    }),
+    rscDelegatePlugin(
+      moduleImports,
+      (source) => {
+        const mesg: MessageRes = { type: 'hot-import', source };
+        parentPort!.postMessage(mesg);
+      },
+      (result) => {
+        const mesg: MessageRes = { type: 'module-import', result };
+        parentPort!.postMessage(mesg);
+      },
+    ),
   ],
   optimizeDeps: {
     include: ['react-server-dom-webpack/client', 'react-dom'],
