@@ -80,13 +80,8 @@ for (const { build, command } of commands) {
       const page = await context.newPage();
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
-      // we need to remove loading indicator in dev.
-      await page.evaluate(() => {
-        const spinner = document.getElementById('waku-module-spinner');
-        spinner?.remove();
-      });
       await expect(page.getByTestId('count')).toHaveText('0');
-      await page.getByTestId('increment').click();
+      await page.getByTestId('increment').click({ force: true });
       await expect(page.getByTestId('count')).toHaveText('0');
       await page.close();
       await context.close();
