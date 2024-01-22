@@ -77,7 +77,7 @@ export function rscHmrPlugin(opts: { srcDir: string; mainJs: string }): Plugin {
         hydrateRoot(document.body, rootElement);
       }
     });
-    observer.observe(document, { childList: true });
+    observer.observe(document, { childList: true, subtree: true });
   } else {
     hydrateRoot(document.body, rootElement);
   }

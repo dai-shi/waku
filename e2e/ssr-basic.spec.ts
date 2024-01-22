@@ -65,7 +65,7 @@ for (const { build, command } of commands) {
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
       // hydration is delayed 500ms at most in dev.
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await expect(page.locator('#waku-module-spinner')).toBeHidden();
       await expect(page.getByTestId('count')).toHaveText('0');
       await page.getByTestId('increment').click();
       await page.getByTestId('increment').click();
