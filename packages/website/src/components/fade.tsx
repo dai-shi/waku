@@ -9,13 +9,13 @@ type FadeProps = {
   always?: boolean;
 };
 
-export const Fade = ({ always = false }: FadeProps) => {
+export const Fade = ({ always = true }: FadeProps) => {
   const hasScrolled = useAtomValue(scrolledAtom);
 
   return (
     <div
       className={cx(
-        'pointer-events-none fixed inset-0 z-0 transition-opacity duration-500 ease-in-out',
+        'pointer-events-none fixed left-0 right-0 top-0 z-0 h-lvh transition-opacity duration-500 ease-in-out xl:inset-0 xl:h-full',
         always || hasScrolled ? 'opacity-100' : 'opacity-0',
       )}
     >

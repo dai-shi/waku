@@ -6,16 +6,16 @@ import { Credits } from '../components/credits.js';
 import { Scroll } from './scroll.js';
 
 type PageProps = {
-  isFaded?: boolean;
+  isHome?: boolean;
   children: ReactNode;
 };
 
-export const Page = ({ isFaded = true, children }: PageProps) => {
+export const Page = ({ isHome = false, children }: PageProps) => {
   return (
     <>
       <Menu />
       <Background />
-      <Fade always={isFaded} />
+      <Fade always={!isHome} />
       <Main>{children}</Main>
       <Credits />
       <Scroll />
@@ -33,7 +33,7 @@ const Main = ({ children }: MainProps) => {
 
 const Background = () => {
   return (
-    <div className="fixed inset-0 z-0">
+    <div className="fixed left-0 right-0 top-0 z-0 h-lvh xl:inset-0 xl:h-full">
       <div className="absolute inset-0 z-0 sm:-inset-8">
         <img
           src="https://cdn.candycode.com/waku/background.jpg"

@@ -21,7 +21,7 @@ export const HomePage = async () => {
   const { content } = mdx;
 
   return (
-    <Page isFaded={false}>
+    <Page isHome={true}>
       <Meta title="Waku" description="The minimal React framework" />
       <div className="relative flex h-svh w-full flex-col items-center justify-center overflow-clip font-sans">
         <Start />
