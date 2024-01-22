@@ -44,7 +44,7 @@ export const PokemonPage = async ({ slug }: PokemonPageProps) => {
             {stats.map(([stat, value]: any) => (
               <li
                 key={stat}
-                className="inline-block rounded-sm bg-black px-1.5 py-1 text-[0.5rem] font-bold uppercase text-white"
+                className="inline-block rounded-sm bg-black px-1.5 py-1 text-[0.5rem] font-bold uppercase tracking-wider text-white"
               >
                 {stat}: {value}
               </li>
