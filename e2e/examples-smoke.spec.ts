@@ -111,7 +111,7 @@ for (const cwd of examples) {
           await page.goto(`http://localhost:${port}/`);
           // title maybe doesn't ready yet
           await page.waitForLoadState('load');
-          await expect.poll(() => page.title()).toBe('Waku');
+          await expect.poll(() => page.title()).toMatch(/^Waku/);
         });
       });
     }
@@ -160,7 +160,7 @@ for (const cwd of examples) {
           await page.goto(`http://localhost:${port}/`);
           // title maybe doesn't ready yet
           await page.waitForLoadState('load');
-          await expect.poll(() => page.title()).toBe('Waku');
+          await expect.poll(() => page.title()).toMatch(/^Waku/);
         });
       });
     }

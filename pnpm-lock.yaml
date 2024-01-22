@@ -183,27 +183,15 @@ importers:
 
   examples/02_demo:
     dependencies:
-      bright:
-        specifier: 0.8.4
-        version: 0.8.4(react@18.3.0-canary-b30030471-20240117)
-      clsx:
-        specifier: 2.1.0
-        version: 2.1.0
-      framer-motion:
-        specifier: 10.18.0
-        version: 10.18.0(react-dom@18.3.0-canary-b30030471-20240117)(react@18.3.0-canary-b30030471-20240117)
-      jotai:
-        specifier: 2.6.2
-        version: 2.6.2(@types/react@18.2.48)(react@18.3.0-canary-b30030471-20240117)
-      next-mdx-remote:
-        specifier: 4.4.1
-        version: 4.4.1(react-dom@18.3.0-canary-b30030471-20240117)(react@18.3.0-canary-b30030471-20240117)
       react:
         specifier: 18.3.0-canary-b30030471-20240117
         version: 18.3.0-canary-b30030471-20240117
       react-dom:
         specifier: 18.3.0-canary-b30030471-20240117
         version: 18.3.0-canary-b30030471-20240117(react@18.3.0-canary-b30030471-20240117)
+      react-server-dom-webpack:
+        specifier: 18.3.0-canary-b30030471-20240117
+        version: 18.3.0-canary-b30030471-20240117(react-dom@18.3.0-canary-b30030471-20240117)(react@18.3.0-canary-b30030471-20240117)(webpack@5.89.0)
       waku:
         specifier: 0.19.0
         version: link:../../packages/waku
@@ -223,9 +211,6 @@ importers:
       typescript:
         specifier: 5.3.3
         version: 5.3.3
-      vite:
-        specifier: 5.0.12
-        version: 5.0.12(@types/node@20.11.5)
 
   examples/03_minimal:
     dependencies:
