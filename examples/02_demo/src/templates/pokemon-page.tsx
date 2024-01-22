@@ -19,7 +19,7 @@ export const PokemonPage = async ({ slug }: PokemonPageProps) => {
             {pokemon.type.map((type) => (
               <div
                 key={type}
-                className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-black/60"
+                className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold uppercase leading-none tracking-wide text-black/60"
               >
                 {type}
               </div>
@@ -32,7 +32,7 @@ export const PokemonPage = async ({ slug }: PokemonPageProps) => {
             alt={pokemon.slug}
             className="size-[144px]"
           />
-          <div className="flex flex-col items-center justify-center gap-1 text-2xl">
+          <div className="flex flex-col items-center justify-center gap-1 text-2xl leading-none">
             <span className="font-bold">{pokemon.name.english}</span>
             <span className="font-zen-maru-gothic text-[0.875em] font-bold opacity-40">
               {pokemon.name.japanese}
