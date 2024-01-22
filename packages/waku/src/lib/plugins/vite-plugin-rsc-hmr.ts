@@ -40,7 +40,7 @@ export function rscHmrPlugin(opts: { srcDir: string; mainJs: string }): Plugin {
     name: 'rsc-hmr-plugin',
     enforce: 'post',
     configResolved(config) {
-      mainJsFile = path.join(config.root, opts.srcDir, opts.mainJs);
+      mainJsFile = path.posix.join(config.root, opts.srcDir, opts.mainJs);
     },
     transformIndexHtml() {
       return [
