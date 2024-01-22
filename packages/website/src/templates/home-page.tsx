@@ -10,9 +10,9 @@ import { Start } from '../components/start.js';
 export const HomePage = async () => {
   const fileName = '../../README.md';
   const file = readFileSync(fileName, 'utf8');
-  const source = `## Introduction${file
-    .split('## Introduction')[1]
-    ?.split('## Tweets')[0]}`;
+  const source = `## Introduction${
+    file.split('## Introduction')[1]?.split('## Tweets')[0]
+  }`;
   const mdx = await compileMDX({
     source,
     components,
