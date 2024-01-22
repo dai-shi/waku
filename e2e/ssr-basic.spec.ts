@@ -64,7 +64,7 @@ for (const { build, command } of commands) {
     test('increase counter', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
-      // we need to wait because the hydration is delayed 500ms at most.
+      // hydration is delayed 500ms at most in dev.
       await new Promise((resolve) => setTimeout(resolve, 500));
       await expect(page.getByTestId('count')).toHaveText('0');
       await page.getByTestId('increment').click();
@@ -80,6 +80,11 @@ for (const { build, command } of commands) {
       const page = await context.newPage();
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
+      // we need to remove loading indicator in dev.
+      await page.evaluate(() => {
+        const spinner = document.getElementById('waku-module-spinner');
+        spinner?.remove();
+      });
       await expect(page.getByTestId('count')).toHaveText('0');
       await page.getByTestId('increment').click();
       await expect(page.getByTestId('count')).toHaveText('0');
