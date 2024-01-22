@@ -16,7 +16,7 @@ export const Start = () => {
         !hasScrolled ? 'opacity-100' : 'opacity-0',
       )}
     >
-      <h1 className="text-shadow -ml-4 font-serif text-8xl font-extrabold leading-none sm:text-[10rem]">
+      <h1 className="text-shadow -ml-1.5 font-serif text-8xl font-extrabold leading-none sm:-ml-3 sm:text-[10rem]">
         Waku
       </h1>
       <h3 className="text-shadow text-xl font-bold leading-none text-white/80 sm:-mt-2 sm:text-3xl">
