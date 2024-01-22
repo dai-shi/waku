@@ -63,9 +63,9 @@ for (const { build, command } of commands) {
 
     test('increase counter', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
-
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
-
+      // we need to wait because the hydration is delayed 500ms at most.
+      await new Promise((resolve) => setTimeout(resolve, 500));
       await expect(page.getByTestId('count')).toHaveText('0');
       await page.getByTestId('increment').click();
       await page.getByTestId('increment').click();
