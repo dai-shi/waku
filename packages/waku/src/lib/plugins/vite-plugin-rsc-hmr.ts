@@ -65,6 +65,7 @@ export function rscHmrPlugin(opts: { srcDir: string; mainJs: string }): Plugin {
     transform(code, id, options) {
       if (options?.ssr) return;
       if (id === mainJsFile) {
+        // FIXME this is pretty fragile, should we patch react-dom/client?
         return code.replace(
           'hydrateRoot(document.body, rootElement);',
           `
