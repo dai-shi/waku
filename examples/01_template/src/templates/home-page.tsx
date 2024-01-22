@@ -20,7 +20,7 @@ export const HomePage = async () => {
 
 const getData = async () => {
   const data = {
-    title: 'Home',
+    title: 'Waku',
     headline: 'Waku',
     body: 'Hello world!',
   };
