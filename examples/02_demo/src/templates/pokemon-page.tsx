@@ -14,6 +14,18 @@ export const PokemonPage = async ({ slug }: PokemonPageProps) => {
     <>
       <title>{`Waku ${pokemon.name.english}`}</title>
       <div className="mx-auto flex w-1/2 flex-col items-center justify-center gap-6 leading-none md:w-full md:max-w-xl">
+        <div>
+          <ul className="flex items-center justify-center gap-1.5">
+            {pokemon.type.map((type) => (
+              <div
+                key={type}
+                className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-black/60"
+              >
+                {type}
+              </div>
+            ))}
+          </ul>
+        </div>
         <div className="inline-flex aspect-square flex-col items-center justify-center">
           <img
             src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`}
