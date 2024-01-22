@@ -16,7 +16,7 @@ export const Menu = () => {
 
   return (
     <>
-      <div className="fixed right-0 top-0 z-100 p-5 lg:left-0 lg:right-auto lg:p-8">
+      <div className="fixed right-0 top-0 z-100 p-5 lg:p-8">
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className="inline-flex aspect-square h-[3.5rem] w-[3.5rem] items-center justify-center overflow-clip rounded-full border-4 border-gray-950 bg-gray-900 text-3xl transition-colors duration-300 ease-in-out hover:bg-gray-800 focus:ring-4 focus:ring-primary-300"

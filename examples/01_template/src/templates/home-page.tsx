@@ -8,10 +8,12 @@ export const HomePage = async () => {
   return (
     <div>
       <title>{data.title}</title>
-      <h1>{data.title}</h1>
+      <h1 className="text-4xl font-bold tracking-tight">{data.headline}</h1>
       <p>{data.body}</p>
       <Counter />
-      <Link to="/about">Learn more</Link>
+      <Link to="/about" className="mt-4 inline-block underline">
+        Learn more
+      </Link>
     </div>
   );
 };
@@ -19,6 +21,7 @@ export const HomePage = async () => {
 const getData = async () => {
   const data = {
     title: 'Waku',
+    headline: 'Waku',
     body: 'Hello world!',
   };
 
