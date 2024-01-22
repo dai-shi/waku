@@ -1,6 +1,9 @@
 # Change Log
 
 ## [Unreleased]
+### Changed
+- fix some issues with deployment
+- improve sytle HMR in development
 
 ## [0.19.0] - 2024-01-16
 ### Added
