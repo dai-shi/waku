@@ -37,7 +37,7 @@ Future versions of Waku may provide additional APIs to abstract away some of the
 
 #### Server components
 
-Waku follows React conventions including [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md) and [server actions](https://react.dev/reference/react/use-server). Server components can be made async and can securely perform server-side logic and data fetching. Feel free to use heavy dependencies since they aren't included in the client bundle. They have no interactivity or access to browser APIs since they run exclusively on the server.
+Waku supports [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md) and [server actions](https://react.dev/reference/react/use-server). Server components can be made async and can securely perform server-side logic and data fetching. Feel free to use heavy dependencies since they aren't included in the client bundle. They have no interactivity or access to browser APIs since they run exclusively on the server.
 
 ```tsx
 // server component
@@ -87,7 +87,31 @@ export const Headline = ({ children }) => {
 
 #### Weaving patterns
 
-Server components can import client components and doing so will create a server-client boundary. Client components cannot import server components, but they can accept server components as props such as `children`.
+Server components can import client components and doing so will create a server-client boundary. Client components cannot import server components, but they can accept server components as props such as `children`. For example, you may want to add global context providers this way.
+
+```tsx
+// ./src/templates/root-layout.tsx
+import { Providers } from '../components/providers.js';
+
+export const RootLayout = async ({ children }) => {
+  return (
+    <Providers>
+      <main>{children}</main>
+    </Providers>
+  );
+};
+```
+
+```tsx
+// ./src/components/providers.tsx
+'use client';
+
+import { Provider } from 'jotai';
+
+export const Providers = ({ children }) => {
+  return <Provider>{children}</Provider>;
+};
+```
 
 #### Server-side rendering
 
@@ -103,7 +127,7 @@ The entry point for routing in Waku projects is `./src/entries.tsx`. Export the 
 
 Both `createLayout` and `createPage` accept a configuration object to specify the route path, React component, and render method. Waku currently supports two options: `'static'` for static prerendering (SSG) or `'dynamic'` for server-side rendering (SSR).
 
-For example you can statically prerender a global header and footer in the root layout at build time, but dynamically render the rest of a home page at request time for personalized user experiences.
+For example, you can statically prerender a global header and footer in the root layout at build time, but dynamically render the rest of a home page at request time for personalized user experiences.
 
 ```tsx
 // ./src/entries.tsx
@@ -338,7 +362,7 @@ export const Providers = ({ children }) => {
 
 #### Other layouts
 
-Layouts are also helpful further down the tree. For example you could add a layout at `path: '/blog` to add a sidebar to both the blog index and all blog article pages.
+Layouts are also helpful further down the tree. For example, you could add a layout at `path: '/blog` to add a sidebar to both the blog index and all blog article pages.
 
 ```tsx
 // ./src/entries.tsx
@@ -392,13 +416,13 @@ export const HomePage = async () => {
 
 Static assets such as images, fonts, stylesheets, and scripts can be placed in a special `./public` folder of the Waku project root directory. The public directory structure is served relative to the `/` base path.
 
-For example an image added to `./public/images/logo.svg` can be rendered via `<img src="/images/logo.svg" />`.
+For example, an image added to `./public/images/logo.svg` can be rendered via `<img src="/images/logo.svg" />`.
 
 ## Data fetching
 
 ### Server
 
-All of the wonderful patterns of React server components are supported. For example you can compile MDX files or perform code syntax highlighting on the server with zero impact on the client bundle size.
+All of the wonderful patterns of React server components are supported. For example, you can compile MDX files or perform code syntax highlighting on the server with zero impact on the client bundle size.
 
 ```tsx
 // ./src/templates/blog-article-page.tsx
@@ -456,6 +480,35 @@ export const HomePage = async () => {
       <div>Hello world!</div>
     </>
   );
+};
+```
+
+Metadata could also be generated programatically.
+
+```tsx
+// ./src/templates/home-page.tsx
+export const HomePage = async () => {
+  return (
+    <>
+      <Head />
+      <div>{/* ...*/}</div>
+    </>
+  );
+};
+
+const Head = async () => {
+  const metadata = await getMetadata();
+
+  return (
+    <>
+      <title>{metadata.title}</title>
+      <meta property="description" content={metadata.description} />
+    </>
+  );
+};
+
+const getMetadata = async () => {
+  /* ... */
 };
 ```
 
