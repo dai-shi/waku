@@ -1,7 +1,8 @@
 import path from 'node:path';
 import type { Plugin, ViteDevServer } from 'vite';
 import * as swc from '@swc/core';
-import type { ModuleImportResult } from '../handlers/types.js';
+
+import type { ModuleImportResult } from './vite-plugin-rsc-hmr.js';
 
 // import { CSS_LANGS_RE } from "vite/dist/node/constants.js";
 const CSS_LANGS_RE =
@@ -9,7 +10,8 @@ const CSS_LANGS_RE =
 
 export function rscDelegatePlugin(
   moduleImports: Set<string>,
-  importCallback: (source: string | ModuleImportResult) => void,
+  sourceCallback: (source: string) => void,
+  moduleCallback: (result: ModuleImportResult) => void,
 ): Plugin {
   let mode = 'development';
   let base = '/';
@@ -27,7 +29,9 @@ export function rscDelegatePlugin(
       if (moduleImports.has(file)) {
         // re-inject
         const transformedResult = await server.transformRequest(file);
-        transformedResult && importCallback({ ...transformedResult, id: file });
+        if (transformedResult) {
+          moduleCallback({ ...transformedResult, id: file });
+        }
       }
     },
     async transform(code, id) {
@@ -45,7 +49,7 @@ export function rscDelegatePlugin(
             if (item.source.value.startsWith('virtual:')) {
               // HACK this relies on Vite's internal implementation detail.
               const source = base + '@id/__x00__' + item.source.value;
-              importCallback(source);
+              sourceCallback(source);
             } else if (CSS_LANGS_RE.test(item.source.value)) {
               const resolvedSource = await server.pluginContainer.resolveId(
                 item.source.value,
@@ -58,9 +62,10 @@ export function rscDelegatePlugin(
                 );
                 if (transformedResult) {
                   moduleImports.add(resolvedSource.id);
-                  importCallback({
+                  moduleCallback({
                     ...transformedResult,
                     id: resolvedSource.id,
+                    css: true,
                   });
                 }
               }

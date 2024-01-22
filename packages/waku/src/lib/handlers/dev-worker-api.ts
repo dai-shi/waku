@@ -4,7 +4,7 @@ import type {
 } from 'node:worker_threads';
 
 import type { ResolvedConfig } from '../config.js';
-import type { ModuleImportResult } from './types.js';
+import type { ModuleImportResult } from '../plugins/vite-plugin-rsc-hmr.js';
 
 export type RenderRequest = {
   input: string;

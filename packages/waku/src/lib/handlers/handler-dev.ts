@@ -63,7 +63,7 @@ export function createHandler<
         patchReactRefresh(viteReact()),
         rscEnvPlugin({ config, hydrate: ssr }),
         rscIndexPlugin(config),
-        rscHmrPlugin(),
+        rscHmrPlugin(config),
         { name: 'nonjs-resolve-plugin' }, // dummy to match with dev-worker-impl.ts
         { name: 'rsc-transform-plugin' }, // dummy to match with dev-worker-impl.ts
         { name: 'rsc-reload-plugin' }, // dummy to match with dev-worker-impl.ts
