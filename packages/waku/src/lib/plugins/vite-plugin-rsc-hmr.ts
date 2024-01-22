@@ -33,7 +33,7 @@ export function rscHmrPlugin(): Plugin {
       return [
         {
           tag: 'script',
-          attrs: { type: 'module' },
+          attrs: { type: 'module', async: true },
           children: customCode,
           injectTo: 'head',
         },

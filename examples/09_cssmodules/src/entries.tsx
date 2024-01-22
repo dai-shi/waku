@@ -3,12 +3,17 @@ import { defineEntries } from 'waku/server';
 import { Slot } from 'waku/client';
 
 const App = lazy(() => import('./components/App.js'));
+const Layout = lazy(() => import('./components/Layout.js'));
 
 export default defineEntries(
   // renderEntries
   async (input) => {
     return {
-      App: <App name={input || 'Waku'} />,
+      App: (
+        <Layout>
+          <App name={input || 'Waku'} />
+        </Layout>
+      ),
     };
   },
   // getBuildConfig
