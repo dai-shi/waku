@@ -5,7 +5,7 @@
 ## [0.19.1] - 2024-01-22
 ### Changed
 - fix some issues with deployment
-- improve sytle HMR in development
+- improve style HMR in development
 
 ## [0.19.0] - 2024-01-16
 ### Added
