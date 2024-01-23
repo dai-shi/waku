@@ -587,7 +587,7 @@ export async function build(options: {
     );
   } else if (options.deploy === 'cloudflare') {
     await emitCloudflareOutput(rootDir, config);
-  } else if (options.deploy ==='aws-lambda') {
+  } else if (options.deploy === 'aws-lambda') {
     await emitAwsLambdaOutput(config);
   }
 }

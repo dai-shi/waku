@@ -1,7 +1,7 @@
 /* eslint import/no-unresolved: off */
 
 import { Hono } from 'hono';
-import { handle } from 'hono/aws-lambda'
+import { handle } from 'hono/aws-lambda';
 
 import { honoMiddleware } from '../middleware/hono-prd.js';
 import { serveStatic } from '@hono/node-server/serve-static';
