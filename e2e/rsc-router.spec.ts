@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
-import { getFreePort, test } from './utils.js';
+import { debugChildProcess, getFreePort, terminate, test } from './utils.js';
 import { rm } from 'node:fs/promises';
 
 const waku = fileURLToPath(
@@ -46,19 +46,14 @@ for (const { build, command } of commands) {
           PORT: `${port}`,
         },
       });
-      cp.stdout?.on('data', (data) => {
-        console.log(`${port} stdout: `, `${data}`);
-      });
-      cp.stderr?.on('data', (data) => {
-        console.error(`${port} stderr: `, `${data}`);
-      });
+      debugChildProcess(cp, fileURLToPath(import.meta.url));
       await waitPort({
         port,
       });
     });
 
     test.afterAll(async () => {
-      cp.kill();
+      await terminate(cp.pid!);
     });
 
     test('home', async ({ page }) => {
