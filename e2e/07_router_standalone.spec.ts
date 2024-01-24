@@ -76,7 +76,7 @@ test.describe('07_router standalone', () => {
         },
       },
     );
-    debugChildProcess(cp);
+    debugChildProcess(cp, fileURLToPath(import.meta.url));
     await testRouterExample(page, port);
     cp.kill();
   });
@@ -93,7 +93,7 @@ test.describe('07_router standalone', () => {
         },
       },
     );
-    debugChildProcess(cp);
+    debugChildProcess(cp, fileURLToPath(import.meta.url));
     await testRouterExample(page, port);
     cp.kill();
   });

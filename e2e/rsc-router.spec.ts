@@ -2,9 +2,8 @@ import { expect } from '@playwright/test';
 import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
-import { getFreePort, test } from './utils.js';
+import { debugChildProcess, getFreePort, test } from './utils.js';
 import { rm } from 'node:fs/promises';
-import { error, info } from '@actions/core';
 
 const waku = fileURLToPath(
   new URL('../packages/waku/dist/cli.js', import.meta.url),
@@ -47,14 +46,7 @@ for (const { build, command } of commands) {
           PORT: `${port}`,
         },
       });
-      cp.stdout?.on('data', (data) => {
-        info(`${port} stdout: ${data}`);
-        console.log(`${port} stdout: `, `${data}`);
-      });
-      cp.stderr?.on('data', (data) => {
-        error(`${port} stderr: ${data}`);
-        console.error(`${port} stderr: `, `${data}`);
-      });
+      debugChildProcess(cp, fileURLToPath(import.meta.url));
       await waitPort({
         port,
       });

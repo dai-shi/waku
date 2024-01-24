@@ -19,7 +19,7 @@ test('should create waku with default setup work', async () => {
     cwd,
     env: process.env,
   });
-  debugChildProcess(cp);
+  debugChildProcess(cp, fileURLToPath(import.meta.url));
   const stdin = cp.stdin!;
   await new Promise<void>((resolve) => {
     cp.stdout!.on('data', (data) => {
@@ -71,7 +71,7 @@ test('should create waku with update notify work', async () => {
     cwd,
     env: process.env,
   });
-  debugChildProcess(childProcess);
+  debugChildProcess(childProcess, fileURLToPath(import.meta.url));
   const stdin = childProcess.stdin!;
   await new Promise<void>((resolve) => {
     childProcess.stdout!.on('data', (data) => {
