@@ -2,6 +2,7 @@ import net from 'node:net';
 import { expect, test as basicTest } from '@playwright/test';
 import type { ConsoleMessage } from '@playwright/test';
 import type { ChildProcess } from 'node:child_process';
+import { error, info } from '@actions/core';
 
 const unexpectedErrors: RegExp[] = [
   /^You did not run Node.js with the `--conditions react-server` flag/,
@@ -23,12 +24,14 @@ export function debugChildProcess(cp: ChildProcess) {
   cp.stdout?.on('data', (data) => {
     const str = data.toString();
     expect(unexpectedErrors.some((re) => re.test(str))).toBeFalsy();
+    info(`stdout: ${str}`);
     console.log(`stdout: ${str}`);
   });
 
   cp.stderr?.on('data', (data) => {
     const str = data.toString();
     expect(unexpectedErrors.some((re) => re.test(str))).toBeFalsy();
+    error(`stderr: ${str}`);
     console.error(`stderr: ${str}`);
   });
 }
