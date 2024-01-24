@@ -7,6 +7,7 @@ import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
 import type { Config } from '../../config.js';
+import type { PathSpec } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import type { ResolvedConfig } from '../config.js';
 import {
@@ -384,6 +385,12 @@ export function skipRenderRsc(input) {
   return { buildConfig, getClientModules, rscFiles: Array.from(rscFileSet) };
 };
 
+const pathname2pathSpec = (pathname: string): PathSpec =>
+  pathname
+    .split('/')
+    .filter(Boolean)
+    .map((name) => ({ type: 'static' as const, name }));
+
 const emitHtmlFiles = async (
   rootDir: string,
   config: ResolvedConfig,
@@ -407,11 +414,14 @@ const emitHtmlFiles = async (
     /.*?<head>(.*?)<\/head>.*/s,
     '$1',
   );
-  const htmlHeadMap: Record<string, string> = {};
-  // TODO check duplicated files like rscFileSet
-  const htmlFiles = await Promise.all(
+  const dynamicHtmlHeadMap: Record<string, string> = {};
+  const dynamicHtmlPaths: PathSpec[] = [];
+  Promise.all(
     Array.from(buildConfig).map(
-      async ({ pathname, entries, customCode, context }) => {
+      async ({ pathname, isStatic, entries, customCode, context }) => {
+        const pathSpec = Array.isArray(pathname)
+          ? pathname
+          : pathname2pathSpec(pathname);
         let htmlStr = publicIndexHtml;
         let htmlHead = publicIndexHtmlHead;
         const destHtmlFile = joinPath(
@@ -444,7 +454,7 @@ const emitHtmlFiles = async (
           );
           htmlHead += `<script type="module" async>${code}</script>`;
         }
-        htmlHeadMap[pathname] = htmlHead;
+        dynamicHtmlHeadMap[JSON.stringify(pathSpec)] = htmlHead;
         const htmlReadable =
           ssr &&
           (await renderHtml({
@@ -490,16 +500,16 @@ const emitHtmlFiles = async (
       },
     ),
   );
-  htmlFiles.unshift(publicIndexHtmlFile);
-  const loadHtmlHeadCode = `
-export function loadHtmlHead(pathname) {
-  return ${JSON.stringify(htmlHeadMap)}[pathname] || ${JSON.stringify(
-    publicIndexHtmlHead,
-  )};
+  await appendFile(
+    distEntriesFile,
+    `
+export function loadHtmlHead(pathSpec) {
+  return ${JSON.stringify(dynamicHtmlHeadMap)}[JSON.stringify(pathSpec)];
 }
-`;
-  await appendFile(distEntriesFile, loadHtmlHeadCode);
-  return { htmlFiles };
+export const dynamicHtmlPaths = ${JSON.stringify(dynamicHtmlPaths)};
+`,
+  );
+  return { dynamicHtmlPaths };
 };
 
 const resolveFileName = (fname: string) => {
@@ -564,7 +574,7 @@ export async function build(options: {
     config,
     distEntriesFile,
   );
-  const { htmlFiles } = await emitHtmlFiles(
+  const { dynamicHtmlPaths } = await emitHtmlFiles(
     rootDir,
     config,
     distEntriesFile,
@@ -578,7 +588,7 @@ export async function build(options: {
       rootDir,
       config,
       rscFiles,
-      htmlFiles,
+      dynamicHtmlPaths,
       !!options.ssr,
       options.deploy.slice('vercel-'.length) as 'static' | 'serverless',
     );

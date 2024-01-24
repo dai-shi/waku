@@ -13,11 +13,17 @@ export type RenderEntries = (
   searchParams: URLSearchParams,
 ) => Promise<Elements | null>;
 
+export type PathSpecItem =
+  | { type: 'static'; name: string }
+  | { type: 'dynamic'; multiple: boolean };
+export type PathSpec = PathSpecItem[];
+
 export type GetBuildConfig = (
   unstable_collectClientModules: (input: string) => Promise<string[]>,
 ) => Promise<
   Iterable<{
-    pathname: string;
+    pathname: string | PathSpec; // TODO drop support for string?
+    isStatic?: boolean;
     entries?: Iterable<{
       input: string;
       skipPrefetch?: boolean;
@@ -54,7 +60,8 @@ export type EntriesDev = {
 
 export type EntriesPrd = EntriesDev & {
   loadModule: (id: string) => Promise<unknown>;
-  loadHtmlHead: (pathname: string) => string;
+  loadHtmlHead: (pathSpec: PathSpec) => string | undefined;
+  dynamicHtmlPaths: PathSpec[];
   skipRenderRsc: (input: string) => boolean;
 };
 
