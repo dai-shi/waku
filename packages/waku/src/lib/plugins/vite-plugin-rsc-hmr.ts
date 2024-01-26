@@ -1,4 +1,9 @@
-import type { HtmlTagDescriptor, Plugin, TransformResult, ViteDevServer } from 'vite';
+import type {
+  HtmlTagDescriptor,
+  Plugin,
+  TransformResult,
+  ViteDevServer,
+} from 'vite';
 
 export type ModuleImportResult = TransformResult & {
   id: string;
@@ -39,11 +44,11 @@ export function rscHmrPlugin(): Plugin {
     name: 'rsc-hmr-plugin',
     enforce: 'post',
     configureServer(server) {
-      viteServer = server
+      viteServer = server;
     },
     async transformIndexHtml() {
       return [
-        ...await generateInitialScripts(viteServer),
+        ...(await generateInitialScripts(viteServer)),
         {
           tag: 'script',
           attrs: { type: 'module', async: true },
@@ -92,15 +97,14 @@ async function generateInitialScripts(
 ): Promise<HtmlTagDescriptor[]> {
   let sourceSet = modulePendingMap.get(viteServer);
 
-  
-  let scripts: HtmlTagDescriptor[] = []
+  let scripts: HtmlTagDescriptor[] = [];
   for (const result of sourceSet!) {
     scripts.push({
       tag: 'style',
       attrs: { type: 'text/css', 'waku-module-id': result.id },
       children: result.source,
-      injectTo: 'head-prepend'      
-    })
+      injectTo: 'head-prepend',
+    });
   }
-  return scripts
+  return scripts;
 }
