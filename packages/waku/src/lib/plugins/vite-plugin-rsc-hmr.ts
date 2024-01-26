@@ -95,9 +95,9 @@ export function moduleImport(
 async function generateInitialScripts(
   viteServer: ViteDevServer,
 ): Promise<HtmlTagDescriptor[]> {
-  let sourceSet = modulePendingMap.get(viteServer);
+  const sourceSet = modulePendingMap.get(viteServer);
 
-  let scripts: HtmlTagDescriptor[] = [];
+  const scripts: HtmlTagDescriptor[] = [];
   for (const result of sourceSet!) {
     scripts.push({
       tag: 'style',
