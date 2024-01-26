@@ -97,8 +97,12 @@ async function generateInitialScripts(
 ): Promise<HtmlTagDescriptor[]> {
   const sourceSet = modulePendingMap.get(viteServer);
 
+  if (!sourceSet) {
+    return []
+  }
+
   const scripts: HtmlTagDescriptor[] = [];
-  for (const result of sourceSet!) {
+  for (const result of sourceSet) {
     scripts.push({
       tag: 'style',
       attrs: { type: 'text/css', 'waku-module-id': result.id },
