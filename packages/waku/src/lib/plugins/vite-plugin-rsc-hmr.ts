@@ -98,7 +98,7 @@ async function generateInitialScripts(
   const sourceSet = modulePendingMap.get(viteServer);
 
   if (!sourceSet) {
-    return []
+    return [];
   }
 
   const scripts: HtmlTagDescriptor[] = [];
