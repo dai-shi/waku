@@ -1,4 +1,5 @@
 import { Link } from 'waku';
+
 import { Code } from './code.js';
 
 export const components = {
