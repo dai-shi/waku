@@ -421,7 +421,7 @@ const emitHtmlFiles = async (
   );
   const dynamicHtmlHeadMap: Record<string, string> = {};
   const dynamicHtmlPaths: PathSpec[] = [];
-  Promise.all(
+  await Promise.all(
     Array.from(buildConfig).map(
       async ({ pathname, isStatic, entries, customCode, context }) => {
         const pathSpec =
