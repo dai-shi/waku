@@ -73,7 +73,7 @@ jobs:
         run: tar -xvzf ./*.tgz -C . --strip-components=1
         working-directory: ./packages/create-waku
       - name: Cleanup create-waku
-        run: rm -rf ./*.tgz ./node_modules tsconfig.json
+        run: rm -rf ./*.tgz ./node_modules tsconfig.json ./src
         working-directory: ./packages/create-waku
       - name: Cache Playwright
         uses: actions/cache@v3
