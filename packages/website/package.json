@@ -12,8 +12,8 @@
   "dependencies": {
     "bright": "^0.8.4",
     "clsx": "^2.1.0",
-    "framer-motion": "^10.18.0",
-    "jotai": "^2.6.2",
+    "framer-motion": "^11.0.3",
+    "jotai": "^2.6.3",
     "next-mdx-remote": "^4.4.1",
     "react": "18.3.0-canary-b30030471-20240117",
     "react-dom": "18.3.0-canary-b30030471-20240117",
