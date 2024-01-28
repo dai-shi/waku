@@ -12,7 +12,8 @@ import {
   SHOULD_SKIP_ID,
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
-import { joinPath } from '../lib/utils/path.js';
+import { joinPath, parsePathWithSlug } from '../lib/utils/path.js';
+import type { PathSpec } from '../lib/utils/path.js';
 
 const ShoudSkipComponent = ({ shouldSkip }: { shouldSkip: ShouldSkip }) =>
   createElement('meta', {
@@ -214,78 +215,67 @@ const splitPath = (path: string): string[] => {
   return p.split('/');
 };
 
-type ParsedPath = { name: string; isSlug: boolean; isWildcard: boolean }[];
-const parsePath = (path: string): ParsedPath =>
-  splitPath(path).map((name) => {
-    const isSlug = name.startsWith('[') && name.endsWith(']');
-    if (isSlug) {
-      name = name.slice(1, -1);
-    }
-    const isWildcard = name.startsWith('...');
-    if (isWildcard) {
-      name = name.slice(3);
-    }
-    return { name, isSlug, isWildcard };
-  });
-
-const getDynamicMapping = (parsedPath: ParsedPath, actual: string[]) => {
-  if (parsedPath.length !== actual.length) {
+const getDynamicMapping = (pathSpec: PathSpec, actual: string[]) => {
+  if (pathSpec.length !== actual.length) {
     return null;
   }
   const mapping: Record<string, string> = {};
-  for (let i = 0; i < parsedPath.length; i++) {
-    const { name, isSlug } = parsedPath[i]!;
-    if (isSlug) {
-      mapping[name] = actual[i]!;
-    } else {
+  for (let i = 0; i < pathSpec.length; i++) {
+    const { type, name } = pathSpec[i]!;
+    if (type === 'literal') {
       if (name !== actual[i]) {
         return null;
       }
+    } else if (name) {
+      mapping[name] = actual[i]!;
     }
   }
   return mapping;
 };
 
-const getWildcardMapping = (parsedPath: ParsedPath, actual: string[]) => {
-  if (parsedPath.length > actual.length) {
+const getWildcardMapping = (pathSpec: PathSpec, actual: string[]) => {
+  if (pathSpec.length > actual.length) {
     return null;
   }
   const mapping: Record<string, string | string[]> = {};
   let wildcardStartIndex = -1;
-  for (let i = 0; i < parsedPath.length; i++) {
-    const { name, isSlug, isWildcard } = parsedPath[i]!;
-    if (isWildcard) {
-      wildcardStartIndex = i;
-      break;
-    } else if (isSlug) {
-      mapping[name] = actual[i]!;
-    } else {
+  for (let i = 0; i < pathSpec.length; i++) {
+    const { type, name } = pathSpec[i]!;
+    if (type === 'literal') {
       if (name !== actual[i]) {
         return null;
       }
+    } else if (type === 'wildcard') {
+      wildcardStartIndex = i;
+      break;
+    } else if (name) {
+      mapping[name] = actual[i]!;
     }
   }
   let wildcardEndIndex = -1;
-  for (let i = 0; i < parsedPath.length; i++) {
-    const { name, isSlug, isWildcard } = parsedPath[parsedPath.length - i - 1]!;
-    if (isWildcard) {
-      wildcardEndIndex = actual.length - i - 1;
-      break;
-    } else if (isSlug) {
-      mapping[name] = actual[actual.length - i - 1]!;
-    } else {
+  for (let i = 0; i < pathSpec.length; i++) {
+    const { type, name } = pathSpec[pathSpec.length - i - 1]!;
+    if (type === 'literal') {
       if (name !== actual[actual.length - i - 1]) {
         return null;
       }
+    } else if (type === 'wildcard') {
+      wildcardEndIndex = actual.length - i - 1;
+      break;
+    } else if (name) {
+      mapping[name] = actual[actual.length - i - 1]!;
     }
   }
   if (wildcardStartIndex === -1 || wildcardEndIndex === -1) {
     throw new Error('Invalid wildcard path');
   }
-  mapping[parsedPath[wildcardStartIndex]!.name] = actual.slice(
-    wildcardStartIndex,
-    wildcardEndIndex + 1,
-  );
+  const wildcardName = pathSpec[wildcardStartIndex]!.name;
+  if (wildcardName) {
+    mapping[wildcardName] = actual.slice(
+      wildcardStartIndex,
+      wildcardEndIndex + 1,
+    );
+  }
   return mapping;
 };
 
@@ -297,14 +287,8 @@ export function createPages(
 ): ReturnType<typeof defineEntries> {
   let configured = false;
   const staticPathSet = new Set<string>();
-  const dynamicPathMap = new Map<
-    string,
-    [ParsedPath, FunctionComponent<any>]
-  >();
-  const wildcardPathMap = new Map<
-    string,
-    [ParsedPath, FunctionComponent<any>]
-  >();
+  const dynamicPathMap = new Map<string, [PathSpec, FunctionComponent<any>]>();
+  const wildcardPathMap = new Map<string, [PathSpec, FunctionComponent<any>]>();
   const staticComponentMap = new Map<string, FunctionComponent<any>>();
   const registerStaticComponent = (
     id: string,
@@ -323,10 +307,10 @@ export function createPages(
     if (configured) {
       throw new Error('no longer available');
     }
-    const parsedPath = parsePath(page.path);
-    const numSlugs = parsedPath.filter(({ isSlug }) => isSlug).length;
-    const numWildcards = parsedPath.filter(
-      ({ isWildcard }) => isWildcard,
+    const pathSpec = parsePathWithSlug(page.path);
+    const numSlugs = pathSpec.filter(({ type }) => type !== 'literal').length;
+    const numWildcards = pathSpec.filter(
+      ({ type }) => type === 'wildcard',
     ).length;
     if (page.render === 'static' && numSlugs === 0) {
       staticPathSet.add(page.path);
@@ -344,9 +328,13 @@ export function createPages(
         }
         const mapping: Record<string, string> = {};
         let slugIndex = 0;
-        const pathItems = parsedPath.map(({ name, isSlug }) => {
-          if (isSlug) {
-            return (mapping[name] = staticPath[slugIndex++]!);
+        const pathItems = pathSpec.map(({ type, name }) => {
+          if (type !== 'literal') {
+            const actualName = staticPath[slugIndex++]!;
+            if (name) {
+              mapping[name] = actualName;
+            }
+            return actualName;
           }
           return name;
         });
@@ -360,12 +348,12 @@ export function createPages(
       if (dynamicPathMap.has(page.path)) {
         throw new Error(`Duplicated dynamic path: ${page.path}`);
       }
-      dynamicPathMap.set(page.path, [parsedPath, page.component]);
+      dynamicPathMap.set(page.path, [pathSpec, page.component]);
     } else if (page.render === 'dynamic' && numWildcards === 1) {
       if (wildcardPathMap.has(page.path)) {
         throw new Error(`Duplicated dynamic path: ${page.path}`);
       }
-      wildcardPathMap.set(page.path, [parsedPath, page.component]);
+      wildcardPathMap.set(page.path, [pathSpec, page.component]);
     } else {
       throw new Error('Invalid page configuration');
     }
@@ -410,9 +398,9 @@ export function createPages(
         unstable_setShouldSkip({});
         return staticComponent;
       }
-      for (const [parsedPath, Component] of dynamicPathMap.values()) {
+      for (const [pathSpec, Component] of dynamicPathMap.values()) {
         const mapping = getDynamicMapping(
-          [...parsedPath, { name: 'page', isSlug: false, isWildcard: false }],
+          [...pathSpec, { type: 'literal', name: 'page' }],
           id.split('/'),
         );
         if (mapping) {
@@ -426,9 +414,9 @@ export function createPages(
           return WrappedComponent;
         }
       }
-      for (const [parsedPath, Component] of wildcardPathMap.values()) {
+      for (const [pathSpec, Component] of wildcardPathMap.values()) {
         const mapping = getWildcardMapping(
-          [...parsedPath, { name: 'page', isSlug: false, isWildcard: false }],
+          [...pathSpec, { type: 'literal', name: 'page' }],
           id.split('/'),
         );
         if (mapping) {

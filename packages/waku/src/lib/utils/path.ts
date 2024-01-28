@@ -63,3 +63,28 @@ export const extname = (filePath: string) => {
   const index = filePath.lastIndexOf('.');
   return index > 0 ? filePath.slice(index) : '';
 };
+
+export type PathSpecItem =
+  | { type: 'literal'; name: string }
+  | { type: 'group'; name?: string }
+  | { type: 'wildcard'; name?: string };
+export type PathSpec = PathSpecItem[];
+
+export const parsePathWithSlug = (path: string): PathSpec =>
+  path
+    .split('/')
+    .filter(Boolean)
+    .map((name) => {
+      let type: 'literal' | 'group' | 'wildcard' = 'literal';
+      const isSlug = name.startsWith('[') && name.endsWith(']');
+      if (isSlug) {
+        type = 'group';
+        name = name.slice(1, -1);
+      }
+      const isWildcard = name.startsWith('...');
+      if (isWildcard) {
+        type = 'wildcard';
+        name = name.slice(3);
+      }
+      return { type, name };
+    });

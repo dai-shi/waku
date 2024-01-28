@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import type { PathSpec } from './lib/utils/path.js';
+
 type Elements = Record<string, ReactNode>;
 
 export interface RenderContext<T = unknown> {
@@ -12,11 +14,6 @@ export type RenderEntries = (
   input: string,
   searchParams: URLSearchParams,
 ) => Promise<Elements | null>;
-
-export type PathSpecItem =
-  | { type: 'static'; name: string }
-  | { type: 'dynamic'; multiple: boolean };
-export type PathSpec = PathSpecItem[];
 
 export type GetBuildConfig = (
   unstable_collectClientModules: (input: string) => Promise<string[]>,
