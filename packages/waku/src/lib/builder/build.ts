@@ -7,7 +7,7 @@ import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
 import type { Config } from '../../config.js';
-import type { PathSpec } from '../../server.js';
+import type { EntriesPrd, PathSpec } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import type { ResolvedConfig } from '../config.js';
 import {
@@ -320,9 +320,9 @@ const emitRscFiles = async (
   rootDir: string,
   config: ResolvedConfig,
   distEntriesFile: string,
+  distEntries: EntriesPrd,
+  buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
 ) => {
-  const distEntries = await import(filePathToFileURL(distEntriesFile));
-  const buildConfig = await getBuildConfig({ config, entries: distEntries });
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (input: string, id: string) => {
     let idSet = clientModuleMap.get(input);
@@ -382,7 +382,7 @@ export function skipRenderRsc(input) {
 }
 `;
   await appendFile(distEntriesFile, skipRenderRscCode);
-  return { buildConfig, getClientModules, rscFiles: Array.from(rscFileSet) };
+  return { getClientModules, rscFiles: Array.from(rscFileSet) };
 };
 
 const pathname2pathSpec = (pathname: string): PathSpec =>
@@ -395,11 +395,11 @@ const emitHtmlFiles = async (
   rootDir: string,
   config: ResolvedConfig,
   distEntriesFile: string,
+  distEntries: EntriesPrd,
   buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
   getClientModules: (input: string) => string[],
   ssr: boolean,
 ) => {
-  const distEntries = await import(filePathToFileURL(distEntriesFile));
   const basePrefix = config.basePath + config.rscPath + '/';
   const publicIndexHtmlFile = joinPath(
     rootDir,
@@ -569,15 +569,20 @@ export async function build(options: {
     !!options.ssr,
   );
 
-  const { buildConfig, getClientModules, rscFiles } = await emitRscFiles(
+  const distEntries = await import(filePathToFileURL(distEntriesFile));
+  const buildConfig = await getBuildConfig({ config, entries: distEntries });
+  const { getClientModules, rscFiles } = await emitRscFiles(
     rootDir,
     config,
     distEntriesFile,
+    distEntries,
+    buildConfig,
   );
   const { dynamicHtmlPaths } = await emitHtmlFiles(
     rootDir,
     config,
     distEntriesFile,
+    distEntries,
     buildConfig,
     getClientModules,
     !!options.ssr,
