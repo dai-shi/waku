@@ -101,6 +101,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
 };`;
     const buildConfig: {
       pathname: string;
+      isStatic: boolean;
       entries: { input: string; isStatic: boolean }[];
       customCode: string;
     }[] = [];
@@ -108,7 +109,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
       const isStatic = (await existsPath(path)) === 'static';
       const input = getInputString(path);
       const entries = [{ input, isStatic }];
-      buildConfig.push({ pathname: path, entries, customCode });
+      buildConfig.push({ pathname: path, isStatic, entries, customCode });
     }
     return buildConfig;
   };
