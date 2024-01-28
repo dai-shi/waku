@@ -71,7 +71,7 @@ jobs:
         run: tar -xvzf ./*.tgz -C . --strip-components=1
         working-directory: ./packages/create-waku
       - name: Cleanup create-waku
-        run: rm -rf ./*.tgz ./node_modules
+        run: rm -rf ./*.tgz ./node_modules tsconfig.json
         working-directory: ./packages/create-waku
       - run: pnpm install --frozen-lockfile
       - run: pnpm run compile
