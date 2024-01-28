@@ -1,13 +1,13 @@
 import { debugChildProcess, getFreePort, terminate, test } from './utils.js';
 import { fileURLToPath } from 'node:url';
-import { cp, mkdir, rm } from 'node:fs/promises';
+import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { exec, execSync } from 'node:child_process';
 import { expect, type Page } from '@playwright/test';
-import crypto from 'node:crypto';
 import waitPort from 'wait-port';
-import path from 'node:path';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
-const cacheDir = fileURLToPath(new URL('./.cache', import.meta.url));
+let standaloneDir: string;
 const exampleDir = fileURLToPath(
   new URL('../examples/07_router', import.meta.url),
 );
@@ -30,52 +30,41 @@ async function testRouterExample(page: Page, port: number) {
 }
 
 test.describe('07_router standalone', () => {
-  const dirname = crypto.randomUUID();
   test.beforeAll('copy code', async () => {
-    await mkdir(cacheDir, {
+    standaloneDir = await mkdtemp(join(tmpdir(), 'waku-07_counter'));
+    await cp(exampleDir, standaloneDir, {
+      filter: (src) => {
+        return !src.includes('node_modules') && !src.includes('dist');
+      },
       recursive: true,
     });
-    await cp(exampleDir, `${cacheDir}/${dirname}`, { recursive: true });
-    // cleanup node_modules and output
-    await rm(`${cacheDir}/${dirname}/node_modules`, {
-      recursive: true,
-      force: true,
-    });
-    await rm(`${cacheDir}/${dirname}/dist`, { recursive: true, force: true });
-    execSync('pnpm --ignore-workspace install', {
-      cwd: `${cacheDir}/${dirname}`,
+    execSync('npm install', {
+      cwd: standaloneDir,
       stdio: 'inherit',
     });
-    await rm(`${cacheDir}/${dirname}/node_modules/waku`, {
+    await rm(`${standaloneDir}/node_modules/waku`, {
       recursive: true,
       force: true,
     });
     // copy waku
-    await cp(wakuDir, `${cacheDir}/${dirname}/node_modules/waku`, {
+    await cp(wakuDir, `${standaloneDir}/node_modules/waku`, {
       recursive: true,
-    });
-    execSync('pnpm --ignore-workspace install --prod', {
-      cwd: `${cacheDir}/${dirname}/node_modules/waku`,
-      stdio: 'inherit',
     });
   });
 
   test('should prod work', async ({ page }) => {
-    execSync(`node ${path.join('./node_modules/waku/dist/cli.js')} build`, {
-      cwd: `${cacheDir}/${dirname}`,
+    execSync(`node ${join('./node_modules/waku/dist/cli.js')} build`, {
+      cwd: standaloneDir,
       stdio: 'inherit',
     });
     const port = await getFreePort();
-    const cp = exec(
-      `node ${path.join('./node_modules/waku/dist/cli.js')} start`,
-      {
-        cwd: `${cacheDir}/${dirname}`,
-        env: {
-          ...process.env,
-          PORT: `${port}`,
-        },
+    const cp = exec(`node ${join('./node_modules/waku/dist/cli.js')} start`, {
+      cwd: standaloneDir,
+      env: {
+        ...process.env,
+        PORT: `${port}`,
       },
-    );
+    });
     debugChildProcess(cp, fileURLToPath(import.meta.url));
     await testRouterExample(page, port);
     await terminate(cp.pid!);
@@ -83,16 +72,13 @@ test.describe('07_router standalone', () => {
 
   test('should dev work', async ({ page }) => {
     const port = await getFreePort();
-    const cp = exec(
-      `node ${path.join('./node_modules/waku/dist/cli.js')} dev`,
-      {
-        cwd: `${cacheDir}/${dirname}`,
-        env: {
-          ...process.env,
-          PORT: `${port}`,
-        },
+    const cp = exec(`node ${join('./node_modules/waku/dist/cli.js')} dev`, {
+      cwd: standaloneDir,
+      env: {
+        ...process.env,
+        PORT: `${port}`,
       },
-    );
+    });
     debugChildProcess(cp, fileURLToPath(import.meta.url));
     await testRouterExample(page, port);
     await terminate(cp.pid!);
