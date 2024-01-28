@@ -44,10 +44,32 @@ jobs:
           path: packages/create-waku/*.tgz
           if-no-files-found: error
 
+  build-waku:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'pnpm'
+          cache-dependency-path: '**/pnpm-lock.yaml'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r --filter="./packages/waku" run compile
+      - run: pnpm pack
+        working-directory: packages/waku
+      - uses: actions/upload-artifact@v4
+        with:
+          name: waku
+          path: packages/waku/*.tgz
+          if-no-files-found: error
+
   e2e:
     name: E2E on ${{ matrix.os }} (Node ${{ matrix.version }}) - (${{ matrix.shared }}/4)
     needs:
+      # use the same build artifacts for all jobs
       - build-create-waku
+      - build-waku
     strategy:
       fail-fast: false
       matrix:
@@ -64,7 +86,6 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run compile
       - uses: actions/download-artifact@v4
         with:
           name: create-waku
@@ -75,6 +96,16 @@ jobs:
       - name: Cleanup create-waku
         run: rm -rf ./*.tgz ./node_modules tsconfig.json ./src
         working-directory: ./packages/create-waku
+      - uses: actions/download-artifact@v4
+        with:
+          name: waku
+          path: ./packages/waku
+      - name: Unzip waku
+        run: tar -xvzf ./*.tgz -C . --strip-components=1
+        working-directory: ./packages/waku
+      - name: Cleanup waku
+        run: rm -rf ./*.tgz ./node_modules tsconfig.json ./src
+        working-directory: ./packages/waku
       - name: Cache Playwright
         uses: actions/cache@v3
         id: playwright-cache
