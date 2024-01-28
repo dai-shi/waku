@@ -12,7 +12,11 @@ import {
   SHOULD_SKIP_ID,
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
-import { joinPath, parsePathWithSlug } from '../lib/utils/path.js';
+import {
+  joinPath,
+  parsePathWithSlug,
+  getPathMapping,
+} from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
 
 const ShoudSkipComponent = ({ shouldSkip }: { shouldSkip: ShouldSkip }) =>
@@ -215,70 +219,6 @@ const splitPath = (path: string): string[] => {
   return p.split('/');
 };
 
-const getDynamicMapping = (pathSpec: PathSpec, actual: string[]) => {
-  if (pathSpec.length !== actual.length) {
-    return null;
-  }
-  const mapping: Record<string, string> = {};
-  for (let i = 0; i < pathSpec.length; i++) {
-    const { type, name } = pathSpec[i]!;
-    if (type === 'literal') {
-      if (name !== actual[i]) {
-        return null;
-      }
-    } else if (name) {
-      mapping[name] = actual[i]!;
-    }
-  }
-  return mapping;
-};
-
-const getWildcardMapping = (pathSpec: PathSpec, actual: string[]) => {
-  if (pathSpec.length > actual.length) {
-    return null;
-  }
-  const mapping: Record<string, string | string[]> = {};
-  let wildcardStartIndex = -1;
-  for (let i = 0; i < pathSpec.length; i++) {
-    const { type, name } = pathSpec[i]!;
-    if (type === 'literal') {
-      if (name !== actual[i]) {
-        return null;
-      }
-    } else if (type === 'wildcard') {
-      wildcardStartIndex = i;
-      break;
-    } else if (name) {
-      mapping[name] = actual[i]!;
-    }
-  }
-  let wildcardEndIndex = -1;
-  for (let i = 0; i < pathSpec.length; i++) {
-    const { type, name } = pathSpec[pathSpec.length - i - 1]!;
-    if (type === 'literal') {
-      if (name !== actual[actual.length - i - 1]) {
-        return null;
-      }
-    } else if (type === 'wildcard') {
-      wildcardEndIndex = actual.length - i - 1;
-      break;
-    } else if (name) {
-      mapping[name] = actual[actual.length - i - 1]!;
-    }
-  }
-  if (wildcardStartIndex === -1 || wildcardEndIndex === -1) {
-    throw new Error('Invalid wildcard path');
-  }
-  const wildcardName = pathSpec[wildcardStartIndex]!.name;
-  if (wildcardName) {
-    mapping[wildcardName] = actual.slice(
-      wildcardStartIndex,
-      wildcardEndIndex + 1,
-    );
-  }
-  return mapping;
-};
-
 export function createPages(
   fn: (fns: {
     createPage: CreatePage;
@@ -378,13 +318,13 @@ export function createPages(
         return 'static';
       }
       for (const [parsedPath] of dynamicPathMap.values()) {
-        const mapping = getDynamicMapping(parsedPath, splitPath(path));
+        const mapping = getPathMapping(parsedPath, splitPath(path));
         if (mapping) {
           return 'dynamic';
         }
       }
       for (const [parsedPath] of wildcardPathMap.values()) {
-        const mapping = getWildcardMapping(parsedPath, splitPath(path));
+        const mapping = getPathMapping(parsedPath, splitPath(path));
         if (mapping) {
           return 'dynamic';
         }
@@ -399,7 +339,7 @@ export function createPages(
         return staticComponent;
       }
       for (const [pathSpec, Component] of dynamicPathMap.values()) {
-        const mapping = getDynamicMapping(
+        const mapping = getPathMapping(
           [...pathSpec, { type: 'literal', name: 'page' }],
           id.split('/'),
         );
@@ -415,7 +355,7 @@ export function createPages(
         }
       }
       for (const [pathSpec, Component] of wildcardPathMap.values()) {
-        const mapping = getWildcardMapping(
+        const mapping = getPathMapping(
           [...pathSpec, { type: 'literal', name: 'page' }],
           id.split('/'),
         );

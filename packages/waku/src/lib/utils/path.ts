@@ -68,7 +68,7 @@ export type PathSpecItem =
   | { type: 'literal'; name: string }
   | { type: 'group'; name?: string }
   | { type: 'wildcard'; name?: string };
-export type PathSpec = PathSpecItem[];
+export type PathSpec = readonly PathSpecItem[];
 
 export const parsePathWithSlug = (path: string): PathSpec =>
   path
@@ -88,3 +88,58 @@ export const parsePathWithSlug = (path: string): PathSpec =>
       }
       return { type, name };
     });
+
+export const getPathMapping = (
+  pathSpec: PathSpec,
+  actual: string[],
+): Record<string, string | string[]> | null => {
+  if (pathSpec.length > actual.length) {
+    return null;
+  }
+  const mapping: Record<string, string | string[]> = {};
+  let wildcardStartIndex = -1;
+  for (let i = 0; i < pathSpec.length; i++) {
+    const { type, name } = pathSpec[i]!;
+    if (type === 'literal') {
+      if (name !== actual[i]) {
+        return null;
+      }
+    } else if (type === 'wildcard') {
+      wildcardStartIndex = i;
+      break;
+    } else if (name) {
+      mapping[name] = actual[i]!;
+    }
+  }
+  if (wildcardStartIndex === -1) {
+    if (pathSpec.length !== actual.length) {
+      return null;
+    }
+    return mapping;
+  }
+  let wildcardEndIndex = -1;
+  for (let i = 0; i < pathSpec.length; i++) {
+    const { type, name } = pathSpec[pathSpec.length - i - 1]!;
+    if (type === 'literal') {
+      if (name !== actual[actual.length - i - 1]) {
+        return null;
+      }
+    } else if (type === 'wildcard') {
+      wildcardEndIndex = actual.length - i - 1;
+      break;
+    } else if (name) {
+      mapping[name] = actual[actual.length - i - 1]!;
+    }
+  }
+  if (wildcardStartIndex === -1 || wildcardEndIndex === -1) {
+    throw new Error('Invalid wildcard path');
+  }
+  const wildcardName = pathSpec[wildcardStartIndex]!.name;
+  if (wildcardName) {
+    mapping[wildcardName] = actual.slice(
+      wildcardStartIndex,
+      wildcardEndIndex + 1,
+    );
+  }
+  return mapping;
+};
