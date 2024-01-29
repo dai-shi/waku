@@ -35,7 +35,7 @@ While there's a bit of a learning curve to modern React rendering, it introduces
 
 So please don't be intimidated by the `'use client'` directive! Once you get the hang of it, you'll appreciate how awesome it is to flexibly move server-client boundaries with a single line of code as your full-stack React codebase evolves over time.
 
-And please don't fret about client components! Even if you only lightly optimize towards server components, your client bundle size will be significantly smaller than traditional React frameworks, which are 100% client components.
+And please don't fret about client components! Even if you only lightly optimize towards server components, your client bundle size will be smaller than traditional React frameworks, which are 100% client components.
 
 > Future versions of Waku may provide additional opt-in APIs to abstract some of the complexity away for an improved developer experience.
 
@@ -49,7 +49,7 @@ Server components can still be rendered below this boundary, but only via compos
 
 #### Server components
 
-Server components can be made async and can securely perform server-side logic and data fetching. Feel free to access the local file-system and import heavy dependencies since they aren't included in the client bundle. They have no interactivity or access to browser APIs since they run exclusively on the server.
+Server components can be made async and can securely perform server-side logic and data fetching. Feel free to access the local file-system and import heavy dependencies since they aren't included in the client bundle. They have no state, interactivity, or access to browser APIs since they run exclusively on the server.
 
 ```tsx
 // server component
