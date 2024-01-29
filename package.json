@@ -8,7 +8,6 @@
     "dev": "pnpm -r --filter='./packages/*' run dev",
     "compile": "pnpm -r --filter='./packages/*' run compile",
     "csb-install-FIXME": "pnpm install --no-frozen-lockfile",
-    "postinstall": "node ./scripts/postinstall.js",
     "test": "prettier -c . && eslint . && tsc -b",
     "e2e": "playwright test",
     "examples:dev": "(cd ./examples/${NAME} && pnpm run dev)",
