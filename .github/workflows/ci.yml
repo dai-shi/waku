@@ -79,6 +79,11 @@ jobs:
         with:
           name: waku
           path: packages/waku
+      # link global
+      - run: pnpm link --global
+        working-directory: packages/waku
+      - run: pnpm link --global
+        working-directory: packages/create-waku
       - name: Cache Playwright
         uses: actions/cache@v3
         id: playwright-cache
