@@ -35,7 +35,6 @@ export type GetSsrConfig = (
   pathname: string,
   options: {
     searchParams: URLSearchParams;
-    isPrd: boolean;
   },
 ) => Promise<{
   input: string;

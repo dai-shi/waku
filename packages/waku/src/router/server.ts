@@ -114,9 +114,9 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
     return buildConfig;
   };
 
-  const getSsrConfig: GetSsrConfig = async (pathname, { isPrd }) => {
+  const getSsrConfig: GetSsrConfig = async (pathname) => {
     const pathType = await existsPath(pathname);
-    if (isPrd ? pathType !== 'dynamic' : pathType === null) {
+    if (pathType === null) {
       return null;
     }
     const componentIds = getComponentIds(pathname);
