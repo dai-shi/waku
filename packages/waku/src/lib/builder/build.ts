@@ -422,7 +422,7 @@ const emitHtmlFiles = async (
     '$1',
   );
   const dynamicHtmlHeadMap: Record<string, string> = {};
-  const dynamicHtmlPaths: PathSpec[] = [];
+  const dynamicHtmlPathSet = new Set<PathSpec>();
   await Promise.all(
     Array.from(buildConfig).map(
       async ({ pathname, isStatic, entries, customCode, context }) => {
@@ -456,7 +456,7 @@ const emitHtmlFiles = async (
         }
         if (!isStatic) {
           dynamicHtmlHeadMap[JSON.stringify(pathSpec)] = htmlHead;
-          dynamicHtmlPaths.push(pathSpec);
+          dynamicHtmlPathSet.add(pathSpec);
           return;
         }
         pathname = pathSpec2pathname(pathSpec);
@@ -510,6 +510,7 @@ const emitHtmlFiles = async (
       },
     ),
   );
+  const dynamicHtmlPaths: readonly PathSpec[] = Array.from(dynamicHtmlPathSet);
   const code = `
 export function loadHtmlHead(pathSpec) {
   return ${JSON.stringify(dynamicHtmlHeadMap)}[JSON.stringify(pathSpec)];
