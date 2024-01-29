@@ -54,17 +54,33 @@ const getMappingAndItems = async (id: string) => {
   return { mapping, items };
 };
 
-const getStaticPaths = async () => {
+const getPathSpecs = async () => {
   const files = await glob('**/page.{tsx,js}', { cwd: routesDir });
-  return files
-    .filter((file) => !/(^|\/)(\[\w+\]|_\w+_)\//.test(file))
-    .map((file) => '/' + file.slice(0, Math.max(0, file.lastIndexOf('/'))));
+  return files.map((file) => {
+    const names = file.split('/').filter(Boolean).slice(0, -1);
+    const pathSpec = names.map((name) => {
+      const match = name.match(/^(\[\w+\]|_\w+_)$/);
+      if (match) {
+        return { type: 'group', name: match[1]!.slice(1, -1) } as const;
+      }
+      return { type: 'literal', name } as const;
+    });
+    return {
+      path: pathSpec,
+      isStatic: pathSpec.every(({ type }) => type === 'literal'),
+    };
+  });
 };
 
 export default defineRouter(
   // existsPath
   async (path: string) => {
-    if ((await getStaticPaths()).includes(path)) {
+    if (
+      (await getPathSpecs()).some(
+        ({ path: pathSpec, isStatic }) =>
+          isStatic && '/' + pathSpec.map(({ name }) => name).join('/') === path,
+      )
+    ) {
       return true;
     }
     if ((await getMappingAndItems(path + '/page')) !== null) {
@@ -87,12 +103,5 @@ export default defineRouter(
     return Component;
   },
   // getPathsForBuild
-  async () =>
-    (await getStaticPaths()).map((path) => ({
-      path: path
-        .split('/')
-        .filter(Boolean)
-        .map((name) => ({ type: 'literal', name })),
-      isStatic: true,
-    })),
+  () => getPathSpecs(),
 );
