@@ -26,7 +26,7 @@ const ShoudSkipComponent = ({ shouldSkip }: { shouldSkip: ShouldSkip }) =>
   });
 
 export function unstable_defineRouter(
-  existsPath: (path: string) => Promise<'static' | 'dynamic' | null>,
+  existsPath: (pathname: string) => Promise<boolean>,
   getComponent: (
     componentId: string, // "**/layout" or "**/page"
     unstable_setShouldSkip: (val?: ShouldSkip[string]) => void,
@@ -37,18 +37,20 @@ export function unstable_defineRouter(
     | { default: FunctionComponent<RouteProps & { children: ReactNode }> }
     | null
   >,
-  getPathsForBuild?: () => Promise<Iterable<string>>,
+  getPathsForBuild?: () => Promise<
+    Iterable<{ path: PathSpec; isStatic?: boolean }>
+  >,
 ): ReturnType<typeof defineEntries> {
   const shouldSkip: ShouldSkip = {};
 
   const renderEntries: RenderEntries = async (input, searchParams) => {
-    const path = parseInputString(input);
-    if (!(await existsPath(path))) {
+    const pathname = parseInputString(input);
+    if (!(await existsPath(pathname))) {
       return null;
     }
     const skip = searchParams.getAll(PARAM_KEY_SKIP) || [];
-    const componentIds = getComponentIds(path);
-    const props: RouteProps = { path, searchParams };
+    const componentIds = getComponentIds(pathname);
+    const props: RouteProps = { path: pathname, searchParams };
     const entries = (
       await Promise.all(
         componentIds.map(async (id) => {
@@ -87,10 +89,14 @@ export function unstable_defineRouter(
   ) => {
     const pathsForBuild = await getPathsForBuild?.();
     const path2moduleIds: Record<string, string[]> = {};
-    for (const path of pathsForBuild || []) {
-      const input = getInputString(path);
+    for (const { path: pathSpec } of pathsForBuild || []) {
+      if (pathSpec.some(({ type }) => type !== 'literal')) {
+        continue;
+      }
+      const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
+      const input = getInputString(pathname);
       const moduleIds = await unstable_collectClientModules(input);
-      path2moduleIds[path] = moduleIds;
+      path2moduleIds[pathname] = moduleIds;
     }
     const customCode = `
 globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
@@ -100,23 +106,25 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   }
 };`;
     const buildConfig: {
-      pathname: string;
+      pathname: PathSpec;
       isStatic: boolean;
       entries: { input: string; isStatic: boolean }[];
       customCode: string;
     }[] = [];
-    for (const path of pathsForBuild || []) {
-      const isStatic = (await existsPath(path)) === 'static';
-      const input = getInputString(path);
-      const entries = [{ input, isStatic }];
-      buildConfig.push({ pathname: path, isStatic, entries, customCode });
+    for (const { path: pathSpec, isStatic = false } of pathsForBuild || []) {
+      const entries: (typeof buildConfig)[number]['entries'] = [];
+      if (pathSpec.every(({ type }) => type === 'literal')) {
+        const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
+        const input = getInputString(pathname);
+        entries.push({ input, isStatic });
+      }
+      buildConfig.push({ pathname: pathSpec, isStatic, entries, customCode });
     }
     return buildConfig;
   };
 
   const getSsrConfig: GetSsrConfig = async (pathname) => {
-    const pathType = await existsPath(pathname);
-    if (pathType === null) {
+    if (!(await existsPath(pathname))) {
       return null;
     }
     const componentIds = getComponentIds(pathname);
@@ -227,7 +235,7 @@ export function createPages(
   }) => Promise<void>,
 ): ReturnType<typeof defineEntries> {
   let configured = false;
-  const staticPathSet = new Set<string>();
+  const staticPathSet = new Set<PathSpec>();
   const dynamicPathMap = new Map<string, [PathSpec, FunctionComponent<any>]>();
   const wildcardPathMap = new Map<string, [PathSpec, FunctionComponent<any>]>();
   const staticComponentMap = new Map<string, FunctionComponent<any>>();
@@ -254,7 +262,7 @@ export function createPages(
       ({ type }) => type === 'wildcard',
     ).length;
     if (page.render === 'static' && numSlugs === 0) {
-      staticPathSet.add(page.path);
+      staticPathSet.add(pathSpec);
       const id = joinPath(page.path, 'page').replace(/^\//, '');
       registerStaticComponent(id, page.component);
     } else if (page.render === 'static' && numSlugs > 0 && numWildcards === 0) {
@@ -279,7 +287,7 @@ export function createPages(
           }
           return name;
         });
-        staticPathSet.add('/' + joinPath(...pathItems));
+        staticPathSet.add(pathItems.map((name) => ({ type: 'literal', name })));
         const id = joinPath(...pathItems, 'page');
         const WrappedComponent = (props: Record<string, unknown>) =>
           createElement(page.component as any, { ...props, ...mapping });
@@ -315,22 +323,25 @@ export function createPages(
   return unstable_defineRouter(
     async (path: string) => {
       await ready;
-      if (staticPathSet.has(path)) {
-        return 'static';
-      }
-      for (const [parsedPath] of dynamicPathMap.values()) {
-        const mapping = getPathMapping(parsedPath, splitPath(path));
+      for (const pathSpec of staticPathSet) {
+        const mapping = getPathMapping(pathSpec, splitPath(path));
         if (mapping) {
-          return 'dynamic';
+          return true;
         }
       }
-      for (const [parsedPath] of wildcardPathMap.values()) {
-        const mapping = getPathMapping(parsedPath, splitPath(path));
+      for (const [pathSpec] of dynamicPathMap.values()) {
+        const mapping = getPathMapping(pathSpec, splitPath(path));
         if (mapping) {
-          return 'dynamic';
+          return true;
         }
       }
-      return null; // not found
+      for (const [pathSpec] of wildcardPathMap.values()) {
+        const mapping = getPathMapping(pathSpec, splitPath(path));
+        if (mapping) {
+          return true;
+        }
+      }
+      return false;
     },
     async (id, unstable_setShouldSkip) => {
       await ready;
@@ -370,6 +381,18 @@ export function createPages(
       unstable_setShouldSkip({}); // negative cache
       return null; // not found
     },
-    async () => staticPathSet,
+    async () => {
+      const paths: { path: PathSpec; isStatic: boolean }[] = [];
+      for (const pathSpec of staticPathSet) {
+        paths.push({ path: pathSpec, isStatic: true });
+      }
+      for (const [pathSpec] of dynamicPathMap.values()) {
+        paths.push({ path: pathSpec, isStatic: false });
+      }
+      for (const [pathSpec] of wildcardPathMap.values()) {
+        paths.push({ path: pathSpec, isStatic: false });
+      }
+      return paths;
+    },
   );
 }
