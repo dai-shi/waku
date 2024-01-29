@@ -391,7 +391,9 @@ const pathname2pathSpec = (pathname: string): PathSpec =>
 
 const pathSpec2pathname = (pathSpec: PathSpec): string => {
   if (pathSpec.some(({ type }) => type !== 'literal')) {
-    throw new Error('Cannot convert pathSpec to pathname');
+    throw new Error(
+      'Cannot convert pathSpec to pathname: ' + JSON.stringify(pathSpec),
+    );
   }
   return '/' + pathSpec.map(({ name }) => name!).join('/');
 };
@@ -426,15 +428,8 @@ const emitHtmlFiles = async (
       async ({ pathname, isStatic, entries, customCode, context }) => {
         const pathSpec =
           typeof pathname === 'string' ? pathname2pathSpec(pathname) : pathname;
-        pathname = pathSpec2pathname(pathSpec);
         let htmlStr = publicIndexHtml;
         let htmlHead = publicIndexHtmlHead;
-        const destHtmlFile = joinPath(
-          rootDir,
-          config.distDir,
-          config.publicDir,
-          extname(pathname) ? pathname : pathname + '/' + config.indexHtml,
-        );
         const inputsForPrefetch = new Set<string>();
         const moduleIdsForPrefetch = new Set<string>();
         for (const { input, skipPrefetch } of entries || []) {
@@ -464,6 +459,13 @@ const emitHtmlFiles = async (
           dynamicHtmlPaths.push(pathSpec);
           return;
         }
+        pathname = pathSpec2pathname(pathSpec);
+        const destHtmlFile = joinPath(
+          rootDir,
+          config.distDir,
+          config.publicDir,
+          extname(pathname) ? pathname : pathname + '/' + config.indexHtml,
+        );
         const htmlReadable =
           ssr &&
           (await renderHtml({
