@@ -65,12 +65,12 @@ export default defineRouter(
   // existsPath
   async (path: string) => {
     if ((await getStaticPaths()).includes(path)) {
-      return 'static';
+      return true;
     }
     if ((await getMappingAndItems(path + '/page')) !== null) {
-      return 'dynamic';
+      return true;
     }
-    return null;
+    return false;
   },
   // getComponent (id is "**/layout" or "**/page")
   async (id, unstable_setShouldSkip) => {
@@ -87,5 +87,12 @@ export default defineRouter(
     return Component;
   },
   // getPathsForBuild
-  () => getStaticPaths(),
+  async () =>
+    (await getStaticPaths()).map((path) => ({
+      path: path
+        .split('/')
+        .filter(Boolean)
+        .map((name) => ({ type: 'literal', name })),
+      isStatic: true,
+    })),
 );

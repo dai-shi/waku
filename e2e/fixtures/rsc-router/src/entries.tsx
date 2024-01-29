@@ -4,7 +4,7 @@ const STATIC_PATHS = ['/', '/foo'];
 
 export default defineRouter(
   // existsPath
-  async (path: string) => (STATIC_PATHS.includes(path) ? 'static' : null),
+  async (path: string) => STATIC_PATHS.includes(path),
   // getComponent (id is "**/layout" or "**/page")
   async (id) => {
     switch (id) {
@@ -19,5 +19,12 @@ export default defineRouter(
     }
   },
   // getPathsForBuild
-  async () => STATIC_PATHS,
+  async () =>
+    STATIC_PATHS.map((path) => ({
+      path: path
+        .split('/')
+        .filter(Boolean)
+        .map((name) => ({ type: 'literal', name })),
+      isStatic: true,
+    })),
 );
