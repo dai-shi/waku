@@ -55,7 +55,7 @@ export function createHandler<
         const resolvedEntries = await entries;
         const { loadHtmlHead, dynamicHtmlPaths } = resolvedEntries;
         const pathSpec = dynamicHtmlPaths.find((pathSpec) =>
-          getPathMapping(pathSpec, req.url.pathname.split('/').filter(Boolean)),
+          getPathMapping(pathSpec, req.url.pathname),
         );
         const htmlHead = pathSpec && loadHtmlHead(pathSpec);
         if (htmlHead) {

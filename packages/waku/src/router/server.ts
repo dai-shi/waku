@@ -26,7 +26,9 @@ const ShoudSkipComponent = ({ shouldSkip }: { shouldSkip: ShouldSkip }) =>
   });
 
 export function unstable_defineRouter(
-  existsPath: (pathname: string) => Promise<boolean>,
+  getPathConfig: () => Promise<
+    Iterable<{ path: PathSpec; isStatic?: boolean }>
+  >,
   getComponent: (
     componentId: string, // "**/layout" or "**/page"
     unstable_setShouldSkip: (val?: ShouldSkip[string]) => void,
@@ -37,15 +39,21 @@ export function unstable_defineRouter(
     | { default: FunctionComponent<RouteProps & { children: ReactNode }> }
     | null
   >,
-  getPathsForBuild?: () => Promise<
-    Iterable<{ path: PathSpec; isStatic?: boolean }>
-  >,
 ): ReturnType<typeof defineEntries> {
+  const pathConfigPromise = getPathConfig().then((pathConfig) =>
+    Array.from(pathConfig),
+  );
+  const existsPath = async (pathname: string) => {
+    const pathConfig = await pathConfigPromise;
+    return pathConfig.some(({ path: pathSpec }) =>
+      getPathMapping(pathSpec, pathname),
+    );
+  };
   const shouldSkip: ShouldSkip = {};
 
   const renderEntries: RenderEntries = async (input, searchParams) => {
     const pathname = parseInputString(input);
-    if (!(await existsPath(pathname))) {
+    if (!existsPath(pathname)) {
       return null;
     }
     const skip = searchParams.getAll(PARAM_KEY_SKIP) || [];
@@ -87,9 +95,9 @@ export function unstable_defineRouter(
   const getBuildConfig: GetBuildConfig = async (
     unstable_collectClientModules,
   ) => {
-    const pathsForBuild = await getPathsForBuild?.();
+    const pathConfig = await pathConfigPromise;
     const path2moduleIds: Record<string, string[]> = {};
-    for (const { path: pathSpec } of pathsForBuild || []) {
+    for (const { path: pathSpec } of pathConfig) {
       if (pathSpec.some(({ type }) => type !== 'literal')) {
         continue;
       }
@@ -111,7 +119,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
       entries: { input: string; isStatic: boolean }[];
       customCode: string;
     }[] = [];
-    for (const { path: pathSpec, isStatic = false } of pathsForBuild || []) {
+    for (const { path: pathSpec, isStatic = false } of pathConfig) {
       const entries: (typeof buildConfig)[number]['entries'] = [];
       if (pathSpec.every(({ type }) => type === 'literal')) {
         const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
@@ -220,14 +228,6 @@ type CreateLayout = <T extends string>(layout: {
   component: FunctionComponent<RouteProps & { children: ReactNode }>;
 }) => void;
 
-const splitPath = (path: string): string[] => {
-  const p = path.replace(/^\//, '');
-  if (!p) {
-    return [];
-  }
-  return p.split('/');
-};
-
 export function createPages(
   fn: (fns: {
     createPage: CreatePage;
@@ -321,27 +321,18 @@ export function createPages(
   });
 
   return unstable_defineRouter(
-    async (path: string) => {
-      await ready;
+    async () => {
+      const paths: { path: PathSpec; isStatic: boolean }[] = [];
       for (const pathSpec of staticPathSet) {
-        const mapping = getPathMapping(pathSpec, splitPath(path));
-        if (mapping) {
-          return true;
-        }
+        paths.push({ path: pathSpec, isStatic: true });
       }
       for (const [pathSpec] of dynamicPathMap.values()) {
-        const mapping = getPathMapping(pathSpec, splitPath(path));
-        if (mapping) {
-          return true;
-        }
+        paths.push({ path: pathSpec, isStatic: false });
       }
       for (const [pathSpec] of wildcardPathMap.values()) {
-        const mapping = getPathMapping(pathSpec, splitPath(path));
-        if (mapping) {
-          return true;
-        }
+        paths.push({ path: pathSpec, isStatic: false });
       }
-      return false;
+      return paths;
     },
     async (id, unstable_setShouldSkip) => {
       await ready;
@@ -353,7 +344,7 @@ export function createPages(
       for (const [pathSpec, Component] of dynamicPathMap.values()) {
         const mapping = getPathMapping(
           [...pathSpec, { type: 'literal', name: 'page' }],
-          id.split('/'),
+          id,
         );
         if (mapping) {
           if (Object.keys(mapping).length === 0) {
@@ -369,7 +360,7 @@ export function createPages(
       for (const [pathSpec, Component] of wildcardPathMap.values()) {
         const mapping = getPathMapping(
           [...pathSpec, { type: 'literal', name: 'page' }],
-          id.split('/'),
+          id,
         );
         if (mapping) {
           const WrappedComponent = (props: Record<string, unknown>) =>
@@ -380,19 +371,6 @@ export function createPages(
       }
       unstable_setShouldSkip({}); // negative cache
       return null; // not found
-    },
-    async () => {
-      const paths: { path: PathSpec; isStatic: boolean }[] = [];
-      for (const pathSpec of staticPathSet) {
-        paths.push({ path: pathSpec, isStatic: true });
-      }
-      for (const [pathSpec] of dynamicPathMap.values()) {
-        paths.push({ path: pathSpec, isStatic: false });
-      }
-      for (const [pathSpec] of wildcardPathMap.values()) {
-        paths.push({ path: pathSpec, isStatic: false });
-      }
-      return paths;
     },
   );
 }

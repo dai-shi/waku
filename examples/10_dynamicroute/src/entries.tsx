@@ -54,7 +54,7 @@ const getMappingAndItems = async (id: string) => {
   return { mapping, items };
 };
 
-const getPathSpecs = async () => {
+const getPathConfig = async () => {
   const files = await glob('**/page.{tsx,js}', { cwd: routesDir });
   return files.map((file) => {
     const names = file.split('/').filter(Boolean).slice(0, -1);
@@ -73,21 +73,8 @@ const getPathSpecs = async () => {
 };
 
 export default defineRouter(
-  // existsPath
-  async (path: string) => {
-    if (
-      (await getPathSpecs()).some(
-        ({ path: pathSpec, isStatic }) =>
-          isStatic && '/' + pathSpec.map(({ name }) => name).join('/') === path,
-      )
-    ) {
-      return true;
-    }
-    if ((await getMappingAndItems(path + '/page')) !== null) {
-      return true;
-    }
-    return false;
-  },
+  // getPathConfig
+  () => getPathConfig(),
   // getComponent (id is "**/layout" or "**/page")
   async (id, unstable_setShouldSkip) => {
     unstable_setShouldSkip({}); // always skip if possible
@@ -102,6 +89,4 @@ export default defineRouter(
     );
     return Component;
   },
-  // getPathsForBuild
-  () => getPathSpecs(),
 );

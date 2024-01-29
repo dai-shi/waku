@@ -91,8 +91,9 @@ export const parsePathWithSlug = (path: string): PathSpec =>
 
 export const getPathMapping = (
   pathSpec: PathSpec,
-  actual: string[],
+  pathname: string,
 ): Record<string, string | string[]> | null => {
+  const actual = pathname.split('/').filter(Boolean);
   if (pathSpec.length > actual.length) {
     return null;
   }
