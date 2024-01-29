@@ -322,6 +322,7 @@ export function createPages(
 
   return unstable_defineRouter(
     async () => {
+      await ready;
       const paths: { path: PathSpec; isStatic: boolean }[] = [];
       for (const pathSpec of staticPathSet) {
         paths.push({ path: pathSpec, isStatic: true });
