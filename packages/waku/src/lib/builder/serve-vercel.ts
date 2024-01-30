@@ -12,5 +12,6 @@ app.use('*', honoMiddleware({ loadEntries, env }));
 const requestListener = getRequestListener(app.fetch);
 
 export default function handler(req: IncomingMessage, res: ServerResponse) {
+  console.log('request', req.url);
   requestListener(req, res);
 }
