@@ -15,17 +15,17 @@ export default createPages(async ({ createPage, createLayout }) => {
   });
 
   createPage({
-    render: 'static',
+    render: 'dynamic',
     path: '/',
     component: HomePage,
   });
 
-  const blogPaths = await getBlogPaths();
+  /* const blogPaths = */ await getBlogPaths();
 
   createPage({
-    render: 'static',
+    render: 'dynamic',
     path: '/blog/[slug]',
-    staticPaths: blogPaths,
+    // staticPaths: blogPaths,
     component: BlogArticlePage,
   });
 });
