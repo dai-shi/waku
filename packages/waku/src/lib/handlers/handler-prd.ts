@@ -54,9 +54,10 @@ export function createHandler<
       try {
         const resolvedEntries = await entries;
         const { dynamicHtmlPaths } = resolvedEntries;
-        const htmlHead = dynamicHtmlPaths.find(([pathSpec]) =>
-          getPathMapping(pathSpec, req.url.pathname),
-        )?.[1];
+        const htmlHead = dynamicHtmlPaths.find(([pathSpec]) => {
+          console.log('pathSpec', pathSpec, req.url.pathname);
+          return getPathMapping(pathSpec, req.url.pathname);
+        })?.[1];
         if (htmlHead) {
           const readable = await renderHtml({
             config,
