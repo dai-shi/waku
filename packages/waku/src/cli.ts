@@ -111,6 +111,7 @@ async function runStart(options: { ssr: boolean }) {
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, entriesJs)).toString());
   const app = new Hono();
+  app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
   app.use(
     '*',
     honoPrdMiddleware({
@@ -120,7 +121,6 @@ async function runStart(options: { ssr: boolean }) {
       env: process.env as any,
     }),
   );
-  app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
   const port = parseInt(process.env.PORT || '8080', 10);
   startServer(app, port);
 }

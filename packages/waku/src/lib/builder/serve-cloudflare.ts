@@ -8,8 +8,8 @@ const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
 let serveWaku: ReturnType<typeof honoMiddleware> | undefined;
 
 const app = new Hono();
-app.use('*', (c, next) => serveWaku!(c, next));
 app.use('*', serveStatic({ root: './' }));
+app.use('*', (c, next) => serveWaku!(c, next));
 export default {
   async fetch(
     request: Request,
