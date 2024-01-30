@@ -12,7 +12,7 @@
     "directory": "packages/create-waku"
   },
   "bin": {
-    "create-waku": "./dist/index.js"
+    "create-waku": "./cli.js"
   },
   "files": [
     "dist",

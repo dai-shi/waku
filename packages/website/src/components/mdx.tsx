@@ -81,14 +81,14 @@ export const components = {
   pre: ({ children, ...rest }: any) => (
     <Code
       code={children.props.children}
-      className="code !mb-16 max-w-full !overflow-clip overflow-x-scroll !rounded-xl !bg-gray-900 !p-0 !font-mono !text-sm sm:!-mx-[0.75em] sm:max-w-[calc(100%+1.5em)] sm:!p-[0.5em] sm:!text-base [&>*]:!bg-gray-900"
+      className="code !mb-16 max-w-full overflow-clip overflow-x-scroll rounded-xl bg-gray-900 p-4 font-mono text-sm sm:-mx-3 sm:max-w-[calc(100%+1rem)] sm:p-6 sm:text-base [&>*]:!bg-gray-900"
       {...rest}
     />
   ),
   blockquote: ({ children, ...rest }: any) => {
     return (
-      <div className="overflow-clip rounded-xl bg-gray-950  sm:!-mx-[0.75em]">
-        <blockquote className="px-[calc(1rem+0.5em)] py-4" {...rest}>
+      <div className="overflow-clip rounded-xl bg-gray-950 sm:!-mx-3">
+        <blockquote className="p-4 sm:p-6" {...rest}>
           <div className="mb-1 flex items-center gap-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"

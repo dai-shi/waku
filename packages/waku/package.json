@@ -55,7 +55,7 @@
     }
   },
   "bin": {
-    "waku": "./dist/cli.js"
+    "waku": "./cli.js"
   },
   "files": [
     "src",
