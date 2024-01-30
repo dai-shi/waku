@@ -27,6 +27,7 @@ import {
   readFile,
   writeFile,
   appendFile,
+  unlink,
 } from '../utils/node-fs.js';
 import { encodeInput, generatePrefetchCode } from '../renderers/utils.js';
 import {
@@ -410,6 +411,7 @@ const emitHtmlFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
+  await unlink(publicIndexHtmlFile);
   const publicIndexHtmlHead = publicIndexHtml.replace(
     /.*?<head>(.*?)<\/head>.*/s,
     '$1',
