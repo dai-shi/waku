@@ -411,7 +411,9 @@ const emitHtmlFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  await unlink(publicIndexHtmlFile);
+  if (ssr) {
+    await unlink(publicIndexHtmlFile);
+  }
   const publicIndexHtmlHead = publicIndexHtml.replace(
     /.*?<head>(.*?)<\/head>.*/s,
     '$1',
