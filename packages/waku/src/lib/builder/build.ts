@@ -7,6 +7,7 @@ import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
 import type { Config } from '../../config.js';
+import type { EntriesPrd } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import type { ResolvedConfig } from '../config.js';
 import {
@@ -16,6 +17,7 @@ import {
   fileURLToFilePath,
   decodeFilePathFromAbsolute,
 } from '../utils/path.js';
+import type { PathSpec } from '../utils/path.js';
 import {
   createReadStream,
   createWriteStream,
@@ -319,9 +321,9 @@ const emitRscFiles = async (
   rootDir: string,
   config: ResolvedConfig,
   distEntriesFile: string,
+  distEntries: EntriesPrd,
+  buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
 ) => {
-  const distEntries = await import(filePathToFileURL(distEntriesFile));
-  const buildConfig = await getBuildConfig({ config, entries: distEntries });
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (input: string, id: string) => {
     let idSet = clientModuleMap.get(input);
@@ -335,64 +337,76 @@ const emitRscFiles = async (
     const idSet = clientModuleMap.get(input);
     return Array.from(idSet || []);
   };
-  const rscFileSet = new Set<string>(); // XXX could be implemented better
   const staticInputSet = new Set<string>();
   await Promise.all(
     Array.from(buildConfig).map(async ({ entries, context }) => {
       for (const { input, isStatic } of entries || []) {
-        if (isStatic) {
-          staticInputSet.add(input);
+        if (!isStatic) {
+          continue;
         }
+        if (staticInputSet.has(input)) {
+          continue;
+        }
+        staticInputSet.add(input);
         const destRscFile = joinPath(
           rootDir,
           config.distDir,
           config.publicDir,
           config.rscPath,
-          encodeInput(
-            // Should we do this here? Or waku/router or in entries.ts?
-            input.split('\\').join('/'),
-          ),
+          encodeInput(input),
         );
-        if (!rscFileSet.has(destRscFile)) {
-          rscFileSet.add(destRscFile);
-          await mkdir(joinPath(destRscFile, '..'), { recursive: true });
-          const readable = await renderRsc({
-            input,
-            searchParams: new URLSearchParams(),
-            method: 'GET',
-            config,
-            context,
-            moduleIdCallback: (id) => addClientModule(input, id),
-            isDev: false,
-            entries: distEntries,
-          });
-          await pipeline(
-            Readable.fromWeb(readable as any),
-            createWriteStream(destRscFile),
-          );
-        }
+        await mkdir(joinPath(destRscFile, '..'), { recursive: true });
+        const readable = await renderRsc({
+          input,
+          searchParams: new URLSearchParams(),
+          method: 'GET',
+          config,
+          context,
+          moduleIdCallback: (id) => addClientModule(input, id),
+          isDev: false,
+          entries: distEntries,
+        });
+        await pipeline(
+          Readable.fromWeb(readable as any),
+          createWriteStream(destRscFile),
+        );
       }
     }),
   );
-  const skipRenderRscCode = `
-const staticInputSet = new Set(${JSON.stringify(Array.from(staticInputSet))});
+  const staticInputs: readonly string[] = Array.from(staticInputSet);
+  const code = `
+const staticInputSet = new Set(${JSON.stringify(staticInputs)});
 export function skipRenderRsc(input) {
   return staticInputSet.has(input);
-}
-`;
-  await appendFile(distEntriesFile, skipRenderRscCode);
-  return { buildConfig, getClientModules, rscFiles: Array.from(rscFileSet) };
+}`;
+  await appendFile(distEntriesFile, code);
+  return { getClientModules, staticInputs };
+};
+
+const pathname2pathSpec = (pathname: string): PathSpec =>
+  pathname
+    .split('/')
+    .filter(Boolean)
+    .map((name) => ({ type: 'literal', name }));
+
+const pathSpec2pathname = (pathSpec: PathSpec): string => {
+  if (pathSpec.some(({ type }) => type !== 'literal')) {
+    throw new Error(
+      'Cannot convert pathSpec to pathname: ' + JSON.stringify(pathSpec),
+    );
+  }
+  return '/' + pathSpec.map(({ name }) => name!).join('/');
 };
 
 const emitHtmlFiles = async (
   rootDir: string,
   config: ResolvedConfig,
   distEntriesFile: string,
+  distEntries: EntriesPrd,
   buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
   getClientModules: (input: string) => string[],
   ssr: boolean,
 ) => {
-  const distEntries = await import(filePathToFileURL(distEntriesFile));
   const basePrefix = config.basePath + config.rscPath + '/';
   const publicIndexHtmlFile = joinPath(
     rootDir,
@@ -407,19 +421,15 @@ const emitHtmlFiles = async (
     /.*?<head>(.*?)<\/head>.*/s,
     '$1',
   );
-  const htmlHeadMap: Record<string, string> = {};
-  // TODO check duplicated files like rscFileSet
-  const htmlFiles = await Promise.all(
+  const dynamicHtmlHeadMap: Record<string, string> = {};
+  const dynamicHtmlPathSet = new Set<PathSpec>();
+  await Promise.all(
     Array.from(buildConfig).map(
-      async ({ pathname, entries, customCode, context }) => {
+      async ({ pathname, isStatic, entries, customCode, context }) => {
+        const pathSpec =
+          typeof pathname === 'string' ? pathname2pathSpec(pathname) : pathname;
         let htmlStr = publicIndexHtml;
         let htmlHead = publicIndexHtmlHead;
-        const destHtmlFile = joinPath(
-          rootDir,
-          config.distDir,
-          config.publicDir,
-          extname(pathname) ? pathname : pathname + '/' + config.indexHtml,
-        );
         const inputsForPrefetch = new Set<string>();
         const moduleIdsForPrefetch = new Set<string>();
         for (const { input, skipPrefetch } of entries || []) {
@@ -444,7 +454,18 @@ const emitHtmlFiles = async (
           );
           htmlHead += `<script type="module" async>${code}</script>`;
         }
-        htmlHeadMap[pathname] = htmlHead;
+        if (!isStatic) {
+          dynamicHtmlHeadMap[JSON.stringify(pathSpec)] = htmlHead;
+          dynamicHtmlPathSet.add(pathSpec);
+          return;
+        }
+        pathname = pathSpec2pathname(pathSpec);
+        const destHtmlFile = joinPath(
+          rootDir,
+          config.distDir,
+          config.publicDir,
+          extname(pathname) ? pathname : pathname + '/' + config.indexHtml,
+        );
         const htmlReadable =
           ssr &&
           (await renderHtml({
@@ -486,20 +507,18 @@ const emitHtmlFiles = async (
         } else {
           await writeFile(destHtmlFile, htmlStr);
         }
-        return destHtmlFile;
       },
     ),
   );
-  htmlFiles.unshift(publicIndexHtmlFile);
-  const loadHtmlHeadCode = `
-export function loadHtmlHead(pathname) {
-  return ${JSON.stringify(htmlHeadMap)}[pathname] || ${JSON.stringify(
-    publicIndexHtmlHead,
-  )};
+  const dynamicHtmlPaths: readonly PathSpec[] = Array.from(dynamicHtmlPathSet);
+  const code = `
+export function loadHtmlHead(pathSpec) {
+  return ${JSON.stringify(dynamicHtmlHeadMap)}[JSON.stringify(pathSpec)];
 }
+export const dynamicHtmlPaths = ${JSON.stringify(dynamicHtmlPaths)};
 `;
-  await appendFile(distEntriesFile, loadHtmlHeadCode);
-  return { htmlFiles };
+  await appendFile(distEntriesFile, code);
+  return { dynamicHtmlPaths };
 };
 
 const resolveFileName = (fname: string) => {
@@ -559,15 +578,20 @@ export async function build(options: {
     !!options.ssr,
   );
 
-  const { buildConfig, getClientModules, rscFiles } = await emitRscFiles(
+  const distEntries = await import(filePathToFileURL(distEntriesFile));
+  const buildConfig = await getBuildConfig({ config, entries: distEntries });
+  const { getClientModules, staticInputs } = await emitRscFiles(
     rootDir,
     config,
     distEntriesFile,
+    distEntries,
+    buildConfig,
   );
-  const { htmlFiles } = await emitHtmlFiles(
+  const { dynamicHtmlPaths } = await emitHtmlFiles(
     rootDir,
     config,
     distEntriesFile,
+    distEntries,
     buildConfig,
     getClientModules,
     !!options.ssr,
@@ -577,8 +601,8 @@ export async function build(options: {
     await emitVercelOutput(
       rootDir,
       config,
-      rscFiles,
-      htmlFiles,
+      staticInputs,
+      dynamicHtmlPaths,
       !!options.ssr,
       options.deploy.slice('vercel-'.length) as 'static' | 'serverless',
     );

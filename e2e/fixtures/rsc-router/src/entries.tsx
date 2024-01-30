@@ -3,8 +3,15 @@ import { unstable_defineRouter as defineRouter } from 'waku/router/server';
 const STATIC_PATHS = ['/', '/foo'];
 
 export default defineRouter(
-  // existsPath
-  async (path: string) => (STATIC_PATHS.includes(path) ? 'static' : null),
+  // getPathConfig
+  async () =>
+    STATIC_PATHS.map((path) => ({
+      path: path
+        .split('/')
+        .filter(Boolean)
+        .map((name) => ({ type: 'literal', name })),
+      isStatic: true,
+    })),
   // getComponent (id is "**/layout" or "**/page")
   async (id) => {
     switch (id) {
@@ -18,6 +25,4 @@ export default defineRouter(
         return null;
     }
   },
-  // getPathsForBuild
-  async () => STATIC_PATHS,
 );

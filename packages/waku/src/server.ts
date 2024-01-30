@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import type { PathSpec } from './lib/utils/path.js';
+
 type Elements = Record<string, ReactNode>;
 
 export interface RenderContext<T = unknown> {
@@ -17,7 +19,8 @@ export type GetBuildConfig = (
   unstable_collectClientModules: (input: string) => Promise<string[]>,
 ) => Promise<
   Iterable<{
-    pathname: string;
+    pathname: string | PathSpec; // TODO drop support for string?
+    isStatic?: boolean;
     entries?: Iterable<{
       input: string;
       skipPrefetch?: boolean;
@@ -32,7 +35,6 @@ export type GetSsrConfig = (
   pathname: string,
   options: {
     searchParams: URLSearchParams;
-    isPrd: boolean;
   },
 ) => Promise<{
   input: string;
@@ -54,7 +56,8 @@ export type EntriesDev = {
 
 export type EntriesPrd = EntriesDev & {
   loadModule: (id: string) => Promise<unknown>;
-  loadHtmlHead: (pathname: string) => string;
+  loadHtmlHead: (pathSpec: PathSpec) => string | undefined;
+  dynamicHtmlPaths: PathSpec[];
   skipRenderRsc: (input: string) => boolean;
 };
 

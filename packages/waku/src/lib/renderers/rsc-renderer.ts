@@ -241,10 +241,7 @@ export async function getSsrConfig(
     ? import(RSDW_SERVER_MODULE_VALUE)
     : loadModule!(RSDW_SERVER_MODULE).then((m: any) => m.default));
 
-  const ssrConfig = await getSsrConfig?.(pathname, {
-    searchParams,
-    isPrd: !isDev && !opts.isBuild,
-  });
+  const ssrConfig = await getSsrConfig?.(pathname, { searchParams });
   if (!ssrConfig) {
     return null;
   }
