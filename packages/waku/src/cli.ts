@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import path from 'node:path';
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
