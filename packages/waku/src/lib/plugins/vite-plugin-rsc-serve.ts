@@ -5,7 +5,6 @@ export function rscServePlugin(opts: {
   distDir: string;
   publicDir: string;
   indexHtml: string;
-  rscPath: string;
   entriesFile: string;
   srcServeFile: string;
   ssr: boolean;
@@ -25,7 +24,6 @@ export function rscServePlugin(opts: {
         'import.meta.env.WAKU_CONFIG_PUBLIC_DIR': JSON.stringify(
           opts.publicDir,
         ),
-        'import.meta.env.WAKU_CONFIG_RSC_PATH': JSON.stringify(opts.rscPath),
         'import.meta.env.WAKU_CONFIG_INDEX_HTML': JSON.stringify(
           opts.indexHtml,
         ),

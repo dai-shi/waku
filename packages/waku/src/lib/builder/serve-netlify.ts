@@ -13,8 +13,6 @@ export default async (req: Request, context: Context) =>
   app.fetch(req, { context });
 
 export const config: Config = {
-  path: [
-    `/${import.meta.env.WAKU_CONFIG_RSC_PATH}/*`,
-    // TODO add html paths
-  ],
+  preferStatic: true,
+  path: '/*',
 };
