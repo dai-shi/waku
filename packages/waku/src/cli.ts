@@ -36,6 +36,9 @@ const { values, positionals } = parseArgs({
     'with-deno': {
       type: 'boolean',
     },
+    'with-netlify': {
+      type: 'boolean',
+    },
     version: {
       type: 'boolean',
       short: 'v',
@@ -102,7 +105,8 @@ async function runBuild(options: { ssr: boolean }) {
           : 'vercel-serverless'
         : undefined) ||
       (values['with-cloudflare'] ? 'cloudflare' : undefined) ||
-      (values['with-deno'] ? 'deno' : undefined),
+      (values['with-deno'] ? 'deno' : undefined) ||
+      (values['with-netlify'] ? 'netlify' : undefined),
   });
 }
 

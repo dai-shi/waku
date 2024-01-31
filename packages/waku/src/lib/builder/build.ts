@@ -142,7 +142,7 @@ const buildServerBundle = async (
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
   ssr: boolean,
-  serve: 'vercel' | 'cloudflare' | 'deno' | false,
+  serve: 'vercel' | 'cloudflare' | 'deno' | 'netlify' | false,
 ) => {
   const serverBuildOutput = await buildVite({
     plugins: [
@@ -531,6 +531,7 @@ export async function build(options: {
     | 'vercel-serverless'
     | 'cloudflare'
     | 'deno'
+    | 'netlify'
     | undefined;
 }) {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
@@ -558,7 +559,8 @@ export async function build(options: {
     !!options.ssr,
     (options.deploy === 'vercel-serverless' ? 'vercel' : false) ||
       (options.deploy === 'cloudflare' ? 'cloudflare' : false) ||
-      (options.deploy === 'deno' ? 'deno' : false),
+      (options.deploy === 'deno' ? 'deno' : false) ||
+      (options.deploy === 'netlify' ? 'netlify' : false),
   );
   await buildClientBundle(
     rootDir,
