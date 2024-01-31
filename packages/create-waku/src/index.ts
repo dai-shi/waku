@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { existsSync, readdirSync } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';

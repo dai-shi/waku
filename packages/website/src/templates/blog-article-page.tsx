@@ -34,7 +34,10 @@ export const BlogArticlePage = async ({ slug }: BlogArticlePageProps) => {
 
   return (
     <Page>
-      <Meta title={frontmatter.title} description={frontmatter.description} />
+      <Meta
+        title={`${frontmatter.title} — Waku`}
+        description={frontmatter.description}
+      />
       <div className="relative z-10 mx-auto w-full max-w-[80ch] pt-16 text-white lg:pt-64">
         <div className="mb-8 flex items-center gap-4">
           {frontmatter.release && (

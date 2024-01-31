@@ -8,5 +8,9 @@ export default defineConfig(({ mode }) => {
       },
     };
   }
-  return {};
+  return {
+    build: {
+      target: ['chrome89', 'edge89', 'safari15', 'firefox89'],
+    },
+  };
 });

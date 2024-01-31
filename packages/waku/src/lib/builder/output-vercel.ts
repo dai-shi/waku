@@ -1,14 +1,16 @@
 import path from 'node:path';
 import { cpSync, mkdirSync, writeFileSync } from 'node:fs';
 
+import { encodeInput } from '../renderers/utils.js';
 import type { ResolvedConfig } from '../config.js';
+import type { PathSpec } from '../utils/path.js';
 
 // https://vercel.com/docs/build-output-api/v3
 export const emitVercelOutput = async (
   rootDir: string,
   config: ResolvedConfig,
-  rscFiles: string[],
-  htmlFiles: string[],
+  staticInputs: readonly string[],
+  dynamicHtmlPaths: readonly PathSpec[],
   ssr: boolean,
   type: 'static' | 'serverless',
 ) => {
@@ -47,12 +49,12 @@ export const emitVercelOutput = async (
   }
 
   const overrides = Object.fromEntries(
-    rscFiles
-      .filter((file) => !path.extname(file))
-      .map((file) => [
-        path.relative(publicDir, file),
-        { contentType: 'text/plain' },
-      ]),
+    staticInputs
+      .map(
+        (input) => config.basePath + config.rscPath + '/' + encodeInput(input),
+      )
+      .filter((rscPath) => !path.extname(rscPath))
+      .map((rscPath) => [rscPath, { contentType: 'text/plain' }]),
   );
   const basePrefix = config.basePath + config.rscPath + '/';
   const routes =
@@ -60,12 +62,18 @@ export const emitVercelOutput = async (
       ? [
           { src: basePrefix + '(.*)', dest: basePrefix },
           ...(ssr
-            ? htmlFiles.map((htmlFile) => {
-                const file =
-                  config.basePath + path.relative(publicDir, htmlFile);
-                const src = file.endsWith('/' + config.indexHtml)
-                  ? file.slice(0, -('/' + config.indexHtml).length) || '/'
-                  : file;
+            ? dynamicHtmlPaths.map((pathSpec) => {
+                const src =
+                  '/' +
+                  pathSpec
+                    .map((item) =>
+                      item.type === 'literal'
+                        ? item.name
+                        : item.type === 'group'
+                          ? '[^/]+'
+                          : '.*',
+                    )
+                    .join('/');
                 return { src, dest: basePrefix };
               })
             : []),

@@ -31,15 +31,25 @@ npm create waku@latest
 
 ## Rendering
 
-Let's face it: React is getting complicated. But not without good reason!
+While there's a bit of a learning curve to modern React rendering, it introduces powerful new patterns of composability that are only possible with the advent of React [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md).
 
-While there's a bit of a learning curve to modern React rendering, it introduces powerful new patterns of composability that are only possible with the advent of React server components. So stick with us.
+So please don't be intimidated by the `'use client'` directive! Once you get the hang of it, you'll appreciate how awesome it is to flexibly move server-client boundaries with a single line of code as your full-stack React codebase evolves over time.
 
-Future versions of Waku may provide additional APIs to abstract away some of the complexity for an improved developer experience.
+And please don't fret about client components! Even if you only lightly optimize towards server components, your client bundle size will be smaller than traditional React frameworks, which are 100% client components.
+
+> Future versions of Waku may provide additional opt-in APIs to abstract some of the complexity away for an improved developer experience.
+
+#### Overview
+
+Each layout and page in Waku is composed of a React component heirarchy.
+
+It begins with a server component at the top of the tree. Then at points down the heirarchy, you'll eventually import a component that needs client component APIs. Mark this file with a `'use client'` directive at the top. When imported into a server component, it will create a server-client boundary. Below this point all imported components are hydrated and will run in the browser as well.
+
+Server components can still be rendered below this boundary, but only via composition (e.g., `children` props).
 
 #### Server components
 
-Waku supports [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md) and [server actions](https://react.dev/reference/react/use-server). Server components can be made async and can securely perform server-side logic and data fetching. Feel free to use heavy dependencies since they aren't included in the client bundle. They have no interactivity or access to browser APIs since they run exclusively on the server.
+Server components can be made async and can securely perform server-side logic and data fetching. Feel free to access the local file-system and import heavy dependencies since they aren't included in the client bundle. They have no state, interactivity, or access to browser APIs since they run exclusively on the server.
 
 ```tsx
 // server component
@@ -364,7 +374,7 @@ export const Providers = ({ children }) => {
 
 #### Other layouts
 
-Layouts are also helpful further down the tree. For example, you could add a layout at `path: '/blog` to add a sidebar to both the blog index and all blog article pages.
+Layouts are also helpful further down the tree. For example, you could add a layout at `path: '/blog'` to add a sidebar to both the blog index and all blog article pages.
 
 ```tsx
 // ./src/entries.tsx

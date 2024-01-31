@@ -1,6 +1,7 @@
 import type { EntriesPrd } from '../../server.js';
 import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
+import { getPathMapping } from '../utils/path.js';
 import { endStream } from '../utils/stream.js';
 import { renderHtml } from '../renderers/html-renderer.js';
 import { decodeInput, hasStatusCode, deepFreeze } from '../renderers/utils.js';
@@ -52,43 +53,49 @@ export function createHandler<
     if (ssr) {
       try {
         const resolvedEntries = await entries;
-        const { loadHtmlHead } = resolvedEntries;
-        const readable = await renderHtml({
-          config,
-          pathname: req.url.pathname,
-          searchParams: req.url.searchParams,
-          htmlHead: loadHtmlHead(req.url.pathname),
-          renderRscForHtml: (input, searchParams) =>
-            renderRsc({
-              entries: resolvedEntries,
-              config,
-              input,
-              searchParams,
-              method: 'GET',
-              context,
-              isDev: false,
-            }),
-          getSsrConfigForHtml: (pathname, searchParams) =>
-            getSsrConfig({
-              config,
-              pathname,
-              searchParams,
-              isDev: false,
-              entries: resolvedEntries,
-              isBuild: false,
-            }),
-          loadClientModule: (key) =>
-            resolvedEntries.loadModule(CLIENT_PREFIX + key),
-          isDev: false,
-          loadModule: resolvedEntries.loadModule,
-          isBuild: false,
-        });
-        if (readable) {
-          unstable_posthook?.(req, res, context as Context);
-          deepFreeze(context);
-          res.setHeader('content-type', 'text/html; charset=utf-8');
-          readable.pipeTo(res.stream);
-          return;
+        const { loadHtmlHead, dynamicHtmlPaths } = resolvedEntries;
+        const pathSpec = dynamicHtmlPaths.find((pathSpec) =>
+          getPathMapping(pathSpec, req.url.pathname),
+        );
+        const htmlHead = pathSpec && loadHtmlHead(pathSpec);
+        if (htmlHead) {
+          const readable = await renderHtml({
+            config,
+            pathname: req.url.pathname,
+            searchParams: req.url.searchParams,
+            htmlHead,
+            renderRscForHtml: (input, searchParams) =>
+              renderRsc({
+                entries: resolvedEntries,
+                config,
+                input,
+                searchParams,
+                method: 'GET',
+                context,
+                isDev: false,
+              }),
+            getSsrConfigForHtml: (pathname, searchParams) =>
+              getSsrConfig({
+                config,
+                pathname,
+                searchParams,
+                isDev: false,
+                entries: resolvedEntries,
+                isBuild: false,
+              }),
+            loadClientModule: (key) =>
+              resolvedEntries.loadModule(CLIENT_PREFIX + key),
+            isDev: false,
+            loadModule: resolvedEntries.loadModule,
+            isBuild: false,
+          });
+          if (readable) {
+            unstable_posthook?.(req, res, context as Context);
+            deepFreeze(context);
+            res.setHeader('content-type', 'text/html; charset=utf-8');
+            readable.pipeTo(res.stream);
+            return;
+          }
         }
       } catch (e) {
         handleError(e);
