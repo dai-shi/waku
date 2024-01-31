@@ -4,7 +4,7 @@ export default defineConfig(({ mode }) => {
   if (mode === 'development') {
     return {
       ssr: {
-        external: ['next-mdx-remote'],
+        // external: ['next-mdx-remote'],
       },
     };
   }

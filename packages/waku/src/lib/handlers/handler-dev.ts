@@ -1,6 +1,7 @@
 import { Readable, Writable } from 'node:stream';
 import { createServer as createViteServer } from 'vite';
-import { default as viteReact } from '@vitejs/plugin-react';
+import viteReact from '@vitejs/plugin-react';
+import viteCommonjs from 'vite-plugin-commonjs';
 
 import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
@@ -61,6 +62,14 @@ export function createHandler<
       base: config.basePath,
       plugins: [
         patchReactRefresh(viteReact()),
+        // @ts-expect-error no callable
+        viteCommonjs({
+          filter(id: string) {
+            if (id.includes('node_modules/')) {
+              return true;
+            }
+          },
+        }),
         rscEnvPlugin({ config, hydrate: ssr }),
         rscIndexPlugin(config),
         rscHmrPlugin(),
