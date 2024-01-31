@@ -15,9 +15,7 @@ export const emitAwsLambdaOutput = async (config: ResolvedConfig) => {
         input: path.join(config.distDir, 'serve.js'),
         output: {
           dir: path.join(config.distDir, '.aws'),
-          //file: path.join(config.distDir, 'serve:lambda.mjs'),
           format: 'esm',
-          sourcemap: true,
           inlineDynamicImports: true,
           compact: true,
         },
