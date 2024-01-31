@@ -27,6 +27,7 @@ import {
   readFile,
   writeFile,
   appendFile,
+  unlink,
 } from '../utils/node-fs.js';
 import { encodeInput, generatePrefetchCode } from '../renderers/utils.js';
 import {
@@ -180,7 +181,8 @@ const buildServerBundle = async (
         conditions: ['react-server', 'workerd'],
         externalConditions: ['react-server', 'workerd'],
       },
-      external: ['hono', 'hono/cloudflare-workers'],
+      external:
+        (serve === 'cloudflare' && ['hono', 'hono/cloudflare-workers']) || [],
       noExternal: /^(?!node:)/,
     },
     define: {
@@ -320,7 +322,6 @@ const buildClientBundle = async (
 const emitRscFiles = async (
   rootDir: string,
   config: ResolvedConfig,
-  distEntriesFile: string,
   distEntries: EntriesPrd,
   buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
 ) => {
@@ -373,14 +374,7 @@ const emitRscFiles = async (
       }
     }),
   );
-  const staticInputs: readonly string[] = Array.from(staticInputSet);
-  const code = `
-const staticInputSet = new Set(${JSON.stringify(staticInputs)});
-export function skipRenderRsc(input) {
-  return staticInputSet.has(input);
-}`;
-  await appendFile(distEntriesFile, code);
-  return { getClientModules, staticInputs };
+  return { getClientModules };
 };
 
 const pathname2pathSpec = (pathname: string): PathSpec =>
@@ -417,12 +411,14 @@ const emitHtmlFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
+  if (ssr) {
+    await unlink(publicIndexHtmlFile);
+  }
   const publicIndexHtmlHead = publicIndexHtml.replace(
     /.*?<head>(.*?)<\/head>.*/s,
     '$1',
   );
-  const dynamicHtmlHeadMap: Record<string, string> = {};
-  const dynamicHtmlPathSet = new Set<PathSpec>();
+  const dynamicHtmlPathMap = new Map<PathSpec, string>();
   await Promise.all(
     Array.from(buildConfig).map(
       async ({ pathname, isStatic, entries, customCode, context }) => {
@@ -455,8 +451,7 @@ const emitHtmlFiles = async (
           htmlHead += `<script type="module" async>${code}</script>`;
         }
         if (!isStatic) {
-          dynamicHtmlHeadMap[JSON.stringify(pathSpec)] = htmlHead;
-          dynamicHtmlPathSet.add(pathSpec);
+          dynamicHtmlPathMap.set(pathSpec, htmlHead);
           return;
         }
         pathname = pathSpec2pathname(pathSpec);
@@ -510,15 +505,11 @@ const emitHtmlFiles = async (
       },
     ),
   );
-  const dynamicHtmlPaths: readonly PathSpec[] = Array.from(dynamicHtmlPathSet);
+  const dynamicHtmlPaths = Array.from(dynamicHtmlPathMap);
   const code = `
-export function loadHtmlHead(pathSpec) {
-  return ${JSON.stringify(dynamicHtmlHeadMap)}[JSON.stringify(pathSpec)];
-}
-export const dynamicHtmlPaths = ${JSON.stringify(dynamicHtmlPaths)};
+export const dynamicHtmlPaths= ${JSON.stringify(dynamicHtmlPaths)};
 `;
   await appendFile(distEntriesFile, code);
-  return { dynamicHtmlPaths };
 };
 
 const resolveFileName = (fname: string) => {
@@ -580,14 +571,13 @@ export async function build(options: {
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
   const buildConfig = await getBuildConfig({ config, entries: distEntries });
-  const { getClientModules, staticInputs } = await emitRscFiles(
+  const { getClientModules } = await emitRscFiles(
     rootDir,
     config,
-    distEntriesFile,
     distEntries,
     buildConfig,
   );
-  const { dynamicHtmlPaths } = await emitHtmlFiles(
+  await emitHtmlFiles(
     rootDir,
     config,
     distEntriesFile,
@@ -601,9 +591,6 @@ export async function build(options: {
     await emitVercelOutput(
       rootDir,
       config,
-      staticInputs,
-      dynamicHtmlPaths,
-      !!options.ssr,
       options.deploy.slice('vercel-'.length) as 'static' | 'serverless',
     );
   } else if (options.deploy === 'cloudflare') {
