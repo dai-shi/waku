@@ -30,7 +30,8 @@ export function rscDelegatePlugin(
         // re-inject
         const transformedResult = await server.transformRequest(file);
         if (transformedResult) {
-          moduleCallback({ ...transformedResult, id: file });
+          const { default: source } = await server.ssrLoadModule(file);
+          moduleCallback({ ...transformedResult, source, id: file });
         }
       }
     },
@@ -57,6 +58,9 @@ export function rscDelegatePlugin(
                 { ssr: true },
               );
               if (resolvedSource?.id) {
+                const { default: source } = await server.ssrLoadModule(
+                  resolvedSource.id,
+                );
                 const transformedResult = await server.transformRequest(
                   resolvedSource.id,
                 );
@@ -64,6 +68,7 @@ export function rscDelegatePlugin(
                   moduleImports.add(resolvedSource.id);
                   moduleCallback({
                     ...transformedResult,
+                    source,
                     id: resolvedSource.id,
                     css: true,
                   });

@@ -1,11 +1,14 @@
-import { Code as BrightCode } from 'bright';
-
-import theme from '../theme.json';
+import { highlighter } from '../lib/index.js';
 
 type CodeProps = {
   code: string;
 };
 
-export const Code = ({ code, ...rest }: CodeProps) => (
-  <BrightCode lang="tsx" theme={theme} code={code.trim()} {...rest} />
-);
+export const Code = async ({ code, ...rest }: CodeProps) => {
+  const html = highlighter.codeToHtml(code.trim(), {
+    lang: 'tsx',
+    theme: 'lucy',
+  });
+
+  return <div dangerouslySetInnerHTML={{ __html: html }} {...rest} />;
+};

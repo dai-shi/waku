@@ -64,8 +64,6 @@ for (const { build, command } of commands) {
     test('increase counter', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
-      // hydration is delayed 500ms at most in dev.
-      await expect(page.locator('#waku-module-spinner')).toBeHidden();
       await expect(page.getByTestId('count')).toHaveText('0');
       await page.getByTestId('increment').click();
       await page.getByTestId('increment').click();
@@ -81,7 +79,7 @@ for (const { build, command } of commands) {
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
       await expect(page.getByTestId('count')).toHaveText('0');
-      await page.getByTestId('increment').click({ force: true });
+      await page.getByTestId('increment').click();
       await expect(page.getByTestId('count')).toHaveText('0');
       await page.close();
       await context.close();
