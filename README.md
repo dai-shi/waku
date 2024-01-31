@@ -661,6 +661,19 @@ npm run build -- --with-deno
 DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod dist/serve.js --exclude node_modules
 ```
 
+### AWS Lambda (experimental)
+
+```
+npm run build -- --with-aws-lambda
+```
+
+The generated output format compatible with [AWS Lambda](https://aws.amazon.com/lambda/).
+The output entrypoint in `dist/serve.mjs`` is compatible with [AWS Lambda format](https://docs.aws.amazon.com/lex/latest/dg/lambda-input-response-format.html).
+
+You can zip and upload the `dist` folder [manual to AWS console](https://docs.aws.amazon.com/lambda/latest/dg/nodejs-package.html) or use one of the tools to deploy:
+* [serverless framework](https://www.serverless.com)
+* [AWS CDK](https://aws.amazon.com/de/cdk/)
+
 ## Community
 
 Please join our friendly [GitHub discussions](https://github.com/dai-shi/waku/discussions) or [Discord server](https://discord.gg/MrQdmzd) to participate in the Waku community. Hope to see you there!
