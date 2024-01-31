@@ -671,8 +671,9 @@ The generated output format compatible with [AWS Lambda](https://aws.amazon.com/
 The output entrypoint in `dist/serve.mjs`` is compatible with [AWS Lambda format](https://docs.aws.amazon.com/lex/latest/dg/lambda-input-response-format.html).
 
 You can zip and upload the `dist` folder [manual to AWS console](https://docs.aws.amazon.com/lambda/latest/dg/nodejs-package.html) or use one of the tools to deploy:
-* [serverless framework](https://www.serverless.com)
-* [AWS CDK](https://aws.amazon.com/de/cdk/)
+
+- [serverless framework](https://www.serverless.com)
+- [AWS CDK](https://aws.amazon.com/de/cdk/)
 
 ## Community
 
