@@ -661,6 +661,13 @@ npm run build -- --with-deno
 DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod dist/serve.js --exclude node_modules
 ```
 
+### Netlify Deploy (experimental)
+
+```
+npm run build -- --with-netlify
+netlify deploy
+```
+
 ## Community
 
 Please join our friendly [GitHub discussions](https://github.com/dai-shi/waku/discussions) or [Discord server](https://discord.gg/MrQdmzd) to participate in the Waku community. Hope to see you there!

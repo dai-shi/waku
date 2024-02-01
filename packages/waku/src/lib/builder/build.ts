@@ -48,6 +48,7 @@ import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { emitVercelOutput } from './output-vercel.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
+import { emitNetlifyOutput } from './output-netlify.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -531,7 +532,8 @@ export async function build(options: {
     | 'vercel-serverless'
     | 'cloudflare'
     | 'deno'
-    | 'netlify'
+    | 'netlify-static'
+    | 'netlify-functions'
     | undefined;
 }) {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
@@ -560,7 +562,7 @@ export async function build(options: {
     (options.deploy === 'vercel-serverless' ? 'vercel' : false) ||
       (options.deploy === 'cloudflare' ? 'cloudflare' : false) ||
       (options.deploy === 'deno' ? 'deno' : false) ||
-      (options.deploy === 'netlify' ? 'netlify' : false),
+      (options.deploy === 'netlify-functions' ? 'netlify' : false),
   );
   await buildClientBundle(
     rootDir,
@@ -597,5 +599,11 @@ export async function build(options: {
     );
   } else if (options.deploy === 'cloudflare') {
     await emitCloudflareOutput(rootDir, config);
+  } else if (options.deploy?.startsWith('netlify-')) {
+    await emitNetlifyOutput(
+      rootDir,
+      config,
+      options.deploy.slice('netlify-'.length) as 'static' | 'functions',
+    );
   }
 }
