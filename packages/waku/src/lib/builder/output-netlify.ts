@@ -16,7 +16,11 @@ export const emitNetlifyOutput = async (
     writeFileSync(
       path.join(functionsDir, 'serve.js'),
       `
-export * from '../${config.distDir}/${config.serveJs}';
+export { default } from '../${config.distDir}/${config.serveJs}';
+export const config = {
+  preferStatic: true,
+  path: ['/', '/*'],
+};
 `,
     );
   }

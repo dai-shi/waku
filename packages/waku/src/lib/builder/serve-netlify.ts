@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import type { Config, Context } from '@netlify/functions';
+import type { Context } from '@netlify/functions';
 
 import { honoMiddleware } from '../middleware/hono-prd.js';
 
@@ -9,10 +9,6 @@ const env: Record<string, string> = process.env as any;
 
 const app = new Hono();
 app.use('*', honoMiddleware({ loadEntries, ssr, env }));
+
 export default async (req: Request, context: Context) =>
   app.fetch(req, { context });
-
-export const config: Config = {
-  preferStatic: true,
-  path: ['/', '/*'],
-};
