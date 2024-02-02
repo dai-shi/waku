@@ -8,9 +8,10 @@ export const emitCloudflareOutput = async (
   rootDir: string,
   config: ResolvedConfig,
 ) => {
-  if (!existsSync(path.join(rootDir, 'wrangler.toml'))) {
+  const wranglerTomlFile = path.join(rootDir, 'wrangler.toml');
+  if (!existsSync(wranglerTomlFile)) {
     writeFileSync(
-      path.join(rootDir, 'wrangler.toml'),
+      wranglerTomlFile,
       `
 name = "waku-project"
 main = "${config.distDir}/${config.serveJs}"

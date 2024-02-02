@@ -36,6 +36,12 @@ const { values, positionals } = parseArgs({
     'with-deno': {
       type: 'boolean',
     },
+    'with-netlify': {
+      type: 'boolean',
+    },
+    'with-netlify-static': {
+      type: 'boolean',
+    },
     version: {
       type: 'boolean',
       short: 'v',
@@ -102,7 +108,12 @@ async function runBuild(options: { ssr: boolean }) {
           : 'vercel-serverless'
         : undefined) ||
       (values['with-cloudflare'] ? 'cloudflare' : undefined) ||
-      (values['with-deno'] ? 'deno' : undefined),
+      (values['with-deno'] ? 'deno' : undefined) ||
+      (values['with-netlify']
+        ? values['with-netlify-static']
+          ? 'netlify-static'
+          : 'netlify-functions'
+        : undefined),
   });
 }
 
@@ -153,6 +164,7 @@ Options:
   --with-vercel         Output for Vercel on build
   --with-cloudflare     Output for Cloudflare on build
   --with-deno           Output for Deno on build
+  --with-netlify        Output for Netlify on build
   -v, --version         Display the version number
   -h, --help            Display this help message
 `);
