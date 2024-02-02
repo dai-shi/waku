@@ -6,7 +6,6 @@ import { Server } from 'node:http';
 import type { TransferListItem } from 'node:worker_threads';
 import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
-import viteCommonjs from 'vite-plugin-commonjs';
 
 import type { EntriesDev } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
@@ -113,14 +112,6 @@ const moduleImports: Set<string> = new Set();
 const mergedViteConfig = await mergeUserViteConfig({
   plugins: [
     viteReact(),
-    // @ts-expect-error no callable
-    viteCommonjs({
-      filter(id: string) {
-        if (id.includes('node_modules/')) {
-          return true;
-        }
-      },
-    }),
     rscEnvPlugin({}),
     { name: 'rsc-index-plugin' }, // dummy to match with handler-dev.ts
     { name: 'rsc-hmr-plugin', enforce: 'post' }, // dummy to match with handler-dev.ts
@@ -152,8 +143,13 @@ const mergedViteConfig = await mergeUserViteConfig({
       conditions: ['react-server', 'workerd'],
       externalConditions: ['react-server', 'workerd'],
     },
-    // external: ['react', 'react-server-dom-webpack'],
-    noExternal: /^(?!node:)/,
+    external: [
+      'waku',
+      'waku/client',
+      'waku/server',
+      'waku/router/client',
+      'waku/router/server',
+    ],
   },
   appType: 'custom',
   server: { middlewareMode: true, hmr: { server: dummyServer } },
