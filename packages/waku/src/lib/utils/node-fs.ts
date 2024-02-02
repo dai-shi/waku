@@ -33,3 +33,6 @@ export const appendFile = (filePath: string, content: string) =>
 
 export const stat = (filePath: string) =>
   fsPromises.stat(filePathToOsPath(filePath));
+
+export const unlink = (filePath: string) =>
+  fsPromises.unlink(filePathToOsPath(filePath));
