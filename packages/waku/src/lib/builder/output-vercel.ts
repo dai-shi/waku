@@ -7,9 +7,6 @@ import type { ResolvedConfig } from '../config.js';
 export const emitVercelOutput = async (
   rootDir: string,
   config: ResolvedConfig,
-  rscFiles: string[],
-  htmlFiles: string[],
-  ssr: boolean,
   type: 'static' | 'serverless',
 ) => {
   const publicDir = path.join(rootDir, config.distDir, config.publicDir);
@@ -46,32 +43,17 @@ export const emitVercelOutput = async (
     );
   }
 
-  const overrides = Object.fromEntries(
-    rscFiles
-      .filter((file) => !path.extname(file))
-      .map((file) => [
-        path.relative(publicDir, file),
-        { contentType: 'text/plain' },
-      ]),
-  );
-  const basePrefix = config.basePath + config.rscPath + '/';
   const routes =
     type === 'serverless'
       ? [
-          { src: basePrefix + '(.*)', dest: basePrefix },
-          ...(ssr
-            ? htmlFiles.map((htmlFile) => {
-                const file =
-                  config.basePath + path.relative(publicDir, htmlFile);
-                const src = file.endsWith('/' + config.indexHtml)
-                  ? file.slice(0, -('/' + config.indexHtml).length) || '/'
-                  : file;
-                return { src, dest: basePrefix };
-              })
-            : []),
+          { handle: 'filesystem' },
+          {
+            src: config.basePath + '(.*)',
+            dest: config.basePath + config.rscPath + '/',
+          },
         ]
       : undefined;
-  const configJson = { version: 3, overrides, routes };
+  const configJson = { version: 3, routes };
   mkdirSync(outputDir, { recursive: true });
   writeFileSync(
     path.join(outputDir, 'config.json'),

@@ -102,7 +102,32 @@ async function generateInitialScripts(
   }
 
   const scripts: HtmlTagDescriptor[] = [];
+  let injectedBlockingViteClient = false;
+
   for (const result of sourceSet) {
+    // CSS modules do not support result.source (empty) since ssr-transforming them gives the css keys
+    // and client-transforming them gives the script tag for injecting them.
+    if (result.id.endsWith('.module.css')) {
+      if (!injectedBlockingViteClient) {
+        // since we use the client-transformed script tag, we need to avoid FOUC by parse-blocking the vite client that the script imports
+        // this way we make sure to run the CSS modules script tag before everything
+        // blocking this way is not ideal but it works. It should be revisited.
+        scripts.push({
+          tag: 'script',
+          attrs: { type: 'module', blocking: 'render', src: '/@vite/client' },
+          injectTo: 'head-prepend',
+        });
+        injectedBlockingViteClient = true;
+      }
+      scripts.push({
+        tag: 'script',
+        // tried render blocking this script tag by data url imports but it gives `/@vite/client: Invalid relative url or base scheme isn't hierarchical.` which could not find a way to fix.
+        attrs: { type: 'module', 'waku-module-id': result.id },
+        children: result.code,
+        injectTo: 'head-prepend',
+      });
+      continue;
+    }
     scripts.push({
       tag: 'style',
       attrs: { type: 'text/css', 'waku-module-id': result.id },

@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 // @ts-expect-error no exported member
 import { compileMDX } from 'next-mdx-remote/rsc';
 
@@ -6,13 +5,11 @@ import { Page } from '../components/page.js';
 import { Meta } from '../components/meta.js';
 import { components } from '../components/mdx.js';
 import { Start } from '../components/start.js';
+import { loadReadme } from '../lib/load-readme.js';
 
 export const HomePage = async () => {
-  const fileName = '../../README.md';
-  const file = readFileSync(fileName, 'utf8');
-  const source = `## Introduction${
-    file.split('## Introduction')[1]?.split('## Tweets')[0]
-  }`;
+  const file = loadReadme();
+  const source = `## Introduction${file.split('## Introduction')[1]}`;
   const mdx = await compileMDX({
     source,
     components,

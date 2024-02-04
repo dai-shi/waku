@@ -15,8 +15,8 @@ const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
 const env = Deno.env.toObject();
 
 const app = new Hono();
-app.use('*', honoMiddleware({ loadEntries, ssr, env }));
 app.use('*', serveStatic({ root: `${distDir}/${publicDir}` }));
+app.use('*', honoMiddleware({ loadEntries, ssr, env }));
 
 // @ts-expect-error no types
 Deno.serve(app.fetch);
