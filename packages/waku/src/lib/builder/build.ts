@@ -3,7 +3,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
 import { build as buildVite, resolveConfig as resolveViteConfig } from 'vite';
-import { default as viteReact } from '@vitejs/plugin-react';
+import viteReact from '@vitejs/plugin-react';
 import type { RollupLog, LoggingFunction } from 'rollup';
 
 import type { Config } from '../../config.js';
