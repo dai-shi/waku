@@ -663,12 +663,17 @@ DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod dist/serve.js --excl
 
 ### AWS Lambda (experimental)
 
+you have to add the [`hono`](https://hono.dev/getting-started/aws-lambda) package to your project:
+`npm install hono --save-dev`
+
+generate build:
+
 ```
 npm run build -- --with-aws-lambda
 ```
 
-The generated output format compatible with [AWS Lambda](https://aws.amazon.com/lambda/).
-The output entrypoint in `dist/serve.mjs`` is compatible with [AWS Lambda format](https://docs.aws.amazon.com/lex/latest/dg/lambda-input-response-format.html).
+The generated output format is compatible with [AWS Lambda](https://aws.amazon.com/lambda/).
+The output entrypoint `dist/serve.js` is compatible with [AWS Lambda format](https://docs.aws.amazon.com/lex/latest/dg/lambda-input-response-format.html).
 
 You can zip and upload the `dist` folder [manual to AWS console](https://docs.aws.amazon.com/lambda/latest/dg/nodejs-package.html) or use one of the tools to deploy:
 
