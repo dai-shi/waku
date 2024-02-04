@@ -62,7 +62,7 @@ export function rscDelegatePlugin(
                   resolvedSource.id,
                 );
                 const transformedResult = await server.transformRequest(
-                  resolvedSource.id,
+                  resolvedSource.id
                 );
                 if (transformedResult) {
                   moduleImports.add(resolvedSource.id);
