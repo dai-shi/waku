@@ -117,6 +117,7 @@ async function generateInitialScripts(
           attrs: { type: 'module', blocking: 'render', src: '/@vite/client' },
           injectTo: 'head-prepend',
         });
+        injectedBlockingViteClient = true;
       }
       scripts.push({
         tag: 'script',
