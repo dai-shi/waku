@@ -181,7 +181,8 @@ const buildServerBundle = async (
         conditions: ['react-server', 'workerd'],
         externalConditions: ['react-server', 'workerd'],
       },
-      external: ['hono', 'hono/cloudflare-workers'],
+      external:
+        serve === 'aws-lambda' ? [] : ['hono', 'hono/cloudflare-workers'],
       noExternal: /^(?!node:)/,
     },
     define: {
@@ -203,6 +204,7 @@ const buildServerBundle = async (
           ...serverEntryFiles,
         },
         output: {
+          format: serve === 'aws-lambda' ? 'esm' : 'es',
           entryFileNames: (chunkInfo) => {
             if (
               [WAKU_CLIENT].includes(chunkInfo.name) ||
