@@ -228,9 +228,15 @@ export function createHandler<
         item.url !== viteUrl &&
         !item.url.includes('?html-proxy')
       ) {
+        const { code } = (await vite.transformRequest(item.url))!;
         res.setHeader('Content-Type', 'application/javascript');
         res.setStatus(200);
-        endStream(res.stream, `export * from "${item.url}";`);
+        let exports = `export * from "${item.url}";`;
+        // `export *` does not re-export `default`
+        if (code.includes('export default')) {
+          exports += `export { default } from "${item.url}";`;
+        }
+        endStream(res.stream, exports);
         return;
       }
     }
