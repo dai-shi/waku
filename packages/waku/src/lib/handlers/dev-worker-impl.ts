@@ -143,6 +143,13 @@ const mergedViteConfig = await mergeUserViteConfig({
       conditions: ['react-server', 'workerd'],
       externalConditions: ['react-server', 'workerd'],
     },
+    external: [
+      // 'waku',
+      // 'waku/client',
+      // 'waku/server',
+      // 'waku/router/client',
+      // 'waku/router/server',
+    ],
     noExternal: ['waku'],
   },
   appType: 'custom',

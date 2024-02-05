@@ -77,7 +77,13 @@ export function createHandler<
         ],
       },
       ssr: {
-        noExternal: ['waku'],
+        external: [
+          'waku',
+          'waku/client',
+          'waku/server',
+          'waku/router/client',
+          'waku/router/server',
+        ],
       },
       server: { middlewareMode: true },
     });
