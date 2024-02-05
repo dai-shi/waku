@@ -150,6 +150,7 @@ const mergedViteConfig = await mergeUserViteConfig({
       'waku/router/client',
       'waku/router/server',
     ],
+    noExternal: /^[abcdefghijklmopqrstuvwxyz]/,
   },
   appType: 'custom',
   server: { middlewareMode: true, hmr: { server: dummyServer } },
