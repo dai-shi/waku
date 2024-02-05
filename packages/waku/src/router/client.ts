@@ -176,6 +176,23 @@ const getSkipList = (
   });
 };
 
+const equalRouteProps = (a: RouteProps, b: RouteProps) => {
+  if (a.path !== b.path) {
+    return false;
+  }
+  if (a.searchParams.size !== b.searchParams.size) {
+    return false;
+  }
+  if (
+    Array.from(a.searchParams.entries()).some(
+      ([key, value]) => value !== b.searchParams.get(key),
+    )
+  ) {
+    return false;
+  }
+  return true;
+};
+
 function InnerRouter() {
   const refetch = useRefetch();
 
@@ -213,9 +230,18 @@ function InnerRouter() {
         window.scrollTo(scrollTo);
       }
       const componentIds = getComponentIds(loc.path);
+      if (
+        !method &&
+        componentIds.every((id) => {
+          const cachedLoc = cachedRef.current[id];
+          return cachedLoc && equalRouteProps(cachedLoc, loc);
+        })
+      ) {
+        return; // everything is cached
+      }
       const skip = getSkipList(componentIds, loc, cachedRef.current);
       if (componentIds.every((id) => skip.includes(id))) {
-        return; // everything is cached
+        return; // everything is skipped
       }
       const input = getInputString(loc.path);
       refetch(
@@ -257,12 +283,11 @@ function InnerRouter() {
   useEffect(() => {
     const callback = () => {
       const loc = parseLocation();
-      prefetchLocation(loc.path, loc.searchParams);
-      changeLocation(loc.path, loc.searchParams, false);
+      changeLocation(loc.path, loc.searchParams, false, false);
     };
     window.addEventListener('popstate', callback);
     return () => window.removeEventListener('popstate', callback);
-  }, [changeLocation, prefetchLocation]);
+  }, [changeLocation]);
 
   const children = componentIds.reduceRight(
     (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),

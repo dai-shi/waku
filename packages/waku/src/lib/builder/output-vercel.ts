@@ -1,17 +1,12 @@
 import path from 'node:path';
 import { cpSync, mkdirSync, writeFileSync } from 'node:fs';
 
-import { encodeInput } from '../renderers/utils.js';
 import type { ResolvedConfig } from '../config.js';
-import type { PathSpec } from '../utils/path.js';
 
 // https://vercel.com/docs/build-output-api/v3
 export const emitVercelOutput = async (
   rootDir: string,
   config: ResolvedConfig,
-  staticInputs: readonly string[],
-  dynamicHtmlPaths: readonly PathSpec[],
-  ssr: boolean,
   type: 'static' | 'serverless',
 ) => {
   const publicDir = path.join(rootDir, config.distDir, config.publicDir);
@@ -48,38 +43,17 @@ export const emitVercelOutput = async (
     );
   }
 
-  const overrides = Object.fromEntries(
-    staticInputs
-      .map(
-        (input) => config.basePath + config.rscPath + '/' + encodeInput(input),
-      )
-      .filter((rscPath) => !path.extname(rscPath))
-      .map((rscPath) => [rscPath, { contentType: 'text/plain' }]),
-  );
-  const basePrefix = config.basePath + config.rscPath + '/';
   const routes =
     type === 'serverless'
       ? [
-          { src: basePrefix + '(.*)', dest: basePrefix },
-          ...(ssr
-            ? dynamicHtmlPaths.map((pathSpec) => {
-                const src =
-                  '/' +
-                  pathSpec
-                    .map((item) =>
-                      item.type === 'literal'
-                        ? item.name
-                        : item.type === 'group'
-                          ? '[^/]+'
-                          : '.*',
-                    )
-                    .join('/');
-                return { src, dest: basePrefix };
-              })
-            : []),
+          { handle: 'filesystem' },
+          {
+            src: config.basePath + '(.*)',
+            dest: config.basePath + config.rscPath + '/',
+          },
         ]
       : undefined;
-  const configJson = { version: 3, overrides, routes };
+  const configJson = { version: 3, routes };
   mkdirSync(outputDir, { recursive: true });
   writeFileSync(
     path.join(outputDir, 'config.json'),

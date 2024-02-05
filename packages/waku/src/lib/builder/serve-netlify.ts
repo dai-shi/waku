@@ -1,6 +1,5 @@
-import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Hono } from 'hono';
-import { getRequestListener } from '@hono/node-server';
+import type { Context } from '@netlify/functions';
 
 import { honoMiddleware } from '../middleware/hono-prd.js';
 
@@ -10,8 +9,6 @@ const env: Record<string, string> = process.env as any;
 
 const app = new Hono();
 app.use('*', honoMiddleware({ loadEntries, ssr, env }));
-const requestListener = getRequestListener(app.fetch);
 
-export default function handler(req: IncomingMessage, res: ServerResponse) {
-  requestListener(req, res);
-}
+export default async (req: Request, context: Context) =>
+  app.fetch(req, { context });

@@ -56,9 +56,7 @@ export type EntriesDev = {
 
 export type EntriesPrd = EntriesDev & {
   loadModule: (id: string) => Promise<unknown>;
-  loadHtmlHead: (pathSpec: PathSpec) => string | undefined;
-  dynamicHtmlPaths: PathSpec[];
-  skipRenderRsc: (input: string) => boolean;
+  dynamicHtmlPaths: [pathSpec: PathSpec, htmlHead: string][];
 };
 
 export function getEnv(key: string): string | undefined {

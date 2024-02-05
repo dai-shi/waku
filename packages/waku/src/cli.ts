@@ -36,6 +36,12 @@ const { values, positionals } = parseArgs({
     'with-deno': {
       type: 'boolean',
     },
+    'with-netlify': {
+      type: 'boolean',
+    },
+    'with-netlify-static': {
+      type: 'boolean',
+    },
     'with-aws-lambda': {
       type: 'boolean',
     },
@@ -106,6 +112,11 @@ async function runBuild(options: { ssr: boolean }) {
         : undefined) ||
       (values['with-cloudflare'] ? 'cloudflare' : undefined) ||
       (values['with-deno'] ? 'deno' : undefined) ||
+      (values['with-netlify']
+        ? values['with-netlify-static']
+          ? 'netlify-static'
+          : 'netlify-functions'
+        : undefined) ||
       (values['with-aws-lambda'] ? 'aws-lambda' : undefined),
   });
 }
@@ -115,6 +126,7 @@ async function runStart(options: { ssr: boolean }) {
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, entriesJs)).toString());
   const app = new Hono();
+  app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
   app.use(
     '*',
     honoPrdMiddleware({
@@ -124,7 +136,6 @@ async function runStart(options: { ssr: boolean }) {
       env: process.env as any,
     }),
   );
-  app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
   const port = parseInt(process.env.PORT || '8080', 10);
   startServer(app, port);
 }
@@ -157,6 +168,7 @@ Options:
   --with-vercel         Output for Vercel on build
   --with-cloudflare     Output for Cloudflare on build
   --with-deno           Output for Deno on build
+  --with-netlify        Output for Netlify on build
   --with-aws-lambda     Output for AWS Lambda on build
   -v, --version         Display the version number
   -h, --help            Display this help message

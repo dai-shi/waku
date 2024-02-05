@@ -661,8 +661,14 @@ npm run build -- --with-deno
 DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod dist/serve.js --exclude node_modules
 ```
 
-### AWS Lambda (experimental)
+### Netlify Deploy (experimental)
 
+```
+npm run build -- --with-netlify
+netlify deploy
+```
+
+### AWS Lambda (experimental)
 
 ```
 npm run build -- --with-aws-lambda

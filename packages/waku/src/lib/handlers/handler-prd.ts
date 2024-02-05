@@ -53,11 +53,10 @@ export function createHandler<
     if (ssr) {
       try {
         const resolvedEntries = await entries;
-        const { loadHtmlHead, dynamicHtmlPaths } = resolvedEntries;
-        const pathSpec = dynamicHtmlPaths.find((pathSpec) =>
+        const { dynamicHtmlPaths } = resolvedEntries;
+        const htmlHead = dynamicHtmlPaths.find(([pathSpec]) =>
           getPathMapping(pathSpec, req.url.pathname),
-        );
-        const htmlHead = pathSpec && loadHtmlHead(pathSpec);
+        )?.[1];
         if (htmlHead) {
           const readable = await renderHtml({
             config,
@@ -107,26 +106,23 @@ export function createHandler<
       if (method !== 'GET' && method !== 'POST') {
         throw new Error(`Unsupported method '${method}'`);
       }
-      const { skipRenderRsc } = await entries;
       try {
         const input = decodeInput(req.url.pathname.slice(basePrefix.length));
-        if (!skipRenderRsc(input)) {
-          const readable = await renderRsc({
-            config,
-            input,
-            searchParams: req.url.searchParams,
-            method,
-            context,
-            body: req.stream,
-            contentType,
-            isDev: false,
-            entries: await entries,
-          });
-          unstable_posthook?.(req, res, context as Context);
-          deepFreeze(context);
-          readable.pipeTo(res.stream);
-          return;
-        }
+        const readable = await renderRsc({
+          config,
+          input,
+          searchParams: req.url.searchParams,
+          method,
+          context,
+          body: req.stream,
+          contentType,
+          isDev: false,
+          entries: await entries,
+        });
+        unstable_posthook?.(req, res, context as Context);
+        deepFreeze(context);
+        readable.pipeTo(res.stream);
+        return;
       } catch (e) {
         handleError(e);
         return;
