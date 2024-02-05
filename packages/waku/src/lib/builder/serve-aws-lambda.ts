@@ -2,9 +2,9 @@
 
 import { Hono } from 'hono';
 import { handle } from 'hono/aws-lambda';
+import { serveStatic } from '@hono/node-server/serve-static';
 
 import { honoMiddleware } from '../middleware/hono-prd.js';
-import { serveStatic } from '@hono/node-server/serve-static';
 
 const ssr = !!import.meta.env.WAKU_BUILD_SSR;
 const distDir = import.meta.env.WAKU_CONFIG_DIST_DIR;
