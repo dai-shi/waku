@@ -48,8 +48,8 @@ import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { emitVercelOutput } from './output-vercel.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
-import { emitAwsLambdaOutput } from './output-aws-lambda.js';
 import { emitNetlifyOutput } from './output-netlify.js';
+import { emitAwsLambdaOutput } from './output-aws-lambda.js';
 
 // TODO this file and functions in it are too long. will fix.
 
