@@ -674,13 +674,7 @@ netlify deploy
 npm run build -- --with-aws-lambda
 ```
 
-The generated output format is compatible with [AWS Lambda](https://aws.amazon.com/lambda/).
-The output entrypoint `dist/serve.js` is compatible with [AWS Lambda format](https://docs.aws.amazon.com/lex/latest/dg/lambda-input-response-format.html).
-
-You can zip and upload the `dist` folder [manual to AWS console](https://docs.aws.amazon.com/lambda/latest/dg/nodejs-package.html) or use one of the tools to deploy:
-
-- [serverless framework](https://www.serverless.com)
-- [AWS CDK](https://aws.amazon.com/de/cdk/)
+The handler entrypoint is `dist/serve.js` - see [Hono AWS Lambda Deploy Docs](https://hono.dev/getting-started/aws-lambda#_3-deploy)
 
 ## Community
 
