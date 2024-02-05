@@ -5,7 +5,7 @@ import { parentPort, getEnvironmentData } from 'node:worker_threads';
 import { Server } from 'node:http';
 import type { TransferListItem } from 'node:worker_threads';
 import { createServer as createViteServer } from 'vite';
-import { default as viteReact } from '@vitejs/plugin-react';
+import viteReact from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
@@ -143,8 +143,16 @@ const mergedViteConfig = await mergeUserViteConfig({
       conditions: ['react-server', 'workerd'],
       externalConditions: ['react-server', 'workerd'],
     },
-    external: ['react', 'react-server-dom-webpack'],
-    noExternal: /^(?!node:)/,
+    external: [
+      // FIXME We want to externalize waku, but it fails on windows.
+      // 'waku',
+      // 'waku/client',
+      // 'waku/server',
+      // 'waku/router/client',
+      // 'waku/router/server',
+    ],
+    // FIXME We want to externalize waku, but it fails on windows.
+    noExternal: ['waku'],
   },
   appType: 'custom',
   server: { middlewareMode: true, hmr: { server: dummyServer } },

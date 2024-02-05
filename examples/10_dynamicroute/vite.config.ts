@@ -7,9 +7,6 @@ const routeFiles = glob.sync('routes/**/*.{tsx,js}', { cwd: rootDir });
 
 /** @type {import('vite').UserConfig} */
 export default {
-  ssr: {
-    external: ['glob'],
-  },
   build: {
     rollupOptions: {
       input: Object.fromEntries(
