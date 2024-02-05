@@ -1,11 +1,11 @@
-import { highlighter } from '../lib/index.js';
+import { codeToHtml } from '../lib/shiki.js';
 
 type CodeProps = {
   code: string;
 };
 
 export const Code = async ({ code, ...rest }: CodeProps) => {
-  const html = highlighter.codeToHtml(code.trim(), {
+  const html = await codeToHtml(code.trim(), {
     lang: 'tsx',
     theme: 'lucy',
   });
