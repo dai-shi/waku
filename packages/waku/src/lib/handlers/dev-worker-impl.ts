@@ -144,12 +144,14 @@ const mergedViteConfig = await mergeUserViteConfig({
       externalConditions: ['react-server', 'workerd'],
     },
     external: [
+      // FIXME We want to externalize waku, but it fails on windows.
       // 'waku',
       // 'waku/client',
       // 'waku/server',
       // 'waku/router/client',
       // 'waku/router/server',
     ],
+    // FIXME We want to externalize waku, but it fails on windows.
     noExternal: ['waku'],
   },
   appType: 'custom',
