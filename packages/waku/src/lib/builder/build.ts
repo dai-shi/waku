@@ -204,7 +204,6 @@ const buildServerBundle = async (
           ...serverEntryFiles,
         },
         output: {
-          format: serve === 'aws-lambda' ? 'esm' : 'es',
           entryFileNames: (chunkInfo) => {
             if (
               [WAKU_CLIENT].includes(chunkInfo.name) ||
