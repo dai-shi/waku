@@ -663,10 +663,6 @@ DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod dist/serve.js --excl
 
 ### AWS Lambda (experimental)
 
-you have to add the [`hono`](https://hono.dev/getting-started/aws-lambda) package to your project:
-`npm install hono --save-dev`
-
-generate build:
 
 ```
 npm run build -- --with-aws-lambda
