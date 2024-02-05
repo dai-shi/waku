@@ -1,5 +1,3 @@
-/* eslint import/no-unresolved: off */
-
 import { Hono } from 'hono';
 import { handle } from 'hono/aws-lambda';
 import { serveStatic } from '@hono/node-server/serve-static';
