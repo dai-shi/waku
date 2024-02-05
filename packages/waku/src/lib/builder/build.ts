@@ -49,6 +49,7 @@ import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { emitVercelOutput } from './output-vercel.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
 import { emitNetlifyOutput } from './output-netlify.js';
+import { emitAwsLambdaOutput } from './output-aws-lambda.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -143,7 +144,7 @@ const buildServerBundle = async (
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
   ssr: boolean,
-  serve: 'vercel' | 'cloudflare' | 'deno' | 'netlify' | false,
+  serve: 'vercel' | 'cloudflare' | 'deno' | 'netlify' | 'aws-lambda' | false,
 ) => {
   const serverBuildOutput = await buildVite({
     plugins: [
@@ -534,6 +535,7 @@ export async function build(options: {
     | 'deno'
     | 'netlify-static'
     | 'netlify-functions'
+    | 'aws-lambda'
     | undefined;
 }) {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
@@ -562,7 +564,8 @@ export async function build(options: {
     (options.deploy === 'vercel-serverless' ? 'vercel' : false) ||
       (options.deploy === 'cloudflare' ? 'cloudflare' : false) ||
       (options.deploy === 'deno' ? 'deno' : false) ||
-      (options.deploy === 'netlify-functions' ? 'netlify' : false),
+      (options.deploy === 'netlify-functions' ? 'netlify' : false) ||
+      (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
   );
   await buildClientBundle(
     rootDir,
@@ -605,5 +608,7 @@ export async function build(options: {
       config,
       options.deploy.slice('netlify-'.length) as 'static' | 'functions',
     );
+  } else if (options.deploy === 'aws-lambda') {
+    await emitAwsLambdaOutput(config);
   }
 }

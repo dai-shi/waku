@@ -42,6 +42,9 @@ const { values, positionals } = parseArgs({
     'with-netlify-static': {
       type: 'boolean',
     },
+    'with-aws-lambda': {
+      type: 'boolean',
+    },
     version: {
       type: 'boolean',
       short: 'v',
@@ -113,7 +116,8 @@ async function runBuild(options: { ssr: boolean }) {
         ? values['with-netlify-static']
           ? 'netlify-static'
           : 'netlify-functions'
-        : undefined),
+        : undefined) ||
+      (values['with-aws-lambda'] ? 'aws-lambda' : undefined),
   });
 }
 
@@ -165,6 +169,7 @@ Options:
   --with-cloudflare     Output for Cloudflare on build
   --with-deno           Output for Deno on build
   --with-netlify        Output for Netlify on build
+  --with-aws-lambda     Output for AWS Lambda on build
   -v, --version         Display the version number
   -h, --help            Display this help message
 `);
