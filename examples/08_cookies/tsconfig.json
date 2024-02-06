@@ -9,6 +9,6 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "types": ["react/experimental", "node"],
-    "jsx": "react-jsx",
-  },
+    "jsx": "react-jsx"
+  }
 }
