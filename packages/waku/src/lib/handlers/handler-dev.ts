@@ -154,17 +154,12 @@ export function createHandler<
     }
     if (ssr) {
       try {
-        const mainJsPath = joinPath(
-          config.basePath,
-          config.srcDir,
-          config.mainJs,
-        );
         const readable = await renderHtml({
           config,
           pathname: req.url.pathname,
           searchParams: req.url.searchParams,
           htmlHead: `${config.htmlHead}
-<script src="${mainJsPath}" async type="module"></script>`,
+<script src="${config.basePath}${config.srcDir}/${config.mainJs}" async type="module"></script>`,
           renderRscForHtml: async (input, searchParams) => {
             const [readable, nextCtx] = await renderRscWithWorker({
               input,
