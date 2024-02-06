@@ -38,6 +38,7 @@ export type MessageReq =
 
 export type MessageRes =
   | { type: 'full-reload' }
+  | { type: 'rsc-reload' }
   | { type: 'hot-import'; source: string }
   | { type: 'module-import'; result: ModuleImportResult }
   | { id: number; type: 'start'; context: unknown; stream: ReadableStream }
@@ -109,12 +110,16 @@ const getWorker = () => {
 };
 
 export async function registerReloadCallback(
-  fn: (type: 'full-reload') => void,
+  fn: (
+    payload: { type: 'full-reload' } | { type: 'custom'; event: 'rsc-reload' },
+  ) => void,
 ) {
   const worker = await getWorker();
   const listener = (mesg: MessageRes) => {
     if (mesg.type === 'full-reload') {
-      fn(mesg.type);
+      fn({ type: 'full-reload' });
+    } else if (mesg.type === 'rsc-reload') {
+      fn({ type: 'custom', event: 'rsc-reload' });
     }
   };
   worker.on('message', listener);

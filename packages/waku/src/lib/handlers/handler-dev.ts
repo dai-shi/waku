@@ -89,7 +89,7 @@ export function createHandler<
     });
     const vite = await createViteServer(mergedViteConfig);
     initializeWorker(config);
-    registerReloadCallback((type) => vite.ws.send({ type }));
+    registerReloadCallback((payload) => vite.ws.send(payload));
     registerImportCallback((source) => hotImport(vite, source));
     registerModuleCallback((result) => moduleImport(vite, result));
     return vite;

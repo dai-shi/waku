@@ -4,7 +4,7 @@ import * as swc from '@swc/core';
 
 export function rscReloadPlugin(
   moduleImports: Set<string>,
-  fn: (type: 'full-reload') => void,
+  fn: (type: 'full-reload' | 'rsc-reload') => void,
 ): Plugin {
   let enabled = false;
   const isClientEntry = (id: string, code: string) => {
@@ -42,7 +42,7 @@ export function rscReloadPlugin(
         !isClientEntry(ctx.file, await ctx.read()) &&
         !moduleImports.has(ctx.file)
       ) {
-        fn('full-reload');
+        fn('rsc-reload');
       } else {
         return [];
       }
