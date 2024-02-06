@@ -15,7 +15,7 @@ app.use('*', serveStatic({ root: `${distDir}/${publicDir}` }));
 app.use('*', honoMiddleware({ loadEntries, ssr, env }));
 
 /*
- FIX: AWS HTTP API V2 breaks RSC POST requests needed for server actions
+ FIX: AWS HTTP API V2 breaks RSC POST requests url needed for server actions
     - AWS HTTP API V2 sets rawPath to a decoded path
     - We need to encode the string after /RSC/ and replace the orginal rawPath
     - Hono bug: https://github.com/honojs/hono/issues/2156
