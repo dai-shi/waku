@@ -62,6 +62,19 @@ export interface Config {
    * <meta name="viewport" content="width=device-width, initial-scale=1" />
    */
   htmlHead?: string;
+  middleware?: {
+    /**
+     * The prehook function.
+     * It's called before rendering RSC.
+     */
+    prehook?: Function;
+    /**
+     * The posthook function.
+     * It's called after rendering RSC.
+     */
+    posthook?: Function;
+  } | undefined;
+  
 }
 
 export function defineConfig(config: Config) {

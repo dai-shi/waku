@@ -22,8 +22,10 @@ export function createHandler<
   unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
   loadEntries: () => Promise<EntriesPrd>;
 }): Handler<Req, Res> {
-  const { config, ssr, unstable_prehook, unstable_posthook, loadEntries } =
-    options;
+    const {config, ssr,loadEntries } = options;
+  const unstable_prehook= options?.unstable_prehook??options?.config?.middleware?.prehook;
+  const unstable_posthook= options?.unstable_posthook??options?.config?.middleware?.posthook;
+  if (options?.config?.middleware) options.config.middleware=undefined
   if (!unstable_prehook && unstable_posthook) {
     throw new Error('prehook is required if posthook is provided');
   }
