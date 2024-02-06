@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 
 import { TextBox } from './TextBox.js';
 
-export const Counter = ({
+const Counter = ({
   greet,
   increment,
 }: {
@@ -36,3 +36,5 @@ export const Counter = ({
     </div>
   );
 };
+
+export default Counter;

@@ -1,6 +1,6 @@
 import { Readable, Writable } from 'node:stream';
 import { createServer as createViteServer } from 'vite';
-import { default as viteReact } from '@vitejs/plugin-react';
+import viteReact from '@vitejs/plugin-react';
 
 import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
@@ -233,9 +233,15 @@ export function createHandler<
         item.url !== viteUrl &&
         !item.url.includes('?html-proxy')
       ) {
+        const { code } = (await vite.transformRequest(item.url))!;
         res.setHeader('Content-Type', 'application/javascript');
         res.setStatus(200);
-        endStream(res.stream, `export * from "${item.url}";`);
+        let exports = `export * from "${item.url}";`;
+        // `export *` does not re-export `default`
+        if (code.includes('export default')) {
+          exports += `export { default } from "${item.url}";`;
+        }
+        endStream(res.stream, exports);
         return;
       }
     }

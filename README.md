@@ -668,6 +668,14 @@ npm run build -- --with-netlify
 netlify deploy
 ```
 
+### AWS Lambda (experimental)
+
+```
+npm run build -- --with-aws-lambda
+```
+
+The handler entrypoint is `dist/serve.js` - see [Hono AWS Lambda Deploy Docs](https://hono.dev/getting-started/aws-lambda#_3-deploy)
+
 ## Community
 
 Please join our friendly [GitHub discussions](https://github.com/dai-shi/waku/discussions) or [Discord server](https://discord.gg/MrQdmzd) to participate in the Waku community. Hope to see you there!

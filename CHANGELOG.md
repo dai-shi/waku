@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.19.2] - 2024-02-06
+### Changed
+- fix various bugs
+- support deployment on netlify and aws-lambda
+
 ## [0.19.1] - 2024-01-22
 ### Changed
 - fix some issues with deployment
