@@ -28,6 +28,19 @@ export const decodeInput = (encodedInput: string) => {
   throw err;
 };
 
+export const encodeActionId = (actionId: string) => {
+  const [file, name] = actionId.split('#') as [string, string];
+  if (name.includes('/')) {
+    throw new Error('Unsupported action name');
+  }
+  return '_' + file + '/' + name;
+};
+
+export const decodeActionId = (encoded: string) => {
+  const index = encoded.lastIndexOf('/');
+  return encoded.slice(1, index) + '#' + encoded.slice(index + 1);
+};
+
 export const hasStatusCode = (x: unknown): x is { statusCode: number } =>
   typeof (x as any)?.statusCode === 'number';
 

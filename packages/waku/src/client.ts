@@ -13,7 +13,7 @@ import {
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
 
-import { encodeInput } from './lib/renderers/utils.js';
+import { encodeInput, encodeActionId } from './lib/renderers/utils.js';
 
 const { createFromFetch, encodeReply } = RSDWClient;
 
@@ -81,7 +81,7 @@ export const fetchRSC = (
   const options = {
     async callServer(actionId: string, args: unknown[]) {
       const response = fetch(
-        BASE_PATH + encodeInput(encodeURIComponent(actionId)),
+        BASE_PATH + encodeInput(encodeActionId(actionId)),
         {
           method: 'POST',
           body: await encodeReply(args),
