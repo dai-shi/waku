@@ -9,11 +9,7 @@ import viteReact from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
-import {
-  joinPath,
-  fileURLToFilePath,
-  encodeFilePathToAbsolute,
-} from '../utils/path.js';
+import { joinPath, fileURLToFilePath } from '../utils/path.js';
 import { deepFreeze, hasStatusCode } from '../renderers/utils.js';
 import type {
   MessageReq,
@@ -37,18 +33,25 @@ if (HAS_MODULE_REGISTER) {
 (globalThis as any).__WAKU_PRIVATE_ENV__ = getEnvironmentData(
   '__WAKU_PRIVATE_ENV__',
 );
+const configBasePath = getEnvironmentData('CONFIG_BASE_PATH') as string;
 const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR');
 const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS');
 
-const resolveClientEntryForDev = (id: string, config: ResolvedConfig) => {
-  const filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
-  // HACK this relies on Vite's internal implementation detail.
-  return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
+const resolveClientEntryForDev = (
+  id: string,
+  moduleGraph: Awaited<ReturnType<typeof createViteServer>>['moduleGraph'],
+) => {
+  const moduleNode = moduleGraph.getModuleById(id);
+  if (!moduleNode) {
+    throw new Error(`Module not found: ${id}`);
+  }
+  return moduleNode.url;
 };
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   const { id, type: _removed, hasModuleIdCallback, ...rest } = mesg;
   const rr: RenderRequest = rest;
+  const vite = await vitePromise;
   try {
     if (hasModuleIdCallback) {
       rr.moduleIdCallback = (moduleId: string) => {
@@ -68,7 +71,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
       isDev: true,
       customImport: loadServerFile,
       resolveClientEntry: (id: string) =>
-        resolveClientEntryForDev(id, rr.config),
+        resolveClientEntryForDev(id, vite.moduleGraph),
       entries: await loadEntries(rr.config),
     });
     const mesg: MessageRes = {
@@ -93,13 +96,15 @@ const handleGetSsrConfig = async (
 ) => {
   const { id, config, pathname, searchParamsString } = mesg;
   const searchParams = new URLSearchParams(searchParamsString);
+  const vite = await vitePromise;
   try {
     const ssrConfig = await getSsrConfig({
       config,
       pathname,
       searchParams,
       isDev: true,
-      resolveClientEntry: (id: string) => resolveClientEntryForDev(id, config),
+      resolveClientEntry: (id: string) =>
+        resolveClientEntryForDev(id, vite.moduleGraph),
       entries: await loadEntries(config),
     });
     const mesg: MessageRes = ssrConfig
@@ -123,6 +128,7 @@ const dummyServer = new Server(); // FIXME we hope to avoid this hack
 const moduleImports: Set<string> = new Set();
 
 const mergedViteConfig = await mergeUserViteConfig({
+  base: configBasePath,
   plugins: [
     viteReact(),
     rscEnvPlugin({}),
