@@ -4,6 +4,26 @@ import * as swc from '@swc/core';
 
 import type { HotUpdatePayload } from './vite-plugin-rsc-hmr.js';
 
+const isClientEntry = (id: string, code: string) => {
+  const ext = path.extname(id);
+  if (['.ts', '.tsx', '.js', '.jsx'].includes(ext)) {
+    const mod = swc.parseSync(code, {
+      syntax: ext === '.ts' || ext === '.tsx' ? 'typescript' : 'ecmascript',
+      tsx: ext === '.tsx',
+    });
+    for (const item of mod.body) {
+      if (
+        item.type === 'ExpressionStatement' &&
+        item.expression.type === 'StringLiteral' &&
+        item.expression.value === 'use client'
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
 // import { CSS_LANGS_RE } from "vite/dist/node/constants.js";
 const CSS_LANGS_RE =
   /\.(css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)/;
@@ -26,7 +46,6 @@ export function rscDelegatePlugin(
     },
     async handleHotUpdate(ctx) {
       if (mode === 'development') {
-        console.log('---', moduleImports, ctx)
         if (moduleImports.has(ctx.file)) {
           // re-inject
           const transformedResult = await server.transformRequest(ctx.file);
@@ -38,7 +57,10 @@ export function rscDelegatePlugin(
               data: { ...transformedResult, source, id: ctx.file },
             });
           }
-        } else if (ctx.modules.length) {
+        } else if (
+          ctx.modules.length &&
+          !isClientEntry(ctx.file, await ctx.read())
+        ) {
           callback({ type: 'custom', event: 'rsc-reload' });
         }
       }
