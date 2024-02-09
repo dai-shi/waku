@@ -28,6 +28,11 @@ export interface Config {
    */
   assetsDir?: string;
   /**
+   * The SSR directory relative to distDir.
+   * Defaults to "ssr".
+   */
+  ssrDir?: string;
+  /**
    * The index.html file for any directories.
    * Defaults to "index.html".
    */

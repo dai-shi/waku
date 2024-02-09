@@ -322,7 +322,7 @@ export const renderHtml = async (
                 moduleLoading.set(
                   id,
                   opts
-                    .loadModule(joinPath(config.publicDir, id))
+                    .loadModule(joinPath(config.ssrDir, id))
                     .then((m: any) => {
                       moduleCache.set(id, m);
                     }),

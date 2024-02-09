@@ -22,6 +22,7 @@ import {
   createReadStream,
   createWriteStream,
   existsSync,
+  copyFile,
   rename,
   mkdir,
   readFile,
@@ -135,6 +136,7 @@ const analyzeEntries = async (entriesFile: string) => {
   };
 };
 
+// For RSC
 const buildServerBundle = async (
   rootDir: string,
   config: ResolvedConfig,
@@ -152,13 +154,11 @@ const buildServerBundle = async (
       rscTransformPlugin({
         isBuild: true,
         assetsDir: config.assetsDir,
-        clientEntryFiles: {
-          // FIXME this seems very ad-hoc
-          [WAKU_CLIENT]: decodeFilePathFromAbsolute(
-            joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
-          ),
-          ...clientEntryFiles,
-        },
+        wakuClientId: WAKU_CLIENT,
+        wakuClientPath: decodeFilePathFromAbsolute(
+          joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
+        ),
+        clientEntryFiles,
         serverEntryFiles,
       }),
       rscEnvPlugin({ config }),
@@ -224,7 +224,8 @@ const buildServerBundle = async (
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
-  const psDir = joinPath(config.publicDir, config.assetsDir);
+  // TODO If ssr === false, we don't need to write ssr entries.
+  const ssrAssetsDir = joinPath(config.ssrDir, config.assetsDir);
   const code = `
 export function loadModule(id) {
   switch (id) {
@@ -234,24 +235,24 @@ ${Object.keys(CLIENT_MODULE_MAP)
   .map(
     (key) => `
     case '${CLIENT_PREFIX}${key}':
-      return import('./${psDir}/${key}.js');
+      return import('./${ssrAssetsDir}/${key}.js');
   `,
   )
   .join('')}
-    case '${psDir}/${WAKU_CLIENT}.js':
-      return import('./${psDir}/${WAKU_CLIENT}.js');
+    case '${ssrAssetsDir}/${WAKU_CLIENT}.js':
+      return import('./${ssrAssetsDir}/${WAKU_CLIENT}.js');
+${Object.entries(clientEntryFiles || {})
+  .map(
+    ([k]) => `
+    case '${ssrAssetsDir}/${k}.js':
+      return import('./${ssrAssetsDir}/${k}.js');`,
+  )
+  .join('')}
 ${Object.entries(serverEntryFiles || {})
   .map(
     ([k]) => `
     case '${config.assetsDir}/${k}.js':
       return import('./${config.assetsDir}/${k}.js');`,
-  )
-  .join('')}
-${Object.entries(clientEntryFiles || {})
-  .map(
-    ([k]) => `
-    case '${psDir}/${k}.js':
-      return import('./${psDir}/${k}.js');`,
   )
   .join('')}
     default:
@@ -263,6 +264,67 @@ ${Object.entries(clientEntryFiles || {})
   return serverBuildOutput;
 };
 
+// For SSR (render client components on server to generate HTML)
+const buildSsrBundle = async (
+  rootDir: string,
+  config: ResolvedConfig,
+  commonEntryFiles: Record<string, string>,
+  clientEntryFiles: Record<string, string>,
+  serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
+) => {
+  const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
+  const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
+    type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
+  );
+  await buildVite({
+    base: config.basePath,
+    plugins: [
+      rscIndexPlugin({ ...config, cssAssets }),
+      rscEnvPlugin({ config, hydrate: true }),
+    ],
+    ssr: {
+      noExternal: /^(?!node:)/,
+    },
+    define: {
+      'process.env.NODE_ENV': JSON.stringify('production'),
+    },
+    publicDir: false,
+    build: {
+      ssr: true,
+      outDir: joinPath(rootDir, config.distDir, config.ssrDir),
+      rollupOptions: {
+        onwarn,
+        input: {
+          main: mainJsFile,
+          ...CLIENT_MODULE_MAP,
+          ...commonEntryFiles,
+          ...clientEntryFiles,
+        },
+        output: {
+          entryFileNames: (chunkInfo) => {
+            if (
+              CLIENT_MODULE_MAP[
+                chunkInfo.name as keyof typeof CLIENT_MODULE_MAP
+              ] ||
+              commonEntryFiles[chunkInfo.name] ||
+              clientEntryFiles[chunkInfo.name]
+            ) {
+              return config.assetsDir + '/[name].js';
+            }
+            return config.assetsDir + '/[name]-[hash].js';
+          },
+        },
+      },
+    },
+  });
+  for (const cssAsset of cssAssets) {
+    const from = joinPath(rootDir, config.distDir, cssAsset);
+    const to = joinPath(rootDir, config.distDir, config.ssrDir, cssAsset);
+    await copyFile(from, to);
+  }
+};
+
+// For Browsers
 const buildClientBundle = async (
   rootDir: string,
   config: ResolvedConfig,
@@ -288,7 +350,7 @@ const buildClientBundle = async (
         onwarn,
         input: {
           main: mainJsFile,
-          ...CLIENT_MODULE_MAP,
+          [WAKU_CLIENT]: CLIENT_MODULE_MAP[WAKU_CLIENT],
           ...commonEntryFiles,
           ...clientEntryFiles,
         },
@@ -296,9 +358,7 @@ const buildClientBundle = async (
         output: {
           entryFileNames: (chunkInfo) => {
             if (
-              CLIENT_MODULE_MAP[
-                chunkInfo.name as keyof typeof CLIENT_MODULE_MAP
-              ] ||
+              [WAKU_CLIENT].includes(chunkInfo.name) ||
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name]
             ) {
@@ -567,6 +627,15 @@ export async function build(options: {
       (options.deploy === 'netlify-functions' ? 'netlify' : false) ||
       (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
   );
+  if (options.ssr) {
+    await buildSsrBundle(
+      rootDir,
+      config,
+      commonEntryFiles,
+      clientEntryFiles,
+      serverBuildOutput,
+    );
+  }
   await buildClientBundle(
     rootDir,
     config,
