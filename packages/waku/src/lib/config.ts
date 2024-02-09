@@ -21,6 +21,7 @@ export async function resolveConfig(config: Config) {
     distDir: 'dist',
     publicDir: 'public',
     assetsDir: 'assets',
+    ssrDir: 'ssr',
     indexHtml: 'index.html',
     mainJs: 'main.tsx',
     entriesJs: 'entries.js',
