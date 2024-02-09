@@ -9,14 +9,14 @@ export const emitNetlifyOutput = async (
   type: 'static' | 'functions',
 ) => {
   if (type === 'functions') {
-    const functionsDir = path.join(rootDir, 'functions');
+    const functionsDir = path.join(rootDir, 'netlify/functions');
     mkdirSync(functionsDir, {
       recursive: true,
     });
     writeFileSync(
       path.join(functionsDir, 'serve.js'),
       `
-export { default } from '../${config.distDir}/${config.serveJs}';
+export { default } from '../../${config.distDir}/${config.serveJs}';
 export const config = {
   preferStatic: true,
   path: ['/', '/*'],
@@ -31,13 +31,7 @@ export const config = {
       `
 [build]                             
   publish = "${config.distDir}/${config.publicDir}"
-` +
-        (type === 'functions'
-          ? `
-[functions]                             
-  directory = "functions"       
-`
-          : ''),
+`,
     );
   }
 };
