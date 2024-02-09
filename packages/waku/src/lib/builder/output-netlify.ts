@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 
 import type { ResolvedConfig } from '../config.js';
 
@@ -21,16 +21,6 @@ export const config = {
   preferStatic: true,
   path: ['/', '/*'],
 };
-`,
-    );
-  }
-  const netlifyTomlFile = path.join(rootDir, 'netlify.toml');
-  if (!existsSync(netlifyTomlFile)) {
-    writeFileSync(
-      netlifyTomlFile,
-      `
-[build]                             
-  publish = "${config.distDir}/${config.publicDir}"
 `,
     );
   }
