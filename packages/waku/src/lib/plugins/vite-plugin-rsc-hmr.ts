@@ -11,7 +11,7 @@ import {
   decodeFilePathFromAbsolute,
 } from '../utils/path.js';
 
-export type ModuleImportResult = TransformResult & {
+type ModuleImportResult = TransformResult & {
   id: string;
   // non-transformed result of `TransformResult.code`
   source: string;
@@ -93,7 +93,7 @@ globalThis.__WAKU_REFETCH_RSC__ = () => {
 
 const pendingMap = new WeakMap<ViteDevServer, Set<string>>();
 
-export function hotImport(vite: ViteDevServer, source: string) {
+function hotImport(vite: ViteDevServer, source: string) {
   let sourceSet = pendingMap.get(vite);
   if (!sourceSet) {
     sourceSet = new Set();
@@ -110,10 +110,7 @@ export function hotImport(vite: ViteDevServer, source: string) {
 
 const modulePendingMap = new WeakMap<ViteDevServer, Set<ModuleImportResult>>();
 
-export function moduleImport(
-  viteServer: ViteDevServer,
-  result: ModuleImportResult,
-) {
+function moduleImport(viteServer: ViteDevServer, result: ModuleImportResult) {
   let sourceSet = modulePendingMap.get(viteServer);
   if (!sourceSet) {
     sourceSet = new Set();
@@ -167,4 +164,22 @@ async function generateInitialScripts(
     });
   }
   return scripts;
+}
+
+export type HotUpdatePayload =
+  | { type: 'full-reload' }
+  | { type: 'custom'; event: 'rsc-reload' }
+  | { type: 'custom'; event: 'hot-import'; data: string }
+  | { type: 'custom'; event: 'module-import'; data: ModuleImportResult };
+
+export function hotUpdate(vite: ViteDevServer, payload: HotUpdatePayload) {
+  if (payload.type === 'full-reload') {
+    vite.ws.send(payload);
+  } else if (payload.event === 'rsc-reload') {
+    vite.ws.send(payload);
+  } else if (payload.event === 'hot-import') {
+    hotImport(vite, payload.data);
+  } else if (payload.event === 'module-import') {
+    moduleImport(vite, payload.data);
+  }
 }
