@@ -647,6 +647,27 @@ Adding the `--with-vercel-static` flag to the build script will produce static s
 }
 ```
 
+### Netlify Deploy
+
+Waku projects can be deployed to Netlify with the [Netlify CLI](https://docs.netlify.com/cli/get-started/).
+
+```
+npm run build -- --with-netlify
+netlify deploy --dir=dist/public
+```
+
+#### Pure SSG
+
+Adding the `--with-netlify-static` flag to the build script will produce static sites without Netlify functions.
+
+```
+{
+  "scripts": {
+    "build": "waku build --with-ssr --with-netlify-static"
+  }
+}
+```
+
 ### Cloudflare (experimental)
 
 ```
@@ -659,13 +680,6 @@ npx wrangler dev # or deploy
 ```
 npm run build -- --with-deno
 DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod dist/serve.js --exclude node_modules
-```
-
-### Netlify Deploy (experimental)
-
-```
-npm run build -- --with-netlify
-netlify deploy
 ```
 
 ### AWS Lambda (experimental)
