@@ -115,9 +115,9 @@ export const MenuLink = ({ link }: MenuLinkProps) => {
 
 const links = [
   { to: '/', label: 'Home' },
-  { to: '/docs', label: 'Docs', disabled: true },
+  { to: '/blog', label: 'Blog' },
   { to: 'https://github.com/dai-shi/waku/issues/24', label: 'Roadmap' },
-  { to: '/blog', label: 'Blog', disabled: true },
+  { to: '/docs', label: 'Docs', disabled: true },
   { to: 'https://github.com/dai-shi/waku', label: 'GitHub' },
   { to: 'https://discord.gg/MrQdmzd', label: 'Discord' },
 ];

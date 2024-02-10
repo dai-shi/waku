@@ -6,6 +6,7 @@ import type { ResolvedConfig } from '../config.js';
 import { filePathToFileURL } from '../utils/path.js';
 import { parseFormData } from '../utils/form.js';
 import { streamToString } from '../utils/stream.js';
+import { decodeActionId } from '../renderers/utils.js';
 
 export const RSDW_SERVER_MODULE = 'rsdw-server';
 export const RSDW_SERVER_MODULE_VALUE = 'react-server-dom-webpack/server.edge';
@@ -100,7 +101,7 @@ export async function renderRsc(
   );
 
   if (method === 'POST') {
-    const rsfId = decodeURIComponent(input);
+    const rsfId = decodeActionId(input);
     let args: unknown[] = [];
     let bodyStr = '';
     if (body) {

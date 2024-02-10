@@ -5,19 +5,28 @@ import type {
   ViteDevServer,
 } from 'vite';
 
-export type ModuleImportResult = TransformResult & {
+import {
+  joinPath,
+  fileURLToFilePath,
+  decodeFilePathFromAbsolute,
+} from '../utils/path.js';
+
+type ModuleImportResult = TransformResult & {
   id: string;
   // non-transformed result of `TransformResult.code`
   source: string;
   css?: boolean;
 };
 
-const customCode = `
+const injectingHmrCode = `
 import { createHotContext as __vite__createHotContext } from "/@vite/client";
 import.meta.hot = __vite__createHotContext(import.meta.url);
 
 if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
   globalThis.__WAKU_HMR_CONFIGURED__ = true;
+  import.meta.hot.on('rsc-reload', () => {
+    globalThis.__WAKU_REFETCH_RSC__?.();
+  });
   import.meta.hot.on('hot-import', (data) => import(/* @vite-ignore */ data));
   import.meta.hot.on('module-import', (data) => {
     // remove element with the same 'waku-module-id'
@@ -39,6 +48,9 @@ if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
 `;
 
 export function rscHmrPlugin(): Plugin {
+  const wakuClientDist = decodeFilePathFromAbsolute(
+    joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
+  );
   let viteServer: ViteDevServer;
   return {
     name: 'rsc-hmr-plugin',
@@ -52,17 +64,36 @@ export function rscHmrPlugin(): Plugin {
         {
           tag: 'script',
           attrs: { type: 'module', async: true },
-          children: customCode,
+          children: injectingHmrCode,
           injectTo: 'head',
         },
       ];
+    },
+    async transform(code, id) {
+      if (id === wakuClientDist) {
+        // FIXME this is fragile. Can we do it better?
+        const FETCH_RSC_LINE =
+          'export const fetchRSC = (input, searchParamsString, setElements, cache = fetchCache)=>{';
+        return code.replace(
+          FETCH_RSC_LINE,
+          FETCH_RSC_LINE +
+            `
+globalThis.__WAKU_REFETCH_RSC__ = () => {
+  cache.splice(0);
+  const searchParams = new URLSearchParams(searchParamsString);
+  searchParams.delete('waku_router_skip'); // HACK hard coded, FIXME we need event listeners for 'rsc-reload'
+  const data = fetchRSC(input, searchParams.toString(), setElements, cache);
+  setElements((prev) => mergeElements(prev, data));
+};`,
+        );
+      }
     },
   };
 }
 
 const pendingMap = new WeakMap<ViteDevServer, Set<string>>();
 
-export function hotImport(vite: ViteDevServer, source: string) {
+function hotImport(vite: ViteDevServer, source: string) {
   let sourceSet = pendingMap.get(vite);
   if (!sourceSet) {
     sourceSet = new Set();
@@ -79,10 +110,7 @@ export function hotImport(vite: ViteDevServer, source: string) {
 
 const modulePendingMap = new WeakMap<ViteDevServer, Set<ModuleImportResult>>();
 
-export function moduleImport(
-  viteServer: ViteDevServer,
-  result: ModuleImportResult,
-) {
+function moduleImport(viteServer: ViteDevServer, result: ModuleImportResult) {
   let sourceSet = modulePendingMap.get(viteServer);
   if (!sourceSet) {
     sourceSet = new Set();
@@ -136,4 +164,22 @@ async function generateInitialScripts(
     });
   }
   return scripts;
+}
+
+export type HotUpdatePayload =
+  | { type: 'full-reload' }
+  | { type: 'custom'; event: 'rsc-reload' }
+  | { type: 'custom'; event: 'hot-import'; data: string }
+  | { type: 'custom'; event: 'module-import'; data: ModuleImportResult };
+
+export function hotUpdate(vite: ViteDevServer, payload: HotUpdatePayload) {
+  if (payload.type === 'full-reload') {
+    vite.ws.send(payload);
+  } else if (payload.event === 'rsc-reload') {
+    vite.ws.send(payload);
+  } else if (payload.event === 'hot-import') {
+    hotImport(vite, payload.data);
+  } else if (payload.event === 'module-import') {
+    moduleImport(vite, payload.data);
+  }
 }

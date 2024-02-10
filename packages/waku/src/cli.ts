@@ -112,7 +112,7 @@ async function runBuild(options: { ssr: boolean }) {
         : undefined) ||
       (values['with-cloudflare'] ? 'cloudflare' : undefined) ||
       (values['with-deno'] ? 'deno' : undefined) ||
-      (values['with-netlify']
+      (values['with-netlify'] ?? !!process.env.NETLIFY
         ? values['with-netlify-static']
           ? 'netlify-static'
           : 'netlify-functions'
