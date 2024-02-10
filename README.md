@@ -31,21 +31,13 @@ npm create waku@latest
 
 ## Rendering
 
-While there's a bit of a learning curve to modern React rendering, it introduces powerful new patterns of composability that are only possible with the advent of React [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md).
+While there's a bit of a learning curve to modern React rendering, it introduces powerful new patterns of full-stack composability that are only possible with the advent of [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md).
 
-So please don't be intimidated by the `'use client'` directive! Once you get the hang of it, you'll appreciate how awesome it is to flexibly move server-client boundaries with a single line of code as your full-stack React codebase evolves over time.
+So please don't be intimidated by the `'use client'` directive! Once you get the hang of it, you'll appreciate how awesome it is to flexibly move server-client boundaries with a single line of code as your full-stack React codebase evolves over time. It's way simpler than maintaining separate codebases for your backend and frontend.
 
-And please don't fret about client components! Even if you only lightly optimize towards server components, your client bundle size will be smaller than traditional React frameworks, which are 100% client components.
+And please don't fret about client components! Even if you only lightly optimize towards server components, your client bundle size will be smaller than traditional React frameworks, which are always 100% client components.
 
 > Future versions of Waku may provide additional opt-in APIs to abstract some of the complexity away for an improved developer experience.
-
-#### Overview
-
-Each layout and page in Waku is composed of a React component heirarchy.
-
-It begins with a server component at the top of the tree. Then at points down the heirarchy, you'll eventually import a component that needs client component APIs. Mark this file with a `'use client'` directive at the top. When imported into a server component, it will create a server-client boundary. Below this point all imported components are hydrated and will run in the browser as well.
-
-Server components can still be rendered below this boundary, but only via composition (e.g., `children` props).
 
 #### Server components
 
@@ -127,7 +119,17 @@ export const Providers = ({ children }) => {
 
 #### Server-side rendering
 
-Waku provides static prerendering (SSG) or server-side rendering (SSR) options for layouts and pages including both their server and client components.
+SSR is a distinct concept from RSC. Waku provides static prerendering (SSG) or server-side rendering (SSR) options for both layouts and pages including all of their server _and_ client components.
+
+#### tl;dr:
+
+Each layout and page in Waku is composed of a React component heirarchy.
+
+It begins with a server component at the top of the tree. Then at points down the heirarchy, you'll eventually import a component that needs client component APIs. Mark this file with a `'use client'` directive at the top. When imported into a server component, it will create a server-client boundary. Below this point in the component heirarchy, all imported components are hydrated and will run in the browser as well.
+
+Server components can still be rendered below this boundary, but only via composition (e.g., `children` props). They form [a new layer](https://github.com/reactwg/server-components/discussions/4) that run _before_ any client code.
+
+Client components are still server-side rendered. SSR is seperate from RSC. See the [linked diagrams](https://github.com/reactwg/server-components/discussions/4) for a helpful visual.
 
 #### Further reading
 
@@ -647,7 +649,7 @@ Adding the `--with-vercel-static` flag to the build script will produce static s
 }
 ```
 
-### Netlify Deploy
+### Netlify
 
 Waku projects can be deployed to Netlify with the [Netlify CLI](https://docs.netlify.com/cli/get-started/).
 
