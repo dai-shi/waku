@@ -19,14 +19,14 @@
     "waku": "https://pkg.csb.dev/dai-shi/waku/commit/7be1189f/waku"
   },
   "devDependencies": {
-    "@types/react": "^18.2.54",
-    "@types/react-dom": "^18.2.18",
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
     "autoprefixer": "^10.4.17",
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.11",
-    "shiki": "1.0.0-beta.6",
+    "shiki": "1.1.1",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3",
-    "vite": "5.0.12"
+    "vite": "5.1.1"
   }
 }
