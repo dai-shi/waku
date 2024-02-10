@@ -20,7 +20,6 @@ import { renderRsc, getSsrConfig } from '../renderers/rsc-renderer.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
-import { rscReloadPlugin } from '../plugins/vite-plugin-rsc-reload.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 
@@ -107,8 +106,6 @@ const handleGetSsrConfig = async (
 
 const dummyServer = new Server(); // FIXME we hope to avoid this hack
 
-const moduleImports: Set<string> = new Set();
-
 const mergedViteConfig = await mergeUserViteConfig({
   plugins: [
     viteReact(),
@@ -117,21 +114,10 @@ const mergedViteConfig = await mergeUserViteConfig({
     { name: 'rsc-hmr-plugin', enforce: 'post' }, // dummy to match with handler-dev.ts
     nonjsResolvePlugin(),
     rscTransformPlugin({ isBuild: false }),
-    rscReloadPlugin(moduleImports, (type) => {
-      const mesg: MessageRes = { type };
+    rscDelegatePlugin((payload) => {
+      const mesg: MessageRes = { type: 'hot-update', payload };
       parentPort!.postMessage(mesg);
     }),
-    rscDelegatePlugin(
-      moduleImports,
-      (source) => {
-        const mesg: MessageRes = { type: 'hot-import', source };
-        parentPort!.postMessage(mesg);
-      },
-      (result) => {
-        const mesg: MessageRes = { type: 'module-import', result };
-        parentPort!.postMessage(mesg);
-      },
-    ),
   ],
   optimizeDeps: {
     include: ['react-server-dom-webpack/client', 'react-dom'],

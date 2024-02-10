@@ -14,19 +14,13 @@ import { renderHtml } from '../renderers/html-renderer.js';
 import { decodeInput, hasStatusCode } from '../renderers/utils.js';
 import {
   initializeWorker,
-  registerReloadCallback,
-  registerImportCallback,
-  registerModuleCallback,
+  registerHotUpdateCallback,
   renderRscWithWorker,
   getSsrConfigWithWorker,
 } from './dev-worker-api.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
-import {
-  rscHmrPlugin,
-  hotImport,
-  moduleImport,
-} from '../plugins/vite-plugin-rsc-hmr.js';
+import { rscHmrPlugin, hotUpdate } from '../plugins/vite-plugin-rsc-hmr.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
@@ -66,7 +60,6 @@ export function createHandler<
         rscHmrPlugin(),
         { name: 'nonjs-resolve-plugin' }, // dummy to match with dev-worker-impl.ts
         { name: 'rsc-transform-plugin' }, // dummy to match with dev-worker-impl.ts
-        { name: 'rsc-reload-plugin' }, // dummy to match with dev-worker-impl.ts
         { name: 'rsc-delegate-plugin' }, // dummy to match with dev-worker-impl.ts
       ],
       optimizeDeps: {
@@ -89,9 +82,7 @@ export function createHandler<
     });
     const vite = await createViteServer(mergedViteConfig);
     initializeWorker(config);
-    registerReloadCallback((type) => vite.ws.send({ type }));
-    registerImportCallback((source) => hotImport(vite, source));
-    registerModuleCallback((result) => moduleImport(vite, result));
+    registerHotUpdateCallback((payload) => hotUpdate(vite, payload));
     return vite;
   });
 
