@@ -3,11 +3,7 @@ import type { default as RSDWServerType } from 'react-server-dom-webpack/server.
 
 import type { RenderContext, EntriesDev, EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
-import {
-  encodeFilePathToAbsolute,
-  filePathToFileURL,
-  fileURLToFilePath,
-} from '../utils/path.js';
+import { filePathToFileURL } from '../utils/path.js';
 import { parseFormData } from '../utils/form.js';
 import { streamToString } from '../utils/stream.js';
 import { decodeActionId } from '../renderers/utils.js';
@@ -15,22 +11,11 @@ import { decodeActionId } from '../renderers/utils.js';
 export const RSDW_SERVER_MODULE = 'rsdw-server';
 export const RSDW_SERVER_MODULE_VALUE = 'react-server-dom-webpack/server.edge';
 
-const resolveClientEntry = (
-  file: string, // filePath or fileURL
-  config: ResolvedConfig,
-  isDev: boolean,
-) => {
-  if (isDev) {
-    const filePath = file.startsWith('file://')
-      ? fileURLToFilePath(file)
-      : file;
-    // HACK this relies on Vite's internal implementation detail.
-    return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
-  }
-  if (!file.startsWith('@id/')) {
+const resolveClientEntryForPrd = (id: string, config: ResolvedConfig) => {
+  if (!id.startsWith('@id/')) {
     throw new Error('Unexpected client entry in PRD');
   }
-  return config.basePath + file.slice('@id/'.length);
+  return config.basePath + id.slice('@id/'.length);
 };
 
 export async function renderRsc(
@@ -49,6 +34,7 @@ export async function renderRsc(
         isDev: true;
         entries: EntriesDev;
         customImport: (fileURL: string) => Promise<unknown>;
+        resolveClientEntry: (id: string) => string;
       }
   ),
 ): Promise<ReadableStream> {
@@ -64,6 +50,10 @@ export async function renderRsc(
     isDev,
     entries,
   } = opts;
+
+  const resolveClientEntry = isDev
+    ? opts.resolveClientEntry
+    : resolveClientEntryForPrd;
 
   const {
     default: { renderEntries },
@@ -103,7 +93,7 @@ export async function renderRsc(
     {
       get(_target, encodedId: string) {
         const [file, name] = encodedId.split('#') as [string, string];
-        const id = resolveClientEntry(file, config, isDev);
+        const id = resolveClientEntry(file, config);
         moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },
@@ -229,10 +219,18 @@ export async function getSsrConfig(
     searchParams: URLSearchParams;
   } & (
     | { isDev: false; entries: EntriesPrd; isBuild: boolean }
-    | { isDev: true; entries: EntriesDev }
+    | {
+        isDev: true;
+        entries: EntriesDev;
+        resolveClientEntry: (id: string) => string;
+      }
   ),
 ) {
   const { config, pathname, searchParams, isDev, entries } = opts;
+
+  const resolveClientEntry = isDev
+    ? opts.resolveClientEntry
+    : resolveClientEntryForPrd;
 
   const {
     default: { getSsrConfig },
@@ -251,7 +249,7 @@ export async function getSsrConfig(
     {
       get(_target, encodedId: string) {
         const [file, name] = encodedId.split('#') as [string, string];
-        const id = resolveClientEntry(file, config, isDev);
+        const id = resolveClientEntry(file, config);
         return { id, chunks: [id], name, async: true };
       },
     },
