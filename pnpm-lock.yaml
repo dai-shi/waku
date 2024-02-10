@@ -611,8 +611,8 @@ importers:
         specifier: 18.3.0-canary-4b2a1115a-20240202
         version: 18.3.0-canary-4b2a1115a-20240202(react@18.3.0-canary-4b2a1115a-20240202)
       waku:
-        specifier: https://pkg.csb.dev/dai-shi/waku/commit/e411dd08/waku
-        version: '@pkg.csb.dev/dai-shi/waku/commit/e411dd08/waku(@types/node@20.11.16)(react-dom@18.3.0-canary-4b2a1115a-20240202)(react-server-dom-webpack@18.3.0-canary-4b2a1115a-20240202)(react@18.3.0-canary-4b2a1115a-20240202)'
+        specifier: https://pkg.csb.dev/dai-shi/waku/commit/7be1189f/waku
+        version: '@pkg.csb.dev/dai-shi/waku/commit/7be1189f/waku(@types/node@20.11.16)(react-dom@18.3.0-canary-4b2a1115a-20240202)(react-server-dom-webpack@18.3.0-canary-4b2a1115a-20240202)(react@18.3.0-canary-4b2a1115a-20240202)'
     devDependencies:
       '@types/react':
         specifier: ^18.2.54
@@ -6617,11 +6617,11 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
     dev: false
 
-  '@pkg.csb.dev/dai-shi/waku/commit/e411dd08/waku(@types/node@20.11.16)(react-dom@18.3.0-canary-4b2a1115a-20240202)(react-server-dom-webpack@18.3.0-canary-4b2a1115a-20240202)(react@18.3.0-canary-4b2a1115a-20240202)':
-    resolution: {tarball: https://pkg.csb.dev/dai-shi/waku/commit/e411dd08/waku}
-    id: '@pkg.csb.dev/dai-shi/waku/commit/e411dd08/waku'
+  '@pkg.csb.dev/dai-shi/waku/commit/7be1189f/waku(@types/node@20.11.16)(react-dom@18.3.0-canary-4b2a1115a-20240202)(react-server-dom-webpack@18.3.0-canary-4b2a1115a-20240202)(react@18.3.0-canary-4b2a1115a-20240202)':
+    resolution: {tarball: https://pkg.csb.dev/dai-shi/waku/commit/7be1189f/waku}
+    id: '@pkg.csb.dev/dai-shi/waku/commit/7be1189f/waku'
     name: waku
-    version: 0.19.1
+    version: 0.19.2
     engines: {node: ^20.8.0 || ^18.16.0}
     hasBin: true
     peerDependencies:
