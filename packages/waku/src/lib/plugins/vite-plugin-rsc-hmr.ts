@@ -73,7 +73,7 @@ export function rscHmrPlugin(): Plugin {
       ];
     },
     async transform(code, id) {
-      if (id === wakuClientDist) {
+      if (id.startsWith(wakuClientDist)) {
         // FIXME this is fragile. Can we do it better?
         const FETCH_RSC_LINE =
           'export const fetchRSC = (input, searchParamsString, setElements, cache = fetchCache)=>{';
@@ -98,8 +98,7 @@ export function rscHmrPlugin(): Plugin {
 }
 `,
         );
-      }
-      if (id === wakuRouterClientDist) {
+      } else if (id.startsWith(wakuRouterClientDist)) {
         // FIXME this is fragile. Can we do it better?
         const INNER_ROUTER_LINE = 'function InnerRouter() {';
         return code.replace(
