@@ -57,7 +57,7 @@ const mergeElements = (
   return getCached(getResult, cache2, b);
 };
 
-type SetElements = (fn: (prev: Elements) => Elements) => void;
+type SetElements = (updater: Elements | ((prev: Elements) => Elements)) => void;
 type CacheEntry = [
   input: string,
   searchParamsString: string,
