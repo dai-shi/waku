@@ -7,7 +7,7 @@
   @apply bg-black;
 }
 body {
-  @apply overflow-x-clip overscroll-none;
+  @apply overflow-x-clip overflow-y-scroll overscroll-none;
 }
 #__waku {
   @apply bg-gray-950;
