@@ -6,6 +6,7 @@ import { compileMDX } from 'next-mdx-remote/rsc';
 import { Page } from '../components/page.js';
 import { Meta } from '../components/meta.js';
 import { components } from '../components/mdx.js';
+import { getAuthor } from '../lib/get-author.js';
 
 type BlogArticlePageProps = {
   slug: string;
@@ -39,11 +40,12 @@ export const BlogArticlePage = async ({ slug }: BlogArticlePageProps) => {
         description={frontmatter.description}
       />
       <div className="relative z-10 mx-auto w-full max-w-[80ch] pt-16 text-white lg:pt-64">
-        <div className="mb-8 flex items-center gap-4">
+        <div className="mb-8 flex items-center gap-2 sm:gap-4">
           {frontmatter.release && (
             <div>
-              <div className="inline-block rounded-md bg-white px-2 py-1 text-[0.625rem] font-black uppercase tracking-wide text-black sm:text-xs">
-                Waku v{frontmatter.release}
+              <div className="inline-block rounded-md bg-white px-2 py-1 text-[0.625rem] font-black tracking-wide text-black sm:text-xs">
+                <span className="hidden uppercase sm:inline">Waku</span> v
+                {frontmatter.release}
               </div>
             </div>
           )}
@@ -92,31 +94,6 @@ export const BlogArticlePage = async ({ slug }: BlogArticlePageProps) => {
       </div>
     </Page>
   );
-};
-
-const getAuthor = (author: string) => {
-  switch (author) {
-    case 'daishi':
-      return {
-        name: `Daishi Kato`,
-        biography: `author of Zustand and Jotai`,
-        avatar: `https://cdn.candycode.com/waku/daishi.png`,
-        url: `https://x.com/dai_shi`,
-      };
-    case 'sophia':
-      return {
-        name: `Sophia Andren`,
-        biography: `technical director of candycode`,
-        avatar: `https://cdn.candycode.com/waku/sophia.png`,
-        url: `https://x.com/razorbelle`,
-      };
-    default:
-      return {
-        name: ``,
-        biography: ``,
-        avatar: ``,
-      };
-  }
 };
 
 const getFileName = async (slug: string) => {
