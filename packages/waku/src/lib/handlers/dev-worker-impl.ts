@@ -9,7 +9,11 @@ import viteReact from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
-import { joinPath, fileURLToFilePath } from '../utils/path.js';
+import {
+  joinPath,
+  fileURLToFilePath,
+  encodeFilePathToAbsolute,
+} from '../utils/path.js';
 import { deepFreeze, hasStatusCode } from '../renderers/utils.js';
 import type {
   MessageReq,
@@ -35,6 +39,12 @@ if (HAS_MODULE_REGISTER) {
 const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR');
 const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS');
 
+const resolveClientEntryForDev = (id: string, config: ResolvedConfig) => {
+  const filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
+  // HACK this relies on Vite's internal implementation detail.
+  return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
+};
+
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   const { id, type: _removed, hasModuleIdCallback, ...rest } = mesg;
   const rr: RenderRequest = rest;
@@ -56,6 +66,8 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
       moduleIdCallback: rr.moduleIdCallback,
       isDev: true,
       customImport: loadServerFile,
+      resolveClientEntry: (id: string) =>
+        resolveClientEntryForDev(id, rr.config),
       entries: await loadEntries(rr.config),
     });
     const mesg: MessageRes = {
@@ -86,6 +98,7 @@ const handleGetSsrConfig = async (
       pathname,
       searchParams,
       isDev: true,
+      resolveClientEntry: (id: string) => resolveClientEntryForDev(id, config),
       entries: await loadEntries(config),
     });
     const mesg: MessageRes = ssrConfig
