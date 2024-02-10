@@ -25,7 +25,7 @@ import.meta.hot = __vite__createHotContext(import.meta.url);
 if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
   globalThis.__WAKU_HMR_CONFIGURED__ = true;
   import.meta.hot.on('rsc-reload', () => {
-    globalThis.__WAKU_REFETCH_RSC__?.();
+    globalThis.__WAKU_RSC_RELOAD_LISTENERS__?.forEach((l) => l());
   });
   import.meta.hot.on('hot-import', (data) => import(/* @vite-ignore */ data));
   import.meta.hot.on('module-import', (data) => {
@@ -51,6 +51,9 @@ export function rscHmrPlugin(): Plugin {
   const wakuClientDist = decodeFilePathFromAbsolute(
     joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
   );
+  const wakuRouterClientDist = decodeFilePathFromAbsolute(
+    joinPath(fileURLToFilePath(import.meta.url), '../../../router/client.js'),
+  );
   let viteServer: ViteDevServer;
   return {
     name: 'rsc-hmr-plugin',
@@ -70,7 +73,7 @@ export function rscHmrPlugin(): Plugin {
       ];
     },
     async transform(code, id) {
-      if (id === wakuClientDist) {
+      if (id.startsWith(wakuClientDist)) {
         // FIXME this is fragile. Can we do it better?
         const FETCH_RSC_LINE =
           'export const fetchRSC = (input, searchParamsString, setElements, cache = fetchCache)=>{';
@@ -78,13 +81,45 @@ export function rscHmrPlugin(): Plugin {
           FETCH_RSC_LINE,
           FETCH_RSC_LINE +
             `
-globalThis.__WAKU_REFETCH_RSC__ = () => {
-  cache.splice(0);
-  const searchParams = new URLSearchParams(searchParamsString);
-  searchParams.delete('waku_router_skip'); // HACK hard coded, FIXME we need event listeners for 'rsc-reload'
-  const data = fetchRSC(input, searchParams.toString(), setElements, cache);
-  setElements((prev) => mergeElements(prev, data));
-};`,
+{
+  const refetchRsc = () => {
+    cache.splice(0);
+    const data = fetchRSC(input, searchParamsString, setElements, cache);
+    setElements(data);
+  };
+  globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];
+  const index = globalThis.__WAKU_RSC_RELOAD_LISTENERS__.indexOf(globalThis.__WAKU_REFETCH_RSC__);
+  if (index !== -1) {
+    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.splice(index, 1, refetchRsc);
+  } else {
+    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.push(refetchRsc);
+  }
+  globalThis.__WAKU_REFETCH_RSC__ = refetchRsc;
+}
+`,
+        );
+      } else if (id.startsWith(wakuRouterClientDist)) {
+        // FIXME this is fragile. Can we do it better?
+        const INNER_ROUTER_LINE = 'function InnerRouter() {';
+        return code.replace(
+          INNER_ROUTER_LINE,
+          INNER_ROUTER_LINE +
+            `
+{
+  const refetchRoute = () => {
+    const input = getInputString(loc.path);
+    refetch(input, loc.searchParams);
+  };
+  globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];
+  const index = globalThis.__WAKU_RSC_RELOAD_LISTENERS__.indexOf(globalThis.__WAKU_REFETCH_ROUTE__);
+  if (index !== -1) {
+    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.splice(index, 1, refetchRoute);
+  } else {
+    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.unshift(refetchRoute);
+  }
+  globalThis.__WAKU_REFETCH_ROUTE__ = refetchRoute;
+}
+`,
         );
       }
     },
