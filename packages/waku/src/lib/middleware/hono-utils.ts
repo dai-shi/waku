@@ -66,7 +66,7 @@ export const honoWrapper = <E extends Env, P extends string, I extends Input>(
       });
       const res: BaseRes & { c: Context<E, P, I> } = {
         stream: writable,
-        setStatus: (code) => c.status(code),
+        setStatus: (code) => c.status(code as any), // FIXME avoid any
         setHeader: (name, value) => c.header(name, value),
         c,
       };
