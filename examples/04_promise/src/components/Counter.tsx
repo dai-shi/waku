@@ -3,6 +3,8 @@
 
 import { Suspense, useState, use } from 'react';
 
+import { Hello } from './Hello.js';
+
 export const Counter = ({
   delayedMessage,
 }: {
@@ -17,6 +19,7 @@ export const Counter = ({
       <Suspense fallback="Pending...">
         <Message count={count} delayedMessage={delayedMessage} />
       </Suspense>
+      <Hello />
     </div>
   );
 };
