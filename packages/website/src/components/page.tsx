@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 
 import { Menu } from '../components/menu.js';
-import { Fade } from './fade.js';
+import { Fade } from '../components/fade.js';
+import { Sponsors } from '../components/sponsors.js';
 import { Credits } from '../components/credits.js';
 import { Scroll } from './scroll.js';
 
@@ -17,6 +18,7 @@ export const Page = ({ isHome = false, children }: PageProps) => {
       <Background />
       <Fade always={!isHome} />
       <Main>{children}</Main>
+      <Sponsors className="fixed bottom-0 left-0 z-80 hidden p-[16px] lg:block" />
       <Credits />
       <Scroll />
     </>

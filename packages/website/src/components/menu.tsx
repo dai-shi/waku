@@ -5,6 +5,7 @@ import { useAtom, useSetAtom } from 'jotai';
 import cx from 'clsx';
 
 import { menuAtom } from '../atoms/index.js';
+import { Sponsors } from '../components/sponsors.js';
 import { useOnEscape } from '../hooks/index.js';
 
 export const Menu = () => {
@@ -45,16 +46,25 @@ export const Menu = () => {
           isMenuOpen
             ? 'pointer-events-auto opacity-100'
             : 'pointer-events-none opacity-0',
-          'fixed inset-0 z-90 flex items-center justify-center overscroll-none text-white transition-opacity duration-500 ease-in-out',
+          'fixed inset-0 z-90 flex items-center justify-center overscroll-none bg-black transition-opacity duration-300 ease-in-out lg:p-24',
         )}
       >
-        <div className="absolute inset-0 backdrop-blur" />
-        <div className="absolute inset-0 bg-gray-950/90" />
-        <ul className="relative z-100 flex-col gap-6 text-center last:flex sm:gap-8">
-          {links.map((link) => {
-            return <MenuLink key={link.to} link={link} />;
-          })}
-        </ul>
+        <div className="relative z-10 flex flex-col items-center justify-center text-white">
+          <div className="hidden w-full pb-24 lg:flex">
+            <img
+              src="https://cdn.candycode.com/waku/waku-logo-shadow.svg"
+              alt="Waku"
+              className="mx-auto block w-full max-w-[25rem]"
+            />
+            <span className="sr-only">Waku</span>
+          </div>
+          <ul className="relative z-100 flex flex-shrink-0 flex-col gap-4 text-center sm:gap-8 lg:grid lg:grid-cols-2 lg:gap-12">
+            {links.map((link) => {
+              return <MenuLink key={link.to} link={link} />;
+            })}
+          </ul>
+          <Sponsors className="mt-0 sm:mt-8 lg:hidden" always={true} />
+        </div>
       </nav>
     </>
   );
@@ -96,15 +106,15 @@ export const MenuLink = ({ link }: MenuLinkProps) => {
         {...props}
         onClick={() => setIsMenuOpen(false)}
         className={cx(
-          'flex items-center gap-4 rounded-md focus:ring-4 focus:ring-primary-300',
+          'flex items-center gap-4 rounded-md border border-gray-800 bg-black px-4 py-3 transition-colors duration-300 ease-in-out focus:ring-4 focus:ring-primary-300 lg:px-9 lg:py-6',
           !link.disabled
-            ? 'text-white transition-colors duration-300 ease-in-out hover:text-primary'
+            ? 'text-white hover:border-secondary'
             : 'cursor-not-allowed text-white/40',
         )}
       >
-        <span className="text-4xl font-bold sm:text-6xl">{link.label}</span>
+        <span className="text-2xl font-bold sm:text-4xl">{link.label}</span>
         {link.disabled && (
-          <span className="inline-block rounded-md bg-white px-2 py-1 text-[0.625rem] font-black uppercase tracking-wide text-black sm:text-xs">
+          <span className="inline-block origin-left scale-75 whitespace-nowrap rounded-md bg-white px-2 py-1 text-[0.625rem] font-black uppercase tracking-wide text-black sm:scale-100 sm:text-xs">
             Coming soon
           </span>
         )}
