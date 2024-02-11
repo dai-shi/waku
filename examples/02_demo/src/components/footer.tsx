@@ -1,6 +1,6 @@
 export const Footer = () => {
   return (
-    <footer className="fixed bottom-0 left-0 p-6">
+    <footer className="p-6 lg:fixed lg:bottom-0 lg:left-0">
       <div>
         visit{' '}
         <a

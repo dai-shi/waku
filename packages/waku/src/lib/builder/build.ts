@@ -179,6 +179,7 @@ const buildServerBundle = async (
         : []),
     ],
     ssr: {
+      target: 'webworker',
       resolve: {
         conditions: ['react-server', 'workerd'],
         externalConditions: ['react-server', 'workerd'],
@@ -283,6 +284,7 @@ const buildSsrBundle = async (
       rscEnvPlugin({ config, hydrate: true }),
     ],
     ssr: {
+      target: 'webworker',
       noExternal: /^(?!node:)/,
     },
     define: {
