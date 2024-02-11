@@ -11,7 +11,12 @@ export const HomePage = async () => {
       <title>Waku pokemon</title>
       <div className="flex h-full w-full flex-col items-center justify-center p-6">
         <div className="px-6">
-          <div className="whitespace-nowrap text-xs font-bold hover:underline sm:text-base">{`SELECT * FROM pokemon ORDER BY RANDOM() LIMIT 9`}</div>
+          <a
+            href="https://github.com/dai-shi/waku/tree/main/examples/02_demo/src"
+            target="_blank"
+            rel="noreferrer"
+            className="whitespace-nowrap text-xs font-bold hover:underline sm:text-base"
+          >{`SELECT * FROM pokemon ORDER BY RANDOM() LIMIT 9`}</a>
         </div>
         <ul className="relative mt-6 grid h-full w-full max-w-xl flex-shrink-0 grid-cols-2 gap-6 leading-none md:grid-cols-3 md:px-0">
           {rows.map((row) => (
