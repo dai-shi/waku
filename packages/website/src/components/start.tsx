@@ -4,6 +4,7 @@ import cx from 'clsx';
 import { useAtomValue } from 'jotai';
 
 import { scrolledAtom } from '../atoms/index.js';
+import { Logo } from '../components/logo.js';
 import { scrollTo } from '../utils/index.js';
 
 export const Start = () => {
@@ -16,13 +17,8 @@ export const Start = () => {
         !hasScrolled ? 'opacity-100' : 'opacity-0',
       )}
     >
-      <h1 className="relative -right-0.5 lg:-right-2">
-        <img
-          src="https://cdn.candycode.com/waku/waku-logo-shadow.svg"
-          alt="Waku"
-          className="mx-auto block w-full max-w-[15rem] lg:max-w-[25rem]"
-        />
-        <span className="sr-only">Waku</span>
+      <h1>
+        <Logo />
       </h1>
       <h3 className="text-shadow mt-3 text-xl font-bold leading-none text-white/80 sm:text-3xl">
         The minimal React framework

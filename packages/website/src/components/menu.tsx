@@ -5,6 +5,7 @@ import { useAtom, useSetAtom } from 'jotai';
 import cx from 'clsx';
 
 import { menuAtom } from '../atoms/index.js';
+import { Logo } from '../components/logo.js';
 import { Sponsors } from '../components/sponsors.js';
 import { useOnEscape } from '../hooks/index.js';
 
@@ -51,12 +52,9 @@ export const Menu = () => {
       >
         <div className="relative z-10 flex flex-col items-center justify-center text-white">
           <div className="hidden w-full pb-24 lg:flex">
-            <img
-              src="https://cdn.candycode.com/waku/waku-logo-shadow.svg"
-              alt="Waku"
-              className="mx-auto block w-full max-w-[25rem]"
-            />
-            <span className="sr-only">Waku</span>
+            <div className="mx-auto block w-full">
+              <Logo />
+            </div>
           </div>
           <ul className="relative z-100 flex flex-shrink-0 flex-col gap-4 text-center sm:gap-8 lg:grid lg:grid-cols-2 lg:gap-12">
             {links.map((link) => {
