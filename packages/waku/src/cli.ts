@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+import { existsSync, writeFileSync, unlinkSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
@@ -8,6 +8,7 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import * as swc from '@swc/core';
+import dotenv from 'dotenv';
 
 import type { Config } from './config.js';
 import { resolveConfig } from './lib/config.js';
@@ -16,6 +17,8 @@ import { honoMiddleware as honoPrdMiddleware } from './lib/middleware/hono-prd.j
 import { build } from './lib/builder/build.js';
 
 const require = createRequire(new URL('.', import.meta.url));
+
+dotenv.config({ path: ['.env.local', '.env'] });
 
 const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
@@ -56,7 +59,6 @@ const { values, positionals } = parseArgs({
   },
 });
 
-loadEnv();
 const config = await loadConfig();
 
 const cmd = positionals[0];
@@ -173,24 +175,6 @@ Options:
   -v, --version         Display the version number
   -h, --help            Display this help message
 `);
-}
-
-// TODO consider using a library such as `dotenv`
-function loadEnv() {
-  if (existsSync('.env.local')) {
-    for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
-      const [key, value] = line.split('=');
-      if (key && value) {
-        if (value.startsWith('"') && value.endsWith('"')) {
-          process.env[key.trim()] = value.slice(1, -1);
-        } else if (value.startsWith("'") && value.endsWith("'")) {
-          process.env[key.trim()] = value.slice(1, -1);
-        } else {
-          process.env[key.trim()] = value.trim();
-        }
-      }
-    }
-  }
 }
 
 // TODO is this a good idea?

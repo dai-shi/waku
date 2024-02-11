@@ -75,6 +75,7 @@
     "@hono/node-server": "1.7.0",
     "@swc/core": "1.4.0",
     "@vitejs/plugin-react": "4.2.1",
+    "dotenv": "16.4.2",
     "hono": "3.12.11",
     "vite": "5.0.12"
   },
