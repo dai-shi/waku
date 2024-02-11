@@ -186,6 +186,7 @@ const buildServerBundle = async (
       external:
         (serve === 'cloudflare' && ['hono', 'hono/cloudflare-workers']) || [],
       noExternal: /^(?!node:)/,
+      target: 'webworker',
     },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
@@ -284,6 +285,7 @@ const buildSsrBundle = async (
     ],
     ssr: {
       noExternal: /^(?!node:)/,
+      target: 'webworker',
     },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
