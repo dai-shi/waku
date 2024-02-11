@@ -76,13 +76,13 @@
     "@swc/core": "1.4.0",
     "@vitejs/plugin-react": "4.2.1",
     "dotenv": "16.4.2",
-    "hono": "3.12.11",
+    "hono": "4.0.0",
     "vite": "5.0.12"
   },
   "devDependencies": {
     "@netlify/functions": "^2.5.1",
     "@swc/cli": "^0.3.9",
-    "rollup": "^4.9.6"
+    "rollup": "^4.10.0"
   },
   "peerDependencies": {
     "react": "18.3.0-canary-4b2a1115a-20240202",

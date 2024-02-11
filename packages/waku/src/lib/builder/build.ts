@@ -93,6 +93,7 @@ const analyzeEntries = async (entriesFile: string) => {
   await buildVite({
     plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
     ssr: {
+      target: 'webworker',
       resolve: {
         conditions: ['react-server', 'workerd'],
         externalConditions: ['react-server', 'workerd'],
@@ -174,6 +175,7 @@ const buildServerBundle = async (
                 ),
               ),
               ssr,
+              serve,
             }),
           ]
         : []),
@@ -184,8 +186,6 @@ const buildServerBundle = async (
         conditions: ['react-server', 'workerd'],
         externalConditions: ['react-server', 'workerd'],
       },
-      external:
-        (serve === 'cloudflare' && ['hono', 'hono/cloudflare-workers']) || [],
       noExternal: /^(?!node:)/,
     },
     define: {
