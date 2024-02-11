@@ -70,6 +70,7 @@ export function createHandler<
         ],
       },
       ssr: {
+        target: 'webworker',
         external: [
           'waku',
           'waku/client',
