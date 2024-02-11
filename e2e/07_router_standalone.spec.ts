@@ -21,6 +21,11 @@ async function testRouterExample(page: Page, port: number) {
   await page.goto(`http://localhost:${port}`);
   await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
 
+  const backgroundColor = await page.evaluate(() =>
+    window.getComputedStyle(document.body).getPropertyValue('background-color'),
+  );
+  expect(backgroundColor).toBe('rgb(254, 254, 254)');
+
   await page.click("a[href='/foo']");
 
   await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
@@ -97,4 +102,6 @@ test.describe('07_router standalone', () => {
     await testRouterExample(page, port);
     cp.kill();
   });
+
+  // FIXME shouldn't we also test `--with-ssr`?
 });
