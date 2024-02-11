@@ -76,7 +76,7 @@
     "@swc/core": "1.4.0",
     "@vitejs/plugin-react": "4.2.1",
     "hono": "4.0.0",
-    "vite": "5.1.1"
+    "vite": "5.0.12"
   },
   "devDependencies": {
     "@netlify/functions": "^2.5.1",
