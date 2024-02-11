@@ -93,6 +93,7 @@ const analyzeEntries = async (entriesFile: string) => {
   await buildVite({
     plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
     ssr: {
+      target: 'webworker',
       resolve: {
         conditions: ['react-server', 'workerd'],
         externalConditions: ['react-server', 'workerd'],
