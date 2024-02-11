@@ -614,8 +614,8 @@ importers:
         specifier: 18.3.0-canary-4b2a1115a-20240202
         version: 18.3.0-canary-4b2a1115a-20240202(react@18.3.0-canary-4b2a1115a-20240202)
       waku:
-        specifier: https://pkg.csb.dev/dai-shi/waku/commit/7be1189f/waku
-        version: '@pkg.csb.dev/dai-shi/waku/commit/7be1189f/waku(@types/node@20.11.17)(react-dom@18.3.0-canary-4b2a1115a-20240202)(react-server-dom-webpack@18.3.0-canary-4b2a1115a-20240202)(react@18.3.0-canary-4b2a1115a-20240202)'
+        specifier: https://pkg.csb.dev/dai-shi/waku/commit/23dba0bb/waku
+        version: '@pkg.csb.dev/dai-shi/waku/commit/23dba0bb/waku(@types/node@20.11.17)(react-dom@18.3.0-canary-4b2a1115a-20240202)(react-server-dom-webpack@18.3.0-canary-4b2a1115a-20240202)(react@18.3.0-canary-4b2a1115a-20240202)'
     devDependencies:
       '@types/react':
         specifier: ^18.2.55
@@ -3735,11 +3735,6 @@ packages:
     resolution: {integrity: sha512-nAxA0v8+vXSBDt3AnRUNjyRIQ0rD+ntpbAp4LnPkumc5M9yUbSMa4XDU9Q6etY4f1Wp4bNgvc1yjiZtsTTrSng==}
     dev: false
 
-  /hono@3.12.11:
-    resolution: {integrity: sha512-LSpxVgIMR3UzyFiXZaPvqBUGqyOKG0LMZqgMn2RXz9f+YAdkHSfFQQX0dtU72fPm5GnEMh5AYXs0ek5NYgMOmA==}
-    engines: {node: '>=16.0.0'}
-    dev: false
-
   /hono@4.0.0:
     resolution: {integrity: sha512-8dKhuBBpRZEodUttQhrSFJ6PQqHRjXHyeeegfxOf132pvgbf0tOb9qqb7q7eYwAWpOcYrsUOsWdJ0sQIIovhZg==}
     engines: {node: '>=16.0.0'}
@@ -6639,9 +6634,9 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
     dev: false
 
-  '@pkg.csb.dev/dai-shi/waku/commit/7be1189f/waku(@types/node@20.11.17)(react-dom@18.3.0-canary-4b2a1115a-20240202)(react-server-dom-webpack@18.3.0-canary-4b2a1115a-20240202)(react@18.3.0-canary-4b2a1115a-20240202)':
-    resolution: {tarball: https://pkg.csb.dev/dai-shi/waku/commit/7be1189f/waku}
-    id: '@pkg.csb.dev/dai-shi/waku/commit/7be1189f/waku'
+  '@pkg.csb.dev/dai-shi/waku/commit/23dba0bb/waku(@types/node@20.11.17)(react-dom@18.3.0-canary-4b2a1115a-20240202)(react-server-dom-webpack@18.3.0-canary-4b2a1115a-20240202)(react@18.3.0-canary-4b2a1115a-20240202)':
+    resolution: {tarball: https://pkg.csb.dev/dai-shi/waku/commit/23dba0bb/waku}
+    id: '@pkg.csb.dev/dai-shi/waku/commit/23dba0bb/waku'
     name: waku
     version: 0.19.2
     engines: {node: ^20.8.0 || ^18.16.0}
@@ -6654,7 +6649,8 @@ packages:
       '@hono/node-server': 1.7.0
       '@swc/core': 1.4.0
       '@vitejs/plugin-react': 4.2.1(vite@5.0.12)
-      hono: 3.12.11
+      dotenv: 16.4.2
+      hono: 4.0.0
       react: 18.3.0-canary-4b2a1115a-20240202
       react-dom: 18.3.0-canary-4b2a1115a-20240202(react@18.3.0-canary-4b2a1115a-20240202)
       react-server-dom-webpack: 18.3.0-canary-4b2a1115a-20240202(react-dom@18.3.0-canary-4b2a1115a-20240202)(react@18.3.0-canary-4b2a1115a-20240202)(webpack@5.90.1)
