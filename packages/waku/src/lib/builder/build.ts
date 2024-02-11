@@ -184,12 +184,7 @@ const buildServerBundle = async (
         externalConditions: ['react-server', 'workerd'],
       },
       external:
-        (serve === 'cloudflare' && [
-          'hono',
-          'hono/cloudflare-workers',
-          '__STATIC_CONTENT_MANIFEST',
-        ]) ||
-        [],
+        (serve === 'cloudflare' && ['hono', 'hono/cloudflare-workers']) || [],
       noExternal: /^(?!node:)/,
     },
     define: {
