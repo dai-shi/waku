@@ -14,10 +14,16 @@ export const BlogIndexPage = async () => {
     <Page>
       <Meta title="Waku blog" description="The official Waku developer blog." />
       <div className="relative z-10 mx-auto w-full max-w-[80ch] pt-16 text-white lg:pt-64">
-        <ul className="space-y-12 divide-y divide-gray-800">
+        <ul className="-mx-4 -mt-px flex flex-col gap-6 sm:-mx-6 md:-mx-12 lg:gap-12">
           {articles.map((article) => (
-            <li key={article.key} className="pt-12 first:-mt-12">
-              <Link to={`/blog/${article.slug}`} className="group">
+            <li
+              key={article.slug}
+              className="-mx-px first:-mt-4 first:sm:-mt-6 first:lg:-mt-12"
+            >
+              <Link
+                to={`/blog/${article.slug}`}
+                className="group block rounded-xl border border-gray-800 bg-gray-950/90 p-4 transition-colors duration-300 ease-in-out hover:border-secondary sm:p-6 lg:p-12"
+              >
                 <div className="flex items-center gap-2 whitespace-nowrap sm:gap-4">
                   {article.release && (
                     <div>
@@ -33,7 +39,7 @@ export const BlogIndexPage = async () => {
                     <span>{article.author.name}</span>
                   </div>
                 </div>
-                <h3 className="mt-6 font-serif text-2xl font-extrabold leading-none transition-colors duration-300 ease-in-out group-hover:text-primary sm:text-4xl">
+                <h3 className="mt-6 font-serif text-2xl font-extrabold leading-none sm:text-4xl">
                   {article.title}
                 </h3>
                 <div className="mt-2 text-sm font-normal leading-snug text-white/60 sm:mt-0 sm:text-base">
