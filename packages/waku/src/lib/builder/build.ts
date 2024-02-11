@@ -179,6 +179,7 @@ const buildServerBundle = async (
         : []),
     ],
     ssr: {
+      target: 'webworker',
       resolve: {
         conditions: ['react-server', 'workerd'],
         externalConditions: ['react-server', 'workerd'],
@@ -186,7 +187,6 @@ const buildServerBundle = async (
       external:
         (serve === 'cloudflare' && ['hono', 'hono/cloudflare-workers']) || [],
       noExternal: /^(?!node:)/,
-      target: 'webworker',
     },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
@@ -284,8 +284,8 @@ const buildSsrBundle = async (
       rscEnvPlugin({ config, hydrate: true }),
     ],
     ssr: {
-      noExternal: /^(?!node:)/,
       target: 'webworker',
+      noExternal: /^(?!node:)/,
     },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
