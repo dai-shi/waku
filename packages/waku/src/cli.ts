@@ -8,7 +8,7 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import * as swc from '@swc/core';
-import 'dotenv/config';
+import dotenv from 'dotenv';
 
 import type { Config } from './config.js';
 import { resolveConfig } from './lib/config.js';
@@ -17,6 +17,8 @@ import { honoMiddleware as honoPrdMiddleware } from './lib/middleware/hono-prd.j
 import { build } from './lib/builder/build.js';
 
 const require = createRequire(new URL('.', import.meta.url));
+
+dotenv.config({ path: ['.env.local', '.env'] });
 
 const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
