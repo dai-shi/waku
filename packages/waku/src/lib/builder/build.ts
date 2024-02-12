@@ -55,8 +55,6 @@ import { emitAwsLambdaOutput } from './output-aws-lambda.js';
 
 // TODO this file and functions in it are too long. will fix.
 
-const WAKU_CLIENT = 'waku-client';
-
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   if (
@@ -92,8 +90,11 @@ const analyzeEntries = async (
   config: ResolvedConfig,
   entriesFile: string,
 ) => {
+  const wakuClientDist = decodeFilePathFromAbsolute(
+    joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
+  );
   const commonFileSet = new Set<string>();
-  const clientFileSet = new Set<string>();
+  const clientFileSet = new Set<string>([wakuClientDist]);
   const serverFileSet = new Set<string>();
   const moduleFileMap = new Map<string, string>(); // full path -> module id
   for (const preserveModuleDir of config.preserveModuleDirs) {
@@ -182,20 +183,11 @@ const buildServerBundle = async (
   ssr: boolean,
   serve: 'vercel' | 'cloudflare' | 'deno' | 'netlify' | 'aws-lambda' | false,
 ) => {
-  const serverModuleFileValueSet = new Set(Object.values(serverModuleFiles));
-  const removeServerModule = (map: Record<string, string>) =>
-    Object.fromEntries(
-      Object.entries(map).filter(([, v]) => !serverModuleFileValueSet.has(v)),
-    );
   const serverBuildOutput = await buildVite({
     plugins: [
       nonjsResolvePlugin(),
       rscTransformPlugin({
         isBuild: true,
-        wakuClientId: WAKU_CLIENT,
-        wakuClientPath: decodeFilePathFromAbsolute(
-          joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
-        ),
         clientEntryFiles,
         serverEntryFiles,
       }),
@@ -238,11 +230,10 @@ const buildServerBundle = async (
         input: {
           entries: entriesFile,
           [RSDW_SERVER_MODULE]: RSDW_SERVER_MODULE_VALUE,
-          [WAKU_CLIENT]: CLIENT_MODULE_MAP[WAKU_CLIENT],
-          ...removeServerModule(commonEntryFiles),
-          ...removeServerModule(clientEntryFiles),
-          ...removeServerModule(serverEntryFiles),
           ...serverModuleFiles,
+          ...commonEntryFiles,
+          ...clientEntryFiles,
+          ...serverEntryFiles,
         },
       },
     },
@@ -264,8 +255,6 @@ ${Object.keys(CLIENT_MODULE_MAP)
   `,
   )
   .join('')}
-    case '${config.ssrDir}/${WAKU_CLIENT}.js':
-      return import('./${config.ssrDir}/${WAKU_CLIENT}.js');
 ${Object.keys(clientEntryFiles || {})
   .map(
     (key) => `
@@ -322,9 +311,9 @@ const buildSsrBundle = async (
         onwarn,
         input: {
           main: mainJsFile,
-          ...CLIENT_MODULE_MAP,
           ...commonEntryFiles,
           ...clientEntryFiles,
+          ...CLIENT_MODULE_MAP,
         },
         output: {
           entryFileNames: (chunkInfo) => {
@@ -376,7 +365,6 @@ const buildClientBundle = async (
         onwarn,
         input: {
           main: mainJsFile,
-          [WAKU_CLIENT]: CLIENT_MODULE_MAP[WAKU_CLIENT],
           ...commonEntryFiles,
           ...clientEntryFiles,
         },
@@ -384,7 +372,6 @@ const buildClientBundle = async (
         output: {
           entryFileNames: (chunkInfo) => {
             if (
-              [WAKU_CLIENT].includes(chunkInfo.name) ||
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name]
             ) {
