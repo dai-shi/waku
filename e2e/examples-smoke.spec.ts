@@ -58,9 +58,7 @@ const specialExamples = [
   },
 ];
 
-const matchScreenshots=[
-  '12_css'
-]
+const matchScreenshots = ['12_css'];
 
 const examples = [
   ...(await readdir(examplesDir)).map((example) =>
@@ -70,7 +68,7 @@ const examples = [
 
 for (const cwd of examples) {
   const specialExample = specialExamples.find(({ name }) => cwd.includes(name));
-  const matchScreenshot=matchScreenshots.some(name=>cwd.includes(name))
+  const matchScreenshot = matchScreenshots.some((name) => cwd.includes(name));
   if (specialExample) {
     for (const { build, command } of specialExample.commands) {
       test.describe(`smoke test on ${basename(cwd)}: ${command}`, () => {
@@ -118,7 +116,7 @@ for (const cwd of examples) {
           // title maybe doesn't ready yet
           await page.waitForLoadState('load');
           await expect.poll(() => page.title()).toMatch(/^Waku/);
-          if (matchScreenshot){
+          if (matchScreenshot) {
             const screenshot = await page.screenshot();
             expect(screenshot).toMatchSnapshot();
           }
@@ -170,12 +168,12 @@ for (const cwd of examples) {
           await page.goto(`http://localhost:${port}/`);
           // title maybe doesn't ready yet
           await page.waitForLoadState('load');
-          await expect.poll(() => page.title()).toMatch(/^Waku/)
-          if (matchScreenshot){
+          await expect.poll(() => page.title()).toMatch(/^Waku/);
+          if (matchScreenshot) {
             const screenshot = await page.screenshot();
             expect(screenshot).toMatchSnapshot();
           }
-         });
+        });
       });
     }
   }
