@@ -2,7 +2,8 @@
  * Smoke tests for all examples.
  * This test will run all examples and check that the title is correct.
  *
- * If you want to run a specific example, you can use VSCode Playwright extension.
+ * If you want to run a specific example, you can use VSCode Playwright extension or on the command line:
+ * pnpm playwright test e2e/examples-smoke.spec.ts -g "12_css" --project=chromium
  */
 import { expect } from '@playwright/test';
 import { execSync, exec, ChildProcess } from 'node:child_process';
@@ -57,6 +58,10 @@ const specialExamples = [
   },
 ];
 
+const matchScreenshots=[
+  '12_css'
+]
+
 const examples = [
   ...(await readdir(examplesDir)).map((example) =>
     fileURLToPath(new URL(`../examples/${example}`, import.meta.url)),
@@ -65,6 +70,7 @@ const examples = [
 
 for (const cwd of examples) {
   const specialExample = specialExamples.find(({ name }) => cwd.includes(name));
+  const matchScreenshot=matchScreenshots.some(name=>cwd.includes(name))
   if (specialExample) {
     for (const { build, command } of specialExample.commands) {
       test.describe(`smoke test on ${basename(cwd)}: ${command}`, () => {
@@ -112,6 +118,10 @@ for (const cwd of examples) {
           // title maybe doesn't ready yet
           await page.waitForLoadState('load');
           await expect.poll(() => page.title()).toMatch(/^Waku/);
+          if (matchScreenshot){
+            const screenshot = await page.screenshot();
+            expect(screenshot).toMatchSnapshot();
+          }
         });
       });
     }
@@ -160,8 +170,12 @@ for (const cwd of examples) {
           await page.goto(`http://localhost:${port}/`);
           // title maybe doesn't ready yet
           await page.waitForLoadState('load');
-          await expect.poll(() => page.title()).toMatch(/^Waku/);
-        });
+          await expect.poll(() => page.title()).toMatch(/^Waku/)
+          if (matchScreenshot){
+            const screenshot = await page.screenshot();
+            expect(screenshot).toMatchSnapshot();
+          }
+         });
       });
     }
   }
