@@ -266,14 +266,18 @@ ${Object.keys(CLIENT_MODULE_MAP)
   .join('')}
     case '${config.ssrDir}/${WAKU_CLIENT}.js':
       return import('./${config.ssrDir}/${WAKU_CLIENT}.js');
-${[
-  ...Object.entries(clientEntryFiles || {}),
-  ...Object.entries(serverEntryFiles || {}),
-]
+${Object.keys(clientEntryFiles || {})
   .map(
-    ([k]) => `
-    case '${config.ssrDir}/${k}.js':
-      return import('./${config.ssrDir}/${k}.js');`,
+    (key) => `
+    case '${config.ssrDir}/${key}.js':
+      return import('./${config.ssrDir}/${key}.js');`,
+  )
+  .join('')}
+${Object.keys(serverEntryFiles || {})
+  .map(
+    (key) => `
+    case '${key}.js':
+      return import('./${key}.js');`,
   )
   .join('')}
     default:
