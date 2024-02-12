@@ -148,6 +148,7 @@ const buildServerBundle = async (
   serverEntryFiles: Record<string, string>,
   ssr: boolean,
   serve: 'vercel' | 'cloudflare' | 'deno' | 'netlify' | 'aws-lambda' | false,
+  isNodeCompatible: boolean,
 ) => {
   const serverBuildOutput = await buildVite({
     plugins: [
@@ -180,14 +181,22 @@ const buildServerBundle = async (
           ]
         : []),
     ],
-    ssr: {
-      target: 'webworker',
-      resolve: {
-        conditions: ['react-server', 'workerd'],
-        externalConditions: ['react-server', 'workerd'],
-      },
-      noExternal: /^(?!node:)/,
-    },
+    ssr: isNodeCompatible
+      ? {
+          resolve: {
+            conditions: ['react-server', 'workerd'],
+            externalConditions: ['react-server', 'workerd'],
+          },
+          noExternal: /^(?!node:)/,
+        }
+      : {
+          target: 'webworker',
+          resolve: {
+            conditions: ['react-server', 'workerd', 'worker'],
+            externalConditions: ['react-server', 'workerd', 'worker'],
+          },
+          noExternal: true,
+        },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
     },
@@ -272,6 +281,7 @@ const buildSsrBundle = async (
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
+  isNodeCompatible: boolean,
 ) => {
   const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
@@ -283,10 +293,18 @@ const buildSsrBundle = async (
       rscIndexPlugin({ ...config, cssAssets }),
       rscEnvPlugin({ config, hydrate: true }),
     ],
-    ssr: {
-      target: 'webworker',
-      noExternal: /^(?!node:)/,
-    },
+    ssr: isNodeCompatible
+      ? {
+          noExternal: /^(?!node:)/,
+        }
+      : {
+          target: 'webworker',
+          resolve: {
+            conditions: ['worker'],
+            externalConditions: ['worker'],
+          },
+          noExternal: true,
+        },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
     },
@@ -611,6 +629,8 @@ export async function build(options: {
   const distEntriesFile = resolveFileName(
     joinPath(rootDir, config.distDir, config.entriesJs),
   );
+  const isNodeCompatible =
+    options.deploy !== 'cloudflare' && options.deploy !== 'deno';
 
   const { commonEntryFiles, clientEntryFiles, serverEntryFiles } =
     await analyzeEntries(entriesFile);
@@ -628,6 +648,7 @@ export async function build(options: {
       (options.deploy === 'deno' ? 'deno' : false) ||
       (options.deploy === 'netlify-functions' ? 'netlify' : false) ||
       (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
+    isNodeCompatible,
   );
   if (options.ssr) {
     await buildSsrBundle(
@@ -636,6 +657,7 @@ export async function build(options: {
       commonEntryFiles,
       clientEntryFiles,
       serverBuildOutput,
+      isNodeCompatible,
     );
   }
   await buildClientBundle(
