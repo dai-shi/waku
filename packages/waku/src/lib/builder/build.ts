@@ -136,48 +136,27 @@ const analyzeEntries = async (
       },
     },
   });
-  let comIndex = 0;
   const commonEntryFiles = Object.fromEntries(
     await Promise.all(
-      Array.from(commonFileSet).map(async (fname) => {
-        const id = moduleFileMap.get(fname);
-        if (id) {
-          moduleFileMap.delete(fname);
-          return [id, fname];
-        }
-        return [
-          `${config.assetsDir}/com${++comIndex}-${await hash(fname)}`,
-          fname,
-        ];
-      }),
+      Array.from(commonFileSet).map(async (fname, i) => [
+        `${config.assetsDir}/com${i}-${await hash(fname)}`,
+        fname,
+      ]),
     ),
   );
-  let rscIndex = 0;
   const clientEntryFiles = Object.fromEntries(
     await Promise.all(
-      Array.from(clientFileSet).map(async (fname) => {
-        const id = moduleFileMap.get(fname);
-        if (id) {
-          moduleFileMap.delete(fname);
-          return [id, fname];
-        }
-        return [
-          `${config.assetsDir}/rsc${++rscIndex}-${await hash(fname)}`,
-          fname,
-        ];
-      }),
+      Array.from(clientFileSet).map(async (fname, i) => [
+        `${config.assetsDir}/rsc${i}-${await hash(fname)}`,
+        fname,
+      ]),
     ),
   );
-  let rsfIndex = 0;
   const serverEntryFiles = Object.fromEntries(
-    Array.from(serverFileSet).map((fname) => {
-      const id = moduleFileMap.get(fname);
-      if (id) {
-        moduleFileMap.delete(fname);
-        return [id, fname];
-      }
-      return [`${config.assetsDir}/rsf${++rsfIndex}`, fname];
-    }),
+    Array.from(serverFileSet).map((fname, i) => [
+      `${config.assetsDir}/rsf${i}`,
+      fname,
+    ]),
   );
   const serverModuleFiles = Object.fromEntries(
     Array.from(moduleFileMap).map(([k, v]) => [v, k]),
@@ -203,6 +182,11 @@ const buildServerBundle = async (
   ssr: boolean,
   serve: 'vercel' | 'cloudflare' | 'deno' | 'netlify' | 'aws-lambda' | false,
 ) => {
+  const serverModuleFileValueSet = new Set(Object.values(serverModuleFiles));
+  const removeServerModule = (map: Record<string, string>) =>
+    Object.fromEntries(
+      Object.entries(map).filter(([, v]) => !serverModuleFileValueSet.has(v)),
+    );
   const serverBuildOutput = await buildVite({
     plugins: [
       nonjsResolvePlugin(),
@@ -255,9 +239,9 @@ const buildServerBundle = async (
           entries: entriesFile,
           [RSDW_SERVER_MODULE]: RSDW_SERVER_MODULE_VALUE,
           [WAKU_CLIENT]: CLIENT_MODULE_MAP[WAKU_CLIENT],
-          ...commonEntryFiles,
-          ...clientEntryFiles,
-          ...serverEntryFiles,
+          ...removeServerModule(commonEntryFiles),
+          ...removeServerModule(clientEntryFiles),
+          ...removeServerModule(serverEntryFiles),
           ...serverModuleFiles,
         },
       },
@@ -388,8 +372,7 @@ const buildClientBundle = async (
         onwarn,
         input: {
           main: mainJsFile,
-          // TOCHECK Probabaly not needed
-          // [WAKU_CLIENT]: CLIENT_MODULE_MAP[WAKU_CLIENT],
+          [WAKU_CLIENT]: CLIENT_MODULE_MAP[WAKU_CLIENT],
           ...commonEntryFiles,
           ...clientEntryFiles,
         },
