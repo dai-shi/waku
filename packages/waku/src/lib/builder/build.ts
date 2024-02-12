@@ -29,6 +29,7 @@ import {
   writeFile,
   appendFile,
   unlink,
+  readdir,
 } from '../utils/node-fs.js';
 import { encodeInput, generatePrefetchCode } from '../renderers/utils.js';
 import {
@@ -86,10 +87,34 @@ const hash = (fname: string) =>
     createReadStream(fname).pipe(sha256);
   });
 
-const analyzeEntries = async (entriesFile: string) => {
+const analyzeEntries = async (
+  rootDir: string,
+  config: ResolvedConfig,
+  entriesFile: string,
+) => {
   const commonFileSet = new Set<string>();
   const clientFileSet = new Set<string>();
   const serverFileSet = new Set<string>();
+  const moduleFileMap = new Map<string, string>(); // full path -> module id
+  for (const preserveModuleDir of config.preserveModuleDirs) {
+    const dir = joinPath(rootDir, config.srcDir, preserveModuleDir);
+    if (!existsSync(dir)) {
+      continue;
+    }
+    const files = await readdir(dir, { encoding: 'utf8', recursive: true });
+    for (const file of files) {
+      const ext = extname(file);
+      if (['.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs'].includes(ext)) {
+        moduleFileMap.set(
+          joinPath(dir, file),
+          joinPath(
+            preserveModuleDir,
+            file.slice(0, -ext.length),
+          ),
+        );
+      }
+    }
+  }
   await buildVite({
     plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
     ssr: {
@@ -106,34 +131,65 @@ const analyzeEntries = async (entriesFile: string) => {
       rollupOptions: {
         onwarn,
         input: {
+          ...Object.fromEntries(
+            Array.from(moduleFileMap).map(([k, v]) => [v, k]),
+          ),
           entries: entriesFile,
         },
       },
     },
   });
+  let comIndex = 0;
   const commonEntryFiles = Object.fromEntries(
     await Promise.all(
-      Array.from(commonFileSet).map(async (fname, i) => [
-        `com${i}-${await hash(fname)}`,
-        fname,
-      ]),
+      Array.from(commonFileSet).map(async (fname) => {
+        const id = moduleFileMap.get(fname);
+        if (id) {
+          moduleFileMap.delete(fname);
+          return [id, fname];
+        }
+        return [`com${++comIndex}-${await hash(fname)}`, fname];
+      }),
     ),
   );
+  let rscIndex = 0;
   const clientEntryFiles = Object.fromEntries(
     await Promise.all(
-      Array.from(clientFileSet).map(async (fname, i) => [
-        `rsc${i}-${await hash(fname)}`,
-        fname,
-      ]),
+      Array.from(clientFileSet).map(async (fname) => {
+        const id = moduleFileMap.get(fname);
+        if (id) {
+          moduleFileMap.delete(fname);
+          return [id, fname];
+        }
+        return [`rsc${++rscIndex}-${await hash(fname)}`, fname];
+      }),
     ),
   );
+  let rsfIndex = 0;
   const serverEntryFiles = Object.fromEntries(
-    Array.from(serverFileSet).map((fname, i) => [`rsf${i}`, fname]),
+    Array.from(serverFileSet).map((fname) => {
+      const id = moduleFileMap.get(fname);
+      if (id) {
+        moduleFileMap.delete(fname);
+        return [id, fname];
+      }
+      return [`rsf${++rsfIndex}`, fname];
+    }),
   );
+  const serverModuleFiles = Object.fromEntries(
+    Array.from(moduleFileMap).map(([k, v]) => [v, k]),
+  );
+  console.log({
+    commonEntryFiles,
+    clientEntryFiles,
+    serverEntryFiles,
+    serverModuleFiles,
+  });
   return {
     commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
+    serverModuleFiles,
   };
 };
 
@@ -146,6 +202,7 @@ const buildServerBundle = async (
   commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
+  serverModuleFiles: Record<string, string>,
   ssr: boolean,
   serve: 'vercel' | 'cloudflare' | 'deno' | 'netlify' | 'aws-lambda' | false,
 ) => {
@@ -205,11 +262,12 @@ const buildServerBundle = async (
           ...commonEntryFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
+          ...serverModuleFiles,
         },
         output: {
           entryFileNames: (chunkInfo) => {
             if (
-              [WAKU_CLIENT].includes(chunkInfo.name) ||
+              [RSDW_SERVER_MODULE, WAKU_CLIENT].includes(chunkInfo.name) ||
               commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name] ||
               serverEntryFiles[chunkInfo.name]
@@ -231,7 +289,7 @@ const buildServerBundle = async (
 export function loadModule(id) {
   switch (id) {
     case '${RSDW_SERVER_MODULE}':
-      return import('./${RSDW_SERVER_MODULE}.js');
+      return import('./${config.assetsDir}/${RSDW_SERVER_MODULE}.js');
 ${Object.keys(CLIENT_MODULE_MAP)
   .map(
     (key) => `
@@ -612,8 +670,12 @@ export async function build(options: {
     joinPath(rootDir, config.distDir, config.entriesJs),
   );
 
-  const { commonEntryFiles, clientEntryFiles, serverEntryFiles } =
-    await analyzeEntries(entriesFile);
+  const {
+    commonEntryFiles,
+    clientEntryFiles,
+    serverEntryFiles,
+    serverModuleFiles,
+  } = await analyzeEntries(rootDir, config, entriesFile);
   const serverBuildOutput = await buildServerBundle(
     rootDir,
     config,
@@ -622,6 +684,7 @@ export async function build(options: {
     commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
+    serverModuleFiles,
     !!options.ssr,
     (options.deploy === 'vercel-serverless' ? 'vercel' : false) ||
       (options.deploy === 'cloudflare' ? 'cloudflare' : false) ||

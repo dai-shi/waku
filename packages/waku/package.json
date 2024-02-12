@@ -69,7 +69,7 @@
   },
   "license": "MIT",
   "engines": {
-    "node": "^20.8.0 || ^18.16.0"
+    "node": "^20.8.0 || ^18.17.0"
   },
   "dependencies": {
     "@hono/node-server": "1.7.0",
