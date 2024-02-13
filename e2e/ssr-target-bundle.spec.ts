@@ -19,7 +19,9 @@ const commands = [
   },
 ];
 
-const cwd = fileURLToPath(new URL('./fixtures/ssr-target-bundle', import.meta.url));
+const cwd = fileURLToPath(
+  new URL('./fixtures/ssr-target-bundle', import.meta.url),
+);
 
 for (const { build, command } of commands) {
   test.describe(`ssr-target-bundle: ${command}`, () => {
@@ -65,9 +67,13 @@ for (const { build, command } of commands) {
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
       await expect(page.getByTestId('textarea')).toHaveValue('EMPTY');
-      const height = await page.getByTestId('textarea').evaluate((el) => el.clientHeight);
-      await page.getByTestId('textarea').fill("Line1\nLine2\nLine3");
-      const heightChanged = await page.getByTestId('textarea').evaluate((el) => el.clientHeight);
+      const height = await page
+        .getByTestId('textarea')
+        .evaluate((el) => el.clientHeight);
+      await page.getByTestId('textarea').fill('Line1\nLine2\nLine3');
+      const heightChanged = await page
+        .getByTestId('textarea')
+        .evaluate((el) => el.clientHeight);
       expect(heightChanged).toBeGreaterThan(height);
     });
 
