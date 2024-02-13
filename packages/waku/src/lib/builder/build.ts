@@ -567,13 +567,11 @@ const emitHtmlFiles = async (
                 searchParams,
                 isDev: false,
                 entries: distEntries,
-                isBuild: true,
               }),
             loadClientModule: (key) =>
               distEntries.loadModule(CLIENT_PREFIX + key),
             isDev: false,
             loadModule: distEntries.loadModule,
-            isBuild: true,
           }));
         await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
         if (htmlReadable) {
