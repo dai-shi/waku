@@ -138,7 +138,6 @@ const mergedViteConfig = await mergeUserViteConfig({
     entries: [`${configSrcDir}/${configEntriesJs}`.replace(/\.js$/, '.*')],
   },
   ssr: {
-    target: 'webworker',
     resolve: {
       conditions: ['react-server', 'workerd'],
       externalConditions: ['react-server', 'workerd'],
