@@ -218,7 +218,7 @@ export async function getSsrConfig(
     pathname: string;
     searchParams: URLSearchParams;
   } & (
-    | { isDev: false; entries: EntriesPrd; isBuild: boolean }
+    | { isDev: false; entries: EntriesPrd }
     | {
         isDev: true;
         entries: EntriesDev;

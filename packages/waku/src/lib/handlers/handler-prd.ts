@@ -80,13 +80,11 @@ export function createHandler<
                 searchParams,
                 isDev: false,
                 entries: resolvedEntries,
-                isBuild: false,
               }),
             loadClientModule: (key) =>
               resolvedEntries.loadModule(CLIENT_PREFIX + key),
             isDev: false,
             loadModule: resolvedEntries.loadModule,
-            isBuild: false,
           });
           if (readable) {
             unstable_posthook?.(req, res, context as Context);
