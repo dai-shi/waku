@@ -129,7 +129,7 @@ It begins with a server component at the top of the tree. Then at points down th
 
 Server components can still be rendered below this boundary, but only via composition (e.g., `children` props). Together they form [a new "React server" layer](https://github.com/reactwg/server-components/discussions/4) that runs _before_ the traditional "React client" layer with which you're already familiar.
 
-Client components are still server-side rendered as SSR is distinct concept from RSC. See the [linked diagrams](https://github.com/reactwg/server-components/discussions/4) for a helpful visual.
+Client components are still server-side rendered as SSR is a distinct concept from RSC. See the [linked diagrams](https://github.com/reactwg/server-components/discussions/4) for a helpful visual.
 
 #### Further reading
 
