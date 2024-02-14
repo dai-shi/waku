@@ -642,8 +642,8 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react@18.3.0-canary-14fd9630e-20240213)
       waku:
-        specifier: https://pkg.csb.dev/dai-shi/waku/commit/c54c814b/waku
-        version: '@pkg.csb.dev/dai-shi/waku/commit/c54c814b/waku(@types/node@20.11.17)(react-dom@18.3.0-canary-14fd9630e-20240213)(react-server-dom-webpack@18.3.0-canary-4b2a1115a-20240202)(react@18.3.0-canary-14fd9630e-20240213)'
+        specifier: https://pkg.csb.dev/dai-shi/waku/commit/47ee5d7b/waku
+        version: '@pkg.csb.dev/dai-shi/waku/commit/47ee5d7b/waku(@types/node@20.11.17)(react-dom@18.3.0-canary-14fd9630e-20240213)(react-server-dom-webpack@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)'
     devDependencies:
       '@types/react':
         specifier: ^18.2.55
@@ -5426,22 +5426,6 @@ packages:
       react-dom: 18.3.0-canary-14fd9630e-20240213(react@18.3.0-canary-14fd9630e-20240213)
       webpack: 5.90.1
 
-  /react-server-dom-webpack@18.3.0-canary-4b2a1115a-20240202(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1):
-    resolution: {integrity: sha512-6Dc9DkzIRf44P02ez/yoZUCs9+nM3LWq6Wi85rAXIddlE1X3qmpao10AsFPVfDm/iUyBdRTc8cGGi0YGfhMVFg==}
-    engines: {node: '>=0.10.0'}
-    peerDependencies:
-      react: 18.3.0-canary-4b2a1115a-20240202
-      react-dom: 18.3.0-canary-4b2a1115a-20240202
-      webpack: ^5.59.0
-    dependencies:
-      acorn-loose: 8.4.0
-      loose-envify: 1.4.0
-      neo-async: 2.6.2
-      react: 18.3.0-canary-14fd9630e-20240213
-      react-dom: 18.3.0-canary-14fd9630e-20240213(react@18.3.0-canary-14fd9630e-20240213)
-      webpack: 5.90.1
-    dev: false
-
   /react-textarea-autosize@8.5.3(@types/react@18.2.55)(react@18.3.0-canary-14fd9630e-20240213):
     resolution: {integrity: sha512-XT1024o2pqCuZSuBt9FwHlaDeNtVrtCXu0Rnz88t1jUGheCLa3PhjE1GH8Ctm2axEtvdCl5SUHYschyQ0L5QHQ==}
     engines: {node: '>=10'}
@@ -6727,17 +6711,17 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
     dev: false
 
-  '@pkg.csb.dev/dai-shi/waku/commit/c54c814b/waku(@types/node@20.11.17)(react-dom@18.3.0-canary-14fd9630e-20240213)(react-server-dom-webpack@18.3.0-canary-4b2a1115a-20240202)(react@18.3.0-canary-14fd9630e-20240213)':
-    resolution: {tarball: https://pkg.csb.dev/dai-shi/waku/commit/c54c814b/waku}
-    id: '@pkg.csb.dev/dai-shi/waku/commit/c54c814b/waku'
+  '@pkg.csb.dev/dai-shi/waku/commit/47ee5d7b/waku(@types/node@20.11.17)(react-dom@18.3.0-canary-14fd9630e-20240213)(react-server-dom-webpack@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)':
+    resolution: {tarball: https://pkg.csb.dev/dai-shi/waku/commit/47ee5d7b/waku}
+    id: '@pkg.csb.dev/dai-shi/waku/commit/47ee5d7b/waku'
     name: waku
     version: 0.19.2
     engines: {node: ^20.8.0 || ^18.16.0}
     hasBin: true
     peerDependencies:
-      react: 18.3.0-canary-4b2a1115a-20240202
-      react-dom: 18.3.0-canary-4b2a1115a-20240202
-      react-server-dom-webpack: 18.3.0-canary-4b2a1115a-20240202
+      react: 18.3.0-canary-14fd9630e-20240213
+      react-dom: 18.3.0-canary-14fd9630e-20240213
+      react-server-dom-webpack: 18.3.0-canary-14fd9630e-20240213
     dependencies:
       '@hono/node-server': 1.7.0
       '@swc/core': 1.4.0
@@ -6746,7 +6730,7 @@ packages:
       hono: 4.0.0
       react: 18.3.0-canary-14fd9630e-20240213
       react-dom: 18.3.0-canary-14fd9630e-20240213(react@18.3.0-canary-14fd9630e-20240213)
-      react-server-dom-webpack: 18.3.0-canary-4b2a1115a-20240202(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
+      react-server-dom-webpack: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       vite: 5.0.12(@types/node@20.11.17)
     transitivePeerDependencies:
       - '@swc/helpers'
