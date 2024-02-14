@@ -1,0 +1,23 @@
+{
+  "name": "ssr-target-bundle",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "waku dev --with-ssr",
+    "build": "waku build --with-ssr",
+    "start": "waku start --with-ssr"
+  },
+  "dependencies": {
+    "react": "18.3.0-canary-4b2a1115a-20240202",
+    "react-dom": "18.3.0-canary-4b2a1115a-20240202",
+    "react-server-dom-webpack": "18.3.0-canary-4b2a1115a-20240202",
+    "react-textarea-autosize": "^8.5.3",
+    "waku": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "18.2.55",
+    "@types/react-dom": "18.2.19",
+    "typescript": "5.3.3"
+  }
+}
