@@ -160,6 +160,13 @@ async function init() {
 
   fse.copySync(templateDir, root);
 
+  if (existsSync(path.join(root, 'gitignore'))) {
+    await fsPromises.rename(
+      path.join(root, 'gitignore'),
+      path.join(root, '.gitignore'),
+    );
+  }
+
   await fsPromises.writeFile(
     packageJsonPath,
     JSON.stringify(
