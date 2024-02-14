@@ -87,7 +87,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
-        specifier: 0.19.2
+        specifier: workspace:*
         version: link:../../../packages/waku
     devDependencies:
       '@types/react':
@@ -112,7 +112,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
-        specifier: 0.19.2
+        specifier: workspace:*
         version: link:../../../packages/waku
     devDependencies:
       '@types/react':
@@ -137,7 +137,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
-        specifier: 0.19.2
+        specifier: workspace:*
         version: link:../../../packages/waku
     devDependencies:
       '@types/react':
@@ -190,7 +190,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
-        specifier: 0.19.2
+        specifier: 0.19.3
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -221,7 +221,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
-        specifier: 0.19.2
+        specifier: 0.19.3
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -252,7 +252,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
-        specifier: 0.19.2
+        specifier: 0.19.3
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -277,7 +277,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
-        specifier: 0.19.2
+        specifier: 0.19.3
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -305,7 +305,7 @@ importers:
         specifier: 1.1.0
         version: 1.1.0(react@18.3.0-canary-14fd9630e-20240213)
       waku:
-        specifier: 0.19.2
+        specifier: 0.19.3
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -330,7 +330,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
-        specifier: 0.19.2
+        specifier: 0.19.3
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -355,7 +355,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
-        specifier: 0.19.2
+        specifier: 0.19.3
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -389,7 +389,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
-        specifier: 0.19.2
+        specifier: 0.19.3
         version: link:../../packages/waku
     devDependencies:
       '@types/node':
@@ -417,7 +417,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
-        specifier: 0.19.2
+        specifier: 0.19.3
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -445,7 +445,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
-        specifier: 0.19.2
+        specifier: 0.19.3
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -470,7 +470,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
-        specifier: 0.19.2
+        specifier: 0.19.3
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -504,7 +504,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
-        specifier: 0.19.2
+        specifier: 0.19.3
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -538,7 +538,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
-        specifier: 0.19.2
+        specifier: 0.19.3
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
