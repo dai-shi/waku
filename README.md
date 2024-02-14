@@ -127,9 +127,9 @@ Each layout and page in Waku is composed of a React component heirarchy.
 
 It begins with a server component at the top of the tree. Then at points down the heirarchy, you'll eventually import a component that needs client component APIs. Mark this file with a `'use client'` directive at the top. When imported into a server component, it will create a server-client boundary. Below this point in the component heirarchy, all imported components are hydrated and will run in the browser as well.
 
-Server components can still be rendered below this boundary, but only via composition (e.g., `children` props). They form [a new layer](https://github.com/reactwg/server-components/discussions/4) that run _before_ any client code.
+Server components can still be rendered below this boundary, but only via composition (e.g., `children` props). Together they form [a new "React server" layer](https://github.com/reactwg/server-components/discussions/4) that runs _before_ the traditional "React client" layer with which you're already familiar.
 
-Client components are still server-side rendered. SSR is seperate from RSC. See the [linked diagrams](https://github.com/reactwg/server-components/discussions/4) for a helpful visual.
+Client components are still server-side rendered as SSR is a distinct concept from RSC. See the [linked diagrams](https://github.com/reactwg/server-components/discussions/4) for a helpful visual.
 
 #### Further reading
 
