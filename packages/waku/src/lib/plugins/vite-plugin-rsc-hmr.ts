@@ -126,18 +126,16 @@ export function rscHmrPlugin(): Plugin {
   };
 }
 
-type Server = NonNullable<ViteDevServer['httpServer']>;
-
-const pendingMap = new WeakMap<Server, Set<string>>();
+const pendingMap = new WeakMap<ViteDevServer['ws'], Set<string>>();
 
 function hotImport(viteServer: ViteDevServer, source: string) {
   if (!viteServer.httpServer) {
     return;
   }
-  let sourceSet = pendingMap.get(viteServer.httpServer);
+  let sourceSet = pendingMap.get(viteServer.ws);
   if (!sourceSet) {
     sourceSet = new Set();
-    pendingMap.set(viteServer.httpServer, sourceSet);
+    pendingMap.set(viteServer.ws, sourceSet);
     viteServer.ws.on('connection', () => {
       for (const source of sourceSet!) {
         viteServer.ws.send({
@@ -152,16 +150,16 @@ function hotImport(viteServer: ViteDevServer, source: string) {
   viteServer.ws.send({ type: 'custom', event: 'hot-import', data: source });
 }
 
-const modulePendingMap = new WeakMap<Server, Set<ModuleImportResult>>();
+const modulePendingMap = new WeakMap<ViteDevServer['ws'], Set<ModuleImportResult>>();
 
 function moduleImport(viteServer: ViteDevServer, result: ModuleImportResult) {
   if (!viteServer.httpServer) {
     return;
   }
-  let sourceSet = modulePendingMap.get(viteServer.httpServer);
+  let sourceSet = modulePendingMap.get(viteServer.ws);
   if (!sourceSet) {
     sourceSet = new Set();
-    modulePendingMap.set(viteServer.httpServer, sourceSet);
+    modulePendingMap.set(viteServer.ws, sourceSet);
   }
   sourceSet.add(result);
   viteServer.ws.send({ type: 'custom', event: 'module-import', data: result });
@@ -173,7 +171,7 @@ async function generateInitialScripts(
   if (!viteServer.httpServer) {
     return [];
   }
-  const sourceSet = modulePendingMap.get(viteServer.httpServer);
+  const sourceSet = modulePendingMap.get(viteServer.ws);
 
   if (!sourceSet) {
     return [];
