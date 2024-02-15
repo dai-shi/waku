@@ -53,7 +53,7 @@ export const Menu = () => {
           isMenuOpen
             ? 'pointer-events-auto opacity-100'
             : 'pointer-events-none opacity-0',
-          'fixed inset-0 z-90 flex max-h-full items-center justify-center overflow-y-auto overscroll-none  border-gray-800 bg-gray-950 transition-opacity duration-300 ease-in-out lg:bottom-auto lg:left-auto lg:right-4 lg:top-4 lg:overflow-clip lg:rounded-xl lg:border lg:p-12 lg:backdrop-blur',
+          'fixed inset-0 z-90 flex max-h-full items-center justify-center overflow-y-auto overscroll-none border-gray-800  bg-gray-950 transition-opacity duration-300 ease-in-out lg:bottom-auto lg:left-auto lg:right-4 lg:top-4 lg:z-100 lg:overflow-clip lg:rounded-xl lg:border lg:p-12 lg:backdrop-blur',
         )}
       >
         <div className="relative z-10 flex flex-col items-center justify-center text-white">
