@@ -126,13 +126,13 @@ export function rscHmrPlugin(): Plugin {
   };
 }
 
-type Server = NonNullable<ViteDevServer['httpServer']>
+type Server = NonNullable<ViteDevServer['httpServer']>;
 
 const pendingMap = new WeakMap<Server, Set<string>>();
 
 function hotImport(viteServer: ViteDevServer, source: string) {
   if (!viteServer.httpServer) {
-    return
+    return;
   }
   let sourceSet = pendingMap.get(viteServer.httpServer);
   if (!sourceSet) {
@@ -140,7 +140,11 @@ function hotImport(viteServer: ViteDevServer, source: string) {
     pendingMap.set(viteServer.httpServer, sourceSet);
     viteServer.ws.on('connection', () => {
       for (const source of sourceSet!) {
-        viteServer.ws.send({ type: 'custom', event: 'hot-import', data: source });
+        viteServer.ws.send({
+          type: 'custom',
+          event: 'hot-import',
+          data: source,
+        });
       }
     });
   }
@@ -152,7 +156,7 @@ const modulePendingMap = new WeakMap<Server, Set<ModuleImportResult>>();
 
 function moduleImport(viteServer: ViteDevServer, result: ModuleImportResult) {
   if (!viteServer.httpServer) {
-    return
+    return;
   }
   let sourceSet = modulePendingMap.get(viteServer.httpServer);
   if (!sourceSet) {
@@ -167,7 +171,7 @@ async function generateInitialScripts(
   viteServer: ViteDevServer,
 ): Promise<HtmlTagDescriptor[]> {
   if (!viteServer.httpServer) {
-    return []
+    return [];
   }
   const sourceSet = modulePendingMap.get(viteServer.httpServer);
 
