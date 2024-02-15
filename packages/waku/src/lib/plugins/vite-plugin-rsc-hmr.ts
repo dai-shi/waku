@@ -129,9 +129,6 @@ export function rscHmrPlugin(): Plugin {
 const pendingMap = new WeakMap<ViteDevServer['ws'], Set<string>>();
 
 function hotImport(viteServer: ViteDevServer, source: string) {
-  if (!viteServer.httpServer) {
-    return;
-  }
   let sourceSet = pendingMap.get(viteServer.ws);
   if (!sourceSet) {
     sourceSet = new Set();
@@ -156,9 +153,6 @@ const modulePendingMap = new WeakMap<
 >();
 
 function moduleImport(viteServer: ViteDevServer, result: ModuleImportResult) {
-  if (!viteServer.httpServer) {
-    return;
-  }
   let sourceSet = modulePendingMap.get(viteServer.ws);
   if (!sourceSet) {
     sourceSet = new Set();
@@ -171,9 +165,6 @@ function moduleImport(viteServer: ViteDevServer, result: ModuleImportResult) {
 async function generateInitialScripts(
   viteServer: ViteDevServer,
 ): Promise<HtmlTagDescriptor[]> {
-  if (!viteServer.httpServer) {
-    return [];
-  }
   const sourceSet = modulePendingMap.get(viteServer.ws);
 
   if (!sourceSet) {
