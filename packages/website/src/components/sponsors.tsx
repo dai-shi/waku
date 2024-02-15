@@ -33,7 +33,7 @@ export const Sponsors = ({ always = false, className = '' }: SponsorsProps) => {
       >
         <span
           className={cx(
-            'font-simple text-[11px] uppercase tracking-[0.125em] text-gray-600 transition-colors duration-300 ease-in-out group-hover:text-white',
+            'font-simple text-[11px] uppercase tracking-[0.125em] text-gray-500 transition-colors duration-300 ease-in-out group-hover:text-white',
           )}
         >
           sponsored by

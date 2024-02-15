@@ -47,16 +47,16 @@ export const Menu = () => {
           isMenuOpen
             ? 'pointer-events-auto opacity-100'
             : 'pointer-events-none opacity-0',
-          'fixed inset-0 z-90 flex items-center justify-center overscroll-none bg-black transition-opacity duration-300 ease-in-out lg:p-24',
+          'fixed inset-0 z-90 flex max-h-full items-center justify-center overflow-y-auto overscroll-none  border-gray-800 bg-gray-950 transition-opacity duration-300 ease-in-out lg:bottom-auto lg:left-auto lg:right-4 lg:top-4 lg:overflow-clip lg:rounded-3xl lg:border lg:p-12 lg:backdrop-blur',
         )}
       >
         <div className="relative z-10 flex flex-col items-center justify-center text-white">
-          <div className="hidden w-full pb-24 lg:flex">
+          <div className="hidden w-full pb-12 2xl:flex">
             <div className="mx-auto block w-full">
-              <Logo />
+              <Logo className="lg:!max-w-[12.5rem]" />
             </div>
           </div>
-          <ul className="relative z-100 flex flex-shrink-0 flex-col gap-4 text-center sm:gap-8 lg:grid lg:grid-cols-2 lg:gap-12">
+          <ul className="relative z-100 flex flex-shrink-0 flex-col gap-4 text-center">
             {links.map((link) => {
               return <MenuLink key={link.to} link={link} />;
             })}
@@ -104,15 +104,15 @@ export const MenuLink = ({ link }: MenuLinkProps) => {
         {...props}
         onClick={() => setIsMenuOpen(false)}
         className={cx(
-          'flex items-center gap-4 rounded-md border border-gray-800 bg-black px-4 py-3 transition-colors duration-300 ease-in-out focus:ring-4 focus:ring-primary-300 lg:px-9 lg:py-6',
+          'flex items-center gap-4 rounded-md border border-gray-800 bg-black px-4 py-3 transition-colors duration-300 ease-in-out focus:ring-4 focus:ring-primary-300',
           !link.disabled
             ? 'text-white hover:border-secondary'
             : 'cursor-not-allowed text-white/40',
         )}
       >
-        <span className="text-2xl font-bold sm:text-4xl">{link.label}</span>
+        <span className="text-2xl font-bold">{link.label}</span>
         {link.disabled && (
-          <span className="inline-block origin-left scale-75 whitespace-nowrap rounded-md bg-white px-2 py-1 text-[0.625rem] font-black uppercase tracking-wide text-black sm:scale-100 sm:text-xs">
+          <span className="inline-block origin-left scale-75 whitespace-nowrap rounded-md bg-white px-2 py-1 text-[0.625rem] font-black uppercase tracking-wide text-black">
             Coming soon
           </span>
         )}
