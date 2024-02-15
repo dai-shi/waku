@@ -150,7 +150,10 @@ function hotImport(viteServer: ViteDevServer, source: string) {
   viteServer.ws.send({ type: 'custom', event: 'hot-import', data: source });
 }
 
-const modulePendingMap = new WeakMap<ViteDevServer['ws'], Set<ModuleImportResult>>();
+const modulePendingMap = new WeakMap<
+  ViteDevServer['ws'],
+  Set<ModuleImportResult>
+>();
 
 function moduleImport(viteServer: ViteDevServer, result: ModuleImportResult) {
   if (!viteServer.httpServer) {
