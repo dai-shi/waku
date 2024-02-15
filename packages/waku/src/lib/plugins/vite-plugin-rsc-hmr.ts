@@ -10,6 +10,7 @@ import {
   fileURLToFilePath,
   decodeFilePathFromAbsolute,
 } from '../utils/path.js';
+import type { Server } from 'node:http';
 
 type ModuleImportResult = TransformResult & {
   id: string;
