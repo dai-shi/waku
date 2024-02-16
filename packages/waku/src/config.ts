@@ -52,7 +52,7 @@ export interface Config {
   /**
    * The list of directries to preserve server module structure.
    * Relative to srcDir.
-   * Defaults to ["pages", "templates", "components"].
+   * Defaults to ["pages", "templates", "routes", "components"].
    */
   preserveModuleDirs?: string[];
   /**
