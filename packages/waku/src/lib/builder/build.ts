@@ -111,6 +111,8 @@ const analyzeEntries = async (entriesFile: string) => {
       },
     },
   });
+  // TMP do we need it?
+  commonFileSet.clear();
   const commonEntryFiles = Object.fromEntries(
     await Promise.all(
       Array.from(commonFileSet).map(async (fname, i) => [
