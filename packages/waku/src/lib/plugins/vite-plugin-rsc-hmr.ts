@@ -126,30 +126,37 @@ export function rscHmrPlugin(): Plugin {
   };
 }
 
-const pendingMap = new WeakMap<ViteDevServer, Set<string>>();
+const pendingMap = new WeakMap<ViteDevServer['ws'], Set<string>>();
 
-function hotImport(vite: ViteDevServer, source: string) {
-  let sourceSet = pendingMap.get(vite);
+function hotImport(viteServer: ViteDevServer, source: string) {
+  let sourceSet = pendingMap.get(viteServer.ws);
   if (!sourceSet) {
     sourceSet = new Set();
-    pendingMap.set(vite, sourceSet);
-    vite.ws.on('connection', () => {
+    pendingMap.set(viteServer.ws, sourceSet);
+    viteServer.ws.on('connection', () => {
       for (const source of sourceSet!) {
-        vite.ws.send({ type: 'custom', event: 'hot-import', data: source });
+        viteServer.ws.send({
+          type: 'custom',
+          event: 'hot-import',
+          data: source,
+        });
       }
     });
   }
   sourceSet.add(source);
-  vite.ws.send({ type: 'custom', event: 'hot-import', data: source });
+  viteServer.ws.send({ type: 'custom', event: 'hot-import', data: source });
 }
 
-const modulePendingMap = new WeakMap<ViteDevServer, Set<ModuleImportResult>>();
+const modulePendingMap = new WeakMap<
+  ViteDevServer['ws'],
+  Set<ModuleImportResult>
+>();
 
 function moduleImport(viteServer: ViteDevServer, result: ModuleImportResult) {
-  let sourceSet = modulePendingMap.get(viteServer);
+  let sourceSet = modulePendingMap.get(viteServer.ws);
   if (!sourceSet) {
     sourceSet = new Set();
-    modulePendingMap.set(viteServer, sourceSet);
+    modulePendingMap.set(viteServer.ws, sourceSet);
   }
   sourceSet.add(result);
   viteServer.ws.send({ type: 'custom', event: 'module-import', data: result });
@@ -158,7 +165,7 @@ function moduleImport(viteServer: ViteDevServer, result: ModuleImportResult) {
 async function generateInitialScripts(
   viteServer: ViteDevServer,
 ): Promise<HtmlTagDescriptor[]> {
-  const sourceSet = modulePendingMap.get(viteServer);
+  const sourceSet = modulePendingMap.get(viteServer.ws);
 
   if (!sourceSet) {
     return [];
