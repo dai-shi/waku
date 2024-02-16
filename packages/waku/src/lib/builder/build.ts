@@ -87,11 +87,10 @@ const hash = (fname: string) =>
   });
 
 const analyzeEntries = async (entriesFile: string) => {
-  const commonFileSet = new Set<string>();
   const clientFileSet = new Set<string>();
   const serverFileSet = new Set<string>();
   await buildVite({
-    plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
+    plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet)],
     ssr: {
       target: 'webworker',
       resolve: {
@@ -111,14 +110,6 @@ const analyzeEntries = async (entriesFile: string) => {
       },
     },
   });
-  const commonEntryFiles = Object.fromEntries(
-    await Promise.all(
-      Array.from(commonFileSet).map(async (fname, i) => [
-        `com${i}-${await hash(fname)}`,
-        fname,
-      ]),
-    ),
-  );
   const clientEntryFiles = Object.fromEntries(
     await Promise.all(
       Array.from(clientFileSet).map(async (fname, i) => [
@@ -131,7 +122,6 @@ const analyzeEntries = async (entriesFile: string) => {
     Array.from(serverFileSet).map((fname, i) => [`rsf${i}`, fname]),
   );
   return {
-    commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
   };
@@ -143,7 +133,6 @@ const buildServerBundle = async (
   config: ResolvedConfig,
   entriesFile: string,
   distEntriesFile: string,
-  commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
   ssr: boolean,
@@ -211,7 +200,6 @@ const buildServerBundle = async (
           entries: entriesFile,
           [RSDW_SERVER_MODULE]: RSDW_SERVER_MODULE_VALUE,
           [WAKU_CLIENT]: CLIENT_MODULE_MAP[WAKU_CLIENT],
-          ...commonEntryFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
         },
@@ -219,7 +207,6 @@ const buildServerBundle = async (
           entryFileNames: (chunkInfo) => {
             if (
               [WAKU_CLIENT].includes(chunkInfo.name) ||
-              commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name] ||
               serverEntryFiles[chunkInfo.name]
             ) {
@@ -278,7 +265,6 @@ ${Object.entries(serverEntryFiles || {})
 const buildSsrBundle = async (
   rootDir: string,
   config: ResolvedConfig,
-  commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
   isNodeCompatible: boolean,
@@ -317,7 +303,6 @@ const buildSsrBundle = async (
         input: {
           main: mainJsFile,
           ...CLIENT_MODULE_MAP,
-          ...commonEntryFiles,
           ...clientEntryFiles,
         },
         output: {
@@ -326,7 +311,6 @@ const buildSsrBundle = async (
               CLIENT_MODULE_MAP[
                 chunkInfo.name as keyof typeof CLIENT_MODULE_MAP
               ] ||
-              commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name]
             ) {
               return config.assetsDir + '/[name].js';
@@ -348,7 +332,6 @@ const buildSsrBundle = async (
 const buildClientBundle = async (
   rootDir: string,
   config: ResolvedConfig,
-  commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
   ssr: boolean,
@@ -371,7 +354,6 @@ const buildClientBundle = async (
         input: {
           main: mainJsFile,
           [WAKU_CLIENT]: CLIENT_MODULE_MAP[WAKU_CLIENT],
-          ...commonEntryFiles,
           ...clientEntryFiles,
         },
         preserveEntrySignatures: 'exports-only',
@@ -379,7 +361,6 @@ const buildClientBundle = async (
           entryFileNames: (chunkInfo) => {
             if (
               [WAKU_CLIENT].includes(chunkInfo.name) ||
-              commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name]
             ) {
               return config.assetsDir + '/[name].js';
@@ -630,14 +611,13 @@ export async function build(options: {
   const isNodeCompatible =
     options.deploy !== 'cloudflare' && options.deploy !== 'deno';
 
-  const { commonEntryFiles, clientEntryFiles, serverEntryFiles } =
+  const { clientEntryFiles, serverEntryFiles } =
     await analyzeEntries(entriesFile);
   const serverBuildOutput = await buildServerBundle(
     rootDir,
     config,
     entriesFile,
     distEntriesFile,
-    commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
     !!options.ssr,
@@ -652,7 +632,6 @@ export async function build(options: {
     await buildSsrBundle(
       rootDir,
       config,
-      commonEntryFiles,
       clientEntryFiles,
       serverBuildOutput,
       isNodeCompatible,
@@ -661,7 +640,6 @@ export async function build(options: {
   await buildClientBundle(
     rootDir,
     config,
-    commonEntryFiles,
     clientEntryFiles,
     serverBuildOutput,
     !!options.ssr,
