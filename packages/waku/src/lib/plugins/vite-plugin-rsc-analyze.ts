@@ -1,10 +1,8 @@
 import path from 'node:path';
-import { existsSync } from 'node:fs';
 import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 
 export function rscAnalyzePlugin(
-  commonFileSet: Set<string>,
   clientFileSet: Set<string>,
   serverFileSet: Set<string>,
 ): Plugin {
@@ -48,63 +46,6 @@ export function rscAnalyzePlugin(
         }
       }
       return code;
-    },
-    generateBundle(_options, bundle) {
-      // TODO the logic in this function should probably be redesigned.
-      const outputIds = Object.values(bundle).flatMap((item) =>
-        'facadeModuleId' in item && item.facadeModuleId
-          ? [item.facadeModuleId]
-          : [],
-      );
-      const possibleCommonFileMap = new Map<
-        string,
-        { fromClient?: true; notFromClient?: true }
-      >();
-      const seen = new Set<string>();
-      const loop = (id: string, isClient: boolean) => {
-        if (seen.has(id)) {
-          return;
-        }
-        seen.add(id);
-        isClient = isClient || clientFileSet.has(id);
-        for (const depId of dependencyMap.get(id) ?? []) {
-          if (!existsSync(depId)) {
-            // HACK is there a better way?
-            return;
-          }
-          let value = possibleCommonFileMap.get(depId);
-          if (!value) {
-            value = {};
-            possibleCommonFileMap.set(depId, value);
-          }
-          if (isClient) {
-            value.fromClient = true;
-          } else {
-            value.notFromClient = true;
-          }
-          loop(depId, isClient);
-        }
-      };
-      for (const id of outputIds) {
-        loop(id, false);
-      }
-      for (const id of clientFileSet) {
-        loop(id, true);
-      }
-      for (const id of serverFileSet) {
-        loop(id, false);
-      }
-      for (const [id, val] of possibleCommonFileMap) {
-        if (val.fromClient && val.notFromClient) {
-          commonFileSet.add(id);
-        }
-      }
-      for (const id of clientFileSet) {
-        commonFileSet.delete(id);
-      }
-      for (const id of serverFileSet) {
-        commonFileSet.delete(id);
-      }
     },
   };
 }
