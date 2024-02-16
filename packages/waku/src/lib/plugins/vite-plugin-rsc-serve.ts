@@ -8,7 +8,13 @@ export function rscServePlugin(opts: {
   entriesFile: string;
   srcServeFile: string;
   ssr: boolean;
-  serve: 'vercel' | 'cloudflare' | 'deno' | 'netlify' | 'aws-lambda';
+  serve:
+    | 'vercel'
+    | 'cloudflare'
+    | 'partykit'
+    | 'deno'
+    | 'netlify'
+    | 'aws-lambda';
 }): Plugin {
   return {
     name: 'rsc-serve-plugin',
@@ -39,6 +45,17 @@ export function rscServePlugin(opts: {
             'hono/cloudflare-workers',
             '__STATIC_CONTENT_MANIFEST',
           );
+        } else {
+          throw new Error(
+            'Unsupported: build.rollupOptions.external is not an array',
+          );
+        }
+      } else if (opts.serve === 'partykit') {
+        viteConfig.build ||= {};
+        viteConfig.build.rollupOptions ||= {};
+        viteConfig.build.rollupOptions.external ||= [];
+        if (Array.isArray(viteConfig.build.rollupOptions.external)) {
+          viteConfig.build.rollupOptions.external.push('hono');
         } else {
           throw new Error(
             'Unsupported: build.rollupOptions.external is not an array',
