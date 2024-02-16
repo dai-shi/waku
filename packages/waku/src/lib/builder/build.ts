@@ -93,7 +93,6 @@ const analyzeEntries = async (
   const wakuClientDist = decodeFilePathFromAbsolute(
     joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
   );
-  const commonFileSet = new Set<string>();
   const clientFileSet = new Set<string>([wakuClientDist]);
   const serverFileSet = new Set<string>();
   const moduleFileMap = new Map<string, string>(); // full path -> module id
@@ -114,7 +113,7 @@ const analyzeEntries = async (
     }
   }
   await buildVite({
-    plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
+    plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet)],
     ssr: {
       target: 'webworker',
       resolve: {
@@ -137,14 +136,6 @@ const analyzeEntries = async (
       },
     },
   });
-  const commonEntryFiles = Object.fromEntries(
-    await Promise.all(
-      Array.from(commonFileSet).map(async (fname, i) => [
-        `${config.assetsDir}/com${i}-${await hash(fname)}`,
-        fname,
-      ]),
-    ),
-  );
   const clientEntryFiles = Object.fromEntries(
     await Promise.all(
       Array.from(clientFileSet).map(async (fname, i) => [
@@ -163,7 +154,6 @@ const analyzeEntries = async (
     Array.from(moduleFileMap).map(([k, v]) => [v, k]),
   );
   return {
-    commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
     serverModuleFiles,
@@ -176,12 +166,12 @@ const buildServerBundle = async (
   config: ResolvedConfig,
   entriesFile: string,
   distEntriesFile: string,
-  commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
   serverModuleFiles: Record<string, string>,
   ssr: boolean,
   serve: 'vercel' | 'cloudflare' | 'deno' | 'netlify' | 'aws-lambda' | false,
+  isNodeCompatible: boolean,
 ) => {
   const serverBuildOutput = await buildVite({
     plugins: [
@@ -209,14 +199,22 @@ const buildServerBundle = async (
           ]
         : []),
     ],
-    ssr: {
-      target: 'webworker',
-      resolve: {
-        conditions: ['react-server', 'workerd'],
-        externalConditions: ['react-server', 'workerd'],
-      },
-      noExternal: /^(?!node:)/,
-    },
+    ssr: isNodeCompatible
+      ? {
+          resolve: {
+            conditions: ['react-server', 'workerd'],
+            externalConditions: ['react-server', 'workerd'],
+          },
+          noExternal: /^(?!node:)/,
+        }
+      : {
+          target: 'webworker',
+          resolve: {
+            conditions: ['react-server', 'workerd', 'worker'],
+            externalConditions: ['react-server', 'workerd', 'worker'],
+          },
+          noExternal: true,
+        },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
     },
@@ -231,7 +229,6 @@ const buildServerBundle = async (
           entries: entriesFile,
           [RSDW_SERVER_MODULE]: RSDW_SERVER_MODULE_VALUE,
           ...serverModuleFiles,
-          ...commonEntryFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
         },
@@ -282,9 +279,9 @@ ${Object.keys(serverEntryFiles || {})
 const buildSsrBundle = async (
   rootDir: string,
   config: ResolvedConfig,
-  commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
+  isNodeCompatible: boolean,
 ) => {
   const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
@@ -296,10 +293,18 @@ const buildSsrBundle = async (
       rscIndexPlugin({ ...config, cssAssets }),
       rscEnvPlugin({ config, hydrate: true }),
     ],
-    ssr: {
-      target: 'webworker',
-      noExternal: /^(?!node:)/,
-    },
+    ssr: isNodeCompatible
+      ? {
+          noExternal: /^(?!node:)/,
+        }
+      : {
+          target: 'webworker',
+          resolve: {
+            conditions: ['worker'],
+            externalConditions: ['worker'],
+          },
+          noExternal: true,
+        },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
     },
@@ -311,7 +316,6 @@ const buildSsrBundle = async (
         onwarn,
         input: {
           main: mainJsFile,
-          ...commonEntryFiles,
           ...clientEntryFiles,
           ...CLIENT_MODULE_MAP,
         },
@@ -321,7 +325,6 @@ const buildSsrBundle = async (
               CLIENT_MODULE_MAP[
                 chunkInfo.name as keyof typeof CLIENT_MODULE_MAP
               ] ||
-              commonEntryFiles[chunkInfo.name] ||
               clientEntryFiles[chunkInfo.name]
             ) {
               return '[name].js';
@@ -343,7 +346,6 @@ const buildSsrBundle = async (
 const buildClientBundle = async (
   rootDir: string,
   config: ResolvedConfig,
-  commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
   ssr: boolean,
@@ -365,16 +367,12 @@ const buildClientBundle = async (
         onwarn,
         input: {
           main: mainJsFile,
-          ...commonEntryFiles,
           ...clientEntryFiles,
         },
         preserveEntrySignatures: 'exports-only',
         output: {
           entryFileNames: (chunkInfo) => {
-            if (
-              commonEntryFiles[chunkInfo.name] ||
-              clientEntryFiles[chunkInfo.name]
-            ) {
+            if (clientEntryFiles[chunkInfo.name]) {
               return '[name].js';
             }
             return config.assetsDir + '/[name]-[hash].js';
@@ -560,13 +558,11 @@ const emitHtmlFiles = async (
                 searchParams,
                 isDev: false,
                 entries: distEntries,
-                isBuild: true,
               }),
             loadClientModule: (key) =>
               distEntries.loadModule(CLIENT_PREFIX + key),
             isDev: false,
             loadModule: distEntries.loadModule,
-            isBuild: true,
           }));
         await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
         if (htmlReadable) {
@@ -622,19 +618,16 @@ export async function build(options: {
   const distEntriesFile = resolveFileName(
     joinPath(rootDir, config.distDir, config.entriesJs),
   );
+  const isNodeCompatible =
+    options.deploy !== 'cloudflare' && options.deploy !== 'deno';
 
-  const {
-    commonEntryFiles,
-    clientEntryFiles,
-    serverEntryFiles,
-    serverModuleFiles,
-  } = await analyzeEntries(rootDir, config, entriesFile);
+  const { clientEntryFiles, serverEntryFiles, serverModuleFiles } =
+    await analyzeEntries(rootDir, config, entriesFile);
   const serverBuildOutput = await buildServerBundle(
     rootDir,
     config,
     entriesFile,
     distEntriesFile,
-    commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
     serverModuleFiles,
@@ -644,20 +637,20 @@ export async function build(options: {
       (options.deploy === 'deno' ? 'deno' : false) ||
       (options.deploy === 'netlify-functions' ? 'netlify' : false) ||
       (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
+    isNodeCompatible,
   );
   if (options.ssr) {
     await buildSsrBundle(
       rootDir,
       config,
-      commonEntryFiles,
       clientEntryFiles,
       serverBuildOutput,
+      isNodeCompatible,
     );
   }
   await buildClientBundle(
     rootDir,
     config,
-    commonEntryFiles,
     clientEntryFiles,
     serverBuildOutput,
     !!options.ssr,
