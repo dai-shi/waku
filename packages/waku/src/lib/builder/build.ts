@@ -95,7 +95,7 @@ const analyzeEntries = async (
   );
   const clientFileSet = new Set<string>([wakuClientDist]);
   const serverFileSet = new Set<string>();
-  const moduleFileMap = new Map<string, string>(); // full path -> module id
+  const moduleFileMap = new Map<string, string>(); // module id -> full path
   for (const preserveModuleDir of config.preserveModuleDirs) {
     const dir = joinPath(rootDir, config.srcDir, preserveModuleDir);
     if (!existsSync(dir)) {
@@ -106,8 +106,8 @@ const analyzeEntries = async (
       const ext = extname(file);
       if (['.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs'].includes(ext)) {
         moduleFileMap.set(
-          joinPath(dir, file),
           joinPath(preserveModuleDir, file.slice(0, -ext.length)),
+          joinPath(dir, file),
         );
       }
     }
@@ -128,9 +128,7 @@ const analyzeEntries = async (
       rollupOptions: {
         onwarn,
         input: {
-          ...Object.fromEntries(
-            Array.from(moduleFileMap).map(([k, v]) => [v, k]),
-          ),
+          ...Object.fromEntries(moduleFileMap),
           entries: entriesFile,
         },
       },
@@ -150,9 +148,7 @@ const analyzeEntries = async (
       fname,
     ]),
   );
-  const serverModuleFiles = Object.fromEntries(
-    Array.from(moduleFileMap).map(([k, v]) => [v, k]),
-  );
+  const serverModuleFiles = Object.fromEntries(moduleFileMap);
   return {
     clientEntryFiles,
     serverEntryFiles,
