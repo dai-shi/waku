@@ -41,7 +41,7 @@ And please don't fret about client components! Even if you only lightly optimize
 
 #### Server components
 
-Server components can be made async and can securely perform server-side logic and data fetching. Feel free to access the local file-system and import heavy dependencies since they aren't included in the client bundle. They have no state, interactivity, or access to browser APIs since they run exclusively on the server.
+Server components can be made async and can securely perform server-side logic and data fetching. Feel free to access the local file-system and import heavy dependencies since they aren't included in the client bundle. They have no state, interactivity, or access to browser APIs since they run _exclusively_ on the server.
 
 ```tsx
 // server component
@@ -119,17 +119,17 @@ export const Providers = ({ children }) => {
 
 #### Server-side rendering
 
-SSR is a distinct concept from RSC. Waku provides static prerendering (SSG) or server-side rendering (SSR) options for both layouts and pages including all of their server _and_ client components.
+Waku provides static prerendering (SSG) and server-side rendering (SSR) options for both layouts and pages including all of their server _and_ client components. SSR is a distinct concept from RSC.
 
 #### tl;dr:
 
-Each layout and page in Waku is composed of a React component heirarchy.
+Each layout and page in Waku is composed of a React component hierarchy.
 
-It begins with a server component at the top of the tree. Then at points down the heirarchy, you'll eventually import a component that needs client component APIs. Mark this file with a `'use client'` directive at the top. When imported into a server component, it will create a server-client boundary. Below this point in the component heirarchy, all imported components are hydrated and will run in the browser as well.
+It begins with a server component at the top of the tree. Then at points down the hierarchy, you'll eventually import a component that needs client component APIs. Mark this file with a `'use client'` directive at the top. When imported into a server component, it will create a server-client boundary. Below this point in the component hierarchy, all imported components are hydrated and will run in the browser as well.
 
-Server components can still be rendered below this boundary, but only via composition (e.g., `children` props). Together they form [a new "React server" layer](https://github.com/reactwg/server-components/discussions/4) that runs _before_ the traditional "React client" layer with which you're already familiar.
+Server components can be rendered below this boundary, but only via composition (e.g., `children` props). Together they form [a new "React server" layer](https://github.com/reactwg/server-components/discussions/4) that runs _before_ the traditional "React client" layer with which you're already familiar.
 
-Client components are still server-side rendered as SSR is a distinct concept from RSC. See the [linked diagrams](https://github.com/reactwg/server-components/discussions/4) for a helpful visual.
+Client components are server-side rendered as SSR is separate from RSC. See the [linked diagrams](https://github.com/reactwg/server-components/discussions/4) for a helpful visual.
 
 #### Further reading
 
@@ -137,7 +137,7 @@ To learn more about the modern React architecture, we recommend [Making Sense of
 
 ## Routing (low-level API)
 
-The entry point for routing in Waku projects is `./src/entries.tsx`. Export the `createPages` function to create your layouts and pages programatically.
+The entry point for routing in Waku projects is `./src/entries.tsx`. Export the `createPages` function to create your layouts and pages programmatically.
 
 Both `createLayout` and `createPage` accept a configuration object to specify the route path, React component, and render method. Waku currently supports two options: `'static'` for static prerendering (SSG) or `'dynamic'` for server-side rendering (SSR).
 
@@ -228,7 +228,7 @@ export default createPages(async ({ createPage }) => {
 });
 ```
 
-Static paths (or other values) could also be generated programatically.
+Static paths (or other values) could also be generated programmatically.
 
 ```tsx
 // ./src/entries.tsx
@@ -270,7 +270,7 @@ export default createPages(async ({ createPage }) => {
 });
 ```
 
-For static prerendering of nested segment routes, the `staticPaths` array is instead comprised of ordered arrays.
+For static prerendering of nested segment routes, the `staticPaths` array is instead composed of ordered arrays.
 
 ```tsx
 // ./src/entries.tsx
@@ -497,7 +497,7 @@ export const HomePage = async () => {
 };
 ```
 
-Metadata could also be generated programatically.
+Metadata could also be generated programmatically.
 
 ```tsx
 // ./src/templates/home-page.tsx
@@ -575,7 +575,7 @@ By default all environment variables are considered private and accessible only 
 
 #### Public
 
-A special `WAKU_PUBLIC_` prefix is required to make an environment variable public and accessible in client components. They will be present as cleartext in the production JavaScript bundle sent to users browsers.
+A special `WAKU_PUBLIC_` prefix is required to make an environment variable public and accessible in client components. They will be present as cleartext in the production JavaScript bundle sent to users' browsers.
 
 ### Runtime agnostic (recommended)
 
@@ -690,7 +690,7 @@ DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod dist/serve.js --excl
 npm run build -- --with-aws-lambda
 ```
 
-The handler entrypoint is `dist/serve.js` - see [Hono AWS Lambda Deploy Docs](https://hono.dev/getting-started/aws-lambda#_3-deploy)
+The handler entrypoint is `dist/serve.js`: see [Hono AWS Lambda Deploy Docs](https://hono.dev/getting-started/aws-lambda#_3-deploy).
 
 ## Community
 

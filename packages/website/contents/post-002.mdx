@@ -1,7 +1,7 @@
 ---
 slug: introducing-create-pages
 title: Introducing createPages
-description: Learn about the new API for creating layouts and pages programatically.
+description: Learn about the new API for creating layouts and pages programmatically.
 author: sophia
 release: 0.19
 date: 2024/1/16
@@ -9,7 +9,7 @@ date: 2024/1/16
 
 Until now, [Waku](https://waku.gg) has been helpful as a reference implementation for library authors curious about [React server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md). Today's v0.19 release marks the shift towards building Waku into a production-ready React framework. It's designed for startups and agencies seeking a lightweight alternative for small to medium-sized React projects. We want to make React development fun!
 
-The first building block is the new `createPages` function, a low-level routing API which allows Waku developers to create layouts and pages programatically. Both static prerendering (SSG) and server-side rendering (SSR) options are available and are selected at the layout and page level.
+The first building block is the new `createPages` function, a low-level routing API which allows Waku developers to create layouts and pages programmatically. Both static prerendering (SSG) and server-side rendering (SSR) options are available and are selected at the layout and page level.
 
 For example, you can statically prerender a global header and footer in the root layout at build time, but dynamically render the rest of a home page at request time for personalized user experiences.
 
@@ -17,7 +17,7 @@ Let's explore the details of the new Waku API.
 
 ## Low-level routing API
 
-The entry point for routing in Waku projects is `./src/entries.tsx`. Export the `createPages` function to create your layouts and pages programatically.
+The entry point for routing in Waku projects is `./src/entries.tsx`. Export the `createPages` function to create your layouts and pages programmatically.
 
 Both `createLayout` and `createPage` accept a configuration object to specify the route path, React component, and render method (`'static'` for SSG or `'dynamic'` for SSR). Layout components must accept a `children` prop.
 
@@ -106,7 +106,7 @@ export default createPages(async ({ createPage }) => {
 });
 ```
 
-Static paths (or other values) could also be generated programatically.
+Static paths (or other values) could also be generated programmatically.
 
 ```tsx
 // ./src/entries.tsx
@@ -148,7 +148,7 @@ export default createPages(async ({ createPage }) => {
 });
 ```
 
-For static prerendering of nested segment routes, the `staticPaths` array is instead comprised of ordered arrays.
+For static prerendering of nested segment routes, the `staticPaths` array is instead composed of ordered arrays.
 
 ```tsx
 // ./src/entries.tsx
