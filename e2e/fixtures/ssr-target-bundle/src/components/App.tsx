@@ -1,7 +1,7 @@
 import { Textarea } from './Textarea.js';
 import SampleImage from './image-not-inlined.jpg'; // build.assetsInlineLimit - default 4096 Bytes
 
-const App =  ({ name }: { name: string }) => {
+const App = ({ name }: { name: string }) => {
   return (
     <div style={{ border: '3px red dashed', margin: '1em', padding: '1em' }}>
       <title>Waku example</title>
