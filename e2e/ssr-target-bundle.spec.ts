@@ -78,16 +78,25 @@ for (const { build, command } of commands) {
     });
 
     test('image was loaded', async ({ page }) => {
-
       await page.goto(`http://localhost:${port}/`);
       await page.waitForLoadState('domcontentloaded');
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
 
-      page.on('response', data => {
-        console.log(data.status(), data.url(),data.url() /*.includes('image.png')*/);
+      page.on('response', (data) => {
+        console.log(
+          data.status(),
+          data.url(),
+          data.url() /*.includes('image.png')*/,
+        );
       });
-      await expect( page.getByTestId('image')).toHaveJSProperty('complete', true);
-      await expect(page.getByTestId('image')).not.toHaveJSProperty('naturalWidth', 0);
+      await expect(page.getByTestId('image')).toHaveJSProperty(
+        'complete',
+        true,
+      );
+      await expect(page.getByTestId('image')).not.toHaveJSProperty(
+        'naturalWidth',
+        0,
+      );
     });
 
     test('no js environment should have first screen', async ({ browser }) => {
