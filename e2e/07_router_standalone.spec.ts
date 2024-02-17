@@ -37,7 +37,7 @@ async function testRouterExample(page: Page, port: number) {
   expect(backgroundColor).toBe('rgb(254, 254, 254)');
 }
 
-test.describe.only('07_router standalone', () => {
+test.describe('07_router standalone', () => {
   test.beforeAll('copy code', async () => {
     // GitHub Action on Windows doesn't support mkdtemp on global temp dir,
     // Which will cause files in `src` folder to be empty.
