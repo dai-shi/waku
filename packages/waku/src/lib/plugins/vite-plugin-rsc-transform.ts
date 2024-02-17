@@ -8,9 +8,6 @@ export function rscTransformPlugin(
       }
     | {
         isBuild: true;
-        assetsDir: string;
-        wakuClientId: string;
-        wakuClientPath: string;
         clientEntryFiles: Record<string, string>;
         serverEntryFiles: Record<string, string>;
       },
@@ -19,12 +16,9 @@ export function rscTransformPlugin(
     if (!opts.isBuild) {
       throw new Error('not buiding');
     }
-    if (id === opts.wakuClientPath) {
-      return `@id/${opts.assetsDir}/${opts.wakuClientId}.js`;
-    }
     for (const [k, v] of Object.entries(opts.clientEntryFiles)) {
       if (v === id) {
-        return `@id/${opts.assetsDir}/${k}.js`;
+        return `@id/${k}.js`;
       }
     }
     throw new Error('client id not found: ' + id);
@@ -35,7 +29,7 @@ export function rscTransformPlugin(
     }
     for (const [k, v] of Object.entries(opts.serverEntryFiles)) {
       if (v === id) {
-        return `@id/${opts.assetsDir}/${k}.js`;
+        return `@id/${k}.js`;
       }
     }
     throw new Error('server id not found: ' + id);

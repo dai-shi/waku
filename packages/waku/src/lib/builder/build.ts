@@ -29,6 +29,7 @@ import {
   writeFile,
   appendFile,
   unlink,
+  readdir,
 } from '../utils/node-fs.js';
 import { encodeInput, generatePrefetchCode } from '../renderers/utils.js';
 import {
@@ -54,8 +55,6 @@ import { emitPartyKitOutput } from './output-partykit.js';
 import { emitAwsLambdaOutput } from './output-aws-lambda.js';
 
 // TODO this file and functions in it are too long. will fix.
-
-const WAKU_CLIENT = 'waku-client';
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
@@ -87,9 +86,33 @@ const hash = (fname: string) =>
     createReadStream(fname).pipe(sha256);
   });
 
-const analyzeEntries = async (entriesFile: string) => {
-  const clientFileSet = new Set<string>();
+const analyzeEntries = async (
+  rootDir: string,
+  config: ResolvedConfig,
+  entriesFile: string,
+) => {
+  const wakuClientDist = decodeFilePathFromAbsolute(
+    joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
+  );
+  const clientFileSet = new Set<string>([wakuClientDist]);
   const serverFileSet = new Set<string>();
+  const moduleFileMap = new Map<string, string>(); // module id -> full path
+  for (const preserveModuleDir of config.preserveModuleDirs) {
+    const dir = joinPath(rootDir, config.srcDir, preserveModuleDir);
+    if (!existsSync(dir)) {
+      continue;
+    }
+    const files = await readdir(dir, { encoding: 'utf8', recursive: true });
+    for (const file of files) {
+      const ext = extname(file);
+      if (['.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs'].includes(ext)) {
+        moduleFileMap.set(
+          joinPath(preserveModuleDir, file.slice(0, -ext.length)),
+          joinPath(dir, file),
+        );
+      }
+    }
+  }
   await buildVite({
     plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet)],
     ssr: {
@@ -106,6 +129,7 @@ const analyzeEntries = async (entriesFile: string) => {
       rollupOptions: {
         onwarn,
         input: {
+          ...Object.fromEntries(moduleFileMap),
           entries: entriesFile,
         },
       },
@@ -114,17 +138,22 @@ const analyzeEntries = async (entriesFile: string) => {
   const clientEntryFiles = Object.fromEntries(
     await Promise.all(
       Array.from(clientFileSet).map(async (fname, i) => [
-        `rsc${i}-${await hash(fname)}`,
+        `${config.assetsDir}/rsc${i}-${await hash(fname)}`,
         fname,
       ]),
     ),
   );
   const serverEntryFiles = Object.fromEntries(
-    Array.from(serverFileSet).map((fname, i) => [`rsf${i}`, fname]),
+    Array.from(serverFileSet).map((fname, i) => [
+      `${config.assetsDir}/rsf${i}`,
+      fname,
+    ]),
   );
+  const serverModuleFiles = Object.fromEntries(moduleFileMap);
   return {
     clientEntryFiles,
     serverEntryFiles,
+    serverModuleFiles,
   };
 };
 
@@ -136,6 +165,7 @@ const buildServerBundle = async (
   distEntriesFile: string,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
+  serverModuleFiles: Record<string, string>,
   ssr: boolean,
   serve:
     | 'vercel'
@@ -152,11 +182,6 @@ const buildServerBundle = async (
       nonjsResolvePlugin(),
       rscTransformPlugin({
         isBuild: true,
-        assetsDir: config.assetsDir,
-        wakuClientId: WAKU_CLIENT,
-        wakuClientPath: decodeFilePathFromAbsolute(
-          joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
-        ),
         clientEntryFiles,
         serverEntryFiles,
       }),
@@ -207,21 +232,9 @@ const buildServerBundle = async (
         input: {
           entries: entriesFile,
           [RSDW_SERVER_MODULE]: RSDW_SERVER_MODULE_VALUE,
-          [WAKU_CLIENT]: CLIENT_MODULE_MAP[WAKU_CLIENT],
+          ...serverModuleFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
-        },
-        output: {
-          entryFileNames: (chunkInfo) => {
-            if (
-              [WAKU_CLIENT].includes(chunkInfo.name) ||
-              clientEntryFiles[chunkInfo.name] ||
-              serverEntryFiles[chunkInfo.name]
-            ) {
-              return config.assetsDir + '/[name].js';
-            }
-            return '[name].js';
-          },
         },
       },
     },
@@ -230,7 +243,6 @@ const buildServerBundle = async (
     throw new Error('Unexpected vite server build output');
   }
   // TODO If ssr === false, we don't need to write ssr entries.
-  const ssrAssetsDir = joinPath(config.ssrDir, config.assetsDir);
   const code = `
 export function loadModule(id) {
   switch (id) {
@@ -240,24 +252,22 @@ ${Object.keys(CLIENT_MODULE_MAP)
   .map(
     (key) => `
     case '${CLIENT_PREFIX}${key}':
-      return import('./${ssrAssetsDir}/${key}.js');
+      return import('./${config.ssrDir}/${key}.js');
   `,
   )
   .join('')}
-    case '${ssrAssetsDir}/${WAKU_CLIENT}.js':
-      return import('./${ssrAssetsDir}/${WAKU_CLIENT}.js');
-${Object.entries(clientEntryFiles || {})
+${Object.keys(clientEntryFiles || {})
   .map(
-    ([k]) => `
-    case '${ssrAssetsDir}/${k}.js':
-      return import('./${ssrAssetsDir}/${k}.js');`,
+    (key) => `
+    case '${config.ssrDir}/${key}.js':
+      return import('./${config.ssrDir}/${key}.js');`,
   )
   .join('')}
-${Object.entries(serverEntryFiles || {})
+${Object.keys(serverEntryFiles || {})
   .map(
-    ([k]) => `
-    case '${config.assetsDir}/${k}.js':
-      return import('./${config.assetsDir}/${k}.js');`,
+    (key) => `
+    case '${key}.js':
+      return import('./${key}.js');`,
   )
   .join('')}
     default:
@@ -310,8 +320,8 @@ const buildSsrBundle = async (
         onwarn,
         input: {
           main: mainJsFile,
-          ...CLIENT_MODULE_MAP,
           ...clientEntryFiles,
+          ...CLIENT_MODULE_MAP,
         },
         output: {
           entryFileNames: (chunkInfo) => {
@@ -321,7 +331,7 @@ const buildSsrBundle = async (
               ] ||
               clientEntryFiles[chunkInfo.name]
             ) {
-              return config.assetsDir + '/[name].js';
+              return '[name].js';
             }
             return config.assetsDir + '/[name]-[hash].js';
           },
@@ -361,17 +371,13 @@ const buildClientBundle = async (
         onwarn,
         input: {
           main: mainJsFile,
-          [WAKU_CLIENT]: CLIENT_MODULE_MAP[WAKU_CLIENT],
           ...clientEntryFiles,
         },
         preserveEntrySignatures: 'exports-only',
         output: {
           entryFileNames: (chunkInfo) => {
-            if (
-              [WAKU_CLIENT].includes(chunkInfo.name) ||
-              clientEntryFiles[chunkInfo.name]
-            ) {
-              return config.assetsDir + '/[name].js';
+            if (clientEntryFiles[chunkInfo.name]) {
+              return '[name].js';
             }
             return config.assetsDir + '/[name]-[hash].js';
           },
@@ -622,8 +628,8 @@ export async function build(options: {
     options.deploy !== 'partykit' &&
     options.deploy !== 'deno';
 
-  const { clientEntryFiles, serverEntryFiles } =
-    await analyzeEntries(entriesFile);
+  const { clientEntryFiles, serverEntryFiles, serverModuleFiles } =
+    await analyzeEntries(rootDir, config, entriesFile);
   const serverBuildOutput = await buildServerBundle(
     rootDir,
     config,
@@ -631,6 +637,7 @@ export async function build(options: {
     distEntriesFile,
     clientEntryFiles,
     serverEntryFiles,
+    serverModuleFiles,
     !!options.ssr,
     (options.deploy === 'vercel-serverless' ? 'vercel' : false) ||
       (options.deploy === 'netlify-functions' ? 'netlify' : false) ||

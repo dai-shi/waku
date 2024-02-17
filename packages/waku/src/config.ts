@@ -50,6 +50,12 @@ export interface Config {
    */
   entriesJs?: string;
   /**
+   * The list of directries to preserve server module structure.
+   * Relative to srcDir.
+   * Defaults to ["pages", "templates", "routes", "components"].
+   */
+  preserveModuleDirs?: string[];
+  /**
    * The serve.js file relative distDir.
    * This file is used for deployment.
    * Defaults to "serve.js".
