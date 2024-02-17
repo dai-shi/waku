@@ -49,8 +49,9 @@ import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { emitVercelOutput } from './output-vercel.js';
-import { emitCloudflareOutput } from './output-cloudflare.js';
 import { emitNetlifyOutput } from './output-netlify.js';
+import { emitCloudflareOutput } from './output-cloudflare.js';
+import { emitPartyKitOutput } from './output-partykit.js';
 import { emitAwsLambdaOutput } from './output-aws-lambda.js';
 
 // TODO this file and functions in it are too long. will fix.
@@ -166,7 +167,14 @@ const buildServerBundle = async (
   serverEntryFiles: Record<string, string>,
   serverModuleFiles: Record<string, string>,
   ssr: boolean,
-  serve: 'vercel' | 'cloudflare' | 'deno' | 'netlify' | 'aws-lambda' | false,
+  serve:
+    | 'vercel'
+    | 'netlify'
+    | 'cloudflare'
+    | 'partykit'
+    | 'deno'
+    | 'aws-lambda'
+    | false,
   isNodeCompatible: boolean,
 ) => {
   const serverBuildOutput = await buildVite({
@@ -596,10 +604,11 @@ export async function build(options: {
   deploy?:
     | 'vercel-static'
     | 'vercel-serverless'
-    | 'cloudflare'
-    | 'deno'
     | 'netlify-static'
     | 'netlify-functions'
+    | 'cloudflare'
+    | 'partykit'
+    | 'deno'
     | 'aws-lambda'
     | undefined;
 }) {
@@ -615,7 +624,9 @@ export async function build(options: {
     joinPath(rootDir, config.distDir, config.entriesJs),
   );
   const isNodeCompatible =
-    options.deploy !== 'cloudflare' && options.deploy !== 'deno';
+    options.deploy !== 'cloudflare' &&
+    options.deploy !== 'partykit' &&
+    options.deploy !== 'deno';
 
   const { clientEntryFiles, serverEntryFiles, serverModuleFiles } =
     await analyzeEntries(rootDir, config, entriesFile);
@@ -629,9 +640,10 @@ export async function build(options: {
     serverModuleFiles,
     !!options.ssr,
     (options.deploy === 'vercel-serverless' ? 'vercel' : false) ||
-      (options.deploy === 'cloudflare' ? 'cloudflare' : false) ||
-      (options.deploy === 'deno' ? 'deno' : false) ||
       (options.deploy === 'netlify-functions' ? 'netlify' : false) ||
+      (options.deploy === 'cloudflare' ? 'cloudflare' : false) ||
+      (options.deploy === 'partykit' ? 'partykit' : false) ||
+      (options.deploy === 'deno' ? 'deno' : false) ||
       (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
     isNodeCompatible,
   );
@@ -676,14 +688,16 @@ export async function build(options: {
       config,
       options.deploy.slice('vercel-'.length) as 'static' | 'serverless',
     );
-  } else if (options.deploy === 'cloudflare') {
-    await emitCloudflareOutput(rootDir, config);
   } else if (options.deploy?.startsWith('netlify-')) {
     await emitNetlifyOutput(
       rootDir,
       config,
       options.deploy.slice('netlify-'.length) as 'static' | 'functions',
     );
+  } else if (options.deploy === 'cloudflare') {
+    await emitCloudflareOutput(rootDir, config);
+  } else if (options.deploy === 'partykit') {
+    await emitPartyKitOutput(rootDir, config);
   } else if (options.deploy === 'aws-lambda') {
     await emitAwsLambdaOutput(config);
   }

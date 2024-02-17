@@ -33,16 +33,19 @@ const { values, positionals } = parseArgs({
     'with-vercel-static': {
       type: 'boolean',
     },
-    'with-cloudflare': {
-      type: 'boolean',
-    },
-    'with-deno': {
-      type: 'boolean',
-    },
     'with-netlify': {
       type: 'boolean',
     },
     'with-netlify-static': {
+      type: 'boolean',
+    },
+    'with-cloudflare': {
+      type: 'boolean',
+    },
+    'with-partykit': {
+      type: 'boolean',
+    },
+    'with-deno': {
       type: 'boolean',
     },
     'with-aws-lambda': {
@@ -112,13 +115,14 @@ async function runBuild(options: { ssr: boolean }) {
           ? 'vercel-static'
           : 'vercel-serverless'
         : undefined) ||
-      (values['with-cloudflare'] ? 'cloudflare' : undefined) ||
-      (values['with-deno'] ? 'deno' : undefined) ||
       (values['with-netlify'] ?? !!process.env.NETLIFY
         ? values['with-netlify-static']
           ? 'netlify-static'
           : 'netlify-functions'
         : undefined) ||
+      (values['with-cloudflare'] ? 'cloudflare' : undefined) ||
+      (values['with-partykit'] ? 'partykit' : undefined) ||
+      (values['with-deno'] ? 'deno' : undefined) ||
       (values['with-aws-lambda'] ? 'aws-lambda' : undefined),
   });
 }
@@ -168,9 +172,10 @@ Commands:
 Options:
   --with-ssr            Use opt-in SSR
   --with-vercel         Output for Vercel on build
-  --with-cloudflare     Output for Cloudflare on build
-  --with-deno           Output for Deno on build
   --with-netlify        Output for Netlify on build
+  --with-cloudflare     Output for Cloudflare on build
+  --with-partykit       Output for PartyKit on build
+  --with-deno           Output for Deno on build
   --with-aws-lambda     Output for AWS Lambda on build
   -v, --version         Display the version number
   -h, --help            Display this help message
