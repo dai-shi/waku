@@ -89,8 +89,6 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm playwright install --with-deps
       - run: pnpm exec playwright test --shard=${{ matrix.shared }}/4
-        env:
-          TEMP_DIR: ${{ runner.temp }}
       - uses: actions/upload-artifact@v3
         if: always()
         with:
