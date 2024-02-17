@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { existsSync, writeFileSync, unlinkSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
@@ -142,6 +142,14 @@ async function runStart(options: { ssr: boolean }) {
       env: process.env as any,
     }),
   );
+  app.notFound((c) => {
+    // FIXME better implementation using node stream?
+    const file = path.join(distDir, publicDir, '404.html');
+    if (existsSync(file)) {
+      return c.html(readFileSync(file, 'utf8'), 404);
+    }
+    return c.text('404 Not Found', 404);
+  });
   const port = parseInt(process.env.PORT || '8080', 10);
   startServer(app, port);
 }
