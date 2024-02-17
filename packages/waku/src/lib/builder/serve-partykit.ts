@@ -7,8 +7,8 @@ const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
 let serveWaku: ReturnType<typeof honoMiddleware> | undefined;
 
 const app = new Hono();
-
 app.use('*', (c, next) => serveWaku!(c, next));
+
 export default {
   onFetch(request: Request, lobby: any, ctx: Parameters<typeof app.fetch>[2]) {
     if (!serveWaku) {

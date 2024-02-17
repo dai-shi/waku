@@ -10,10 +10,10 @@ export function rscServePlugin(opts: {
   ssr: boolean;
   serve:
     | 'vercel'
+    | 'netlify'
     | 'cloudflare'
     | 'partykit'
     | 'deno'
-    | 'netlify'
     | 'aws-lambda';
 }): Plugin {
   return {
@@ -35,27 +35,18 @@ export function rscServePlugin(opts: {
           opts.indexHtml,
         ),
       };
-      if (opts.serve === 'cloudflare') {
-        viteConfig.build ||= {};
-        viteConfig.build.rollupOptions ||= {};
-        viteConfig.build.rollupOptions.external ||= [];
-        if (Array.isArray(viteConfig.build.rollupOptions.external)) {
-          viteConfig.build.rollupOptions.external.push(
-            'hono',
-            'hono/cloudflare-workers',
-            '__STATIC_CONTENT_MANIFEST',
-          );
-        } else {
-          throw new Error(
-            'Unsupported: build.rollupOptions.external is not an array',
-          );
-        }
-      } else if (opts.serve === 'partykit') {
+      if (opts.serve === 'cloudflare' || opts.serve === 'partykit') {
         viteConfig.build ||= {};
         viteConfig.build.rollupOptions ||= {};
         viteConfig.build.rollupOptions.external ||= [];
         if (Array.isArray(viteConfig.build.rollupOptions.external)) {
           viteConfig.build.rollupOptions.external.push('hono');
+          if (opts.serve === 'cloudflare') {
+            viteConfig.build.rollupOptions.external.push(
+              'hono/cloudflare-workers',
+              '__STATIC_CONTENT_MANIFEST',
+            );
+          }
         } else {
           throw new Error(
             'Unsupported: build.rollupOptions.external is not an array',
