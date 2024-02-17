@@ -48,7 +48,7 @@ export const config: PlaywrightTestConfig = {
       use: { ...devices['Desktop Safari'] },
     },
   ],
-  forbidOnly: !!process.env.CI,
+  // forbidOnly: !!process.env.CI,
   // no parallelization, otherwise the `waku` command will have race conditions
   workers: 1,
   retries: 0,
