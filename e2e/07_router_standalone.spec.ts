@@ -69,6 +69,7 @@ test.describe.only('07_router standalone', () => {
   });
 
   test.beforeEach(async () => {
+    console.log('list:', join(standaloneDir, '**/**'))
     const paths = await glob(join(standaloneDir, '**/**'));
     console.log('paths:', paths);
   });
