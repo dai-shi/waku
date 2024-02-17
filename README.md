@@ -27,7 +27,7 @@ Start a new Waku project with the `create` command for your preferred package ma
 npm create waku@latest
 ```
 
-**Node.js version requirement:** `^20.8.0 || ^18.16.0`
+**Node.js version requirement:** `^20.8.0 || ^18.17.0`
 
 ## Rendering
 

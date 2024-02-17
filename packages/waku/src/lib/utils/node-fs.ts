@@ -39,3 +39,11 @@ export const stat = (filePath: string) =>
 
 export const unlink = (filePath: string) =>
   fsPromises.unlink(filePathToOsPath(filePath));
+
+export const readdir = (
+  filePath: string,
+  options?: {
+    encoding: 'utf8';
+    recursive: boolean;
+  },
+) => fsPromises.readdir(filePathToOsPath(filePath), options);
