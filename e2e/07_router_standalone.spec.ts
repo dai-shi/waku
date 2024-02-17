@@ -56,6 +56,15 @@ test.describe('07_router standalone', () => {
     await cp(wakuDir, `${standaloneDir}/node_modules/waku`, {
       recursive: true,
     });
+
+    // copy again?
+    await cp(exampleDir, standaloneDir, {
+      filter: (src) => {
+        return src.includes('src');
+      },
+      force: true,
+      recursive: true,
+    });
   });
 
   test('should prod work', async ({ page }) => {
