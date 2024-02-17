@@ -75,12 +75,12 @@ test.describe.only('07_router standalone', () => {
   });
 
   test('should prod work', async ({ page }) => {
-    execSync(`node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} build`, {
+    execSync(`node ${join('./node_modules/waku/dist/cli.js')} build`, {
       cwd: standaloneDir,
       stdio: 'inherit',
     });
     const port = await getFreePort();
-    const cp = exec(`node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start`, {
+    const cp = exec(`node ${join('./node_modules/waku/dist/cli.js')} start`, {
       cwd: standaloneDir,
       env: {
         ...process.env,
@@ -94,7 +94,7 @@ test.describe.only('07_router standalone', () => {
 
   test('should dev work', async ({ page }) => {
     const port = await getFreePort();
-    const cp = exec(`node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} dev`, {
+    const cp = exec(`node ${join('./node_modules/waku/dist/cli.js')} dev`, {
       cwd: standaloneDir,
       env: {
         ...process.env,
