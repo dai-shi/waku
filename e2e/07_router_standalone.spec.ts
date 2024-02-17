@@ -1,14 +1,16 @@
-import { debugChildProcess, getFreePort, test } from './utils.js';
+import { debugChildProcess, getFreePort, terminate, test } from './utils.js';
 import { fileURLToPath } from 'node:url';
-import { cp, mkdir, rm } from 'node:fs/promises';
+import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { exec, execSync } from 'node:child_process';
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import crypto from 'node:crypto';
 import waitPort from 'wait-port';
-import path from 'node:path';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
-const cacheDir = fileURLToPath(new URL('./.cache', import.meta.url));
+const testMatrix = [{ withSSR: false }, { withSSR: true }] as const;
+
+let standaloneDir: string;
 const exampleDir = fileURLToPath(
   new URL('../examples/07_router', import.meta.url),
 );
@@ -36,73 +38,83 @@ async function testRouterExample(page: Page, port: number) {
 }
 
 test.describe('07_router standalone', () => {
-  const dirname = crypto.randomUUID();
   test.beforeAll('copy code', async () => {
-    await mkdir(cacheDir, {
+    // GitHub Action on Windows doesn't support mkdtemp on global temp dir,
+    // Which will cause files in `src` folder to be empty.
+    // I don't know why
+    const tmpDir = process.env.TEMP_DIR ? process.env.TEMP_DIR : tmpdir();
+    standaloneDir = await mkdtemp(join(tmpDir, 'waku-07-router-'));
+    await cp(exampleDir, standaloneDir, {
+      filter: (src) => {
+        return !src.includes('node_modules') && !src.includes('dist');
+      },
       recursive: true,
     });
-    await cp(exampleDir, `${cacheDir}/${dirname}`, { recursive: true });
-    // cleanup node_modules and output
-    await rm(`${cacheDir}/${dirname}/node_modules`, {
-      recursive: true,
-      force: true,
-    });
-    await rm(`${cacheDir}/${dirname}/dist`, { recursive: true, force: true });
-    execSync('pnpm --ignore-workspace install', {
-      cwd: `${cacheDir}/${dirname}`,
+    execSync('npm install', {
+      cwd: standaloneDir,
       stdio: 'inherit',
     });
-    await rm(`${cacheDir}/${dirname}/node_modules/waku`, {
+    await rm(`${standaloneDir}/node_modules/waku`, {
       recursive: true,
       force: true,
     });
     // copy waku
-    await cp(wakuDir, `${cacheDir}/${dirname}/node_modules/waku`, {
+    await cp(wakuDir, `${standaloneDir}/node_modules/waku`, {
       recursive: true,
     });
-    execSync('pnpm --ignore-workspace install --prod', {
-      cwd: `${cacheDir}/${dirname}/node_modules/waku`,
-      stdio: 'inherit',
+
+    // copy again?
+    await cp(exampleDir, standaloneDir, {
+      filter: (src) => {
+        return src.includes('src');
+      },
+      force: true,
+      recursive: true,
     });
   });
 
-  test('should prod work', async ({ page }) => {
-    execSync(`node ${path.join('./node_modules/waku/dist/cli.js')} build`, {
-      cwd: `${cacheDir}/${dirname}`,
-      stdio: 'inherit',
+  testMatrix.forEach(({ withSSR }) => {
+    test(`should prod work ${withSSR ? 'with SSR' : ''}`, async ({ page }) => {
+      test.fixme(withSSR, 'SSR is not working in standalone');
+      execSync(
+        `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} build${withSSR ? ' --with-ssr' : ''}`,
+        {
+          cwd: standaloneDir,
+          stdio: 'inherit',
+        },
+      );
+      const port = await getFreePort();
+      const cp = exec(
+        `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start${withSSR ? ' --with-ssr' : ''}`,
+        {
+          cwd: standaloneDir,
+          env: {
+            ...process.env,
+            PORT: `${port}`,
+          },
+        },
+      );
+      debugChildProcess(cp, fileURLToPath(import.meta.url));
+      await testRouterExample(page, port);
+      await terminate(cp.pid!);
     });
-    const port = await getFreePort();
-    const cp = exec(
-      `node ${path.join('./node_modules/waku/dist/cli.js')} start`,
-      {
-        cwd: `${cacheDir}/${dirname}`,
-        env: {
-          ...process.env,
-          PORT: `${port}`,
-        },
-      },
-    );
-    debugChildProcess(cp);
-    await testRouterExample(page, port);
-    cp.kill();
-  });
 
-  test('should dev work', async ({ page }) => {
-    const port = await getFreePort();
-    const cp = exec(
-      `node ${path.join('./node_modules/waku/dist/cli.js')} dev`,
-      {
-        cwd: `${cacheDir}/${dirname}`,
-        env: {
-          ...process.env,
-          PORT: `${port}`,
+    test(`should dev work ${withSSR ? 'with SSR' : ''}`, async ({ page }) => {
+      test.fixme(withSSR, 'SSR is not working in standalone');
+      const port = await getFreePort();
+      const cp = exec(
+        `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} dev${withSSR ? ' --with-ssr' : ''}`,
+        {
+          cwd: standaloneDir,
+          env: {
+            ...process.env,
+            PORT: `${port}`,
+          },
         },
-      },
-    );
-    debugChildProcess(cp);
-    await testRouterExample(page, port);
-    cp.kill();
+      );
+      debugChildProcess(cp, fileURLToPath(import.meta.url));
+      await testRouterExample(page, port);
+      await terminate(cp.pid!);
+    });
   });
-
-  // FIXME shouldn't we also test `--with-ssr`?
 });
