@@ -36,7 +36,7 @@ async function testRouterExample(page: Page, port: number) {
   expect(backgroundColor).toBe('rgb(254, 254, 254)');
 }
 
-test.describe('07_router standalone', () => {
+test.describe.only('07_router standalone', () => {
   test.beforeAll('copy code', async () => {
     standaloneDir = await mkdtemp(join(tmpdir(), 'waku-07_counter'));
     await cp(exampleDir, standaloneDir, {
