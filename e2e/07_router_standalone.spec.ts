@@ -39,12 +39,11 @@ async function testRouterExample(page: Page, port: number) {
 
 test.describe.only('07_router standalone', () => {
   test.beforeAll('copy code', async () => {
-    standaloneDir = process.env.TEMP_DIR
-      ? // GitHub Action on Windows doesn't support mkdtemp on global temp dir,
-        // Which will cause `src` folder to be empty.
-        // I don't know why
-        join(process.env.TEMP_DIR, `${crypto.randomUUID()}-waku-07_counter`)
-      : await mkdtemp(join(tmpdir(), 'waku-07_counter'));
+    // GitHub Action on Windows doesn't support mkdtemp on global temp dir,
+    // Which will cause files in `src` folder to be empty.
+    // I don't know why
+    const tmpDir = process.env.TEMP_DIR ? process.env.TEMP_DIR : tmpdir();
+    standaloneDir = await mkdtemp(join(tmpDir, 'waku-07-router-'));
     await cp(exampleDir, standaloneDir, {
       filter: (src) => {
         return !src.includes('node_modules') && !src.includes('dist');
