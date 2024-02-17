@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+import { existsSync, writeFileSync, unlinkSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
@@ -8,6 +8,7 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import * as swc from '@swc/core';
+import * as dotenv from 'dotenv';
 
 import type { Config } from './config.js';
 import { resolveConfig } from './lib/config.js';
@@ -16,6 +17,8 @@ import { honoMiddleware as honoPrdMiddleware } from './lib/middleware/hono-prd.j
 import { build } from './lib/builder/build.js';
 
 const require = createRequire(new URL('.', import.meta.url));
+
+dotenv.config({ path: ['.env.local', '.env'] });
 
 const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
@@ -30,16 +33,19 @@ const { values, positionals } = parseArgs({
     'with-vercel-static': {
       type: 'boolean',
     },
-    'with-cloudflare': {
-      type: 'boolean',
-    },
-    'with-deno': {
-      type: 'boolean',
-    },
     'with-netlify': {
       type: 'boolean',
     },
     'with-netlify-static': {
+      type: 'boolean',
+    },
+    'with-cloudflare': {
+      type: 'boolean',
+    },
+    'with-partykit': {
+      type: 'boolean',
+    },
+    'with-deno': {
       type: 'boolean',
     },
     'with-aws-lambda': {
@@ -56,7 +62,6 @@ const { values, positionals } = parseArgs({
   },
 });
 
-loadEnv();
 const config = await loadConfig();
 
 const cmd = positionals[0];
@@ -110,13 +115,14 @@ async function runBuild(options: { ssr: boolean }) {
           ? 'vercel-static'
           : 'vercel-serverless'
         : undefined) ||
-      (values['with-cloudflare'] ? 'cloudflare' : undefined) ||
-      (values['with-deno'] ? 'deno' : undefined) ||
-      (values['with-netlify']
+      (values['with-netlify'] ?? !!process.env.NETLIFY
         ? values['with-netlify-static']
           ? 'netlify-static'
           : 'netlify-functions'
         : undefined) ||
+      (values['with-cloudflare'] ? 'cloudflare' : undefined) ||
+      (values['with-partykit'] ? 'partykit' : undefined) ||
+      (values['with-deno'] ? 'deno' : undefined) ||
       (values['with-aws-lambda'] ? 'aws-lambda' : undefined),
   });
 }
@@ -166,31 +172,14 @@ Commands:
 Options:
   --with-ssr            Use opt-in SSR
   --with-vercel         Output for Vercel on build
-  --with-cloudflare     Output for Cloudflare on build
-  --with-deno           Output for Deno on build
   --with-netlify        Output for Netlify on build
+  --with-cloudflare     Output for Cloudflare on build
+  --with-partykit       Output for PartyKit on build
+  --with-deno           Output for Deno on build
   --with-aws-lambda     Output for AWS Lambda on build
   -v, --version         Display the version number
   -h, --help            Display this help message
 `);
-}
-
-// TODO consider using a library such as `dotenv`
-function loadEnv() {
-  if (existsSync('.env.local')) {
-    for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
-      const [key, value] = line.split('=');
-      if (key && value) {
-        if (value.startsWith('"') && value.endsWith('"')) {
-          process.env[key.trim()] = value.slice(1, -1);
-        } else if (value.startsWith("'") && value.endsWith("'")) {
-          process.env[key.trim()] = value.slice(1, -1);
-        } else {
-          process.env[key.trim()] = value.trim();
-        }
-      }
-    }
-  }
 }
 
 // TODO is this a good idea?

@@ -209,7 +209,7 @@ export const renderHtml = async (
     } | null>;
     loadClientModule: (key: CLIENT_MODULE_KEY) => Promise<unknown>;
   } & (
-    | { isDev: false; loadModule: EntriesPrd['loadModule']; isBuild: boolean }
+    | { isDev: false; loadModule: EntriesPrd['loadModule'] }
     | {
         isDev: true;
         rootDir: string;
@@ -322,7 +322,7 @@ export const renderHtml = async (
                 moduleLoading.set(
                   id,
                   opts
-                    .loadModule(joinPath(config.publicDir, id))
+                    .loadModule(joinPath(config.ssrDir, id))
                     .then((m: any) => {
                       moduleCache.set(id, m);
                     }),

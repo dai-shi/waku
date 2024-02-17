@@ -5,19 +5,28 @@ import type {
   ViteDevServer,
 } from 'vite';
 
-export type ModuleImportResult = TransformResult & {
+import {
+  joinPath,
+  fileURLToFilePath,
+  decodeFilePathFromAbsolute,
+} from '../utils/path.js';
+
+type ModuleImportResult = TransformResult & {
   id: string;
   // non-transformed result of `TransformResult.code`
   source: string;
   css?: boolean;
 };
 
-const customCode = `
+const injectingHmrCode = `
 import { createHotContext as __vite__createHotContext } from "/@vite/client";
 import.meta.hot = __vite__createHotContext(import.meta.url);
 
 if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
   globalThis.__WAKU_HMR_CONFIGURED__ = true;
+  import.meta.hot.on('rsc-reload', () => {
+    globalThis.__WAKU_RSC_RELOAD_LISTENERS__?.forEach((l) => l());
+  });
   import.meta.hot.on('hot-import', (data) => import(/* @vite-ignore */ data));
   import.meta.hot.on('module-import', (data) => {
     // remove element with the same 'waku-module-id'
@@ -39,6 +48,12 @@ if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
 `;
 
 export function rscHmrPlugin(): Plugin {
+  const wakuClientDist = decodeFilePathFromAbsolute(
+    joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
+  );
+  const wakuRouterClientDist = decodeFilePathFromAbsolute(
+    joinPath(fileURLToFilePath(import.meta.url), '../../../router/client.js'),
+  );
   let viteServer: ViteDevServer;
   return {
     name: 'rsc-hmr-plugin',
@@ -52,41 +67,96 @@ export function rscHmrPlugin(): Plugin {
         {
           tag: 'script',
           attrs: { type: 'module', async: true },
-          children: customCode,
+          children: injectingHmrCode,
           injectTo: 'head',
         },
       ];
     },
+    async transform(code, id) {
+      if (id.startsWith(wakuClientDist)) {
+        // FIXME this is fragile. Can we do it better?
+        const FETCH_RSC_LINE =
+          'export const fetchRSC = (input, searchParamsString, setElements, cache = fetchCache)=>{';
+        return code.replace(
+          FETCH_RSC_LINE,
+          FETCH_RSC_LINE +
+            `
+{
+  const refetchRsc = () => {
+    cache.splice(0);
+    const data = fetchRSC(input, searchParamsString, setElements, cache);
+    setElements(data);
+  };
+  globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];
+  const index = globalThis.__WAKU_RSC_RELOAD_LISTENERS__.indexOf(globalThis.__WAKU_REFETCH_RSC__);
+  if (index !== -1) {
+    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.splice(index, 1, refetchRsc);
+  } else {
+    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.push(refetchRsc);
+  }
+  globalThis.__WAKU_REFETCH_RSC__ = refetchRsc;
+}
+`,
+        );
+      } else if (id.startsWith(wakuRouterClientDist)) {
+        // FIXME this is fragile. Can we do it better?
+        const INNER_ROUTER_LINE = 'function InnerRouter() {';
+        return code.replace(
+          INNER_ROUTER_LINE,
+          INNER_ROUTER_LINE +
+            `
+{
+  const refetchRoute = () => {
+    const input = getInputString(loc.path);
+    refetch(input, loc.searchParams);
+  };
+  globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];
+  const index = globalThis.__WAKU_RSC_RELOAD_LISTENERS__.indexOf(globalThis.__WAKU_REFETCH_ROUTE__);
+  if (index !== -1) {
+    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.splice(index, 1, refetchRoute);
+  } else {
+    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.unshift(refetchRoute);
+  }
+  globalThis.__WAKU_REFETCH_ROUTE__ = refetchRoute;
+}
+`,
+        );
+      }
+    },
   };
 }
 
-const pendingMap = new WeakMap<ViteDevServer, Set<string>>();
+const pendingMap = new WeakMap<ViteDevServer['ws'], Set<string>>();
 
-export function hotImport(vite: ViteDevServer, source: string) {
-  let sourceSet = pendingMap.get(vite);
+function hotImport(viteServer: ViteDevServer, source: string) {
+  let sourceSet = pendingMap.get(viteServer.ws);
   if (!sourceSet) {
     sourceSet = new Set();
-    pendingMap.set(vite, sourceSet);
-    vite.ws.on('connection', () => {
+    pendingMap.set(viteServer.ws, sourceSet);
+    viteServer.ws.on('connection', () => {
       for (const source of sourceSet!) {
-        vite.ws.send({ type: 'custom', event: 'hot-import', data: source });
+        viteServer.ws.send({
+          type: 'custom',
+          event: 'hot-import',
+          data: source,
+        });
       }
     });
   }
   sourceSet.add(source);
-  vite.ws.send({ type: 'custom', event: 'hot-import', data: source });
+  viteServer.ws.send({ type: 'custom', event: 'hot-import', data: source });
 }
 
-const modulePendingMap = new WeakMap<ViteDevServer, Set<ModuleImportResult>>();
+const modulePendingMap = new WeakMap<
+  ViteDevServer['ws'],
+  Set<ModuleImportResult>
+>();
 
-export function moduleImport(
-  viteServer: ViteDevServer,
-  result: ModuleImportResult,
-) {
-  let sourceSet = modulePendingMap.get(viteServer);
+function moduleImport(viteServer: ViteDevServer, result: ModuleImportResult) {
+  let sourceSet = modulePendingMap.get(viteServer.ws);
   if (!sourceSet) {
     sourceSet = new Set();
-    modulePendingMap.set(viteServer, sourceSet);
+    modulePendingMap.set(viteServer.ws, sourceSet);
   }
   sourceSet.add(result);
   viteServer.ws.send({ type: 'custom', event: 'module-import', data: result });
@@ -95,7 +165,7 @@ export function moduleImport(
 async function generateInitialScripts(
   viteServer: ViteDevServer,
 ): Promise<HtmlTagDescriptor[]> {
-  const sourceSet = modulePendingMap.get(viteServer);
+  const sourceSet = modulePendingMap.get(viteServer.ws);
 
   if (!sourceSet) {
     return [];
@@ -136,4 +206,22 @@ async function generateInitialScripts(
     });
   }
   return scripts;
+}
+
+export type HotUpdatePayload =
+  | { type: 'full-reload' }
+  | { type: 'custom'; event: 'rsc-reload' }
+  | { type: 'custom'; event: 'hot-import'; data: string }
+  | { type: 'custom'; event: 'module-import'; data: ModuleImportResult };
+
+export function hotUpdate(vite: ViteDevServer, payload: HotUpdatePayload) {
+  if (payload.type === 'full-reload') {
+    vite.ws.send(payload);
+  } else if (payload.event === 'rsc-reload') {
+    vite.ws.send(payload);
+  } else if (payload.event === 'hot-import') {
+    hotImport(vite, payload.data);
+  } else if (payload.event === 'module-import') {
+    moduleImport(vite, payload.data);
+  }
 }

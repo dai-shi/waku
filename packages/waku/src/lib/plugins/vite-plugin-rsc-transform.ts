@@ -9,6 +9,8 @@ export function rscTransformPlugin(
     | {
         isBuild: true;
         assetsDir: string;
+        wakuClientId: string;
+        wakuClientPath: string;
         clientEntryFiles: Record<string, string>;
         serverEntryFiles: Record<string, string>;
       },
@@ -16,6 +18,9 @@ export function rscTransformPlugin(
   const getClientId = (id: string) => {
     if (!opts.isBuild) {
       throw new Error('not buiding');
+    }
+    if (id === opts.wakuClientPath) {
+      return `@id/${opts.assetsDir}/${opts.wakuClientId}.js`;
     }
     for (const [k, v] of Object.entries(opts.clientEntryFiles)) {
       if (v === id) {

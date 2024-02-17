@@ -4,6 +4,7 @@ import cx from 'clsx';
 import { useAtomValue } from 'jotai';
 
 import { scrolledAtom } from '../atoms/index.js';
+import { Logo } from '../components/logo.js';
 import { scrollTo } from '../utils/index.js';
 
 export const Start = () => {
@@ -12,14 +13,14 @@ export const Start = () => {
   return (
     <div
       className={cx(
-        'pt-8 text-center text-white transition-opacity duration-500 ease-in-out',
+        'pt-4 text-center text-white transition-opacity duration-500 ease-in-out lg:pt-8',
         !hasScrolled ? 'opacity-100' : 'opacity-0',
       )}
     >
-      <h1 className="text-shadow -ml-1.5 font-serif text-8xl font-extrabold leading-none sm:-ml-3 sm:text-[10rem]">
-        Waku
+      <h1>
+        <Logo />
       </h1>
-      <h3 className="text-shadow text-xl font-bold leading-none text-white/80 sm:-mt-2 sm:text-3xl">
+      <h3 className="text-shadow mt-3 text-xl font-bold leading-none text-white/80 sm:text-3xl">
         The minimal React framework
       </h3>
       <div className="mt-4 px-12 sm:mt-4 sm:px-0">

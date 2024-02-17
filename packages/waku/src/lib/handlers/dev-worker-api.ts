@@ -4,7 +4,7 @@ import type {
 } from 'node:worker_threads';
 
 import type { ResolvedConfig } from '../config.js';
-import type { ModuleImportResult } from '../plugins/vite-plugin-rsc-hmr.js';
+import type { HotUpdatePayload } from '../plugins/vite-plugin-rsc-hmr.js';
 
 export type RenderRequest = {
   input: string;
@@ -37,9 +37,7 @@ export type MessageReq =
     };
 
 export type MessageRes =
-  | { type: 'full-reload' }
-  | { type: 'hot-import'; source: string }
-  | { type: 'module-import'; result: ModuleImportResult }
+  | { type: 'hot-update'; payload: HotUpdatePayload }
   | { id: number; type: 'start'; context: unknown; stream: ReadableStream }
   | { id: number; type: 'err'; err: unknown; statusCode?: number }
   | { id: number; type: 'moduleId'; moduleId: string }
@@ -108,37 +106,13 @@ const getWorker = () => {
   return workerPromise;
 };
 
-export async function registerReloadCallback(
-  fn: (type: 'full-reload') => void,
+export async function registerHotUpdateCallback(
+  fn: (payload: HotUpdatePayload) => void,
 ) {
   const worker = await getWorker();
   const listener = (mesg: MessageRes) => {
-    if (mesg.type === 'full-reload') {
-      fn(mesg.type);
-    }
-  };
-  worker.on('message', listener);
-  return () => worker.off('message', listener);
-}
-
-export async function registerImportCallback(fn: (source: string) => void) {
-  const worker = await getWorker();
-  const listener = (mesg: MessageRes) => {
-    if (mesg.type === 'hot-import') {
-      fn(mesg.source);
-    }
-  };
-  worker.on('message', listener);
-  return () => worker.off('message', listener);
-}
-
-export async function registerModuleCallback(
-  fn: (result: ModuleImportResult) => void,
-) {
-  const worker = await getWorker();
-  const listener = (mesg: MessageRes) => {
-    if (mesg.type === 'module-import') {
-      fn(mesg.result);
+    if (mesg.type === 'hot-update') {
+      fn(mesg.payload);
     }
   };
   worker.on('message', listener);

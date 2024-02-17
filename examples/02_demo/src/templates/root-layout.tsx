@@ -15,7 +15,7 @@ export const RootLayout = async ({ children }: RootLayoutProps) => {
       <meta property="description" content={data.description} />
       <link rel="icon" type="image/png" href={data.icon} />
       <Header />
-      <main className="flex min-h-svh items-center justify-center">
+      <main className="flex items-center justify-center lg:min-h-svh">
         {children}
       </main>
       <Footer />

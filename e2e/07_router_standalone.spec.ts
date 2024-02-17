@@ -2,7 +2,8 @@ import { debugChildProcess, getFreePort, terminate, test } from './utils.js';
 import { fileURLToPath } from 'node:url';
 import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { exec, execSync } from 'node:child_process';
-import { expect, type Page } from '@playwright/test';
+import { expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import waitPort from 'wait-port';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -27,6 +28,11 @@ async function testRouterExample(page: Page, port: number) {
 
   await page.goto(`http://localhost:${port}/foo`);
   await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
+
+  const backgroundColor = await page.evaluate(() =>
+    window.getComputedStyle(document.body).getPropertyValue('background-color'),
+  );
+  expect(backgroundColor).toBe('rgb(254, 254, 254)');
 }
 
 test.describe('07_router standalone', () => {
@@ -83,4 +89,6 @@ test.describe('07_router standalone', () => {
     await testRouterExample(page, port);
     await terminate(cp.pid!);
   });
+
+  // FIXME shouldn't we also test `--with-ssr`?
 });
