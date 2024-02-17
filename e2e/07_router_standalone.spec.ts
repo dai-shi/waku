@@ -7,6 +7,7 @@ import type { Page } from '@playwright/test';
 import waitPort from 'wait-port';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { glob } from 'glob';
 
 let standaloneDir: string;
 const exampleDir = fileURLToPath(
@@ -65,6 +66,11 @@ test.describe('07_router standalone', () => {
       force: true,
       recursive: true,
     });
+  });
+
+  test.beforeEach(async () => {
+    const paths = await glob(join(standaloneDir, '**/**'));
+    console.log('paths:', paths);
   });
 
   test('should prod work', async ({ page }) => {
