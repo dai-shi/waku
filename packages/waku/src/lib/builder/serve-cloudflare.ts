@@ -13,6 +13,7 @@ let serveWaku: ReturnType<typeof honoMiddleware> | undefined;
 const app = new Hono();
 app.use('*', serveStatic({ root: './', manifest }));
 app.use('*', (c, next) => serveWaku!(c, next));
+
 export default {
   async fetch(
     request: Request,
