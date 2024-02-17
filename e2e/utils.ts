@@ -8,6 +8,9 @@ import { createRequire } from 'node:module';
 // Upstream doesn't support ES module
 //  Related: https://github.com/dwyl/terminate/pull/85
 export const terminate = createRequire(import.meta.url)(
+  // use terminate instead of cp.kill,
+  //  because cp.kill will not kill the child process of the child process
+  //  to avoid the zombie process
   'terminate/promise',
 ) as (pid: number) => Promise<void>;
 
