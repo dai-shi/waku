@@ -10,13 +10,14 @@
     "start": "waku start --with-ssr"
   },
   "dependencies": {
+    "@sindresorhus/slugify": "^2.2.1",
     "clsx": "^2.1.0",
     "framer-motion": "^11.0.3",
     "jotai": "^2.6.4",
     "next-mdx-remote": "^4.4.1",
     "react": "18.3.0-canary-14fd9630e-20240213",
     "react-dom": "18.3.0-canary-14fd9630e-20240213",
-    "waku": "https://pkg.csb.dev/dai-shi/waku/commit/47ee5d7b/waku"
+    "waku": "https://pkg.csb.dev/dai-shi/waku/commit/0ae93a2f/waku"
   },
   "devDependencies": {
     "@types/react": "^18.2.55",
