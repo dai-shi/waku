@@ -26,7 +26,7 @@ export const Menu = () => {
           className={cx(
             isMenuOpen
               ? 'pointer-events-none opacity-0'
-              : 'pointer-events-auto opacity-100 delay-300',
+              : 'pointer-events-auto opacity-100 lg:delay-300',
             'inline-flex aspect-square h-[3.5rem] w-[3.5rem] items-center justify-center overflow-clip rounded-full border-4 border-gray-950 bg-gray-900 text-3xl transition duration-300 ease-in-out hover:bg-gray-800 focus:ring-4 focus:ring-primary-300 lg:focus:ring-0',
           )}
         >
@@ -44,9 +44,9 @@ export const Menu = () => {
         ref={ref}
         className={cx(
           isMenuOpen
-            ? 'pointer-events-auto opacity-100 delay-300'
+            ? 'pointer-events-auto opacity-100 lg:delay-300'
             : 'pointer-events-none opacity-0',
-          'fixed inset-0 z-90 flex max-h-full items-center justify-center overflow-y-auto overscroll-none border-gray-800  bg-gray-950 transition-opacity duration-300 ease-in-out lg:bottom-auto lg:left-auto lg:right-4 lg:top-4 lg:z-100 lg:overflow-clip lg:rounded-xl lg:border lg:p-12 lg:backdrop-blur',
+          'fixed inset-0 z-90 flex max-h-full items-center justify-center overflow-y-auto overscroll-none border-gray-800 bg-gray-950 transition-opacity duration-300 ease-in-out lg:bottom-auto lg:left-auto lg:right-4 lg:top-4 lg:z-100 lg:overflow-clip lg:rounded-xl lg:border lg:p-12 lg:backdrop-blur',
         )}
       >
         <div className="relative z-10 flex flex-col items-center justify-center text-white">

@@ -10,6 +10,7 @@
     "start": "waku start --with-ssr"
   },
   "dependencies": {
+    "@sindresorhus/slugify": "^2.2.1",
     "clsx": "^2.1.0",
     "framer-motion": "^11.0.3",
     "jotai": "^2.6.4",
