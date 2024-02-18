@@ -629,6 +629,9 @@ importers:
 
   packages/website:
     dependencies:
+      '@sindresorhus/slugify':
+        specifier: ^2.2.1
+        version: 2.2.1
       clsx:
         specifier: ^2.1.0
         version: 2.1.0
@@ -648,8 +651,8 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react@18.3.0-canary-14fd9630e-20240213)
       waku:
-        specifier: https://pkg.csb.dev/dai-shi/waku/commit/47ee5d7b/waku
-        version: '@pkg.csb.dev/dai-shi/waku/commit/47ee5d7b/waku(@types/node@20.11.17)(react-dom@18.3.0-canary-14fd9630e-20240213)(react-server-dom-webpack@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)'
+        specifier: https://pkg.csb.dev/dai-shi/waku/commit/0ae93a2f/waku
+        version: '@pkg.csb.dev/dai-shi/waku/commit/0ae93a2f/waku(@types/node@20.11.17)(react-dom@18.3.0-canary-14fd9630e-20240213)(react-server-dom-webpack@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)'
     devDependencies:
       '@types/react':
         specifier: ^18.2.55
@@ -1455,6 +1458,21 @@ packages:
     resolution: {integrity: sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw==}
     engines: {node: '>=10'}
     dev: true
+
+  /@sindresorhus/slugify@2.2.1:
+    resolution: {integrity: sha512-MkngSCRZ8JdSOCHRaYd+D01XhvU3Hjy6MGl06zhOk614hp9EOAp5gIkBeQg7wtmxpitU6eAL4kdiRMcJa2dlrw==}
+    engines: {node: '>=12'}
+    dependencies:
+      '@sindresorhus/transliterate': 1.6.0
+      escape-string-regexp: 5.0.0
+    dev: false
+
+  /@sindresorhus/transliterate@1.6.0:
+    resolution: {integrity: sha512-doH1gimEu3A46VX6aVxpHTeHrytJAG6HgdxntYnCFiIFHEM/ZGpG8KiZGBChchjQmG0XFIBL552kBTjVcMZXwQ==}
+    engines: {node: '>=12'}
+    dependencies:
+      escape-string-regexp: 5.0.0
+    dev: false
 
   /@stylexjs/babel-plugin@0.5.1:
     resolution: {integrity: sha512-Q5AaCyVZRC88QMF8sFHmFC3Rakm19t2jkwfaPImyoGjMyOPySCYVmF4NDffAIwIP+j8J/qn7T8njfKIhSpEftg==}
@@ -2989,7 +3007,6 @@ packages:
   /escape-string-regexp@5.0.0:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
-    dev: true
 
   /eslint-config-prettier@9.1.0(eslint@8.56.0):
     resolution: {integrity: sha512-NSWl5BFQWEPi1j4TjVNItzYV7dZXZ+wP6I6ZhrBGpChQhZRUaElihE9uRRkcbRnNb76UMKDF3r+WTmNcGPKsqw==}
@@ -6814,12 +6831,12 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
     dev: false
 
-  '@pkg.csb.dev/dai-shi/waku/commit/47ee5d7b/waku(@types/node@20.11.17)(react-dom@18.3.0-canary-14fd9630e-20240213)(react-server-dom-webpack@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)':
-    resolution: {tarball: https://pkg.csb.dev/dai-shi/waku/commit/47ee5d7b/waku}
-    id: '@pkg.csb.dev/dai-shi/waku/commit/47ee5d7b/waku'
+  '@pkg.csb.dev/dai-shi/waku/commit/0ae93a2f/waku(@types/node@20.11.17)(react-dom@18.3.0-canary-14fd9630e-20240213)(react-server-dom-webpack@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)':
+    resolution: {tarball: https://pkg.csb.dev/dai-shi/waku/commit/0ae93a2f/waku}
+    id: '@pkg.csb.dev/dai-shi/waku/commit/0ae93a2f/waku'
     name: waku
-    version: 0.19.2
-    engines: {node: ^20.8.0 || ^18.16.0}
+    version: 0.19.3
+    engines: {node: ^20.8.0 || ^18.17.0}
     hasBin: true
     peerDependencies:
       react: 18.3.0-canary-14fd9630e-20240213
