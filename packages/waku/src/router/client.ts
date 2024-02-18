@@ -18,6 +18,7 @@ import type {
   AnchorHTMLAttributes,
   ReactElement,
   MouseEvent,
+  PropsWithChildren,
 } from 'react';
 
 import { prefetchRSC, Root, Slot, useRefetch } from '../client.js';
@@ -314,6 +315,8 @@ function InnerRouter() {
   );
 }
 
+const isServer = typeof window === 'undefined'
+
 export function Router() {
   const loc = parseLocation();
   const initialInput = getInputString(loc.path);
@@ -322,5 +325,28 @@ export function Router() {
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
     { initialInput, initialSearchParamsString },
     createElement(InnerRouter),
+  );
+}
+
+function notAvailableInServer(name: string) {
+  return () => { 
+    throw new Error(`${name} is not in the server`)
+  }
+}
+
+export function ServerRouter({children, loc}: PropsWithChildren<{loc: ReturnType<typeof parseLocation>}>) {
+  if (!isServer) {
+    throw new Error('ServerRouter is not supposed to be run in the client')
+  }
+
+  return createElement(
+    Fragment,
+    null,
+    createElement(Slot, { id: SHOULD_SKIP_ID }),
+    createElement(
+      RouterContext.Provider,
+      { value: { loc, changeLocation: notAvailableInServer('changeLocation'), prefetchLocation: notAvailableInServer('prefetchLocation') } },
+      children,
+    ),
   );
 }
