@@ -345,7 +345,6 @@ export function ServerRouter({
   return createElement(
     Fragment,
     null,
-    createElement(Slot, { id: SHOULD_SKIP_ID }),
     createElement(
       RouterContext.Provider,
       {
