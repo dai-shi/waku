@@ -3,7 +3,8 @@ import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
 import { getFreePort, test } from './utils.js';
-import { rm } from 'node:fs/promises';
+import { readdir, rm } from 'node:fs/promises';
+import path from 'node:path';
 
 const waku = fileURLToPath(
   new URL('../packages/waku/dist/cli.js', import.meta.url),
@@ -63,6 +64,36 @@ for (const { build, command } of commands) {
       cp.kill();
     });
 
+    test('image exists in folder public/assets', async () => {
+      test.skip(command.startsWith('dev '));
+      const imagePath = path.join(cwd, 'dist', 'public', 'assets');
+      const files = await readdir(imagePath);
+      const imageExists = files.some((file) =>
+        file.startsWith('image-not-inlined-'),
+      );
+      expect(imageExists).toBe(true);
+    });
+
+    test('json public linked exists in folder public/assets', async () => {
+      test.skip(command.startsWith('dev '));
+      const imagePath = path.join(cwd, 'dist', 'public', 'assets');
+      const files = await readdir(imagePath);
+      const imageExists = files.some((file) =>
+        file.startsWith('json-public-linked-'),
+      );
+      expect(imageExists).toBe(true);
+    });
+
+    test('json private NOT exists in folder public/assets', async () => {
+      test.skip(command.startsWith('dev '));
+      const imagePath = path.join(cwd, 'dist', 'public', 'assets');
+      const files = await readdir(imagePath);
+      const imageExists = files.some((file) =>
+        file.startsWith('json-private-'),
+      );
+      expect(imageExists).not.toBe(true);
+    });
+
     test('add text input', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
@@ -77,7 +108,7 @@ for (const { build, command } of commands) {
       expect(heightChanged).toBeGreaterThan(height);
     });
 
-    test('image was loaded', async ({ page }) => {
+    test('image was loaded and JSON results exists', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
       await page.waitForLoadState('domcontentloaded');
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
@@ -97,6 +128,12 @@ for (const { build, command } of commands) {
         'naturalWidth',
         0,
       );
+
+      await expect(page.getByTestId('json-private')).toHaveText('6');
+      const value = await page
+        .getByTestId('json-public-linked')
+        .getAttribute('href');
+      await expect(value).toMatch(/json-public-linked/);
     });
 
     test('no js environment should have first screen', async ({ browser }) => {
