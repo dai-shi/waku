@@ -10,8 +10,9 @@ const env: Record<string, string> = process.env as any;
 const app = new Hono();
 app.use('*', honoMiddleware({ loadEntries, ssr, env }));
 app.notFound((c) => {
-  if ((globalThis as any).__WAKU_NOT_FOUND_HTML__) {
-    return c.html((globalThis as any).__WAKU_NOT_FOUND_HTML__, 404);
+  const notFoundHtml = (globalThis as any).__WAKU_NOT_FOUND_HTML__;
+  if (typeof notFoundHtml === 'string') {
+    return c.html(notFoundHtml, 404);
   }
   return c.text('404 Not Found', 404);
 });
