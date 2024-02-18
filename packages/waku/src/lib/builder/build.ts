@@ -22,7 +22,6 @@ import {
   createReadStream,
   createWriteStream,
   existsSync,
-  copyFile,
   rename,
   mkdir,
   readFile,
@@ -339,11 +338,6 @@ const buildSsrBundle = async (
       },
     },
   });
-  for (const cssAsset of cssAssets) {
-    const from = joinPath(rootDir, config.distDir, cssAsset);
-    const to = joinPath(rootDir, config.distDir, config.ssrDir, cssAsset);
-    await copyFile(from, to);
-  }
 };
 
 // For Browsers
