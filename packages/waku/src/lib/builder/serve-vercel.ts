@@ -7,6 +7,7 @@ import { getRequestListener } from '@hono/node-server';
 import { honoMiddleware } from '../middleware/hono-prd.js';
 
 const ssr = !!import.meta.env.WAKU_BUILD_SSR;
+const distDir = import.meta.env.WAKU_CONFIG_DIST_DIR!;
 const publicDir = import.meta.env.WAKU_CONFIG_PUBLIC_DIR!;
 const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
 const env: Record<string, string> = process.env as any;
@@ -15,7 +16,7 @@ const app = new Hono();
 app.use('*', honoMiddleware({ loadEntries, ssr, env }));
 app.notFound((c) => {
   // FIXME better implementation using node stream?
-  const file = path.join(publicDir, '404.html');
+  const file = path.join(distDir, publicDir, '404.html');
   if (existsSync(file)) {
     return c.html(readFileSync(file, 'utf8'), 404);
   }
