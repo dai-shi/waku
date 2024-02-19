@@ -70,6 +70,7 @@ jobs:
           node-version: ${{ matrix.version }}
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
+      - run: ls
       - run: pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v4
         with:
