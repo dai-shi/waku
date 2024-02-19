@@ -70,16 +70,15 @@ jobs:
           node-version: ${{ matrix.version }}
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
-      - run: ls
       - run: pnpm install --frozen-lockfile
-      # - uses: actions/download-artifact@v4
-      #   with:
-      #     name: create-waku
-      #     path: packages/create-waku
-      # - uses: actions/download-artifact@v4
-      #   with:
-      #     name: waku
-      #     path: packages/waku
+      - uses: actions/download-artifact@v4
+        with:
+          name: create-waku
+          path: packages/create-waku
+      - uses: actions/download-artifact@v4
+        with:
+          name: waku
+          path: packages/waku
       - name: Cache Playwright
         uses: actions/cache@v3
         id: playwright-cache
