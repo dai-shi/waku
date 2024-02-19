@@ -17,11 +17,11 @@ const env = process.env as Record<string, string>;
 const app = new Hono();
 app.use('*', serveStatic({ root: `${distDir}/${publicDir}` }));
 app.use('*', honoMiddleware({ loadEntries, ssr, env }));
-app.notFound(async (c)=>{
-    const file = path.join(distDir, publicDir, '404.html');
-    if (existsSync(file)) {
-        return c.html(readFileSync(file, 'utf8'), 404);
-    }
-    return c.text('404 Not Found', 404);
+app.notFound(async (c) => {
+  const file = path.join(distDir, publicDir, '404.html');
+  if (existsSync(file)) {
+    return c.html(readFileSync(file, 'utf8'), 404);
+  }
+  return c.text('404 Not Found', 404);
 });
 export const handler = handle(app);
