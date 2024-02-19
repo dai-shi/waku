@@ -63,10 +63,15 @@ test.describe('07_router standalone', () => {
     await cp(wakuDir, `${standaloneDir}/node_modules/waku`, {
       recursive: true,
     });
-    const wakuPackageJson = JSON.parse(await readFile('`${standaloneDir}/node_modules/waku/node_modules', 'utf-8')) 
-    const peerDeps = Object.keys(wakuPackageJson['peerDependencies'])
+    const wakuPackageJson = JSON.parse(
+      await readFile(
+        '`${standaloneDir}/node_modules/waku/node_modules',
+        'utf-8',
+      ),
+    );
+    const peerDeps = Object.keys(wakuPackageJson['peerDependencies']);
     for (const dep of peerDeps) {
-      console.log('remove', dep)
+      console.log('remove', dep);
       await rm(`${standaloneDir}/node_modules/waku/node_modules/${dep}`, {
         recursive: true,
         force: true,
