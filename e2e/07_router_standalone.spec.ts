@@ -75,8 +75,12 @@ test.describe('07_router standalone', () => {
         recursive: true,
         force: true,
       });
-      console.log('remove done', dep);
     }
+
+    execSync('ls', {
+      cwd: `${standaloneDir}/node_modules/waku/node_modules`,
+      stdio: 'inherit',
+    });
   });
 
   testMatrix.forEach(({ withSSR }) => {
