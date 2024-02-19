@@ -54,7 +54,7 @@ test.describe('07_router standalone', () => {
       cwd: standaloneDir,
       stdio: 'inherit',
     });
-    
+
     await rm(`${standaloneDir}/node_modules/waku`, {
       recursive: true,
       force: true,
@@ -63,7 +63,7 @@ test.describe('07_router standalone', () => {
     await cp(wakuDir, `${standaloneDir}/node_modules/waku`, {
       recursive: true,
     });
-    console.log('here')
+    console.log('here');
     execSync('ls', {
       cwd: `${standaloneDir}/node_modules/waku`,
       stdio: 'inherit',
