@@ -18,7 +18,6 @@ import type {
   AnchorHTMLAttributes,
   ReactElement,
   MouseEvent,
-  PropsWithChildren,
 } from 'react';
 
 import { prefetchRSC, Root, Slot, useRefetch } from '../client.js';
