@@ -47,6 +47,7 @@ const parseLocation = (): RouteProps => {
 type ChangeLocation = (
   path?: string,
   searchParams?: URLSearchParams,
+  hash?: string,
   method?: 'pushState' | 'replaceState' | false,
   scrollTo?: ScrollToOptions | false,
 ) => void;
@@ -114,7 +115,7 @@ export function Link({
     if (url.href !== window.location.href) {
       prefetchLocation(url.pathname, url.searchParams);
       startTransition(() => {
-        changeLocation(url.pathname, url.searchParams);
+        changeLocation(url.pathname, url.searchParams, url.hash);
       });
     }
     props.onClick?.(event);
@@ -211,15 +212,19 @@ function InnerRouter() {
     (
       path,
       searchParams,
+      hash,
       method = 'pushState',
       scrollTo = { top: 0, left: 0 },
     ) => {
       const url = new URL(window.location.href);
-      if (path) {
+      if (typeof path === 'string') {
         url.pathname = path;
       }
       if (searchParams) {
         url.search = '?' + searchParams.toString();
+      }
+      if (typeof hash === 'string') {
+        url.hash = hash;
       }
       if (method) {
         window.history[method](window.history.state, '', url);
@@ -283,7 +288,7 @@ function InnerRouter() {
   useEffect(() => {
     const callback = () => {
       const loc = parseLocation();
-      changeLocation(loc.path, loc.searchParams, false, false);
+      changeLocation(loc.path, loc.searchParams, '', false, false);
     };
     window.addEventListener('popstate', callback);
     return () => window.removeEventListener('popstate', callback);
