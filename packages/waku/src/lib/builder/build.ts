@@ -22,7 +22,6 @@ import {
   createReadStream,
   createWriteStream,
   existsSync,
-  copyFile,
   rename,
   mkdir,
   readFile,
@@ -339,11 +338,6 @@ const buildSsrBundle = async (
       },
     },
   });
-  for (const cssAsset of cssAssets) {
-    const from = joinPath(rootDir, config.distDir, cssAsset);
-    const to = joinPath(rootDir, config.distDir, config.ssrDir, cssAsset);
-    await copyFile(from, to);
-  }
 };
 
 // For Browsers
@@ -355,9 +349,10 @@ const buildClientBundle = async (
   ssr: boolean,
 ) => {
   const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
-  const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
-    type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
+  const nonJsAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
+    type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
   );
+  const cssAssets = nonJsAssets.filter((asset) => asset.endsWith('.css'));
   const clientBuildOutput = await buildVite({
     base: config.basePath,
     plugins: [
@@ -388,9 +383,9 @@ const buildClientBundle = async (
   if (!('output' in clientBuildOutput)) {
     throw new Error('Unexpected vite client build output');
   }
-  for (const cssAsset of cssAssets) {
-    const from = joinPath(rootDir, config.distDir, cssAsset);
-    const to = joinPath(rootDir, config.distDir, config.publicDir, cssAsset);
+  for (const nonJsAsset of nonJsAssets) {
+    const from = joinPath(rootDir, config.distDir, nonJsAsset);
+    const to = joinPath(rootDir, config.distDir, config.publicDir, nonJsAsset);
     await rename(from, to);
   }
   return clientBuildOutput;
