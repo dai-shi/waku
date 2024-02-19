@@ -4,8 +4,7 @@ import { serveStatic } from '@hono/node-server/serve-static';
 
 import { honoMiddleware } from '../middleware/hono-prd.js';
 import path from 'node:path';
-import { existsSync } from '../utils/node-fs.js';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const ssr = !!import.meta.env.WAKU_BUILD_SSR;
 const distDir = import.meta.env.WAKU_CONFIG_DIST_DIR!;
