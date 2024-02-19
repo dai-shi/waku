@@ -1,6 +1,6 @@
 import { debugChildProcess, getFreePort, terminate, test } from './utils.js';
 import { fileURLToPath } from 'node:url';
-import { cp, mkdtemp, rm } from 'node:fs/promises';
+import { cp, mkdtemp, rm, readFile } from 'node:fs/promises';
 import { exec, execSync } from 'node:child_process';
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
@@ -63,11 +63,15 @@ test.describe('07_router standalone', () => {
     await cp(wakuDir, `${standaloneDir}/node_modules/waku`, {
       recursive: true,
     });
-    console.log('here');
-    execSync('ls', {
-      cwd: `${standaloneDir}/node_modules/waku/node_modules`,
-      stdio: 'inherit',
-    });
+    const wakuPackageJson = JSON.parse(await readFile('`${standaloneDir}/node_modules/waku/node_modules', 'utf-8')) 
+    const peerDeps = Object.keys(wakuPackageJson['peerDependencies'])
+    for (const dep of peerDeps) {
+      console.log('remove', dep)
+      await rm(`${standaloneDir}/node_modules/waku/node_modules/${dep}`, {
+        recursive: true,
+        force: true,
+      });
+    }
   });
 
   testMatrix.forEach(({ withSSR }) => {
