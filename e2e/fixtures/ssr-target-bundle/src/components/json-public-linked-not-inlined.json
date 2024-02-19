@@ -1,0 +1,198 @@
+{
+  "type": "public",
+  "password": "SECRET",
+  "data": [
+    {
+      "name": "John Doe",
+      "age": 30,
+      "address": {
+        "street": "123 Main St",
+        "city": "New York",
+        "state": "NY"
+      },
+      "hobbies": ["reading", "painting", "playing guitar"],
+      "friends": [
+        {
+          "name": "Jane Smith",
+          "age": 28,
+          "address": {
+            "street": "456 Elm St",
+            "city": "Los Angeles",
+            "state": "CA"
+          },
+          "hobbies": ["hiking", "cooking", "photography"]
+        },
+        {
+          "name": "Mike Johnson",
+          "age": 32,
+          "address": {
+            "street": "789 Oak St",
+            "city": "Chicago",
+            "state": "IL"
+          },
+          "hobbies": ["running", "playing basketball", "watching movies"]
+        }
+      ]
+    },
+    {
+      "name": "John Doe",
+      "age": 30,
+      "address": {
+        "street": "123 Main St",
+        "city": "New York",
+        "state": "NY"
+      },
+      "hobbies": ["reading", "painting", "playing guitar"],
+      "friends": [
+        {
+          "name": "Jane Smith",
+          "age": 28,
+          "address": {
+            "street": "456 Elm St",
+            "city": "Los Angeles",
+            "state": "CA"
+          },
+          "hobbies": ["hiking", "cooking", "photography"]
+        },
+        {
+          "name": "Mike Johnson",
+          "age": 32,
+          "address": {
+            "street": "789 Oak St",
+            "city": "Chicago",
+            "state": "IL"
+          },
+          "hobbies": ["running", "playing basketball", "watching movies"]
+        }
+      ]
+    },
+    {
+      "name": "John Doe",
+      "age": 30,
+      "address": {
+        "street": "123 Main St",
+        "city": "New York",
+        "state": "NY"
+      },
+      "hobbies": ["reading", "painting", "playing guitar"],
+      "friends": [
+        {
+          "name": "Jane Smith",
+          "age": 28,
+          "address": {
+            "street": "456 Elm St",
+            "city": "Los Angeles",
+            "state": "CA"
+          },
+          "hobbies": ["hiking", "cooking", "photography"]
+        },
+        {
+          "name": "Mike Johnson",
+          "age": 32,
+          "address": {
+            "street": "789 Oak St",
+            "city": "Chicago",
+            "state": "IL"
+          },
+          "hobbies": ["running", "playing basketball", "watching movies"]
+        }
+      ]
+    },
+    {
+      "name": "John Doe",
+      "age": 30,
+      "address": {
+        "street": "123 Main St",
+        "city": "New York",
+        "state": "NY"
+      },
+      "hobbies": ["reading", "painting", "playing guitar"],
+      "friends": [
+        {
+          "name": "Jane Smith",
+          "age": 28,
+          "address": {
+            "street": "456 Elm St",
+            "city": "Los Angeles",
+            "state": "CA"
+          },
+          "hobbies": ["hiking", "cooking", "photography"]
+        },
+        {
+          "name": "Mike Johnson",
+          "age": 32,
+          "address": {
+            "street": "789 Oak St",
+            "city": "Chicago",
+            "state": "IL"
+          },
+          "hobbies": ["running", "playing basketball", "watching movies"]
+        }
+      ]
+    },
+    {
+      "name": "John Doe",
+      "age": 30,
+      "address": {
+        "street": "123 Main St",
+        "city": "New York",
+        "state": "NY"
+      },
+      "hobbies": ["reading", "painting", "playing guitar"],
+      "friends": [
+        {
+          "name": "Jane Smith",
+          "age": 28,
+          "address": {
+            "street": "456 Elm St",
+            "city": "Los Angeles",
+            "state": "CA"
+          },
+          "hobbies": ["hiking", "cooking", "photography"]
+        },
+        {
+          "name": "Mike Johnson",
+          "age": 32,
+          "address": {
+            "street": "789 Oak St",
+            "city": "Chicago",
+            "state": "IL"
+          },
+          "hobbies": ["running", "playing basketball", "watching movies"]
+        }
+      ]
+    },
+    {
+      "name": "John Doe",
+      "age": 30,
+      "address": {
+        "street": "123 Main St",
+        "city": "New York",
+        "state": "NY"
+      },
+      "hobbies": ["reading", "painting", "playing guitar"],
+      "friends": [
+        {
+          "name": "Jane Smith",
+          "age": 28,
+          "address": {
+            "street": "456 Elm St",
+            "city": "Los Angeles",
+            "state": "CA"
+          },
+          "hobbies": ["hiking", "cooking", "photography"]
+        },
+        {
+          "name": "Mike Johnson",
+          "age": 32,
+          "address": {
+            "street": "789 Oak St",
+            "city": "Chicago",
+            "state": "IL"
+          },
+          "hobbies": ["running", "playing basketball", "watching movies"]
+        }
+      ]
+    }
+  ]
+}
