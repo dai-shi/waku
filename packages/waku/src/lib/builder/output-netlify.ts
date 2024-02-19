@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 
 import type { ResolvedConfig } from '../config.js';
 
@@ -13,9 +13,19 @@ export const emitNetlifyOutput = async (
     mkdirSync(functionsDir, {
       recursive: true,
     });
+    const notFoundFile = path.join(
+      rootDir,
+      config.distDir,
+      config.publicDir,
+      '404.html',
+    );
+    const notFoundHtml = existsSync(notFoundFile)
+      ? readFileSync(notFoundFile, 'utf8')
+      : null;
     writeFileSync(
       path.join(functionsDir, 'serve.js'),
       `
+globalThis.__WAKU_NOT_FOUND_HTML__ = ${JSON.stringify(notFoundHtml)};
 export { default } from '../../${config.distDir}/${config.serveJs}';
 export const config = {
   preferStatic: true,
