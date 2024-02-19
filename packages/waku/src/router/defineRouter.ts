@@ -143,7 +143,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
     return buildConfig;
   };
 
-  const getSsrConfig: GetSsrConfig = async (pathname, {searchParams}) => {
+  const getSsrConfig: GetSsrConfig = async (pathname, { searchParams }) => {
     if (!(await existsPath(pathname))) {
       if (await has404Promise) {
         pathname = '/404';
