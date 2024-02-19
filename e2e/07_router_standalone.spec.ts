@@ -65,7 +65,7 @@ test.describe('07_router standalone', () => {
     });
     console.log('here');
     execSync('ls', {
-      cwd: `${standaloneDir}/node_modules/waku`,
+      cwd: `${standaloneDir}/node_modules/waku/node_modules`,
       stdio: 'inherit',
     });
   });
