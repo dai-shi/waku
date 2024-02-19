@@ -81,9 +81,19 @@ export default createPages(async ({ createPage, createLayout }) => {
 
   createPage({
     render: 'dynamic',
-    path: '/any/[...all]', // `/[...all]` is impossible.
+    path: '/any/[...all]',
     component: ({ all }: { all: string[] }) => (
       <h2>Catch-all: {all.join('/')}</h2>
+    ),
+  });
+
+  // Custom Not Found page
+  // TODO allow to change the status code to 404
+  createPage({
+    render: 'dynamic',
+    path: '/[...all]',
+    component: ({ all }: { all: string[] }) => (
+      <h2>Not Found: {all.join('/')}</h2>
     ),
   });
 });

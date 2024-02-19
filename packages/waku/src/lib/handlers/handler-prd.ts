@@ -50,6 +50,33 @@ export function createHandler<
       handleError(e);
       return;
     }
+    if (req.url.pathname.startsWith(basePrefix)) {
+      const { method, contentType } = req;
+      if (method !== 'GET' && method !== 'POST') {
+        throw new Error(`Unsupported method '${method}'`);
+      }
+      try {
+        const input = decodeInput(req.url.pathname.slice(basePrefix.length));
+        const readable = await renderRsc({
+          config,
+          input,
+          searchParams: req.url.searchParams,
+          method,
+          context,
+          body: req.stream,
+          contentType,
+          isDev: false,
+          entries: await entries,
+        });
+        unstable_posthook?.(req, res, context as Context);
+        deepFreeze(context);
+        readable.pipeTo(res.stream);
+        return;
+      } catch (e) {
+        handleError(e);
+        return;
+      }
+    }
     if (ssr) {
       try {
         const resolvedEntries = await entries;
@@ -94,33 +121,6 @@ export function createHandler<
             return;
           }
         }
-      } catch (e) {
-        handleError(e);
-        return;
-      }
-    }
-    if (req.url.pathname.startsWith(basePrefix)) {
-      const { method, contentType } = req;
-      if (method !== 'GET' && method !== 'POST') {
-        throw new Error(`Unsupported method '${method}'`);
-      }
-      try {
-        const input = decodeInput(req.url.pathname.slice(basePrefix.length));
-        const readable = await renderRsc({
-          config,
-          input,
-          searchParams: req.url.searchParams,
-          method,
-          context,
-          body: req.stream,
-          contentType,
-          isDev: false,
-          entries: await entries,
-        });
-        unstable_posthook?.(req, res, context as Context);
-        deepFreeze(context);
-        readable.pipeTo(res.stream);
-        return;
       } catch (e) {
         handleError(e);
         return;

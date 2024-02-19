@@ -124,6 +124,16 @@ export function createHandler<
     });
   };
 
+  const willBeHandledByVite = async (pathname: string) => {
+    const vite = await vitePromise;
+    try {
+      const result = await vite.transformRequest(pathname);
+      return !!result;
+    } catch {
+      return false;
+    }
+  };
+
   return async (req, res, next) => {
     const [config, vite] = await Promise.all([configPromise, vitePromise]);
     const basePrefix = config.basePath + config.rscPath + '/';
@@ -143,7 +153,30 @@ export function createHandler<
       handleError(e);
       return;
     }
-    if (ssr) {
+    if (req.url.pathname.startsWith(basePrefix)) {
+      const { method, contentType } = req;
+      if (method !== 'GET' && method !== 'POST') {
+        throw new Error(`Unsupported method '${method}'`);
+      }
+      try {
+        const input = decodeInput(req.url.pathname.slice(basePrefix.length));
+        const [readable, nextCtx] = await renderRscWithWorker({
+          input,
+          searchParamsString: req.url.searchParams.toString(),
+          method,
+          contentType,
+          config,
+          context,
+          stream: req.stream,
+        });
+        unstable_posthook?.(req, res, nextCtx as Context);
+        readable.pipeTo(res.stream);
+      } catch (e) {
+        handleError(e);
+      }
+      return;
+    }
+    if (ssr && !(await willBeHandledByVite(req.url.pathname))) {
       try {
         const readable = await renderHtml({
           config,
@@ -178,33 +211,12 @@ export function createHandler<
             .pipeTo(res.stream);
           return;
         }
+        next();
+        return;
       } catch (e) {
         handleError(e);
         return;
       }
-    }
-    if (req.url.pathname.startsWith(basePrefix)) {
-      const { method, contentType } = req;
-      if (method !== 'GET' && method !== 'POST') {
-        throw new Error(`Unsupported method '${method}'`);
-      }
-      try {
-        const input = decodeInput(req.url.pathname.slice(basePrefix.length));
-        const [readable, nextCtx] = await renderRscWithWorker({
-          input,
-          searchParamsString: req.url.searchParams.toString(),
-          method,
-          contentType,
-          config,
-          context,
-          stream: req.stream,
-        });
-        unstable_posthook?.(req, res, nextCtx as Context);
-        readable.pipeTo(res.stream);
-      } catch (e) {
-        handleError(e);
-      }
-      return;
     }
     // HACK re-export "?v=..." URL to avoid dual module hazard.
     const viteUrl = req.url.toString().slice(req.url.origin.length);

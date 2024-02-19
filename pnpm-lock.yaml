@@ -436,7 +436,7 @@ importers:
         specifier: 5.3.3
         version: 5.3.3
 
-  examples/10_dynamicroute:
+  examples/10_fs-router:
     dependencies:
       glob:
         specifier: 10.3.10
