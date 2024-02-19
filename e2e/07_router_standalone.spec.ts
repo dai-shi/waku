@@ -65,7 +65,7 @@ test.describe('07_router standalone', () => {
     });
     const wakuPackageJson = JSON.parse(
       await readFile(
-        '`${standaloneDir}/node_modules/waku/package.json',
+        `${standaloneDir}/node_modules/waku/package.json`,
         'utf-8',
       ),
     );
