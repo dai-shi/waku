@@ -69,7 +69,9 @@ test.describe('07_router standalone', () => {
         'utf-8',
       ),
     );
+    console.log('wakuPackagejson', wakuPackageJson);
     const peerDeps = Object.keys(wakuPackageJson['peerDependencies']);
+    console.log('peerDeps', peerDeps);
     for (const dep of peerDeps) {
       console.log('remove', dep);
       await rm(`${standaloneDir}/node_modules/waku/node_modules/${dep}`, {
