@@ -18,6 +18,7 @@ import type {
   AnchorHTMLAttributes,
   ReactElement,
   MouseEvent,
+  PropsWithChildren,
 } from 'react';
 
 import { prefetchRSC, Root, Slot, useRefetch } from '../client.js';
@@ -338,10 +339,9 @@ function notAvailableInServer(name: string) {
 export function ServerRouter({
   children,
   loc,
-}: {
-  children: ReactNode;
+}: PropsWithChildren<{
   loc: ReturnType<typeof parseLocation>;
-}) {
+}>) {
   return createElement(
     Fragment,
     null,
