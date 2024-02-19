@@ -9,7 +9,6 @@ import type * as RDServerType from 'react-dom/server.edge';
 import type { default as RSDWClientType } from 'react-server-dom-webpack/client.edge';
 
 import type * as WakuClientType from '../../client.js';
-import type * as WakuRouterClientType from '../../router/client.js';
 import type { EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import type { CLIENT_MODULE_KEY } from '../handlers/handler-dev.js';
@@ -240,7 +239,6 @@ export const renderHtml = async (
       default: { createFromReadableStream },
     },
     { ServerRoot },
-    { ServerRouter },
   ] = await Promise.all([
     loadClientModule('react') as Promise<{ default: typeof ReactType }>,
     loadClientModule('rd-server') as Promise<{ default: typeof RDServerType }>,
@@ -248,9 +246,6 @@ export const renderHtml = async (
       default: typeof RSDWClientType;
     }>,
     loadClientModule('waku-client') as Promise<typeof WakuClientType>,
-    loadClientModule('waku-router-client') as Promise<
-      typeof WakuRouterClientType
-    >,
   ]);
   const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
   if (!ssrConfig) {
@@ -358,10 +353,7 @@ export const renderHtml = async (
       Omit<ComponentProps<typeof ServerRoot>, 'children'>
     >,
     { elements },
-    createElement(ServerRouter, {
-      children: body as any,
-      loc: { path: pathname, searchParams },
-    }),
+    body as any,
   );
 
   const readable = (

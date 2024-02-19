@@ -315,8 +315,6 @@ function InnerRouter() {
   );
 }
 
-const isServer = typeof window === 'undefined';
-
 export function Router() {
   const loc = parseLocation();
   const initialInput = getInputString(loc.path);
@@ -338,10 +336,6 @@ export function ServerRouter({
   children,
   loc,
 }: PropsWithChildren<{ loc: ReturnType<typeof parseLocation> }>) {
-  if (!isServer) {
-    throw new Error('ServerRouter is not supposed to be run in the client');
-  }
-
   return createElement(
     Fragment,
     null,

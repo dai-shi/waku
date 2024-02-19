@@ -30,7 +30,6 @@ export const CLIENT_MODULE_MAP = {
   'rd-server': 'react-dom/server.edge',
   'rsdw-client': 'react-server-dom-webpack/client.edge',
   'waku-client': 'waku/client',
-  'waku-router-client': 'waku/router/client',
 };
 export type CLIENT_MODULE_KEY = keyof typeof CLIENT_MODULE_MAP;
 
