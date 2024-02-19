@@ -23,4 +23,5 @@ app.notFound(async (c) => {
   }
   return c.text('404 Not Found', 404);
 });
+
 export const handler = handle(app);
