@@ -332,6 +332,10 @@ function notAvailableInServer(name: string) {
   };
 }
 
+/**
+ * ServerRouter for SSR
+ * This is not a public API.
+ */
 export function ServerRouter({
   children,
   loc,
