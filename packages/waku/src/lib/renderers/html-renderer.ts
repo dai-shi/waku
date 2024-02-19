@@ -348,17 +348,19 @@ export const renderHtml = async (
   const body: Promise<ReactNode> = createFromReadableStream(ssrConfig.body, {
     ssrManifest: { moduleMap, moduleLoading: null },
   });
-  const bodyElement = createElement(
-    ServerRoot as FunctionComponent<
-      Omit<ComponentProps<typeof ServerRoot>, 'children'>
-    >,
-    { elements },
-    body as any,
-  );
-
   const readable = (
     await renderToReadableStream(
-      buildHtml(createElement, htmlHead, bodyElement),
+      buildHtml(
+        createElement,
+        htmlHead,
+        createElement(
+          ServerRoot as FunctionComponent<
+            Omit<ComponentProps<typeof ServerRoot>, 'children'>
+          >,
+          { elements },
+          body as any,
+        ),
+      ),
       {
         onError(err: unknown) {
           console.error(err);
