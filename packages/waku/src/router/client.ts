@@ -339,7 +339,7 @@ function notAvailableInServer(name: string) {
 export function ServerRouter({
   children,
   loc,
-}: PropsWithChildren<{ loc: ReturnType<typeof parseLocation> }>) {
+}: { children: ReactNode; loc: ReturnType<typeof parseLocation> }) {
   return createElement(
     Fragment,
     null,
