@@ -1,5 +1,6 @@
-import path from 'node:path';
 import type { Plugin } from 'vite';
+
+import { joinPath } from '../utils/path.js';
 
 export function rscPrivatePlugin({
   privateDir,
@@ -10,9 +11,9 @@ export function rscPrivatePlugin({
   return {
     name: 'rsc-env-plugin',
     configResolved(config) {
-      privatePath = path.join(config.root, privateDir);
+      privatePath = joinPath(config.root, privateDir);
     },
-    resolveId(id) {
+    load(id) {
       if (id.startsWith(privatePath)) {
         throw new Error('Private file access is not allowed');
       }
