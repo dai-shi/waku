@@ -55,7 +55,6 @@ test.describe('07_router standalone', () => {
       cwd: standaloneDir,
       stdio: 'inherit',
     });
-
     await rm(`${standaloneDir}/node_modules/waku`, {
       recursive: true,
       force: true,
@@ -63,24 +62,6 @@ test.describe('07_router standalone', () => {
     // copy waku
     await cp(wakuDir, `${standaloneDir}/node_modules/waku`, {
       recursive: true,
-    });
-    const wakuPackageJson = JSON.parse(
-      await readFile(
-        `${standaloneDir}/node_modules/waku/package.json`,
-        'utf-8',
-      ),
-    );
-    const peerDeps = Object.keys(wakuPackageJson['peerDependencies']);
-    for (const dep of peerDeps) {
-      await rm(`${standaloneDir}/node_modules/waku/node_modules/${dep}`, {
-        recursive: true,
-        force: true,
-      });
-    }
-
-    execSync('ls', {
-      cwd: `${standaloneDir}/node_modules/waku/node_modules`,
-      stdio: 'inherit',
     });
   });
 
