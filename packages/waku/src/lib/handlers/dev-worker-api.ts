@@ -23,11 +23,11 @@ export type BuildOutput = {
 };
 
 export type MessageReq =
-  | ({
+  | {
       id: number;
       type: 'pre-import';
       config: ResolvedConfig;
-    })
+    }
   | ({
       id: number;
       type: 'render';
@@ -105,7 +105,7 @@ export function initializeWorker(config: ResolvedConfig) {
           type: 'pre-import',
           config,
         };
-        worker.postMessage(mesg)
+        worker.postMessage(mesg);
         resolve(worker);
       })
       .catch((e) => reject(e));

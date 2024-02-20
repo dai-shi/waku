@@ -46,8 +46,8 @@ const resolveClientEntryForDev = (id: string, config: ResolvedConfig) => {
 };
 
 const handlePreImport = async (mesg: MessageReq & { type: 'pre-import' }) => {
-  loadEntries(mesg.config)
-}
+  loadEntries(mesg.config);
+};
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   const { id, type: _removed, hasModuleIdCallback, ...rest } = mesg;
@@ -179,7 +179,7 @@ const loadEntries = async (config: ResolvedConfig) => {
 
 parentPort!.on('message', (mesg: MessageReq) => {
   if (mesg.type === 'pre-import') {
-    handlePreImport(mesg)
+    handlePreImport(mesg);
   } else if (mesg.type === 'render') {
     handleRender(mesg);
   } else if (mesg.type === 'getSsrConfig') {

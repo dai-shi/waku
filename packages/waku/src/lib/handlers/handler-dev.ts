@@ -135,7 +135,6 @@ export function createHandler<
   };
 
   return async (req, res, next) => {
-    
     const [config, vite] = await Promise.all([configPromise, vitePromise]);
     const basePrefix = config.basePath + config.rscPath + '/';
     const handleError = (err: unknown) => {
