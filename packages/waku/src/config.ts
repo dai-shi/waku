@@ -12,7 +12,7 @@ export interface Config {
   srcDir?: string;
   /**
    * The dist directory relative to root.
-   * This will be the actual root in the production mode.
+   * This will be the folder to contain the built files.
    * Defaults to  "dist".
    */
   distDir?: string;
@@ -55,6 +55,12 @@ export interface Config {
    * Defaults to ["pages", "templates", "routes", "components"].
    */
   preserveModuleDirs?: string[];
+  /**
+   * The private directory relative to root.
+   * This folder will contain files that should be read only on the server.
+   * Defaults to  "private".
+   */
+  privateDir?: string;
   /**
    * The serve.js file relative distDir.
    * This file is used for deployment.

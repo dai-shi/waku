@@ -26,6 +26,7 @@ export async function resolveConfig(config: Config) {
     mainJs: 'main.tsx',
     entriesJs: 'entries.js',
     preserveModuleDirs: ['pages', 'templates', 'routes', 'components'],
+    privateDir: 'private',
     serveJs: 'serve.js',
     rscPath: 'RSC',
     htmlHead: DEFAULT_HTML_HEAD,
