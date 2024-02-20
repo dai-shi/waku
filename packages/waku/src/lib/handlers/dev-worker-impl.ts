@@ -45,6 +45,10 @@ const resolveClientEntryForDev = (id: string, config: ResolvedConfig) => {
   return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
 };
 
+const handlePreImport = async (mesg: MessageReq & { type: 'pre-import' }) => {
+  loadEntries(mesg.config)
+}
+
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   const { id, type: _removed, hasModuleIdCallback, ...rest } = mesg;
   const rr: RenderRequest = rest;
@@ -174,7 +178,9 @@ const loadEntries = async (config: ResolvedConfig) => {
 };
 
 parentPort!.on('message', (mesg: MessageReq) => {
-  if (mesg.type === 'render') {
+  if (mesg.type === 'pre-import') {
+    handlePreImport(mesg)
+  } else if (mesg.type === 'render') {
     handleRender(mesg);
   } else if (mesg.type === 'getSsrConfig') {
     handleGetSsrConfig(mesg);

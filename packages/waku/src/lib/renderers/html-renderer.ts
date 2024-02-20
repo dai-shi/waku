@@ -365,10 +365,18 @@ export const renderHtml = async (
         onError(err: unknown) {
           console.error(err);
         },
+      
       },
     )
   )
     .pipeThrough(rectifyHtml())
-    .pipeThrough(interleave());
+    .pipeThrough(interleave())
+    .pipeThrough(new TransformStream({start: () => {
+    console.time('renderToReadableStream')
+    
+  },
+  flush: () => console.timeEnd('renderToReadableStream')
+  
+  }))
   return readable;
 };
