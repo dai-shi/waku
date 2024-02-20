@@ -37,7 +37,16 @@ export function defineRouter(
   >,
 ): ReturnType<typeof defineEntries> {
   const pathConfigPromise = getPathConfig().then((pathConfig) =>
-    Array.from(pathConfig),
+    Array.from(pathConfig).map((item) => {
+      const is404 =
+        item.path.length === 1 &&
+        item.path[0]!.type === 'literal' &&
+        item.path[0]!.name === '404';
+      return { ...item, is404 };
+    }),
+  );
+  const has404Promise = pathConfigPromise.then((pathConfig) =>
+    pathConfig.some(({ is404 }) => is404),
   );
   const existsPath = async (pathname: string) => {
     const pathConfig = await pathConfigPromise;
@@ -115,21 +124,31 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
       entries: { input: string; isStatic: boolean }[];
       customCode: string;
     }[] = [];
-    for (const { path: pathSpec, isStatic = false } of pathConfig) {
+    for (const { path: pathSpec, isStatic = false, is404 } of pathConfig) {
       const entries: (typeof buildConfig)[number]['entries'] = [];
       if (pathSpec.every(({ type }) => type === 'literal')) {
         const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
         const input = getInputString(pathname);
         entries.push({ input, isStatic });
       }
-      buildConfig.push({ pathname: pathSpec, isStatic, entries, customCode });
+      buildConfig.push({
+        pathname: pathSpec,
+        isStatic,
+        entries,
+        customCode:
+          customCode + (is404 ? 'globalThis.__WAKU_ROUTER_404__ = true;' : ''),
+      });
     }
     return buildConfig;
   };
 
   const getSsrConfig: GetSsrConfig = async (pathname) => {
     if (!(await existsPath(pathname))) {
-      return null;
+      if (await has404Promise) {
+        pathname = '/404';
+      } else {
+        return null;
+      }
     }
     const componentIds = getComponentIds(pathname);
     const input = getInputString(pathname);

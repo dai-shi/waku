@@ -531,7 +531,11 @@ const emitHtmlFiles = async (
           rootDir,
           config.distDir,
           config.publicDir,
-          extname(pathname) ? pathname : pathname + '/' + config.indexHtml,
+          extname(pathname)
+            ? pathname
+            : pathname === '/404'
+              ? '404.html' // HACK special treatment for 404, better way?
+              : pathname + '/' + config.indexHtml,
         );
         const htmlReadable =
           ssr &&
