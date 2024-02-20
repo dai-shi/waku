@@ -88,12 +88,9 @@ export default createPages(async ({ createPage, createLayout }) => {
   });
 
   // Custom Not Found page
-  // TODO allow to change the status code to 404
   createPage({
-    render: 'dynamic',
-    path: '/[...all]',
-    component: ({ all }: { all: string[] }) => (
-      <h2>Not Found: {all.join('/')}</h2>
-    ),
+    render: 'static',
+    path: '/404',
+    component: () => <h2>Not Found</h2>,
   });
 });

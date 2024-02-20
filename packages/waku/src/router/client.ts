@@ -36,6 +36,9 @@ declare global {
 }
 
 const parseLocation = (): RouteProps => {
+  if ((globalThis as any).__WAKU_ROUTER_404__) {
+    return { path: '/404', searchParams: new URLSearchParams() };
+  }
   const { pathname, search } = window.location;
   const searchParams = new URLSearchParams(search);
   if (searchParams.has(PARAM_KEY_SKIP)) {
