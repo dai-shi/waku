@@ -91,8 +91,6 @@ export default createPages(async ({ createPage, createLayout }) => {
   createPage({
     render: 'static',
     path: '/404',
-    component: () => (
-      <h2>Not Found</h2>
-    ),
+    component: () => <h2>Not Found</h2>,
   });
 });
