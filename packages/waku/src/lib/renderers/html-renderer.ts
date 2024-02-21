@@ -94,6 +94,7 @@ globalThis.__WAKU_PREFETCHED__ = {
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     let headSent = false;
+    let mainJsSent = false;
     let data = '';
     let scriptsClosed = false;
     const sendScripts = (
@@ -103,12 +104,15 @@ globalThis.__WAKU_PREFETCHED__ = {
       if (scriptsClosed) {
         return;
       }
-      // enqueue `mainJs` first in the body to avoid the document.body undefined error, before we used to inject it in the head which sometimes made it load before the document.body was loaded
-      controller.enqueue(
-        encoder.encode(
-          `<script src="${config.basePath}${config.srcDir}/${config.mainJs}" async type="module"></script>`,
-        ),
-      );
+      if (!mainJsSent) {
+        // enqueue `mainJs` first in the body to avoid the document.body undefined error, before we used to inject it in the head which sometimes made it load before the document.body was loaded
+        controller.enqueue(
+          encoder.encode(
+            `<script src="${config.basePath}${config.srcDir}/${config.mainJs}" async type="module"></script>`,
+          ),
+        );
+        mainJsSent = true;
+      }
 
       const scripts = chunks.splice(0).map(
         (chunk) =>
