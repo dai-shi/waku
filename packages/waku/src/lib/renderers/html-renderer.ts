@@ -349,7 +349,7 @@ export const renderHtml = async (
   );
   const [copied, interleave] = injectRscPayload(
     stream,
-    config,
+    `${config.basePath}${config.srcDir}/${config.mainJs}`,
     config.basePath + config.rscPath + '/' + encodeInput(ssrConfig.input),
   );
   const elements: Promise<Record<string, ReactNode>> = createFromReadableStream(
