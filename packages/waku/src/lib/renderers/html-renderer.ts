@@ -44,7 +44,7 @@ Promise.resolve(new Response(new ReadableStream({
 
 const injectRscPayload = (
   readable: ReadableStream,
-  config: ResolvedConfig,
+  mainJsPath: string,
   urlForFakeFetch: string,
 ) => {
   const chunks: Uint8Array[] = [];
