@@ -18,6 +18,7 @@ import type {
   AnchorHTMLAttributes,
   ReactElement,
   MouseEvent,
+  PropsWithChildren,
 } from 'react';
 
 import { prefetchRSC, Root, Slot, useRefetch } from '../client.js';
@@ -322,5 +323,38 @@ export function Router() {
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
     { initialInput, initialSearchParamsString },
     createElement(InnerRouter),
+  );
+}
+
+function notAvailableInServer(name: string) {
+  return () => {
+    throw new Error(`${name} is not in the server`);
+  };
+}
+
+/**
+ * ServerRouter for SSR
+ * This is not a public API.
+ */
+export function ServerRouter({
+  children,
+  loc,
+}: PropsWithChildren<{
+  loc: ReturnType<typeof parseLocation>;
+}>) {
+  return createElement(
+    Fragment,
+    null,
+    createElement(
+      RouterContext.Provider,
+      {
+        value: {
+          loc,
+          changeLocation: notAvailableInServer('changeLocation'),
+          prefetchLocation: notAvailableInServer('prefetchLocation'),
+        },
+      },
+      children,
+    ),
   );
 }

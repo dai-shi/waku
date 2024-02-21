@@ -1,4 +1,4 @@
-import { createElement, Fragment } from 'react';
+import { createElement } from 'react';
 import type { FunctionComponent, ReactNode } from 'react';
 
 import { defineEntries } from '../server.js';
@@ -14,6 +14,7 @@ import {
 import type { RouteProps, ShouldSkip } from './common.js';
 import { getPathMapping } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
+import { ServerRouter } from './client.js';
 
 const ShoudSkipComponent = ({ shouldSkip }: { shouldSkip: ShouldSkip }) =>
   createElement('meta', {
@@ -142,7 +143,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
     return buildConfig;
   };
 
-  const getSsrConfig: GetSsrConfig = async (pathname) => {
+  const getSsrConfig: GetSsrConfig = async (pathname, { searchParams }) => {
     if (!(await existsPath(pathname))) {
       if (await has404Promise) {
         pathname = '/404';
@@ -153,8 +154,8 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
     const componentIds = getComponentIds(pathname);
     const input = getInputString(pathname);
     const body = createElement(
-      Fragment,
-      null,
+      ServerRouter,
+      { loc: { path: pathname, searchParams } },
       createElement(Slot, { id: SHOULD_SKIP_ID }),
       componentIds.reduceRight(
         (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
