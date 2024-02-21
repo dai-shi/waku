@@ -32,7 +32,7 @@ export const emitVercelOutput = async (
       cpSync(
         path.join(rootDir, config.privateDir),
         path.join(serverlessDir, config.privateDir),
-        { recursive: true },
+        { recursive: true, dereference: true },
       );
     }
     const vcConfigJson = {
