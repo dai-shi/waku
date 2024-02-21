@@ -36,17 +36,13 @@ if (HAS_MODULE_REGISTER) {
 (globalThis as any).__WAKU_PRIVATE_ENV__ = getEnvironmentData(
   '__WAKU_PRIVATE_ENV__',
 );
-const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR');
-const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS');
+const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR') as string;
+const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS') as string;
 
 const resolveClientEntryForDev = (id: string, config: ResolvedConfig) => {
   const filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
   // HACK this relies on Vite's internal implementation detail.
   return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
-};
-
-const handlePreImport = async (mesg: MessageReq & { type: 'pre-import' }) => {
-  loadEntries(mesg.config);
 };
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
@@ -171,16 +167,17 @@ const loadServerFile = async (fileURL: string) => {
   return vite.ssrLoadModule(fileURLToFilePath(fileURL));
 };
 
-const loadEntries = async (config: ResolvedConfig) => {
+const loadEntries = async (config: { srcDir: string; entriesJs: string }) => {
   const vite = await vitePromise;
   const filePath = joinPath(vite.config.root, config.srcDir, config.entriesJs);
   return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
 };
 
+// load entries eagerly
+loadEntries({ srcDir: configSrcDir, entriesJs: configEntriesJs });
+
 parentPort!.on('message', (mesg: MessageReq) => {
-  if (mesg.type === 'pre-import') {
-    handlePreImport(mesg);
-  } else if (mesg.type === 'render') {
+  if (mesg.type === 'render') {
     handleRender(mesg);
   } else if (mesg.type === 'getSsrConfig') {
     handleGetSsrConfig(mesg);
