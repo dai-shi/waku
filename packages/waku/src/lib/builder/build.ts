@@ -218,7 +218,7 @@ const buildServerBundle = async (
             conditions: ['react-server', 'workerd', 'worker'],
             externalConditions: ['react-server', 'workerd', 'worker'],
           },
-          noExternal: true,
+          noExternal: /^(?!node:)/,
         },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
@@ -309,7 +309,7 @@ const buildSsrBundle = async (
             conditions: ['worker'],
             externalConditions: ['worker'],
           },
-          noExternal: true,
+          noExternal: /^(?!node:)/,
         },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
