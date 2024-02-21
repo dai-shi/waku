@@ -324,3 +324,35 @@ export function Router() {
     createElement(InnerRouter),
   );
 }
+
+const notAvailableInServer = (name: string) => () => {
+  throw new Error(`${name} is not in the server`);
+};
+
+/**
+ * ServerRouter for SSR
+ * This is not a public API.
+ */
+export function ServerRouter({
+  children,
+  loc,
+}: {
+  children: ReactNode;
+  loc: ReturnType<typeof parseLocation>;
+}) {
+  return createElement(
+    Fragment,
+    null,
+    createElement(
+      RouterContext.Provider,
+      {
+        value: {
+          loc,
+          changeLocation: notAvailableInServer('changeLocation'),
+          prefetchLocation: notAvailableInServer('prefetchLocation'),
+        },
+      },
+      children,
+    ),
+  );
+}
