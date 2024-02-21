@@ -1,13 +1,11 @@
 import path from 'node:path';
-import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
-import { randomBytes } from 'node:crypto';
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
-import * as swc from '@swc/core';
 import * as dotenv from 'dotenv';
 
 import type { Config } from './config.js';
@@ -208,23 +206,17 @@ Options:
 `);
 }
 
-// TODO is this a good idea?
 async function loadConfig(): Promise<Config> {
   if (!existsSync('waku.config.ts')) {
     return {};
   }
-  const { code } = swc.transformFileSync('waku.config.ts', {
+  const { transformFile } = await import('@swc/core');
+  const { code } = await transformFile('waku.config.ts', {
     swcrc: false,
     jsc: {
       parser: { syntax: 'typescript' },
       target: 'es2022',
     },
   });
-  const temp = path.resolve(`.temp-${randomBytes(8).toString('hex')}.js`);
-  try {
-    writeFileSync(temp, code);
-    return (await import(pathToFileURL(temp).toString())).default;
-  } finally {
-    unlinkSync(temp);
-  }
+  return (await import('data:text/javascript,' + code)).default;
 }
