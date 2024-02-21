@@ -44,7 +44,7 @@ export const config = {
   publish = "${config.distDir}/${config.publicDir}"
 [functions]
   included_files = ["${config.privateDir}/**"]
-`
+`,
     );
   }
 };
