@@ -18,7 +18,6 @@ import type {
   AnchorHTMLAttributes,
   ReactElement,
   MouseEvent,
-  PropsWithChildren,
 } from 'react';
 
 import { prefetchRSC, Root, Slot, useRefetch } from '../client.js';
@@ -326,11 +325,9 @@ export function Router() {
   );
 }
 
-function notAvailableInServer(name: string) {
-  return () => {
-    throw new Error(`${name} is not in the server`);
-  };
-}
+const notAvailableInServer = (name: string) => () => {
+  throw new Error(`${name} is not in the server`);
+};
 
 /**
  * ServerRouter for SSR
@@ -339,9 +336,10 @@ function notAvailableInServer(name: string) {
 export function ServerRouter({
   children,
   loc,
-}: PropsWithChildren<{
+}: {
+  children: ReactNode;
   loc: ReturnType<typeof parseLocation>;
-}>) {
+}) {
   return createElement(
     Fragment,
     null,

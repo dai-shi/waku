@@ -641,6 +641,9 @@ importers:
       react-dom:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react@18.3.0-canary-14fd9630e-20240213)
+      react-server-dom-webpack:
+        specifier: 18.3.0-canary-14fd9630e-20240213
+        version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       waku:
         specifier: https://pkg.csb.dev/dai-shi/waku/commit/ccdbf5b9/waku
         version: '@pkg.csb.dev/dai-shi/waku/commit/ccdbf5b9/waku(@types/node@20.11.17)(react-dom@18.3.0-canary-14fd9630e-20240213)(react-server-dom-webpack@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)'
