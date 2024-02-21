@@ -108,7 +108,7 @@ globalThis.__WAKU_PREFETCHED__ = {
         // enqueue `mainJs` first in the body to avoid the document.body undefined error, before we used to inject it in the head which sometimes made it load before the document.body was loaded
         controller.enqueue(
           encoder.encode(
-            `<script src="${config.basePath}${config.srcDir}/${config.mainJs}" async type="module"></script>`,
+            `<script src="${mainJsPath}" async type="module"></script>`,
           ),
         );
         mainJsSent = true;
