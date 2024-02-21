@@ -1,5 +1,5 @@
 import { createElement } from 'react';
-import type { FunctionComponent, ReactNode } from 'react';
+import type { ComponentProps, FunctionComponent, ReactNode } from 'react';
 
 import { defineEntries } from '../server.js';
 import type { RenderEntries, GetBuildConfig, GetSsrConfig } from '../server.js';
@@ -154,7 +154,9 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
     const componentIds = getComponentIds(pathname);
     const input = getInputString(pathname);
     const body = createElement(
-      ServerRouter,
+      ServerRouter as FunctionComponent<
+        Omit<ComponentProps<typeof ServerRouter>, 'children'>
+      >,
       { loc: { path: pathname, searchParams } },
       createElement(Slot, { id: SHOULD_SKIP_ID }),
       componentIds.reduceRight(
