@@ -1,9 +1,9 @@
-import type { PropsWithChildren, HTMLAttributes } from 'react';
+import type { ReactNode, HTMLAttributes } from 'react';
 
 export const ServerBox = ({
   children,
   ...props
-}: PropsWithChildren<HTMLAttributes<HTMLDivElement>>) => {
+}: { children: ReactNode } & HTMLAttributes<HTMLDivElement>) => {
   return (
     <div
       {...props}
@@ -18,7 +18,7 @@ export const ServerBox = ({
 export const ClientBox = ({
   children,
   ...props
-}: PropsWithChildren<HTMLAttributes<HTMLDivElement>>) => {
+}: { children: ReactNode } & HTMLAttributes<HTMLDivElement>) => {
   return (
     <div
       {...props}
