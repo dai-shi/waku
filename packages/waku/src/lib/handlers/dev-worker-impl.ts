@@ -158,7 +158,7 @@ const mergedViteConfig = await mergeUserViteConfig({
 });
 
 const vitePromise = createViteServer(mergedViteConfig).then(async (vite) => {
-  await vite.ws.close();
+  await vite.hot.close();
   return vite;
 });
 
