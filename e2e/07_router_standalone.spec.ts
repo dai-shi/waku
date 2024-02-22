@@ -7,6 +7,7 @@ import type { Page } from '@playwright/test';
 import waitPort from 'wait-port';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { createRequire } from 'node:module';
 
 const testMatrix = [{ withSSR: false }, { withSSR: true }] as const;
 
@@ -15,6 +16,9 @@ const exampleDir = fileURLToPath(
   new URL('../examples/07_router', import.meta.url),
 );
 const wakuDir = fileURLToPath(new URL('../packages/waku', import.meta.url));
+const { version } = createRequire(import.meta.url)(
+  join(wakuDir, 'package.json'),
+);
 
 async function testRouterExample(page: Page, port: number) {
   await waitPort({
@@ -54,13 +58,7 @@ test.describe('07_router standalone', () => {
       cwd: wakuDir,
       stdio: 'inherit',
     });
-    const name = `waku-${
-      (
-        await import(join(wakuDir, 'package.json'), {
-          assert: { type: 'json' },
-        })
-      ).version
-    }.tgz`;
+    const name = `waku-${version}.tgz`;
     execSync(`npm install ${join(standaloneDir, name)}`, {
       cwd: standaloneDir,
       stdio: 'inherit',
