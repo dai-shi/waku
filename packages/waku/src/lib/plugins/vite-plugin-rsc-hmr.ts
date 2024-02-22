@@ -127,7 +127,7 @@ export function rscHmrPlugin(): Plugin {
 }
 
 const pendingMap = new WeakMap<
-  ViteDevServer['hot'] | ViteDevServer['ws'],
+  ReturnType<typeof viteHot>,
   Set<string>
 >();
 
@@ -156,7 +156,7 @@ function hotImport(viteServer: ViteDevServer, source: string) {
 }
 
 const modulePendingMap = new WeakMap<
-  ViteDevServer['hot'] | ViteDevServer['ws'],
+  ReturnType<typeof viteHot>,
   Set<ModuleImportResult>
 >();
 
