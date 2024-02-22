@@ -18,7 +18,7 @@
     "react": "18.3.0-canary-14fd9630e-20240213",
     "react-dom": "18.3.0-canary-14fd9630e-20240213",
     "react-server-dom-webpack": "18.3.0-canary-14fd9630e-20240213",
-    "waku": "https://pkg.csb.dev/dai-shi/waku/commit/ccdbf5b9/waku"
+    "waku": "https://pkg.csb.dev/dai-shi/waku/commit/7b41db5a/waku"
   },
   "devDependencies": {
     "@types/react": "^18.2.55",
