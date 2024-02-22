@@ -126,17 +126,21 @@ export function rscHmrPlugin(): Plugin {
   };
 }
 
-const pendingMap = new WeakMap<ViteDevServer['hot'], Set<string>>();
+const pendingMap = new WeakMap<ViteDevServer['hot'] | ViteDevServer['ws'], Set<string>>();
+
+export function viteHot(viteServer: ViteDevServer) {
+  return viteServer.hot ?? viteServer.ws;
+}
 
 function hotImport(viteServer: ViteDevServer, source: string) {
-  const HMRKEY = viteServer.hot ?? viteServer.ws;
-  let sourceSet = pendingMap.get(HMRKEY);
+  const hot = viteHot(viteServer);
+  let sourceSet = pendingMap.get(hot);
   if (!sourceSet) {
     sourceSet = new Set();
-    pendingMap.set(HMRKEY, sourceSet);
-    HMRKEY.on('connection', () => {
+    pendingMap.set(hot, sourceSet);
+    hot.on('connection', () => {
       for (const source of sourceSet!) {
-        HMRKEY.send({
+        hot.send({
           type: 'custom',
           event: 'hot-import',
           data: source,
@@ -145,11 +149,11 @@ function hotImport(viteServer: ViteDevServer, source: string) {
     });
   }
   sourceSet.add(source);
-  HMRKEY.send({ type: 'custom', event: 'hot-import', data: source });
+  hot.send({ type: 'custom', event: 'hot-import', data: source });
 }
 
 const modulePendingMap = new WeakMap<
-  ViteDevServer['hot'],
+  ViteDevServer['hot'] | ViteDevServer['ws'],
   Set<ModuleImportResult>
 >();
 
@@ -218,11 +222,11 @@ export type HotUpdatePayload =
   | { type: 'custom'; event: 'module-import'; data: ModuleImportResult };
 
 export function hotUpdate(vite: ViteDevServer, payload: HotUpdatePayload) {
-  const HMRKEY = vite.hot ?? vite.ws;
+  const hot = viteHot(vite);
   if (payload.type === 'full-reload') {
-    HMRKEY.send(payload);
+    hot.send(payload);
   } else if (payload.event === 'rsc-reload') {
-    HMRKEY.send(payload);
+    hot.send(payload);
   } else if (payload.event === 'hot-import') {
     hotImport(vite, payload.data);
   } else if (payload.event === 'module-import') {
