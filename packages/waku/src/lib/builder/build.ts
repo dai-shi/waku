@@ -112,7 +112,7 @@ const analyzeEntries = async (
       }
     }
   }
-  // const analyzeInlineConfig = 
+  // const analyzeInlineConfig =
   await buildVite({
     plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet)],
     ssr: {
