@@ -53,14 +53,18 @@ test.describe('07_router standalone', () => {
     execSync(`pnpm pack --pack-destination ${standaloneDir}`, {
       cwd: wakuDir,
       stdio: 'inherit',
-    })
-    const name = `waku-${(await import(join(wakuDir, 'package.json'), {
-      assert: { type: 'json' }
-    })).version}.tgz`
+    });
+    const name = `waku-${
+      (
+        await import(join(wakuDir, 'package.json'), {
+          assert: { type: 'json' },
+        })
+      ).version
+    }.tgz`;
     execSync(`npm install ${join(standaloneDir, name)}`, {
       cwd: standaloneDir,
       stdio: 'inherit',
-    })
+    });
   });
 
   testMatrix.forEach(({ withSSR }) => {
