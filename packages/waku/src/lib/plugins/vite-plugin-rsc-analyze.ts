@@ -1,6 +1,6 @@
 import path from 'node:path';
 // import { createServer as createViteServer } from 'vite';
-import type { Plugin, ViteDevServer } from 'vite';
+import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 
 export function rscAnalyzePlugin(
