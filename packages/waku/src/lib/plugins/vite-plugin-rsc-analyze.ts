@@ -1,5 +1,6 @@
 import path from 'node:path';
-import type { Plugin } from 'vite';
+import { createServer as createViteServer } from 'vite';
+import type { Plugin, ViteDevServer } from 'vite';
 import * as swc from '@swc/core';
 
 export function rscAnalyzePlugin(
@@ -17,9 +18,12 @@ export function rscAnalyzePlugin(
     }
     depSet.add(depId);
   };
+  let viteClientServer: ViteDevServer
+
   return {
     name: 'rsc-analyze-plugin',
     async transform(code, id) {
+      let type: 'agnostic' | 'server-component' | 'client-component' = 'agnostic'
       const ext = path.extname(id);
       if (['.ts', '.tsx', '.js', '.jsx', '.mjs'].includes(ext)) {
         const mod = swc.parseSync(code, {
@@ -32,11 +36,16 @@ export function rscAnalyzePlugin(
             item.expression.type === 'StringLiteral'
           ) {
             if (item.expression.value === 'use client') {
+              type = 'client-component'
               clientEntryCallback(id);
             } else if (item.expression.value === 'use server') {
+              type = 'server-component'
               serverEntryCallback(id);
+            } else {
+              type = 'agnostic'
             }
           }
+          
           if (item.type === 'ImportDeclaration') {
             const resolvedId = await this.resolve(item.source.value, id);
             if (resolvedId) {

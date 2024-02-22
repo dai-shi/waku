@@ -112,13 +112,14 @@ const analyzeEntries = async (
       }
     }
   }
+  // const analyzeInlineConfig = 
   await buildVite({
     plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet)],
     ssr: {
       target: 'webworker',
       resolve: {
-        conditions: ['react-server', 'workerd'],
-        externalConditions: ['react-server', 'workerd'],
+        // conditions: ['react-server', 'workerd'],
+        // externalConditions: ['react-server', 'workerd'],
       },
       noExternal: /^(?!node:)/,
     },

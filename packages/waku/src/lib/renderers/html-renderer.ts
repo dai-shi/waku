@@ -319,6 +319,7 @@ export const renderHtml = async (
                 }
                 const id = filePathToFileURL(filePath);
                 if (!moduleLoading.has(id)) {
+                  console.log('moduleLoading', id)
                   moduleLoading.set(
                     id,
                     opts.loadServerFile(id).then((m) => {
