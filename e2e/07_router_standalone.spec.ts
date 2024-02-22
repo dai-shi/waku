@@ -1,6 +1,6 @@
 import { debugChildProcess, getFreePort, terminate, test } from './utils.js';
 import { fileURLToPath } from 'node:url';
-import { cp, mkdtemp, rm } from 'node:fs/promises';
+import { cp, mkdtemp } from 'node:fs/promises';
 import { exec, execSync } from 'node:child_process';
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
@@ -50,18 +50,14 @@ test.describe('07_router standalone', () => {
       },
       recursive: true,
     });
-    execSync('npm install', {
+    execSync(`pnpm pack --pack-destination ${standaloneDir}`, {
+      cwd: wakuDir,
+      stdio: 'inherit',
+    })
+    execSync(`npm install *.tgz`, {
       cwd: standaloneDir,
       stdio: 'inherit',
-    });
-    await rm(`${standaloneDir}/node_modules/waku`, {
-      recursive: true,
-      force: true,
-    });
-    // copy waku
-    await cp(wakuDir, `${standaloneDir}/node_modules/waku`, {
-      recursive: true,
-    });
+    })
   });
 
   testMatrix.forEach(({ withSSR }) => {
