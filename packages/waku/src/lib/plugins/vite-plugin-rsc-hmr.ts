@@ -126,7 +126,10 @@ export function rscHmrPlugin(): Plugin {
   };
 }
 
-const pendingMap = new WeakMap<ViteDevServer['hot'] | ViteDevServer['ws'], Set<string>>();
+const pendingMap = new WeakMap<
+  ViteDevServer['hot'] | ViteDevServer['ws'],
+  Set<string>
+>();
 
 export function viteHot(viteServer: ViteDevServer) {
   return viteServer.hot ?? viteServer.ws;
