@@ -54,7 +54,9 @@ test.describe('07_router standalone', () => {
       cwd: wakuDir,
       stdio: 'inherit',
     })
-    const name = `waku-${(await import(join(wakuDir, 'package.json'))).version}.tgz`
+    const name = `waku-${(await import(join(wakuDir, 'package.json'), {
+      assert: { type: 'json' }
+    })).version}.tgz`
     execSync(`npm install ${join(standaloneDir, name)}`, {
       cwd: standaloneDir,
       stdio: 'inherit',
