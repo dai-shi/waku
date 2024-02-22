@@ -158,7 +158,8 @@ const mergedViteConfig = await mergeUserViteConfig({
 });
 
 const vitePromise = createViteServer(mergedViteConfig).then(async (vite) => {
-  await vite.hot.close();
+  const HMRKEY = vite.hot ?? vite.ws;
+  await HMRKEY.close();
   return vite;
 });
 
