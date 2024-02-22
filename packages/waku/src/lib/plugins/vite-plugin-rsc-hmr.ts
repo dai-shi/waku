@@ -158,21 +158,21 @@ const modulePendingMap = new WeakMap<
 >();
 
 function moduleImport(viteServer: ViteDevServer, result: ModuleImportResult) {
-  const HMRKEY = viteServer.hot ?? viteServer.ws;
-  let sourceSet = modulePendingMap.get(HMRKEY);
+  const hot = viteHot(viteServer);
+  let sourceSet = modulePendingMap.get(hot);
   if (!sourceSet) {
     sourceSet = new Set();
-    modulePendingMap.set(HMRKEY, sourceSet);
+    modulePendingMap.set(hot, sourceSet);
   }
   sourceSet.add(result);
-  HMRKEY.send({ type: 'custom', event: 'module-import', data: result });
+  hot.send({ type: 'custom', event: 'module-import', data: result });
 }
 
 async function generateInitialScripts(
   viteServer: ViteDevServer,
 ): Promise<HtmlTagDescriptor[]> {
-  const HMRKEY = viteServer.hot ?? viteServer.ws;
-  const sourceSet = modulePendingMap.get(HMRKEY);
+  const hot = viteHot(viteServer);
+  const sourceSet = modulePendingMap.get(hot);
 
   if (!sourceSet) {
     return [];
