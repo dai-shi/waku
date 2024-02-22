@@ -210,8 +210,6 @@ export function createHandler<
             .pipeTo(res.stream);
           return;
         }
-        next();
-        return;
       } catch (e) {
         handleError(e);
         return;
