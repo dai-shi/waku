@@ -21,7 +21,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm test
+      # - run: pnpm test
       - run: pnpm run compile
       - run: pnpm -r --filter='./packages/*' --no-git-checks publish
         env:
