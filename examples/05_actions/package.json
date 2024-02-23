@@ -9,9 +9,9 @@
     "start": "waku start --with-ssr"
   },
   "dependencies": {
-    "react": "18.3.0-canary-a515d753b-20240220",
-    "react-dom": "18.3.0-canary-a515d753b-20240220",
-    "react-server-dom-webpack": "18.3.0-canary-a515d753b-20240220",
+    "react": "18.3.0-canary-47beb96cc-20240222",
+    "react-dom": "18.3.0-canary-47beb96cc-20240222",
+    "react-server-dom-webpack": "18.3.0-canary-47beb96cc-20240222",
     "react-wrap-balancer": "1.1.0",
     "waku": "0.19.3"
   },

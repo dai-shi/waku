@@ -15,9 +15,9 @@
     "framer-motion": "^11.0.3",
     "jotai": "^2.6.4",
     "next-mdx-remote": "^4.4.1",
-    "react": "18.3.0-canary-a515d753b-20240220",
-    "react-dom": "18.3.0-canary-a515d753b-20240220",
-    "react-server-dom-webpack": "18.3.0-canary-a515d753b-20240220",
+    "react": "18.3.0-canary-47beb96cc-20240222",
+    "react-dom": "18.3.0-canary-47beb96cc-20240222",
+    "react-server-dom-webpack": "18.3.0-canary-47beb96cc-20240222",
     "waku": "https://pkg.csb.dev/dai-shi/waku/commit/ccdbf5b9/waku"
   },
   "devDependencies": {
