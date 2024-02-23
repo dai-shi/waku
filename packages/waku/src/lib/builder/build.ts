@@ -47,6 +47,7 @@ import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
+import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { emitVercelOutput } from './output-vercel.js';
 import { emitNetlifyOutput } from './output-netlify.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
@@ -185,6 +186,7 @@ const buildServerBundle = async (
         serverEntryFiles,
       }),
       rscEnvPlugin({ config }),
+      rscPrivatePlugin(config),
       ...(serve
         ? [
             rscServePlugin({
@@ -216,7 +218,7 @@ const buildServerBundle = async (
             conditions: ['react-server', 'workerd', 'worker'],
             externalConditions: ['react-server', 'workerd', 'worker'],
           },
-          noExternal: true,
+          noExternal: /^(?!node:)/,
         },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
@@ -295,6 +297,7 @@ const buildSsrBundle = async (
     plugins: [
       rscIndexPlugin({ ...config, cssAssets }),
       rscEnvPlugin({ config, hydrate: true }),
+      rscPrivatePlugin(config),
     ],
     ssr: isNodeCompatible
       ? {
@@ -306,7 +309,7 @@ const buildSsrBundle = async (
             conditions: ['worker'],
             externalConditions: ['worker'],
           },
-          noExternal: true,
+          noExternal: /^(?!node:)/,
         },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
@@ -359,6 +362,7 @@ const buildClientBundle = async (
       viteReact(),
       rscIndexPlugin({ ...config, cssAssets }),
       rscEnvPlugin({ config, hydrate: ssr }),
+      rscPrivatePlugin(config),
     ],
     build: {
       outDir: joinPath(rootDir, config.distDir, config.publicDir),

@@ -24,6 +24,7 @@ import { renderRsc, getSsrConfig } from '../renderers/rsc-renderer.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
+import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 
@@ -38,6 +39,7 @@ if (HAS_MODULE_REGISTER) {
 );
 const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR') as string;
 const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS') as string;
+const configPrivateDir = getEnvironmentData('CONFIG_PRIVATE_DIR') as string;
 
 const resolveClientEntryForDev = (id: string, config: ResolvedConfig) => {
   const filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
@@ -123,6 +125,7 @@ const mergedViteConfig = await mergeUserViteConfig({
   plugins: [
     viteReact(),
     rscEnvPlugin({}),
+    rscPrivatePlugin({ privateDir: configPrivateDir }),
     { name: 'rsc-index-plugin' }, // dummy to match with handler-dev.ts
     { name: 'rsc-hmr-plugin', enforce: 'post' }, // dummy to match with handler-dev.ts
     nonjsResolvePlugin(),

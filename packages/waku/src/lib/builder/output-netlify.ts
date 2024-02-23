@@ -34,4 +34,17 @@ export const config = {
 `,
     );
   }
+  const netlifyTomlFile = path.join(rootDir, 'netlify.toml');
+  if (!existsSync(netlifyTomlFile)) {
+    writeFileSync(
+      netlifyTomlFile,
+      `
+[build]
+  command = "npm run build -- --with-netlify"
+  publish = "${config.distDir}/${config.publicDir}"
+[functions]
+  included_files = ["${config.privateDir}/**"]
+`,
+    );
+  }
 };

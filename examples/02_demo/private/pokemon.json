@@ -1,0 +1,2586 @@
+[
+  {
+    "id": 1,
+    "slug": "bulbasaur",
+    "name": {
+      "english": "Bulbasaur",
+      "japanese": "フシギダネ"
+    },
+    "type": ["Grass", "Poison"],
+    "base": {
+      "HP": 45,
+      "Attack": 49,
+      "Defense": 49,
+      "Sp. Attack": 65,
+      "Sp. Defense": 65,
+      "Speed": 45
+    }
+  },
+  {
+    "id": 2,
+    "slug": "ivysaur",
+    "name": {
+      "english": "Ivysaur",
+      "japanese": "フシギソウ"
+    },
+    "type": ["Grass", "Poison"],
+    "base": {
+      "HP": 60,
+      "Attack": 62,
+      "Defense": 63,
+      "Sp. Attack": 80,
+      "Sp. Defense": 80,
+      "Speed": 60
+    }
+  },
+  {
+    "id": 3,
+    "slug": "venusaur",
+    "name": {
+      "english": "Venusaur",
+      "japanese": "フシギバナ"
+    },
+    "type": ["Grass", "Poison"],
+    "base": {
+      "HP": 80,
+      "Attack": 82,
+      "Defense": 83,
+      "Sp. Attack": 100,
+      "Sp. Defense": 100,
+      "Speed": 80
+    }
+  },
+  {
+    "id": 4,
+    "slug": "charmander",
+    "name": {
+      "english": "Charmander",
+      "japanese": "ヒトカゲ"
+    },
+    "type": ["Fire"],
+    "base": {
+      "HP": 39,
+      "Attack": 52,
+      "Defense": 43,
+      "Sp. Attack": 60,
+      "Sp. Defense": 50,
+      "Speed": 65
+    }
+  },
+  {
+    "id": 5,
+    "slug": "charmeleon",
+    "name": {
+      "english": "Charmeleon",
+      "japanese": "リザード"
+    },
+    "type": ["Fire"],
+    "base": {
+      "HP": 58,
+      "Attack": 64,
+      "Defense": 58,
+      "Sp. Attack": 80,
+      "Sp. Defense": 65,
+      "Speed": 80
+    }
+  },
+  {
+    "id": 6,
+    "slug": "charizard",
+    "name": {
+      "english": "Charizard",
+      "japanese": "リザードン"
+    },
+    "type": ["Fire", "Flying"],
+    "base": {
+      "HP": 78,
+      "Attack": 84,
+      "Defense": 78,
+      "Sp. Attack": 109,
+      "Sp. Defense": 85,
+      "Speed": 100
+    }
+  },
+  {
+    "id": 7,
+    "slug": "squirtle",
+    "name": {
+      "english": "Squirtle",
+      "japanese": "ゼニガメ"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 44,
+      "Attack": 48,
+      "Defense": 65,
+      "Sp. Attack": 50,
+      "Sp. Defense": 64,
+      "Speed": 43
+    }
+  },
+  {
+    "id": 8,
+    "slug": "wartortle",
+    "name": {
+      "english": "Wartortle",
+      "japanese": "カメール"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 59,
+      "Attack": 63,
+      "Defense": 80,
+      "Sp. Attack": 65,
+      "Sp. Defense": 80,
+      "Speed": 58
+    }
+  },
+  {
+    "id": 9,
+    "slug": "blastoise",
+    "name": {
+      "english": "Blastoise",
+      "japanese": "カメックス"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 79,
+      "Attack": 83,
+      "Defense": 100,
+      "Sp. Attack": 85,
+      "Sp. Defense": 105,
+      "Speed": 78
+    }
+  },
+  {
+    "id": 10,
+    "slug": "caterpie",
+    "name": {
+      "english": "Caterpie",
+      "japanese": "キャタピー"
+    },
+    "type": ["Bug"],
+    "base": {
+      "HP": 45,
+      "Attack": 30,
+      "Defense": 35,
+      "Sp. Attack": 20,
+      "Sp. Defense": 20,
+      "Speed": 45
+    }
+  },
+  {
+    "id": 11,
+    "slug": "metapod",
+    "name": {
+      "english": "Metapod",
+      "japanese": "トランセル"
+    },
+    "type": ["Bug"],
+    "base": {
+      "HP": 50,
+      "Attack": 20,
+      "Defense": 55,
+      "Sp. Attack": 25,
+      "Sp. Defense": 25,
+      "Speed": 30
+    }
+  },
+  {
+    "id": 12,
+    "slug": "butterfree",
+    "name": {
+      "english": "Butterfree",
+      "japanese": "バタフリー"
+    },
+    "type": ["Bug", "Flying"],
+    "base": {
+      "HP": 60,
+      "Attack": 45,
+      "Defense": 50,
+      "Sp. Attack": 90,
+      "Sp. Defense": 80,
+      "Speed": 70
+    }
+  },
+  {
+    "id": 13,
+    "slug": "weedle",
+    "name": {
+      "english": "Weedle",
+      "japanese": "ビードル"
+    },
+    "type": ["Bug", "Poison"],
+    "base": {
+      "HP": 40,
+      "Attack": 35,
+      "Defense": 30,
+      "Sp. Attack": 20,
+      "Sp. Defense": 20,
+      "Speed": 50
+    }
+  },
+  {
+    "id": 14,
+    "slug": "kakuna",
+    "name": {
+      "english": "Kakuna",
+      "japanese": "コクーン"
+    },
+    "type": ["Bug", "Poison"],
+    "base": {
+      "HP": 45,
+      "Attack": 25,
+      "Defense": 50,
+      "Sp. Attack": 25,
+      "Sp. Defense": 25,
+      "Speed": 35
+    }
+  },
+  {
+    "id": 15,
+    "slug": "beedrill",
+    "name": {
+      "english": "Beedrill",
+      "japanese": "スピアー"
+    },
+    "type": ["Bug", "Poison"],
+    "base": {
+      "HP": 65,
+      "Attack": 90,
+      "Defense": 40,
+      "Sp. Attack": 45,
+      "Sp. Defense": 80,
+      "Speed": 75
+    }
+  },
+  {
+    "id": 16,
+    "slug": "pidgey",
+    "name": {
+      "english": "Pidgey",
+      "japanese": "ポッポ"
+    },
+    "type": ["Normal", "Flying"],
+    "base": {
+      "HP": 40,
+      "Attack": 45,
+      "Defense": 40,
+      "Sp. Attack": 35,
+      "Sp. Defense": 35,
+      "Speed": 56
+    }
+  },
+  {
+    "id": 17,
+    "slug": "pidgeotto",
+    "name": {
+      "english": "Pidgeotto",
+      "japanese": "ピジョン"
+    },
+    "type": ["Normal", "Flying"],
+    "base": {
+      "HP": 63,
+      "Attack": 60,
+      "Defense": 55,
+      "Sp. Attack": 50,
+      "Sp. Defense": 50,
+      "Speed": 71
+    }
+  },
+  {
+    "id": 18,
+    "slug": "pidgeot",
+    "name": {
+      "english": "Pidgeot",
+      "japanese": "ピジョット"
+    },
+    "type": ["Normal", "Flying"],
+    "base": {
+      "HP": 83,
+      "Attack": 80,
+      "Defense": 75,
+      "Sp. Attack": 70,
+      "Sp. Defense": 70,
+      "Speed": 101
+    }
+  },
+  {
+    "id": 19,
+    "slug": "rattata",
+    "name": {
+      "english": "Rattata",
+      "japanese": "コラッタ"
+    },
+    "type": ["Normal"],
+    "base": {
+      "HP": 30,
+      "Attack": 56,
+      "Defense": 35,
+      "Sp. Attack": 25,
+      "Sp. Defense": 35,
+      "Speed": 72
+    }
+  },
+  {
+    "id": 20,
+    "slug": "raticate",
+    "name": {
+      "english": "Raticate",
+      "japanese": "ラッタ"
+    },
+    "type": ["Normal"],
+    "base": {
+      "HP": 55,
+      "Attack": 81,
+      "Defense": 60,
+      "Sp. Attack": 50,
+      "Sp. Defense": 70,
+      "Speed": 97
+    }
+  },
+  {
+    "id": 21,
+    "slug": "spearow",
+    "name": {
+      "english": "Spearow",
+      "japanese": "オニスズメ"
+    },
+    "type": ["Normal", "Flying"],
+    "base": {
+      "HP": 40,
+      "Attack": 60,
+      "Defense": 30,
+      "Sp. Attack": 31,
+      "Sp. Defense": 31,
+      "Speed": 70
+    }
+  },
+  {
+    "id": 22,
+    "slug": "fearow",
+    "name": {
+      "english": "Fearow",
+      "japanese": "オニドリル"
+    },
+    "type": ["Normal", "Flying"],
+    "base": {
+      "HP": 65,
+      "Attack": 90,
+      "Defense": 65,
+      "Sp. Attack": 61,
+      "Sp. Defense": 61,
+      "Speed": 100
+    }
+  },
+  {
+    "id": 23,
+    "slug": "ekans",
+    "name": {
+      "english": "Ekans",
+      "japanese": "アーボ"
+    },
+    "type": ["Poison"],
+    "base": {
+      "HP": 35,
+      "Attack": 60,
+      "Defense": 44,
+      "Sp. Attack": 40,
+      "Sp. Defense": 54,
+      "Speed": 55
+    }
+  },
+  {
+    "id": 24,
+    "slug": "arbok",
+    "name": {
+      "english": "Arbok",
+      "japanese": "アーボック"
+    },
+    "type": ["Poison"],
+    "base": {
+      "HP": 60,
+      "Attack": 95,
+      "Defense": 69,
+      "Sp. Attack": 65,
+      "Sp. Defense": 79,
+      "Speed": 80
+    }
+  },
+  {
+    "id": 25,
+    "slug": "pikachu",
+    "name": {
+      "english": "Pikachu",
+      "japanese": "ピカチュウ"
+    },
+    "type": ["Electric"],
+    "base": {
+      "HP": 35,
+      "Attack": 55,
+      "Defense": 40,
+      "Sp. Attack": 50,
+      "Sp. Defense": 50,
+      "Speed": 90
+    }
+  },
+  {
+    "id": 26,
+    "slug": "raichu",
+    "name": {
+      "english": "Raichu",
+      "japanese": "ライチュウ"
+    },
+    "type": ["Electric"],
+    "base": {
+      "HP": 60,
+      "Attack": 90,
+      "Defense": 55,
+      "Sp. Attack": 90,
+      "Sp. Defense": 80,
+      "Speed": 110
+    }
+  },
+  {
+    "id": 27,
+    "slug": "sandshrew",
+    "name": {
+      "english": "Sandshrew",
+      "japanese": "サンド"
+    },
+    "type": ["Ground"],
+    "base": {
+      "HP": 50,
+      "Attack": 75,
+      "Defense": 85,
+      "Sp. Attack": 20,
+      "Sp. Defense": 30,
+      "Speed": 40
+    }
+  },
+  {
+    "id": 28,
+    "slug": "sandslash",
+    "name": {
+      "english": "Sandslash",
+      "japanese": "サンドパン"
+    },
+    "type": ["Ground"],
+    "base": {
+      "HP": 75,
+      "Attack": 100,
+      "Defense": 110,
+      "Sp. Attack": 45,
+      "Sp. Defense": 55,
+      "Speed": 65
+    }
+  },
+  {
+    "id": 29,
+    "slug": "nidoran-female",
+    "name": {
+      "english": "Nidoran♀",
+      "japanese": "ニドラン♀"
+    },
+    "type": ["Poison"],
+    "base": {
+      "HP": 55,
+      "Attack": 47,
+      "Defense": 52,
+      "Sp. Attack": 40,
+      "Sp. Defense": 40,
+      "Speed": 41
+    }
+  },
+  {
+    "id": 30,
+    "slug": "nidorina",
+    "name": {
+      "english": "Nidorina",
+      "japanese": "ニドリーナ"
+    },
+    "type": ["Poison"],
+    "base": {
+      "HP": 70,
+      "Attack": 62,
+      "Defense": 67,
+      "Sp. Attack": 55,
+      "Sp. Defense": 55,
+      "Speed": 56
+    }
+  },
+  {
+    "id": 31,
+    "slug": "nidoqueen",
+    "name": {
+      "english": "Nidoqueen",
+      "japanese": "ニドクイン"
+    },
+    "type": ["Poison", "Ground"],
+    "base": {
+      "HP": 90,
+      "Attack": 92,
+      "Defense": 87,
+      "Sp. Attack": 75,
+      "Sp. Defense": 85,
+      "Speed": 76
+    }
+  },
+  {
+    "id": 32,
+    "slug": "nidoran-male",
+    "name": {
+      "english": "Nidoran♂",
+      "japanese": "ニドラン♂"
+    },
+    "type": ["Poison"],
+    "base": {
+      "HP": 46,
+      "Attack": 57,
+      "Defense": 40,
+      "Sp. Attack": 40,
+      "Sp. Defense": 40,
+      "Speed": 50
+    }
+  },
+  {
+    "id": 33,
+    "slug": "nidorino",
+    "name": {
+      "english": "Nidorino",
+      "japanese": "ニドリーノ"
+    },
+    "type": ["Poison"],
+    "base": {
+      "HP": 61,
+      "Attack": 72,
+      "Defense": 57,
+      "Sp. Attack": 55,
+      "Sp. Defense": 55,
+      "Speed": 65
+    }
+  },
+  {
+    "id": 34,
+    "slug": "nidoking",
+    "name": {
+      "english": "Nidoking",
+      "japanese": "ニドキング"
+    },
+    "type": ["Poison", "Ground"],
+    "base": {
+      "HP": 81,
+      "Attack": 102,
+      "Defense": 77,
+      "Sp. Attack": 85,
+      "Sp. Defense": 75,
+      "Speed": 85
+    }
+  },
+  {
+    "id": 35,
+    "slug": "clefairy",
+    "name": {
+      "english": "Clefairy",
+      "japanese": "ピッピ"
+    },
+    "type": ["Fairy"],
+    "base": {
+      "HP": 70,
+      "Attack": 45,
+      "Defense": 48,
+      "Sp. Attack": 60,
+      "Sp. Defense": 65,
+      "Speed": 35
+    }
+  },
+  {
+    "id": 36,
+    "slug": "clefable",
+    "name": {
+      "english": "Clefable",
+      "japanese": "ピクシー"
+    },
+    "type": ["Fairy"],
+    "base": {
+      "HP": 95,
+      "Attack": 70,
+      "Defense": 73,
+      "Sp. Attack": 95,
+      "Sp. Defense": 90,
+      "Speed": 60
+    }
+  },
+  {
+    "id": 37,
+    "slug": "vulpix",
+    "name": {
+      "english": "Vulpix",
+      "japanese": "ロコン"
+    },
+    "type": ["Fire"],
+    "base": {
+      "HP": 38,
+      "Attack": 41,
+      "Defense": 40,
+      "Sp. Attack": 50,
+      "Sp. Defense": 65,
+      "Speed": 65
+    }
+  },
+  {
+    "id": 38,
+    "slug": "ninetales",
+    "name": {
+      "english": "Ninetales",
+      "japanese": "キュウコン"
+    },
+    "type": ["Fire"],
+    "base": {
+      "HP": 73,
+      "Attack": 76,
+      "Defense": 75,
+      "Sp. Attack": 81,
+      "Sp. Defense": 100,
+      "Speed": 100
+    }
+  },
+  {
+    "id": 39,
+    "slug": "jigglypuff",
+    "name": {
+      "english": "Jigglypuff",
+      "japanese": "プリン"
+    },
+    "type": ["Normal", "Fairy"],
+    "base": {
+      "HP": 115,
+      "Attack": 45,
+      "Defense": 20,
+      "Sp. Attack": 45,
+      "Sp. Defense": 25,
+      "Speed": 20
+    }
+  },
+  {
+    "id": 40,
+    "slug": "wigglytuff",
+    "name": {
+      "english": "Wigglytuff",
+      "japanese": "プクリン"
+    },
+    "type": ["Normal", "Fairy"],
+    "base": {
+      "HP": 140,
+      "Attack": 70,
+      "Defense": 45,
+      "Sp. Attack": 85,
+      "Sp. Defense": 50,
+      "Speed": 45
+    }
+  },
+  {
+    "id": 41,
+    "slug": "zubat",
+    "name": {
+      "english": "Zubat",
+      "japanese": "ズバット"
+    },
+    "type": ["Poison", "Flying"],
+    "base": {
+      "HP": 40,
+      "Attack": 45,
+      "Defense": 35,
+      "Sp. Attack": 30,
+      "Sp. Defense": 40,
+      "Speed": 55
+    }
+  },
+  {
+    "id": 42,
+    "slug": "golbat",
+    "name": {
+      "english": "Golbat",
+      "japanese": "ゴルバット"
+    },
+    "type": ["Poison", "Flying"],
+    "base": {
+      "HP": 75,
+      "Attack": 80,
+      "Defense": 70,
+      "Sp. Attack": 65,
+      "Sp. Defense": 75,
+      "Speed": 90
+    }
+  },
+  {
+    "id": 43,
+    "slug": "oddish",
+    "name": {
+      "english": "Oddish",
+      "japanese": "ナゾノクサ"
+    },
+    "type": ["Grass", "Poison"],
+    "base": {
+      "HP": 45,
+      "Attack": 50,
+      "Defense": 55,
+      "Sp. Attack": 75,
+      "Sp. Defense": 65,
+      "Speed": 30
+    }
+  },
+  {
+    "id": 44,
+    "slug": "gloom",
+    "name": {
+      "english": "Gloom",
+      "japanese": "クサイハナ"
+    },
+    "type": ["Grass", "Poison"],
+    "base": {
+      "HP": 60,
+      "Attack": 65,
+      "Defense": 70,
+      "Sp. Attack": 85,
+      "Sp. Defense": 75,
+      "Speed": 40
+    }
+  },
+  {
+    "id": 45,
+    "slug": "vileplume",
+    "name": {
+      "english": "Vileplume",
+      "japanese": "ラフレシア"
+    },
+    "type": ["Grass", "Poison"],
+    "base": {
+      "HP": 75,
+      "Attack": 80,
+      "Defense": 85,
+      "Sp. Attack": 110,
+      "Sp. Defense": 90,
+      "Speed": 50
+    }
+  },
+  {
+    "id": 46,
+    "slug": "paras",
+    "name": {
+      "english": "Paras",
+      "japanese": "パラス"
+    },
+    "type": ["Bug", "Grass"],
+    "base": {
+      "HP": 35,
+      "Attack": 70,
+      "Defense": 55,
+      "Sp. Attack": 45,
+      "Sp. Defense": 55,
+      "Speed": 25
+    }
+  },
+  {
+    "id": 47,
+    "slug": "parasect",
+    "name": {
+      "english": "Parasect",
+      "japanese": "パラセクト"
+    },
+    "type": ["Bug", "Grass"],
+    "base": {
+      "HP": 60,
+      "Attack": 95,
+      "Defense": 80,
+      "Sp. Attack": 60,
+      "Sp. Defense": 80,
+      "Speed": 30
+    }
+  },
+  {
+    "id": 48,
+    "slug": "venonat",
+    "name": {
+      "english": "Venonat",
+      "japanese": "コンパン"
+    },
+    "type": ["Bug", "Poison"],
+    "base": {
+      "HP": 60,
+      "Attack": 55,
+      "Defense": 50,
+      "Sp. Attack": 40,
+      "Sp. Defense": 55,
+      "Speed": 45
+    }
+  },
+  {
+    "id": 49,
+    "slug": "venomoth",
+    "name": {
+      "english": "Venomoth",
+      "japanese": "モルフォン"
+    },
+    "type": ["Bug", "Poison"],
+    "base": {
+      "HP": 70,
+      "Attack": 65,
+      "Defense": 60,
+      "Sp. Attack": 90,
+      "Sp. Defense": 75,
+      "Speed": 90
+    }
+  },
+  {
+    "id": 50,
+    "slug": "diglett",
+    "name": {
+      "english": "Diglett",
+      "japanese": "ディグダ"
+    },
+    "type": ["Ground"],
+    "base": {
+      "HP": 10,
+      "Attack": 55,
+      "Defense": 25,
+      "Sp. Attack": 35,
+      "Sp. Defense": 45,
+      "Speed": 95
+    }
+  },
+  {
+    "id": 51,
+    "slug": "dugtrio",
+    "name": {
+      "english": "Dugtrio",
+      "japanese": "ダグトリオ"
+    },
+    "type": ["Ground"],
+    "base": {
+      "HP": 35,
+      "Attack": 100,
+      "Defense": 50,
+      "Sp. Attack": 50,
+      "Sp. Defense": 70,
+      "Speed": 120
+    }
+  },
+  {
+    "id": 52,
+    "slug": "meowth",
+    "name": {
+      "english": "Meowth",
+      "japanese": "ニャース"
+    },
+    "type": ["Normal"],
+    "base": {
+      "HP": 40,
+      "Attack": 45,
+      "Defense": 35,
+      "Sp. Attack": 40,
+      "Sp. Defense": 40,
+      "Speed": 90
+    }
+  },
+  {
+    "id": 53,
+    "slug": "persian",
+    "name": {
+      "english": "Persian",
+      "japanese": "ペルシアン"
+    },
+    "type": ["Normal"],
+    "base": {
+      "HP": 65,
+      "Attack": 70,
+      "Defense": 60,
+      "Sp. Attack": 65,
+      "Sp. Defense": 65,
+      "Speed": 115
+    }
+  },
+  {
+    "id": 54,
+    "slug": "psyduck",
+    "name": {
+      "english": "Psyduck",
+      "japanese": "コダック"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 50,
+      "Attack": 52,
+      "Defense": 48,
+      "Sp. Attack": 65,
+      "Sp. Defense": 50,
+      "Speed": 55
+    }
+  },
+  {
+    "id": 55,
+    "slug": "golduck",
+    "name": {
+      "english": "Golduck",
+      "japanese": "ゴルダック"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 80,
+      "Attack": 82,
+      "Defense": 78,
+      "Sp. Attack": 95,
+      "Sp. Defense": 80,
+      "Speed": 85
+    }
+  },
+  {
+    "id": 56,
+    "slug": "mankey",
+    "name": {
+      "english": "Mankey",
+      "japanese": "マンキー"
+    },
+    "type": ["Fighting"],
+    "base": {
+      "HP": 40,
+      "Attack": 80,
+      "Defense": 35,
+      "Sp. Attack": 35,
+      "Sp. Defense": 45,
+      "Speed": 70
+    }
+  },
+  {
+    "id": 57,
+    "slug": "primeape",
+    "name": {
+      "english": "Primeape",
+      "japanese": "オコリザル"
+    },
+    "type": ["Fighting"],
+    "base": {
+      "HP": 65,
+      "Attack": 105,
+      "Defense": 60,
+      "Sp. Attack": 60,
+      "Sp. Defense": 70,
+      "Speed": 95
+    }
+  },
+  {
+    "id": 58,
+    "slug": "growlithe",
+    "name": {
+      "english": "Growlithe",
+      "japanese": "ガーディ"
+    },
+    "type": ["Fire"],
+    "base": {
+      "HP": 55,
+      "Attack": 70,
+      "Defense": 45,
+      "Sp. Attack": 70,
+      "Sp. Defense": 50,
+      "Speed": 60
+    }
+  },
+  {
+    "id": 59,
+    "slug": "arcanine",
+    "name": {
+      "english": "Arcanine",
+      "japanese": "ウインディ"
+    },
+    "type": ["Fire"],
+    "base": {
+      "HP": 90,
+      "Attack": 110,
+      "Defense": 80,
+      "Sp. Attack": 100,
+      "Sp. Defense": 80,
+      "Speed": 95
+    }
+  },
+  {
+    "id": 60,
+    "slug": "poliwag",
+    "name": {
+      "english": "Poliwag",
+      "japanese": "ニョロモ"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 40,
+      "Attack": 50,
+      "Defense": 40,
+      "Sp. Attack": 40,
+      "Sp. Defense": 40,
+      "Speed": 90
+    }
+  },
+  {
+    "id": 61,
+    "slug": "poliwhirl",
+    "name": {
+      "english": "Poliwhirl",
+      "japanese": "ニョロゾ"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 65,
+      "Attack": 65,
+      "Defense": 65,
+      "Sp. Attack": 50,
+      "Sp. Defense": 50,
+      "Speed": 90
+    }
+  },
+  {
+    "id": 62,
+    "slug": "poliwrath",
+    "name": {
+      "english": "Poliwrath",
+      "japanese": "ニョロボン"
+    },
+    "type": ["Water", "Fighting"],
+    "base": {
+      "HP": 90,
+      "Attack": 95,
+      "Defense": 95,
+      "Sp. Attack": 70,
+      "Sp. Defense": 90,
+      "Speed": 70
+    }
+  },
+  {
+    "id": 63,
+    "slug": "abra",
+    "name": {
+      "english": "Abra",
+      "japanese": "ケーシィ"
+    },
+    "type": ["Psychic"],
+    "base": {
+      "HP": 25,
+      "Attack": 20,
+      "Defense": 15,
+      "Sp. Attack": 105,
+      "Sp. Defense": 55,
+      "Speed": 90
+    }
+  },
+  {
+    "id": 64,
+    "slug": "kadabra",
+    "name": {
+      "english": "Kadabra",
+      "japanese": "ユンゲラー"
+    },
+    "type": ["Psychic"],
+    "base": {
+      "HP": 40,
+      "Attack": 35,
+      "Defense": 30,
+      "Sp. Attack": 120,
+      "Sp. Defense": 70,
+      "Speed": 105
+    }
+  },
+  {
+    "id": 65,
+    "slug": "alakazam",
+    "name": {
+      "english": "Alakazam",
+      "japanese": "フーディン"
+    },
+    "type": ["Psychic"],
+    "base": {
+      "HP": 55,
+      "Attack": 50,
+      "Defense": 45,
+      "Sp. Attack": 135,
+      "Sp. Defense": 95,
+      "Speed": 120
+    }
+  },
+  {
+    "id": 66,
+    "slug": "machop",
+    "name": {
+      "english": "Machop",
+      "japanese": "ワンリキー"
+    },
+    "type": ["Fighting"],
+    "base": {
+      "HP": 70,
+      "Attack": 80,
+      "Defense": 50,
+      "Sp. Attack": 35,
+      "Sp. Defense": 35,
+      "Speed": 35
+    }
+  },
+  {
+    "id": 67,
+    "slug": "machoke",
+    "name": {
+      "english": "Machoke",
+      "japanese": "ゴーリキー"
+    },
+    "type": ["Fighting"],
+    "base": {
+      "HP": 80,
+      "Attack": 100,
+      "Defense": 70,
+      "Sp. Attack": 50,
+      "Sp. Defense": 60,
+      "Speed": 45
+    }
+  },
+  {
+    "id": 68,
+    "slug": "machamp",
+    "name": {
+      "english": "Machamp",
+      "japanese": "カイリキー"
+    },
+    "type": ["Fighting"],
+    "base": {
+      "HP": 90,
+      "Attack": 130,
+      "Defense": 80,
+      "Sp. Attack": 65,
+      "Sp. Defense": 85,
+      "Speed": 55
+    }
+  },
+  {
+    "id": 69,
+    "slug": "bellsprout",
+    "name": {
+      "english": "Bellsprout",
+      "japanese": "マダツボミ"
+    },
+    "type": ["Grass", "Poison"],
+    "base": {
+      "HP": 50,
+      "Attack": 75,
+      "Defense": 35,
+      "Sp. Attack": 70,
+      "Sp. Defense": 30,
+      "Speed": 40
+    }
+  },
+  {
+    "id": 70,
+    "slug": "weepinbell",
+    "name": {
+      "english": "Weepinbell",
+      "japanese": "ウツドン"
+    },
+    "type": ["Grass", "Poison"],
+    "base": {
+      "HP": 65,
+      "Attack": 90,
+      "Defense": 50,
+      "Sp. Attack": 85,
+      "Sp. Defense": 45,
+      "Speed": 55
+    }
+  },
+  {
+    "id": 71,
+    "slug": "victreebel",
+    "name": {
+      "english": "Victreebel",
+      "japanese": "ウツボット"
+    },
+    "type": ["Grass", "Poison"],
+    "base": {
+      "HP": 80,
+      "Attack": 105,
+      "Defense": 65,
+      "Sp. Attack": 100,
+      "Sp. Defense": 70,
+      "Speed": 70
+    }
+  },
+  {
+    "id": 72,
+    "slug": "tentacool",
+    "name": {
+      "english": "Tentacool",
+      "japanese": "メノクラゲ"
+    },
+    "type": ["Water", "Poison"],
+    "base": {
+      "HP": 40,
+      "Attack": 40,
+      "Defense": 35,
+      "Sp. Attack": 50,
+      "Sp. Defense": 100,
+      "Speed": 70
+    }
+  },
+  {
+    "id": 73,
+    "slug": "tentacruel",
+    "name": {
+      "english": "Tentacruel",
+      "japanese": "ドククラゲ"
+    },
+    "type": ["Water", "Poison"],
+    "base": {
+      "HP": 80,
+      "Attack": 70,
+      "Defense": 65,
+      "Sp. Attack": 80,
+      "Sp. Defense": 120,
+      "Speed": 100
+    }
+  },
+  {
+    "id": 74,
+    "slug": "geodude",
+    "name": {
+      "english": "Geodude",
+      "japanese": "イシツブテ"
+    },
+    "type": ["Rock", "Ground"],
+    "base": {
+      "HP": 40,
+      "Attack": 80,
+      "Defense": 100,
+      "Sp. Attack": 30,
+      "Sp. Defense": 30,
+      "Speed": 20
+    }
+  },
+  {
+    "id": 75,
+    "slug": "graveler",
+    "name": {
+      "english": "Graveler",
+      "japanese": "ゴローン"
+    },
+    "type": ["Rock", "Ground"],
+    "base": {
+      "HP": 55,
+      "Attack": 95,
+      "Defense": 115,
+      "Sp. Attack": 45,
+      "Sp. Defense": 45,
+      "Speed": 35
+    }
+  },
+  {
+    "id": 76,
+    "slug": "golem",
+    "name": {
+      "english": "Golem",
+      "japanese": "ゴローニャ"
+    },
+    "type": ["Rock", "Ground"],
+    "base": {
+      "HP": 80,
+      "Attack": 120,
+      "Defense": 130,
+      "Sp. Attack": 55,
+      "Sp. Defense": 65,
+      "Speed": 45
+    }
+  },
+  {
+    "id": 77,
+    "slug": "ponyta",
+    "name": {
+      "english": "Ponyta",
+      "japanese": "ポニータ"
+    },
+    "type": ["Fire"],
+    "base": {
+      "HP": 50,
+      "Attack": 85,
+      "Defense": 55,
+      "Sp. Attack": 65,
+      "Sp. Defense": 65,
+      "Speed": 90
+    }
+  },
+  {
+    "id": 78,
+    "slug": "rapidash",
+    "name": {
+      "english": "Rapidash",
+      "japanese": "ギャロップ"
+    },
+    "type": ["Fire"],
+    "base": {
+      "HP": 65,
+      "Attack": 100,
+      "Defense": 70,
+      "Sp. Attack": 80,
+      "Sp. Defense": 80,
+      "Speed": 105
+    }
+  },
+  {
+    "id": 79,
+    "slug": "slowpoke",
+    "name": {
+      "english": "Slowpoke",
+      "japanese": "ヤドン"
+    },
+    "type": ["Water", "Psychic"],
+    "base": {
+      "HP": 90,
+      "Attack": 65,
+      "Defense": 65,
+      "Sp. Attack": 40,
+      "Sp. Defense": 40,
+      "Speed": 15
+    }
+  },
+  {
+    "id": 80,
+    "slug": "slowbro",
+    "name": {
+      "english": "Slowbro",
+      "japanese": "ヤドラン"
+    },
+    "type": ["Water", "Psychic"],
+    "base": {
+      "HP": 95,
+      "Attack": 75,
+      "Defense": 110,
+      "Sp. Attack": 100,
+      "Sp. Defense": 80,
+      "Speed": 30
+    }
+  },
+  {
+    "id": 81,
+    "slug": "magnemite",
+    "name": {
+      "english": "Magnemite",
+      "japanese": "コイル"
+    },
+    "type": ["Electric", "Steel"],
+    "base": {
+      "HP": 25,
+      "Attack": 35,
+      "Defense": 70,
+      "Sp. Attack": 95,
+      "Sp. Defense": 55,
+      "Speed": 45
+    }
+  },
+  {
+    "id": 82,
+    "slug": "magneton",
+    "name": {
+      "english": "Magneton",
+      "japanese": "レアコイル"
+    },
+    "type": ["Electric", "Steel"],
+    "base": {
+      "HP": 50,
+      "Attack": 60,
+      "Defense": 95,
+      "Sp. Attack": 120,
+      "Sp. Defense": 70,
+      "Speed": 70
+    }
+  },
+  {
+    "id": 83,
+    "slug": "farfetchd",
+    "name": {
+      "english": "Farfetch'd",
+      "japanese": "カモネギ"
+    },
+    "type": ["Normal", "Flying"],
+    "base": {
+      "HP": 52,
+      "Attack": 90,
+      "Defense": 55,
+      "Sp. Attack": 58,
+      "Sp. Defense": 62,
+      "Speed": 60
+    }
+  },
+  {
+    "id": 84,
+    "slug": "doduo",
+    "name": {
+      "english": "Doduo",
+      "japanese": "ドードー"
+    },
+    "type": ["Normal", "Flying"],
+    "base": {
+      "HP": 35,
+      "Attack": 85,
+      "Defense": 45,
+      "Sp. Attack": 35,
+      "Sp. Defense": 35,
+      "Speed": 75
+    }
+  },
+  {
+    "id": 85,
+    "slug": "dodrio",
+    "name": {
+      "english": "Dodrio",
+      "japanese": "ドードリオ"
+    },
+    "type": ["Normal", "Flying"],
+    "base": {
+      "HP": 60,
+      "Attack": 110,
+      "Defense": 70,
+      "Sp. Attack": 60,
+      "Sp. Defense": 60,
+      "Speed": 110
+    }
+  },
+  {
+    "id": 86,
+    "slug": "seel",
+    "name": {
+      "english": "Seel",
+      "japanese": "パウワウ"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 65,
+      "Attack": 45,
+      "Defense": 55,
+      "Sp. Attack": 45,
+      "Sp. Defense": 70,
+      "Speed": 45
+    }
+  },
+  {
+    "id": 87,
+    "slug": "dewgong",
+    "name": {
+      "english": "Dewgong",
+      "japanese": "ジュゴン"
+    },
+    "type": ["Water", "Ice"],
+    "base": {
+      "HP": 90,
+      "Attack": 70,
+      "Defense": 80,
+      "Sp. Attack": 70,
+      "Sp. Defense": 95,
+      "Speed": 70
+    }
+  },
+  {
+    "id": 88,
+    "slug": "grimer",
+    "name": {
+      "english": "Grimer",
+      "japanese": "ベトベター"
+    },
+    "type": ["Poison"],
+    "base": {
+      "HP": 80,
+      "Attack": 80,
+      "Defense": 50,
+      "Sp. Attack": 40,
+      "Sp. Defense": 50,
+      "Speed": 25
+    }
+  },
+  {
+    "id": 89,
+    "slug": "muk",
+    "name": {
+      "english": "Muk",
+      "japanese": "ベトベトン"
+    },
+    "type": ["Poison"],
+    "base": {
+      "HP": 105,
+      "Attack": 105,
+      "Defense": 75,
+      "Sp. Attack": 65,
+      "Sp. Defense": 100,
+      "Speed": 50
+    }
+  },
+  {
+    "id": 90,
+    "slug": "shellder",
+    "name": {
+      "english": "Shellder",
+      "japanese": "シェルダー"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 30,
+      "Attack": 65,
+      "Defense": 100,
+      "Sp. Attack": 45,
+      "Sp. Defense": 25,
+      "Speed": 40
+    }
+  },
+  {
+    "id": 91,
+    "slug": "cloyster",
+    "name": {
+      "english": "Cloyster",
+      "japanese": "パルシェン"
+    },
+    "type": ["Water", "Ice"],
+    "base": {
+      "HP": 50,
+      "Attack": 95,
+      "Defense": 180,
+      "Sp. Attack": 85,
+      "Sp. Defense": 45,
+      "Speed": 70
+    }
+  },
+  {
+    "id": 92,
+    "slug": "gastly",
+    "name": {
+      "english": "Gastly",
+      "japanese": "ゴース"
+    },
+    "type": ["Ghost", "Poison"],
+    "base": {
+      "HP": 30,
+      "Attack": 35,
+      "Defense": 30,
+      "Sp. Attack": 100,
+      "Sp. Defense": 35,
+      "Speed": 80
+    }
+  },
+  {
+    "id": 93,
+    "slug": "haunter",
+    "name": {
+      "english": "Haunter",
+      "japanese": "ゴースト"
+    },
+    "type": ["Ghost", "Poison"],
+    "base": {
+      "HP": 45,
+      "Attack": 50,
+      "Defense": 45,
+      "Sp. Attack": 115,
+      "Sp. Defense": 55,
+      "Speed": 95
+    }
+  },
+  {
+    "id": 94,
+    "slug": "gengar",
+    "name": {
+      "english": "Gengar",
+      "japanese": "ゲンガー"
+    },
+    "type": ["Ghost", "Poison"],
+    "base": {
+      "HP": 60,
+      "Attack": 65,
+      "Defense": 60,
+      "Sp. Attack": 130,
+      "Sp. Defense": 75,
+      "Speed": 110
+    }
+  },
+  {
+    "id": 95,
+    "slug": "onix",
+    "name": {
+      "english": "Onix",
+      "japanese": "イワーク"
+    },
+    "type": ["Rock", "Ground"],
+    "base": {
+      "HP": 35,
+      "Attack": 45,
+      "Defense": 160,
+      "Sp. Attack": 30,
+      "Sp. Defense": 45,
+      "Speed": 70
+    }
+  },
+  {
+    "id": 96,
+    "slug": "drowzee",
+    "name": {
+      "english": "Drowzee",
+      "japanese": "スリープ"
+    },
+    "type": ["Psychic"],
+    "base": {
+      "HP": 60,
+      "Attack": 48,
+      "Defense": 45,
+      "Sp. Attack": 43,
+      "Sp. Defense": 90,
+      "Speed": 42
+    }
+  },
+  {
+    "id": 97,
+    "slug": "hypno",
+    "name": {
+      "english": "Hypno",
+      "japanese": "スリーパー"
+    },
+    "type": ["Psychic"],
+    "base": {
+      "HP": 85,
+      "Attack": 73,
+      "Defense": 70,
+      "Sp. Attack": 73,
+      "Sp. Defense": 115,
+      "Speed": 67
+    }
+  },
+  {
+    "id": 98,
+    "slug": "krabby",
+    "name": {
+      "english": "Krabby",
+      "japanese": "クラブ"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 30,
+      "Attack": 105,
+      "Defense": 90,
+      "Sp. Attack": 25,
+      "Sp. Defense": 25,
+      "Speed": 50
+    }
+  },
+  {
+    "id": 99,
+    "slug": "kingler",
+    "name": {
+      "english": "Kingler",
+      "japanese": "キングラー"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 55,
+      "Attack": 130,
+      "Defense": 115,
+      "Sp. Attack": 50,
+      "Sp. Defense": 50,
+      "Speed": 75
+    }
+  },
+  {
+    "id": 100,
+    "slug": "voltorb",
+    "name": {
+      "english": "Voltorb",
+      "japanese": "ビリリダマ"
+    },
+    "type": ["Electric"],
+    "base": {
+      "HP": 40,
+      "Attack": 30,
+      "Defense": 50,
+      "Sp. Attack": 55,
+      "Sp. Defense": 55,
+      "Speed": 100
+    }
+  },
+  {
+    "id": 101,
+    "slug": "electrode",
+    "name": {
+      "english": "Electrode",
+      "japanese": "マルマイン"
+    },
+    "type": ["Electric"],
+    "base": {
+      "HP": 60,
+      "Attack": 50,
+      "Defense": 70,
+      "Sp. Attack": 80,
+      "Sp. Defense": 80,
+      "Speed": 150
+    }
+  },
+  {
+    "id": 102,
+    "slug": "exeggcute",
+    "name": {
+      "english": "Exeggcute",
+      "japanese": "タマタマ"
+    },
+    "type": ["Grass", "Psychic"],
+    "base": {
+      "HP": 60,
+      "Attack": 40,
+      "Defense": 80,
+      "Sp. Attack": 60,
+      "Sp. Defense": 45,
+      "Speed": 40
+    }
+  },
+  {
+    "id": 103,
+    "slug": "exeggutor",
+    "name": {
+      "english": "Exeggutor",
+      "japanese": "ナッシー"
+    },
+    "type": ["Grass", "Psychic"],
+    "base": {
+      "HP": 95,
+      "Attack": 95,
+      "Defense": 85,
+      "Sp. Attack": 125,
+      "Sp. Defense": 75,
+      "Speed": 55
+    }
+  },
+  {
+    "id": 104,
+    "slug": "cubone",
+    "name": {
+      "english": "Cubone",
+      "japanese": "カラカラ"
+    },
+    "type": ["Ground"],
+    "base": {
+      "HP": 50,
+      "Attack": 50,
+      "Defense": 95,
+      "Sp. Attack": 40,
+      "Sp. Defense": 50,
+      "Speed": 35
+    }
+  },
+  {
+    "id": 105,
+    "slug": "marowak",
+    "name": {
+      "english": "Marowak",
+      "japanese": "ガラガラ"
+    },
+    "type": ["Ground"],
+    "base": {
+      "HP": 60,
+      "Attack": 80,
+      "Defense": 110,
+      "Sp. Attack": 50,
+      "Sp. Defense": 80,
+      "Speed": 45
+    }
+  },
+  {
+    "id": 106,
+    "slug": "hitmonlee",
+    "name": {
+      "english": "Hitmonlee",
+      "japanese": "サワムラー"
+    },
+    "type": ["Fighting"],
+    "base": {
+      "HP": 50,
+      "Attack": 120,
+      "Defense": 53,
+      "Sp. Attack": 35,
+      "Sp. Defense": 110,
+      "Speed": 87
+    }
+  },
+  {
+    "id": 107,
+    "slug": "hitmonchan",
+    "name": {
+      "english": "Hitmonchan",
+      "japanese": "エビワラー"
+    },
+    "type": ["Fighting"],
+    "base": {
+      "HP": 50,
+      "Attack": 105,
+      "Defense": 79,
+      "Sp. Attack": 35,
+      "Sp. Defense": 110,
+      "Speed": 76
+    }
+  },
+  {
+    "id": 108,
+    "slug": "lickitung",
+    "name": {
+      "english": "Lickitung",
+      "japanese": "ベロリンガ"
+    },
+    "type": ["Normal"],
+    "base": {
+      "HP": 90,
+      "Attack": 55,
+      "Defense": 75,
+      "Sp. Attack": 60,
+      "Sp. Defense": 75,
+      "Speed": 30
+    }
+  },
+  {
+    "id": 109,
+    "slug": "koffing",
+    "name": {
+      "english": "Koffing",
+      "japanese": "ドガース"
+    },
+    "type": ["Poison"],
+    "base": {
+      "HP": 40,
+      "Attack": 65,
+      "Defense": 95,
+      "Sp. Attack": 60,
+      "Sp. Defense": 45,
+      "Speed": 35
+    }
+  },
+  {
+    "id": 110,
+    "slug": "weezing",
+    "name": {
+      "english": "Weezing",
+      "japanese": "マタドガス"
+    },
+    "type": ["Poison"],
+    "base": {
+      "HP": 65,
+      "Attack": 90,
+      "Defense": 120,
+      "Sp. Attack": 85,
+      "Sp. Defense": 70,
+      "Speed": 60
+    }
+  },
+  {
+    "id": 111,
+    "slug": "rhyhorn",
+    "name": {
+      "english": "Rhyhorn",
+      "japanese": "サイホーン"
+    },
+    "type": ["Ground", "Rock"],
+    "base": {
+      "HP": 80,
+      "Attack": 85,
+      "Defense": 95,
+      "Sp. Attack": 30,
+      "Sp. Defense": 30,
+      "Speed": 25
+    }
+  },
+  {
+    "id": 112,
+    "slug": "rhydon",
+    "name": {
+      "english": "Rhydon",
+      "japanese": "サイドン"
+    },
+    "type": ["Ground", "Rock"],
+    "base": {
+      "HP": 105,
+      "Attack": 130,
+      "Defense": 120,
+      "Sp. Attack": 45,
+      "Sp. Defense": 45,
+      "Speed": 40
+    }
+  },
+  {
+    "id": 113,
+    "slug": "chansey",
+    "name": {
+      "english": "Chansey",
+      "japanese": "ラッキー"
+    },
+    "type": ["Normal"],
+    "base": {
+      "HP": 250,
+      "Attack": 5,
+      "Defense": 5,
+      "Sp. Attack": 35,
+      "Sp. Defense": 105,
+      "Speed": 50
+    }
+  },
+  {
+    "id": 114,
+    "slug": "tangela",
+    "name": {
+      "english": "Tangela",
+      "japanese": "モンジャラ"
+    },
+    "type": ["Grass"],
+    "base": {
+      "HP": 65,
+      "Attack": 55,
+      "Defense": 115,
+      "Sp. Attack": 100,
+      "Sp. Defense": 40,
+      "Speed": 60
+    }
+  },
+  {
+    "id": 115,
+    "slug": "kangaskhan",
+    "name": {
+      "english": "Kangaskhan",
+      "japanese": "ガルーラ"
+    },
+    "type": ["Normal"],
+    "base": {
+      "HP": 105,
+      "Attack": 95,
+      "Defense": 80,
+      "Sp. Attack": 40,
+      "Sp. Defense": 80,
+      "Speed": 90
+    }
+  },
+  {
+    "id": 116,
+    "slug": "horsea",
+    "name": {
+      "english": "Horsea",
+      "japanese": "タッツー"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 30,
+      "Attack": 40,
+      "Defense": 70,
+      "Sp. Attack": 70,
+      "Sp. Defense": 25,
+      "Speed": 60
+    }
+  },
+  {
+    "id": 117,
+    "slug": "seadra",
+    "name": {
+      "english": "Seadra",
+      "japanese": "シードラ"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 55,
+      "Attack": 65,
+      "Defense": 95,
+      "Sp. Attack": 95,
+      "Sp. Defense": 45,
+      "Speed": 85
+    }
+  },
+  {
+    "id": 118,
+    "slug": "goldeen",
+    "name": {
+      "english": "Goldeen",
+      "japanese": "トサキント"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 45,
+      "Attack": 67,
+      "Defense": 60,
+      "Sp. Attack": 35,
+      "Sp. Defense": 50,
+      "Speed": 63
+    }
+  },
+  {
+    "id": 119,
+    "slug": "seaking",
+    "name": {
+      "english": "Seaking",
+      "japanese": "アズマオウ"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 80,
+      "Attack": 92,
+      "Defense": 65,
+      "Sp. Attack": 65,
+      "Sp. Defense": 80,
+      "Speed": 68
+    }
+  },
+  {
+    "id": 120,
+    "slug": "staryu",
+    "name": {
+      "english": "Staryu",
+      "japanese": "ヒトデマン"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 30,
+      "Attack": 45,
+      "Defense": 55,
+      "Sp. Attack": 70,
+      "Sp. Defense": 55,
+      "Speed": 85
+    }
+  },
+  {
+    "id": 121,
+    "slug": "starmie",
+    "name": {
+      "english": "Starmie",
+      "japanese": "スターミー"
+    },
+    "type": ["Water", "Psychic"],
+    "base": {
+      "HP": 60,
+      "Attack": 75,
+      "Defense": 85,
+      "Sp. Attack": 100,
+      "Sp. Defense": 85,
+      "Speed": 115
+    }
+  },
+  {
+    "id": 122,
+    "slug": "mr. mime",
+    "name": {
+      "english": "Mr. Mime",
+      "japanese": "バリヤード"
+    },
+    "type": ["Psychic", "Fairy"],
+    "base": {
+      "HP": 40,
+      "Attack": 45,
+      "Defense": 65,
+      "Sp. Attack": 100,
+      "Sp. Defense": 120,
+      "Speed": 90
+    }
+  },
+  {
+    "id": 123,
+    "slug": "scyther",
+    "name": {
+      "english": "Scyther",
+      "japanese": "ストライク"
+    },
+    "type": ["Bug", "Flying"],
+    "base": {
+      "HP": 70,
+      "Attack": 110,
+      "Defense": 80,
+      "Sp. Attack": 55,
+      "Sp. Defense": 80,
+      "Speed": 105
+    }
+  },
+  {
+    "id": 124,
+    "slug": "jynx",
+    "name": {
+      "english": "Jynx",
+      "japanese": "ルージュラ"
+    },
+    "type": ["Ice", "Psychic"],
+    "base": {
+      "HP": 65,
+      "Attack": 50,
+      "Defense": 35,
+      "Sp. Attack": 115,
+      "Sp. Defense": 95,
+      "Speed": 95
+    }
+  },
+  {
+    "id": 125,
+    "slug": "electabuzz",
+    "name": {
+      "english": "Electabuzz",
+      "japanese": "エレブー"
+    },
+    "type": ["Electric"],
+    "base": {
+      "HP": 65,
+      "Attack": 83,
+      "Defense": 57,
+      "Sp. Attack": 95,
+      "Sp. Defense": 85,
+      "Speed": 105
+    }
+  },
+  {
+    "id": 126,
+    "slug": "magmar",
+    "name": {
+      "english": "Magmar",
+      "japanese": "ブーバー"
+    },
+    "type": ["Fire"],
+    "base": {
+      "HP": 65,
+      "Attack": 95,
+      "Defense": 57,
+      "Sp. Attack": 100,
+      "Sp. Defense": 85,
+      "Speed": 93
+    }
+  },
+  {
+    "id": 127,
+    "slug": "pinsir",
+    "name": {
+      "english": "Pinsir",
+      "japanese": "カイロス"
+    },
+    "type": ["Bug"],
+    "base": {
+      "HP": 65,
+      "Attack": 125,
+      "Defense": 100,
+      "Sp. Attack": 55,
+      "Sp. Defense": 70,
+      "Speed": 85
+    }
+  },
+  {
+    "id": 128,
+    "slug": "tauros",
+    "name": {
+      "english": "Tauros",
+      "japanese": "ケンタロス"
+    },
+    "type": ["Normal"],
+    "base": {
+      "HP": 75,
+      "Attack": 100,
+      "Defense": 95,
+      "Sp. Attack": 40,
+      "Sp. Defense": 70,
+      "Speed": 110
+    }
+  },
+  {
+    "id": 129,
+    "slug": "magikarp",
+    "name": {
+      "english": "Magikarp",
+      "japanese": "コイキング"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 20,
+      "Attack": 10,
+      "Defense": 55,
+      "Sp. Attack": 15,
+      "Sp. Defense": 20,
+      "Speed": 80
+    }
+  },
+  {
+    "id": 130,
+    "slug": "gyarados",
+    "name": {
+      "english": "Gyarados",
+      "japanese": "ギャラドス"
+    },
+    "type": ["Water", "Flying"],
+    "base": {
+      "HP": 95,
+      "Attack": 125,
+      "Defense": 79,
+      "Sp. Attack": 60,
+      "Sp. Defense": 100,
+      "Speed": 81
+    }
+  },
+  {
+    "id": 131,
+    "slug": "lapras",
+    "name": {
+      "english": "Lapras",
+      "japanese": "ラプラス"
+    },
+    "type": ["Water", "Ice"],
+    "base": {
+      "HP": 130,
+      "Attack": 85,
+      "Defense": 80,
+      "Sp. Attack": 85,
+      "Sp. Defense": 95,
+      "Speed": 60
+    }
+  },
+  {
+    "id": 132,
+    "slug": "ditto",
+    "name": {
+      "english": "Ditto",
+      "japanese": "メタモン"
+    },
+    "type": ["Normal"],
+    "base": {
+      "HP": 48,
+      "Attack": 48,
+      "Defense": 48,
+      "Sp. Attack": 48,
+      "Sp. Defense": 48,
+      "Speed": 48
+    }
+  },
+  {
+    "id": 133,
+    "slug": "eevee",
+    "name": {
+      "english": "Eevee",
+      "japanese": "イーブイ"
+    },
+    "type": ["Normal"],
+    "base": {
+      "HP": 55,
+      "Attack": 55,
+      "Defense": 50,
+      "Sp. Attack": 45,
+      "Sp. Defense": 65,
+      "Speed": 55
+    }
+  },
+  {
+    "id": 134,
+    "slug": "vaporeon",
+    "name": {
+      "english": "Vaporeon",
+      "japanese": "シャワーズ"
+    },
+    "type": ["Water"],
+    "base": {
+      "HP": 130,
+      "Attack": 65,
+      "Defense": 60,
+      "Sp. Attack": 110,
+      "Sp. Defense": 95,
+      "Speed": 65
+    }
+  },
+  {
+    "id": 135,
+    "slug": "jolteon",
+    "name": {
+      "english": "Jolteon",
+      "japanese": "サンダース"
+    },
+    "type": ["Electric"],
+    "base": {
+      "HP": 65,
+      "Attack": 65,
+      "Defense": 60,
+      "Sp. Attack": 110,
+      "Sp. Defense": 95,
+      "Speed": 130
+    }
+  },
+  {
+    "id": 136,
+    "slug": "flareon",
+    "name": {
+      "english": "Flareon",
+      "japanese": "ブースター"
+    },
+    "type": ["Fire"],
+    "base": {
+      "HP": 65,
+      "Attack": 130,
+      "Defense": 60,
+      "Sp. Attack": 95,
+      "Sp. Defense": 110,
+      "Speed": 65
+    }
+  },
+  {
+    "id": 137,
+    "slug": "porygon",
+    "name": {
+      "english": "Porygon",
+      "japanese": "ポリゴン"
+    },
+    "type": ["Normal"],
+    "base": {
+      "HP": 65,
+      "Attack": 60,
+      "Defense": 70,
+      "Sp. Attack": 85,
+      "Sp. Defense": 75,
+      "Speed": 40
+    }
+  },
+  {
+    "id": 138,
+    "slug": "omanyte",
+    "name": {
+      "english": "Omanyte",
+      "japanese": "オムナイト"
+    },
+    "type": ["Rock", "Water"],
+    "base": {
+      "HP": 35,
+      "Attack": 40,
+      "Defense": 100,
+      "Sp. Attack": 90,
+      "Sp. Defense": 55,
+      "Speed": 35
+    }
+  },
+  {
+    "id": 139,
+    "slug": "omastar",
+    "name": {
+      "english": "Omastar",
+      "japanese": "オムスター"
+    },
+    "type": ["Rock", "Water"],
+    "base": {
+      "HP": 70,
+      "Attack": 60,
+      "Defense": 125,
+      "Sp. Attack": 115,
+      "Sp. Defense": 70,
+      "Speed": 55
+    }
+  },
+  {
+    "id": 140,
+    "slug": "kabuto",
+    "name": {
+      "english": "Kabuto",
+      "japanese": "カブト"
+    },
+    "type": ["Rock", "Water"],
+    "base": {
+      "HP": 30,
+      "Attack": 80,
+      "Defense": 90,
+      "Sp. Attack": 55,
+      "Sp. Defense": 45,
+      "Speed": 55
+    }
+  },
+  {
+    "id": 141,
+    "slug": "kabutops",
+    "name": {
+      "english": "Kabutops",
+      "japanese": "カブトプス"
+    },
+    "type": ["Rock", "Water"],
+    "base": {
+      "HP": 60,
+      "Attack": 115,
+      "Defense": 105,
+      "Sp. Attack": 65,
+      "Sp. Defense": 70,
+      "Speed": 80
+    }
+  },
+  {
+    "id": 142,
+    "slug": "aerodactyl",
+    "name": {
+      "english": "Aerodactyl",
+      "japanese": "プテラ"
+    },
+    "type": ["Rock", "Flying"],
+    "base": {
+      "HP": 80,
+      "Attack": 105,
+      "Defense": 65,
+      "Sp. Attack": 60,
+      "Sp. Defense": 75,
+      "Speed": 130
+    }
+  },
+  {
+    "id": 143,
+    "slug": "snorlax",
+    "name": {
+      "english": "Snorlax",
+      "japanese": "カビゴン"
+    },
+    "type": ["Normal"],
+    "base": {
+      "HP": 160,
+      "Attack": 110,
+      "Defense": 65,
+      "Sp. Attack": 65,
+      "Sp. Defense": 110,
+      "Speed": 30
+    }
+  },
+  {
+    "id": 144,
+    "slug": "articuno",
+    "name": {
+      "english": "Articuno",
+      "japanese": "フリーザー"
+    },
+    "type": ["Ice", "Flying"],
+    "base": {
+      "HP": 90,
+      "Attack": 85,
+      "Defense": 100,
+      "Sp. Attack": 95,
+      "Sp. Defense": 125,
+      "Speed": 85
+    }
+  },
+  {
+    "id": 145,
+    "slug": "zapdos",
+    "name": {
+      "english": "Zapdos",
+      "japanese": "サンダー"
+    },
+    "type": ["Electric", "Flying"],
+    "base": {
+      "HP": 90,
+      "Attack": 90,
+      "Defense": 85,
+      "Sp. Attack": 125,
+      "Sp. Defense": 90,
+      "Speed": 100
+    }
+  },
+  {
+    "id": 146,
+    "slug": "moltres",
+    "name": {
+      "english": "Moltres",
+      "japanese": "ファイヤー"
+    },
+    "type": ["Fire", "Flying"],
+    "base": {
+      "HP": 90,
+      "Attack": 100,
+      "Defense": 90,
+      "Sp. Attack": 125,
+      "Sp. Defense": 85,
+      "Speed": 90
+    }
+  },
+  {
+    "id": 147,
+    "slug": "dratini",
+    "name": {
+      "english": "Dratini",
+      "japanese": "ミニリュウ"
+    },
+    "type": ["Dragon"],
+    "base": {
+      "HP": 41,
+      "Attack": 64,
+      "Defense": 45,
+      "Sp. Attack": 50,
+      "Sp. Defense": 50,
+      "Speed": 50
+    }
+  },
+  {
+    "id": 148,
+    "slug": "dragonair",
+    "name": {
+      "english": "Dragonair",
+      "japanese": "ハクリュー"
+    },
+    "type": ["Dragon"],
+    "base": {
+      "HP": 61,
+      "Attack": 84,
+      "Defense": 65,
+      "Sp. Attack": 70,
+      "Sp. Defense": 70,
+      "Speed": 70
+    }
+  },
+  {
+    "id": 149,
+    "slug": "dragonite",
+    "name": {
+      "english": "Dragonite",
+      "japanese": "カイリュー"
+    },
+    "type": ["Dragon", "Flying"],
+    "base": {
+      "HP": 91,
+      "Attack": 134,
+      "Defense": 95,
+      "Sp. Attack": 100,
+      "Sp. Defense": 100,
+      "Speed": 80
+    }
+  },
+  {
+    "id": 150,
+    "slug": "mewtwo",
+    "name": {
+      "english": "Mewtwo",
+      "japanese": "ミュウツー"
+    },
+    "type": ["Psychic"],
+    "base": {
+      "HP": 106,
+      "Attack": 110,
+      "Defense": 90,
+      "Sp. Attack": 154,
+      "Sp. Defense": 90,
+      "Speed": 130
+    }
+  },
+  {
+    "id": 151,
+    "slug": "mew",
+    "name": {
+      "english": "Mew",
+      "japanese": "ミュウ"
+    },
+    "type": ["Psychic"],
+    "base": {
+      "HP": 100,
+      "Attack": 100,
+      "Defense": 100,
+      "Sp. Attack": 100,
+      "Sp. Defense": 100,
+      "Speed": 100
+    }
+  },
+  {
+    "id": 175,
+    "slug": "togepi",
+    "name": {
+      "english": "Togepi",
+      "japanese": "トゲピー"
+    },
+    "type": ["Fairy"],
+    "base": {
+      "HP": 35,
+      "Attack": 20,
+      "Defense": 65,
+      "Sp. Attack": 40,
+      "Sp. Defense": 65,
+      "Speed": 20
+    }
+  }
+]
