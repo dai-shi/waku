@@ -16,7 +16,7 @@ export default defineEntries(
       await fsPromises.readFile(
         path.join(
           path.dirname(fileURLToPath(import.meta.url)),
-          '../db/items.json',
+          '../private/items.json',
         ),
         'utf8',
       ),

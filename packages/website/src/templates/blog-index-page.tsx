@@ -58,12 +58,12 @@ const getArticles = async () => {
   const blogFileNames: Array<string> = [];
   const blogArticles: Array<any> = [];
 
-  readdirSync('./contents').forEach((fileName) => {
+  readdirSync('./private/contents').forEach((fileName) => {
     blogFileNames.push(fileName);
   });
 
   for await (const fileName of blogFileNames) {
-    const path = `./contents/${fileName}`;
+    const path = `./private/contents/${fileName}`;
     const source = readFileSync(path, 'utf8');
     const mdx = await compileMDX({
       source,

@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { cpSync, mkdirSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 
 import type { ResolvedConfig } from '../config.js';
 
@@ -28,6 +28,13 @@ export const emitVercelOutput = async (
       path.join(serverlessDir, config.distDir),
       { recursive: true },
     );
+    if (existsSync(path.join(rootDir, config.privateDir))) {
+      cpSync(
+        path.join(rootDir, config.privateDir),
+        path.join(serverlessDir, config.privateDir),
+        { recursive: true, dereference: true },
+      );
+    }
     const vcConfigJson = {
       runtime: 'nodejs18.x',
       handler: `${config.distDir}/${config.serveJs}`,

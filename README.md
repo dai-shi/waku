@@ -655,7 +655,7 @@ Waku projects can be deployed to Netlify with the [Netlify CLI](https://docs.net
 
 ```
 npm run build -- --with-netlify
-netlify deploy --dir=dist/public
+netlify deploy
 ```
 
 #### Pure SSG
