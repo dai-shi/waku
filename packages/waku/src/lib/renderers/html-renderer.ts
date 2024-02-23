@@ -52,7 +52,10 @@ Promise.resolve(new Response(new ReadableStream({
   .map((line) => line.trim())
   .join('');
 
-const injectScript = (mainJsPath: string, urlForFakeFetch: string) => {
+const injectScript = (
+  urlForFakeFetch: string,
+  mainJsPath: string, // for DEV only, pass `''` for PRD
+) => {
   const modifyHead = (data: string) => {
     const matchPrefetched = data.match(
       // HACK This is very brittle
@@ -100,7 +103,9 @@ globalThis.__WAKU_PREFETCHED__ = {
         }
         headSent = true;
         data = modifyHead(data);
-        data += `<script src="${mainJsPath}" async type="module"></script>`
+        if (mainJsPath) {
+          data += `<script src="${mainJsPath}" async type="module"></script>`;
+        }
       }
       controller.enqueue(encoder.encode(data));
       data = '';
@@ -326,8 +331,8 @@ export const renderHtml = async (
     .pipeThrough(rectifyHtml())
     .pipeThrough(
       injectScript(
-        `${config.basePath}${config.srcDir}/${config.mainJs}`,
         config.basePath + config.rscPath + '/' + encodeInput(ssrConfig.input),
+        isDev ? `${config.basePath}${config.srcDir}/${config.mainJs}` : '',
       ),
     )
     .pipeThrough(injectRSCPayload(stream2));
