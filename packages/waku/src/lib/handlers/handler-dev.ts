@@ -22,6 +22,7 @@ import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscHmrPlugin, hotUpdate } from '../plugins/vite-plugin-rsc-hmr.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
+import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 
@@ -56,6 +57,7 @@ export function createHandler<
       plugins: [
         patchReactRefresh(viteReact()),
         rscEnvPlugin({ config, hydrate: ssr }),
+        rscPrivatePlugin(config),
         rscIndexPlugin(config),
         rscHmrPlugin(),
         { name: 'nonjs-resolve-plugin' }, // dummy to match with dev-worker-impl.ts
