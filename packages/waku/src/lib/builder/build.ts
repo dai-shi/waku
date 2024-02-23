@@ -112,29 +112,30 @@ const analyzeEntries = async (
       }
     }
   }
-  // const analyzeInlineConfig =
-  await buildVite({
-    plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet)],
-    ssr: {
-      target: 'webworker',
-      resolve: {
-        // conditions: ['react-server', 'workerd'],
-        // externalConditions: ['react-server', 'workerd'],
+  for (const conditions of [[], ['react-server', 'workerd']]) {
+    await buildVite({
+      plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet)],
+      ssr: {
+        target: 'webworker',
+        resolve: {
+          conditions,
+          externalConditions: conditions,
+        },
+        noExternal: /^(?!node:)/,
       },
-      noExternal: /^(?!node:)/,
-    },
-    build: {
-      write: false,
-      ssr: true,
-      rollupOptions: {
-        onwarn,
-        input: {
-          ...Object.fromEntries(moduleFileMap),
-          entries: entriesFile,
+      build: {
+        write: false,
+        ssr: true,
+        rollupOptions: {
+          onwarn,
+          input: {
+            ...Object.fromEntries(moduleFileMap),
+            entries: entriesFile,
+          },
         },
       },
-    },
-  });
+    });
+  }
   const clientEntryFiles = Object.fromEntries(
     await Promise.all(
       Array.from(clientFileSet).map(async (fname, i) => [
