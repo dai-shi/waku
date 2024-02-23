@@ -9,7 +9,7 @@ export function rscPrivatePlugin({
 }): Plugin {
   let privatePath: string;
   return {
-    name: 'rsc-env-plugin',
+    name: 'rsc-private-plugin',
     configResolved(config) {
       privatePath = joinPath(config.root, privateDir);
     },
