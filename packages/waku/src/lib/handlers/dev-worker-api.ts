@@ -75,6 +75,7 @@ export function initializeWorker(config: ResolvedConfig) {
         );
         setEnvironmentData('CONFIG_SRC_DIR', config.srcDir);
         setEnvironmentData('CONFIG_ENTRIES_JS', config.entriesJs);
+        setEnvironmentData('CONFIG_PRIVATE_DIR', config.privateDir);
         const worker = new Worker(
           new URL('dev-worker-impl.js', import.meta.url),
           {

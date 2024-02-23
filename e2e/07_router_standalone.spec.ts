@@ -1,12 +1,13 @@
 import { debugChildProcess, getFreePort, terminate, test } from './utils.js';
 import { fileURLToPath } from 'node:url';
-import { cp, mkdtemp, rm } from 'node:fs/promises';
+import { cp, mkdtemp } from 'node:fs/promises';
 import { exec, execSync } from 'node:child_process';
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import waitPort from 'wait-port';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { createRequire } from 'node:module';
 
 const testMatrix = [{ withSSR: false }, { withSSR: true }] as const;
 
@@ -15,6 +16,9 @@ const exampleDir = fileURLToPath(
   new URL('../examples/07_router', import.meta.url),
 );
 const wakuDir = fileURLToPath(new URL('../packages/waku', import.meta.url));
+const { version } = createRequire(import.meta.url)(
+  join(wakuDir, 'package.json'),
+);
 
 async function testRouterExample(page: Page, port: number) {
   await waitPort({
@@ -50,17 +54,14 @@ test.describe('07_router standalone', () => {
       },
       recursive: true,
     });
-    execSync('npm install', {
-      cwd: standaloneDir,
+    execSync(`pnpm pack --pack-destination ${standaloneDir}`, {
+      cwd: wakuDir,
       stdio: 'inherit',
     });
-    await rm(`${standaloneDir}/node_modules/waku`, {
-      recursive: true,
-      force: true,
-    });
-    // copy waku
-    await cp(wakuDir, `${standaloneDir}/node_modules/waku`, {
-      recursive: true,
+    const name = `waku-${version}.tgz`;
+    execSync(`npm install ${join(standaloneDir, name)}`, {
+      cwd: standaloneDir,
+      stdio: 'inherit',
     });
   });
 

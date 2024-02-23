@@ -41,7 +41,7 @@
     "examples:prd:13_path-alias": "NAME=13_path-alias pnpm run examples:prd",
     "website:dev": "(cd packages/website && pnpm run dev)",
     "website:build": "cd packages/website && pnpm run build",
-    "website:vercel": "pnpm run compile && pnpm run website:build --with-vercel-static && mv packages/website/.vercel/output .vercel/ && (cp -r README.md packages/website/contents .vercel/output/functions/RSC.func/ ; true)",
+    "website:vercel": "pnpm run compile && pnpm run website:build --with-vercel-static && mv packages/website/.vercel/output .vercel/",
     "website:prd": "pnpm run website:build && (cd packages/website && pnpm start)"
   },
   "prettier": {

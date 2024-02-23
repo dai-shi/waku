@@ -17,7 +17,7 @@ export const BlogArticlePage = async ({ slug }: BlogArticlePageProps) => {
 
   if (!fileName) return null;
 
-  const path = `./contents/${fileName}`;
+  const path = `./private/contents/${fileName}`;
   const source = readFileSync(path, 'utf8');
   const mdx = await compileMDX({
     source,
@@ -100,12 +100,12 @@ const getFileName = async (slug: string) => {
   const blogFileNames: Array<string> = [];
   const blogSlugToFileName: Record<string, string> = {};
 
-  readdirSync('./contents').forEach((fileName) => {
+  readdirSync('./private/contents').forEach((fileName) => {
     blogFileNames.push(fileName);
   });
 
   for await (const fileName of blogFileNames) {
-    const path = `./contents/${fileName}`;
+    const path = `./private/contents/${fileName}`;
     const source = readFileSync(path, 'utf8');
     const mdx = await compileMDX({
       source,
