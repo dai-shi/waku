@@ -27,6 +27,7 @@ import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
+import { viteHot } from '../plugins/vite-plugin-rsc-hmr.js';
 
 const { default: module } = await import('node:module');
 const HAS_MODULE_REGISTER = typeof module.register === 'function';
@@ -161,7 +162,8 @@ const mergedViteConfig = await mergeUserViteConfig({
 });
 
 const vitePromise = createViteServer(mergedViteConfig).then(async (vite) => {
-  await vite.ws.close();
+  const hot = viteHot(vite);
+  await hot.close();
   return vite;
 });
 
