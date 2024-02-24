@@ -11,5 +11,5 @@
     "types": ["react/experimental"],
     "jsx": "react-jsx"
   },
-  "include": ["src", "lib", "server.ts"]
+  "include": ["**/*.ts", "**/*.tsx"]
 }

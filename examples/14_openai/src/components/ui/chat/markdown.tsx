@@ -3,7 +3,6 @@ import ReactMarkdown, { Options } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeHighlight from 'rehype-highlight';
-import 'rehype-highlight';
 
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { cn } from '../../ui/lib/utils.js';
@@ -25,18 +24,19 @@ export default function Markdown({ content }: { content: string }) {
           return <p className="mb-2 last:mb-0">{children}</p>;
         },
         code(props) {
-          const { children, className, node, ...rest } = props;
+          const { children, className, ...rest } = props;
           const match = /language-(\w+)/.exec(className || '');
           return match ? (
             <SyntaxHighlighter
               {...rest}
               PreTag="div"
-              children={String(children).replace(/\n$/, '')}
               language={match[1]}
               className={cn(className, 'rounded-md', 'my-1')}
               style={undefined}
               ref={undefined}
-            />
+            >
+              {String(children).replace(/\n$/, '')}
+            </SyntaxHighlighter>
           ) : (
             <code {...rest} className={className}>
               {children}

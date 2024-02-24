@@ -14,7 +14,7 @@ import type { LLM } from 'llamaindex';
 
 const app = new Hono();
 
-app.post('/api/chat', async (context, next) => {
+app.post('/api/chat', async (context) => {
   const body = await context.req.json();
   const {
     messages,

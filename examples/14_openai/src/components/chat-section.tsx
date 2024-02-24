@@ -6,7 +6,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai/react';
 import { Suspense, useCallback } from 'react';
 import { atom } from 'jotai/vanilla';
 import { atomWithStorage } from 'jotai/utils';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 
 const {
   messagesAtom,
@@ -73,13 +73,13 @@ export default function ChatSection() {
           onChange={useCallback(
             (e: React.ChangeEvent<HTMLInputElement>) =>
               setApiKey(e.target.value),
-            [],
+            [setApiKey],
           )}
           placeholder="OpenAPI Key"
           className="w-full rounded-xl p-4 shadow-xl"
         />
         <button
-          onClick={useCallback(() => setApiKey(null), [])}
+          onClick={useCallback(() => setApiKey(null), [setApiKey])}
           className="bg-red-500 rounded-xl p-4 text-white shadow-xl"
         >
           Clear

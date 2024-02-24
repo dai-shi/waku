@@ -1,6 +1,5 @@
 import '../styles.css';
 
-import { Toaster } from 'sonner';
 import type { ReactNode } from 'react';
 
 import { Footer } from '../components/footer.js';
