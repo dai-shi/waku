@@ -42,7 +42,10 @@ import { renderHtml } from '../renderers/html-renderer.js';
 import { CLIENT_MODULE_MAP } from '../handlers/handler-dev.js';
 import { CLIENT_PREFIX } from '../handlers/handler-prd.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
-import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
+import {
+  rscAnalyzePlugin,
+  type EntryFiles,
+} from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
@@ -52,6 +55,7 @@ import { emitNetlifyOutput } from './output-netlify.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
 import { emitPartyKitOutput } from './output-partykit.js';
 import { emitAwsLambdaOutput } from './output-aws-lambda.js';
+import { hash } from '../utils/crypto.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -72,18 +76,6 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   }
   defaultHandler(warning);
 };
-
-const hash = (fname: string) =>
-  new Promise<string>((resolve) => {
-    const sha256 = createHash('sha256');
-    sha256.on('readable', () => {
-      const data = sha256.read();
-      if (data) {
-        resolve(data.toString('hex').slice(0, 9));
-      }
-    });
-    createReadStream(fname).pipe(sha256);
-  });
 
 const analyzeEntries = async (
   rootDir: string,
@@ -112,9 +104,15 @@ const analyzeEntries = async (
       }
     }
   }
-  for (const conditions of [[], ['react-server', 'workerd']]) {
+
+  const clientEntryFiles: EntryFiles = {
+    [`${config.assetsDir}/rsc${0}-${await hash(wakuClientDist)}`]:
+      wakuClientDist,
+  };
+  const serverEntryFiles: EntryFiles = {};
+  for (const conditions of [['react-server', 'workerd']]) {
     await buildVite({
-      plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet)],
+      plugins: [rscAnalyzePlugin(config, clientEntryFiles, serverEntryFiles)],
       ssr: {
         target: 'webworker',
         resolve: {
@@ -136,20 +134,20 @@ const analyzeEntries = async (
       },
     });
   }
-  const clientEntryFiles = Object.fromEntries(
-    await Promise.all(
-      Array.from(clientFileSet).map(async (fname, i) => [
-        `${config.assetsDir}/rsc${i}-${await hash(fname)}`,
-        fname,
-      ]),
-    ),
-  );
-  const serverEntryFiles = Object.fromEntries(
-    Array.from(serverFileSet).map((fname, i) => [
-      `${config.assetsDir}/rsf${i}`,
-      fname,
-    ]),
-  );
+  // const clientEntryFiles = Object.fromEntries(
+  //   await Promise.all(
+  //     Array.from(clientFileSet).map(async (fname, i) => [
+  //       `${config.assetsDir}/rsc${i}-${await hash(fname)}`,
+  //       fname,
+  //     ]),
+  //   ),
+  // );
+  // const serverEntryFiles = Object.fromEntries(
+  //   Array.from(serverFileSet).map((fname, i) => [
+  //     `${config.assetsDir}/rsf${i}`,
+  //     fname,
+  //   ]),
+  // );
   const serverModuleFiles = Object.fromEntries(moduleFileMap);
   return {
     clientEntryFiles,
