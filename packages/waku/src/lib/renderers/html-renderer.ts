@@ -35,9 +35,8 @@ const fakeFetchCode = `
 Promise.resolve(new Response(new ReadableStream({
   start(c) {
     const d = (self.__FLIGHT_DATA ||= []);
-    const f = (s) => c.enqueue(
-      typeof s === 'string' ? new TextEncoder().encode(s) : s
-    );
+    const t = new TextEncoder();
+    const f = (s) => c.enqueue(typeof s === 'string' ? t.encode(s) : s);
     d.forEach(f);
     d.push = f;
     if (document.readyState === 'loading') {
