@@ -1,0 +1,44 @@
+{
+  "name": "waku-starter",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "NODE_ENV=development node --import 'data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"));' --env-file=.env.local server.js",
+    "build": "waku build",
+    "start": "NODE_ENV=production node --loader ts-node/esm --env-file=.env server.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "1.7.0",
+    "@radix-ui/react-slot": "^1.0.2",
+    "ai": "^2.2.36",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.0",
+    "hono": "4.0.0",
+    "jotai": "^2.6.4",
+    "jotai-ai": "^0.0.7",
+    "jotai-effect": "^0.5.0",
+    "llamaindex": "^0.1.16",
+    "lucide-react": "^0.338.0",
+    "react": "18.3.0-canary-a515d753b-20240220",
+    "react-dom": "18.3.0-canary-a515d753b-20240220",
+    "react-markdown": "^9.0.1",
+    "react-server-dom-webpack": "18.3.0-canary-a515d753b-20240220",
+    "react-syntax-highlighter": "^15.5.0",
+    "rehype-highlight": "^7.0.0",
+    "remark-gfm": "^4.0.0",
+    "remark-math": "^6.0.0",
+    "sonner": "^1.4.1",
+    "tailwind-merge": "^2.2.1",
+    "ts-node": "^10.9.2",
+    "waku": "0.19.3"
+  },
+  "devDependencies": {
+    "@types/react": "18.2.55",
+    "@types/react-dom": "18.2.19",
+    "@types/react-syntax-highlighter": "^15.5.11",
+    "autoprefixer": "10.4.17",
+    "tailwindcss": "3.4.1",
+    "typescript": "5.3.3"
+  }
+}
