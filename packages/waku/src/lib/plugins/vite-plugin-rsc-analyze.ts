@@ -9,10 +9,7 @@ export function rscAnalyzePlugin(
   clientFileSet: Set<string>,
   serverFileSet: Set<string>,
 ): Plugin {
-  const rscTransform = rscTransformPlugin({ isBuild: false })
-    .transform as ReturnType<typeof rscAnalyzePlugin>['transform'] & {
-    handler: undefined;
-  };
+  const rscTransform = rscTransformPlugin({ isBuild: false }).transform;
   const clientEntryCallback = (id: string) => clientFileSet.add(id);
   const serverEntryCallback = (id: string) => serverFileSet.add(id);
   return {
@@ -37,8 +34,13 @@ export function rscAnalyzePlugin(
           }
         }
       }
-      // TODO this isn't efficient. let's refactor it in the future.
-      return rscTransform.call(this, code, id, options);
+      // Avoid walking after the client boundary
+      if (clientFileSet.has(id)) {
+        // TODO this isn't efficient. let's refactor it in the future.
+        return (
+          rscTransform as typeof rscTransform & { handler: undefined }
+        ).call(this, code, id, options);
+      }
     },
   };
 }
