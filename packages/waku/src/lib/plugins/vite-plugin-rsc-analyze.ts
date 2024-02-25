@@ -2,10 +2,15 @@ import path from 'node:path';
 import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 
+// HACK: Is it common to depend on another plugin like this?
+import { rscTransformPlugin } from './vite-plugin-rsc-transform.js';
+
 export function rscAnalyzePlugin(
   clientFileSet: Set<string>,
   serverFileSet: Set<string>,
 ): Plugin {
+  const rscTransform = rscTransformPlugin({ isBuild: false }).transform;
+  // TODO this is unused. a leftover in #490. remove it.
   const dependencyMap = new Map<string, Set<string>>();
   const clientEntryCallback = (id: string) => clientFileSet.add(id);
   const serverEntryCallback = (id: string) => serverFileSet.add(id);
@@ -19,7 +24,7 @@ export function rscAnalyzePlugin(
   };
   return {
     name: 'rsc-analyze-plugin',
-    async transform(code, id) {
+    async transform(code, id, options) {
       const ext = path.extname(id);
       if (['.ts', '.tsx', '.js', '.jsx', '.mjs'].includes(ext)) {
         const mod = swc.parseSync(code, {
@@ -45,7 +50,8 @@ export function rscAnalyzePlugin(
           }
         }
       }
-      return code;
+      // TODO this isn't efficient. let's refactor it in the future.
+      return (rscTransform as any).call(this, code, id, options);
     },
   };
 }
