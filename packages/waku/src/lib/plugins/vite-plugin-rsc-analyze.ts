@@ -1,5 +1,4 @@
 import path from 'node:path';
-// import { createServer as createViteServer } from 'vite';
 import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 import * as RSDWNodeLoader from 'react-server-dom-webpack/node-loader';
@@ -13,40 +12,13 @@ export function rscAnalyzePlugin(
   clientEntryFiles: EntryFiles,
   serverEntryFiles: EntryFiles,
 ): Plugin[] {
-  // const clientEntryFiles = Object.fromEntries(
-  //   await Promise.all(
-  //     Array.from(clientFileSet).map(async (fname, i) => [
-  //       `${config.assetsDir}/rsc${i}-${await hash(fname)}`,
-  //       fname,
-  //     ]),
-  //   ),
-  // );
-  // const serverEntryFiles = Object.fromEntries(
-  //   Array.from(serverFileSet).map((fname, i) => [
-  //     `${config.assetsDir}/rsf${i}`,
-  //     fname,
-  //   ]),
-  // );
-  const dependencyMap = new Map<string, Set<string>>();
-  const clientEntryPromiseMap = new Map<string, Promise<unknown>>()
   const clientEntryCallback = async (id: string) => {
-    if (clientEntryPromiseMap.has(id)) {
-      return clientEntryPromiseMap.get(id) 
-    }
-    
     if (Object.values(clientEntryFiles).includes(id)) {
       return;
     }
-    let res: (value:unknown) => void
-    const promise = new Promise((r) => res = r)
-    clientEntryPromiseMap.set(id, promise)
-    console.log('clientEntryCallback start', id)
-
     clientEntryFiles[
       `${config.assetsDir}/rsc${Object.keys(clientEntryFiles).length}-${await hash(id)}`
     ] = id;
-    console.log('clientEntryCallback done', id)
-    res!(undefined)
   };
   const serverEntryCallback = (id: string) => {
     if (Object.values(serverEntryFiles).includes(id)) {
@@ -60,20 +32,8 @@ export function rscAnalyzePlugin(
       }
     }
   };
-  // const dependencyCallback = (id: string, depId: string) => {
-  //   let depSet = dependencyMap.get(id);
-  //   if (!depSet) {
-  //     depSet = new Set();
-  //     dependencyMap.set(id, depSet);
-  //   }
-  //   depSet.add(depId);
-  // };
-  // let viteClientServer: ViteDevServer;
 
   const getClientId = async (id: string) => {
-    console.log(id, clientEntryPromiseMap)
-    await clientEntryPromiseMap.get(id)
-    console.log('hereeee', clientEntryFiles)
     for (const [k, v] of Object.entries(clientEntryFiles)) {
       if (v === id) {
         return `@id/${k}.js`;
