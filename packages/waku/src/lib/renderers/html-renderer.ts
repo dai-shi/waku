@@ -44,8 +44,8 @@ Promise.resolve(new Response(new ReadableStream({
 
 const injectRscPayload = (
   readable: ReadableStream,
-  mainJsPath: string,
   urlForFakeFetch: string,
+  mainJsPath: string, // for DEV only, pass `''` for PRD
 ) => {
   const chunks: Uint8Array[] = [];
   const copied = readable.pipeThrough(
@@ -104,7 +104,7 @@ globalThis.__WAKU_PREFETCHED__ = {
       if (scriptsClosed) {
         return;
       }
-      if (!mainJsSent) {
+      if (mainJsPath && !mainJsSent) {
         // enqueue `mainJs` first in the body to avoid the document.body undefined error, before we used to inject it in the head which sometimes made it load before the document.body was loaded
         controller.enqueue(
           encoder.encode(
@@ -349,8 +349,8 @@ export const renderHtml = async (
   );
   const [copied, interleave] = injectRscPayload(
     stream,
-    `${config.basePath}${config.srcDir}/${config.mainJs}`,
     config.basePath + config.rscPath + '/' + encodeInput(ssrConfig.input),
+    isDev ? `${config.basePath}${config.srcDir}/${config.mainJs}` : '',
   );
   const elements: Promise<Record<string, ReactNode>> = createFromReadableStream(
     copied,
