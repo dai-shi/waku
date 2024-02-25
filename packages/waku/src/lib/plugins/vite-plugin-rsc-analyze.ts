@@ -9,19 +9,12 @@ export function rscAnalyzePlugin(
   clientFileSet: Set<string>,
   serverFileSet: Set<string>,
 ): Plugin {
-  const rscTransform = rscTransformPlugin({ isBuild: false }).transform;
-  // TODO this is unused. a leftover in #490. remove it.
-  const dependencyMap = new Map<string, Set<string>>();
+  const rscTransform = rscTransformPlugin({ isBuild: false })
+    .transform as ReturnType<typeof rscAnalyzePlugin>['transform'] & {
+    handler: undefined;
+  };
   const clientEntryCallback = (id: string) => clientFileSet.add(id);
   const serverEntryCallback = (id: string) => serverFileSet.add(id);
-  const dependencyCallback = (id: string, depId: string) => {
-    let depSet = dependencyMap.get(id);
-    if (!depSet) {
-      depSet = new Set();
-      dependencyMap.set(id, depSet);
-    }
-    depSet.add(depId);
-  };
   return {
     name: 'rsc-analyze-plugin',
     async transform(code, id, options) {
@@ -42,16 +35,10 @@ export function rscAnalyzePlugin(
               serverEntryCallback(id);
             }
           }
-          if (item.type === 'ImportDeclaration') {
-            const resolvedId = await this.resolve(item.source.value, id);
-            if (resolvedId) {
-              dependencyCallback(id, resolvedId.id);
-            }
-          }
         }
       }
       // TODO this isn't efficient. let's refactor it in the future.
-      return (rscTransform as any).call(this, code, id, options);
+      return rscTransform.call(this, code, id, options);
     },
   };
 }
