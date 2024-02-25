@@ -9,7 +9,10 @@ export function rscAnalyzePlugin(
   clientFileSet: Set<string>,
   serverFileSet: Set<string>,
 ): Plugin {
-  const rscTransform = rscTransformPlugin({ isBuild: false }).transform as ReturnType<typeof rscAnalyzePlugin>['transform'] & { handler: undefined };
+  const rscTransform = rscTransformPlugin({ isBuild: false })
+    .transform as ReturnType<typeof rscAnalyzePlugin>['transform'] & {
+    handler: undefined;
+  };
   const clientEntryCallback = (id: string) => clientFileSet.add(id);
   const serverEntryCallback = (id: string) => serverFileSet.add(id);
   return {
