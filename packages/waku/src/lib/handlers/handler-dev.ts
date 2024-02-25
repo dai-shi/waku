@@ -126,16 +126,6 @@ export function createHandler<
     });
   };
 
-  const willBeHandledByVite = async (pathname: string) => {
-    const vite = await vitePromise;
-    try {
-      const result = await vite.transformRequest(pathname);
-      return !!result;
-    } catch {
-      return false;
-    }
-  };
-
   return async (req, res, next) => {
     const [config, vite] = await Promise.all([configPromise, vitePromise]);
     const basePrefix = config.basePath + config.rscPath + '/';
@@ -178,7 +168,7 @@ export function createHandler<
       }
       return;
     }
-    if (ssr && !(await willBeHandledByVite(req.url.pathname))) {
+    if (ssr) {
       try {
         const readable = await renderHtml({
           config,
@@ -212,8 +202,6 @@ export function createHandler<
             .pipeTo(res.stream);
           return;
         }
-        next();
-        return;
       } catch (e) {
         handleError(e);
         return;
