@@ -147,6 +147,34 @@ importers:
         specifier: 5.3.3
         version: 5.3.3
 
+  e2e/fixtures/ssr-swr:
+    dependencies:
+      react:
+        specifier: 18.3.0-canary-14fd9630e-20240213
+        version: 18.3.0-canary-14fd9630e-20240213
+      react-dom:
+        specifier: 18.3.0-canary-14fd9630e-20240213
+        version: 18.3.0-canary-14fd9630e-20240213(react@18.3.0-canary-14fd9630e-20240213)
+      react-server-dom-webpack:
+        specifier: 18.3.0-canary-14fd9630e-20240213
+        version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
+      swr:
+        specifier: 2.2.5
+        version: 2.2.5(react@18.3.0-canary-14fd9630e-20240213)
+      waku:
+        specifier: workspace:*
+        version: link:../../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 18.2.55
+        version: 18.2.55
+      '@types/react-dom':
+        specifier: 18.2.19
+        version: 18.2.19
+      typescript:
+        specifier: 5.3.3
+        version: 5.3.3
+
   e2e/fixtures/ssr-target-bundle:
     dependencies:
       react:
@@ -159,7 +187,7 @@ importers:
         specifier: 18.3.0-canary-14fd9630e-20240213
         version: 18.3.0-canary-14fd9630e-20240213(react-dom@18.3.0-canary-14fd9630e-20240213)(react@18.3.0-canary-14fd9630e-20240213)(webpack@5.90.1)
       react-textarea-autosize:
-        specifier: ^8.5.3
+        specifier: 8.5.3
         version: 8.5.3(@types/react@18.2.55)(react@18.3.0-canary-14fd9630e-20240213)
       waku:
         specifier: workspace:*
@@ -2575,6 +2603,10 @@ packages:
 
   /classnames@2.3.2:
     resolution: {integrity: sha512-CSbhY4cFEJRe6/GQzIk5qXZ4Jeg5pcsP7b5peFSDpffpe1cqjASH/n9UTjBwOp6XpMSTwQ8Za2K5V02ueA7Tmw==}
+    dev: false
+
+  /client-only@0.0.1:
+    resolution: {integrity: sha512-IV3Ou0jSMzZrd3pZ48nLkT9DA7Ag1pnPzaiQhpW7c3RbcqqzvzzVu+L8gfqMp/8IM2MQtSiqaCxrrcfu8I8rMA==}
     dev: false
 
   /clone-response@1.0.3:
@@ -6157,6 +6189,16 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
+  /swr@2.2.5(react@18.3.0-canary-14fd9630e-20240213):
+    resolution: {integrity: sha512-QtxqyclFeAsxEUeZIYmsaQ0UjimSq1RZ9Un7I68/0ClKK/U3LoyQunwkQfJZr2fc22DfIXLNDc2wFyTEikCUpg==}
+    peerDependencies:
+      react: ^16.11.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      client-only: 0.0.1
+      react: 18.3.0-canary-14fd9630e-20240213
+      use-sync-external-store: 1.2.0(react@18.3.0-canary-14fd9630e-20240213)
+    dev: false
+
   /tailwindcss@3.4.1:
     resolution: {integrity: sha512-qAYmXRfk3ENzuPBakNK0SRrUDipP8NQnEY6772uDhflcQz5EhRdD7JNZxyrFHVQNCwULPBn6FNPp9brpO7ctcA==}
     engines: {node: '>=14.0.0'}
@@ -6556,6 +6598,14 @@ packages:
       '@types/react': 18.2.55
       react: 18.3.0-canary-14fd9630e-20240213
       use-isomorphic-layout-effect: 1.1.2(@types/react@18.2.55)(react@18.3.0-canary-14fd9630e-20240213)
+    dev: false
+
+  /use-sync-external-store@1.2.0(react@18.3.0-canary-14fd9630e-20240213):
+    resolution: {integrity: sha512-eEgnFxGQ1Ife9bzYs6VLi8/4X6CObHMw9Qr9tPY43iKwsPw8xE8+EFsf/2cFZ5S3esXgpWgtSCtLNS41F+sKPA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      react: 18.3.0-canary-14fd9630e-20240213
     dev: false
 
   /util-deprecate@1.0.2:

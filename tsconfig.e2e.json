@@ -17,6 +17,9 @@
     },
     {
       "path": "./e2e/fixtures/ssr-target-bundle/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/ssr-swr/tsconfig.json"
     }
   ]
 }

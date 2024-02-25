@@ -1,5 +1,5 @@
 {
-  "name": "ssr-target-bundle",
+  "name": "ssr-swr",
   "version": "0.1.0",
   "type": "module",
   "private": true,
@@ -12,7 +12,7 @@
     "react": "18.3.0-canary-14fd9630e-20240213",
     "react-dom": "18.3.0-canary-14fd9630e-20240213",
     "react-server-dom-webpack": "18.3.0-canary-14fd9630e-20240213",
-    "react-textarea-autosize": "8.5.3",
+    "swr": "2.2.5",
     "waku": "workspace:*"
   },
   "devDependencies": {
