@@ -14,8 +14,15 @@ const commands = [
     command: 'dev',
   },
   {
+    command: 'dev --with-ssr',
+  },
+  {
     build: 'build',
     command: 'start',
+  },
+  {
+    build: 'build --with-ssr',
+    command: 'start --with-ssr',
   },
 ];
 
