@@ -16,11 +16,7 @@
     "declaration": true,
     "emitDeclarationOnly": true,
     "composite": true,
-    "incremental": true,
-    "paths": {
-      "waku": ["./packages/waku/src/main.ts"],
-      "waku/*": ["./packages/waku/src/*.ts"]
-    }
+    "incremental": true
   },
   "files": [],
   "include": [],

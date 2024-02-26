@@ -1,4 +1,4 @@
-import { createPages } from 'waku';
+import { createPages } from 'waku/router/server';
 
 import { RootLayout } from './pages/root-layout.js';
 import { HomePage } from './pages/home-page.js';
