@@ -7,7 +7,7 @@ import path from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 
 const ssr = !!import.meta.env.WAKU_BUILD_SSR;
-const distDir = import.meta.env.WAKU_CONFIG_DIST_DIR!;
+const distDir = process.env?.WAKU_BUILD_DIST_DIR ?? '';
 const publicDir = import.meta.env.WAKU_CONFIG_PUBLIC_DIR!;
 const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
 
