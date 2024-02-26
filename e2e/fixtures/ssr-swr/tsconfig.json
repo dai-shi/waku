@@ -13,5 +13,10 @@
     "jsx": "react-jsx",
     "rootDir": "./src",
     "outDir": "./dist"
-  }
+  },
+  "references": [
+    {
+      "path": "../../../packages/waku/tsconfig.json"
+    }
+  ]
 }
