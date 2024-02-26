@@ -11,7 +11,7 @@
     "prettier"
   ],
   "settings": {
-    "react": { "version": "detect" },
+    "react": { "version": "999.999.999" },
     "import/resolver": { "typescript": true }
   },
   "parser": "@typescript-eslint/parser",
