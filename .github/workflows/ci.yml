@@ -22,6 +22,8 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
+      # compile waku package for type check
+      - run: pnpm -r --filter='./packages/waku' run compile
       - run: pnpm test
 
   build:
