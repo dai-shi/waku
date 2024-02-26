@@ -180,13 +180,37 @@ import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { HttpApi } from 'aws-cdk-lib/aws-apigatewayv2';
+import { spawnSync } from 'node:child_process';
+import { existsSync, cpSync } from 'node:fs';
+import { join } from 'node:path';
 
 export class WakuStack extends cdk.Stack {
   constructor(scope, id, props) {
     super(scope, id, props);
 
     const fn = new lambda.Function(this, 'waku-lambda', {
-      code: lambda.Code.fromAsset('dist'),
+      code: lambda.Code.fromAsset('dist', {
+        bundling: {
+          image: cdk.DockerImage.fromRegistry('local'),
+          local: {
+            tryBundle(outputDir) {
+              spawnSync(
+                'pnpm',
+                ['exec', 'waku', 'build', '--with-ssr', '--with-aws-lambda'],
+                { stdio: 'inherit' },
+              );
+              cpSync('dist', outputDir, { recursive: true, dereference: true });
+              if (existsSync('private')) {
+                cpSync('private', join(outputDir, 'private'), {
+                  recursive: true,
+                  dereference: true,
+                });
+              }
+              return true;
+            },
+          },
+        },
+      }),
       handler: 'serve.handler',
       architecture: lambda.Architecture.ARM_64,
       runtime: lambda.Runtime.NODEJS_20_X,
@@ -209,14 +233,12 @@ export class WakuStack extends cdk.Stack {
 }
 ```
 
-Build for AWS:
-
-```sh
-pnpm waku build --with-ssr --with-aws-lambda
-```
+This configuration will include all files from the `./private` directory in the final deployment.
 
 deploy to AWS:
 
 ```sh
 pnpm cdk deploy WakuStack
 ```
+
+For more configuration options and how to use a custom domain visit the AWS CDK [documentation](https://docs.aws.amazon.com/cdk/v2/guide/home.html)
