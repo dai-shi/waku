@@ -296,7 +296,7 @@ const buildSsrBundle = async (
     base: config.basePath,
     plugins: [
       rscIndexPlugin({ ...config, cssAssets }),
-      rscEnvPlugin({ config, hydrate: true }),
+      rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
     ],
     ssr: isNodeCompatible
@@ -349,7 +349,6 @@ const buildClientBundle = async (
   config: ResolvedConfig,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
-  ssr: boolean,
 ) => {
   const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
   const nonJsAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
@@ -361,7 +360,7 @@ const buildClientBundle = async (
     plugins: [
       viteReact(),
       rscIndexPlugin({ ...config, cssAssets }),
-      rscEnvPlugin({ config, hydrate: ssr }),
+      rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
     ],
     build: {
@@ -659,13 +658,7 @@ export async function build(options: {
       isNodeCompatible,
     );
   }
-  await buildClientBundle(
-    rootDir,
-    config,
-    clientEntryFiles,
-    serverBuildOutput,
-    !!options.ssr,
-  );
+  await buildClientBundle(rootDir, config, clientEntryFiles, serverBuildOutput);
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
   const buildConfig = await getBuildConfig({ config, entries: distEntries });

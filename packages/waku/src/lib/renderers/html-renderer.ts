@@ -198,7 +198,7 @@ const buildHtml = (
     'html',
     null,
     createElement('head', { dangerouslySetInnerHTML: { __html: head } }),
-    createElement('body', null, body),
+    createElement('body', { 'data-hydrate': true }, body),
   );
 
 export const renderHtml = async (

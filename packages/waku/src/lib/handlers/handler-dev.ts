@@ -56,7 +56,7 @@ export function createHandler<
       base: config.basePath,
       plugins: [
         patchReactRefresh(viteReact()),
-        rscEnvPlugin({ config, hydrate: ssr }),
+        rscEnvPlugin({ config }),
         rscPrivatePlugin(config),
         rscIndexPlugin(config),
         rscHmrPlugin(),
