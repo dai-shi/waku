@@ -29,4 +29,5 @@ export default createPages(async ({ createPage, createLayout }) => {
     path: '/[roomId]',
     component: RoomPage,
   });
-});
+  // fixme: error TS2742
+}) as any;

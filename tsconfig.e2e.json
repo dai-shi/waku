@@ -5,6 +5,7 @@
     "types": ["node"]
   },
   "include": ["playwright.config.base.ts", "playwright.config.ts", "./e2e"],
+  "exclude": ["./e2e/fixtures"],
   "references": [
     {
       "path": "./e2e/fixtures/rsc-basic/tsconfig.json"
