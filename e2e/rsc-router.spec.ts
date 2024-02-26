@@ -59,7 +59,11 @@ for (const { build, command } of commands) {
     test('home', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByTestId('home-title')).toHaveText('Home');
-      await page.getByText('Foo').click();
+      await page.getByTestId('link-to-foo').click();
+      await expect(page.getByTestId('foo-title')).toHaveText('Foo');
+      await page.getByTestId('link-to-home').click();
+      await expect(page.getByTestId('home-title')).toHaveText('Home');
+      await page.getByTestId('a-to-foo').click();
       await expect(page.getByTestId('foo-title')).toHaveText('Foo');
     });
 
