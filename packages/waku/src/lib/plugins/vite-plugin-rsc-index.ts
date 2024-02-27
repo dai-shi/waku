@@ -26,11 +26,18 @@ ${config.htmlHead}
     configureServer(server) {
       return () => {
         server.middlewares.use((req, res) => {
-          server.transformIndexHtml(req.url || '', html).then((content) => {
-            res.statusCode = 200;
-            res.setHeader('content-type', 'text/html; charset=utf-8');
-            res.end(content);
-          });
+          server
+            .transformIndexHtml(req.url || '', html)
+            .then((content) => {
+              res.statusCode = 200;
+              res.setHeader('content-type', 'text/html; charset=utf-8');
+              res.end(content);
+            })
+            .catch((err) => {
+              console.error('Error transforming index.html', err);
+              res.statusCode = 500;
+              res.end('Internal Server Error');
+            });
         });
       };
     },

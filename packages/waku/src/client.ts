@@ -110,6 +110,7 @@ export const fetchRSC = (
     checkStatus(response),
     options,
   );
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
   cache[0] = entry = [input, searchParamsString, setElements, data];
   return data;
 };

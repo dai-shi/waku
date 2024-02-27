@@ -16,9 +16,11 @@ export function Counter({ increase, ping }: CounterProps) {
       <button
         data-testid="ping"
         onClick={() => {
-          ping().then((value) => {
-            setPong(value);
-          });
+          ping()
+            .then((value) => {
+              setPong(value);
+            })
+            .catch(console.error);
         }}
       >
         ping

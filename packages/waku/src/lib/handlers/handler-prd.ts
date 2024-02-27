@@ -34,20 +34,20 @@ export function createHandler<
   return async (req, res, next) => {
     const config = await configPromise;
     const basePrefix = config.basePath + config.rscPath + '/';
-    const handleError = (err: unknown) => {
+    const handleError = async (err: unknown) => {
       if (hasStatusCode(err)) {
         res.setStatus(err.statusCode);
       } else {
         console.info('Cannot render RSC', err);
         res.setStatus(500);
       }
-      endStream(res.stream);
+      await endStream(res.stream);
     };
     let context: Context | undefined;
     try {
       context = unstable_prehook?.(req, res);
     } catch (e) {
-      handleError(e);
+      await handleError(e);
       return;
     }
     if (req.url.pathname.startsWith(basePrefix)) {
@@ -70,10 +70,10 @@ export function createHandler<
         });
         unstable_posthook?.(req, res, context as Context);
         deepFreeze(context);
-        readable.pipeTo(res.stream);
+        await readable.pipeTo(res.stream);
         return;
       } catch (e) {
-        handleError(e);
+        await handleError(e);
         return;
       }
     }
@@ -117,12 +117,12 @@ export function createHandler<
             unstable_posthook?.(req, res, context as Context);
             deepFreeze(context);
             res.setHeader('content-type', 'text/html; charset=utf-8');
-            readable.pipeTo(res.stream);
+            await readable.pipeTo(res.stream);
             return;
           }
         }
       } catch (e) {
-        handleError(e);
+        await handleError(e);
         return;
       }
     }
