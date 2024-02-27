@@ -3,8 +3,6 @@ import { decodeInput, hasStatusCode } from '../renderers/utils.js';
 import { renderRsc } from '../renderers/rsc-renderer.js';
 import type { Middleware } from './types.js';
 
-export const CLIENT_PREFIX = 'client/';
-
 export const rsc: Middleware = (options) => {
   const { config, cmd } = options;
   if (cmd === 'dev') {
