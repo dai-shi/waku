@@ -1,5 +1,5 @@
 {
-  "name": "waku-example",
+  "name": "ssr-swr",
   "version": "0.1.0",
   "type": "module",
   "private": true,
@@ -12,7 +12,8 @@
     "react": "18.3.0-canary-6c3b8dbfe-20240226",
     "react-dom": "18.3.0-canary-6c3b8dbfe-20240226",
     "react-server-dom-webpack": "18.3.0-canary-6c3b8dbfe-20240226",
-    "waku": "0.19.3"
+    "swr": "2.2.5",
+    "waku": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "18.2.55",

@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "glob": "10.3.10",
-    "react": "18.3.0-canary-14fd9630e-20240213",
-    "react-dom": "18.3.0-canary-14fd9630e-20240213",
-    "react-server-dom-webpack": "18.3.0-canary-14fd9630e-20240213",
+    "react": "18.3.0-canary-6c3b8dbfe-20240226",
+    "react-dom": "18.3.0-canary-6c3b8dbfe-20240226",
+    "react-server-dom-webpack": "18.3.0-canary-6c3b8dbfe-20240226",
     "waku": "0.19.3"
   },
   "devDependencies": {

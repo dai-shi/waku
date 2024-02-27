@@ -1,0 +1,244 @@
+---
+slug: builder/aws-lambda
+title: AWS Lambda Builder
+description: Deploy a WAKU application to AWS.
+---
+
+# AWS Lambda Builder
+
+The WAKU builder for AWS Lambda will provide the bundled output in the `dist` folder.
+The entry handler for the Lambda is `dist/serve.handler`.
+
+> Folder which require directly access - eg. `fs.readFile("./private/data.json")` needs to be manual added to the deployment configuration.
+
+## [Serverless Framework](https://www.serverless.com)
+
+### Installation
+
+add this serverless plugin to your `package.json`:
+
+```sh
+pnpm add -D serverless-scriptable-plugin
+```
+
+### Setup
+
+create a `serverlesss.yml` with this content and change the `service:` to your project name.
+
+```yml
+service: waku-aws-lambda
+frameworkVersion: '3'
+configValidationMode: error
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  architecture: arm64
+  deploymentMethod: direct
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  versionFunctions: false
+
+plugins:
+  - serverless-scriptable-plugin
+
+package:
+  patterns:
+    - '!**/**'
+    - 'private/**' # include all static files and directories from ./private directory
+    - 'dist/**'
+
+functions:
+  ssr:
+    handler: dist/serve.handler
+    events:
+      - httpApi: '*'
+
+custom:
+  scriptable:
+    # add custom hooks
+    hooks:
+      before:package:createDeploymentArtifacts:
+        - pnpm waku build --with-ssr --with-aws-lambda
+```
+
+This configuration will include all files from the `./private` directory in the final deployment.
+
+### Deploy
+
+```sh
+pnpm dlx serverless deploy
+```
+
+Output:
+
+```
+✔ Service deployed to stack waku-aws-lambda-m-dev (95s)
+
+endpoint: ANY - https://<your-application>.execute-api.us-east-1.amazonaws.com
+functions:
+  ssr: waku-aws-lambda-m-dev-ssr (325 kB)
+```
+
+You can access the frontend through the url provided as the `endpoint:`
+
+For more configuration options and how to use a custom domain visit the Serverless framework [documentation](https://www.serverless.com/framework/docs).
+
+## AWS CDK
+
+### Setup
+
+Initialize your project with the `cdk` CLI
+
+```sh
+mkdir cdk &&  cd "$_"
+pnpm dlx cdk init app -l typescript --generate-only
+cd ..
+cp cdk/cdk.json .
+```
+
+change entry in `cdk.json`:
+
+```diff
+-  "app": "npx ts-node --prefer-ts-exts bin/cdk.ts",
++  "app": "infra/main.js",
+```
+
+remove these lines:
+
+```diff
+-  "watch": {
+-    "include": [
+-      "**"
+-    ],
+-    "exclude": [
+-      "README.md",
+-      "cdk*.json",
+-      "**/*.d.ts",
+-      "**/*.js",
+-      "tsconfig.json",
+-      "package*.json",
+-      "yarn.lock",
+-      "node_modules",
+-      "test"
+-    ]
+-  },
+```
+
+remove the `cdk` directory:
+
+```sh
+rm -fr cdk
+```
+
+add packages:
+
+```sh
+pnpm add -D aws-cdk
+pnpm add aws-cdk-lib constructs
+```
+
+create the infrastructure directory:
+
+```sh
+mkdir -p  infra/lib
+```
+
+bootstrap the AWS CDK:
+
+```sh
+pnpm cdk bootstrap
+```
+
+create `infra/main.js`:
+
+```js
+#!/usr/bin/env node
+//import 'source-map-support/register';
+import * as cdk from 'aws-cdk-lib';
+import { WakuStack } from './lib/waku-stack.js';
+
+const app = new cdk.App();
+new WakuStack(app, 'WakuStack', {
+  /* If you don't specify 'env', this stack will be environment-agnostic.
+   * Account/Region-dependent features and context lookups will not work,
+   * but a single synthesized template can be deployed anywhere. */
+  /* Uncomment the next line to specialize this stack for the AWS Account
+   * and Region that are implied by the current CLI configuration. */
+  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
+  /* Uncomment the next line if you know exactly what Account and Region you
+   * want to deploy the stack to. */
+  // env: { account: '123456789012', region: 'us-east-1' },
+  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
+});
+```
+
+create `infra/lib/waku-stack.js`:
+
+```js
+import * as cdk from 'aws-cdk-lib';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
+import { HttpApi } from 'aws-cdk-lib/aws-apigatewayv2';
+import { spawnSync } from 'node:child_process';
+import { existsSync, cpSync } from 'node:fs';
+import { join } from 'node:path';
+
+export class WakuStack extends cdk.Stack {
+  constructor(scope, id, props) {
+    super(scope, id, props);
+
+    const fn = new lambda.Function(this, 'waku-lambda', {
+      code: lambda.Code.fromAsset('dist', {
+        bundling: {
+          image: cdk.DockerImage.fromRegistry('local'),
+          local: {
+            tryBundle(outputDir) {
+              spawnSync(
+                'pnpm',
+                ['exec', 'waku', 'build', '--with-ssr', '--with-aws-lambda'],
+                { stdio: 'inherit' },
+              );
+              cpSync('dist', outputDir, { recursive: true, dereference: true });
+              if (existsSync('private')) {
+                cpSync('private', join(outputDir, 'private'), {
+                  recursive: true,
+                  dereference: true,
+                });
+              }
+              return true;
+            },
+          },
+        },
+      }),
+      handler: 'serve.handler',
+      architecture: lambda.Architecture.ARM_64,
+      runtime: lambda.Runtime.NODEJS_20_X,
+    });
+
+    const httpApi = new HttpApi(this, 'waku-http-api', {
+      defaultIntegration: new HttpLambdaIntegration('waku-integration', fn),
+    });
+
+    fn.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+    });
+
+    // 👇 add an Output with the API Url
+    new cdk.CfnOutput(this, 'waku-http-api-url', {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      value: httpApi.url,
+    });
+  }
+}
+```
+
+This configuration will include all files from the `./private` directory in the final deployment.
+
+deploy to AWS:
+
+```sh
+pnpm cdk deploy WakuStack
+```
+
+For more configuration options and how to use a custom domain visit the AWS CDK [documentation](https://docs.aws.amazon.com/cdk/v2/guide/home.html)
