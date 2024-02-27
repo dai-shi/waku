@@ -84,7 +84,11 @@ export function createHandler<
     });
     const vite = await createViteServer(mergedViteConfig);
     initializeWorker(config);
-    registerHotUpdateCallback((payload) => hotUpdate(vite, payload));
+    registerHotUpdateCallback((payload) => hotUpdate(vite, payload)).catch(
+      (err) => {
+        console.error('Failed to register hot update callback', err);
+      },
+    );
     return vite;
   });
 
@@ -109,11 +113,16 @@ export function createHandler<
           // FIXME without removing async, Vite will move it
           // to the proxy cache, which breaks __WAKU_PUSH__.
           data = data.replace(/<script type="module" async>/, '<script>');
-          return new Promise<void>((resolve) => {
-            vite.transformIndexHtml(pathname, data).then((result) => {
-              controller.enqueue(encoder.encode(result));
-              resolve();
-            });
+          return new Promise<void>((resolve, reject) => {
+            vite
+              .transformIndexHtml(pathname, data)
+              .then((result) => {
+                controller.enqueue(encoder.encode(result));
+                resolve();
+              })
+              .catch((err) => {
+                reject(err);
+              });
           });
         }
         controller.enqueue(chunk);
@@ -146,7 +155,9 @@ export function createHandler<
         console.info('Cannot render RSC', err);
         res.setStatus(500);
       }
-      endStream(res.stream, String(err));
+      endStream(res.stream, String(err)).catch((err) => {
+        console.error('Failed to end stream', err);
+      });
     };
     let context: Context | undefined;
     try {
@@ -172,7 +183,9 @@ export function createHandler<
           stream: req.stream,
         });
         unstable_posthook?.(req, res, nextCtx as Context);
-        readable.pipeTo(res.stream);
+        readable.pipeTo(res.stream).catch((err) => {
+          console.error('Failed to pipe to response', err);
+        });
       } catch (e) {
         handleError(e);
       }
@@ -209,7 +222,10 @@ export function createHandler<
           res.setHeader('content-type', 'text/html; charset=utf-8');
           readable
             .pipeThrough(await transformIndexHtml(req.url.pathname))
-            .pipeTo(res.stream);
+            .pipeTo(res.stream)
+            .catch((err) => {
+              console.error('Failed to pipe to response', err);
+            });
           return;
         }
         next();
@@ -240,7 +256,9 @@ export function createHandler<
         if (code.includes('export default')) {
           exports += `export { default } from "${item.url}";`;
         }
-        endStream(res.stream, exports);
+        endStream(res.stream, exports).catch((err) => {
+          console.error('Failed to end stream', err);
+        });
         return;
       }
     }

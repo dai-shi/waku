@@ -73,15 +73,15 @@ if (values.version) {
   const ssr = !!values['with-ssr'];
   switch (cmd) {
     case 'dev':
-      runDev({ ssr });
+      await runDev({ ssr });
       break;
     case 'build':
-      runBuild({
+      await runBuild({
         ssr,
       });
       break;
     case 'start':
-      runStart({ ssr });
+      await runStart({ ssr });
       break;
     default:
       if (cmd) {
@@ -107,7 +107,7 @@ async function runDev(options: { ssr: boolean }) {
     return c.text('404 Not Found', 404);
   });
   const port = parseInt(process.env.PORT || '3000', 10);
-  startServer(app, port);
+  await startServer(app, port);
 }
 
 async function runBuild(options: { ssr: boolean }) {
@@ -167,7 +167,7 @@ async function runStart(options: { ssr: boolean }) {
     return c.text('404 Not Found', 404);
   });
   const port = parseInt(process.env.PORT || '8080', 10);
-  startServer(app, port);
+  await startServer(app, port);
 }
 
 async function startServer(app: Hono, port: number) {
@@ -177,7 +177,9 @@ async function startServer(app: Hono, port: number) {
   server.on('error', (err: NodeJS.ErrnoException) => {
     if (err.code === 'EADDRINUSE') {
       console.log(`warn: Port ${port} is in use, trying ${port + 1} instead.`);
-      startServer(app, port + 1);
+      startServer(app, port + 1).catch((err) => {
+        console.error(`Failed to start server: ${err.message}`);
+      });
     } else {
       console.error(`Failed to start server: ${err.message}`);
     }

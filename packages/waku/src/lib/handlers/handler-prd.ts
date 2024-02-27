@@ -41,7 +41,9 @@ export function createHandler<
         console.info('Cannot render RSC', err);
         res.setStatus(500);
       }
-      endStream(res.stream);
+      endStream(res.stream).catch((err) => {
+        console.error('Error while ending stream', err);
+      });
     };
     let context: Context | undefined;
     try {
@@ -70,7 +72,10 @@ export function createHandler<
         });
         unstable_posthook?.(req, res, context as Context);
         deepFreeze(context);
-        readable.pipeTo(res.stream);
+        readable.pipeTo(res.stream).catch((err) => {
+          console.error('Error while streaming RSC', err);
+          return endStream(res.stream);
+        });
         return;
       } catch (e) {
         handleError(e);
@@ -117,7 +122,10 @@ export function createHandler<
             unstable_posthook?.(req, res, context as Context);
             deepFreeze(context);
             res.setHeader('content-type', 'text/html; charset=utf-8');
-            readable.pipeTo(res.stream);
+            readable.pipeTo(res.stream).catch((err) => {
+              console.error('Error while streaming HTML', err);
+              return endStream(res.stream);
+            });
             return;
           }
         }

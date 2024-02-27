@@ -203,7 +203,7 @@ export async function getBuildConfig(opts: {
           reject(reason);
         },
       });
-      readable.pipeTo(writable);
+      readable.pipeTo(writable).catch(reject);
     });
     return Array.from(idSet);
   };
