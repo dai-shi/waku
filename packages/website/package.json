@@ -15,10 +15,10 @@
     "framer-motion": "^11.0.3",
     "jotai": "^2.6.4",
     "next-mdx-remote": "^4.4.1",
-    "react": "18.3.0-canary-14fd9630e-20240213",
-    "react-dom": "18.3.0-canary-14fd9630e-20240213",
-    "react-server-dom-webpack": "18.3.0-canary-14fd9630e-20240213",
-    "waku": "https://pkg.csb.dev/dai-shi/waku/commit/7b41db5a/waku"
+    "react": "18.3.0-canary-6c3b8dbfe-20240226",
+    "react-dom": "18.3.0-canary-6c3b8dbfe-20240226",
+    "react-server-dom-webpack": "18.3.0-canary-6c3b8dbfe-20240226",
+    "waku": "https://pkg.csb.dev/dai-shi/waku/commit/1d7f3c56/waku"
   },
   "devDependencies": {
     "@types/react": "^18.2.55",
