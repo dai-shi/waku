@@ -2,10 +2,13 @@
 export default ({ mode }: { mode: string }) => ({
   ...(mode === 'development' && {
     optimizeDeps: {
-      include: ['react-tweet'],
+      include: [
+        'react-dom/client',
+        'react-tweet > use-sync-external-store/shim/index.js',
+        'react-tweet > date-fns/format/index.js',
+      ],
     },
     ssr: {
-      external: ['use-sync-external-store'],
       noExternal: ['react-tweet'],
     },
   }),
