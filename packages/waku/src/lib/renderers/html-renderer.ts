@@ -97,7 +97,7 @@ globalThis.__WAKU_PREFETCHED__ = {
       }
       data += decoder.decode(chunk);
       if (!headSent) {
-        if (!data.includes('</head><body>')) {
+        if (!/<\/head><body[^>]*>/.test(data)) {
           return;
         }
         headSent = true;
