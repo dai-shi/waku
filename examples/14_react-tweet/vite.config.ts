@@ -1,10 +1,12 @@
 /** @type {import('vite').UserConfig} */
-export default {
-  optimizeDeps: {
-    include: ['react-tweet'],
-  },
-  ssr: {
-    external: ['use-sync-external-store'],
-    noExternal: ['react-tweet'],
-  },
-};
+export default ({ mode }: { mode: string }) => ({
+  ...(mode === 'development' && {
+    optimizeDeps: {
+      include: ['react-tweet'],
+    },
+    ssr: {
+      external: ['use-sync-external-store'],
+      noExternal: ['react-tweet'],
+    },
+  }),
+});
