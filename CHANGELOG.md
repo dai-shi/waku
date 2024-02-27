@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.19.4] - 2024-02-27
+### Changed
+- fix various bugs
+- support customizing 404
+
 ## [0.19.3] - 2024-02-14
 ### Changed
 - fix SSR (html generation) build
