@@ -157,6 +157,7 @@ export const Root = ({
   );
   const refetch = useCallback(
     (input: string, searchParams?: URLSearchParams) => {
+      (cache || fetchCache).splice(0); // clear cache before fetching
       const data = fetchRSC(
         input,
         searchParams?.toString() || '',
