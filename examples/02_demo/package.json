@@ -9,13 +9,13 @@
     "start": "waku start --with-ssr"
   },
   "dependencies": {
-    "react": "18.3.0-canary-14fd9630e-20240213",
-    "react-dom": "18.3.0-canary-14fd9630e-20240213",
-    "react-server-dom-webpack": "18.3.0-canary-14fd9630e-20240213",
-    "waku": "0.19.3"
+    "react": "18.3.0-canary-6c3b8dbfe-20240226",
+    "react-dom": "18.3.0-canary-6c3b8dbfe-20240226",
+    "react-server-dom-webpack": "18.3.0-canary-6c3b8dbfe-20240226",
+    "waku": "0.19.4"
   },
   "devDependencies": {
-    "@types/react": "18.2.55",
+    "@types/react": "18.2.59",
     "@types/react-dom": "18.2.19",
     "autoprefixer": "10.4.17",
     "tailwindcss": "3.4.1",

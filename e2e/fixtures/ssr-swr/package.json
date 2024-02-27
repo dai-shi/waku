@@ -9,14 +9,14 @@
     "start": "waku start --with-ssr"
   },
   "dependencies": {
-    "react": "18.3.0-canary-14fd9630e-20240213",
-    "react-dom": "18.3.0-canary-14fd9630e-20240213",
-    "react-server-dom-webpack": "18.3.0-canary-14fd9630e-20240213",
+    "react": "18.3.0-canary-6c3b8dbfe-20240226",
+    "react-dom": "18.3.0-canary-6c3b8dbfe-20240226",
+    "react-server-dom-webpack": "18.3.0-canary-6c3b8dbfe-20240226",
     "swr": "2.2.5",
     "waku": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "18.2.55",
+    "@types/react": "18.2.59",
     "@types/react-dom": "18.2.19",
     "typescript": "5.3.3"
   }

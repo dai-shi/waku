@@ -24,6 +24,7 @@
     "examples:dev:11_form": "NAME=11_form pnpm run examples:dev",
     "examples:dev:12_css": "NAME=12_css pnpm run examples:dev",
     "examples:dev:13_path-alias": "NAME=13_path-alias pnpm run examples:dev",
+    "examples:dev:14_react-tweet": "NAME=14_react-tweet pnpm run examples:dev",
     "examples:build": "(cd ./examples/${NAME} && pnpm run build)",
     "examples:prd": "pnpm run examples:build && (cd ./examples/${NAME} && pnpm start)",
     "examples:prd:01_template": "NAME=01_template pnpm run examples:prd",
@@ -39,6 +40,7 @@
     "examples:prd:11_form": "NAME=11_form pnpm run examples:prd",
     "examples:prd:12_css": "NAME=12_css pnpm run examples:prd",
     "examples:prd:13_path-alias": "NAME=13_path-alias pnpm run examples:prd",
+    "examples:prd:14_react-tweet": "NAME=14_react-tweet pnpm run examples:prd",
     "website:dev": "(cd packages/website && pnpm run dev)",
     "website:build": "cd packages/website && pnpm run build",
     "website:vercel": "pnpm run compile && pnpm run website:build --with-vercel-static && mv packages/website/.vercel/output .vercel/",
@@ -58,12 +60,12 @@
     "@actions/core": "^1.10.1",
     "@playwright/test": "^1.41.2",
     "@types/babel__core": "^7.20.5",
-    "@types/node": "^20.11.17",
-    "@types/react": "^18.2.55",
+    "@types/node": "^20.11.20",
+    "@types/react": "^18.2.59",
     "@types/react-dom": "^18.2.19",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
-    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^7.1.0",
+    "@typescript-eslint/parser": "^7.1.0",
+    "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "^2.29.1",
@@ -78,7 +80,7 @@
   },
   "pnpm": {
     "overrides": {
-      "vite": "5.1.3"
+      "vite": "5.1.4"
     }
   }
 }
