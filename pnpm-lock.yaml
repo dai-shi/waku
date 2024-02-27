@@ -667,8 +667,8 @@ importers:
         specifier: 18.3.0-canary-6c3b8dbfe-20240226
         version: 18.3.0-canary-6c3b8dbfe-20240226(react-dom@18.3.0-canary-6c3b8dbfe-20240226)(react@18.3.0-canary-6c3b8dbfe-20240226)(webpack@5.90.1)
       rsc-html-stream:
-        specifier: 0.0.2
-        version: 0.0.2
+        specifier: 0.0.3
+        version: 0.0.3
       vite:
         specifier: 5.1.3
         version: 5.1.3(@types/node@20.11.17)
@@ -5834,8 +5834,8 @@ packages:
       '@rollup/rollup-win32-x64-msvc': 4.10.0
       fsevents: 2.3.3
 
-  /rsc-html-stream@0.0.2:
-    resolution: {integrity: sha512-H6KSfry8qbwc/9eq1mv88WYiYXOHd8KpqVfmJ6s4xTEeaEgL2mqYoVvNLjZi0OYcBeshE7053CjEq4srHLVOrA==}
+  /rsc-html-stream@0.0.3:
+    resolution: {integrity: sha512-GrHT+ADZM1Mj+sfXNjJjtFCwvB/xK5gx9KHQqcHJQIKfZ0Nh3wd8O59Nvd7VLb8lyvdOkqnqi5d5TAtDICf8yQ==}
     dev: false
 
   /run-parallel@1.2.0:
