@@ -170,19 +170,24 @@ async function runStart(options: { ssr: boolean }) {
   await startServer(app, port);
 }
 
-async function startServer(app: Hono, port: number) {
-  const server = serve({ ...app, port }, () => {
-    console.log(`ready: Listening on http://localhost:${port}/`);
-  });
-  server.on('error', (err: NodeJS.ErrnoException) => {
-    if (err.code === 'EADDRINUSE') {
-      console.log(`warn: Port ${port} is in use, trying ${port + 1} instead.`);
-      startServer(app, port + 1).catch((err) => {
+function startServer(app: Hono, port: number) {
+  return new Promise<void>((resolve, reject) => {
+    const server = serve({ ...app, port }, () => {
+      console.log(`ready: Listening on http://localhost:${port}/`);
+      resolve();
+    });
+    server.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE') {
+        console.log(
+          `warn: Port ${port} is in use, trying ${port + 1} instead.`,
+        );
+        startServer(app, port + 1)
+          .then(resolve)
+          .catch(reject);
+      } else {
         console.error(`Failed to start server: ${err.message}`);
-      });
-    } else {
-      console.error(`Failed to start server: ${err.message}`);
-    }
+      }
+    });
   });
 }
 

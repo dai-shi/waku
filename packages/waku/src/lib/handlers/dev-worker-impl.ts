@@ -179,20 +179,14 @@ const loadEntries = async (config: { srcDir: string; entriesJs: string }) => {
 };
 
 // load entries eagerly
-loadEntries({ srcDir: configSrcDir, entriesJs: configEntriesJs }).catch(
-  (err) => {
-    console.error('Error while loading entries', err);
-  },
-);
+loadEntries({ srcDir: configSrcDir, entriesJs: configEntriesJs }).catch(() => {
+  // ignore
+});
 
-parentPort!.on('message', (mesg: MessageReq) => {
+parentPort!.on('message', async (mesg: MessageReq) => {
   if (mesg.type === 'render') {
-    handleRender(mesg).catch((err) => {
-      console.error('Error while handling render', err);
-    });
+    await handleRender(mesg);
   } else if (mesg.type === 'getSsrConfig') {
-    handleGetSsrConfig(mesg).catch((err) => {
-      console.error('Error while handling getSsrConfig', err);
-    });
+    await handleGetSsrConfig(mesg);
   }
 });

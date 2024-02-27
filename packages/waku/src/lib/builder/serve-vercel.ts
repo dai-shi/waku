@@ -25,9 +25,5 @@ app.notFound((c) => {
 const requestListener = getRequestListener(app.fetch);
 
 export default function handler(req: IncomingMessage, res: ServerResponse) {
-  requestListener(req, res).catch((err) => {
-    console.error('Error while handling request', err);
-    res.statusCode = 500;
-    res.end();
-  });
+  return requestListener(req, res);
 }
