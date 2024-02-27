@@ -7,6 +7,7 @@ import type {
 } from 'react';
 import type * as RDServerType from 'react-dom/server.edge';
 import type { default as RSDWClientType } from 'react-server-dom-webpack/client.edge';
+import { injectRSCPayload } from 'rsc-html-stream/server';
 
 import type * as WakuClientType from '../../client.js';
 import type { EntriesPrd } from '../../server.js';
@@ -33,8 +34,16 @@ const moduleCache = (globalThis as any).__webpack_module_cache__;
 const fakeFetchCode = `
 Promise.resolve(new Response(new ReadableStream({
   start(c) {
-    const f = (s) => new TextEncoder().encode(decodeURI(s));
-    globalThis.__WAKU_PUSH__ = (s) => s ? c.enqueue(f(s)) : c.close();
+    const d = (self.__FLIGHT_DATA ||= []);
+    const t = new TextEncoder();
+    const f = (s) => c.enqueue(typeof s === 'string' ? t.encode(s) : s);
+    d.forEach(f);
+    d.push = f;
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => c.close());
+    } else {
+      c.close();
+    }
   }
 })))
 `
@@ -42,23 +51,10 @@ Promise.resolve(new Response(new ReadableStream({
   .map((line) => line.trim())
   .join('');
 
-const injectRscPayload = (
-  readable: ReadableStream,
+const injectScript = (
   urlForFakeFetch: string,
   mainJsPath: string, // for DEV only, pass `''` for PRD
 ) => {
-  const chunks: Uint8Array[] = [];
-  const copied = readable.pipeThrough(
-    new TransformStream({
-      transform(chunk, controller) {
-        if (!(chunk instanceof Uint8Array)) {
-          throw new Error('Unknown chunk type');
-        }
-        chunks.push(chunk);
-        controller.enqueue(chunk);
-      },
-    }),
-  );
   const modifyHead = (data: string) => {
     const matchPrefetched = data.match(
       // HACK This is very brittle
@@ -90,76 +86,30 @@ globalThis.__WAKU_PREFETCHED__ = {
     }
     return data;
   };
-  const interleave = () => {
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-    let headSent = false;
-    let mainJsSent = false;
-    let data = '';
-    let scriptsClosed = false;
-    const sendScripts = (
-      controller: TransformStreamDefaultController,
-      close?: boolean,
-    ) => {
-      if (scriptsClosed) {
-        return;
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  let headSent = false;
+  let data = '';
+  return new TransformStream({
+    transform(chunk, controller) {
+      if (!(chunk instanceof Uint8Array)) {
+        throw new Error('Unknown chunk type');
       }
-      if (mainJsPath && !mainJsSent) {
-        // enqueue `mainJs` first in the body to avoid the document.body undefined error, before we used to inject it in the head which sometimes made it load before the document.body was loaded
-        controller.enqueue(
-          encoder.encode(
-            `<script src="${mainJsPath}" async type="module"></script>`,
-          ),
-        );
-        mainJsSent = true;
-      }
-
-      const scripts = chunks.splice(0).map(
-        (chunk) =>
-          `
-<script type="module" async>globalThis.__WAKU_PUSH__("${encodeURI(
-            decoder.decode(chunk),
-          )}")</script>`,
-      );
-      if (close) {
-        scriptsClosed = true;
-        scripts.push(
-          `
-<script type="module" async>globalThis.__WAKU_PUSH__()</script>`,
-        );
-      }
-      if (scripts.length) {
-        controller.enqueue(encoder.encode(scripts.join('')));
-      }
-    };
-    return new TransformStream({
-      transform(chunk, controller) {
-        if (!(chunk instanceof Uint8Array)) {
-          throw new Error('Unknown chunk type');
+      data += decoder.decode(chunk);
+      if (!headSent) {
+        if (!data.includes('</head><body>')) {
+          return;
         }
-        data += decoder.decode(chunk);
-        if (!headSent) {
-          if (!data.includes('</head>')) {
-            return;
-          }
-          headSent = true;
-          data = modifyHead(data);
+        headSent = true;
+        data = modifyHead(data);
+        if (mainJsPath) {
+          data += `<script src="${mainJsPath}" async type="module"></script>`;
         }
-        const closingBodyIndex = data.lastIndexOf('</body>');
-        if (closingBodyIndex === -1) {
-          controller.enqueue(encoder.encode(data));
-          data = '';
-          sendScripts(controller);
-        } else {
-          controller.enqueue(encoder.encode(data.slice(0, closingBodyIndex)));
-          sendScripts(controller, true);
-          controller.enqueue(encoder.encode(data.slice(closingBodyIndex)));
-          data = '';
-        }
-      },
-    });
-  };
-  return [copied, interleave] as const;
+      }
+      controller.enqueue(encoder.encode(data));
+      data = '';
+    },
+  });
 };
 
 // HACK for now, do we want to use HTML parser?
@@ -347,13 +297,9 @@ export const renderHtml = async (
       },
     },
   );
-  const [copied, interleave] = injectRscPayload(
-    stream,
-    config.basePath + config.rscPath + '/' + encodeInput(ssrConfig.input),
-    isDev ? `${config.basePath}${config.srcDir}/${config.mainJs}` : '',
-  );
+  const [stream1, stream2] = stream.tee();
   const elements: Promise<Record<string, ReactNode>> = createFromReadableStream(
-    copied,
+    stream1,
     {
       ssrManifest: { moduleMap, moduleLoading: null },
     },
@@ -382,6 +328,12 @@ export const renderHtml = async (
     )
   )
     .pipeThrough(rectifyHtml())
-    .pipeThrough(interleave());
+    .pipeThrough(
+      injectScript(
+        config.basePath + config.rscPath + '/' + encodeInput(ssrConfig.input),
+        isDev ? `${config.basePath}${config.srcDir}/${config.mainJs}` : '',
+      ),
+    )
+    .pipeThrough(injectRSCPayload(stream2));
   return readable;
 };
