@@ -4,7 +4,7 @@ import { serveStatic } from 'hono/cloudflare-workers';
 // eslint-disable-next-line import/no-unresolved
 import manifest from '__STATIC_CONTENT_MANIFEST';
 
-import { honoMiddleware } from '../middleware/hono-prd.js';
+import { honoMiddleware } from '../old-wrappers/hono-prd.js';
 
 const ssr = !!import.meta.env.WAKU_BUILD_SSR;
 const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);

@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Hono } from 'hono';
 import { getRequestListener } from '@hono/node-server';
 
-import { honoMiddleware } from '../middleware/hono-prd.js';
+import { honoMiddleware } from '../old-wrappers/hono-prd.js';
 
 const ssr = !!import.meta.env.WAKU_BUILD_SSR;
 const distDir = import.meta.env.WAKU_CONFIG_DIST_DIR!;

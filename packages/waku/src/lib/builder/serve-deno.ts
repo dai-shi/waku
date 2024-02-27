@@ -5,7 +5,7 @@ import { Hono } from 'https://deno.land/x/hono/mod.ts';
 // @ts-expect-error no types
 import { serveStatic } from 'https://deno.land/x/hono/middleware.ts';
 
-import { honoMiddleware } from '../middleware/hono-prd.js';
+import { honoMiddleware } from '../old-wrappers/hono-prd.js';
 
 declare const Deno: any;
 

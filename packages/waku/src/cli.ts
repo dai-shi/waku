@@ -10,8 +10,8 @@ import * as dotenv from 'dotenv';
 
 import type { Config } from './config.js';
 import { resolveConfig } from './lib/config.js';
-import { honoMiddleware as honoDevMiddleware } from './lib/middleware/hono-dev.js';
-import { honoMiddleware as honoPrdMiddleware } from './lib/middleware/hono-prd.js';
+import { honoMiddleware as honoDevMiddleware } from './lib/old-wrappers/hono-dev.js';
+import { honoMiddleware as honoPrdMiddleware } from './lib/old-wrappers/hono-prd.js';
 import { build } from './lib/builder/build.js';
 
 const require = createRequire(new URL('.', import.meta.url));
