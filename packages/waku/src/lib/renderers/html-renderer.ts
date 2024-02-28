@@ -97,7 +97,7 @@ globalThis.__WAKU_PREFETCHED__ = {
       }
       data += decoder.decode(chunk);
       if (!headSent) {
-        if (!data.includes('</head><body>')) {
+        if (!/<\/head><body[^>]*>/.test(data)) {
           return;
         }
         headSent = true;
@@ -148,7 +148,7 @@ const buildHtml = (
     'html',
     null,
     createElement('head', { dangerouslySetInnerHTML: { __html: head } }),
-    createElement('body', null, body),
+    createElement('body', { 'data-hydrate': true }, body),
   );
 
 export const renderHtml = async (
