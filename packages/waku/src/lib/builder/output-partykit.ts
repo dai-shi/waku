@@ -17,7 +17,7 @@ export const emitPartyKitOutput = async (
           name: 'waku-project',
           main: `${config.distDir}/${config.serveJs}`,
           compatibilityDate: '2023-02-16',
-          assets: `./${config.distDir}/${config.publicDir}`,
+          serve: `./${config.distDir}/${config.publicDir}`,
         },
         null,
         2,
