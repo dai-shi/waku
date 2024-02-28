@@ -179,12 +179,14 @@ const loadEntries = async (config: { srcDir: string; entriesJs: string }) => {
 };
 
 // load entries eagerly
-loadEntries({ srcDir: configSrcDir, entriesJs: configEntriesJs });
+loadEntries({ srcDir: configSrcDir, entriesJs: configEntriesJs }).catch(() => {
+  // ignore
+});
 
-parentPort!.on('message', (mesg: MessageReq) => {
+parentPort!.on('message', async (mesg: MessageReq) => {
   if (mesg.type === 'render') {
-    handleRender(mesg);
+    await handleRender(mesg);
   } else if (mesg.type === 'getSsrConfig') {
-    handleGetSsrConfig(mesg);
+    await handleGetSsrConfig(mesg);
   }
 });

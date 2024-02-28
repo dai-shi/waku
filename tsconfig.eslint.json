@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "packages/**/*",
+    "examples/**/*",
+    "e2e/**/*",
+    "./playwright.config.ts"
+  ]
+}

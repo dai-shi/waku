@@ -110,6 +110,7 @@ export const fetchRSC = (
     checkStatus(response),
     options,
   );
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
   cache[0] = entry = [input, searchParamsString, setElements, data];
   return data;
 };
@@ -156,6 +157,7 @@ export const Root = ({
   );
   const refetch = useCallback(
     (input: string, searchParams?: URLSearchParams) => {
+      (cache || fetchCache).splice(0); // clear cache before fetching
       const data = fetchRSC(
         input,
         searchParams?.toString() || '',

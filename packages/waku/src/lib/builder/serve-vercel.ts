@@ -25,5 +25,5 @@ app.notFound((c) => {
 const requestListener = getRequestListener(app.fetch);
 
 export default function handler(req: IncomingMessage, res: ServerResponse) {
-  requestListener(req, res);
+  return requestListener(req, res);
 }

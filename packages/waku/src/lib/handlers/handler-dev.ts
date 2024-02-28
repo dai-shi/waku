@@ -109,11 +109,14 @@ export function createHandler<
           // FIXME without removing async, Vite will move it
           // to the proxy cache, which breaks __WAKU_PUSH__.
           data = data.replace(/<script type="module" async>/, '<script>');
-          return new Promise<void>((resolve) => {
-            vite.transformIndexHtml(pathname, data).then((result) => {
-              controller.enqueue(encoder.encode(result));
-              resolve();
-            });
+          return new Promise<void>((resolve, reject) => {
+            vite
+              .transformIndexHtml(pathname, data)
+              .then((result) => {
+                controller.enqueue(encoder.encode(result));
+                resolve();
+              })
+              .catch(reject);
           });
         }
         controller.enqueue(chunk);
@@ -129,20 +132,20 @@ export function createHandler<
   return async (req, res, next) => {
     const [config, vite] = await Promise.all([configPromise, vitePromise]);
     const basePrefix = config.basePath + config.rscPath + '/';
-    const handleError = (err: unknown) => {
+    const handleError = async (err: unknown) => {
       if (hasStatusCode(err)) {
         res.setStatus(err.statusCode);
       } else {
         console.info('Cannot render RSC', err);
         res.setStatus(500);
       }
-      endStream(res.stream, String(err));
+      await endStream(res.stream, String(err));
     };
     let context: Context | undefined;
     try {
       context = unstable_prehook?.(req, res);
     } catch (e) {
-      handleError(e);
+      await handleError(e);
       return;
     }
     if (req.url.pathname.startsWith(basePrefix)) {
@@ -162,9 +165,9 @@ export function createHandler<
           stream: req.stream,
         });
         unstable_posthook?.(req, res, nextCtx as Context);
-        readable.pipeTo(res.stream);
+        await readable.pipeTo(res.stream);
       } catch (e) {
-        handleError(e);
+        await handleError(e);
       }
       return;
     }
@@ -197,13 +200,13 @@ export function createHandler<
         if (readable) {
           unstable_posthook?.(req, res, context as Context);
           res.setHeader('content-type', 'text/html; charset=utf-8');
-          readable
+          await readable
             .pipeThrough(await transformIndexHtml(req.url.pathname))
             .pipeTo(res.stream);
           return;
         }
       } catch (e) {
-        handleError(e);
+        await handleError(e);
         return;
       }
     }
@@ -228,7 +231,7 @@ export function createHandler<
         if (code.includes('export default')) {
           exports += `export { default } from "${item.url}";`;
         }
-        endStream(res.stream, exports);
+        await endStream(res.stream, exports);
         return;
       }
     }

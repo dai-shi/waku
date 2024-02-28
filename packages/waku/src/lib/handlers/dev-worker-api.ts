@@ -96,7 +96,7 @@ export function initializeWorker(config: ResolvedConfig) {
         });
         resolve(worker);
       })
-      .catch((e) => reject(e));
+      .catch(reject);
   });
 }
 
@@ -107,17 +107,21 @@ const getWorker = () => {
   return workerPromise;
 };
 
-export async function registerHotUpdateCallback(
+export function registerHotUpdateCallback(
   fn: (payload: HotUpdatePayload) => void,
 ) {
-  const worker = await getWorker();
-  const listener = (mesg: MessageRes) => {
-    if (mesg.type === 'hot-update') {
-      fn(mesg.payload);
-    }
-  };
-  worker.on('message', listener);
-  return () => worker.off('message', listener);
+  getWorker()
+    .then((worker) => {
+      const listener = (mesg: MessageRes) => {
+        if (mesg.type === 'hot-update') {
+          fn(mesg.payload);
+        }
+      };
+      worker.on('message', listener);
+    })
+    .catch((e) => {
+      console.error('Failed to register hot update callback', e);
+    });
 }
 
 let nextId = 1;
