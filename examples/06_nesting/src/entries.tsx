@@ -38,6 +38,7 @@ export default defineEntries(
     {
       pathname: '/no-ssr',
       entries: [{ input: 'AppWithoutSsr' }],
+      isStatic: true,
     },
   ],
   // getSsrConfig
