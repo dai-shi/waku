@@ -13,7 +13,10 @@ export const rsc: Middleware = (options) => {
   const entriesPromise = options.loadEntries();
 
   return async (ctx, next) => {
-    const config = await configPromise;
+    const [config, entries] = await Promise.all([
+      configPromise,
+      entriesPromise,
+    ]);
     const basePrefix = config.basePath + config.rscPath + '/';
     if (ctx.req.url.pathname.startsWith(basePrefix)) {
       const { method, headers } = ctx.req;
@@ -33,7 +36,7 @@ export const rsc: Middleware = (options) => {
           body: ctx.req.body,
           contentType: headers['content-type'] || '',
           isDev: false,
-          entries: await entriesPromise,
+          entries,
         });
         ctx.res.body = readable;
         return;
@@ -41,7 +44,7 @@ export const rsc: Middleware = (options) => {
         if (hasStatusCode(err)) {
           ctx.res.status = err.statusCode;
         } else {
-          console.info('Cannot render RSC', err);
+          console.info('Cannot process RSC', err);
           ctx.res.status = 500;
         }
         return;
