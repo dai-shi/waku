@@ -1,4 +1,5 @@
 'use client';
+import './Counter.css'
 
 import { useState } from 'react';
 
