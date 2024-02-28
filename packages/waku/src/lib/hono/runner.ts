@@ -15,7 +15,7 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
     import('waku/middleware').then((mod) => mod.rsc),
     // import('waku/middleware').then((mod) => mod.fallback),
   ];
-  const handlerList = Promise.all(
+  const handlersPromise = Promise.all(
     middlewareList.map(async (middleware) => (await middleware)(options)),
   );
   return async (c, next) => {
@@ -31,7 +31,7 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
       res: {},
       context: {},
     };
-    const handlers = await handlerList;
+    const handlers = await handlersPromise;
     const run = async (index: number) => {
       if (index >= handlers.length) {
         return next();
