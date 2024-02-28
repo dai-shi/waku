@@ -98,14 +98,6 @@ async function runDev(options: { ssr: boolean }) {
     '*',
     honoDevMiddleware({ ...options, config, env: process.env as any }),
   );
-  app.notFound((c) => {
-    // TODO Will re-consider this later. Should not be hard-coded.
-    const file = 'public/404.html';
-    if (existsSync(file)) {
-      return c.html(readFileSync(file, 'utf8'), 404);
-    }
-    return c.text('404 Not Found', 404);
-  });
   const port = parseInt(process.env.PORT || '3000', 10);
   await startServer(app, port);
 }
