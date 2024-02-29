@@ -1,5 +1,5 @@
 'use client';
-import './Counter.css'
+import './Counter.css';
 
 import { useState } from 'react';
 

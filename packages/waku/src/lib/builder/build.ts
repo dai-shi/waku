@@ -290,9 +290,11 @@ const buildSsrBundle = async (
   isNodeCompatible: boolean,
 ) => {
   const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
-  const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
-    type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
-  ).concat(clientBuildCss);
+  const cssAssets = serverBuildOutput.output
+    .flatMap(({ type, fileName }) =>
+      type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
+    )
+    .concat(clientBuildCss);
   await buildVite({
     base: config.basePath,
     plugins: [
@@ -352,7 +354,7 @@ const buildClientBundle = async (
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
 ) => {
   const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
-  const nonJsAssets = extractNotJsAssets(serverBuildOutput);
+  const nonJsAssets = extractNonJsAssets(serverBuildOutput);
   const cssAssets = extracCssAssets(nonJsAssets);
   const clientBuildOutput = await buildVite({
     base: config.basePath,
@@ -393,12 +395,13 @@ const buildClientBundle = async (
   return clientBuildOutput;
 };
 
-export const extractNotJsAssets = (buildOutput: RollupOutput) => buildOutput.output.flatMap(({ type, fileName }) =>
-    type === 'asset' && !fileName.endsWith('.js') ? [fileName] : []
-  )
+export const extractNonJsAssets = (buildOutput: RollupOutput) =>
+  buildOutput.output.flatMap(({ type, fileName }) =>
+    type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
+  );
 
-
-export const extracCssAssets = (assets: string[]) => assets.filter((asset) => asset.endsWith('.css'))
+export const extracCssAssets = (assets: string[]) =>
+  assets.filter((asset) => asset.endsWith('.css'));
 
 const emitRscFiles = async (
   rootDir: string,
@@ -483,7 +486,7 @@ const emitHtmlFiles = async (
   clientBuildCss: string[],
   ssr: boolean,
 ) => {
-  const css = clientBuildCss.map((l) => `<link rel="stylesheet" href="${l}">`)
+  const css = clientBuildCss.map((l) => `<link rel="stylesheet" href="${l}">`);
 
   const basePrefix = config.basePath + config.rscPath + '/';
   const publicIndexHtmlFile = joinPath(
@@ -495,12 +498,9 @@ const emitHtmlFiles = async (
   let publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  publicIndexHtml = publicIndexHtml.replace(
-    /<\/head>/,
-    `${css}</head>`,
-  )
-  await writeFile(publicIndexHtmlFile, publicIndexHtml)
-  
+  publicIndexHtml = publicIndexHtml.replace(/<\/head>/, `${css}</head>`);
+  await writeFile(publicIndexHtmlFile, publicIndexHtml);
+
   if (ssr) {
     await unlink(publicIndexHtmlFile);
   }
@@ -533,12 +533,9 @@ const emitHtmlFiles = async (
             moduleIdsForPrefetch,
           ) + (customCode || '');
         if (code) {
-          const str = `<script type="module" async>${code}</script>`
+          const str = `<script type="module" async>${code}</script>`;
           // HACK is this too naive to inject script code?
-          htmlStr = htmlStr.replace(
-            /<\/head>/,
-            `${str}</head>`,
-          );
+          htmlStr = htmlStr.replace(/<\/head>/, `${str}</head>`);
           htmlHead += str;
         }
         if (!isStatic) {
@@ -587,14 +584,12 @@ const emitHtmlFiles = async (
             loadModule: distEntries.loadModule,
           }));
         await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
-        console.log('htmlReadable', htmlReadable)
         if (htmlReadable) {
           await pipeline(
             Readable.fromWeb(htmlReadable as any),
             createWriteStream(destHtmlFile),
           );
         } else {
-          console.log('here', htmlHead)
           await writeFile(destHtmlFile, htmlStr);
         }
       },
@@ -667,8 +662,13 @@ export async function build(options: {
       (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
     isNodeCompatible,
   );
-  const clientBuildOutput = await buildClientBundle(rootDir, config, clientEntryFiles, serverBuildOutput);
-  const clientBuildCss = extracCssAssets(extractNotJsAssets(clientBuildOutput))
+  const clientBuildOutput = await buildClientBundle(
+    rootDir,
+    config,
+    clientEntryFiles,
+    serverBuildOutput,
+  );
+  const clientBuildCss = extracCssAssets(extractNonJsAssets(clientBuildOutput));
 
   if (options.ssr) {
     await buildSsrBundle(
@@ -680,7 +680,6 @@ export async function build(options: {
       isNodeCompatible,
     );
   }
-  
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
   const buildConfig = await getBuildConfig({ config, entries: distEntries });
