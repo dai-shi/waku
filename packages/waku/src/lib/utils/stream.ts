@@ -37,3 +37,13 @@ export const streamToString = async (
   outs.push(decoder.decode());
   return outs.join('');
 };
+
+export const stringToStream = (str: string): ReadableStream => {
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(str));
+      controller.close();
+    },
+  });
+};

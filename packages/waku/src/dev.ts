@@ -1,5 +1,4 @@
-export { honoMiddleware as unstable_honoMiddleware } from './lib/middleware/hono-dev.js';
-export { connectMiddleware as unstable_connectMiddleware } from './lib/middleware/connect-dev.js';
+export { honoMiddleware as unstable_honoMiddleware } from './lib/old-wrappers/hono-dev.js';
+export { connectMiddleware as unstable_connectMiddleware } from './lib/old-wrappers/connect-dev.js';
 
-export { createHandler as unstable_createHandler } from './lib/handlers/handler-dev.js';
-export { build } from './lib/builder/build.js';
+export { build as unstable_build } from './lib/builder/build.js';

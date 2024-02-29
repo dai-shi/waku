@@ -585,6 +585,7 @@ const emitHtmlFiles = async (
   const dynamicHtmlPaths = Array.from(dynamicHtmlPathMap);
   const code = `
 export const dynamicHtmlPaths= ${JSON.stringify(dynamicHtmlPaths)};
+export const publicIndexHtml= ${JSON.stringify(publicIndexHtml)};
 `;
   await appendFile(distEntriesFile, code);
 };

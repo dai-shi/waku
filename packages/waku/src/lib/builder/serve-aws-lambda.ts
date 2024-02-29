@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { handle } from 'hono/aws-lambda';
 import { serveStatic } from '@hono/node-server/serve-static';
 
-import { honoMiddleware } from '../middleware/hono-prd.js';
+import { honoMiddleware } from '../old-wrappers/hono-prd.js';
 import path from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 

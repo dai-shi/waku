@@ -10,8 +10,9 @@ import * as dotenv from 'dotenv';
 
 import type { Config } from './config.js';
 import { resolveConfig } from './lib/config.js';
-import { honoMiddleware as honoDevMiddleware } from './lib/middleware/hono-dev.js';
-import { honoMiddleware as honoPrdMiddleware } from './lib/middleware/hono-prd.js';
+import { honoMiddleware as honoDevMiddleware } from './lib/old-wrappers/hono-dev.js';
+import { honoMiddleware as honoPrdMiddleware } from './lib/old-wrappers/hono-prd.js';
+import { runner } from './lib/hono/runner.js';
 import { build } from './lib/builder/build.js';
 
 const require = createRequire(new URL('.', import.meta.url));
@@ -131,15 +132,27 @@ async function runStart(options: { ssr: boolean }) {
     import(pathToFileURL(path.resolve(distDir, entriesJs)).toString());
   const app = new Hono();
   app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
-  app.use(
-    '*',
-    honoPrdMiddleware({
-      ...options,
-      config,
-      loadEntries,
-      env: process.env as any,
-    }),
-  );
+  if (process.env.WAKU_WIP_MIDDLEWARE) {
+    app.use(
+      '*',
+      runner({
+        config,
+        env: process.env as any,
+        cmd: 'start',
+        loadEntries,
+      }),
+    );
+  } else {
+    app.use(
+      '*',
+      honoPrdMiddleware({
+        ...options,
+        config,
+        loadEntries,
+        env: process.env as any,
+      }),
+    );
+  }
   if (!options.ssr) {
     // history api fallback
     app.use(
