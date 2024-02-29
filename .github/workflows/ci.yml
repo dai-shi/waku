@@ -89,10 +89,12 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm playwright install --with-deps
       - run: pnpm exec playwright test --forbid-only --shard=${{ matrix.shared }}/4
+        env:
+          TEMP_DIR: ${{ runner.temp }}
       - uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.os }}-${{ matrix.version }}-${{ matrix.shared }}
           path: test-results/
           retention-days: 30
           if-no-files-found: ignore

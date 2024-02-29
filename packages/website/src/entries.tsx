@@ -5,6 +5,7 @@ import { compileMDX } from 'next-mdx-remote/rsc';
 
 import { RootLayout } from './templates/root-layout.js';
 import { HomePage } from './templates/home-page.js';
+import { BlogIndexPage } from './templates/blog-index-page.js';
 import { BlogArticlePage } from './templates/blog-article-page.js';
 
 export default createPages(async ({ createPage, createLayout }) => {
@@ -18,6 +19,12 @@ export default createPages(async ({ createPage, createLayout }) => {
     render: 'static',
     path: '/',
     component: HomePage,
+  });
+
+  createPage({
+    render: 'static',
+    path: '/blog',
+    component: BlogIndexPage,
   });
 
   const blogPaths = await getBlogPaths();
@@ -34,12 +41,12 @@ async function getBlogPaths() {
   const blogPaths: Array<string> = [];
   const blogFileNames: Array<string> = [];
 
-  readdirSync('./contents').forEach((fileName) => {
+  readdirSync('./private/contents').forEach((fileName) => {
     blogFileNames.push(fileName);
   });
 
   for await (const fileName of blogFileNames) {
-    const path = `./contents/${fileName}`;
+    const path = `./private/contents/${fileName}`;
     const source = readFileSync(path, 'utf8');
     const mdx = await compileMDX({
       source,

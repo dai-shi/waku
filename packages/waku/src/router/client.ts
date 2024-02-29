@@ -36,6 +36,9 @@ declare global {
 }
 
 const parseLocation = (): RouteProps => {
+  if ((globalThis as any).__WAKU_ROUTER_404__) {
+    return { path: '/404', searchParams: new URLSearchParams() };
+  }
   const { pathname, search } = window.location;
   const searchParams = new URLSearchParams(search);
   if (searchParams.has(PARAM_KEY_SKIP)) {
@@ -47,6 +50,7 @@ const parseLocation = (): RouteProps => {
 type ChangeLocation = (
   path?: string,
   searchParams?: URLSearchParams,
+  hash?: string,
   method?: 'pushState' | 'replaceState' | false,
   scrollTo?: ScrollToOptions | false,
 ) => void;
@@ -114,7 +118,7 @@ export function Link({
     if (url.href !== window.location.href) {
       prefetchLocation(url.pathname, url.searchParams);
       startTransition(() => {
-        changeLocation(url.pathname, url.searchParams);
+        changeLocation(url.pathname, url.searchParams, url.hash);
       });
     }
     props.onClick?.(event);
@@ -211,15 +215,19 @@ function InnerRouter() {
     (
       path,
       searchParams,
+      hash,
       method = 'pushState',
       scrollTo = { top: 0, left: 0 },
     ) => {
       const url = new URL(window.location.href);
-      if (path) {
+      if (typeof path === 'string') {
         url.pathname = path;
       }
       if (searchParams) {
         url.search = '?' + searchParams.toString();
+      }
+      if (typeof hash === 'string') {
+        url.hash = hash;
       }
       if (method) {
         window.history[method](window.history.state, '', url);
@@ -283,7 +291,7 @@ function InnerRouter() {
   useEffect(() => {
     const callback = () => {
       const loc = parseLocation();
-      changeLocation(loc.path, loc.searchParams, false, false);
+      changeLocation(loc.path, loc.searchParams, '', false, false);
     };
     window.addEventListener('popstate', callback);
     return () => window.removeEventListener('popstate', callback);
@@ -314,5 +322,37 @@ export function Router() {
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
     { initialInput, initialSearchParamsString },
     createElement(InnerRouter),
+  );
+}
+
+const notAvailableInServer = (name: string) => () => {
+  throw new Error(`${name} is not in the server`);
+};
+
+/**
+ * ServerRouter for SSR
+ * This is not a public API.
+ */
+export function ServerRouter({
+  children,
+  loc,
+}: {
+  children: ReactNode;
+  loc: ReturnType<typeof parseLocation>;
+}) {
+  return createElement(
+    Fragment,
+    null,
+    createElement(
+      RouterContext.Provider,
+      {
+        value: {
+          loc,
+          changeLocation: notAvailableInServer('changeLocation'),
+          prefetchLocation: notAvailableInServer('prefetchLocation'),
+        },
+      },
+      children,
+    ),
   );
 }

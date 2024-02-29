@@ -10,23 +10,25 @@
     "start": "waku start --with-ssr"
   },
   "dependencies": {
+    "@sindresorhus/slugify": "^2.2.1",
     "clsx": "^2.1.0",
-    "framer-motion": "^11.0.3",
-    "jotai": "^2.6.4",
+    "framer-motion": "^11.0.6",
+    "jotai": "^2.6.5",
     "next-mdx-remote": "^4.4.1",
-    "react": "18.3.0-canary-4b2a1115a-20240202",
-    "react-dom": "18.3.0-canary-4b2a1115a-20240202",
-    "waku": "https://pkg.csb.dev/dai-shi/waku/commit/e411dd08/waku"
+    "react": "18.3.0-canary-6c3b8dbfe-20240226",
+    "react-dom": "18.3.0-canary-6c3b8dbfe-20240226",
+    "react-server-dom-webpack": "18.3.0-canary-6c3b8dbfe-20240226",
+    "waku": "https://pkg.csb.dev/dai-shi/waku/commit/07b708cd/waku"
   },
   "devDependencies": {
-    "@types/react": "^18.2.54",
-    "@types/react-dom": "^18.2.18",
+    "@types/react": "^18.2.59",
+    "@types/react-dom": "^18.2.19",
     "autoprefixer": "^10.4.17",
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.11",
-    "shiki": "1.0.0-beta.6",
+    "shiki": "^1.1.7",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3",
-    "vite": "5.0.12"
+    "vite": "5.1.4"
   }
 }

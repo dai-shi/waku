@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 
 import type { ResolvedConfig } from '../config.js';
 
@@ -9,14 +9,24 @@ export const emitNetlifyOutput = async (
   type: 'static' | 'functions',
 ) => {
   if (type === 'functions') {
-    const functionsDir = path.join(rootDir, 'functions');
+    const functionsDir = path.join(rootDir, 'netlify/functions');
     mkdirSync(functionsDir, {
       recursive: true,
     });
+    const notFoundFile = path.join(
+      rootDir,
+      config.distDir,
+      config.publicDir,
+      '404.html',
+    );
+    const notFoundHtml = existsSync(notFoundFile)
+      ? readFileSync(notFoundFile, 'utf8')
+      : null;
     writeFileSync(
       path.join(functionsDir, 'serve.js'),
       `
-export { default } from '../${config.distDir}/${config.serveJs}';
+globalThis.__WAKU_NOT_FOUND_HTML__ = ${JSON.stringify(notFoundHtml)};
+export { default } from '../../${config.distDir}/${config.serveJs}';
 export const config = {
   preferStatic: true,
   path: ['/', '/*'],
@@ -29,15 +39,12 @@ export const config = {
     writeFileSync(
       netlifyTomlFile,
       `
-[build]                             
+[build]
+  command = "npm run build -- --with-netlify"
   publish = "${config.distDir}/${config.publicDir}"
-` +
-        (type === 'functions'
-          ? `
-[functions]                             
-  directory = "functions"       
-`
-          : ''),
+[functions]
+  included_files = ["${config.privateDir}/**"]
+`,
     );
   }
 };

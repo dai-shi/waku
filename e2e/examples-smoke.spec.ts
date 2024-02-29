@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
 import { readdir, rm } from 'node:fs/promises';
 import { basename } from 'node:path';
-import { getFreePort, test } from './utils.js';
+import { debugChildProcess, getFreePort, terminate, test } from './utils.js';
+import { error, info } from '@actions/core';
 
 const examplesDir = fileURLToPath(new URL('../examples', import.meta.url));
 
@@ -92,19 +93,14 @@ for (const cwd of examples) {
               PORT: `${port}`,
             },
           });
-          cp.stdout?.on('data', (data) => {
-            console.log(`${port} stdout: `, `${data}`);
-          });
-          cp.stderr?.on('data', (data) => {
-            console.error(`${port} stderr: `, `${data}`);
-          });
+          debugChildProcess(cp, fileURLToPath(import.meta.url));
           await waitPort({
             port,
           });
         });
 
         test.afterAll(async () => {
-          cp.kill();
+          await terminate(cp.pid!);
         });
 
         test('check title', async ({ page }) => {
@@ -142,9 +138,11 @@ for (const cwd of examples) {
             },
           });
           cp.stdout?.on('data', (data) => {
+            info(`${port} stdout: ${data}`);
             console.log(`${port} stdout: `, `${data}`);
           });
           cp.stderr?.on('data', (data) => {
+            error(`${port} stderr: ${data}`);
             console.error(`${port} stderr: `, `${data}`);
           });
           await waitPort({
@@ -153,7 +151,7 @@ for (const cwd of examples) {
         });
 
         test.afterAll(async () => {
-          cp.kill();
+          await terminate(cp.pid!);
         });
 
         test('check title', async ({ page }) => {

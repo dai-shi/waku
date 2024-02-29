@@ -1,10 +1,10 @@
-import { lazy } from 'react';
 import type { ReactNode } from 'react';
 import { defineEntries } from 'waku/server';
 import { Slot } from 'waku/client';
 
-const App = lazy(() => import('./components/App.js'));
-const InnerApp = lazy(() => import('./components/InnerApp.js'));
+import App from './components/App.js';
+import InnerApp from './components/InnerApp.js';
+import AppWithoutSsr from './components/AppWithoutSsr.js';
 
 export default defineEntries(
   // renderEntries
@@ -16,6 +16,9 @@ export default defineEntries(
     }
     if (params.has('InnerApp')) {
       result.InnerApp = <InnerApp count={Number(params.get('InnerApp'))} />;
+    }
+    if (params.has('AppWithoutSsr')) {
+      result.AppWithoutSsr = <AppWithoutSsr />;
     }
     return result;
   },
@@ -32,6 +35,11 @@ export default defineEntries(
         { input: 'InnerApp=5', skipPrefetch: true },
       ],
     },
+    {
+      pathname: '/no-ssr',
+      entries: [{ input: 'AppWithoutSsr' }],
+      isStatic: true,
+    },
   ],
   // getSsrConfig
   async (pathname) => {
@@ -41,6 +49,8 @@ export default defineEntries(
           input: '',
           body: <Slot id="App" />,
         };
+      case '/no-ssr':
+        return null;
       default:
         return null;
     }

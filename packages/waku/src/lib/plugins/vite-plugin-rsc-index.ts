@@ -15,9 +15,9 @@ export function rscIndexPlugin(config: {
 <html>
   <head>
 ${config.htmlHead}
-<script src="${config.basePath}${config.srcDir}/${config.mainJs}" async type="module"></script>
   </head>
   <body>
+    <script src="${config.basePath}${config.srcDir}/${config.mainJs}" async type="module"></script>
   </body>
 </html>
 `;
@@ -26,11 +26,18 @@ ${config.htmlHead}
     configureServer(server) {
       return () => {
         server.middlewares.use((req, res) => {
-          res.statusCode = 200;
-          res.setHeader('content-type', 'text/html; charset=utf-8');
-          server.transformIndexHtml(req.url || '', html).then((content) => {
-            res.end(content);
-          });
+          server
+            .transformIndexHtml(req.url || '', html)
+            .then((content) => {
+              res.statusCode = 200;
+              res.setHeader('content-type', 'text/html; charset=utf-8');
+              res.end(content);
+            })
+            .catch((err) => {
+              console.error('Error transforming index.html', err);
+              res.statusCode = 500;
+              res.end('Internal Server Error');
+            });
         });
       };
     },

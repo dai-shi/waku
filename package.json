@@ -20,10 +20,11 @@
     "examples:dev:07_router": "NAME=07_router pnpm run examples:dev",
     "examples:dev:08_cookies": "NAME=08_cookies pnpm run examples:dev",
     "examples:dev:09_cssmodules": "NAME=09_cssmodules pnpm run examples:dev",
-    "examples:dev:10_dynamicroute": "NAME=10_dynamicroute pnpm run examples:dev",
+    "examples:dev:10_fs-router": "NAME=10_fs-router pnpm run examples:dev",
     "examples:dev:11_form": "NAME=11_form pnpm run examples:dev",
     "examples:dev:12_css": "NAME=12_css pnpm run examples:dev",
     "examples:dev:13_path-alias": "NAME=13_path-alias pnpm run examples:dev",
+    "examples:dev:14_react-tweet": "NAME=14_react-tweet pnpm run examples:dev",
     "examples:build": "(cd ./examples/${NAME} && pnpm run build)",
     "examples:prd": "pnpm run examples:build && (cd ./examples/${NAME} && pnpm start)",
     "examples:prd:01_template": "NAME=01_template pnpm run examples:prd",
@@ -35,13 +36,14 @@
     "examples:prd:07_router": "NAME=07_router pnpm run examples:prd",
     "examples:prd:08_cookies": "NAME=08_cookies pnpm run examples:prd",
     "examples:prd:09_cssmodules": "NAME=09_cssmodules pnpm run examples:prd",
-    "examples:prd:10_dynamicroute": "NAME=10_dynamicroute pnpm run examples:prd",
+    "examples:prd:10_fs-router": "NAME=10_fs-router pnpm run examples:prd",
     "examples:prd:11_form": "NAME=11_form pnpm run examples:prd",
     "examples:prd:12_css": "NAME=12_css pnpm run examples:prd",
     "examples:prd:13_path-alias": "NAME=13_path-alias pnpm run examples:prd",
+    "examples:prd:14_react-tweet": "NAME=14_react-tweet pnpm run examples:prd",
     "website:dev": "(cd packages/website && pnpm run dev)",
     "website:build": "cd packages/website && pnpm run build",
-    "website:vercel": "pnpm run compile && pnpm run website:build --with-vercel-static && mv packages/website/.vercel/output .vercel/ && (cp -r README.md packages/website/contents .vercel/output/functions/RSC.func/ ; true)",
+    "website:vercel": "pnpm run compile && pnpm run website:build --with-vercel-static && mv packages/website/.vercel/output .vercel/",
     "website:prd": "pnpm run website:build && (cd packages/website && pnpm start)"
   },
   "prettier": {
@@ -55,14 +57,15 @@
     ]
   },
   "devDependencies": {
+    "@actions/core": "^1.10.1",
     "@playwright/test": "^1.41.2",
     "@types/babel__core": "^7.20.5",
-    "@types/node": "^20.11.16",
-    "@types/react": "^18.2.54",
-    "@types/react-dom": "^18.2.18",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
-    "eslint": "^8.56.0",
+    "@types/node": "^20.11.20",
+    "@types/react": "^18.2.59",
+    "@types/react-dom": "^18.2.19",
+    "@typescript-eslint/eslint-plugin": "^7.1.0",
+    "@typescript-eslint/parser": "^7.1.0",
+    "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "^2.29.1",
@@ -70,16 +73,14 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.11",
-    "react": "18.3.0-canary-4b2a1115a-20240202",
-    "react-dom": "18.3.0-canary-4b2a1115a-20240202",
-    "react-server-dom-webpack": "18.3.0-canary-4b2a1115a-20240202",
+    "terminate": "^2.6.1",
     "typescript": "^5.3.3",
     "wait-port": "^1.1.0",
     "waku": "workspace:*"
   },
   "pnpm": {
     "overrides": {
-      "vite": "5.0.12"
+      "vite": "5.1.4"
     }
   }
 }

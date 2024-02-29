@@ -57,6 +57,7 @@ export type EntriesDev = {
 export type EntriesPrd = EntriesDev & {
   loadModule: (id: string) => Promise<unknown>;
   dynamicHtmlPaths: [pathSpec: PathSpec, htmlHead: string][];
+  publicIndexHtml: string;
 };
 
 export function getEnv(key: string): string | undefined {

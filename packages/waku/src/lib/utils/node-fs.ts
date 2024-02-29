@@ -14,6 +14,9 @@ export const createWriteStream = (filePath: string) =>
 export const existsSync = (filePath: string) =>
   fs.existsSync(filePathToOsPath(filePath));
 
+export const copyFile = (filePath1: string, filePath2: string) =>
+  fsPromises.copyFile(filePathToOsPath(filePath1), filePathToOsPath(filePath2));
+
 export const rename = (filePath1: string, filePath2: string) =>
   fsPromises.rename(filePathToOsPath(filePath1), filePathToOsPath(filePath2));
 
@@ -36,3 +39,11 @@ export const stat = (filePath: string) =>
 
 export const unlink = (filePath: string) =>
   fsPromises.unlink(filePathToOsPath(filePath));
+
+export const readdir = (
+  filePath: string,
+  options?: {
+    encoding: 'utf8';
+    recursive: boolean;
+  },
+) => fsPromises.readdir(filePathToOsPath(filePath), options);

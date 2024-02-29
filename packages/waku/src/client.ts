@@ -13,7 +13,7 @@ import {
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
 
-import { encodeInput } from './lib/renderers/utils.js';
+import { encodeInput, encodeActionId } from './lib/renderers/utils.js';
 
 const { createFromFetch, encodeReply } = RSDWClient;
 
@@ -57,7 +57,7 @@ const mergeElements = (
   return getCached(getResult, cache2, b);
 };
 
-type SetElements = (fn: (prev: Elements) => Elements) => void;
+type SetElements = (updater: Elements | ((prev: Elements) => Elements)) => void;
 type CacheEntry = [
   input: string,
   searchParamsString: string,
@@ -81,7 +81,7 @@ export const fetchRSC = (
   const options = {
     async callServer(actionId: string, args: unknown[]) {
       const response = fetch(
-        BASE_PATH + encodeInput(encodeURIComponent(actionId)),
+        BASE_PATH + encodeInput(encodeActionId(actionId)),
         {
           method: 'POST',
           body: await encodeReply(args),
@@ -110,6 +110,7 @@ export const fetchRSC = (
     checkStatus(response),
     options,
   );
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
   cache[0] = entry = [input, searchParamsString, setElements, data];
   return data;
 };
@@ -156,6 +157,7 @@ export const Root = ({
   );
   const refetch = useCallback(
     (input: string, searchParams?: URLSearchParams) => {
+      (cache || fetchCache).splice(0); // clear cache before fetching
       const data = fetchRSC(
         input,
         searchParams?.toString() || '',
@@ -207,6 +209,10 @@ export const Slot = ({
 
 export const Children = () => use(ChildrenContext);
 
+/**
+ * ServerRoot for SSR
+ * This is not a public API.
+ */
 export const ServerRoot = ({
   elements,
   children,

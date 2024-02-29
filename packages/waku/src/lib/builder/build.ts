@@ -28,6 +28,7 @@ import {
   writeFile,
   appendFile,
   unlink,
+  readdir,
 } from '../utils/node-fs.js';
 import { encodeInput, generatePrefetchCode } from '../renderers/utils.js';
 import {
@@ -46,14 +47,14 @@ import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
+import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { emitVercelOutput } from './output-vercel.js';
-import { emitCloudflareOutput } from './output-cloudflare.js';
 import { emitNetlifyOutput } from './output-netlify.js';
+import { emitCloudflareOutput } from './output-cloudflare.js';
+import { emitPartyKitOutput } from './output-partykit.js';
 import { emitAwsLambdaOutput } from './output-aws-lambda.js';
 
 // TODO this file and functions in it are too long. will fix.
-
-const WAKU_CLIENT = 'waku-client';
 
 // Upstream issue: https://github.com/rollup/rollup/issues/4699
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
@@ -85,13 +86,37 @@ const hash = (fname: string) =>
     createReadStream(fname).pipe(sha256);
   });
 
-const analyzeEntries = async (entriesFile: string) => {
-  const commonFileSet = new Set<string>();
-  const clientFileSet = new Set<string>();
+const analyzeEntries = async (
+  rootDir: string,
+  config: ResolvedConfig,
+  entriesFile: string,
+) => {
+  const wakuClientDist = decodeFilePathFromAbsolute(
+    joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
+  );
+  const clientFileSet = new Set<string>([wakuClientDist]);
   const serverFileSet = new Set<string>();
+  const moduleFileMap = new Map<string, string>(); // module id -> full path
+  for (const preserveModuleDir of config.preserveModuleDirs) {
+    const dir = joinPath(rootDir, config.srcDir, preserveModuleDir);
+    if (!existsSync(dir)) {
+      continue;
+    }
+    const files = await readdir(dir, { encoding: 'utf8', recursive: true });
+    for (const file of files) {
+      const ext = extname(file);
+      if (['.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs'].includes(ext)) {
+        moduleFileMap.set(
+          joinPath(preserveModuleDir, file.slice(0, -ext.length)),
+          joinPath(dir, file),
+        );
+      }
+    }
+  }
   await buildVite({
-    plugins: [rscAnalyzePlugin(commonFileSet, clientFileSet, serverFileSet)],
+    plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet)],
     ssr: {
+      target: 'webworker',
       resolve: {
         conditions: ['react-server', 'workerd'],
         externalConditions: ['react-server', 'workerd'],
@@ -104,64 +129,64 @@ const analyzeEntries = async (entriesFile: string) => {
       rollupOptions: {
         onwarn,
         input: {
+          ...Object.fromEntries(moduleFileMap),
           entries: entriesFile,
         },
       },
     },
   });
-  const commonEntryFiles = Object.fromEntries(
-    await Promise.all(
-      Array.from(commonFileSet).map(async (fname, i) => [
-        `com${i}-${await hash(fname)}`,
-        fname,
-      ]),
-    ),
-  );
   const clientEntryFiles = Object.fromEntries(
     await Promise.all(
       Array.from(clientFileSet).map(async (fname, i) => [
-        `rsc${i}-${await hash(fname)}`,
+        `${config.assetsDir}/rsc${i}-${await hash(fname)}`,
         fname,
       ]),
     ),
   );
   const serverEntryFiles = Object.fromEntries(
-    Array.from(serverFileSet).map((fname, i) => [`rsf${i}`, fname]),
+    Array.from(serverFileSet).map((fname, i) => [
+      `${config.assetsDir}/rsf${i}`,
+      fname,
+    ]),
   );
+  const serverModuleFiles = Object.fromEntries(moduleFileMap);
   return {
-    commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
+    serverModuleFiles,
   };
 };
 
+// For RSC
 const buildServerBundle = async (
   rootDir: string,
   config: ResolvedConfig,
   entriesFile: string,
   distEntriesFile: string,
-  commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
+  serverModuleFiles: Record<string, string>,
   ssr: boolean,
-  serve: 'vercel' | 'cloudflare' | 'deno' | 'netlify' | 'aws-lambda' | false,
+  serve:
+    | 'vercel'
+    | 'netlify'
+    | 'cloudflare'
+    | 'partykit'
+    | 'deno'
+    | 'aws-lambda'
+    | false,
+  isNodeCompatible: boolean,
 ) => {
   const serverBuildOutput = await buildVite({
     plugins: [
       nonjsResolvePlugin(),
       rscTransformPlugin({
         isBuild: true,
-        assetsDir: config.assetsDir,
-        clientEntryFiles: {
-          // FIXME this seems very ad-hoc
-          [WAKU_CLIENT]: decodeFilePathFromAbsolute(
-            joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
-          ),
-          ...clientEntryFiles,
-        },
+        clientEntryFiles,
         serverEntryFiles,
       }),
       rscEnvPlugin({ config }),
+      rscPrivatePlugin(config),
       ...(serve
         ? [
             rscServePlugin({
@@ -174,19 +199,27 @@ const buildServerBundle = async (
                 ),
               ),
               ssr,
+              serve,
             }),
           ]
         : []),
     ],
-    ssr: {
-      resolve: {
-        conditions: ['react-server', 'workerd'],
-        externalConditions: ['react-server', 'workerd'],
-      },
-      external:
-        (serve === 'cloudflare' && ['hono', 'hono/cloudflare-workers']) || [],
-      noExternal: /^(?!node:)/,
-    },
+    ssr: isNodeCompatible
+      ? {
+          resolve: {
+            conditions: ['react-server', 'workerd'],
+            externalConditions: ['react-server', 'workerd'],
+          },
+          noExternal: /^(?!node:)/,
+        }
+      : {
+          target: 'webworker',
+          resolve: {
+            conditions: ['react-server', 'workerd', 'worker'],
+            externalConditions: ['react-server', 'workerd', 'worker'],
+          },
+          noExternal: /^(?!node:)/,
+        },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
     },
@@ -200,23 +233,9 @@ const buildServerBundle = async (
         input: {
           entries: entriesFile,
           [RSDW_SERVER_MODULE]: RSDW_SERVER_MODULE_VALUE,
-          [WAKU_CLIENT]: CLIENT_MODULE_MAP[WAKU_CLIENT],
-          ...commonEntryFiles,
+          ...serverModuleFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
-        },
-        output: {
-          entryFileNames: (chunkInfo) => {
-            if (
-              [WAKU_CLIENT].includes(chunkInfo.name) ||
-              commonEntryFiles[chunkInfo.name] ||
-              clientEntryFiles[chunkInfo.name] ||
-              serverEntryFiles[chunkInfo.name]
-            ) {
-              return config.assetsDir + '/[name].js';
-            }
-            return '[name].js';
-          },
         },
       },
     },
@@ -224,7 +243,7 @@ const buildServerBundle = async (
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
-  const psDir = joinPath(config.publicDir, config.assetsDir);
+  // TODO If ssr === false, we don't need to write ssr entries.
   const code = `
 export function loadModule(id) {
   switch (id) {
@@ -234,24 +253,22 @@ ${Object.keys(CLIENT_MODULE_MAP)
   .map(
     (key) => `
     case '${CLIENT_PREFIX}${key}':
-      return import('./${psDir}/${key}.js');
+      return import('./${config.ssrDir}/${key}.js');
   `,
   )
   .join('')}
-    case '${psDir}/${WAKU_CLIENT}.js':
-      return import('./${psDir}/${WAKU_CLIENT}.js');
-${Object.entries(serverEntryFiles || {})
+${Object.keys(clientEntryFiles || {})
   .map(
-    ([k]) => `
-    case '${config.assetsDir}/${k}.js':
-      return import('./${config.assetsDir}/${k}.js');`,
+    (key) => `
+    case '${config.ssrDir}/${key}.js':
+      return import('./${config.ssrDir}/${key}.js');`,
   )
   .join('')}
-${Object.entries(clientEntryFiles || {})
+${Object.keys(serverEntryFiles || {})
   .map(
-    ([k]) => `
-    case '${psDir}/${k}.js':
-      return import('./${psDir}/${k}.js');`,
+    (key) => `
+    case '${key}.js':
+      return import('./${key}.js');`,
   )
   .join('')}
     default:
@@ -263,24 +280,88 @@ ${Object.entries(clientEntryFiles || {})
   return serverBuildOutput;
 };
 
-const buildClientBundle = async (
+// For SSR (render client components on server to generate HTML)
+const buildSsrBundle = async (
   rootDir: string,
   config: ResolvedConfig,
-  commonEntryFiles: Record<string, string>,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
-  ssr: boolean,
+  isNodeCompatible: boolean,
 ) => {
   const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
+  await buildVite({
+    base: config.basePath,
+    plugins: [
+      rscIndexPlugin({ ...config, cssAssets }),
+      rscEnvPlugin({ config }),
+      rscPrivatePlugin(config),
+    ],
+    ssr: isNodeCompatible
+      ? {
+          noExternal: /^(?!node:)/,
+        }
+      : {
+          target: 'webworker',
+          resolve: {
+            conditions: ['worker'],
+            externalConditions: ['worker'],
+          },
+          noExternal: /^(?!node:)/,
+        },
+    define: {
+      'process.env.NODE_ENV': JSON.stringify('production'),
+    },
+    publicDir: false,
+    build: {
+      ssr: true,
+      outDir: joinPath(rootDir, config.distDir, config.ssrDir),
+      rollupOptions: {
+        onwarn,
+        input: {
+          main: mainJsFile,
+          ...clientEntryFiles,
+          ...CLIENT_MODULE_MAP,
+        },
+        output: {
+          entryFileNames: (chunkInfo) => {
+            if (
+              CLIENT_MODULE_MAP[
+                chunkInfo.name as keyof typeof CLIENT_MODULE_MAP
+              ] ||
+              clientEntryFiles[chunkInfo.name]
+            ) {
+              return '[name].js';
+            }
+            return config.assetsDir + '/[name]-[hash].js';
+          },
+        },
+      },
+    },
+  });
+};
+
+// For Browsers
+const buildClientBundle = async (
+  rootDir: string,
+  config: ResolvedConfig,
+  clientEntryFiles: Record<string, string>,
+  serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
+) => {
+  const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
+  const nonJsAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
+    type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
+  );
+  const cssAssets = nonJsAssets.filter((asset) => asset.endsWith('.css'));
   const clientBuildOutput = await buildVite({
     base: config.basePath,
     plugins: [
       viteReact(),
       rscIndexPlugin({ ...config, cssAssets }),
-      rscEnvPlugin({ config, hydrate: ssr }),
+      rscEnvPlugin({ config }),
+      rscPrivatePlugin(config),
     ],
     build: {
       outDir: joinPath(rootDir, config.distDir, config.publicDir),
@@ -288,21 +369,13 @@ const buildClientBundle = async (
         onwarn,
         input: {
           main: mainJsFile,
-          ...CLIENT_MODULE_MAP,
-          ...commonEntryFiles,
           ...clientEntryFiles,
         },
         preserveEntrySignatures: 'exports-only',
         output: {
           entryFileNames: (chunkInfo) => {
-            if (
-              CLIENT_MODULE_MAP[
-                chunkInfo.name as keyof typeof CLIENT_MODULE_MAP
-              ] ||
-              commonEntryFiles[chunkInfo.name] ||
-              clientEntryFiles[chunkInfo.name]
-            ) {
-              return config.assetsDir + '/[name].js';
+            if (clientEntryFiles[chunkInfo.name]) {
+              return '[name].js';
             }
             return config.assetsDir + '/[name]-[hash].js';
           },
@@ -313,9 +386,9 @@ const buildClientBundle = async (
   if (!('output' in clientBuildOutput)) {
     throw new Error('Unexpected vite client build output');
   }
-  for (const cssAsset of cssAssets) {
-    const from = joinPath(rootDir, config.distDir, cssAsset);
-    const to = joinPath(rootDir, config.distDir, config.publicDir, cssAsset);
+  for (const nonJsAsset of nonJsAssets) {
+    const from = joinPath(rootDir, config.distDir, nonJsAsset);
+    const to = joinPath(rootDir, config.distDir, config.publicDir, nonJsAsset);
     await rename(from, to);
   }
   return clientBuildOutput;
@@ -461,7 +534,11 @@ const emitHtmlFiles = async (
           rootDir,
           config.distDir,
           config.publicDir,
-          extname(pathname) ? pathname : pathname + '/' + config.indexHtml,
+          extname(pathname)
+            ? pathname
+            : pathname === '/404'
+              ? '404.html' // HACK special treatment for 404, better way?
+              : pathname + '/' + config.indexHtml,
         );
         const htmlReadable =
           ssr &&
@@ -487,13 +564,11 @@ const emitHtmlFiles = async (
                 searchParams,
                 isDev: false,
                 entries: distEntries,
-                isBuild: true,
               }),
             loadClientModule: (key) =>
               distEntries.loadModule(CLIENT_PREFIX + key),
             isDev: false,
             loadModule: distEntries.loadModule,
-            isBuild: true,
           }));
         await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
         if (htmlReadable) {
@@ -510,6 +585,7 @@ const emitHtmlFiles = async (
   const dynamicHtmlPaths = Array.from(dynamicHtmlPathMap);
   const code = `
 export const dynamicHtmlPaths= ${JSON.stringify(dynamicHtmlPaths)};
+export const publicIndexHtml= ${JSON.stringify(publicIndexHtml)};
 `;
   await appendFile(distEntriesFile, code);
 };
@@ -531,10 +607,11 @@ export async function build(options: {
   deploy?:
     | 'vercel-static'
     | 'vercel-serverless'
-    | 'cloudflare'
-    | 'deno'
     | 'netlify-static'
     | 'netlify-functions'
+    | 'cloudflare'
+    | 'partykit'
+    | 'deno'
     | 'aws-lambda'
     | undefined;
 }) {
@@ -549,32 +626,40 @@ export async function build(options: {
   const distEntriesFile = resolveFileName(
     joinPath(rootDir, config.distDir, config.entriesJs),
   );
+  const isNodeCompatible =
+    options.deploy !== 'cloudflare' &&
+    options.deploy !== 'partykit' &&
+    options.deploy !== 'deno';
 
-  const { commonEntryFiles, clientEntryFiles, serverEntryFiles } =
-    await analyzeEntries(entriesFile);
+  const { clientEntryFiles, serverEntryFiles, serverModuleFiles } =
+    await analyzeEntries(rootDir, config, entriesFile);
   const serverBuildOutput = await buildServerBundle(
     rootDir,
     config,
     entriesFile,
     distEntriesFile,
-    commonEntryFiles,
     clientEntryFiles,
     serverEntryFiles,
+    serverModuleFiles,
     !!options.ssr,
     (options.deploy === 'vercel-serverless' ? 'vercel' : false) ||
-      (options.deploy === 'cloudflare' ? 'cloudflare' : false) ||
-      (options.deploy === 'deno' ? 'deno' : false) ||
       (options.deploy === 'netlify-functions' ? 'netlify' : false) ||
+      (options.deploy === 'cloudflare' ? 'cloudflare' : false) ||
+      (options.deploy === 'partykit' ? 'partykit' : false) ||
+      (options.deploy === 'deno' ? 'deno' : false) ||
       (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
+    isNodeCompatible,
   );
-  await buildClientBundle(
-    rootDir,
-    config,
-    commonEntryFiles,
-    clientEntryFiles,
-    serverBuildOutput,
-    !!options.ssr,
-  );
+  if (options.ssr) {
+    await buildSsrBundle(
+      rootDir,
+      config,
+      clientEntryFiles,
+      serverBuildOutput,
+      isNodeCompatible,
+    );
+  }
+  await buildClientBundle(rootDir, config, clientEntryFiles, serverBuildOutput);
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
   const buildConfig = await getBuildConfig({ config, entries: distEntries });
@@ -600,14 +685,16 @@ export async function build(options: {
       config,
       options.deploy.slice('vercel-'.length) as 'static' | 'serverless',
     );
-  } else if (options.deploy === 'cloudflare') {
-    await emitCloudflareOutput(rootDir, config);
   } else if (options.deploy?.startsWith('netlify-')) {
     await emitNetlifyOutput(
       rootDir,
       config,
       options.deploy.slice('netlify-'.length) as 'static' | 'functions',
     );
+  } else if (options.deploy === 'cloudflare') {
+    await emitCloudflareOutput(rootDir, config);
+  } else if (options.deploy === 'partykit') {
+    await emitPartyKitOutput(rootDir, config);
   } else if (options.deploy === 'aws-lambda') {
     await emitAwsLambdaOutput(config);
   }

@@ -14,20 +14,15 @@ import { renderHtml } from '../renderers/html-renderer.js';
 import { decodeInput, hasStatusCode } from '../renderers/utils.js';
 import {
   initializeWorker,
-  registerReloadCallback,
-  registerImportCallback,
-  registerModuleCallback,
+  registerHotUpdateCallback,
   renderRscWithWorker,
   getSsrConfigWithWorker,
 } from './dev-worker-api.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
-import {
-  rscHmrPlugin,
-  hotImport,
-  moduleImport,
-} from '../plugins/vite-plugin-rsc-hmr.js';
+import { rscHmrPlugin, hotUpdate } from '../plugins/vite-plugin-rsc-hmr.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
+import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import type { BaseReq, BaseRes, Handler } from './types.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 
@@ -61,12 +56,12 @@ export function createHandler<
       base: config.basePath,
       plugins: [
         patchReactRefresh(viteReact()),
-        rscEnvPlugin({ config, hydrate: ssr }),
+        rscEnvPlugin({ config }),
+        rscPrivatePlugin(config),
         rscIndexPlugin(config),
         rscHmrPlugin(),
         { name: 'nonjs-resolve-plugin' }, // dummy to match with dev-worker-impl.ts
         { name: 'rsc-transform-plugin' }, // dummy to match with dev-worker-impl.ts
-        { name: 'rsc-reload-plugin' }, // dummy to match with dev-worker-impl.ts
         { name: 'rsc-delegate-plugin' }, // dummy to match with dev-worker-impl.ts
       ],
       optimizeDeps: {
@@ -89,9 +84,7 @@ export function createHandler<
     });
     const vite = await createViteServer(mergedViteConfig);
     initializeWorker(config);
-    registerReloadCallback((type) => vite.ws.send({ type }));
-    registerImportCallback((source) => hotImport(vite, source));
-    registerModuleCallback((result) => moduleImport(vite, result));
+    registerHotUpdateCallback((payload) => hotUpdate(vite, payload));
     return vite;
   });
 
@@ -116,11 +109,14 @@ export function createHandler<
           // FIXME without removing async, Vite will move it
           // to the proxy cache, which breaks __WAKU_PUSH__.
           data = data.replace(/<script type="module" async>/, '<script>');
-          return new Promise<void>((resolve) => {
-            vite.transformIndexHtml(pathname, data).then((result) => {
-              controller.enqueue(encoder.encode(result));
-              resolve();
-            });
+          return new Promise<void>((resolve, reject) => {
+            vite
+              .transformIndexHtml(pathname, data)
+              .then((result) => {
+                controller.enqueue(encoder.encode(result));
+                resolve();
+              })
+              .catch(reject);
           });
         }
         controller.enqueue(chunk);
@@ -136,20 +132,43 @@ export function createHandler<
   return async (req, res, next) => {
     const [config, vite] = await Promise.all([configPromise, vitePromise]);
     const basePrefix = config.basePath + config.rscPath + '/';
-    const handleError = (err: unknown) => {
+    const handleError = async (err: unknown) => {
       if (hasStatusCode(err)) {
         res.setStatus(err.statusCode);
       } else {
         console.info('Cannot render RSC', err);
         res.setStatus(500);
       }
-      endStream(res.stream, String(err));
+      await endStream(res.stream, String(err));
     };
     let context: Context | undefined;
     try {
       context = unstable_prehook?.(req, res);
     } catch (e) {
-      handleError(e);
+      await handleError(e);
+      return;
+    }
+    if (req.url.pathname.startsWith(basePrefix)) {
+      const { method, contentType } = req;
+      if (method !== 'GET' && method !== 'POST') {
+        throw new Error(`Unsupported method '${method}'`);
+      }
+      try {
+        const input = decodeInput(req.url.pathname.slice(basePrefix.length));
+        const [readable, nextCtx] = await renderRscWithWorker({
+          input,
+          searchParamsString: req.url.searchParams.toString(),
+          method,
+          contentType,
+          config,
+          context,
+          stream: req.stream,
+        });
+        unstable_posthook?.(req, res, nextCtx as Context);
+        await readable.pipeTo(res.stream);
+      } catch (e) {
+        await handleError(e);
+      }
       return;
     }
     if (ssr) {
@@ -158,8 +177,7 @@ export function createHandler<
           config,
           pathname: req.url.pathname,
           searchParams: req.url.searchParams,
-          htmlHead: `${config.htmlHead}
-<script src="${config.basePath}${config.srcDir}/${config.mainJs}" async type="module"></script>`,
+          htmlHead: config.htmlHead,
           renderRscForHtml: async (input, searchParams) => {
             const [readable, nextCtx] = await renderRscWithWorker({
               input,
@@ -182,38 +200,15 @@ export function createHandler<
         if (readable) {
           unstable_posthook?.(req, res, context as Context);
           res.setHeader('content-type', 'text/html; charset=utf-8');
-          readable
+          await readable
             .pipeThrough(await transformIndexHtml(req.url.pathname))
             .pipeTo(res.stream);
           return;
         }
       } catch (e) {
-        handleError(e);
+        await handleError(e);
         return;
       }
-    }
-    if (req.url.pathname.startsWith(basePrefix)) {
-      const { method, contentType } = req;
-      if (method !== 'GET' && method !== 'POST') {
-        throw new Error(`Unsupported method '${method}'`);
-      }
-      try {
-        const input = decodeInput(req.url.pathname.slice(basePrefix.length));
-        const [readable, nextCtx] = await renderRscWithWorker({
-          input,
-          searchParamsString: req.url.searchParams.toString(),
-          method,
-          contentType,
-          config,
-          context,
-          stream: req.stream,
-        });
-        unstable_posthook?.(req, res, nextCtx as Context);
-        readable.pipeTo(res.stream);
-      } catch (e) {
-        handleError(e);
-      }
-      return;
     }
     // HACK re-export "?v=..." URL to avoid dual module hazard.
     const viteUrl = req.url.toString().slice(req.url.origin.length);
@@ -236,7 +231,7 @@ export function createHandler<
         if (code.includes('export default')) {
           exports += `export { default } from "${item.url}";`;
         }
-        endStream(res.stream, exports);
+        await endStream(res.stream, exports);
         return;
       }
     }

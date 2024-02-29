@@ -1,7 +1,7 @@
 {
   "name": "waku",
   "description": "⛩️ The minimal React framework",
-  "version": "0.19.2",
+  "version": "0.19.4",
   "type": "module",
   "author": "Daishi Kato",
   "homepage": "https://waku.gg",
@@ -24,6 +24,10 @@
     "./config": {
       "types": "./dist/config.d.ts",
       "default": "./dist/config.js"
+    },
+    "./middleware": {
+      "types": "./dist/middleware.d.ts",
+      "default": "./dist/middleware.js"
     },
     "./prd": {
       "types": "./dist/prd.d.ts",
@@ -69,23 +73,25 @@
   },
   "license": "MIT",
   "engines": {
-    "node": "^20.8.0 || ^18.16.0"
+    "node": "^20.8.0 || ^18.17.0"
   },
   "dependencies": {
-    "@hono/node-server": "1.7.0",
-    "@swc/core": "1.4.0",
+    "@hono/node-server": "1.8.2",
+    "@swc/core": "1.4.2",
     "@vitejs/plugin-react": "4.2.1",
-    "hono": "3.12.11",
-    "vite": "5.0.12"
+    "dotenv": "16.4.5",
+    "hono": "4.0.7",
+    "rsc-html-stream": "0.0.3",
+    "vite": "5.1.4"
   },
   "devDependencies": {
-    "@netlify/functions": "^2.5.1",
+    "@netlify/functions": "^2.6.0",
     "@swc/cli": "^0.3.9",
-    "rollup": "^4.9.6"
+    "rollup": "^4.12.0"
   },
   "peerDependencies": {
-    "react": "18.3.0-canary-4b2a1115a-20240202",
-    "react-dom": "18.3.0-canary-4b2a1115a-20240202",
-    "react-server-dom-webpack": "18.3.0-canary-4b2a1115a-20240202"
+    "react": "18.3.0-canary-6c3b8dbfe-20240226",
+    "react-dom": "18.3.0-canary-6c3b8dbfe-20240226",
+    "react-server-dom-webpack": "18.3.0-canary-6c3b8dbfe-20240226"
   }
 }

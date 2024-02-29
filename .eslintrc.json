@@ -11,13 +11,17 @@
     "prettier"
   ],
   "settings": {
-    "react": { "version": "detect" },
+    "react": { "version": "999.999.999" },
     "import/resolver": { "typescript": true }
   },
   "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "./tsconfig.eslint.json"
+  },
   "plugins": ["@typescript-eslint"],
   "ignorePatterns": ["dist"],
   "rules": {
+    "@typescript-eslint/no-floating-promises": "error",
     "@typescript-eslint/no-non-null-assertion": "off",
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-unused-vars": [

@@ -9,7 +9,11 @@ import viteReact from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
-import { joinPath, fileURLToFilePath } from '../utils/path.js';
+import {
+  joinPath,
+  fileURLToFilePath,
+  encodeFilePathToAbsolute,
+} from '../utils/path.js';
 import { deepFreeze, hasStatusCode } from '../renderers/utils.js';
 import type {
   MessageReq,
@@ -20,9 +24,10 @@ import { renderRsc, getSsrConfig } from '../renderers/rsc-renderer.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
-import { rscReloadPlugin } from '../plugins/vite-plugin-rsc-reload.js';
+import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
+import { viteHot } from '../plugins/vite-plugin-rsc-hmr.js';
 
 const { default: module } = await import('node:module');
 const HAS_MODULE_REGISTER = typeof module.register === 'function';
@@ -33,8 +38,15 @@ if (HAS_MODULE_REGISTER) {
 (globalThis as any).__WAKU_PRIVATE_ENV__ = getEnvironmentData(
   '__WAKU_PRIVATE_ENV__',
 );
-const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR');
-const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS');
+const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR') as string;
+const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS') as string;
+const configPrivateDir = getEnvironmentData('CONFIG_PRIVATE_DIR') as string;
+
+const resolveClientEntryForDev = (id: string, config: ResolvedConfig) => {
+  const filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
+  // HACK this relies on Vite's internal implementation detail.
+  return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
+};
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   const { id, type: _removed, hasModuleIdCallback, ...rest } = mesg;
@@ -57,6 +69,8 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
       moduleIdCallback: rr.moduleIdCallback,
       isDev: true,
       customImport: loadServerFile,
+      resolveClientEntry: (id: string) =>
+        resolveClientEntryForDev(id, rr.config),
       entries: await loadEntries(rr.config),
     });
     const mesg: MessageRes = {
@@ -87,6 +101,7 @@ const handleGetSsrConfig = async (
       pathname,
       searchParams,
       isDev: true,
+      resolveClientEntry: (id: string) => resolveClientEntryForDev(id, config),
       entries: await loadEntries(config),
     });
     const mesg: MessageRes = ssrConfig
@@ -107,31 +122,19 @@ const handleGetSsrConfig = async (
 
 const dummyServer = new Server(); // FIXME we hope to avoid this hack
 
-const moduleImports: Set<string> = new Set();
-
 const mergedViteConfig = await mergeUserViteConfig({
   plugins: [
     viteReact(),
     rscEnvPlugin({}),
+    rscPrivatePlugin({ privateDir: configPrivateDir }),
     { name: 'rsc-index-plugin' }, // dummy to match with handler-dev.ts
     { name: 'rsc-hmr-plugin', enforce: 'post' }, // dummy to match with handler-dev.ts
     nonjsResolvePlugin(),
     rscTransformPlugin({ isBuild: false }),
-    rscReloadPlugin(moduleImports, (type) => {
-      const mesg: MessageRes = { type };
+    rscDelegatePlugin((payload) => {
+      const mesg: MessageRes = { type: 'hot-update', payload };
       parentPort!.postMessage(mesg);
     }),
-    rscDelegatePlugin(
-      moduleImports,
-      (source) => {
-        const mesg: MessageRes = { type: 'hot-import', source };
-        parentPort!.postMessage(mesg);
-      },
-      (result) => {
-        const mesg: MessageRes = { type: 'module-import', result };
-        parentPort!.postMessage(mesg);
-      },
-    ),
   ],
   optimizeDeps: {
     include: ['react-server-dom-webpack/client', 'react-dom'],
@@ -159,7 +162,8 @@ const mergedViteConfig = await mergeUserViteConfig({
 });
 
 const vitePromise = createViteServer(mergedViteConfig).then(async (vite) => {
-  await vite.ws.close();
+  const hot = viteHot(vite);
+  await hot.close();
   return vite;
 });
 
@@ -168,16 +172,21 @@ const loadServerFile = async (fileURL: string) => {
   return vite.ssrLoadModule(fileURLToFilePath(fileURL));
 };
 
-const loadEntries = async (config: ResolvedConfig) => {
+const loadEntries = async (config: { srcDir: string; entriesJs: string }) => {
   const vite = await vitePromise;
   const filePath = joinPath(vite.config.root, config.srcDir, config.entriesJs);
   return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
 };
 
-parentPort!.on('message', (mesg: MessageReq) => {
+// load entries eagerly
+loadEntries({ srcDir: configSrcDir, entriesJs: configEntriesJs }).catch(() => {
+  // ignore
+});
+
+parentPort!.on('message', async (mesg: MessageReq) => {
   if (mesg.type === 'render') {
-    handleRender(mesg);
+    await handleRender(mesg);
   } else if (mesg.type === 'getSsrConfig') {
-    handleGetSsrConfig(mesg);
+    await handleGetSsrConfig(mesg);
   }
 });

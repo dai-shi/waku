@@ -9,16 +9,16 @@
     "start": "waku start --with-ssr"
   },
   "dependencies": {
-    "react": "18.3.0-canary-4b2a1115a-20240202",
-    "react-dom": "18.3.0-canary-4b2a1115a-20240202",
-    "react-server-dom-webpack": "18.3.0-canary-4b2a1115a-20240202",
-    "waku": "0.19.2"
+    "react": "18.3.0-canary-6c3b8dbfe-20240226",
+    "react-dom": "18.3.0-canary-6c3b8dbfe-20240226",
+    "react-server-dom-webpack": "18.3.0-canary-6c3b8dbfe-20240226",
+    "waku": "0.19.4"
   },
   "devDependencies": {
-    "@types/react": "18.2.54",
-    "@types/react-dom": "18.2.18",
+    "@types/react": "18.2.59",
+    "@types/react-dom": "18.2.19",
     "typescript": "5.3.3",
-    "vite": "5.0.12",
+    "vite": "5.1.4",
     "vite-tsconfig-paths": "4.3.1"
   }
 }
