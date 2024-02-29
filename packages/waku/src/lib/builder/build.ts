@@ -400,7 +400,7 @@ export const extractNonJsAssets = (buildOutput: RollupOutput) =>
     type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
   );
 
-export const extracCssAssets = (assets: string[]) =>
+const extracCssAssets = (assets: string[]) =>
   assets.filter((asset) => asset.endsWith('.css'));
 
 const emitRscFiles = async (
