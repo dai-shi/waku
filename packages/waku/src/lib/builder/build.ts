@@ -4,7 +4,7 @@ import { pipeline } from 'node:stream/promises';
 
 import { build as buildVite, resolveConfig as resolveViteConfig } from 'vite';
 import viteReact from '@vitejs/plugin-react';
-import type { RollupLog, LoggingFunction } from 'rollup';
+import type { RollupLog, LoggingFunction, RollupOutput } from 'rollup';
 
 import type { Config } from '../../config.js';
 import type { EntriesPrd } from '../../server.js';
@@ -285,13 +285,14 @@ const buildSsrBundle = async (
   rootDir: string,
   config: ResolvedConfig,
   clientEntryFiles: Record<string, string>,
+  clientBuildCss: string[],
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
   isNodeCompatible: boolean,
 ) => {
   const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
-  );
+  ).concat(clientBuildCss);
   await buildVite({
     base: config.basePath,
     plugins: [
@@ -351,10 +352,8 @@ const buildClientBundle = async (
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
 ) => {
   const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
-  const nonJsAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
-    type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
-  );
-  const cssAssets = nonJsAssets.filter((asset) => asset.endsWith('.css'));
+  const nonJsAssets = extractNotJsAssets(serverBuildOutput);
+  const cssAssets = extracCssAssets(nonJsAssets);
   const clientBuildOutput = await buildVite({
     base: config.basePath,
     plugins: [
@@ -393,6 +392,13 @@ const buildClientBundle = async (
   }
   return clientBuildOutput;
 };
+
+export const extractNotJsAssets = (buildOutput: RollupOutput) => buildOutput.output.flatMap(({ type, fileName }) =>
+    type === 'asset' && !fileName.endsWith('.js') ? [fileName] : []
+  )
+
+
+export const extracCssAssets = (assets: string[]) => assets.filter((asset) => asset.endsWith('.css'))
 
 const emitRscFiles = async (
   rootDir: string,
@@ -474,8 +480,11 @@ const emitHtmlFiles = async (
   distEntries: EntriesPrd,
   buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
   getClientModules: (input: string) => string[],
+  clientBuildCss: string[],
   ssr: boolean,
 ) => {
+  const css = clientBuildCss.map((l) => `<link rel="stylesheet" href="${l}">`)
+
   const basePrefix = config.basePath + config.rscPath + '/';
   const publicIndexHtmlFile = joinPath(
     rootDir,
@@ -483,9 +492,15 @@ const emitHtmlFiles = async (
     config.publicDir,
     config.indexHtml,
   );
-  const publicIndexHtml = await readFile(publicIndexHtmlFile, {
+  let publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
+  publicIndexHtml = publicIndexHtml.replace(
+    /<\/head>/,
+    `${css}</head>`,
+  )
+  await writeFile(publicIndexHtmlFile, publicIndexHtml)
+  
   if (ssr) {
     await unlink(publicIndexHtmlFile);
   }
@@ -518,12 +533,13 @@ const emitHtmlFiles = async (
             moduleIdsForPrefetch,
           ) + (customCode || '');
         if (code) {
+          const str = `<script type="module" async>${code}</script>`
           // HACK is this too naive to inject script code?
           htmlStr = htmlStr.replace(
             /<\/head>/,
-            `<script type="module" async>${code}</script></head>`,
+            `${str}</head>`,
           );
-          htmlHead += `<script type="module" async>${code}</script>`;
+          htmlHead += str;
         }
         if (!isStatic) {
           dynamicHtmlPathMap.set(pathSpec, htmlHead);
@@ -571,12 +587,14 @@ const emitHtmlFiles = async (
             loadModule: distEntries.loadModule,
           }));
         await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
+        console.log('htmlReadable', htmlReadable)
         if (htmlReadable) {
           await pipeline(
             Readable.fromWeb(htmlReadable as any),
             createWriteStream(destHtmlFile),
           );
         } else {
+          console.log('here', htmlHead)
           await writeFile(destHtmlFile, htmlStr);
         }
       },
@@ -649,16 +667,20 @@ export async function build(options: {
       (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
     isNodeCompatible,
   );
+  const clientBuildOutput = await buildClientBundle(rootDir, config, clientEntryFiles, serverBuildOutput);
+  const clientBuildCss = extracCssAssets(extractNotJsAssets(clientBuildOutput))
+
   if (options.ssr) {
     await buildSsrBundle(
       rootDir,
       config,
       clientEntryFiles,
+      clientBuildCss,
       serverBuildOutput,
       isNodeCompatible,
     );
   }
-  await buildClientBundle(rootDir, config, clientEntryFiles, serverBuildOutput);
+  
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
   const buildConfig = await getBuildConfig({ config, entries: distEntries });
@@ -675,6 +697,7 @@ export async function build(options: {
     distEntries,
     buildConfig,
     getClientModules,
+    clientBuildCss,
     !!options.ssr,
   );
 
