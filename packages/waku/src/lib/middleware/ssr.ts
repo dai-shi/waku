@@ -1,8 +1,8 @@
 import { resolveConfig } from '../config.js';
 import { getPathMapping } from '../utils/path.js';
 import { renderHtml } from '../renderers/html-renderer.js';
-import { hasStatusCode } from '../renderers/utils.js';
-import { renderRsc, getSsrConfig } from '../renderers/rsc-renderer.js';
+import { hasStatusCode, encodeInput } from '../renderers/utils.js';
+import { getSsrConfig } from '../renderers/rsc-renderer.js';
 import type { Middleware } from './types.js';
 
 export const CLIENT_PREFIX = 'client/';
@@ -32,17 +32,16 @@ export const ssr: Middleware = (options) => {
           pathname: ctx.req.url.pathname,
           searchParams: ctx.req.url.searchParams,
           htmlHead,
-          // TODO refactor: avoid this and try using next() instead
-          renderRscForHtml: (input, searchParams) =>
-            renderRsc({
-              entries,
-              config,
-              input,
-              searchParams,
-              method: 'GET',
-              context: ctx.context,
-              isDev: false,
-            }),
+          renderRscForHtml: async (input, searchParams) => {
+            ctx.req.url.pathname =
+              config.basePath + config.rscPath + '/' + encodeInput(input);
+            ctx.req.url.search = '?' + searchParams.toString();
+            await next();
+            if (!ctx.res.body) {
+              throw new Error('No body');
+            }
+            return ctx.res.body;
+          },
           getSsrConfigForHtml: (pathname, searchParams) =>
             getSsrConfig({
               config,
