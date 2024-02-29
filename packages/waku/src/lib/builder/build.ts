@@ -395,7 +395,7 @@ const buildClientBundle = async (
   return clientBuildOutput;
 };
 
-export const extractNonJsAssets = (buildOutput: RollupOutput) =>
+const extractNonJsAssets = (buildOutput: RollupOutput) =>
   buildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
   );
