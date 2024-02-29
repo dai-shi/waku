@@ -4,11 +4,8 @@ import viteReact from '@vitejs/plugin-react';
 
 import { resolveConfig } from '../config.js';
 import {
-  joinPath,
   fileURLToFilePath,
-  decodeFilePathFromAbsolute,
 } from '../utils/path.js';
-import { stringToStream } from '../utils/stream.js';
 import {
   initializeWorker,
   registerHotUpdateCallback,
@@ -162,7 +159,7 @@ export const devServer: Middleware = (options) => {
   };
 
   return async (ctx, next) => {
-    const [{ middleware: _removed, ...config }, vite] = await Promise.all([
+    const [{ middleware: _removed }, vite] = await Promise.all([
       configPromise,
       vitePromise,
     ]);
@@ -182,34 +179,36 @@ export const devServer: Middleware = (options) => {
 
     // HACK re-export "?v=..." URL to avoid dual module hazard.
     const viteUrl = ctx.req.url.toString().slice(ctx.req.url.origin.length);
-    const fname = viteUrl.startsWith(config.basePath + '@fs/')
-      ? decodeFilePathFromAbsolute(
-          viteUrl.slice(config.basePath.length + '@fs'.length),
-        )
-      : joinPath(vite.config.root, viteUrl);
-    for (const item of vite.moduleGraph.idToModuleMap.values()) {
-      if (
-        item.file === fname &&
-        item.url !== viteUrl &&
-        !item.url.includes('?html-proxy')
-      ) {
-        const { code } = (await vite.transformRequest(item.url))!;
-        ctx.res.headers = {
-          ...ctx.res.headers,
-          'content-type': 'application/javascript',
-        };
-        ctx.res.status = 200;
-        let exports = `export * from "${item.url}";`;
-        // `export *` does not re-export `default`
-        if (code.includes('export default')) {
-          exports += `export { default } from "${item.url}";`;
-        }
-        ctx.res.body = stringToStream(exports);
-        return;
-      }
-    }
+    // const fname = viteUrl.startsWith(config.basePath + '@fs/')
+    //   ? decodeFilePathFromAbsolute(
+    //       viteUrl.slice(config.basePath.length + '@fs'.length),
+    //     )
+    //   : joinPath(vite.config.root, viteUrl);
+    // for (const item of vite.moduleGraph.idToModuleMap.values()) {
+    //   if (
+    //     item.file === fname &&
+    //     item.url !== viteUrl &&
+    //     !item.url.includes('?html-proxy')
+    //   ) {
+    //     const { code } = (await vite.transformRequest(item.url))!;
+    //     ctx.res.headers = {
+    //       ...ctx.res.headers,
+    //       'content-type': 'application/javascript',
+    //     };
+    //     ctx.res.status = 200;
+    //     let exports = `export * from "${item.url}";`;
+    //     // `export *` does not re-export `default`
+    //     if (code.includes('export default')) {
+    //       exports += `export { default } from "${item.url}";`;
+    //     }
+    //     ctx.res.body = stringToStream(exports);
+    //     return;
+    //   }
+    // }
     const viteReq: any = Readable.fromWeb(ctx.req.body as any);
     viteReq.method = ctx.req.method;
+    // const viteReq: any = Readable.fromWeb(req.stream as any);
+    // viteReq.method = req.method;
     viteReq.url = viteUrl;
     viteReq.headers = ctx.req.headers;
     const [writable, readablePromise] = createStreamPair();
