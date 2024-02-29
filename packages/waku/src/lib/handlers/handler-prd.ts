@@ -11,15 +11,18 @@ import type { BaseReq, BaseRes, Handler } from './types.js';
 export const CLIENT_PREFIX = 'client/';
 
 export function createHandler<
-  Context,
   Req extends BaseReq,
   Res extends BaseRes,
 >(options: {
   config?: Config;
   ssr?: boolean;
   env?: Record<string, string>;
-  unstable_prehook?: (req: Req, res: Res) => Context;
-  unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
+  unstable_prehook?: (req: Req, res: Res) => Record<string, unknown>;
+  unstable_posthook?: (
+    req: Req,
+    res: Res,
+    context: Record<string, unknown>,
+  ) => void;
   loadEntries: () => Promise<EntriesPrd>;
 }): Handler<Req, Res> {
   const { config, ssr, unstable_prehook, unstable_posthook, loadEntries } =
@@ -43,7 +46,7 @@ export function createHandler<
       }
       await endStream(res.stream);
     };
-    let context: Context | undefined;
+    let context: Record<string, unknown> | undefined;
     try {
       context = unstable_prehook?.(req, res);
     } catch (e) {
@@ -72,7 +75,7 @@ export function createHandler<
             entries: await entries,
           },
         );
-        unstable_posthook?.(req, res, context as Context);
+        unstable_posthook?.(req, res, context!);
         deepFreeze(context);
         await readable.pipeTo(res.stream);
         return;
@@ -122,7 +125,7 @@ export function createHandler<
             loadModule: resolvedEntries.loadModule,
           });
           if (readable) {
-            unstable_posthook?.(req, res, context as Context);
+            unstable_posthook?.(req, res, context!);
             deepFreeze(context);
             res.setHeader('content-type', 'text/html; charset=utf-8');
             await readable.pipeTo(res.stream);

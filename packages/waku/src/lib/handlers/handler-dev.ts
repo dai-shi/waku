@@ -35,15 +35,18 @@ export const CLIENT_MODULE_MAP = {
 export type CLIENT_MODULE_KEY = keyof typeof CLIENT_MODULE_MAP;
 
 export function createHandler<
-  Context,
   Req extends BaseReq,
   Res extends BaseRes,
 >(options: {
   config?: Config;
   ssr?: boolean;
   env?: Record<string, string>;
-  unstable_prehook?: (req: Req, res: Res) => Context;
-  unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
+  unstable_prehook?: (req: Req, res: Res) => Record<string, unknown>;
+  unstable_posthook?: (
+    req: Req,
+    res: Res,
+    context: Record<string, unknown>,
+  ) => void;
 }): Handler<Req, Res> {
   const { ssr, unstable_prehook, unstable_posthook } = options;
   if (!unstable_prehook && unstable_posthook) {
@@ -141,7 +144,7 @@ export function createHandler<
       }
       await endStream(res.stream, String(err));
     };
-    let context: Context | undefined;
+    let context: Record<string, unknown> | undefined;
     try {
       context = unstable_prehook?.(req, res);
     } catch (e) {
@@ -155,7 +158,7 @@ export function createHandler<
       }
       try {
         const input = decodeInput(req.url.pathname.slice(basePrefix.length));
-        const [readable, nextCtx] = await renderRscWithWorker({
+        const readable = await renderRscWithWorker({
           input,
           searchParams: req.url.searchParams,
           method,
@@ -164,7 +167,7 @@ export function createHandler<
           context,
           body: req.stream,
         });
-        unstable_posthook?.(req, res, nextCtx as Context);
+        unstable_posthook?.(req, res, context!);
         await readable.pipeTo(res.stream);
       } catch (e) {
         await handleError(e);
@@ -179,7 +182,7 @@ export function createHandler<
           searchParams: req.url.searchParams,
           htmlHead: config.htmlHead,
           renderRscForHtml: async (input, searchParams) => {
-            const [readable, nextCtx] = await renderRscWithWorker({
+            const readable = await renderRscWithWorker({
               input,
               searchParams,
               method: 'GET',
@@ -187,7 +190,6 @@ export function createHandler<
               config,
               context,
             });
-            context = nextCtx as Context;
             return readable;
           },
           getSsrConfigForHtml: (pathname, options) =>
@@ -198,7 +200,7 @@ export function createHandler<
           loadServerFile,
         });
         if (readable) {
-          unstable_posthook?.(req, res, context as Context);
+          unstable_posthook?.(req, res, context!);
           res.setHeader('content-type', 'text/html; charset=utf-8');
           await readable
             .pipeThrough(await transformIndexHtml(req.url.pathname))

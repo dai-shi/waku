@@ -23,7 +23,7 @@ export type RenderRscArgs = {
   input: string;
   searchParams: URLSearchParams;
   method: 'GET' | 'POST';
-  context: unknown;
+  context: Record<string, unknown> | undefined;
   body?: ReadableStream | undefined;
   contentType?: string | undefined;
   moduleIdCallback?: ((id: string) => void) | undefined;
@@ -137,7 +137,7 @@ export async function renderRsc(
       if (rendered) {
         throw new Error('already rendered');
       }
-      const renderContext: RenderContext = { rerender, context };
+      const renderContext: RenderContext = { rerender, context: context || {} };
       elements = Promise.all([
         elements,
         render(renderContext, input, searchParams),
@@ -146,7 +146,7 @@ export async function renderRsc(
         ...newElements,
       }));
     };
-    const renderContext: RenderContext = { rerender, context };
+    const renderContext: RenderContext = { rerender, context: context || {} };
     const data = await fn.apply(renderContext, args);
     const resolvedElements = await elements;
     rendered = true;
@@ -161,7 +161,7 @@ export async function renderRsc(
     rerender: () => {
       throw new Error('Cannot rerender');
     },
-    context,
+    context: context || {},
   };
   const elements = await render(renderContext, input, searchParams);
   return renderToReadableStream(elements, bundlerConfig);
@@ -193,7 +193,7 @@ export async function getBuildConfig(opts: {
         input,
         searchParams: new URLSearchParams(),
         method: 'GET',
-        context: null,
+        context: undefined,
         moduleIdCallback: (id) => idSet.add(id),
       },
       {

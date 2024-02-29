@@ -29,7 +29,12 @@ export type MessageReq =
 
 export type MessageRes =
   | { type: 'hot-update'; payload: HotUpdatePayload }
-  | { id: number; type: 'start'; context: unknown; stream: ReadableStream }
+  | {
+      id: number;
+      type: 'start';
+      context: Record<string, unknown> | undefined;
+      stream: ReadableStream;
+    }
   | { id: number; type: 'err'; err: unknown; statusCode?: number }
   | { id: number; type: 'moduleId'; moduleId: string }
   | {
@@ -117,9 +122,9 @@ export function registerHotUpdateCallback(
 
 let nextId = 1;
 
-export async function renderRscWithWorker<Context>(
+export async function renderRscWithWorker(
   args: RenderRscArgs,
-): Promise<readonly [ReadableStream, Context]> {
+): Promise<ReadableStream> {
   const worker = await getWorker();
   const id = nextId++;
   let started = false;
@@ -133,7 +138,12 @@ export async function renderRscWithWorker<Context>(
               messageCallbacks.delete(id);
             },
           });
-          resolve([mesg.stream.pipeThrough(bridge), mesg.context as Context]);
+          Object.entries(mesg.context || {}).forEach(([key, value]) => {
+            if (args.context) {
+              args.context[key] = value;
+            }
+          });
+          resolve(mesg.stream.pipeThrough(bridge));
         } else {
           throw new Error('already started');
         }
