@@ -4,7 +4,6 @@ export default ({ mode }: { mode: string }) => {
     return {
       optimizeDeps: {
         include: [
-          'react-dom/client',
           'react-tweet > use-sync-external-store/shim/index.js',
           'react-tweet > date-fns/format/index.js',
         ],
