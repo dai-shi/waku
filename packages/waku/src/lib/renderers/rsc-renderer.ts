@@ -18,25 +18,29 @@ const resolveClientEntryForPrd = (id: string, config: ResolvedConfig) => {
   return config.basePath + id.slice('@id/'.length);
 };
 
+export type RenderRscArgs = {
+  config: ResolvedConfig;
+  input: string;
+  searchParams: URLSearchParams;
+  method: 'GET' | 'POST';
+  context: unknown;
+  body?: ReadableStream | undefined;
+  contentType?: string | undefined;
+  moduleIdCallback?: ((id: string) => void) | undefined;
+};
+
+type RenderRscOpts =
+  | { isDev: false; entries: EntriesPrd }
+  | {
+      isDev: true;
+      entries: EntriesDev;
+      customImport: (fileURL: string) => Promise<unknown>;
+      resolveClientEntry: (id: string) => string;
+    };
+
 export async function renderRsc(
-  opts: {
-    config: ResolvedConfig;
-    input: string;
-    searchParams: URLSearchParams;
-    method: 'GET' | 'POST';
-    context: unknown;
-    body?: ReadableStream | undefined;
-    contentType?: string | undefined;
-    moduleIdCallback?: ((id: string) => void) | undefined;
-  } & (
-    | { isDev: false; entries: EntriesPrd }
-    | {
-        isDev: true;
-        entries: EntriesDev;
-        customImport: (fileURL: string) => Promise<unknown>;
-        resolveClientEntry: (id: string) => string;
-      }
-  ),
+  args: RenderRscArgs,
+  opts: RenderRscOpts,
 ): Promise<ReadableStream> {
   const {
     config,
@@ -47,9 +51,8 @@ export async function renderRsc(
     context,
     body,
     moduleIdCallback,
-    isDev,
-    entries,
-  } = opts;
+  } = args;
+  const { isDev, entries } = opts;
 
   const resolveClientEntry = isDev
     ? opts.resolveClientEntry
@@ -184,16 +187,20 @@ export async function getBuildConfig(opts: {
     input: string,
   ): Promise<string[]> => {
     const idSet = new Set<string>();
-    const readable = await renderRsc({
-      config,
-      input,
-      searchParams: new URLSearchParams(),
-      method: 'GET',
-      context: null,
-      moduleIdCallback: (id) => idSet.add(id),
-      isDev: false,
-      entries,
-    });
+    const readable = await renderRsc(
+      {
+        config,
+        input,
+        searchParams: new URLSearchParams(),
+        method: 'GET',
+        context: null,
+        moduleIdCallback: (id) => idSet.add(id),
+      },
+      {
+        isDev: false,
+        entries,
+      },
+    );
     await new Promise<void>((resolve, reject) => {
       const writable = new WritableStream({
         close() {

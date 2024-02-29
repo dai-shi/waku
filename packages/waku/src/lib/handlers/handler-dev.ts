@@ -15,7 +15,7 @@ import { decodeInput, hasStatusCode } from '../renderers/utils.js';
 import {
   initializeWorker,
   registerHotUpdateCallback,
-  old_renderRscWithWorker as renderRscWithWorker,
+  renderRscWithWorker,
   getSsrConfigWithWorker,
 } from '../renderers/dev-worker-api.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
@@ -157,12 +157,12 @@ export function createHandler<
         const input = decodeInput(req.url.pathname.slice(basePrefix.length));
         const [readable, nextCtx] = await renderRscWithWorker({
           input,
-          searchParamsString: req.url.searchParams.toString(),
+          searchParams: req.url.searchParams,
           method,
           contentType,
           config,
           context,
-          stream: req.stream,
+          body: req.stream,
         });
         unstable_posthook?.(req, res, nextCtx as Context);
         await readable.pipeTo(res.stream);
@@ -181,7 +181,7 @@ export function createHandler<
           renderRscForHtml: async (input, searchParams) => {
             const [readable, nextCtx] = await renderRscWithWorker({
               input,
-              searchParamsString: searchParams.toString(),
+              searchParams,
               method: 'GET',
               contentType: undefined,
               config,

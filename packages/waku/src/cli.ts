@@ -95,10 +95,14 @@ if (values.version) {
 
 async function runDev(options: { ssr: boolean }) {
   const app = new Hono();
-  app.use(
-    '*',
-    honoDevMiddleware({ ...options, config, env: process.env as any }),
-  );
+  if (process.env.WAKU_WIP_MIDDLEWARE) {
+    app.use('*', runner({ config, env: process.env as any, cmd: 'dev' }));
+  } else {
+    app.use(
+      '*',
+      honoDevMiddleware({ ...options, config, env: process.env as any }),
+    );
+  }
   const port = parseInt(process.env.PORT || '3000', 10);
   await startServer(app, port);
 }
@@ -135,12 +139,7 @@ async function runStart(options: { ssr: boolean }) {
   if (process.env.WAKU_WIP_MIDDLEWARE) {
     app.use(
       '*',
-      runner({
-        config,
-        env: process.env as any,
-        cmd: 'start',
-        loadEntries,
-      }),
+      runner({ config, env: process.env as any, cmd: 'start', loadEntries }),
     );
   } else {
     app.use(

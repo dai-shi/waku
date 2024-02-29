@@ -432,16 +432,20 @@ const emitRscFiles = async (
           encodeInput(input),
         );
         await mkdir(joinPath(destRscFile, '..'), { recursive: true });
-        const readable = await renderRsc({
-          input,
-          searchParams: new URLSearchParams(),
-          method: 'GET',
-          config,
-          context,
-          moduleIdCallback: (id) => addClientModule(input, id),
-          isDev: false,
-          entries: distEntries,
-        });
+        const readable = await renderRsc(
+          {
+            input,
+            searchParams: new URLSearchParams(),
+            method: 'GET',
+            config,
+            context,
+            moduleIdCallback: (id) => addClientModule(input, id),
+          },
+          {
+            isDev: false,
+            entries: distEntries,
+          },
+        );
         await pipeline(
           Readable.fromWeb(readable as any),
           createWriteStream(destRscFile),
@@ -548,15 +552,19 @@ const emitHtmlFiles = async (
             searchParams: new URLSearchParams(),
             htmlHead,
             renderRscForHtml: (input, searchParams) =>
-              renderRsc({
-                entries: distEntries,
-                config,
-                input,
-                searchParams,
-                method: 'GET',
-                context,
-                isDev: false,
-              }),
+              renderRsc(
+                {
+                  config,
+                  input,
+                  searchParams,
+                  method: 'GET',
+                  context,
+                },
+                {
+                  isDev: false,
+                  entries: distEntries,
+                },
+              ),
             getSsrConfigForHtml: (pathname, searchParams) =>
               getSsrConfig({
                 config,

@@ -57,17 +57,21 @@ export function createHandler<
       }
       try {
         const input = decodeInput(req.url.pathname.slice(basePrefix.length));
-        const readable = await renderRsc({
-          config,
-          input,
-          searchParams: req.url.searchParams,
-          method,
-          context,
-          body: req.stream,
-          contentType,
-          isDev: false,
-          entries: await entries,
-        });
+        const readable = await renderRsc(
+          {
+            config,
+            input,
+            searchParams: req.url.searchParams,
+            method,
+            context,
+            body: req.stream,
+            contentType,
+          },
+          {
+            isDev: false,
+            entries: await entries,
+          },
+        );
         unstable_posthook?.(req, res, context as Context);
         deepFreeze(context);
         await readable.pipeTo(res.stream);
@@ -91,15 +95,19 @@ export function createHandler<
             searchParams: req.url.searchParams,
             htmlHead,
             renderRscForHtml: (input, searchParams) =>
-              renderRsc({
-                entries: resolvedEntries,
-                config,
-                input,
-                searchParams,
-                method: 'GET',
-                context,
-                isDev: false,
-              }),
+              renderRsc(
+                {
+                  config,
+                  input,
+                  searchParams,
+                  method: 'GET',
+                  context,
+                },
+                {
+                  isDev: false,
+                  entries: resolvedEntries,
+                },
+              ),
             getSsrConfigForHtml: (pathname, searchParams) =>
               getSsrConfig({
                 config,

@@ -15,11 +15,7 @@ import {
   encodeFilePathToAbsolute,
 } from '../utils/path.js';
 import { deepFreeze, hasStatusCode } from './utils.js';
-import type {
-  MessageReq,
-  MessageRes,
-  RenderRequest,
-} from './dev-worker-api.js';
+import type { MessageReq, MessageRes } from './dev-worker-api.js';
 import { renderRsc, getSsrConfig } from './rsc-renderer.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
@@ -50,37 +46,41 @@ const resolveClientEntryForDev = (id: string, config: ResolvedConfig) => {
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   const { id, type: _removed, hasModuleIdCallback, ...rest } = mesg;
-  const rr: RenderRequest = rest;
   try {
+    let moduleIdCallback: ((id: string) => void) | undefined;
     if (hasModuleIdCallback) {
-      rr.moduleIdCallback = (moduleId: string) => {
+      moduleIdCallback = (moduleId: string) => {
         const mesg: MessageRes = { id, type: 'moduleId', moduleId };
         parentPort!.postMessage(mesg);
       };
     }
-    const readable = await renderRsc({
-      config: rr.config,
-      input: rr.input,
-      searchParams: new URLSearchParams(rr.searchParamsString),
-      method: rr.method,
-      context: rr.context,
-      body: rr.stream,
-      contentType: rr.contentType,
-      moduleIdCallback: rr.moduleIdCallback,
-      isDev: true,
-      customImport: loadServerFile,
-      resolveClientEntry: (id: string) =>
-        resolveClientEntryForDev(id, rr.config),
-      entries: await loadEntries(rr.config),
-    });
+    const readable = await renderRsc(
+      {
+        config: rest.config,
+        input: rest.input,
+        searchParams: new URLSearchParams(rest.searchParamsString),
+        method: rest.method,
+        context: rest.context,
+        body: rest.body,
+        contentType: rest.contentType,
+        moduleIdCallback,
+      },
+      {
+        isDev: true,
+        customImport: loadServerFile,
+        resolveClientEntry: (id: string) =>
+          resolveClientEntryForDev(id, rest.config),
+        entries: await loadEntries(rest.config),
+      },
+    );
     const mesg: MessageRes = {
       id,
       type: 'start',
-      context: rr.context,
+      context: rest.context,
       stream: readable,
     };
     parentPort!.postMessage(mesg, [readable as unknown as TransferListItem]);
-    deepFreeze(rr.context);
+    deepFreeze(rest.context);
   } catch (err) {
     const mesg: MessageRes = { id, type: 'err', err: `${err}` };
     if (hasStatusCode(err)) {
