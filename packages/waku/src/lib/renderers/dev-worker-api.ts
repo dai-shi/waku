@@ -126,7 +126,7 @@ export function registerHotUpdateCallback(
 
 let nextId = 1;
 
-export async function renderRscWithWorker<Context>(
+export async function old_renderRscWithWorker<Context>(
   rr: RenderRequest,
 ): Promise<readonly [ReadableStream, Context]> {
   const worker = await getWorker();

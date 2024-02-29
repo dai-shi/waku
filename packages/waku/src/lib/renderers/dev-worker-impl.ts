@@ -14,13 +14,13 @@ import {
   fileURLToFilePath,
   encodeFilePathToAbsolute,
 } from '../utils/path.js';
-import { deepFreeze, hasStatusCode } from '../renderers/utils.js';
+import { deepFreeze, hasStatusCode } from './utils.js';
 import type {
   MessageReq,
   MessageRes,
   RenderRequest,
 } from './dev-worker-api.js';
-import { renderRsc, getSsrConfig } from '../renderers/rsc-renderer.js';
+import { renderRsc, getSsrConfig } from './rsc-renderer.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';

@@ -15,9 +15,9 @@ import { decodeInput, hasStatusCode } from '../renderers/utils.js';
 import {
   initializeWorker,
   registerHotUpdateCallback,
-  renderRscWithWorker,
+  old_renderRscWithWorker as renderRscWithWorker,
   getSsrConfigWithWorker,
-} from './dev-worker-api.js';
+} from '../renderers/dev-worker-api.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscHmrPlugin, hotUpdate } from '../plugins/vite-plugin-rsc-hmr.js';
