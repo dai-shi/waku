@@ -8,7 +8,6 @@ import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../../server.js';
-import type { ResolvedConfig } from '../config.js';
 import {
   joinPath,
   fileURLToFilePath,
@@ -38,7 +37,7 @@ const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR') as string;
 const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS') as string;
 const configPrivateDir = getEnvironmentData('CONFIG_PRIVATE_DIR') as string;
 
-const resolveClientEntryForDev = (id: string, config: ResolvedConfig) => {
+const resolveClientEntryForDev = (id: string, config: { basePath: string }) => {
   const filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
   // HACK this relies on Vite's internal implementation detail.
   return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
