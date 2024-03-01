@@ -1,14 +1,13 @@
 import { Hono } from 'hono';
 import type { Context } from '@netlify/functions';
 
-import { honoMiddleware } from '../old-wrappers/hono-prd.js';
+import { runner } from '../hono/runner.js';
 
-const ssr = !!import.meta.env.WAKU_BUILD_SSR;
 const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
 const env: Record<string, string> = process.env as any;
 
 const app = new Hono();
-app.use('*', honoMiddleware({ loadEntries, ssr, env }));
+app.use('*', runner({ cmd: 'start', loadEntries, env }));
 app.notFound((c) => {
   const notFoundHtml = (globalThis as any).__WAKU_NOT_FOUND_HTML__;
   if (typeof notFoundHtml === 'string') {
