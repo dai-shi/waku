@@ -208,7 +208,7 @@ export const devServer: Middleware = (options) => {
       headers.set(name, value);
       ctx.res.headers = {
         ...ctx.res.headers,
-        [name]: value,
+        [name]: String(value),
       };
     };
     viteRes.getHeader = (name: string) => headers.get(name);
