@@ -51,10 +51,15 @@ export function rscTransformPlugin(
         return { url };
       };
       const load = async (url: string) => {
-        let source = url === id ? code : (await this.load({ id: url })).code as string
+        let source =
+          url === id ? code : ((await this.load({ id: url })).code as string);
         // HACK move directives before import statements.
-        source.includes("\"use client\";") && (source = source.replace("\"use client\";", "")) && (source = "\"use client\";" + source)
-        source.includes("\"use server\";") && (source = source.replace("\"use server\";", "")) && (source = "\"use server\";" + source)
+        source.includes('"use client";') &&
+          (source = source.replace('"use client";', '')) &&
+          (source = '"use client";' + source);
+        source.includes('"use server";') &&
+          (source = source.replace('"use server";', '')) &&
+          (source = '"use server";' + source);
         return { format: 'module', source };
       };
       RSDWNodeLoader.resolve(
