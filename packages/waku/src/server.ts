@@ -58,7 +58,7 @@ export type EntriesDev = {
 };
 
 export type EntriesPrd = EntriesDev & {
-  config: Config;
+  configPromise: Promise<Config>;
   loadModule: (id: string) => Promise<unknown>;
   dynamicHtmlPaths: [pathSpec: PathSpec, htmlHead: string][];
   publicIndexHtml: string;

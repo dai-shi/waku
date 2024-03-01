@@ -1,5 +1,6 @@
 import path from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
@@ -229,5 +230,11 @@ async function loadConfig(): Promise<Config> {
       target: 'es2022',
     },
   });
-  return (await import('data:text/javascript,' + code)).default;
+  const temp = path.resolve(`.temp-${randomBytes(8).toString('hex')}.js`);
+  try {
+    writeFileSync(temp, code);
+    return (await import(pathToFileURL(temp).toString())).default;
+  } finally {
+    unlinkSync(temp);
+  }
 }

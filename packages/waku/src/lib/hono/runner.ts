@@ -17,7 +17,9 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
       : ('Error: loadEntries are not available' as never);
   const configPromise =
     options.cmd === 'start'
-      ? entriesPromise.then((entries) => resolveConfig(entries.config))
+      ? entriesPromise.then((entries) =>
+          entries.configPromise.then((config) => resolveConfig(config)),
+        )
       : resolveConfig(options.config);
   const handlersPromise = configPromise.then((config) =>
     Promise.all(

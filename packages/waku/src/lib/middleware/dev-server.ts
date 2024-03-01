@@ -150,7 +150,10 @@ export const devServer: Middleware = (options) => {
   };
 
   return async (ctx, next) => {
-    const [config, vite] = await Promise.all([configPromise, vitePromise]);
+    const [{ middleware: _removed, ...config }, vite] = await Promise.all([
+      configPromise,
+      vitePromise,
+    ]);
     ctx.devServer = {
       rootDir: vite.config.root,
       renderRscWithWorker,

@@ -21,11 +21,11 @@ export function loadModule(id) {
   if (existsSync(CONFIG_FILE)) {
     const file = path.resolve(CONFIG_FILE);
     codeToAdd += `
-export const config = (await import('${file}')).default;
+export const configPromise = import('${file}').then((m) => m.default);
 `;
   } else {
     codeToAdd += `
-export const config = {};
+export const configPromise = Promise.resolve({});
 `;
   }
   return {
