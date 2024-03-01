@@ -2,16 +2,13 @@ import { Readable, Writable } from 'node:stream';
 import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
-import type { Config } from '../../config.js';
 import { resolveConfig } from '../config.js';
 import {
   joinPath,
   fileURLToFilePath,
   decodeFilePathFromAbsolute,
 } from '../utils/path.js';
-import { endStream } from '../utils/stream.js';
-import { renderHtml } from '../renderers/html-renderer.js';
-import { decodeInput, hasStatusCode } from '../renderers/utils.js';
+import { stringToStream } from '../utils/stream.js';
 import {
   initializeWorker,
   registerHotUpdateCallback,
@@ -23,35 +20,55 @@ import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscHmrPlugin, hotUpdate } from '../plugins/vite-plugin-rsc-hmr.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
-import type { BaseReq, BaseRes, Handler } from './types.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
+import type { Middleware } from './types.js';
 
-export const CLIENT_MODULE_MAP = {
-  react: 'react',
-  'rd-server': 'react-dom/server.edge',
-  'rsdw-client': 'react-server-dom-webpack/client.edge',
-  'waku-client': 'waku/client',
+const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
+  let controller: ReadableStreamDefaultController | undefined;
+  const readable = new ReadableStream({
+    start(c) {
+      controller = c;
+    },
+    cancel() {
+      controller = undefined;
+    },
+  });
+  let resolve: (value: ReadableStream | null) => void;
+  const promise = new Promise<ReadableStream | null>((r) => (resolve = r));
+  let hasData = false;
+  const writable = new Writable({
+    write(chunk, encoding, callback) {
+      if (encoding !== ('buffer' as any)) {
+        throw new Error('Unknown encoding');
+      }
+      if (controller) {
+        controller.enqueue(chunk);
+        if (!hasData) {
+          hasData = true;
+          resolve(readable);
+        }
+      }
+      callback();
+    },
+    final(callback) {
+      if (controller) {
+        controller.close();
+        if (!hasData) {
+          resolve(null);
+        }
+      }
+      callback();
+    },
+  });
+  return [writable, promise];
 };
-export type CLIENT_MODULE_KEY = keyof typeof CLIENT_MODULE_MAP;
 
-export function createHandler<
-  Req extends BaseReq,
-  Res extends BaseRes,
->(options: {
-  config?: Config;
-  ssr?: boolean;
-  env?: Record<string, string>;
-  unstable_prehook?: (req: Req, res: Res) => Record<string, unknown>;
-  unstable_posthook?: (
-    req: Req,
-    res: Res,
-    context: Record<string, unknown>,
-  ) => void;
-}): Handler<Req, Res> {
-  const { ssr, unstable_prehook, unstable_posthook } = options;
-  if (!unstable_prehook && unstable_posthook) {
-    throw new Error('prehook is required if posthook is provided');
+export const devServer: Middleware = (options) => {
+  if (options.cmd !== 'dev') {
+    // pass through if not dev command
+    return (_ctx, next) => next();
   }
+
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(options.config || {});
   const vitePromise = configPromise.then(async (config) => {
@@ -132,88 +149,23 @@ export function createHandler<
     });
   };
 
-  return async (req, res, next) => {
+  return async (ctx, next) => {
     const [config, vite] = await Promise.all([configPromise, vitePromise]);
-    const basePrefix = config.basePath + config.rscPath + '/';
-    const handleError = async (err: unknown) => {
-      if (hasStatusCode(err)) {
-        res.setStatus(err.statusCode);
-      } else {
-        console.info('Cannot render RSC', err);
-        res.setStatus(500);
-      }
-      await endStream(res.stream, String(err));
+    ctx.devServer = {
+      rootDir: vite.config.root,
+      renderRscWithWorker,
+      getSsrConfigWithWorker,
+      loadServerFile,
+      transformIndexHtml,
     };
-    let context: Record<string, unknown> | undefined;
-    try {
-      context = unstable_prehook?.(req, res);
-    } catch (e) {
-      await handleError(e);
+
+    await next();
+    if (ctx.res.body) {
       return;
     }
-    if (req.url.pathname.startsWith(basePrefix)) {
-      const { method, contentType } = req;
-      if (method !== 'GET' && method !== 'POST') {
-        throw new Error(`Unsupported method '${method}'`);
-      }
-      try {
-        const input = decodeInput(req.url.pathname.slice(basePrefix.length));
-        const readable = await renderRscWithWorker({
-          input,
-          searchParams: req.url.searchParams,
-          method,
-          contentType,
-          config,
-          context,
-          body: req.stream,
-        });
-        unstable_posthook?.(req, res, context!);
-        await readable.pipeTo(res.stream);
-      } catch (e) {
-        await handleError(e);
-      }
-      return;
-    }
-    if (ssr) {
-      try {
-        const readable = await renderHtml({
-          config,
-          pathname: req.url.pathname,
-          searchParams: req.url.searchParams,
-          htmlHead: config.htmlHead,
-          renderRscForHtml: async (input, searchParams) => {
-            const readable = await renderRscWithWorker({
-              input,
-              searchParams,
-              method: 'GET',
-              contentType: undefined,
-              config,
-              context,
-            });
-            return readable;
-          },
-          getSsrConfigForHtml: (pathname, searchParams) =>
-            getSsrConfigWithWorker({ config, pathname, searchParams }),
-          loadClientModule: (key) => import(CLIENT_MODULE_MAP[key]),
-          isDev: true,
-          rootDir: vite.config.root,
-          loadServerFile,
-        });
-        if (readable) {
-          unstable_posthook?.(req, res, context!);
-          res.setHeader('content-type', 'text/html; charset=utf-8');
-          await readable
-            .pipeThrough(await transformIndexHtml(req.url.pathname))
-            .pipeTo(res.stream);
-          return;
-        }
-      } catch (e) {
-        await handleError(e);
-        return;
-      }
-    }
+
     // HACK re-export "?v=..." URL to avoid dual module hazard.
-    const viteUrl = req.url.toString().slice(req.url.origin.length);
+    const viteUrl = ctx.req.url.toString().slice(ctx.req.url.origin.length);
     const fname = viteUrl.startsWith(config.basePath + '@fs/')
       ? decodeFilePathFromAbsolute(
           viteUrl.slice(config.basePath.length + '@fs'.length),
@@ -226,40 +178,50 @@ export function createHandler<
         !item.url.includes('?html-proxy')
       ) {
         const { code } = (await vite.transformRequest(item.url))!;
-        res.setHeader('Content-Type', 'application/javascript');
-        res.setStatus(200);
+        ctx.res.headers = {
+          ...ctx.res.headers,
+          'content-type': 'application/javascript',
+        };
+        ctx.res.status = 200;
         let exports = `export * from "${item.url}";`;
         // `export *` does not re-export `default`
         if (code.includes('export default')) {
           exports += `export { default } from "${item.url}";`;
         }
-        await endStream(res.stream, exports);
+        ctx.res.body = stringToStream(exports);
         return;
       }
     }
-    const viteReq: any = Readable.fromWeb(req.stream as any);
-    viteReq.method = req.method;
+    const viteReq: any = Readable.fromWeb(ctx.req.body as any);
+    viteReq.method = ctx.req.method;
     viteReq.url = viteUrl;
-    viteReq.headers = { 'content-type': req.contentType };
-    const viteRes: any = Writable.fromWeb(res.stream as any);
+    viteReq.headers = ctx.req.headers;
+    const [writable, readablePromise] = createStreamPair();
+    const viteRes: any = writable;
     Object.defineProperty(viteRes, 'statusCode', {
       set(code) {
-        res.setStatus(code);
+        ctx.res.status = code;
       },
     });
     const headers = new Map<string, string>();
     viteRes.setHeader = (name: string, value: string) => {
       headers.set(name, value);
-      res.setHeader(name, value);
+      ctx.res.headers = {
+        ...ctx.res.headers,
+        [name]: String(value),
+      };
     };
     viteRes.getHeader = (name: string) => headers.get(name);
     viteRes.writeHead = (code: number, headers?: Record<string, string>) => {
-      res.setStatus(code);
+      ctx.res.status = code;
       for (const [name, value] of Object.entries(headers || {})) {
         viteRes.setHeader(name, value);
       }
     };
-    vite.middlewares(viteReq, viteRes, next);
-    return;
+    vite.middlewares(viteReq, viteRes);
+    const body = await readablePromise;
+    if (body) {
+      ctx.res.body = body;
+    }
   };
-}
+};

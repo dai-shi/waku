@@ -4,11 +4,10 @@ import { serveStatic } from 'hono/cloudflare-workers';
 // eslint-disable-next-line import/no-unresolved
 import manifest from '__STATIC_CONTENT_MANIFEST';
 
-import { honoMiddleware } from '../old-wrappers/hono-prd.js';
+import { runner } from '../hono/runner.js';
 
-const ssr = !!import.meta.env.WAKU_BUILD_SSR;
 const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
-let serveWaku: ReturnType<typeof honoMiddleware> | undefined;
+let serveWaku: ReturnType<typeof runner> | undefined;
 let staticContent: any;
 
 const parsedManifest: Record<string, string> = JSON.parse(manifest);
@@ -34,7 +33,7 @@ export default {
     ctx: Parameters<typeof app.fetch>[2],
   ) {
     if (!serveWaku) {
-      serveWaku = honoMiddleware({ loadEntries, ssr, env });
+      serveWaku = runner({ cmd: 'start', loadEntries, env });
       staticContent = env.__STATIC_CONTENT;
     }
     return app.fetch(request, env, ctx);

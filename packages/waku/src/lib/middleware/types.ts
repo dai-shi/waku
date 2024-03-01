@@ -1,11 +1,15 @@
 import type { Config } from '../../config.js';
 import type { EntriesPrd } from '../../server.js';
+import type {
+  renderRscWithWorker,
+  getSsrConfigWithWorker,
+} from '../renderers/dev-worker-api.js';
 
 export type HandlerReq = {
-  readonly body: ReadableStream;
-  readonly url: URL;
-  readonly method: string;
-  readonly headers: Record<string, string>;
+  body: ReadableStream;
+  url: URL;
+  method: string;
+  headers: Record<string, string>;
 };
 
 export type HandlerRes = {
@@ -20,6 +24,15 @@ export type HandlerContext = {
   readonly req: HandlerReq;
   readonly res: HandlerRes;
   readonly context: RscContext;
+  devServer?: {
+    rootDir: string;
+    renderRscWithWorker: typeof renderRscWithWorker;
+    getSsrConfigWithWorker: typeof getSsrConfigWithWorker;
+    loadServerFile: (fileURL: string) => Promise<Record<string, any>>;
+    transformIndexHtml: (
+      pathname: string,
+    ) => Promise<TransformStream<any, any>>;
+  };
 };
 
 export type Handler = (

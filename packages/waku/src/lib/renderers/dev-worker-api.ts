@@ -5,17 +5,7 @@ import type {
 
 import type { ResolvedConfig } from '../config.js';
 import type { HotUpdatePayload } from '../plugins/vite-plugin-rsc-hmr.js';
-
-export type RenderRequest = {
-  input: string;
-  searchParamsString: string;
-  method: 'GET' | 'POST';
-  contentType: string | undefined;
-  config: ResolvedConfig;
-  context: unknown;
-  stream?: ReadableStream | undefined;
-  moduleIdCallback?: (id: string) => void;
-};
+import type { RenderRscArgs, GetSsrConfigArgs } from './rsc-renderer.js';
 
 export type BuildOutput = {
   rscFiles: string[];
@@ -26,8 +16,9 @@ export type MessageReq =
   | ({
       id: number;
       type: 'render';
+      searchParamsString: string;
       hasModuleIdCallback: boolean;
-    } & Omit<RenderRequest, 'moduleIdCallback'>)
+    } & Omit<RenderRscArgs, 'searchParams' | 'moduleIdCallback'>)
   | {
       id: number;
       type: 'getSsrConfig';
@@ -38,7 +29,12 @@ export type MessageReq =
 
 export type MessageRes =
   | { type: 'hot-update'; payload: HotUpdatePayload }
-  | { id: number; type: 'start'; context: unknown; stream: ReadableStream }
+  | {
+      id: number;
+      type: 'start';
+      context: Record<string, unknown> | undefined;
+      stream: ReadableStream;
+    }
   | { id: number; type: 'err'; err: unknown; statusCode?: number }
   | { id: number; type: 'moduleId'; moduleId: string }
   | {
@@ -126,9 +122,9 @@ export function registerHotUpdateCallback(
 
 let nextId = 1;
 
-export async function renderRscWithWorker<Context>(
-  rr: RenderRequest,
-): Promise<readonly [ReadableStream, Context]> {
+export async function renderRscWithWorker(
+  args: RenderRscArgs,
+): Promise<ReadableStream> {
   const worker = await getWorker();
   const id = nextId++;
   let started = false;
@@ -142,12 +138,17 @@ export async function renderRscWithWorker<Context>(
               messageCallbacks.delete(id);
             },
           });
-          resolve([mesg.stream.pipeThrough(bridge), mesg.context as Context]);
+          Object.entries(mesg.context || {}).forEach(([key, value]) => {
+            if (args.context) {
+              args.context[key] = value;
+            }
+          });
+          resolve(mesg.stream.pipeThrough(bridge));
         } else {
           throw new Error('already started');
         }
       } else if (mesg.type === 'moduleId') {
-        rr.moduleIdCallback?.(mesg.moduleId);
+        args.moduleIdCallback?.(mesg.moduleId);
       } else if (mesg.type === 'err') {
         const err =
           typeof mesg.err === 'string' ? new Error(mesg.err) : mesg.err;
@@ -160,33 +161,31 @@ export async function renderRscWithWorker<Context>(
         messageCallbacks.delete(id);
       }
     });
-    const { ssr: _removed, ...copiedConfig } = rr.config as any; // HACK type
-    const copied = { ...rr, config: copiedConfig };
-    delete copied.stream;
-    delete copied.moduleIdCallback;
     const mesg: MessageReq = {
       id,
       type: 'render',
-      hasModuleIdCallback: !!rr.moduleIdCallback,
-      stream: rr.stream,
-      ...copied,
+      config: args.config,
+      input: args.input,
+      searchParamsString: args.searchParams.toString(),
+      method: args.method,
+      context: args.context,
+      body: args.body,
+      contentType: args.contentType,
+      hasModuleIdCallback: !!args.moduleIdCallback,
     };
     worker.postMessage(
       mesg,
-      rr.stream ? [rr.stream as unknown as TransferListItem] : undefined,
+      args.body ? [args.body as unknown as TransferListItem] : undefined,
     );
   });
 }
 
-export async function getSsrConfigWithWorker(
-  config: ResolvedConfig,
-  pathname: string,
-  searchParams: URLSearchParams,
-): Promise<{
+export async function getSsrConfigWithWorker(args: GetSsrConfigArgs): Promise<{
   input: string;
   searchParams?: URLSearchParams;
   body: ReadableStream;
 } | null> {
+  const { config, pathname, searchParams } = args;
   const worker = await getWorker();
   const id = nextId++;
   return new Promise((resolve, reject) => {

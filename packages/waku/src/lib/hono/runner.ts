@@ -11,12 +11,23 @@ const createEmptyReadableStream = () =>
 
 export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
   const middlewareList = [
-    import('waku/middleware').then((mod) => mod.ssr),
-    import('waku/middleware').then((mod) => mod.rsc),
-    // import('waku/middleware').then((mod) => mod.fallback),
+    import('waku/middleware/ssr'),
+    import('waku/middleware/rsc'),
   ];
+  // Without SSR
+  // const middlewareList = [
+  //   import('waku/middleware/rsc'),
+  //   import('waku/middleware/fallback'),
+  // ];
+  if (options.cmd === 'dev') {
+    middlewareList.unshift(
+      import('DO_NOT_BUNDLE'.slice(Infinity) + 'waku/middleware/dev-server'),
+    );
+  }
   const handlersPromise = Promise.all(
-    middlewareList.map(async (middleware) => (await middleware)(options)),
+    middlewareList.map(async (middleware) =>
+      (await middleware).default(options),
+    ),
   );
   return async (c, next) => {
     const ctx: HandlerContext = {
@@ -45,17 +56,10 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
       });
     };
     await run(0);
-    if ('status' in ctx.res) {
-      c.status(ctx.res.status as any);
-    }
-    if ('headers' in ctx.res) {
-      for (const [k, v] of Object.entries(ctx.res.headers)) {
-        c.header(k, v);
-      }
-    }
-    if ('body' in ctx.res) {
-      return c.body(ctx.res.body);
-    }
-    return c.body(null);
+    return c.body(
+      ctx.res.body || null,
+      (ctx.res.status as any) || 200,
+      ctx.res.headers || {},
+    );
   };
 };

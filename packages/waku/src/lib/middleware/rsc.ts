@@ -1,16 +1,16 @@
 import { resolveConfig } from '../config.js';
 import { decodeInput, hasStatusCode } from '../renderers/utils.js';
 import { renderRsc } from '../renderers/rsc-renderer.js';
+import type { RenderRscArgs } from '../renderers/rsc-renderer.js';
 import type { Middleware } from './types.js';
 
 export const rsc: Middleware = (options) => {
-  if (options.cmd === 'dev') {
-    throw new Error('not implemented yet');
-  }
-
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(options.config || {});
-  const entriesPromise = options.loadEntries();
+  const entriesPromise =
+    options.cmd === 'start'
+      ? options.loadEntries()
+      : ('Error: loadEntries are not available' as never);
 
   return async (ctx, next) => {
     const [config, entries] = await Promise.all([
@@ -27,7 +27,7 @@ export const rsc: Middleware = (options) => {
         const input = decodeInput(
           ctx.req.url.pathname.slice(basePrefix.length),
         );
-        const readable = await renderRsc({
+        const args: RenderRscArgs = {
           config,
           input,
           searchParams: ctx.req.url.searchParams,
@@ -35,9 +35,10 @@ export const rsc: Middleware = (options) => {
           context: ctx.context,
           body: ctx.req.body,
           contentType: headers['content-type'] || '',
-          isDev: false,
-          entries,
-        });
+        };
+        const readable = await (ctx.devServer
+          ? ctx.devServer.renderRscWithWorker(args)
+          : renderRsc(args, { isDev: false, entries }));
         ctx.res.body = readable;
         return;
       } catch (err) {

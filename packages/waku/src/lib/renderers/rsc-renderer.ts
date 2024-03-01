@@ -18,25 +18,29 @@ const resolveClientEntryForPrd = (id: string, config: ResolvedConfig) => {
   return config.basePath + id.slice('@id/'.length);
 };
 
+export type RenderRscArgs = {
+  config: ResolvedConfig;
+  input: string;
+  searchParams: URLSearchParams;
+  method: 'GET' | 'POST';
+  context: Record<string, unknown> | undefined;
+  body?: ReadableStream | undefined;
+  contentType?: string | undefined;
+  moduleIdCallback?: ((id: string) => void) | undefined;
+};
+
+type RenderRscOpts =
+  | { isDev: false; entries: EntriesPrd }
+  | {
+      isDev: true;
+      entries: EntriesDev;
+      customImport: (fileURL: string) => Promise<unknown>;
+      resolveClientEntry: (id: string) => string;
+    };
+
 export async function renderRsc(
-  opts: {
-    config: ResolvedConfig;
-    input: string;
-    searchParams: URLSearchParams;
-    method: 'GET' | 'POST';
-    context: unknown;
-    body?: ReadableStream | undefined;
-    contentType?: string | undefined;
-    moduleIdCallback?: ((id: string) => void) | undefined;
-  } & (
-    | { isDev: false; entries: EntriesPrd }
-    | {
-        isDev: true;
-        entries: EntriesDev;
-        customImport: (fileURL: string) => Promise<unknown>;
-        resolveClientEntry: (id: string) => string;
-      }
-  ),
+  args: RenderRscArgs,
+  opts: RenderRscOpts,
 ): Promise<ReadableStream> {
   const {
     config,
@@ -47,9 +51,8 @@ export async function renderRsc(
     context,
     body,
     moduleIdCallback,
-    isDev,
-    entries,
-  } = opts;
+  } = args;
+  const { isDev, entries } = opts;
 
   const resolveClientEntry = isDev
     ? opts.resolveClientEntry
@@ -134,7 +137,7 @@ export async function renderRsc(
       if (rendered) {
         throw new Error('already rendered');
       }
-      const renderContext: RenderContext = { rerender, context };
+      const renderContext: RenderContext = { rerender, context: context || {} };
       elements = Promise.all([
         elements,
         render(renderContext, input, searchParams),
@@ -143,7 +146,7 @@ export async function renderRsc(
         ...newElements,
       }));
     };
-    const renderContext: RenderContext = { rerender, context };
+    const renderContext: RenderContext = { rerender, context: context || {} };
     const data = await fn.apply(renderContext, args);
     const resolvedElements = await elements;
     rendered = true;
@@ -158,7 +161,7 @@ export async function renderRsc(
     rerender: () => {
       throw new Error('Cannot rerender');
     },
-    context,
+    context: context || {},
   };
   const elements = await render(renderContext, input, searchParams);
   return renderToReadableStream(elements, bundlerConfig);
@@ -184,16 +187,20 @@ export async function getBuildConfig(opts: {
     input: string,
   ): Promise<string[]> => {
     const idSet = new Set<string>();
-    const readable = await renderRsc({
-      config,
-      input,
-      searchParams: new URLSearchParams(),
-      method: 'GET',
-      context: null,
-      moduleIdCallback: (id) => idSet.add(id),
-      isDev: false,
-      entries,
-    });
+    const readable = await renderRsc(
+      {
+        config,
+        input,
+        searchParams: new URLSearchParams(),
+        method: 'GET',
+        context: undefined,
+        moduleIdCallback: (id) => idSet.add(id),
+      },
+      {
+        isDev: false,
+        entries,
+      },
+    );
     await new Promise<void>((resolve, reject) => {
       const writable = new WritableStream({
         close() {
@@ -212,21 +219,26 @@ export async function getBuildConfig(opts: {
   return output;
 }
 
+export type GetSsrConfigArgs = {
+  config: ResolvedConfig;
+  pathname: string;
+  searchParams: URLSearchParams;
+};
+
+type GetSsrConfigOpts =
+  | { isDev: false; entries: EntriesPrd }
+  | {
+      isDev: true;
+      entries: EntriesDev;
+      resolveClientEntry: (id: string) => string;
+    };
+
 export async function getSsrConfig(
-  opts: {
-    config: ResolvedConfig;
-    pathname: string;
-    searchParams: URLSearchParams;
-  } & (
-    | { isDev: false; entries: EntriesPrd }
-    | {
-        isDev: true;
-        entries: EntriesDev;
-        resolveClientEntry: (id: string) => string;
-      }
-  ),
+  args: GetSsrConfigArgs,
+  opts: GetSsrConfigOpts,
 ) {
-  const { config, pathname, searchParams, isDev, entries } = opts;
+  const { config, pathname, searchParams } = args;
+  const { isDev, entries } = opts;
 
   const resolveClientEntry = isDev
     ? opts.resolveClientEntry

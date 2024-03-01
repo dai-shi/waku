@@ -25,9 +25,9 @@
       "types": "./dist/config.d.ts",
       "default": "./dist/config.js"
     },
-    "./middleware": {
-      "types": "./dist/middleware.d.ts",
-      "default": "./dist/middleware.js"
+    "./middleware/*": {
+      "types": "./dist/middleware/*.d.ts",
+      "default": "./dist/middleware/*.js"
     },
     "./prd": {
       "types": "./dist/prd.d.ts",

@@ -25,7 +25,6 @@ export function rscServePlugin(opts: {
       }
       viteConfig.define = {
         ...viteConfig.define,
-        'import.meta.env.WAKU_BUILD_SSR': JSON.stringify(opts.ssr ? 'yes' : ''),
         'import.meta.env.WAKU_ENTRIES_FILE': JSON.stringify(opts.entriesFile),
         'import.meta.env.WAKU_CONFIG_DIST_DIR': JSON.stringify(opts.distDir),
         'import.meta.env.WAKU_CONFIG_PUBLIC_DIR': JSON.stringify(

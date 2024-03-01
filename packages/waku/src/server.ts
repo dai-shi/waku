@@ -4,7 +4,9 @@ import type { PathSpec } from './lib/utils/path.js';
 
 type Elements = Record<string, ReactNode>;
 
-export interface RenderContext<T = unknown> {
+export interface RenderContext<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> {
   rerender: (input: string, searchParams?: URLSearchParams) => void;
   context: T;
 }
@@ -27,7 +29,7 @@ export type GetBuildConfig = (
       isStatic?: boolean;
     }>;
     customCode?: string; // optional code to inject TODO hope to remove this
-    context?: unknown;
+    context?: Record<string, unknown>;
   }>
 >;
 

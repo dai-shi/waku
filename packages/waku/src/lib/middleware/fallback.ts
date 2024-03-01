@@ -4,7 +4,7 @@ import type { Middleware } from './types.js';
 export const fallback: Middleware = (options) => {
   if (options.cmd === 'dev') {
     // pass through in dev command
-    return async (_ctx, next) => next();
+    return (_ctx, next) => next();
   }
 
   const entriesPromise = options.loadEntries();

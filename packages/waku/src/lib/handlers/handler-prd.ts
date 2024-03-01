@@ -11,15 +11,18 @@ import type { BaseReq, BaseRes, Handler } from './types.js';
 export const CLIENT_PREFIX = 'client/';
 
 export function createHandler<
-  Context,
   Req extends BaseReq,
   Res extends BaseRes,
 >(options: {
   config?: Config;
   ssr?: boolean;
   env?: Record<string, string>;
-  unstable_prehook?: (req: Req, res: Res) => Context;
-  unstable_posthook?: (req: Req, res: Res, ctx: Context) => void;
+  unstable_prehook?: (req: Req, res: Res) => Record<string, unknown>;
+  unstable_posthook?: (
+    req: Req,
+    res: Res,
+    context: Record<string, unknown>,
+  ) => void;
   loadEntries: () => Promise<EntriesPrd>;
 }): Handler<Req, Res> {
   const { config, ssr, unstable_prehook, unstable_posthook, loadEntries } =
@@ -43,7 +46,7 @@ export function createHandler<
       }
       await endStream(res.stream);
     };
-    let context: Context | undefined;
+    let context: Record<string, unknown> | undefined;
     try {
       context = unstable_prehook?.(req, res);
     } catch (e) {
@@ -57,18 +60,22 @@ export function createHandler<
       }
       try {
         const input = decodeInput(req.url.pathname.slice(basePrefix.length));
-        const readable = await renderRsc({
-          config,
-          input,
-          searchParams: req.url.searchParams,
-          method,
-          context,
-          body: req.stream,
-          contentType,
-          isDev: false,
-          entries: await entries,
-        });
-        unstable_posthook?.(req, res, context as Context);
+        const readable = await renderRsc(
+          {
+            config,
+            input,
+            searchParams: req.url.searchParams,
+            method,
+            context,
+            body: req.stream,
+            contentType,
+          },
+          {
+            isDev: false,
+            entries: await entries,
+          },
+        );
+        unstable_posthook?.(req, res, context!);
         deepFreeze(context);
         await readable.pipeTo(res.stream);
         return;
@@ -91,30 +98,38 @@ export function createHandler<
             searchParams: req.url.searchParams,
             htmlHead,
             renderRscForHtml: (input, searchParams) =>
-              renderRsc({
-                entries: resolvedEntries,
-                config,
-                input,
-                searchParams,
-                method: 'GET',
-                context,
-                isDev: false,
-              }),
+              renderRsc(
+                {
+                  config,
+                  input,
+                  searchParams,
+                  method: 'GET',
+                  context,
+                },
+                {
+                  isDev: false,
+                  entries: resolvedEntries,
+                },
+              ),
             getSsrConfigForHtml: (pathname, searchParams) =>
-              getSsrConfig({
-                config,
-                pathname,
-                searchParams,
-                isDev: false,
-                entries: resolvedEntries,
-              }),
+              getSsrConfig(
+                {
+                  config,
+                  pathname,
+                  searchParams,
+                },
+                {
+                  isDev: false,
+                  entries: resolvedEntries,
+                },
+              ),
             loadClientModule: (key) =>
               resolvedEntries.loadModule(CLIENT_PREFIX + key),
             isDev: false,
             loadModule: resolvedEntries.loadModule,
           });
           if (readable) {
-            unstable_posthook?.(req, res, context as Context);
+            unstable_posthook?.(req, res, context!);
             deepFreeze(context);
             res.setHeader('content-type', 'text/html; charset=utf-8');
             await readable.pipeTo(res.stream);
