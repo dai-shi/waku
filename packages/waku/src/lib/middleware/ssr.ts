@@ -43,13 +43,17 @@ export const ssr: Middleware = (options) => {
             return ctx.res.body;
           },
           getSsrConfigForHtml: (pathname, searchParams) =>
-            getSsrConfig({
-              config,
-              pathname,
-              searchParams,
-              isDev: false,
-              entries,
-            }),
+            getSsrConfig(
+              {
+                config,
+                pathname,
+                searchParams,
+              },
+              {
+                isDev: false,
+                entries,
+              },
+            ),
           loadClientModule: (key) => entries.loadModule(CLIENT_PREFIX + key),
           isDev: false,
           loadModule: entries.loadModule,

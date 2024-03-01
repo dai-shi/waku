@@ -5,7 +5,7 @@ import type {
 
 import type { ResolvedConfig } from '../config.js';
 import type { HotUpdatePayload } from '../plugins/vite-plugin-rsc-hmr.js';
-import type { RenderRscArgs } from './rsc-renderer.js';
+import type { RenderRscArgs, GetSsrConfigArgs } from './rsc-renderer.js';
 
 export type BuildOutput = {
   rscFiles: string[];
@@ -180,15 +180,12 @@ export async function renderRscWithWorker(
   });
 }
 
-export async function getSsrConfigWithWorker(
-  config: ResolvedConfig,
-  pathname: string,
-  searchParams: URLSearchParams,
-): Promise<{
+export async function getSsrConfigWithWorker(args: GetSsrConfigArgs): Promise<{
   input: string;
   searchParams?: URLSearchParams;
   body: ReadableStream;
 } | null> {
+  const { config, pathname, searchParams } = args;
   const worker = await getWorker();
   const id = nextId++;
   return new Promise((resolve, reject) => {

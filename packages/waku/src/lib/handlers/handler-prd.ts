@@ -112,13 +112,17 @@ export function createHandler<
                 },
               ),
             getSsrConfigForHtml: (pathname, searchParams) =>
-              getSsrConfig({
-                config,
-                pathname,
-                searchParams,
-                isDev: false,
-                entries: resolvedEntries,
-              }),
+              getSsrConfig(
+                {
+                  config,
+                  pathname,
+                  searchParams,
+                },
+                {
+                  isDev: false,
+                  entries: resolvedEntries,
+                },
+              ),
             loadClientModule: (key) =>
               resolvedEntries.loadModule(CLIENT_PREFIX + key),
             isDev: false,

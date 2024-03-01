@@ -96,14 +96,19 @@ const handleGetSsrConfig = async (
   const { id, config, pathname, searchParamsString } = mesg;
   const searchParams = new URLSearchParams(searchParamsString);
   try {
-    const ssrConfig = await getSsrConfig({
-      config,
-      pathname,
-      searchParams,
-      isDev: true,
-      resolveClientEntry: (id: string) => resolveClientEntryForDev(id, config),
-      entries: await loadEntries(config),
-    });
+    const ssrConfig = await getSsrConfig(
+      {
+        config,
+        pathname,
+        searchParams,
+      },
+      {
+        isDev: true,
+        resolveClientEntry: (id: string) =>
+          resolveClientEntryForDev(id, config),
+        entries: await loadEntries(config),
+      },
+    );
     const mesg: MessageRes = ssrConfig
       ? { id, type: 'ssrConfig', ...ssrConfig }
       : { id, type: 'noSsrConfig' };

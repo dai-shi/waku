@@ -192,8 +192,8 @@ export function createHandler<
             });
             return readable;
           },
-          getSsrConfigForHtml: (pathname, options) =>
-            getSsrConfigWithWorker(config, pathname, options),
+          getSsrConfigForHtml: (pathname, searchParams) =>
+            getSsrConfigWithWorker({ config, pathname, searchParams }),
           loadClientModule: (key) => import(CLIENT_MODULE_MAP[key]),
           isDev: true,
           rootDir: vite.config.root,

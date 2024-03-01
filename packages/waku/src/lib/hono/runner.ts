@@ -11,7 +11,7 @@ const createEmptyReadableStream = () =>
 
 export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
   const middlewareList = [
-    // import('waku/middleware').then((mod) => mod.ssr),
+    import('waku/middleware').then((mod) => mod.ssr),
     import('waku/middleware').then((mod) => mod.rsc),
     // import('waku/middleware').then((mod) => mod.fallback),
   ];

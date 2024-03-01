@@ -219,21 +219,26 @@ export async function getBuildConfig(opts: {
   return output;
 }
 
+export type GetSsrConfigArgs = {
+  config: ResolvedConfig;
+  pathname: string;
+  searchParams: URLSearchParams;
+};
+
+type GetSsrConfigOpts =
+  | { isDev: false; entries: EntriesPrd }
+  | {
+      isDev: true;
+      entries: EntriesDev;
+      resolveClientEntry: (id: string) => string;
+    };
+
 export async function getSsrConfig(
-  opts: {
-    config: ResolvedConfig;
-    pathname: string;
-    searchParams: URLSearchParams;
-  } & (
-    | { isDev: false; entries: EntriesPrd }
-    | {
-        isDev: true;
-        entries: EntriesDev;
-        resolveClientEntry: (id: string) => string;
-      }
-  ),
+  args: GetSsrConfigArgs,
+  opts: GetSsrConfigOpts,
 ) {
-  const { config, pathname, searchParams, isDev, entries } = opts;
+  const { config, pathname, searchParams } = args;
+  const { isDev, entries } = opts;
 
   const resolveClientEntry = isDev
     ? opts.resolveClientEntry

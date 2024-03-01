@@ -566,13 +566,17 @@ const emitHtmlFiles = async (
                 },
               ),
             getSsrConfigForHtml: (pathname, searchParams) =>
-              getSsrConfig({
-                config,
-                pathname,
-                searchParams,
-                isDev: false,
-                entries: distEntries,
-              }),
+              getSsrConfig(
+                {
+                  config,
+                  pathname,
+                  searchParams,
+                },
+                {
+                  isDev: false,
+                  entries: distEntries,
+                },
+              ),
             loadClientModule: (key) =>
               distEntries.loadModule(CLIENT_PREFIX + key),
             isDev: false,
