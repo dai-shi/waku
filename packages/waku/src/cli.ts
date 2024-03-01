@@ -95,7 +95,7 @@ if (values.version) {
 
 async function runDev(options: { ssr: boolean }) {
   const app = new Hono();
-  if (process.env.WAKU_WIP_MIDDLEWARE) {
+  if (!process.env.WAKU_OLD_MIDDLEWARE) {
     app.use('*', runner({ config, env: process.env as any, cmd: 'dev' }));
   } else {
     app.use(
@@ -136,7 +136,7 @@ async function runStart(options: { ssr: boolean }) {
     import(pathToFileURL(path.resolve(distDir, entriesJs)).toString());
   const app = new Hono();
   app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
-  if (process.env.WAKU_WIP_MIDDLEWARE) {
+  if (!process.env.WAKU_OLD_MIDDLEWARE) {
     app.use(
       '*',
       runner({ config, env: process.env as any, cmd: 'start', loadEntries }),
