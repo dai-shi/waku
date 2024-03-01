@@ -1,6 +1,9 @@
 import type { Config } from '../../config.js';
 import type { EntriesPrd } from '../../server.js';
-import type { renderRscWithWorker, getSsrConfigWithWorker} from '../renderers/dev-worker-api.js';
+import type {
+  renderRscWithWorker,
+  getSsrConfigWithWorker,
+} from '../renderers/dev-worker-api.js';
 
 export type HandlerReq = {
   body: ReadableStream;
@@ -25,8 +28,9 @@ export type HandlerContext = {
     renderRscWithWorker: typeof renderRscWithWorker;
     getSsrConfigWithWorker: typeof getSsrConfigWithWorker;
     loadServerFile: (fileURL: string) => Promise<Record<string, any>>;
-    transformIndexHtml: (pathname: string) => Promise<TransformStream<any,  
- any>>
+    transformIndexHtml: (
+      pathname: string,
+    ) => Promise<TransformStream<any, any>>;
   };
 };
 
