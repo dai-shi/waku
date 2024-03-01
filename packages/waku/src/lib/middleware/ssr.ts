@@ -29,14 +29,11 @@ export const ssr: Middleware = (options) => {
       entriesPromise,
     ]);
     try {
-      const { dynamicHtmlPaths } = devServer
-        ? ({} as Partial<typeof entries>)
-        : entries;
-      const htmlHead = dynamicHtmlPaths
-        ? dynamicHtmlPaths.find(([pathSpec]) =>
+      const htmlHead = devServer
+        ? config.htmlHead
+        : entries.dynamicHtmlPaths.find(([pathSpec]) =>
             getPathMapping(pathSpec, ctx.req.url.pathname),
-          )?.[1]
-        : config.htmlHead;
+          )?.[1];
       if (htmlHead) {
         const readable = await renderHtml({
           config,
@@ -83,7 +80,11 @@ export const ssr: Middleware = (options) => {
             ...ctx.res.headers,
             'content-type': 'text/html; charset=utf-8',
           };
-          ctx.res.body = readable;
+          ctx.res.body = devServer
+            ? readable.pipeThrough(
+                await devServer.transformIndexHtml(ctx.req.url.pathname),
+              )
+            : readable;
           return;
         }
       }
