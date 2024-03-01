@@ -15,6 +15,12 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
     import('waku/middleware').then((mod) => mod.rsc),
     // import('waku/middleware').then((mod) => mod.fallback),
   ];
+  if (options.cmd === 'dev') {
+    // TODO this can't be code split.
+    middlewareList.unshift(
+      import('waku/middleware').then((mod) => mod.devServer),
+    );
+  }
   const handlersPromise = Promise.all(
     middlewareList.map(async (middleware) => (await middleware)(options)),
   );
@@ -45,17 +51,10 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
       });
     };
     await run(0);
-    if ('status' in ctx.res) {
-      c.status(ctx.res.status as any);
-    }
-    if ('headers' in ctx.res) {
-      for (const [k, v] of Object.entries(ctx.res.headers)) {
-        c.header(k, v);
-      }
-    }
-    if ('body' in ctx.res) {
-      return c.body(ctx.res.body);
-    }
-    return c.body(null);
+    return c.body(
+      ctx.res.body || null,
+      (ctx.res.status as any) || 200,
+      ctx.res.headers || {},
+    );
   };
 };
