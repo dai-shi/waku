@@ -95,7 +95,7 @@ if (values.version) {
 
 async function runDev(options: { ssr: boolean }) {
   const app = new Hono();
-  if (process.env.WAKU_WIP_MIDDLEWARE) {
+  if (!process.env.WAKU_OLD_MIDDLEWARE) {
     app.use('*', runner({ config, env: process.env as any, cmd: 'dev' }));
   } else {
     app.use(
