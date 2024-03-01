@@ -596,7 +596,7 @@ const resolveFileName = (fname: string) => {
 };
 
 export async function build(options: {
-  config?: Config;
+  config: Config;
   env?: Record<string, string>;
   deploy?:
     | 'vercel-static'
@@ -610,7 +610,7 @@ export async function build(options: {
     | undefined;
 }) {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
-  const config = await resolveConfig(options.config || {});
+  const config = await resolveConfig(options.config);
   const rootDir = (
     await resolveViteConfig({}, 'build', 'production', 'production')
   ).root;

@@ -20,7 +20,7 @@ app.use(
     unstable_posthook: (req, res, ctx) => {
       res.orig.cookie('count', String(ctx.count));
     },
-    ssr: withSsr,
+    ssr: withSsr || true, // HACK for now
   }),
 );
 app.use(express.static(path.join(root, 'dist', 'public')));

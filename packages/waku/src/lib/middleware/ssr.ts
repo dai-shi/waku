@@ -16,11 +16,14 @@ export const CLIENT_PREFIX = 'client/';
 
 export const ssr: Middleware = (options) => {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
-  const configPromise = resolveConfig(options.config || {});
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()
       : ('Error: loadEntries are not available' as never);
+  const configPromise =
+    options.cmd === 'start'
+      ? entriesPromise.then((entries) => resolveConfig(entries.config))
+      : resolveConfig(options.config);
 
   return async (ctx, next) => {
     const { devServer } = ctx;

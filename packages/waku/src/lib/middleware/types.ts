@@ -41,8 +41,10 @@ export type Handler = (
 ) => Promise<void>;
 
 export type MiddlewareOptions = {
-  config?: Config;
   env?: Record<string, string>;
-} & ({ cmd: 'dev' } | { cmd: 'start'; loadEntries: () => Promise<EntriesPrd> });
+} & (
+  | { cmd: 'dev'; config: Config }
+  | { cmd: 'start'; loadEntries: () => Promise<EntriesPrd> }
+);
 
 export type Middleware = (options: MiddlewareOptions) => Handler;

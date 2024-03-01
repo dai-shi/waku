@@ -139,7 +139,7 @@ async function runStart(options: { ssr: boolean }) {
   if (!process.env.WAKU_OLD_MIDDLEWARE) {
     app.use(
       '*',
-      runner({ cmd: 'start', config, env: process.env as any, loadEntries }),
+      runner({ cmd: 'start', loadEntries, env: process.env as any }),
     );
   } else {
     app.use(

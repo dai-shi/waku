@@ -70,7 +70,7 @@ export const devServer: Middleware = (options) => {
   }
 
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
-  const configPromise = resolveConfig(options.config || {});
+  const configPromise = resolveConfig(options.config);
   const vitePromise = configPromise.then(async (config) => {
     const mergedViteConfig = await mergeUserViteConfig({
       base: config.basePath,
