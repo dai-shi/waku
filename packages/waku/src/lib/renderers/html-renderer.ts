@@ -153,7 +153,7 @@ const buildHtml = (
 
 export const renderHtml = async (
   opts: {
-    config: ResolvedConfig;
+    config: Omit<ResolvedConfig, 'middleware'>;
     pathname: string;
     searchParams: URLSearchParams;
     htmlHead: string;

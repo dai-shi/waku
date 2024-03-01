@@ -163,11 +163,10 @@ export async function renderRscWithWorker(
         messageCallbacks.delete(id);
       }
     });
-    const { middleware: _removed, ...config } = args.config;
     const mesg: MessageReq = {
       id,
       type: 'render',
-      config,
+      config: args.config,
       input: args.input,
       searchParamsString: args.searchParams.toString(),
       method: args.method,
@@ -214,11 +213,10 @@ export async function getSsrConfigWithWorker(args: GetSsrConfigArgs): Promise<{
         messageCallbacks.delete(id);
       }
     });
-    const { middleware: _removed, ...config } = args.config;
     const mesg: MessageReq = {
       id,
       type: 'getSsrConfig',
-      config,
+      config: args.config,
       pathname: args.pathname,
       searchParamsString: args.searchParams.toString(),
     };

@@ -27,7 +27,7 @@ export const ssr: Middleware = (options) => {
 
   return async (ctx, next) => {
     const { devServer } = ctx;
-    const [config, entries] = await Promise.all([
+    const [{ middleware: _removed, ...config }, entries] = await Promise.all([
       configPromise,
       entriesPromise,
     ]);

@@ -16,7 +16,7 @@ export const rsc: Middleware = (options) => {
       : resolveConfig(options.config);
 
   return async (ctx, next) => {
-    const [config, entries] = await Promise.all([
+    const [{ middleware: _removed, ...config }, entries] = await Promise.all([
       configPromise,
       entriesPromise,
     ]);
