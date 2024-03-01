@@ -7,7 +7,6 @@ export function rscServePlugin(opts: {
   indexHtml: string;
   entriesFile: string;
   srcServeFile: string;
-  ssr: boolean;
   serve:
     | 'vercel'
     | 'netlify'
