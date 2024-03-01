@@ -10,7 +10,7 @@ export const rsc: Middleware = (options) => {
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()
-      : ('Error: loadEntries are not available' as any);
+      : ('Error: loadEntries are not available' as never);
 
   return async (ctx, next) => {
     const [config, entries] = await Promise.all([

@@ -5,27 +5,38 @@ import { hasStatusCode, encodeInput } from '../renderers/utils.js';
 import { getSsrConfig } from '../renderers/rsc-renderer.js';
 import type { Middleware } from './types.js';
 
+export const CLIENT_MODULE_MAP = {
+  react: 'react',
+  'rd-server': 'react-dom/server.edge',
+  'rsdw-client': 'react-server-dom-webpack/client.edge',
+  'waku-client': 'waku/client',
+};
+export type CLIENT_MODULE_KEY = keyof typeof CLIENT_MODULE_MAP;
 export const CLIENT_PREFIX = 'client/';
 
 export const ssr: Middleware = (options) => {
-  if (options.cmd === 'dev') {
-    throw new Error('not implemented yet');
-  }
-
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(options.config || {});
-  const entriesPromise = options.loadEntries();
+  const entriesPromise =
+    options.cmd === 'start'
+      ? options.loadEntries()
+      : ('Error: loadEntries are not available' as never);
 
   return async (ctx, next) => {
+    const { devServer } = ctx;
     const [config, entries] = await Promise.all([
       configPromise,
       entriesPromise,
     ]);
     try {
-      const { dynamicHtmlPaths } = entries;
-      const htmlHead = dynamicHtmlPaths.find(([pathSpec]) =>
-        getPathMapping(pathSpec, ctx.req.url.pathname),
-      )?.[1];
+      const { dynamicHtmlPaths } = devServer
+        ? ({} as Partial<typeof entries>)
+        : entries;
+      const htmlHead = dynamicHtmlPaths
+        ? dynamicHtmlPaths.find(([pathSpec]) =>
+            getPathMapping(pathSpec, ctx.req.url.pathname),
+          )?.[1]
+        : config.htmlHead;
       if (htmlHead) {
         const readable = await renderHtml({
           config,
@@ -42,21 +53,30 @@ export const ssr: Middleware = (options) => {
             }
             return ctx.res.body;
           },
-          getSsrConfigForHtml: (pathname, searchParams) =>
-            getSsrConfig(
-              {
-                config,
-                pathname,
-                searchParams,
-              },
-              {
+          ...(devServer
+            ? {
+                isDev: true,
+                getSsrConfigForHtml: (pathname, searchParams) =>
+                  devServer.getSsrConfigWithWorker({
+                    config,
+                    pathname,
+                    searchParams,
+                  }),
+                loadClientModule: (key) => import(CLIENT_MODULE_MAP[key]),
+                rootDir: devServer.rootDir,
+                loadServerFile: devServer.loadServerFile,
+              }
+            : {
                 isDev: false,
-                entries,
-              },
-            ),
-          loadClientModule: (key) => entries.loadModule(CLIENT_PREFIX + key),
-          isDev: false,
-          loadModule: entries.loadModule,
+                getSsrConfigForHtml: (pathname, searchParams) =>
+                  getSsrConfig(
+                    { config, pathname, searchParams },
+                    { isDev: false, entries },
+                  ),
+                loadClientModule: (key) =>
+                  entries.loadModule(CLIENT_PREFIX + key),
+                loadModule: entries.loadModule,
+              }),
         });
         if (readable) {
           ctx.res.headers = {

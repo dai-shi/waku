@@ -25,6 +25,7 @@ export type HandlerContext = {
   readonly res: HandlerRes;
   readonly context: RscContext;
   devServer?: {
+    rootDir: string;
     renderRscWithWorker: typeof renderRscWithWorker;
     getSsrConfigWithWorker: typeof getSsrConfigWithWorker;
     loadServerFile: (fileURL: string) => Promise<Record<string, any>>;

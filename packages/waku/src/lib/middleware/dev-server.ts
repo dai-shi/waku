@@ -23,14 +23,6 @@ import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import type { Middleware } from './types.js';
 
-export const CLIENT_MODULE_MAP = {
-  react: 'react',
-  'rd-server': 'react-dom/server.edge',
-  'rsdw-client': 'react-server-dom-webpack/client.edge',
-  'waku-client': 'waku/client',
-};
-export type CLIENT_MODULE_KEY = keyof typeof CLIENT_MODULE_MAP;
-
 const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
   let controller: ReadableStreamDefaultController | undefined;
   const readable = new ReadableStream({
@@ -160,6 +152,7 @@ export const devServer: Middleware = (options) => {
   return async (ctx, next) => {
     const [config, vite] = await Promise.all([configPromise, vitePromise]);
     ctx.devServer = {
+      rootDir: vite.config.root,
       renderRscWithWorker,
       getSsrConfigWithWorker,
       loadServerFile,
