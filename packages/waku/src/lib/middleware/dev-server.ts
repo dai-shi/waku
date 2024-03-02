@@ -149,6 +149,16 @@ export const devServer: Middleware = (options) => {
     });
   };
 
+  const willBeHandledLater = async (pathname: string) => {
+    const vite = await vitePromise;
+    try {
+      const result = await vite.transformRequest(pathname);
+      return !!result;
+    } catch {
+      return false;
+    }
+  };
+
   return async (ctx, next) => {
     const [config, vite] = await Promise.all([configPromise, vitePromise]);
     ctx.devServer = {
@@ -157,6 +167,7 @@ export const devServer: Middleware = (options) => {
       getSsrConfigWithWorker,
       loadServerFile,
       transformIndexHtml,
+      willBeHandledLater,
     };
 
     await next();
