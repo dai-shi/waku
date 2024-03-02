@@ -224,7 +224,7 @@ function InnerRouter() {
         url.pathname = path;
       }
       if (searchParams) {
-        url.search = '?' + searchParams.toString();
+        url.search = searchParams.toString();
       }
       if (typeof hash === 'string') {
         url.hash = hash;
