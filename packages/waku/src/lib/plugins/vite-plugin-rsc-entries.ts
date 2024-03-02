@@ -21,10 +21,13 @@ export function loadModule(id) {
   console.log(
     '=========',
     existsSync(CONFIG_FILE),
-    path.relative(path.dirname(opts.entriesFile), path.resolve(CONFIG_FILE)),
+    path.posix.relative(
+      path.dirname(opts.entriesFile),
+      path.resolve(CONFIG_FILE),
+    ),
   );
   if (existsSync(CONFIG_FILE)) {
-    const file = path.relative(
+    const file = path.posix.relative(
       path.dirname(opts.entriesFile),
       path.resolve(CONFIG_FILE),
     );
