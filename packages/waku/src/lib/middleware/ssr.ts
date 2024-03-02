@@ -48,7 +48,7 @@ export const ssr: Middleware = (options) => {
           renderRscForHtml: async (input, searchParams) => {
             ctx.req.url.pathname =
               config.basePath + config.rscPath + '/' + encodeInput(input);
-            ctx.req.url.search = '?' + searchParams.toString();
+            ctx.req.url.search = searchParams.toString();
             await next();
             if (!ctx.res.body) {
               throw new Error('No body');
