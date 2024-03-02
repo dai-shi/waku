@@ -19,6 +19,7 @@ export function loadModule(id) {
 }
 `;
   const file = path.resolve(CONFIG_FILE);
+  console.log('============', CONFIG_FILE, file, existsSync(file));
   if (existsSync(file)) {
     codeToAdd += `
 export const configPromise = import('${path.relative(path.dirname(opts.entriesFile), file)}').then((m) => m.default);
@@ -28,7 +29,6 @@ export const configPromise = import('${path.relative(path.dirname(opts.entriesFi
 export const configPromise = Promise.resolve({});
 `;
   }
-  console.log('============', codeToAdd);
   return {
     name: 'rsc-entries-plugin',
     transform(code, id) {
