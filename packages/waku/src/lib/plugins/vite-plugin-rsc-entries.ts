@@ -18,8 +18,9 @@ export function loadModule(id) {
   return import(file);
 }
 `;
-  console.log('===================CONFIG_FILE', CONFIG_FILE);
-  console.log('===================entriesFile', opts.entriesFile);
+  console.log('===========CONFIG_FILE', CONFIG_FILE);
+  console.log('===========exists', existsSync(CONFIG_FILE));
+  console.log('===========path.resolve', path.resolve(CONFIG_FILE));
   if (existsSync(CONFIG_FILE)) {
     const file =
       path.relative(path.dirname(opts.entriesFile), path.resolve('.')) +
@@ -37,6 +38,7 @@ export const configPromise = Promise.resolve({});
   return {
     name: 'rsc-entries-plugin',
     transform(code, id) {
+      console.log('===========if', opts.entriesFile, id);
       if (id === opts.entriesFile) {
         return code + codeToAdd;
       }
