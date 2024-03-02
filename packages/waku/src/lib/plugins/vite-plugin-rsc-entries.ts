@@ -18,6 +18,8 @@ export function loadModule(id) {
   return import(file);
 }
 `;
+  console.log('===================CONFIG_FILE', CONFIG_FILE);
+  console.log('===================entriesFile', opts.entriesFile);
   if (existsSync(CONFIG_FILE)) {
     const file =
       path.relative(path.dirname(opts.entriesFile), path.resolve('.')) +
