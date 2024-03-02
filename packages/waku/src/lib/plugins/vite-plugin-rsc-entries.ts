@@ -1,6 +1,5 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import type { Plugin } from 'vite';
 
 const CONFIG_FILE = 'waku.config.ts'; // XXX only ts extension
