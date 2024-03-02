@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import type { Plugin } from 'vite';
 
@@ -18,7 +18,11 @@ export function loadModule(id) {
   return import(file);
 }
 `;
-  console.log('----------', readdirSync('.'));
+  console.log(
+    '=========',
+    existsSync(CONFIG_FILE),
+    path.relative(path.dirname(opts.entriesFile), path.resolve(CONFIG_FILE)),
+  );
   if (existsSync(CONFIG_FILE)) {
     const file = path.relative(
       path.dirname(opts.entriesFile),
