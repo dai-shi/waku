@@ -23,6 +23,7 @@ export function loadModule(id) {
       path.relative(path.dirname(opts.entriesFile), path.resolve('.')) +
       path.sep +
       CONFIG_FILE;
+    console.log('===================file', file);
     codeToAdd += `
 export const configPromise = import('${file}').then((m) => m.default);
 `;
