@@ -219,12 +219,11 @@ Options:
 }
 
 async function loadConfig(): Promise<Config> {
-  const file = path.resolve(CONFIG_FILE);
-  if (!existsSync(file)) {
+  if (!existsSync(CONFIG_FILE)) {
     return {};
   }
   const { transformFile } = await import('@swc/core');
-  const { code } = await transformFile(file, {
+  const { code } = await transformFile(CONFIG_FILE, {
     swcrc: false,
     jsc: {
       parser: { syntax: 'typescript' },

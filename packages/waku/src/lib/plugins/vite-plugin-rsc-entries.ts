@@ -18,11 +18,13 @@ export function loadModule(id) {
   return import(file);
 }
 `;
-  const file = path.resolve(CONFIG_FILE);
-  console.log('============', CONFIG_FILE, file, existsSync(file));
-  if (existsSync(file)) {
+  if (existsSync(CONFIG_FILE)) {
+    const file =
+      path.relative(path.dirname(opts.entriesFile), path.resolve('.')) +
+      path.sep +
+      CONFIG_FILE;
     codeToAdd += `
-export const configPromise = import('${path.relative(path.dirname(opts.entriesFile), file)}').then((m) => m.default);
+export const configPromise = import('${file}').then((m) => m.default);
 `;
   } else {
     codeToAdd += `
