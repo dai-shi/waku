@@ -223,8 +223,8 @@ function InnerRouter() {
       if (typeof path === 'string') {
         url.pathname = path;
       }
-      if (searchParams?.size) {
-        url.search = '?' + searchParams.toString();
+      if (searchParams) {
+        url.search = searchParams.toString();
       }
       if (typeof hash === 'string') {
         url.hash = hash;
