@@ -19,10 +19,10 @@ export function loadModule(id) {
 }
 `;
   if (existsSync(CONFIG_FILE)) {
-    const file =
-      path.relative(path.dirname(opts.entriesFile), path.resolve('.')) +
-      path.sep +
-      CONFIG_FILE;
+    const file = path.relative(
+      path.dirname(opts.entriesFile),
+      path.resolve(CONFIG_FILE),
+    );
     codeToAdd += `
 export const configPromise = import('${file}').then((m) => m.default);
 `;
