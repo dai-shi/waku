@@ -20,9 +20,12 @@ export function loadModule(id) {
 }
 `;
   if (existsSync(CONFIG_FILE)) {
-    const file = path.resolve(CONFIG_FILE);
+    const file = path.relative(
+      path.dirname(opts.entriesFile),
+      path.resolve(CONFIG_FILE),
+    );
     codeToAdd += `
-export const configPromise = import('${pathToFileURL(file).toString()}').then((m) => m.default);
+export const configPromise = import('${file}').then((m) => m.default);
 `;
   } else {
     codeToAdd += `
