@@ -28,6 +28,7 @@ export const configPromise = import('${path.relative(path.dirname(opts.entriesFi
 export const configPromise = Promise.resolve({});
 `;
   }
+  console.log('============', codeToAdd);
   return {
     name: 'rsc-entries-plugin',
     transform(code, id) {
