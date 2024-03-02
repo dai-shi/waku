@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import type { Plugin } from 'vite';
 
 const CONFIG_FILE = 'waku.config.ts'; // XXX only ts extension
@@ -21,7 +22,7 @@ export function loadModule(id) {
   if (existsSync(CONFIG_FILE)) {
     const file = path.resolve(CONFIG_FILE);
     codeToAdd += `
-export const configPromise = import('${file}').then((m) => m.default);
+export const configPromise = import('${pathToFileURL(file).toString()}').then((m) => m.default);
 `;
   } else {
     codeToAdd += `
