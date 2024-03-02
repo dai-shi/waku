@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import type { Plugin } from 'vite';
 
 const CONFIG_FILE = 'waku.config.ts'; // XXX only ts extension
@@ -18,17 +19,10 @@ export function loadModule(id) {
   return import(file);
 }
 `;
-  console.log('===========CONFIG_FILE', CONFIG_FILE);
-  console.log('===========exists', existsSync(CONFIG_FILE));
-  console.log('===========path.resolve', path.resolve(CONFIG_FILE));
-  if (existsSync(CONFIG_FILE)) {
-    const file =
-      path.relative(path.dirname(opts.entriesFile), path.resolve('.')) +
-      path.sep +
-      CONFIG_FILE;
-    console.log('===================file', file);
+  const file = path.resolve(CONFIG_FILE);
+  if (existsSync(file)) {
     codeToAdd += `
-export const configPromise = import('${file}').then((m) => m.default);
+export const configPromise = import('${path.relative(path.dirname(opts.entriesFile), file)}').then((m) => m.default);
 `;
   } else {
     codeToAdd += `
@@ -38,7 +32,6 @@ export const configPromise = Promise.resolve({});
   return {
     name: 'rsc-entries-plugin',
     transform(code, id) {
-      console.log('===========if', opts.entriesFile, id);
       if (id === opts.entriesFile) {
         return code + codeToAdd;
       }
