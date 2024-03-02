@@ -29,6 +29,13 @@ export const ssr: Middleware = (options) => {
 
   return async (ctx, next) => {
     const { devServer } = ctx;
+    if (
+      devServer &&
+      (await devServer.willBeHandledLater(ctx.req.url.pathname))
+    ) {
+      await next();
+      return;
+    }
     const [{ middleware: _removed, ...config }, entries] = await Promise.all([
       configPromise,
       entriesPromise,

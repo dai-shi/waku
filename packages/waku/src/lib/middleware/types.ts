@@ -32,6 +32,7 @@ export type HandlerContext = {
     transformIndexHtml: (
       pathname: string,
     ) => Promise<TransformStream<any, any>>;
+    willBeHandledLater: (pathname: string) => Promise<boolean>;
   };
 };
 

@@ -132,6 +132,16 @@ export function createHandler<
     });
   };
 
+  const willBeHandledByVite = async (pathname: string) => {
+    const vite = await vitePromise;
+    try {
+      const result = await vite.transformRequest(pathname);
+      return !!result;
+    } catch {
+      return false;
+    }
+  };
+
   return async (req, res, next) => {
     const [{ middleware: _removed, ...config }, vite] = await Promise.all([
       configPromise,
@@ -177,7 +187,7 @@ export function createHandler<
       }
       return;
     }
-    if (ssr) {
+    if (ssr && !(await willBeHandledByVite(req.url.pathname))) {
       try {
         const readable = await renderHtml({
           config,
