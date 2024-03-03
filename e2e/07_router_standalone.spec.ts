@@ -28,7 +28,9 @@ async function testRouterExample(page: Page, port: number) {
   await page.goto(`http://localhost:${port}`);
   await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
 
+  console.log('content', await page.content())
   await page.click("a[href='/foo']");
+  console.log('content', await page.content())
 
   await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
 
