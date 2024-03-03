@@ -56,7 +56,7 @@ const specialExamples = [
       },
     ],
   },
-];
+].slice(Infinity); // FIXME: remove, as no longer needed
 
 const examples = [
   ...(await readdir(examplesDir)).map((example) =>
