@@ -11,7 +11,7 @@ import { decodeActionId } from '../renderers/utils.js';
 export const RSDW_SERVER_MODULE = 'rsdw-server';
 export const RSDW_SERVER_MODULE_VALUE = 'react-server-dom-webpack/server.edge';
 
-const resolveClientEntryForPrd = (id: string, config: ResolvedConfig) => {
+const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
   if (!id.startsWith('@id/')) {
     throw new Error('Unexpected client entry in PRD');
   }
@@ -19,7 +19,7 @@ const resolveClientEntryForPrd = (id: string, config: ResolvedConfig) => {
 };
 
 export type RenderRscArgs = {
-  config: ResolvedConfig;
+  config: Omit<ResolvedConfig, 'middleware'>;
   input: string;
   searchParams: URLSearchParams;
   method: 'GET' | 'POST';
@@ -220,7 +220,7 @@ export async function getBuildConfig(opts: {
 }
 
 export type GetSsrConfigArgs = {
-  config: ResolvedConfig;
+  config: Omit<ResolvedConfig, 'middleware'>;
   pathname: string;
   searchParams: URLSearchParams;
 };

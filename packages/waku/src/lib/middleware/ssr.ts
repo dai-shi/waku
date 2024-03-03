@@ -16,11 +16,16 @@ export const CLIENT_PREFIX = 'client/';
 
 export const ssr: Middleware = (options) => {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
-  const configPromise = resolveConfig(options.config || {});
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()
       : ('Error: loadEntries are not available' as never);
+  const configPromise =
+    options.cmd === 'start'
+      ? entriesPromise.then((entries) =>
+          entries.loadConfig().then((config) => resolveConfig(config)),
+        )
+      : resolveConfig(options.config);
 
   return async (ctx, next) => {
     const { devServer } = ctx;
@@ -31,7 +36,7 @@ export const ssr: Middleware = (options) => {
       await next();
       return;
     }
-    const [config, entries] = await Promise.all([
+    const [{ middleware: _removed, ...config }, entries] = await Promise.all([
       configPromise,
       entriesPromise,
     ]);
@@ -50,7 +55,7 @@ export const ssr: Middleware = (options) => {
           renderRscForHtml: async (input, searchParams) => {
             ctx.req.url.pathname =
               config.basePath + config.rscPath + '/' + encodeInput(input);
-            ctx.req.url.search = '?' + searchParams.toString();
+            ctx.req.url.search = searchParams.toString();
             await next();
             if (!ctx.res.body) {
               throw new Error('No body');

@@ -1,5 +1,6 @@
 import type { MiddlewareHandler } from 'hono';
 
+import { resolveConfig } from '../config.js';
 import type { HandlerContext, MiddlewareOptions } from '../middleware/types.js';
 
 const createEmptyReadableStream = () =>
@@ -10,23 +11,21 @@ const createEmptyReadableStream = () =>
   });
 
 export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
-  const middlewareList = [
-    import('waku/middleware/ssr'),
-    import('waku/middleware/rsc'),
-  ];
-  // Without SSR
-  // const middlewareList = [
-  //   import('waku/middleware/rsc'),
-  //   import('waku/middleware/fallback'),
-  // ];
-  if (options.cmd === 'dev') {
-    middlewareList.unshift(
-      import('DO_NOT_BUNDLE'.slice(Infinity) + 'waku/middleware/dev-server'),
-    );
-  }
-  const handlersPromise = Promise.all(
-    middlewareList.map(async (middleware) =>
-      (await middleware).default(options),
+  const entriesPromise =
+    options.cmd === 'start'
+      ? options.loadEntries()
+      : ('Error: loadEntries are not available' as never);
+  const configPromise =
+    options.cmd === 'start'
+      ? entriesPromise.then((entries) =>
+          entries.loadConfig().then((config) => resolveConfig(config)),
+        )
+      : resolveConfig(options.config);
+  const handlersPromise = configPromise.then((config) =>
+    Promise.all(
+      config
+        .middleware(options.cmd)
+        .map(async (middleware) => (await middleware).default(options)),
     ),
   );
   return async (c, next) => {
@@ -35,9 +34,7 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
         body: c.req.raw.body || createEmptyReadableStream(),
         url: new URL(c.req.url),
         method: c.req.method,
-        headers: Object.fromEntries(
-          Array.from(c.req.raw.headers.entries()).map(([k, v]) => [k, v]),
-        ),
+        headers: c.req.header(),
       },
       res: {},
       context: {},

@@ -1,3 +1,7 @@
+import type { Middleware } from './lib/middleware/types.js';
+
+export type { Middleware };
+
 export interface Config {
   /**
    * The base path for serve HTTP.
@@ -79,6 +83,16 @@ export interface Config {
    * <meta name="viewport" content="width=device-width, initial-scale=1" />
    */
   htmlHead?: string;
+  /**
+   * Middleware to use
+   * Defaults to:
+   * (cmd: 'dev' | 'start') => [
+   *   ...(cmd === 'dev' ? [import('waku/middleware/dev-server')] : []),
+   *   import('waku/middleware/ssr'),
+   *   import('waku/middleware/rsc'),
+   * ]
+   */
+  middleware?: (cmd: 'dev' | 'start') => Promise<{ default: Middleware }>[];
 }
 
 export function defineConfig(config: Config) {

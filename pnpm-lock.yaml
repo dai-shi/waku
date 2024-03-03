@@ -398,9 +398,9 @@ importers:
 
   examples/08_cookies:
     dependencies:
-      cookie-parser:
-        specifier: 1.4.6
-        version: 1.4.6
+      cookie:
+        specifier: 0.6.0
+        version: 0.6.0
       express:
         specifier: 4.18.2
         version: 4.18.2
@@ -417,6 +417,9 @@ importers:
         specifier: 0.19.4
         version: link:../../packages/waku
     devDependencies:
+      '@types/cookie':
+        specifier: 0.6.0
+        version: 0.6.0
       '@types/node':
         specifier: 20.11.20
         version: 20.11.20
@@ -710,8 +713,8 @@ importers:
         specifier: 18.3.0-canary-6c3b8dbfe-20240226
         version: 18.3.0-canary-6c3b8dbfe-20240226(react-dom@18.3.0-canary-6c3b8dbfe-20240226)(react@18.3.0-canary-6c3b8dbfe-20240226)(webpack@5.90.3)
       waku:
-        specifier: https://pkg.csb.dev/dai-shi/waku/commit/07b708cd/waku
-        version: '@pkg.csb.dev/dai-shi/waku/commit/07b708cd/waku(@types/node@20.11.20)(react-dom@18.3.0-canary-6c3b8dbfe-20240226)(react-server-dom-webpack@18.3.0-canary-6c3b8dbfe-20240226)(react@18.3.0-canary-6c3b8dbfe-20240226)'
+        specifier: workspace:*
+        version: link:../waku
     devDependencies:
       '@types/react':
         specifier: ^18.2.59
@@ -1768,6 +1771,10 @@ packages:
       '@types/responselike': 1.0.3
     dev: true
 
+  /@types/cookie@0.6.0:
+    resolution: {integrity: sha512-4Kh9a6B2bQciAhf7FSuMRRkUWecJgJu9nPnx3yzpsfXX/c50REIqpHY4C82bXP90qrLtXtkDxTZosYO3UpOwlA==}
+    dev: true
+
   /@types/debug@4.1.12:
     resolution: {integrity: sha512-vIChWdVG3LG1SMxEvI/AK+FWJthlrqlTu7fbrlywTkkaONwk/UAGaULXRlf8vkzFBLVm0zkMdCquhL5aOjhXPQ==}
     dependencies:
@@ -2741,25 +2748,17 @@ packages:
   /convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
 
-  /cookie-parser@1.4.6:
-    resolution: {integrity: sha512-z3IzaNjdwUC2olLIB5/ITd0/setiaFMLYiZJle7xg5Fe9KWAceil7xszYfHHBtDFYLSgJduS2Ty0P1uJdPDJeA==}
-    engines: {node: '>= 0.8.0'}
-    dependencies:
-      cookie: 0.4.1
-      cookie-signature: 1.0.6
-    dev: false
-
   /cookie-signature@1.0.6:
     resolution: {integrity: sha512-QADzlaHc8icV8I7vbaJXJwod9HWYp8uCqf1xa4OfNu1T7JVxQIrUgOWtHdNDtPiywmFbiS12VjotIXLrKM3orQ==}
     dev: false
 
-  /cookie@0.4.1:
-    resolution: {integrity: sha512-ZwrFkGJxUR3EIoXtO+yVE69Eb7KlixbaeAWfBQB9vVsNn/o+Yw69gBWSSDK825hQNdN+wF8zELf3dFNl/kxkUA==}
+  /cookie@0.5.0:
+    resolution: {integrity: sha512-YZ3GUyn/o8gfKJlnlX7g7xq4gyO6OSuhGPKaaGssGB2qgDUS0gPgtTvoyZLTt9Ab6dC4hfc9dV5arkvc/OCmrw==}
     engines: {node: '>= 0.6'}
     dev: false
 
-  /cookie@0.5.0:
-    resolution: {integrity: sha512-YZ3GUyn/o8gfKJlnlX7g7xq4gyO6OSuhGPKaaGssGB2qgDUS0gPgtTvoyZLTt9Ab6dC4hfc9dV5arkvc/OCmrw==}
+  /cookie@0.6.0:
+    resolution: {integrity: sha512-U71cyTamuh1CRNCfpGY6to28lxvNwPG4Guz/EVjgf3Jmzv0vlDp1atT9eS5dDjMYHucpHbWns6Lwf3BKz6svdw==}
     engines: {node: '>= 0.6'}
     dev: false
 
@@ -7029,38 +7028,4 @@ packages:
 
   /zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
-    dev: false
-
-  '@pkg.csb.dev/dai-shi/waku/commit/07b708cd/waku(@types/node@20.11.20)(react-dom@18.3.0-canary-6c3b8dbfe-20240226)(react-server-dom-webpack@18.3.0-canary-6c3b8dbfe-20240226)(react@18.3.0-canary-6c3b8dbfe-20240226)':
-    resolution: {tarball: https://pkg.csb.dev/dai-shi/waku/commit/07b708cd/waku}
-    id: '@pkg.csb.dev/dai-shi/waku/commit/07b708cd/waku'
-    name: waku
-    version: 0.19.3
-    engines: {node: ^20.8.0 || ^18.17.0}
-    hasBin: true
-    peerDependencies:
-      react: 18.3.0-canary-6c3b8dbfe-20240226
-      react-dom: 18.3.0-canary-6c3b8dbfe-20240226
-      react-server-dom-webpack: 18.3.0-canary-6c3b8dbfe-20240226
-    dependencies:
-      '@hono/node-server': 1.8.2
-      '@swc/core': 1.4.2
-      '@vitejs/plugin-react': 4.2.1(vite@5.1.4)
-      dotenv: 16.4.5
-      hono: 4.0.7
-      react: 18.3.0-canary-6c3b8dbfe-20240226
-      react-dom: 18.3.0-canary-6c3b8dbfe-20240226(react@18.3.0-canary-6c3b8dbfe-20240226)
-      react-server-dom-webpack: 18.3.0-canary-6c3b8dbfe-20240226(react-dom@18.3.0-canary-6c3b8dbfe-20240226)(react@18.3.0-canary-6c3b8dbfe-20240226)(webpack@5.90.3)
-      rsc-html-stream: 0.0.3
-      vite: 5.1.4(@types/node@20.11.20)
-    transitivePeerDependencies:
-      - '@swc/helpers'
-      - '@types/node'
-      - less
-      - lightningcss
-      - sass
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
     dev: false

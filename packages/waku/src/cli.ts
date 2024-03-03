@@ -19,6 +19,8 @@ const require = createRequire(new URL('.', import.meta.url));
 
 dotenv.config({ path: ['.env.local', '.env'] });
 
+const CONFIG_FILE = 'waku.config.ts'; // XXX only ts extension
+
 const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
   allowPositionals: true,
@@ -61,8 +63,6 @@ const { values, positionals } = parseArgs({
   },
 });
 
-const config = await loadConfig();
-
 const cmd = positionals[0];
 
 if (values.version) {
@@ -77,9 +77,7 @@ if (values.version) {
       await runDev({ ssr });
       break;
     case 'build':
-      await runBuild({
-        ssr,
-      });
+      await runBuild();
       break;
     case 'start':
       await runStart({ ssr });
@@ -94,9 +92,10 @@ if (values.version) {
 }
 
 async function runDev(options: { ssr: boolean }) {
+  const config = await loadConfig();
   const app = new Hono();
   if (!process.env.WAKU_OLD_MIDDLEWARE) {
-    app.use('*', runner({ config, env: process.env as any, cmd: 'dev' }));
+    app.use('*', runner({ cmd: 'dev', config, env: process.env as any }));
   } else {
     app.use(
       '*',
@@ -107,9 +106,10 @@ async function runDev(options: { ssr: boolean }) {
   await startServer(app, port);
 }
 
-async function runBuild(options: { ssr: boolean }) {
+async function runBuild() {
+  const config = await loadConfig();
+  process.env.NODE_ENV = 'production';
   await build({
-    ...options,
     config,
     env: process.env as any,
     deploy:
@@ -131,6 +131,7 @@ async function runBuild(options: { ssr: boolean }) {
 }
 
 async function runStart(options: { ssr: boolean }) {
+  const config = await loadConfig();
   const { distDir, publicDir, entriesJs } = await resolveConfig(config);
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, entriesJs)).toString());
@@ -139,7 +140,7 @@ async function runStart(options: { ssr: boolean }) {
   if (!process.env.WAKU_OLD_MIDDLEWARE) {
     app.use(
       '*',
-      runner({ config, env: process.env as any, cmd: 'start', loadEntries }),
+      runner({ cmd: 'start', loadEntries, env: process.env as any }),
     );
   } else {
     app.use(
@@ -218,16 +219,10 @@ Options:
 }
 
 async function loadConfig(): Promise<Config> {
-  if (!existsSync('waku.config.ts')) {
+  if (!existsSync(CONFIG_FILE)) {
     return {};
   }
-  const { transformFile } = await import('@swc/core');
-  const { code } = await transformFile('waku.config.ts', {
-    swcrc: false,
-    jsc: {
-      parser: { syntax: 'typescript' },
-      target: 'es2022',
-    },
-  });
-  return (await import('data:text/javascript,' + code)).default;
+  const { loadServerFile } = await import('./lib/utils/vite-loader.js');
+  const file = pathToFileURL(path.resolve(CONFIG_FILE)).toString();
+  return (await loadServerFile(file)).default;
 }

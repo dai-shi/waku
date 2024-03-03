@@ -18,11 +18,13 @@ export type MessageReq =
       type: 'render';
       searchParamsString: string;
       hasModuleIdCallback: boolean;
-    } & Omit<RenderRscArgs, 'searchParams' | 'moduleIdCallback'>)
+    } & Omit<RenderRscArgs, 'searchParams' | 'moduleIdCallback' | 'config'> & {
+        config: Omit<ResolvedConfig, 'middleware'>;
+      })
   | {
       id: number;
       type: 'getSsrConfig';
-      config: ResolvedConfig;
+      config: Omit<ResolvedConfig, 'middleware'>;
       pathname: string;
       searchParamsString: string;
     };
@@ -185,7 +187,6 @@ export async function getSsrConfigWithWorker(args: GetSsrConfigArgs): Promise<{
   searchParams?: URLSearchParams;
   body: ReadableStream;
 } | null> {
-  const { config, pathname, searchParams } = args;
   const worker = await getWorker();
   const id = nextId++;
   return new Promise((resolve, reject) => {
@@ -215,9 +216,9 @@ export async function getSsrConfigWithWorker(args: GetSsrConfigArgs): Promise<{
     const mesg: MessageReq = {
       id,
       type: 'getSsrConfig',
-      config,
-      pathname,
-      searchParamsString: searchParams.toString(),
+      config: args.config,
+      pathname: args.pathname,
+      searchParamsString: args.searchParams.toString(),
     };
     worker.postMessage(mesg);
   });

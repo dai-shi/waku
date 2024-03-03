@@ -6,14 +6,19 @@ import type { Middleware } from './types.js';
 
 export const rsc: Middleware = (options) => {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
-  const configPromise = resolveConfig(options.config || {});
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()
       : ('Error: loadEntries are not available' as never);
+  const configPromise =
+    options.cmd === 'start'
+      ? entriesPromise.then((entries) =>
+          entries.loadConfig().then((config) => resolveConfig(config)),
+        )
+      : resolveConfig(options.config);
 
   return async (ctx, next) => {
-    const [config, entries] = await Promise.all([
+    const [{ middleware: _removed, ...config }, entries] = await Promise.all([
       configPromise,
       entriesPromise,
     ]);

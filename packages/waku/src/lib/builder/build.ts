@@ -45,6 +45,7 @@ import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
+import { rscEntriesPlugin } from '../plugins/vite-plugin-rsc-entries.js';
 import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
@@ -162,11 +163,9 @@ const buildServerBundle = async (
   rootDir: string,
   config: ResolvedConfig,
   entriesFile: string,
-  distEntriesFile: string,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
   serverModuleFiles: Record<string, string>,
-  ssr: boolean,
   serve:
     | 'vercel'
     | 'netlify'
@@ -187,6 +186,30 @@ const buildServerBundle = async (
       }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
+      rscEntriesPlugin({
+        entriesFile,
+        moduleMap: {
+          [RSDW_SERVER_MODULE]: `./${RSDW_SERVER_MODULE}.js`,
+          ...Object.fromEntries(
+            Object.keys(CLIENT_MODULE_MAP).map((key) => [
+              `${CLIENT_PREFIX}${key}`,
+              `./${config.ssrDir}/${key}.js`,
+            ]),
+          ),
+          ...Object.fromEntries(
+            Object.keys(clientEntryFiles || {}).map((key) => [
+              `${config.ssrDir}/${key}.js`,
+              `./${config.ssrDir}/${key}.js`,
+            ]),
+          ),
+          ...Object.fromEntries(
+            Object.keys(serverEntryFiles || {}).map((key) => [
+              `${key}.js`,
+              `./${key}.js`,
+            ]),
+          ),
+        },
+      }),
       ...(serve
         ? [
             rscServePlugin({
@@ -198,7 +221,6 @@ const buildServerBundle = async (
                   `../serve-${serve}.js`,
                 ),
               ),
-              ssr,
               serve,
             }),
           ]
@@ -243,40 +265,6 @@ const buildServerBundle = async (
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
-  // TODO If ssr === false, we don't need to write ssr entries.
-  const code = `
-export function loadModule(id) {
-  switch (id) {
-    case '${RSDW_SERVER_MODULE}':
-      return import('./${RSDW_SERVER_MODULE}.js');
-${Object.keys(CLIENT_MODULE_MAP)
-  .map(
-    (key) => `
-    case '${CLIENT_PREFIX}${key}':
-      return import('./${config.ssrDir}/${key}.js');
-  `,
-  )
-  .join('')}
-${Object.keys(clientEntryFiles || {})
-  .map(
-    (key) => `
-    case '${config.ssrDir}/${key}.js':
-      return import('./${config.ssrDir}/${key}.js');`,
-  )
-  .join('')}
-${Object.keys(serverEntryFiles || {})
-  .map(
-    (key) => `
-    case '${key}.js':
-      return import('./${key}.js');`,
-  )
-  .join('')}
-    default:
-      throw new Error('Cannot find module: ' + id);
-  }
-}
-`;
-  await appendFile(distEntriesFile, code);
   return serverBuildOutput;
 };
 
@@ -478,7 +466,6 @@ const emitHtmlFiles = async (
   distEntries: EntriesPrd,
   buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
   getClientModules: (input: string) => string[],
-  ssr: boolean,
 ) => {
   const basePrefix = config.basePath + config.rscPath + '/';
   const publicIndexHtmlFile = joinPath(
@@ -490,9 +477,7 @@ const emitHtmlFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  if (ssr) {
-    await unlink(publicIndexHtmlFile);
-  }
+  await unlink(publicIndexHtmlFile);
   const publicIndexHtmlHead = publicIndexHtml.replace(
     /.*?<head>(.*?)<\/head>.*/s,
     '$1',
@@ -544,44 +529,42 @@ const emitHtmlFiles = async (
               ? '404.html' // HACK special treatment for 404, better way?
               : pathname + '/' + config.indexHtml,
         );
-        const htmlReadable =
-          ssr &&
-          (await renderHtml({
-            config,
-            pathname,
-            searchParams: new URLSearchParams(),
-            htmlHead,
-            renderRscForHtml: (input, searchParams) =>
-              renderRsc(
-                {
-                  config,
-                  input,
-                  searchParams,
-                  method: 'GET',
-                  context,
-                },
-                {
-                  isDev: false,
-                  entries: distEntries,
-                },
-              ),
-            getSsrConfigForHtml: (pathname, searchParams) =>
-              getSsrConfig(
-                {
-                  config,
-                  pathname,
-                  searchParams,
-                },
-                {
-                  isDev: false,
-                  entries: distEntries,
-                },
-              ),
-            loadClientModule: (key) =>
-              distEntries.loadModule(CLIENT_PREFIX + key),
-            isDev: false,
-            loadModule: distEntries.loadModule,
-          }));
+        const htmlReadable = await renderHtml({
+          config,
+          pathname,
+          searchParams: new URLSearchParams(),
+          htmlHead,
+          renderRscForHtml: (input, searchParams) =>
+            renderRsc(
+              {
+                config,
+                input,
+                searchParams,
+                method: 'GET',
+                context,
+              },
+              {
+                isDev: false,
+                entries: distEntries,
+              },
+            ),
+          getSsrConfigForHtml: (pathname, searchParams) =>
+            getSsrConfig(
+              {
+                config,
+                pathname,
+                searchParams,
+              },
+              {
+                isDev: false,
+                entries: distEntries,
+              },
+            ),
+          loadClientModule: (key) =>
+            distEntries.loadModule(CLIENT_PREFIX + key),
+          isDev: false,
+          loadModule: distEntries.loadModule,
+        });
         await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
         if (htmlReadable) {
           await pipeline(
@@ -596,8 +579,8 @@ const emitHtmlFiles = async (
   );
   const dynamicHtmlPaths = Array.from(dynamicHtmlPathMap);
   const code = `
-export const dynamicHtmlPaths= ${JSON.stringify(dynamicHtmlPaths)};
-export const publicIndexHtml= ${JSON.stringify(publicIndexHtml)};
+export const dynamicHtmlPaths = ${JSON.stringify(dynamicHtmlPaths)};
+export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
 `;
   await appendFile(distEntriesFile, code);
 };
@@ -613,8 +596,7 @@ const resolveFileName = (fname: string) => {
 };
 
 export async function build(options: {
-  config?: Config;
-  ssr?: boolean;
+  config: Config;
   env?: Record<string, string>;
   deploy?:
     | 'vercel-static'
@@ -628,7 +610,7 @@ export async function build(options: {
     | undefined;
 }) {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
-  const config = await resolveConfig(options.config || {});
+  const config = await resolveConfig(options.config);
   const rootDir = (
     await resolveViteConfig({}, 'build', 'production', 'production')
   ).root;
@@ -649,11 +631,9 @@ export async function build(options: {
     rootDir,
     config,
     entriesFile,
-    distEntriesFile,
     clientEntryFiles,
     serverEntryFiles,
     serverModuleFiles,
-    !!options.ssr,
     (options.deploy === 'vercel-serverless' ? 'vercel' : false) ||
       (options.deploy === 'netlify-functions' ? 'netlify' : false) ||
       (options.deploy === 'cloudflare' ? 'cloudflare' : false) ||
@@ -662,15 +642,13 @@ export async function build(options: {
       (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
     isNodeCompatible,
   );
-  if (options.ssr) {
-    await buildSsrBundle(
-      rootDir,
-      config,
-      clientEntryFiles,
-      serverBuildOutput,
-      isNodeCompatible,
-    );
-  }
+  await buildSsrBundle(
+    rootDir,
+    config,
+    clientEntryFiles,
+    serverBuildOutput,
+    isNodeCompatible,
+  );
   await buildClientBundle(rootDir, config, clientEntryFiles, serverBuildOutput);
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
@@ -688,7 +666,6 @@ export async function build(options: {
     distEntries,
     buildConfig,
     getClientModules,
-    !!options.ssr,
   );
 
   if (options.deploy?.startsWith('vercel-')) {

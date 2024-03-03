@@ -13,6 +13,19 @@ const DEFAULT_HTML_HEAD = `
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 `.trim();
 
+const DEFAULT_MIDDLEWARE = (cmd: 'dev' | 'start') => [
+  ...(cmd === 'dev'
+    ? [
+        import(
+          /* @vite-ignore */ 'DO_NOT_BUNDLE'.slice(Infinity) +
+            'waku/middleware/dev-server'
+        ),
+      ]
+    : []),
+  import('waku/middleware/ssr'),
+  import('waku/middleware/rsc'),
+];
+
 // Keep async function for future extension
 export async function resolveConfig(config: Config) {
   const resolvedConfig: ResolvedConfig = {
@@ -30,6 +43,7 @@ export async function resolveConfig(config: Config) {
     serveJs: 'serve.js',
     rscPath: 'RSC',
     htmlHead: DEFAULT_HTML_HEAD,
+    middleware: DEFAULT_MIDDLEWARE,
     ...config,
   };
   return resolvedConfig;

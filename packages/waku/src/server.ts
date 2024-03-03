@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import type { Config } from './config.js';
 import type { PathSpec } from './lib/utils/path.js';
 
 type Elements = Record<string, ReactNode>;
@@ -57,6 +58,7 @@ export type EntriesDev = {
 };
 
 export type EntriesPrd = EntriesDev & {
+  loadConfig: () => Promise<Config>;
   loadModule: (id: string) => Promise<unknown>;
   dynamicHtmlPaths: [pathSpec: PathSpec, htmlHead: string][];
   publicIndexHtml: string;
