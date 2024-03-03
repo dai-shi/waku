@@ -15,7 +15,12 @@ const DEFAULT_HTML_HEAD = `
 
 const DEFAULT_MIDDLEWARE = (cmd: 'dev' | 'start') => [
   ...(cmd === 'dev'
-    ? [import('DO_NOT_BUNDLE'.slice(Infinity) + 'waku/middleware/dev-server')]
+    ? [
+        import(
+          /* @vite-ignore */ 'DO_NOT_BUNDLE'.slice(Infinity) +
+            'waku/middleware/dev-server'
+        ),
+      ]
     : []),
   import('waku/middleware/ssr'),
   import('waku/middleware/rsc'),
