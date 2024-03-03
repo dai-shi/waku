@@ -22,14 +22,14 @@ export function loadModule(id) {
     '=========',
     existsSync(CONFIG_FILE),
     path.posix.relative(
-      path.dirname(opts.entriesFile),
-      path.resolve(CONFIG_FILE),
+      path.posix.dirname(opts.entriesFile),
+      path.posix.resolve(CONFIG_FILE),
     ),
   );
   if (existsSync(CONFIG_FILE)) {
     const file = path.posix.relative(
-      path.dirname(opts.entriesFile),
-      path.resolve(CONFIG_FILE),
+      path.posix.dirname(opts.entriesFile),
+      path.posix.resolve(CONFIG_FILE),
     );
     codeToAdd += `
 export const configPromise = import('${file}').then((m) => m.default);
