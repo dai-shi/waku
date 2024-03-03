@@ -1,6 +1,5 @@
 import path from 'node:path';
-import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
-import { randomBytes } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
@@ -222,19 +221,7 @@ async function loadConfig(): Promise<Config> {
   if (!existsSync(CONFIG_FILE)) {
     return {};
   }
-  const { transformFile } = await import('@swc/core');
-  const { code } = await transformFile(CONFIG_FILE, {
-    swcrc: false,
-    jsc: {
-      parser: { syntax: 'typescript' },
-      target: 'es2022',
-    },
-  });
-  const temp = path.resolve(`.temp-${randomBytes(8).toString('hex')}.js`);
-  try {
-    writeFileSync(temp, code);
-    return (await import(pathToFileURL(temp).toString())).default;
-  } finally {
-    unlinkSync(temp);
-  }
+  const { loadServerFile } = await import('./lib/utils/vite-loader.js');
+  const file = pathToFileURL(path.resolve(CONFIG_FILE)).toString();
+  return (await loadServerFile(file)).default;
 }
