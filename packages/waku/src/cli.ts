@@ -108,6 +108,7 @@ async function runDev(options: { ssr: boolean }) {
 
 async function runBuild() {
   const config = await loadConfig();
+  process.env.NODE_ENV = 'production';
   await build({
     config,
     env: process.env as any,
