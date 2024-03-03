@@ -23,7 +23,7 @@ export const ssr: Middleware = (options) => {
   const configPromise =
     options.cmd === 'start'
       ? entriesPromise.then((entries) =>
-          entries.configPromise.then((config) => resolveConfig(config)),
+          entries.loadConfig().then((config) => resolveConfig(config)),
         )
       : resolveConfig(options.config);
 

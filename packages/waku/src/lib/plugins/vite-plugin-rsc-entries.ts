@@ -24,11 +24,11 @@ export function loadModule(id) {
       path.relative(path.dirname(opts.entriesFile), path.resolve(CONFIG_FILE)),
     );
     codeToAdd += `
-export const configPromise = import('${file}').then((m) => m.default);
+export const loadConfig = async () => (await import('${file}')).default;
 `;
   } else {
     codeToAdd += `
-export const configPromise = Promise.resolve({});
+export const loadConfig = async () => ({});
 `;
   }
   return {
