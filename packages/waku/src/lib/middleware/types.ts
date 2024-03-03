@@ -14,7 +14,7 @@ export type HandlerReq = {
 
 export type HandlerRes = {
   body?: ReadableStream;
-  headers?: Record<string, string>;
+  headers?: Record<string, string | string[]>;
   status?: number;
 };
 
