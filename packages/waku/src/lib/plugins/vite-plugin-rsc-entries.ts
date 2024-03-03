@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 
 const CONFIG_FILE = 'waku.config.ts'; // XXX only ts extension
@@ -18,18 +19,9 @@ export function loadModule(id) {
   return import(file);
 }
 `;
-  console.log(
-    '=========',
-    existsSync(CONFIG_FILE),
-    path.posix.relative(
-      path.posix.dirname(opts.entriesFile),
-      path.posix.resolve(CONFIG_FILE),
-    ),
-  );
   if (existsSync(CONFIG_FILE)) {
-    const file = path.posix.relative(
-      path.posix.dirname(opts.entriesFile),
-      path.posix.resolve(CONFIG_FILE),
+    const file = normalizePath(
+      path.relative(path.dirname(opts.entriesFile), path.resolve(CONFIG_FILE)),
     );
     codeToAdd += `
 export const configPromise = import('${file}').then((m) => m.default);
