@@ -1,5 +1,7 @@
 import type { Middleware } from './lib/middleware/types.js';
 
+export type { Middleware };
+
 export interface Config {
   /**
    * The base path for serve HTTP.

@@ -34,9 +34,7 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
         body: c.req.raw.body || createEmptyReadableStream(),
         url: new URL(c.req.url),
         method: c.req.method,
-        headers: Object.fromEntries(
-          Array.from(c.req.raw.headers.entries()).map(([k, v]) => [k, v]),
-        ),
+        headers: c.req.header(),
       },
       res: {},
       context: {},
