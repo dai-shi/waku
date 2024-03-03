@@ -713,8 +713,8 @@ importers:
         specifier: 18.3.0-canary-6c3b8dbfe-20240226
         version: 18.3.0-canary-6c3b8dbfe-20240226(react-dom@18.3.0-canary-6c3b8dbfe-20240226)(react@18.3.0-canary-6c3b8dbfe-20240226)(webpack@5.90.3)
       waku:
-        specifier: https://pkg.csb.dev/dai-shi/waku/commit/07b708cd/waku
-        version: '@pkg.csb.dev/dai-shi/waku/commit/07b708cd/waku(@types/node@20.11.20)(react-dom@18.3.0-canary-6c3b8dbfe-20240226)(react-server-dom-webpack@18.3.0-canary-6c3b8dbfe-20240226)(react@18.3.0-canary-6c3b8dbfe-20240226)'
+        specifier: workspace:*
+        version: link:../waku
     devDependencies:
       '@types/react':
         specifier: ^18.2.59
@@ -7028,38 +7028,4 @@ packages:
 
   /zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
-    dev: false
-
-  '@pkg.csb.dev/dai-shi/waku/commit/07b708cd/waku(@types/node@20.11.20)(react-dom@18.3.0-canary-6c3b8dbfe-20240226)(react-server-dom-webpack@18.3.0-canary-6c3b8dbfe-20240226)(react@18.3.0-canary-6c3b8dbfe-20240226)':
-    resolution: {tarball: https://pkg.csb.dev/dai-shi/waku/commit/07b708cd/waku}
-    id: '@pkg.csb.dev/dai-shi/waku/commit/07b708cd/waku'
-    name: waku
-    version: 0.19.3
-    engines: {node: ^20.8.0 || ^18.17.0}
-    hasBin: true
-    peerDependencies:
-      react: 18.3.0-canary-6c3b8dbfe-20240226
-      react-dom: 18.3.0-canary-6c3b8dbfe-20240226
-      react-server-dom-webpack: 18.3.0-canary-6c3b8dbfe-20240226
-    dependencies:
-      '@hono/node-server': 1.8.2
-      '@swc/core': 1.4.2
-      '@vitejs/plugin-react': 4.2.1(vite@5.1.4)
-      dotenv: 16.4.5
-      hono: 4.0.7
-      react: 18.3.0-canary-6c3b8dbfe-20240226
-      react-dom: 18.3.0-canary-6c3b8dbfe-20240226(react@18.3.0-canary-6c3b8dbfe-20240226)
-      react-server-dom-webpack: 18.3.0-canary-6c3b8dbfe-20240226(react-dom@18.3.0-canary-6c3b8dbfe-20240226)(react@18.3.0-canary-6c3b8dbfe-20240226)(webpack@5.90.3)
-      rsc-html-stream: 0.0.3
-      vite: 5.1.4(@types/node@20.11.20)
-    transitivePeerDependencies:
-      - '@swc/helpers'
-      - '@types/node'
-      - less
-      - lightningcss
-      - sass
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
     dev: false
