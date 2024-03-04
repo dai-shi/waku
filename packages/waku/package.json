@@ -74,6 +74,7 @@
     "dotenv": "16.4.5",
     "hono": "4.0.7",
     "rsc-html-stream": "0.0.3",
+    "swc-plugin-react-server": "^0.1.0",
     "vite": "5.1.4"
   },
   "devDependencies": {

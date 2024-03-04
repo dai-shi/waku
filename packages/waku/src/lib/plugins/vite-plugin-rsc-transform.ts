@@ -1,3 +1,4 @@
+import { transform } from '@swc/core';
 import type { Plugin } from 'vite';
 import * as RSDWNodeLoader from 'react-server-dom-webpack/node-loader';
 
@@ -51,12 +52,17 @@ export function rscTransformPlugin(
         return { url };
       };
       const load = async (url: string) => {
-        let source = url === id ? code : (await this.load({ id: url })).code;
-        // HACK move directives before import statements.
-        source = source!.replace(
-          /^(import {.*?} from ".*?";)\s*"use (client|server)";/,
-          '"use $2";$1',
-        );
+        let source =
+          url === id ? code : ((await this.load({ id: url })).code as string);
+        source = (
+          await transform(source, {
+            jsc: {
+              experimental: {
+                plugins: [['swc-plugin-react-server', {}]],
+              },
+            },
+          })
+        ).code;
         return { format: 'module', source };
       };
       RSDWNodeLoader.resolve(
