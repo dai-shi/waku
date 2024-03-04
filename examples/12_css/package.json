@@ -4,9 +4,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "waku dev --with-ssr",
-    "build": "waku build --with-ssr",
-    "start": "waku start --with-ssr"
+    "dev": "waku dev",
+    "build": "waku build",
+    "start": "waku start"
   },
   "dependencies": {
     "@stylexjs/stylex": "0.5.1",

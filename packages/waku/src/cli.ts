@@ -10,8 +10,6 @@ import * as dotenv from 'dotenv';
 
 import type { Config } from './config.js';
 import { resolveConfig } from './lib/config.js';
-import { honoMiddleware as honoDevMiddleware } from './lib/old-wrappers/hono-dev.js';
-import { honoMiddleware as honoPrdMiddleware } from './lib/old-wrappers/hono-prd.js';
 import { runner } from './lib/hono/runner.js';
 import { build } from './lib/builder/build.js';
 
@@ -25,9 +23,6 @@ const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
   allowPositionals: true,
   options: {
-    'with-ssr': {
-      type: 'boolean',
-    },
     'with-vercel': {
       type: 'boolean',
     },
@@ -71,16 +66,15 @@ if (values.version) {
 } else if (values.help) {
   displayUsage();
 } else {
-  const ssr = !!values['with-ssr'];
   switch (cmd) {
     case 'dev':
-      await runDev({ ssr });
+      await runDev();
       break;
     case 'build':
       await runBuild();
       break;
     case 'start':
-      await runStart({ ssr });
+      await runStart();
       break;
     default:
       if (cmd) {
@@ -91,17 +85,10 @@ if (values.version) {
   }
 }
 
-async function runDev(options: { ssr: boolean }) {
+async function runDev() {
   const config = await loadConfig();
   const app = new Hono();
-  if (!process.env.WAKU_OLD_MIDDLEWARE) {
-    app.use('*', runner({ cmd: 'dev', config, env: process.env as any }));
-  } else {
-    app.use(
-      '*',
-      honoDevMiddleware({ ...options, config, env: process.env as any }),
-    );
-  }
+  app.use('*', runner({ cmd: 'dev', config, env: process.env as any }));
   const port = parseInt(process.env.PORT || '3000', 10);
   await startServer(app, port);
 }
@@ -130,39 +117,14 @@ async function runBuild() {
   });
 }
 
-async function runStart(options: { ssr: boolean }) {
+async function runStart() {
   const config = await loadConfig();
   const { distDir, publicDir, entriesJs } = await resolveConfig(config);
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, entriesJs)).toString());
   const app = new Hono();
   app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
-  if (!process.env.WAKU_OLD_MIDDLEWARE) {
-    app.use(
-      '*',
-      runner({ cmd: 'start', loadEntries, env: process.env as any }),
-    );
-  } else {
-    app.use(
-      '*',
-      honoPrdMiddleware({
-        ...options,
-        config,
-        loadEntries,
-        env: process.env as any,
-      }),
-    );
-  }
-  if (!options.ssr) {
-    // history api fallback
-    app.use(
-      '*',
-      serveStatic({
-        root: path.join(distDir, publicDir),
-        rewriteRequestPath: () => '/',
-      }),
-    );
-  }
+  app.use('*', runner({ cmd: 'start', loadEntries, env: process.env as any }));
   app.notFound((c) => {
     // FIXME better implementation using node stream?
     const file = path.join(distDir, publicDir, '404.html');
@@ -206,7 +168,6 @@ Commands:
   start       Start the production server
 
 Options:
-  --with-ssr            Use opt-in SSR
   --with-vercel         Output for Vercel on build
   --with-netlify        Output for Netlify on build
   --with-cloudflare     Output for Cloudflare on build

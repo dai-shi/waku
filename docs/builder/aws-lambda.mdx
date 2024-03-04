@@ -59,7 +59,7 @@ custom:
     # add custom hooks
     hooks:
       before:package:createDeploymentArtifacts:
-        - pnpm waku build --with-ssr --with-aws-lambda
+        - pnpm waku build --with-aws-lambda
 ```
 
 This configuration will include all files from the `./private` directory in the final deployment.
@@ -196,7 +196,7 @@ export class WakuStack extends cdk.Stack {
             tryBundle(outputDir) {
               spawnSync(
                 'pnpm',
-                ['exec', 'waku', 'build', '--with-ssr', '--with-aws-lambda'],
+                ['exec', 'waku', 'build', '--with-aws-lambda'],
                 { stdio: 'inherit' },
               );
               cpSync('dist', outputDir, { recursive: true, dereference: true });

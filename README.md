@@ -644,7 +644,7 @@ Adding the `--with-vercel-static` flag to the build script will produce static s
 ```
 {
   "scripts": {
-    "build": "waku build --with-ssr --with-vercel-static"
+    "build": "waku build --with-vercel-static"
   }
 }
 ```
@@ -665,7 +665,7 @@ Adding the `--with-netlify-static` flag to the build script will produce static 
 ```
 {
   "scripts": {
-    "build": "waku build --with-ssr --with-netlify-static"
+    "build": "waku build --with-netlify-static"
   }
 }
 ```

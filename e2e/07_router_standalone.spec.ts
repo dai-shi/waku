@@ -69,7 +69,7 @@ test.describe('07_router standalone', () => {
     test(`should prod work ${withSSR ? 'with SSR' : ''}`, async ({ page }) => {
       test.fixme(withSSR, 'SSR is not working in standalone');
       execSync(
-        `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} build${withSSR ? ' --with-ssr' : ''}`,
+        `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} build`,
         {
           cwd: standaloneDir,
           stdio: 'inherit',
@@ -77,7 +77,7 @@ test.describe('07_router standalone', () => {
       );
       const port = await getFreePort();
       const cp = exec(
-        `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start${withSSR ? ' --with-ssr' : ''}`,
+        `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start`,
         {
           cwd: standaloneDir,
           env: {
@@ -95,7 +95,7 @@ test.describe('07_router standalone', () => {
       test.fixme(withSSR, 'SSR is not working in standalone');
       const port = await getFreePort();
       const cp = exec(
-        `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} dev${withSSR ? ' --with-ssr' : ''}`,
+        `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} dev`,
         {
           cwd: standaloneDir,
           env: {
