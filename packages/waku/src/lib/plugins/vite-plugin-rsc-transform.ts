@@ -1,6 +1,8 @@
 import { transform } from '@swc/core';
 import type { Plugin } from 'vite';
 import * as RSDWNodeLoader from 'react-server-dom-webpack/node-loader';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 
 export function rscTransformPlugin(
   opts:
@@ -57,9 +59,11 @@ export function rscTransformPlugin(
         if (/\.[jt]sx?$/.test(url)) {
           source = (
             await transform(source, {
+              swcrc: false,
               jsc: {
                 experimental: {
-                  plugins: [['swc-plugin-react-server', {}]],
+                  disableBuiltinTransformsForInternalTesting: true,
+                  plugins: [[require.resolve('swc-plugin-react-server'), {}]],
                 },
               },
             })
