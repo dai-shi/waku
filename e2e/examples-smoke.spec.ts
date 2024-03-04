@@ -37,13 +37,6 @@ const specialExamples = [
         command: 'node dev.js',
       },
       {
-        command: 'node dev.js',
-      },
-      {
-        build: 'waku build',
-        command: 'node start.js',
-      },
-      {
         build: 'waku build',
         command: 'node start.js',
       },
