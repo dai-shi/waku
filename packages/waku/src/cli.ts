@@ -77,7 +77,7 @@ if (values.version) {
       await runDev({ ssr });
       break;
     case 'build':
-      await runBuild();
+      await runBuild({ ssr });
       break;
     case 'start':
       await runStart({ ssr });
