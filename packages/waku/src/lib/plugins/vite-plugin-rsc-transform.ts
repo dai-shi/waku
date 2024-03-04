@@ -54,6 +54,8 @@ export function rscTransformPlugin(
         ? getServerId(id) ?? getClientId(id) ?? null
         : id;
       const load: LoadHook = async (_: string) => {
+        // `_` here is equivalent to `resolveId`, we use `id`
+        //  to get the source code.
         let source = code;
         if (/\.[jt]sx?$/.test(id)) {
           source = (
