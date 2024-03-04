@@ -15,6 +15,7 @@ export type CLIENT_MODULE_KEY = keyof typeof CLIENT_MODULE_MAP;
 export const CLIENT_PREFIX = 'client/';
 
 export const ssr: Middleware = (options) => {
+  console.log('options', options);
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const entriesPromise =
     options.cmd === 'start'
@@ -49,6 +50,7 @@ export const ssr: Middleware = (options) => {
       if (htmlHead) {
         const readable = await renderHtml({
           config,
+          ssr: options.ssr,
           pathname: ctx.req.url.pathname,
           searchParams: ctx.req.url.searchParams,
           htmlHead,

@@ -12,11 +12,12 @@ declare const Deno: any;
 const distDir = import.meta.env.WAKU_CONFIG_DIST_DIR;
 const publicDir = import.meta.env.WAKU_CONFIG_PUBLIC_DIR;
 const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
+const ssr: boolean = import.meta.env.WAKU_SSR === "true"
 const env = Deno.env.toObject();
 
 const app = new Hono();
 app.use('*', serveStatic({ root: `${distDir}/${publicDir}` }));
-app.use('*', runner({ cmd: 'start', loadEntries, env }));
+app.use('*', runner({ ssr, cmd: 'start', loadEntries, env }));
 app.notFound(async (c: any) => {
   const file = `${distDir}/${publicDir}/404.html`;
   const info = await Deno.stat(file);

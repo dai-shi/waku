@@ -11,6 +11,7 @@ let serveWaku: ReturnType<typeof runner> | undefined;
 let staticContent: any;
 
 const parsedManifest: Record<string, string> = JSON.parse(manifest);
+const ssr: boolean = import.meta.env.WAKU_SSR === "true"
 
 const app = new Hono();
 app.use('*', serveStatic({ root: './', manifest }));
@@ -33,7 +34,7 @@ export default {
     ctx: Parameters<typeof app.fetch>[2],
   ) {
     if (!serveWaku) {
-      serveWaku = runner({ cmd: 'start', loadEntries, env });
+      serveWaku = runner({ ssr, cmd: 'start', loadEntries, env });
       staticContent = env.__STATIC_CONTENT;
     }
     return app.fetch(request, env, ctx);

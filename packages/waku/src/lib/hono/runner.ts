@@ -11,6 +11,7 @@ const createEmptyReadableStream = () =>
   });
 
 export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
+  console.log('runner', options)
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()

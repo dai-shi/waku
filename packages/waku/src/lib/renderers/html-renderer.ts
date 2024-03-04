@@ -140,6 +140,7 @@ const rectifyHtml = () => {
 };
 
 const buildHtml = (
+  ssr: boolean,
   createElement: typeof createElementType,
   head: string,
   body: ReactNode,
@@ -148,12 +149,13 @@ const buildHtml = (
     'html',
     null,
     createElement('head', { dangerouslySetInnerHTML: { __html: head } }),
-    createElement('body', { 'data-hydrate': true }, body),
+    createElement('body', { 'data-hydrate': ssr ? "true" : undefined }, body),
   );
 
 export const renderHtml = async (
   opts: {
     config: Omit<ResolvedConfig, 'middleware'>;
+    ssr: boolean;
     pathname: string;
     searchParams: URLSearchParams;
     htmlHead: string;
@@ -181,6 +183,7 @@ export const renderHtml = async (
 ): Promise<ReadableStream | null> => {
   const {
     config,
+    ssr,
     pathname,
     searchParams,
     htmlHead,
@@ -307,9 +310,11 @@ export const renderHtml = async (
   const body: Promise<ReactNode> = createFromReadableStream(ssrConfig.body, {
     ssrManifest: { moduleMap, moduleLoading: null },
   });
+  console.log('hereeee', ssr)
   const readable = (
     await renderToReadableStream(
       buildHtml(
+        ssr,
         createElement,
         htmlHead,
         createElement(

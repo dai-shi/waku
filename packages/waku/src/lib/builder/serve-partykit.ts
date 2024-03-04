@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { runner } from '../hono/runner.js';
 
 const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
+const ssr: boolean = import.meta.env.WAKU_SSR === "true"
 let serveWaku: ReturnType<typeof runner> | undefined;
 
 const app = new Hono();
@@ -29,7 +30,7 @@ app.notFound(async (c) => {
 export default {
   onFetch(request: Request, lobby: any, ctx: Parameters<typeof app.fetch>[2]) {
     if (!serveWaku) {
-      serveWaku = runner({ cmd: 'start', loadEntries, env: lobby });
+      serveWaku = runner({ ssr, cmd: 'start', loadEntries, env: lobby });
     }
     return app.fetch(request, lobby, ctx);
   },

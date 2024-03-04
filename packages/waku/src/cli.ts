@@ -95,7 +95,7 @@ async function runDev(options: { ssr: boolean }) {
   const config = await loadConfig();
   const app = new Hono();
   if (!process.env.WAKU_OLD_MIDDLEWARE) {
-    app.use('*', runner({ cmd: 'dev', config, env: process.env as any }));
+    app.use('*', runner({ ssr: options.ssr, cmd: 'dev', config, env: process.env as any }));
   } else {
     app.use(
       '*',
@@ -106,11 +106,12 @@ async function runDev(options: { ssr: boolean }) {
   await startServer(app, port);
 }
 
-async function runBuild() {
+async function runBuild(options: { ssr: boolean }) {
   const config = await loadConfig();
   process.env.NODE_ENV = 'production';
   await build({
     config,
+    ssr: options.ssr,
     env: process.env as any,
     deploy:
       (values['with-vercel'] ?? !!process.env.VERCEL
@@ -140,7 +141,7 @@ async function runStart(options: { ssr: boolean }) {
   if (!process.env.WAKU_OLD_MIDDLEWARE) {
     app.use(
       '*',
-      runner({ cmd: 'start', loadEntries, env: process.env as any }),
+      runner({ ssr: options.ssr, cmd: 'start', loadEntries, env: process.env as any }),
     );
   } else {
     app.use(

@@ -42,6 +42,7 @@ export type Handler = (
 ) => Promise<void>;
 
 export type MiddlewareOptions = {
+  ssr: boolean,
   env?: Record<string, string>;
 } & (
   | { cmd: 'dev'; config: Config }

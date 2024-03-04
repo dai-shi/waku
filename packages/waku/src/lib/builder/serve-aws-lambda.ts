@@ -9,12 +9,13 @@ import { runner } from '../hono/runner.js';
 const distDir = process.env?.WAKU_BUILD_DIST_DIR ?? '';
 const publicDir = import.meta.env.WAKU_CONFIG_PUBLIC_DIR!;
 const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
+const ssr: boolean = import.meta.env.WAKU_SSR === "true"
 
 const env = process.env as Record<string, string>;
 
 const app = new Hono();
 app.use('*', serveStatic({ root: `${distDir}/${publicDir}` }));
-app.use('*', runner({ cmd: 'start', loadEntries, env }));
+app.use('*', runner({ ssr, cmd: 'start', loadEntries, env }));
 app.notFound(async (c) => {
   const file = path.join(distDir, publicDir, '404.html');
   if (existsSync(file)) {

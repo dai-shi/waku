@@ -94,6 +94,7 @@ export function createHandler<
         if (htmlHead) {
           const readable = await renderHtml({
             config,
+            ssr,
             pathname: req.url.pathname,
             searchParams: req.url.searchParams,
             htmlHead,

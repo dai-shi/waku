@@ -174,6 +174,7 @@ const buildServerBundle = async (
     | 'deno'
     | 'aws-lambda'
     | false,
+  ssr: boolean,
   isNodeCompatible: boolean,
 ) => {
   const serverBuildOutput = await buildVite({
@@ -222,6 +223,7 @@ const buildServerBundle = async (
                 ),
               ),
               serve,
+              ssr
             }),
           ]
         : []),
@@ -462,6 +464,7 @@ const pathSpec2pathname = (pathSpec: PathSpec): string => {
 const emitHtmlFiles = async (
   rootDir: string,
   config: ResolvedConfig,
+  ssr: boolean,
   distEntriesFile: string,
   distEntries: EntriesPrd,
   buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
@@ -531,6 +534,7 @@ const emitHtmlFiles = async (
         );
         const htmlReadable = await renderHtml({
           config,
+          ssr,
           pathname,
           searchParams: new URLSearchParams(),
           htmlHead,
@@ -597,6 +601,7 @@ const resolveFileName = (fname: string) => {
 
 export async function build(options: {
   config: Config;
+  ssr: boolean;
   env?: Record<string, string>;
   deploy?:
     | 'vercel-static'
@@ -640,6 +645,7 @@ export async function build(options: {
       (options.deploy === 'partykit' ? 'partykit' : false) ||
       (options.deploy === 'deno' ? 'deno' : false) ||
       (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
+    options.ssr,
     isNodeCompatible,
   );
   await buildSsrBundle(
@@ -662,6 +668,7 @@ export async function build(options: {
   await emitHtmlFiles(
     rootDir,
     config,
+    options.ssr,
     distEntriesFile,
     distEntries,
     buildConfig,
