@@ -63,7 +63,6 @@ export function rscTransformPlugin(
               swcrc: false,
               jsc: {
                 experimental: {
-                  disableBuiltinTransformsForInternalTesting: true,
                   plugins: [[require.resolve('swc-plugin-react-server'), {}]],
                 },
               },
