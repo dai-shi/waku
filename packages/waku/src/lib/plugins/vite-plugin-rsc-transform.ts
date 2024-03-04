@@ -51,7 +51,7 @@ export function rscTransformPlugin(
         return { url };
       };
       const resolveId = opts.isBuild
-        ? getServerId(id) ?? getClientId(id) ?? null
+        ? getServerId(id) ?? getClientId(id) ?? 'UNKNOWN_REFERENCE_ID'
         : id;
       const load: LoadHook = async (_: string) => {
         // `_` here is equivalent to `resolveId`, we use `id`
@@ -77,10 +77,7 @@ export function rscTransformPlugin(
         { conditions: ['react-server', 'workerd'], parentURL: '' },
         resolve,
       );
-      if (!resolveId) {
-        throw new Error('id not found: ' + id);
-      }
-      const { source } = await RSDWNodeLoader.load(id, {}, load);
+      const { source } = await RSDWNodeLoader.load(resolveId, {}, load);
       return source;
     },
   };
