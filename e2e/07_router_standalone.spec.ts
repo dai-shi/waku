@@ -98,6 +98,7 @@ test.describe('07_router standalone', () => {
     });
 
     test(`should dev work ${withSSR ? 'with SSR' : ''}`, async ({ page }) => {
+      console.log(`should dev work ${withSSR ? 'with SSR' : ''}`);
       console.log(withSSR);
       test.fixme(withSSR, 'SSR is not working in standalone');
       const port = await getFreePort();
