@@ -11,7 +11,7 @@ let serveWaku: ReturnType<typeof runner> | undefined;
 let staticContent: any;
 
 const parsedManifest: Record<string, string> = JSON.parse(manifest);
-const ssr: boolean = import.meta.env.WAKU_SSR === "true"
+const ssr: boolean = import.meta.env.WAKU_SSR === 'true';
 
 const app = new Hono();
 app.use('*', serveStatic({ root: './', manifest }));

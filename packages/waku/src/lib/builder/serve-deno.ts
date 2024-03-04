@@ -12,7 +12,7 @@ declare const Deno: any;
 const distDir = import.meta.env.WAKU_CONFIG_DIST_DIR;
 const publicDir = import.meta.env.WAKU_CONFIG_PUBLIC_DIR;
 const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
-const ssr: boolean = import.meta.env.WAKU_SSR === "true"
+const ssr: boolean = import.meta.env.WAKU_SSR === 'true';
 const env = Deno.env.toObject();
 
 const app = new Hono();

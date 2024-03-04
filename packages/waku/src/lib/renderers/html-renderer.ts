@@ -149,7 +149,7 @@ const buildHtml = (
     'html',
     null,
     createElement('head', { dangerouslySetInnerHTML: { __html: head } }),
-    createElement('body', { 'data-hydrate': ssr ? "true" : undefined }, body),
+    createElement('body', { 'data-hydrate': ssr ? 'true' : undefined }, body),
   );
 
 export const renderHtml = async (
@@ -310,7 +310,6 @@ export const renderHtml = async (
   const body: Promise<ReactNode> = createFromReadableStream(ssrConfig.body, {
     ssrManifest: { moduleMap, moduleLoading: null },
   });
-  console.log('hereeee', ssr)
   const readable = (
     await renderToReadableStream(
       buildHtml(

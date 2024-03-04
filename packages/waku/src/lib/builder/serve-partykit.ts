@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { runner } from '../hono/runner.js';
 
 const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
-const ssr: boolean = import.meta.env.WAKU_SSR === "true"
+const ssr: boolean = import.meta.env.WAKU_SSR === 'true';
 let serveWaku: ReturnType<typeof runner> | undefined;
 
 const app = new Hono();

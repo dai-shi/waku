@@ -9,7 +9,7 @@ import { runner } from '../hono/runner.js';
 const distDir = process.env?.WAKU_BUILD_DIST_DIR ?? '';
 const publicDir = import.meta.env.WAKU_CONFIG_PUBLIC_DIR!;
 const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
-const ssr: boolean = import.meta.env.WAKU_SSR === "true"
+const ssr: boolean = import.meta.env.WAKU_SSR === 'true';
 
 const env = process.env as Record<string, string>;
 

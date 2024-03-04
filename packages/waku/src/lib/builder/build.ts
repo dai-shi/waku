@@ -223,7 +223,7 @@ const buildServerBundle = async (
                 ),
               ),
               serve,
-              ssr
+              ssr,
             }),
           ]
         : []),

@@ -15,7 +15,6 @@ export type CLIENT_MODULE_KEY = keyof typeof CLIENT_MODULE_MAP;
 export const CLIENT_PREFIX = 'client/';
 
 export const ssr: Middleware = (options) => {
-  console.log('options', options);
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const entriesPromise =
     options.cmd === 'start'

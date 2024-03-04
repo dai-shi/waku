@@ -95,7 +95,10 @@ async function runDev(options: { ssr: boolean }) {
   const config = await loadConfig();
   const app = new Hono();
   if (!process.env.WAKU_OLD_MIDDLEWARE) {
-    app.use('*', runner({ ssr: options.ssr, cmd: 'dev', config, env: process.env as any }));
+    app.use(
+      '*',
+      runner({ ssr: options.ssr, cmd: 'dev', config, env: process.env as any }),
+    );
   } else {
     app.use(
       '*',
@@ -141,7 +144,12 @@ async function runStart(options: { ssr: boolean }) {
   if (!process.env.WAKU_OLD_MIDDLEWARE) {
     app.use(
       '*',
-      runner({ ssr: options.ssr, cmd: 'start', loadEntries, env: process.env as any }),
+      runner({
+        ssr: options.ssr,
+        cmd: 'start',
+        loadEntries,
+        env: process.env as any,
+      }),
     );
   } else {
     app.use(

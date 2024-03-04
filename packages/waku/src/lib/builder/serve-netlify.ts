@@ -4,7 +4,7 @@ import type { Context } from '@netlify/functions';
 import { runner } from '../hono/runner.js';
 
 const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
-const ssr: boolean = import.meta.env.WAKU_SSR === "true"
+const ssr: boolean = import.meta.env.WAKU_SSR === 'true';
 const env: Record<string, string> = process.env as any;
 
 const app = new Hono();
