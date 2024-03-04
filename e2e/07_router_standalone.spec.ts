@@ -27,9 +27,9 @@ async function testRouterExample(page: Page, port: number) {
   console.log('go to');
   await page.goto(`http://localhost:${port}`);
   console.log('main content', await page.content());
-  console.log('start111')
+  console.log('start111');
   await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
-  console.log('done111')
+  console.log('done111');
 
   await page.click("a[href='/foo']");
   console.log('foo content', await page.content());
@@ -44,6 +44,8 @@ async function testRouterExample(page: Page, port: number) {
   );
   expect(backgroundColor).toBe('rgb(254, 254, 254)');
 }
+
+test.describe.configure({ mode: 'serial' });
 
 test.describe('07_router standalone', () => {
   test.beforeAll('copy code', async () => {
