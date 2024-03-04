@@ -54,15 +54,17 @@ export function rscTransformPlugin(
       const load = async (url: string) => {
         let source =
           url === id ? code : ((await this.load({ id: url })).code as string);
-        source = (
-          await transform(source, {
-            jsc: {
-              experimental: {
-                plugins: [['swc-plugin-react-server', {}]],
+        if (/\.[jt]sx?$/.test(url)) {
+          source = (
+            await transform(source, {
+              jsc: {
+                experimental: {
+                  plugins: [['swc-plugin-react-server', {}]],
+                },
               },
-            },
-          })
-        ).code;
+            })
+          ).code;
+        }
         return { format: 'module', source };
       };
       RSDWNodeLoader.resolve(
