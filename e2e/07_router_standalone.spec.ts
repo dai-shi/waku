@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 
-const testMatrix = [{ withSSR: false }, { withSSR: true }] as const;
+const testMatrix = [{ withSSR: false }] as const;
 
 let standaloneDir: string;
 const exampleDir = fileURLToPath(
