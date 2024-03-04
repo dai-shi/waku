@@ -53,7 +53,7 @@ export const test = basicTest.extend({
   page: async ({ page }, use) => {
     const callback = (msg: ConsoleMessage) => {
       if (unexpectedErrors.some((re) => re.test(msg.text()))) {
-        console.log('error', msg.text())
+        console.log('error', msg.text());
         throw new Error(msg.text());
       }
       console.log(`${msg.type()}: ${msg.text()}`);

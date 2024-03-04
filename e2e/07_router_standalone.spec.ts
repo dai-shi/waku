@@ -72,7 +72,7 @@ test.describe('07_router standalone', () => {
 
   testMatrix.forEach(({ withSSR }) => {
     test(`should prod work ${withSSR ? 'with SSR' : ''}`, async ({ page }) => {
-      return
+      return;
       console.log(withSSR);
       test.fixme(withSSR, 'SSR is not working in standalone');
       execSync(
