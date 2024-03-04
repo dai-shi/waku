@@ -24,14 +24,12 @@ async function testRouterExample(page: Page, port: number) {
   await waitPort({
     port,
   });
-  console.log('wait done');
-
   console.log('go to');
   await page.goto(`http://localhost:${port}`);
   console.log('main content', await page.content());
-  console.log('start')
+  console.log('start111')
   await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
-  console.log('done')
+  console.log('done111')
 
   await page.click("a[href='/foo']");
   console.log('foo content', await page.content());
