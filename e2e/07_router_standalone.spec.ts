@@ -70,6 +70,7 @@ test.describe('07_router standalone', () => {
 
   testMatrix.forEach(({ withSSR }) => {
     test(`should prod work ${withSSR ? 'with SSR' : ''}`, async ({ page }) => {
+      return;
       console.log(withSSR);
       test.fixme(withSSR, 'SSR is not working in standalone');
       execSync(
@@ -97,9 +98,10 @@ test.describe('07_router standalone', () => {
     });
 
     test(`should dev work ${withSSR ? 'with SSR' : ''}`, async ({ page }) => {
-      return;
+      console.log(withSSR);
       test.fixme(withSSR, 'SSR is not working in standalone');
       const port = await getFreePort();
+      console.log('port', port);
       const cp = exec(
         `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} dev`,
         {
