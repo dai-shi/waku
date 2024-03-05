@@ -12,8 +12,8 @@ const rootElement = (
   </StrictMode>
 );
 
-// if (document.body.dataset.hydrate) {
-//   hydrateRoot(document.body, rootElement);
-// } else {
-createRoot(document.body).render(rootElement);
-// }
+if (document.body.dataset.hydrate) {
+  hydrateRoot(document.body, rootElement);
+} else {
+  createRoot(document.body).render(rootElement);
+}

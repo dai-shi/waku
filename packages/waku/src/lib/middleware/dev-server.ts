@@ -3,9 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
 import { resolveConfig } from '../config.js';
-import {
-  fileURLToFilePath,
-} from '../utils/path.js';
+import { fileURLToFilePath } from '../utils/path.js';
 import {
   initializeWorker,
   registerHotUpdateCallback,

@@ -281,7 +281,6 @@ export const renderHtml = async (
                       }),
                     );
                   }
-                  console.log('waku dist', id);
                   return { id, chunks: [id], name };
                 }
                 const id = filePathToFileURL(filePath);
@@ -293,7 +292,6 @@ export const renderHtml = async (
                     }),
                   );
                 }
-                console.log('non waku dist', id);
                 return { id, chunks: [id], name };
               }
               // !isDev

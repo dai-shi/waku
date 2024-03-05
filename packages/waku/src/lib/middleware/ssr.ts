@@ -20,6 +20,7 @@ export const ssr: Middleware = (options) => {
 
   return async (ctx, next) => {
     const { devServer } = ctx;
+    const viteUrl = ctx.req.url.toString().slice(ctx.req.url.origin.length);
     if (devServer && (await devServer.willBeHandledLater(viteUrl))) {
       await next();
       return;
