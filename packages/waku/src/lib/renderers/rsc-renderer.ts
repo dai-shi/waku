@@ -113,21 +113,12 @@ export async function renderRsc(
     input: string,
     searchParams: URLSearchParams,
   ) => {
-    let elements: Record<string, ReactNode> | undefined;
+    let elements: Record<string, ReactNode> | null = null;
     await createFromReadableStream(
       renderToReadableStream(
         createElement((async () => {
           setRenderContext(renderContext);
-          const eles = await renderEntries(input, searchParams);
-          if (eles === null) {
-            const err = new Error('No function component found');
-            (err as any).statusCode = 404; // HACK our convention for NotFound
-            throw err;
-          }
-          if (Object.keys(eles).some((key) => key.startsWith('_'))) {
-            throw new Error('"_" prefix is reserved');
-          }
-          elements = eles;
+          elements = await renderEntries(input, searchParams);
         }) as any),
         {},
       ),
@@ -135,15 +126,20 @@ export async function renderRsc(
         ssrManifest: { moduleMap: null, moduleLoading: null },
       },
     );
-    if (!elements) {
-      throw new Error('[Bug] elements are not yet ready');
+    if (elements === null) {
+      const err = new Error('No function component found');
+      (err as any).statusCode = 404; // HACK our convention for NotFound
+      throw err;
+    }
+    if (Object.keys(elements).some((key) => key.startsWith('_'))) {
+      throw new Error('"_" prefix is reserved');
     }
     return Object.fromEntries(
       Object.entries(elements).map(([k, v]) => [
         k,
         createElement(() => {
           setRenderContext(renderContext);
-          return v;
+          return v as any;
         }),
       ]),
     );
