@@ -72,6 +72,12 @@ export async function renderRsc(
     default: { renderEntries },
     loadModule,
   } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
+
+  const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
+    (isDev
+      ? import(/* @vite-ignore */ SERVER_MODULE_MAP[key])
+      : loadModule!(key)) as Promise<T>;
+
   const [
     {
       default: { createElement },
@@ -84,21 +90,9 @@ export async function renderRsc(
     },
     { setRenderContext },
   ] = await Promise.all([
-    (isDev
-      ? import(/* @vite-ignore */ SERVER_MODULE_MAP['react'])
-      : loadModule!('react')) as Promise<{
-      default: typeof ReactType;
-    }>,
-    (isDev
-      ? import(/* @vite-ignore */ SERVER_MODULE_MAP['rsdw-server'])
-      : loadModule!('rsdw-server')) as Promise<{
-      default: typeof RSDWServerType;
-    }>,
-    (isDev
-      ? import(/* @vite-ignore */ SERVER_MODULE_MAP['rsdw-client'])
-      : loadModule!('rsdw-client')) as Promise<{
-      default: typeof RSDWClientType;
-    }>,
+    loadServerModule<{ default: typeof ReactType }>('react'),
+    loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server'),
+    loadServerModule<{ default: typeof RSDWClientType }>('rsdw-client'),
     (isDev
       ? opts.loadServerModule(SERVER_MODULE_MAP['waku-server'])
       : loadModule!('waku-server')) as Promise<{

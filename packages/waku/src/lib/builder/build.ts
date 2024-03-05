@@ -37,8 +37,11 @@ import {
   getBuildConfig,
   getSsrConfig,
 } from '../renderers/rsc-renderer.js';
-import { renderHtml } from '../renderers/html-renderer.js';
-import { CLIENT_MODULE_MAP, CLIENT_PREFIX } from '../middleware/ssr.js';
+import {
+  renderHtml,
+  CLIENT_MODULE_MAP,
+  CLIENT_PREFIX,
+} from '../renderers/html-renderer.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
@@ -560,8 +563,6 @@ const emitHtmlFiles = async (
                 entries: distEntries,
               },
             ),
-          loadClientModule: (key) =>
-            distEntries.loadModule(CLIENT_PREFIX + key),
           isDev: false,
           loadModule: distEntries.loadModule,
         });
