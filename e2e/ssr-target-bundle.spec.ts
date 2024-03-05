@@ -65,7 +65,7 @@ for (const { build, command } of commands) {
     });
 
     test('image exists in folder public/assets', async () => {
-      test.skip(command.startsWith('dev '));
+      test.skip(command.startsWith('dev'));
       const imagePath = path.join(cwd, 'dist', 'public', 'assets');
       const files = await readdir(imagePath);
       const imageExists = files.some((file) =>
@@ -75,7 +75,7 @@ for (const { build, command } of commands) {
     });
 
     test('json public linked exists in folder public/assets', async () => {
-      test.skip(command.startsWith('dev '));
+      test.skip(command.startsWith('dev'));
       const imagePath = path.join(cwd, 'dist', 'public', 'assets');
       const files = await readdir(imagePath);
       const imageExists = files.some((file) =>
@@ -85,7 +85,7 @@ for (const { build, command } of commands) {
     });
 
     test('json private NOT exists in folder public/assets', async () => {
-      test.skip(command.startsWith('dev '));
+      test.skip(command.startsWith('dev'));
       const imagePath = path.join(cwd, 'dist', 'public', 'assets');
       const files = await readdir(imagePath);
       const imageExists = files.some((file) =>
