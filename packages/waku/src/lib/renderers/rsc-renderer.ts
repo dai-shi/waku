@@ -109,10 +109,16 @@ export async function renderRsc(
   ]);
 
   const renderWithContext = async (
-    renderContext: RenderContext,
+    context: Record<string, unknown> | undefined,
     input: string,
     searchParams: URLSearchParams,
   ) => {
+    const renderContext: RenderContext = {
+      context: context || {},
+      rerender: () => {
+        throw new Error('Cannot rerender');
+      },
+    };
     let elements: Record<string, ReactNode> | null = null;
     await createFromReadableStream(
       renderToReadableStream(
@@ -143,6 +149,60 @@ export async function renderRsc(
         }),
       ]),
     );
+  };
+
+  const renderWithContextWithAction = async (
+    context: Record<string, unknown> | undefined,
+    actionFn: () => unknown,
+  ) => {
+    let elementsPromise: Promise<Record<string, ReactNode>> = Promise.resolve(
+      {},
+    );
+    let actionValue: unknown;
+    let rendered = false;
+    const renderContext: RenderContext = {
+      context: context || {},
+      rerender: async (input: string, searchParams = new URLSearchParams()) => {
+        if (rendered) {
+          throw new Error('already rendered');
+        }
+        elementsPromise = Promise.all([
+          elementsPromise,
+          renderEntries(input, searchParams),
+        ]).then(([oldElements, newElements]) => ({
+          ...oldElements,
+          // FIXME we should actually check if newElements is null and send an error
+          ...newElements,
+        }));
+      },
+    };
+    await createFromReadableStream(
+      renderToReadableStream(
+        createElement((async () => {
+          setRenderContext(renderContext);
+          actionValue = await actionFn();
+        }) as any),
+        {},
+      ),
+      {
+        ssrManifest: { moduleMap: null, moduleLoading: null },
+      },
+    );
+    const elements = await elementsPromise;
+    rendered = true;
+    if (Object.keys(elements).some((key) => key.startsWith('_'))) {
+      throw new Error('"_" prefix is reserved');
+    }
+    return Object.fromEntries([
+      ...Object.entries(elements).map(([k, v]) => [
+        k,
+        createElement(() => {
+          setRenderContext(renderContext);
+          return v as any;
+        }),
+      ]),
+      ['_value', actionValue],
+    ]);
   };
 
   const bundlerConfig = new Proxy(
@@ -185,50 +245,14 @@ export async function renderRsc(
       mod = await loadModule!(fileId.slice('@id/'.length));
     }
     const fn = mod[name] || mod;
-    let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
-    let rendered = false;
-    const rerender = (input: string, searchParams = new URLSearchParams()) => {
-      if (rendered) {
-        throw new Error('already rendered');
-      }
-      const renderContext: RenderContext = { rerender, context: context || {} };
-      elements = Promise.all([
-        elements,
-        renderWithContext(renderContext, input, searchParams),
-      ]).then(([oldElements, newElements]) => ({
-        ...oldElements,
-        ...newElements,
-      }));
-    };
-    const renderContext: RenderContext = { rerender, context: context || {} };
-    const data = await createFromReadableStream(
-      renderToReadableStream(
-        createElement(() => {
-          setRenderContext(renderContext);
-          return fn(...args);
-        }),
-        {},
-      ),
-      {
-        ssrManifest: { moduleMap: null, moduleLoading: null },
-      },
+    const elements = await renderWithContextWithAction(context, () =>
+      fn(...args),
     );
-    const resolvedElements = await elements;
-    rendered = true;
-    return renderToReadableStream(
-      { ...resolvedElements, _value: data },
-      bundlerConfig,
-    );
+    return renderToReadableStream(elements, bundlerConfig);
   }
 
   // method === 'GET'
-  const renderContext: RenderContext = {
-    rerender: () => {
-      throw new Error('Cannot rerender');
-    },
-    context: context || {},
-  };
-  const elements = await renderWithContext(renderContext, input, searchParams);
+  const elements = await renderWithContext(context, input, searchParams);
   return renderToReadableStream(elements, bundlerConfig);
 }
 
