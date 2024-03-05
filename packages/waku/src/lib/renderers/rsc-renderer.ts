@@ -108,36 +108,46 @@ export async function renderRsc(
     }>,
   ]);
 
-  const renderWithContext = (
+  const renderWithContext = async (
     renderContext: RenderContext,
     input: string,
     searchParams: URLSearchParams,
-  ) =>
-    new Promise<Record<string, ReactNode>>((resolve, reject) => {
-      createFromReadableStream(
-        renderToReadableStream(
-          createElement((async () => {
-            setRenderContext(renderContext);
-            const elements = await renderEntries(input, searchParams);
-            if (elements === null) {
-              const err = new Error('No function component found');
-              (err as any).statusCode = 404; // HACK our convention for NotFound
-              reject(err);
-            } else if (
-              Object.keys(elements).some((key) => key.startsWith('_'))
-            ) {
-              reject(new Error('"_" prefix is reserved'));
-            } else {
-              resolve(elements);
-            }
-          }) as any),
-          {},
-        ),
-        {
-          ssrManifest: { moduleMap: null, moduleLoading: null },
-        },
-      ).catch(reject);
-    });
+  ) => {
+    let elements: Record<string, ReactNode> | undefined;
+    await createFromReadableStream(
+      renderToReadableStream(
+        createElement((async () => {
+          setRenderContext(renderContext);
+          const eles = await renderEntries(input, searchParams);
+          if (eles === null) {
+            const err = new Error('No function component found');
+            (err as any).statusCode = 404; // HACK our convention for NotFound
+            throw err;
+          }
+          if (Object.keys(eles).some((key) => key.startsWith('_'))) {
+            throw new Error('"_" prefix is reserved');
+          }
+          elements = eles;
+        }) as any),
+        {},
+      ),
+      {
+        ssrManifest: { moduleMap: null, moduleLoading: null },
+      },
+    );
+    if (!elements) {
+      throw new Error('[Bug] elements are not yet ready');
+    }
+    return Object.fromEntries(
+      Object.entries(elements).map(([k, v]) => [
+        k,
+        createElement(() => {
+          setRenderContext(renderContext);
+          return v;
+        }),
+      ]),
+    );
+  };
 
   const bundlerConfig = new Proxy(
     {},

@@ -1,11 +1,10 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fsPromises from 'node:fs/promises';
-import { lazy } from 'react';
 import { defineEntries, getContext } from 'waku/server';
 import { Slot } from 'waku/client';
 
-const App = lazy(() => import('./components/App.js'));
+import App from './components/App.js';
 
 export default defineEntries(
   // renderEntries
@@ -22,7 +21,7 @@ export default defineEntries(
       ),
     );
     return {
-      App: <App name={input || 'Waku'} count={context.count} items={items} />,
+      App: <App name={input || 'Waku'} items={items} />,
     };
   },
   // getBuildConfig
