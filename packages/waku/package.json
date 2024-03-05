@@ -29,14 +29,6 @@
       "types": "./dist/middleware/*.d.ts",
       "default": "./dist/middleware/*.js"
     },
-    "./prd": {
-      "types": "./dist/prd.d.ts",
-      "default": "./dist/prd.js"
-    },
-    "./dev": {
-      "types": "./dist/dev.d.ts",
-      "default": "./dist/dev.js"
-    },
     "./node-loader": {
       "types": "./dist/node-loader.d.ts",
       "default": "./dist/node-loader.js"

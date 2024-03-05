@@ -39,8 +39,7 @@ import {
   getSsrConfig,
 } from '../renderers/rsc-renderer.js';
 import { renderHtml } from '../renderers/html-renderer.js';
-import { CLIENT_MODULE_MAP } from '../handlers/handler-dev.js';
-import { CLIENT_PREFIX } from '../handlers/handler-prd.js';
+import { CLIENT_MODULE_MAP, CLIENT_PREFIX } from '../middleware/ssr.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';

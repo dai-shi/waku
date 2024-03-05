@@ -12,7 +12,7 @@ import { injectRSCPayload } from 'rsc-html-stream/server';
 import type * as WakuClientType from '../../client.js';
 import type { EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
-import type { CLIENT_MODULE_KEY } from '../handlers/handler-dev.js';
+import type { CLIENT_MODULE_KEY } from '../middleware/ssr.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import {
   joinPath,
