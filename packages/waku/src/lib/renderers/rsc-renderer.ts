@@ -108,6 +108,51 @@ export async function renderRsc(
     }>,
   ]);
 
+  const runWithRenderContext = async <T>(
+    renderContext: RenderContext,
+    fn: () => T,
+  ): Promise<Awaited<T>> =>
+    new Promise<Awaited<T>>((resolve, reject) => {
+      createFromReadableStream(
+        renderToReadableStream(
+          createElement((async () => {
+            setRenderContext(renderContext);
+            resolve(await fn());
+          }) as any),
+          {},
+        ),
+        {
+          ssrManifest: { moduleMap: null, moduleLoading: null },
+        },
+      ).catch(reject);
+    });
+
+  const wrapWithContext = (
+    context: Record<string, unknown> | undefined,
+    elements: Record<string, ReactNode>,
+    value?: unknown,
+  ) => {
+    const renderContext: RenderContext = {
+      context: context || {},
+      rerender: () => {
+        throw new Error('Cannot rerender');
+      },
+    };
+    const elementEntries: [string, unknown][] = Object.entries(elements).map(
+      ([k, v]) => [
+        k,
+        createElement(() => {
+          setRenderContext(renderContext);
+          return v as ReactNode; // XXX lie the type
+        }),
+      ],
+    );
+    if (value !== undefined) {
+      elementEntries.push(['_value', value]);
+    }
+    return Object.fromEntries(elementEntries);
+  };
+
   const renderWithContext = async (
     context: Record<string, unknown> | undefined,
     input: string,
@@ -119,18 +164,8 @@ export async function renderRsc(
         throw new Error('Cannot rerender');
       },
     };
-    let elements: Record<string, ReactNode> | null = null;
-    await createFromReadableStream(
-      renderToReadableStream(
-        createElement((async () => {
-          setRenderContext(renderContext);
-          elements = await renderEntries(input, searchParams);
-        }) as any),
-        {},
-      ),
-      {
-        ssrManifest: { moduleMap: null, moduleLoading: null },
-      },
+    const elements = await runWithRenderContext(renderContext, () =>
+      renderEntries(input, searchParams),
     );
     if (elements === null) {
       const err = new Error('No function component found');
@@ -140,15 +175,7 @@ export async function renderRsc(
     if (Object.keys(elements).some((key) => key.startsWith('_'))) {
       throw new Error('"_" prefix is reserved');
     }
-    return Object.fromEntries(
-      Object.entries(elements).map(([k, v]) => [
-        k,
-        createElement(() => {
-          setRenderContext(renderContext);
-          return v as any;
-        }),
-      ]),
-    );
+    return wrapWithContext(context, elements);
   };
 
   const renderWithContextWithAction = async (
@@ -158,7 +185,6 @@ export async function renderRsc(
     let elementsPromise: Promise<Record<string, ReactNode>> = Promise.resolve(
       {},
     );
-    let actionValue: unknown;
     let rendered = false;
     const renderContext: RenderContext = {
       context: context || {},
@@ -176,33 +202,13 @@ export async function renderRsc(
         }));
       },
     };
-    await createFromReadableStream(
-      renderToReadableStream(
-        createElement((async () => {
-          setRenderContext(renderContext);
-          actionValue = await actionFn();
-        }) as any),
-        {},
-      ),
-      {
-        ssrManifest: { moduleMap: null, moduleLoading: null },
-      },
-    );
+    const actionValue = await runWithRenderContext(renderContext, actionFn);
     const elements = await elementsPromise;
     rendered = true;
     if (Object.keys(elements).some((key) => key.startsWith('_'))) {
       throw new Error('"_" prefix is reserved');
     }
-    return Object.fromEntries([
-      ...Object.entries(elements).map(([k, v]) => [
-        k,
-        createElement(() => {
-          setRenderContext(renderContext);
-          return v as any;
-        }),
-      ]),
-      ['_value', actionValue],
-    ]);
+    return wrapWithContext(context, elements, actionValue);
   };
 
   const bundlerConfig = new Proxy(
