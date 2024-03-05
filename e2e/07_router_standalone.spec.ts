@@ -24,15 +24,10 @@ async function testRouterExample(page: Page, port: number) {
   await waitPort({
     port,
   });
-  console.log('go to');
   await page.goto(`http://localhost:${port}`);
-  console.log('main content', await page.content());
-  console.log('start111');
   await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
-  console.log('done111');
 
   await page.click("a[href='/foo']");
-  console.log('foo content', await page.content());
 
   await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
 
@@ -73,7 +68,6 @@ test.describe('07_router standalone', () => {
   testMatrix.forEach(({ withSSR }) => {
     test(`should prod work ${withSSR ? 'with SSR' : ''}`, async ({ page }) => {
       return;
-      console.log(withSSR);
       test.fixme(withSSR, 'SSR is not working in standalone');
       execSync(
         `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} build`,
@@ -83,7 +77,6 @@ test.describe('07_router standalone', () => {
         },
       );
       const port = await getFreePort();
-      console.log('port', port);
       const cp = exec(
         `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start`,
         {
@@ -101,11 +94,8 @@ test.describe('07_router standalone', () => {
 
     test(`should dev work ${withSSR ? 'with SSR' : ''}`, async ({ page }) => {
       // return
-      console.log(`should dev work ${withSSR ? 'with SSR' : ''}`);
-      console.log(withSSR);
       test.fixme(withSSR, 'SSR is not working in standalone');
       const port = await getFreePort();
-      console.log('port', port);
       const cp = exec(
         `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} dev`,
         {
