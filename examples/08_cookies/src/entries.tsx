@@ -10,8 +10,8 @@ const App = lazy(() => import('./components/App.js'));
 export default defineEntries(
   // renderEntries
   async (input) => {
-    const ctx = getContext<{ count: number }>();
-    ++ctx.count;
+    const context = getContext<{ count: number }>();
+    ++context.count;
     const items = JSON.parse(
       await fsPromises.readFile(
         path.join(
@@ -22,7 +22,7 @@ export default defineEntries(
       ),
     );
     return {
-      App: <App name={input || 'Waku'} count={ctx.count} items={items} />,
+      App: <App name={input || 'Waku'} count={context.count} items={items} />,
     };
   },
   // getBuildConfig

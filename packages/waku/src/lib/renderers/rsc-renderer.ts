@@ -1,10 +1,6 @@
-import type {
-  default as ReactType,
-  ComponentProps,
-  FunctionComponent,
-  ReactNode,
-} from 'react';
+import type { default as ReactType, ReactNode } from 'react';
 import type { default as RSDWServerType } from 'react-server-dom-webpack/server.edge';
+import type { default as RSDWClientType } from 'react-server-dom-webpack/client.edge';
 
 import type {
   EntriesDev,
@@ -20,6 +16,7 @@ import { decodeActionId } from '../renderers/utils.js';
 export const SERVER_MODULE_MAP = {
   react: 'react',
   'rsdw-server': 'react-server-dom-webpack/server.edge',
+  'rsdw-client': 'react-server-dom-webpack/client.edge',
   'waku-server': 'waku/server',
 };
 
@@ -48,7 +45,8 @@ type RenderRscOpts =
   | {
       isDev: true;
       entries: EntriesDev;
-      customImport: (fileURL: string) => Promise<unknown>;
+      loadServerFile: (fileURL: string) => Promise<unknown>;
+      loadServerModule: (id: string) => Promise<unknown>;
       resolveClientEntry: (id: string) => string;
     };
 
@@ -83,63 +81,63 @@ export async function renderRsc(
     {
       default: { renderToReadableStream, decodeReply },
     },
+    {
+      default: { createFromReadableStream },
+    },
     { setRenderContext },
   ] = await Promise.all([
     (isDev
-      ? import(SERVER_MODULE_MAP['react'])
+      ? import(/* @vite-ignore */ SERVER_MODULE_MAP['react'])
       : loadModule!('react')) as Promise<{
       default: typeof ReactType;
     }>,
     (isDev
-      ? import(SERVER_MODULE_MAP['rsdw-server'])
+      ? import(/* @vite-ignore */ SERVER_MODULE_MAP['rsdw-server'])
       : loadModule!('rsdw-server')) as Promise<{
       default: typeof RSDWServerType;
     }>,
     (isDev
-      ? import(SERVER_MODULE_MAP['waku-server'])
+      ? import(/* @vite-ignore */ SERVER_MODULE_MAP['rsdw-client'])
+      : loadModule!('rsdw-client')) as Promise<{
+      default: typeof RSDWClientType;
+    }>,
+    (isDev
+      ? opts.loadServerModule(SERVER_MODULE_MAP['waku-server'])
       : loadModule!('waku-server')) as Promise<{
       setRenderContext: typeof setRenderContextType;
     }>,
   ]);
 
-  const WithRenderContext = ({
-    renderContext,
-    children,
-  }: {
-    renderContext: RenderContext;
-    children: ReactNode;
-  }) => {
-    setRenderContext(renderContext);
-    return children;
-  };
-
-  const renderWithContext = async (
+  const renderWithContext = (
     renderContext: RenderContext,
     input: string,
     searchParams: URLSearchParams,
-  ) => {
-    const elements = await renderEntries(input, searchParams);
-    if (elements === null) {
-      const err = new Error('No function component found');
-      (err as any).statusCode = 404; // HACK our convention for NotFound
-      throw err;
-    }
-    if (Object.keys(elements).some((key) => key.startsWith('_'))) {
-      throw new Error('"_" prefix is reserved');
-    }
-    return Object.fromEntries(
-      Object.entries(elements).map(([k, v]) => [
-        k,
-        createElement(
-          WithRenderContext as FunctionComponent<
-            Omit<ComponentProps<typeof WithRenderContext>, 'children'>
-          >,
-          { renderContext },
-          v,
+  ) =>
+    new Promise<Record<string, ReactNode>>((resolve, reject) => {
+      createFromReadableStream(
+        renderToReadableStream(
+          createElement((async () => {
+            setRenderContext(renderContext);
+            const elements = await renderEntries(input, searchParams);
+            if (elements === null) {
+              const err = new Error('No function component found');
+              (err as any).statusCode = 404; // HACK our convention for NotFound
+              reject(err);
+            } else if (
+              Object.keys(elements).some((key) => key.startsWith('_'))
+            ) {
+              reject(new Error('"_" prefix is reserved'));
+            } else {
+              resolve(elements);
+            }
+          }) as any),
+          {},
         ),
-      ]),
-    );
-  };
+        {
+          ssrManifest: { moduleMap: null, moduleLoading: null },
+        },
+      ).catch(reject);
+    });
 
   const bundlerConfig = new Proxy(
     {},
@@ -173,7 +171,7 @@ export async function renderRsc(
     const [fileId, name] = rsfId.split('#') as [string, string];
     let mod: any;
     if (isDev) {
-      mod = await opts.customImport(filePathToFileURL(fileId));
+      mod = await opts.loadServerFile(filePathToFileURL(fileId));
     } else {
       if (!fileId.startsWith('@id/')) {
         throw new Error('Unexpected server entry in PRD');
@@ -197,7 +195,18 @@ export async function renderRsc(
       }));
     };
     const renderContext: RenderContext = { rerender, context: context || {} };
-    const data = await fn.apply(renderContext, args);
+    const data = await createFromReadableStream(
+      renderToReadableStream(
+        createElement(() => {
+          setRenderContext(renderContext);
+          return fn(...args);
+        }),
+        {},
+      ),
+      {
+        ssrManifest: { moduleMap: null, moduleLoading: null },
+      },
+    );
     const resolvedElements = await elements;
     rendered = true;
     return renderToReadableStream(
@@ -299,7 +308,7 @@ export async function getSsrConfig(
     loadModule,
   } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
   const { renderToReadableStream } = await (isDev
-    ? import(SERVER_MODULE_MAP['rsdw-server'])
+    ? import(/* @vite-ignore */ SERVER_MODULE_MAP['rsdw-server'])
     : loadModule!('rsdw-server').then((m: any) => m.default));
 
   const ssrConfig = await getSsrConfig?.(pathname, { searchParams });
