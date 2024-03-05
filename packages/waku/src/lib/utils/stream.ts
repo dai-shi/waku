@@ -1,11 +1,4 @@
-export const endStream = async (stream: WritableStream, message?: string) => {
-  const writer = stream.getWriter();
-  await writer.ready;
-  if (message) {
-    await writer.write(new TextEncoder().encode(message));
-  }
-  await writer.close();
-};
+// Utility functions for web streams (not Node.js streams)
 
 export const concatUint8Arrays = (arrs: Uint8Array[]): Uint8Array => {
   const len = arrs.reduce((acc, arr) => acc + arr.length, 0);

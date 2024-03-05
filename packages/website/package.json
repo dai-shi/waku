@@ -5,9 +5,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "waku dev --with-ssr",
-    "build": "waku build --with-ssr",
-    "start": "waku start --with-ssr"
+    "dev": "waku dev",
+    "build": "waku build",
+    "start": "waku start"
   },
   "dependencies": {
     "@sindresorhus/slugify": "^2.2.1",

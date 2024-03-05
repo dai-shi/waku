@@ -11,11 +11,11 @@ const waku = fileURLToPath(
 
 const commands = [
   {
-    command: 'dev --with-ssr',
+    command: 'dev',
   },
   {
-    build: 'build --with-ssr',
-    command: 'start --with-ssr',
+    build: 'build',
+    command: 'start',
   },
 ];
 

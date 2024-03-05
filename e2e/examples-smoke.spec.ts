@@ -24,15 +24,8 @@ const commands = [
     command: 'dev',
   },
   {
-    command: 'dev --with-ssr',
-  },
-  {
     build: 'build',
     command: 'start',
-  },
-  {
-    build: 'build --with-ssr',
-    command: 'start --with-ssr',
   },
 ];
 
@@ -41,14 +34,7 @@ const specialExamples = [
     name: '08_cookies',
     commands: [
       {
-        command: 'node dev.js --with-ssr',
-      },
-      {
         command: 'node dev.js',
-      },
-      {
-        build: 'waku build --with-ssr',
-        command: 'node start.js --with-ssr',
       },
       {
         build: 'waku build',
