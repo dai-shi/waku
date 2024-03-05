@@ -12,7 +12,6 @@ import { injectRSCPayload } from 'rsc-html-stream/server';
 import type * as WakuClientType from '../../client.js';
 import type { EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
-import type { CLIENT_MODULE_KEY } from '../middleware/ssr.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import {
   joinPath,
@@ -20,6 +19,14 @@ import {
   fileURLToFilePath,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
+
+export const CLIENT_MODULE_MAP = {
+  react: 'react',
+  'rd-server': 'react-dom/server.edge',
+  'rsdw-client': 'react-server-dom-webpack/client.edge',
+  'waku-client': 'waku/client',
+} as const;
+export const CLIENT_PREFIX = 'client/';
 
 // HACK for react-server-dom-webpack without webpack
 (globalThis as any).__webpack_module_loading__ ||= new Map();
@@ -169,7 +176,6 @@ export const renderHtml = async (
       searchParams?: URLSearchParams;
       body: ReadableStream;
     } | null>;
-    loadClientModule: (key: CLIENT_MODULE_KEY) => Promise<unknown>;
   } & (
     | { isDev: false; loadModule: EntriesPrd['loadModule'] }
     | {
@@ -186,9 +192,13 @@ export const renderHtml = async (
     htmlHead,
     renderRscForHtml,
     getSsrConfigForHtml,
-    loadClientModule,
     isDev,
   } = opts;
+
+  const loadClientModule = <T>(key: keyof typeof CLIENT_MODULE_MAP) =>
+    (isDev
+      ? import(CLIENT_MODULE_MAP[key])
+      : opts.loadModule(CLIENT_PREFIX + key)) as Promise<T>;
 
   const [
     {
@@ -202,12 +212,10 @@ export const renderHtml = async (
     },
     { ServerRoot },
   ] = await Promise.all([
-    loadClientModule('react') as Promise<{ default: typeof ReactType }>,
-    loadClientModule('rd-server') as Promise<{ default: typeof RDServerType }>,
-    loadClientModule('rsdw-client') as Promise<{
-      default: typeof RSDWClientType;
-    }>,
-    loadClientModule('waku-client') as Promise<typeof WakuClientType>,
+    loadClientModule<{ default: typeof ReactType }>('react'),
+    loadClientModule<{ default: typeof RDServerType }>('rd-server'),
+    loadClientModule<{ default: typeof RSDWClientType }>('rsdw-client'),
+    loadClientModule<typeof WakuClientType>('waku-client'),
   ]);
   const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
   if (!ssrConfig) {

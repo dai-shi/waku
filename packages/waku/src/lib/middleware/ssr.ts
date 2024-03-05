@@ -5,15 +5,6 @@ import { hasStatusCode, encodeInput } from '../renderers/utils.js';
 import { getSsrConfig } from '../renderers/rsc-renderer.js';
 import type { Middleware } from './types.js';
 
-export const CLIENT_MODULE_MAP = {
-  react: 'react',
-  'rd-server': 'react-dom/server.edge',
-  'rsdw-client': 'react-server-dom-webpack/client.edge',
-  'waku-client': 'waku/client',
-};
-export type CLIENT_MODULE_KEY = keyof typeof CLIENT_MODULE_MAP;
-export const CLIENT_PREFIX = 'client/';
-
 export const ssr: Middleware = (options) => {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const entriesPromise =
@@ -71,7 +62,6 @@ export const ssr: Middleware = (options) => {
                     pathname,
                     searchParams,
                   }),
-                loadClientModule: (key) => import(CLIENT_MODULE_MAP[key]),
                 rootDir: devServer.rootDir,
                 loadServerFile: devServer.loadServerFile,
               }
@@ -82,8 +72,6 @@ export const ssr: Middleware = (options) => {
                     { config, pathname, searchParams },
                     { isDev: false, entries },
                   ),
-                loadClientModule: (key) =>
-                  entries.loadModule(CLIENT_PREFIX + key),
                 loadModule: entries.loadModule,
               }),
         });

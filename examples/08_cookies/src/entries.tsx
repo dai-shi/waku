@@ -1,17 +1,16 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fsPromises from 'node:fs/promises';
-import { lazy } from 'react';
-import { defineEntries } from 'waku/server';
+import { defineEntries, getContext } from 'waku/server';
 import { Slot } from 'waku/client';
 
-const App = lazy(() => import('./components/App.js'));
+import App from './components/App.js';
 
 export default defineEntries(
   // renderEntries
-  async function (input) {
-    const ctx = this.context as { count: number };
-    ++ctx.count;
+  async (input) => {
+    const context = getContext<{ count: number }>();
+    ++context.count;
     const items = JSON.parse(
       await fsPromises.readFile(
         path.join(
@@ -22,7 +21,7 @@ export default defineEntries(
       ),
     );
     return {
-      App: <App name={input || 'Waku'} count={ctx.count} items={items} />,
+      App: <App name={input || 'Waku'} items={items} />,
     };
   },
   // getBuildConfig

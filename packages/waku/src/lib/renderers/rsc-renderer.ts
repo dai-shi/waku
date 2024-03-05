@@ -1,15 +1,24 @@
-import type { ReactNode } from 'react';
+import type { default as ReactType, ReactNode } from 'react';
 import type { default as RSDWServerType } from 'react-server-dom-webpack/server.edge';
+import type { default as RSDWClientType } from 'react-server-dom-webpack/client.edge';
 
-import type { RenderContext, EntriesDev, EntriesPrd } from '../../server.js';
+import type {
+  EntriesDev,
+  EntriesPrd,
+  setRenderContext as setRenderContextType,
+} from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { filePathToFileURL } from '../utils/path.js';
 import { parseFormData } from '../utils/form.js';
 import { streamToString } from '../utils/stream.js';
 import { decodeActionId } from '../renderers/utils.js';
 
-export const RSDW_SERVER_MODULE = 'rsdw-server';
-export const RSDW_SERVER_MODULE_VALUE = 'react-server-dom-webpack/server.edge';
+export const SERVER_MODULE_MAP = {
+  react: 'react',
+  'rsdw-server': 'react-server-dom-webpack/server.edge',
+  'rsdw-client': 'react-server-dom-webpack/client.edge',
+  'waku-server': 'waku/server',
+} as const;
 
 const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
   if (!id.startsWith('@id/')) {
@@ -34,7 +43,8 @@ type RenderRscOpts =
   | {
       isDev: true;
       entries: EntriesDev;
-      customImport: (fileURL: string) => Promise<unknown>;
+      loadServerFile: (fileURL: string) => Promise<unknown>;
+      loadServerModule: (id: string) => Promise<unknown>;
       resolveClientEntry: (id: string) => string;
     };
 
@@ -62,23 +72,92 @@ export async function renderRsc(
     default: { renderEntries },
     loadModule,
   } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
-  const {
-    default: { renderToReadableStream, decodeReply },
-  } = await ((
-    isDev ? import(RSDW_SERVER_MODULE_VALUE) : loadModule!(RSDW_SERVER_MODULE)
-  ) as Promise<{
-    default: typeof RSDWServerType;
-  }>);
 
-  const render = async (
-    renderContext: RenderContext,
+  const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
+    (isDev
+      ? import(/* @vite-ignore */ SERVER_MODULE_MAP[key])
+      : loadModule!(key)) as Promise<T>;
+
+  const [
+    {
+      default: { createElement },
+    },
+    {
+      default: { renderToReadableStream, decodeReply },
+    },
+    {
+      default: { createFromReadableStream },
+    },
+    { setRenderContext },
+  ] = await Promise.all([
+    loadServerModule<{ default: typeof ReactType }>('react'),
+    loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server'),
+    loadServerModule<{ default: typeof RSDWClientType }>('rsdw-client'),
+    (isDev
+      ? opts.loadServerModule(SERVER_MODULE_MAP['waku-server'])
+      : loadModule!('waku-server')) as Promise<{
+      setRenderContext: typeof setRenderContextType;
+    }>,
+  ]);
+
+  const runWithRenderContext = async <T>(
+    renderContext: Parameters<typeof setRenderContext>[0],
+    fn: () => T,
+  ): Promise<Awaited<T>> =>
+    new Promise<Awaited<T>>((resolve, reject) => {
+      createFromReadableStream(
+        renderToReadableStream(
+          createElement((async () => {
+            setRenderContext(renderContext);
+            resolve(await fn());
+          }) as any),
+          {},
+        ),
+        {
+          ssrManifest: { moduleMap: null, moduleLoading: null },
+        },
+      ).catch(reject);
+    });
+
+  const wrapWithContext = (
+    context: Record<string, unknown> | undefined,
+    elements: Record<string, ReactNode>,
+    value?: unknown,
+  ) => {
+    const renderContext = {
+      context: context || {},
+      rerender: () => {
+        throw new Error('Cannot rerender');
+      },
+    };
+    const elementEntries: [string, unknown][] = Object.entries(elements).map(
+      ([k, v]) => [
+        k,
+        createElement(() => {
+          setRenderContext(renderContext);
+          return v as ReactNode; // XXX lie the type
+        }),
+      ],
+    );
+    if (value !== undefined) {
+      elementEntries.push(['_value', value]);
+    }
+    return Object.fromEntries(elementEntries);
+  };
+
+  const renderWithContext = async (
+    context: Record<string, unknown> | undefined,
     input: string,
     searchParams: URLSearchParams,
   ) => {
-    const elements = await renderEntries.call(
-      renderContext,
-      input,
-      searchParams,
+    const renderContext = {
+      context: context || {},
+      rerender: () => {
+        throw new Error('Cannot rerender');
+      },
+    };
+    const elements = await runWithRenderContext(renderContext, () =>
+      renderEntries(input, searchParams),
     );
     if (elements === null) {
       const err = new Error('No function component found');
@@ -88,7 +167,40 @@ export async function renderRsc(
     if (Object.keys(elements).some((key) => key.startsWith('_'))) {
       throw new Error('"_" prefix is reserved');
     }
-    return elements;
+    return wrapWithContext(context, elements);
+  };
+
+  const renderWithContextWithAction = async (
+    context: Record<string, unknown> | undefined,
+    actionFn: () => unknown,
+  ) => {
+    let elementsPromise: Promise<Record<string, ReactNode>> = Promise.resolve(
+      {},
+    );
+    let rendered = false;
+    const renderContext = {
+      context: context || {},
+      rerender: async (input: string, searchParams = new URLSearchParams()) => {
+        if (rendered) {
+          throw new Error('already rendered');
+        }
+        elementsPromise = Promise.all([
+          elementsPromise,
+          renderEntries(input, searchParams),
+        ]).then(([oldElements, newElements]) => ({
+          ...oldElements,
+          // FIXME we should actually check if newElements is null and send an error
+          ...newElements,
+        }));
+      },
+    };
+    const actionValue = await runWithRenderContext(renderContext, actionFn);
+    const elements = await elementsPromise;
+    rendered = true;
+    if (Object.keys(elements).some((key) => key.startsWith('_'))) {
+      throw new Error('"_" prefix is reserved');
+    }
+    return wrapWithContext(context, elements, actionValue);
   };
 
   const bundlerConfig = new Proxy(
@@ -123,7 +235,7 @@ export async function renderRsc(
     const [fileId, name] = rsfId.split('#') as [string, string];
     let mod: any;
     if (isDev) {
-      mod = await opts.customImport(filePathToFileURL(fileId));
+      mod = await opts.loadServerFile(filePathToFileURL(fileId));
     } else {
       if (!fileId.startsWith('@id/')) {
         throw new Error('Unexpected server entry in PRD');
@@ -131,39 +243,14 @@ export async function renderRsc(
       mod = await loadModule!(fileId.slice('@id/'.length));
     }
     const fn = mod[name] || mod;
-    let elements: Promise<Record<string, ReactNode>> = Promise.resolve({});
-    let rendered = false;
-    const rerender = (input: string, searchParams = new URLSearchParams()) => {
-      if (rendered) {
-        throw new Error('already rendered');
-      }
-      const renderContext: RenderContext = { rerender, context: context || {} };
-      elements = Promise.all([
-        elements,
-        render(renderContext, input, searchParams),
-      ]).then(([oldElements, newElements]) => ({
-        ...oldElements,
-        ...newElements,
-      }));
-    };
-    const renderContext: RenderContext = { rerender, context: context || {} };
-    const data = await fn.apply(renderContext, args);
-    const resolvedElements = await elements;
-    rendered = true;
-    return renderToReadableStream(
-      { ...resolvedElements, _value: data },
-      bundlerConfig,
+    const elements = await renderWithContextWithAction(context, () =>
+      fn(...args),
     );
+    return renderToReadableStream(elements, bundlerConfig);
   }
 
   // method === 'GET'
-  const renderContext: RenderContext = {
-    rerender: () => {
-      throw new Error('Cannot rerender');
-    },
-    context: context || {},
-  };
-  const elements = await render(renderContext, input, searchParams);
+  const elements = await renderWithContext(context, input, searchParams);
   return renderToReadableStream(elements, bundlerConfig);
 }
 
@@ -249,8 +336,8 @@ export async function getSsrConfig(
     loadModule,
   } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
   const { renderToReadableStream } = await (isDev
-    ? import(RSDW_SERVER_MODULE_VALUE)
-    : loadModule!(RSDW_SERVER_MODULE).then((m: any) => m.default));
+    ? import(/* @vite-ignore */ SERVER_MODULE_MAP['rsdw-server'])
+    : loadModule!('rsdw-server').then((m: any) => m.default));
 
   const ssrConfig = await getSsrConfig?.(pathname, { searchParams });
   if (!ssrConfig) {

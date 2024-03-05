@@ -32,14 +32,16 @@ import {
 } from '../utils/node-fs.js';
 import { encodeInput, generatePrefetchCode } from '../renderers/utils.js';
 import {
-  RSDW_SERVER_MODULE,
-  RSDW_SERVER_MODULE_VALUE,
+  SERVER_MODULE_MAP,
   renderRsc,
   getBuildConfig,
   getSsrConfig,
 } from '../renderers/rsc-renderer.js';
-import { renderHtml } from '../renderers/html-renderer.js';
-import { CLIENT_MODULE_MAP, CLIENT_PREFIX } from '../middleware/ssr.js';
+import {
+  renderHtml,
+  CLIENT_MODULE_MAP,
+  CLIENT_PREFIX,
+} from '../renderers/html-renderer.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
@@ -188,7 +190,9 @@ const buildServerBundle = async (
       rscEntriesPlugin({
         entriesFile,
         moduleMap: {
-          [RSDW_SERVER_MODULE]: `./${RSDW_SERVER_MODULE}.js`,
+          ...Object.fromEntries(
+            Object.keys(SERVER_MODULE_MAP).map((key) => [key, `./${key}.js`]),
+          ),
           ...Object.fromEntries(
             Object.keys(CLIENT_MODULE_MAP).map((key) => [
               `${CLIENT_PREFIX}${key}`,
@@ -253,7 +257,7 @@ const buildServerBundle = async (
         onwarn,
         input: {
           entries: entriesFile,
-          [RSDW_SERVER_MODULE]: RSDW_SERVER_MODULE_VALUE,
+          ...SERVER_MODULE_MAP,
           ...serverModuleFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
@@ -559,8 +563,6 @@ const emitHtmlFiles = async (
                 entries: distEntries,
               },
             ),
-          loadClientModule: (key) =>
-            distEntries.loadModule(CLIENT_PREFIX + key),
           isDev: false,
           loadModule: distEntries.loadModule,
         });
