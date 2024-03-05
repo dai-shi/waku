@@ -41,7 +41,6 @@ async function testRouterExample(page: Page, port: number) {
 }
 
 test.describe('07_router standalone', () => {
-  test.describe.configure({ mode: 'parallel', retries: 2 });
   test.beforeAll('copy code', async () => {
     // GitHub Action on Windows doesn't support mkdtemp on global temp dir,
     // Which will cause files in `src` folder to be empty.
