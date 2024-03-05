@@ -1,15 +1,29 @@
-import type { ReactNode } from 'react';
+import type {
+  default as ReactType,
+  ComponentProps,
+  FunctionComponent,
+  ReactNode,
+} from 'react';
 import type { default as RSDWServerType } from 'react-server-dom-webpack/server.edge';
 
-import type { RenderContext, EntriesDev, EntriesPrd } from '../../server.js';
+import type {
+  EntriesDev,
+  EntriesPrd,
+  setRenderContext as setRenderContextType,
+} from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { filePathToFileURL } from '../utils/path.js';
 import { parseFormData } from '../utils/form.js';
 import { streamToString } from '../utils/stream.js';
 import { decodeActionId } from '../renderers/utils.js';
 
-export const RSDW_SERVER_MODULE = 'rsdw-server';
-export const RSDW_SERVER_MODULE_VALUE = 'react-server-dom-webpack/server.edge';
+export const SERVER_MODULE_MAP = {
+  react: 'react',
+  'rsdw-server': 'react-server-dom-webpack/server.edge',
+  'waku-server': 'waku/server',
+};
+
+type RenderContext = Parameters<typeof setRenderContextType>[0];
 
 const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
   if (!id.startsWith('@id/')) {
@@ -62,24 +76,49 @@ export async function renderRsc(
     default: { renderEntries },
     loadModule,
   } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
-  const {
-    default: { renderToReadableStream, decodeReply },
-  } = await ((
-    isDev ? import(RSDW_SERVER_MODULE_VALUE) : loadModule!(RSDW_SERVER_MODULE)
-  ) as Promise<{
-    default: typeof RSDWServerType;
-  }>);
+  const [
+    {
+      default: { createElement },
+    },
+    {
+      default: { renderToReadableStream, decodeReply },
+    },
+    { setRenderContext },
+  ] = await Promise.all([
+    (isDev
+      ? import(SERVER_MODULE_MAP['react'])
+      : loadModule!('react')) as Promise<{
+      default: typeof ReactType;
+    }>,
+    (isDev
+      ? import(SERVER_MODULE_MAP['rsdw-server'])
+      : loadModule!('rsdw-server')) as Promise<{
+      default: typeof RSDWServerType;
+    }>,
+    (isDev
+      ? import(SERVER_MODULE_MAP['waku-server'])
+      : loadModule!('waku-server')) as Promise<{
+      setRenderContext: typeof setRenderContextType;
+    }>,
+  ]);
+
+  const WithRenderContext = ({
+    renderContext,
+    children,
+  }: {
+    renderContext: RenderContext;
+    children: ReactNode;
+  }) => {
+    setRenderContext(renderContext);
+    return children;
+  };
 
   const render = async (
     renderContext: RenderContext,
     input: string,
     searchParams: URLSearchParams,
   ) => {
-    const elements = await renderEntries.call(
-      renderContext,
-      input,
-      searchParams,
-    );
+    const elements = await renderEntries(input, searchParams);
     if (elements === null) {
       const err = new Error('No function component found');
       (err as any).statusCode = 404; // HACK our convention for NotFound
@@ -88,7 +127,18 @@ export async function renderRsc(
     if (Object.keys(elements).some((key) => key.startsWith('_'))) {
       throw new Error('"_" prefix is reserved');
     }
-    return elements;
+    return Object.fromEntries(
+      Object.entries(elements).map(([k, v]) => [
+        k,
+        createElement(
+          WithRenderContext as FunctionComponent<
+            Omit<ComponentProps<typeof WithRenderContext>, 'children'>
+          >,
+          { renderContext },
+          v,
+        ),
+      ]),
+    );
   };
 
   const bundlerConfig = new Proxy(
@@ -249,8 +299,8 @@ export async function getSsrConfig(
     loadModule,
   } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
   const { renderToReadableStream } = await (isDev
-    ? import(RSDW_SERVER_MODULE_VALUE)
-    : loadModule!(RSDW_SERVER_MODULE).then((m: any) => m.default));
+    ? import(SERVER_MODULE_MAP['rsdw-server'])
+    : loadModule!('rsdw-server').then((m: any) => m.default));
 
   const ssrConfig = await getSsrConfig?.(pathname, { searchParams });
   if (!ssrConfig) {

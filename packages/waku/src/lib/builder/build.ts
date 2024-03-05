@@ -32,8 +32,7 @@ import {
 } from '../utils/node-fs.js';
 import { encodeInput, generatePrefetchCode } from '../renderers/utils.js';
 import {
-  RSDW_SERVER_MODULE,
-  RSDW_SERVER_MODULE_VALUE,
+  SERVER_MODULE_MAP,
   renderRsc,
   getBuildConfig,
   getSsrConfig,
@@ -188,7 +187,9 @@ const buildServerBundle = async (
       rscEntriesPlugin({
         entriesFile,
         moduleMap: {
-          [RSDW_SERVER_MODULE]: `./${RSDW_SERVER_MODULE}.js`,
+          ...Object.fromEntries(
+            Object.keys(SERVER_MODULE_MAP).map((key) => [key, `./${key}.js`]),
+          ),
           ...Object.fromEntries(
             Object.keys(CLIENT_MODULE_MAP).map((key) => [
               `${CLIENT_PREFIX}${key}`,
@@ -253,7 +254,7 @@ const buildServerBundle = async (
         onwarn,
         input: {
           entries: entriesFile,
-          [RSDW_SERVER_MODULE]: RSDW_SERVER_MODULE_VALUE,
+          ...SERVER_MODULE_MAP,
           ...serverModuleFiles,
           ...clientEntryFiles,
           ...serverEntryFiles,
