@@ -18,9 +18,7 @@ export const SERVER_MODULE_MAP = {
   'rsdw-server': 'react-server-dom-webpack/server.edge',
   'rsdw-client': 'react-server-dom-webpack/client.edge',
   'waku-server': 'waku/server',
-};
-
-type RenderContext = Parameters<typeof setRenderContextType>[0];
+} as const;
 
 const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
   if (!id.startsWith('@id/')) {
@@ -109,7 +107,7 @@ export async function renderRsc(
   ]);
 
   const runWithRenderContext = async <T>(
-    renderContext: RenderContext,
+    renderContext: Parameters<typeof setRenderContext>[0],
     fn: () => T,
   ): Promise<Awaited<T>> =>
     new Promise<Awaited<T>>((resolve, reject) => {
@@ -132,7 +130,7 @@ export async function renderRsc(
     elements: Record<string, ReactNode>,
     value?: unknown,
   ) => {
-    const renderContext: RenderContext = {
+    const renderContext = {
       context: context || {},
       rerender: () => {
         throw new Error('Cannot rerender');
@@ -158,7 +156,7 @@ export async function renderRsc(
     input: string,
     searchParams: URLSearchParams,
   ) => {
-    const renderContext: RenderContext = {
+    const renderContext = {
       context: context || {},
       rerender: () => {
         throw new Error('Cannot rerender');
@@ -186,7 +184,7 @@ export async function renderRsc(
       {},
     );
     let rendered = false;
-    const renderContext: RenderContext = {
+    const renderContext = {
       context: context || {},
       rerender: async (input: string, searchParams = new URLSearchParams()) => {
         if (rendered) {
