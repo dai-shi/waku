@@ -113,7 +113,7 @@ export async function renderRsc(
     return children;
   };
 
-  const render = async (
+  const renderWithContext = async (
     renderContext: RenderContext,
     input: string,
     searchParams: URLSearchParams,
@@ -190,7 +190,7 @@ export async function renderRsc(
       const renderContext: RenderContext = { rerender, context: context || {} };
       elements = Promise.all([
         elements,
-        render(renderContext, input, searchParams),
+        renderWithContext(renderContext, input, searchParams),
       ]).then(([oldElements, newElements]) => ({
         ...oldElements,
         ...newElements,
@@ -213,7 +213,7 @@ export async function renderRsc(
     },
     context: context || {},
   };
-  const elements = await render(renderContext, input, searchParams);
+  const elements = await renderWithContext(renderContext, input, searchParams);
   return renderToReadableStream(elements, bundlerConfig);
 }
 
