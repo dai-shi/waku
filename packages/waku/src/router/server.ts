@@ -1,2 +1,2 @@
-export { defineRouter as unstable_defineRouter } from './defineRouter.js';
-export { createPages } from './createPages.js';
+export { unstable_defineRouter } from './define-router.js';
+export { createPages } from './create-pages.js';

@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import type { FunctionComponent, ReactNode } from 'react';
 
-import { defineRouter } from './defineRouter.js';
+import { unstable_defineRouter as defineRouter } from './define-router.js';
 import type { RouteProps } from './common.js';
 import {
   joinPath,
@@ -52,7 +52,7 @@ type CreatePage = <
   SlugKey extends string,
   WildSlugKey extends string,
 >(
-  page:
+  page: (
     | {
         render: 'static';
         path: PathWithoutSlug<Path>;
@@ -75,7 +75,8 @@ type CreatePage = <
         component: FunctionComponent<
           RouteProps & Record<SlugKey, string> & Record<WildSlugKey, string[]>
         >;
-      },
+      }
+  ) & { unstable_disableSSR?: boolean },
 ) => void;
 
 type CreateLayout = <T extends string>(layout: {
@@ -91,10 +92,14 @@ export function createPages(
   }) => Promise<void>,
 ) {
   let configured = false;
+
+  // TODO I think there's room for improvement to refactor these structures
   const staticPathSet = new Set<PathSpec>();
   const dynamicPathMap = new Map<string, [PathSpec, FunctionComponent<any>]>();
   const wildcardPathMap = new Map<string, [PathSpec, FunctionComponent<any>]>();
   const staticComponentMap = new Map<string, FunctionComponent<any>>();
+  const noSsrSet = new WeakSet<PathSpec>();
+
   const registerStaticComponent = (
     id: string,
     component: FunctionComponent<any>,
@@ -113,6 +118,9 @@ export function createPages(
       throw new Error('no longer available');
     }
     const pathSpec = parsePathWithSlug(page.path);
+    if (page.unstable_disableSSR) {
+      noSsrSet.add(pathSpec);
+    }
     const numSlugs = pathSpec.filter(({ type }) => type !== 'literal').length;
     const numWildcards = pathSpec.filter(
       ({ type }) => type === 'wildcard',
@@ -179,23 +187,26 @@ export function createPages(
   return defineRouter(
     async () => {
       await ready;
-      const paths: { path: PathSpec; isStatic: boolean }[] = [];
+      const paths: { path: PathSpec; isStatic: boolean; noSsr: boolean }[] = [];
       for (const pathSpec of staticPathSet) {
-        paths.push({ path: pathSpec, isStatic: true });
+        const noSsr = noSsrSet.has(pathSpec);
+        paths.push({ path: pathSpec, isStatic: true, noSsr });
       }
       for (const [pathSpec] of dynamicPathMap.values()) {
-        paths.push({ path: pathSpec, isStatic: false });
+        const noSsr = noSsrSet.has(pathSpec);
+        paths.push({ path: pathSpec, isStatic: false, noSsr });
       }
       for (const [pathSpec] of wildcardPathMap.values()) {
-        paths.push({ path: pathSpec, isStatic: false });
+        const noSsr = noSsrSet.has(pathSpec);
+        paths.push({ path: pathSpec, isStatic: false, noSsr });
       }
       return paths;
     },
-    async (id, unstable_setShouldSkip) => {
+    async (id, setShouldSkip) => {
       await ready;
       const staticComponent = staticComponentMap.get(id);
       if (staticComponent) {
-        unstable_setShouldSkip({});
+        setShouldSkip({});
         return staticComponent;
       }
       for (const [pathSpec, Component] of dynamicPathMap.values()) {
@@ -205,12 +216,12 @@ export function createPages(
         );
         if (mapping) {
           if (Object.keys(mapping).length === 0) {
-            unstable_setShouldSkip();
+            setShouldSkip();
             return Component;
           }
           const WrappedComponent = (props: Record<string, unknown>) =>
             createElement(Component, { ...props, ...mapping });
-          unstable_setShouldSkip();
+          setShouldSkip();
           return WrappedComponent;
         }
       }
@@ -222,11 +233,11 @@ export function createPages(
         if (mapping) {
           const WrappedComponent = (props: Record<string, unknown>) =>
             createElement(Component, { ...props, ...mapping });
-          unstable_setShouldSkip();
+          setShouldSkip();
           return WrappedComponent;
         }
       }
-      unstable_setShouldSkip({}); // negative cache
+      setShouldSkip({}); // negative cache
       return null; // not found
     },
   );

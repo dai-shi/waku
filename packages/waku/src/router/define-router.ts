@@ -16,19 +16,23 @@ import { getPathMapping } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
 import { ServerRouter } from './client.js';
 
+// TODO revisit shouldSkip API
 const ShoudSkipComponent = ({ shouldSkip }: { shouldSkip: ShouldSkip }) =>
   createElement('meta', {
     name: 'waku-should-skip',
     content: JSON.stringify(shouldSkip),
   });
 
-export function defineRouter(
+export function unstable_defineRouter(
   getPathConfig: () => Promise<
-    Iterable<{ path: PathSpec; isStatic?: boolean }>
+    Iterable<{ path: PathSpec; isStatic?: boolean; noSsr?: boolean }>
   >,
   getComponent: (
     componentId: string, // "**/layout" or "**/page"
-    unstable_setShouldSkip: (val?: ShouldSkip[string]) => void,
+    /**
+     * HACK setShouldSkip API is too hard to understand
+     */
+    setShouldSkip: (val?: ShouldSkip[string]) => void,
   ) => Promise<
     | FunctionComponent<RouteProps>
     | FunctionComponent<RouteProps & { children: ReactNode }>
@@ -49,11 +53,14 @@ export function defineRouter(
   const has404Promise = pathConfigPromise.then((pathConfig) =>
     pathConfig.some(({ is404 }) => is404),
   );
-  const existsPath = async (pathname: string) => {
+  const existsPath = async (
+    pathname: string,
+  ): Promise<false | true | 'NO_SSR'> => {
     const pathConfig = await pathConfigPromise;
-    return pathConfig.some(({ path: pathSpec }) =>
+    const found = pathConfig.find(({ path: pathSpec }) =>
       getPathMapping(pathSpec, pathname),
     );
+    return found ? (found.noSsr ? 'NO_SSR' : true) : false;
   };
   const shouldSkip: ShouldSkip = {};
 
@@ -144,7 +151,11 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   };
 
   const getSsrConfig: GetSsrConfig = async (pathname, { searchParams }) => {
-    if (!(await existsPath(pathname))) {
+    const found = await existsPath(pathname);
+    if (found === 'NO_SSR') {
+      return null;
+    }
+    if (!found) {
       if (await has404Promise) {
         pathname = '/404';
       } else {
