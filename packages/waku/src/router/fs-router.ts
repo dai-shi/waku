@@ -1,4 +1,9 @@
-import { joinPath, fileURLToFilePath, extname } from '../lib/utils/path.js';
+import {
+  joinPath,
+  fileURLToFilePath,
+  extname,
+  decodeFilePathFromAbsolute,
+} from '../lib/utils/path.js';
 import { readdir } from '../lib/utils/node-fs.js';
 
 import { createPages } from './create-pages.js';
@@ -8,7 +13,9 @@ export function fsRouter(
   loader: (dir: string, file: string) => Promise<any>,
   pages = 'pages',
 ) {
-  const pagesDir = joinPath(fileURLToFilePath(importMetaUrl), '..', pages);
+  const pagesDir = decodeFilePathFromAbsolute(
+    joinPath(fileURLToFilePath(importMetaUrl), '..', pages),
+  );
   console.log('======', importMetaUrl, pages, pagesDir);
   return createPages(async ({ createPage, createLayout }) => {
     const files = await readdir(pagesDir, {
