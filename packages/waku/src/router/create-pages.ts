@@ -9,6 +9,7 @@ import {
   getPathMapping,
 } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
+import type { defineEntries } from 'waku/server';
 
 // createPages API (a wrapper around unstable_defineRouter)
 
@@ -90,7 +91,7 @@ export function createPages(
     createPage: CreatePage;
     createLayout: CreateLayout;
   }) => Promise<void>,
-) {
+): ReturnType<typeof defineEntries> {
   let configured = false;
 
   // TODO I think there's room for improvement to refactor these structures

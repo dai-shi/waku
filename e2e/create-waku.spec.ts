@@ -5,7 +5,8 @@ import { mkdir, readdir, cp, readFile, writeFile } from 'node:fs/promises';
 import { test, debugChildProcess, terminate } from './utils.js';
 import { expect } from '@playwright/test';
 
-test('should create waku with default setup work', async () => {
+test('should create waku with default setup work', async ({ browserName }) => {
+  test.skip(browserName !== 'chromium', 'only test in one browser');
   const cliPath = fileURLToPath(
     new URL('../packages/create-waku/dist/index.js', import.meta.url),
   );
@@ -46,7 +47,8 @@ test('should create waku with default setup work', async () => {
   await terminate(childProcess.pid!);
 });
 
-test('should create waku with update notify work', async () => {
+test('should create waku with update notify work', async ({ browserName }) => {
+  test.skip(browserName !== 'chromium', 'only test in one browser');
   const oldCliDir = fileURLToPath(
     new URL('../packages/create-waku/', import.meta.url),
   );
