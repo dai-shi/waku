@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "rootDir": ".",
     "composite": true,
     "strict": true,
     "target": "esnext",
@@ -11,7 +12,6 @@
     "exactOptionalPropertyTypes": true,
     "types": ["react/experimental"],
     "jsx": "react-jsx",
-    "rootDir": "./src",
     "outDir": "./dist"
   },
   "references": [

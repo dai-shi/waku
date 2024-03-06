@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "rootDir": ".",
     "strict": true,
     "target": "esnext",
     "downlevelIteration": true,
