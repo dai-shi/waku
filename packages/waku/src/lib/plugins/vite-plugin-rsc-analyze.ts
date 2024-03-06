@@ -5,9 +5,21 @@ import * as swc from '@swc/core';
 // HACK: Is it common to depend on another plugin like this?
 import { rscTransformPlugin } from './vite-plugin-rsc-transform.js';
 
+const hash = async (code: string): Promise<string> => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(code);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 9);
+};
+
 export function rscAnalyzePlugin(
   clientFileSet: Set<string>,
   serverFileSet: Set<string>,
+  fileHashMap: Map<string, string>,
 ): Plugin {
   const rscTransform = rscTransformPlugin({ isBuild: false }).transform;
   const clientEntryCallback = (id: string) => clientFileSet.add(id);
@@ -28,6 +40,7 @@ export function rscAnalyzePlugin(
           ) {
             if (item.expression.value === 'use client') {
               clientEntryCallback(id);
+              fileHashMap.set(id, await hash(code));
             } else if (item.expression.value === 'use server') {
               serverEntryCallback(id);
             }
