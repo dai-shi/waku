@@ -97,7 +97,7 @@ importers:
         specifier: 5.3.3
         version: 5.3.3
 
-  e2e/fixtures/rsc-pages-crash-runtime:
+  e2e/fixtures/rsc-dynamic-page-no-crash-on-build:
     dependencies:
       react:
         specifier: 18.3.0-canary-6c3b8dbfe-20240226

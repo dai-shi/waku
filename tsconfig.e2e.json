@@ -10,7 +10,7 @@
       "path": "./e2e/fixtures/rsc-basic/tsconfig.json"
     },
     {
-      "path": "./e2e/fixtures/rsc-pages-crash-runtime/tsconfig.json"
+      "path": "./e2e/fixtures/rsc-dynamic-page-no-crash-on-build/tsconfig.json"
     },
     {
       "path": "./e2e/fixtures/ssr-basic/tsconfig.json"
