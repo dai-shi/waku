@@ -3,6 +3,7 @@ import { Link } from 'waku';
 import { Counter } from '../components/counter.js';
 
 export const HomePage = async () => {
+  console.trace('called');
   const data = await getData();
 
   return (
