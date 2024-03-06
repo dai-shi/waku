@@ -51,7 +51,7 @@ export function rscTransformPlugin(
         return { url };
       };
       const resolveId = opts.isBuild
-        ? getServerId(id) ?? getClientId(id) ?? 'UNKNOWN_REFERENCE_ID'
+        ? getServerId(id) ?? getClientId(id) ?? id
         : id;
       const load: LoadHook = async (_: string) => {
         // `_` here is equivalent to `resolveId`, we use `id`
