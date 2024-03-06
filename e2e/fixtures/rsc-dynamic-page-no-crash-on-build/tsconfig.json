@@ -13,5 +13,10 @@
     "outDir": "./dist",
     "composite": true
   },
-  "include": ["./src", "./waku.config.ts"]
+  "include": ["./src", "./waku.config.ts"],
+  "references": [
+    {
+      "path": "../../../packages/waku/tsconfig.json"
+    }
+  ]
 }
