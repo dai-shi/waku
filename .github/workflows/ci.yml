@@ -88,7 +88,7 @@ jobs:
       - name: Install Playwright
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm playwright install --with-deps
-      - run: pnpm exec playwright test ./e2e/07_router_standalone.spec.ts --forbid-only
+      - run: pnpm exec playwright test --forbid-only --shard=${{ matrix.shared }}/4
         env:
           TEMP_DIR: ${{ runner.temp }}
       - uses: actions/upload-artifact@v3
