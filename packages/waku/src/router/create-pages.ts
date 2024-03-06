@@ -168,7 +168,6 @@ export function createPages(
       }
       wildcardPathMap.set(page.path, [pathSpec, page.component]);
     } else {
-      console.log('!!!!!!!!!!', page);
       throw new Error('Invalid page configuration');
     }
   };
