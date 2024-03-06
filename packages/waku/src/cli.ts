@@ -9,7 +9,6 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import * as dotenv from 'dotenv';
 
 import type { Config } from './config.js';
-import { resolveConfig } from './lib/config.js';
 import { runner } from './lib/hono/runner.js';
 import { build } from './lib/builder/build.js';
 
@@ -74,7 +73,7 @@ if (values.version) {
       await runBuild();
       break;
     case 'start':
-      await runStart();
+      await runStart({});
       break;
     default:
       if (cmd) {
@@ -117,9 +116,11 @@ async function runBuild() {
   });
 }
 
-async function runStart() {
-  const config = await loadConfig();
-  const { distDir, publicDir, entriesJs } = await resolveConfig(config);
+async function runStart({
+  distDir = 'dist',
+  entriesJs = 'entries.js',
+  publicDir = 'public',
+}) {
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, entriesJs)).toString());
   const app = new Hono();
