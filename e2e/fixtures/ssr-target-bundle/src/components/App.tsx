@@ -1,6 +1,12 @@
 import { Textarea } from './Textarea.js';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
 import SampleImage from './image-not-inlined.jpg'; // build.assetsInlineLimit - default 4096 Bytes
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
 import SampleJsonPrivate from './json-private-not-inlined.json'; // build.assetsInlineLimit - default 4096 Bytes
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
 import SampleJsonPublic from './json-public-linked-not-inlined.json?url'; // build.assetsInlineLimit - default 4096 Bytes
 
 const App = async ({ name }: { name: string }) => {
