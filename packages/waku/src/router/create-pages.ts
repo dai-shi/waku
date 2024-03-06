@@ -9,7 +9,7 @@ import {
   getPathMapping,
 } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
-import type { defineEntries } from 'waku/server';
+import type { defineEntries } from '../server.js';
 
 // createPages API (a wrapper around unstable_defineRouter)
 
