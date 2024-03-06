@@ -19,7 +19,7 @@ const hash = async (code: string): Promise<string> => {
 export function rscAnalyzePlugin(
   clientFileSet: Set<string>,
   serverFileSet: Set<string>,
-  fileHashSet: Map<string, string>,
+  fileHashMap: Map<string, string>,
 ): Plugin {
   const rscTransform = rscTransformPlugin({ isBuild: false }).transform;
   const clientEntryCallback = (id: string) => clientFileSet.add(id);
@@ -40,7 +40,7 @@ export function rscAnalyzePlugin(
           ) {
             if (item.expression.value === 'use client') {
               clientEntryCallback(id);
-              fileHashSet.set(id, await hash(code));
+              fileHashMap.set(id, await hash(code));
             } else if (item.expression.value === 'use server') {
               serverEntryCallback(id);
             }

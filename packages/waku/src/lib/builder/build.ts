@@ -84,7 +84,7 @@ const analyzeEntries = async (
   );
   const clientFileSet = new Set<string>([wakuClientDist]);
   const serverFileSet = new Set<string>();
-  const fileHashSet = new Map<string, string>();
+  const fileHashMap = new Map<string, string>();
   const moduleFileMap = new Map<string, string>(); // module id -> full path
   for (const preserveModuleDir of config.preserveModuleDirs) {
     const dir = joinPath(rootDir, config.srcDir, preserveModuleDir);
@@ -103,7 +103,7 @@ const analyzeEntries = async (
     }
   }
   await buildVite({
-    plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet, fileHashSet)],
+    plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet, fileHashMap)],
     ssr: {
       target: 'webworker',
       resolve: {
@@ -126,7 +126,7 @@ const analyzeEntries = async (
   });
   const clientEntryFiles = Object.fromEntries(
     Array.from(clientFileSet).map((fname, i) => [
-      `${config.assetsDir}/rsc${i}-${fileHashSet.get(fname)}`,
+      `${config.assetsDir}/rsc${i}-${fileHashMap.get(fname)}`,
       fname,
     ]),
   );
