@@ -19,6 +19,7 @@ import {
   fileURLToFilePath,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
+import type { HandlerContext } from '../middleware/types.js';
 
 export const CLIENT_MODULE_MAP = {
   react: 'react',
@@ -189,6 +190,7 @@ export const renderHtml = async (
     | {
         isDev: true;
         rootDir: string;
+        devServer: NonNullable<HandlerContext['devServer']>;
         loadServerFile: (fileURL: string) => Promise<unknown>;
       }
   ),
@@ -241,6 +243,13 @@ export const renderHtml = async (
     }
     throw e;
   }
+
+  if (isDev) {
+    const mainJs = `${config.basePath}${config.srcDir}/${config.mainJs}`;
+    // pre-process the mainJs file to see which modules are being sent to the browser by vite
+    // and using the same modules if possible in the moduleMap in the stream
+    await opts.devServer.server.transformRequest(mainJs);
+  }
   const moduleMap = new Proxy(
     {} as Record<
       string,
@@ -259,21 +268,34 @@ export const renderHtml = async (
           {},
           {
             get(_target, name: string) {
-              const file = filePath.slice(config.basePath.length);
+              const file = filePath
+                .slice(config.basePath.length)
+                .split('?')[0]!;
               // TODO too long, we need to refactor this logic
               if (isDev) {
                 const filePath = file.startsWith('@fs/')
                   ? file.slice('@fs'.length)
                   : joinPath(opts.rootDir, file);
+                let dedupId: string | null = null;
+                for (const [_, moduleNode] of opts.devServer.server.moduleGraph
+                  .idToModuleMap) {
+                  // console.log(moduleNode)
+                  if (moduleNode.file === filePath) {
+                    dedupId = moduleNode.url;
+                    // console.log(true, moduleNode.url, filePath)
+                  }
+                }
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
                 );
+                // console.log(filePath)
                 if (filePath.startsWith(wakuDist)) {
                   const id =
                     'waku' +
                     filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
-                  if (!moduleLoading.has(id)) {
+                  const keyId = dedupId ?? id;
+                  if (!moduleLoading.has(keyId)) {
                     moduleLoading.set(
                       id,
                       import(/* @vite-ignore */ id).then((m) => {
@@ -281,18 +303,25 @@ export const renderHtml = async (
                       }),
                     );
                   }
-                  return { id, chunks: [id], name };
+                  // const dedupId = opts.devServer.server.pluginContainer.resolveId(id)
+                  // console.log(dedupId)
+                  // console.log('ids', opts.devServer.server.moduleGraph.idToModuleMap)
+                  // console.log('urls',opts.devServer.server.moduleGraph.urlToModuleMap.keys())
+                  // console.log('waku dist', id, filePath)
+                  // console.log('keyId', keyId)
+                  return { id: keyId, chunks: [keyId], name };
                 }
                 const id = filePathToFileURL(filePath);
-                if (!moduleLoading.has(id)) {
+                const keyId = dedupId ?? id;
+                if (!moduleLoading.has(keyId)) {
                   moduleLoading.set(
-                    id,
+                    keyId,
                     opts.loadServerFile(id).then((m) => {
-                      moduleCache.set(id, m);
+                      moduleCache.set(keyId, m);
                     }),
                   );
                 }
-                return { id, chunks: [id], name };
+                return { id: keyId, chunks: [keyId], name };
               }
               // !isDev
               const id = file;

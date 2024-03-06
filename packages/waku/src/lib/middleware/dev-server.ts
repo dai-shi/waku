@@ -9,6 +9,7 @@ import {
   registerHotUpdateCallback,
   renderRscWithWorker,
   getSsrConfigWithWorker,
+  type ClonableModuleNode,
 } from '../renderers/dev-worker-api.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
@@ -59,6 +60,8 @@ const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
   return [writable, promise];
 };
 
+const externalizedWakuClientModules = ['waku/client', 'waku/router/client'];
+
 export const devServer: Middleware = (options) => {
   if (options.cmd !== 'dev') {
     // pass through if not dev command
@@ -92,10 +95,9 @@ export const devServer: Middleware = (options) => {
       ssr: {
         external: [
           'waku',
-          'waku/client',
           'waku/server',
-          'waku/router/client',
           'waku/router/server',
+          ...externalizedWakuClientModules,
         ],
       },
       server: { middlewareMode: true },
@@ -161,12 +163,29 @@ export const devServer: Middleware = (options) => {
   };
 
   return async (ctx, next) => {
-    const [{ middleware: _removed }, vite] = await Promise.all([
+    const [{ middleware: _removed, ...config }, vite] = await Promise.all([
       configPromise,
       vitePromise,
     ]);
+
+    const mainJs = `${config.basePath}${config.srcDir}/${config.mainJs}`;
+    // pre-process the mainJs file to see which modules are being sent to the browser by vite
+    // and using the same modules if possible in the bundlerConfig in the stream
+    for (const m of [mainJs, ...externalizedWakuClientModules]) {
+      const resolved = await vite.pluginContainer.resolveId(m);
+      if (resolved?.id) {
+        await vite.warmupRequest(resolved.id);
+      }
+    }
+
+    const initialModuleGraph: ClonableModuleNode[] = Array.from(
+      vite.moduleGraph.idToModuleMap.values(),
+    ).map((m) => ({ url: m.url, file: m.file }));
+
     ctx.devServer = {
       rootDir: vite.config.root,
+      server: vite,
+      initialModuleGraph,
       renderRscWithWorker,
       getSsrConfigWithWorker,
       loadServerFile,
@@ -181,6 +200,7 @@ export const devServer: Middleware = (options) => {
 
     // HACK re-export "?v=..." URL to avoid dual module hazard.
     const viteUrl = ctx.req.url.toString().slice(ctx.req.url.origin.length);
+    // console.log(viteUrl)
     // const fname = viteUrl.startsWith(config.basePath + '@fs/')
     //   ? decodeFilePathFromAbsolute(
     //       viteUrl.slice(config.basePath.length + '@fs'.length),

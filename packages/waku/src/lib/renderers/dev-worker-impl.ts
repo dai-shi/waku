@@ -49,7 +49,13 @@ const resolveClientEntryForDev = (id: string, config: { basePath: string }) => {
 };
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
-  const { id, type: _removed, hasModuleIdCallback, ...rest } = mesg;
+  const {
+    id,
+    type: _removed,
+    hasModuleIdCallback,
+    initialModuleGraph,
+    ...rest
+  } = mesg;
   try {
     let moduleIdCallback: ((id: string) => void) | undefined;
     if (hasModuleIdCallback) {
@@ -75,6 +81,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         loadServerModule,
         resolveClientEntry: (id: string) =>
           resolveClientEntryForDev(id, rest.config),
+        initialModuleGraph,
         entries: await loadEntries(rest.config),
       },
     );
@@ -98,7 +105,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
 const handleGetSsrConfig = async (
   mesg: MessageReq & { type: 'getSsrConfig' },
 ) => {
-  const { id, config, pathname, searchParamsString } = mesg;
+  const { id, config, pathname, searchParamsString, initialModuleGraph } = mesg;
   const searchParams = new URLSearchParams(searchParamsString);
   try {
     const ssrConfig = await getSsrConfig(
@@ -111,6 +118,7 @@ const handleGetSsrConfig = async (
         isDev: true,
         resolveClientEntry: (id: string) =>
           resolveClientEntryForDev(id, config),
+        initialModuleGraph,
         entries: await loadEntries(config),
       },
     );

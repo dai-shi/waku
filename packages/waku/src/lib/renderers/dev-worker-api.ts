@@ -6,17 +6,21 @@ import type {
 import type { ResolvedConfig } from '../config.js';
 import type { HotUpdatePayload } from '../plugins/vite-plugin-rsc-hmr.js';
 import type { RenderRscArgs, GetSsrConfigArgs } from './rsc-renderer.js';
+import type { ModuleNode } from 'vite';
 
 export type BuildOutput = {
   rscFiles: string[];
   htmlFiles: string[];
 };
 
+export type ClonableModuleNode = Pick<ModuleNode, 'url' | 'file'>;
+
 export type MessageReq =
   | ({
       id: number;
       type: 'render';
       searchParamsString: string;
+      initialModuleGraph: ClonableModuleNode[];
       hasModuleIdCallback: boolean;
     } & Omit<RenderRscArgs, 'searchParams' | 'moduleIdCallback' | 'config'> & {
         config: Omit<ResolvedConfig, 'middleware'>;
@@ -27,6 +31,7 @@ export type MessageReq =
       config: Omit<ResolvedConfig, 'middleware'>;
       pathname: string;
       searchParamsString: string;
+      initialModuleGraph: ClonableModuleNode[];
     };
 
 export type MessageRes =
@@ -125,7 +130,7 @@ export function registerHotUpdateCallback(
 let nextId = 1;
 
 export async function renderRscWithWorker(
-  args: RenderRscArgs,
+  args: RenderRscArgs & { initialModuleGraph: ClonableModuleNode[] },
 ): Promise<ReadableStream> {
   const worker = await getWorker();
   const id = nextId++;
@@ -169,6 +174,7 @@ export async function renderRscWithWorker(
       config: args.config,
       input: args.input,
       searchParamsString: args.searchParams.toString(),
+      initialModuleGraph: args.initialModuleGraph,
       method: args.method,
       context: args.context,
       body: args.body,
@@ -182,7 +188,9 @@ export async function renderRscWithWorker(
   });
 }
 
-export async function getSsrConfigWithWorker(args: GetSsrConfigArgs): Promise<{
+export async function getSsrConfigWithWorker(
+  args: GetSsrConfigArgs & { initialModuleGraph: ClonableModuleNode[] },
+): Promise<{
   input: string;
   searchParams?: URLSearchParams;
   body: ReadableStream;
@@ -218,6 +226,7 @@ export async function getSsrConfigWithWorker(args: GetSsrConfigArgs): Promise<{
       type: 'getSsrConfig',
       config: args.config,
       pathname: args.pathname,
+      initialModuleGraph: args.initialModuleGraph,
       searchParamsString: args.searchParams.toString(),
     };
     worker.postMessage(mesg);
