@@ -9,6 +9,7 @@ export function fsRouter(
   pages = 'pages',
 ) {
   const pagesDir = joinPath(fileURLToFilePath(importMetaUrl), '..', pages);
+  console.log('======', importMetaUrl, pages, pagesDir);
   return createPages(async ({ createPage, createLayout }) => {
     const files = await readdir(pagesDir, {
       encoding: 'utf8',
