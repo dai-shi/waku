@@ -16,7 +16,6 @@ export function fsRouter(
   const pagesDir = decodeFilePathFromAbsolute(
     joinPath(fileURLToFilePath(importMetaUrl), '..', pages),
   );
-  console.log('======', importMetaUrl, pages, pagesDir);
   return createPages(async ({ createPage, createLayout }) => {
     const files = await readdir(pagesDir, {
       encoding: 'utf8',
@@ -26,8 +25,14 @@ export function fsRouter(
       if (!['.tsx', '.js'].includes(extname(file))) {
         continue;
       }
-      // HACK: replace "_slug_" to "[slug]"
-      const fname = file.replace(/(^|\/)_(\w+)_(\/|\.)/g, '$1[$2]$3');
+      const fname = (
+        pagesDir.startsWith('/')
+          ? file
+          : // For Windows
+            file.replace(/\\/g, '/')
+      )
+        // HACK: replace "_slug_" to "[slug]"
+        .replace(/(^|\/)_(\w+)_(\/|\.)/g, '$1[$2]$3');
       const mod = await loader(pages, fname);
       const config = await mod.getConfig?.();
       const pathItems = fname
