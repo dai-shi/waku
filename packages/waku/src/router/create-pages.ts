@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import type { FunctionComponent, ReactNode } from 'react';
 
-import { defineRouter } from './defineRouter.js';
+import { defineRouter } from './define-router.js';
 import type { RouteProps } from './common.js';
 import {
   joinPath,
