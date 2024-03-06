@@ -110,14 +110,16 @@ export function unstable_defineRouter(
   ) => {
     const pathConfig = await pathConfigPromise;
     const path2moduleIds: Record<string, string[]> = {};
-    for (const { path: pathSpec } of pathConfig) {
+    for (const { path: pathSpec, isStatic } of pathConfig) {
       if (pathSpec.some(({ type }) => type !== 'literal')) {
         continue;
       }
       const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
       const input = getInputString(pathname);
-      const moduleIds = await unstable_collectClientModules(input);
-      path2moduleIds[pathname] = moduleIds;
+      if (!isStatic) {
+        const moduleIds = await unstable_collectClientModules(input);
+        path2moduleIds[pathname] = moduleIds;
+      }
     }
     const customCode = `
 globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
