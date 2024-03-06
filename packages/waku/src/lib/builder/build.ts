@@ -74,17 +74,6 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   defaultHandler(warning);
 };
 
-const hash = async (fname: string): Promise<string> => {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(fname);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
-    .slice(0, 9);
-};
-
 const analyzeEntries = async (
   rootDir: string,
   config: ResolvedConfig,
@@ -95,6 +84,7 @@ const analyzeEntries = async (
   );
   const clientFileSet = new Set<string>([wakuClientDist]);
   const serverFileSet = new Set<string>();
+  const fileHashSet = new Map<string, string>();
   const moduleFileMap = new Map<string, string>(); // module id -> full path
   for (const preserveModuleDir of config.preserveModuleDirs) {
     const dir = joinPath(rootDir, config.srcDir, preserveModuleDir);
@@ -113,7 +103,7 @@ const analyzeEntries = async (
     }
   }
   await buildVite({
-    plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet)],
+    plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet, fileHashSet)],
     ssr: {
       target: 'webworker',
       resolve: {
@@ -135,12 +125,10 @@ const analyzeEntries = async (
     },
   });
   const clientEntryFiles = Object.fromEntries(
-    await Promise.all(
-      Array.from(clientFileSet).map(async (fname, i) => [
-        `${config.assetsDir}/rsc${i}-${await hash(fname)}`,
-        fname,
-      ]),
-    ),
+    Array.from(clientFileSet).map((fname, i) => [
+      `${config.assetsDir}/rsc${i}-${fileHashSet.get(fname)}`,
+      fname,
+    ]),
   );
   const serverEntryFiles = Object.fromEntries(
     Array.from(serverFileSet).map((fname, i) => [
