@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import type { FunctionComponent, ReactNode } from 'react';
 
-import { defineRouter } from './define-router.js';
+import { unstable_defineRouter as defineRouter } from './define-router.js';
 import type { RouteProps } from './common.js';
 import {
   joinPath,
@@ -191,11 +191,11 @@ export function createPages(
       }
       return paths;
     },
-    async (id, unstable_setShouldSkip) => {
+    async (id, setShouldSkip) => {
       await ready;
       const staticComponent = staticComponentMap.get(id);
       if (staticComponent) {
-        unstable_setShouldSkip({});
+        setShouldSkip({});
         return staticComponent;
       }
       for (const [pathSpec, Component] of dynamicPathMap.values()) {
@@ -205,12 +205,12 @@ export function createPages(
         );
         if (mapping) {
           if (Object.keys(mapping).length === 0) {
-            unstable_setShouldSkip();
+            setShouldSkip();
             return Component;
           }
           const WrappedComponent = (props: Record<string, unknown>) =>
             createElement(Component, { ...props, ...mapping });
-          unstable_setShouldSkip();
+          setShouldSkip();
           return WrappedComponent;
         }
       }
@@ -222,11 +222,11 @@ export function createPages(
         if (mapping) {
           const WrappedComponent = (props: Record<string, unknown>) =>
             createElement(Component, { ...props, ...mapping });
-          unstable_setShouldSkip();
+          setShouldSkip();
           return WrappedComponent;
         }
       }
-      unstable_setShouldSkip({}); // negative cache
+      setShouldSkip({}); // negative cache
       return null; // not found
     },
   );
