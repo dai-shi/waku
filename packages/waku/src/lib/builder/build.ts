@@ -1,46 +1,44 @@
-import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
 import { build as buildVite, resolveConfig as resolveViteConfig } from 'vite';
 import viteReact from '@vitejs/plugin-react';
-import type { RollupLog, LoggingFunction } from 'rollup';
+import type { LoggingFunction, RollupLog } from 'rollup';
 
 import type { Config } from '../../config.js';
 import type { EntriesPrd } from '../../server.js';
-import { resolveConfig } from '../config.js';
 import type { ResolvedConfig } from '../config.js';
+import { resolveConfig } from '../config.js';
+import type { PathSpec } from '../utils/path.js';
 import {
-  joinPath,
+  decodeFilePathFromAbsolute,
   extname,
   filePathToFileURL,
   fileURLToFilePath,
-  decodeFilePathFromAbsolute,
+  joinPath,
 } from '../utils/path.js';
-import type { PathSpec } from '../utils/path.js';
 import {
-  createReadStream,
+  appendFile,
   createWriteStream,
   existsSync,
-  rename,
   mkdir,
-  readFile,
-  writeFile,
-  appendFile,
-  unlink,
   readdir,
+  readFile,
+  rename,
+  unlink,
+  writeFile,
 } from '../utils/node-fs.js';
 import { encodeInput, generatePrefetchCode } from '../renderers/utils.js';
 import {
-  SERVER_MODULE_MAP,
-  renderRsc,
   getBuildConfig,
   getSsrConfig,
+  renderRsc,
+  SERVER_MODULE_MAP,
 } from '../renderers/rsc-renderer.js';
 import {
-  renderHtml,
   CLIENT_MODULE_MAP,
   CLIENT_PREFIX,
+  renderHtml,
 } from '../renderers/html-renderer.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
@@ -76,17 +74,16 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   defaultHandler(warning);
 };
 
-const hash = (fname: string) =>
-  new Promise<string>((resolve) => {
-    const sha256 = createHash('sha256');
-    sha256.on('readable', () => {
-      const data = sha256.read();
-      if (data) {
-        resolve(data.toString('hex').slice(0, 9));
-      }
-    });
-    createReadStream(fname).pipe(sha256);
-  });
+const hash = async (fname: string): Promise<string> => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(fname);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 9);
+};
 
 const analyzeEntries = async (
   rootDir: string,
