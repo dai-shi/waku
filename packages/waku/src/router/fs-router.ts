@@ -1,17 +1,13 @@
-import { joinPath, fileURLToFilePath } from '../lib/utils/path.js';
+import { joinPath, fileURLToFilePath, extname } from '../lib/utils/path.js';
 import { readdir } from '../lib/utils/node-fs.js';
 
 import { createPages } from './create-pages.js';
 
-export function fsRouter({
-  importMetaUrl,
+export function fsRouter(
+  importMetaUrl: string,
+  loader: (dir: string, file: string) => Promise<any>,
   pages = 'pages',
-  loader,
-}: {
-  importMetaUrl: string;
-  pages?: string; // default: 'pages'
-  loader: (dir: string, file: string) => Promise<any>;
-}) {
+) {
   const pagesDir = joinPath(fileURLToFilePath(importMetaUrl), '..', pages);
   return createPages(async ({ createPage, createLayout }) => {
     const files = await readdir(pagesDir, {
@@ -19,21 +15,33 @@ export function fsRouter({
       recursive: true,
     });
     for (const file of files) {
+      if (!['.tsx', '.js'].includes(extname(file))) {
+        continue;
+      }
       const mod = await loader(pages, file);
-      const path = '/' + file.replace(/\.\w+$/, '');
-      if (path.endsWith('/_layout')) {
+      const config = await mod.getConfig?.();
+      const pathItems = file
+        .replace(/\.\w+$/, '')
+        .split('/')
+        .filter(Boolean);
+      if (pathItems.at(-1) === '_layout') {
         createLayout({
-          path: path.slice(0, '/_layout'.length) || '/',
+          path: '/' + pathItems.slice(0, -1).join('/'),
           component: mod.default,
           render: 'static',
-          ...mod.config,
+          ...config,
         });
       } else {
         createPage({
-          path,
+          path:
+            '/' +
+            (pathItems.at(-1) === 'index'
+              ? pathItems.slice(0, -1)
+              : pathItems
+            ).join('/'),
           component: mod.default,
-          render: 'dyamic',
-          ...mod.config,
+          render: 'dynamic',
+          ...config,
         });
       }
     }
