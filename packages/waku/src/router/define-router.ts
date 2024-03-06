@@ -116,7 +116,7 @@ export function unstable_defineRouter(
       }
       const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
       const input = getInputString(pathname);
-      if (!isStatic) {
+      if (isStatic) {
         const moduleIds = await unstable_collectClientModules(input);
         path2moduleIds[pathname] = moduleIds;
       }
