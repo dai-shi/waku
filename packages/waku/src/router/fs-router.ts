@@ -18,9 +18,11 @@ export function fsRouter(
       if (!['.tsx', '.js'].includes(extname(file))) {
         continue;
       }
-      const mod = await loader(pages, file);
+      // HACK: replace "_slug_" to "[slug]"
+      const fname = file.replace(/(^|\/)_(\w+)_(\/|\.)/g, '$1[$2]$3');
+      const mod = await loader(pages, fname);
       const config = await mod.getConfig?.();
-      const pathItems = file
+      const pathItems = fname
         .replace(/\.\w+$/, '')
         .split('/')
         .filter(Boolean);

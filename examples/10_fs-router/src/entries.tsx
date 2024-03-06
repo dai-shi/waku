@@ -3,9 +3,7 @@ import { fsRouter } from 'waku/router/server';
 export default fsRouter(import.meta.url, loader);
 
 function loader(dir: string, file: string) {
-  let p = file.replace(/\.\w+$/, '').split('/');
-  // HACK: replace "_slug_" to "[slug]"
-  p = p.map((item) => item.replace(/^_(\w+)_$/, '[$1]'));
+  const p = file.replace(/\.\w+$/, '').split('/');
   switch (p.length) {
     case 1:
       return import(`./${dir}/${p[0]}.tsx`);
