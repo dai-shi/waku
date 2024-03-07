@@ -34,10 +34,11 @@ export function unstable_defineRouter(
   >,
   getComponent: (
     componentId: string, // "**/layout" or "**/page"
-    /**
-     * HACK setShouldSkip API is too hard to understand
-     */
-    setShouldSkip: (val?: ShouldSkip[string]) => void,
+    options: {
+      // TODO setShouldSkip API is too hard to understand
+      unstable_setShouldSkip: (val?: ShouldSkip[string]) => void;
+      unstable_buildConfig: BuildConfig | undefined;
+    },
   ) => Promise<
     | FunctionComponent<RouteProps>
     | FunctionComponent<RouteProps & { children: ReactNode }>
@@ -108,12 +109,16 @@ export function unstable_defineRouter(
           if (skip?.includes(id)) {
             return [];
           }
-          const mod = await getComponent(id, (val) => {
+          const setShoudSkip = (val?: ShouldSkip[string]) => {
             if (val) {
               shouldSkip[id] = val;
             } else {
               delete shouldSkip[id];
             }
+          };
+          const mod = await getComponent(id, {
+            unstable_setShouldSkip: setShoudSkip,
+            unstable_buildConfig: buildConfig,
           });
           const component = mod && 'default' in mod ? mod.default : mod;
           if (!component) {

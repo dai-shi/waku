@@ -23,7 +23,7 @@ export type RenderEntries = (
   input: string,
   options: {
     searchParams: URLSearchParams;
-    buildConfig?: BuildConfig | undefined;
+    buildConfig: BuildConfig | undefined;
   },
 ) => Promise<Elements | null>;
 

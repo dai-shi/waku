@@ -86,10 +86,15 @@ type CreateLayout = <T extends string>(layout: {
 }) => void;
 
 export function createPages(
-  fn: (fns: {
-    createPage: CreatePage;
-    createLayout: CreateLayout;
-  }) => Promise<void>,
+  fn: (
+    fns: {
+      createPage: CreatePage;
+      createLayout: CreateLayout;
+    },
+    opts: {
+      unstable_buildPaths?: PathSpec[] | undefined;
+    },
+  ) => Promise<void>,
 ) {
   let configured = false;
 
@@ -180,13 +185,22 @@ export function createPages(
     registerStaticComponent(id, layout.component);
   };
 
-  const ready = fn({ createPage, createLayout }).then(() => {
-    configured = true;
-  });
+  let ready: Promise<void> | undefined;
+  const configure = async (buildPaths?: PathSpec[]) => {
+    if (!configured && !ready) {
+      ready = fn(
+        { createPage, createLayout },
+        { unstable_buildPaths: buildPaths },
+      );
+      await ready;
+      configured = true;
+    }
+    await ready;
+  };
 
   return defineRouter(
     async () => {
-      await ready;
+      await configure();
       const paths: { path: PathSpec; isStatic: boolean; noSsr: boolean }[] = [];
       for (const pathSpec of staticPathSet) {
         const noSsr = noSsrSet.has(pathSpec);
@@ -202,11 +216,13 @@ export function createPages(
       }
       return paths;
     },
-    async (id, setShouldSkip) => {
-      await ready;
+    async (id, { unstable_setShouldSkip, unstable_buildConfig }) => {
+      await configure(
+        unstable_buildConfig?.map((item) => item.pathname as PathSpec),
+      );
       const staticComponent = staticComponentMap.get(id);
       if (staticComponent) {
-        setShouldSkip({});
+        unstable_setShouldSkip({});
         return staticComponent;
       }
       for (const [pathSpec, Component] of dynamicPathMap.values()) {
@@ -216,12 +232,12 @@ export function createPages(
         );
         if (mapping) {
           if (Object.keys(mapping).length === 0) {
-            setShouldSkip();
+            unstable_setShouldSkip();
             return Component;
           }
           const WrappedComponent = (props: Record<string, unknown>) =>
             createElement(Component, { ...props, ...mapping });
-          setShouldSkip();
+          unstable_setShouldSkip();
           return WrappedComponent;
         }
       }
@@ -233,11 +249,11 @@ export function createPages(
         if (mapping) {
           const WrappedComponent = (props: Record<string, unknown>) =>
             createElement(Component, { ...props, ...mapping });
-          setShouldSkip();
+          unstable_setShouldSkip();
           return WrappedComponent;
         }
       }
-      setShouldSkip({}); // negative cache
+      unstable_setShouldSkip({}); // negative cache
       return null; // not found
     },
   );
