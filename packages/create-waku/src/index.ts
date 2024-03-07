@@ -17,12 +17,9 @@ import {
 } from './helpers/examples';
 
 // FIXME is there a better way with prompts?
-const { values, tokens } = parseArgs({
+const { tokens } = parseArgs({
   args: process.argv.slice(2),
   options: {
-    'choose-template': {
-      type: 'boolean',
-    },
     example: {
       type: 'string',
     },
@@ -93,7 +90,6 @@ async function init() {
   let result: {
     packageName: string;
     shouldOverwrite: string;
-    chooseTemplate?: string;
   };
 
   try {
@@ -129,20 +125,6 @@ async function init() {
           validate: (dir: string) =>
             isValidPackageName(dir) || 'Invalid package.json name',
         },
-        ...(values['choose-template']
-          ? [
-              {
-                name: 'chooseTemplate',
-                type: 'select',
-                message: 'Choose a starter template',
-                choices: [
-                  { title: 'Basic Template', value: CHOICES[0] },
-                  { title: 'Demo Template', value: CHOICES[1] },
-                  { title: 'Minimal Template', value: CHOICES[2] },
-                ],
-              } as prompts.PromptObject<string>,
-            ]
-          : []),
       ],
       {
         onCancel: () => {
@@ -209,7 +191,7 @@ async function init() {
   }
 
   const root = path.resolve(targetDir);
-  const { packageName, shouldOverwrite, chooseTemplate } = result;
+  const { packageName, shouldOverwrite } = result;
 
   if (shouldOverwrite) {
     fse.emptyDirSync(root);
@@ -255,7 +237,7 @@ async function init() {
       version: '0.0.0',
     };
 
-    const templateDir = path.join(templateRoot, chooseTemplate || CHOICES[0]!);
+    const templateDir = path.join(templateRoot, CHOICES[0]!);
 
     // Read existing package.json from the root directory
     const packageJsonPath = path.join(root, 'package.json');
