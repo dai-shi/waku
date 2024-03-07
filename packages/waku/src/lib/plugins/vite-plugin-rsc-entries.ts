@@ -11,12 +11,12 @@ export function rscEntriesPlugin(opts: {
 }): Plugin {
   let codeToAdd = `
 export function loadModule(id) {
-  const moduleMap = ${JSON.stringify(opts.moduleMap)};
-  const file = moduleMap[id];
-  if (!file) {
-    throw new Error('Cannot find module: ' + id);
+  switch (id) {
+    ${Object.entries(opts.moduleMap)
+      .map(([k, v]) => `case '${k}': return import('' + '${v}');`)
+      .join('\n')}
+    default: throw new Error('Cannot find module: ' + id);
   }
-  return import(file);
 }
 `;
   if (existsSync(CONFIG_FILE)) {
