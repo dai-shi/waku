@@ -198,6 +198,7 @@ export const Slot = ({
 }) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
+    console.log('place', typeof window)
     throw new Error('Missing Root component');
   }
   const elements = use(elementsPromise);
