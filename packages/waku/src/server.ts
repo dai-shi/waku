@@ -6,33 +6,36 @@ import type { PathSpec } from './lib/utils/path.js';
 
 type Elements = Record<string, ReactNode>;
 
+export type BuildConfig = {
+  pathname: string | PathSpec; // TODO drop support for string?
+  isStatic?: boolean;
+  entries?: {
+    input: string;
+    skipPrefetch?: boolean;
+    isStatic?: boolean;
+  }[];
+  context?: Record<string, unknown>;
+  customCode?: string; // optional code to inject TODO hope to remove this
+  customData?: unknown; // should be serializable with JSON.stringify
+}[];
+
 export type RenderEntries = (
   input: string,
-  opts: {
+  options: {
     searchParams: URLSearchParams;
+    buildConfig?: BuildConfig;
   },
 ) => Promise<Elements | null>;
 
 export type GetBuildConfig = (
   unstable_collectClientModules: (input: string) => Promise<string[]>,
-) => Promise<
-  Iterable<{
-    pathname: string | PathSpec; // TODO drop support for string?
-    isStatic?: boolean;
-    entries?: Iterable<{
-      input: string;
-      skipPrefetch?: boolean;
-      isStatic?: boolean;
-    }>;
-    customCode?: string; // optional code to inject TODO hope to remove this
-    context?: Record<string, unknown>;
-  }>
->;
+) => Promise<BuildConfig>;
 
 export type GetSsrConfig = (
   pathname: string,
   options: {
     searchParams: URLSearchParams;
+    buildConfig?: BuildConfig;
   },
 ) => Promise<{
   input: string;
@@ -55,6 +58,7 @@ export type EntriesDev = {
 export type EntriesPrd = EntriesDev & {
   loadConfig: () => Promise<Config>;
   loadModule: (id: string) => Promise<unknown>;
+  buildConfig: BuildConfig;
   dynamicHtmlPaths: [pathSpec: PathSpec, htmlHead: string][];
   publicIndexHtml: string;
 };

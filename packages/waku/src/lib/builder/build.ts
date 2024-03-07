@@ -6,7 +6,7 @@ import viteReact from '@vitejs/plugin-react';
 import type { LoggingFunction, RollupLog } from 'rollup';
 
 import type { Config } from '../../config.js';
-import type { EntriesPrd } from '../../server.js';
+import type { BuildConfig, EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import type { PathSpec } from '../utils/path.js';
@@ -374,7 +374,7 @@ const emitRscFiles = async (
   rootDir: string,
   config: ResolvedConfig,
   distEntries: EntriesPrd,
-  buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
+  buildConfig: BuildConfig,
 ) => {
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (input: string, id: string) => {
@@ -452,7 +452,7 @@ const emitHtmlFiles = async (
   config: ResolvedConfig,
   distEntriesFile: string,
   distEntries: EntriesPrd,
-  buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
+  buildConfig: BuildConfig,
   getClientModules: (input: string) => string[],
 ) => {
   const basePrefix = config.basePath + config.rscPath + '/';
@@ -639,6 +639,10 @@ export async function build(options: {
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
   const buildConfig = await getBuildConfig({ config, entries: distEntries });
+  await appendFile(
+    distEntriesFile,
+    `export const buildConfig = ${JSON.stringify(buildConfig)};`,
+  );
   const { getClientModules } = await emitRscFiles(
     rootDir,
     config,
