@@ -64,7 +64,7 @@ export function unstable_defineRouter(
   };
   const shouldSkip: ShouldSkip = {};
 
-  const renderEntries: RenderEntries = async (input, searchParams) => {
+  const renderEntries: RenderEntries = async (input, { searchParams }) => {
     const pathname = parseInputString(input);
     if (!existsPath(pathname)) {
       return null;

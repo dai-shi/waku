@@ -8,7 +8,9 @@ type Elements = Record<string, ReactNode>;
 
 export type RenderEntries = (
   input: string,
-  searchParams: URLSearchParams,
+  opts: {
+    searchParams: URLSearchParams;
+  },
 ) => Promise<Elements | null>;
 
 export type GetBuildConfig = (

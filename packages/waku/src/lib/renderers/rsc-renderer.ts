@@ -157,7 +157,7 @@ export async function renderRsc(
       },
     };
     const elements = await runWithRenderContext(renderContext, () =>
-      renderEntries(input, searchParams),
+      renderEntries(input, { searchParams }),
     );
     if (elements === null) {
       const err = new Error('No function component found');
@@ -186,7 +186,7 @@ export async function renderRsc(
         }
         elementsPromise = Promise.all([
           elementsPromise,
-          renderEntries(input, searchParams),
+          renderEntries(input, { searchParams }),
         ]).then(([oldElements, newElements]) => ({
           ...oldElements,
           // FIXME we should actually check if newElements is null and send an error
