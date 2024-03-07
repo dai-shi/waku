@@ -227,7 +227,7 @@ export const renderHtml = async (
     loadClientModule<{ default: typeof RSDWClientType }>('rsdw-client'),
     loadClientModule<typeof WakuClientType>('waku-client'),
   ]);
-  console.log('ServerRoot', ServerRoot)
+  console.log('ServerRoot', ServerRoot);
   const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
   if (!ssrConfig) {
     return null;
@@ -306,7 +306,7 @@ export const renderHtml = async (
                   return { id: id, chunks: [id], name };
                 }
                 const id = filePathToFileURL(filePath);
-                console.log('loadServerFile', id, file, filePath)
+                console.log('loadServerFile', id, file, filePath);
                 if (!moduleLoading.has(id)) {
                   moduleLoading.set(
                     id,

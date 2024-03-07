@@ -162,7 +162,7 @@ export const devServer: Middleware = (options) => {
     }
   };
 
-  let initialModuleGraph: ClonableModuleNode[]
+  let initialModuleGraph: ClonableModuleNode[];
 
   return async (ctx, next) => {
     const [{ middleware: _removed, ...config }, vite] = await Promise.all([
