@@ -36,14 +36,6 @@ export const ssr: Middleware = (options) => {
             getPathMapping(pathSpec, ctx.req.url.pathname),
           )?.[1];
 
-      // const initialModuleGraph: ClonableModuleNode[] = []
-      // if (devServer) {
-      //   const mainJs = `${config.basePath}${config.srcDir}/${config.mainJs}`
-      //   // pre-process the mainJs file to see which modules are being sent to the browser by vite
-      //   // and using the same modules if possible in the moduleMap in the stream
-      //   await devServer.server.transformRequest(mainJs)
-      //   initialModuleGraph.push(...Array.from(devServer.server.moduleGraph.idToModuleMap.values()).map((m) => ({url: m.url, file: m.file})))
-      // }
       if (htmlHead) {
         const readable = await renderHtml({
           config,

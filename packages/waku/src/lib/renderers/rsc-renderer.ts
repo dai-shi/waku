@@ -280,7 +280,6 @@ type GetSsrConfigOpts =
   | {
       isDev: true;
       entries: EntriesDev;
-      initialModuleGraph: ClonableModuleNode[];
       resolveClientEntry: (id: string) => string;
     };
 
@@ -319,24 +318,6 @@ export async function getSsrConfig(
       get(_target, encodedId: string) {
         const [file, name] = encodedId.split('#') as [string, string];
         const id = resolveClientEntry(file, config);
-        // console.log('bunderConfig', file, id)
-
-        // let dedupId: string | null = null;
-        // if (isDev) {
-        //   for (const moduleNode of opts.initialModuleGraph) {
-        //     if (moduleNode.file === file) {
-        //       dedupId = moduleNode.url;
-        //       // console.log(true, moduleNode.url, file)
-        //     }
-        //   }
-        // }
-        // const keyId = dedupId ?? id;
-
-        // if (isDev) {
-        //   console.log()
-        //   console.log('bundlerConfig', opts.devServer.server.moduleGraph.idToModuleMap)
-        // }
-
         return { id, chunks: [id], name, async: true };
       },
     },

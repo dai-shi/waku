@@ -245,12 +245,6 @@ export const renderHtml = async (
     throw e;
   }
 
-  if (isDev) {
-    const mainJs = `${config.basePath}${config.srcDir}/${config.mainJs}`;
-    // pre-process the mainJs file to see which modules are being sent to the browser by vite
-    // and using the same modules if possible in the moduleMap in the stream
-    await opts.devServer.server.transformRequest(mainJs);
-  }
   const moduleMap = new Proxy(
     {} as Record<
       string,
@@ -271,7 +265,7 @@ export const renderHtml = async (
             get(_target, name: string) {
               const file = filePath
                 .slice(config.basePath.length)
-                // .split('?')[0]!;
+                .split('?')[0]!;
               // TODO too long, we need to refactor this logic
               if (isDev) {
                 const filePath = file.startsWith('@fs/')
@@ -312,6 +306,7 @@ export const renderHtml = async (
                   return { id: id, chunks: [id], name };
                 }
                 const id = filePathToFileURL(filePath);
+                console.log('loadServerFile', id, file, filePath)
                 if (!moduleLoading.has(id)) {
                   moduleLoading.set(
                     id,

@@ -105,7 +105,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
 const handleGetSsrConfig = async (
   mesg: MessageReq & { type: 'getSsrConfig' },
 ) => {
-  const { id, config, pathname, searchParamsString, initialModuleGraph } = mesg;
+  const { id, config, pathname, searchParamsString } = mesg;
   const searchParams = new URLSearchParams(searchParamsString);
   try {
     const ssrConfig = await getSsrConfig(
@@ -118,7 +118,6 @@ const handleGetSsrConfig = async (
         isDev: true,
         resolveClientEntry: (id: string) =>
           resolveClientEntryForDev(id, config),
-        initialModuleGraph,
         entries: await loadEntries(config),
       },
     );

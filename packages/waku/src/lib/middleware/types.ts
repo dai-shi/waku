@@ -1,4 +1,3 @@
-import type { ViteDevServer } from 'vite';
 import type { Config } from '../../config.js';
 import type { EntriesPrd } from '../../server.js';
 import type {
@@ -28,7 +27,6 @@ export type HandlerContext = {
   readonly context: RscContext;
   devServer?: {
     rootDir: string;
-    server: ViteDevServer;
     initialModuleGraph: ClonableModuleNode[];
     renderRscWithWorker: typeof renderRscWithWorker;
     getSsrConfigWithWorker: typeof getSsrConfigWithWorker;
