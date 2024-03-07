@@ -1,5 +1,7 @@
 import { createPages } from './create-pages.js';
 
+const DO_NOT_BUNDLE = '';
+
 export function fsRouter(
   importMetaUrl: string,
   loader: (dir: string, file: string) => Promise<any>,
@@ -21,9 +23,9 @@ export function fsRouter(
           { join, dirname, extname, sep },
           { fileURLToPath },
         ] = await Promise.all([
-          import('node:fs/promises'),
-          import('node:path'),
-          import('node:url'),
+          import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:fs/promises'),
+          import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:path'),
+          import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:url'),
         ]);
         const pagesDir = join(dirname(fileURLToPath(importMetaUrl)), pages);
         files = await readdir(pagesDir, {
