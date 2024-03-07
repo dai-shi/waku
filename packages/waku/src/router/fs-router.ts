@@ -35,7 +35,7 @@ export function fsRouter(
             return [];
           }
           // HACK: replace "_slug_" to "[slug]"
-          file = file.replace(/(^|\/)_(\w+)_(\/|\.)/g, '$1[$2]$3');
+          file = file.replace(/(^|\/|\\)_(\w+)_(\/|\\|\.)/g, '$1[$2]$3');
           if (sep === '/') {
             return [file];
           }
