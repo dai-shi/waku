@@ -124,6 +124,13 @@ async function installTemplate({
       2,
     ),
   );
+
+  if (existsSync(path.join(root, 'gitignore'))) {
+    await fsPromises.rename(
+      path.join(root, 'gitignore'),
+      path.join(root, '.gitignore'),
+    );
+  }
 }
 
 async function init() {
@@ -287,13 +294,6 @@ async function init() {
      * by installing from a template.
      */
     await installTemplate({ root, packageName, targetDir });
-  }
-
-  if (existsSync(path.join(root, 'gitignore'))) {
-    await fsPromises.rename(
-      path.join(root, 'gitignore'),
-      path.join(root, '.gitignore'),
-    );
   }
 
   const manager = process.env.npm_config_user_agent ?? '';
