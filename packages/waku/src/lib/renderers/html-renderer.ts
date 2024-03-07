@@ -271,21 +271,21 @@ export const renderHtml = async (
             get(_target, name: string) {
               const file = filePath
                 .slice(config.basePath.length)
-                .split('?')[0]!;
+                // .split('?')[0]!;
               // TODO too long, we need to refactor this logic
               if (isDev) {
                 const filePath = file.startsWith('@fs/')
                   ? file.slice('@fs'.length)
                   : joinPath(opts.rootDir, file);
-                let dedupId: string | null = null;
-                for (const [_, moduleNode] of opts.devServer.server.moduleGraph
-                  .idToModuleMap) {
-                  // console.log(moduleNode)
-                  if (moduleNode.file === filePath) {
-                    dedupId = moduleNode.url;
-                    // console.log(true, moduleNode.url, filePath)
-                  }
-                }
+                // let dedupId: string | null = null;
+                // for (const [_, moduleNode] of opts.devServer.server.moduleGraph
+                //   .idToModuleMap) {
+                //   // console.log(moduleNode)
+                //   if (moduleNode.file === filePath) {
+                //     dedupId = moduleNode.url;
+                //     // console.log(true, moduleNode.url, filePath)
+                //   }
+                // }
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
@@ -295,8 +295,7 @@ export const renderHtml = async (
                   const id =
                     'waku' +
                     filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
-                  const keyId = dedupId ?? id;
-                  if (!moduleLoading.has(keyId)) {
+                  if (!moduleLoading.has(id)) {
                     moduleLoading.set(
                       id,
                       import(/* @vite-ignore */ id).then((m) => {
@@ -310,19 +309,18 @@ export const renderHtml = async (
                   // console.log('urls',opts.devServer.server.moduleGraph.urlToModuleMap.keys())
                   // console.log('waku dist', id, filePath)
                   // console.log('keyId', keyId)
-                  return { id: keyId, chunks: [keyId], name };
+                  return { id: id, chunks: [id], name };
                 }
                 const id = filePathToFileURL(filePath);
-                const keyId = dedupId ?? id;
-                if (!moduleLoading.has(keyId)) {
+                if (!moduleLoading.has(id)) {
                   moduleLoading.set(
-                    keyId,
+                    id,
                     opts.loadServerFile(id).then((m) => {
-                      moduleCache.set(keyId, m);
+                      moduleCache.set(id, m);
                     }),
                   );
                 }
-                return { id: keyId, chunks: [keyId], name };
+                return { id, chunks: [id], name };
               }
               // !isDev
               const id = file;

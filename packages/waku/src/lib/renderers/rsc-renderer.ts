@@ -321,23 +321,23 @@ export async function getSsrConfig(
         const id = resolveClientEntry(file, config);
         // console.log('bunderConfig', file, id)
 
-        let dedupId: string | null = null;
-        if (isDev) {
-          for (const moduleNode of opts.initialModuleGraph) {
-            if (moduleNode.file === file) {
-              dedupId = moduleNode.url;
-              // console.log(true, moduleNode.url, file)
-            }
-          }
-        }
-        const keyId = dedupId ?? id;
+        // let dedupId: string | null = null;
+        // if (isDev) {
+        //   for (const moduleNode of opts.initialModuleGraph) {
+        //     if (moduleNode.file === file) {
+        //       dedupId = moduleNode.url;
+        //       // console.log(true, moduleNode.url, file)
+        //     }
+        //   }
+        // }
+        // const keyId = dedupId ?? id;
 
         // if (isDev) {
         //   console.log()
         //   console.log('bundlerConfig', opts.devServer.server.moduleGraph.idToModuleMap)
         // }
 
-        return { id: keyId, chunks: [keyId], name, async: true };
+        return { id, chunks: [id], name, async: true };
       },
     },
   );
