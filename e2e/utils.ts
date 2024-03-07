@@ -58,7 +58,7 @@ export const test = basicTest.extend({
       }
       console.log(`${msg.type()}: ${msg.text()}`);
     };
-    page.on('request', (req) => console.log(req.url))
+    page.on('request', (req) => console.log(req.url()))
     page.on('console', callback);
     await use(page);
     page.off('console', callback);
