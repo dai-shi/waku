@@ -11,6 +11,7 @@ import { createRequire } from 'node:module';
 import {
   downloadAndExtractExample,
   downloadAndExtractRepo,
+  existsInRepo,
   getRepoInfo,
   hasRepo,
   type RepoInfo,
@@ -226,6 +227,17 @@ async function init() {
           `Could not locate the repository for ${red(
             `"${example}"`,
           )}. Please check that the repository exists and try again.`,
+        );
+        process.exit(1);
+      }
+    } else {
+      const found = await existsInRepo(example);
+
+      if (!found) {
+        console.error(
+          `Could not locate an example named ${red(
+            `"${example}"`,
+          )}. Please check that the example exists and try again.`,
         );
         process.exit(1);
       }
