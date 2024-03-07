@@ -8,11 +8,11 @@ type Elements = Record<string, ReactNode>;
 
 export type BuildConfig = {
   pathname: string | PathSpec; // TODO drop support for string?
-  isStatic?: boolean;
+  isStatic?: boolean | undefined;
   entries?: {
     input: string;
-    skipPrefetch?: boolean;
-    isStatic?: boolean;
+    skipPrefetch?: boolean | undefined;
+    isStatic?: boolean | undefined;
   }[];
   context?: Record<string, unknown>;
   customCode?: string; // optional code to inject TODO hope to remove this
@@ -23,7 +23,7 @@ export type RenderEntries = (
   input: string,
   options: {
     searchParams: URLSearchParams;
-    buildConfig?: BuildConfig;
+    buildConfig?: BuildConfig | undefined;
   },
 ) => Promise<Elements | null>;
 
@@ -35,7 +35,7 @@ export type GetSsrConfig = (
   pathname: string,
   options: {
     searchParams: URLSearchParams;
-    buildConfig?: BuildConfig;
+    buildConfig?: BuildConfig | undefined;
   },
 ) => Promise<{
   input: string;
@@ -58,7 +58,7 @@ export type EntriesDev = {
 export type EntriesPrd = EntriesDev & {
   loadConfig: () => Promise<Config>;
   loadModule: (id: string) => Promise<unknown>;
-  buildConfig: BuildConfig;
+  buildConfig?: BuildConfig;
   dynamicHtmlPaths: [pathSpec: PathSpec, htmlHead: string][];
   publicIndexHtml: string;
 };
