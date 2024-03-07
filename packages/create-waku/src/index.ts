@@ -75,9 +75,20 @@ async function notifyUpdate() {
   }
 }
 
-async function init() {
-  let targetDir = '';
-  const defaultProjectName = 'waku-project';
+async function installTemplate({
+  root,
+  packageName,
+  targetDir,
+}: {
+  root: string;
+  packageName: string;
+  targetDir: string;
+}) {
+  const pkg = {
+    name: packageName ?? toValidPackageName(targetDir),
+    version: '0.0.0',
+  };
+
   const templateRoot = path.join(
     fileURLToPath(import.meta.url),
     '../../template',
@@ -87,6 +98,37 @@ async function init() {
   const CHOICES = (await fsPromises.readdir(templateRoot)).filter(
     (dir) => !dir.startsWith('.'),
   );
+
+  const templateDir = path.join(templateRoot, CHOICES[0]!);
+
+  // Read existing package.json from the root directory
+  const packageJsonPath = path.join(root, 'package.json');
+
+  // Read new package.json from the template directory
+  const newPackageJsonPath = path.join(templateDir, 'package.json');
+  const newPackageJson = JSON.parse(
+    await fsPromises.readFile(newPackageJsonPath, 'utf-8'),
+  );
+
+  fse.copySync(templateDir, root);
+
+  await fsPromises.writeFile(
+    packageJsonPath,
+    JSON.stringify(
+      {
+        ...newPackageJson,
+        ...pkg,
+      },
+      null,
+      2,
+    ),
+  );
+}
+
+async function init() {
+  let targetDir = '';
+  const defaultProjectName = 'waku-project';
+
   let result: {
     packageName: string;
     shouldOverwrite: string;
@@ -190,6 +232,8 @@ async function init() {
     }
   }
 
+  console.log('Setting up project...');
+
   const root = path.resolve(targetDir);
   const { packageName, shouldOverwrite } = result;
 
@@ -198,8 +242,6 @@ async function init() {
   } else if (!existsSync(root)) {
     await fsPromises.mkdir(root, { recursive: true });
   }
-
-  console.log('Setting up project...');
 
   if (example) {
     /**
@@ -232,35 +274,7 @@ async function init() {
      * If an example repository is not provided for cloning, proceed
      * by installing from a template.
      */
-    const pkg = {
-      name: packageName ?? toValidPackageName(targetDir),
-      version: '0.0.0',
-    };
-
-    const templateDir = path.join(templateRoot, CHOICES[0]!);
-
-    // Read existing package.json from the root directory
-    const packageJsonPath = path.join(root, 'package.json');
-
-    // Read new package.json from the template directory
-    const newPackageJsonPath = path.join(templateDir, 'package.json');
-    const newPackageJson = JSON.parse(
-      await fsPromises.readFile(newPackageJsonPath, 'utf-8'),
-    );
-
-    fse.copySync(templateDir, root);
-
-    await fsPromises.writeFile(
-      packageJsonPath,
-      JSON.stringify(
-        {
-          ...newPackageJson,
-          ...pkg,
-        },
-        null,
-        2,
-      ),
-    );
+    await installTemplate({ root, packageName, targetDir });
   }
 
   if (existsSync(path.join(root, 'gitignore'))) {
