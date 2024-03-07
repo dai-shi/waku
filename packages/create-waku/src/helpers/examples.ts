@@ -1,7 +1,7 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import * as tar from 'tar';
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
+import { type ReadableStream } from 'stream/web';
 
 export type RepoInfo = {
   username: string | undefined;
@@ -85,7 +85,7 @@ async function downloadTarStream(url: string) {
     throw new Error(`Failed to download: ${url}`);
   }
 
-  return Readable.fromWeb(res.body as import('stream/web').ReadableStream);
+  return Readable.fromWeb(res.body as ReadableStream);
 }
 
 export async function downloadAndExtractRepo(
