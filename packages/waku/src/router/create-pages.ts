@@ -8,6 +8,7 @@ import {
   parsePathWithSlug,
   getPathMapping,
 } from '../lib/utils/path.js';
+import type { BuildConfig } from '../server.js';
 import type { PathSpec } from '../lib/utils/path.js';
 
 // createPages API (a wrapper around unstable_defineRouter)
@@ -90,20 +91,22 @@ export function createPages(
     fns: {
       createPage: CreatePage;
       createLayout: CreateLayout;
+      unstable_setBuildData: (path: string, data: unknown) => void;
     },
     opts: {
-      unstable_buildPaths?: PathSpec[] | undefined;
+      unstable_buildConfig: BuildConfig | undefined;
     },
   ) => Promise<void>,
 ) {
   let configured = false;
 
   // TODO I think there's room for improvement to refactor these structures
-  const staticPathSet = new Set<PathSpec>();
+  const staticPathSet = new Set<[string, PathSpec]>();
   const dynamicPathMap = new Map<string, [PathSpec, FunctionComponent<any>]>();
   const wildcardPathMap = new Map<string, [PathSpec, FunctionComponent<any>]>();
   const staticComponentMap = new Map<string, FunctionComponent<any>>();
   const noSsrSet = new WeakSet<PathSpec>();
+  const buildDataMap = new Map<string, unknown>();
 
   const registerStaticComponent = (
     id: string,
@@ -131,7 +134,7 @@ export function createPages(
       ({ type }) => type === 'wildcard',
     ).length;
     if (page.render === 'static' && numSlugs === 0) {
-      staticPathSet.add(pathSpec);
+      staticPathSet.add([page.path, pathSpec]);
       const id = joinPath(page.path, 'page').replace(/^\//, '');
       registerStaticComponent(id, page.component);
     } else if (page.render === 'static' && numSlugs > 0 && numWildcards === 0) {
@@ -156,7 +159,10 @@ export function createPages(
           }
           return name;
         });
-        staticPathSet.add(pathItems.map((name) => ({ type: 'literal', name })));
+        staticPathSet.add([
+          page.path,
+          pathItems.map((name) => ({ type: 'literal', name })),
+        ]);
         const id = joinPath(...pathItems, 'page');
         const WrappedComponent = (props: Record<string, unknown>) =>
           createElement(page.component as any, { ...props, ...mapping });
@@ -185,12 +191,16 @@ export function createPages(
     registerStaticComponent(id, layout.component);
   };
 
+  const unstable_setBuildData = (path: string, data: unknown) => {
+    buildDataMap.set(path, data);
+  };
+
   let ready: Promise<void> | undefined;
-  const configure = async (buildPaths?: PathSpec[]) => {
+  const configure = async (buildConfig?: BuildConfig) => {
     if (!configured && !ready) {
       ready = fn(
-        { createPage, createLayout },
-        { unstable_buildPaths: buildPaths },
+        { createPage, createLayout, unstable_setBuildData },
+        { unstable_buildConfig: buildConfig },
       );
       await ready;
       configured = true;
@@ -201,25 +211,43 @@ export function createPages(
   return defineRouter(
     async () => {
       await configure();
-      const paths: { path: PathSpec; isStatic: boolean; noSsr: boolean }[] = [];
-      for (const pathSpec of staticPathSet) {
+      const paths: {
+        path: PathSpec;
+        isStatic: boolean;
+        noSsr: boolean;
+        data: unknown;
+      }[] = [];
+      for (const [path, pathSpec] of staticPathSet) {
         const noSsr = noSsrSet.has(pathSpec);
-        paths.push({ path: pathSpec, isStatic: true, noSsr });
+        paths.push({
+          path: pathSpec,
+          isStatic: true,
+          noSsr,
+          data: buildDataMap.get(path),
+        });
       }
-      for (const [pathSpec] of dynamicPathMap.values()) {
+      for (const [path, [pathSpec]] of dynamicPathMap) {
         const noSsr = noSsrSet.has(pathSpec);
-        paths.push({ path: pathSpec, isStatic: false, noSsr });
+        paths.push({
+          path: pathSpec,
+          isStatic: false,
+          noSsr,
+          data: buildDataMap.get(path),
+        });
       }
-      for (const [pathSpec] of wildcardPathMap.values()) {
+      for (const [path, [pathSpec]] of wildcardPathMap) {
         const noSsr = noSsrSet.has(pathSpec);
-        paths.push({ path: pathSpec, isStatic: false, noSsr });
+        paths.push({
+          path: pathSpec,
+          isStatic: false,
+          noSsr,
+          data: buildDataMap.get(path),
+        });
       }
       return paths;
     },
     async (id, { unstable_setShouldSkip, unstable_buildConfig }) => {
-      await configure(
-        unstable_buildConfig?.map((item) => item.pathname as PathSpec),
-      );
+      await configure(unstable_buildConfig);
       const staticComponent = staticComponentMap.get(id);
       if (staticComponent) {
         unstable_setShouldSkip({});

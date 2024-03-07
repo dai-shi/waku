@@ -6,41 +6,37 @@ export function fsRouter(
   pages = 'pages',
 ) {
   return createPages(
-    async ({ createPage, createLayout }, { unstable_buildPaths }) => {
+    async (
+      { createPage, createLayout, unstable_setBuildData },
+      { unstable_buildConfig },
+    ) => {
       let files: string[];
-      if (unstable_buildPaths) {
-        files = unstable_buildPaths.map((pathSpec) =>
-          pathSpec
-            .map((item) => {
-              if (!item.name) {
-                throw new Error('[Bug] No name in pathSpec');
-              }
-              return item.name;
-            })
-            .join('/'),
-        );
+      if (unstable_buildConfig) {
+        // TODO FIXME this is toooooooo naive
+        files = (unstable_buildConfig[0]!.customData as any).data;
       } else {
         // dev and build only
-        const [{ readdir }, path, { fileURLToPath }] = await Promise.all([
+        const [
+          { readdir },
+          { join, dirname, extname, sep },
+          { fileURLToPath },
+        ] = await Promise.all([
           import('node:fs/promises'),
           import('node:path'),
           import('node:url'),
         ]);
-        const pagesDir = path.join(
-          path.dirname(fileURLToPath(importMetaUrl)),
-          pages,
-        );
+        const pagesDir = join(dirname(fileURLToPath(importMetaUrl)), pages);
         files = await readdir(pagesDir, {
           encoding: 'utf8',
           recursive: true,
         });
         files = files.flatMap((file) => {
-          if (!['.tsx', '.js'].includes(path.extname(file))) {
+          if (!['.tsx', '.js'].includes(extname(file))) {
             return [];
           }
           // HACK: replace "_slug_" to "[slug]"
           file = file.replace(/(^|\/)_(\w+)_(\/|\.)/g, '$1[$2]$3');
-          if (path.sep === '/') {
+          if (sep === '/') {
             return [file];
           }
           // For Windows
@@ -54,21 +50,23 @@ export function fsRouter(
           .replace(/\.\w+$/, '')
           .split('/')
           .filter(Boolean);
+        const path =
+          '/' +
+          (['_layout', 'index'].includes(pathItems.at(-1)!)
+            ? pathItems.slice(0, -1)
+            : pathItems
+          ).join('/');
+        unstable_setBuildData(path, files); // FIXME toooooo naive, not efficient
         if (pathItems.at(-1) === '_layout') {
           createLayout({
-            path: '/' + pathItems.slice(0, -1).join('/'),
+            path,
             component: mod.default,
             render: 'static',
             ...config,
           });
         } else {
           createPage({
-            path:
-              '/' +
-              (pathItems.at(-1) === 'index'
-                ? pathItems.slice(0, -1)
-                : pathItems
-              ).join('/'),
+            path,
             component: mod.default,
             render: 'dynamic',
             ...config,

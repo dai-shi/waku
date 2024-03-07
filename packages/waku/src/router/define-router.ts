@@ -30,7 +30,12 @@ const ShoudSkipComponent = ({ shouldSkip }: { shouldSkip: ShouldSkip }) =>
 
 export function unstable_defineRouter(
   getPathConfig: () => Promise<
-    Iterable<{ path: PathSpec; isStatic?: boolean; noSsr?: boolean }>
+    Iterable<{
+      path: PathSpec;
+      isStatic?: boolean;
+      noSsr?: boolean;
+      data?: unknown; // For build: put in customData
+    }>
   >,
   getComponent: (
     componentId: string, // "**/layout" or "**/page"
@@ -50,7 +55,7 @@ export function unstable_defineRouter(
   type MyPathConfig = {
     pathname: PathSpec;
     isStatic?: boolean | undefined;
-    customData: { noSsr?: boolean; is404: boolean };
+    customData: { noSsr?: boolean; is404: boolean; data: unknown };
   }[];
   let cachedPathConfig: MyPathConfig | undefined;
   const getMyPathConfig = async (
@@ -68,7 +73,7 @@ export function unstable_defineRouter(
         return {
           pathname: item.path,
           isStatic: item.isStatic,
-          customData: { is404, noSsr: !!item.noSsr },
+          customData: { is404, noSsr: !!item.noSsr, data: item.data },
         };
       });
     }
