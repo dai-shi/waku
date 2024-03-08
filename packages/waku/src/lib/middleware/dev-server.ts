@@ -61,7 +61,7 @@ const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
 };
 
 const externalizedWakuClientModules = ['waku/client',
-   // 'waku/router/client'
+   'waku/router/client'
 ];
 
 export const devServer: Middleware = (options) => {
@@ -74,7 +74,7 @@ export const devServer: Middleware = (options) => {
   const configPromise = resolveConfig(options.config);
   const vitePromise = configPromise.then(async (config) => {
     const mergedViteConfig = await mergeUserViteConfig({
-      cacheDir: 'node_modules/.vite-dev-server',
+      // cacheDir: 'node_modules/.vite-dev-server',
       base: config.basePath,
       plugins: [
         patchReactRefresh(viteReact()),
@@ -99,7 +99,6 @@ export const devServer: Middleware = (options) => {
           'waku',
           'waku/server',
           'waku/router/server',
-         'waku/router/client',
           ...externalizedWakuClientModules,
         ],
       },
