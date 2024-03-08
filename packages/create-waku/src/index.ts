@@ -79,14 +79,12 @@ async function notifyUpdate() {
 async function installTemplate({
   root,
   packageName,
-  targetDir,
 }: {
   root: string;
   packageName: string;
-  targetDir: string;
 }) {
   const pkg = {
-    name: packageName ?? toValidPackageName(targetDir),
+    name: packageName,
     version: '0.0.0',
   };
 
@@ -293,7 +291,10 @@ async function init() {
      * If an example repository is not provided for cloning, proceed
      * by installing from a template.
      */
-    await installTemplate({ root, packageName, targetDir });
+    await installTemplate({
+      root,
+      packageName: packageName ?? toValidPackageName(targetDir),
+    });
   }
 
   const manager = process.env.npm_config_user_agent ?? '';
