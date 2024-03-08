@@ -1,10 +1,12 @@
+import type { ModuleNode } from 'vite';
 import type { Config } from '../../config.js';
 import type { EntriesPrd } from '../../server.js';
 import type {
   renderRscWithWorker,
   getSsrConfigWithWorker,
-  ClonableModuleNode,
 } from '../renderers/dev-worker-api.js';
+
+export type ClonableModuleNode = Pick<ModuleNode, 'url' | 'file'>;
 
 export type HandlerReq = {
   body: ReadableStream;

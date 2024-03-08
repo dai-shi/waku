@@ -9,7 +9,6 @@ import {
   registerHotUpdateCallback,
   renderRscWithWorker,
   getSsrConfigWithWorker,
-  type ClonableModuleNode,
 } from '../renderers/dev-worker-api.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
@@ -18,7 +17,7 @@ import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
-import type { Middleware } from './types.js';
+import type { ClonableModuleNode, Middleware } from './types.js';
 
 const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
   let controller: ReadableStreamDefaultController | undefined;

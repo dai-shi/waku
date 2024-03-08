@@ -6,14 +6,12 @@ import type {
 import type { ResolvedConfig } from '../config.js';
 import type { HotUpdatePayload } from '../plugins/vite-plugin-rsc-hmr.js';
 import type { RenderRscArgs, GetSsrConfigArgs } from './rsc-renderer.js';
-import type { ModuleNode } from 'vite';
+import type { ClonableModuleNode } from '../middleware/types.js';
 
 export type BuildOutput = {
   rscFiles: string[];
   htmlFiles: string[];
 };
-
-export type ClonableModuleNode = Pick<ModuleNode, 'url' | 'file'>;
 
 export type MessageReq =
   | ({
