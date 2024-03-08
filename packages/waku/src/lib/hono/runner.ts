@@ -29,7 +29,6 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
     ),
   );
   return async (c, next) => {
-    console.log('runner', c.req.url);
     const ctx: HandlerContext = {
       req: {
         body: c.req.raw.body || createEmptyReadableStream(),
@@ -54,7 +53,6 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
       });
     };
     await run(0);
-    console.log('runner body', c.req.url, c.res.body);
     return c.body(
       ctx.res.body || null,
       (ctx.res.status as any) || 200,
