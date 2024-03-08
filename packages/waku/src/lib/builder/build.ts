@@ -48,6 +48,7 @@ import { rscEntriesPlugin } from '../plugins/vite-plugin-rsc-entries.js';
 import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
+import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { emitVercelOutput } from './output-vercel.js';
 import { emitNetlifyOutput } from './output-netlify.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
@@ -103,7 +104,10 @@ const analyzeEntries = async (
     }
   }
   await buildVite({
-    plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet, fileHashMap)],
+    plugins: [
+      rscAnalyzePlugin(clientFileSet, serverFileSet, fileHashMap),
+      rscManagedPlugin(config),
+    ],
     ssr: {
       target: 'webworker',
       resolve: {
@@ -172,6 +176,7 @@ const buildServerBundle = async (
       }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
+      rscManagedPlugin(config),
       rscEntriesPlugin({
         entriesFile,
         moduleMap: {
@@ -274,6 +279,7 @@ const buildSsrBundle = async (
       rscIndexPlugin({ ...config, cssAssets }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
+      rscManagedPlugin(config),
     ],
     ssr: isNodeCompatible
       ? {
@@ -338,6 +344,7 @@ const buildClientBundle = async (
       rscIndexPlugin({ ...config, cssAssets }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
+      rscManagedPlugin(config),
     ],
     build: {
       outDir: joinPath(rootDir, config.distDir, config.publicDir),
