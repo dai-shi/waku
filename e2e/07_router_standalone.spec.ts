@@ -24,6 +24,7 @@ async function testRouterExample(page: Page, port: number) {
   await waitPort({
     port,
   });
+  console.log('page before err', await page.content())
   await page.goto(`http://localhost:${port}`);
   await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
 
@@ -105,7 +106,7 @@ test.describe('07_router standalone', () => {
           },
         },
       );
-      console.log('page before err', await page.content())
+      
       debugChildProcess(cp, fileURLToPath(import.meta.url));
       await testRouterExample(page, port);
       await terminate(cp.pid!);
