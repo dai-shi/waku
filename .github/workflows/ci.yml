@@ -58,9 +58,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shared: [1]
-        os: [ubuntu-latest, windows-latest]
-        version: [20]
+        shared: [1, 2, 3, 4]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        version: [18, 20]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -88,7 +88,7 @@ jobs:
       - name: Install Playwright
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm playwright install --with-deps
-      - run: pnpm exec playwright test e2e/07_router_standalone.spec.ts --forbid-only --shard=${{ matrix.shared }}/4
+      - run: pnpm exec playwright test --forbid-only --shard=${{ matrix.shared }}/4
         env:
           TEMP_DIR: ${{ runner.temp }}
       - uses: actions/upload-artifact@v3
