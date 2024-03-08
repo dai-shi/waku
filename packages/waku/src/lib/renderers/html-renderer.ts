@@ -19,7 +19,6 @@ import {
   fileURLToFilePath,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
-import type { HandlerContext } from '../middleware/types.js';
 
 export const CLIENT_MODULE_MAP = {
   react: 'react',
