@@ -153,9 +153,9 @@ export const devServer: Middleware = (options) => {
 
   const willBeHandledLater = async (pathname: string) => {
     const vite = await vitePromise;
-    if (vite.moduleGraph.urlToModuleMap.has(pathname)) {
-      return true;
-    }
+    // if (vite.moduleGraph.urlToModuleMap.has(pathname)) {
+    //   return true;
+    // }
     try {
       const result = await vite.transformRequest(pathname);
       return !!result;
