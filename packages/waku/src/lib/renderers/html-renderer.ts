@@ -259,14 +259,15 @@ export const renderHtml = async (
           {},
           {
             get(_target, name: string) {
-              const file = filePath
-                .slice(config.basePath.length)
-                .split('?')[0]!;
+              const file =
+                '/' + filePath.slice(config.basePath.length).split('?')[0]!;
               // TODO too long, we need to refactor this logic
               if (isDev) {
-                const filePath = file.startsWith('@fs/')
-                  ? file.slice('@fs'.length)
-                  : joinPath(opts.rootDir, file);
+                const filePath = file.startsWith('/@fs/')
+                  ? file.slice('/@fs'.length)
+                  : file.startsWith(opts.rootDir)
+                    ? file
+                    : joinPath(opts.rootDir, file);
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
@@ -283,7 +284,7 @@ export const renderHtml = async (
                       }),
                     );
                   }
-                  return { id: id, chunks: [id], name };
+                  return { id, chunks: [id], name };
                 }
                 const id = filePathToFileURL(filePath);
                 if (!moduleLoading.has(id)) {
