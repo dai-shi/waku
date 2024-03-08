@@ -105,6 +105,7 @@ test.describe('07_router standalone', () => {
           },
         },
       );
+      console.log('page before err', await page.content())
       debugChildProcess(cp, fileURLToPath(import.meta.url));
       await testRouterExample(page, port);
       await terminate(cp.pid!);

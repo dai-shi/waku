@@ -59,7 +59,7 @@ jobs:
       fail-fast: false
       matrix:
         shared: [1]
-        os: [windows-latest]
+        os: [ubuntu-latest, windows-latest]
         version: [18, 20]
     runs-on: ${{ matrix.os }}
     steps:
