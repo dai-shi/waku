@@ -15,10 +15,10 @@
     "waku": "0.19.4"
   },
   "devDependencies": {
-    "@types/react": "18.2.59",
-    "@types/react-dom": "18.2.19",
-    "typescript": "5.3.3",
-    "vite": "5.1.4",
+    "@types/react": "18.2.64",
+    "@types/react-dom": "18.2.21",
+    "typescript": "5.4.2",
+    "vite": "5.1.5",
     "vite-tsconfig-paths": "4.3.1"
   }
 }
