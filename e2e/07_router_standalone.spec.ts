@@ -24,7 +24,7 @@ async function testRouterExample(page: Page, port: number) {
   await waitPort({
     port,
   });
-    await page.goto(`http://localhost:${port}`);
+  await page.goto(`http://localhost:${port}`);
   await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
   console.log('page before err', await page.content())
 
