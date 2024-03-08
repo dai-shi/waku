@@ -265,9 +265,7 @@ export const renderHtml = async (
               if (isDev) {
                 const filePath = file.startsWith('/@fs/')
                   ? file.slice('/@fs'.length)
-                  : file.startsWith(opts.rootDir)
-                    ? file
-                    : joinPath(opts.rootDir, file);
+                  : joinPath(opts.rootDir, file);
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
