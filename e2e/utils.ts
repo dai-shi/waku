@@ -51,8 +51,9 @@ export function debugChildProcess(cp: ChildProcess, sourceFile: string) {
 
 export const test = basicTest.extend({
   page: async ({ page }, use) => {
-    const callback = (msg: ConsoleMessage) => {
+    const callback = async (msg: ConsoleMessage) => {
       if (unexpectedErrors.some((re) => re.test(msg.text()))) {
+        console.log('page before err', await page.content())
         console.log('error', msg.text());
         throw new Error(msg.text());
       }
