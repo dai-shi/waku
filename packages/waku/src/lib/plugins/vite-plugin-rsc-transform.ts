@@ -1,5 +1,8 @@
+import { transform } from '@swc/core';
 import type { Plugin } from 'vite';
 import * as RSDWNodeLoader from 'react-server-dom-webpack/node-loader';
+import { createRequire, type LoadHook, type ResolveHook } from 'node:module';
+const require = createRequire(import.meta.url);
 
 export function rscTransformPlugin(
   opts:
@@ -21,7 +24,7 @@ export function rscTransformPlugin(
         return `@id/${k}.js`;
       }
     }
-    throw new Error('client id not found: ' + id);
+    return null;
   };
   const getServerId = (id: string) => {
     if (!opts.isBuild) {
@@ -32,7 +35,7 @@ export function rscTransformPlugin(
         return `@id/${k}.js`;
       }
     }
-    throw new Error('server id not found: ' + id);
+    return null;
   };
   return {
     name: 'rsc-transform-plugin',
@@ -40,23 +43,32 @@ export function rscTransformPlugin(
       if (!options?.ssr) {
         return;
       }
-      const resolve = async (
-        specifier: string,
-        { parentURL }: { parentURL: string },
-      ) => {
+      const resolve: ResolveHook = async (specifier: string, { parentURL }) => {
         if (!specifier) {
           return { url: '' };
         }
         const url = (await this.resolve(specifier, parentURL))!.id;
         return { url };
       };
-      const load = async (url: string) => {
-        let source = url === id ? code : (await this.load({ id: url })).code;
-        // HACK move directives before import statements.
-        source = source!.replace(
-          /^(import {.*?} from ".*?";)\s*"use (client|server)";/,
-          '"use $2";$1',
-        );
+      const resolveId = opts.isBuild
+        ? getServerId(id) ?? getClientId(id) ?? id
+        : id;
+      const load: LoadHook = async (_: string) => {
+        // `_` here is equivalent to `resolveId`, we use `id`
+        //  to get the source code.
+        let source = code;
+        if (/\.[jt]sx?$/.test(id)) {
+          source = (
+            await transform(source, {
+              swcrc: false,
+              jsc: {
+                experimental: {
+                  plugins: [[require.resolve('swc-plugin-react-server'), {}]],
+                },
+              },
+            })
+          ).code;
+        }
         return { format: 'module', source };
       };
       RSDWNodeLoader.resolve(
@@ -64,34 +76,7 @@ export function rscTransformPlugin(
         { conditions: ['react-server', 'workerd'], parentURL: '' },
         resolve,
       );
-      let { source } = await RSDWNodeLoader.load(id, null, load);
-      if (opts.isBuild) {
-        // TODO we should parse the source code by ourselves with SWC
-        if (
-          /^import {registerClientReference} from "react-server-dom-webpack\/server";/.test(
-            source,
-          )
-        ) {
-          // HACK tweak registerClientReference for production
-          source = source.replace(
-            /registerClientReference\(function\(\) {throw new Error\("([^"]*)"\);},"[^"]*","([^"]*)"\);/gs,
-            `registerClientReference(function() {return "$1";}, "${getClientId(
-              id,
-            )}", "$2");`,
-          );
-        }
-        if (
-          /;import {registerServerReference} from "react-server-dom-webpack\/server";/.test(
-            source,
-          )
-        ) {
-          // HACK tweak registerServerReference for production
-          source = source.replace(
-            /registerServerReference\(([^,]*),"[^"]*","([^"]*)"\);/gs,
-            `registerServerReference($1, "${getServerId(id)}", "$2");`,
-          );
-        }
-      }
+      const { source } = await RSDWNodeLoader.load(resolveId, {}, load);
       return source;
     },
   };
