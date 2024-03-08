@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 
-const testMatrix = [{ withSSR: false }] as const;
+const testMatrix = [{ withSSR: false }, { withSSR: true }] as const;
 
 let standaloneDir: string;
 const exampleDir = fileURLToPath(
@@ -24,12 +24,11 @@ async function testRouterExample(page: Page, port: number) {
   await waitPort({
     port,
   });
-  await page.goto(`http://localhost:${port}/foo`, {waitUntil: 'commit'});
-  console.log('pageeeee', await page.content())
-  await page.goto(`http://localhost:${port}/foo`);
-  // await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
 
-  // await page.click("a[href='/foo']");
+  await page.goto(`http://localhost:${port}`);
+  await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
+
+  await page.click("a[href='/foo']");
 
   await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
 
@@ -68,7 +67,6 @@ test.describe('07_router standalone', () => {
 
   testMatrix.forEach(({ withSSR }) => {
     test(`should prod work ${withSSR ? 'with SSR' : ''}`, async ({ page }) => {
-      return;
       test.fixme(withSSR, 'SSR is not working in standalone');
       execSync(
         `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} build`,
@@ -94,7 +92,6 @@ test.describe('07_router standalone', () => {
     });
 
     test(`should dev work ${withSSR ? 'with SSR' : ''}`, async ({ page }) => {
-      // return
       test.fixme(withSSR, 'SSR is not working in standalone');
       const port = await getFreePort();
       const cp = exec(
@@ -107,7 +104,6 @@ test.describe('07_router standalone', () => {
           },
         },
       );
-      
       debugChildProcess(cp, fileURLToPath(import.meta.url));
       await testRouterExample(page, port);
       await terminate(cp.pid!);

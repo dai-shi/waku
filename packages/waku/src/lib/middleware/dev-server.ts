@@ -74,7 +74,6 @@ export const devServer: Middleware = (options) => {
   const configPromise = resolveConfig(options.config);
   const vitePromise = configPromise.then(async (config) => {
     const mergedViteConfig = await mergeUserViteConfig({
-      // cacheDir: 'node_modules/.vite-dev-server',
       base: config.basePath,
       plugins: [
         patchReactRefresh(viteReact()),
@@ -153,9 +152,6 @@ export const devServer: Middleware = (options) => {
 
   const willBeHandledLater = async (pathname: string) => {
     const vite = await vitePromise;
-    // if (vite.moduleGraph.urlToModuleMap.has(pathname)) {
-    //   return true;
-    // }
     try {
       const result = await vite.transformRequest(pathname);
       return !!result;

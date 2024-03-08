@@ -104,11 +104,9 @@ export async function renderRsc(
           for (const moduleNode of opts.initialModuleGraph) {
             if (moduleNode.file === file) {
               id = moduleNode.url;
-              // console.log(true, moduleNode.url, file)
             }
           }
         }
-        console.log('another bundler config', id, file);
         moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },

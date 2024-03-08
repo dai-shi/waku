@@ -20,8 +20,10 @@ export const ssr: Middleware = (options) => {
 
   return async (ctx, next) => {
     const { devServer } = ctx;
-    const viteUrl = ctx.req.url.toString().slice(ctx.req.url.origin.length);
-    if (devServer && (await devServer.willBeHandledLater(viteUrl))) {
+    if (
+      devServer &&
+      (await devServer.willBeHandledLater(ctx.req.url.pathname))
+    ) {
       await next();
       return;
     }
@@ -35,7 +37,6 @@ export const ssr: Middleware = (options) => {
         : entries.dynamicHtmlPaths.find(([pathSpec]) =>
             getPathMapping(pathSpec, ctx.req.url.pathname),
           )?.[1];
-
       if (htmlHead) {
         const readable = await renderHtml({
           config,
@@ -60,10 +61,9 @@ export const ssr: Middleware = (options) => {
                     config,
                     pathname,
                     searchParams,
-                    initialModuleGraph: devServer.initialModuleGraph,
+                    initialModuleGraph: devServer.initialModuleGraph
                   }),
                 rootDir: devServer.rootDir,
-                devServer,
                 loadServerFile: devServer.loadServerFile,
               }
             : {

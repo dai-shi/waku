@@ -190,7 +190,6 @@ export const renderHtml = async (
     | {
         isDev: true;
         rootDir: string;
-        devServer: NonNullable<HandlerContext['devServer']>;
         loadServerFile: (fileURL: string) => Promise<unknown>;
       }
   ),
@@ -227,7 +226,6 @@ export const renderHtml = async (
     loadClientModule<{ default: typeof RSDWClientType }>('rsdw-client'),
     loadClientModule<typeof WakuClientType>('waku-client'),
   ]);
-  console.log('ServerRoot', ServerRoot);
   const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
   if (!ssrConfig) {
     return null;
@@ -244,7 +242,6 @@ export const renderHtml = async (
     }
     throw e;
   }
-
   const moduleMap = new Proxy(
     {} as Record<
       string,
@@ -271,20 +268,10 @@ export const renderHtml = async (
                 const filePath = file.startsWith('@fs/')
                   ? file.slice('@fs'.length)
                   : joinPath(opts.rootDir, file);
-                // let dedupId: string | null = null;
-                // for (const [_, moduleNode] of opts.devServer.server.moduleGraph
-                //   .idToModuleMap) {
-                //   // console.log(moduleNode)
-                //   if (moduleNode.file === filePath) {
-                //     dedupId = moduleNode.url;
-                //     // console.log(true, moduleNode.url, filePath)
-                //   }
-                // }
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
                 );
-                // console.log(filePath)
                 if (filePath.startsWith(wakuDist)) {
                   const id =
                     'waku' +
@@ -297,16 +284,9 @@ export const renderHtml = async (
                       }),
                     );
                   }
-                  // const dedupId = opts.devServer.server.pluginContainer.resolveId(id)
-                  // console.log(dedupId)
-                  // console.log('ids', opts.devServer.server.moduleGraph.idToModuleMap)
-                  // console.log('urls',opts.devServer.server.moduleGraph.urlToModuleMap.keys())
-                  // console.log('waku dist', id, filePath)
-                  // console.log('keyId', keyId)
                   return { id: id, chunks: [id], name };
                 }
                 const id = filePathToFileURL(filePath);
-                console.log('loadServerFile', id, file, filePath);
                 if (!moduleLoading.has(id)) {
                   moduleLoading.set(
                     id,
