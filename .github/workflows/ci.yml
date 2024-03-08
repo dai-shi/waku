@@ -60,7 +60,7 @@ jobs:
       matrix:
         shared: [1]
         os: [ubuntu-latest, windows-latest]
-        version: [18, 20]
+        version: [20]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
