@@ -13,7 +13,7 @@
     "react-dom": "18.3.0-canary-0066e0b68-20240306",
     "react-server-dom-webpack": "18.3.0-canary-0066e0b68-20240306",
     "react-wrap-balancer": "1.1.0",
-    "waku": "0.19.4"
+    "waku": "0.20.0-alpha.0"
   },
   "devDependencies": {
     "@types/react": "18.2.64",
