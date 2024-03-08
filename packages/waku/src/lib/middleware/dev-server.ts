@@ -60,9 +60,7 @@ const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
   return [writable, promise];
 };
 
-const externalizedWakuClientModules = ['waku/client',
-   'waku/router/client'
-];
+const externalizedWakuClientModules = ['waku/client', 'waku/router/client'];
 
 export const devServer: Middleware = (options) => {
   if (options.cmd !== 'dev') {
