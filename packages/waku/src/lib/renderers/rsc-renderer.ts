@@ -11,7 +11,7 @@ import { filePathToFileURL } from '../utils/path.js';
 import { parseFormData } from '../utils/form.js';
 import { streamToString } from '../utils/stream.js';
 import { decodeActionId } from '../renderers/utils.js';
-import type { ClonableModuleNode } from './dev-worker-api.js';
+import type { ClonableModuleNode } from '../middleware/types.js';
 
 export const SERVER_MODULE_MAP = {
   'rsdw-server': 'react-server-dom-webpack/server.edge',
