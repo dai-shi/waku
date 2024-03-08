@@ -24,9 +24,9 @@ async function testRouterExample(page: Page, port: number) {
   await waitPort({
     port,
   });
-  await page.goto(`http://localhost:${port}`);
-  await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
+  await page.goto(`http://localhost:${port}`, {waitUntil: 'commit'});
   console.log('pageeeee', await page.content())
+  await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
 
   await page.click("a[href='/foo']");
 
