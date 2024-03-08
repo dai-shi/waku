@@ -20,6 +20,7 @@ import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
+import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import { viteHot } from '../plugins/vite-plugin-rsc-hmr.js';
@@ -132,6 +133,7 @@ const mergedViteConfig = await mergeUserViteConfig({
     viteReact(),
     rscEnvPlugin({}),
     rscPrivatePlugin({ privateDir: configPrivateDir }),
+    rscManagedPlugin({ srcDir: configSrcDir, entriesJs: configEntriesJs }),
     { name: 'rsc-index-plugin' }, // dummy to match with handler-dev.ts
     { name: 'rsc-hmr-plugin', enforce: 'post' }, // dummy to match with handler-dev.ts
     nonjsResolvePlugin(),
