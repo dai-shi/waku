@@ -71,12 +71,15 @@ export async function renderRsc(
   const {
     default: { renderEntries },
     loadModule,
-  } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
+    buildConfig,
+  } = entries as
+    | (EntriesDev & { loadModule: never; buildConfig: never })
+    | EntriesPrd;
 
   const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
     (isDev
       ? import(/* @vite-ignore */ SERVER_MODULE_MAP[key])
-      : loadModule!(key)) as Promise<T>;
+      : loadModule(key)) as Promise<T>;
 
   const [
     {
@@ -95,7 +98,7 @@ export async function renderRsc(
     loadServerModule<{ default: typeof RSDWClientType }>('rsdw-client'),
     (isDev
       ? opts.loadServerModule(SERVER_MODULE_MAP['waku-server'])
-      : loadModule!('waku-server')) as Promise<{
+      : loadModule('waku-server')) as Promise<{
       setRenderContext: typeof setRenderContextType;
     }>,
   ]);
@@ -157,7 +160,7 @@ export async function renderRsc(
       },
     };
     const elements = await runWithRenderContext(renderContext, () =>
-      renderEntries(input, searchParams),
+      renderEntries(input, { searchParams, buildConfig }),
     );
     if (elements === null) {
       const err = new Error('No function component found');
@@ -186,7 +189,7 @@ export async function renderRsc(
         }
         elementsPromise = Promise.all([
           elementsPromise,
-          renderEntries(input, searchParams),
+          renderEntries(input, { searchParams, buildConfig }),
         ]).then(([oldElements, newElements]) => ({
           ...oldElements,
           // FIXME we should actually check if newElements is null and send an error
@@ -240,7 +243,7 @@ export async function renderRsc(
       if (!fileId.startsWith('@id/')) {
         throw new Error('Unexpected server entry in PRD');
       }
-      mod = await loadModule!(fileId.slice('@id/'.length));
+      mod = await loadModule(fileId.slice('@id/'.length));
     }
     const fn = mod[name] || mod;
     const elements = await renderWithContextWithAction(context, () =>
@@ -334,12 +337,18 @@ export async function getSsrConfig(
   const {
     default: { getSsrConfig },
     loadModule,
-  } = entries as (EntriesDev & { loadModule: undefined }) | EntriesPrd;
+    buildConfig,
+  } = entries as
+    | (EntriesDev & { loadModule: never; buildConfig: never })
+    | EntriesPrd;
   const { renderToReadableStream } = await (isDev
     ? import(/* @vite-ignore */ SERVER_MODULE_MAP['rsdw-server'])
-    : loadModule!('rsdw-server').then((m: any) => m.default));
+    : loadModule('rsdw-server').then((m: any) => m.default));
 
-  const ssrConfig = await getSsrConfig?.(pathname, { searchParams });
+  const ssrConfig = await getSsrConfig?.(pathname, {
+    searchParams,
+    buildConfig,
+  });
   if (!ssrConfig) {
     return null;
   }

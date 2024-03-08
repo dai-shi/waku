@@ -1,46 +1,44 @@
-import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
 import { build as buildVite, resolveConfig as resolveViteConfig } from 'vite';
 import viteReact from '@vitejs/plugin-react';
-import type { RollupLog, LoggingFunction } from 'rollup';
+import type { LoggingFunction, RollupLog } from 'rollup';
 
 import type { Config } from '../../config.js';
-import type { EntriesPrd } from '../../server.js';
-import { resolveConfig } from '../config.js';
+import type { BuildConfig, EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
+import { resolveConfig } from '../config.js';
+import type { PathSpec } from '../utils/path.js';
 import {
-  joinPath,
+  decodeFilePathFromAbsolute,
   extname,
   filePathToFileURL,
   fileURLToFilePath,
-  decodeFilePathFromAbsolute,
+  joinPath,
 } from '../utils/path.js';
-import type { PathSpec } from '../utils/path.js';
 import {
-  createReadStream,
+  appendFile,
   createWriteStream,
   existsSync,
-  rename,
   mkdir,
-  readFile,
-  writeFile,
-  appendFile,
-  unlink,
   readdir,
+  readFile,
+  rename,
+  unlink,
+  writeFile,
 } from '../utils/node-fs.js';
 import { encodeInput, generatePrefetchCode } from '../renderers/utils.js';
 import {
-  SERVER_MODULE_MAP,
-  renderRsc,
   getBuildConfig,
   getSsrConfig,
+  renderRsc,
+  SERVER_MODULE_MAP,
 } from '../renderers/rsc-renderer.js';
 import {
-  renderHtml,
   CLIENT_MODULE_MAP,
   CLIENT_PREFIX,
+  renderHtml,
 } from '../renderers/html-renderer.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
@@ -76,18 +74,6 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   defaultHandler(warning);
 };
 
-const hash = (fname: string) =>
-  new Promise<string>((resolve) => {
-    const sha256 = createHash('sha256');
-    sha256.on('readable', () => {
-      const data = sha256.read();
-      if (data) {
-        resolve(data.toString('hex').slice(0, 9));
-      }
-    });
-    createReadStream(fname).pipe(sha256);
-  });
-
 const analyzeEntries = async (
   rootDir: string,
   config: ResolvedConfig,
@@ -98,6 +84,7 @@ const analyzeEntries = async (
   );
   const clientFileSet = new Set<string>([wakuClientDist]);
   const serverFileSet = new Set<string>();
+  const fileHashMap = new Map<string, string>();
   const moduleFileMap = new Map<string, string>(); // module id -> full path
   for (const preserveModuleDir of config.preserveModuleDirs) {
     const dir = joinPath(rootDir, config.srcDir, preserveModuleDir);
@@ -116,7 +103,7 @@ const analyzeEntries = async (
     }
   }
   await buildVite({
-    plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet)],
+    plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet, fileHashMap)],
     ssr: {
       target: 'webworker',
       resolve: {
@@ -138,12 +125,10 @@ const analyzeEntries = async (
     },
   });
   const clientEntryFiles = Object.fromEntries(
-    await Promise.all(
-      Array.from(clientFileSet).map(async (fname, i) => [
-        `${config.assetsDir}/rsc${i}-${await hash(fname)}`,
-        fname,
-      ]),
-    ),
+    Array.from(clientFileSet).map((fname, i) => [
+      `${config.assetsDir}/rsc${i}-${fileHashMap.get(fname)}`,
+      fname,
+    ]),
   );
   const serverEntryFiles = Object.fromEntries(
     Array.from(serverFileSet).map((fname, i) => [
@@ -389,7 +374,7 @@ const emitRscFiles = async (
   rootDir: string,
   config: ResolvedConfig,
   distEntries: EntriesPrd,
-  buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
+  buildConfig: BuildConfig,
 ) => {
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (input: string, id: string) => {
@@ -467,7 +452,7 @@ const emitHtmlFiles = async (
   config: ResolvedConfig,
   distEntriesFile: string,
   distEntries: EntriesPrd,
-  buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
+  buildConfig: BuildConfig,
   getClientModules: (input: string) => string[],
 ) => {
   const basePrefix = config.basePath + config.rscPath + '/';
@@ -654,6 +639,10 @@ export async function build(options: {
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
   const buildConfig = await getBuildConfig({ config, entries: distEntries });
+  await appendFile(
+    distEntriesFile,
+    `export const buildConfig = ${JSON.stringify(buildConfig)};`,
+  );
   const { getClientModules } = await emitRscFiles(
     rootDir,
     config,
