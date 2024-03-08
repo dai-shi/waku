@@ -172,7 +172,7 @@ export const devServer: Middleware = (options) => {
       vitePromise,
     ]);
 
-    const mainJs = `${config.basePath}${config.srcDir}/${config.mainJs}`;
+    const mainJs = `${config.srcDir}/${config.mainJs}`;
     // pre-process the mainJs file to see which modules are being sent to the browser by vite
     // and using the same modules if possible in the bundlerConfig in the stream
     for (const m of [mainJs, ...externalizedWakuClientModules]) {
