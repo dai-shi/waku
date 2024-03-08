@@ -69,17 +69,17 @@
   },
   "dependencies": {
     "@hono/node-server": "1.8.2",
-    "@swc/core": "1.4.2",
+    "@swc/core": "1.4.5",
     "@vitejs/plugin-react": "4.2.1",
     "dotenv": "16.4.5",
-    "hono": "4.0.7",
+    "hono": "4.0.10",
     "rsc-html-stream": "0.0.3",
-    "vite": "5.1.4"
+    "vite": "5.1.5"
   },
   "devDependencies": {
     "@netlify/functions": "^2.6.0",
-    "@swc/cli": "^0.3.9",
-    "rollup": "^4.12.0"
+    "@swc/cli": "^0.3.10",
+    "rollup": "^4.12.1"
   },
   "peerDependencies": {
     "react": "18.3.0-canary-0066e0b68-20240306",

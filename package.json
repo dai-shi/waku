@@ -58,29 +58,29 @@
   },
   "devDependencies": {
     "@actions/core": "^1.10.1",
-    "@playwright/test": "^1.41.2",
+    "@playwright/test": "^1.42.1",
     "@types/babel__core": "^7.20.5",
-    "@types/node": "^20.11.20",
-    "@types/react": "^18.2.59",
-    "@types/react-dom": "^18.2.19",
-    "@typescript-eslint/eslint-plugin": "^7.1.0",
-    "@typescript-eslint/parser": "^7.1.0",
+    "@types/node": "^20.11.25",
+    "@types/react": "^18.2.64",
+    "@types/react-dom": "^18.2.21",
+    "@typescript-eslint/eslint-plugin": "^7.1.1",
+    "@typescript-eslint/parser": "^7.1.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react": "^7.34.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "prettier": "^3.2.5",
-    "prettier-plugin-tailwindcss": "^0.5.11",
+    "prettier-plugin-tailwindcss": "^0.5.12",
     "terminate": "^2.6.1",
-    "typescript": "^5.3.3",
+    "typescript": "^5.4.2",
     "wait-port": "^1.1.0",
     "waku": "workspace:*"
   },
   "pnpm": {
     "overrides": {
-      "vite": "5.1.4"
+      "vite": "5.1.5"
     }
   }
 }
