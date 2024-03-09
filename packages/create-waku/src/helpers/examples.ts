@@ -1,7 +1,7 @@
 import * as tar from 'tar';
-import { Readable } from 'stream';
-import { pipeline } from 'stream/promises';
-import { type ReadableStream } from 'stream/web';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import type { ReadableStream } from 'stream/web';
 
 export type RepoInfo = {
   username: string | undefined;
@@ -19,6 +19,14 @@ export async function isUrlOk(url: string): Promise<boolean> {
   }
 }
 
+/**
+ * this is a part of the response type for github "Get a repository" API
+ * @see {@link https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#get-a-repository|GitHub REST API}
+ */
+interface GetRepoInfo {
+  /** A default branch of the repository */
+  default_branch: string;
+}
 export async function getRepoInfo(url: URL): Promise<RepoInfo | undefined> {
   const [, username, name, t, _branch, ...file] = url.pathname.split('/');
   const filePath = file.join('/');
@@ -40,8 +48,7 @@ export async function getRepoInfo(url: URL): Promise<RepoInfo | undefined> {
         return;
       }
 
-      // HACK no-any
-      const info = (await infoResponse.json()) as any;
+      const info = (await infoResponse.json()) as GetRepoInfo;
       return { username, name, branch: info['default_branch'], filePath };
     } catch {
       return;

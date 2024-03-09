@@ -40,8 +40,7 @@ function getExample(tokens: any) {
   const exampleToken = tokens.find(
     (token: any) => token.kind === 'option' && token.name === 'example',
   );
-  if (exampleToken) return exampleToken.value;
-  else return;
+  return exampleToken?.value;
 }
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
@@ -92,7 +91,6 @@ async function installTemplate({
     fileURLToPath(import.meta.url),
     '../../template',
   );
-  // is it nesessary?
   // maybe include `.DS_Store` on macOS
   const CHOICES = (await fsPromises.readdir(templateRoot)).filter(
     (dir) => !dir.startsWith('.'),
