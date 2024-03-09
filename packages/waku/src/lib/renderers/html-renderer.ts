@@ -266,6 +266,7 @@ export const renderHtml = async (
                 filePath = path.join('/@fs', filePath)  
                 console.log('condition', filePath)
               }
+
               const file =
                 '/' + filePath.slice(config.basePath.length).split('?')[0]!;
               console.log('file', file)
