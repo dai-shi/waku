@@ -19,6 +19,7 @@ import {
   fileURLToFilePath,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
+import path from 'path';
 
 export const CLIENT_MODULE_MAP = {
   react: 'react',
@@ -260,6 +261,10 @@ export const renderHtml = async (
           {
             get(_target, name: string) {
               console.log('filepath', filePath)
+              if (isDev && filePath.startsWith(opts.rootDir)) {
+                filePath = path.join('/@fs', filePath)  
+                console.log('condition', filePath)
+              }
               const file =
                 '/' + filePath.slice(config.basePath.length).split('?')[0]!;
               console.log('file', file)
