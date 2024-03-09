@@ -71,6 +71,7 @@ export const devServer: Middleware = (options) => {
   const configPromise = resolveConfig(options.config);
   const vitePromise = configPromise.then(async (config) => {
     const mergedViteConfig = await mergeUserViteConfig({
+      cacheDir: 'node_modules/.vite/waku-dev-server',
       base: config.basePath,
       plugins: [
         patchReactRefresh(viteReact()),
