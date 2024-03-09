@@ -259,8 +259,10 @@ export const renderHtml = async (
           {},
           {
             get(_target, name: string) {
+              console.log('filepath', filePath)
               const file =
                 '/' + filePath.slice(config.basePath.length).split('?')[0]!;
+              console.log('file', file)
               // TODO too long, we need to refactor this logic
               if (isDev) {
                 console.log('rootDir', opts.rootDir)
