@@ -54,7 +54,7 @@ export const test = basicTest.extend({
     page.on('requestfinished', async (req) => {
       console.log('request', req.url());
       console.log(
-        'request response',
+        'request response', req.url(),
         await (await req.response())?.allHeaders(),
       );
       // console.log('request response', (await req.response())?.headerValue('Content-Type:'))
