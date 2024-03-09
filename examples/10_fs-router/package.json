@@ -10,14 +10,14 @@
   },
   "dependencies": {
     "glob": "10.3.10",
-    "react": "18.3.0-canary-6c3b8dbfe-20240226",
-    "react-dom": "18.3.0-canary-6c3b8dbfe-20240226",
-    "react-server-dom-webpack": "18.3.0-canary-6c3b8dbfe-20240226",
-    "waku": "0.19.4"
+    "react": "18.3.0-canary-0066e0b68-20240306",
+    "react-dom": "18.3.0-canary-0066e0b68-20240306",
+    "react-server-dom-webpack": "18.3.0-canary-0066e0b68-20240306",
+    "waku": "0.20.0-alpha.0"
   },
   "devDependencies": {
-    "@types/react": "18.2.59",
-    "@types/react-dom": "18.2.19",
-    "typescript": "5.3.3"
+    "@types/react": "18.2.64",
+    "@types/react-dom": "18.2.21",
+    "typescript": "5.4.2"
   }
 }

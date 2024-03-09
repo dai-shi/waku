@@ -20,6 +20,7 @@ import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscHmrPlugin, hotUpdate } from '../plugins/vite-plugin-rsc-hmr.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
+import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import type { Middleware } from './types.js';
 
@@ -78,6 +79,7 @@ export const devServer: Middleware = (options) => {
         patchReactRefresh(viteReact()),
         rscEnvPlugin({ config }),
         rscPrivatePlugin(config),
+        rscManagedPlugin(config),
         rscIndexPlugin(config),
         rscHmrPlugin(),
         { name: 'nonjs-resolve-plugin' }, // dummy to match with dev-worker-impl.ts
