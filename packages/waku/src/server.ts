@@ -1,4 +1,4 @@
-import { cache } from 'react';
+import type { AsyncLocalStorage as AsyncLocalStorageType } from 'node:async_hooks';
 import type { ReactNode } from 'react';
 
 import type { Config } from './config.js';
@@ -68,37 +68,63 @@ export function getEnv(key: string): string | undefined {
   return (globalThis as any).__WAKU_PRIVATE_ENV__[key];
 }
 
-type RenderContext<
+type RenderStore<
   RscContext extends Record<string, unknown> = Record<string, unknown>,
 > = {
   rerender: (input: string, searchParams?: URLSearchParams) => void;
   context: RscContext;
 };
 
-const getRenderContextHolder = cache(() => [] as [RenderContext?]);
+const DO_NOT_BUNDLE = '';
+
+let renderStorage: AsyncLocalStorageType<RenderStore> | undefined;
+
+import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:async_hooks')
+  .then(({ AsyncLocalStorage }) => {
+    renderStorage = new AsyncLocalStorage();
+  })
+  .catch(() => {
+    console.warn(
+      'AsyncLocalStorage is not available, rerender and getContext are only available in sync.',
+    );
+  });
+
+let previousRenderStore: RenderStore | undefined;
+let currentRenderStore: RenderStore | undefined;
 
 /**
  * This is an internal function and not for public use.
  */
-export const setRenderContext = (renderContext: RenderContext) => {
-  const holder = getRenderContextHolder();
-  holder[0] = renderContext;
+export const runWithRenderStore = <T>(
+  renderStore: RenderStore,
+  fn: () => T,
+): T => {
+  if (renderStorage) {
+    return renderStorage.run(renderStore, fn);
+  }
+  previousRenderStore = currentRenderStore;
+  currentRenderStore = renderStore;
+  try {
+    return fn();
+  } finally {
+    currentRenderStore = previousRenderStore;
+  }
 };
 
 export function rerender(input: string, searchParams?: URLSearchParams) {
-  const holder = getRenderContextHolder();
-  if (!holder[0]) {
-    throw new Error('[Bug] No render context found');
+  const renderStore = renderStorage?.getStore() ?? currentRenderStore;
+  if (!renderStore) {
+    throw new Error('Render store is not available');
   }
-  holder[0].rerender(input, searchParams);
+  renderStore.rerender(input, searchParams);
 }
 
 export function getContext<
   RscContext extends Record<string, unknown> = Record<string, unknown>,
 >(): RscContext {
-  const holder = getRenderContextHolder();
-  if (!holder[0]) {
-    throw new Error('[Bug] No render context found');
+  const renderStore = renderStorage?.getStore() ?? currentRenderStore;
+  if (!renderStore) {
+    throw new Error('Render store is not available');
   }
-  return holder[0].context as RscContext;
+  return renderStore.context as RscContext;
 }

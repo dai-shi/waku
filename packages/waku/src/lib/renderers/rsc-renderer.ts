@@ -1,11 +1,10 @@
-import type { default as ReactType, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { default as RSDWServerType } from 'react-server-dom-webpack/server.edge';
-import type { default as RSDWClientType } from 'react-server-dom-webpack/client.edge';
 
 import type {
   EntriesDev,
   EntriesPrd,
-  setRenderContext as setRenderContextType,
+  runWithRenderStore as runWithRenderStoreType,
 } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { filePathToFileURL } from '../utils/path.js';
@@ -14,9 +13,7 @@ import { streamToString } from '../utils/stream.js';
 import { decodeActionId } from '../renderers/utils.js';
 
 export const SERVER_MODULE_MAP = {
-  react: 'react',
   'rsdw-server': 'react-server-dom-webpack/server.edge',
-  'rsdw-client': 'react-server-dom-webpack/client.edge',
   'waku-server': 'waku/server',
 } as const;
 
@@ -83,105 +80,68 @@ export async function renderRsc(
 
   const [
     {
-      default: { createElement },
-    },
-    {
       default: { renderToReadableStream, decodeReply },
     },
-    {
-      default: { createFromReadableStream },
-    },
-    { setRenderContext },
+    { runWithRenderStore },
   ] = await Promise.all([
-    loadServerModule<{ default: typeof ReactType }>('react'),
     loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server'),
-    loadServerModule<{ default: typeof RSDWClientType }>('rsdw-client'),
     (isDev
       ? opts.loadServerModule(SERVER_MODULE_MAP['waku-server'])
       : loadModule('waku-server')) as Promise<{
-      setRenderContext: typeof setRenderContextType;
+      runWithRenderStore: typeof runWithRenderStoreType;
     }>,
   ]);
 
-  const runWithRenderContext = async <T>(
-    renderContext: Parameters<typeof setRenderContext>[0],
-    fn: () => T,
-  ): Promise<Awaited<T>> =>
-    new Promise<Awaited<T>>((resolve, reject) => {
-      createFromReadableStream(
-        renderToReadableStream(
-          createElement((async () => {
-            setRenderContext(renderContext);
-            resolve(await fn());
-          }) as any),
-          {},
-        ),
-        {
-          ssrManifest: { moduleMap: null, moduleLoading: null },
-        },
-      ).catch(reject);
-    });
-
-  const wrapWithContext = (
-    context: Record<string, unknown> | undefined,
-    elements: Record<string, ReactNode>,
-    value?: unknown,
-  ) => {
-    const renderContext = {
-      context: context || {},
-      rerender: () => {
-        throw new Error('Cannot rerender');
+  const bundlerConfig = new Proxy(
+    {},
+    {
+      get(_target, encodedId: string) {
+        const [file, name] = encodedId.split('#') as [string, string];
+        const id = resolveClientEntry(file, config);
+        moduleIdCallback?.(id);
+        return { id, chunks: [id], name, async: true };
       },
-    };
-    const elementEntries: [string, unknown][] = Object.entries(elements).map(
-      ([k, v]) => [
-        k,
-        createElement(() => {
-          setRenderContext(renderContext);
-          return v as ReactNode; // XXX lie the type
-        }),
-      ],
-    );
-    if (value !== undefined) {
-      elementEntries.push(['_value', value]);
-    }
-    return Object.fromEntries(elementEntries);
-  };
+    },
+  );
 
   const renderWithContext = async (
     context: Record<string, unknown> | undefined,
     input: string,
     searchParams: URLSearchParams,
   ) => {
-    const renderContext = {
+    const renderStore = {
       context: context || {},
       rerender: () => {
         throw new Error('Cannot rerender');
       },
     };
-    const elements = await runWithRenderContext(renderContext, () =>
-      renderEntries(input, { searchParams, buildConfig }),
-    );
-    if (elements === null) {
-      const err = new Error('No function component found');
-      (err as any).statusCode = 404; // HACK our convention for NotFound
-      throw err;
-    }
-    if (Object.keys(elements).some((key) => key.startsWith('_'))) {
-      throw new Error('"_" prefix is reserved');
-    }
-    return wrapWithContext(context, elements);
+    return runWithRenderStore(renderStore, async () => {
+      const elements = await renderEntries(input, {
+        searchParams,
+        buildConfig,
+      });
+      if (elements === null) {
+        const err = new Error('No function component found');
+        (err as any).statusCode = 404; // HACK our convention for NotFound
+        throw err;
+      }
+      if (Object.keys(elements).some((key) => key.startsWith('_'))) {
+        throw new Error('"_" prefix is reserved');
+      }
+      return renderToReadableStream(elements, bundlerConfig);
+    });
   };
 
   const renderWithContextWithAction = async (
     context: Record<string, unknown> | undefined,
-    actionFn: () => unknown,
+    actionFn: (...args: unknown[]) => unknown,
+    actionArgs: unknown[],
   ) => {
     let elementsPromise: Promise<Record<string, ReactNode>> = Promise.resolve(
       {},
     );
     let rendered = false;
-    const renderContext = {
+    const renderStore = {
       context: context || {},
       rerender: async (input: string, searchParams = new URLSearchParams()) => {
         if (rendered) {
@@ -197,26 +157,19 @@ export async function renderRsc(
         }));
       },
     };
-    const actionValue = await runWithRenderContext(renderContext, actionFn);
-    const elements = await elementsPromise;
-    rendered = true;
-    if (Object.keys(elements).some((key) => key.startsWith('_'))) {
-      throw new Error('"_" prefix is reserved');
-    }
-    return wrapWithContext(context, elements, actionValue);
+    return runWithRenderStore(renderStore, async () => {
+      const actionValue = await actionFn(...actionArgs);
+      const elements = await elementsPromise;
+      rendered = true;
+      if (Object.keys(elements).some((key) => key.startsWith('_'))) {
+        throw new Error('"_" prefix is reserved');
+      }
+      return renderToReadableStream(
+        { ...elements, _value: actionValue },
+        bundlerConfig,
+      );
+    });
   };
-
-  const bundlerConfig = new Proxy(
-    {},
-    {
-      get(_target, encodedId: string) {
-        const [file, name] = encodedId.split('#') as [string, string];
-        const id = resolveClientEntry(file, config);
-        moduleIdCallback?.(id);
-        return { id, chunks: [id], name, async: true };
-      },
-    },
-  );
 
   if (method === 'POST') {
     const rsfId = decodeActionId(input);
@@ -246,15 +199,11 @@ export async function renderRsc(
       mod = await loadModule(fileId.slice('@id/'.length));
     }
     const fn = mod[name] || mod;
-    const elements = await renderWithContextWithAction(context, () =>
-      fn(...args),
-    );
-    return renderToReadableStream(elements, bundlerConfig);
+    return renderWithContextWithAction(context, fn, args);
   }
 
   // method === 'GET'
-  const elements = await renderWithContext(context, input, searchParams);
-  return renderToReadableStream(elements, bundlerConfig);
+  return renderWithContext(context, input, searchParams);
 }
 
 export async function getBuildConfig(opts: {

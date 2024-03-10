@@ -1,6 +1,13 @@
+import { Suspense } from 'react';
 import { getContext } from 'waku/server';
 
 import { Counter } from './Counter.js';
+
+const InternalAsyncComponent = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  console.log(getContext());
+  return null;
+};
 
 const App = ({ name, items }: { name: string; items: unknown[] }) => {
   const context = getContext<{ count: number }>();
@@ -12,6 +19,9 @@ const App = ({ name, items }: { name: string; items: unknown[] }) => {
       <p>Cookie count: {context.count}</p>
       <Counter />
       <p>Item count: {items.length}</p>
+      <Suspense>
+        <InternalAsyncComponent />
+      </Suspense>
     </div>
   );
 };
