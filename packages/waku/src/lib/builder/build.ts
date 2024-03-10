@@ -119,6 +119,7 @@ const analyzeEntries = async (
     build: {
       write: false,
       ssr: true,
+      target: 'node18',
       rollupOptions: {
         onwarn,
         input: {
@@ -242,6 +243,7 @@ const buildServerBundle = async (
     build: {
       ssr: true,
       ssrEmitAssets: true,
+      target: 'node18',
       outDir: joinPath(rootDir, config.distDir),
       rollupOptions: {
         onwarn,
@@ -299,6 +301,7 @@ const buildSsrBundle = async (
     publicDir: false,
     build: {
       ssr: true,
+      target: 'node18',
       outDir: joinPath(rootDir, config.distDir, config.ssrDir),
       rollupOptions: {
         onwarn,

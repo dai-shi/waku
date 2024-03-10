@@ -75,11 +75,18 @@ type RenderStore<
   context: RscContext;
 };
 
-const DO_NOT_BUNDLE = '';
-
 let renderStorage: AsyncLocalStorageType<RenderStore> | undefined;
 
-import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:async_hooks')
+// TODO top-level await doesn't work. Let's revisit after supporting "use server"
+// try {
+//   const { AsyncLocalStorage } = await import('node:async_hooks');
+//   renderStorage = new AsyncLocalStorage();
+// } catch (e) {
+//   console.warn(
+//     'AsyncLocalStorage is not available, rerender and getContext are only available in sync.',
+//   );
+// }
+import('node:async_hooks')
   .then(({ AsyncLocalStorage }) => {
     renderStorage = new AsyncLocalStorage();
   })

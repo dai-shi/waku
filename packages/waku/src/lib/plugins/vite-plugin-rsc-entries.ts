@@ -9,7 +9,12 @@ export function rscEntriesPlugin(opts: {
   entriesFile: string;
   moduleMap: Record<string, string>;
 }): Plugin {
-  let codeToAdd = `
+  const codeToPrepend = `
+try {
+  globalThis.AsyncLocalStorage = (await import('node:async_hooks')).AsyncLocalStorage;
+} catch (e) {}
+`;
+  let codeToAppend = `
 export function loadModule(id) {
   switch (id) {
     ${Object.entries(opts.moduleMap)
@@ -23,19 +28,25 @@ export function loadModule(id) {
     const file = normalizePath(
       path.relative(path.dirname(opts.entriesFile), path.resolve(CONFIG_FILE)),
     );
-    codeToAdd += `
+    codeToAppend += `
 export const loadConfig = async () => (await import('${file}')).default;
 `;
   } else {
-    codeToAdd += `
+    codeToAppend += `
 export const loadConfig = async () => ({});
 `;
   }
   return {
     name: 'rsc-entries-plugin',
     transform(code, id) {
+      if (
+        // FIXME this is too hacky and not the right place to patch
+        id.endsWith('/react-server-dom-webpack-server.edge.production.min.js')
+      ) {
+        return codeToPrepend + code;
+      }
       if (id === opts.entriesFile) {
-        return code + codeToAdd;
+        return code + codeToAppend;
       }
     },
   };

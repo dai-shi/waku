@@ -3,6 +3,7 @@
 import { pathToFileURL } from 'node:url';
 import { parentPort, getEnvironmentData } from 'node:worker_threads';
 import { Server } from 'node:http';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import type { TransferListItem } from 'node:worker_threads';
 import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
@@ -24,6 +25,9 @@ import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import { viteHot } from '../plugins/vite-plugin-rsc-hmr.js';
+
+// For react-server-dom-webpack/server.edge
+(globalThis as any).AsyncLocalStorage = AsyncLocalStorage;
 
 const { default: module } = await import('node:module');
 const HAS_MODULE_REGISTER = typeof module.register === 'function';
