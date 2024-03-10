@@ -119,6 +119,7 @@ const analyzeEntries = async (
     build: {
       write: false,
       ssr: true,
+      target: 'node18',
       rollupOptions: {
         onwarn,
         input: {
