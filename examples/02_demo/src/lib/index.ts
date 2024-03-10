@@ -22,5 +22,5 @@ const shuffle = (array: Array<any>) => {
  * Mock static paths
  */
 export const getPokemonPaths = async () => {
-  return pokemon.map((row) => row.slug);
+  return pokemon.map((row: any) => row.slug);
 };
