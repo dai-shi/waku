@@ -77,14 +77,24 @@ type RenderStore<
 
 let renderStorage: AsyncLocalStorageType<RenderStore> | undefined;
 
-try {
-  const { AsyncLocalStorage } = await import('node:async_hooks');
-  renderStorage = new AsyncLocalStorage();
-} catch (e) {
-  console.warn(
-    'AsyncLocalStorage is not available, rerender and getContext are only available in sync.',
-  );
-}
+// TODO top-level await doesn't work. Let's revisit after supporting "use server"
+// try {
+//   const { AsyncLocalStorage } = await import('node:async_hooks');
+//   renderStorage = new AsyncLocalStorage();
+// } catch (e) {
+//   console.warn(
+//     'AsyncLocalStorage is not available, rerender and getContext are only available in sync.',
+//   );
+// }
+import('node:async_hooks')
+  .then(({ AsyncLocalStorage }) => {
+    renderStorage = new AsyncLocalStorage();
+  })
+  .catch(() => {
+    console.warn(
+      'AsyncLocalStorage is not available, rerender and getContext are only available in sync.',
+    );
+  });
 
 let previousRenderStore: RenderStore | undefined;
 let currentRenderStore: RenderStore | undefined;
