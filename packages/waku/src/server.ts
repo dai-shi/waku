@@ -75,11 +75,9 @@ type RenderStore<
   context: RscContext;
 };
 
-const DO_NOT_BUNDLE = '';
-
 let renderStorage: AsyncLocalStorageType<RenderStore> | undefined;
 
-import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:async_hooks')
+import('node:async_hooks')
   .then(({ AsyncLocalStorage }) => {
     renderStorage = new AsyncLocalStorage();
   })
