@@ -1,9 +1,11 @@
 import { Link } from 'waku';
+
+import { getPokemonPaths } from '../lib/index.js';
 import { pokemon } from '../lib/pokemon.js';
 
 type PokemonPageProps = { slug: string };
 
-export const PokemonPage = async ({ slug }: PokemonPageProps) => {
+export default async function PokemonPage({ slug }: PokemonPageProps) {
   const pokemon = await getPokemon(slug);
 
   if (!pokemon) return null;
@@ -17,7 +19,7 @@ export const PokemonPage = async ({ slug }: PokemonPageProps) => {
         <div className="mx-auto flex w-full flex-shrink-0 flex-col items-center justify-center gap-6 rounded-xl bg-gray-50 p-12 leading-none md:w-full md:max-w-xl">
           <div>
             <ul className="flex items-center justify-center gap-1.5">
-              {pokemon.type.map((type) => (
+              {pokemon.type.map((type: string) => (
                 <div
                   key={type}
                   className="rounded-full bg-gray-200 px-3 py-1 text-xs font-bold uppercase leading-none tracking-wide text-black/60"
@@ -64,8 +66,17 @@ export const PokemonPage = async ({ slug }: PokemonPageProps) => {
       </div>
     </>
   );
+}
+
+export const getConfig = async () => {
+  const pokemonPaths = await getPokemonPaths();
+
+  return {
+    render: 'static',
+    staticPaths: pokemonPaths,
+  };
 };
 
 const getPokemon = async (slug: string) => {
-  return pokemon.find((row) => row.slug === slug) ?? null;
+  return pokemon.find((row: any) => row.slug === slug) ?? null;
 };

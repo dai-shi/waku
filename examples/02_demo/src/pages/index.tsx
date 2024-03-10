@@ -3,7 +3,7 @@ import { Link } from 'waku';
 import { Reload } from '../components/reload.js';
 import { sql } from '../lib/index.js';
 
-export const HomePage = async () => {
+export default async function HomePage() {
   const { rows } = await sql`SELECT * FROM pokemon ORDER BY RANDOM() LIMIT 9`;
 
   return (
@@ -46,4 +46,10 @@ export const HomePage = async () => {
       </div>
     </>
   );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'dynamic',
+  };
 };
