@@ -11,7 +11,7 @@ export default {
           ),
         ]
       : []),
+    import('waku/middleware/ssr'),
     import('waku/middleware/rsc'),
-    import('waku/middleware/fallback'),
   ],
 };

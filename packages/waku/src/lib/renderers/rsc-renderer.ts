@@ -92,7 +92,19 @@ export async function renderRsc(
     }>,
   ]);
 
-  const renderWithStore = async (
+  const bundlerConfig = new Proxy(
+    {},
+    {
+      get(_target, encodedId: string) {
+        const [file, name] = encodedId.split('#') as [string, string];
+        const id = resolveClientEntry(file, config);
+        moduleIdCallback?.(id);
+        return { id, chunks: [id], name, async: true };
+      },
+    },
+  );
+
+  const renderWithContext = async (
     context: Record<string, unknown> | undefined,
     input: string,
     searchParams: URLSearchParams,
@@ -116,13 +128,14 @@ export async function renderRsc(
       if (Object.keys(elements).some((key) => key.startsWith('_'))) {
         throw new Error('"_" prefix is reserved');
       }
-      return elements;
+      return renderToReadableStream(elements, bundlerConfig);
     });
   };
 
-  const renderWithStoreWithAction = async (
+  const renderWithContextWithAction = async (
     context: Record<string, unknown> | undefined,
-    actionFn: () => unknown,
+    actionFn: (...args: unknown[]) => unknown,
+    actionArgs: unknown[],
   ) => {
     let elementsPromise: Promise<Record<string, ReactNode>> = Promise.resolve(
       {},
@@ -145,27 +158,18 @@ export async function renderRsc(
       },
     };
     return runWithRenderStore(renderStore, async () => {
-      const actionValue = await actionFn();
+      const actionValue = await actionFn(...actionArgs);
       const elements = await elementsPromise;
       rendered = true;
       if (Object.keys(elements).some((key) => key.startsWith('_'))) {
         throw new Error('"_" prefix is reserved');
       }
-      return { ...elements, _value: actionValue };
+      return renderToReadableStream(
+        { ...elements, _value: actionValue },
+        bundlerConfig,
+      );
     });
   };
-
-  const bundlerConfig = new Proxy(
-    {},
-    {
-      get(_target, encodedId: string) {
-        const [file, name] = encodedId.split('#') as [string, string];
-        const id = resolveClientEntry(file, config);
-        moduleIdCallback?.(id);
-        return { id, chunks: [id], name, async: true };
-      },
-    },
-  );
 
   if (method === 'POST') {
     const rsfId = decodeActionId(input);
@@ -195,15 +199,11 @@ export async function renderRsc(
       mod = await loadModule(fileId.slice('@id/'.length));
     }
     const fn = mod[name] || mod;
-    const elements = await renderWithStoreWithAction(context, () =>
-      fn(...args),
-    );
-    return renderToReadableStream(elements, bundlerConfig);
+    return renderWithContextWithAction(context, fn, args);
   }
 
   // method === 'GET'
-  const elements = await renderWithStore(context, input, searchParams);
-  return renderToReadableStream(elements, bundlerConfig);
+  return renderWithContext(context, input, searchParams);
 }
 
 export async function getBuildConfig(opts: {
