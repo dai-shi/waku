@@ -16,6 +16,7 @@ export const emitCloudflareOutput = async (
 name = "waku-project"
 main = "${config.distDir}/${config.serveJs}"
 compatibility_date = "2023-12-06"
+compatibility_flags = [ "nodejs_als" ]
 
 [site]
 bucket = "./${config.distDir}/${config.publicDir}"
