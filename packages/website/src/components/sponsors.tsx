@@ -1,6 +1,6 @@
 'use client';
 
-import cx from 'clsx';
+import cx from 'classnames';
 import { useAtomValue } from 'jotai';
 
 import { scrolledAtom } from '../atoms/index.js';

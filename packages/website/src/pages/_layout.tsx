@@ -7,7 +7,7 @@ import { Analytics } from '../components/analytics.js';
 
 type RootLayoutProps = { children: ReactNode };
 
-export const RootLayout = async ({ children }: RootLayoutProps) => {
+export default async function RootLayout({ children }: RootLayoutProps) {
   return (
     <Providers>
       <Meta />
@@ -15,7 +15,7 @@ export const RootLayout = async ({ children }: RootLayoutProps) => {
       <Analytics />
     </Providers>
   );
-};
+}
 
 const Meta = () => {
   return (
@@ -38,4 +38,10 @@ const Meta = () => {
       />
     </>
   );
+};
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
 };

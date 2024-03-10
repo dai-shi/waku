@@ -7,7 +7,7 @@ import { components } from '../components/mdx.js';
 import { Start } from '../components/start.js';
 import { loadReadme } from '../lib/load-readme.js';
 
-export const HomePage = async () => {
+export default async function HomePage() {
   const file = loadReadme();
   const source = `## Introduction${file.split('## Introduction')[1]}`;
   const mdx = await compileMDX({
@@ -44,4 +44,10 @@ export const HomePage = async () => {
       </div>
     </Page>
   );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
 };
