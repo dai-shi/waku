@@ -1,9 +1,9 @@
 'use client';
 
 import { useRef } from 'react';
+import cx from 'classnames';
 import { Link } from 'waku';
 import { useAtom, useSetAtom } from 'jotai';
-import cx from 'clsx';
 
 import { menuAtom } from '../atoms/index.js';
 import { Logo } from '../components/logo.js';
