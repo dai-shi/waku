@@ -110,7 +110,15 @@ globalThis.__WAKU_PREFETCHED__ = {
         headSent = true;
         data = modifyHead(data);
         if (mainJsPath) {
-          data += `<script src="${mainJsPath}" async type="module"></script>`;
+          const closingBodyIndex = data.indexOf('</body>');
+          const [firstPart, secondPart] =
+            closingBodyIndex === -1
+              ? [data, '']
+              : [data.slice(0, closingBodyIndex), data.slice(closingBodyIndex)];
+          data =
+            firstPart +
+            `<script src="${mainJsPath}" async type="module"></script>` +
+            secondPart;
         }
       }
       controller.enqueue(encoder.encode(data));
