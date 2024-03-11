@@ -15,6 +15,7 @@ import {
   parseInputString,
   PARAM_KEY_SKIP,
   SHOULD_SKIP_ID,
+  LOCATION_ID,
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
 import { getPathMapping } from '../lib/utils/path.js';
@@ -137,6 +138,7 @@ export function unstable_defineRouter(
       )
     ).flat();
     entries.push([SHOULD_SKIP_ID, Object.entries(shouldSkipObj)]);
+    entries.push([LOCATION_ID, [pathname, searchParams.toString()]]);
     return Object.fromEntries(entries);
   };
 

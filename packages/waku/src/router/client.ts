@@ -27,6 +27,7 @@ import {
   getInputString,
   PARAM_KEY_SKIP,
   SHOULD_SKIP_ID,
+  LOCATION_ID,
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
 
@@ -197,8 +198,10 @@ const equalRouteProps = (a: RouteProps, b: RouteProps) => {
 
 function InnerRouter({
   shouldSkipRef,
+  locListnerSet,
 }: {
   shouldSkipRef: MutableRefObject<ShouldSkip | undefined>;
+  locListnerSet: Set<(loc: RouteProps) => void>;
 }) {
   const refetch = useRefetch();
 
@@ -306,8 +309,12 @@ function InnerRouter({
       changeLocation(loc.path, loc.searchParams, '', false, false);
     };
     window.addEventListener('popstate', callback);
-    return () => window.removeEventListener('popstate', callback);
-  }, [changeLocation]);
+    locListnerSet.add(callback);
+    return () => {
+      locListnerSet.delete(callback);
+      window.removeEventListener('popstate', callback);
+    };
+  }, [changeLocation, locListnerSet]);
 
   const children = componentIds.reduceRight(
     (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
@@ -326,11 +333,32 @@ export function Router() {
   const initialInput = getInputString(loc.path);
   const initialSearchParamsString = loc.searchParams.toString();
   const shouldSkipRef = useRef<ShouldSkip>();
+  const locListnerSetRef = useRef(new Set<(loc: RouteProps) => void>());
   const unstable_onFetchData = useCallback((data: unknown) => {
     Promise.resolve(data)
       .then((data) => {
-        if (data && typeof data === 'object' && SHOULD_SKIP_ID in data) {
-          shouldSkipRef.current = data[SHOULD_SKIP_ID] as ShouldSkip;
+        if (data && typeof data === 'object') {
+          // We need to process LOCATION_ID before SHOULD_SKIP_ID
+          if (LOCATION_ID in data) {
+            const [pathname, searchParamsString] = data[LOCATION_ID] as [
+              string,
+              string,
+            ];
+            // FIXME this check here seems ad-hoc (less readable code)
+            if (
+              window.location.pathname !== pathname ||
+              window.location.search.replace(/^\?/, '') !== searchParamsString
+            ) {
+              const loc: RouteProps = {
+                path: pathname,
+                searchParams: new URLSearchParams(searchParamsString),
+              };
+              locListnerSetRef.current.forEach((listener) => listener(loc));
+            }
+          }
+          if (SHOULD_SKIP_ID in data) {
+            shouldSkipRef.current = data[SHOULD_SKIP_ID] as ShouldSkip;
+          }
         }
       })
       .catch(() => {});
@@ -338,7 +366,10 @@ export function Router() {
   return createElement(
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
     { initialInput, initialSearchParamsString, unstable_onFetchData },
-    createElement(InnerRouter, { shouldSkipRef }),
+    createElement(InnerRouter, {
+      shouldSkipRef,
+      locListnerSet: locListnerSetRef.current,
+    }),
   );
 }
 

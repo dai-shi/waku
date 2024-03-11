@@ -27,8 +27,11 @@ export function parseInputString(input: string): string {
 
 export const PARAM_KEY_SKIP = 'waku_router_skip';
 
-// It starts with "/" to avoid conflicing with normal component ids.
+// It starts with "/" to avoid conflicting with normal component ids.
 export const SHOULD_SKIP_ID = '/SHOULD_SKIP';
+
+// It starts with "/" to avoid conflicting with normal component ids.
+export const LOCATION_ID = '/LOCATION';
 
 // TODO revisit shouldSkip API
 export type ShouldSkip = (readonly [
