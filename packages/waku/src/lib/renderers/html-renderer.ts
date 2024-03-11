@@ -263,7 +263,7 @@ export const renderHtml = async (
               console.log('filepath', filePath)
               console.log('conditi', isDev, filePath, isDev && opts.rootDir)
               if (isDev && filePath.startsWith(opts.rootDir)) {
-                filePath = path.join('/@fs', filePath)  
+                filePath = joinPath('/@fs', filePath)  
                 console.log('condition', filePath)
               }
 
