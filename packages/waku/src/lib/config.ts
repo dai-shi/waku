@@ -12,6 +12,9 @@ const DEFAULT_HTML_HEAD = `
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 `.trim();
+const ADDITIONAL_HTML_HEAD = `
+<meta name="generator" content="Waku" />
+`.trim();
 
 const DO_NOT_BUNDLE = '';
 
@@ -43,5 +46,8 @@ export async function resolveConfig(config: Config) {
     middleware: DEFAULT_MIDDLEWARE,
     ...config,
   };
+  if (!resolvedConfig.htmlHead.includes(ADDITIONAL_HTML_HEAD)) {
+    resolvedConfig.htmlHead += ADDITIONAL_HTML_HEAD;
+  }
   return resolvedConfig;
 }

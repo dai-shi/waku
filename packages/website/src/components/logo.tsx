@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import cx from 'clsx';
+import cx from 'classnames';
 
 type LogoProps = {
   className?: string;

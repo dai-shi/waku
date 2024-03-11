@@ -13,7 +13,7 @@
     "react": "18.3.0-canary-0066e0b68-20240306",
     "react-dom": "18.3.0-canary-0066e0b68-20240306",
     "react-server-dom-webpack": "18.3.0-canary-0066e0b68-20240306",
-    "waku": "0.20.0-alpha.0"
+    "waku": "0.20.0-alpha.1"
   },
   "devDependencies": {
     "@types/cookie": "0.6.0",
