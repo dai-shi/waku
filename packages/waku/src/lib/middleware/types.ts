@@ -1,4 +1,3 @@
-import type { ModuleNode } from 'vite';
 import type { Config } from '../../config.js';
 import type { EntriesPrd } from '../../server.js';
 import type {
@@ -6,7 +5,7 @@ import type {
   getSsrConfigWithWorker,
 } from '../renderers/dev-worker-api.js';
 
-export type ClonableModuleNode = Pick<ModuleNode, 'url' | 'file'>;
+export type ClonableModuleNode = { url: string, file: string };
 
 export type HandlerReq = {
   body: ReadableStream;
@@ -29,7 +28,7 @@ export type HandlerContext = {
   readonly context: RscContext;
   devServer?: {
     rootDir: string;
-    initialModuleGraph: ClonableModuleNode[];
+    initialModules: ClonableModuleNode[];
     renderRscWithWorker: typeof renderRscWithWorker;
     getSsrConfigWithWorker: typeof getSsrConfigWithWorker;
     loadServerFile: (fileURL: string) => Promise<Record<string, any>>;

@@ -53,7 +53,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
     id,
     type: _removed,
     hasModuleIdCallback,
-    initialModuleGraph,
+    initialModules: initialModules,
     ...rest
   } = mesg;
   try {
@@ -79,9 +79,9 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         isDev: true,
         loadServerFile,
         loadServerModule,
+        initialModules,
         resolveClientEntry: (id: string) =>
           resolveClientEntryForDev(id, rest.config),
-        initialModuleGraph,
         entries: await loadEntries(rest.config),
       },
     );

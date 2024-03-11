@@ -44,7 +44,7 @@ export const rsc: Middleware = (options) => {
         const readable = await (ctx.devServer
           ? ctx.devServer.renderRscWithWorker({
               ...args,
-              initialModuleGraph: ctx.devServer.initialModuleGraph,
+              initialModules: ctx.devServer.initialModules,
             })
           : renderRsc(args, { isDev: false, entries }));
         ctx.res.body = readable;

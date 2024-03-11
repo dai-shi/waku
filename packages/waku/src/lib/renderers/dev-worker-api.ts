@@ -18,7 +18,7 @@ export type MessageReq =
       id: number;
       type: 'render';
       searchParamsString: string;
-      initialModuleGraph: ClonableModuleNode[];
+      initialModules: ClonableModuleNode[];
       hasModuleIdCallback: boolean;
     } & Omit<RenderRscArgs, 'searchParams' | 'moduleIdCallback' | 'config'> & {
         config: Omit<ResolvedConfig, 'middleware'>;
@@ -29,7 +29,7 @@ export type MessageReq =
       config: Omit<ResolvedConfig, 'middleware'>;
       pathname: string;
       searchParamsString: string;
-      initialModuleGraph: ClonableModuleNode[];
+      initialModules: ClonableModuleNode[];
     };
 
 export type MessageRes =
@@ -128,7 +128,7 @@ export function registerHotUpdateCallback(
 let nextId = 1;
 
 export async function renderRscWithWorker(
-  args: RenderRscArgs & { initialModuleGraph: ClonableModuleNode[] },
+  args: RenderRscArgs & { initialModules: ClonableModuleNode[] },
 ): Promise<ReadableStream> {
   const worker = await getWorker();
   const id = nextId++;
@@ -172,7 +172,7 @@ export async function renderRscWithWorker(
       config: args.config,
       input: args.input,
       searchParamsString: args.searchParams.toString(),
-      initialModuleGraph: args.initialModuleGraph,
+      initialModules: args.initialModules,
       method: args.method,
       context: args.context,
       body: args.body,
@@ -187,7 +187,7 @@ export async function renderRscWithWorker(
 }
 
 export async function getSsrConfigWithWorker(
-  args: GetSsrConfigArgs & { initialModuleGraph: ClonableModuleNode[] },
+  args: GetSsrConfigArgs & { initialModules: ClonableModuleNode[] },
 ): Promise<{
   input: string;
   searchParams?: URLSearchParams;
@@ -224,7 +224,7 @@ export async function getSsrConfigWithWorker(
       type: 'getSsrConfig',
       config: args.config,
       pathname: args.pathname,
-      initialModuleGraph: args.initialModuleGraph,
+      initialModules: args.initialModules,
       searchParamsString: args.searchParams.toString(),
     };
     worker.postMessage(mesg);

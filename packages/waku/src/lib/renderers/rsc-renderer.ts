@@ -43,7 +43,7 @@ type RenderRscOpts =
       entries: EntriesDev;
       loadServerFile: (fileURL: string) => Promise<unknown>;
       loadServerModule: (id: string) => Promise<unknown>;
-      initialModuleGraph: ClonableModuleNode[];
+      initialModules: ClonableModuleNode[];
       resolveClientEntry: (id: string) => string;
     };
 
@@ -101,7 +101,7 @@ export async function renderRsc(
         const [file, name] = encodedId.split('#') as [string, string];
         let id = resolveClientEntry(file, config);
         if (isDev) {
-          for (const moduleNode of opts.initialModuleGraph) {
+          for (const moduleNode of opts.initialModules) {
             if (moduleNode.file === file) {
               id = moduleNode.url;
             }

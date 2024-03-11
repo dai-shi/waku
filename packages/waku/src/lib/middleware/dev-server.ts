@@ -158,7 +158,7 @@ export const devServer: Middleware = (options) => {
     }
   };
 
-  let initialModuleGraph: ClonableModuleNode[];
+  let initialModules: ClonableModuleNode[];
 
   return async (ctx, next) => {
     const [{ middleware: _removed, ...config }, vite] = await Promise.all([
@@ -176,15 +176,15 @@ export const devServer: Middleware = (options) => {
       }
     }
 
-    if (!initialModuleGraph) {
-      initialModuleGraph = Array.from(
+    if (!initialModules) {
+      initialModules = Array.from(
         vite.moduleGraph.idToModuleMap.values(),
-      ).map((m) => ({ url: m.url, file: m.file }));
+      ).map((m) => ({ url: m.url, file: m.file! }));
     }
 
     ctx.devServer = {
       rootDir: vite.config.root,
-      initialModuleGraph,
+      initialModules: initialModules,
       renderRscWithWorker,
       getSsrConfigWithWorker,
       loadServerFile,

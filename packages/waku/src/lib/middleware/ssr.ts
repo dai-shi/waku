@@ -61,7 +61,7 @@ export const ssr: Middleware = (options) => {
                     config,
                     pathname,
                     searchParams,
-                    initialModuleGraph: devServer.initialModuleGraph,
+                    initialModules: devServer.initialModules,
                   }),
                 rootDir: devServer.rootDir,
                 loadServerFile: devServer.loadServerFile,
