@@ -106,6 +106,7 @@ export function unstable_defineRouter(
       return null;
     }
     const skip = searchParams.getAll(PARAM_KEY_SKIP) || [];
+    searchParams.delete(PARAM_KEY_SKIP); // delete all
     const componentIds = getComponentIds(pathname);
     const props: RouteProps = { path: pathname, searchParams };
     const entries = (
@@ -224,6 +225,13 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
 export function unstable_redirect(
   pathname: string,
   searchParams?: URLSearchParams,
+  skip?: string[],
 ) {
+  if (skip) {
+    searchParams = new URLSearchParams(searchParams);
+    for (const id of skip) {
+      searchParams.append(PARAM_KEY_SKIP, id);
+    }
+  }
   rerender(pathname, searchParams);
 }
