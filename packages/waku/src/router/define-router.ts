@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import type { ComponentProps, FunctionComponent, ReactNode } from 'react';
 
-import { defineEntries } from '../server.js';
+import { defineEntries, rerender } from '../server.js';
 import type {
   BuildConfig,
   RenderEntries,
@@ -219,4 +219,11 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   };
 
   return { renderEntries, getBuildConfig, getSsrConfig };
+}
+
+export function unstable_redirect(
+  pathname: string,
+  searchParams?: URLSearchParams,
+){
+  rerender(pathname, searchParams);
 }
