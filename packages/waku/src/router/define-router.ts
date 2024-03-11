@@ -21,6 +21,10 @@ import { getPathMapping } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
 import { ServerRouter } from './client.js';
 
+type RoutePropsForLayout = Omit<RouteProps, 'searchParams'> & {
+  children: ReactNode;
+};
+
 // TODO revisit shouldSkip API
 const ShoudSkipComponent = ({ shouldSkip }: { shouldSkip: ShouldSkip }) =>
   createElement('meta', {
@@ -46,9 +50,7 @@ export function unstable_defineRouter(
     },
   ) => Promise<
     | FunctionComponent<RouteProps>
-    | FunctionComponent<RouteProps & { children: ReactNode }>
-    | { default: FunctionComponent<RouteProps> }
-    | { default: FunctionComponent<RouteProps & { children: ReactNode }> }
+    | FunctionComponent<RoutePropsForLayout>
     | null
   >,
 ): ReturnType<typeof defineEntries> {
@@ -107,7 +109,6 @@ export function unstable_defineRouter(
     }
     const skip = searchParams.getAll(PARAM_KEY_SKIP) || [];
     const componentIds = getComponentIds(pathname);
-    const props: RouteProps = { path: pathname, searchParams };
     const entries = (
       await Promise.all(
         componentIds.map(async (id) => {
@@ -121,17 +122,21 @@ export function unstable_defineRouter(
               delete shouldSkip[id];
             }
           };
-          const mod = await getComponent(id, {
+          const component = await getComponent(id, {
             unstable_setShouldSkip: setShoudSkip,
             unstable_buildConfig: buildConfig,
           });
-          const component = mod && 'default' in mod ? mod.default : mod;
           if (!component) {
             return [];
           }
           const element = createElement(
-            component as FunctionComponent<RouteProps>,
-            props,
+            component as FunctionComponent<{
+              path: string;
+              searchParams?: URLSearchParams;
+            }>,
+            id.endsWith('/layout')
+              ? { path: pathname }
+              : { path: pathname, searchParams },
             createElement(Children),
           );
           return [[id, element]] as const;
