@@ -15,7 +15,7 @@ import {
   getRepoInfo,
   hasRepo,
   type RepoInfo,
-} from './helpers/examples';
+} from './helpers/example-option';
 
 // FIXME is there a better way with prompts?
 const { tokens } = parseArgs({
