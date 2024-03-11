@@ -205,7 +205,7 @@ export const getConfig = async () => {
 
 #### Single routes
 
-Pages can be rendered as a single route (e.g., `/about` or `/blog`).
+Pages can be rendered as a single route (e.g., `/about.tsx` or `/blog.tsx`).
 
 ```tsx
 // ./src/pages/about.tsx
@@ -239,7 +239,7 @@ export const getConfig = async () => {
 
 #### Segment routes
 
-Pages can also render a segment route (e.g., `/blog/[slug]`). The rendered React component automatically receives a prop named by the segment (e.g, `slug`) with the value of the rendered route (e.g., `'introducing-waku'`). If statically prerendering a segment route at build time, a `staticPaths` array must also be provided.
+Pages can also render a segment route (e.g., `/blog/[slug].tsx`). The rendered React component automatically receives a prop named by the segment (e.g, `slug`) with the value of the rendered route (e.g., `'introducing-waku'`). If statically prerendering a segment route at build time, a `staticPaths` array must also be provided.
 
 ```tsx
 // ./src/pages/blog/[slug].tsx
@@ -317,7 +317,7 @@ const getStaticPaths = async () => {
 
 #### Nested segment routes
 
-Routes can contain multiple segments (e.g., `/shop/[category]/[product]`).
+Routes can contain multiple segments (e.g., `/shop/[category]/[product].tsx`).
 
 ```tsx
 // ./src/pages/shop/[category]/[product].tsx
@@ -357,7 +357,7 @@ export const getConfig = async () => {
 
 #### Catch-all routes
 
-Catch-all or "wildcard" routes (e.g., `/app/[...catchAll]`) have indefinite segments. Wildcard routes receive a prop with segment values as an ordered array.
+Catch-all or "wildcard" routes (e.g., `/app/[...catchAll].tsx`) have indefinite segments. Wildcard routes receive a prop with segment values as an ordered array.
 
 For example, the `/app/profile/settings` route would receive a `catchAll` prop with the value `['profile', 'settings']`. These values can then be used to determine what to render in the component.
 
