@@ -14,6 +14,7 @@ import {
 import type {
   ComponentProps,
   FunctionComponent,
+  MutableRefObject,
   ReactNode,
   AnchorHTMLAttributes,
   ReactElement,
@@ -147,29 +148,26 @@ export function Link({
 }
 
 const getSkipList = (
+  shouldSkip: ShouldSkip | undefined,
   componentIds: readonly string[],
   props: RouteProps,
   cached: Record<string, RouteProps>,
 ): string[] => {
-  const ele: any = document.querySelector('meta[name="waku-should-skip"]');
-  if (!ele) {
-    return [];
-  }
-  const shouldSkip: ShouldSkip = JSON.parse(ele.content);
+  const shouldSkipObj = Object.fromEntries(shouldSkip || []);
   return componentIds.filter((id) => {
     const prevProps = cached[id];
     if (!prevProps) {
       return false;
     }
-    const shouldCheck = shouldSkip?.[id];
+    const shouldCheck = shouldSkipObj[id];
     if (!shouldCheck) {
       return false;
     }
-    if (shouldCheck.path && props.path !== prevProps.path) {
+    if (shouldCheck[0] && props.path !== prevProps.path) {
       return false;
     }
     if (
-      shouldCheck.keys?.some(
+      shouldCheck[1]?.some(
         (key) =>
           props.searchParams.get(key) !== prevProps.searchParams.get(key),
       )
@@ -197,7 +195,11 @@ const equalRouteProps = (a: RouteProps, b: RouteProps) => {
   return true;
 };
 
-function InnerRouter() {
+function InnerRouter({
+  shouldSkipRef,
+}: {
+  shouldSkipRef: MutableRefObject<ShouldSkip | undefined>;
+}) {
   const refetch = useRefetch();
 
   const [loc, setLoc] = useState(parseLocation);
@@ -247,7 +249,12 @@ function InnerRouter() {
       ) {
         return; // everything is cached
       }
-      const skip = getSkipList(componentIds, loc, cachedRef.current);
+      const skip = getSkipList(
+        shouldSkipRef.current,
+        componentIds,
+        loc,
+        cachedRef.current,
+      );
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is skipped
       }
@@ -266,14 +273,19 @@ function InnerRouter() {
         ),
       }));
     },
-    [refetch],
+    [refetch, shouldSkipRef],
   );
 
   const prefetchLocation: PrefetchLocation = useCallback(
     (path, searchParams) => {
       const componentIds = getComponentIds(path);
       const routeProps: RouteProps = { path, searchParams };
-      const skip = getSkipList(componentIds, routeProps, cachedRef.current);
+      const skip = getSkipList(
+        shouldSkipRef.current,
+        componentIds,
+        routeProps,
+        cachedRef.current,
+      );
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is cached
       }
@@ -285,7 +297,7 @@ function InnerRouter() {
       prefetchRSC(input, searchParamsString);
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(path);
     },
-    [],
+    [shouldSkipRef],
   );
 
   useEffect(() => {
@@ -303,14 +315,9 @@ function InnerRouter() {
   );
 
   return createElement(
-    Fragment,
-    null,
-    createElement(Slot, { id: SHOULD_SKIP_ID }),
-    createElement(
-      RouterContext.Provider,
-      { value: { loc, changeLocation, prefetchLocation } },
-      children,
-    ),
+    RouterContext.Provider,
+    { value: { loc, changeLocation, prefetchLocation } },
+    children,
   );
 }
 
@@ -318,10 +325,20 @@ export function Router() {
   const loc = parseLocation();
   const initialInput = getInputString(loc.path);
   const initialSearchParamsString = loc.searchParams.toString();
+  const shouldSkipRef = useRef<ShouldSkip>();
+  const unstable_onFetchData = useCallback((data: unknown) => {
+    Promise.resolve(data)
+      .then((data) => {
+        if (data && typeof data === 'object' && SHOULD_SKIP_ID in data) {
+          shouldSkipRef.current = data[SHOULD_SKIP_ID] as ShouldSkip;
+        }
+      })
+      .catch(() => {});
+  }, []);
   return createElement(
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
-    { initialInput, initialSearchParamsString },
-    createElement(InnerRouter),
+    { initialInput, initialSearchParamsString, unstable_onFetchData },
+    createElement(InnerRouter, { shouldSkipRef }),
   );
 }
 

@@ -30,11 +30,11 @@ export const PARAM_KEY_SKIP = 'waku_router_skip';
 // It starts with "/" to avoid conflicing with normal component ids.
 export const SHOULD_SKIP_ID = '/SHOULD_SKIP';
 
-// The key is componentId
-export type ShouldSkip = Record<
-  string,
-  {
-    path?: boolean; // if we compare path
-    keys?: string[]; // searchParams keys to compare
-  }
->;
+// TODO revisit shouldSkip API
+export type ShouldSkip = (readonly [
+  componentId: string,
+  readonly [
+    path?: boolean, // if we compare path
+    keys?: string[], // searchParams keys to compare
+  ],
+])[];

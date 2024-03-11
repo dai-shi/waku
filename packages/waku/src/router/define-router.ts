@@ -21,12 +21,7 @@ import { getPathMapping } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
 import { ServerRouter } from './client.js';
 
-// TODO revisit shouldSkip API
-const ShoudSkipComponent = ({ shouldSkip }: { shouldSkip: ShouldSkip }) =>
-  createElement('meta', {
-    name: 'waku-should-skip',
-    content: JSON.stringify(shouldSkip),
-  });
+type ShouldSkipValue = ShouldSkip[number][1];
 
 export function unstable_defineRouter(
   getPathConfig: () => Promise<
@@ -41,7 +36,7 @@ export function unstable_defineRouter(
     componentId: string, // "**/layout" or "**/page"
     options: {
       // TODO setShouldSkip API is too hard to understand
-      unstable_setShouldSkip: (val?: ShouldSkip[string]) => void;
+      unstable_setShouldSkip: (val?: ShouldSkipValue) => void;
       unstable_buildConfig: BuildConfig | undefined;
     },
   ) => Promise<
@@ -95,7 +90,9 @@ export function unstable_defineRouter(
         ? ['NOT_FOUND', 'HAS_404']
         : ['NOT_FOUND'];
   };
-  const shouldSkip: ShouldSkip = {};
+  const shouldSkipObj: {
+    [componentId: ShouldSkip[number][0]]: ShouldSkip[number][1];
+  } = {};
 
   const renderEntries: RenderEntries = async (
     input,
@@ -109,17 +106,17 @@ export function unstable_defineRouter(
     searchParams.delete(PARAM_KEY_SKIP); // delete all
     const componentIds = getComponentIds(pathname);
     const props: RouteProps = { path: pathname, searchParams };
-    const entries = (
+    const entries: (readonly [string, ReactNode])[] = (
       await Promise.all(
         componentIds.map(async (id) => {
           if (skip?.includes(id)) {
             return [];
           }
-          const setShoudSkip = (val?: ShouldSkip[string]) => {
+          const setShoudSkip = (val?: ShouldSkipValue) => {
             if (val) {
-              shouldSkip[id] = val;
+              shouldSkipObj[id] = val;
             } else {
-              delete shouldSkip[id];
+              delete shouldSkipObj[id];
             }
           };
           const mod = await getComponent(id, {
@@ -139,10 +136,7 @@ export function unstable_defineRouter(
         }),
       )
     ).flat();
-    entries.push([
-      SHOULD_SKIP_ID,
-      createElement(ShoudSkipComponent, { shouldSkip }) as any,
-    ]);
+    entries.push([SHOULD_SKIP_ID, Object.entries(shouldSkipObj)]);
     return Object.fromEntries(entries);
   };
 
@@ -210,7 +204,6 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         Omit<ComponentProps<typeof ServerRouter>, 'children'>
       >,
       { loc: { path: pathname, searchParams } },
-      createElement(Slot, { id: SHOULD_SKIP_ID }),
       componentIds.reduceRight(
         (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
         null,
