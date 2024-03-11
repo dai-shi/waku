@@ -24,7 +24,7 @@ We recommend other frameworks for heavy ecommerce or enterprise applications. Wa
 Start a new Waku project with the `create` command for your preferred package manager. It will scaffold a new project with our default [Waku starter](https://github.com/dai-shi/waku/tree/main/examples/01_template).
 
 ```
-npm create waku@latest
+npm create waku@next
 ```
 
 **Node.js version requirement:** `^20.8.0 || ^18.17.0`
@@ -49,11 +49,11 @@ import db from 'some-db';
 
 import { Gallery } from '../components/gallery.js';
 
-export const StorePage = async () => {
+export default async function StorePage() {
   const products = await db.query('SELECT * FROM products');
 
   return <Gallery products={products} />;
-};
+}
 ```
 
 #### Client components
@@ -94,15 +94,21 @@ export const Headline = ({ children }) => {
 Server components can import client components and doing so will create a server-client boundary. Client components cannot import server components, but they can accept server components as props such as `children`. For example, you may want to add global context providers this way.
 
 ```tsx
-// ./src/templates/root-layout.tsx
+// ./src/pages/_layout.tsx
 import { Providers } from '../components/providers.js';
 
-export const RootLayout = async ({ children }) => {
+export default async function RootLayout({ children }) {
   return (
     <Providers>
       <main>{children}</main>
     </Providers>
   );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
 };
 ```
 
@@ -135,220 +141,258 @@ Client components are server-side rendered as SSR is separate from RSC. See the 
 
 To learn more about the modern React architecture, we recommend [Making Sense of React Server Components](https://www.joshwcomeau.com/react/server-components/) and [The Two Reacts: Part 1](https://overreacted.io/the-two-reacts/).
 
-## Routing (low-level API)
+## Routing
 
-The entry point for routing in Waku projects is `./src/entries.tsx`. Export the `createPages` function to create your layouts and pages programmatically.
+Waku provides a familiar file-based “pages router” experience built for the modern React server components era.
 
-Both `createLayout` and `createPage` accept a configuration object to specify the route path, React component, and render method. Waku currently supports two options: `'static'` for static prerendering (SSG) or `'dynamic'` for server-side rendering (SSR).
+Its underlying [low-level API](https://github.com/dai-shi/waku/blob/main/docs/minimal-api.mdx) is also available for those that prefer programmatic routing. This documentation covers file-baesed routing since many React developers prefer it, but please feel free to try both and see which you like more.
+
+### Overview
+
+The directory for file-based routing in Waku projects is `./src/pages`. Layouts and pages can be created as easily as making a new file with two exports: a default function for the React component and a named `getConfig` function to specify the render method and other configuration details.
+
+Waku currently supports two rendering options: `'static'` for static prerendering (SSG) or `'dynamic'` for server-side rendering (SSR).
 
 For example, you can statically prerender a global header and footer in the root layout at build time, but dynamically render the rest of a home page at request time for personalized user experiences.
 
 ```tsx
-// ./src/entries.tsx
-import { createPages } from 'waku';
+// ./src/pages/_layout.tsx
 
-import { RootLayout } from './templates/root-layout.js';
-import { HomePage } from './templates/home-page.js';
+// Create root layout
+export default async function RootLayout({ children }) {
+  return (
+    <>
+      <Header />
+      <main>{children}</main>
+      <Footer />
+    </>
+  );
+}
 
-export default createPages(async ({ createPage, createLayout }) => {
-  // Create root layout
-  createLayout({
+export const getConfig = async () => {
+  return {
     render: 'static',
-    path: '/',
-    component: RootLayout,
-  });
+  };
+};
+```
 
-  // Create home page
-  createPage({
+```tsx
+// ./src/pages/index.tsx
+
+// Create home page
+export default async function HomePage() {
+  const data = await getData();
+
+  return (
+    <div>
+      <h1>{data.someDynamicTitle}</h1>
+    </div>
+  );
+}
+
+const getData = async () => {
+  /* ... */
+};
+
+export const getConfig = async () => {
+  return {
     render: 'dynamic',
-    path: '/',
-    component: HomePage,
-  });
-});
+  };
+};
 ```
 
 ### Pages
 
 #### Single routes
 
-Pages can be rendered as a single route (e.g., `/about`).
+Pages can be rendered as a single route (e.g., `/about.tsx` or `/blog.tsx`).
 
 ```tsx
-// ./src/entries.tsx
-import { createPages } from 'waku';
+// ./src/pages/about.tsx
 
-import { AboutPage } from './templates/about-page.js';
-import { BlogIndexPage } from './templates/blog-index-page.js';
+// Create about page
+export default async function AboutPage() {
+  return <>{/* ...*/}</>;
+}
 
-export default createPages(async ({ createPage }) => {
-  // Create about page
-  createPage({
+export const getConfig = async () => {
+  return {
     render: 'static',
-    path: '/about',
-    component: AboutPage,
-  });
+  };
+};
+```
 
-  // Create blog index page
-  createPage({
+```tsx
+// ./src/pages/blog.tsx
+
+// Create blog index page
+export default async function BlogIndexPage() {
+  return <>{/* ...*/}</>;
+}
+
+export const getConfig = async () => {
+  return {
     render: 'static',
-    path: '/blog',
-    component: BlogIndexPage,
-  });
-});
+  };
+};
 ```
 
 #### Segment routes
 
-Pages can also render a segment route (e.g., `/blog/[slug]`). The rendered React component automatically receives a prop named by the segment (e.g, `slug`) with the value of the rendered route (e.g., `'introducing-waku'`). If statically prerendering a segment route at build time, a `staticPaths` array must also be provided.
+Pages can also render a segment route (e.g., `/blog/[slug].tsx`). The rendered React component automatically receives a prop named by the segment (e.g, `slug`) with the value of the rendered route (e.g., `'introducing-waku'`). If statically prerendering a segment route at build time, a `staticPaths` array must also be provided.
 
 ```tsx
-// ./src/entries.tsx
-import { createPages } from 'waku';
+// ./src/pages/blog/[slug].tsx
 
-import { BlogArticlePage } from './templates/blog-article-page.js';
-import { ProductCategoryPage } from './templates/product-category-page.js';
+// Create blog article pages
+export default async function BlogArticlePage({ slug }) {
+  const data = await getData(slug);
 
-export default createPages(async ({ createPage }) => {
-  // Create blog article pages
-  // `<BlogArticlePage>` receives `slug` prop
-  createPage({
+  return <>{/* ...*/}</>;
+}
+
+const getData = async (slug) => {
+  /* ... */
+};
+
+export const getConfig = async () => {
+  return {
     render: 'static',
-    path: '/blog/[slug]',
     staticPaths: ['introducing-waku', 'introducing-create-pages'],
-    component: BlogArticlePage,
-  });
+  };
+};
+```
 
-  // Create product category pages
-  // `<ProductCategoryPage>` receives `category` prop
-  createPage({
+```tsx
+// ./src/pages/shop/[category].tsx
+
+// Create product category pages
+export default async function ProductCategoryPage({ category }) {
+  const data = await getData(category);
+
+  return <>{/* ...*/}</>;
+}
+
+const getData = async (category) => {
+  /* ... */
+};
+
+export const getConfig = async () => {
+  return {
     render: 'dynamic',
-    path: '/shop/[category]',
-    component: ProductCategoryPage,
-  });
-});
+  };
+};
 ```
 
 Static paths (or other values) could also be generated programmatically.
 
 ```tsx
-// ./src/entries.tsx
-import { createPages } from 'waku';
+// ./src/pages/blog/[slug].tsx
 
-import { getBlogPaths } from './lib/get-blog-paths.js';
-import { BlogArticlePage } from './templates/blog-article-page.js';
+// Create blog article pages
+export default async function BlogArticlePage({ slug }) {
+  const data = await getData(slug);
 
-export default createPages(async ({ createPage }) => {
-  const blogPaths = await getBlogPaths();
+  return <>{/* ...*/}</>;
+}
 
-  createPage({
+const getData = async (slug) => {
+  /* ... */
+};
+
+export const getConfig = async () => {
+  const staticPaths = await getStaticPaths();
+
+  return {
     render: 'static',
-    path: '/blog/[slug]',
-    staticPaths: blogPaths,
-    component: BlogArticlePage,
-  });
-});
+    staticPaths,
+  };
+};
+
+const getStaticPaths = async () => {
+  /* ... */
+};
 ```
 
 #### Nested segment routes
 
-Routes can contain multiple segments (e.g., `/shop/[category]/[product]`).
+Routes can contain multiple segments (e.g., `/shop/[category]/[product].tsx`).
 
 ```tsx
-// ./src/entries.tsx
-import { createPages } from 'waku';
+// ./src/pages/shop/[category]/[product].tsx
 
-import { ProductDetailPage } from './templates/product-detail-page.js';
+// Create product category pages
+export default async function ProductDetailPage({ category, product }) {
+  return <>{/* ...*/}</>;
+}
 
-export default createPages(async ({ createPage }) => {
-  // Create product detail pages
-  // `<ProductDetailPage>` receives `category` and `product` props
-  createPage({
+export const getConfig = async () => {
+  return {
     render: 'dynamic',
-    path: '/shop/[category]/[product]',
-    component: ProductDetailPage,
-  });
-});
+  };
+};
 ```
 
 For static prerendering of nested segment routes, the `staticPaths` array is instead composed of ordered arrays.
 
 ```tsx
-// ./src/entries.tsx
-import { createPages } from 'waku';
+// ./src/pages/shop/[category]/[product].tsx
 
-import { ProductDetailPage } from './templates/product-detail-page.js';
+// Create product detail pages
+export default async function ProductDetailPage({ category, product }) {
+  return <>{/* ...*/}</>;
+}
 
-export default createPages(async ({ createPage }) => {
-  // Create product detail pages
-  // `<ProductDetailPage>` receives `category` and `product` props
-  createPage({
+export const getConfig = async () => {
+  return {
     render: 'static',
-    path: '/shop/[category]/[product]',
     staticPaths: [
       ['someCategory', 'someProduct'],
       ['someCategory', 'anotherProduct'],
     ],
-    component: ProductDetailPage,
-  });
-});
+  };
+};
 ```
 
 #### Catch-all routes
 
-Catch-all or "wildcard" routes (e.g., `/app/[...catchAll]`) have indefinite segments. Wildcard routes receive a prop with segment values as an ordered array.
+Catch-all or "wildcard" routes (e.g., `/app/[...catchAll].tsx`) have indefinite segments. Wildcard routes receive a prop with segment values as an ordered array.
 
 For example, the `/app/profile/settings` route would receive a `catchAll` prop with the value `['profile', 'settings']`. These values can then be used to determine what to render in the component.
 
 ```tsx
-// ./src/entries.tsx
-import { createPages } from 'waku';
+// ./src/pages/app/[...catchAll].tsx
 
-import { DashboardPage } from './templates/dashboard-page.js';
+// Create dashboard page
+export default async function DashboardPage({ catchAll }) {
+  return <>{/* ...*/}</>;
+}
 
-export default createPages(async ({ createPage }) => {
-  // Create account dashboard
-  // `<DashboardPage>` receives `catchAll` prop (string[])
-  createPage({
+export const getConfig = async () => {
+  return {
     render: 'dynamic',
-    path: '/app/[...catchAll]',
-    component: DashboardPage,
-  });
-});
+  };
+};
 ```
 
 ### Layouts
 
-Layouts wrap an entire route and its descendents. They must accept a `children` prop of type `ReactNode`. While not required, you will typically want at least a root layout.
+Layouts are created with a special `_layout.tsx` file name and wrap the entire route and its descendents. They must accept a `children` prop of type `ReactNode`. While not required, you will typically want at least a root layout.
 
 #### Root layout
 
-The root layout rendered at `path: '/'` is especially useful. It can be used for setting global styles, global metadata, global providers, global data, and global components, such as a header and footer.
+The root layout placed at `./src/pages/_layout.tsx` is especially useful. It can be used for setting global styles, global metadata, global providers, global data, and global components, such as a header and footer.
 
 ```tsx
-// ./src/entries.tsx
-import { createPages } from 'waku';
-
-import { RootLayout } from './templates/root-layout.js';
-
-export default createPages(async ({ createLayout }) => {
-  // Add a global header and footer
-  createLayout({
-    render: 'static',
-    path: '/',
-    component: RootLayout,
-  });
-});
-```
-
-```tsx
-// ./src/templates/root-layout.tsx
+// ./src/pages/_layout.tsx
 import '../styles.css';
 
 import { Providers } from '../components/providers.js';
 import { Header } from '../components/header.js';
 import { Footer } from '../components/footer.js';
 
-export const RootLayout = async ({ children }) => {
+// Create root layout
+export default async function RootLayout({ children }) {
   return (
     <Providers>
       <meta property="og:image" content="/images/preview.png" />
@@ -358,7 +402,7 @@ export const RootLayout = async ({ children }) => {
       <Footer />
     </Providers>
   );
-};
+}
 ```
 
 ```tsx
@@ -376,36 +420,21 @@ export const Providers = ({ children }) => {
 
 #### Other layouts
 
-Layouts are also helpful further down the tree. For example, you could add a layout at `path: '/blog'` to add a sidebar to both the blog index and all blog article pages.
+Layouts are also helpful further down the tree. For example, you could add a layout at `./src/pages/blog/_layout.tsx` to add a sidebar to both the blog index and all blog article pages.
 
 ```tsx
-// ./src/entries.tsx
-import { createPages } from 'waku';
+// ./src/pages/blog/_layout.tsx
+import { Sidebar } from '../../components/sidebar.js';
 
-import { BlogLayout } from './templates/blog-layout.js';
-
-export default createPages(async ({ createLayout }) => {
-  // Add a sidebar to the blog index and blog article pages
-  createLayout({
-    render: 'static',
-    path: '/blog',
-    component: BlogLayout,
-  });
-});
-```
-
-```tsx
-// ./src/templates/blog-layout.tsx
-import { Sidebar } from '../components/sidebar.js';
-
-export const BlogLayout = async ({ children }) => {
+// Create blog layout
+export default async function BlogLayout({ children }) {
   return (
     <div className="flex">
       <div>{children}</div>
       <Sidebar />
     </div>
   );
-};
+}
 ```
 
 ## Navigation
@@ -413,17 +442,17 @@ export const BlogLayout = async ({ children }) => {
 Internal links should be made with the Waku `<Link />` component. It accepts a `to` prop for the destination, which is automatically prefetched ahead of the navigation.
 
 ```tsx
-// ./src/templates/home-page.tsx
+// ./src/pages/index.tsx
 import { Link } from 'waku';
 
-export const HomePage = async () => {
+export default async function HomePage() {
   return (
     <>
       <h1>Home</h1>
       <Link to="/about">About</Link>
     </>
   );
-};
+}
 ```
 
 ## Static assets
@@ -432,6 +461,17 @@ Static assets such as images, fonts, stylesheets, and scripts can be placed in a
 
 For example, an image added to `./public/images/logo.svg` can be rendered via `<img src="/images/logo.svg" />`.
 
+## File system
+
+Files placed in a special `./private` folder of the Waku project root directory can be securely accessed in React server components.
+
+```tsx
+export default async function HomePage() {
+  const file = readFileSync('./private/README.md', 'utf8');
+  /* ... */
+}
+```
+
 ## Data fetching
 
 ### Server
@@ -439,11 +479,11 @@ For example, an image added to `./public/images/logo.svg` can be rendered via `<
 All of the wonderful patterns of React server components are supported. For example, you can compile MDX files or perform code syntax highlighting on the server with zero impact on the client bundle size.
 
 ```tsx
-// ./src/templates/blog-article-page.tsx
-import { MDX } from '../components/mdx.js';
-import { getArticle } from '../lib/get-article.js';
+// ./src/pages/blog/[slug].tsx
+import { MDX } from '../../components/mdx.js';
+import { getArticle } from '../../lib/get-article.js';
 
-export const BlogArticlePage = async ({ slug }) => {
+export default async function BlogArticlePage({ slug }) {
   const article = await getArticle(slug);
 
   return (
@@ -453,7 +493,7 @@ export const BlogArticlePage = async ({ slug }) => {
       <MDX>{article.content}</MDX>
     </>
   );
-};
+}
 ```
 
 ### Client
@@ -471,8 +511,8 @@ We're exploring a deeper integration of atomic state management into Waku to ach
 Waku automatically hoists any title, meta, and link tags to the document head. So adding meta tags is as simple as adding it to any of your layout or page components.
 
 ```tsx
-// ./src/templates/root-layout.tsx
-export const RootLayout = async ({ children }) => {
+// ./src/pages/_layout.tsx
+export default async function RootLayout({ children }) {
   return (
     <>
       <meta property="og:image" content="/images/preview.png" />
@@ -480,12 +520,12 @@ export const RootLayout = async ({ children }) => {
       {children}
     </>
   );
-};
+}
 ```
 
 ```tsx
-// ./src/templates/home-page.tsx
-export const HomePage = async () => {
+// ./src/pages/index.tsx
+export default async function HomePage() {
   return (
     <>
       <title>Waku</title>
@@ -494,21 +534,21 @@ export const HomePage = async () => {
       <div>Hello world!</div>
     </>
   );
-};
+}
 ```
 
 Metadata could also be generated programmatically.
 
 ```tsx
-// ./src/templates/home-page.tsx
-export const HomePage = async () => {
+// ./src/pages/index.tsx
+export default async function HomePage() {
   return (
     <>
       <Head />
       <div>{/* ...*/}</div>
     </>
   );
-};
+}
 
 const Head = async () => {
   const metadata = await getMetadata();
@@ -533,12 +573,12 @@ const getMetadata = async () => {
 Install any required dev dependencies (e.g., `npm i -D tailwindcss autoprefixer`) and set up any required configuration (e.g., `postcss.config.js`). Then create your global stylesheet (e.g., `./src/styles.css`) and import it into the root layout.
 
 ```tsx
-// ./src/templates/root-layout.tsx
+// ./src/pages/_layout.tsx
 import '../styles.css';
 
-export const RootLayout = async ({ children }) => {
+export default async function RootLayout({ children }) {
   return <main>{children}</main>;
-};
+}
 ```
 
 ```css
