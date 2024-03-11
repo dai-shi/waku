@@ -19,7 +19,6 @@ import {
   fileURLToFilePath,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
-import path from 'path';
 
 export const CLIENT_MODULE_MAP = {
   react: 'react',
