@@ -47,13 +47,13 @@ Server components can be made async and can securely perform server-side logic a
 // server component
 import db from 'some-db';
 
-import { Gallery } from '~/components/gallery.js';
+import { Gallery } from '../components/gallery.js';
 
 export default async function StorePage() {
   const products = await db.query('SELECT * FROM products');
 
   return <Gallery products={products} />;
-};
+}
 ```
 
 #### Client components
@@ -95,7 +95,7 @@ Server components can import client components and doing so will create a server
 
 ```tsx
 // ./src/pages/_layout.tsx
-import { Providers } from '~/components/providers.js';
+import { Providers } from '../components/providers.js';
 
 export default async function RootLayout({ children }) {
   return (
@@ -103,7 +103,7 @@ export default async function RootLayout({ children }) {
       <main>{children}</main>
     </Providers>
   );
-};
+}
 
 export const getConfig = async () => {
   return {
@@ -145,7 +145,7 @@ To learn more about the modern React architecture, we recommend [Making Sense of
 
 Waku provides a familiar file-based “pages router” experience built for the modern React server components era.
 
-Its underlying [low-level API](https://github.com/dai-shi/waku/blob/main/docs/minimal-api.mdx) is also available for those that prefer programmatic routing. This documentation covers the former since many React developers prefer file-based routing, but please feel free to try both or even mix and match!
+Its underlying [low-level API](https://github.com/dai-shi/waku/blob/main/docs/minimal-api.mdx) is also available for those that prefer programmatic routing. This documentation covers file-baesed routing since many React developers prefer it, but please feel free to try both and see which you like more.
 
 ### Overview
 
@@ -167,7 +167,7 @@ export default async function RootLayout({ children }) {
       <Footer />
     </>
   );
-};
+}
 
 export const getConfig = async () => {
   return {
@@ -188,7 +188,7 @@ export default async function HomePage() {
       <h1>{data.someDynamicTitle}</h1>
     </div>
   );
-};
+}
 
 const getData = async () => {
   /* ... */
@@ -213,7 +213,7 @@ Pages can be rendered as a single route (e.g., `/about.tsx` or `/blog.tsx`).
 // Create about page
 export default async function AboutPage() {
   return <>{/* ...*/}</>;
-};
+}
 
 export const getConfig = async () => {
   return {
@@ -228,7 +228,7 @@ export const getConfig = async () => {
 // Create blog index page
 export default async function BlogIndexPage() {
   return <>{/* ...*/}</>;
-};
+}
 
 export const getConfig = async () => {
   return {
@@ -249,7 +249,7 @@ export default async function BlogArticlePage({ slug }) {
   const data = await getData(slug);
 
   return <>{/* ...*/}</>;
-};
+}
 
 const getData = async (slug) => {
   /* ... */
@@ -271,7 +271,7 @@ export default async function ProductCategoryPage({ category }) {
   const data = await getData(category);
 
   return <>{/* ...*/}</>;
-};
+}
 
 const getData = async (category) => {
   /* ... */
@@ -294,7 +294,7 @@ export default async function BlogArticlePage({ slug }) {
   const data = await getData(slug);
 
   return <>{/* ...*/}</>;
-};
+}
 
 const getData = async (slug) => {
   /* ... */
@@ -312,7 +312,6 @@ export const getConfig = async () => {
 const getStaticPaths = async () => {
   /* ... */
 };
-
 ```
 
 #### Nested segment routes
@@ -325,7 +324,7 @@ Routes can contain multiple segments (e.g., `/shop/[category]/[product].tsx`).
 // Create product category pages
 export default async function ProductDetailPage({ category, product }) {
   return <>{/* ...*/}</>;
-};
+}
 
 export const getConfig = async () => {
   return {
@@ -342,7 +341,7 @@ For static prerendering of nested segment routes, the `staticPaths` array is ins
 // Create product detail pages
 export default async function ProductDetailPage({ category, product }) {
   return <>{/* ...*/}</>;
-};
+}
 
 export const getConfig = async () => {
   return {
@@ -367,7 +366,7 @@ For example, the `/app/profile/settings` route would receive a `catchAll` prop w
 // Create dashboard page
 export default async function DashboardPage({ catchAll }) {
   return <>{/* ...*/}</>;
-};
+}
 
 export const getConfig = async () => {
   return {
@@ -386,11 +385,11 @@ The root layout placed at `./src/pages/_layout.tsx` is especially useful. It can
 
 ```tsx
 // ./src/pages/_layout.tsx
-import '~/styles.css';
+import '../styles.css';
 
-import { Providers } from '~/components/providers.js';
-import { Header } from '~/components/header.js';
-import { Footer } from '~/components/footer.js';
+import { Providers } from '../components/providers.js';
+import { Header } from '../components/header.js';
+import { Footer } from '../components/footer.js';
 
 // Create root layout
 export default async function RootLayout({ children }) {
@@ -403,7 +402,7 @@ export default async function RootLayout({ children }) {
       <Footer />
     </Providers>
   );
-};
+}
 ```
 
 ```tsx
@@ -425,7 +424,7 @@ Layouts are also helpful further down the tree. For example, you could add a lay
 
 ```tsx
 // ./src/pages/blog/_layout.tsx
-import { Sidebar } from '~/components/sidebar.js';
+import { Sidebar } from '../../components/sidebar.js';
 
 // Create blog layout
 export default async function BlogLayout({ children }) {
@@ -435,7 +434,7 @@ export default async function BlogLayout({ children }) {
       <Sidebar />
     </div>
   );
-};
+}
 ```
 
 ## Navigation
@@ -453,7 +452,7 @@ export default async function HomePage() {
       <Link to="/about">About</Link>
     </>
   );
-};
+}
 ```
 
 ## Static assets
@@ -470,7 +469,7 @@ Files placed in a special `./private` folder of the Waku project root directory 
 export default async function HomePage() {
   const file = readFileSync('./private/README.md', 'utf8');
   /* ... */
-};
+}
 ```
 
 ## Data fetching
@@ -481,8 +480,8 @@ All of the wonderful patterns of React server components are supported. For exam
 
 ```tsx
 // ./src/pages/blog/[slug].tsx
-import { MDX } from '~/components/mdx.js';
-import { getArticle } from '~/lib/get-article.js';
+import { MDX } from '../../components/mdx.js';
+import { getArticle } from '../../lib/get-article.js';
 
 export default async function BlogArticlePage({ slug }) {
   const article = await getArticle(slug);
@@ -494,7 +493,7 @@ export default async function BlogArticlePage({ slug }) {
       <MDX>{article.content}</MDX>
     </>
   );
-};
+}
 ```
 
 ### Client
@@ -521,7 +520,7 @@ export default async function RootLayout({ children }) {
       {children}
     </>
   );
-};
+}
 ```
 
 ```tsx
@@ -535,7 +534,7 @@ export default async function HomePage() {
       <div>Hello world!</div>
     </>
   );
-};
+}
 ```
 
 Metadata could also be generated programmatically.
@@ -549,7 +548,7 @@ export default async function HomePage() {
       <div>{/* ...*/}</div>
     </>
   );
-};
+}
 
 const Head = async () => {
   const metadata = await getMetadata();
@@ -575,11 +574,11 @@ Install any required dev dependencies (e.g., `npm i -D tailwindcss autoprefixer`
 
 ```tsx
 // ./src/pages/_layout.tsx
-import '~/styles.css';
+import '../styles.css';
 
 export default async function RootLayout({ children }) {
   return <main>{children}</main>;
-};
+}
 ```
 
 ```css
