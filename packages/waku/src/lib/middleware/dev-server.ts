@@ -177,9 +177,9 @@ export const devServer: Middleware = (options) => {
     }
 
     if (!initialModules) {
-      initialModules = Array.from(
-        vite.moduleGraph.idToModuleMap.values(),
-      ).map((m) => ({ url: m.url, file: m.file! }));
+      initialModules = Array.from(vite.moduleGraph.idToModuleMap.values()).map(
+        (m) => ({ url: m.url, file: m.file! }),
+      );
     }
 
     ctx.devServer = {

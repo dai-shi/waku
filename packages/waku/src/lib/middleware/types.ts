@@ -5,7 +5,7 @@ import type {
   getSsrConfigWithWorker,
 } from '../renderers/dev-worker-api.js';
 
-export type ClonableModuleNode = { url: string, file: string };
+export type ClonableModuleNode = { url: string; file: string };
 
 export type HandlerReq = {
   body: ReadableStream;
