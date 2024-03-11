@@ -224,6 +224,6 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
 export function unstable_redirect(
   pathname: string,
   searchParams?: URLSearchParams,
-){
+) {
   rerender(pathname, searchParams);
 }
