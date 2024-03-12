@@ -128,7 +128,8 @@ export function registerHotUpdateCallback(
 let nextId = 1;
 
 export async function renderRscWithWorker(
-  args: RenderRscArgs & { initialModules: ClonableModuleNode[] },
+  args: RenderRscArgs,
+  opts: { initialModules: ClonableModuleNode[] },
 ): Promise<ReadableStream> {
   const worker = await getWorker();
   const id = nextId++;
@@ -172,7 +173,7 @@ export async function renderRscWithWorker(
       config: args.config,
       input: args.input,
       searchParamsString: args.searchParams.toString(),
-      initialModules: args.initialModules,
+      initialModules: opts.initialModules,
       method: args.method,
       context: args.context,
       body: args.body,
@@ -187,7 +188,8 @@ export async function renderRscWithWorker(
 }
 
 export async function getSsrConfigWithWorker(
-  args: GetSsrConfigArgs & { initialModules: ClonableModuleNode[] },
+  args: GetSsrConfigArgs,
+  opts: { initialModules: ClonableModuleNode[] },
 ): Promise<{
   input: string;
   searchParams?: URLSearchParams;
@@ -224,7 +226,7 @@ export async function getSsrConfigWithWorker(
       type: 'getSsrConfig',
       config: args.config,
       pathname: args.pathname,
-      initialModules: args.initialModules,
+      initialModules: opts.initialModules,
       searchParamsString: args.searchParams.toString(),
     };
     worker.postMessage(mesg);

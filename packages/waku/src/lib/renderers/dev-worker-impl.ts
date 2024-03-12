@@ -79,9 +79,15 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         isDev: true,
         loadServerFile,
         loadServerModule,
-        initialModules,
-        resolveClientEntry: (id: string) =>
-          resolveClientEntryForDev(id, rest.config),
+        resolveClientEntry: (file: string) => {
+          let id = resolveClientEntryForDev(file, rest.config);
+          for (const moduleNode of initialModules) {
+            if (moduleNode.file === file) {
+              id = moduleNode.url;
+            }
+          }
+          return id;
+        },
         entries: await loadEntries(rest.config),
       },
     );

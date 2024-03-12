@@ -11,7 +11,6 @@ import { filePathToFileURL } from '../utils/path.js';
 import { parseFormData } from '../utils/form.js';
 import { streamToString } from '../utils/stream.js';
 import { decodeActionId } from '../renderers/utils.js';
-import type { ClonableModuleNode } from '../middleware/types.js';
 
 export const SERVER_MODULE_MAP = {
   'rsdw-server': 'react-server-dom-webpack/server.edge',
@@ -43,7 +42,6 @@ type RenderRscOpts =
       entries: EntriesDev;
       loadServerFile: (fileURL: string) => Promise<unknown>;
       loadServerModule: (id: string) => Promise<unknown>;
-      initialModules: ClonableModuleNode[];
       resolveClientEntry: (id: string) => string;
     };
 
@@ -100,13 +98,6 @@ export async function renderRsc(
       get(_target, encodedId: string) {
         const [file, name] = encodedId.split('#') as [string, string];
         let id = resolveClientEntry(file, config);
-        if (isDev) {
-          for (const moduleNode of opts.initialModules) {
-            if (moduleNode.file === file) {
-              id = moduleNode.url;
-            }
-          }
-        }
         moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },
