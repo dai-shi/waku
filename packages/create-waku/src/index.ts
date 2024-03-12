@@ -4,21 +4,44 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { default as prompts } from 'prompts';
-import { red, green, bold } from 'kolorist';
+import { red, green, bold, cyan } from 'kolorist';
 import fse from 'fs-extra/esm';
 import checkForUpdate from 'update-check';
 import { createRequire } from 'node:module';
+import {
+  downloadAndExtractExample,
+  downloadAndExtractRepo,
+  existsInRepo,
+  getRepoInfo,
+  hasRepo,
+  type RepoInfo,
+} from './helpers/example-option';
 
 // FIXME is there a better way with prompts?
-const { values } = parseArgs({
+const { tokens } = parseArgs({
   args: process.argv.slice(2),
   options: {
-    'choose-template': {
-      type: 'boolean',
+    example: {
+      type: 'string',
     },
   },
+  tokens: true,
 });
 
+function isErrorLike(err: unknown): err is { message: string } {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    typeof (err as { message?: unknown }).message === 'string'
+  );
+}
+// FIXME no-nay
+function getExample(tokens: any) {
+  const exampleToken = tokens.find(
+    (token: any) => token.kind === 'option' && token.name === 'example',
+  );
+  return exampleToken?.value;
+}
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
     projectName,
@@ -52,9 +75,18 @@ async function notifyUpdate() {
   }
 }
 
-async function init() {
-  let targetDir = '';
-  const defaultProjectName = 'waku-project';
+async function installTemplate({
+  root,
+  packageName,
+}: {
+  root: string;
+  packageName: string;
+}) {
+  const pkg = {
+    name: packageName,
+    version: '0.0.0',
+  };
+
   const templateRoot = path.join(
     fileURLToPath(import.meta.url),
     '../../template',
@@ -63,10 +95,47 @@ async function init() {
   const CHOICES = (await fsPromises.readdir(templateRoot)).filter(
     (dir) => !dir.startsWith('.'),
   );
+
+  const templateDir = path.join(templateRoot, CHOICES[0]!);
+
+  // Read existing package.json from the root directory
+  const packageJsonPath = path.join(root, 'package.json');
+
+  // Read new package.json from the template directory
+  const newPackageJsonPath = path.join(templateDir, 'package.json');
+  const newPackageJson = JSON.parse(
+    await fsPromises.readFile(newPackageJsonPath, 'utf-8'),
+  );
+
+  fse.copySync(templateDir, root);
+
+  await fsPromises.writeFile(
+    packageJsonPath,
+    JSON.stringify(
+      {
+        ...newPackageJson,
+        ...pkg,
+      },
+      null,
+      2,
+    ),
+  );
+
+  if (existsSync(path.join(root, 'gitignore'))) {
+    await fsPromises.rename(
+      path.join(root, 'gitignore'),
+      path.join(root, '.gitignore'),
+    );
+  }
+}
+
+async function init() {
+  let targetDir = '';
+  const defaultProjectName = 'waku-project';
+
   let result: {
     packageName: string;
     shouldOverwrite: string;
-    chooseTemplate?: string;
   };
 
   try {
@@ -102,20 +171,6 @@ async function init() {
           validate: (dir: string) =>
             isValidPackageName(dir) || 'Invalid package.json name',
         },
-        ...(values['choose-template']
-          ? [
-              {
-                name: 'chooseTemplate',
-                type: 'select',
-                message: 'Choose a starter template',
-                choices: [
-                  { title: 'Basic Template', value: CHOICES[0] },
-                  { title: 'Demo Template', value: CHOICES[1] },
-                  { title: 'Minimal Template', value: CHOICES[2] },
-                ],
-              } as prompts.PromptObject<string>,
-            ]
-          : []),
       ],
       {
         onCancel: () => {
@@ -129,10 +184,73 @@ async function init() {
     }
     process.exit(1);
   }
+  let repoInfo: RepoInfo | undefined;
+  const example = getExample(tokens);
 
-  const { packageName, shouldOverwrite, chooseTemplate } = result;
+  if (example) {
+    let repoUrl: URL | undefined;
+
+    try {
+      repoUrl = new URL(example);
+    } catch (error: unknown) {
+      const err = error as Error & { code: string | undefined };
+      if (err.code !== 'ERR_INVALID_URL') {
+        console.error(error);
+        process.exit(1);
+      }
+    }
+
+    if (repoUrl) {
+      // NOTE check github origin
+      if (repoUrl.origin !== 'https://github.com') {
+        console.error(
+          `Invalid URL: ${red(
+            `"${example}"`,
+          )}. Only GitHub repositories are supported. Please use a GitHub URL and try again.`,
+        );
+        process.exit(1);
+      }
+
+      repoInfo = await getRepoInfo(repoUrl);
+
+      // NOTE validate reproInfo
+      if (!repoInfo) {
+        console.error(
+          `Found invalid GitHub URL: ${red(
+            `"${example}"`,
+          )}. Please fix the URL and try again.`,
+        );
+        process.exit(1);
+      }
+
+      const found = await hasRepo(repoInfo);
+      // NOTE Do the repo exist?
+      if (!found) {
+        console.error(
+          `Could not locate the repository for ${red(
+            `"${example}"`,
+          )}. Please check that the repository exists and try again.`,
+        );
+        process.exit(1);
+      }
+    } else {
+      const found = await existsInRepo(example);
+
+      if (!found) {
+        console.error(
+          `Could not locate an example named ${red(
+            `"${example}"`,
+          )}. Please check that the example exists and try again.`,
+        );
+        process.exit(1);
+      }
+    }
+  }
+
+  console.log('Setting up project...');
 
   const root = path.resolve(targetDir);
+  const { packageName, shouldOverwrite } = result;
 
   if (shouldOverwrite) {
     fse.emptyDirSync(root);
@@ -140,44 +258,42 @@ async function init() {
     await fsPromises.mkdir(root, { recursive: true });
   }
 
-  const pkg = {
-    name: packageName ?? toValidPackageName(targetDir),
-    version: '0.0.0',
-  };
+  if (example) {
+    /**
+     * If an example repository is provided, clone it.
+     */
+    try {
+      if (repoInfo) {
+        console.log(
+          `Downloading files from repo ${cyan(example)}. This might take a moment.`,
+        );
+        console.log();
+        await downloadAndExtractRepo(root, repoInfo);
+      } else {
+        console.log(
+          `Downloading files for example ${cyan(example)}. This might take a moment.`,
+        );
+        console.log();
+        await downloadAndExtractExample(root, example);
+      }
+    } catch (reason) {
+      // download error
+      throw new Error(isErrorLike(reason) ? reason.message : reason + '');
+    }
 
-  console.log('Setting up project...');
-
-  const templateDir = path.join(templateRoot, chooseTemplate || CHOICES[0]!);
-
-  // Read existing package.json from the root directory
-  const packageJsonPath = path.join(root, 'package.json');
-
-  // Read new package.json from the template directory
-  const newPackageJsonPath = path.join(templateDir, 'package.json');
-  const newPackageJson = JSON.parse(
-    await fsPromises.readFile(newPackageJsonPath, 'utf-8'),
-  );
-
-  fse.copySync(templateDir, root);
-
-  if (existsSync(path.join(root, 'gitignore'))) {
-    await fsPromises.rename(
-      path.join(root, 'gitignore'),
-      path.join(root, '.gitignore'),
-    );
+    // TODO automatically installing dependencies
+    // 1. check packageManager
+    // 2. and then install dependencies
+  } else {
+    /**
+     * If an example repository is not provided for cloning, proceed
+     * by installing from a template.
+     */
+    await installTemplate({
+      root,
+      packageName: packageName ?? toValidPackageName(targetDir),
+    });
   }
-
-  await fsPromises.writeFile(
-    packageJsonPath,
-    JSON.stringify(
-      {
-        ...newPackageJson,
-        ...pkg,
-      },
-      null,
-      2,
-    ),
-  );
 
   const manager = process.env.npm_config_user_agent ?? '';
   const packageManager = /pnpm/.test(manager)

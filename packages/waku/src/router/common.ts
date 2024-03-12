@@ -22,19 +22,25 @@ export function getInputString(path: string): string {
 }
 
 export function parseInputString(input: string): string {
+  if (input.startsWith('/')) {
+    throw new Error('Input should not start with `/`');
+  }
   return '/' + input;
 }
 
 export const PARAM_KEY_SKIP = 'waku_router_skip';
 
-// It starts with "/" to avoid conflicing with normal component ids.
+// It starts with "/" to avoid conflicting with normal component ids.
 export const SHOULD_SKIP_ID = '/SHOULD_SKIP';
 
-// The key is componentId
-export type ShouldSkip = Record<
-  string,
-  {
-    path?: boolean; // if we compare path
-    keys?: string[]; // searchParams keys to compare
-  }
->;
+// It starts with "/" to avoid conflicting with normal component ids.
+export const LOCATION_ID = '/LOCATION';
+
+// TODO revisit shouldSkip API
+export type ShouldSkip = (readonly [
+  componentId: string,
+  readonly [
+    path?: boolean, // if we compare path
+    keys?: string[], // searchParams keys to compare
+  ],
+])[];
