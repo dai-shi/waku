@@ -22,6 +22,9 @@ export function getInputString(path: string): string {
 }
 
 export function parseInputString(input: string): string {
+  if (input.startsWith('/')) {
+    throw new Error('Input should not start with `/`');
+  }
   return '/' + input;
 }
 
