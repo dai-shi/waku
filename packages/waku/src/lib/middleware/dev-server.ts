@@ -170,13 +170,13 @@ export const devServer: Middleware = (options) => {
     const mainJs = `${config.srcDir}/${config.mainJs}`;
     const resolved = await vite.pluginContainer.resolveId(mainJs);
     await vite.transformRequest(resolved!.id);
-    const resolvedModule = vite.moduleGraph.idToModuleMap.get(resolved!.id)! 
+    const resolvedModule = vite.moduleGraph.idToModuleMap.get(resolved!.id)!;
     for (const { id } of resolvedModule.importedModules) {
       if (id) {
         await vite.warmupRequest(id);
       }
     }
-    
+
     if (!initialModules) {
       initialModules = Array.from(vite.moduleGraph.idToModuleMap.values()).map(
         (m) => ({ url: m.url, file: m.file! }),
