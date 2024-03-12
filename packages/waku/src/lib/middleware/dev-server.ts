@@ -59,8 +59,6 @@ const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
   return [writable, promise];
 };
 
-const externalizedWakuClientModules = ['waku/client', 'waku/router/client'];
-
 export const devServer: Middleware = (options) => {
   if (options.cmd !== 'dev') {
     // pass through if not dev command
@@ -89,14 +87,6 @@ export const devServer: Middleware = (options) => {
         exclude: ['waku'],
         entries: [
           `${config.srcDir}/${config.entriesJs}`.replace(/\.js$/, '.*'),
-        ],
-      },
-      ssr: {
-        external: [
-          'waku',
-          'waku/server',
-          'waku/router/server',
-          ...externalizedWakuClientModules,
         ],
       },
       server: { middlewareMode: true },
@@ -166,16 +156,18 @@ export const devServer: Middleware = (options) => {
       vitePromise,
     ]);
 
-    const mainJs = `${config.srcDir}/${config.mainJs}`;
     // pre-process the mainJs file to see which modules are being sent to the browser by vite
     // and using the same modules if possible in the bundlerConfig in the stream
-    for (const m of [mainJs, ...externalizedWakuClientModules]) {
-      const resolved = await vite.pluginContainer.resolveId(m);
-      if (resolved?.id) {
-        await vite.warmupRequest(resolved.id);
+    const mainJs = `${config.srcDir}/${config.mainJs}`;
+    const resolved = await vite.pluginContainer.resolveId(mainJs);
+    await vite.transformRequest(resolved!.id);
+    const resolvedModule = vite.moduleGraph.idToModuleMap.get(resolved!.id)! 
+    for (const { id } of resolvedModule.importedModules) {
+      if (id) {
+        await vite.warmupRequest(id);
       }
     }
-
+    
     if (!initialModules) {
       initialModules = Array.from(vite.moduleGraph.idToModuleMap.values()).map(
         (m) => ({ url: m.url, file: m.file! }),
@@ -184,7 +176,7 @@ export const devServer: Middleware = (options) => {
 
     ctx.devServer = {
       rootDir: vite.config.root,
-      initialModules: initialModules,
+      initialModules,
       renderRscWithWorker,
       getSsrConfigWithWorker,
       loadServerFile,
