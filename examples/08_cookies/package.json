@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "cookie": "0.6.0",
-    "react": "18.3.0-canary-0066e0b68-20240306",
-    "react-dom": "18.3.0-canary-0066e0b68-20240306",
-    "react-server-dom-webpack": "18.3.0-canary-0066e0b68-20240306",
+    "react": "18.3.0-canary-56e20051c-20240311",
+    "react-dom": "18.3.0-canary-56e20051c-20240311",
+    "react-server-dom-webpack": "18.3.0-canary-56e20051c-20240311",
     "waku": "0.20.0-alpha.1"
   },
   "devDependencies": {
