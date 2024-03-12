@@ -60,9 +60,12 @@ const parseLocation = (): RouteProps => {
 type ChangeLocation = (
   path?: string,
   searchParams?: URLSearchParams,
-  hash?: string,
-  method?: 'pushState' | 'replaceState' | false,
-  scrollTo?: ScrollToOptions | false,
+  options?: {
+    hash?: string;
+    method?: 'pushState' | 'replaceState' | false;
+    scrollTo?: ScrollToOptions | false;
+    unstable_skipRefetch?: boolean;
+  },
 ) => void;
 
 type PrefetchLocation = (path: string, searchParams: URLSearchParams) => void;
@@ -128,7 +131,7 @@ export function Link({
     if (url.href !== window.location.href) {
       prefetchLocation(url.pathname, url.searchParams);
       startTransition(() => {
-        changeLocation(url.pathname, url.searchParams, url.hash);
+        changeLocation(url.pathname, url.searchParams, { hash: url.hash });
       });
     }
     props.onClick?.(event);
@@ -223,13 +226,13 @@ function InnerRouter({
   }, [cached]);
 
   const changeLocation: ChangeLocation = useCallback(
-    (
-      path,
-      searchParams,
-      hash,
-      method = 'pushState',
-      scrollTo = { top: 0, left: 0 },
-    ) => {
+    (path, searchParams, options) => {
+      const {
+        hash,
+        method = 'pushState',
+        scrollTo = { top: 0, left: 0 },
+        unstable_skipRefetch,
+      } = options || {};
       const url = new URL(window.location.href);
       if (typeof path === 'string') {
         url.pathname = path;
@@ -268,13 +271,15 @@ function InnerRouter({
         return; // everything is skipped
       }
       const input = getInputString(loc.path);
-      refetch(
-        input,
-        new URLSearchParams([
-          ...Array.from(loc.searchParams.entries()),
-          ...skip.map((id) => [PARAM_KEY_SKIP, id]),
-        ]),
-      );
+      if (!unstable_skipRefetch) {
+        refetch(
+          input,
+          new URLSearchParams([
+            ...Array.from(loc.searchParams.entries()),
+            ...skip.map((id) => [PARAM_KEY_SKIP, id]),
+          ]),
+        );
+      }
       setCached((prev) => ({
         ...prev,
         ...Object.fromEntries(
@@ -312,7 +317,11 @@ function InnerRouter({
   useEffect(() => {
     const callback = () => {
       const loc = parseLocation();
-      changeLocation(loc.path, loc.searchParams, '', false, false);
+      changeLocation(loc.path, loc.searchParams, {
+        hash: '',
+        method: false,
+        scrollTo: false,
+      });
     };
     window.addEventListener('popstate', callback);
     return () => {
@@ -322,7 +331,10 @@ function InnerRouter({
 
   useEffect(() => {
     const callback = (pathname: string, searchParams: URLSearchParams) => {
-      changeLocation(pathname, searchParams, '', 'pushState', false);
+      changeLocation(pathname, searchParams, {
+        hash: '',
+        unstable_skipRefetch: true,
+      });
     };
     locationPushListeners.add(callback);
     return () => {
@@ -351,7 +363,10 @@ export function Router() {
     Promise.resolve(data)
       .then((data) => {
         if (data && typeof data === 'object') {
-          // We need to process LOCATION_ID before SHOULD_SKIP_ID
+          // We need to process SHOULD_SKIP_ID before LOCATION_ID
+          if (SHOULD_SKIP_ID in data) {
+            shouldSkipRef.current = data[SHOULD_SKIP_ID] as ShouldSkip;
+          }
           if (LOCATION_ID in data) {
             const [pathname, searchParamsString] = data[LOCATION_ID] as [
               string,
@@ -364,9 +379,6 @@ export function Router() {
             ) {
               pushLocation(pathname, new URLSearchParams(searchParamsString));
             }
-          }
-          if (SHOULD_SKIP_ID in data) {
-            shouldSkipRef.current = data[SHOULD_SKIP_ID] as ShouldSkip;
           }
         }
       })
