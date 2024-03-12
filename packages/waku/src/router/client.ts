@@ -37,6 +37,14 @@ declare global {
   }
 }
 
+// XXX Unfortunately, we need a module state for push listeners
+const locationPushListeners = new Set<
+  (pathname: string, searchParams: URLSearchParams) => void
+>();
+const pushLocation = (pathname: string, searchParams: URLSearchParams) => {
+  locationPushListeners.forEach((l) => l(pathname, searchParams));
+};
+
 const parseLocation = (): RouteProps => {
   if ((globalThis as any).__WAKU_ROUTER_404__) {
     return { path: '/404', searchParams: new URLSearchParams() };
@@ -198,10 +206,8 @@ const equalRouteProps = (a: RouteProps, b: RouteProps) => {
 
 function InnerRouter({
   shouldSkipRef,
-  locListnerSet,
 }: {
   shouldSkipRef: MutableRefObject<ShouldSkip | undefined>;
-  locListnerSet: Set<(loc: RouteProps) => void>;
 }) {
   const refetch = useRefetch();
 
@@ -309,12 +315,20 @@ function InnerRouter({
       changeLocation(loc.path, loc.searchParams, '', false, false);
     };
     window.addEventListener('popstate', callback);
-    locListnerSet.add(callback);
     return () => {
-      locListnerSet.delete(callback);
       window.removeEventListener('popstate', callback);
     };
-  }, [changeLocation, locListnerSet]);
+  }, [changeLocation]);
+
+  useEffect(() => {
+    const callback = (pathname: string, searchParams: URLSearchParams) => {
+      changeLocation(pathname, searchParams, '', 'pushState', false);
+    };
+    locationPushListeners.add(callback);
+    return () => {
+      locationPushListeners.delete(callback);
+    };
+  }, [changeLocation]);
 
   const children = componentIds.reduceRight(
     (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
@@ -333,7 +347,6 @@ export function Router() {
   const initialInput = getInputString(loc.path);
   const initialSearchParamsString = loc.searchParams.toString();
   const shouldSkipRef = useRef<ShouldSkip>();
-  const locListnerSetRef = useRef(new Set<(loc: RouteProps) => void>());
   const unstable_onFetchData = useCallback((data: unknown) => {
     Promise.resolve(data)
       .then((data) => {
@@ -349,11 +362,7 @@ export function Router() {
               window.location.pathname !== pathname ||
               window.location.search.replace(/^\?/, '') !== searchParamsString
             ) {
-              const loc: RouteProps = {
-                path: pathname,
-                searchParams: new URLSearchParams(searchParamsString),
-              };
-              locListnerSetRef.current.forEach((listener) => listener(loc));
+              pushLocation(pathname, new URLSearchParams(searchParamsString));
             }
           }
           if (SHOULD_SKIP_ID in data) {
@@ -366,10 +375,7 @@ export function Router() {
   return createElement(
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
     { initialInput, initialSearchParamsString, unstable_onFetchData },
-    createElement(InnerRouter, {
-      shouldSkipRef,
-      locListnerSet: locListnerSetRef.current,
-    }),
+    createElement(InnerRouter, { shouldSkipRef }),
   );
 }
 

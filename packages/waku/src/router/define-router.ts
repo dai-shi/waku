@@ -228,5 +228,6 @@ export function unstable_redirect(
       searchParams.append(PARAM_KEY_SKIP, id);
     }
   }
-  rerender(pathname, searchParams);
+  const input = getInputString(pathname);
+  rerender(input, searchParams);
 }
