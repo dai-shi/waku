@@ -97,7 +97,7 @@ export async function renderRsc(
     {
       get(_target, encodedId: string) {
         const [file, name] = encodedId.split('#') as [string, string];
-        let id = resolveClientEntry(file, config);
+        const id = resolveClientEntry(file, config);
         moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },
