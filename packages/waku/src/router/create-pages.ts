@@ -250,7 +250,7 @@ export function createPages(
       await configure(unstable_buildConfig);
       const staticComponent = staticComponentMap.get(id);
       if (staticComponent) {
-        unstable_setShouldSkip({});
+        unstable_setShouldSkip([]);
         return staticComponent;
       }
       for (const [pathSpec, Component] of dynamicPathMap.values()) {
@@ -281,7 +281,7 @@ export function createPages(
           return WrappedComponent;
         }
       }
-      unstable_setShouldSkip({}); // negative cache
+      unstable_setShouldSkip([]); // negative cache
       return null; // not found
     },
   );

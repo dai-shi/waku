@@ -72,6 +72,7 @@ export const fetchRSC = (
   searchParamsString: string,
   setElements: SetElements,
   cache = fetchCache,
+  unstable_onFetchData?: (data: unknown) => void,
 ): Elements => {
   let entry: CacheEntry | undefined = cache[0];
   if (entry && entry[0] === input && entry[1] === searchParamsString) {
@@ -91,6 +92,7 @@ export const fetchRSC = (
         checkStatus(response),
         options,
       );
+      unstable_onFetchData?.(data);
       const setElements = entry![2];
       startTransition(() => {
         // FIXME this causes rerenders even if data is empty
@@ -110,6 +112,7 @@ export const fetchRSC = (
     checkStatus(response),
     options,
   );
+  unstable_onFetchData?.(data);
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
   cache[0] = entry = [input, searchParamsString, setElements, data];
   return data;
@@ -140,11 +143,13 @@ export const Root = ({
   initialInput,
   initialSearchParamsString,
   cache,
+  unstable_onFetchData,
   children,
 }: {
   initialInput?: string;
   initialSearchParamsString?: string;
   cache?: typeof fetchCache;
+  unstable_onFetchData?: (data: unknown) => void;
   children: ReactNode;
 }) => {
   const [elements, setElements] = useState(() =>
@@ -153,6 +158,7 @@ export const Root = ({
       initialSearchParamsString || '',
       (fn) => setElements(fn),
       cache,
+      unstable_onFetchData,
     ),
   );
   const refetch = useCallback(
@@ -163,10 +169,11 @@ export const Root = ({
         searchParams?.toString() || '',
         setElements,
         cache,
+        unstable_onFetchData,
       );
       setElements((prev) => mergeElements(prev, data));
     },
-    [cache],
+    [cache, unstable_onFetchData],
   );
   return createElement(
     RefetchContext.Provider,
