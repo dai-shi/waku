@@ -89,6 +89,15 @@ export const devServer: Middleware = (options) => {
           `${config.srcDir}/${config.entriesJs}`.replace(/\.js$/, '.*'),
         ],
       },
+      ssr: {
+        external: [
+          'waku',
+          'waku/client',
+          'waku/server',
+          'waku/router/client',
+          'waku/router/server',
+        ],
+      },
       server: { middlewareMode: true },
     });
     const vite = await createViteServer(mergedViteConfig);
