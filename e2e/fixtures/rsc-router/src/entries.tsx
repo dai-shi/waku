@@ -1,8 +1,8 @@
-import { unstable_defineRouter as defineRouter } from 'waku/router/server';
+import { unstable_defineRouter } from 'waku/router/server';
 
 const STATIC_PATHS = ['/', '/foo'];
 
-export default defineRouter(
+export default unstable_defineRouter(
   // getPathConfig
   async () =>
     STATIC_PATHS.map((path) => ({
@@ -16,11 +16,11 @@ export default defineRouter(
   async (id) => {
     switch (id) {
       case 'layout':
-        return import('./routes/layout.js');
+        return (await import('./routes/layout.js')).default;
       case 'page':
-        return import('./routes/page.js');
+        return (await import('./routes/page.js')).default;
       case 'foo/page':
-        return import('./routes/foo/page.js');
+        return (await import('./routes/foo/page.js')).default;
       default:
         return null;
     }
