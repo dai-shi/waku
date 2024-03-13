@@ -148,12 +148,16 @@ function getValidURL(url: string): URL | undefined {
   }
 }
 
+type ParsedExampleOption = {
+  example: string;
+  defaultRef: string;
+  repoInfo?: RepoInfo;
+};
+
 export async function parseExampleOption(
   example: string | undefined,
   defaultRef: string,
-): Promise<
-  { example: string; defaultRef: string; repoInfo?: RepoInfo } | undefined
-> {
+): Promise<ParsedExampleOption | undefined> {
   if (!example) {
     return undefined;
   }
@@ -216,11 +220,7 @@ function isErrorLike(err: unknown): err is { message: string } {
 
 export async function downloadAndExtract(
   root: string,
-  {
-    example,
-    defaultRef,
-    repoInfo,
-  }: { example: string; defaultRef: string; repoInfo?: RepoInfo },
+  { example, defaultRef, repoInfo }: ParsedExampleOption,
 ): Promise<void> {
   try {
     if (repoInfo) {
