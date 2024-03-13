@@ -4,18 +4,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { default as prompts } from 'prompts';
-import { red, green, bold, cyan } from 'kolorist';
+import { red, green, bold } from 'kolorist';
 import fse from 'fs-extra/esm';
 import checkForUpdate from 'update-check';
 import { createRequire } from 'node:module';
 import {
-  downloadAndExtractExample,
-  downloadAndExtractRepo,
-  existsInRepo,
-  getRepoInfo,
-  hasRepo,
+  parseExampleOption,
+  downloadAndExtract,
 } from './helpers/example-option.js';
-import type { RepoInfo } from './helpers/example-option.js';
 
 const DEFAULT_REF = 'v0.20.0-alpha.2';
 
@@ -33,13 +29,6 @@ const { values } = parseArgs({
   },
 });
 
-function isErrorLike(err: unknown): err is { message: string } {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    typeof (err as { message?: unknown }).message === 'string'
-  );
-}
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
     projectName,
@@ -144,6 +133,8 @@ async function init() {
     return;
   }
 
+  const repoInfo = await parseExampleOption(values.example, DEFAULT_REF);
+
   let targetDir = '';
   const defaultProjectName = 'waku-project';
 
@@ -198,68 +189,6 @@ async function init() {
     }
     process.exit(1);
   }
-  let repoInfo: RepoInfo | undefined;
-
-  // FIXME this is pretty hard to follow. Separate functions?
-  if (values.example) {
-    let repoUrl: URL | undefined;
-
-    try {
-      repoUrl = new URL(values.example);
-    } catch (error: unknown) {
-      const err = error as Error & { code: string | undefined };
-      if (err.code !== 'ERR_INVALID_URL') {
-        console.error(error);
-        process.exit(1);
-      }
-    }
-
-    if (repoUrl) {
-      // NOTE check github origin
-      if (repoUrl.origin !== 'https://github.com') {
-        console.error(
-          `Invalid URL: ${red(
-            `"${values.example}"`,
-          )}. Only GitHub repositories are supported. Please use a GitHub URL and try again.`,
-        );
-        process.exit(1);
-      }
-
-      repoInfo = await getRepoInfo(repoUrl);
-
-      // NOTE validate reproInfo
-      if (!repoInfo) {
-        console.error(
-          `Found invalid GitHub URL: ${red(
-            `"${values.example}"`,
-          )}. Please fix the URL and try again.`,
-        );
-        process.exit(1);
-      }
-
-      const found = await hasRepo(repoInfo);
-      // NOTE Do the repo exist?
-      if (!found) {
-        console.error(
-          `Could not locate the repository for ${red(
-            `"${values.example}"`,
-          )}. Please check that the repository exists and try again.`,
-        );
-        process.exit(1);
-      }
-    } else {
-      const found = await existsInRepo(values.example, DEFAULT_REF);
-
-      if (!found) {
-        console.error(
-          `Could not locate an example named ${red(
-            `"${values.example}"`,
-          )}. Please check that the example exists and try again.`,
-        );
-        process.exit(1);
-      }
-    }
-  }
 
   console.log('Setting up project...');
 
@@ -272,37 +201,12 @@ async function init() {
     await fsPromises.mkdir(root, { recursive: true });
   }
 
-  if (values.example) {
-    /**
-     * If an example repository is provided, clone it.
-     */
-    try {
-      if (repoInfo) {
-        console.log(
-          `Downloading files from repo ${cyan(values.example)}. This might take a moment.`,
-        );
-        console.log();
-        await downloadAndExtractRepo(root, repoInfo);
-      } else {
-        console.log(
-          `Downloading files for example ${cyan(values.example)}. This might take a moment.`,
-        );
-        console.log();
-        await downloadAndExtractExample(root, values.example, DEFAULT_REF);
-      }
-    } catch (reason) {
-      // download error
-      throw new Error(isErrorLike(reason) ? reason.message : reason + '');
-    }
-
-    // TODO automatically installing dependencies
-    // 1. check packageManager
-    // 2. and then install dependencies
+  if (repoInfo) {
+    // If an example repository is provided, clone it.
+    await downloadAndExtract(values.example!, root, repoInfo, DEFAULT_REF);
   } else {
-    /**
-     * If an example repository is not provided for cloning, proceed
-     * by installing from a template.
-     */
+    // If an example repository is not provided for cloning, proceed
+    // by installing from a template.
     await installTemplate({
       root,
       packageName: packageName ?? toValidPackageName(targetDir),

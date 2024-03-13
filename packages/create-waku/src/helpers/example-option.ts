@@ -1,16 +1,17 @@
-import * as tar from 'tar';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type { ReadableStream } from 'stream/web';
+import * as tar from 'tar';
+import { red, cyan } from 'kolorist';
 
-export type RepoInfo = {
+type RepoInfo = {
   username: string | undefined;
   name: string | undefined;
   branch: string | undefined;
   filePath: string | undefined;
 };
 
-export async function isUrlOk(url: string): Promise<boolean> {
+async function isUrlOk(url: string): Promise<boolean> {
   try {
     const res = await fetch(url, { method: 'HEAD' });
     return res.status === 200;
@@ -27,7 +28,7 @@ interface GetRepoInfo {
   /** A default branch of the repository */
   default_branch: string;
 }
-export async function getRepoInfo(url: URL): Promise<RepoInfo | undefined> {
+async function getRepoInfo(url: URL): Promise<RepoInfo | undefined> {
   const [, username, name, t, _branch, ...file] = url.pathname.split('/');
   const filePath = file.join('/');
 
@@ -60,7 +61,7 @@ export async function getRepoInfo(url: URL): Promise<RepoInfo | undefined> {
   }
 }
 
-export function hasRepo({
+function hasRepo({
   username,
   name,
   branch,
@@ -72,7 +73,7 @@ export function hasRepo({
   return isUrlOk(contentsUrl + packagePath + `?ref=${branch}`);
 }
 
-export function existsInRepo(nameOrUrl: string, ref: string): Promise<boolean> {
+function existsInRepo(nameOrUrl: string, ref: string): Promise<boolean> {
   try {
     const url = new URL(nameOrUrl);
     return isUrlOk(url.href);
@@ -96,7 +97,7 @@ async function downloadTarStream(url: string) {
   return Readable.fromWeb(res.body as ReadableStream);
 }
 
-export async function downloadAndExtractRepo(
+async function downloadAndExtractRepo(
   root: string,
   { username, name, branch, filePath }: RepoInfo,
 ) {
@@ -117,7 +118,7 @@ export async function downloadAndExtractRepo(
   );
 }
 
-export async function downloadAndExtractExample(
+async function downloadAndExtractExample(
   root: string,
   name: string,
   ref: string,
@@ -133,4 +134,110 @@ export async function downloadAndExtractExample(
         p.replace(/waku-[^/]+\//, '').includes(`examples/${name}/`),
     }),
   );
+}
+
+export async function parseExampleOption(
+  example: string | undefined,
+  defaultRef: string,
+): Promise<RepoInfo | string | undefined> {
+  if (!example) {
+    return undefined;
+  }
+  let repoInfo: RepoInfo | undefined;
+  let repoUrl: URL | undefined;
+
+  try {
+    repoUrl = new URL(example);
+  } catch (error: unknown) {
+    const err = error as Error & { code: string | undefined };
+    if (err.code !== 'ERR_INVALID_URL') {
+      console.error(error);
+      process.exit(1);
+    }
+  }
+
+  if (repoUrl) {
+    // NOTE check github origin
+    if (repoUrl.origin !== 'https://github.com') {
+      console.error(
+        `Invalid URL: ${red(
+          `"${example}"`,
+        )}. Only GitHub repositories are supported. Please use a GitHub URL and try again.`,
+      );
+      process.exit(1);
+    }
+
+    repoInfo = await getRepoInfo(repoUrl);
+
+    // NOTE validate reproInfo
+    if (!repoInfo) {
+      console.error(
+        `Found invalid GitHub URL: ${red(
+          `"${example}"`,
+        )}. Please fix the URL and try again.`,
+      );
+      process.exit(1);
+    }
+
+    const found = await hasRepo(repoInfo);
+    // NOTE Do the repo exist?
+    if (!found) {
+      console.error(
+        `Could not locate the repository for ${red(
+          `"${example}"`,
+        )}. Please check that the repository exists and try again.`,
+      );
+      process.exit(1);
+    }
+  } else {
+    const found = await existsInRepo(example, defaultRef);
+
+    if (!found) {
+      console.error(
+        `Could not locate an example named ${red(
+          `"${example}"`,
+        )}. Please check that the example exists and try again.`,
+      );
+      process.exit(1);
+    }
+  }
+  return repoInfo;
+}
+
+function isErrorLike(err: unknown): err is { message: string } {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    typeof (err as { message?: unknown }).message === 'string'
+  );
+}
+
+export async function downloadAndExtract(
+  example: string,
+  root: string,
+  repoInfo: RepoInfo | string,
+  defaultRef: string,
+): Promise<void> {
+  try {
+    if (typeof repoInfo === 'string') {
+      console.log(
+        `Downloading files for example ${cyan(example)}. This might take a moment.`,
+      );
+      console.log();
+      await downloadAndExtractExample(root, example, defaultRef);
+    } else {
+      console.log(
+        `Downloading files from repo ${cyan(example)}. This might take a moment.`,
+      );
+      console.log();
+      await downloadAndExtractRepo(root, repoInfo);
+    }
+  } catch (reason) {
+    // download error
+    throw new Error(isErrorLike(reason) ? reason.message : reason + '');
+  }
+
+  // TODO automatically installing dependencies
+  // 1. check packageManager
+  // 2. and then install dependencies
 }
