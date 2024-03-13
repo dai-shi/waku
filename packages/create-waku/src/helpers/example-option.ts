@@ -210,14 +210,6 @@ export async function parseExampleOption(
   return { example, defaultRef };
 }
 
-function isErrorLike(err: unknown): err is { message: string } {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    typeof (err as { message?: unknown }).message === 'string'
-  );
-}
-
 export async function downloadAndExtract(
   root: string,
   { example, defaultRef, repoInfo }: ParsedExampleOption,
