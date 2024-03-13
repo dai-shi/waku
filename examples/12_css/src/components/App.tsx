@@ -1,5 +1,4 @@
 import classNames from 'classnames';
-// @ts-expect-error no types
 import styles from './App.module.css';
 import './App.css';
 import { container } from './styles.css.js';
