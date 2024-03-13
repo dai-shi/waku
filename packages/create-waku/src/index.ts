@@ -118,7 +118,7 @@ async function notifyUpdate() {
   // keep original require to avoid
   //  bundling the whole package.json by `@vercel/ncc`
   const packageJson = createRequire(import.meta.url)('../package.json');
-  const result = await checkForUpdate(packageJson).catch(() => null);
+  const result = await checkForUpdate(packageJson).catch(() => {});
   if (result?.latest) {
     console.log(`A new version of 'create-waku' is available!`);
     console.log('You can update by running: ');
@@ -154,6 +154,10 @@ async function init() {
     // by installing from a template.
     await installTemplate({ root, packageName });
   }
+
+  // TODO automatically installing dependencies
+  // 1. check packageManager
+  // 2. and then install dependencies
 
   const manager = process.env.npm_config_user_agent ?? '';
   const packageManager = /pnpm/.test(manager)

@@ -222,26 +222,17 @@ export async function downloadAndExtract(
   root: string,
   { example, defaultRef, repoInfo }: ParsedExampleOption,
 ): Promise<void> {
-  try {
-    if (repoInfo) {
-      console.log(
-        `Downloading files from repo ${cyan(example)}. This might take a moment.`,
-      );
-      console.log();
-      await downloadAndExtractRepo(root, repoInfo);
-    } else {
-      console.log(
-        `Downloading files for example ${cyan(example)}. This might take a moment.`,
-      );
-      console.log();
-      await downloadAndExtractExample(root, example, defaultRef);
-    }
-  } catch (err) {
-    // download error
-    throw new Error(isErrorLike(err) ? err.message : err + '');
+  if (repoInfo) {
+    console.log(
+      `Downloading files from repo ${cyan(example)}. This might take a moment.
+`,
+    );
+    await downloadAndExtractRepo(root, repoInfo);
+  } else {
+    console.log(
+      `Downloading files for example ${cyan(example)}. This might take a moment.
+`,
+    );
+    await downloadAndExtractExample(root, example, defaultRef);
   }
-
-  // TODO automatically installing dependencies
-  // 1. check packageManager
-  // 2. and then install dependencies
 }
