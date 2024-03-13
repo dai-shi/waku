@@ -15,6 +15,30 @@ import {
 
 const DEFAULT_REF = 'v0.20.0-alpha.2';
 
+const userAgent = process.env.npm_config_user_agent || '';
+const packageManager = /pnpm/.test(userAgent)
+  ? 'pnpm'
+  : /yarn/.test(userAgent)
+    ? 'yarn'
+    : 'npm';
+const commands = {
+  pnpm: {
+    install: 'pnpm install',
+    dev: 'pnpm dev',
+    create: 'pnpm create waku',
+  },
+  yarn: {
+    install: 'yarn',
+    dev: 'yarn dev',
+    create: 'yarn create waku',
+  },
+  npm: {
+    install: 'npm install',
+    dev: 'npm run dev',
+    create: 'npm create waku',
+  },
+}[packageManager];
+
 // FIXME is there a better way with prompts?
 const { values } = parseArgs({
   args: process.argv.slice(2),
@@ -104,9 +128,8 @@ async function doPrompts() {
 }
 
 function displayUsage() {
-  const cmd = process.argv.slice(0, 2).join(' ');
   console.log(`
-Usage: ${cmd} [options]
+Usage: ${commands.create} [options]
 
 Options:
   --example             Specify an example use as a template
@@ -159,30 +182,10 @@ async function init() {
   // 1. check packageManager
   // 2. and then install dependencies
 
-  const manager = process.env.npm_config_user_agent ?? '';
-  const packageManager = /pnpm/.test(manager)
-    ? 'pnpm'
-    : /yarn/.test(manager)
-      ? 'yarn'
-      : 'npm';
-
-  const commandsMap = {
-    install: {
-      pnpm: 'pnpm install',
-      yarn: 'yarn',
-      npm: 'npm install',
-    },
-    dev: {
-      pnpm: 'pnpm dev',
-      yarn: 'yarn dev',
-      npm: 'npm run dev',
-    },
-  };
-
   console.log(`\nDone. Now run:\n`);
   console.log(`${bold(green(`cd ${targetDir}`))}`);
-  console.log(`${bold(green(commandsMap.install[packageManager]))}`);
-  console.log(`${bold(green(commandsMap.dev[packageManager]))}`);
+  console.log(`${bold(green(commands.install))}`);
+  console.log(`${bold(green(commands.dev))}`);
   console.log();
 }
 

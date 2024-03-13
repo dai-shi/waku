@@ -131,7 +131,7 @@ async function downloadAndExtractExample(
       cwd: root,
       strip: 2 + name.split('/').length,
       filter: (p) =>
-        p.replace(/waku-[^/]+\//, '').includes(`examples/${name}/`),
+        p.split('/').slice(1).join('/').startsWith(`examples/${name}/`),
     }),
   );
 }
@@ -157,9 +157,9 @@ type ParsedExampleOption = {
 export async function parseExampleOption(
   example: string | undefined,
   defaultRef: string,
-): Promise<ParsedExampleOption | undefined> {
+): Promise<ParsedExampleOption | null> {
   if (!example) {
-    return undefined;
+    return null;
   }
 
   const repoUrl = getValidURL(example);
