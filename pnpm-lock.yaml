@@ -539,8 +539,8 @@ importers:
         specifier: 18.2.21
         version: 18.2.21
       '@vanilla-extract/vite-plugin':
-        specifier: 3.9.5
-        version: 3.9.5(@types/node@20.11.26)(vite@5.1.6)
+        specifier: 4.0.6
+        version: 4.0.6(@types/node@20.11.26)(vite@5.1.6)
       typescript:
         specifier: 5.4.2
         version: 5.4.2
@@ -2061,8 +2061,8 @@ packages:
       modern-ahocorasick: 1.0.1
       outdent: 0.8.0
 
-  /@vanilla-extract/integration@6.5.0(@types/node@20.11.26):
-    resolution: {integrity: sha512-E2YcfO8vA+vs+ua+gpvy1HRqvgWbI+MTlUpxA8FvatOvybuNcWAY0CKwQ/Gpj7rswYKtC6C7+xw33emM6/ImdQ==}
+  /@vanilla-extract/integration@7.1.1(@types/node@20.11.26):
+    resolution: {integrity: sha512-2JjDKL2HDTazis4oTkUFsQFUyw61k8oym9r0NOLSJC0JB0W25W1ryVZvDx74d3deIyB5AWbCselyzl3gja30kQ==}
     dependencies:
       '@babel/core': 7.24.0
       '@babel/plugin-syntax-typescript': 7.23.3(@babel/core@7.24.0)
@@ -2091,15 +2091,12 @@ packages:
   /@vanilla-extract/private@1.0.3:
     resolution: {integrity: sha512-17kVyLq3ePTKOkveHxXuIJZtGYs+cSoev7BlP+Lf4916qfDhk/HBjvlYDe8egrea7LNPHKwSZJK/bzZC+Q6AwQ==}
 
-  /@vanilla-extract/vite-plugin@3.9.5(@types/node@20.11.26)(vite@5.1.6):
-    resolution: {integrity: sha512-CWI/CtrVW6i3HKccI6T7uGQkTJ8bd8Xl2UMBg3Pkr7dwWMmavXTeucV0I9KSbmXaYXSbEj+Q8c9y0xAZwtmTig==}
+  /@vanilla-extract/vite-plugin@4.0.6(@types/node@20.11.26)(vite@5.1.6):
+    resolution: {integrity: sha512-uT2AhzxEC8qdn7SFxD/MHF7pxyFMb2e7HY3+isyPDzkTyIdiA/ZXk7qwWhcigFMNCJ6YuyxFQJmiDhP9U9oOmg==}
     peerDependencies:
       vite: 5.1.6
     dependencies:
-      '@vanilla-extract/integration': 6.5.0(@types/node@20.11.26)
-      outdent: 0.8.0
-      postcss: 8.4.35
-      postcss-load-config: 4.0.2(postcss@8.4.35)
+      '@vanilla-extract/integration': 7.1.1(@types/node@20.11.26)
       vite: 5.1.6(@types/node@20.11.26)
     transitivePeerDependencies:
       - '@types/node'
@@ -2110,7 +2107,6 @@ packages:
       - sugarss
       - supports-color
       - terser
-      - ts-node
     dev: true
 
   /@vercel/ncc@0.38.1:
