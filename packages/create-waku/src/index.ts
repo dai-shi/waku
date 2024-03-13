@@ -14,18 +14,23 @@ import {
   existsInRepo,
   getRepoInfo,
   hasRepo,
-  type RepoInfo,
-} from './helpers/example-option';
+} from './helpers/example-option.js';
+import type { RepoInfo } from './helpers/example-option.js';
+
+const DEFAULT_REF = 'v0.20.0-alpha.2';
 
 // FIXME is there a better way with prompts?
-const { tokens } = parseArgs({
+const { values } = parseArgs({
   args: process.argv.slice(2),
   options: {
     example: {
       type: 'string',
     },
+    help: {
+      type: 'boolean',
+      short: 'h',
+    },
   },
-  tokens: true,
 });
 
 function isErrorLike(err: unknown): err is { message: string } {
@@ -34,13 +39,6 @@ function isErrorLike(err: unknown): err is { message: string } {
     err !== null &&
     typeof (err as { message?: unknown }).message === 'string'
   );
-}
-// FIXME no-nay
-function getExample(tokens: any) {
-  const exampleToken = tokens.find(
-    (token: any) => token.kind === 'option' && token.name === 'example',
-  );
-  return exampleToken?.value;
 }
 function isValidPackageName(projectName: string) {
   return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
@@ -60,6 +58,17 @@ function toValidPackageName(projectName: string) {
 // if the dir is empty or not exist
 function canSafelyOverwrite(dir: string) {
   return !existsSync(dir) || readdirSync(dir).length === 0;
+}
+
+function displayUsage() {
+  const cmd = process.argv.slice(0, 2).join(' ');
+  console.log(`
+Usage: ${cmd} [options]
+
+Options:
+  --example             Specify an example use as a template
+  -h, --help            Display this help message
+`);
 }
 
 async function notifyUpdate() {
@@ -130,6 +139,11 @@ async function installTemplate({
 }
 
 async function init() {
+  if (values.help) {
+    displayUsage();
+    return;
+  }
+
   let targetDir = '';
   const defaultProjectName = 'waku-project';
 
@@ -185,13 +199,13 @@ async function init() {
     process.exit(1);
   }
   let repoInfo: RepoInfo | undefined;
-  const example = getExample(tokens);
 
-  if (example) {
+  // FIXME this is pretty hard to follow. Separate functions?
+  if (values.example) {
     let repoUrl: URL | undefined;
 
     try {
-      repoUrl = new URL(example);
+      repoUrl = new URL(values.example);
     } catch (error: unknown) {
       const err = error as Error & { code: string | undefined };
       if (err.code !== 'ERR_INVALID_URL') {
@@ -205,7 +219,7 @@ async function init() {
       if (repoUrl.origin !== 'https://github.com') {
         console.error(
           `Invalid URL: ${red(
-            `"${example}"`,
+            `"${values.example}"`,
           )}. Only GitHub repositories are supported. Please use a GitHub URL and try again.`,
         );
         process.exit(1);
@@ -217,7 +231,7 @@ async function init() {
       if (!repoInfo) {
         console.error(
           `Found invalid GitHub URL: ${red(
-            `"${example}"`,
+            `"${values.example}"`,
           )}. Please fix the URL and try again.`,
         );
         process.exit(1);
@@ -228,18 +242,18 @@ async function init() {
       if (!found) {
         console.error(
           `Could not locate the repository for ${red(
-            `"${example}"`,
+            `"${values.example}"`,
           )}. Please check that the repository exists and try again.`,
         );
         process.exit(1);
       }
     } else {
-      const found = await existsInRepo(example);
+      const found = await existsInRepo(values.example, DEFAULT_REF);
 
       if (!found) {
         console.error(
           `Could not locate an example named ${red(
-            `"${example}"`,
+            `"${values.example}"`,
           )}. Please check that the example exists and try again.`,
         );
         process.exit(1);
@@ -258,23 +272,23 @@ async function init() {
     await fsPromises.mkdir(root, { recursive: true });
   }
 
-  if (example) {
+  if (values.example) {
     /**
      * If an example repository is provided, clone it.
      */
     try {
       if (repoInfo) {
         console.log(
-          `Downloading files from repo ${cyan(example)}. This might take a moment.`,
+          `Downloading files from repo ${cyan(values.example)}. This might take a moment.`,
         );
         console.log();
         await downloadAndExtractRepo(root, repoInfo);
       } else {
         console.log(
-          `Downloading files for example ${cyan(example)}. This might take a moment.`,
+          `Downloading files for example ${cyan(values.example)}. This might take a moment.`,
         );
         console.log();
-        await downloadAndExtractExample(root, example);
+        await downloadAndExtractExample(root, values.example, DEFAULT_REF);
       }
     } catch (reason) {
       // download error

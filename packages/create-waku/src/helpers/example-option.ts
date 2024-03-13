@@ -72,15 +72,16 @@ export function hasRepo({
   return isUrlOk(contentsUrl + packagePath + `?ref=${branch}`);
 }
 
-export function existsInRepo(nameOrUrl: string): Promise<boolean> {
+export function existsInRepo(nameOrUrl: string, ref: string): Promise<boolean> {
   try {
     const url = new URL(nameOrUrl);
     return isUrlOk(url.href);
   } catch {
+    const params = new URLSearchParams({ ref });
     return isUrlOk(
       `https://api.github.com/repos/dai-shi/waku/contents/examples/${encodeURIComponent(
         nameOrUrl,
-      )}`,
+      )}?${params}`,
     );
   }
 }
@@ -116,15 +117,20 @@ export async function downloadAndExtractRepo(
   );
 }
 
-export async function downloadAndExtractExample(root: string, name: string) {
+export async function downloadAndExtractExample(
+  root: string,
+  name: string,
+  ref: string,
+) {
   await pipeline(
     await downloadTarStream(
-      'https://codeload.github.com/dai-shi/waku/tar.gz/main',
+      `https://codeload.github.com/dai-shi/waku/tar.gz/${ref}`,
     ),
     tar.x({
       cwd: root,
       strip: 2 + name.split('/').length,
-      filter: (p) => p.includes(`waku-main/examples/${name}/`),
+      filter: (p) =>
+        p.replace(/waku-[^/]+\//, '').includes(`examples/${name}/`),
     }),
   );
 }
