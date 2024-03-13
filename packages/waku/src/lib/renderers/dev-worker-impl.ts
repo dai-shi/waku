@@ -82,9 +82,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         resolveClientEntry: (file: string) => {
           let id = resolveClientEntryForDev(file, rest.config);
           for (const moduleNode of initialModules) {
-            console.log('moduleNode.file', moduleNode.file)
             if (moduleNode.file === file) {
-              console.log('file', file, 'replacing id', id, moduleNode.url);
               id = moduleNode.url;
               break;
             }
