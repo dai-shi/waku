@@ -1,25 +1,18 @@
 import { existsSync } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import fse from 'fs-extra/esm';
 
-export async function installTemplate({
-  root,
-  packageName,
-}: {
-  root: string;
-  packageName: string;
-}) {
+export async function installTemplate(
+  root: string,
+  packageName: string,
+  templateRoot: string,
+) {
   const pkg = {
     name: packageName,
     version: '0.0.0',
   };
 
-  const templateRoot = path.join(
-    fileURLToPath(import.meta.url),
-    '../../template',
-  );
   // maybe include `.DS_Store` on macOS
   const CHOICES = (await fsPromises.readdir(templateRoot)).filter(
     (dir) => !dir.startsWith('.'),

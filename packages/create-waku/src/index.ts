@@ -1,6 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { default as prompts } from 'prompts';
 import { red, green, bold } from 'kolorist';
@@ -38,6 +39,11 @@ const commands = {
     create: 'npm create waku',
   },
 }[packageManager];
+
+const templateRoot = path.join(
+  fileURLToPath(import.meta.url),
+  '../../template',
+);
 
 // FIXME is there a better way with prompts?
 const { values } = parseArgs({
@@ -175,7 +181,7 @@ async function init() {
   } else {
     // If an example repository is not provided for cloning, proceed
     // by installing from a template.
-    await installTemplate({ root, packageName });
+    await installTemplate(root, packageName, templateRoot);
   }
 
   // TODO automatically installing dependencies
