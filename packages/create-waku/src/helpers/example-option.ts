@@ -136,27 +136,29 @@ async function downloadAndExtractExample(
   );
 }
 
-export async function parseExampleOption(
-  example: string | undefined,
-  defaultRef: string,
-): Promise<RepoInfo | string | undefined> {
-  if (!example) {
-    return undefined;
-  }
-
-  let repoInfo: RepoInfo | undefined;
-  let repoUrl: URL | undefined;
-
+function getValidURL(url: string): URL | undefined {
   try {
-    repoUrl = new URL(example);
-  } catch (error: unknown) {
+    return new URL(url);
+  } catch (error) {
     const err = error as Error & { code: string | undefined };
     if (err.code !== 'ERR_INVALID_URL') {
       console.error(error);
       process.exit(1);
     }
   }
+}
 
+export async function parseExampleOption(
+  example: string | undefined,
+  defaultRef: string,
+): Promise<
+  { example: string; defaultRef: string; repoInfo?: RepoInfo } | undefined
+> {
+  if (!example) {
+    return undefined;
+  }
+
+  const repoUrl = getValidURL(example);
   if (repoUrl) {
     // NOTE check github origin
     if (repoUrl.origin !== 'https://github.com') {
@@ -168,8 +170,7 @@ export async function parseExampleOption(
       process.exit(1);
     }
 
-    repoInfo = await getRepoInfo(repoUrl);
-
+    const repoInfo = await getRepoInfo(repoUrl);
     // NOTE validate reproInfo
     if (!repoInfo) {
       console.error(
@@ -180,9 +181,8 @@ export async function parseExampleOption(
       process.exit(1);
     }
 
-    const found = await hasRepo(repoInfo);
     // NOTE Do the repo exist?
-    if (!found) {
+    if (!(await hasRepo(repoInfo))) {
       console.error(
         `Could not locate the repository for ${red(
           `"${example}"`,
@@ -190,20 +190,20 @@ export async function parseExampleOption(
       );
       process.exit(1);
     }
-  } else {
-    const found = await existsInRepo(example, defaultRef);
 
-    if (!found) {
-      console.error(
-        `Could not locate an example named ${red(
-          `"${example}"`,
-        )}. Please check that the example exists and try again.`,
-      );
-      process.exit(1);
-    }
-    return example;
+    return { example, defaultRef, repoInfo };
   }
-  return repoInfo;
+
+  if (!(await existsInRepo(example, defaultRef))) {
+    console.error(
+      `Could not locate an example named ${red(
+        `"${example}"`,
+      )}. Please check that the example exists and try again.`,
+    );
+    process.exit(1);
+  }
+
+  return { example, defaultRef };
 }
 
 function isErrorLike(err: unknown): err is { message: string } {
@@ -215,28 +215,30 @@ function isErrorLike(err: unknown): err is { message: string } {
 }
 
 export async function downloadAndExtract(
-  example: string,
   root: string,
-  repoInfo: RepoInfo | string,
-  defaultRef: string,
+  {
+    example,
+    defaultRef,
+    repoInfo,
+  }: { example: string; defaultRef: string; repoInfo?: RepoInfo },
 ): Promise<void> {
   try {
-    if (typeof repoInfo === 'string') {
-      console.log(
-        `Downloading files for example ${cyan(example)}. This might take a moment.`,
-      );
-      console.log();
-      await downloadAndExtractExample(root, example, defaultRef);
-    } else {
+    if (repoInfo) {
       console.log(
         `Downloading files from repo ${cyan(example)}. This might take a moment.`,
       );
       console.log();
       await downloadAndExtractRepo(root, repoInfo);
+    } else {
+      console.log(
+        `Downloading files for example ${cyan(example)}. This might take a moment.`,
+      );
+      console.log();
+      await downloadAndExtractExample(root, example, defaultRef);
     }
-  } catch (reason) {
+  } catch (err) {
     // download error
-    throw new Error(isErrorLike(reason) ? reason.message : reason + '');
+    throw new Error(isErrorLike(err) ? err.message : err + '');
   }
 
   // TODO automatically installing dependencies

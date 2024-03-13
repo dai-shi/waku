@@ -133,7 +133,7 @@ async function init() {
     return;
   }
 
-  const repoInfo = await parseExampleOption(values.example, DEFAULT_REF);
+  const exampleOption = await parseExampleOption(values.example, DEFAULT_REF);
 
   const { packageName, shouldOverwrite, targetDir } = await doPrompts();
   const root = path.resolve(targetDir);
@@ -146,9 +146,9 @@ async function init() {
     await fsPromises.mkdir(root, { recursive: true });
   }
 
-  if (repoInfo) {
+  if (exampleOption) {
     // If an example repository is provided, clone it.
-    await downloadAndExtract(values.example!, root, repoInfo, DEFAULT_REF);
+    await downloadAndExtract(root, exampleOption);
   } else {
     // If an example repository is not provided for cloning, proceed
     // by installing from a template.
