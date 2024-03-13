@@ -259,6 +259,7 @@ export const renderHtml = async (
           {},
           {
             get(_target, name: string) {
+              console.log('filePath', filePath)
               let file = filePath.slice(config.basePath.length);
               // TODO too long, we need to refactor this logic
               if (isDev) {
