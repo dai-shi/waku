@@ -53,7 +53,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
     id,
     type: _removed,
     hasModuleIdCallback,
-    initialModules: initialModules,
+    initialModules,
     ...rest
   } = mesg;
   try {
@@ -83,7 +83,9 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
           let id = resolveClientEntryForDev(file, rest.config);
           for (const moduleNode of initialModules) {
             if (moduleNode.file === file) {
+              console.log('replacing id', id, moduleNode.url);
               id = moduleNode.url;
+              break;
             }
           }
           return id;
