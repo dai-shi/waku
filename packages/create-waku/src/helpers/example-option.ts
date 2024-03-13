@@ -143,6 +143,7 @@ export async function parseExampleOption(
   if (!example) {
     return undefined;
   }
+
   let repoInfo: RepoInfo | undefined;
   let repoUrl: URL | undefined;
 
@@ -200,6 +201,7 @@ export async function parseExampleOption(
       );
       process.exit(1);
     }
+    return example;
   }
   return repoInfo;
 }
