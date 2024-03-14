@@ -260,6 +260,7 @@ export const renderHtml = async (
           {},
           {
             get(_target, name: string) {
+              console.log('opts', opts)
               console.log('filePath', filePath);
               const resolveClientEntryPrefix = config.basePath + '@fs'
               const isResolvedClientEntry = filePath.startsWith(resolveClientEntryPrefix);
