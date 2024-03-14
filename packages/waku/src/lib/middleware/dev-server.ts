@@ -167,7 +167,6 @@ export const devServer: Middleware = (options) => {
     // and using the same modules if possible in the bundlerConfig in the stream
     const mainJs = `${config.srcDir}/${config.mainJs}`;
     const resolved = await vite.pluginContainer.resolveId(mainJs);
-    console.log('resolved', mainJs, resolved, vite.moduleGraph.idToModuleMap.keys())
     await vite.transformRequest(resolved!.id);
     const resolvedModule = vite.moduleGraph.idToModuleMap.get(resolved!.id)!;
     await Promise.all(

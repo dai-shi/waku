@@ -17,6 +17,7 @@ import {
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
+  encodeFilePathToAbsolute,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
 
@@ -260,18 +261,26 @@ export const renderHtml = async (
           {
             get(_target, name: string) {
               console.log('filePath', filePath);
-              let file = filePath.slice(config.basePath.length);
+              const resolveClientEntryPrefix = config.basePath + '@fs'
+              const isResolvedClientEntry = filePath.startsWith(resolveClientEntryPrefix);
+              let file = isResolvedClientEntry ? filePath.slice(resolveClientEntryPrefix.length) : filePath;
               // TODO too long, we need to refactor this logic
               if (isDev) {
                 file = file.split('?')[0]!;
-                const filePath = file.startsWith('@fs/')
-                  ? file.slice('@fs'.length)
+                // const filePath = file.startsWith('@fs/')
+                //   ? file.slice('@fs'.length)
+                //   : joinPath(opts.rootDir, file);
+                const filePath = file.startsWith(opts.rootDir)
+                  ? file
                   : joinPath(opts.rootDir, file);
+                console.log({
+                  filePath,
+                  file
+                })
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
                 );
-                console.log('wakuDist', wakuDist)
                 if (filePath.startsWith(wakuDist)) {
                   const id =
                     'waku' +
@@ -286,7 +295,7 @@ export const renderHtml = async (
                   }
                   return { id, chunks: [id], name };
                 }
-                const id = filePathToFileURL(filePath);
+                const id = filePathToFileURL(encodeFilePathToAbsolute(filePath));
                 if (!moduleLoading.has(id)) {
                   moduleLoading.set(
                     id,
