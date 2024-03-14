@@ -270,7 +270,7 @@ export const renderHtml = async (
                 // const filePath = file.startsWith('@fs/')
                 //   ? file.slice('@fs'.length)
                 //   : joinPath(opts.rootDir, file);
-                const filePath = file.startsWith(opts.rootDir)
+                const filePath = file.startsWith(opts.rootDir) || isResolvedClientEntry
                   ? file
                   : joinPath(opts.rootDir, file);
                 console.log({
