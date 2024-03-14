@@ -271,6 +271,7 @@ export const renderHtml = async (
                   fileURLToFilePath(import.meta.url),
                   '../../..',
                 );
+                console.log('wakuDist', wakuDist)
                 if (filePath.startsWith(wakuDist)) {
                   const id =
                     'waku' +
