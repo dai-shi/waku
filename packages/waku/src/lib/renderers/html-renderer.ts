@@ -242,6 +242,7 @@ export const renderHtml = async (
     }
     throw e;
   }
+  console.log('opts', opts)
   const moduleMap = new Proxy(
     {} as Record<
       string,
@@ -260,7 +261,7 @@ export const renderHtml = async (
           {},
           {
             get(_target, name: string) {
-              console.log('opts', opts)
+              
               console.log('filePath', filePath);
               const resolveClientEntryPrefix = config.basePath + '@fs'
               const isResolvedClientEntry = filePath.startsWith(resolveClientEntryPrefix);
