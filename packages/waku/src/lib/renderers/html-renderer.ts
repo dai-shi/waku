@@ -260,7 +260,6 @@ export const renderHtml = async (
           {},
           {
             get(_target, name: string) {
-              console.log(filePath)
               let file = filePath.slice(config.basePath.length);
               // TODO too long, we need to refactor this logic
               if (isDev) {
@@ -272,12 +271,10 @@ export const renderHtml = async (
                   fileURLToFilePath(import.meta.url),
                   '../../..',
                 );
-                console.log('wakuDist', wakuDist, filePath)
                 if (filePath.startsWith(wakuDist)) {
                   const id =
                     'waku' +
                     filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
-                  console.log('import id', id)
                   if (!moduleLoading.has(id)) {
                     moduleLoading.set(
                       id,
@@ -289,7 +286,6 @@ export const renderHtml = async (
                   return { id, chunks: [id], name };
                 }
                 const id = filePathToFileURL(filePath);
-                console.log('loadServerFile id', id)
                 if (!moduleLoading.has(id)) {
                   moduleLoading.set(
                     id,
