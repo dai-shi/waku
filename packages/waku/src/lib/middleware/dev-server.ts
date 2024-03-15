@@ -3,12 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
 import { resolveConfig } from '../config.js';
-import {
-  joinPath,
-  fileURLToFilePath,
-  decodeFilePathFromAbsolute,
-} from '../utils/path.js';
-import { stringToStream } from '../utils/stream.js';
+import { fileURLToFilePath } from '../utils/path.js';
 import {
   initializeWorker,
   registerHotUpdateCallback,
@@ -22,7 +17,7 @@ import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
-import type { Middleware } from './types.js';
+import type { ClonableModuleNode, Middleware } from './types.js';
 
 const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
   let controller: ReadableStreamDefaultController | undefined;
@@ -74,6 +69,8 @@ export const devServer: Middleware = (options) => {
   const configPromise = resolveConfig(options.config);
   const vitePromise = configPromise.then(async (config) => {
     const mergedViteConfig = await mergeUserViteConfig({
+      // Since we have multiple instances of vite, different ones might overwrite the others' cache. That's why we change it for this one.
+      cacheDir: 'node_modules/.vite/waku-dev-server',
       base: config.basePath,
       plugins: [
         patchReactRefresh(viteReact()),
@@ -161,13 +158,35 @@ export const devServer: Middleware = (options) => {
     }
   };
 
+  let initialModules: ClonableModuleNode[];
+
   return async (ctx, next) => {
     const [{ middleware: _removed, ...config }, vite] = await Promise.all([
       configPromise,
       vitePromise,
     ]);
+
+    if (!initialModules) {
+      // pre-process the mainJs file to see which modules are being sent to the browser by vite
+      // and using the same modules if possible in the bundlerConfig in the stream
+      const mainJs = `${config.basePath}${config.srcDir}/${config.mainJs}`;
+      await vite.transformRequest(mainJs);
+      const resolved = await vite.pluginContainer.resolveId(mainJs);
+      const resolvedModule = vite.moduleGraph.idToModuleMap.get(resolved!.id)!;
+      await Promise.all(
+        [...resolvedModule.importedModules].map(({ id }) =>
+          id ? vite.warmupRequest(id) : null,
+        ),
+      );
+
+      initialModules = Array.from(vite.moduleGraph.idToModuleMap.values()).map(
+        (m) => ({ url: m.url, file: m.file! }),
+      );
+    }
+
     ctx.devServer = {
       rootDir: vite.config.root,
+      initialModules,
       renderRscWithWorker,
       getSsrConfigWithWorker,
       loadServerFile,
@@ -180,34 +199,7 @@ export const devServer: Middleware = (options) => {
       return;
     }
 
-    // HACK re-export "?v=..." URL to avoid dual module hazard.
     const viteUrl = ctx.req.url.toString().slice(ctx.req.url.origin.length);
-    const fname = viteUrl.startsWith(config.basePath + '@fs/')
-      ? decodeFilePathFromAbsolute(
-          viteUrl.slice(config.basePath.length + '@fs'.length),
-        )
-      : joinPath(vite.config.root, viteUrl);
-    for (const item of vite.moduleGraph.idToModuleMap.values()) {
-      if (
-        item.file === fname &&
-        item.url !== viteUrl &&
-        !item.url.includes('?html-proxy')
-      ) {
-        const { code } = (await vite.transformRequest(item.url))!;
-        ctx.res.headers = {
-          ...ctx.res.headers,
-          'content-type': 'application/javascript',
-        };
-        ctx.res.status = 200;
-        let exports = `export * from "${item.url}";`;
-        // `export *` does not re-export `default`
-        if (code.includes('export default')) {
-          exports += `export { default } from "${item.url}";`;
-        }
-        ctx.res.body = stringToStream(exports);
-        return;
-      }
-    }
     const viteReq: any = Readable.fromWeb(ctx.req.body as any);
     viteReq.method = ctx.req.method;
     viteReq.url = viteUrl;

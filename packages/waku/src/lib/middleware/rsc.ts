@@ -42,7 +42,9 @@ export const rsc: Middleware = (options) => {
           contentType: headers['content-type'] || '',
         };
         const readable = await (ctx.devServer
-          ? ctx.devServer.renderRscWithWorker(args)
+          ? ctx.devServer.renderRscWithWorker(args, {
+              initialModules: ctx.devServer.initialModules,
+            })
           : renderRsc(args, { isDev: false, entries }));
         ctx.res.body = readable;
         return;

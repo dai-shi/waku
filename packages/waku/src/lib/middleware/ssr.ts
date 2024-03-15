@@ -57,11 +57,16 @@ export const ssr: Middleware = (options) => {
             ? {
                 isDev: true,
                 getSsrConfigForHtml: (pathname, searchParams) =>
-                  devServer.getSsrConfigWithWorker({
-                    config,
-                    pathname,
-                    searchParams,
-                  }),
+                  devServer.getSsrConfigWithWorker(
+                    {
+                      config,
+                      pathname,
+                      searchParams,
+                    },
+                    {
+                      initialModules: devServer.initialModules,
+                    },
+                  ),
                 rootDir: devServer.rootDir,
                 loadServerFile: devServer.loadServerFile,
               }
