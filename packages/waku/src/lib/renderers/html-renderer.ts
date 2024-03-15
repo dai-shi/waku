@@ -17,6 +17,7 @@ import {
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
+  encodeFilePathToAbsolute,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
 
@@ -264,9 +265,9 @@ export const renderHtml = async (
               // TODO too long, we need to refactor this logic
               if (isDev) {
                 file = file.split('?')[0]!;
-                const filePath = file.startsWith('@fs/')
+                const filePath = encodeFilePathToAbsolute(file.startsWith('@fs/')
                   ? file.slice('@fs'.length)
-                  : joinPath(opts.rootDir, file);
+                  : joinPath(opts.rootDir, file));
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
