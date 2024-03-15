@@ -169,6 +169,7 @@ export const devServer: Middleware = (options) => {
     if (!initialModules) {
       // pre-process the mainJs file to see which modules are being sent to the browser by vite
       // and using the same modules if possible in the bundlerConfig in the stream
+
       const mainJs = `${config.basePath}${config.srcDir}/${config.mainJs}`;
       await vite.transformRequest(mainJs);
       const resolved = await vite.pluginContainer.resolveId(mainJs);
