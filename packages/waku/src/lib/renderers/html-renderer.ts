@@ -265,9 +265,9 @@ export const renderHtml = async (
               // TODO too long, we need to refactor this logic
               if (isDev) {
                 file = file.split('?')[0]!;
-                const filePath = encodeFilePathToAbsolute(file.startsWith('@fs/')
+                const filePath = file.startsWith('@fs/')
                   ? file.slice('@fs'.length)
-                  : joinPath(opts.rootDir, file));
+                  : encodeFilePathToAbsolute(joinPath(opts.rootDir, file));
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
