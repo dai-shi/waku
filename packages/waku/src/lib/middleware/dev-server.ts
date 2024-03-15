@@ -170,7 +170,6 @@ export const devServer: Middleware = (options) => {
     const mainJs = `${config.basePath}${config.srcDir}/${config.mainJs}`;
     await vite.transformRequest(mainJs);
     const resolved = await vite.pluginContainer.resolveId(mainJs);
-    console.log('resolved', resolved)
     const resolvedModule = vite.moduleGraph.idToModuleMap.get(resolved!.id)!;
     await Promise.all(
       [...resolvedModule.importedModules].map(({ id }) =>

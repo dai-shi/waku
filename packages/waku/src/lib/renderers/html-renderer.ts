@@ -274,6 +274,7 @@ export const renderHtml = async (
                   const id =
                     'waku' +
                     filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
+                  console.log('import id', id)
                   if (!moduleLoading.has(id)) {
                     moduleLoading.set(
                       id,
@@ -285,6 +286,7 @@ export const renderHtml = async (
                   return { id, chunks: [id], name };
                 }
                 const id = filePathToFileURL(filePath);
+                console.log('loadServerFile id', id)
                 if (!moduleLoading.has(id)) {
                   moduleLoading.set(
                     id,
