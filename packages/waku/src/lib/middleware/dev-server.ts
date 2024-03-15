@@ -69,6 +69,7 @@ export const devServer: Middleware = (options) => {
   const configPromise = resolveConfig(options.config);
   const vitePromise = configPromise.then(async (config) => {
     const mergedViteConfig = await mergeUserViteConfig({
+      // Since we have multiple instances of vite, different ones might overwrite the others' cache. That's why we change it for this one.
       cacheDir: 'node_modules/.vite/waku-dev-server',
       base: config.basePath,
       plugins: [

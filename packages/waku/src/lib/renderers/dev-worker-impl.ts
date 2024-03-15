@@ -89,8 +89,8 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         isDev: true,
         loadServerFile,
         loadServerModule,
-        resolveClientEntry: (file: string) =>
-          resolveClientEntryForDev(file, rest.config, initialModules),
+        resolveClientEntry: (id: string) =>
+          resolveClientEntryForDev(id, rest.config, initialModules),
         entries: await loadEntries(rest.config),
       },
     );
