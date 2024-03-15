@@ -17,7 +17,6 @@ import {
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
-  encodeFilePathToAbsolute,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
 
@@ -242,7 +241,6 @@ export const renderHtml = async (
     }
     throw e;
   }
-  console.log('opts', opts)
   const moduleMap = new Proxy(
     {} as Record<
       string,
@@ -261,24 +259,14 @@ export const renderHtml = async (
           {},
           {
             get(_target, name: string) {
-              
               console.log('filePath', filePath);
-              const resolveClientEntryPrefix = config.basePath + '@fs'
-              const isResolvedClientEntry = filePath.startsWith(resolveClientEntryPrefix);
-              let file = isResolvedClientEntry ? filePath.slice(resolveClientEntryPrefix.length) : filePath;
+              let file = filePath.slice(config.basePath.length);
               // TODO too long, we need to refactor this logic
               if (isDev) {
                 file = file.split('?')[0]!;
-                // const filePath = file.startsWith('@fs/')
-                //   ? file.slice('@fs'.length)
-                //   : joinPath(opts.rootDir, file);
-                const filePath = file.startsWith(opts.rootDir) || isResolvedClientEntry
-                  ? file
+                const filePath = file.startsWith('@fs/')
+                  ? file.slice('@fs'.length)
                   : joinPath(opts.rootDir, file);
-                console.log({
-                  filePath,
-                  file
-                })
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
@@ -297,7 +285,7 @@ export const renderHtml = async (
                   }
                   return { id, chunks: [id], name };
                 }
-                const id = filePathToFileURL(encodeFilePathToAbsolute(filePath));
+                const id = filePathToFileURL(filePath);
                 if (!moduleLoading.has(id)) {
                   moduleLoading.set(
                     id,

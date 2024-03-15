@@ -157,6 +157,8 @@ export const devServer: Middleware = (options) => {
     }
   };
 
+  let initialModules: ClonableModuleNode[];
+
   return async (ctx, next) => {
     const [{ middleware: _removed, ...config }, vite] = await Promise.all([
       configPromise,
@@ -175,9 +177,11 @@ export const devServer: Middleware = (options) => {
       ),
     );
 
-    const initialModules: ClonableModuleNode[] = Array.from(
-      vite.moduleGraph.idToModuleMap.values(),
-    ).map((m) => ({ url: m.url, file: m.file! }));
+    if (!initialModules) {
+      initialModules = Array.from(vite.moduleGraph.idToModuleMap.values()).map(
+        (m) => ({ url: m.url, file: m.file! }),
+      );
+    }
 
     ctx.devServer = {
       rootDir: vite.config.root,
