@@ -271,6 +271,7 @@ export const renderHtml = async (
                   fileURLToFilePath(import.meta.url),
                   '../../..',
                 );
+                cosnole.log('wakuDist', wakuDist, filePath)
                 if (filePath.startsWith(wakuDist)) {
                   const id =
                     'waku' +
