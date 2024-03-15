@@ -25,6 +25,7 @@ import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import { viteHot } from '../plugins/vite-plugin-rsc-hmr.js';
+import type { ClonableModuleNode } from '../middleware/types.js';
 
 // For react-server-dom-webpack/server.edge
 (globalThis as any).AsyncLocalStorage = AsyncLocalStorage;
@@ -42,7 +43,16 @@ const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR') as string;
 const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS') as string;
 const configPrivateDir = getEnvironmentData('CONFIG_PRIVATE_DIR') as string;
 
-const resolveClientEntryForDev = (id: string, config: { basePath: string }) => {
+const resolveClientEntryForDev = (
+  id: string,
+  config: { basePath: string },
+  initialModules: ClonableModuleNode[],
+) => {
+  for (const moduleNode of initialModules) {
+    if (moduleNode.file === id) {
+      return moduleNode.url;
+    }
+  }
   const filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
   // HACK this relies on Vite's internal implementation detail.
   return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
@@ -79,16 +89,8 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         isDev: true,
         loadServerFile,
         loadServerModule,
-        resolveClientEntry: (file: string) => {
-          let id = resolveClientEntryForDev(file, rest.config);
-          for (const moduleNode of initialModules) {
-            if (moduleNode.file === file) {
-              id = moduleNode.url;
-              break;
-            }
-          }
-          return id;
-        },
+        resolveClientEntry: (file: string) =>
+          resolveClientEntryForDev(file, rest.config, initialModules),
         entries: await loadEntries(rest.config),
       },
     );
@@ -112,7 +114,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
 const handleGetSsrConfig = async (
   mesg: MessageReq & { type: 'getSsrConfig' },
 ) => {
-  const { id, config, pathname, searchParamsString } = mesg;
+  const { id, config, pathname, searchParamsString, initialModules } = mesg;
   const searchParams = new URLSearchParams(searchParamsString);
   try {
     const ssrConfig = await getSsrConfig(
@@ -124,7 +126,7 @@ const handleGetSsrConfig = async (
       {
         isDev: true,
         resolveClientEntry: (id: string) =>
-          resolveClientEntryForDev(id, config),
+          resolveClientEntryForDev(id, config, initialModules),
         entries: await loadEntries(config),
       },
     );

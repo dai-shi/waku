@@ -285,7 +285,6 @@ export const renderHtml = async (
                   return { id, chunks: [id], name };
                 }
                 const id = filePathToFileURL(filePath);
-                console.log('id===============', id, filePath);
                 if (!moduleLoading.has(id)) {
                   moduleLoading.set(
                     id,
