@@ -23,12 +23,6 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   );
 }
 
-export const getConfig = async () => {
-  return {
-    render: 'static',
-  };
-};
-
 const getData = async () => {
   const data = {
     description: 'An internet website!',
@@ -36,4 +30,10 @@ const getData = async () => {
   };
 
   return data;
+};
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
 };
