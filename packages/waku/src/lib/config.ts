@@ -12,15 +12,15 @@ const DEFAULT_HTML_HEAD = `
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 `.trim();
+const ADDITIONAL_HTML_HEAD = `
+<meta name="generator" content="Waku" />
+`.trim();
+
+const DO_NOT_BUNDLE = '';
 
 const DEFAULT_MIDDLEWARE = (cmd: 'dev' | 'start') => [
   ...(cmd === 'dev'
-    ? [
-        import(
-          /* @vite-ignore */ 'DO_NOT_BUNDLE'.slice(Infinity) +
-            'waku/middleware/dev-server'
-        ),
-      ]
+    ? [import(/* @vite-ignore */ DO_NOT_BUNDLE + 'waku/middleware/dev-server')]
     : []),
   import('waku/middleware/ssr'),
   import('waku/middleware/rsc'),
@@ -46,5 +46,8 @@ export async function resolveConfig(config: Config) {
     middleware: DEFAULT_MIDDLEWARE,
     ...config,
   };
+  if (!resolvedConfig.htmlHead.includes(ADDITIONAL_HTML_HEAD)) {
+    resolvedConfig.htmlHead += ADDITIONAL_HTML_HEAD;
+  }
   return resolvedConfig;
 }

@@ -1,6 +1,12 @@
 # Change Log
 
 ## [Unreleased]
+### Added
+- Middleware architecture
+- File system router
+### Changed
+- getContext / rerender from 'waku/server'
+- SSR by default (opting out method)
 
 ## [0.19.4] - 2024-02-27
 ### Changed

@@ -17,6 +17,7 @@ import {
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
+  encodeFilePathToAbsolute,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
 import { createRequire } from 'node:module';
@@ -113,7 +114,15 @@ globalThis.__WAKU_PREFETCHED__ = {
         headSent = true;
         data = modifyHead(data);
         if (mainJsPath) {
-          data += `<script src="${mainJsPath}" async type="module"></script>`;
+          const closingBodyIndex = data.indexOf('</body>');
+          const [firstPart, secondPart] =
+            closingBodyIndex === -1
+              ? [data, '']
+              : [data.slice(0, closingBodyIndex), data.slice(closingBodyIndex)];
+          data =
+            firstPart +
+            `<script src="${mainJsPath}" async type="module"></script>` +
+            secondPart;
         }
       }
       controller.enqueue(encoder.encode(data));
@@ -200,7 +209,7 @@ export const renderHtml = async (
 
   const loadClientModule = <T>(key: keyof typeof CLIENT_MODULE_MAP) =>
     (isDev
-      ? import(CLIENT_MODULE_MAP[key])
+      ? import(/* @vite-ignore */ CLIENT_MODULE_MAP[key])
       : opts.loadModule(CLIENT_PREFIX + key)) as Promise<T>;
 
   const [
@@ -259,7 +268,9 @@ export const renderHtml = async (
               if (isDev) {
                 const filePath = file.startsWith('@fs/')
                   ? file.slice('@fs'.length)
-                  : joinPath(opts.rootDir, file);
+                  : encodeFilePathToAbsolute(
+                      joinPath(opts.rootDir, file.split('?')[0]!),
+                    );
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
@@ -271,7 +282,7 @@ export const renderHtml = async (
                   if (!moduleLoading.has(id)) {
                     moduleLoading.set(
                       id,
-                      import(id).then((m) => {
+                      import(/* @vite-ignore */ id).then((m) => {
                         moduleCache.set(id, m);
                       }),
                     );

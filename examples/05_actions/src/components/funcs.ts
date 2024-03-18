@@ -1,8 +1,12 @@
 'use server';
 
-import { rerender } from 'waku/server';
+import { rerender, getContext } from 'waku/server';
 
-export const greet = (name: string) => `Hello ${name} from server!`;
+export const greet = async (name: string) => {
+  await Promise.resolve();
+  console.log('RSC Context:', getContext()); // ---> {}
+  return `Hello ${name} from server!`;
+};
 
 // module state on server
 let counter = 0;

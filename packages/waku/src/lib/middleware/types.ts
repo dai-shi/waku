@@ -5,6 +5,8 @@ import type {
   getSsrConfigWithWorker,
 } from '../renderers/dev-worker-api.js';
 
+export type ClonableModuleNode = { url: string; file: string };
+
 export type HandlerReq = {
   body: ReadableStream;
   url: URL;
@@ -26,6 +28,7 @@ export type HandlerContext = {
   readonly context: RscContext;
   devServer?: {
     rootDir: string;
+    initialModules: ClonableModuleNode[];
     renderRscWithWorker: typeof renderRscWithWorker;
     getSsrConfigWithWorker: typeof getSsrConfigWithWorker;
     loadServerFile: (fileURL: string) => Promise<Record<string, any>>;

@@ -1,3 +1,5 @@
+const DO_NOT_BUNDLE = '';
+
 /** @type {import('waku/config').Config} */
 export default {
   middleware: (cmd: 'dev' | 'start') => [
@@ -5,12 +7,11 @@ export default {
     ...(cmd === 'dev'
       ? [
           import(
-            /* @vite-ignore */ 'DO_NOT_BUNDLE'.slice(Infinity) +
-              'waku/middleware/dev-server'
+            /* @vite-ignore */ DO_NOT_BUNDLE + 'waku/middleware/dev-server'
           ),
         ]
       : []),
+    import('waku/middleware/ssr'),
     import('waku/middleware/rsc'),
-    import('waku/middleware/fallback'),
   ],
 };

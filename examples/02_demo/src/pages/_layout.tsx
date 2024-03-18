@@ -7,7 +7,7 @@ import { Footer } from '../components/footer.js';
 
 type RootLayoutProps = { children: ReactNode };
 
-export const RootLayout = async ({ children }: RootLayoutProps) => {
+export default async function RootLayout({ children }: RootLayoutProps) {
   const data = await getData();
 
   return (
@@ -21,7 +21,7 @@ export const RootLayout = async ({ children }: RootLayoutProps) => {
       <Footer />
     </div>
   );
-};
+}
 
 const getData = async () => {
   const data = {
@@ -30,4 +30,10 @@ const getData = async () => {
   };
 
   return data;
+};
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
 };

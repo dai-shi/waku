@@ -7,7 +7,7 @@ import { Footer } from '../components/footer.js';
 
 type RootLayoutProps = { children: ReactNode };
 
-export const RootLayout = async ({ children }: RootLayoutProps) => {
+export default async function RootLayout({ children }: RootLayoutProps) {
   const data = await getData();
 
   return (
@@ -15,13 +15,13 @@ export const RootLayout = async ({ children }: RootLayoutProps) => {
       <meta property="description" content={data.description} />
       <link rel="icon" type="image/png" href={data.icon} />
       <Header />
-      <main className="flex min-h-svh items-center justify-center *:min-h-64 *:min-w-64">
+      <main className="m-6 flex items-center *:min-h-64 *:min-w-64 lg:m-0 lg:min-h-svh lg:justify-center">
         {children}
       </main>
       <Footer />
     </div>
   );
-};
+}
 
 const getData = async () => {
   const data = {
@@ -30,4 +30,10 @@ const getData = async () => {
   };
 
   return data;
+};
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
 };

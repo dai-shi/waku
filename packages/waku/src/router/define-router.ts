@@ -1,8 +1,13 @@
 import { createElement } from 'react';
 import type { ComponentProps, FunctionComponent, ReactNode } from 'react';
 
-import { defineEntries } from '../server.js';
-import type { RenderEntries, GetBuildConfig, GetSsrConfig } from '../server.js';
+import { defineEntries, rerender } from '../server.js';
+import type {
+  BuildConfig,
+  RenderEntries,
+  GetBuildConfig,
+  GetSsrConfig,
+} from '../server.js';
 import { Children, Slot } from '../client.js';
 import {
   getComponentIds,
@@ -10,107 +15,144 @@ import {
   parseInputString,
   PARAM_KEY_SKIP,
   SHOULD_SKIP_ID,
+  LOCATION_ID,
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
 import { getPathMapping } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
 import { ServerRouter } from './client.js';
 
-// TODO revisit shouldSkip API
-const ShoudSkipComponent = ({ shouldSkip }: { shouldSkip: ShouldSkip }) =>
-  createElement('meta', {
-    name: 'waku-should-skip',
-    content: JSON.stringify(shouldSkip),
-  });
+type RoutePropsForLayout = Omit<RouteProps, 'searchParams'> & {
+  children: ReactNode;
+};
+
+type ShouldSkipValue = ShouldSkip[number][1];
 
 export function unstable_defineRouter(
   getPathConfig: () => Promise<
-    Iterable<{ path: PathSpec; isStatic?: boolean; noSsr?: boolean }>
+    Iterable<{
+      path: PathSpec;
+      isStatic?: boolean;
+      noSsr?: boolean;
+      data?: unknown; // For build: put in customData
+    }>
   >,
   getComponent: (
     componentId: string, // "**/layout" or "**/page"
-    /**
-     * HACK setShouldSkip API is too hard to understand
-     */
-    setShouldSkip: (val?: ShouldSkip[string]) => void,
+    options: {
+      // TODO setShouldSkip API is too hard to understand
+      unstable_setShouldSkip: (val?: ShouldSkipValue) => void;
+      unstable_buildConfig: BuildConfig | undefined;
+    },
   ) => Promise<
     | FunctionComponent<RouteProps>
-    | FunctionComponent<RouteProps & { children: ReactNode }>
-    | { default: FunctionComponent<RouteProps> }
-    | { default: FunctionComponent<RouteProps & { children: ReactNode }> }
+    | FunctionComponent<RoutePropsForLayout>
     | null
   >,
 ): ReturnType<typeof defineEntries> {
-  const pathConfigPromise = getPathConfig().then((pathConfig) =>
-    Array.from(pathConfig).map((item) => {
-      const is404 =
-        item.path.length === 1 &&
-        item.path[0]!.type === 'literal' &&
-        item.path[0]!.name === '404';
-      return { ...item, is404 };
-    }),
-  );
-  const has404Promise = pathConfigPromise.then((pathConfig) =>
-    pathConfig.some(({ is404 }) => is404),
-  );
+  type MyPathConfig = {
+    pathname: PathSpec;
+    isStatic?: boolean | undefined;
+    customData: { noSsr?: boolean; is404: boolean; data: unknown };
+  }[];
+  let cachedPathConfig: MyPathConfig | undefined;
+  const getMyPathConfig = async (
+    buildConfig?: BuildConfig,
+  ): Promise<MyPathConfig> => {
+    if (buildConfig) {
+      return buildConfig as MyPathConfig;
+    }
+    if (!cachedPathConfig) {
+      cachedPathConfig = Array.from(await getPathConfig()).map((item) => {
+        const is404 =
+          item.path.length === 1 &&
+          item.path[0]!.type === 'literal' &&
+          item.path[0]!.name === '404';
+        return {
+          pathname: item.path,
+          isStatic: item.isStatic,
+          customData: { is404, noSsr: !!item.noSsr, data: item.data },
+        };
+      });
+    }
+    return cachedPathConfig;
+  };
   const existsPath = async (
     pathname: string,
-  ): Promise<false | true | 'NO_SSR'> => {
-    const pathConfig = await pathConfigPromise;
-    const found = pathConfig.find(({ path: pathSpec }) =>
+    buildConfig: BuildConfig | undefined,
+  ): Promise<['FOUND', 'NO_SSR'?] | ['NOT_FOUND', 'HAS_404'?]> => {
+    const pathConfig = await getMyPathConfig(buildConfig);
+    const found = pathConfig.find(({ pathname: pathSpec }) =>
       getPathMapping(pathSpec, pathname),
     );
-    return found ? (found.noSsr ? 'NO_SSR' : true) : false;
+    return found
+      ? found.customData.noSsr
+        ? ['FOUND', 'NO_SSR']
+        : ['FOUND']
+      : pathConfig.some(({ customData: { is404 } }) => is404) // FIXMEs should avoid re-computation
+        ? ['NOT_FOUND', 'HAS_404']
+        : ['NOT_FOUND'];
   };
-  const shouldSkip: ShouldSkip = {};
+  const shouldSkipObj: {
+    [componentId: ShouldSkip[number][0]]: ShouldSkip[number][1];
+  } = {};
 
-  const renderEntries: RenderEntries = async (input, searchParams) => {
+  const renderEntries: RenderEntries = async (
+    input,
+    { searchParams, buildConfig },
+  ) => {
     const pathname = parseInputString(input);
-    if (!existsPath(pathname)) {
+    if ((await existsPath(pathname, buildConfig))[0] === 'NOT_FOUND') {
       return null;
     }
     const skip = searchParams.getAll(PARAM_KEY_SKIP) || [];
+    searchParams.delete(PARAM_KEY_SKIP); // delete all
     const componentIds = getComponentIds(pathname);
-    const props: RouteProps = { path: pathname, searchParams };
-    const entries = (
+    const entries: (readonly [string, ReactNode])[] = (
       await Promise.all(
         componentIds.map(async (id) => {
           if (skip?.includes(id)) {
             return [];
           }
-          const mod = await getComponent(id, (val) => {
+          const setShoudSkip = (val?: ShouldSkipValue) => {
             if (val) {
-              shouldSkip[id] = val;
+              shouldSkipObj[id] = val;
             } else {
-              delete shouldSkip[id];
+              delete shouldSkipObj[id];
             }
+          };
+          const component = await getComponent(id, {
+            unstable_setShouldSkip: setShoudSkip,
+            unstable_buildConfig: buildConfig,
           });
-          const component = mod && 'default' in mod ? mod.default : mod;
           if (!component) {
             return [];
           }
           const element = createElement(
-            component as FunctionComponent<RouteProps>,
-            props,
+            component as FunctionComponent<{
+              path: string;
+              searchParams?: URLSearchParams;
+            }>,
+            id.endsWith('/layout')
+              ? { path: pathname }
+              : { path: pathname, searchParams },
             createElement(Children),
           );
           return [[id, element]] as const;
         }),
       )
     ).flat();
-    entries.push([
-      SHOULD_SKIP_ID,
-      createElement(ShoudSkipComponent, { shouldSkip }) as any,
-    ]);
+    entries.push([SHOULD_SKIP_ID, Object.entries(shouldSkipObj)]);
+    entries.push([LOCATION_ID, [pathname, searchParams.toString()]]);
     return Object.fromEntries(entries);
   };
 
   const getBuildConfig: GetBuildConfig = async (
     unstable_collectClientModules,
   ) => {
-    const pathConfig = await pathConfigPromise;
+    const pathConfig = await getMyPathConfig();
     const path2moduleIds: Record<string, string[]> = {};
-    for (const { path: pathSpec } of pathConfig) {
+    for (const { pathname: pathSpec } of pathConfig) {
       if (pathSpec.some(({ type }) => type !== 'literal')) {
         continue;
       }
@@ -126,14 +168,9 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
     import(id);
   }
 };`;
-    const buildConfig: {
-      pathname: PathSpec;
-      isStatic: boolean;
-      entries: { input: string; isStatic: boolean }[];
-      customCode: string;
-    }[] = [];
-    for (const { path: pathSpec, isStatic = false, is404 } of pathConfig) {
-      const entries: (typeof buildConfig)[number]['entries'] = [];
+    const buildConfig: BuildConfig = [];
+    for (const { pathname: pathSpec, isStatic, customData } of pathConfig) {
+      const entries: BuildConfig[number]['entries'] = [];
       if (pathSpec.every(({ type }) => type === 'literal')) {
         const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
         const input = getInputString(pathname);
@@ -144,19 +181,24 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         isStatic,
         entries,
         customCode:
-          customCode + (is404 ? 'globalThis.__WAKU_ROUTER_404__ = true;' : ''),
+          customCode +
+          (customData.is404 ? 'globalThis.__WAKU_ROUTER_404__ = true;' : ''),
+        customData,
       });
     }
     return buildConfig;
   };
 
-  const getSsrConfig: GetSsrConfig = async (pathname, { searchParams }) => {
-    const found = await existsPath(pathname);
-    if (found === 'NO_SSR') {
+  const getSsrConfig: GetSsrConfig = async (
+    pathname,
+    { searchParams, buildConfig },
+  ) => {
+    const pathStatus = await existsPath(pathname, buildConfig);
+    if (pathStatus[1] === 'NO_SSR') {
       return null;
     }
-    if (!found) {
-      if (await has404Promise) {
+    if (pathStatus[0] === 'NOT_FOUND') {
+      if (pathStatus[1] === 'HAS_404') {
         pathname = '/404';
       } else {
         return null;
@@ -169,7 +211,6 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         Omit<ComponentProps<typeof ServerRouter>, 'children'>
       >,
       { loc: { path: pathname, searchParams } },
-      createElement(Slot, { id: SHOULD_SKIP_ID }),
       componentIds.reduceRight(
         (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
         null,
@@ -179,4 +220,19 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   };
 
   return { renderEntries, getBuildConfig, getSsrConfig };
+}
+
+export function unstable_redirect(
+  pathname: string,
+  searchParams?: URLSearchParams,
+  skip?: string[],
+) {
+  if (skip) {
+    searchParams = new URLSearchParams(searchParams);
+    for (const id of skip) {
+      searchParams.append(PARAM_KEY_SKIP, id);
+    }
+  }
+  const input = getInputString(pathname);
+  rerender(input, searchParams);
 }

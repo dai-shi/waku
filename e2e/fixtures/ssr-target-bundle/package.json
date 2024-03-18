@@ -9,15 +9,15 @@
     "start": "waku start"
   },
   "dependencies": {
-    "react": "18.3.0-canary-6c3b8dbfe-20240226",
-    "react-dom": "18.3.0-canary-6c3b8dbfe-20240226",
-    "react-server-dom-webpack": "18.3.0-canary-6c3b8dbfe-20240226",
+    "react": "18.3.0-canary-56e20051c-20240311",
+    "react-dom": "18.3.0-canary-56e20051c-20240311",
+    "react-server-dom-webpack": "18.3.0-canary-56e20051c-20240311",
     "react-textarea-autosize": "8.5.3",
     "waku": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "18.2.59",
-    "@types/react-dom": "18.2.19",
-    "typescript": "5.3.3"
+    "@types/react": "18.2.65",
+    "@types/react-dom": "18.2.21",
+    "typescript": "5.4.2"
   }
 }

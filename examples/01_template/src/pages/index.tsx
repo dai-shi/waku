@@ -2,7 +2,7 @@ import { Link } from 'waku';
 
 import { Counter } from '../components/counter.js';
 
-export const HomePage = async () => {
+export default async function HomePage() {
   const data = await getData();
 
   return (
@@ -12,11 +12,11 @@ export const HomePage = async () => {
       <p>{data.body}</p>
       <Counter />
       <Link to="/about" className="mt-4 inline-block underline">
-        Learn more
+        About page
       </Link>
     </div>
   );
-};
+}
 
 const getData = async () => {
   const data = {
@@ -26,4 +26,10 @@ const getData = async () => {
   };
 
   return data;
+};
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
 };

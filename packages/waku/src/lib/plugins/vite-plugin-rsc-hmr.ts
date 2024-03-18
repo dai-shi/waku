@@ -75,11 +75,10 @@ export function rscHmrPlugin(): Plugin {
     async transform(code, id) {
       if (id.startsWith(wakuClientDist)) {
         // FIXME this is fragile. Can we do it better?
-        const FETCH_RSC_LINE =
-          'export const fetchRSC = (input, searchParamsString, setElements, cache = fetchCache)=>{';
         return code.replace(
-          FETCH_RSC_LINE,
-          FETCH_RSC_LINE +
+          /\nexport const fetchRSC = \(.*?\)=>\{/,
+          (m) =>
+            m +
             `
 {
   const refetchRsc = () => {

@@ -3,11 +3,11 @@ import { readdirSync, readFileSync } from 'node:fs';
 // @ts-expect-error no exported member
 import { compileMDX } from 'next-mdx-remote/rsc';
 
-import { Page } from '../components/page.js';
-import { Meta } from '../components/meta.js';
-import { getAuthor } from '../lib/get-author.js';
+import { Page } from '../../components/page.js';
+import { Meta } from '../../components/meta.js';
+import { getAuthor } from '../../lib/get-author.js';
 
-export const BlogIndexPage = async () => {
+export default async function BlogIndexPage() {
   const articles = await getArticles();
 
   return (
@@ -52,6 +52,12 @@ export const BlogIndexPage = async () => {
       </div>
     </Page>
   );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
 };
 
 const getArticles = async () => {

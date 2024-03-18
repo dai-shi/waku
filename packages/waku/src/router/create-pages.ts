@@ -1,14 +1,28 @@
 import { createElement } from 'react';
 import type { FunctionComponent, ReactNode } from 'react';
 
-import { unstable_defineRouter as defineRouter } from './define-router.js';
+import { unstable_defineRouter } from './define-router.js';
 import type { RouteProps } from './common.js';
 import {
   joinPath,
   parsePathWithSlug,
   getPathMapping,
 } from '../lib/utils/path.js';
+import type { BuildConfig } from '../server.js';
 import type { PathSpec } from '../lib/utils/path.js';
+
+const hasPathSpecPrefix = (prefix: PathSpec, path: PathSpec) => {
+  for (let i = 0; i < prefix.length; i++) {
+    if (
+      i >= path.length ||
+      prefix[i]!.type !== path[i]!.type ||
+      prefix[i]!.name !== path[i]!.name
+    ) {
+      return false;
+    }
+  }
+  return true;
+};
 
 // createPages API (a wrapper around unstable_defineRouter)
 
@@ -80,25 +94,44 @@ type CreatePage = <
 ) => void;
 
 type CreateLayout = <T extends string>(layout: {
-  render: 'static';
+  render: 'static' | 'dynamic';
   path: PathWithoutSlug<T>;
-  component: FunctionComponent<RouteProps & { children: ReactNode }>;
+  component: FunctionComponent<
+    Omit<RouteProps, 'searchParams'> & { children: ReactNode }
+  >;
 }) => void;
 
 export function createPages(
-  fn: (fns: {
-    createPage: CreatePage;
-    createLayout: CreateLayout;
-  }) => Promise<void>,
+  fn: (
+    fns: {
+      createPage: CreatePage;
+      createLayout: CreateLayout;
+      unstable_setBuildData: (path: string, data: unknown) => void;
+    },
+    opts: {
+      unstable_buildConfig: BuildConfig | undefined;
+    },
+  ) => Promise<void>,
 ) {
   let configured = false;
 
   // TODO I think there's room for improvement to refactor these structures
-  const staticPathSet = new Set<PathSpec>();
-  const dynamicPathMap = new Map<string, [PathSpec, FunctionComponent<any>]>();
-  const wildcardPathMap = new Map<string, [PathSpec, FunctionComponent<any>]>();
+  const staticPathSet = new Set<[string, PathSpec]>();
+  const dynamicPagePathMap = new Map<
+    string,
+    [PathSpec, FunctionComponent<any>]
+  >();
+  const wildcardPagePathMap = new Map<
+    string,
+    [PathSpec, FunctionComponent<any>]
+  >();
+  const dynamicLayoutPathMap = new Map<
+    string,
+    [PathSpec, FunctionComponent<any>]
+  >();
   const staticComponentMap = new Map<string, FunctionComponent<any>>();
   const noSsrSet = new WeakSet<PathSpec>();
+  const buildDataMap = new Map<string, unknown>();
 
   const registerStaticComponent = (
     id: string,
@@ -126,7 +159,7 @@ export function createPages(
       ({ type }) => type === 'wildcard',
     ).length;
     if (page.render === 'static' && numSlugs === 0) {
-      staticPathSet.add(pathSpec);
+      staticPathSet.add([page.path, pathSpec]);
       const id = joinPath(page.path, 'page').replace(/^\//, '');
       registerStaticComponent(id, page.component);
     } else if (page.render === 'static' && numSlugs > 0 && numWildcards === 0) {
@@ -151,22 +184,25 @@ export function createPages(
           }
           return name;
         });
-        staticPathSet.add(pathItems.map((name) => ({ type: 'literal', name })));
+        staticPathSet.add([
+          page.path,
+          pathItems.map((name) => ({ type: 'literal', name })),
+        ]);
         const id = joinPath(...pathItems, 'page');
         const WrappedComponent = (props: Record<string, unknown>) =>
           createElement(page.component as any, { ...props, ...mapping });
         registerStaticComponent(id, WrappedComponent);
       }
     } else if (page.render === 'dynamic' && numWildcards === 0) {
-      if (dynamicPathMap.has(page.path)) {
+      if (dynamicPagePathMap.has(page.path)) {
         throw new Error(`Duplicated dynamic path: ${page.path}`);
       }
-      dynamicPathMap.set(page.path, [pathSpec, page.component]);
+      dynamicPagePathMap.set(page.path, [pathSpec, page.component]);
     } else if (page.render === 'dynamic' && numWildcards === 1) {
-      if (wildcardPathMap.has(page.path)) {
+      if (wildcardPagePathMap.has(page.path)) {
         throw new Error(`Duplicated dynamic path: ${page.path}`);
       }
-      wildcardPathMap.set(page.path, [pathSpec, page.component]);
+      wildcardPagePathMap.set(page.path, [pathSpec, page.component]);
     } else {
       throw new Error('Invalid page configuration');
     }
@@ -176,56 +212,102 @@ export function createPages(
     if (configured) {
       throw new Error('no longer available');
     }
-    const id = joinPath(layout.path, 'layout').replace(/^\//, '');
-    registerStaticComponent(id, layout.component);
+    if (layout.render === 'static') {
+      const id = joinPath(layout.path, 'layout').replace(/^\//, '');
+      registerStaticComponent(id, layout.component);
+    } else if (layout.render === 'dynamic') {
+      if (dynamicLayoutPathMap.has(layout.path)) {
+        throw new Error(`Duplicated dynamic path: ${layout.path}`);
+      }
+      const pathSpec = parsePathWithSlug(layout.path);
+      dynamicLayoutPathMap.set(layout.path, [pathSpec, layout.component]);
+    } else {
+      throw new Error('Invalid layout configuration');
+    }
   };
 
-  const ready = fn({ createPage, createLayout }).then(() => {
-    configured = true;
-  });
+  const unstable_setBuildData = (path: string, data: unknown) => {
+    buildDataMap.set(path, data);
+  };
 
-  return defineRouter(
-    async () => {
+  let ready: Promise<void> | undefined;
+  const configure = async (buildConfig?: BuildConfig) => {
+    if (!configured && !ready) {
+      ready = fn(
+        { createPage, createLayout, unstable_setBuildData },
+        { unstable_buildConfig: buildConfig },
+      );
       await ready;
-      const paths: { path: PathSpec; isStatic: boolean; noSsr: boolean }[] = [];
-      for (const pathSpec of staticPathSet) {
+      configured = true;
+    }
+    await ready;
+  };
+
+  return unstable_defineRouter(
+    async () => {
+      await configure();
+      const paths: {
+        path: PathSpec;
+        isStatic: boolean;
+        noSsr: boolean;
+        data: unknown;
+      }[] = [];
+      for (const [path, pathSpec] of staticPathSet) {
         const noSsr = noSsrSet.has(pathSpec);
-        paths.push({ path: pathSpec, isStatic: true, noSsr });
+        const isStatic = Array.from(dynamicLayoutPathMap.values()).every(
+          ([layoutPathSpec]) => !hasPathSpecPrefix(layoutPathSpec, pathSpec),
+        );
+        paths.push({
+          path: pathSpec,
+          isStatic,
+          noSsr,
+          data: buildDataMap.get(path),
+        });
       }
-      for (const [pathSpec] of dynamicPathMap.values()) {
+      for (const [path, [pathSpec]] of dynamicPagePathMap) {
         const noSsr = noSsrSet.has(pathSpec);
-        paths.push({ path: pathSpec, isStatic: false, noSsr });
+        paths.push({
+          path: pathSpec,
+          isStatic: false,
+          noSsr,
+          data: buildDataMap.get(path),
+        });
       }
-      for (const [pathSpec] of wildcardPathMap.values()) {
+      for (const [path, [pathSpec]] of wildcardPagePathMap) {
         const noSsr = noSsrSet.has(pathSpec);
-        paths.push({ path: pathSpec, isStatic: false, noSsr });
+        paths.push({
+          path: pathSpec,
+          isStatic: false,
+          noSsr,
+          data: buildDataMap.get(path),
+        });
       }
       return paths;
     },
-    async (id, setShouldSkip) => {
-      await ready;
+    async (id, { unstable_setShouldSkip, unstable_buildConfig }) => {
+      await configure(unstable_buildConfig);
       const staticComponent = staticComponentMap.get(id);
       if (staticComponent) {
-        setShouldSkip({});
+        unstable_setShouldSkip([]);
         return staticComponent;
       }
-      for (const [pathSpec, Component] of dynamicPathMap.values()) {
+      for (const [pathSpec, Component] of dynamicPagePathMap.values()) {
         const mapping = getPathMapping(
           [...pathSpec, { type: 'literal', name: 'page' }],
           id,
         );
         if (mapping) {
           if (Object.keys(mapping).length === 0) {
-            setShouldSkip();
+            unstable_setShouldSkip();
             return Component;
           }
           const WrappedComponent = (props: Record<string, unknown>) =>
             createElement(Component, { ...props, ...mapping });
-          setShouldSkip();
+          unstable_setShouldSkip();
           return WrappedComponent;
         }
       }
-      for (const [pathSpec, Component] of wildcardPathMap.values()) {
+      for (const [pathSpec, Component] of wildcardPagePathMap.values()) {
         const mapping = getPathMapping(
           [...pathSpec, { type: 'literal', name: 'page' }],
           id,
@@ -233,11 +315,24 @@ export function createPages(
         if (mapping) {
           const WrappedComponent = (props: Record<string, unknown>) =>
             createElement(Component, { ...props, ...mapping });
-          setShouldSkip();
+          unstable_setShouldSkip();
           return WrappedComponent;
         }
       }
-      setShouldSkip({}); // negative cache
+      for (const [pathSpec, Component] of dynamicLayoutPathMap.values()) {
+        const mapping = getPathMapping(
+          [...pathSpec, { type: 'literal', name: 'layout' }],
+          id,
+        );
+        if (mapping) {
+          if (Object.keys(mapping).length) {
+            throw new Error('[Bug] layout should not have slugs');
+          }
+          unstable_setShouldSkip();
+          return Component;
+        }
+      }
+      unstable_setShouldSkip([]); // negative cache
       return null; // not found
     },
   );

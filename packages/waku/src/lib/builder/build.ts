@@ -6,7 +6,7 @@ import viteReact from '@vitejs/plugin-react';
 import type { LoggingFunction, RollupLog } from 'rollup';
 
 import type { Config } from '../../config.js';
-import type { EntriesPrd } from '../../server.js';
+import type { BuildConfig, EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import type { PathSpec } from '../utils/path.js';
@@ -48,6 +48,7 @@ import { rscEntriesPlugin } from '../plugins/vite-plugin-rsc-entries.js';
 import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
+import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { emitVercelOutput } from './output-vercel.js';
 import { emitNetlifyOutput } from './output-netlify.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
@@ -103,7 +104,10 @@ const analyzeEntries = async (
     }
   }
   await buildVite({
-    plugins: [rscAnalyzePlugin(clientFileSet, serverFileSet, fileHashMap)],
+    plugins: [
+      rscAnalyzePlugin(clientFileSet, serverFileSet, fileHashMap),
+      rscManagedPlugin(config),
+    ],
     ssr: {
       target: 'webworker',
       resolve: {
@@ -115,6 +119,7 @@ const analyzeEntries = async (
     build: {
       write: false,
       ssr: true,
+      target: 'node18',
       rollupOptions: {
         onwarn,
         input: {
@@ -172,6 +177,7 @@ const buildServerBundle = async (
       }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
+      rscManagedPlugin(config),
       rscEntriesPlugin({
         entriesFile,
         moduleMap: {
@@ -237,6 +243,7 @@ const buildServerBundle = async (
     build: {
       ssr: true,
       ssrEmitAssets: true,
+      target: 'node18',
       outDir: joinPath(rootDir, config.distDir),
       rollupOptions: {
         onwarn,
@@ -274,6 +281,7 @@ const buildSsrBundle = async (
       rscIndexPlugin({ ...config, cssAssets }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
+      rscManagedPlugin(config),
     ],
     ssr: isNodeCompatible
       ? {
@@ -293,6 +301,7 @@ const buildSsrBundle = async (
     publicDir: false,
     build: {
       ssr: true,
+      target: 'node18',
       outDir: joinPath(rootDir, config.distDir, config.ssrDir),
       rollupOptions: {
         onwarn,
@@ -338,6 +347,7 @@ const buildClientBundle = async (
       rscIndexPlugin({ ...config, cssAssets }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
+      rscManagedPlugin(config),
     ],
     build: {
       outDir: joinPath(rootDir, config.distDir, config.publicDir),
@@ -374,7 +384,7 @@ const emitRscFiles = async (
   rootDir: string,
   config: ResolvedConfig,
   distEntries: EntriesPrd,
-  buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
+  buildConfig: BuildConfig,
 ) => {
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (input: string, id: string) => {
@@ -452,7 +462,7 @@ const emitHtmlFiles = async (
   config: ResolvedConfig,
   distEntriesFile: string,
   distEntries: EntriesPrd,
-  buildConfig: Awaited<ReturnType<typeof getBuildConfig>>,
+  buildConfig: BuildConfig,
   getClientModules: (input: string) => string[],
 ) => {
   const basePrefix = config.basePath + config.rscPath + '/';
@@ -639,6 +649,10 @@ export async function build(options: {
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
   const buildConfig = await getBuildConfig({ config, entries: distEntries });
+  await appendFile(
+    distEntriesFile,
+    `export const buildConfig = ${JSON.stringify(buildConfig)};`,
+  );
   const { getClientModules } = await emitRscFiles(
     rootDir,
     config,

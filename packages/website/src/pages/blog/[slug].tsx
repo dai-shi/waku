@@ -3,16 +3,16 @@ import { readdirSync, readFileSync } from 'node:fs';
 // @ts-expect-error no exported member
 import { compileMDX } from 'next-mdx-remote/rsc';
 
-import { Page } from '../components/page.js';
-import { Meta } from '../components/meta.js';
-import { components } from '../components/mdx.js';
-import { getAuthor } from '../lib/get-author.js';
+import { Page } from '../../components/page.js';
+import { Meta } from '../../components/meta.js';
+import { components } from '../../components/mdx.js';
+import { getAuthor } from '../../lib/get-author.js';
 
 type BlogArticlePageProps = {
   slug: string;
 };
 
-export const BlogArticlePage = async ({ slug }: BlogArticlePageProps) => {
+export default async function BlogArticlePage({ slug }: BlogArticlePageProps) {
   const fileName = await getFileName(slug);
 
   if (!fileName) return null;
@@ -94,6 +94,37 @@ export const BlogArticlePage = async ({ slug }: BlogArticlePageProps) => {
       </div>
     </Page>
   );
+}
+
+export const getConfig = async () => {
+  const blogPaths = await getBlogPaths();
+
+  return {
+    render: 'static',
+    staticPaths: blogPaths,
+  };
+};
+
+const getBlogPaths = async () => {
+  const blogPaths: Array<string> = [];
+  const blogFileNames: Array<string> = [];
+
+  readdirSync('./private/contents').forEach((fileName) => {
+    blogFileNames.push(fileName);
+  });
+
+  for await (const fileName of blogFileNames) {
+    const path = `./private/contents/${fileName}`;
+    const source = readFileSync(path, 'utf8');
+    const mdx = await compileMDX({
+      source,
+      options: { parseFrontmatter: true },
+    });
+    const { frontmatter } = mdx;
+    blogPaths.push(frontmatter.slug);
+  }
+
+  return blogPaths;
 };
 
 const getFileName = async (slug: string) => {

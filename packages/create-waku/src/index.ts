@@ -8,69 +8,80 @@ import { red, green, bold } from 'kolorist';
 import fse from 'fs-extra/esm';
 import checkForUpdate from 'update-check';
 import { createRequire } from 'node:module';
+import { installTemplate } from './helpers/install-template.js';
+import {
+  parseExampleOption,
+  downloadAndExtract,
+} from './helpers/example-option.js';
+
+const DEFAULT_REF = 'v0.20.0-beta.2';
+
+const userAgent = process.env.npm_config_user_agent || '';
+const packageManager = /pnpm/.test(userAgent)
+  ? 'pnpm'
+  : /yarn/.test(userAgent)
+    ? 'yarn'
+    : 'npm';
+const commands = {
+  pnpm: {
+    install: 'pnpm install',
+    dev: 'pnpm dev',
+    create: 'pnpm create waku',
+  },
+  yarn: {
+    install: 'yarn',
+    dev: 'yarn dev',
+    create: 'yarn create waku',
+  },
+  npm: {
+    install: 'npm install',
+    dev: 'npm run dev',
+    create: 'npm create waku',
+  },
+}[packageManager];
+
+const templateRoot = path.join(
+  fileURLToPath(import.meta.url),
+  '../../template',
+);
 
 // FIXME is there a better way with prompts?
 const { values } = parseArgs({
   args: process.argv.slice(2),
   options: {
-    'choose-template': {
+    example: {
+      type: 'string',
+    },
+    help: {
       type: 'boolean',
+      short: 'h',
     },
   },
 });
 
-function isValidPackageName(projectName: string) {
-  return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
-    projectName,
-  );
-}
+async function doPrompts() {
+  const isValidPackageName = (projectName: string) =>
+    /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
+      projectName,
+    );
 
-function toValidPackageName(projectName: string) {
-  return projectName
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/^[._]/, '')
-    .replace(/[^a-z0-9-~]+/g, '-');
-}
+  const toValidPackageName = (projectName: string) =>
+    projectName
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/^[._]/, '')
+      .replace(/[^a-z0-9-~]+/g, '-');
 
-// if the dir is empty or not exist
-function canSafelyOverwrite(dir: string) {
-  return !existsSync(dir) || readdirSync(dir).length === 0;
-}
+  // if the dir is empty or not exist
+  const canSafelyOverwrite = (dir: string) =>
+    !existsSync(dir) || readdirSync(dir).length === 0;
 
-async function notifyUpdate() {
-  // keep original require to avoid
-  //  bundling the whole package.json by `@vercel/ncc`
-  const packageJson = createRequire(import.meta.url)('../package.json');
-  const result = await checkForUpdate(packageJson).catch(() => null);
-  if (result?.latest) {
-    console.log(`A new version of 'create-waku' is available!`);
-    console.log('You can update by running: ');
-    console.log();
-    console.log(`    npm i -g create-waku`);
-  }
-}
-
-async function init() {
-  let targetDir = '';
   const defaultProjectName = 'waku-project';
-  const templateRoot = path.join(
-    fileURLToPath(import.meta.url),
-    '../../template',
-  );
-  // maybe include `.DS_Store` on macOS
-  const CHOICES = (await fsPromises.readdir(templateRoot)).filter(
-    (dir) => !dir.startsWith('.'),
-  );
-  let result: {
-    packageName: string;
-    shouldOverwrite: string;
-    chooseTemplate?: string;
-  };
+  let targetDir = '';
 
   try {
-    result = (await prompts(
+    const result = await prompts(
       [
         {
           name: 'projectName',
@@ -102,37 +113,61 @@ async function init() {
           validate: (dir: string) =>
             isValidPackageName(dir) || 'Invalid package.json name',
         },
-        ...(values['choose-template']
-          ? [
-              {
-                name: 'chooseTemplate',
-                type: 'select',
-                message: 'Choose a starter template',
-                choices: [
-                  { title: 'Basic Template', value: CHOICES[0] },
-                  { title: 'Demo Template', value: CHOICES[1] },
-                  { title: 'Minimal Template', value: CHOICES[2] },
-                ],
-              } as prompts.PromptObject<string>,
-            ]
-          : []),
       ],
       {
         onCancel: () => {
           throw new Error(red('✖') + ' Operation cancelled');
         },
       },
-    )) as any; // FIXME no-any
-  } catch (cancelled) {
-    if (cancelled instanceof Error) {
-      console.log(cancelled.message);
+    );
+    return {
+      ...result,
+      packageName: result.packageName ?? toValidPackageName(targetDir),
+      targetDir,
+    };
+  } catch (err) {
+    if (err instanceof Error) {
+      console.log(err.message);
     }
     process.exit(1);
   }
+}
 
-  const { packageName, shouldOverwrite, chooseTemplate } = result;
+function displayUsage() {
+  console.log(`
+Usage: ${commands.create} [options]
 
+Options:
+  --example             Specify an example use as a template
+  -h, --help            Display this help message
+`);
+}
+
+async function notifyUpdate() {
+  // keep original require to avoid
+  //  bundling the whole package.json by `@vercel/ncc`
+  const packageJson = createRequire(import.meta.url)('../package.json');
+  const result = await checkForUpdate(packageJson).catch(() => {});
+  if (result?.latest) {
+    console.log(`A new version of 'create-waku' is available!`);
+    console.log('You can update by running: ');
+    console.log();
+    console.log(`    npm i -g create-waku`);
+  }
+}
+
+async function init() {
+  if (values.help) {
+    displayUsage();
+    return;
+  }
+
+  const exampleOption = await parseExampleOption(values.example, DEFAULT_REF);
+
+  const { packageName, shouldOverwrite, targetDir } = await doPrompts();
   const root = path.resolve(targetDir);
+
+  console.log('Setting up project...');
 
   if (shouldOverwrite) {
     fse.emptyDirSync(root);
@@ -140,69 +175,23 @@ async function init() {
     await fsPromises.mkdir(root, { recursive: true });
   }
 
-  const pkg = {
-    name: packageName ?? toValidPackageName(targetDir),
-    version: '0.0.0',
-  };
-
-  console.log('Setting up project...');
-
-  const templateDir = path.join(templateRoot, chooseTemplate || CHOICES[0]!);
-
-  // Read existing package.json from the root directory
-  const packageJsonPath = path.join(root, 'package.json');
-
-  // Read new package.json from the template directory
-  const newPackageJsonPath = path.join(templateDir, 'package.json');
-  const newPackageJson = JSON.parse(
-    await fsPromises.readFile(newPackageJsonPath, 'utf-8'),
-  );
-
-  fse.copySync(templateDir, root);
-
-  if (existsSync(path.join(root, 'gitignore'))) {
-    await fsPromises.rename(
-      path.join(root, 'gitignore'),
-      path.join(root, '.gitignore'),
-    );
+  if (exampleOption) {
+    // If an example repository is provided, clone it.
+    await downloadAndExtract(root, exampleOption);
+  } else {
+    // If an example repository is not provided for cloning, proceed
+    // by installing from a template.
+    await installTemplate(root, packageName, templateRoot);
   }
 
-  await fsPromises.writeFile(
-    packageJsonPath,
-    JSON.stringify(
-      {
-        ...newPackageJson,
-        ...pkg,
-      },
-      null,
-      2,
-    ),
-  );
-
-  const manager = process.env.npm_config_user_agent ?? '';
-  const packageManager = /pnpm/.test(manager)
-    ? 'pnpm'
-    : /yarn/.test(manager)
-      ? 'yarn'
-      : 'npm';
-
-  const commandsMap = {
-    install: {
-      pnpm: 'pnpm install',
-      yarn: 'yarn',
-      npm: 'npm install',
-    },
-    dev: {
-      pnpm: 'pnpm dev',
-      yarn: 'yarn dev',
-      npm: 'npm run dev',
-    },
-  };
+  // TODO automatically installing dependencies
+  // 1. check packageManager
+  // 2. and then install dependencies
 
   console.log(`\nDone. Now run:\n`);
   console.log(`${bold(green(`cd ${targetDir}`))}`);
-  console.log(`${bold(green(commandsMap.install[packageManager]))}`);
-  console.log(`${bold(green(commandsMap.dev[packageManager]))}`);
+  console.log(`${bold(green(commands.install))}`);
+  console.log(`${bold(green(commands.dev))}`);
   console.log();
 }
 
