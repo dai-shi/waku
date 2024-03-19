@@ -224,9 +224,13 @@ parentPort!.on('message', async (mesg: MessageReq) => {
     const {
       default: { renderEntries },
     } = await loadEntries({ srcDir: configSrcDir, entriesJs: configEntriesJs });
-    await renderEntries('dummy dummy dummy', {
-      searchParams: new URLSearchParams(),
-      buildConfig: undefined,
-    });
+    try {
+      await renderEntries('dummy dummy dummy', {
+        searchParams: new URLSearchParams(),
+        buildConfig: undefined,
+      });
+    } catch (e) {
+      // ignore
+    }
   }
 });
