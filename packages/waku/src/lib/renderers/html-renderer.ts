@@ -287,14 +287,15 @@ export const renderHtml = async (
                   return { id, chunks: [id], name };
                 }
                 const id = filePathToFileURL(filePath);
-                if (!moduleLoading.has(id)) {
+                console.log(id, moduleLoading.has(id))
+                // if (!moduleLoading.has(id)) {
                   moduleLoading.set(
                     id,
                     opts.loadServerFile(id).then((m) => {
                       moduleCache.set(id, m);
                     }),
                   );
-                }
+                // }
                 return { id, chunks: [id], name };
               }
               // !isDev
