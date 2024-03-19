@@ -9,7 +9,9 @@ import {
   joinPath,
   fileURLToFilePath,
   decodeFilePathFromAbsolute,
+  filePathToFileURL,
 } from '../utils/path.js';
+import { moduleCache, moduleLoading } from '../utils/react-server-dom-webpack.js';
 
 type ModuleImportResult = TransformResult & {
   id: string;
@@ -121,6 +123,19 @@ export function rscHmrPlugin(): Plugin {
 `,
         );
       }
+    },handleHotUpdate({file}) {
+      const id = filePathToFileURL(file)
+      // map.delete()
+       console.log('before hmr', file, moduleLoading, moduleCache)
+      moduleLoading.delete(id)
+      moduleCache.delete(id)
+      moduleLoading.set(
+        id,
+        viteServer.ssrLoadModule(id).then((m) => {
+          moduleCache.set(id, m);
+        }),
+      );
+       console.log('hmr', file, moduleLoading, moduleCache)
     },
   };
 }
@@ -153,17 +168,17 @@ function hotImport(viteServer: ViteDevServer, source: string) {
 
 const modulePendingMap = new WeakMap<
   ReturnType<typeof viteHot>,
-  Set<ModuleImportResult>
+  Map<string, ModuleImportResult>
 >();
 
 function moduleImport(viteServer: ViteDevServer, result: ModuleImportResult) {
   const hot = viteHot(viteServer);
-  let sourceSet = modulePendingMap.get(hot);
-  if (!sourceSet) {
-    sourceSet = new Set();
-    modulePendingMap.set(hot, sourceSet);
+  let sources = modulePendingMap.get(hot);
+  if (!sources) {
+    sources = new Map();
+    modulePendingMap.set(hot, sources);
   }
-  sourceSet.add(result);
+  sources.set(result.id, result);
   hot.send({ type: 'custom', event: 'module-import', data: result });
 }
 
@@ -171,16 +186,16 @@ async function generateInitialScripts(
   viteServer: ViteDevServer,
 ): Promise<HtmlTagDescriptor[]> {
   const hot = viteHot(viteServer);
-  const sourceSet = modulePendingMap.get(hot);
+  const sources = modulePendingMap.get(hot);
 
-  if (!sourceSet) {
+  if (!sources) {
     return [];
   }
 
   const scripts: HtmlTagDescriptor[] = [];
   let injectedBlockingViteClient = false;
 
-  for (const result of sourceSet) {
+  for (const [_, result] of sources) {
     // CSS modules do not support result.source (empty) since ssr-transforming them gives the css keys
     // and client-transforming them gives the script tag for injecting them.
     if (result.id.endsWith('.module.css')) {

@@ -20,6 +20,7 @@ import {
   encodeFilePathToAbsolute,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
+import { moduleCache, moduleLoading } from '../utils/react-server-dom-webpack.js';
 
 export const CLIENT_MODULE_MAP = {
   react: 'react',
@@ -28,16 +29,6 @@ export const CLIENT_MODULE_MAP = {
   'waku-client': 'waku/client',
 } as const;
 export const CLIENT_PREFIX = 'client/';
-
-// HACK for react-server-dom-webpack without webpack
-(globalThis as any).__webpack_module_loading__ ||= new Map();
-(globalThis as any).__webpack_module_cache__ ||= new Map();
-(globalThis as any).__webpack_chunk_load__ ||= async (id: string) =>
-  (globalThis as any).__webpack_module_loading__.get(id);
-(globalThis as any).__webpack_require__ ||= (id: string) =>
-  (globalThis as any).__webpack_module_cache__.get(id);
-const moduleLoading = (globalThis as any).__webpack_module_loading__;
-const moduleCache = (globalThis as any).__webpack_module_cache__;
 
 const fakeFetchCode = `
 Promise.resolve(new Response(new ReadableStream({
@@ -288,14 +279,14 @@ export const renderHtml = async (
                 }
                 const id = filePathToFileURL(filePath);
                 console.log(id, moduleLoading.has(id))
-                // if (!moduleLoading.has(id)) {
+                if (!moduleLoading.has(id)) {
                   moduleLoading.set(
                     id,
                     opts.loadServerFile(id).then((m) => {
                       moduleCache.set(id, m);
                     }),
                   );
-                // }
+                }
                 return { id, chunks: [id], name };
               }
               // !isDev
