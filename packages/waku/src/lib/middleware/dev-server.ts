@@ -195,10 +195,17 @@ export const devServer: Middleware = (options) => {
     };
 
     // HACK to force calling loadEntries
-    await getSsrConfigWithWorker(
-      { config, pathname: '/dummy', searchParams: new URLSearchParams() },
+    // We should replace it with a real solution
+    renderRscWithWorker(
+      {
+        config,
+        input: 'dummy',
+        method: 'GET',
+        searchParams: new URLSearchParams(),
+        context: {},
+      },
       { initialModules },
-    );
+    ).catch(() => {});
 
     await next();
     if (ctx.res.body) {
