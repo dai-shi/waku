@@ -30,9 +30,6 @@ export type MessageReq =
       pathname: string;
       searchParamsString: string;
       initialModules: ClonableModuleNode[];
-    }
-  | {
-      type: 'prepare';
     };
 
 export type MessageRes =
@@ -234,17 +231,4 @@ export async function getSsrConfigWithWorker(
     };
     worker.postMessage(mesg);
   });
-}
-
-export function prepareWorker() {
-  getWorker()
-    .then((worker) => {
-      const mesg: MessageReq = {
-        type: 'prepare',
-      };
-      worker.postMessage(mesg);
-    })
-    .catch((e) => {
-      console.error('Failed to prepare worker', e);
-    });
 }

@@ -11,7 +11,6 @@ import {
   decodeFilePathFromAbsolute,
   filePathToFileURL,
 } from '../utils/path.js';
-import { moduleCache, moduleLoading } from '../utils/react-server-dom-webpack.js';
 
 type ModuleImportResult = TransformResult & {
   id: string;
@@ -123,19 +122,22 @@ export function rscHmrPlugin(): Plugin {
 `,
         );
       }
-    },handleHotUpdate({file}) {
-      const id = filePathToFileURL(file)
+    },
+    handleHotUpdate({ file }) {
+      const moduleLoading = (globalThis as any).__webpack_module_loading__;
+      const moduleCache = (globalThis as any).__webpack_module_cache__;
+      const id = filePathToFileURL(file);
       // map.delete()
-       console.log('before hmr', file, moduleLoading, moduleCache)
-      moduleLoading.delete(id)
-      moduleCache.delete(id)
+      console.log('before hmr', file, moduleLoading, moduleCache);
+      moduleLoading.delete(id);
+      moduleCache.delete(id);
       moduleLoading.set(
         id,
         viteServer.ssrLoadModule(id).then((m) => {
           moduleCache.set(id, m);
         }),
       );
-       console.log('hmr', file, moduleLoading, moduleCache)
+      console.log('hmr', file, moduleLoading, moduleCache);
     },
   };
 }

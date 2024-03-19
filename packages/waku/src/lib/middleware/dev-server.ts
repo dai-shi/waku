@@ -9,7 +9,6 @@ import {
   registerHotUpdateCallback,
   renderRscWithWorker,
   getSsrConfigWithWorker,
-  prepareWorker,
 } from '../renderers/dev-worker-api.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
@@ -194,10 +193,6 @@ export const devServer: Middleware = (options) => {
       transformIndexHtml,
       willBeHandledLater,
     };
-
-    // HACK to force calling loadEntries
-    // FIXME We should replace it with a real solution.
-    prepareWorker();
 
     await next();
     if (ctx.res.body) {
