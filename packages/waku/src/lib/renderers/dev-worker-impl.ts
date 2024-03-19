@@ -221,16 +221,16 @@ parentPort!.on('message', async (mesg: MessageReq) => {
   } else if (mesg.type === 'getSsrConfig') {
     await handleGetSsrConfig(mesg);
   } else if (mesg.type === 'prepare') {
-    const {
-      default: { renderEntries },
-    } = await loadEntries({ srcDir: configSrcDir, entriesJs: configEntriesJs });
-    try {
-      await renderEntries('dummy dummy dummy', {
-        searchParams: new URLSearchParams(),
-        buildConfig: undefined,
-      });
-    } catch (e) {
-      // ignore
-    }
+    // const {
+    //   default: { renderEntries },
+    // } = await loadEntries({ srcDir: configSrcDir, entriesJs: configEntriesJs });
+    // try {
+    //   await renderEntries('dummy dummy dummy', {
+    //     searchParams: new URLSearchParams(),
+    //     buildConfig: undefined,
+    //   });
+    // } catch (e) {
+    //   // ignore
+    // }
   }
 });

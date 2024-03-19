@@ -41,7 +41,7 @@ if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
     document.head.appendChild(script);
     // avoid HMR flash by first applying the new and removing the old styles 
     if (style) {
-      queueMicrotask(style.remove);
+      queueMicrotask(() => style.parentElement?.removeChild(style));
     }
   });
 }
