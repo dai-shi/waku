@@ -194,6 +194,12 @@ export const devServer: Middleware = (options) => {
       willBeHandledLater,
     };
 
+    // HACK to force calling loadEntries
+    await getSsrConfigWithWorker(
+      { config, pathname: '/dummy', searchParams: new URLSearchParams() },
+      { initialModules },
+    );
+
     await next();
     if (ctx.res.body) {
       return;
