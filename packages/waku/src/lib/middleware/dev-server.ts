@@ -9,6 +9,7 @@ import {
   registerHotUpdateCallback,
   renderRscWithWorker,
   getSsrConfigWithWorker,
+  prepareWorker,
 } from '../renderers/dev-worker-api.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
@@ -195,17 +196,8 @@ export const devServer: Middleware = (options) => {
     };
 
     // HACK to force calling loadEntries
-    // We should replace it with a real solution
-    renderRscWithWorker(
-      {
-        config,
-        input: 'dummy',
-        method: 'GET',
-        searchParams: new URLSearchParams(),
-        context: {},
-      },
-      { initialModules },
-    ).catch(() => {});
+    // FIXME We should replace it with a real solution.
+    prepareWorker();
 
     await next();
     if (ctx.res.body) {
