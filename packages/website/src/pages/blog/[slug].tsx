@@ -1,4 +1,3 @@
-import { Link } from 'waku';
 import { readdirSync, readFileSync } from 'node:fs';
 // @ts-expect-error no exported member
 import { compileMDX } from 'next-mdx-remote/rsc';
@@ -44,7 +43,7 @@ export default async function BlogArticlePage({ slug }: BlogArticlePageProps) {
           {frontmatter.release && (
             <div>
               <div className="inline-block rounded-md bg-white px-2 py-1 text-[0.625rem] font-black tracking-wide text-black sm:text-xs">
-                <span className="hidden uppercase sm:inline">Waku</span> v
+                <span className="hidden uppercase sm:inline">Waku</span>{' '}
                 {frontmatter.release}
               </div>
             </div>
@@ -85,16 +84,42 @@ export default async function BlogArticlePage({ slug }: BlogArticlePageProps) {
         {content}
       </div>
       <div className="relative z-10 mx-auto mb-8 mt-16 flex w-full max-w-[80ch] justify-center sm:mb-0 lg:mt-32">
-        <Link
-          to="/"
+        <a
+          href="https://github.com/dai-shi/waku"
+          target="_blank"
+          rel="noreferrer"
           className="text-shadow !inline-block -rotate-[5deg] transform whitespace-nowrap text-center font-serif text-3xl font-extrabold leading-none text-white transition-colors duration-300 ease-in-out hover:text-primary sm:mr-4 sm:text-6xl"
         >
-          Waku-Waku!
-        </Link>
+          star Waku on GitHub!
+        </a>
       </div>
     </Page>
   );
 }
+
+const getFileName = async (slug: string) => {
+  const blogFileNames: Array<string> = [];
+  const blogSlugToFileName: Record<string, string> = {};
+
+  readdirSync('./private/contents').forEach((fileName) => {
+    blogFileNames.push(fileName);
+  });
+
+  for await (const fileName of blogFileNames) {
+    const path = `./private/contents/${fileName}`;
+    const source = readFileSync(path, 'utf8');
+    const mdx = await compileMDX({
+      source,
+      options: { parseFrontmatter: true },
+    });
+    const { frontmatter } = mdx;
+    blogSlugToFileName[frontmatter.slug] = fileName;
+  }
+
+  const fileName = blogSlugToFileName[slug];
+
+  return fileName;
+};
 
 export const getConfig = async () => {
   const blogPaths = await getBlogPaths();
@@ -125,28 +150,4 @@ const getBlogPaths = async () => {
   }
 
   return blogPaths;
-};
-
-const getFileName = async (slug: string) => {
-  const blogFileNames: Array<string> = [];
-  const blogSlugToFileName: Record<string, string> = {};
-
-  readdirSync('./private/contents').forEach((fileName) => {
-    blogFileNames.push(fileName);
-  });
-
-  for await (const fileName of blogFileNames) {
-    const path = `./private/contents/${fileName}`;
-    const source = readFileSync(path, 'utf8');
-    const mdx = await compileMDX({
-      source,
-      options: { parseFrontmatter: true },
-    });
-    const { frontmatter } = mdx;
-    blogSlugToFileName[frontmatter.slug] = fileName;
-  }
-
-  const fileName = blogSlugToFileName[slug];
-
-  return fileName;
 };

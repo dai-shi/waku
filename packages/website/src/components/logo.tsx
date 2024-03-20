@@ -27,7 +27,7 @@ export const Logo = ({ className = '' }: LogoProps) => {
         onContextMenu={handleContextMenu}
         src="https://cdn.candycode.com/waku/waku-logo-shadow.svg"
         alt="Waku"
-        className={cx('block w-full max-w-[15rem] lg:max-w-[25rem]', className)}
+        className={cx('block w-full', className)}
       />
       <span className="sr-only">Waku</span>
       {isMenuOpen && (

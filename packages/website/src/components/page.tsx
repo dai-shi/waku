@@ -4,17 +4,17 @@ import { Menu } from '../components/menu.js';
 import { Fade } from '../components/fade.js';
 import { Sponsors } from '../components/sponsors.js';
 import { Credits } from '../components/credits.js';
-import { Scroll } from './scroll.js';
+import { Scroll } from '../components/scroll.js';
 
 type PageProps = {
   isHome?: boolean;
   children: ReactNode;
 };
 
-export const Page = ({ isHome = false, children }: PageProps) => {
+export const Page = async ({ isHome = false, children }: PageProps) => {
   return (
     <>
-      <Menu />
+      <Menu isHome={isHome} />
       <Background />
       <Fade always={!isHome} />
       <Main>{children}</Main>
@@ -30,7 +30,11 @@ type MainProps = {
 };
 
 const Main = ({ children }: MainProps) => {
-  return <main className="px-8 pb-24 lg:pb-32">{children}</main>;
+  return (
+    <main id="top" className="px-8 pb-24 lg:pb-32">
+      {children}
+    </main>
+  );
 };
 
 const Background = () => {
