@@ -127,17 +127,16 @@ export function rscHmrPlugin(): Plugin {
       const moduleLoading = (globalThis as any).__webpack_module_loading__;
       const moduleCache = (globalThis as any).__webpack_module_cache__;
       const id = filePathToFileURL(file);
-      // map.delete()
-      console.log('before hmr', file, moduleLoading, moduleCache);
-      moduleLoading.delete(id);
-      moduleCache.delete(id);
-      moduleLoading.set(
-        id,
-        viteServer.ssrLoadModule(id).then((m) => {
-          moduleCache.set(id, m);
-        }),
-      );
-      console.log('hmr', file, moduleLoading, moduleCache);
+      if (moduleLoading.has(id) && moduleCache.has(id)) {
+        moduleLoading.delete(id);
+        moduleCache.delete(id);
+        moduleLoading.set(
+          id,
+          viteServer.ssrLoadModule(file).then((m) => {
+            moduleCache.set(id, m);
+          }),
+        );
+      }
     },
   };
 }
@@ -197,7 +196,7 @@ async function generateInitialScripts(
   const scripts: HtmlTagDescriptor[] = [];
   let injectedBlockingViteClient = false;
 
-  for (const [_, result] of sources) {
+  for (const result of sources.values()) {
     // CSS modules do not support result.source (empty) since ssr-transforming them gives the css keys
     // and client-transforming them gives the script tag for injecting them.
     if (result.id.endsWith('.module.css')) {
