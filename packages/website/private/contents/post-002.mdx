@@ -3,7 +3,7 @@ slug: introducing-create-pages
 title: Introducing createPages
 description: Learn about the new API for creating layouts and pages programmatically.
 author: sophia
-release: 0.19
+release: v0.19
 date: 2024/1/16
 ---
 
@@ -77,7 +77,7 @@ export default createPages(async ({ createPage }) => {
 
 #### Segment routes
 
-Pages can also render a segment route (e.g., `/blog/[slug]`). The rendered React component automatically receives a prop named by the segment (e.g, `slug`) with the value of the rendered route (e.g., `'introducing-waku'`). If statically prerendering a segment route at build time, a `staticPaths` array must also be provided.
+Pages can also render a segment route (e.g., `/blog/[slug]`). The rendered React component automatically receives a prop named by the segment (e.g, `slug`) with the value of the rendered segment (e.g., `'introducing-waku'`). If statically prerendering a segment route at build time, a `staticPaths` array must also be provided.
 
 ```tsx
 // ./src/entries.tsx
@@ -163,8 +163,8 @@ export default createPages(async ({ createPage }) => {
     render: 'static',
     path: '/shop/[category]/[product]',
     staticPaths: [
-      ['someCategory', 'someProduct'],
-      ['someCategory', 'anotherProduct'],
+      ['some-category', 'some-product'],
+      ['some-category', 'another-product'],
     ],
     component: ProductDetailPage,
   });
@@ -229,8 +229,8 @@ import { Footer } from '../components/footer.js';
 export const RootLayout = async ({ children }) => {
   return (
     <Providers>
-      <meta property="og:image" content="/images/preview.png" />
       <link rel="icon" type="image/png" href="/images/favicon.png" />
+      <meta property="og:image" content="/images/opengraph.png" />
       <Header />
       <main>{children}</main>
       <Footer />
