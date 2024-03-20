@@ -9,6 +9,7 @@ import {
   joinPath,
   fileURLToFilePath,
   decodeFilePathFromAbsolute,
+  filePathToFileURL,
 } from '../utils/path.js';
 
 type ModuleImportResult = TransformResult & {
@@ -41,7 +42,7 @@ if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
     document.head.appendChild(script);
     // avoid HMR flash by first applying the new and removing the old styles 
     if (style) {
-      queueMicrotask(style.remove);
+      queueMicrotask(() => style.parentElement?.removeChild(style));
     }
   });
 }
@@ -122,6 +123,21 @@ export function rscHmrPlugin(): Plugin {
         );
       }
     },
+    handleHotUpdate({ file }) {
+      const moduleLoading = (globalThis as any).__webpack_module_loading__;
+      const moduleCache = (globalThis as any).__webpack_module_cache__;
+      const id = filePathToFileURL(file);
+      if (moduleLoading.has(id) && moduleCache.has(id)) {
+        moduleLoading.delete(id);
+        moduleCache.delete(id);
+        moduleLoading.set(
+          id,
+          viteServer.ssrLoadModule(file).then((m) => {
+            moduleCache.set(id, m);
+          }),
+        );
+      }
+    },
   };
 }
 
@@ -153,17 +169,17 @@ function hotImport(viteServer: ViteDevServer, source: string) {
 
 const modulePendingMap = new WeakMap<
   ReturnType<typeof viteHot>,
-  Set<ModuleImportResult>
+  Map<string, ModuleImportResult>
 >();
 
 function moduleImport(viteServer: ViteDevServer, result: ModuleImportResult) {
   const hot = viteHot(viteServer);
-  let sourceSet = modulePendingMap.get(hot);
-  if (!sourceSet) {
-    sourceSet = new Set();
-    modulePendingMap.set(hot, sourceSet);
+  let sources = modulePendingMap.get(hot);
+  if (!sources) {
+    sources = new Map();
+    modulePendingMap.set(hot, sources);
   }
-  sourceSet.add(result);
+  sources.set(result.id, result);
   hot.send({ type: 'custom', event: 'module-import', data: result });
 }
 
@@ -171,16 +187,16 @@ async function generateInitialScripts(
   viteServer: ViteDevServer,
 ): Promise<HtmlTagDescriptor[]> {
   const hot = viteHot(viteServer);
-  const sourceSet = modulePendingMap.get(hot);
+  const sources = modulePendingMap.get(hot);
 
-  if (!sourceSet) {
+  if (!sources) {
     return [];
   }
 
   const scripts: HtmlTagDescriptor[] = [];
   let injectedBlockingViteClient = false;
 
-  for (const result of sourceSet) {
+  for (const result of sources.values()) {
     // CSS modules do not support result.source (empty) since ssr-transforming them gives the css keys
     // and client-transforming them gives the script tag for injecting them.
     if (result.id.endsWith('.module.css')) {
