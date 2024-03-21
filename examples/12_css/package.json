@@ -15,12 +15,12 @@
     "react": "18.3.0-canary-56e20051c-20240311",
     "react-dom": "18.3.0-canary-56e20051c-20240311",
     "react-server-dom-webpack": "18.3.0-canary-56e20051c-20240311",
-    "waku": "0.20.0-alpha.2"
+    "waku": "0.20.0-beta.2"
   },
   "devDependencies": {
     "@types/react": "18.2.65",
     "@types/react-dom": "18.2.21",
-    "@vanilla-extract/vite-plugin": "3.9.5",
+    "@vanilla-extract/vite-plugin": "4.0.6",
     "typescript": "5.4.2",
     "vite": "5.1.6",
     "vite-plugin-stylex-dev": "0.3.0"

@@ -5,12 +5,17 @@ import cx from 'classnames';
 import { Link } from 'waku';
 import { useAtom, useSetAtom } from 'jotai';
 
-import { menuAtom } from '../atoms/index.js';
+import { menuAtom, destinationAtom } from '../atoms/index.js';
 import { Logo } from '../components/logo.js';
 import { Sponsors } from '../components/sponsors.js';
 import { useOnClickOutside, useOnEscape } from '../hooks/index.js';
+import { scrollTo } from '../utils/index.js';
 
-export const Menu = () => {
+type MenuProps = {
+  isHome: boolean;
+};
+
+export const Menu = ({ isHome }: MenuProps) => {
   const [isMenuOpen, setIsMenuOpen] = useAtom(menuAtom);
 
   const ref = useRef(null);
@@ -46,16 +51,41 @@ export const Menu = () => {
           isMenuOpen
             ? 'pointer-events-auto opacity-100 lg:delay-300'
             : 'pointer-events-none opacity-0',
-          'fixed inset-0 z-90 flex max-h-full items-center justify-center overflow-y-auto overscroll-none border-gray-800 bg-gray-950 transition-opacity duration-300 ease-in-out lg:bottom-auto lg:left-auto lg:right-4 lg:top-4 lg:z-100 lg:overflow-clip lg:rounded-xl lg:border lg:p-12 lg:backdrop-blur',
+          'fixed inset-0 z-90 flex max-h-full items-center justify-center overflow-y-auto overscroll-none border-gray-800 bg-gray-950 transition-opacity duration-300 ease-in-out lg:bottom-auto lg:left-auto lg:right-4 lg:top-4 lg:z-100 lg:overflow-clip lg:rounded-xl lg:border lg:p-12',
         )}
       >
-        <div className="relative z-10 flex flex-col items-center justify-center text-white">
-          <div className="hidden w-full pb-12 2xl:flex">
-            <div className="mx-auto block w-full">
-              <Logo className="lg:!max-w-[12.5rem]" />
-            </div>
+        <div className="relative z-10 flex flex-col items-center justify-center gap-8 text-white">
+          <div className="hidden w-full md:flex">
+            {isHome ? (
+              <button
+                onClick={() => {
+                  scrollTo('top');
+                  setIsMenuOpen(false);
+                }}
+                className="mx-auto block w-full max-w-[12.5rem]"
+              >
+                <Logo />
+              </button>
+            ) : (
+              <Link
+                to="/"
+                onClick={() => setIsMenuOpen(false)}
+                className="mx-auto block w-full max-w-[12.5rem]"
+              >
+                <Logo />
+              </Link>
+            )}
           </div>
-          <ul className="relative z-100 flex flex-shrink-0 flex-col gap-4 text-center">
+          <div className="space-y-1">
+            {docs.map((link) => {
+              return isHome ? (
+                <DocLink key={link.to} link={link} />
+              ) : (
+                <HomeLink key={link.to} link={link} />
+              );
+            })}
+          </div>
+          <ul className="relative z-100 flex w-full flex-shrink-0 justify-between gap-3 text-center">
             {links.map((link) => {
               return <MenuLink key={link.to} link={link} />;
             })}
@@ -67,7 +97,7 @@ export const Menu = () => {
   );
 };
 
-type MenuLinkProps = {
+type LinkProps = {
   link: {
     to?: string;
     label: string;
@@ -75,7 +105,45 @@ type MenuLinkProps = {
   };
 };
 
-export const MenuLink = ({ link }: MenuLinkProps) => {
+const HomeLink = ({ link }: LinkProps) => {
+  const setIsMenuOpen = useSetAtom(menuAtom);
+  const setDestination = useSetAtom(destinationAtom);
+
+  return (
+    <div>
+      <Link
+        to="/"
+        onClick={() => {
+          setDestination(link.to?.split('/#')?.[1] as string);
+          setIsMenuOpen(false);
+        }}
+        className="block text-balance font-simple text-[11px] font-bold uppercase tracking-[0.125em] text-gray-500 transition duration-300 ease-in-out hover:text-white"
+      >
+        {link.label}
+      </Link>
+    </div>
+  );
+};
+
+const DocLink = ({ link }: LinkProps) => {
+  const setIsMenuOpen = useSetAtom(menuAtom);
+
+  return (
+    <div>
+      <button
+        onClick={() => {
+          scrollTo(link.to?.split('/#')?.[1] as string);
+          setIsMenuOpen(false);
+        }}
+        className="block text-balance font-simple text-[11px] font-bold uppercase tracking-[0.125em] text-gray-500 transition duration-300 ease-in-out hover:text-white"
+      >
+        {link.label}
+      </button>
+    </div>
+  );
+};
+
+export const MenuLink = ({ link }: LinkProps) => {
   const setIsMenuOpen = useSetAtom(menuAtom);
 
   let Element: any = 'button';
@@ -98,33 +166,40 @@ export const MenuLink = ({ link }: MenuLinkProps) => {
   }
 
   return (
-    <li>
+    <li className="contents">
       <Element
         {...props}
         onClick={() => setIsMenuOpen(false)}
         className={cx(
-          'flex items-center gap-4 rounded-md border border-gray-800 bg-black px-4 py-3 transition-colors duration-300 ease-in-out focus:ring-4 focus:ring-primary-300',
-          !link.disabled
-            ? 'text-white hover:border-secondary'
-            : 'cursor-not-allowed text-white/40',
+          'text-white transition-colors duration-300 ease-in-out hover:text-secondary',
         )}
       >
-        <span className="text-2xl font-bold">{link.label}</span>
-        {link.disabled && (
-          <span className="inline-block origin-left scale-75 whitespace-nowrap rounded-md bg-white px-2 py-1 text-[0.625rem] font-black uppercase tracking-wide text-black">
-            Coming soon
-          </span>
-        )}
+        <span className="text-base font-bold">{link.label}</span>
       </Element>
     </li>
   );
 };
 
+const docs = [
+  { to: '/#introduction', label: 'Introduction' },
+  { to: '/#getting-started', label: 'Getting Started' },
+  { to: '/#rendering', label: 'Rendering' },
+  { to: '/#routing', label: 'Routing' },
+  { to: '/#navigation', label: 'Navigation' },
+  { to: '/#metadata', label: 'Metadata' },
+  { to: '/#styling', label: 'Styling' },
+  { to: '/#static-assets', label: 'Static Assets' },
+  { to: '/#file-system', label: 'File System' },
+  { to: '/#data-fetching', label: 'Data Fetching' },
+  { to: '/#state-management', label: 'State Management' },
+  { to: '/#environment-variables', label: 'Environment Variables' },
+  { to: '/#deployment', label: 'Deployment' },
+  { to: '/#community', label: 'Community' },
+  { to: '/#roadmap', label: 'Roadmap' },
+];
+
 const links = [
-  { to: '/', label: 'Home' },
   { to: '/blog', label: 'Blog' },
-  { to: 'https://github.com/dai-shi/waku/issues/24', label: 'Roadmap' },
-  { to: '/docs', label: 'Docs', disabled: true },
   { to: 'https://github.com/dai-shi/waku', label: 'GitHub' },
   { to: 'https://discord.gg/MrQdmzd', label: 'Discord' },
 ];

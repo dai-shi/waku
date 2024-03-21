@@ -29,7 +29,7 @@ export default async function BlogIndexPage() {
                     <div>
                       <div className="inline-block rounded-md bg-white px-2 py-1 text-[0.625rem] font-black tracking-wide text-black sm:text-xs">
                         <span className="hidden uppercase sm:inline">Waku</span>{' '}
-                        v{article.release}
+                        {article.release}
                       </div>
                     </div>
                   )}
@@ -53,12 +53,6 @@ export default async function BlogIndexPage() {
     </Page>
   );
 }
-
-export const getConfig = async () => {
-  return {
-    render: 'static',
-  };
-};
 
 const getArticles = async () => {
   const blogFileNames: Array<string> = [];
@@ -98,4 +92,10 @@ const getArticles = async () => {
   }
 
   return blogArticles.sort((a, b) => (a.rawDate > b.rawDate ? -1 : 1));
+};
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
 };

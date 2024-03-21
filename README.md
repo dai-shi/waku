@@ -49,11 +49,11 @@ import db from 'some-db';
 
 import { Gallery } from '../components/gallery.js';
 
-export default async function StorePage() {
+export const Store = async () => {
   const products = await db.query('SELECT * FROM products');
 
   return <Gallery products={products} />;
-}
+};
 ```
 
 #### Client components
@@ -145,11 +145,11 @@ To learn more about the modern React architecture, we recommend [Making Sense of
 
 Waku provides a familiar file-based “pages router” experience built for the modern React server components era.
 
-Its underlying [low-level API](https://github.com/dai-shi/waku/blob/main/docs/minimal-api.mdx) is also available for those that prefer programmatic routing. This documentation covers file-baesed routing since many React developers prefer it, but please feel free to try both and see which you like more.
+Its underlying [low-level API](https://github.com/dai-shi/waku/blob/main/docs/create-pages.mdx) is also available for those that prefer programmatic routing. This documentation covers file-based routing since many React developers prefer it, but please feel free to try both and see which you prefer.
 
 ### Overview
 
-The directory for file-based routing in Waku projects is `./src/pages`. Layouts and pages can be created as easily as making a new file with two exports: a default function for the React component and a named `getConfig` function to specify the render method and other configuration details.
+The directory for file-based routing in Waku projects is `./src/pages`. Layouts and pages can be created by making a new file with two exports: a default function for the React component and a named `getConfig` function that returns a configuration object including the render method and other options.
 
 Waku currently supports two rendering options: `'static'` for static prerendering (SSG) or `'dynamic'` for server-side rendering (SSR).
 
@@ -157,6 +157,9 @@ For example, you can statically prerender a global header and footer in the root
 
 ```tsx
 // ./src/pages/_layout.tsx
+
+import { Header } from '../components/header.js';
+import { Footer } from '../components/footer.js';
 
 // Create root layout
 export default async function RootLayout({ children }) {
@@ -186,6 +189,7 @@ export default async function HomePage() {
   return (
     <div>
       <h1>{data.someDynamicTitle}</h1>
+      <div>{data.someDynamicContent}</div>
     </div>
   );
 }
@@ -205,7 +209,7 @@ export const getConfig = async () => {
 
 #### Single routes
 
-Pages can be rendered as a single route (e.g., `/about.tsx` or `/blog.tsx`).
+Pages can be rendered as a single route (e.g., `/about` or `/blog`).
 
 ```tsx
 // ./src/pages/about.tsx
@@ -223,7 +227,7 @@ export const getConfig = async () => {
 ```
 
 ```tsx
-// ./src/pages/blog.tsx
+// ./src/pages/blog/index.tsx
 
 // Create blog index page
 export default async function BlogIndexPage() {
@@ -239,7 +243,7 @@ export const getConfig = async () => {
 
 #### Segment routes
 
-Pages can also render a segment route (e.g., `/blog/[slug].tsx`). The rendered React component automatically receives a prop named by the segment (e.g, `slug`) with the value of the rendered route (e.g., `'introducing-waku'`). If statically prerendering a segment route at build time, a `staticPaths` array must also be provided.
+Pages can also render a segment route (e.g., `/blog/[slug]`). The rendered React component automatically receives a prop named by the segment (e.g, `slug`) with the value of the rendered segment (e.g., `'introducing-waku'`). If statically prerendering a segment route at build time, a `staticPaths` array must also be provided.
 
 ```tsx
 // ./src/pages/blog/[slug].tsx
@@ -264,7 +268,7 @@ export const getConfig = async () => {
 ```
 
 ```tsx
-// ./src/pages/shop/[category].tsx
+// ./src/pages/shop/[category]/index.tsx
 
 // Create product category pages
 export default async function ProductCategoryPage({ category }) {
@@ -316,7 +320,7 @@ const getStaticPaths = async () => {
 
 #### Nested segment routes
 
-Routes can contain multiple segments (e.g., `/shop/[category]/[product].tsx`).
+Routes can contain multiple segments (e.g., `/shop/[category]/[product]`).
 
 ```tsx
 // ./src/pages/shop/[category]/[product].tsx
@@ -347,8 +351,8 @@ export const getConfig = async () => {
   return {
     render: 'static',
     staticPaths: [
-      ['someCategory', 'someProduct'],
-      ['someCategory', 'anotherProduct'],
+      ['some-category', 'some-product'],
+      ['some-category', 'another-product'],
     ],
   };
 };
@@ -356,7 +360,7 @@ export const getConfig = async () => {
 
 #### Catch-all routes
 
-Catch-all or "wildcard" routes (e.g., `/app/[...catchAll].tsx`) have indefinite segments. Wildcard routes receive a prop with segment values as an ordered array.
+Catch-all or "wildcard" routes (e.g., `/app/[...catchAll]`) have indefinite segments. Wildcard routes receive a prop with segment values as an ordered array.
 
 For example, the `/app/profile/settings` route would receive a `catchAll` prop with the value `['profile', 'settings']`. These values can then be used to determine what to render in the component.
 
@@ -381,7 +385,7 @@ Layouts are created with a special `_layout.tsx` file name and wrap the entire r
 
 #### Root layout
 
-The root layout placed at `./src/pages/_layout.tsx` is especially useful. It can be used for setting global styles, global metadata, global providers, global data, and global components, such as a header and footer.
+The root layout placed at `./pages/_layout.tsx` is especially useful. It can be used for setting global styles, global metadata, global providers, global data, and global components, such as a header and footer.
 
 ```tsx
 // ./src/pages/_layout.tsx
@@ -395,14 +399,20 @@ import { Footer } from '../components/footer.js';
 export default async function RootLayout({ children }) {
   return (
     <Providers>
-      <meta property="og:image" content="/images/preview.png" />
       <link rel="icon" type="image/png" href="/images/favicon.png" />
+      <meta property="og:image" content="/images/opengraph.png" />
       <Header />
       <main>{children}</main>
       <Footer />
     </Providers>
   );
 }
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
 ```
 
 ```tsx
@@ -420,7 +430,7 @@ export const Providers = ({ children }) => {
 
 #### Other layouts
 
-Layouts are also helpful further down the tree. For example, you could add a layout at `./src/pages/blog/_layout.tsx` to add a sidebar to both the blog index and all blog article pages.
+Layouts are also helpful further down the tree. For example, you could add a layout at `./pages/blog/_layout.tsx` to add a sidebar to both the blog index and all blog article pages.
 
 ```tsx
 // ./src/pages/blog/_layout.tsx
@@ -435,6 +445,12 @@ export default async function BlogLayout({ children }) {
     </div>
   );
 }
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
 ```
 
 ## Navigation
@@ -455,57 +471,6 @@ export default async function HomePage() {
 }
 ```
 
-## Static assets
-
-Static assets such as images, fonts, stylesheets, and scripts can be placed in a special `./public` folder of the Waku project root directory. The public directory structure is served relative to the `/` base path.
-
-For example, an image added to `./public/images/logo.svg` can be rendered via `<img src="/images/logo.svg" />`.
-
-## File system
-
-Files placed in a special `./private` folder of the Waku project root directory can be securely accessed in React server components.
-
-```tsx
-export default async function HomePage() {
-  const file = readFileSync('./private/README.md', 'utf8');
-  /* ... */
-}
-```
-
-## Data fetching
-
-### Server
-
-All of the wonderful patterns of React server components are supported. For example, you can compile MDX files or perform code syntax highlighting on the server with zero impact on the client bundle size.
-
-```tsx
-// ./src/pages/blog/[slug].tsx
-import { MDX } from '../../components/mdx.js';
-import { getArticle } from '../../lib/get-article.js';
-
-export default async function BlogArticlePage({ slug }) {
-  const article = await getArticle(slug);
-
-  return (
-    <>
-      <title>{article.frontmatter.title}</title>
-      <h1>{article.frontmatter.title}</h1>
-      <MDX>{article.content}</MDX>
-    </>
-  );
-}
-```
-
-### Client
-
-Data should be fetched on the server when possible for the best user experience, but all data fetching libraries such as React Query should be compatible with Waku.
-
-## State management
-
-We recommend [Jotai](https://jotai.org) for global React state management based on the atomic model's performance and scalability, but Waku should be compatible with all React state management libraries such as Zustand and Valtio.
-
-We're exploring a deeper integration of atomic state management into Waku to achieve the performance and developer experience of signals while preserving React's declarative programming model.
-
 ## Metadata
 
 Waku automatically hoists any title, meta, and link tags to the document head. So adding meta tags is as simple as adding it to any of your layout or page components.
@@ -515,12 +480,18 @@ Waku automatically hoists any title, meta, and link tags to the document head. S
 export default async function RootLayout({ children }) {
   return (
     <>
-      <meta property="og:image" content="/images/preview.png" />
       <link rel="icon" type="image/png" href="/images/favicon.png" />
+      <meta property="og:image" content="/images/opengraph.png" />
       {children}
     </>
   );
 }
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
 ```
 
 ```tsx
@@ -535,6 +506,12 @@ export default async function HomePage() {
     </>
   );
 }
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
 ```
 
 Metadata could also be generated programmatically.
@@ -564,6 +541,12 @@ const Head = async () => {
 const getMetadata = async () => {
   /* ... */
 };
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
 ```
 
 ## Styling
@@ -579,6 +562,12 @@ import '../styles.css';
 export default async function RootLayout({ children }) {
   return <main>{children}</main>;
 }
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
 ```
 
 ```css
@@ -604,6 +593,72 @@ export default {
   },
 };
 ```
+
+## Static assets
+
+Static assets such as images, fonts, stylesheets, and scripts can be placed in a special `./public` folder of the Waku project root directory. The public directory structure is served relative to the `/` base path.
+
+For example, an image added to `./public/images/logo.svg` can be rendered via `<img src="/images/logo.svg" />`.
+
+## File system
+
+Files placed in a special `./private` folder of the Waku project root directory can be securely accessed in React server components.
+
+```tsx
+export default async function HomePage() {
+  const file = readFileSync('./private/README.md', 'utf8');
+  /* ... */
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
+```
+
+## Data fetching
+
+### Server
+
+All of the wonderful patterns of React server components are supported. For example, you can compile MDX files or perform code syntax highlighting on the server with zero impact on the client bundle size.
+
+```tsx
+// ./src/pages/blog/[slug].tsx
+import { MDX } from '../../components/mdx.js';
+import { getArticle, getStaticPaths } from '../../lib/blog.js';
+
+export default async function BlogArticlePage({ slug }) {
+  const article = await getArticle(slug);
+
+  return (
+    <>
+      <title>{article.frontmatter.title}</title>
+      <h1>{article.frontmatter.title}</h1>
+      <MDX>{article.content}</MDX>
+    </>
+  );
+}
+
+export const getConfig = async () => {
+  const staticPaths = await getStaticPaths();
+
+  return {
+    render: 'static',
+    staticPaths,
+  };
+};
+```
+
+### Client
+
+Data should be fetched on the server when possible for the best user experience, but all data fetching libraries such as React Query should be compatible with Waku.
+
+## State management
+
+We recommend [Jotai](https://jotai.org) for global React state management based on the atomic model's performance and scalability, but Waku should be compatible with all React state management libraries such as Zustand and Valtio.
+
+We're exploring a deeper integration of atomic state management into Waku to achieve the performance and developer experience of signals while preserving React's declarative programming model.
 
 ## Environment variables
 

@@ -14,7 +14,6 @@ import {
 import type {
   ComponentProps,
   FunctionComponent,
-  MutableRefObject,
   ReactNode,
   AnchorHTMLAttributes,
   ReactElement,
@@ -36,14 +35,6 @@ declare global {
     readonly env: Record<string, string>;
   }
 }
-
-// XXX Unfortunately, we need a module state for push listeners
-const locationPushListeners = new Set<
-  (pathname: string, searchParams: URLSearchParams) => void
->();
-const pushLocation = (pathname: string, searchParams: URLSearchParams) => {
-  locationPushListeners.forEach((l) => l(pathname, searchParams));
-};
 
 const parseLocation = (): RouteProps => {
   if ((globalThis as any).__WAKU_ROUTER_404__) {
@@ -207,11 +198,7 @@ const equalRouteProps = (a: RouteProps, b: RouteProps) => {
   return true;
 };
 
-function InnerRouter({
-  shouldSkipRef,
-}: {
-  shouldSkipRef: MutableRefObject<ShouldSkip | undefined>;
-}) {
+function InnerRouter({ routerData }: { routerData: RouterData }) {
   const refetch = useRefetch();
 
   const [loc, setLoc] = useState(parseLocation);
@@ -261,8 +248,9 @@ function InnerRouter({
       ) {
         return; // everything is cached
       }
+      const shouldSkip = routerData[0];
       const skip = getSkipList(
-        shouldSkipRef.current,
+        shouldSkip,
         componentIds,
         loc,
         cachedRef.current,
@@ -287,15 +275,16 @@ function InnerRouter({
         ),
       }));
     },
-    [refetch, shouldSkipRef],
+    [refetch, routerData],
   );
 
   const prefetchLocation: PrefetchLocation = useCallback(
     (path, searchParams) => {
       const componentIds = getComponentIds(path);
       const routeProps: RouteProps = { path, searchParams };
+      const shouldSkip = routerData[0];
       const skip = getSkipList(
-        shouldSkipRef.current,
+        shouldSkip,
         componentIds,
         routeProps,
         cachedRef.current,
@@ -311,7 +300,7 @@ function InnerRouter({
       prefetchRSC(input, searchParamsString);
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(path);
     },
-    [shouldSkipRef],
+    [routerData],
   );
 
   useEffect(() => {
@@ -336,11 +325,12 @@ function InnerRouter({
         unstable_skipRefetch: true,
       });
     };
-    locationPushListeners.add(callback);
+    const listeners = (routerData[1] ||= new Set());
+    listeners.add(callback);
     return () => {
-      locationPushListeners.delete(callback);
+      listeners.delete(callback);
     };
-  }, [changeLocation]);
+  }, [changeLocation, routerData]);
 
   const children = componentIds.reduceRight(
     (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
@@ -354,18 +344,27 @@ function InnerRouter({
   );
 }
 
-export function Router() {
+// Note: The router data must be a stable mutable object (array).
+type RouterData = [
+  shouldSkip?: ShouldSkip,
+  locationListners?: Set<
+    (pathname: string, searchParams: URLSearchParams) => void
+  >,
+];
+
+const DEFAULT_ROUTER_DATA: RouterData = [];
+
+export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
   const loc = parseLocation();
   const initialInput = getInputString(loc.path);
   const initialSearchParamsString = loc.searchParams.toString();
-  const shouldSkipRef = useRef<ShouldSkip>();
-  const unstable_onFetchData = useCallback((data: unknown) => {
+  const unstable_onFetchData = (data: unknown) => {
     Promise.resolve(data)
       .then((data) => {
         if (data && typeof data === 'object') {
           // We need to process SHOULD_SKIP_ID before LOCATION_ID
           if (SHOULD_SKIP_ID in data) {
-            shouldSkipRef.current = data[SHOULD_SKIP_ID] as ShouldSkip;
+            routerData[0] = data[SHOULD_SKIP_ID] as ShouldSkip;
           }
           if (LOCATION_ID in data) {
             const [pathname, searchParamsString] = data[LOCATION_ID] as [
@@ -377,17 +376,19 @@ export function Router() {
               window.location.pathname !== pathname ||
               window.location.search.replace(/^\?/, '') !== searchParamsString
             ) {
-              pushLocation(pathname, new URLSearchParams(searchParamsString));
+              routerData[1]?.forEach((listener) =>
+                listener(pathname, new URLSearchParams(searchParamsString)),
+              );
             }
           }
         }
       })
       .catch(() => {});
-  }, []);
+  };
   return createElement(
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
     { initialInput, initialSearchParamsString, unstable_onFetchData },
-    createElement(InnerRouter, { shouldSkipRef }),
+    createElement(InnerRouter, { routerData }),
   );
 }
 

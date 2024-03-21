@@ -5,6 +5,7 @@ import { Page } from '../components/page.js';
 import { Meta } from '../components/meta.js';
 import { components } from '../components/mdx.js';
 import { Start } from '../components/start.js';
+import { Destination } from '../components/destination.js';
 import { loadReadme } from '../lib/load-readme.js';
 
 export default async function HomePage() {
@@ -42,6 +43,7 @@ export default async function HomePage() {
           star Waku on GitHub!
         </a>
       </div>
+      <Destination />
     </Page>
   );
 }

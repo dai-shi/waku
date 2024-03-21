@@ -68,6 +68,10 @@ export default async function PokemonPage({ slug }: PokemonPageProps) {
   );
 }
 
+const getPokemon = async (slug: string) => {
+  return pokemon.find((row: any) => row.slug === slug) ?? null;
+};
+
 export const getConfig = async () => {
   const pokemonPaths = await getPokemonPaths();
 
@@ -75,8 +79,4 @@ export const getConfig = async () => {
     render: 'static',
     staticPaths: pokemonPaths,
   };
-};
-
-const getPokemon = async (slug: string) => {
-  return pokemon.find((row: any) => row.slug === slug) ?? null;
 };

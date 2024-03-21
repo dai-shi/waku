@@ -15,12 +15,6 @@ export default async function AboutPage() {
   );
 }
 
-export const getConfig = async () => {
-  return {
-    render: 'static',
-  };
-};
-
 const getData = async () => {
   const data = {
     title: 'About',
@@ -29,4 +23,10 @@ const getData = async () => {
   };
 
   return data;
+};
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
 };

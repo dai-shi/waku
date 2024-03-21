@@ -35,6 +35,38 @@ export function rscDelegatePlugin(
   let mode = 'development';
   let base = '/';
   let server: ViteDevServer;
+  const updateStyle = async (id: string, importer: string) => {
+    const resolvedSource = await server.pluginContainer.resolveId(
+      id,
+      importer,
+      { ssr: true },
+    );
+    if (resolvedSource?.id) {
+      const { default: source } = await server.ssrLoadModule(resolvedSource.id);
+      const transformedResult = await server.transformRequest(
+        resolvedSource.id,
+      );
+      if (transformedResult) {
+        moduleImports.add(resolvedSource.id);
+        callback({
+          type: 'custom',
+          event: 'module-import',
+          data: {
+            ...transformedResult,
+            source,
+            id: resolvedSource.id,
+            css: true,
+          },
+        });
+      }
+    }
+  };
+  const styleFiles = new Map<string, string>(); // id -> importer
+  const updateAllStyles = async () => {
+    for (const [id, importer] of styleFiles) {
+      await updateStyle(id, importer);
+    }
+  };
   return {
     name: 'rsc-delegate-plugin',
     configResolved(config) {
@@ -46,6 +78,7 @@ export function rscDelegatePlugin(
     },
     async handleHotUpdate(ctx) {
       if (mode === 'development') {
+        await updateAllStyles(); // FIXME is this too aggressive?
         if (moduleImports.has(ctx.file)) {
           // re-inject
           const transformedResult = await server.transformRequest(ctx.file);
@@ -82,32 +115,8 @@ export function rscDelegatePlugin(
               const source = base + '@id/__x00__' + item.source.value;
               callback({ type: 'custom', event: 'hot-import', data: source });
             } else if (CSS_LANGS_RE.test(item.source.value)) {
-              const resolvedSource = await server.pluginContainer.resolveId(
-                item.source.value,
-                id,
-                { ssr: true },
-              );
-              if (resolvedSource?.id) {
-                const { default: source } = await server.ssrLoadModule(
-                  resolvedSource.id,
-                );
-                const transformedResult = await server.transformRequest(
-                  resolvedSource.id,
-                );
-                if (transformedResult) {
-                  moduleImports.add(resolvedSource.id);
-                  callback({
-                    type: 'custom',
-                    event: 'module-import',
-                    data: {
-                      ...transformedResult,
-                      source,
-                      id: resolvedSource.id,
-                      css: true,
-                    },
-                  });
-                }
-              }
+              styleFiles.set(item.source.value, id);
+              await updateStyle(item.source.value, id);
             }
           }
         }

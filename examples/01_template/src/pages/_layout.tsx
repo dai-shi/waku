@@ -15,19 +15,13 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       <meta property="description" content={data.description} />
       <link rel="icon" type="image/png" href={data.icon} />
       <Header />
-      <main className="flex min-h-svh items-center justify-center *:min-h-64 *:min-w-64">
+      <main className="m-6 flex items-center *:min-h-64 *:min-w-64 lg:m-0 lg:min-h-svh lg:justify-center">
         {children}
       </main>
       <Footer />
     </div>
   );
 }
-
-export const getConfig = async () => {
-  return {
-    render: 'static',
-  };
-};
 
 const getData = async () => {
   const data = {
@@ -36,4 +30,10 @@ const getData = async () => {
   };
 
   return data;
+};
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
 };

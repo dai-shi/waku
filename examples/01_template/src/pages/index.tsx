@@ -12,17 +12,11 @@ export default async function HomePage() {
       <p>{data.body}</p>
       <Counter />
       <Link to="/about" className="mt-4 inline-block underline">
-        Learn more
+        About page
       </Link>
     </div>
   );
 }
-
-export const getConfig = async () => {
-  return {
-    render: 'static',
-  };
-};
 
 const getData = async () => {
   const data = {
@@ -32,4 +26,10 @@ const getData = async () => {
   };
 
   return data;
+};
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
 };
