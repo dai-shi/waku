@@ -332,6 +332,7 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
     window.scrollTo({
       left: 0,
       top: element ? element.getBoundingClientRect().top + window.scrollY : 0,
+      behavior: 'instant',
     });
   }, [loc]);
 
