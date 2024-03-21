@@ -1,12 +1,12 @@
 import type {
-  default as ReactType,
   createElement as createElementType,
   ReactNode,
   FunctionComponent,
   ComponentProps,
 } from 'react';
+import { createElement } from 'react';
 import type * as RDServerType from 'react-dom/server.edge';
-import type { default as RSDWClientType } from 'react-server-dom-webpack/client.edge';
+import { createFromReadableStream } from 'react-server-dom-webpack/client.edge';
 import { injectRSCPayload } from 'rsc-html-stream/server';
 
 import type * as WakuClientType from '../../client.js';
@@ -21,9 +21,7 @@ import {
 import { encodeInput, hasStatusCode } from './utils.js';
 
 export const CLIENT_MODULE_MAP = {
-  react: 'react',
   'rd-server': 'react-dom/server.edge',
-  'rsdw-client': 'react-server-dom-webpack/client.edge',
   'waku-client': 'waku/client',
 } as const;
 export const CLIENT_PREFIX = 'client/';
@@ -210,19 +208,11 @@ export const renderHtml = async (
 
   const [
     {
-      default: { createElement },
-    },
-    {
       default: { renderToReadableStream },
-    },
-    {
-      default: { createFromReadableStream },
     },
     { ServerRoot },
   ] = await Promise.all([
-    loadClientModule<{ default: typeof ReactType }>('react'),
     loadClientModule<{ default: typeof RDServerType }>('rd-server'),
-    loadClientModule<{ default: typeof RSDWClientType }>('rsdw-client'),
     loadClientModule<typeof WakuClientType>('waku-client'),
   ]);
   const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
