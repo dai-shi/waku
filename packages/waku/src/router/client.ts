@@ -40,8 +40,7 @@ const parseRoute = (url: URL): RouteProps => {
   if ((globalThis as any).__WAKU_ROUTER_404__) {
     return { path: '/404', searchParams: new URLSearchParams() };
   }
-  const { pathname, search } = url;
-  const searchParams = new URLSearchParams(search);
+  const { pathname, searchParams } = url;
   if (searchParams.has(PARAM_KEY_SKIP)) {
     console.warn(`The search param "${PARAM_KEY_SKIP}" is reserved`);
   }
@@ -65,11 +64,11 @@ const RouterContext = createContext<{
 } | null>(null);
 
 export function useRouter_UNSTABLE() {
-  const value = useContext(RouterContext);
-  if (!value) {
+  const router = useContext(RouterContext);
+  if (!router) {
     throw new Error('Missing Router');
   }
-  const { route, changeRoute, prefetchRoute } = value;
+  const { route, changeRoute, prefetchRoute } = router;
   const push = useCallback(
     (to: string) => {
       if (!to.startsWith('/')) {
@@ -144,14 +143,14 @@ export function Link({
   if (!to.startsWith('/')) {
     throw new Error('"To" must start with "/"');
   }
-  const value = useContext(RouterContext);
-  const changeRoute = value
-    ? value.changeRoute
+  const router = useContext(RouterContext);
+  const changeRoute = router
+    ? router.changeRoute
     : () => {
         throw new Error('Missing Router');
       };
-  const prefetchRoute = value
-    ? value.prefetchRoute
+  const prefetchRoute = router
+    ? router.prefetchRoute
     : () => {
         throw new Error('Missing Router');
       };
@@ -233,7 +232,7 @@ const equalRouteProps = (a: RouteProps, b: RouteProps) => {
   }
   if (
     Array.from(a.searchParams.entries()).some(
-      ([key, value]) => value !== b.searchParams.get(key),
+      ([key, val]) => val !== b.searchParams.get(key),
     )
   ) {
     return false;
