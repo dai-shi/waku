@@ -36,16 +36,16 @@ declare global {
   }
 }
 
-const parseLocation = (): RouteProps => {
+const parseLocation = () => {
   if ((globalThis as any).__WAKU_ROUTER_404__) {
-    return { path: '/404', searchParams: new URLSearchParams() };
+    return { path: '/404', searchParams: new URLSearchParams(), hash: '' };
   }
-  const { pathname, search } = window.location;
+  const { pathname, search, hash } = window.location;
   const searchParams = new URLSearchParams(search);
   if (searchParams.has(PARAM_KEY_SKIP)) {
     console.warn(`The search param "${PARAM_KEY_SKIP}" is reserved`);
   }
-  return { path: pathname, searchParams };
+  return { path: pathname, searchParams, hash };
 };
 
 type ChangeLocation = (
@@ -54,7 +54,6 @@ type ChangeLocation = (
   options?: {
     hash?: string;
     method?: 'pushState' | 'replaceState' | false;
-    scrollTo?: ScrollToOptions | false;
     unstable_skipRefetch?: boolean;
   },
 ) => void;
@@ -217,7 +216,6 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
       const {
         hash,
         method = 'pushState',
-        scrollTo = { top: 0, left: 0 },
         unstable_skipRefetch,
       } = options || {};
       const url = new URL(window.location.href);
@@ -235,9 +233,6 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
       }
       const loc = parseLocation();
       setLoc(loc);
-      if (scrollTo) {
-        window.scrollTo(scrollTo);
-      }
       const componentIds = getComponentIds(loc.path);
       if (
         !method &&
@@ -309,7 +304,6 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
       changeLocation(loc.path, loc.searchParams, {
         hash: '',
         method: false,
-        scrollTo: false,
       });
     };
     window.addEventListener('popstate', callback);
@@ -331,6 +325,16 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
       listeners.delete(callback);
     };
   }, [changeLocation, routerData]);
+
+  useEffect(() => {
+    const { hash } = loc;
+    const element = hash && document.getElementById(hash.slice(1));
+    window.scrollTo({
+      left: 0,
+      top: element ? element.getBoundingClientRect().top + window.scrollY : 0,
+      behavior: 'instant',
+    });
+  }, [loc]);
 
   const children = componentIds.reduceRight(
     (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
