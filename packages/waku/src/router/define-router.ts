@@ -210,7 +210,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
       ServerRouter as FunctionComponent<
         Omit<ComponentProps<typeof ServerRouter>, 'children'>
       >,
-      { loc: { path: pathname, searchParams, hash: '' } },
+      { route: { path: pathname, searchParams } },
       componentIds.reduceRight(
         (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
         null,
