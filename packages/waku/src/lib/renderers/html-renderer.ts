@@ -260,11 +260,10 @@ export const renderHtml = async (
           {},
           {
             get(_target, name: string) {
-              const file = filePath
-                .slice(config.basePath.length)
-                .split('?')[0]!;
+              let file = filePath.slice(config.basePath.length);
               // TODO too long, we need to refactor this logic
               if (isDev) {
+                file = file.split('?')[0]!;
                 const filePath = file.startsWith('@fs/')
                   ? file.slice('@fs'.length)
                   : encodeFilePathToAbsolute(joinPath(opts.rootDir, file));
