@@ -273,8 +273,7 @@ export const renderHtml = async (
                 );
                 if (file.startsWith(wakuDist)) {
                   const id =
-                    'waku' +
-                    file.slice(wakuDist.length).replace(/\.\w+$/, '');
+                    'waku' + file.slice(wakuDist.length).replace(/\.\w+$/, '');
                   if (!moduleLoading.has(id)) {
                     moduleLoading.set(
                       id,
