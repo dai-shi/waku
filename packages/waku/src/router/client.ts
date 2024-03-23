@@ -71,9 +71,6 @@ export function useRouter_UNSTABLE() {
   const { route, changeRoute, prefetchRoute } = router;
   const push = useCallback(
     (to: string) => {
-      if (!to.startsWith('/')) {
-        throw new Error('"To" must start with "/"');
-      }
       const url = new URL(to, window.location.href);
       window.history.pushState(window.history.state, '', url);
       changeRoute(parseRoute(url));
@@ -82,9 +79,6 @@ export function useRouter_UNSTABLE() {
   );
   const replace = useCallback(
     (to: string) => {
-      if (!to.startsWith('/')) {
-        throw new Error('"To" must start with "/"');
-      }
       const url = new URL(to, window.location.href);
       window.history.replaceState(window.history.state, '', url);
       changeRoute(parseRoute(url));
@@ -105,9 +99,6 @@ export function useRouter_UNSTABLE() {
   }, []);
   const prefetch = useCallback(
     (to: string) => {
-      if (!to.startsWith('/')) {
-        throw new Error('"To" must start with "/"');
-      }
       const url = new URL(to, window.location.href);
       prefetchRoute(parseRoute(url));
     },
