@@ -455,6 +455,8 @@ export const getConfig = async () => {
 
 ## Navigation
 
+### Link
+
 Internal links should be made with the Waku `<Link />` component. It accepts a `to` prop for the destination, which is automatically prefetched ahead of the navigation.
 
 ```tsx
@@ -469,6 +471,65 @@ export default async function HomePage() {
     </>
   );
 }
+```
+
+### useRouter
+
+The `useRouter` hook can be used to inspect the current route or perform programmatic navigation.
+
+#### router properties
+
+The `router` object has a `value` property with two additional properties related to the current route: `path` (string) and `searchParams` ([URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams)).
+
+```tsx
+'use client';
+
+import { useRouter_UNSTABLE as useRouter } from 'waku';
+
+export const Component = () => {
+  const router = useRouter();
+  const { path, searchParams } = router.value;
+
+  return (
+    <>
+      <div>current path: {path}</div>
+      <div>current searchParams: {searchParams.toString()}</div>
+    </>
+  );
+};
+```
+
+#### router methods
+
+The `router` object also contains several methods for programmatic navigation:
+
+- `router.push(to: string)` - navigate to the provided route
+
+- `router.prefetch(to: string)` - prefetch the provided route
+
+- `router.replace(to: string)` - replace the current history entry
+
+- `router.reload()` - reload the current route
+
+- `router.back()` - navigate to the previous entry in the session history
+
+- `router.forward()` - navigate to the next entry in the session history
+
+```tsx
+'use client';
+
+import { useRouter_UNSTABLE as useRouter } from 'waku';
+
+export const Component = () => {
+  const router = useRouter();
+
+  return (
+    <>
+      <button onClick={() => router.push('/')}>Home</button>
+      <button onClick={() => router.back()}>Back</button>
+    </>
+  );
+};
 ```
 
 ## Metadata
