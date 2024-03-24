@@ -361,7 +361,7 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
     window.scrollTo({
       left: 0,
       top: element ? element.getBoundingClientRect().top + window.scrollY : 0,
-      behavior: state.waku_new_path ? 'instant' : 'auto',
+      behavior: state?.waku_new_path ? 'instant' : 'auto',
     });
   });
 
