@@ -36,52 +36,90 @@ declare global {
   }
 }
 
-const parseLocation = () => {
+const parseRoute = (url: URL): RouteProps => {
   if ((globalThis as any).__WAKU_ROUTER_404__) {
-    return { path: '/404', searchParams: new URLSearchParams(), hash: '' };
+    return { path: '/404', searchParams: new URLSearchParams() };
   }
-  const { pathname, search, hash } = window.location;
-  const searchParams = new URLSearchParams(search);
+  const { pathname, searchParams } = url;
   if (searchParams.has(PARAM_KEY_SKIP)) {
     console.warn(`The search param "${PARAM_KEY_SKIP}" is reserved`);
   }
-  return { path: pathname, searchParams, hash };
+  return { path: pathname, searchParams };
 };
 
-type ChangeLocation = (
-  path?: string,
-  searchParams?: URLSearchParams,
+type ChangeRoute = (
+  route: RouteProps,
   options?: {
-    hash?: string;
-    method?: 'pushState' | 'replaceState' | false;
-    unstable_skipRefetch?: boolean;
+    checkCache?: boolean;
+    skipRefetch?: boolean;
   },
 ) => void;
 
-type PrefetchLocation = (path: string, searchParams: URLSearchParams) => void;
+type PrefetchRoute = (route: RouteProps) => void;
 
 const RouterContext = createContext<{
-  loc: ReturnType<typeof parseLocation>;
-  changeLocation: ChangeLocation;
-  prefetchLocation: PrefetchLocation;
+  route: RouteProps;
+  changeRoute: ChangeRoute;
+  prefetchRoute: PrefetchRoute;
 } | null>(null);
 
-export function useChangeLocation() {
-  const value = useContext(RouterContext);
-  if (!value) {
-    return () => {
-      throw new Error('Missing Router');
-    };
-  }
-  return value.changeLocation;
-}
-
-export function useLocation() {
-  const value = useContext(RouterContext);
-  if (!value) {
+export function useRouter_UNSTABLE() {
+  const router = useContext(RouterContext);
+  if (!router) {
     throw new Error('Missing Router');
   }
-  return value.loc;
+  const { route, changeRoute, prefetchRoute } = router;
+  const push = useCallback(
+    (to: string) => {
+      const url = new URL(to, window.location.href);
+      window.history.pushState(
+        {
+          ...window.history.state,
+          waku_new_path: url.pathname !== window.location.pathname,
+        },
+        '',
+        url,
+      );
+      changeRoute(parseRoute(url));
+    },
+    [changeRoute],
+  );
+  const replace = useCallback(
+    (to: string) => {
+      const url = new URL(to, window.location.href);
+      window.history.replaceState(window.history.state, '', url);
+      changeRoute(parseRoute(url));
+    },
+    [changeRoute],
+  );
+  const reload = useCallback(() => {
+    const url = new URL(window.location.href);
+    changeRoute(parseRoute(url));
+  }, [changeRoute]);
+  const back = useCallback(() => {
+    // FIXME is this correct?
+    window.history.back();
+  }, []);
+  const forward = useCallback(() => {
+    // FIXME is this correct?
+    window.history.forward();
+  }, []);
+  const prefetch = useCallback(
+    (to: string) => {
+      const url = new URL(to, window.location.href);
+      prefetchRoute(parseRoute(url));
+    },
+    [prefetchRoute],
+  );
+  return {
+    value: route,
+    push,
+    replace,
+    reload,
+    back,
+    forward,
+    prefetch,
+  };
 }
 
 export type LinkProps = {
@@ -100,17 +138,14 @@ export function Link({
   unstable_prefetchOnEnter,
   ...props
 }: LinkProps): ReactElement {
-  if (!to.startsWith('/')) {
-    throw new Error('Link must start with "/"');
-  }
-  const value = useContext(RouterContext);
-  const changeLocation = value
-    ? value.changeLocation
+  const router = useContext(RouterContext);
+  const changeRoute = router
+    ? router.changeRoute
     : () => {
         throw new Error('Missing Router');
       };
-  const prefetchLocation = value
-    ? value.prefetchLocation
+  const prefetchRoute = router
+    ? router.prefetchRoute
     : () => {
         throw new Error('Missing Router');
       };
@@ -119,9 +154,18 @@ export function Link({
     event.preventDefault();
     const url = new URL(to, window.location.href);
     if (url.href !== window.location.href) {
-      prefetchLocation(url.pathname, url.searchParams);
+      const route = parseRoute(url);
+      prefetchRoute(route);
       startTransition(() => {
-        changeLocation(url.pathname, url.searchParams, { hash: url.hash });
+        window.history.pushState(
+          {
+            ...window.history.state,
+            waku_new_path: url.pathname !== window.location.pathname,
+          },
+          '',
+          url,
+        );
+        changeRoute(route);
       });
     }
     props.onClick?.(event);
@@ -130,7 +174,8 @@ export function Link({
     ? (event: MouseEvent<HTMLAnchorElement>) => {
         const url = new URL(to, window.location.href);
         if (url.href !== window.location.href) {
-          prefetchLocation(url.pathname, url.searchParams);
+          const route = parseRoute(url);
+          prefetchRoute(route);
         }
         props.onMouseEnter?.(event);
       }
@@ -152,7 +197,7 @@ export function Link({
 const getSkipList = (
   shouldSkip: ShouldSkip | undefined,
   componentIds: readonly string[],
-  props: RouteProps,
+  route: RouteProps,
   cached: Record<string, RouteProps>,
 ): string[] => {
   const shouldSkipObj = Object.fromEntries(shouldSkip || []);
@@ -165,13 +210,13 @@ const getSkipList = (
     if (!shouldCheck) {
       return false;
     }
-    if (shouldCheck[0] && props.path !== prevProps.path) {
+    if (shouldCheck[0] && route.path !== prevProps.path) {
       return false;
     }
     if (
       shouldCheck[1]?.some(
         (key) =>
-          props.searchParams.get(key) !== prevProps.searchParams.get(key),
+          route.searchParams.get(key) !== prevProps.searchParams.get(key),
       )
     ) {
       return false;
@@ -189,7 +234,7 @@ const equalRouteProps = (a: RouteProps, b: RouteProps) => {
   }
   if (
     Array.from(a.searchParams.entries()).some(
-      ([key, value]) => value !== b.searchParams.get(key),
+      ([key, val]) => val !== b.searchParams.get(key),
     )
   ) {
     return false;
@@ -200,45 +245,29 @@ const equalRouteProps = (a: RouteProps, b: RouteProps) => {
 function InnerRouter({ routerData }: { routerData: RouterData }) {
   const refetch = useRefetch();
 
-  const [loc, setLoc] = useState(parseLocation);
-  const componentIds = getComponentIds(loc.path);
+  const [route, setRoute] = useState(() =>
+    parseRoute(new URL(window.location.href)),
+  );
+  const componentIds = getComponentIds(route.path);
 
   const [cached, setCached] = useState<Record<string, RouteProps>>(() => {
-    return Object.fromEntries(componentIds.map((id) => [id, loc]));
+    return Object.fromEntries(componentIds.map((id) => [id, route]));
   });
   const cachedRef = useRef(cached);
   useEffect(() => {
     cachedRef.current = cached;
   }, [cached]);
 
-  const changeLocation: ChangeLocation = useCallback(
-    (path, searchParams, options) => {
-      const {
-        hash,
-        method = 'pushState',
-        unstable_skipRefetch,
-      } = options || {};
-      const url = new URL(window.location.href);
-      if (typeof path === 'string') {
-        url.pathname = path;
-      }
-      if (searchParams) {
-        url.search = searchParams.toString();
-      }
-      if (typeof hash === 'string') {
-        url.hash = hash;
-      }
-      if (method) {
-        window.history[method](window.history.state, '', url);
-      }
-      const loc = parseLocation();
-      setLoc(loc);
-      const componentIds = getComponentIds(loc.path);
+  const changeRoute: ChangeRoute = useCallback(
+    (route, options) => {
+      const { checkCache, skipRefetch } = options || {};
+      setRoute(route);
+      const componentIds = getComponentIds(route.path);
       if (
-        !method &&
+        checkCache &&
         componentIds.every((id) => {
           const cachedLoc = cachedRef.current[id];
-          return cachedLoc && equalRouteProps(cachedLoc, loc);
+          return cachedLoc && equalRouteProps(cachedLoc, route);
         })
       ) {
         return; // everything is cached
@@ -247,18 +276,18 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
       const skip = getSkipList(
         shouldSkip,
         componentIds,
-        loc,
+        route,
         cachedRef.current,
       );
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is skipped
       }
-      const input = getInputString(loc.path);
-      if (!unstable_skipRefetch) {
+      const input = getInputString(route.path);
+      if (!skipRefetch) {
         refetch(
           input,
           new URLSearchParams([
-            ...Array.from(loc.searchParams.entries()),
+            ...Array.from(route.searchParams.entries()),
             ...skip.map((id) => [PARAM_KEY_SKIP, id]),
           ]),
         );
@@ -266,75 +295,75 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
       setCached((prev) => ({
         ...prev,
         ...Object.fromEntries(
-          componentIds.flatMap((id) => (skip.includes(id) ? [] : [[id, loc]])),
+          componentIds.flatMap((id) =>
+            skip.includes(id) ? [] : [[id, route]],
+          ),
         ),
       }));
     },
     [refetch, routerData],
   );
 
-  const prefetchLocation: PrefetchLocation = useCallback(
-    (path, searchParams) => {
-      const componentIds = getComponentIds(path);
-      const routeProps: RouteProps = { path, searchParams };
+  const prefetchRoute: PrefetchRoute = useCallback(
+    (route) => {
+      const componentIds = getComponentIds(route.path);
       const shouldSkip = routerData[0];
       const skip = getSkipList(
         shouldSkip,
         componentIds,
-        routeProps,
+        route,
         cachedRef.current,
       );
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is cached
       }
-      const input = getInputString(path);
+      const input = getInputString(route.path);
       const searchParamsString = new URLSearchParams([
-        ...Array.from(searchParams.entries()),
+        ...Array.from(route.searchParams.entries()),
         ...skip.map((id) => [PARAM_KEY_SKIP, id]),
       ]).toString();
       prefetchRSC(input, searchParamsString);
-      (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(path);
+      (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(route.path);
     },
     [routerData],
   );
 
   useEffect(() => {
     const callback = () => {
-      const loc = parseLocation();
-      changeLocation(loc.path, loc.searchParams, {
-        hash: '',
-        method: false,
-      });
+      const route = parseRoute(new URL(window.location.href));
+      changeRoute(route, { checkCache: true });
     };
     window.addEventListener('popstate', callback);
     return () => {
       window.removeEventListener('popstate', callback);
     };
-  }, [changeLocation]);
+  }, [changeRoute]);
 
   useEffect(() => {
-    const callback = (pathname: string, searchParams: URLSearchParams) => {
-      changeLocation(pathname, searchParams, {
-        hash: '',
-        unstable_skipRefetch: true,
-      });
+    const callback = (pathname: string, searchParamsString: string) => {
+      const url = new URL(window.location.href);
+      url.pathname = pathname;
+      url.search = searchParamsString;
+      url.hash = '';
+      changeRoute(parseRoute(url), { skipRefetch: true });
     };
     const listeners = (routerData[1] ||= new Set());
     listeners.add(callback);
     return () => {
       listeners.delete(callback);
     };
-  }, [changeLocation, routerData]);
+  }, [changeRoute, routerData]);
 
   useEffect(() => {
-    const { hash } = loc;
+    const { hash } = window.location;
+    const { state } = window.history;
     const element = hash && document.getElementById(hash.slice(1));
     window.scrollTo({
       left: 0,
       top: element ? element.getBoundingClientRect().top + window.scrollY : 0,
-      behavior: 'instant',
+      behavior: state?.waku_new_path ? 'instant' : 'auto',
     });
-  }, [loc]);
+  });
 
   const children = componentIds.reduceRight(
     (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
@@ -343,7 +372,7 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
 
   return createElement(
     RouterContext.Provider,
-    { value: { loc, changeLocation, prefetchLocation } },
+    { value: { route, changeRoute, prefetchRoute } },
     children,
   );
 }
@@ -352,16 +381,16 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
 type RouterData = [
   shouldSkip?: ShouldSkip,
   locationListners?: Set<
-    (pathname: string, searchParams: URLSearchParams) => void
+    (pathname: string, searchParamsString: string) => void
   >,
 ];
 
 const DEFAULT_ROUTER_DATA: RouterData = [];
 
 export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
-  const loc = parseLocation();
-  const initialInput = getInputString(loc.path);
-  const initialSearchParamsString = loc.searchParams.toString();
+  const route = parseRoute(new URL(window.location.href));
+  const initialInput = getInputString(route.path);
+  const initialSearchParamsString = route.searchParams.toString();
   const unstable_onFetchData = (data: unknown) => {
     Promise.resolve(data)
       .then((data) => {
@@ -381,7 +410,7 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
               window.location.search.replace(/^\?/, '') !== searchParamsString
             ) {
               routerData[1]?.forEach((listener) =>
-                listener(pathname, new URLSearchParams(searchParamsString)),
+                listener(pathname, searchParamsString),
               );
             }
           }
@@ -406,10 +435,10 @@ const notAvailableInServer = (name: string) => () => {
  */
 export function ServerRouter({
   children,
-  loc,
+  route,
 }: {
   children: ReactNode;
-  loc: ReturnType<typeof parseLocation>;
+  route: RouteProps;
 }) {
   return createElement(
     Fragment,
@@ -418,9 +447,9 @@ export function ServerRouter({
       RouterContext.Provider,
       {
         value: {
-          loc,
-          changeLocation: notAvailableInServer('changeLocation'),
-          prefetchLocation: notAvailableInServer('prefetchLocation'),
+          route,
+          changeRoute: notAvailableInServer('changeRoute'),
+          prefetchRoute: notAvailableInServer('prefetchRoute'),
         },
       },
       children,
