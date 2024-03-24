@@ -18,11 +18,11 @@
     "waku": "0.20.0-beta.2"
   },
   "devDependencies": {
-    "@types/react": "18.2.65",
-    "@types/react-dom": "18.2.21",
+    "@types/react": "18.2.69",
+    "@types/react-dom": "18.2.22",
     "@vanilla-extract/vite-plugin": "4.0.6",
-    "typescript": "5.4.2",
-    "vite": "5.1.6",
-    "vite-plugin-stylex-dev": "0.3.0"
+    "typescript": "5.4.3",
+    "vite": "5.2.4",
+    "vite-plugin-stylex-dev": "0.4.0"
   }
 }
