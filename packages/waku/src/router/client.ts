@@ -72,7 +72,14 @@ export function useRouter_UNSTABLE() {
   const push = useCallback(
     (to: string) => {
       const url = new URL(to, window.location.href);
-      window.history.pushState(window.history.state, '', url);
+      window.history.pushState(
+        {
+          ...window.history.state,
+          waku_new_path: url.pathname !== window.location.pathname,
+        },
+        '',
+        url,
+      );
       changeRoute(parseRoute(url));
     },
     [changeRoute],
@@ -342,11 +349,12 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
 
   useEffect(() => {
     const { hash } = window.location;
+    const { state } = window.history;
     const element = hash && document.getElementById(hash.slice(1));
     window.scrollTo({
       left: 0,
       top: element ? element.getBoundingClientRect().top + window.scrollY : 0,
-      behavior: 'instant',
+      behavior: state.waku_new_path ? 'instant' : 'auto',
     });
   });
 
