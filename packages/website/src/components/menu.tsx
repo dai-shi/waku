@@ -24,18 +24,18 @@ export const Menu = ({ isHome }: MenuProps) => {
   useOnClickOutside(() => setIsMenuOpen(false), ref);
 
   return (
-    <>
+    <div ref={ref}>
       <div className="fixed right-0 top-0 z-100 p-5 lg:p-8">
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className={cx(
             isMenuOpen
-              ? 'pointer-events-none opacity-0'
+              ? 'lg:pointer-events-none lg:opacity-0'
               : 'pointer-events-auto opacity-100 lg:delay-300',
-            'inline-flex aspect-square h-[3.5rem] w-[3.5rem] items-center justify-center overflow-clip rounded-full border-4 border-gray-950 bg-gray-900 text-3xl transition duration-300 ease-in-out focus:ring-4 focus:ring-primary-300 lg:focus:ring-0',
+            'inline-flex aspect-square h-[3.5rem] w-[3.5rem] items-center justify-center overflow-clip rounded-full border-4 border-gray-950 text-3xl transition-opacity duration-300 ease-in-out focus:ring-4 focus:ring-primary-300 lg:focus:ring-0',
           )}
         >
-          <div className="h-full w-full p-2.5">
+          <div className="h-full w-full bg-gray-900 p-2.5 transition duration-300 ease-in-out hover:bg-gray-950">
             <img
               key="menu"
               src="https://cdn.candycode.com/waku/shinto-shrine.png"
@@ -46,23 +46,22 @@ export const Menu = ({ isHome }: MenuProps) => {
         </button>
       </div>
       <nav
-        ref={ref}
         className={cx(
           isMenuOpen
             ? 'pointer-events-auto opacity-100 lg:delay-300'
             : 'pointer-events-none opacity-0',
-          'fixed inset-0 z-90 flex max-h-full items-center justify-center overflow-y-auto overscroll-none border-gray-800 bg-gray-950 transition-opacity duration-300 ease-in-out lg:bottom-auto lg:left-auto lg:right-4 lg:top-4 lg:z-100 lg:overflow-clip lg:rounded-xl lg:border lg:p-12',
+          'fixed inset-0 z-90 flex shrink-0 items-start overflow-y-auto overscroll-none border-gray-800 bg-gray-950 p-12 transition-opacity duration-300 ease-in-out md:items-center md:justify-center lg:bottom-auto lg:left-auto lg:right-4 lg:top-4 lg:z-100 lg:z-[9999] lg:overflow-clip lg:rounded-xl lg:border',
         )}
       >
-        <div className="relative z-10 flex flex-col items-center justify-center gap-8 text-white">
-          <div className="hidden w-full md:flex">
+        <div className="relative z-10 flex shrink-0 flex-col items-center gap-4 text-white md:justify-center md:gap-8">
+          <div className="flex w-full">
             {isHome ? (
               <button
                 onClick={() => {
                   scrollTo('top');
                   setIsMenuOpen(false);
                 }}
-                className="mx-auto block w-full max-w-[12.5rem]"
+                className={logoClassNames}
               >
                 <Logo />
               </button>
@@ -70,13 +69,13 @@ export const Menu = ({ isHome }: MenuProps) => {
               <Link
                 to="/"
                 onClick={() => setIsMenuOpen(false)}
-                className="mx-auto block w-full max-w-[12.5rem]"
+                className={logoClassNames}
               >
                 <Logo />
               </Link>
             )}
           </div>
-          <div className="space-y-1">
+          <div className="relative -left-1 flex shrink-0 flex-col gap-2 md:left-auto lg:gap-1">
             {docs.map((link) => {
               return isHome ? (
                 <DocLink key={link.to} link={link} />
@@ -93,9 +92,11 @@ export const Menu = ({ isHome }: MenuProps) => {
           <Sponsors className="mt-0 sm:mt-8 lg:hidden" always={true} />
         </div>
       </nav>
-    </>
+    </div>
   );
 };
+
+const logoClassNames = `md:mx-auto max-w-[6.25rem] block w-full md:max-w-[12.5rem]`;
 
 type LinkProps = {
   link: {
@@ -117,7 +118,7 @@ const HomeLink = ({ link }: LinkProps) => {
           setDestination(link.to?.split('/#')?.[1] as string);
           setIsMenuOpen(false);
         }}
-        className="block text-balance font-simple text-[11px] font-bold uppercase tracking-[0.125em] text-gray-500 transition duration-300 ease-in-out hover:text-white"
+        className={linkClassNames}
       >
         {link.label}
       </Link>
@@ -135,13 +136,15 @@ const DocLink = ({ link }: LinkProps) => {
           scrollTo(link.to?.split('/#')?.[1] as string);
           setIsMenuOpen(false);
         }}
-        className="block text-balance font-simple text-[11px] font-bold uppercase tracking-[0.125em] text-gray-500 transition duration-300 ease-in-out hover:text-white"
+        className={linkClassNames}
       >
         {link.label}
       </button>
     </div>
   );
 };
+
+const linkClassNames = `block text-balance font-simple text-[11px] font-bold uppercase tracking-[0.125em] text-gray-500 transition duration-300 ease-in-out hover:text-white p-1 lg:p-0`;
 
 export const MenuLink = ({ link }: LinkProps) => {
   const setIsMenuOpen = useSetAtom(menuAtom);
