@@ -85,8 +85,8 @@
     "rollup": "^4.13.0"
   },
   "peerDependencies": {
-    "react": "18.3.0-canary-56e20051c-20240311",
-    "react-dom": "18.3.0-canary-56e20051c-20240311",
-    "react-server-dom-webpack": "18.3.0-canary-56e20051c-20240311"
+    "react": "18.3.0-canary-670811593-20240322",
+    "react-dom": "18.3.0-canary-670811593-20240322",
+    "react-server-dom-webpack": "18.3.0-canary-670811593-20240322"
   }
 }
