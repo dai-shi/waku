@@ -260,22 +260,20 @@ export const renderHtml = async (
           {},
           {
             get(_target, name: string) {
-              const file = filePath.slice(config.basePath.length);
-              // TODO too long, we need to refactor this logic
               if (isDev) {
-                const filePath = file.startsWith('@fs/')
+                // TODO too long, we need to refactor this logic
+                let file = filePath.slice(config.basePath.length);
+                file = file.split('?')[0]!;
+                file = file.startsWith('@fs/')
                   ? file.slice('@fs'.length)
-                  : encodeFilePathToAbsolute(
-                      joinPath(opts.rootDir, file.split('?')[0]!),
-                    );
+                  : encodeFilePathToAbsolute(joinPath(opts.rootDir, file));
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
                 );
-                if (filePath.startsWith(wakuDist)) {
+                if (file.startsWith(wakuDist)) {
                   const id =
-                    'waku' +
-                    filePath.slice(wakuDist.length).replace(/\.\w+$/, '');
+                    'waku' + file.slice(wakuDist.length).replace(/\.\w+$/, '');
                   if (!moduleLoading.has(id)) {
                     moduleLoading.set(
                       id,
@@ -286,7 +284,7 @@ export const renderHtml = async (
                   }
                   return { id, chunks: [id], name };
                 }
-                const id = filePathToFileURL(filePath);
+                const id = filePathToFileURL(file);
                 if (!moduleLoading.has(id)) {
                   moduleLoading.set(
                     id,
@@ -298,7 +296,7 @@ export const renderHtml = async (
                 return { id, chunks: [id], name };
               }
               // !isDev
-              const id = file;
+              const id = filePath.slice(config.basePath.length);
               if (!moduleLoading.has(id)) {
                 moduleLoading.set(
                   id,
