@@ -131,9 +131,6 @@ export function Link({
   unstable_prefetchOnEnter,
   ...props
 }: LinkProps): ReactElement {
-  if (!to.startsWith('/')) {
-    throw new Error('"To" must start with "/"');
-  }
   const router = useContext(RouterContext);
   const changeRoute = router
     ? router.changeRoute
