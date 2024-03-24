@@ -157,7 +157,14 @@ export function Link({
       const route = parseRoute(url);
       prefetchRoute(route);
       startTransition(() => {
-        window.history.pushState(window.history.state, '', url);
+        window.history.pushState(
+          {
+            ...window.history.state,
+            waku_new_path: url.pathname !== window.location.pathname,
+          },
+          '',
+          url,
+        );
         changeRoute(route);
       });
     }
