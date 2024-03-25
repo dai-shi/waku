@@ -1,6 +1,6 @@
 {
   "name": "create-waku",
-  "version": "0.8.0-beta.0",
+  "version": "0.8.0-beta.3",
   "publishConfig": {
     "tag": "next"
   },
@@ -36,7 +36,7 @@
     "fs-extra": "^11.2.0",
     "kolorist": "^1.8.0",
     "prompts": "^2.4.2",
-    "tar": "^6.2.0",
+    "tar": "^6.2.1",
     "update-check": "^1.5.4"
   }
 }
