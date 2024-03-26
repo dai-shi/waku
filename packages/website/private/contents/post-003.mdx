@@ -1,0 +1,336 @@
+---
+slug: introducing-pages-router
+title: Introducing “pages router”
+description: Bringing a minimal API to the modern React server components era.
+author: sophia
+release: v0.20
+date: 2024/3/26
+---
+
+Waku’s new file-based “pages router” provides a fast developer experience while supporting all the latest React features including [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md) and actions. Its minimal API is designed to accelerate the work of developers at startups and agencies building small to medium-sized React projects such as marketing websites, light ecommerce, and web applications.
+
+Making a Waku site is now as simple as making a few files and folders in the `./src/pages` directory: make `index.tsx` and `about.tsx` to create a home page and about page, then `blog/index.tsx` and `blog/[slug].tsx` to add a blog, and finally a special `_layout.tsx` to wrap the entire site with a global header and footer.
+
+If you’re not already familiar with server components, we recommend starting with our [documentation](https://waku.gg) instead, which includes all of the following material. Otherwise continue reading and we’ll take a closer look at the new Waku pages router API.
+
+## File-based routing API
+
+Layouts and pages can be created by making a new file with two exports: a default function for the React component and a named `getConfig` function that returns a configuration object to specify the render method and other options.
+
+Waku currently supports two rendering options:
+
+- `'static'` for static prerendering (SSG)
+
+- `'dynamic'` for server-side rendering (SSR)
+
+For example, you can statically prerender a global header and footer in the root layout at build time, but dynamically render the rest of a home page at request time for personalized user experiences.
+
+```tsx
+// ./src/pages/_layout.tsx
+import '../styles.css';
+
+import { Providers } from '../components/providers.js';
+import { Header } from '../components/header.js';
+import { Footer } from '../components/footer.js';
+
+// Create root layout
+export default async function RootLayout({ children }) {
+  return (
+    <Providers>
+      <Header />
+      <main>{children}</main>
+      <Footer />
+    </Providers>
+  );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
+```
+
+```tsx
+// ./src/pages/index.tsx
+
+// Create home page
+export default async function HomePage() {
+  const data = await getData();
+
+  return (
+    <>
+      <h1>{data.title}</h1>
+      <div>{data.content}</div>
+    </>
+  );
+}
+
+const getData = async () => {
+  /* ... */
+};
+
+export const getConfig = async () => {
+  return {
+    render: 'dynamic',
+  };
+};
+```
+
+### Pages
+
+#### Single routes
+
+Pages can be rendered as a single route (e.g., `about.tsx` or `blog.tsx`).
+
+```tsx
+// ./src/pages/about.tsx
+
+// Create about page
+export default async function AboutPage() {
+  return <>{/* ...*/}</>;
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
+```
+
+```tsx
+// ./src/pages/blog.tsx
+
+// Create blog index page
+export default async function BlogIndexPage() {
+  return <>{/* ...*/}</>;
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
+```
+
+#### Segment routes
+
+Pages can also render a segment route (e.g., `[slug].tsx`) marked with brackets.
+
+The rendered React component automatically receives a prop named by the segment (e.g, `slug`) with the value of the rendered segment (e.g., `'introducing-waku'`).
+
+If statically prerendering a segment route at build time, a `staticPaths` array must also be provided.
+
+```tsx
+// ./src/pages/blog/[slug].tsx
+
+// Create blog article pages
+export default async function BlogArticlePage({ slug }) {
+  const data = await getData(slug);
+
+  return <>{/* ...*/}</>;
+}
+
+const getData = async (slug) => {
+  /* ... */
+};
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+    staticPaths: ['introducing-waku', 'introducing-pages-router'],
+  };
+};
+```
+
+```tsx
+// ./src/pages/shop/[category].tsx
+
+// Create product category pages
+export default async function ProductCategoryPage({ category }) {
+  const data = await getData(category);
+
+  return <>{/* ...*/}</>;
+}
+
+const getData = async (category) => {
+  /* ... */
+};
+
+export const getConfig = async () => {
+  return {
+    render: 'dynamic',
+  };
+};
+```
+
+Static paths (or other config values) can also be generated programmatically.
+
+```tsx
+// ./src/pages/blog/[slug].tsx
+
+// Create blog article pages
+export default async function BlogArticlePage({ slug }) {
+  const data = await getData(slug);
+
+  return <>{/* ...*/}</>;
+}
+
+const getData = async (slug) => {
+  /* ... */
+};
+
+export const getConfig = async () => {
+  const staticPaths = await getStaticPaths();
+
+  return {
+    render: 'static',
+    staticPaths,
+  };
+};
+
+const getStaticPaths = async () => {
+  /* ... */
+};
+```
+
+#### Nested segment routes
+
+Routes can contain multiple segments (e.g., `/shop/[category]/[product]`) by creating folders with brackets as well.
+
+```tsx
+// ./src/pages/shop/[category]/[product].tsx
+
+// Create product category pages
+export default async function ProductDetailPage({ category, product }) {
+  return <>{/* ...*/}</>;
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'dynamic',
+  };
+};
+```
+
+For static prerendering of nested segment routes, the `staticPaths` array is instead composed of ordered arrays.
+
+```tsx
+// ./src/pages/shop/[category]/[product].tsx
+
+// Create product detail pages
+export default async function ProductDetailPage({ category, product }) {
+  return <>{/* ...*/}</>;
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+    staticPaths: [
+      ['same-category', 'some-product'],
+      ['same-category', 'another-product'],
+    ],
+  };
+};
+```
+
+#### Catch-all routes
+
+Catch-all or “wildcard” segment routes (e.g., `/app/[...catchAll]`) are marked with an ellipsis before the name and have indefinite segments.
+
+Wildcard routes receive a prop with segment values as an ordered array. For example, the `/app/profile/settings` route would receive a `catchAll` prop with the value `['profile', 'settings']`. These values can then be used to determine what to render in the component.
+
+```tsx
+// ./src/pages/app/[...catchAll].tsx
+
+// Create dashboard page
+export default async function DashboardPage({ catchAll }) {
+  return <>{/* ...*/}</>;
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'dynamic',
+  };
+};
+```
+
+### Layouts
+
+Layouts are created with a special `_layout.tsx` file name and wrap the entire route and its descendents. They must accept a `children` prop of type `ReactNode`. While not required, you will typically want at least a root layout.
+
+#### Root layout
+
+The root layout placed at `./pages/_layout.tsx` is especially useful. It can be used for setting global styles, global metadata, global providers, global data, and global components, such as a header and footer.
+
+```tsx
+// ./src/pages/_layout.tsx
+import '../styles.css';
+
+import { Providers } from '../components/providers.js';
+import { Header } from '../components/header.js';
+import { Footer } from '../components/footer.js';
+
+// Create root layout
+export default async function RootLayout({ children }) {
+  return (
+    <Providers>
+      <link rel="icon" type="image/png" href="/images/favicon.png" />
+      <meta property="og:image" content="/images/opengraph.png" />
+      <Header />
+      <main>{children}</main>
+      <Footer />
+    </Providers>
+  );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
+```
+
+```tsx
+// ./src/components/providers.tsx
+'use client';
+
+import { createStore, Provider } from 'jotai';
+
+const store = createStore();
+
+export const Providers = ({ children }) => {
+  return <Provider store={store}>{children}</Provider>;
+};
+```
+
+#### Other layouts
+
+Layouts are also helpful in nested routes. For example, you can add a layout at `./pages/blog/_layout.tsx` to add a sidebar to both the blog index and all blog article pages.
+
+```tsx
+// ./src/pages/blog/_layout.tsx
+import { Sidebar } from '../../components/sidebar.js';
+
+// Create blog layout
+export default async function BlogLayout({ children }) {
+  return (
+    <div className="flex">
+      <div>{children}</div>
+      <Sidebar />
+    </div>
+  );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
+```
+
+## Next steps
+
+We will continue to add [additional features](https://github.com/dai-shi/waku/issues/24), improve [documentation](https://waku.gg), and work towards acheiving stability before the upcoming [React 19 release](https://react.dev/blog/2024/02/15/react-labs-what-we-have-been-working-on-february-2024#the-next-major-version-of-react).
+
+In the meantime, please [star us on GitHub](https://github.com/dai-shi/waku) and [try Waku](https://waku.gg) on non-production projects. Then give us your feedback in our friendly [GitHub discussions](https://github.com/dai-shi/waku/discussions) and [Discord server](https://discord.gg/MrQdmzd). See you around!
