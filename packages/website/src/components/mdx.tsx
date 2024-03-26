@@ -60,6 +60,13 @@ export const components = {
       </b>
     );
   },
+  em: ({ children, ...rest }: any) => {
+    return (
+      <i className="italic text-white/70" {...rest}>
+        {children}
+      </i>
+    );
+  },
   a: ({ href, children, ...rest }: any) => {
     const classNames =
       'text-white/80 underline decoration-white/60 decoration-1 transition-colors duration-300 ease-in-out hover:text-white';
