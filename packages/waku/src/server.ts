@@ -86,15 +86,18 @@ let renderStorage: AsyncLocalStorageType<RenderStore> | undefined;
 //     'AsyncLocalStorage is not available, rerender and getContext are only available in sync.',
 //   );
 // }
-import('node:async_hooks')
-  .then(({ AsyncLocalStorage }) => {
-    renderStorage = new AsyncLocalStorage();
-  })
-  .catch(() => {
-    console.warn(
-      'AsyncLocalStorage is not available, rerender and getContext are only available in sync.',
-    );
-  });
+if (typeof window === 'undefined') {
+  // ignore side effects in browser
+  import('node:async_hooks')
+    .then(({ AsyncLocalStorage }) => {
+      renderStorage = new AsyncLocalStorage();
+    })
+    .catch(() => {
+      console.warn(
+        'AsyncLocalStorage is not available, rerender and getContext are only available in sync.',
+      );
+    });
+}
 
 let previousRenderStore: RenderStore | undefined;
 let currentRenderStore: RenderStore | undefined;
