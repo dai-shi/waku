@@ -50,7 +50,7 @@ export const Menu = ({ isHome }: MenuProps) => {
           isMenuOpen
             ? 'pointer-events-auto opacity-100 lg:delay-300'
             : 'pointer-events-none opacity-0',
-          'fixed inset-0 z-90 flex shrink-0 items-start overflow-y-auto overscroll-none border-gray-800 bg-gray-950 p-12 transition-opacity duration-300 ease-in-out md:items-center md:justify-center lg:bottom-auto lg:left-auto lg:right-4 lg:top-4 lg:z-100 lg:z-[9999] lg:overflow-clip lg:rounded-xl lg:border',
+          'fixed inset-0 z-90 flex shrink-0 items-start overflow-y-auto overscroll-none border-gray-800 bg-gray-950 p-8 transition-opacity duration-300 ease-in-out md:items-center md:justify-center md:p-12 lg:bottom-auto lg:left-auto lg:right-4 lg:top-4 lg:z-[9999] lg:overflow-clip lg:rounded-xl lg:border',
         )}
       >
         <div className="relative z-10 flex shrink-0 flex-col items-center gap-4 text-white md:justify-center md:gap-8">

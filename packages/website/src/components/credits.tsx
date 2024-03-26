@@ -10,7 +10,7 @@ export const Credits = () => {
           rel="noopener noreferrer"
           className="group pointer-events-auto relative inline-flex w-full flex-col items-center justify-center gap-[4px] p-[16px]"
         >
-          <span className="whitespace-nowrap font-simple text-[11px] text-xs uppercase tracking-[0.125em] text-gray-500 transition-colors duration-300 ease-in-out group-hover:text-white">
+          <span className="whitespace-nowrap font-simple text-[11px] uppercase tracking-[0.125em] text-gray-500 transition-colors duration-300 ease-in-out group-hover:text-white">
             designed by
           </span>
           <img
