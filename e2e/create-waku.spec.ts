@@ -74,18 +74,18 @@ test('should create waku with update notify work', async () => {
   });
   debugChildProcess(childProcess, fileURLToPath(import.meta.url));
   const stdin = childProcess.stdin!;
-  await new Promise<void>((resolve) => {
-    childProcess.stdout!.on('data', (data) => {
-      const str = data.toString();
-      if (str.includes('Project Name')) {
-        stdin.write('\n'); // use default
-      } else if (str.includes('Choose a starter template')) {
-        stdin.write('\n'); // use default
-      }
-      if (str.includes(`A new version of 'create-waku' is available!`)) {
-        resolve();
-      }
-    });
-  });
+  const writeNewLine = async () =>
+    new Promise<void>((resolve) => stdin.write('\n', () => resolve())); // will use default
+  for await (const data of childProcess.stdout!) {
+    const str = data.toString();
+    if (str.includes('Project Name')) {
+      await writeNewLine();
+    } else if (str.includes('Choose a starter template')) {
+      await writeNewLine();
+    }
+    if (str.includes(`A new version of 'create-waku' is available!`)) {
+      break;
+    }
+  }
   // no need to kill the process, it will exit by itself
 });
