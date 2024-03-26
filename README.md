@@ -13,9 +13,9 @@ visit [waku.gg](https://waku.gg) or `npm create waku@latest`
 
 ## Introduction
 
-**Waku** _(wah-ku)_ or **わく** means “framework” in Japanese. As the minimal React framework, it aims to accelerate the work of developers at startups and agencies building small to medium-sized React projects. These include marketing websites, light ecommerce, and web applications.
+**Waku** _(wah-ku)_ or **わく** means “framework” in Japanese. As the minimal React framework, it’s designed to accelerate the work of developers at startups and agencies building small to medium-sized React projects. These include marketing websites, light ecommerce, and web applications.
 
-We recommend other frameworks for heavy ecommerce or enterprise applications. Waku is a lightweight alternative designed to bring a fun developer experience to the modern React server components era. Yes, let’s make React development fun!
+We recommend other frameworks for heavy ecommerce or enterprise applications. Waku is a lightweight alternative bringing a fast developer experience to the modern React server components era. Yes, let’s make React development fast again!
 
 > Waku is in rapid development and some features are currently missing. Please try it on non-production projects and report any issues you may encounter. Expect that there will be some breaking changes on the road towards a stable v1 release. Contributors are welcome.
 
@@ -24,24 +24,24 @@ We recommend other frameworks for heavy ecommerce or enterprise applications. Wa
 Start a new Waku project with the `create` command for your preferred package manager. It will scaffold a new project with our default [Waku starter](https://github.com/dai-shi/waku/tree/main/examples/01_template).
 
 ```
-npm create waku@next
+npm create waku@latest
 ```
 
-**Node.js version requirement:** `^20.8.0 || ^18.17.0`
+**Node.js version requirement:** `^20.8.0` or `^18.17.0`
 
 ## Rendering
 
-While there's a bit of a learning curve to modern React rendering, it introduces powerful new patterns of full-stack composability that are only possible with the advent of [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md).
+While there’s a little bit of a learning curve to modern React rendering, it introduces powerful new patterns of full-stack composability that are only possible with the advent of [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md).
 
-So please don't be intimidated by the `'use client'` directive! Once you get the hang of it, you'll appreciate how awesome it is to flexibly move server-client boundaries with a single line of code as your full-stack React codebase evolves over time. It's way simpler than maintaining separate codebases for your backend and frontend.
+So please don’t be intimidated by the `'use client'` directive! Once you get the hang of it, you’ll appreciate how awesome it is to flexibly move server-client boundaries with a single line of code as your full-stack React codebase evolves over time. It’s way simpler than maintaining separate codebases for your backend and frontend.
 
-And please don't fret about client components! Even if you only lightly optimize towards server components, your client bundle size will be smaller than traditional React frameworks, which are always 100% client components.
+And please don’t fret about client components! Even if you only lightly optimize towards server components, your client bundle size will be smaller than traditional React frameworks, which are always 100% client components.
 
 > Future versions of Waku may provide additional opt-in APIs to abstract some of the complexity away for an improved developer experience.
 
 #### Server components
 
-Server components can be made async and can securely perform server-side logic and data fetching. Feel free to access the local file-system and import heavy dependencies since they aren't included in the client bundle. They have no state, interactivity, or access to browser APIs since they run _exclusively_ on the server.
+Server components can be made async and can securely perform server-side logic and data fetching. Feel free to access the local file-system and import heavy dependencies since they aren’t included in the client bundle. They have no state, interactivity, or access to browser APIs since they run _exclusively_ on the server.
 
 ```tsx
 // server component
@@ -58,7 +58,7 @@ export const Store = async () => {
 
 #### Client components
 
-A `'use client'` directive placed at the top of a file will create a server-client boundary when the module is imported into a server component. All components imported below the boundary will be hydrated to run in the browser as well. They can use all traditional React features such as state, effects, and event handlers.
+A `'use client'` directive placed at the top of a file will create a server-client boundary when imported into a server component. All components imported below the boundary will be hydrated to run in the browser as well. They can use all traditional React features such as state, effects, and event handlers.
 
 ```tsx
 // client component
@@ -131,9 +131,9 @@ Waku provides static prerendering (SSG) and server-side rendering (SSR) options 
 
 Each layout and page in Waku is composed of a React component hierarchy.
 
-It begins with a server component at the top of the tree. Then at points down the hierarchy, you'll eventually import a component that needs client component APIs. Mark this file with a `'use client'` directive at the top. When imported into a server component, it will create a server-client boundary. Below this point in the component hierarchy, all imported components are hydrated and will run in the browser as well.
+It begins with a server component at the top of the tree. Then at points down the hierarchy, you’ll eventually import a component that needs client component APIs. Mark this file with a `'use client'` directive at the top. When imported into a server component, it will create a server-client boundary. Below this point, all imported components are hydrated and will run in the browser as well.
 
-Server components can be rendered below this boundary, but only via composition (e.g., `children` props). Together they form [a new "React server" layer](https://github.com/reactwg/server-components/discussions/4) that runs _before_ the traditional "React client" layer with which you're already familiar.
+Server components can be rendered below this boundary, but only via composition (e.g., `children` props). Together they form [a new “React server” layer](https://github.com/reactwg/server-components/discussions/4) that runs _before_ the traditional “React client” layer with which you’re already familiar.
 
 Client components are server-side rendered as SSR is separate from RSC. See the [linked diagrams](https://github.com/reactwg/server-components/discussions/4) for a helpful visual.
 
@@ -143,32 +143,40 @@ To learn more about the modern React architecture, we recommend [Making Sense of
 
 ## Routing
 
-Waku provides a familiar file-based “pages router” experience built for the modern React server components era.
+Waku provides minimal file-based “pages router” experience built for the modern React server components era.
 
-Its underlying [low-level API](https://github.com/dai-shi/waku/blob/main/docs/create-pages.mdx) is also available for those that prefer programmatic routing. This documentation covers file-based routing since many React developers prefer it, but please feel free to try both and see which you prefer.
+Its underlying [low-level API](https://github.com/dai-shi/waku/blob/main/docs/create-pages.mdx) is also available for those that prefer programmatic routing. This documentation covers file-based routing since many React developers prefer it, but feel free to try both and see which you prefer.
 
 ### Overview
 
-The directory for file-based routing in Waku projects is `./src/pages`. Layouts and pages can be created by making a new file with two exports: a default function for the React component and a named `getConfig` function that returns a configuration object including the render method and other options.
+The directory for file-based routing in Waku projects is `./src/pages`.
 
-Waku currently supports two rendering options: `'static'` for static prerendering (SSG) or `'dynamic'` for server-side rendering (SSR).
+Layouts and pages can be created by making a new file with two exports: a default function for the React component and a named `getConfig` function that returns a configuration object to specify the render method and other options.
+
+Waku currently supports two rendering options:
+
+- `'static'` for static prerendering (SSG)
+
+- `'dynamic'` for server-side rendering (SSR)
 
 For example, you can statically prerender a global header and footer in the root layout at build time, but dynamically render the rest of a home page at request time for personalized user experiences.
 
 ```tsx
 // ./src/pages/_layout.tsx
+import '../styles.css';
 
+import { Providers } from '../components/providers.js';
 import { Header } from '../components/header.js';
 import { Footer } from '../components/footer.js';
 
 // Create root layout
 export default async function RootLayout({ children }) {
   return (
-    <>
+    <Providers>
       <Header />
       <main>{children}</main>
       <Footer />
-    </>
+    </Providers>
   );
 }
 
@@ -187,10 +195,10 @@ export default async function HomePage() {
   const data = await getData();
 
   return (
-    <div>
-      <h1>{data.someDynamicTitle}</h1>
-      <div>{data.someDynamicContent}</div>
-    </div>
+    <>
+      <h1>{data.title}</h1>
+      <div>{data.content}</div>
+    </>
   );
 }
 
@@ -209,7 +217,7 @@ export const getConfig = async () => {
 
 #### Single routes
 
-Pages can be rendered as a single route (e.g., `/about` or `/blog`).
+Pages can be rendered as a single route (e.g., `about.tsx` or `blog.tsx`).
 
 ```tsx
 // ./src/pages/about.tsx
@@ -227,7 +235,7 @@ export const getConfig = async () => {
 ```
 
 ```tsx
-// ./src/pages/blog/index.tsx
+// ./src/pages/blog.tsx
 
 // Create blog index page
 export default async function BlogIndexPage() {
@@ -243,7 +251,11 @@ export const getConfig = async () => {
 
 #### Segment routes
 
-Pages can also render a segment route (e.g., `/blog/[slug]`). The rendered React component automatically receives a prop named by the segment (e.g, `slug`) with the value of the rendered segment (e.g., `'introducing-waku'`). If statically prerendering a segment route at build time, a `staticPaths` array must also be provided.
+Pages can also render a segment route (e.g., `[slug].tsx`) marked with brackets.
+
+The rendered React component automatically receives a prop named by the segment (e.g, `slug`) with the value of the rendered segment (e.g., `'introducing-waku'`).
+
+If statically prerendering a segment route at build time, a `staticPaths` array must also be provided.
 
 ```tsx
 // ./src/pages/blog/[slug].tsx
@@ -262,13 +274,13 @@ const getData = async (slug) => {
 export const getConfig = async () => {
   return {
     render: 'static',
-    staticPaths: ['introducing-waku', 'introducing-create-pages'],
+    staticPaths: ['introducing-waku', 'introducing-pages-router'],
   };
 };
 ```
 
 ```tsx
-// ./src/pages/shop/[category]/index.tsx
+// ./src/pages/shop/[category].tsx
 
 // Create product category pages
 export default async function ProductCategoryPage({ category }) {
@@ -288,7 +300,7 @@ export const getConfig = async () => {
 };
 ```
 
-Static paths (or other values) could also be generated programmatically.
+Static paths (or other config values) can also be generated programmatically.
 
 ```tsx
 // ./src/pages/blog/[slug].tsx
@@ -320,7 +332,7 @@ const getStaticPaths = async () => {
 
 #### Nested segment routes
 
-Routes can contain multiple segments (e.g., `/shop/[category]/[product]`).
+Routes can contain multiple segments (e.g., `/shop/[category]/[product]`) by creating folders with brackets as well.
 
 ```tsx
 // ./src/pages/shop/[category]/[product].tsx
@@ -351,8 +363,8 @@ export const getConfig = async () => {
   return {
     render: 'static',
     staticPaths: [
-      ['some-category', 'some-product'],
-      ['some-category', 'another-product'],
+      ['same-category', 'some-product'],
+      ['same-category', 'another-product'],
     ],
   };
 };
@@ -360,9 +372,9 @@ export const getConfig = async () => {
 
 #### Catch-all routes
 
-Catch-all or "wildcard" routes (e.g., `/app/[...catchAll]`) have indefinite segments. Wildcard routes receive a prop with segment values as an ordered array.
+Catch-all or “wildcard” segment routes (e.g., `/app/[...catchAll]`) are marked with an ellipsis before the name and have indefinite segments.
 
-For example, the `/app/profile/settings` route would receive a `catchAll` prop with the value `['profile', 'settings']`. These values can then be used to determine what to render in the component.
+Wildcard routes receive a prop with segment values as an ordered array. For example, the `/app/profile/settings` route would receive a `catchAll` prop with the value `['profile', 'settings']`. These values can then be used to determine what to render in the component.
 
 ```tsx
 // ./src/pages/app/[...catchAll].tsx
@@ -430,7 +442,7 @@ export const Providers = ({ children }) => {
 
 #### Other layouts
 
-Layouts are also helpful further down the tree. For example, you could add a layout at `./pages/blog/_layout.tsx` to add a sidebar to both the blog index and all blog article pages.
+Layouts are also helpful in nested routes. For example, you can add a layout at `./pages/blog/_layout.tsx` to add a sidebar to both the blog index and all blog article pages.
 
 ```tsx
 // ./src/pages/blog/_layout.tsx
@@ -457,7 +469,7 @@ export const getConfig = async () => {
 
 ### Link
 
-Internal links should be made with the Waku `<Link />` component. It accepts a `to` prop for the destination, which is automatically prefetched ahead of the navigation.
+The`<Link />` component should be used for internal links. It accepts a `to` prop for the destination, which is automatically prefetched ahead of the navigation.
 
 ```tsx
 // ./src/pages/index.tsx
@@ -575,7 +587,7 @@ export const getConfig = async () => {
 };
 ```
 
-Metadata could also be generated programmatically.
+Metadata can also be generated programmatically.
 
 ```tsx
 // ./src/pages/index.tsx
@@ -621,7 +633,7 @@ Install any required dev dependencies (e.g., `npm i -D tailwindcss autoprefixer`
 import '../styles.css';
 
 export default async function RootLayout({ children }) {
-  return <main>{children}</main>;
+  return <>{children}</>;
 }
 
 export const getConfig = async () => {
@@ -659,7 +671,17 @@ export default {
 
 Static assets such as images, fonts, stylesheets, and scripts can be placed in a special `./public` folder of the Waku project root directory. The public directory structure is served relative to the `/` base path.
 
-For example, an image added to `./public/images/logo.svg` can be rendered via `<img src="/images/logo.svg" />`.
+```tsx
+// assuming image is saved at `/public/images/logo.svg`
+
+export const Component = () => {
+  return (
+    <>
+      <img src="/images/logo.svg" />
+    </>
+  );
+};
+```
 
 ## File system
 
@@ -717,13 +739,13 @@ Data should be fetched on the server when possible for the best user experience,
 
 ## State management
 
-We recommend [Jotai](https://jotai.org) for global React state management based on the atomic model's performance and scalability, but Waku should be compatible with all React state management libraries such as Zustand and Valtio.
+We recommend [Jotai](https://jotai.org) for global React state management based on the atomic model’s performance and scalability, but Waku should be compatible with all React state management libraries such as Zustand and Valtio.
 
-We're exploring a deeper integration of atomic state management into Waku to achieve the performance and developer experience of signals while preserving React's declarative programming model.
+We’re exploring a deeper integration of atomic state management into Waku to achieve the performance and developer experience of signals while preserving React’s declarative programming model.
 
 ## Environment variables
 
-It's important to distinguish environment variables that must be kept secret from those that can be made public.
+It’s important to distinguish environment variables that must be kept secret from those that can be made public.
 
 #### Private
 
@@ -731,7 +753,7 @@ By default all environment variables are considered private and accessible only 
 
 #### Public
 
-A special `WAKU_PUBLIC_` prefix is required to make an environment variable public and accessible in client components. They will be present as cleartext in the production JavaScript bundle sent to users' browsers.
+A special `WAKU_PUBLIC_` prefix is required to make an environment variable public and accessible in client components. They will be present as cleartext in the production JavaScript bundle sent to users’ browsers.
 
 ### Runtime agnostic (recommended)
 
@@ -861,4 +883,4 @@ Please join our friendly [GitHub discussions](https://github.com/dai-shi/waku/di
 
 ## Roadmap
 
-Waku is in active development and we're seeking additional contributors. Check out our [roadmap](https://github.com/dai-shi/waku/issues/24) for more information.
+Waku is in active development and we’re seeking additional contributors. Check out our [roadmap](https://github.com/dai-shi/waku/issues/24) for more information.

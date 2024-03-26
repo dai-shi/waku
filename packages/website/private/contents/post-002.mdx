@@ -7,13 +7,13 @@ release: v0.19
 date: 2024/1/16
 ---
 
-Until now, [Waku](https://waku.gg) has been helpful as a reference implementation for library authors curious about [React server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md). Today's v0.19 release marks the shift towards building Waku into a production-ready React framework. It's designed for startups and agencies seeking a lightweight alternative for small to medium-sized React projects. We want to make React development fun!
+Until now, [Waku](https://waku.gg) has been helpful as a reference implementation for library authors curious about [React server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md). Today’s v0.19 release marks the shift towards building Waku into a production-ready React framework. It’s designed for startups and agencies seeking a lightweight alternative for small to medium-sized React projects. We want to make React development fun!
 
 The first building block is the new `createPages` function, a low-level routing API which allows Waku developers to create layouts and pages programmatically. Both static prerendering (SSG) and server-side rendering (SSR) options are available and are selected at the layout and page level.
 
 For example, you can statically prerender a global header and footer in the root layout at build time, but dynamically render the rest of a home page at request time for personalized user experiences.
 
-Let's explore the details of the new Waku API.
+Let’s explore the details of the new Waku API.
 
 ## Low-level routing API
 
@@ -288,6 +288,6 @@ export const BlogLayout = async ({ children }) => {
 
 ## Looking forward
 
-Now that a low-level API for creating layouts and pages is complete, we're building a lightweight file-based "pages router" to further accelerate the work of Waku developers.
+Now that a low-level API for creating layouts and pages is complete, we’re building a lightweight file-based “pages router” to further accelerate the work of Waku developers.
 
 Stay tuned for this and other features in the upcoming v0.20 release! In the meantime, please [give Waku a try](https://waku.gg) on non-production projects and join our friendly [GitHub discussions](https://github.com/dai-shi/waku/discussions) or [Discord server](https://discord.gg/MrQdmzd) to participate in the Waku community.
