@@ -5,12 +5,15 @@ description: How to package a Waku app into a Docker container.
 ---
 
 ## Dockerise a Waku app
+
 Bundle your Waku app into a Docker container for portability and easy deployment in various environments.
 
 ### Prerequisites
+
 Make sure you have Docker and Node.js installed on your machine. We will prepare the image and container in 3 easy steps for reproducible results. Create 3 files in your folder root: `Dockerfile`, `.dockerignore`, `docker-compose.yml`.
 
 ### Dockerfile
+
 First, let's take a look at `Dockerfile` where we define the Docker commands to build the app image.
 
 ```dockerfile
@@ -46,18 +49,23 @@ Dockerfile is set up so that it uses Docker's [multi-stage build](https://docs.d
 8. CMD: start up the app
 
 A health check command can be optionally included at the end of the Dockerfile. An example would be:
-```HEALTHCHECK --interval=30s CMD wget -qO- http://localhost:8080 || exit 1```
+`HEALTHCHECK --interval=30s CMD wget -qO- http://localhost:8080 || exit 1`
 
 ### .dockerignore file
+
 Use an ignore file to avoid copying unnecessary/undesirable files into the image. For example:
+
 ```
 /node_modules
 .vscode
 ```
+
 This way `node_modules` files will not be copied in the above Dockerfile setup.
 
 ### docker-compose.yml file
+
 To streamline the build process, create a compose file which will be easily extensible when additional services are needed:
+
 ```yaml
 version: '3.8'
 
@@ -72,14 +80,16 @@ services:
       - 8080:8080
 ```
 
-Specify the name of the service, and within it add the following: 
-- build context ( *cwd* ) where the build process should take place
+Specify the name of the service, and within it add the following:
+
+- build context ( _cwd_ ) where the build process should take place
 - image name so that the correct image is used to create the container
 - environment variables
 - port forwarding so the app is accessible on the host machine (e.g. in your browser)
 
 ### Build the container
-Finally, with the blueprints ready, build the container using the following command:
-```docker-compose up -d --build```
 
-With this, the app should be accessible from *localhost* in the browser and the container should be deployable to cloud hosting platforms.
+Finally, with the blueprints ready, build the container using the following command:
+`docker-compose up -d --build`
+
+With this, the app should be accessible from _localhost_ in the browser and the container should be deployable to cloud hosting platforms.
