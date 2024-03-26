@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import cx from 'classnames';
-import { Link } from 'waku/router/client';
+import { Link } from 'waku';
 import { useAtom, useSetAtom } from 'jotai';
 
 import { menuAtom, destinationAtom } from '../atoms/index.js';
