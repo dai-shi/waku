@@ -14,7 +14,7 @@ import {
   downloadAndExtract,
 } from './helpers/example-option.js';
 
-const DEFAULT_REF = 'v0.20.0-beta.3';
+const DEFAULT_REF = 'v0.20.0';
 
 const userAgent = process.env.npm_config_user_agent || '';
 const packageManager = /pnpm/.test(userAgent)
