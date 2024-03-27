@@ -11,8 +11,10 @@ export const Destination = () => {
 
   useEffect(() => {
     if (destination) {
-      scrollTo(destination);
-      setDestination('');
+      setTimeout(() => {
+        scrollTo(destination);
+        setDestination('');
+      }, 800);
     }
   }, [destination, setDestination]);
 
