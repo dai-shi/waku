@@ -1,0 +1,95 @@
+---
+slug: guides/docker
+title: Dockerise a Waku app
+description: How to package a Waku app into a Docker container.
+---
+
+## Dockerise a Waku app
+
+Bundle your Waku app into a Docker container for portability and easy deployment in various environments.
+
+### Prerequisites
+
+Make sure you have Docker and Node.js installed on your machine. We will prepare the image and container in 3 easy steps for reproducible results. Create 3 files in your folder root: `Dockerfile`, `.dockerignore`, `docker-compose.yml`.
+
+### Dockerfile
+
+First, let's take a look at `Dockerfile` where we define the Docker commands to build the app image.
+
+```dockerfile
+FROM node:18-alpine as builder
+
+WORKDIR /app
+
+# import dependencies
+COPY package.json .
+COPY package-lock.json .
+
+RUN npm install
+
+# copy assets
+COPY . .
+
+RUN npm run build
+
+EXPOSE 8080
+
+CMD ["npm", "run", "start"]
+```
+
+Dockerfile is set up so that it uses Docker's [multi-stage build](https://docs.docker.com/build/building/multi-stage/) paradigm, in which different layers of the process are cached and reused on subsequent builds if the underlying files have not changed since the previous build. Here's a breakdown of the commands:
+
+1. FROM: use a Node v18 base image to scaffold the build process
+2. WORKDIR: set a directory path where all the following commands take place
+3. COPY: copy dependency info to the working directory (signified by the **dot** at the end)
+4. RUN: install project dependencies
+5. COPY: copy project assets (images, jsx files etc.)
+6. RUN: build the app with production settings
+7. EXPOSE: declare a port to enable access to the application from the container
+8. CMD: start up the app
+
+A health check command can be optionally included at the end of the Dockerfile. An example would be:
+`HEALTHCHECK --interval=30s CMD wget -qO- http://localhost:8080 || exit 1`
+
+### .dockerignore file
+
+Use an ignore file to avoid copying unnecessary/undesirable files into the image. For example:
+
+```
+/node_modules
+.vscode
+```
+
+This way `node_modules` files will not be copied in the above Dockerfile setup.
+
+### docker-compose.yml file
+
+To streamline the build process, create a compose file which will be easily extensible when additional services are needed:
+
+```yaml
+version: '3.8'
+
+services:
+  waku-app-frontend:
+    build:
+      context: .
+    image: wakuapp
+    environment:
+      NODE_ENV: production
+    ports:
+      - 8080:8080
+```
+
+Specify the name of the service, and within it add the following:
+
+- build context ( _cwd_ ) where the build process should take place
+- image name so that the correct image is used to create the container
+- environment variables
+- port forwarding so the app is accessible on the host machine (e.g. in your browser)
+
+### Build the container
+
+Finally, with the blueprints ready, build the container using the following command:
+`docker-compose up -d --build`
+
+With this, the app should be accessible from _localhost_ in the browser and the container should be deployable to cloud hosting platforms.
