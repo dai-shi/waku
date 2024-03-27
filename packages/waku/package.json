@@ -19,6 +19,7 @@
     "./package.json": "./package.json",
     ".": {
       "types": "./dist/main.d.ts",
+      "react-server": "./dist/main.react-server.js",
       "default": "./dist/main.js"
     },
     "./config": {
