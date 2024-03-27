@@ -112,7 +112,13 @@ export function useRouter_UNSTABLE() {
     [prefetchRoute],
   );
   return {
-    value: route,
+    get value() {
+      console.warn(
+        'router.value is deprecated. Use router.path and router.searchParams instead.',
+      );
+      return route;
+    },
+    ...route,
     push,
     replace,
     reload,
