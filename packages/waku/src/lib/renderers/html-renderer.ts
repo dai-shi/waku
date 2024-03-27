@@ -20,6 +20,7 @@ import {
   encodeFilePathToAbsolute,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
+import { createRequire } from 'node:module';
 
 export const CLIENT_MODULE_MAP = {
   react: 'react',
@@ -36,6 +37,8 @@ export const CLIENT_PREFIX = 'client/';
   (globalThis as any).__webpack_module_loading__.get(id);
 (globalThis as any).__webpack_require__ ||= (id: string) =>
   (globalThis as any).__webpack_module_cache__.get(id);
+// workaround for downstream packages which assume webpack is present
+(globalThis as any).__non_webpack_require__ = createRequire(import.meta.url);
 const moduleLoading = (globalThis as any).__webpack_module_loading__;
 const moduleCache = (globalThis as any).__webpack_module_cache__;
 
