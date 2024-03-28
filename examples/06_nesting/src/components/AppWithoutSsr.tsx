@@ -1,4 +1,4 @@
-import { CounterWithoutSsr } from './CounterWithoutSsr.js';
+import { CounterWithoutSsr } from './CounterWithoutSsr';
 
 const AppWithoutSsr = () => {
   return (

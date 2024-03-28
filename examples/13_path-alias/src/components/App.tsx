@@ -1,5 +1,5 @@
-import { Counter } from '@/components/Counter.js';
-import { MyFragment } from '@/components/MyFragment.js';
+import { Counter } from '@/components/Counter';
+import { MyFragment } from '@/components/MyFragment';
 
 const App = ({ name }: { name: string }) => {
   return (

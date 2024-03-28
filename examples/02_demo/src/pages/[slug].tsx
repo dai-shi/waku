@@ -1,7 +1,7 @@
 import { Link } from 'waku';
 
-import { getPokemonPaths } from '../lib/index.js';
-import { pokemon } from '../lib/pokemon.js';
+import { getPokemonPaths } from '../lib';
+import { pokemon } from '../lib/pokemon';
 
 type PokemonPageProps = { slug: string };
 

@@ -2,7 +2,7 @@ import { getEnv } from 'waku/server';
 
 // @ts-expect-error no types
 import styles from './App.module.css';
-import { Counter } from './Counter.js';
+import { Counter } from './Counter';
 
 const App = ({ name }: { name: string }) => {
   return (
