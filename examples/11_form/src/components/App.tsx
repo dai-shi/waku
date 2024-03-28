@@ -1,6 +1,6 @@
-import { Counter } from './Counter.js';
-import { Form } from './Form.js';
-import { getMessage, greet, increment } from './funcs.js';
+import { Counter } from './Counter';
+import { Form } from './Form';
+import { getMessage, greet, increment } from './funcs';
 
 type ServerFunction<T> = T extends (...args: infer A) => infer R
   ? (...args: A) => Promise<R>

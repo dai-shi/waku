@@ -2,9 +2,9 @@ import type { ReactNode } from 'react';
 import { defineEntries } from 'waku/server';
 import { Slot } from 'waku/client';
 
-import App from './components/App.js';
-import InnerApp from './components/InnerApp.js';
-import AppWithoutSsr from './components/AppWithoutSsr.js';
+import App from './components/App';
+import InnerApp from './components/InnerApp';
+import AppWithoutSsr from './components/AppWithoutSsr';
 
 export default defineEntries(
   // renderEntries

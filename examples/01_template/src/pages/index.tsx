@@ -1,6 +1,6 @@
 import { Link } from 'waku';
 
-import { Counter } from '../components/counter.js';
+import { Counter } from '../components/counter';
 
 export default async function HomePage() {
   const data = await getData();

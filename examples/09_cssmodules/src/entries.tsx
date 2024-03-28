@@ -2,8 +2,8 @@ import { lazy } from 'react';
 import { defineEntries } from 'waku/server';
 import { Slot } from 'waku/client';
 
-const Layout = lazy(() => import('./components/Layout.js'));
-const App = lazy(() => import('./components/App.js'));
+const Layout = lazy(() => import('./components/Layout'));
+const App = lazy(() => import('./components/App'));
 
 export default defineEntries(
   // renderEntries

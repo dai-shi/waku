@@ -3,7 +3,7 @@
 
 import { Suspense, useState, use } from 'react';
 
-import { Hello } from './Hello.js';
+import { Hello } from './Hello';
 
 export const Counter = ({
   delayedMessage,

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { MyFragment } from '@/components/MyFragment.js';
+import { MyFragment } from '@/components/MyFragment';
 
 export const Counter = () => {
   const [count, setCount] = useState(0);

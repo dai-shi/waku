@@ -1,7 +1,7 @@
 import { Balancer } from 'react-wrap-balancer';
 
-import Counter from './Counter.js';
-import { greet, getCounter, increment } from './funcs.js';
+import Counter from './Counter';
+import { greet, getCounter, increment } from './funcs';
 
 type ServerFunction<T> = T extends (...args: infer A) => infer R
   ? (...args: A) => Promise<R>

@@ -1,7 +1,7 @@
 import { Link } from 'waku';
 
-import { Reload } from '../components/reload.js';
-import { sql } from '../lib/index.js';
+import { Reload } from '../components/reload';
+import { sql } from '../lib';
 
 export default async function HomePage() {
   const { rows } = await sql`SELECT * FROM pokemon ORDER BY RANDOM() LIMIT 9`;

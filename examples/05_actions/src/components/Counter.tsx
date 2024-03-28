@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 
-import { TextBox } from './TextBox.js';
+import { TextBox } from './TextBox';
 
 const Counter = ({
   greet,

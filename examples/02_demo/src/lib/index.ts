@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { pokemon } from './pokemon.js';
+import { pokemon } from './pokemon';
 
 /**
  * Mock database
  * @param {TemplateStringsArray} query: mock query string
  */
-export const sql = async (query: TemplateStringsArray) => {
+export const sql = async (_query: TemplateStringsArray) => {
   const shuffledPokemon = shuffle(pokemon).slice(0, 9);
 
   return { rows: shuffledPokemon };

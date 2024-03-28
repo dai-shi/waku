@@ -1,7 +1,7 @@
 import { Suspense, cache } from 'react';
 import { getContext } from 'waku/server';
 
-import { Counter } from './Counter.js';
+import { Counter } from './Counter';
 
 const cachedFn = cache(() => Date.now());
 
