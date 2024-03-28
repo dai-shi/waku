@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { pokemon } from './pokemon.js';
+import { pokemon } from './pokemon';
 
 /**
  * Mock database

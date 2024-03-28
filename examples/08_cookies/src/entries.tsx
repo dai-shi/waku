@@ -4,7 +4,7 @@ import fsPromises from 'node:fs/promises';
 import { defineEntries, getContext } from 'waku/server';
 import { Slot } from 'waku/client';
 
-import App from './components/App.js';
+import App from './components/App';
 
 export default defineEntries(
   // renderEntries
