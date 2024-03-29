@@ -1,9 +1,14 @@
 # Change Log
 
 ## [Unreleased]
+### Changed
+- Fix invalid AsyncLocalStorage warning
+
+## [0.20.0] - 2024-03-26
 ### Added
 - Middleware architecture
-- File system router
+- File system router / managed mode
+- New router API
 ### Changed
 - getContext / rerender from 'waku/server'
 - SSR by default (opting out method)
