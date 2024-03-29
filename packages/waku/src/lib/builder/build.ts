@@ -267,18 +267,22 @@ const buildServerBundle = async (
 const buildSsrBundle = async (
   rootDir: string,
   config: ResolvedConfig,
+  mainJsFile: string,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
   isNodeCompatible: boolean,
 ) => {
-  const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
   await buildVite({
     base: config.basePath,
     plugins: [
-      rscIndexPlugin({ ...config, cssAssets }),
+      rscIndexPlugin({
+        ...config,
+        cssAssets,
+        mainJs: mainJsFile.split('/').pop()!,
+      }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
       rscManagedPlugin(config),
@@ -332,10 +336,10 @@ const buildSsrBundle = async (
 const buildClientBundle = async (
   rootDir: string,
   config: ResolvedConfig,
+  mainJsFile: string,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
 ) => {
-  const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
   const nonJsAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
   );
@@ -344,7 +348,11 @@ const buildClientBundle = async (
     base: config.basePath,
     plugins: [
       viteReact(),
-      rscIndexPlugin({ ...config, cssAssets }),
+      rscIndexPlugin({
+        ...config,
+        cssAssets,
+        mainJs: mainJsFile.split('/').pop()!,
+      }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
       rscManagedPlugin(config),
@@ -616,6 +624,9 @@ export async function build(options: {
   const distEntriesFile = resolveFileName(
     joinPath(rootDir, config.distDir, config.entriesJs),
   );
+  const mainJsFile = resolveFileName(
+    joinPath(rootDir, config.srcDir, config.mainJs),
+  );
   const isNodeCompatible =
     options.deploy !== 'cloudflare' &&
     options.deploy !== 'partykit' &&
@@ -641,11 +652,18 @@ export async function build(options: {
   await buildSsrBundle(
     rootDir,
     config,
+    mainJsFile,
     clientEntryFiles,
     serverBuildOutput,
     isNodeCompatible,
   );
-  await buildClientBundle(rootDir, config, clientEntryFiles, serverBuildOutput);
+  await buildClientBundle(
+    rootDir,
+    config,
+    mainJsFile,
+    clientEntryFiles,
+    serverBuildOutput,
+  );
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
   const buildConfig = await getBuildConfig({ config, entries: distEntries });
