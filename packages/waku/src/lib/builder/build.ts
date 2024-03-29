@@ -8,7 +8,7 @@ import type { LoggingFunction, RollupLog } from 'rollup';
 import type { Config } from '../../config.js';
 import type { BuildConfig, EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
-import { resolveConfig } from '../config.js';
+import { resolveConfig, EXTENSIONS } from '../config.js';
 import type { PathSpec } from '../utils/path.js';
 import {
   decodeFilePathFromAbsolute,
@@ -95,7 +95,7 @@ const analyzeEntries = async (
     const files = await readdir(dir, { encoding: 'utf8', recursive: true });
     for (const file of files) {
       const ext = extname(file);
-      if (['.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs'].includes(ext)) {
+      if (EXTENSIONS.includes(ext)) {
         moduleFileMap.set(
           joinPath(preserveModuleDir, file.slice(0, -ext.length)),
           joinPath(dir, file),
@@ -582,7 +582,7 @@ export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
 };
 
 const resolveFileName = (fname: string) => {
-  for (const ext of ['.js', '.ts', '.tsx', '.jsx']) {
+  for (const ext of EXTENSIONS) {
     const resolvedName = fname.slice(0, -extname(fname).length) + ext;
     if (existsSync(resolvedName)) {
       return resolvedName;

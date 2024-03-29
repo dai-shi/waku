@@ -22,8 +22,9 @@ const DEFAULT_MIDDLEWARE = (cmd: 'dev' | 'start') => [
   ...(cmd === 'dev'
     ? [import(/* @vite-ignore */ DO_NOT_BUNDLE + 'waku/middleware/dev-server')]
     : []),
-  import('waku/middleware/ssr'),
+  // import('waku/middleware/ssr'),
   import('waku/middleware/rsc'),
+  import('waku/middleware/fallback'),
 ];
 
 // Keep async function for future extension
@@ -36,7 +37,7 @@ export async function resolveConfig(config: Config) {
     assetsDir: 'assets',
     ssrDir: 'ssr',
     indexHtml: 'index.html',
-    mainJs: 'main.tsx',
+    mainJs: 'main.js',
     entriesJs: 'entries.js',
     preserveModuleDirs: ['pages', 'templates', 'routes', 'components'],
     privateDir: 'private',
@@ -51,3 +52,5 @@ export async function resolveConfig(config: Config) {
   }
   return resolvedConfig;
 }
+
+export const EXTENSIONS = ['.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs'];

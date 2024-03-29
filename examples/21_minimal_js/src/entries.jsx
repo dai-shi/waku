@@ -1,4 +1,3 @@
-import { lazy } from 'react';
 import { defineEntries } from 'waku/server';
 import { Slot } from 'waku/client';
 
