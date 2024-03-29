@@ -155,8 +155,6 @@ const mergedViteConfig = await mergeUserViteConfig({
     rscEnvPlugin({}),
     rscPrivatePlugin({ privateDir: configPrivateDir }),
     rscManagedPlugin({ srcDir: configSrcDir, entriesJs: configEntriesJs }),
-    { name: 'rsc-index-plugin' }, // dummy to match with handler-dev.ts
-    { name: 'rsc-hmr-plugin', enforce: 'post' }, // dummy to match with handler-dev.ts
     rscTransformPlugin({ isBuild: false }),
     rscDelegatePlugin((payload) => {
       const mesg: MessageRes = { type: 'hot-update', payload };

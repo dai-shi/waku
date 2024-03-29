@@ -44,8 +44,7 @@ ${opts.htmlHead}
     config() {
       return {
         optimizeDeps: {
-          // TODO check EXTENSIONS and handle for managed mode
-          entries: [`${opts.srcDir}/${opts.mainJs}`],
+          entries: [`${opts.srcDir}/${opts.mainJs}`.replace(/\.js$/, '.*')],
         },
       };
     },

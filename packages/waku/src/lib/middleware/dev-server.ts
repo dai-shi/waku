@@ -81,8 +81,6 @@ export const devServer: Middleware = (options) => {
         rscManagedPlugin(config),
         rscIndexPlugin(config),
         rscHmrPlugin(),
-        { name: 'rsc-transform-plugin' }, // dummy to match with dev-worker-impl.ts
-        { name: 'rsc-delegate-plugin' }, // dummy to match with dev-worker-impl.ts
       ],
       optimizeDeps: {
         include: ['react-server-dom-webpack/client', 'react-dom'],
