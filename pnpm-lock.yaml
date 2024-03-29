@@ -234,7 +234,7 @@ importers:
         specifier: 5.4.3
         version: 5.4.3
 
-  examples/02_demo:
+  examples/03_demo:
     dependencies:
       react:
         specifier: 18.3.0-canary-670811593-20240322
@@ -261,109 +261,6 @@ importers:
       tailwindcss:
         specifier: 3.4.1
         version: 3.4.1
-      typescript:
-        specifier: 5.4.3
-        version: 5.4.3
-
-  examples/03_minimal:
-    dependencies:
-      react:
-        specifier: 18.3.0-canary-670811593-20240322
-        version: 18.3.0-canary-670811593-20240322
-      react-dom:
-        specifier: 18.3.0-canary-670811593-20240322
-        version: 18.3.0-canary-670811593-20240322(react@18.3.0-canary-670811593-20240322)
-      react-server-dom-webpack:
-        specifier: 18.3.0-canary-670811593-20240322
-        version: 18.3.0-canary-670811593-20240322(react-dom@18.3.0-canary-670811593-20240322)(react@18.3.0-canary-670811593-20240322)(webpack@5.91.0)
-      waku:
-        specifier: 0.20.0
-        version: link:../../packages/waku
-    devDependencies:
-      '@types/react':
-        specifier: 18.2.69
-        version: 18.2.69
-      '@types/react-dom':
-        specifier: 18.2.22
-        version: 18.2.22
-      typescript:
-        specifier: 5.4.3
-        version: 5.4.3
-
-  examples/04_promise:
-    dependencies:
-      react:
-        specifier: 18.3.0-canary-670811593-20240322
-        version: 18.3.0-canary-670811593-20240322
-      react-dom:
-        specifier: 18.3.0-canary-670811593-20240322
-        version: 18.3.0-canary-670811593-20240322(react@18.3.0-canary-670811593-20240322)
-      react-server-dom-webpack:
-        specifier: 18.3.0-canary-670811593-20240322
-        version: 18.3.0-canary-670811593-20240322(react-dom@18.3.0-canary-670811593-20240322)(react@18.3.0-canary-670811593-20240322)(webpack@5.91.0)
-      waku:
-        specifier: 0.20.0
-        version: link:../../packages/waku
-    devDependencies:
-      '@types/react':
-        specifier: 18.2.69
-        version: 18.2.69
-      '@types/react-dom':
-        specifier: 18.2.22
-        version: 18.2.22
-      typescript:
-        specifier: 5.4.3
-        version: 5.4.3
-
-  examples/05_actions:
-    dependencies:
-      react:
-        specifier: 18.3.0-canary-670811593-20240322
-        version: 18.3.0-canary-670811593-20240322
-      react-dom:
-        specifier: 18.3.0-canary-670811593-20240322
-        version: 18.3.0-canary-670811593-20240322(react@18.3.0-canary-670811593-20240322)
-      react-server-dom-webpack:
-        specifier: 18.3.0-canary-670811593-20240322
-        version: 18.3.0-canary-670811593-20240322(react-dom@18.3.0-canary-670811593-20240322)(react@18.3.0-canary-670811593-20240322)(webpack@5.91.0)
-      react-wrap-balancer:
-        specifier: 1.1.0
-        version: 1.1.0(react@18.3.0-canary-670811593-20240322)
-      waku:
-        specifier: 0.20.0
-        version: link:../../packages/waku
-    devDependencies:
-      '@types/react':
-        specifier: 18.2.69
-        version: 18.2.69
-      '@types/react-dom':
-        specifier: 18.2.22
-        version: 18.2.22
-      typescript:
-        specifier: 5.4.3
-        version: 5.4.3
-
-  examples/06_nesting:
-    dependencies:
-      react:
-        specifier: 18.3.0-canary-670811593-20240322
-        version: 18.3.0-canary-670811593-20240322
-      react-dom:
-        specifier: 18.3.0-canary-670811593-20240322
-        version: 18.3.0-canary-670811593-20240322(react@18.3.0-canary-670811593-20240322)
-      react-server-dom-webpack:
-        specifier: 18.3.0-canary-670811593-20240322
-        version: 18.3.0-canary-670811593-20240322(react-dom@18.3.0-canary-670811593-20240322)(react@18.3.0-canary-670811593-20240322)(webpack@5.91.0)
-      waku:
-        specifier: 0.20.0
-        version: link:../../packages/waku
-    devDependencies:
-      '@types/react':
-        specifier: 18.2.69
-        version: 18.2.69
-      '@types/react-dom':
-        specifier: 18.2.22
-        version: 18.2.22
       typescript:
         specifier: 5.4.3
         version: 5.4.3
@@ -612,6 +509,109 @@ importers:
       tailwindcss:
         specifier: 3.4.1
         version: 3.4.1
+      typescript:
+        specifier: 5.4.3
+        version: 5.4.3
+
+  examples/20_minimal:
+    dependencies:
+      react:
+        specifier: 18.3.0-canary-670811593-20240322
+        version: 18.3.0-canary-670811593-20240322
+      react-dom:
+        specifier: 18.3.0-canary-670811593-20240322
+        version: 18.3.0-canary-670811593-20240322(react@18.3.0-canary-670811593-20240322)
+      react-server-dom-webpack:
+        specifier: 18.3.0-canary-670811593-20240322
+        version: 18.3.0-canary-670811593-20240322(react-dom@18.3.0-canary-670811593-20240322)(react@18.3.0-canary-670811593-20240322)(webpack@5.91.0)
+      waku:
+        specifier: 0.20.0
+        version: link:../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 18.2.69
+        version: 18.2.69
+      '@types/react-dom':
+        specifier: 18.2.22
+        version: 18.2.22
+      typescript:
+        specifier: 5.4.3
+        version: 5.4.3
+
+  examples/22_promise:
+    dependencies:
+      react:
+        specifier: 18.3.0-canary-670811593-20240322
+        version: 18.3.0-canary-670811593-20240322
+      react-dom:
+        specifier: 18.3.0-canary-670811593-20240322
+        version: 18.3.0-canary-670811593-20240322(react@18.3.0-canary-670811593-20240322)
+      react-server-dom-webpack:
+        specifier: 18.3.0-canary-670811593-20240322
+        version: 18.3.0-canary-670811593-20240322(react-dom@18.3.0-canary-670811593-20240322)(react@18.3.0-canary-670811593-20240322)(webpack@5.91.0)
+      waku:
+        specifier: 0.20.0
+        version: link:../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 18.2.69
+        version: 18.2.69
+      '@types/react-dom':
+        specifier: 18.2.22
+        version: 18.2.22
+      typescript:
+        specifier: 5.4.3
+        version: 5.4.3
+
+  examples/23_actions:
+    dependencies:
+      react:
+        specifier: 18.3.0-canary-670811593-20240322
+        version: 18.3.0-canary-670811593-20240322
+      react-dom:
+        specifier: 18.3.0-canary-670811593-20240322
+        version: 18.3.0-canary-670811593-20240322(react@18.3.0-canary-670811593-20240322)
+      react-server-dom-webpack:
+        specifier: 18.3.0-canary-670811593-20240322
+        version: 18.3.0-canary-670811593-20240322(react-dom@18.3.0-canary-670811593-20240322)(react@18.3.0-canary-670811593-20240322)(webpack@5.91.0)
+      react-wrap-balancer:
+        specifier: 1.1.0
+        version: 1.1.0(react@18.3.0-canary-670811593-20240322)
+      waku:
+        specifier: 0.20.0
+        version: link:../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 18.2.69
+        version: 18.2.69
+      '@types/react-dom':
+        specifier: 18.2.22
+        version: 18.2.22
+      typescript:
+        specifier: 5.4.3
+        version: 5.4.3
+
+  examples/24_nesting:
+    dependencies:
+      react:
+        specifier: 18.3.0-canary-670811593-20240322
+        version: 18.3.0-canary-670811593-20240322
+      react-dom:
+        specifier: 18.3.0-canary-670811593-20240322
+        version: 18.3.0-canary-670811593-20240322(react@18.3.0-canary-670811593-20240322)
+      react-server-dom-webpack:
+        specifier: 18.3.0-canary-670811593-20240322
+        version: 18.3.0-canary-670811593-20240322(react-dom@18.3.0-canary-670811593-20240322)(react@18.3.0-canary-670811593-20240322)(webpack@5.91.0)
+      waku:
+        specifier: 0.20.0
+        version: link:../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 18.2.69
+        version: 18.2.69
+      '@types/react-dom':
+        specifier: 18.2.22
+        version: 18.2.22
       typescript:
         specifier: 5.4.3
         version: 5.4.3
