@@ -1,10 +1,12 @@
 import { createPages } from './create-pages.js';
 
+import { EXTENSIONS } from '../lib/config.js';
+
 const DO_NOT_BUNDLE = '';
 
 export function fsRouter(
   importMetaUrl: string,
-  loader: (dir: string, file: string) => Promise<any>,
+  loadPage: (file: string) => Promise<any>,
   pages = 'pages',
 ) {
   return createPages(
@@ -33,7 +35,7 @@ export function fsRouter(
           recursive: true,
         });
         files = files.flatMap((file) => {
-          if (!['.tsx', '.js'].includes(extname(file))) {
+          if (!EXTENSIONS.includes(extname(file))) {
             return [];
           }
           // HACK: replace "_slug_" to "[slug]"
@@ -46,7 +48,7 @@ export function fsRouter(
         });
       }
       for (const file of files) {
-        const mod = await loader(pages, file);
+        const mod = await loadPage(file);
         const config = await mod.getConfig?.();
         const pathItems = file
           .replace(/\.\w+$/, '')

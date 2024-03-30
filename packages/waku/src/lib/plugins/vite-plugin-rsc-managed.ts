@@ -41,13 +41,10 @@ if (document.body.dataset.hydrate) {
 const getManagedEntries = () => `
 import { fsRouter } from 'waku/router/server';
 
-export default fsRouter(import.meta.url, loader);
-
-function loader(dir, file) {
-  const fname = \`./\${dir}/\${file.replace(/\\.\\w+$/, '')}.tsx\`;
-  const modules = import.meta.glob('./pages/**/*.tsx');
-  return modules[fname]();
-}
+export default fsRouter(
+  import.meta.url,
+  (file: string) => import.meta.glob('./pages/**')[\`./pages/\${file}\`],
+);
 `;
 
 const addSuffixX = (fname: string | undefined) => {
