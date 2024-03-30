@@ -236,6 +236,9 @@ const buildServerBundle = async (
           },
           noExternal: /^(?!node:)/,
         },
+    esbuild: {
+      jsx: 'automatic',
+    },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
     },
@@ -299,6 +302,9 @@ const buildSsrBundle = async (
           },
           noExternal: /^(?!node:)/,
         },
+    esbuild: {
+      jsx: 'automatic',
+    },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
     },
