@@ -1,7 +1,7 @@
 import { defineEntries } from 'waku/server';
 import { Slot } from 'waku/client';
 
-import App from './components/App';
+import App from './components/app';
 
 export default defineEntries(
   // renderEntries

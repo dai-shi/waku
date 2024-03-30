@@ -3,6 +3,13 @@ import path from 'node:path';
 import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 
+import { extname } from '../utils/path.js';
+
+const stripExt = (fname: string) => {
+  const ext = extname(fname);
+  return ext ? fname.slice(0, -ext.length) : fname;
+};
+
 const CONFIG_FILE = 'waku.config.ts'; // XXX only ts extension
 
 export function rscEntriesPlugin(opts: {
@@ -45,7 +52,7 @@ export const loadConfig = async () => ({});
       ) {
         return codeToPrepend + code;
       }
-      if (id === opts.entriesFile) {
+      if (stripExt(id) === stripExt(opts.entriesFile)) {
         return code + codeToAppend;
       }
     },

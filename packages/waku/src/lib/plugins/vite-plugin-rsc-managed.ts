@@ -50,6 +50,16 @@ function loader(dir, file) {
 }
 `;
 
+const addSuffixX = (fname: string | undefined) => {
+  if (!fname) {
+    return fname;
+  }
+  if (fname.endsWith('x')) {
+    return fname;
+  }
+  return fname + 'x';
+};
+
 export function rscManagedPlugin(opts: {
   srcDir: string;
   entriesJs: string;
@@ -73,19 +83,22 @@ export function rscManagedPlugin(opts: {
       const resolved = await this.resolve(id, importer, options);
       if (!resolved && id === entriesFile) {
         managedEntries = true;
-        return id;
+        return addSuffixX(id);
       }
       if (!resolved && (id === mainFile || id === mainJsPath)) {
         managedMain = true;
-        return id;
+        return addSuffixX(id);
       }
       return resolved;
     },
     load(id) {
-      if (managedEntries && id === entriesFile) {
+      if (managedEntries && id === addSuffixX(entriesFile)) {
         return getManagedEntries();
       }
-      if (managedMain && (id === mainFile || id === mainJsPath)) {
+      if (
+        managedMain &&
+        (id === addSuffixX(mainFile) || id === addSuffixX(mainJsPath))
+      ) {
         return getManagedMain();
       }
     },

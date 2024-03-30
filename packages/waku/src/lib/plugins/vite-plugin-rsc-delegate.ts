@@ -1,15 +1,16 @@
-import path from 'node:path';
 import type { Plugin, ViteDevServer } from 'vite';
 import * as swc from '@swc/core';
 
+import { EXTENSIONS } from '../config.js';
+import { extname } from '../utils/path.js';
 import type { HotUpdatePayload } from './vite-plugin-rsc-hmr.js';
 
 const isClientEntry = (id: string, code: string) => {
-  const ext = path.extname(id);
-  if (['.ts', '.tsx', '.js', '.jsx'].includes(ext)) {
+  const ext = extname(id);
+  if (EXTENSIONS.includes(ext)) {
     const mod = swc.parseSync(code, {
-      syntax: ext === '.ts' || ext === '.tsx' ? 'typescript' : 'ecmascript',
-      tsx: ext === '.tsx',
+      syntax: 'typescript',
+      tsx: ext.endsWith('x'),
     });
     for (const item of mod.body) {
       if (
@@ -99,14 +100,11 @@ export function rscDelegatePlugin(
       }
     },
     async transform(code, id) {
-      const ext = path.extname(id);
-      if (
-        mode === 'development' &&
-        ['.ts', '.tsx', '.js', '.jsx'].includes(ext)
-      ) {
+      const ext = extname(id);
+      if (mode === 'development' && EXTENSIONS.includes(ext)) {
         const mod = swc.parseSync(code, {
-          syntax: ext === '.ts' || ext === '.tsx' ? 'typescript' : 'ecmascript',
-          tsx: ext === '.tsx',
+          syntax: 'typescript',
+          tsx: ext.endsWith('x'),
         });
         for (const item of mod.body) {
           if (item.type === 'ImportDeclaration') {
