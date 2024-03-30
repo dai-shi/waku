@@ -1,5 +1,6 @@
 import type { Plugin } from 'vite';
 
+import { EXTENSIONS } from '../config.js';
 import { joinPath } from '../utils/path.js';
 
 const getManagedMain = () => `
@@ -41,13 +42,12 @@ if (document.body.dataset.hydrate) {
 const getManagedEntries = () => `
 import { fsRouter } from 'waku/router/server';
 
-export default fsRouter(import.meta.url, loader);
-
-function loader(dir, file) {
-  const fname = \`./\${dir}/\${file.replace(/\\.\\w+$/, '')}.tsx\`;
-  const modules = import.meta.glob('./pages/**/*.tsx');
-  return modules[fname]();
-}
+export default fsRouter(
+  import.meta.url,
+  (file) => import.meta.glob('./pages/**/*.{${EXTENSIONS.map((ext) =>
+    ext.replace(/^\./, ''),
+  ).join(',')}}')[\`./pages/\${file}\`]?.(),
+);
 `;
 
 const addSuffixX = (fname: string | undefined) => {

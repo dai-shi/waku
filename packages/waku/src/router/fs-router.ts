@@ -1,10 +1,12 @@
 import { createPages } from './create-pages.js';
 
+import { EXTENSIONS } from '../lib/config.js';
+
 const DO_NOT_BUNDLE = '';
 
 export function fsRouter(
   importMetaUrl: string,
-  loader: (dir: string, file: string) => Promise<any>,
+  loadPage: (file: string) => Promise<any> | undefined,
   pages = 'pages',
 ) {
   return createPages(
@@ -33,20 +35,29 @@ export function fsRouter(
           recursive: true,
         });
         files = files.flatMap((file) => {
-          if (!['.tsx', '.js'].includes(extname(file))) {
+          const myExt = extname(file);
+          const myExtIndex = EXTENSIONS.indexOf(myExt);
+          if (myExtIndex === -1) {
             return [];
           }
-          // HACK: replace "_slug_" to "[slug]"
+          // HACK: replace "_slug_" to "[slug]" for build
           file = file.replace(/(^|\/|\\)_(\w+)_(\/|\\|\.)/g, '$1[$2]$3');
-          if (sep === '/') {
-            return [file];
-          }
           // For Windows
-          return [file.replace(/\\/g, '/')];
+          file = sep === '/' ? file : file.replace(/\\/g, '/');
+          // HACK: resolve different extensions for build
+          const exts = [myExt, ...EXTENSIONS];
+          exts.splice(myExtIndex + 1, 1); // remove the second myExt
+          for (const ext of exts) {
+            const f = file.slice(0, -myExt.length) + ext;
+            if (loadPage(f)) {
+              return [f];
+            }
+          }
+          throw new Error('Failed to resolve ' + file);
         });
       }
       for (const file of files) {
-        const mod = await loader(pages, file);
+        const mod = await loadPage(file);
         const config = await mod.getConfig?.();
         const pathItems = file
           .replace(/\.\w+$/, '')
