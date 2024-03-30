@@ -32,7 +32,7 @@ export function rscAnalyzePlugin(
       if (EXTENSIONS.includes(ext)) {
         const mod = swc.parseSync(code, {
           syntax: 'typescript',
-          tsx: ext !== '.ts',
+          tsx: ext.endsWith('x'),
         });
         for (const item of mod.body) {
           if (

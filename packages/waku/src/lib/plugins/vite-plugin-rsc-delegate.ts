@@ -10,7 +10,7 @@ const isClientEntry = (id: string, code: string) => {
   if (EXTENSIONS.includes(ext)) {
     const mod = swc.parseSync(code, {
       syntax: 'typescript',
-      tsx: ext !== '.ts',
+      tsx: ext.endsWith('x'),
     });
     for (const item of mod.body) {
       if (
@@ -104,7 +104,7 @@ export function rscDelegatePlugin(
       if (mode === 'development' && EXTENSIONS.includes(ext)) {
         const mod = swc.parseSync(code, {
           syntax: 'typescript',
-          tsx: ext !== '.ts',
+          tsx: ext.endsWith('x'),
         });
         for (const item of mod.body) {
           if (item.type === 'ImportDeclaration') {
