@@ -20,6 +20,9 @@
     },
     {
       "path": "./e2e/fixtures/ssr-swr/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/ssr-context-provider/tsconfig.json"
     }
   ]
 }
