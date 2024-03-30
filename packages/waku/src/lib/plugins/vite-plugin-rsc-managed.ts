@@ -43,7 +43,7 @@ import { fsRouter } from 'waku/router/server';
 
 export default fsRouter(
   import.meta.url,
-  (file: string) => import.meta.glob('./pages/**')[\`./pages/\${file}\`]?.(),
+  (file) => import.meta.glob('./pages/**')[\`./pages/\${file}\`]?.(),
 );
 `;
 
