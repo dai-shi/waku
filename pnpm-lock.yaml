@@ -234,6 +234,28 @@ importers:
         specifier: 5.4.3
         version: 5.4.3
 
+  examples/02_template_js:
+    dependencies:
+      react:
+        specifier: 18.3.0-canary-670811593-20240322
+        version: 18.3.0-canary-670811593-20240322
+      react-dom:
+        specifier: 18.3.0-canary-670811593-20240322
+        version: 18.3.0-canary-670811593-20240322(react@18.3.0-canary-670811593-20240322)
+      react-server-dom-webpack:
+        specifier: 18.3.0-canary-670811593-20240322
+        version: 18.3.0-canary-670811593-20240322(react-dom@18.3.0-canary-670811593-20240322)(react@18.3.0-canary-670811593-20240322)(webpack@5.91.0)
+      waku:
+        specifier: 0.20.0
+        version: link:../../packages/waku
+    devDependencies:
+      autoprefixer:
+        specifier: 10.4.19
+        version: 10.4.19(postcss@8.4.38)
+      tailwindcss:
+        specifier: 3.4.1
+        version: 3.4.1
+
   examples/03_demo:
     dependencies:
       react:
