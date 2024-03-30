@@ -12,9 +12,7 @@ export const Counter = ({ enableInnerApp }: { enableInnerApp?: boolean }) => {
       startTransition(() => {
         const nextCount = count + 1;
         setCount(nextCount);
-        if (enableInnerApp) {
-          refetch('InnerApp=' + nextCount);
-        }
+        refetch('InnerApp=' + nextCount);
       });
     } else {
       setCount((c) => c + 1);
