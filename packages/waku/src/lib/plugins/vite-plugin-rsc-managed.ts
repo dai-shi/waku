@@ -44,21 +44,9 @@ import { fsRouter } from 'waku/router/server';
 export default fsRouter(import.meta.url, loader);
 
 function loader(dir, file) {
-  const p = file.replace(/\\.\\w+$/, '').split('/');
-  switch (p.length) {
-${[...new Array(50).keys()]
-  .map(
-    (i) =>
-      '    case ' +
-      (i + 1) +
-      ': ' +
-      'return import(`./${dir}/' +
-      [...new Array(i + 1).keys()].map((j) => '${p[' + j + ']}').join('/') +
-      '.tsx`);',
-  )
-  .join('\n')}
-    default: throw new Error('too deep');
-  }
+  const fname = \`./\${dir}/\${file.replace(/\\.\\w+$/, '')}.tsx\`;
+  const modules = import.meta.glob('./pages/**/*.tsx');
+  return modules[fname]();
 }
 `;
 
