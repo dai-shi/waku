@@ -8,5 +8,5 @@ declare global {
 
 export default fsRouter(
   import.meta.url,
-  (file: string) => import.meta.glob('./pages/**')[`./pages/${file}`],
+  (file: string) => import.meta.glob('./pages/**')[`./pages/${file}`]?.(),
 );
