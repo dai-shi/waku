@@ -1,5 +1,6 @@
 import type { Plugin } from 'vite';
 
+import { EXTENSIONS } from '../config.js';
 import { joinPath } from '../utils/path.js';
 
 const getManagedMain = () => `
@@ -43,7 +44,9 @@ import { fsRouter } from 'waku/router/server';
 
 export default fsRouter(
   import.meta.url,
-  (file) => import.meta.glob('./pages/**')[\`./pages/\${file}\`]?.(),
+  (file) => import.meta.glob('./pages/**/*.{${EXTENSIONS.map((ext) =>
+    ext.replace(/^\./, ''),
+  ).join(',')}}')[\`./pages/\${file}\`]?.(),
 );
 `;
 

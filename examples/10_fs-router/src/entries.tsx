@@ -6,7 +6,6 @@ declare global {
   }
 }
 
-export default fsRouter(
-  import.meta.url,
-  (file: string) => import.meta.glob('./pages/**')[`./pages/${file}`]?.(),
+export default fsRouter(import.meta.url, (file: string) =>
+  import.meta.glob('./pages/**/*.tsx')[`./pages/${file}`]?.(),
 );
