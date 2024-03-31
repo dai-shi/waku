@@ -36,6 +36,15 @@ declare global {
   }
 }
 
+const normalizeRoutePath = (path: string) => {
+  for (const suffix of ['/', '/index.html']) {
+    if (path.endsWith(suffix)) {
+      return path.slice(0, -suffix.length) || '/';
+    }
+  }
+  return path;
+};
+
 const parseRoute = (url: URL): RouteProps => {
   if ((globalThis as any).__WAKU_ROUTER_404__) {
     return { path: '/404', searchParams: new URLSearchParams() };
@@ -44,7 +53,7 @@ const parseRoute = (url: URL): RouteProps => {
   if (searchParams.has(PARAM_KEY_SKIP)) {
     console.warn(`The search param "${PARAM_KEY_SKIP}" is reserved`);
   }
-  return { path: pathname, searchParams };
+  return { path: normalizeRoutePath(pathname), searchParams };
 };
 
 type ChangeRoute = (
