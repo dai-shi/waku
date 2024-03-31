@@ -41,7 +41,7 @@ export function fsRouter(
             return [];
           }
           // HACK: replace "_slug_" to "[slug]" for build
-          file = file.replace(/(^|\/|\\)_(\w+)_(\/|\\|\.)/g, '$1[$2]$3');
+          file = file.replace(/(^|\/|\\)_([^/]+)_(\/|\\|\.)/g, '$1[$2]$3');
           // For Windows
           file = sep === '/' ? file : file.replace(/\\/g, '/');
           // HACK: resolve different extensions for build
