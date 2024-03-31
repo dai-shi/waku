@@ -8,27 +8,9 @@ import { Component, StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { Router } from 'waku/router/client';
 
-class ErrorBoundary extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {};
-  }
-  static getDerivedStateFromError(error) {
-    return { error };
-  }
-  render() {
-    if ('error' in this.state) {
-      return this.props.fallback(this.state.error);
-    }
-    return this.props.children;
-  }
-}
-
 const rootElement = (
   <StrictMode>
-    <ErrorBoundary fallback={(error) => <h1>{String(error)}</h1>}>
-      <Router />
-    </ErrorBoundary>
+    <Router />
   </StrictMode>
 );
 
