@@ -15,9 +15,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       <meta property="description" content={data.description} />
       <link rel="icon" type="image/png" href={data.icon} />
       <Header />
-      <main className={styles.main}>
-        {children}
-      </main>
+      <main className={styles.main}>{children}</main>
       <Footer />
     </div>
   );

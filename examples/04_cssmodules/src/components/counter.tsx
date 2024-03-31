@@ -12,10 +12,7 @@ export const Counter = () => {
   return (
     <section className={styles.section}>
       <div>Count: {count}</div>
-      <button
-        onClick={handleIncrement}
-        className={styles.button}
-      >
+      <button onClick={handleIncrement} className={styles.button}>
         Increment
       </button>
     </section>
