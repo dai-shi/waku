@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import styles from './app.module.css';
 import './app.css';
-import { container } from './styles.css';
+import { container } from './styles.css.js';
 import { Counter } from './counter';
 import { Banner } from './banner';
 
