@@ -494,9 +494,8 @@ class ErrorBoundary extends Component<
     if ('error' in this.state) {
       if (
         this.state.error instanceof Error &&
-        this.state.error.message.includes('not valid JSON')
+        (this.state.error as any).statusCode === 404
       ) {
-        // We assume it's caused by history api fallback
         return createElement('h1', null, 'Not Found');
       }
       return createElement('h1', null, String(this.state.error));
