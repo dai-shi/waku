@@ -1,9 +1,9 @@
 import classNames from 'classnames';
-import styles from './App.module.css';
-import './App.css';
+import styles from './app.module.css';
+import './app.css';
 import { container } from './styles.css';
-import { Counter } from './Counter';
-import { Banner } from './Banner';
+import { Counter } from './counter';
+import { Banner } from './banner';
 
 const App = ({ name }: { name: string }) => {
   return (
