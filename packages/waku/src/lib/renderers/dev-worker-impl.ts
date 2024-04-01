@@ -9,7 +9,11 @@ import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../../server.js';
-import { joinPath, fileURLToFilePath } from '../utils/path.js';
+import {
+  joinPath,
+  fileURLToFilePath,
+  encodeFilePathToAbsolute,
+} from '../utils/path.js';
 import { deepFreeze, hasStatusCode } from './utils.js';
 import type { MessageReq, MessageRes } from './dev-worker-api.js';
 import { renderRsc, getSsrConfig } from './rsc-renderer.js';
@@ -38,10 +42,15 @@ const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR') as string;
 const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS') as string;
 const configPrivateDir = getEnvironmentData('CONFIG_PRIVATE_DIR') as string;
 
-const resolveClientEntryForDev = (id: string, config: { rootDir: string }) => {
+const resolveClientEntryForDev = (
+  id: string,
+  config: { rootDir: string; basePath: string },
+) => {
   let filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
   if (filePath.startsWith(config.rootDir)) {
     filePath = filePath.slice(config.rootDir.length, filePath.length);
+  } else {
+    filePath = config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
   }
   return filePath;
 };
@@ -79,7 +88,10 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         loadServerFile,
         loadServerModule,
         resolveClientEntry: (id: string) =>
-          resolveClientEntryForDev(id, { rootDir: vite.config.root }),
+          resolveClientEntryForDev(id, {
+            rootDir: vite.config.root,
+            basePath: rest.config.basePath,
+          }),
         entries: await loadEntries(rest.config),
       },
     );
@@ -116,7 +128,10 @@ const handleGetSsrConfig = async (
       {
         isDev: true,
         resolveClientEntry: (id: string) =>
-          resolveClientEntryForDev(id, { rootDir: vite.config.root }),
+          resolveClientEntryForDev(id, {
+            rootDir: vite.config.root,
+            basePath: config.basePath,
+          }),
         entries: await loadEntries(config),
       },
     );
