@@ -39,8 +39,12 @@ for (const { build, command } of commands) {
         });
       }
       port = await getFreePort();
-      cp = exec(`node ${waku} ${command} --port ${port}`, {
+      cp = exec(`node ${waku} ${command}`, {
         cwd,
+        env: {
+          ...process.env,
+          PORT: `${port}`,
+        },
       });
       debugChildProcess(cp, fileURLToPath(import.meta.url));
       await waitPort({

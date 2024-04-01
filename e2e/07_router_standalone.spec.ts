@@ -77,9 +77,13 @@ test.describe('07_router standalone', () => {
       );
       const port = await getFreePort();
       const cp = exec(
-        `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start --port ${port}`,
+        `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start`,
         {
           cwd: standaloneDir,
+          env: {
+            ...process.env,
+            PORT: `${port}`,
+          },
         },
       );
       debugChildProcess(cp, fileURLToPath(import.meta.url));
@@ -91,9 +95,13 @@ test.describe('07_router standalone', () => {
       test.fixme(withSSR, 'SSR is not working in standalone');
       const port = await getFreePort();
       const cp = exec(
-        `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} dev --port ${port}`,
+        `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} dev`,
         {
           cwd: standaloneDir,
+          env: {
+            ...process.env,
+            PORT: `${port}`,
+          },
         },
       );
       debugChildProcess(cp, fileURLToPath(import.meta.url));
