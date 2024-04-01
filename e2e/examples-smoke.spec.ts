@@ -72,12 +72,8 @@ for (const cwd of examples) {
             });
           }
           port = await getFreePort();
-          cp = exec(command, {
+          cp = exec(`${command} --port ${port}`, {
             cwd,
-            env: {
-              ...process.env,
-              PORT: `${port}`,
-            },
           });
           debugChildProcess(cp, fileURLToPath(import.meta.url));
           await waitPort({
@@ -116,12 +112,8 @@ for (const cwd of examples) {
             });
           }
           port = await getFreePort();
-          cp = exec(`node ${waku} ${command}`, {
+          cp = exec(`node ${waku} ${command} --port ${port}`, {
             cwd,
-            env: {
-              ...process.env,
-              PORT: `${port}`,
-            },
           });
           cp.stdout?.on('data', (data) => {
             info(`${port} stdout: ${data}`);
