@@ -9,11 +9,7 @@ import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../../server.js';
-import {
-  joinPath,
-  fileURLToFilePath,
-  encodeFilePathToAbsolute,
-} from '../utils/path.js';
+import { joinPath, fileURLToFilePath } from '../utils/path.js';
 import { deepFreeze, hasStatusCode } from './utils.js';
 import type { MessageReq, MessageRes } from './dev-worker-api.js';
 import { renderRsc, getSsrConfig } from './rsc-renderer.js';
@@ -25,7 +21,6 @@ import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import { viteHot } from '../plugins/vite-plugin-rsc-hmr.js';
-import type { ClonableModuleNode } from '../middleware/types.js';
 
 // For react-server-dom-webpack/server.edge
 (globalThis as any).AsyncLocalStorage = AsyncLocalStorage;
@@ -43,31 +38,16 @@ const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR') as string;
 const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS') as string;
 const configPrivateDir = getEnvironmentData('CONFIG_PRIVATE_DIR') as string;
 
-const resolveClientEntryForDev = (
-  id: string,
-  config: { rootDir: string },
-  initialModules: ClonableModuleNode[],
-) => {
-  console.log(config)
-  console.log('resolveClientEntryForDev', id)
-  // for (const moduleNode of initialModules) {
-  //   if (moduleNode.file === id) {
-  //     console.log('moduleNode', moduleNode.file, moduleNode.url)
-  //     // return moduleNode.url;
-  //     return moduleNode.file;
-  //   }
-  // }
+const resolveClientEntryForDev = (id: string, config: { rootDir: string }) => {
   let filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
   if (filePath.startsWith(config.rootDir)) {
-    filePath = filePath.slice(config.rootDir.length, filePath.length)
+    filePath = filePath.slice(config.rootDir.length, filePath.length);
   }
-  // HACK this relies on Vite's internal implementation detail.
-  return filePath
-  // return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
+  return filePath;
 };
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
-  const vite = await vitePromise
+  const vite = await vitePromise;
   const {
     id,
     type: _removed,
@@ -99,7 +79,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         loadServerFile,
         loadServerModule,
         resolveClientEntry: (id: string) =>
-          resolveClientEntryForDev(id, {rootDir: vite.config.root}, initialModules),
+          resolveClientEntryForDev(id, { rootDir: vite.config.root }),
         entries: await loadEntries(rest.config),
       },
     );
@@ -123,8 +103,8 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
 const handleGetSsrConfig = async (
   mesg: MessageReq & { type: 'getSsrConfig' },
 ) => {
-  const vite = await vitePromise
-  const { id, config, pathname, searchParamsString, initialModules } = mesg;
+  const vite = await vitePromise;
+  const { id, config, pathname, searchParamsString } = mesg;
   const searchParams = new URLSearchParams(searchParamsString);
   try {
     const ssrConfig = await getSsrConfig(
@@ -136,7 +116,7 @@ const handleGetSsrConfig = async (
       {
         isDev: true,
         resolveClientEntry: (id: string) =>
-          resolveClientEntryForDev(id, {rootDir: vite.config.root}, initialModules),
+          resolveClientEntryForDev(id, { rootDir: vite.config.root }),
         entries: await loadEntries(config),
       },
     );

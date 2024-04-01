@@ -17,7 +17,6 @@ import {
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
-  encodeFilePathToAbsolute,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
 
