@@ -179,6 +179,7 @@ Options:
   --with-partykit       Output for PartyKit on build
   --with-deno           Output for Deno on build
   --with-aws-lambda     Output for AWS Lambda on build
+  -p, --port            Port number for the server
   -v, --version         Display the version number
   -h, --help            Display this help message
 `);
