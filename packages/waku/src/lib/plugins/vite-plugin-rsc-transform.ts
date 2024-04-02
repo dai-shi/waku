@@ -54,8 +54,8 @@ export function rscTransformPlugin(
         let source = url === id ? code : (await this.load({ id: url })).code;
         // HACK move directives before import statements.
         source = source!.replace(
-          /^(import {.*?} from ".*?";)\s*"use (client|server)";/,
-          '"use $2";$1',
+          /^((?:import [^;]+;\s*)*)((?:"use [^"]+";\s*)*)/,
+          '$2$1',
         );
         return { format: 'module', source };
       };
