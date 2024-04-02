@@ -1,5 +1,5 @@
-"use strict";
-"use client";
+'use strict';
+'use client';
 
 import { useEffect } from 'react';
 import { create, props } from '@stylexjs/stylex';
@@ -19,5 +19,7 @@ export const ClientBanner = () => {
   useEffect(() => {
     console.log('ClientBanner rendered!');
   });
-  return <div {...props(styles.root)}>This is a client banner by StyleX CSS</div>;
+  return (
+    <div {...props(styles.root)}>This is a client banner by StyleX CSS</div>
+  );
 };
