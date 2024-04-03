@@ -4,6 +4,7 @@ import './App.css';
 import { container } from './styles.css';
 import { Counter } from './Counter';
 import { Banner } from './Banner';
+import { ClientBanner } from './ClientBanner';
 
 const App = ({ name }: { name: string }) => {
   return (
@@ -14,6 +15,7 @@ const App = ({ name }: { name: string }) => {
       <h3 className={container}>This is a server component.</h3>
       <Counter />
       <Banner />
+      <ClientBanner />
     </div>
   );
 };
