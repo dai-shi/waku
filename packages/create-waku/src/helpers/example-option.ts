@@ -73,20 +73,6 @@ function hasRepo({
   return isUrlOk(contentsUrl + packagePath + `?ref=${branch}`);
 }
 
-function existsInRepo(nameOrUrl: string, ref: string): Promise<boolean> {
-  try {
-    const url = new URL(nameOrUrl);
-    return isUrlOk(url.href);
-  } catch {
-    const params = new URLSearchParams({ ref });
-    return isUrlOk(
-      `https://api.github.com/repos/dai-shi/waku/contents/examples/${encodeURIComponent(
-        nameOrUrl,
-      )}?${params}`,
-    );
-  }
-}
-
 async function downloadTarStream(url: string) {
   const res = await fetch(url);
 
@@ -118,24 +104,6 @@ async function downloadAndExtractRepo(
   );
 }
 
-async function downloadAndExtractExample(
-  root: string,
-  name: string,
-  ref: string,
-) {
-  await pipeline(
-    await downloadTarStream(
-      `https://codeload.github.com/dai-shi/waku/tar.gz/${ref}`,
-    ),
-    tar.x({
-      cwd: root,
-      strip: 2 + name.split('/').length,
-      filter: (p) =>
-        p.split('/').slice(1).join('/').startsWith(`examples/${name}/`),
-    }),
-  );
-}
-
 function getValidURL(url: string): URL | undefined {
   try {
     return new URL(url);
@@ -150,81 +118,68 @@ function getValidURL(url: string): URL | undefined {
 
 type ParsedExampleOption = {
   example: string;
-  defaultRef: string;
-  repoInfo?: RepoInfo;
+  repoInfo: RepoInfo;
 };
 
 export async function parseExampleOption(
   example: string | undefined,
-  defaultRef: string,
 ): Promise<ParsedExampleOption | null> {
   if (!example) {
     return null;
   }
 
   const repoUrl = getValidURL(example);
-  if (repoUrl) {
-    // NOTE check github origin
-    if (repoUrl.origin !== 'https://github.com') {
-      console.error(
-        `Invalid URL: ${red(
-          `"${example}"`,
-        )}. Only GitHub repositories are supported. Please use a GitHub URL and try again.`,
-      );
-      process.exit(1);
-    }
 
-    const repoInfo = await getRepoInfo(repoUrl);
-    // NOTE validate reproInfo
-    if (!repoInfo) {
-      console.error(
-        `Found invalid GitHub URL: ${red(
-          `"${example}"`,
-        )}. Please fix the URL and try again.`,
-      );
-      process.exit(1);
-    }
-
-    // NOTE Do the repo exist?
-    if (!(await hasRepo(repoInfo))) {
-      console.error(
-        `Could not locate the repository for ${red(
-          `"${example}"`,
-        )}. Please check that the repository exists and try again.`,
-      );
-      process.exit(1);
-    }
-
-    return { example, defaultRef, repoInfo };
-  }
-
-  if (!(await existsInRepo(example, defaultRef))) {
+  if (!repoUrl) {
     console.error(
-      `Could not locate an example named ${red(
+      `Not a valid URL ${red(
         `"${example}"`,
-      )}. Please check that the example exists and try again.`,
+      )}. Please check the URL syntax and try again.`,
     );
     process.exit(1);
   }
 
-  return { example, defaultRef };
+  // NOTE check github origin
+  if (repoUrl.origin !== 'https://github.com') {
+    console.error(
+      `Invalid URL: ${red(
+        `"${example}"`,
+      )}. Only GitHub repositories are supported. Please use a GitHub URL and try again.`,
+    );
+    process.exit(1);
+  }
+
+  const repoInfo = await getRepoInfo(repoUrl);
+  // NOTE validate reproInfo
+  if (!repoInfo) {
+    console.error(
+      `Found invalid GitHub URL: ${red(
+        `"${example}"`,
+      )}. Please fix the URL and try again.`,
+    );
+    process.exit(1);
+  }
+
+  // NOTE Do the repo exist?
+  if (!(await hasRepo(repoInfo))) {
+    console.error(
+      `Could not locate the repository for ${red(
+        `"${example}"`,
+      )}. Please check that the repository exists and try again.`,
+    );
+    process.exit(1);
+  }
+
+  return { example, repoInfo };
 }
 
 export async function downloadAndExtract(
   root: string,
-  { example, defaultRef, repoInfo }: ParsedExampleOption,
+  { example, repoInfo }: ParsedExampleOption,
 ): Promise<void> {
-  if (repoInfo) {
-    console.log(
-      `Downloading files from repo ${cyan(example)}. This might take a moment.
+  console.log(
+    `Downloading files from repo ${cyan(example)}. This might take a moment.
 `,
-    );
-    await downloadAndExtractRepo(root, repoInfo);
-  } else {
-    console.log(
-      `Downloading files for example ${cyan(example)}. This might take a moment.
-`,
-    );
-    await downloadAndExtractExample(root, example, defaultRef);
-  }
+  );
+  await downloadAndExtractRepo(root, repoInfo);
 }
