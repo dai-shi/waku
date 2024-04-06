@@ -122,7 +122,7 @@ for (const cwd of examples) {
           cp.stderr?.on('data', (data) => {
             if (
               command === 'dev' &&
-              `${data}` === 'WebSocket server error: Port is already in use'
+              /WebSocket server error: Port is already in use/.test(`${data}`)
             ) {
               // ignore this error
               return;
