@@ -215,7 +215,7 @@ importers:
         specifier: 19.0.0-canary-e3ebcd54b-20240405
         version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -246,7 +246,7 @@ importers:
         specifier: 19.0.0-canary-e3ebcd54b-20240405
         version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
     devDependencies:
       autoprefixer:
@@ -268,7 +268,7 @@ importers:
         specifier: 19.0.0-canary-e3ebcd54b-20240405
         version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -299,7 +299,7 @@ importers:
         specifier: 19.0.0-canary-e3ebcd54b-20240405
         version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -324,7 +324,7 @@ importers:
         specifier: 19.0.0-canary-e3ebcd54b-20240405
         version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -355,7 +355,7 @@ importers:
         specifier: 19.0.0-canary-e3ebcd54b-20240405
         version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/cookie':
@@ -386,7 +386,7 @@ importers:
         specifier: 19.0.0-canary-e3ebcd54b-20240405
         version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -411,7 +411,7 @@ importers:
         specifier: 19.0.0-canary-e3ebcd54b-20240405
         version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -445,7 +445,7 @@ importers:
         specifier: 19.0.0-canary-e3ebcd54b-20240405
         version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -479,7 +479,7 @@ importers:
         specifier: 19.0.0-canary-e3ebcd54b-20240405
         version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -513,7 +513,7 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -544,7 +544,7 @@ importers:
         specifier: 19.0.0-canary-e3ebcd54b-20240405
         version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -569,7 +569,7 @@ importers:
         specifier: 19.0.0-canary-e3ebcd54b-20240405
         version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
 
   examples/22_promise:
@@ -584,7 +584,7 @@ importers:
         specifier: 19.0.0-canary-e3ebcd54b-20240405
         version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -612,7 +612,7 @@ importers:
         specifier: 1.1.0
         version: 1.1.0(react@19.0.0-canary-e3ebcd54b-20240405)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -637,7 +637,7 @@ importers:
         specifier: 19.0.0-canary-e3ebcd54b-20240405
         version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
       waku:
-        specifier: 0.20.0
+        specifier: 0.20.1-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
