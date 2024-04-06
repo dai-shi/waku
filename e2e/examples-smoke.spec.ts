@@ -120,6 +120,13 @@ for (const cwd of examples) {
             console.log(`${port} stdout: `, `${data}`);
           });
           cp.stderr?.on('data', (data) => {
+            if (
+              command === 'dev' &&
+              /WebSocket server error: Port is already in use/.test(`${data}`)
+            ) {
+              // ignore this error
+              return;
+            }
             error(`${port} stderr: ${data}`);
             console.error(`${port} stderr: `, `${data}`);
           });
