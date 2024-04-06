@@ -2,7 +2,8 @@ import net from 'node:net';
 import { expect, test as basicTest } from '@playwright/test';
 import type { ConsoleMessage } from '@playwright/test';
 import type { ChildProcess } from 'node:child_process';
-import { error, info } from '@actions/core';
+// import { error, info } from '@actions/core';
+import { info } from '@actions/core';
 import { createRequire } from 'node:module';
 
 // Upstream doesn't support ES module
@@ -32,7 +33,7 @@ export async function getFreePort(): Promise<number> {
 
 export function debugChildProcess(
   cp: ChildProcess,
-  sourceFile: string,
+  _sourceFile: string,
   ignoreErrors?: RegExp[],
 ) {
   cp.stdout?.on('data', (data) => {
@@ -51,11 +52,12 @@ export function debugChildProcess(
     if (ignoreErrors?.some((re) => re.test(str))) {
       return;
     }
-    error(`stderr: ${str}`, {
-      title: 'Child Process Error',
-      file: sourceFile,
-    });
-    console.error(`stderr: ${str}`);
+    // TEMP: testing
+    // error(`stderr: ${str}`, {
+    //   title: 'Child Process Error',
+    //   file: sourceFile,
+    // });
+    // console.error(`stderr: ${str}`);
   });
 }
 
