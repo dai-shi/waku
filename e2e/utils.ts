@@ -51,9 +51,6 @@ export function debugChildProcess(
     if (ignoreErrors?.some((re) => re.test(str))) {
       return;
     }
-    ignoreErrors?.forEach((re) => {
-      console.log(JSON.stringify({ str, re }), str.match(re));
-    });
     error(`stderr: ${str}`, {
       title: 'Child Process Error',
       file: sourceFile,
