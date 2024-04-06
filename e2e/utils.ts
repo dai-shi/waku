@@ -48,6 +48,9 @@ export function debugChildProcess(
   cp.stderr?.on('data', (data) => {
     const str = data.toString();
     expect(unexpectedErrors.some((re) => re.test(str))).toBeFalsy();
+    if (ignoreErrors?.some((re) => re.test(str))) {
+      return;
+    }
     error(`stderr: ${str}`, {
       title: 'Child Process Error',
       file: sourceFile,
