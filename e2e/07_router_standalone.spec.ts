@@ -82,9 +82,7 @@ test.describe('07_router standalone', () => {
           cwd: standaloneDir,
         },
       );
-      debugChildProcess(cp, fileURLToPath(import.meta.url), [
-        /^WebSocket server error: Port is already in use$/,
-      ]);
+      debugChildProcess(cp, fileURLToPath(import.meta.url));
       await testRouterExample(page, port);
       await terminate(cp.pid!);
     });
