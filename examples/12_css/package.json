@@ -12,9 +12,9 @@
     "@stylexjs/stylex": "0.5.1",
     "@vanilla-extract/css": "1.14.1",
     "classnames": "2.3.2",
-    "react": "18.3.0-canary-670811593-20240322",
-    "react-dom": "18.3.0-canary-670811593-20240322",
-    "react-server-dom-webpack": "18.3.0-canary-670811593-20240322",
+    "react": "19.0.0-canary-e3ebcd54b-20240405",
+    "react-dom": "19.0.0-canary-e3ebcd54b-20240405",
+    "react-server-dom-webpack": "19.0.0-canary-e3ebcd54b-20240405",
     "waku": "0.20.0"
   },
   "devDependencies": {
