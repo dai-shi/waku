@@ -271,7 +271,7 @@ export const renderHtml = async (
                   fileURLToFilePath(import.meta.url),
                   '../../..',
                 );
-                const fileWithAbsolutePath = !file.startsWith(opts.rootDir)
+                const fileWithAbsolutePath = !file.startsWith(opts.rootDir) && !file.startsWith(wakuDist)
                   ? joinPath(opts.rootDir, file)
                   : file;
                 if (
