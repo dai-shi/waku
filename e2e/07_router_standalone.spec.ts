@@ -97,7 +97,7 @@ test.describe('07_router standalone', () => {
         },
       );
       debugChildProcess(cp, fileURLToPath(import.meta.url), [
-        /^WebSocket server error: Port is already in use$/,
+        /WebSocket server error: Port is already in use/,
       ]);
       await testRouterExample(page, port);
       await terminate(cp.pid!);
