@@ -56,7 +56,11 @@ export function debugChildProcess(
       file: sourceFile,
     });
     console.error(`stderr: ${str}`);
-    console.error(`sourceFile: ${sourceFile}`, ignoreErrors);
+    console.error(
+      `sourceFile: ${sourceFile}`,
+      ignoreErrors,
+      ignoreErrors?.[0] && str.match(ignoreErrors[0]),
+    );
   });
 }
 
