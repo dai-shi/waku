@@ -25,6 +25,7 @@ import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import { viteHot } from '../plugins/vite-plugin-rsc-hmr.js';
+import type { ClonableModuleNode } from '../middleware/types.js';
 
 // For react-server-dom-webpack/server.edge
 (globalThis as any).AsyncLocalStorage = AsyncLocalStorage;
@@ -45,7 +46,13 @@ const configPrivateDir = getEnvironmentData('CONFIG_PRIVATE_DIR') as string;
 const resolveClientEntryForDev = (
   id: string,
   config: { rootDir: string; basePath: string },
+  initialModules: ClonableModuleNode[],
 ) => {
+  for (const moduleNode of initialModules) {
+    if (moduleNode.file === id) {
+      return moduleNode.url;
+    }
+  }
   let filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
   if (filePath.startsWith(config.rootDir)) {
     filePath = filePath.slice(config.rootDir.length, filePath.length);
@@ -88,10 +95,14 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         loadServerFile,
         loadServerModule,
         resolveClientEntry: (id: string) =>
-          resolveClientEntryForDev(id, {
-            rootDir: vite.config.root,
-            basePath: rest.config.basePath,
-          }),
+          resolveClientEntryForDev(
+            id,
+            {
+              rootDir: vite.config.root,
+              basePath: rest.config.basePath,
+            },
+            initialModules,
+          ),
         entries: await loadEntries(rest.config),
       },
     );
@@ -116,7 +127,7 @@ const handleGetSsrConfig = async (
   mesg: MessageReq & { type: 'getSsrConfig' },
 ) => {
   const vite = await vitePromise;
-  const { id, config, pathname, searchParamsString } = mesg;
+  const { id, config, initialModules, pathname, searchParamsString } = mesg;
   const searchParams = new URLSearchParams(searchParamsString);
   try {
     const ssrConfig = await getSsrConfig(
@@ -128,10 +139,14 @@ const handleGetSsrConfig = async (
       {
         isDev: true,
         resolveClientEntry: (id: string) =>
-          resolveClientEntryForDev(id, {
-            rootDir: vite.config.root,
-            basePath: config.basePath,
-          }),
+          resolveClientEntryForDev(
+            id,
+            {
+              rootDir: vite.config.root,
+              basePath: config.basePath,
+            },
+            initialModules,
+          ),
         entries: await loadEntries(config),
       },
     );

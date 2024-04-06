@@ -261,19 +261,28 @@ export const renderHtml = async (
             get(_target, name: string) {
               if (isDev) {
                 // TODO too long, we need to refactor this logic
-                let file = filePath.split('?')[0]!;
-                file = file.startsWith('/@fs/')
-                  ? file.slice((config.basePath + '@fs').length)
-                  : file;
+                const file = (
+                  filePath.startsWith('/@fs/')
+                    ? filePath.slice((config.basePath + '@fs').length)
+                    : filePath
+                ).split('?')[0]!;
 
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
                 );
-                const fileWithAbsolutePath = !file.startsWith(opts.rootDir) ? joinPath(opts.rootDir, file): file
-                if (file.startsWith(wakuDist) || fileWithAbsolutePath.startsWith(wakuDist)) {
+                const fileWithAbsolutePath = !file.startsWith(opts.rootDir)
+                  ? joinPath(opts.rootDir, file)
+                  : file;
+                if (
+                  file.startsWith(wakuDist) ||
+                  fileWithAbsolutePath.startsWith(wakuDist)
+                ) {
                   const id =
-                    'waku' + fileWithAbsolutePath.slice(wakuDist.length).replace(/\.\w+$/, '');
+                    'waku' +
+                    fileWithAbsolutePath
+                      .slice(wakuDist.length)
+                      .replace(/\.\w+$/, '');
                   if (!moduleLoading.has(id)) {
                     moduleLoading.set(
                       id,

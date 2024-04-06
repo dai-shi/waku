@@ -166,23 +166,21 @@ export const devServer: Middleware = (options) => {
       vitePromise,
     ]);
 
-    if (!initialModules) {
-      // pre-process the mainJs file to see which modules are being sent to the browser by vite
-      // and using the same modules if possible in the bundlerConfig in the stream
-      const mainJs = `${config.basePath}${config.srcDir}/${config.mainJs}`;
-      await vite.transformRequest(mainJs);
-      const resolved = await vite.pluginContainer.resolveId(mainJs);
-      const resolvedModule = vite.moduleGraph.idToModuleMap.get(resolved!.id)!;
-      await Promise.all(
-        [...resolvedModule.importedModules].map(({ id }) =>
-          id ? vite.warmupRequest(id) : null,
-        ),
-      );
+    // pre-process the mainJs file to see which modules are being sent to the browser by vite
+    // and using the same modules if possible in the bundlerConfig in the stream
+    const mainJs = `${config.basePath}${config.srcDir}/${config.mainJs}`;
+    await vite.transformRequest(mainJs);
+    const resolved = await vite.pluginContainer.resolveId(mainJs);
+    const resolvedModule = vite.moduleGraph.idToModuleMap.get(resolved!.id)!;
+    await Promise.all(
+      [...resolvedModule.importedModules].map(({ id }) =>
+        id ? vite.warmupRequest(id) : null,
+      ),
+    );
 
-      initialModules = Array.from(vite.moduleGraph.idToModuleMap.values()).map(
-        (m) => ({ url: m.url, file: m.file! }),
-      );
-    }
+    initialModules = Array.from(vite.moduleGraph.idToModuleMap.values()).map(
+      (m) => ({ url: m.url, file: m.file! }),
+    );
 
     ctx.devServer = {
       rootDir: vite.config.root,
