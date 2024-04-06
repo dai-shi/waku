@@ -54,11 +54,13 @@ const resolveClientEntryForDev = (
     }
   }
   let filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
+  console.log('startFilePath', filePath)
   if (filePath.startsWith(config.rootDir)) {
     filePath = filePath.slice(config.rootDir.length, filePath.length);
   } else {
     filePath = config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
   }
+  console.log('endFilePath', filePath)
   return filePath;
 };
 
