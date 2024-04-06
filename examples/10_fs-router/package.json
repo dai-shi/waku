@@ -9,7 +9,6 @@
     "start": "waku start"
   },
   "dependencies": {
-    "glob": "10.3.12",
     "react": "19.0.0-canary-e3ebcd54b-20240405",
     "react-dom": "19.0.0-canary-e3ebcd54b-20240405",
     "react-server-dom-webpack": "19.0.0-canary-e3ebcd54b-20240405",
