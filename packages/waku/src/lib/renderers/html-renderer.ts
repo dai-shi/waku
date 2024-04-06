@@ -283,6 +283,7 @@ export const renderHtml = async (
                     fileWithAbsolutePath
                       .slice(wakuDist.length)
                       .replace(/\.\w+$/, '');
+                  console.log('import', fileWithAbsolutePath, id)
                   if (!moduleLoading.has(id)) {
                     moduleLoading.set(
                       id,
