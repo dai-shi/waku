@@ -5,9 +5,7 @@ import { useState } from 'react';
 import { Link, useRouter_UNSTABLE as useRouter } from 'waku/router/client';
 
 export const Counter = () => {
-  const {
-    value: { path },
-  } = useRouter();
+  const { path } = useRouter();
   const [count, setCount] = useState(0);
   return (
     <div style={{ border: '3px blue dashed', margin: '1em', padding: '1em' }}>
