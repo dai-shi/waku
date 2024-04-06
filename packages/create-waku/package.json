@@ -22,7 +22,7 @@
     "start": "node ./dist/index.js",
     "dev": "ncc build ./src/index.ts -w -o ./dist/",
     "compile": "rm -rf template dist *.tsbuildinfo && pnpm run template && pnpm run build",
-    "template": "mkdir template && cp -r ../../examples/01_template template/01_template && rm -rf template/*/dist && rm -rf template/*/node_modules && mv template/01_template/.gitignore template/01_template/gitignore",
+    "template": "cp -r ../../examples template && rm -rf template/*/dist && rm -rf template/*/node_modules && (for d in template/*; do mv $d/.gitignore $d/gitignore || true; done)",
     "build": "ncc build ./src/index.ts -o ./dist/ --minify --no-cache --no-source-map-register"
   },
   "devDependencies": {

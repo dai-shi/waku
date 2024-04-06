@@ -46,6 +46,10 @@ const { values, positionals } = parseArgs({
     'with-aws-lambda': {
       type: 'boolean',
     },
+    port: {
+      type: 'string',
+      short: 'p',
+    },
     version: {
       type: 'boolean',
       short: 'v',
@@ -88,7 +92,7 @@ async function runDev() {
   const config = await loadConfig();
   const app = new Hono();
   app.use('*', runner({ cmd: 'dev', config, env: process.env as any }));
-  const port = parseInt(process.env.PORT || '3000', 10);
+  const port = parseInt(values.port || '3000', 10);
   await startServer(app, port);
 }
 
@@ -134,7 +138,7 @@ async function runStart({
     }
     return c.text('404 Not Found', 404);
   });
-  const port = parseInt(process.env.PORT || '8080', 10);
+  const port = parseInt(values.port || '8080', 10);
   await startServer(app, port);
 }
 
@@ -175,6 +179,7 @@ Options:
   --with-partykit       Output for PartyKit on build
   --with-deno           Output for Deno on build
   --with-aws-lambda     Output for AWS Lambda on build
+  -p, --port            Port number for the server
   -v, --version         Display the version number
   -h, --help            Display this help message
 `);

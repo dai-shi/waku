@@ -3,22 +3,26 @@ import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import fse from 'fs-extra/esm';
 
+export async function getTemplateNames(templateRoot: string) {
+  // maybe include `.DS_Store` on macOS
+  const names = (await fsPromises.readdir(templateRoot)).filter(
+    (dir) => !dir.startsWith('.'),
+  );
+  return names;
+}
+
 export async function installTemplate(
   root: string,
   packageName: string,
   templateRoot: string,
+  templateName: string,
 ) {
   const pkg = {
     name: packageName,
     version: '0.0.0',
   };
 
-  // maybe include `.DS_Store` on macOS
-  const CHOICES = (await fsPromises.readdir(templateRoot)).filter(
-    (dir) => !dir.startsWith('.'),
-  );
-
-  const templateDir = path.join(templateRoot, CHOICES[0]!);
+  const templateDir = path.join(templateRoot, templateName);
 
   // Read existing package.json from the root directory
   const packageJsonPath = path.join(root, 'package.json');

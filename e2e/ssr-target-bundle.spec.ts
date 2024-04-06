@@ -42,12 +42,8 @@ for (const { build, command } of commands) {
         });
       }
       port = await getFreePort();
-      cp = exec(`node ${waku} ${command}`, {
+      cp = exec(`node ${waku} ${command} --port ${port}`, {
         cwd,
-        env: {
-          ...process.env,
-          PORT: `${port}`,
-        },
       });
       cp.stdout?.on('data', (data) => {
         console.log(`${port} stdout: `, `${data}`);
@@ -133,7 +129,7 @@ for (const { build, command } of commands) {
       const value = await page
         .getByTestId('json-public-linked')
         .getAttribute('href');
-      await expect(value).toMatch(/json-public-linked/);
+      expect(value).toMatch(/json-public-linked/);
     });
 
     test('no js environment should have first screen', async ({ browser }) => {
