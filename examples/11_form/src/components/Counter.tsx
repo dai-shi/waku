@@ -3,7 +3,6 @@
 
 'use client';
 
-// @ts-expect-error no types
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 

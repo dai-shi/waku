@@ -9,15 +9,14 @@
     "start": "waku start"
   },
   "dependencies": {
-    "glob": "10.3.10",
     "react": "19.0.0-canary-e3ebcd54b-20240405",
     "react-dom": "19.0.0-canary-e3ebcd54b-20240405",
     "react-server-dom-webpack": "19.0.0-canary-e3ebcd54b-20240405",
     "waku": "0.20.0"
   },
   "devDependencies": {
-    "@types/react": "18.2.69",
-    "@types/react-dom": "18.2.22",
-    "typescript": "5.4.3"
+    "@types/react": "18.2.74",
+    "@types/react-dom": "18.2.24",
+    "typescript": "5.4.4"
   }
 }

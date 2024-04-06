@@ -15,9 +15,9 @@
     "waku": "0.20.0"
   },
   "devDependencies": {
-    "@types/react": "18.2.69",
-    "@types/react-dom": "18.2.22",
+    "@types/react": "18.2.74",
+    "@types/react-dom": "18.2.24",
     "server-only": "0.0.1",
-    "typescript": "5.4.3"
+    "typescript": "5.4.4"
   }
 }
