@@ -2,7 +2,7 @@ import type { Plugin } from 'vite';
 
 import { codeToInject } from '../renderers/utils.js';
 
-export function rscIndexPlugin(config: {
+export function rscIndexPlugin(opts: {
   basePath: string;
   srcDir: string;
   mainJs: string;
@@ -14,10 +14,10 @@ export function rscIndexPlugin(config: {
 <!doctype html>
 <html>
   <head>
-${config.htmlHead}
+${opts.htmlHead}
   </head>
   <body>
-    <script src="${config.basePath}${config.srcDir}/${config.mainJs}" async type="module"></script>
+    <script src="${opts.basePath}${opts.srcDir}/${opts.mainJs}" async type="module"></script>
   </body>
 </html>
 `;
@@ -44,7 +44,7 @@ ${config.htmlHead}
     config() {
       return {
         optimizeDeps: {
-          entries: [`${config.srcDir}/${config.mainJs}`],
+          entries: [`${opts.srcDir}/${opts.mainJs}`.replace(/\.js$/, '.*')],
         },
       };
     },
@@ -58,18 +58,18 @@ ${config.htmlHead}
       return {
         ...options,
         input: {
-          indexHtml: config.indexHtml,
+          indexHtml: opts.indexHtml,
           ...options.input,
         },
       };
     },
     resolveId(id) {
-      if (id === config.indexHtml) {
-        return { id: config.indexHtml, moduleSideEffects: true };
+      if (id === opts.indexHtml) {
+        return { id: opts.indexHtml, moduleSideEffects: true };
       }
     },
     load(id) {
-      if (id === config.indexHtml) {
+      if (id === opts.indexHtml) {
         return html;
       }
     },
@@ -77,13 +77,13 @@ ${config.htmlHead}
       return [
         // HACK without <base>, some relative assets don't work.
         // FIXME ideally, we should avoid this.
-        { tag: 'base', attrs: { href: config.basePath } },
+        { tag: 'base', attrs: { href: opts.basePath } },
         {
           tag: 'script',
           attrs: { type: 'module', async: true },
           children: codeToInject,
         },
-        ...(config.cssAssets || []).map((href) => ({
+        ...(opts.cssAssets || []).map((href) => ({
           tag: 'link',
           attrs: { rel: 'stylesheet', href },
           injectTo: 'head' as const,

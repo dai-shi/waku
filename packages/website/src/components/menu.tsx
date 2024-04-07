@@ -32,10 +32,10 @@ export const Menu = ({ isHome }: MenuProps) => {
             isMenuOpen
               ? 'lg:pointer-events-none lg:opacity-0'
               : 'pointer-events-auto opacity-100 lg:delay-300',
-            'inline-flex aspect-square h-[3.5rem] w-[3.5rem] items-center justify-center overflow-clip rounded-full border-4 border-gray-950 text-3xl transition-opacity duration-300 ease-in-out focus:ring-4 focus:ring-primary-300 lg:focus:ring-0',
+            'group relative inline-flex aspect-square h-[3.5rem] w-[3.5rem] items-center justify-center overflow-clip rounded-full border-4 border-gray-950 text-3xl transition-opacity duration-300 ease-in-out focus:ring-4 focus:ring-primary-300 lg:focus:ring-0',
           )}
         >
-          <div className="h-full w-full bg-gray-900 p-2.5 transition duration-300 ease-in-out hover:bg-gray-950">
+          <div className="h-full w-full bg-gray-950 p-2.5 transition duration-300 ease-in-out group-hover:bg-gray-900">
             <img
               key="menu"
               src="https://cdn.candycode.com/waku/shinto-shrine.png"
@@ -50,11 +50,11 @@ export const Menu = ({ isHome }: MenuProps) => {
           isMenuOpen
             ? 'pointer-events-auto opacity-100 lg:delay-300'
             : 'pointer-events-none opacity-0',
-          'fixed inset-0 z-90 flex shrink-0 items-start overflow-y-auto overscroll-none border-gray-800 bg-gray-950 p-8 transition-opacity duration-300 ease-in-out md:items-center md:justify-center md:p-12 lg:bottom-auto lg:left-auto lg:right-4 lg:top-4 lg:z-[9999] lg:overflow-clip lg:rounded-xl lg:border',
+          'fixed inset-0 z-90 flex shrink-0 items-start overscroll-none border-gray-800 bg-gray-950 p-8 transition-opacity duration-300 ease-in-out md:items-center md:justify-center md:p-12 lg:bottom-auto lg:left-auto lg:right-4 lg:top-4 lg:z-[9999] lg:overflow-clip lg:rounded-xl lg:border',
         )}
       >
-        <div className="relative z-10 flex shrink-0 flex-col items-center gap-4 text-white md:justify-center md:gap-8">
-          <div className="flex w-full">
+        <div className="relative z-10 flex h-full w-full shrink-0 flex-col items-center gap-4 text-white md:justify-center md:gap-8">
+          <div className="flex w-full justify-center">
             {isHome ? (
               <button
                 onClick={() => {
@@ -75,7 +75,7 @@ export const Menu = ({ isHome }: MenuProps) => {
               </Link>
             )}
           </div>
-          <div className="relative -left-1 flex shrink-0 flex-col gap-2 md:left-auto lg:gap-1">
+          <div className="relative flex max-h-full w-full flex-grow flex-col gap-2 overflow-y-scroll md:left-auto md:overflow-y-auto lg:gap-1">
             {docs.map((link) => {
               return isHome ? (
                 <DocLink key={link.to} link={link} />
@@ -84,12 +84,12 @@ export const Menu = ({ isHome }: MenuProps) => {
               );
             })}
           </div>
-          <ul className="relative z-100 flex w-full flex-shrink-0 justify-between gap-3 text-center">
+          <ul className="relative z-100 flex w-full flex-shrink-0 justify-center gap-4 text-center">
             {links.map((link) => {
               return <MenuLink key={link.to} link={link} />;
             })}
           </ul>
-          <Sponsors className="mt-0 sm:mt-8 lg:hidden" always={true} />
+          <Sponsors className="-mt-4 sm:mt-8 lg:hidden" always={true} />
         </div>
       </nav>
     </div>

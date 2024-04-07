@@ -20,7 +20,10 @@ export default async function HomePage() {
 
   return (
     <Page isHome={true}>
-      <Meta title="Waku" description="The minimal React framework" />
+      <Meta
+        title="Waku, the minimal React framework"
+        description="A lightweight alternative React framework with a fast developer experience. Loved by React developers at startups and agencies."
+      />
       <div className="relative flex h-svh w-full flex-col items-center justify-center overflow-clip font-sans">
         <Start />
         <div className="sr-only" suppressHydrationWarning>

@@ -1,0 +1,22 @@
+.div {
+  font-family: 'Nunito';
+}
+
+.main {
+  margin: 1.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.main > * {
+  min-height: 16rem;
+  min-width: 16rem;
+}
+
+@media (min-width: 1024px) {
+  .main {
+    margin: 0px;
+    min-height: 100svh;
+    justify-content: center;
+  }
+}

@@ -1,19 +1,13 @@
-import { lazy } from 'react';
 import { defineEntries } from 'waku/server';
 import { Slot } from 'waku/client';
 
-const Layout = lazy(() => import('./components/Layout'));
-const App = lazy(() => import('./components/App'));
+import App from './components/app';
 
 export default defineEntries(
   // renderEntries
   async (input) => {
     return {
-      App: (
-        <Layout>
-          <App name={input || 'Waku'} />
-        </Layout>
-      ),
+      App: <App name={input || 'Waku'} />,
     };
   },
   // getBuildConfig

@@ -1,5 +1,6 @@
 import type { Plugin } from 'vite';
 
+import { EXTENSIONS } from '../config.js';
 import { joinPath } from '../utils/path.js';
 
 const getManagedMain = () => `
@@ -7,27 +8,9 @@ import { Component, StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { Router } from 'waku/router/client';
 
-class ErrorBoundary extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {};
-  }
-  static getDerivedStateFromError(error) {
-    return { error };
-  }
-  render() {
-    if ('error' in this.state) {
-      return this.props.fallback(this.state.error);
-    }
-    return this.props.children;
-  }
-}
-
 const rootElement = (
   <StrictMode>
-    <ErrorBoundary fallback={(error) => <h1>{String(error)}</h1>}>
-      <Router />
-    </ErrorBoundary>
+    <Router />
   </StrictMode>
 );
 
@@ -41,26 +24,23 @@ if (document.body.dataset.hydrate) {
 const getManagedEntries = () => `
 import { fsRouter } from 'waku/router/server';
 
-export default fsRouter(import.meta.url, loader);
-
-function loader(dir, file) {
-  const p = file.replace(/\\.\\w+$/, '').split('/');
-  switch (p.length) {
-${[...new Array(50).keys()]
-  .map(
-    (i) =>
-      '    case ' +
-      (i + 1) +
-      ': ' +
-      'return import(`./${dir}/' +
-      [...new Array(i + 1).keys()].map((j) => '${p[' + j + ']}').join('/') +
-      '.tsx`);',
-  )
-  .join('\n')}
-    default: throw new Error('too deep');
-  }
-}
+export default fsRouter(
+  import.meta.url,
+  (file) => import.meta.glob('./pages/**/*.{${EXTENSIONS.map((ext) =>
+    ext.replace(/^\./, ''),
+  ).join(',')}}')[\`./pages/\${file}\`]?.(),
+);
 `;
+
+const addSuffixX = (fname: string | undefined) => {
+  if (!fname) {
+    return fname;
+  }
+  if (fname.endsWith('x')) {
+    return fname;
+  }
+  return fname + 'x';
+};
 
 export function rscManagedPlugin(opts: {
   srcDir: string;
@@ -85,19 +65,22 @@ export function rscManagedPlugin(opts: {
       const resolved = await this.resolve(id, importer, options);
       if (!resolved && id === entriesFile) {
         managedEntries = true;
-        return id;
+        return addSuffixX(id);
       }
       if (!resolved && (id === mainFile || id === mainJsPath)) {
         managedMain = true;
-        return id;
+        return addSuffixX(id);
       }
       return resolved;
     },
     load(id) {
-      if (managedEntries && id === entriesFile) {
+      if (managedEntries && id === addSuffixX(entriesFile)) {
         return getManagedEntries();
       }
-      if (managedMain && (id === mainFile || id === mainJsPath)) {
+      if (
+        managedMain &&
+        (id === addSuffixX(mainFile) || id === addSuffixX(mainJsPath))
+      ) {
         return getManagedMain();
       }
     },

@@ -151,12 +151,10 @@ const dummyServer = new Server(); // FIXME we hope to avoid this hack
 const mergedViteConfig = await mergeUserViteConfig({
   plugins: [
     viteReact(),
+    nonjsResolvePlugin(),
     rscEnvPlugin({}),
     rscPrivatePlugin({ privateDir: configPrivateDir }),
     rscManagedPlugin({ srcDir: configSrcDir, entriesJs: configEntriesJs }),
-    { name: 'rsc-index-plugin' }, // dummy to match with handler-dev.ts
-    { name: 'rsc-hmr-plugin', enforce: 'post' }, // dummy to match with handler-dev.ts
-    nonjsResolvePlugin(),
     rscTransformPlugin({ isBuild: false }),
     rscDelegatePlugin((payload) => {
       const mesg: MessageRes = { type: 'hot-update', payload };

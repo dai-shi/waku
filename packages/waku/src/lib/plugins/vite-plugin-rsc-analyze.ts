@@ -1,7 +1,8 @@
-import path from 'node:path';
 import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 
+import { EXTENSIONS } from '../config.js';
+import { extname } from '../utils/path.js';
 // HACK: Is it common to depend on another plugin like this?
 import { rscTransformPlugin } from './vite-plugin-rsc-transform.js';
 
@@ -27,11 +28,11 @@ export function rscAnalyzePlugin(
   return {
     name: 'rsc-analyze-plugin',
     async transform(code, id, options) {
-      const ext = path.extname(id);
-      if (['.ts', '.tsx', '.js', '.jsx', '.mjs'].includes(ext)) {
+      const ext = extname(id);
+      if (EXTENSIONS.includes(ext)) {
         const mod = swc.parseSync(code, {
-          syntax: ext === '.ts' || ext === '.tsx' ? 'typescript' : 'ecmascript',
-          tsx: ext === '.tsx',
+          syntax: 'typescript',
+          tsx: ext.endsWith('x'),
         });
         for (const item of mod.body) {
           if (

@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import type { ReactNode } from 'react';
 
-import './styles.css';
+import './layout.styles.css';
 
 const Layout = ({ children }: { children: ReactNode }) => {
   return (

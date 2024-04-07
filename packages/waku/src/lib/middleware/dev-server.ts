@@ -11,6 +11,7 @@ import {
   getSsrConfigWithWorker,
 } from '../renderers/dev-worker-api.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
+import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscHmrPlugin, hotUpdate } from '../plugins/vite-plugin-rsc-hmr.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
@@ -74,14 +75,12 @@ export const devServer: Middleware = (options) => {
       base: config.basePath,
       plugins: [
         patchReactRefresh(viteReact()),
+        nonjsResolvePlugin(),
         rscEnvPlugin({ config }),
         rscPrivatePlugin(config),
         rscManagedPlugin(config),
         rscIndexPlugin(config),
         rscHmrPlugin(),
-        { name: 'nonjs-resolve-plugin' }, // dummy to match with dev-worker-impl.ts
-        { name: 'rsc-transform-plugin' }, // dummy to match with dev-worker-impl.ts
-        { name: 'rsc-delegate-plugin' }, // dummy to match with dev-worker-impl.ts
       ],
       optimizeDeps: {
         include: ['react-server-dom-webpack/client', 'react-dom'],

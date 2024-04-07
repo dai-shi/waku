@@ -3,6 +3,8 @@
 ## [Unreleased]
 ### Changed
 - Fix invalid AsyncLocalStorage warning
+### Added
+- Support .js and .jsx extensions
 
 ## [0.20.0] - 2024-03-26
 ### Added

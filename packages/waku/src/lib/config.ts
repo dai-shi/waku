@@ -36,7 +36,7 @@ export async function resolveConfig(config: Config) {
     assetsDir: 'assets',
     ssrDir: 'ssr',
     indexHtml: 'index.html',
-    mainJs: 'main.tsx',
+    mainJs: 'main.js',
     entriesJs: 'entries.js',
     preserveModuleDirs: ['pages', 'templates', 'routes', 'components'],
     privateDir: 'private',
@@ -51,3 +51,5 @@ export async function resolveConfig(config: Config) {
   }
   return resolvedConfig;
 }
+
+export const EXTENSIONS = ['.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs'];

@@ -30,10 +30,17 @@ export async function getFreePort(): Promise<number> {
   });
 }
 
-export function debugChildProcess(cp: ChildProcess, sourceFile: string) {
+export function debugChildProcess(
+  cp: ChildProcess,
+  sourceFile: string,
+  ignoreErrors?: RegExp[],
+) {
   cp.stdout?.on('data', (data) => {
     const str = data.toString();
     expect(unexpectedErrors.some((re) => re.test(str))).toBeFalsy();
+    if (ignoreErrors?.some((re) => re.test(str))) {
+      return;
+    }
     info(`stdout: ${str}`);
     console.log(`stdout: ${str}`);
   });
@@ -41,11 +48,15 @@ export function debugChildProcess(cp: ChildProcess, sourceFile: string) {
   cp.stderr?.on('data', (data) => {
     const str = data.toString();
     expect(unexpectedErrors.some((re) => re.test(str))).toBeFalsy();
+    if (ignoreErrors?.some((re) => re.test(str))) {
+      return;
+    }
     error(`stderr: ${str}`, {
       title: 'Child Process Error',
       file: sourceFile,
     });
     console.error(`stderr: ${str}`);
+    console.error(`sourceFile: ${sourceFile}`);
   });
 }
 
