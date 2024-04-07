@@ -8,13 +8,14 @@ import { red, green, bold } from 'kolorist';
 import fse from 'fs-extra/esm';
 import checkForUpdate from 'update-check';
 import { createRequire } from 'node:module';
-import { installTemplate } from './helpers/install-template.js';
+import {
+  getTemplateNames,
+  installTemplate,
+} from './helpers/install-template.js';
 import {
   parseExampleOption,
   downloadAndExtract,
 } from './helpers/example-option.js';
-
-const DEFAULT_REF = 'v0.20.0';
 
 const userAgent = process.env.npm_config_user_agent || '';
 const packageManager = /pnpm/.test(userAgent)
@@ -49,6 +50,9 @@ const templateRoot = path.join(
 const { values } = parseArgs({
   args: process.argv.slice(2),
   options: {
+    choose: {
+      type: 'boolean',
+    },
     example: {
       type: 'string',
     },
@@ -76,6 +80,8 @@ async function doPrompts() {
   // if the dir is empty or not exist
   const canSafelyOverwrite = (dir: string) =>
     !existsSync(dir) || readdirSync(dir).length === 0;
+
+  const templateNames = await getTemplateNames(templateRoot);
 
   const defaultProjectName = 'waku-project';
   let targetDir = '';
@@ -113,6 +119,15 @@ async function doPrompts() {
           validate: (dir: string) =>
             isValidPackageName(dir) || 'Invalid package.json name',
         },
+        {
+          name: 'templateName',
+          type: values['choose'] ? 'select' : null,
+          message: 'Choose a starter template',
+          choices: templateNames.map((name) => ({
+            title: name,
+            value: name,
+          })),
+        },
       ],
       {
         onCancel: () => {
@@ -123,6 +138,7 @@ async function doPrompts() {
     return {
       ...result,
       packageName: result.packageName ?? toValidPackageName(targetDir),
+      templateName: result.templateName ?? templateNames[0],
       targetDir,
     };
   } catch (err) {
@@ -162,9 +178,10 @@ async function init() {
     return;
   }
 
-  const exampleOption = await parseExampleOption(values.example, DEFAULT_REF);
+  const exampleOption = await parseExampleOption(values.example);
 
-  const { packageName, shouldOverwrite, targetDir } = await doPrompts();
+  const { packageName, templateName, shouldOverwrite, targetDir } =
+    await doPrompts();
   const root = path.resolve(targetDir);
 
   console.log('Setting up project...');
@@ -181,7 +198,7 @@ async function init() {
   } else {
     // If an example repository is not provided for cloning, proceed
     // by installing from a template.
-    await installTemplate(root, packageName, templateRoot);
+    await installTemplate(root, packageName, templateRoot, templateName);
   }
 
   // TODO automatically installing dependencies

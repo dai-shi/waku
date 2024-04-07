@@ -8,7 +8,7 @@ import type { LoggingFunction, RollupLog } from 'rollup';
 import type { Config } from '../../config.js';
 import type { BuildConfig, EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
-import { resolveConfig } from '../config.js';
+import { resolveConfig, EXTENSIONS } from '../config.js';
 import type { PathSpec } from '../utils/path.js';
 import {
   decodeFilePathFromAbsolute,
@@ -95,7 +95,7 @@ const analyzeEntries = async (
     const files = await readdir(dir, { encoding: 'utf8', recursive: true });
     for (const file of files) {
       const ext = extname(file);
-      if (['.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs'].includes(ext)) {
+      if (EXTENSIONS.includes(ext)) {
         moduleFileMap.set(
           joinPath(preserveModuleDir, file.slice(0, -ext.length)),
           joinPath(dir, file),
@@ -236,6 +236,9 @@ const buildServerBundle = async (
           },
           noExternal: /^(?!node:)/,
         },
+    esbuild: {
+      jsx: 'automatic',
+    },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
     },
@@ -267,18 +270,22 @@ const buildServerBundle = async (
 const buildSsrBundle = async (
   rootDir: string,
   config: ResolvedConfig,
+  mainJsFile: string,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
   isNodeCompatible: boolean,
 ) => {
-  const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
   await buildVite({
     base: config.basePath,
     plugins: [
-      rscIndexPlugin({ ...config, cssAssets }),
+      rscIndexPlugin({
+        ...config,
+        cssAssets,
+        mainJs: mainJsFile.split('/').pop()!,
+      }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
       rscManagedPlugin(config),
@@ -295,6 +302,9 @@ const buildSsrBundle = async (
           },
           noExternal: /^(?!node:)/,
         },
+    esbuild: {
+      jsx: 'automatic',
+    },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
     },
@@ -332,10 +342,10 @@ const buildSsrBundle = async (
 const buildClientBundle = async (
   rootDir: string,
   config: ResolvedConfig,
+  mainJsFile: string,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
 ) => {
-  const mainJsFile = joinPath(rootDir, config.srcDir, config.mainJs);
   const nonJsAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
   );
@@ -344,7 +354,11 @@ const buildClientBundle = async (
     base: config.basePath,
     plugins: [
       viteReact(),
-      rscIndexPlugin({ ...config, cssAssets }),
+      rscIndexPlugin({
+        ...config,
+        cssAssets,
+        mainJs: mainJsFile.split('/').pop()!,
+      }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
       rscManagedPlugin(config),
@@ -582,7 +596,7 @@ export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
 };
 
 const resolveFileName = (fname: string) => {
-  for (const ext of ['.js', '.ts', '.tsx', '.jsx']) {
+  for (const ext of EXTENSIONS) {
     const resolvedName = fname.slice(0, -extname(fname).length) + ext;
     if (existsSync(resolvedName)) {
       return resolvedName;
@@ -616,6 +630,9 @@ export async function build(options: {
   const distEntriesFile = resolveFileName(
     joinPath(rootDir, config.distDir, config.entriesJs),
   );
+  const mainJsFile = resolveFileName(
+    joinPath(rootDir, config.srcDir, config.mainJs),
+  );
   const isNodeCompatible =
     options.deploy !== 'cloudflare' &&
     options.deploy !== 'partykit' &&
@@ -641,11 +658,18 @@ export async function build(options: {
   await buildSsrBundle(
     rootDir,
     config,
+    mainJsFile,
     clientEntryFiles,
     serverBuildOutput,
     isNodeCompatible,
   );
-  await buildClientBundle(rootDir, config, clientEntryFiles, serverBuildOutput);
+  await buildClientBundle(
+    rootDir,
+    config,
+    mainJsFile,
+    clientEntryFiles,
+    serverBuildOutput,
+  );
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
   const buildConfig = await getBuildConfig({ config, entries: distEntries });

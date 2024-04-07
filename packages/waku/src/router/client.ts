@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Component,
   createContext,
   createElement,
   useCallback,
@@ -36,6 +37,15 @@ declare global {
   }
 }
 
+const normalizeRoutePath = (path: string) => {
+  for (const suffix of ['/', '/index.html']) {
+    if (path.endsWith(suffix)) {
+      return path.slice(0, -suffix.length) || '/';
+    }
+  }
+  return path;
+};
+
 const parseRoute = (url: URL): RouteProps => {
   if ((globalThis as any).__WAKU_ROUTER_404__) {
     return { path: '/404', searchParams: new URLSearchParams() };
@@ -44,7 +54,7 @@ const parseRoute = (url: URL): RouteProps => {
   if (searchParams.has(PARAM_KEY_SKIP)) {
     console.warn(`The search param "${PARAM_KEY_SKIP}" is reserved`);
   }
-  return { path: pathname, searchParams };
+  return { path: normalizeRoutePath(pathname), searchParams };
 };
 
 type ChangeRoute = (
@@ -425,9 +435,13 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
       .catch(() => {});
   };
   return createElement(
-    Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
-    { initialInput, initialSearchParamsString, unstable_onFetchData },
-    createElement(InnerRouter, { routerData }),
+    ErrorBoundary,
+    null,
+    createElement(
+      Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
+      { initialInput, initialSearchParamsString, unstable_onFetchData },
+      createElement(InnerRouter, { routerData }),
+    ),
   );
 }
 
@@ -461,4 +475,31 @@ export function ServerRouter({
       children,
     ),
   );
+}
+
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { error?: unknown }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = {};
+  }
+
+  static getDerivedStateFromError(error: unknown) {
+    return { error };
+  }
+
+  render() {
+    if ('error' in this.state) {
+      if (
+        this.state.error instanceof Error &&
+        (this.state.error as any).statusCode === 404
+      ) {
+        return createElement('h1', null, 'Not Found');
+      }
+      return createElement('h1', null, String(this.state.error));
+    }
+    return this.props.children;
+  }
 }

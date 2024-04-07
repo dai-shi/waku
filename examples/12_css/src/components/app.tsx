@@ -1,9 +1,10 @@
 import classNames from 'classnames';
-import styles from './App.module.css';
-import './App.css';
-import { container } from './styles.css';
-import { Counter } from './Counter';
-import { Banner } from './Banner';
+import styles from './app.module.css';
+import './app.css';
+import { container } from './styles.css.js';
+import { Counter } from './counter';
+import { Banner } from './banner';
+import { ClientBanner } from './ClientBanner';
 
 const App = ({ name }: { name: string }) => {
   return (
@@ -14,6 +15,7 @@ const App = ({ name }: { name: string }) => {
       <h3 className={container}>This is a server component.</h3>
       <Counter />
       <Banner />
+      <ClientBanner />
     </div>
   );
 };

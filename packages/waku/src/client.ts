@@ -200,7 +200,17 @@ export const Slot = ({
   if (!elementsPromise) {
     throw new Error('Missing Root component');
   }
-  const elements = use(elementsPromise);
+  let elements: Awaited<Elements>;
+  try {
+    elements = use(elementsPromise);
+  } catch (e) {
+    if (e instanceof Error) {
+      // HACK we assume any error as Not Found,
+      // probably caused by history api fallback
+      (e as any).statusCode = 404;
+    }
+    throw e;
+  }
   if (!(id in elements)) {
     if (fallback) {
       return fallback;

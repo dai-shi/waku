@@ -43,13 +43,15 @@ export interface Config {
   indexHtml?: string;
   /**
    * The client main file relative to srcDir.
-   * Defaults to "main.tsx".
+   * The extension should be `.js`,
+   * but resolved with other extensions in the development mode.
+   * Defaults to "main.js".
    */
   mainJs?: string;
   /**
    * The entries.js file relative to srcDir or distDir.
    * The extension should be `.js`,
-   * but resolved with `.ts`, `.tsx` and `.jsx` in the development mode.
+   * but resolved with other extensions in the development mode.
    * Defaults to "entries.js".
    */
   entriesJs?: string;

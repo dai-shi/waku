@@ -3,7 +3,8 @@
 
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 
 const FormStatus = () => {
   const { pending } = useFormStatus();
@@ -15,7 +16,7 @@ export const Counter = ({
 }: {
   increment: (count: number) => Promise<number>;
 }) => {
-  const [count, dispatch] = useFormState(increment, 0);
+  const [count, dispatch] = useActionState(increment, 0);
   return (
     <div style={{ border: '3px blue dashed', margin: '1em', padding: '1em' }}>
       <form>
