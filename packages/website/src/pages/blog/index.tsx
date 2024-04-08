@@ -5,6 +5,7 @@ import { compileMDX } from 'next-mdx-remote/rsc';
 import { Page } from '../../components/page';
 import { Meta } from '../../components/meta';
 import { getAuthor } from '../../lib/get-author';
+import type { BlogFrontmatter } from '../../types';
 
 export default async function BlogIndexPage() {
   const articles = await getArticles();
@@ -68,7 +69,7 @@ const getArticles = async () => {
       source,
       options: { parseFrontmatter: true },
     });
-    const { frontmatter } = mdx;
+    const frontmatter = mdx.frontmatter as BlogFrontmatter;
 
     const author = getAuthor(frontmatter.author);
     const date = new Date(frontmatter.date).toLocaleDateString('en-US', {

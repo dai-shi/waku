@@ -5,6 +5,7 @@ import { Page } from '../../components/page';
 import { Meta } from '../../components/meta';
 import { components } from '../../components/mdx';
 import { getAuthor } from '../../lib/get-author';
+import type { BlogFrontmatter } from '../../types';
 
 type BlogArticlePageProps = {
   slug: string;
@@ -22,7 +23,8 @@ export default async function BlogArticlePage({ slug }: BlogArticlePageProps) {
     components,
     options: { parseFrontmatter: true },
   });
-  const { frontmatter, content } = mdx;
+  const { content } = mdx;
+  const frontmatter = mdx.frontmatter as BlogFrontmatter;
 
   const author = getAuthor(frontmatter.author);
   const date = new Date(frontmatter.date).toLocaleDateString('en-US', {
@@ -111,7 +113,7 @@ const getFileName = async (slug: string) => {
       source,
       options: { parseFrontmatter: true },
     });
-    const { frontmatter } = mdx;
+    const frontmatter = mdx.frontmatter as BlogFrontmatter;
     blogSlugToFileName[frontmatter.slug] = fileName;
   }
 
@@ -144,7 +146,7 @@ const getBlogPaths = async () => {
       source,
       options: { parseFrontmatter: true },
     });
-    const { frontmatter } = mdx;
+    const frontmatter = mdx.frontmatter as BlogFrontmatter;
     blogPaths.push(frontmatter.slug);
   }
 
