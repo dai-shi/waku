@@ -3,7 +3,7 @@
 import cx from 'classnames';
 import { useAtomValue } from 'jotai';
 
-import { scrolledAtom } from '../atoms/index.js';
+import { scrolledAtom } from '../atoms';
 
 type FadeProps = {
   always?: boolean;

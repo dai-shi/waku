@@ -2,8 +2,8 @@ import '../styles.css';
 
 import type { ReactNode } from 'react';
 
-import { Providers } from '../components/providers.js';
-import { Analytics } from '../components/analytics.js';
+import { Providers } from '../components/providers';
+import { Analytics } from '../components/analytics';
 
 type RootLayoutProps = { children: ReactNode };
 

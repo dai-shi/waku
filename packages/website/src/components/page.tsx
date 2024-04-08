@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 
-import { Menu } from '../components/menu.js';
-import { Fade } from '../components/fade.js';
-import { Sponsors } from '../components/sponsors.js';
-import { Credits } from '../components/credits.js';
-import { Scroll } from '../components/scroll.js';
+import { Menu } from '../components/menu';
+import { Fade } from '../components/fade';
+import { Sponsors } from '../components/sponsors';
+import { Credits } from '../components/credits';
+import { Scroll } from '../components/scroll';
 
 type PageProps = {
   isHome?: boolean;
