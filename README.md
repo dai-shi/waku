@@ -47,7 +47,7 @@ Server components can be made async and can securely perform server-side logic a
 // server component
 import db from 'some-db';
 
-import { Gallery } from '../components/gallery.js';
+import { Gallery } from '../components/gallery';
 
 export const Store = async () => {
   const products = await db.query('SELECT * FROM products');
@@ -95,7 +95,7 @@ Server components can import client components and doing so will create a server
 
 ```tsx
 // ./src/pages/_layout.tsx
-import { Providers } from '../components/providers.js';
+import { Providers } from '../components/providers';
 
 export default async function RootLayout({ children }) {
   return (
@@ -165,9 +165,9 @@ For example, you can statically prerender a global header and footer in the root
 // ./src/pages/_layout.tsx
 import '../styles.css';
 
-import { Providers } from '../components/providers.js';
-import { Header } from '../components/header.js';
-import { Footer } from '../components/footer.js';
+import { Providers } from '../components/providers';
+import { Header } from '../components/header';
+import { Footer } from '../components/footer';
 
 // Create root layout
 export default async function RootLayout({ children }) {
@@ -215,9 +215,11 @@ export const getConfig = async () => {
 
 ### Pages
 
+Pages render a single route, segment route, or catch-all route based on the file system path (conventions below). All page components automatically receive two props related to the rendered route: `path` (string) and `searchParams` ([URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams)).
+
 #### Single routes
 
-Pages can be rendered as a single route (e.g., `about.tsx` or `blog.tsx`).
+Pages can be rendered as a single route (e.g., `about.tsx` or `blog/index.tsx`).
 
 ```tsx
 // ./src/pages/about.tsx
@@ -235,7 +237,7 @@ export const getConfig = async () => {
 ```
 
 ```tsx
-// ./src/pages/blog.tsx
+// ./src/pages/blog/index.tsx
 
 // Create blog index page
 export default async function BlogIndexPage() {
@@ -251,7 +253,7 @@ export const getConfig = async () => {
 
 #### Segment routes
 
-Pages can also render a segment route (e.g., `[slug].tsx`) marked with brackets.
+Segment routes (e.g., `[slug].tsx` or `[slug]/index.tsx`) are marked with brackets.
 
 The rendered React component automatically receives a prop named by the segment (e.g, `slug`) with the value of the rendered segment (e.g., `'introducing-waku'`).
 
@@ -403,9 +405,9 @@ The root layout placed at `./pages/_layout.tsx` is especially useful. It can be 
 // ./src/pages/_layout.tsx
 import '../styles.css';
 
-import { Providers } from '../components/providers.js';
-import { Header } from '../components/header.js';
-import { Footer } from '../components/footer.js';
+import { Providers } from '../components/providers';
+import { Header } from '../components/header';
+import { Footer } from '../components/footer';
 
 // Create root layout
 export default async function RootLayout({ children }) {
@@ -446,7 +448,7 @@ Layouts are also helpful in nested routes. For example, you can add a layout at 
 
 ```tsx
 // ./src/pages/blog/_layout.tsx
-import { Sidebar } from '../../components/sidebar.js';
+import { Sidebar } from '../../components/sidebar';
 
 // Create blog layout
 export default async function BlogLayout({ children }) {
@@ -491,7 +493,7 @@ The `useRouter` hook can be used to inspect the current route or perform program
 
 #### router properties
 
-The `router` object has a `value` property with two additional properties related to the current route: `path` (string) and `searchParams` ([URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams)).
+The `router` object has two properties related to the current route: `path` (string) and `searchParams` ([URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams)).
 
 ```tsx
 'use client';
@@ -499,8 +501,7 @@ The `router` object has a `value` property with two additional properties relate
 import { useRouter_UNSTABLE as useRouter } from 'waku';
 
 export const Component = () => {
-  const router = useRouter();
-  const { path, searchParams } = router.value;
+  const { path, searchParams } = useRouter();
 
   return (
     <>
@@ -674,7 +675,7 @@ Static assets such as images, fonts, stylesheets, and scripts can be placed in a
 ```tsx
 // assuming image is saved at `/public/images/logo.svg`
 
-export const Component = () => {
+export const Logo = () => {
   return (
     <>
       <img src="/images/logo.svg" />
@@ -708,8 +709,8 @@ All of the wonderful patterns of React server components are supported. For exam
 
 ```tsx
 // ./src/pages/blog/[slug].tsx
-import { MDX } from '../../components/mdx.js';
-import { getArticle, getStaticPaths } from '../../lib/blog.js';
+import { MDX } from '../../components/mdx';
+import { getArticle, getStaticPaths } from '../../lib/blog';
 
 export default async function BlogArticlePage({ slug }) {
   const article = await getArticle(slug);
