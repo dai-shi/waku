@@ -3,9 +3,9 @@
 import cx from 'classnames';
 import { useAtomValue } from 'jotai';
 
-import { scrolledAtom } from '../atoms/index.js';
-import { Logo } from '../components/logo.js';
-import { scrollTo } from '../utils/index.js';
+import { scrolledAtom } from '../atoms';
+import { Logo } from '../components/logo';
+import { scrollTo } from '../utils';
 
 export const Start = () => {
   const hasScrolled = useAtomValue(scrolledAtom);

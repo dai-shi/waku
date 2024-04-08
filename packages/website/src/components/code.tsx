@@ -1,4 +1,4 @@
-import { codeToHtml } from '../lib/shiki.js';
+import { codeToHtml } from '../lib/shiki';
 
 type CodeProps = {
   code: string;

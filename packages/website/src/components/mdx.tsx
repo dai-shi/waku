@@ -1,7 +1,7 @@
 import { Link } from 'waku';
 
-import { Code } from './code.js';
-import { getAnchor } from '../utils/index.js';
+import { Code } from '../components/code';
+import { getAnchor } from '../utils';
 
 export const components = {
   h2: ({ children, ...rest }: any) => {

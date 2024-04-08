@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { createStore, Provider } from 'jotai';
 
-import { menuAtom, scrolledAtom } from '../atoms/index.js';
+import { menuAtom, scrolledAtom } from '../atoms';
 
 type ProvidersProps = { children: ReactNode };
 

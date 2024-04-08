@@ -1,11 +1,11 @@
 import { Link } from 'waku';
 import { readdirSync, readFileSync } from 'node:fs';
-// @ts-expect-error no exported member
 import { compileMDX } from 'next-mdx-remote/rsc';
 
-import { Page } from '../../components/page.js';
-import { Meta } from '../../components/meta.js';
-import { getAuthor } from '../../lib/get-author.js';
+import { Page } from '../../components/page';
+import { Meta } from '../../components/meta';
+import { getAuthor } from '../../lib/get-author';
+import type { BlogFrontmatter } from '../../types';
 
 export default async function BlogIndexPage() {
   const articles = await getArticles();
@@ -69,7 +69,7 @@ const getArticles = async () => {
       source,
       options: { parseFrontmatter: true },
     });
-    const { frontmatter } = mdx;
+    const frontmatter = mdx.frontmatter as BlogFrontmatter;
 
     const author = getAuthor(frontmatter.author);
     const date = new Date(frontmatter.date).toLocaleDateString('en-US', {
