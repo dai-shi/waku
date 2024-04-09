@@ -54,13 +54,14 @@ const resolveClientEntryForDev = (
     }
   }
   let filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
-  console.log('startFilePath', filePath)
+  console.log('startFilePath', filePath);
+  console.log('config.rootDir', config.rootDir);
   if (filePath.startsWith(config.rootDir)) {
-    filePath = filePath.slice(config.rootDir.length, filePath.length);
+    filePath = filePath.slice(config.rootDir.length);
   } else {
     filePath = config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
   }
-  console.log('endFilePath', filePath)
+  console.log('endFilePath', filePath);
   return filePath;
 };
 
@@ -129,7 +130,7 @@ const handleGetSsrConfig = async (
   mesg: MessageReq & { type: 'getSsrConfig' },
 ) => {
   const vite = await vitePromise;
-  const { id, config, initialModules, pathname, searchParamsString } = mesg;
+  const { id, config, pathname, searchParamsString, initialModules } = mesg;
   const searchParams = new URLSearchParams(searchParamsString);
   try {
     const ssrConfig = await getSsrConfig(
