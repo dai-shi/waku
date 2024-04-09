@@ -45,7 +45,7 @@ const configPrivateDir = getEnvironmentData('CONFIG_PRIVATE_DIR') as string;
 
 const resolveClientEntryForDev = (
   id: string,
-  config: { basePath: string },
+  config: { rootDir: string; basePath: string },
   initialModules: ClonableModuleNode[],
 ) => {
   for (const moduleNode of initialModules) {
@@ -53,12 +53,19 @@ const resolveClientEntryForDev = (
       return moduleNode.url;
     }
   }
-  const filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
-  // HACK this relies on Vite's internal implementation detail.
-  return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
+  let filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
+  console.log('startFilePath', filePath)
+  if (filePath.startsWith(config.rootDir)) {
+    filePath = filePath.slice(config.rootDir.length, filePath.length);
+  } else {
+    filePath = config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
+  }
+  console.log('endFilePath', filePath)
+  return filePath;
 };
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
+  const vite = await vitePromise;
   const {
     id,
     type: _removed,
@@ -90,7 +97,14 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         loadServerFile,
         loadServerModule,
         resolveClientEntry: (id: string) =>
-          resolveClientEntryForDev(id, rest.config, initialModules),
+          resolveClientEntryForDev(
+            id,
+            {
+              rootDir: vite.config.root,
+              basePath: rest.config.basePath,
+            },
+            initialModules,
+          ),
         entries: await loadEntries(rest.config),
       },
     );
@@ -114,7 +128,8 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
 const handleGetSsrConfig = async (
   mesg: MessageReq & { type: 'getSsrConfig' },
 ) => {
-  const { id, config, pathname, searchParamsString, initialModules } = mesg;
+  const vite = await vitePromise;
+  const { id, config, initialModules, pathname, searchParamsString } = mesg;
   const searchParams = new URLSearchParams(searchParamsString);
   try {
     const ssrConfig = await getSsrConfig(
@@ -126,7 +141,14 @@ const handleGetSsrConfig = async (
       {
         isDev: true,
         resolveClientEntry: (id: string) =>
-          resolveClientEntryForDev(id, config, initialModules),
+          resolveClientEntryForDev(
+            id,
+            {
+              rootDir: vite.config.root,
+              basePath: config.basePath,
+            },
+            initialModules,
+          ),
         entries: await loadEntries(config),
       },
     );

@@ -17,7 +17,6 @@ import {
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
-  encodeFilePathToAbsolute,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
 
@@ -262,18 +261,29 @@ export const renderHtml = async (
             get(_target, name: string) {
               if (isDev) {
                 // TODO too long, we need to refactor this logic
-                let file = filePath.slice(config.basePath.length);
-                file = file.split('?')[0]!;
-                file = file.startsWith('@fs/')
-                  ? file.slice('@fs'.length)
-                  : encodeFilePathToAbsolute(joinPath(opts.rootDir, file));
+                const file = (
+                  filePath.startsWith('/@fs/')
+                    ? filePath.slice((config.basePath + '@fs').length)
+                    : filePath
+                ).split('?')[0]!;
+
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
                 );
-                if (file.startsWith(wakuDist)) {
+                const fileWithAbsolutePath = !file.startsWith(opts.rootDir) && !file.startsWith(wakuDist)
+                  ? joinPath(opts.rootDir, file)
+                  : file;
+                if (
+                  file.startsWith(wakuDist) ||
+                  fileWithAbsolutePath.startsWith(wakuDist)
+                ) {
                   const id =
-                    'waku' + file.slice(wakuDist.length).replace(/\.\w+$/, '');
+                    'waku' +
+                    fileWithAbsolutePath
+                      .slice(wakuDist.length)
+                      .replace(/\.\w+$/, '');
+                  console.log('import', fileWithAbsolutePath, id)
                   if (!moduleLoading.has(id)) {
                     moduleLoading.set(
                       id,
