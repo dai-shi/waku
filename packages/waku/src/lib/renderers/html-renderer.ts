@@ -17,6 +17,7 @@ import {
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
+  encodeFilePathToAbsolute,
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
 
@@ -266,15 +267,15 @@ export const renderHtml = async (
                     ? filePath.slice((config.basePath + '@fs').length)
                     : filePath
                 ).split('?')[0]!;
-
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
                 );
-                const fileWithAbsolutePath =
+                const fileWithAbsolutePath = encodeFilePathToAbsolute(
                   !file.startsWith(opts.rootDir) && !file.startsWith(wakuDist)
                     ? joinPath(opts.rootDir, file)
-                    : file;
+                    : file,
+                );
                 console.log('---file', file);
                 console.log('---opts.rootDir', opts.rootDir);
                 console.log('---wakuDist', wakuDist, fileWithAbsolutePath);
