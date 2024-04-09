@@ -50,7 +50,6 @@ const resolveClientEntryForDev = (
 ) => {
   for (const moduleNode of initialModules) {
     if (moduleNode.file === id) {
-      console.log('resolveClientEntryForDev moduleNode.url', moduleNode.url);
       return moduleNode.url;
     }
   }
@@ -60,7 +59,6 @@ const resolveClientEntryForDev = (
   } else {
     filePath = config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
   }
-  console.log('resolveClientEntryForDev filePath', filePath);
   return filePath;
 };
 

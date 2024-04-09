@@ -275,10 +275,6 @@ export const renderHtml = async (
                   !file.startsWith(opts.rootDir) && !file.startsWith(wakuDist)
                     ? encodeFilePathToAbsolute(joinPath(opts.rootDir, file))
                     : file;
-                console.log('---file', file);
-                console.log('---opts.rootDir', opts.rootDir);
-                console.log('---wakuDist', wakuDist);
-                console.log('---fileWithAbsolutePath', fileWithAbsolutePath);
                 if (
                   file.startsWith(wakuDist) ||
                   fileWithAbsolutePath.startsWith(wakuDist)
