@@ -5,11 +5,11 @@ import cx from 'classnames';
 import { Link } from 'waku';
 import { useAtom, useSetAtom } from 'jotai';
 
-import { menuAtom, destinationAtom } from '../atoms/index.js';
-import { Logo } from '../components/logo.js';
-import { Sponsors } from '../components/sponsors.js';
-import { useOnClickOutside, useOnEscape } from '../hooks/index.js';
-import { scrollTo } from '../utils/index.js';
+import { menuAtom, destinationAtom } from '../atoms';
+import { Logo } from '../components/logo';
+import { Sponsors } from '../components/sponsors';
+import { useOnClickOutside, useOnEscape } from '../hooks';
+import { scrollTo } from '../utils';
 
 type MenuProps = {
   isHome: boolean;

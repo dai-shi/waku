@@ -1,11 +1,11 @@
 import { readdirSync, readFileSync } from 'node:fs';
-// @ts-expect-error no exported member
 import { compileMDX } from 'next-mdx-remote/rsc';
 
-import { Page } from '../../components/page.js';
-import { Meta } from '../../components/meta.js';
-import { components } from '../../components/mdx.js';
-import { getAuthor } from '../../lib/get-author.js';
+import { Page } from '../../components/page';
+import { Meta } from '../../components/meta';
+import { components } from '../../components/mdx';
+import { getAuthor } from '../../lib/get-author';
+import type { BlogFrontmatter } from '../../types';
 
 type BlogArticlePageProps = {
   slug: string;
@@ -23,7 +23,8 @@ export default async function BlogArticlePage({ slug }: BlogArticlePageProps) {
     components,
     options: { parseFrontmatter: true },
   });
-  const { frontmatter, content } = mdx;
+  const { content } = mdx;
+  const frontmatter = mdx.frontmatter as BlogFrontmatter;
 
   const author = getAuthor(frontmatter.author);
   const date = new Date(frontmatter.date).toLocaleDateString('en-US', {
@@ -112,7 +113,7 @@ const getFileName = async (slug: string) => {
       source,
       options: { parseFrontmatter: true },
     });
-    const { frontmatter } = mdx;
+    const frontmatter = mdx.frontmatter as BlogFrontmatter;
     blogSlugToFileName[frontmatter.slug] = fileName;
   }
 
@@ -145,7 +146,7 @@ const getBlogPaths = async () => {
       source,
       options: { parseFrontmatter: true },
     });
-    const { frontmatter } = mdx;
+    const frontmatter = mdx.frontmatter as BlogFrontmatter;
     blogPaths.push(frontmatter.slug);
   }
 
