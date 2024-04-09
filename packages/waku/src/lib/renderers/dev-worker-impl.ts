@@ -50,18 +50,17 @@ const resolveClientEntryForDev = (
 ) => {
   for (const moduleNode of initialModules) {
     if (moduleNode.file === id) {
+      console.log('resolveClientEntryForDev moduleNode.url', moduleNode.url);
       return moduleNode.url;
     }
   }
   let filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
-  console.log('startFilePath', filePath);
-  console.log('config.rootDir', config.rootDir);
   if (filePath.startsWith(config.rootDir)) {
     filePath = filePath.slice(config.rootDir.length);
   } else {
     filePath = config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
   }
-  console.log('endFilePath', filePath);
+  console.log('resolveClientEntryForDev filePath', filePath);
   return filePath;
 };
 
