@@ -275,6 +275,10 @@ export const renderHtml = async (
                   !file.startsWith(opts.rootDir) && !file.startsWith(wakuDist)
                     ? joinPath(opts.rootDir, file)
                     : file;
+                console.log('---file', file);
+                console.log('---opts.rootDir', opts.rootDir);
+                console.log('---wakuDist', wakuDist, fileWithAbsolutePath);
+                console.log('---fileWithAbsolutePath', fileWithAbsolutePath);
                 if (
                   file.startsWith(wakuDist) ||
                   fileWithAbsolutePath.startsWith(wakuDist)
@@ -284,7 +288,6 @@ export const renderHtml = async (
                     fileWithAbsolutePath
                       .slice(wakuDist.length)
                       .replace(/\.\w+$/, '');
-                  console.log('import', fileWithAbsolutePath, id);
                   if (!moduleLoading.has(id)) {
                     moduleLoading.set(
                       id,
