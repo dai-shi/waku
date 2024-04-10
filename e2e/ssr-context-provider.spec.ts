@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
-import { getFreePort, test } from './utils.js';
+import { debugChildProcess, getFreePort, terminate, test } from './utils.js';
 import { rm } from 'node:fs/promises';
 
 const waku = fileURLToPath(
@@ -36,31 +36,16 @@ for (const { build, command } of commands) {
 
     test.beforeAll(async () => {
       if (build) {
-        execSync(`node ${waku} ${build}`, {
-          cwd,
-        });
+        execSync(`node ${waku} ${build}`, { cwd });
       }
       port = await getFreePort();
-      cp = exec(`node ${waku} ${command}`, {
-        cwd,
-        env: {
-          ...process.env,
-          PORT: `${port}`,
-        },
-      });
-      cp.stdout?.on('data', (data) => {
-        console.log(`${port} stdout: `, `${data}`);
-      });
-      cp.stderr?.on('data', (data) => {
-        console.error(`${port} stderr: `, `${data}`);
-      });
-      await waitPort({
-        port,
-      });
+      cp = exec(`node ${waku} ${command} --port ${port}`, { cwd });
+      debugChildProcess(cp, fileURLToPath(import.meta.url));
+      await waitPort({ port });
     });
 
     test.afterAll(async () => {
-      cp.kill();
+      await terminate(cp.pid!);
     });
 
     test('show context value', async ({ page }) => {

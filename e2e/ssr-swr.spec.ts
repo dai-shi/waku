@@ -34,18 +34,12 @@ for (const { build, command } of commands) {
 
     test.beforeAll(async () => {
       if (build) {
-        execSync(`node ${waku} ${build}`, {
-          cwd,
-        });
+        execSync(`node ${waku} ${build}`, { cwd });
       }
       port = await getFreePort();
-      cp = exec(`node ${waku} ${command} --port ${port}`, {
-        cwd,
-      });
+      cp = exec(`node ${waku} ${command} --port ${port}`, { cwd });
       debugChildProcess(cp, fileURLToPath(import.meta.url));
-      await waitPort({
-        port,
-      });
+      await waitPort({ port });
     });
 
     test.afterAll(async () => {
