@@ -509,12 +509,11 @@ const emitHtmlFiles = async (
         let htmlStr = publicIndexHtml;
         let htmlHead = publicIndexHtmlHead;
         if (cssAssets.length) {
-          const cssStr = cssAssets.map((asset) => `<link rel="stylesheet" href="${asset}">`).join('\n')
+          const cssStr = cssAssets
+            .map((asset) => `<link rel="stylesheet" href="${asset}">`)
+            .join('\n');
           // HACK is this too naive to inject style code?
-          htmlStr = htmlStr.replace(
-            /<\/head>/,
-            cssStr,
-          );
+          htmlStr = htmlStr.replace(/<\/head>/, cssStr);
           htmlHead += cssStr;
         }
         const inputsForPrefetch = new Set<string>();
@@ -705,7 +704,7 @@ export async function build(options: {
     distEntries,
     buildConfig,
     getClientModules,
-    clientBuildOutput
+    clientBuildOutput,
   );
 
   if (options.deploy?.startsWith('vercel-')) {
