@@ -599,7 +599,6 @@ const emitHtmlFiles = async (
         } else {
           await writeFile(destHtmlFile, htmlStr);
         }
-        console.log(destHtmlFile)
       },
     ),
   );
