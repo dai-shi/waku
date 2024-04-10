@@ -271,10 +271,11 @@ export const renderHtml = async (
                   fileURLToFilePath(import.meta.url),
                   '../../..',
                 );
-                const fileWithAbsolutePath =
-                  !file.startsWith(opts.rootDir) && !file.startsWith(wakuDist)
-                    ? encodeFilePathToAbsolute(joinPath(opts.rootDir, file))
-                    : file;
+                const fileWithAbsolutePath = !file.startsWith(opts.rootDir)
+                  ? encodeFilePathToAbsolute(joinPath(opts.rootDir, file))
+                  : file;
+                console.log('fileWithAbsolutePath', fileWithAbsolutePath);
+                console.log('file', file);
                 if (fileWithAbsolutePath.startsWith(wakuDist)) {
                   const id =
                     'waku' +
