@@ -53,13 +53,13 @@ const resolveClientEntryForDev = (
       return moduleNode.url;
     }
   }
-  let filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
-  if (filePath.startsWith(config.rootDir)) {
-    filePath = filePath.slice(config.rootDir.length);
+  let file = id.startsWith('file://') ? fileURLToFilePath(id) : id;
+  if (file.startsWith(config.rootDir)) {
+    file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
   } else {
-    filePath = config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
+    file = '@fs' + encodeFilePathToAbsolute(file);
   }
-  return filePath;
+  return config.basePath + file;
 };
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
