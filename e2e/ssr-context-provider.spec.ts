@@ -19,10 +19,12 @@ const commands = [
   },
 ];
 
-const cwd = fileURLToPath(new URL('./fixtures/ssr-swr', import.meta.url));
+const cwd = fileURLToPath(
+  new URL('./fixtures/ssr-context-provider', import.meta.url),
+);
 
 for (const { build, command } of commands) {
-  test.describe(`ssr-swr: ${command}`, () => {
+  test.describe(`ssr-context-provider: ${command}`, () => {
     let cp: ChildProcess;
     let port: number;
     test.beforeAll('remove cache', async () => {
@@ -46,26 +48,19 @@ for (const { build, command } of commands) {
       await terminate(cp.pid!);
     });
 
-    test('increase counter', async ({ page }) => {
+    test('show context value', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
-      await expect(page.getByTestId('app-name')).toHaveText('Waku');
-      await expect(page.getByTestId('count')).toHaveText('0');
-      await page.getByTestId('increment').click();
-      await page.getByTestId('increment').click();
-      await page.getByTestId('increment').click();
-      await expect(page.getByTestId('count')).toHaveText('3');
+      await page.waitForSelector('[data-testid="mounted"]');
+      await expect(page.getByTestId('value')).toHaveText('provider value');
     });
 
-    test('no js environment should have first screen', async ({ browser }) => {
+    test('no js environment', async ({ browser }) => {
       const context = await browser.newContext({
         javaScriptEnabled: false,
       });
       const page = await context.newPage();
       await page.goto(`http://localhost:${port}/`);
-      await expect(page.getByTestId('app-name')).toHaveText('Waku');
-      await expect(page.getByTestId('count')).toHaveText('0');
-      await page.getByTestId('increment').click();
-      await expect(page.getByTestId('count')).toHaveText('0');
+      await expect(page.getByTestId('value')).toHaveText('provider value');
       await page.close();
       await context.close();
     });

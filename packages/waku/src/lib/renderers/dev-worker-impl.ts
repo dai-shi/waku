@@ -45,7 +45,7 @@ const configPrivateDir = getEnvironmentData('CONFIG_PRIVATE_DIR') as string;
 
 const resolveClientEntryForDev = (
   id: string,
-  config: { basePath: string },
+  config: { rootDir: string; basePath: string },
   initialModules: ClonableModuleNode[],
 ) => {
   for (const moduleNode of initialModules) {
@@ -53,12 +53,17 @@ const resolveClientEntryForDev = (
       return moduleNode.url;
     }
   }
-  const filePath = id.startsWith('file://') ? fileURLToFilePath(id) : id;
-  // HACK this relies on Vite's internal implementation detail.
-  return config.basePath + '@fs' + encodeFilePathToAbsolute(filePath);
+  let file = id.startsWith('file://') ? fileURLToFilePath(id) : id;
+  if (file.startsWith(config.rootDir)) {
+    file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
+  } else {
+    file = '@fs' + encodeFilePathToAbsolute(file);
+  }
+  return config.basePath + file;
 };
 
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
+  const vite = await vitePromise;
   const {
     id,
     type: _removed,
@@ -90,7 +95,14 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         loadServerFile,
         loadServerModule,
         resolveClientEntry: (id: string) =>
-          resolveClientEntryForDev(id, rest.config, initialModules),
+          resolveClientEntryForDev(
+            id,
+            {
+              rootDir: vite.config.root,
+              basePath: rest.config.basePath,
+            },
+            initialModules,
+          ),
         entries: await loadEntries(rest.config),
       },
     );
@@ -114,6 +126,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
 const handleGetSsrConfig = async (
   mesg: MessageReq & { type: 'getSsrConfig' },
 ) => {
+  const vite = await vitePromise;
   const { id, config, pathname, searchParamsString, initialModules } = mesg;
   const searchParams = new URLSearchParams(searchParamsString);
   try {
@@ -126,7 +139,14 @@ const handleGetSsrConfig = async (
       {
         isDev: true,
         resolveClientEntry: (id: string) =>
-          resolveClientEntryForDev(id, config, initialModules),
+          resolveClientEntryForDev(
+            id,
+            {
+              rootDir: vite.config.root,
+              basePath: config.basePath,
+            },
+            initialModules,
+          ),
         entries: await loadEntries(config),
       },
     );

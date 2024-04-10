@@ -21,9 +21,7 @@ const { version } = createRequire(import.meta.url)(
 );
 
 async function testRouterExample(page: Page, port: number) {
-  await waitPort({
-    port,
-  });
+  await waitPort({ port });
 
   await page.goto(`http://localhost:${port}`);
   await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
@@ -78,9 +76,7 @@ test.describe('07_router standalone', () => {
       const port = await getFreePort();
       const cp = exec(
         `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start --port ${port}`,
-        {
-          cwd: standaloneDir,
-        },
+        { cwd: standaloneDir },
       );
       debugChildProcess(cp, fileURLToPath(import.meta.url));
       await testRouterExample(page, port);
@@ -92,9 +88,7 @@ test.describe('07_router standalone', () => {
       const port = await getFreePort();
       const cp = exec(
         `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} dev --port ${port}`,
-        {
-          cwd: standaloneDir,
-        },
+        { cwd: standaloneDir },
       );
       debugChildProcess(cp, fileURLToPath(import.meta.url), [
         /WebSocket server error: Port is already in use/,

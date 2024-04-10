@@ -72,13 +72,9 @@ for (const cwd of examples) {
             });
           }
           port = await getFreePort();
-          cp = exec(`${command} --port ${port}`, {
-            cwd,
-          });
+          cp = exec(`${command} --port ${port}`, { cwd });
           debugChildProcess(cp, fileURLToPath(import.meta.url));
-          await waitPort({
-            port,
-          });
+          await waitPort({ port });
         });
 
         test.afterAll(async () => {
@@ -107,14 +103,10 @@ for (const cwd of examples) {
 
         test.beforeAll(async () => {
           if (build) {
-            execSync(`node ${waku} ${build}`, {
-              cwd,
-            });
+            execSync(`node ${waku} ${build}`, { cwd });
           }
           port = await getFreePort();
-          cp = exec(`node ${waku} ${command} --port ${port}`, {
-            cwd,
-          });
+          cp = exec(`node ${waku} ${command} --port ${port}`, { cwd });
           cp.stdout?.on('data', (data) => {
             info(`${port} stdout: ${data}`);
             console.log(`${port} stdout: `, `${data}`);
@@ -130,9 +122,7 @@ for (const cwd of examples) {
             error(`${port} stderr: ${data}`);
             console.error(`${port} stderr: `, `${data}`);
           });
-          await waitPort({
-            port,
-          });
+          await waitPort({ port });
         });
 
         test.afterAll(async () => {

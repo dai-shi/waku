@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { execSync, exec, ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
-import { getFreePort, test } from './utils.js';
+import { debugChildProcess, getFreePort, terminate, test } from './utils.js';
 import { readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -37,27 +37,16 @@ for (const { build, command } of commands) {
 
     test.beforeAll(async () => {
       if (build) {
-        execSync(`node ${waku} ${build}`, {
-          cwd,
-        });
+        execSync(`node ${waku} ${build}`, { cwd });
       }
       port = await getFreePort();
-      cp = exec(`node ${waku} ${command} --port ${port}`, {
-        cwd,
-      });
-      cp.stdout?.on('data', (data) => {
-        console.log(`${port} stdout: `, `${data}`);
-      });
-      cp.stderr?.on('data', (data) => {
-        console.error(`${port} stderr: `, `${data}`);
-      });
-      await waitPort({
-        port,
-      });
+      cp = exec(`node ${waku} ${command} --port ${port}`, { cwd });
+      debugChildProcess(cp, fileURLToPath(import.meta.url));
+      await waitPort({ port });
     });
 
     test.afterAll(async () => {
-      cp.kill();
+      await terminate(cp.pid!);
     });
 
     test('image exists in folder public/assets', async () => {
@@ -108,7 +97,6 @@ for (const { build, command } of commands) {
       await page.goto(`http://localhost:${port}/`);
       await page.waitForLoadState('domcontentloaded');
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
-
       page.on('response', (data) => {
         console.log(
           data.status(),
@@ -124,7 +112,6 @@ for (const { build, command } of commands) {
         'naturalWidth',
         0,
       );
-
       await expect(page.getByTestId('json-private')).toHaveText('6');
       const value = await page
         .getByTestId('json-public-linked')

@@ -34,18 +34,12 @@ for (const { build, command } of commands) {
 
     test.beforeAll(async () => {
       if (build) {
-        execSync(`node ${waku} ${build}`, {
-          cwd,
-        });
+        execSync(`node ${waku} ${build}`, { cwd });
       }
       port = await getFreePort();
-      cp = exec(`node ${waku} ${command} --port ${port}`, {
-        cwd,
-      });
+      cp = exec(`node ${waku} ${command} --port ${port}`, { cwd });
       debugChildProcess(cp, fileURLToPath(import.meta.url));
-      await waitPort({
-        port,
-      });
+      await waitPort({ port });
     });
 
     test.afterAll(async () => {
@@ -54,9 +48,7 @@ for (const { build, command } of commands) {
 
     test('basic', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
-
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
-
       await expect(
         page.getByTestId('client-counter').getByTestId('count'),
       ).toHaveText('0');
@@ -68,7 +60,6 @@ for (const { build, command } of commands) {
       await expect(
         page.getByTestId('client-counter').getByTestId('count'),
       ).toHaveText('2');
-
       await expect(
         page.getByTestId('server-ping').getByTestId('pong'),
       ).toBeEmpty();
