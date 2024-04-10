@@ -262,8 +262,11 @@ export const renderHtml = async (
             get(_target, name: string) {
               if (isDev) {
                 // TODO too long, we need to refactor this logic
+                const isFullPath = filePath
+                  .slice(config.basePath.length)
+                  .startsWith('@fs/');
                 const file = (
-                  filePath.slice(config.basePath.length).startsWith('@fs/')
+                  isFullPath
                     ? filePath.slice((config.basePath + '@fs').length)
                     : filePath
                 ).split('?')[0]!;
@@ -271,11 +274,12 @@ export const renderHtml = async (
                   fileURLToFilePath(import.meta.url),
                   '../../..',
                 );
-                const fileWithAbsolutePath = !file.startsWith(opts.rootDir)
+                const fileWithAbsolutePath = !isFullPath
                   ? encodeFilePathToAbsolute(joinPath(opts.rootDir, file))
                   : file;
                 console.log('fileWithAbsolutePath', fileWithAbsolutePath);
                 console.log('file', file);
+                console.log('wakuDist', wakuDist);
                 if (fileWithAbsolutePath.startsWith(wakuDist)) {
                   const id =
                     'waku' +
