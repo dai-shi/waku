@@ -369,6 +369,7 @@ const buildClientBundle = async (
         onwarn,
         input: {
           main: mainJsFile,
+          // rollup will ouput the style files related to clientEntryFiles, but since it does not find any link to them in the index.html file, it will not inject them. They are only mentioned by the standalone `clientEntryFiles`
           ...clientEntryFiles,
         },
         preserveEntrySignatures: 'exports-only',
@@ -478,7 +479,12 @@ const emitHtmlFiles = async (
   distEntries: EntriesPrd,
   buildConfig: BuildConfig,
   getClientModules: (input: string) => string[],
+  clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
 ) => {
+  const nonJsAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
+    type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
+  );
+  const cssAssets = nonJsAssets.filter((asset) => asset.endsWith('.css'));
   const basePrefix = config.basePath + config.rscPath + '/';
   const publicIndexHtmlFile = joinPath(
     rootDir,
@@ -502,6 +508,14 @@ const emitHtmlFiles = async (
           typeof pathname === 'string' ? pathname2pathSpec(pathname) : pathname;
         let htmlStr = publicIndexHtml;
         let htmlHead = publicIndexHtmlHead;
+        if (cssAssets.length) {
+          const cssStr = cssAssets
+            .map((asset) => `<link rel="stylesheet" href="${asset}">`)
+            .join('\n');
+          // HACK is this too naive to inject style code?
+          htmlStr = htmlStr.replace(/<\/head>/, cssStr);
+          htmlHead += cssStr;
+        }
         const inputsForPrefetch = new Set<string>();
         const moduleIdsForPrefetch = new Set<string>();
         for (const { input, skipPrefetch } of entries || []) {
@@ -663,7 +677,7 @@ export async function build(options: {
     serverBuildOutput,
     isNodeCompatible,
   );
-  await buildClientBundle(
+  const clientBuildOutput = await buildClientBundle(
     rootDir,
     config,
     mainJsFile,
@@ -690,6 +704,7 @@ export async function build(options: {
     distEntries,
     buildConfig,
     getClientModules,
+    clientBuildOutput,
   );
 
   if (options.deploy?.startsWith('vercel-')) {
