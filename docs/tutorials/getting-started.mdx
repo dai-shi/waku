@@ -20,7 +20,7 @@ npm run dev
 
 Open up your browser and go to [http://localhost:3000](http://localhost:3000/) 
 
-You should see a simple web page with an **interactive** **counter**! (?possibly insert image here?)
+You should see a simple web page with an **interactive** **counter**!
 
 *Lets take a look* at the code/files that we were given
 
@@ -40,14 +40,9 @@ export default async function HomePage() {
 }
 ```
 
-that allows us to make an `async` call to get some data that happens on the server. 
+that allows us to make an `async` call to get some data that happens on the server.
 
-**Server components** can access our **db** directly, keep the client bundle size smaller, and other server-side logic!
-For example you might want to *(insert a good example here)*
-
-Keep in mind with **server components** we *can’t* use a lot React’s API that we’ve come to love (…or hate); such as `useEffect` and `useState` . That’s because they only run once on the server (ie: they don’t re-render)
-
-Don’t worry though we can still use those APIs with **client components**! These are the exact same React Components we’ve been using forever. The only difference is that they now have a `'use client'` directive at the top of the file.
+**Server components** can access our **db** directly, keep the client bundle size smaller, and other server-side logic! Keep in mind that they only run once on the server (ie: they don’t re-render)
 
 ## Client Components
 
@@ -64,7 +59,7 @@ export const Counter = () => {
 }
 ```
 
-As you can see on top of the file it contains `'use client'`  and we’re using `useState` ; so this is a **client component**. They will be 
+As you can see on top of the file it contains `'use client'` and we’re using `useState`; so this tell us it's a **client component**. These are simply the **react components** that we've come to know and love; allowing us to use all of the familiar **react api** such as `useEffect` and `useState`. 
 
 ## Routing
 
@@ -83,13 +78,16 @@ Theres two ways to create a page route.
 
 Either of these would render under http://localhost:3000/contact
 
+
 **Layouts** are how we create a shared *layout* for a route and its inner routes.
 
-In our project `/pages/_layout.tsx` is the [root layout](https://waku.gg/#root-layout) for all of our routes currently.
+In our project `/pages/_layout.tsx` is the [root layout](https://waku.gg/#root-layout) for all of our routes currently. **Layouts** can be nested as-well, which we'll see later.
+
+We *also have* **segment routes**, **nested segment routes**, and **catch-all routes**! In the following chapters we'll go over these and our two rendering options when we start building small projects.
 
 ## And that’s all you need to get started using Waku!
 
-In the next Chapters we will go deeper into everything so you get a good understanding of how powerful but simple **Waku** is 🙂
+In the next Chapters we will dive deeper into everything so you get a good understanding of how powerful but simple **Waku** is 🙂
 
 ---
 
@@ -98,5 +96,3 @@ In the next Chapters we will go deeper into everything so you get a good underst
 In **Chapter 2** we will start building a small **Todo Application** to get some hands on experience with **Waku**. 
 
 You’ll learn more about the **Server Components**, **Client Components**, **Routing**, **Navigation**, and more!
-
-*Insert Link To Next Chapter*
