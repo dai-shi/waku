@@ -13,6 +13,10 @@ export async function mergeUserViteConfig(config: UserConfig) {
     {
       ...resolvedViteConfig,
       configFile: false,
+      // weird error around plugin duplication when removed
+      plugins: resolvedViteConfig.plugins.filter(
+        (plugin) => !plugin.name.startsWith('vite:'),
+      ),
     },
     config,
   );
