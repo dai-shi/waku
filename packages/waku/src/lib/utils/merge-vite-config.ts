@@ -4,7 +4,8 @@ import {
   mergeConfig as mergeViteConfig,
 } from 'vite';
 
-// TODO add background and motivation https://github.com/dai-shi/waku/pull/240/files#r1426032865
+// Avoid terser warning and "path" error for each time we instantiate a vite server
+// Avoid vite finding the config itself, instead, we handle it ourselves with the config argument
 export async function mergeUserViteConfig(config: UserConfig) {
   const resolvedViteConfig = await resolveViteConfig({}, 'serve');
 
@@ -12,10 +13,6 @@ export async function mergeUserViteConfig(config: UserConfig) {
     {
       ...resolvedViteConfig,
       configFile: false,
-
-      plugins: resolvedViteConfig.plugins.filter(
-        (plugin) => !plugin.name.startsWith('vite:'),
-      ),
     },
     config,
   );
