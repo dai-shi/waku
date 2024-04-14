@@ -31,8 +31,8 @@ If we take a deeper look at `/src/pages/index.tsx`, we notice that our component
 ```tsx
 // line 5
 export default async function HomePage() {
-	const data = await getData();
-	// ...rest of the file
+  const data = await getData();
+  // ...rest of the file
 }
 ```
 
@@ -51,8 +51,8 @@ import { useState } from 'react';
 
 export const Counter = () => {
   const [count, setCount] = useState(0);
-  	// ...rest of the file
-}
+  // ...rest of the file
+};
 ```
 
 As you can see on top of the file, it contains a `'use client'` directive. This tell us it (and any components it imports) will be **client components**. These are the traditional React components that we’ve come to know and love, which can use all of the familiar React client API such as `useEffect` and `useState`.
