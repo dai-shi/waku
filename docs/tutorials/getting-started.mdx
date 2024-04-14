@@ -1,52 +1,48 @@
-# Chapter One 
+# Chapter One
 
 ## Getting Started
 
-To create a new **Waku** project run the following command
+To create a new **Waku** project run the following command in your terminal:
 
 ```
 npm create waku@latest
 ```
 
-Follow the cli instructions and name the project `waku-tutorial` 
+Follow the CLI instructions and name the project something like `waku-tutorial`. Then open the project, install dependencies, and run the development server:
 
-Open the project, install dependencies, and run the development server 
-
-```
+```bash
 cd waku-tutorial
 npm install
 npm run dev
 ```
 
-Open up your browser and go to [http://localhost:3000](http://localhost:3000/) 
+Now open up your browser and go to [http://localhost:3000](http://localhost:3000/). You should see a simple Waku app with an interactive counter.
 
-You should see a simple web page with an **interactive** **counter**!
+Let’s take a look at the files and code that we were given:
 
-*Lets take a look* at the code/files that we were given
-
-- `/src/pages`  contains our [routes and layouts](https://waku.gg/#routing)
+- `/src/pages` contains our [layouts and pages](https://waku.gg/#routing)
 - `/src/components` contains our reusable [UI components](https://react.dev/learn/your-first-component)
 - `/public` contains our [static assets](https://waku.gg/#static-assets)
 
 ## Server Components
 
-If we take a deeper look at `/src/pages/index.tsx` we see our component is an `async` [server component](https://waku.gg/#server-components)
+If we take a deeper look at `/src/pages/index.tsx`, we notice that our component is an `async` [server component](https://waku.gg/#server-components):
 
 ```tsx
 // line 5
-export default async function HomePage() { 
+export default async function HomePage() {
 	const data = await getData();
 	// ...rest of the file
 }
 ```
 
-that allows us to make an `async` call to get some data that happens on the server.
+This allows us to make an `async` call to get some data that happens securely on the server.
 
-**Server components** can access our **db** directly, keep the client bundle size smaller, and other server-side logic! Keep in mind that they only run once on the server (ie: they don’t re-render)
+**Server components** can access files and databases directly, keep the client bundle size smaller, and perform other server-side logic! Keep in mind that they only run once on the server (i.e., they never re-render).
 
 ## Client Components
 
-Go ahead and open up `/src/components/counter.tsx` .
+Go ahead and open up `/src/components/counter.tsx`:
 
 ```tsx
 'use client';
@@ -59,40 +55,37 @@ export const Counter = () => {
 }
 ```
 
-As you can see on top of the file it contains `'use client'` and we’re using `useState`; so this tell us it's a **client component**. These are simply the **react components** that we've come to know and love; allowing us to use all of the familiar **react api** such as `useEffect` and `useState`. 
+As you can see on top of the file, it contains a `'use client'` directive. This tell us it (and any components it imports) will be **client components**. These are the traditional React components that we’ve come to know and love, which can use all of the familiar React client API such as `useEffect` and `useState`.
 
 ## Routing
 
-To handle routing in **Waku**, there is a familiar **[Pages Router](https://waku.gg/#routing)**. 
+To handle routing in Waku, there is a familiar **[pages router](https://waku.gg/#routing)**.
 
-Everything that is inside our `/src/pages` abides by the router’s rules
+Everything that’s inside the `/src/pages` directory abides by the router’s rules:
 
-- `/pages/index.tsx` **index route**
-- `/pages/_layout.tsx` **[layout](https://waku.gg/#layouts)**
-- `/pages/about.tsx` **single route**
+- `/pages/_layout.tsx` is a [layout](https://waku.gg/#layouts)
+- `/pages/index.tsx` is a single route page
+- `/pages/about.tsx` is a single route page
 
-Theres two ways to create a page route.
+As you can see, there’s two ways to create **pages**:
 
-1. use an `index` file. (eg: `/pages/contact/index.tsx`)
-2. use a single named route (eg: `/pages/contact.tsx`)
+1. use an `index` file (e.g., `/pages/contact/index.tsx`)
+2. use a single named file (e.g., `/pages/contact.tsx`)
 
-Either of these would render under http://localhost:3000/contact
+Either of these would render under the `/contact` route.
 
+**Layouts** are created with the special `_layout.tsx` filename and are how we create a shared layout that wraps a route and its descendents.
 
-**Layouts** are how we create a shared *layout* for a route and its inner routes.
+The layout at `/pages/_layout.tsx` is the [root layout](https://waku.gg/#root-layout), which wraps the entire site. Layouts can be nested as well, which we’ll see in later chapters. We’ll also discover **segment routes**, **nested segment routes**, and **catch-all routes** as well as Waku’s two rendering methods: **static prerendering** at build time and **dynamic rendering** at request time.
 
-In our project `/pages/_layout.tsx` is the [root layout](https://waku.gg/#root-layout) for all of our routes currently. **Layouts** can be nested as-well, which we'll see later.
+## And that’s all you need to get started
 
-We *also have* **segment routes**, **nested segment routes**, and **catch-all routes**! In the following chapters we'll go over these and our two rendering options when we start building small projects.
-
-## And that’s all you need to get started using Waku!
-
-In the next Chapters we will dive deeper into everything so you get a good understanding of how powerful but simple **Waku** is 🙂
+In the next chapters we’ll dive deeper into everything to understand how powerful, but simple Waku is! 🙂
 
 ---
 
 ## Next Steps
 
-In **Chapter 2** we will start building a small **Todo Application** to get some hands on experience with **Waku**. 
+In **Chapter 2** we will start building a small **Todo Application** to get some hands on experience with Waku.
 
-You’ll learn more about the **Server Components**, **Client Components**, **Routing**, **Navigation**, and more!
+You’ll learn more about server components, client components, router, navigation, and more!
