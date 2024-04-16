@@ -73,7 +73,9 @@ for (const cwd of examples) {
           }
           port = await getFreePort();
           cp = exec(`${command} --port ${port}`, { cwd });
-          debugChildProcess(cp, fileURLToPath(import.meta.url));
+          debugChildProcess(cp, fileURLToPath(import.meta.url), [
+            /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
+          ]);
           await waitPort({ port });
         });
 

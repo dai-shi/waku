@@ -78,7 +78,9 @@ test.describe('07_router standalone', () => {
         `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start --port ${port}`,
         { cwd: standaloneDir },
       );
-      debugChildProcess(cp, fileURLToPath(import.meta.url));
+      debugChildProcess(cp, fileURLToPath(import.meta.url), [
+        /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
+      ]);
       await testRouterExample(page, port);
       await terminate(cp.pid!);
     });
@@ -91,6 +93,7 @@ test.describe('07_router standalone', () => {
         { cwd: standaloneDir },
       );
       debugChildProcess(cp, fileURLToPath(import.meta.url), [
+        /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
         /WebSocket server error: Port is already in use/,
       ]);
       await testRouterExample(page, port);
