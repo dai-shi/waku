@@ -169,6 +169,8 @@ const handleGetSsrConfig = async (
 const dummyServer = new Server(); // FIXME we hope to avoid this hack
 
 const mergedViteConfig = await mergeUserViteConfig({
+  // Since we have multiple instances of vite, different ones might overwrite the others' cache.
+  cacheDir: 'node_modules/.vite/waku-dev-worker',
   plugins: [
     viteReact(),
     nonjsResolvePlugin(),
@@ -184,7 +186,11 @@ const mergedViteConfig = await mergeUserViteConfig({
   optimizeDeps: {
     include: ['react-server-dom-webpack/client', 'react-dom'],
     exclude: ['waku'],
-    entries: [`${configSrcDir}/${configEntriesJs}`.replace(/\.js$/, '.*')],
+    entries: [
+      `${configSrcDir}/${configEntriesJs}`.replace(/\.js$/, '.*'),
+      // HACK hard-coded "pages"
+      `${configSrcDir}/pages/**/*.*`,
+    ],
   },
   ssr: {
     resolve: {
