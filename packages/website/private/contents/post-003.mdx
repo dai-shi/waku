@@ -29,9 +29,9 @@ For example, you can statically prerender a global header and footer in the root
 // ./src/pages/_layout.tsx
 import '../styles.css';
 
-import { Providers } from '../components/providers.js';
-import { Header } from '../components/header.js';
-import { Footer } from '../components/footer.js';
+import { Providers } from '../components/providers';
+import { Header } from '../components/header';
+import { Footer } from '../components/footer';
 
 // Create root layout
 export default async function RootLayout({ children }) {
@@ -267,9 +267,9 @@ The root layout placed at `./pages/_layout.tsx` is especially useful. It can be 
 // ./src/pages/_layout.tsx
 import '../styles.css';
 
-import { Providers } from '../components/providers.js';
-import { Header } from '../components/header.js';
-import { Footer } from '../components/footer.js';
+import { Providers } from '../components/providers';
+import { Header } from '../components/header';
+import { Footer } from '../components/footer';
 
 // Create root layout
 export default async function RootLayout({ children }) {
@@ -310,7 +310,7 @@ Layouts are also helpful in nested routes. For example, you can add a layout at 
 
 ```tsx
 // ./src/pages/blog/_layout.tsx
-import { Sidebar } from '../../components/sidebar.js';
+import { Sidebar } from '../../components/sidebar';
 
 // Create blog layout
 export default async function BlogLayout({ children }) {
