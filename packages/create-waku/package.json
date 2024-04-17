@@ -1,9 +1,6 @@
 {
   "name": "create-waku",
-  "version": "0.9.0-alpha.0",
-  "publishConfig": {
-    "tag": "next"
-  },
+  "version": "0.9.0",
   "author": "Daishi Kato",
   "type": "module",
   "contributors": [

@@ -154,6 +154,7 @@ function displayUsage() {
 Usage: ${commands.create} [options]
 
 Options:
+  --choose              Choose from the template list
   --example             Specify an example use as a template
   -h, --help            Display this help message
 `);
