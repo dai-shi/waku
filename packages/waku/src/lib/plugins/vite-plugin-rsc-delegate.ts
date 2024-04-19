@@ -12,15 +12,26 @@ const isClientEntry = (id: string, code: string) => {
       syntax: 'typescript',
       tsx: ext.endsWith('x'),
     });
+    let isDirective = true;
+    
     for (const item of mod.body) {
       if (
         item.type === 'ExpressionStatement' &&
         item.expression.type === 'StringLiteral' &&
         item.expression.value === 'use client'
       ) {
+        if (!isDirective) {
+          const e = {
+            messageText:
+              'The `"use client"` directive must be put at the top of the file.',
+          }
+          throw e;
+        }
         return true;
+      } else {
+        isDirective = false;
       }
-    }
+    } 
   }
   return false;
 };

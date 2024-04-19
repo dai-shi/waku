@@ -34,17 +34,38 @@ export function rscAnalyzePlugin(
           syntax: 'typescript',
           tsx: ext.endsWith('x'),
         });
+        // to fix the issue that the directive is not at the top of the file
+        let isDirective = true;
+        
         for (const item of mod.body) {
           if (
             item.type === 'ExpressionStatement' &&
             item.expression.type === 'StringLiteral'
           ) {
             if (item.expression.value === 'use client') {
-              clientEntryCallback(id);
-              fileHashMap.set(id, await hash(code));
+              if (!isDirective) {
+                const e = {
+                  messageText:
+                    'The `"use client"` directive must be put at the top of the file.',
+                }
+                throw e;
+              } else {
+                clientEntryCallback(id);
+                fileHashMap.set(id, await hash(code));
+              }
             } else if (item.expression.value === 'use server') {
-              serverEntryCallback(id);
+              if (!isDirective) {
+                const e = {
+                  messageText:
+                    'The `"use server"` directive must be put at the top of the file.',
+                }
+                throw e
+              } else {
+                serverEntryCallback(id); 
+              }
             }
+          } else {
+            isDirective = false;
           }
         }
       }
