@@ -70,7 +70,7 @@ export function rscAnalyzePlugin(
 
       // Avoid re-processing code for client files if already handled
       if (clientFileSet.has(id)) {
-        return rscTransform.call(this, code, id, options);
+        return (rscTransform as typeof rscTransform & { handler: undefined }).call(this, code, id, options);
       }
     },
   };
