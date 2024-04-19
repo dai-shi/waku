@@ -25,6 +25,7 @@ export function rscAnalyzePlugin(
   const rscTransform = rscTransformPlugin({ isBuild: false }).transform;
   const clientEntryCallback = (id: string) => clientFileSet.add(id);
   const serverEntryCallback = (id: string) => serverFileSet.add(id);
+
   return {
     name: 'rsc-analyze-plugin',
     async transform(code, id, options) {
@@ -34,27 +35,44 @@ export function rscAnalyzePlugin(
           syntax: 'typescript',
           tsx: ext.endsWith('x'),
         });
+
+        let isDirective = true;  // Initial state assuming directives are at the top
+        let hasClientDirective = false;
+        let hasServerDirective = false;
+
         for (const item of mod.body) {
-          if (
-            item.type === 'ExpressionStatement' &&
-            item.expression.type === 'StringLiteral'
-          ) {
+          if (item.type === 'ExpressionStatement' && item.expression.type === 'StringLiteral') {
+            if (!isDirective) {
+              continue;  // Skip processing if we are past the initial directives
+            }
+
             if (item.expression.value === 'use client') {
+              if (hasClientDirective || hasServerDirective) {
+                throw new Error('Duplicate or conflicting "use client/server" directives found.');
+              }
               clientEntryCallback(id);
               fileHashMap.set(id, await hash(code));
+              hasClientDirective = true;
             } else if (item.expression.value === 'use server') {
+              if (hasClientDirective || hasServerDirective) {
+                throw new Error('Duplicate or conflicting "use client/server" directives found.');
+              }
               serverEntryCallback(id);
+              hasServerDirective = true;
+            } else {
+              isDirective = false;  // Any non-directive expression ends the directive section
             }
+          } else {
+            isDirective = false;  // Any non-expression statement also ends the directive section
           }
         }
       }
-      // Avoid walking after the client boundary
+
+      // Avoid re-processing code for client files if already handled
       if (clientFileSet.has(id)) {
-        // TODO this isn't efficient. let's refactor it in the future.
-        return (
-          rscTransform as typeof rscTransform & { handler: undefined }
-        ).call(this, code, id, options);
+        return rscTransform.call(this, code, id, options);
       }
     },
   };
 }
+
