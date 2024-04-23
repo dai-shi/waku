@@ -122,6 +122,31 @@ importers:
         specifier: 5.4.4
         version: 5.4.4
 
+  e2e/fixtures/ssg-wildcard:
+    dependencies:
+      react:
+        specifier: 19.0.0-canary-e3ebcd54b-20240405
+        version: 19.0.0-canary-e3ebcd54b-20240405
+      react-dom:
+        specifier: 19.0.0-canary-e3ebcd54b-20240405
+        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+      react-server-dom-webpack:
+        specifier: 19.0.0-canary-e3ebcd54b-20240405
+        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+      waku:
+        specifier: 0.20.1
+        version: link:../../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 18.2.74
+        version: 18.2.74
+      '@types/react-dom':
+        specifier: 18.2.24
+        version: 18.2.24
+      typescript:
+        specifier: 5.4.4
+        version: 5.4.4
+
   e2e/fixtures/ssr-basic:
     dependencies:
       react:
@@ -651,31 +676,6 @@ importers:
         version: 5.4.4
 
   examples/24_nesting:
-    dependencies:
-      react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
-      react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
-      react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
-      waku:
-        specifier: 0.20.1
-        version: link:../../packages/waku
-    devDependencies:
-      '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
-      '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
-      typescript:
-        specifier: 5.4.4
-        version: 5.4.4
-
-  examples/25_static-wildcard:
     dependencies:
       react:
         specifier: 19.0.0-canary-e3ebcd54b-20240405

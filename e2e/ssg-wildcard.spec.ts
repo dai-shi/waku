@@ -10,20 +10,20 @@ import { createRequire } from 'node:module';
 
 let standaloneDir: string;
 const exampleDir = fileURLToPath(
-  new URL('../examples/25_static-wildcard', import.meta.url),
+  new URL('./fixtures/ssg-wildcard', import.meta.url),
 );
 const wakuDir = fileURLToPath(new URL('../packages/waku', import.meta.url));
 const { version } = createRequire(import.meta.url)(
   join(wakuDir, 'package.json'),
 );
 
-test.describe('25_static wildcard', async () => {
+test.describe('ssg wildcard', async () => {
   test.beforeEach(async () => {
     // GitHub Action on Windows doesn't support mkdtemp on global temp dir,
     // Which will cause files in `src` folder to be empty.
     // I don't know why
     const tmpDir = process.env.TEMP_DIR ? process.env.TEMP_DIR : tmpdir();
-    standaloneDir = await mkdtemp(join(tmpDir, 'waku-07-router-'));
+    standaloneDir = await mkdtemp(join(tmpDir, 'waku-ssg-wildcard-'));
     await cp(exampleDir, standaloneDir, {
       filter: (src) => {
         return !src.includes('node_modules') && !src.includes('dist');
