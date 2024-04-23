@@ -74,7 +74,7 @@ type CreatePage = <
       }
     | {
         render: 'static';
-        path: PathWithSlug<Path, SlugKey>;
+        path: PathWithSlug<Path, SlugKey | `...${WildSlugKey}`>;
         staticPaths: string[] | string[][];
         component: FunctionComponent<RouteProps & Record<SlugKey, string>>;
       }
