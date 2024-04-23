@@ -7,6 +7,7 @@
     "packages/**/*",
     "examples/**/*",
     "e2e/**/*",
-    "./playwright.config.ts"
+    "./playwright.config.ts",
+    "./vitest.config.ts"
   ]
 }
