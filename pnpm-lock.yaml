@@ -675,6 +675,31 @@ importers:
         specifier: 5.4.4
         version: 5.4.4
 
+  examples/25_static-wildcard:
+    dependencies:
+      react:
+        specifier: 19.0.0-canary-e3ebcd54b-20240405
+        version: 19.0.0-canary-e3ebcd54b-20240405
+      react-dom:
+        specifier: 19.0.0-canary-e3ebcd54b-20240405
+        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+      react-server-dom-webpack:
+        specifier: 19.0.0-canary-e3ebcd54b-20240405
+        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+      waku:
+        specifier: 0.20.1
+        version: link:../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 18.2.74
+        version: 18.2.74
+      '@types/react-dom':
+        specifier: 18.2.24
+        version: 18.2.24
+      typescript:
+        specifier: 5.4.4
+        version: 5.4.4
+
   packages/create-waku:
     devDependencies:
       '@types/fs-extra':
@@ -2361,7 +2386,7 @@ packages:
   /@vanilla-extract/vite-plugin@4.0.7(@types/node@20.12.5)(vite@5.2.8):
     resolution: {integrity: sha512-uRAFWdq5Eq0ybpgW2P0LNOw8eW+MTg/OFo5K0Hsl2cKu/Tu2tabCsBf6vNjfhDrm4jBShHy1wJIVcYxf6sczVQ==}
     peerDependencies:
-      vite: 5.2.8
+      vite: ^4.0.3 || ^5.0.0
     dependencies:
       '@vanilla-extract/integration': 7.1.2(@types/node@20.12.5)
       vite: 5.2.8(@types/node@20.12.5)
@@ -2385,7 +2410,7 @@ packages:
     resolution: {integrity: sha512-oojO9IDc4nCUUi8qIR11KoQm0XFFLIwsRBwHRR4d/88IWghn1y6ckz/bJ8GHDCsYEJee8mDzqtJxh15/cisJNQ==}
     engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
-      vite: 5.2.8
+      vite: ^4.2.0 || ^5.0.0
     dependencies:
       '@babel/core': 7.24.4
       '@babel/plugin-transform-react-jsx-self': 7.24.1(@babel/core@7.24.4)
@@ -6941,7 +6966,7 @@ packages:
   /vite-tsconfig-paths@4.3.2(typescript@5.4.4)(vite@5.2.8):
     resolution: {integrity: sha512-0Vd/a6po6Q+86rPlntHye7F31zA2URZMbH8M3saAZ/xR9QoGN/L21bxEGfXdWmFdNkqPpRdxFT7nmNe12e9/uA==}
     peerDependencies:
-      vite: 5.2.8
+      vite: '*'
     peerDependenciesMeta:
       vite:
         optional: true
