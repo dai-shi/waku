@@ -162,27 +162,33 @@ export function createPages(
       staticPathSet.add([page.path, pathSpec]);
       const id = joinPath(page.path, 'page').replace(/^\//, '');
       registerStaticComponent(id, page.component);
-    } else if (page.render === 'static' && numSlugs > 0 && numWildcards === 0) {
+    } else if (page.render === 'static' && numSlugs > 0) {
       const staticPaths = (
         page as {
           staticPaths: string[] | string[][];
         }
       ).staticPaths.map((item) => (Array.isArray(item) ? item : [item]));
       for (const staticPath of staticPaths) {
-        if (staticPath.length !== numSlugs) {
+        if (staticPath.length !== numSlugs && numWildcards === 0) {
           throw new Error('staticPaths does not match with slug pattern');
         }
         const mapping: Record<string, string> = {};
         let slugIndex = 0;
-        const pathItems = pathSpec.map(({ type, name }) => {
-          if (type !== 'literal') {
-            const actualName = staticPath[slugIndex++]!;
-            if (name) {
-              mapping[name] = actualName;
-            }
-            return actualName;
+        const pathItems = [] as string[];
+        pathSpec.forEach(({ type, name }) => {
+          switch (type) {
+            case 'literal':
+              pathItems.push(name!);
+              break;
+            case 'wildcard':
+              staticPath.slice(slugIndex++).forEach((slug) => {
+                pathItems.push(slug);
+              });
+              break;
+            case 'group':
+              pathItems.push(staticPath[slugIndex++]!);
+              break;
           }
-          return name;
         });
         staticPathSet.add([
           page.path,
