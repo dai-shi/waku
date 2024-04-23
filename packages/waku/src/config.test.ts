@@ -10,5 +10,5 @@ test('defineConfig', async () => {
 
 expectType<Config>(defineConfig({}));
 
-// @ts-expect-error
+// @ts-expect-error This is supposed to verify ts-expect works.
 expectType<undefined>(defineConfig({}));
