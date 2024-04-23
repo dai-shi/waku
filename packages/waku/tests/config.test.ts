@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { type Config, defineConfig } from 'waku/config';
+import { type Config, defineConfig } from '../src/config.js';
 import { expectType } from 'ts-expect';
 
 // Absolutely meaningless unit and type test examples.
