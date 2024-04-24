@@ -686,11 +686,18 @@ export async function build(options: {
   );
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
+
+  // TODO: proper time measuring and logging
+  let timestamp = Date.now();
+  console.log('Generating build config');
   const buildConfig = await getBuildConfig({ config, entries: distEntries });
   await appendFile(
     distEntriesFile,
     `export const buildConfig = ${JSON.stringify(buildConfig)};`,
   );
+  console.log(`Generated build config in ${Date.now() - timestamp} ms`);
+  timestamp = Date.now();
+  console.log('Generating static pages ...');
   const { getClientModules } = await emitRscFiles(
     rootDir,
     config,
@@ -706,6 +713,7 @@ export async function build(options: {
     getClientModules,
     clientBuildOutput,
   );
+  console.log(`Generated static pages in ${Date.now() - timestamp} ms`);
 
   if (options.deploy?.startsWith('vercel-')) {
     await emitVercelOutput(
