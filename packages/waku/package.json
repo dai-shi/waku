@@ -60,6 +60,7 @@
   ],
   "scripts": {
     "dev": "swc src -d dist -w --strip-leading-paths",
+    "test": "vitest run",
     "compile": "rm -rf dist *.tsbuildinfo && pnpm run compile:code && pnpm run compile:types && cp ../../README.md .",
     "compile:code": "swc src -d dist --strip-leading-paths",
     "compile:types": "tsc --project tsconfig.json"
@@ -80,7 +81,9 @@
   "devDependencies": {
     "@netlify/functions": "^2.6.0",
     "@swc/cli": "^0.3.12",
-    "rollup": "^4.14.0"
+    "rollup": "^4.14.0",
+    "ts-expect": "^1.3.0",
+    "vitest": "^1.5.0"
   },
   "peerDependencies": {
     "react": "19.0.0-canary-e3ebcd54b-20240405",

@@ -8,7 +8,7 @@
     "dev": "pnpm -r --filter='./packages/*' run dev",
     "compile": "pnpm -r --filter='./packages/*' run compile",
     "csb-install-FIXME": "pnpm install --no-frozen-lockfile",
-    "test": "prettier -c . && eslint . && tsc -b",
+    "test": "prettier -c . && eslint . && tsc -b && pnpm run --filter waku test",
     "e2e": "playwright test",
     "examples:dev": "(cd ./examples/${NAME} && pnpm run dev)",
     "examples:dev:01_template": "NAME=01_template pnpm run examples:dev",
