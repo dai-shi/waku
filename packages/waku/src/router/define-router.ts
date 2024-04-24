@@ -96,10 +96,6 @@ export function unstable_defineRouter(
         ? ['NOT_FOUND', 'HAS_404']
         : ['NOT_FOUND'];
   };
-  const shouldSkipObj: {
-    [componentId: ShouldSkip[number][0]]: ShouldSkip[number][1];
-  } = {};
-
   const renderEntries: RenderEntries = async (
     input,
     { searchParams, buildConfig },
@@ -108,6 +104,10 @@ export function unstable_defineRouter(
     if ((await existsPath(pathname, buildConfig))[0] === 'NOT_FOUND') {
       return null;
     }
+    const shouldSkipObj: {
+      [componentId: ShouldSkip[number][0]]: ShouldSkip[number][1];
+    } = {};
+
     const skip = searchParams.getAll(PARAM_KEY_SKIP) || [];
     searchParams.delete(PARAM_KEY_SKIP); // delete all
     const componentIds = getComponentIds(pathname);
