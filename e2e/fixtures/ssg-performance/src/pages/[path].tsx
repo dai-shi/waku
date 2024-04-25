@@ -1,4 +1,5 @@
-export default function Test({ path }: { path: string }) {
+export default async function Test({ path }: { path: string }) {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
   return <h1>{path}</h1>;
 }
 
