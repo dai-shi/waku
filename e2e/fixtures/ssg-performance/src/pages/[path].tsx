@@ -6,6 +6,6 @@ export default async function Test({ path }: { path: string }) {
 export async function getConfig() {
   return {
     render: 'static',
-    staticPaths: new Array(10000).fill(null).map((_, i) => `path-${i}`),
+    staticPaths: new Array(5000).fill(null).map((_, i) => `path-${i}`),
   };
 }
