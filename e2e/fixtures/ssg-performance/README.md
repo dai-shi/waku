@@ -1,3 +1,3 @@
-# RSC Basic
+# SSG Performance
 
-Only RSC features, no SSR.
+Test high volume SSG performance.
