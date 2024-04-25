@@ -1,0 +1,24 @@
+{
+  "name": "render-type",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "waku dev",
+    "build": "waku build",
+    "start:dynamic": "waku start",
+    "start:static": "serve dist/public"
+  },
+  "dependencies": {
+    "react": "19.0.0-canary-e3ebcd54b-20240405",
+    "react-dom": "19.0.0-canary-e3ebcd54b-20240405",
+    "react-server-dom-webpack": "19.0.0-canary-e3ebcd54b-20240405",
+    "waku": "workspace:*",
+    "serve": "^14.2.3"
+  },
+  "devDependencies": {
+    "@types/react": "18.2.74",
+    "@types/react-dom": "18.2.24",
+    "typescript": "5.4.4"
+  }
+}
