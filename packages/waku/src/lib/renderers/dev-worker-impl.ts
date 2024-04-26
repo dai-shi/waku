@@ -173,6 +173,7 @@ const hotUpdateCallback = (payload: HotUpdatePayload) => {
   const mesg: MessageRes = { type: 'hot-update', payload };
   parentPort!.postMessage(mesg);
 };
+
 const mergedViteConfig = await mergeUserViteConfig({
   // Since we have multiple instances of vite, different ones might overwrite the others' cache.
   cacheDir: 'node_modules/.vite/waku-dev-worker',
