@@ -144,6 +144,7 @@ export type LinkProps = {
   notPending?: ReactNode;
   children: ReactNode;
   unstable_prefetchOnEnter?: boolean;
+  unstable_prefetchOnView?: boolean;
 } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>;
 
 export function Link({
@@ -152,6 +153,7 @@ export function Link({
   pending,
   notPending,
   unstable_prefetchOnEnter,
+  unstable_prefetchOnView,
   ...props
 }: LinkProps): ReactElement {
   const router = useContext(RouterContext);
@@ -166,6 +168,32 @@ export function Link({
         throw new Error('Missing Router');
       };
   const [isPending, startTransition] = useTransition();
+  const ref = useRef<HTMLAnchorElement>();
+
+  useEffect(() => {
+    if (unstable_prefetchOnView && ref.current) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const url = new URL(to, window.location.href);
+              if (router && url.href !== window.location.href) {
+                const route = parseRoute(url);
+                router.prefetchRoute(route);
+              }
+            }
+          });
+        },
+        { threshold: 0.1 },
+      );
+
+      observer.observe(ref.current);
+
+      return () => {
+        observer.disconnect();
+      };
+    }
+  }, [unstable_prefetchOnView, router, to]);
   const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     const url = new URL(to, window.location.href);
@@ -198,7 +226,7 @@ export function Link({
     : props.onMouseEnter;
   const ele = createElement(
     'a',
-    { ...props, href: to, onClick, onMouseEnter },
+    { ...props, href: to, onClick, onMouseEnter, ref },
     children,
   );
   if (isPending && pending !== undefined) {
