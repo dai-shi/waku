@@ -75,7 +75,6 @@ ${opts.htmlHead}
     },
     transformIndexHtml() {
       return [
-        // FIXME ideally, we should avoid this.
         {
           tag: 'script',
           attrs: { type: 'module', async: true },
