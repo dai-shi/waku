@@ -14,6 +14,11 @@ const cwd = fileURLToPath(
 );
 
 test.describe(`high volume static site generation`, () => {
+  test.skip(
+    ({ browserName }) => browserName !== 'chromium',
+    'Browsers are not relevant for this test. One is enough.',
+  );
+
   let cp: ChildProcess;
   let port: number;
 
@@ -21,11 +26,7 @@ test.describe(`high volume static site generation`, () => {
     await terminate(cp.pid!);
   });
 
-  test('build and verify', async ({ page, browserName }) => {
-    test.skip(
-      browserName !== 'chromium',
-      'Browsers are not relevant for this test.',
-    );
+  test('build and verify', async ({ page }) => {
     test.setTimeout(60000);
     await rm(`${cwd}/dist`, {
       recursive: true,
