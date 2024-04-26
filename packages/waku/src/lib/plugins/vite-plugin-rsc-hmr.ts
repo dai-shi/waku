@@ -124,7 +124,6 @@ export function rscHmrPlugin(): Plugin {
       }
     },
     handleHotUpdate({ file }) {
-      
       const moduleLoading = (globalThis as any).__webpack_module_loading__;
       const moduleCache = (globalThis as any).__webpack_module_cache__;
       const id = filePathToFileURL(file);
