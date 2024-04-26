@@ -168,7 +168,7 @@ export function Link({
         throw new Error('Missing Router');
       };
   const [isPending, startTransition] = useTransition();
-  const ref = useRef<HTMLAnchorElement>(null);
+  const ref = useRef<HTMLAnchorElement>();
 
   useEffect(() => {
     if (unstable_prefetchOnView && ref.current) {
@@ -177,9 +177,9 @@ export function Link({
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
               const url = new URL(to, window.location.href);
-              if (url.href !== window.location.href) {
+              if (router && url.href !== window.location.href) {
                 const route = parseRoute(url);
-                prefetchRoute(route);
+                router.prefetchRoute(route);
               }
             }
           });
@@ -193,7 +193,7 @@ export function Link({
         observer.disconnect();
       };
     }
-  }, [unstable_prefetchOnView, prefetchRoute, to, ref]);
+  }, [unstable_prefetchOnView, router, to]);
   const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     const url = new URL(to, window.location.href);
