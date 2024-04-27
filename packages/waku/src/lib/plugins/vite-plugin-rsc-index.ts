@@ -7,9 +7,9 @@ export function rscIndexPlugin(opts: {
   srcDir: string;
   mainJs: string;
   htmlHead: string;
-  indexHtml: string;
   cssAssets?: string[];
 }): Plugin {
+  const indexHtml = 'index.html';
   const html = `
 <!doctype html>
 <html>
@@ -58,18 +58,18 @@ ${opts.htmlHead}
       return {
         ...options,
         input: {
-          indexHtml: opts.indexHtml,
+          indexHtml,
           ...options.input,
         },
       };
     },
     resolveId(id) {
-      if (id === opts.indexHtml) {
-        return { id: opts.indexHtml, moduleSideEffects: true };
+      if (id === indexHtml) {
+        return { id: indexHtml, moduleSideEffects: true };
       }
     },
     load(id) {
-      if (id === opts.indexHtml) {
+      if (id === indexHtml) {
         return html;
       }
     },

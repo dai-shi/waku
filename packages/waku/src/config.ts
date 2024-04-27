@@ -37,11 +37,6 @@ export interface Config {
    */
   ssrDir?: string;
   /**
-   * The index.html file for any directories.
-   * Defaults to "index.html".
-   */
-  indexHtml?: string;
-  /**
    * The client main file relative to srcDir.
    * The extension should be `.js`,
    * but resolved with other extensions in the development mode.

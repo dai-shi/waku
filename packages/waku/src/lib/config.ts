@@ -35,7 +35,6 @@ export async function resolveConfig(config: Config) {
     publicDir: 'public',
     assetsDir: 'assets',
     ssrDir: 'ssr',
-    indexHtml: 'index.html',
     mainJs: 'main.js',
     entriesJs: 'entries.js',
     preserveModuleDirs: ['pages', 'templates', 'routes', 'components'],
