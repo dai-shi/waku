@@ -642,7 +642,7 @@ export async function build(options: {
     joinPath(rootDir, config.srcDir, config.entriesJs),
   );
   const distEntriesFile = resolveFileName(
-    joinPath(rootDir, config.distDir, config.entriesJs),
+    joinPath(rootDir, config.distDir, 'entries.js'),
   );
   const mainJsFile = resolveFileName(
     joinPath(rootDir, config.srcDir, config.mainJs),
