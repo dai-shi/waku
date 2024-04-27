@@ -1,4 +1,5 @@
-import { createPages } from 'waku';
+import { createPages } from 'waku/router/server';
+
 import { ServerEcho } from './ServerEcho.js';
 import { ClientEcho } from './ClientEcho.js';
 
