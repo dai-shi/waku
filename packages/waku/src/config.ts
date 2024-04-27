@@ -49,7 +49,8 @@ export interface Config {
    */
   mainJs?: string;
   /**
-   * The entries.js file relative to srcDir or distDir.
+   * The entries.js file relative to srcDir.
+   * Will be generated as `entries.js` to distDir.
    * The extension should be `.js`,
    * but resolved with other extensions in the development mode.
    * Defaults to "entries.js".
