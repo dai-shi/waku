@@ -75,6 +75,10 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   defaultHandler(warning);
 };
 
+// entries file name for dist
+// We may change this in the future
+export const ENTRIES_JS = 'entries.js';
+
 const analyzeEntries = async (
   rootDir: string,
   config: ResolvedConfig,
@@ -641,9 +645,7 @@ export async function build(options: {
   const entriesFile = resolveFileName(
     joinPath(rootDir, config.srcDir, config.entriesJs),
   );
-  const distEntriesFile = resolveFileName(
-    joinPath(rootDir, config.distDir, config.entriesJs),
-  );
+  const distEntriesFile = joinPath(rootDir, config.distDir, ENTRIES_JS);
   const mainJsFile = resolveFileName(
     joinPath(rootDir, config.srcDir, config.mainJs),
   );

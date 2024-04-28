@@ -42,20 +42,6 @@ export interface Config {
    */
   indexHtml?: string;
   /**
-   * The client main file relative to srcDir.
-   * The extension should be `.js`,
-   * but resolved with other extensions in the development mode.
-   * Defaults to "main.js".
-   */
-  mainJs?: string;
-  /**
-   * The entries.js file relative to srcDir or distDir.
-   * The extension should be `.js`,
-   * but resolved with other extensions in the development mode.
-   * Defaults to "entries.js".
-   */
-  entriesJs?: string;
-  /**
    * The list of directries to preserve server module structure.
    * Relative to srcDir.
    * Defaults to ["pages", "templates", "routes", "components"].

@@ -10,7 +10,7 @@ import * as dotenv from 'dotenv';
 
 import type { Config } from './config.js';
 import { runner } from './lib/hono/runner.js';
-import { build } from './lib/builder/build.js';
+import { ENTRIES_JS, build } from './lib/builder/build.js';
 
 const require = createRequire(new URL('.', import.meta.url));
 
@@ -122,11 +122,10 @@ async function runBuild() {
 
 async function runStart({
   distDir = 'dist',
-  entriesJs = 'entries.js',
   publicDir = 'public',
 }) {
   const loadEntries = () =>
-    import(pathToFileURL(path.resolve(distDir, entriesJs)).toString());
+    import(pathToFileURL(path.resolve(distDir, ENTRIES_JS)).toString());
   const app = new Hono();
   app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
   app.use('*', runner({ cmd: 'start', loadEntries, env: process.env as any }));
