@@ -40,7 +40,7 @@ export function loadModule(id) {
     name: 'rsc-entries-plugin',
     configResolved(config) {
       entriesFileWithoutExt = stripExt(
-        path.resolve(config.root, opts.srcDir, SRC_ENTRIES_JS),
+        path.join(config.root, opts.srcDir, SRC_ENTRIES_JS),
       );
       if (existsSync(CONFIG_FILE)) {
         const file = normalizePath(

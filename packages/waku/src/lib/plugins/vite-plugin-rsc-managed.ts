@@ -1,5 +1,4 @@
 import { existsSync } from 'node:fs';
-import path from 'node:path';
 import type { Plugin } from 'vite';
 
 import { EXTENSIONS } from '../config.js';
@@ -72,7 +71,7 @@ export function rscManagedPlugin(opts: {
     enforce: 'pre',
     configResolved(config) {
       entriesFile = resolveFileName(
-        path.resolve(config.root, opts.srcDir, SRC_ENTRIES_JS),
+        joinPath(config.root, opts.srcDir, SRC_ENTRIES_JS),
       );
       mainFile = resolveFileName(
         joinPath(config.root, opts.srcDir, SRC_MAIN_JS),
