@@ -553,7 +553,7 @@ const emitHtmlFiles = async (
             ? pathname
             : pathname === '/404'
               ? '404.html' // HACK special treatment for 404, better way?
-              : pathname + '/index.html'
+              : pathname + '/index.html',
         );
         const htmlReadable = await renderHtml({
           config,
