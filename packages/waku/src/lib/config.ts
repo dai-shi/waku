@@ -37,7 +37,6 @@ export async function resolveConfig(config: Config) {
     ssrDir: 'ssr',
     preserveModuleDirs: ['pages', 'templates', 'routes', 'components'],
     privateDir: 'private',
-    serveJs: 'serve.js',
     rscPath: 'RSC',
     htmlAttrs: '',
     htmlHead: DEFAULT_HTML_HEAD,

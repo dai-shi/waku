@@ -7,6 +7,7 @@ import type { ResolvedConfig } from '../config.js';
 export const emitCloudflareOutput = async (
   rootDir: string,
   config: ResolvedConfig,
+  serveJs: string,
 ) => {
   const wranglerTomlFile = path.join(rootDir, 'wrangler.toml');
   if (!existsSync(wranglerTomlFile)) {
@@ -14,7 +15,7 @@ export const emitCloudflareOutput = async (
       wranglerTomlFile,
       `
 name = "waku-project"
-main = "${config.distDir}/${config.serveJs}"
+main = "${config.distDir}/${serveJs}"
 compatibility_date = "2023-12-06"
 compatibility_flags = [ "nodejs_als" ]
 

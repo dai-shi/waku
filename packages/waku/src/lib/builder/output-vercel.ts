@@ -7,6 +7,7 @@ import type { ResolvedConfig } from '../config.js';
 export const emitVercelOutput = async (
   rootDir: string,
   config: ResolvedConfig,
+  serveJs: string,
   type: 'static' | 'serverless',
 ) => {
   const publicDir = path.join(rootDir, config.distDir, config.publicDir);
@@ -37,7 +38,7 @@ export const emitVercelOutput = async (
     }
     const vcConfigJson = {
       runtime: 'nodejs18.x',
-      handler: `${config.distDir}/${config.serveJs}`,
+      handler: `${config.distDir}/${serveJs}`,
       launcherType: 'Nodejs',
     };
     writeFileSync(

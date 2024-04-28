@@ -10,7 +10,6 @@ export interface Config {
   basePath?: string;
   /**
    * The source directory relative to root.
-   * This will be the actual root in the development mode.
    * Defaults to  "src".
    */
   srcDir?: string;
@@ -49,12 +48,6 @@ export interface Config {
    * Defaults to  "private".
    */
   privateDir?: string;
-  /**
-   * The serve.js file relative distDir.
-   * This file is used for deployment.
-   * Defaults to "serve.js".
-   */
-  serveJs?: string;
   /**
    * Prefix for HTTP requests to indicate RSC requests.
    * Defaults to "RSC".

@@ -6,6 +6,7 @@ import type { ResolvedConfig } from '../config.js';
 export const emitNetlifyOutput = async (
   rootDir: string,
   config: ResolvedConfig,
+  serveJs: string,
   type: 'static' | 'functions',
 ) => {
   if (type === 'functions') {
@@ -26,7 +27,7 @@ export const emitNetlifyOutput = async (
       path.join(functionsDir, 'serve.js'),
       `
 globalThis.__WAKU_NOT_FOUND_HTML__ = ${JSON.stringify(notFoundHtml)};
-export { default } from '../../${config.distDir}/${config.serveJs}';
+export { default } from '../../${config.distDir}/${serveJs}';
 export const config = {
   preferStatic: true,
   path: ['/', '/*'],

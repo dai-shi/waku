@@ -75,9 +75,10 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   defaultHandler(warning);
 };
 
-// entries file name for dist
+// Some file and dir names for dist
 // We may change this in the future
 export const ENTRIES_JS = 'entries.js';
+export const SERVE_JS = 'serve.js';
 
 const analyzeEntries = async (
   rootDir: string,
@@ -212,6 +213,7 @@ const buildServerBundle = async (
         ? [
             rscServePlugin({
               ...config,
+              serveJs: SERVE_JS,
               entriesFile,
               srcServeFile: decodeFilePathFromAbsolute(
                 joinPath(
@@ -713,18 +715,20 @@ export async function build(options: {
     await emitVercelOutput(
       rootDir,
       config,
+      SERVE_JS,
       options.deploy.slice('vercel-'.length) as 'static' | 'serverless',
     );
   } else if (options.deploy?.startsWith('netlify-')) {
     await emitNetlifyOutput(
       rootDir,
       config,
+      SERVE_JS,
       options.deploy.slice('netlify-'.length) as 'static' | 'functions',
     );
   } else if (options.deploy === 'cloudflare') {
-    await emitCloudflareOutput(rootDir, config);
+    await emitCloudflareOutput(rootDir, config, SERVE_JS);
   } else if (options.deploy === 'partykit') {
-    await emitPartyKitOutput(rootDir, config);
+    await emitPartyKitOutput(rootDir, config, SERVE_JS);
   } else if (options.deploy === 'aws-lambda') {
     await emitAwsLambdaOutput(config);
   }

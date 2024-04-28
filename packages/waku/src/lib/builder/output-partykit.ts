@@ -7,6 +7,7 @@ import type { ResolvedConfig } from '../config.js';
 export const emitPartyKitOutput = async (
   rootDir: string,
   config: ResolvedConfig,
+  serveJs: string,
 ) => {
   const partykitJsonFile = path.join(rootDir, 'partykit.json');
   if (!existsSync(partykitJsonFile)) {
@@ -15,7 +16,7 @@ export const emitPartyKitOutput = async (
       JSON.stringify(
         {
           name: 'waku-project',
-          main: `${config.distDir}/${config.serveJs}`,
+          main: `${config.distDir}/${serveJs}`,
           compatibilityDate: '2023-02-16',
           serve: `./${config.distDir}/${config.publicDir}`,
         },
