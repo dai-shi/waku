@@ -1,5 +1,3 @@
-import { existsSync } from 'node:fs';
-import path from 'node:path';
 import type { Plugin } from 'vite';
 
 import { codeToInject } from '../renderers/utils.js';
@@ -23,7 +21,6 @@ ${opts.htmlHead}
   </body>
 </html>
 `;
-  let managedIndexHtml = false;
   return {
     name: 'rsc-index-plugin',
     config() {
@@ -33,55 +30,46 @@ ${opts.htmlHead}
         },
       };
     },
-    configResolved(config) {
-      if (!existsSync(path.join(config.root, indexHtml))) {
-        managedIndexHtml = true;
-      }
-    },
     options(options) {
-      if (managedIndexHtml) {
-        if (typeof options.input === 'string') {
-          throw new Error('string input is unsupported');
-        }
-        if (Array.isArray(options.input)) {
-          throw new Error('array input is unsupported');
-        }
-        return {
-          ...options,
-          input: {
-            indexHtml,
-            ...options.input,
-          },
-        };
+      if (typeof options.input === 'string') {
+        throw new Error('string input is unsupported');
       }
+      if (Array.isArray(options.input)) {
+        throw new Error('array input is unsupported');
+      }
+      return {
+        ...options,
+        input: {
+          indexHtml,
+          ...options.input,
+        },
+      };
     },
     configureServer(server) {
-      if (managedIndexHtml) {
-        return () => {
-          server.middlewares.use((req, res) => {
-            server
-              .transformIndexHtml(req.url || '', html)
-              .then((content) => {
-                res.statusCode = 200;
-                res.setHeader('content-type', 'text/html; charset=utf-8');
-                res.end(content);
-              })
-              .catch((err) => {
-                console.error('Error transforming index.html', err);
-                res.statusCode = 500;
-                res.end('Internal Server Error');
-              });
-          });
-        };
-      }
+      return () => {
+        server.middlewares.use((req, res) => {
+          server
+            .transformIndexHtml(req.url || '', html)
+            .then((content) => {
+              res.statusCode = 200;
+              res.setHeader('content-type', 'text/html; charset=utf-8');
+              res.end(content);
+            })
+            .catch((err) => {
+              console.error('Error transforming index.html', err);
+              res.statusCode = 500;
+              res.end('Internal Server Error');
+            });
+        });
+      };
     },
     resolveId(id) {
-      if (managedIndexHtml && id === indexHtml) {
+      if (id === indexHtml) {
         return { id: indexHtml, moduleSideEffects: true };
       }
     },
     load(id) {
-      if (managedIndexHtml && id === indexHtml) {
+      if (id === indexHtml) {
         return html;
       }
     },
