@@ -58,8 +58,8 @@ const addSuffixX = (fname: string | undefined) => {
 
 export function rscManagedPlugin(opts: {
   srcDir: string;
-  addEntriesJsToInput?: boolean;
-  addMainJsToInput?: boolean;
+  addEntriesToInput?: boolean;
+  addMainToInput?: boolean;
 }): Plugin {
   let entriesFile: string | undefined;
   let mainFile: string | undefined;
@@ -70,12 +70,8 @@ export function rscManagedPlugin(opts: {
     name: 'rsc-managed-plugin',
     enforce: 'pre',
     configResolved(config) {
-      entriesFile = resolveFileName(
-        joinPath(config.root, opts.srcDir, SRC_ENTRIES_JS),
-      );
-      mainFile = resolveFileName(
-        joinPath(config.root, opts.srcDir, SRC_MAIN_JS),
-      );
+      entriesFile = joinPath(config.root, opts.srcDir, SRC_ENTRIES_JS);
+      mainFile = joinPath(config.root, opts.srcDir, SRC_MAIN_JS);
     },
     options(options) {
       if (typeof options.input === 'string') {
@@ -87,9 +83,10 @@ export function rscManagedPlugin(opts: {
       return {
         ...options,
         input: {
-          ...(opts.addEntriesJsToInput &&
-            entriesFile && { entries: entriesFile }),
-          ...(opts.addMainJsToInput && mainFile && { main: mainFile }),
+          ...(opts.addEntriesToInput && {
+            entries: resolveFileName(entriesFile!),
+          }),
+          ...(opts.addMainToInput && { main: resolveFileName(mainFile!) }),
           ...options.input,
         },
       };

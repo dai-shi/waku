@@ -83,7 +83,7 @@ export const devServer: Middleware = (options) => {
         nonjsResolvePlugin(),
         rscEnvPlugin({ config }),
         rscPrivatePlugin(config),
-        rscManagedPlugin(config),
+        rscManagedPlugin({ srcDir: config.srcDir }),
         rscIndexPlugin(config),
         rscHmrPlugin(),
       ],

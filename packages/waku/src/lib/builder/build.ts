@@ -109,7 +109,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
       rscAnalyzePlugin(clientFileSet, serverFileSet, fileHashMap),
       rscManagedPlugin({
         srcDir: config.srcDir,
-        addEntriesJsToInput: true,
+        addEntriesToInput: true,
       }),
     ],
     ssr: {
@@ -179,7 +179,7 @@ const buildServerBundle = async (
       rscPrivatePlugin(config),
       rscManagedPlugin({
         srcDir: config.srcDir,
-        addEntriesJsToInput: true,
+        addEntriesToInput: true,
       }),
       rscEntriesPlugin({
         srcDir: config.srcDir,
@@ -290,7 +290,7 @@ const buildSsrBundle = async (
       rscPrivatePlugin(config),
       rscManagedPlugin({
         srcDir: config.srcDir,
-        addMainJsToInput: true,
+        addMainToInput: true,
       }),
     ],
     ssr: isNodeCompatible
@@ -363,7 +363,7 @@ const buildClientBundle = async (
       rscPrivatePlugin(config),
       rscManagedPlugin({
         srcDir: config.srcDir,
-        addMainJsToInput: true,
+        addMainToInput: true,
       }),
     ],
     build: {
