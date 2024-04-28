@@ -41,6 +41,7 @@ export async function resolveConfig(config: Config) {
     privateDir: 'private',
     serveJs: 'serve.js',
     rscPath: 'RSC',
+    htmlAttrs: '',
     htmlHead: DEFAULT_HTML_HEAD,
     middleware: DEFAULT_MIDDLEWARE,
     ...config,

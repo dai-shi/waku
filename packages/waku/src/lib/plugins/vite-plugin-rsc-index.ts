@@ -6,13 +6,14 @@ export function rscIndexPlugin(opts: {
   basePath: string;
   srcDir: string;
   mainJs: string;
+  htmlAttrs: string;
   htmlHead: string;
   cssAssets?: string[];
 }): Plugin {
   const indexHtml = 'index.html';
   const html = `
 <!doctype html>
-<html>
+<html${opts.htmlAttrs ? ' ' + opts.htmlAttrs : ''}>
   <head>
 ${opts.htmlHead}
   </head>
