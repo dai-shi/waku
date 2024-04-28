@@ -37,10 +37,6 @@ export interface Config {
    */
   ssrDir?: string;
   /**
-   * The index.html file for any directories.
-   * Defaults to "index.html".
-   */
-  indexHtml?: string;
   /**
    * The list of directries to preserve server module structure.
    * Relative to srcDir.
@@ -64,6 +60,13 @@ export interface Config {
    * Defaults to "RSC".
    */
   rscPath?: string;
+  /**
+   * HTML attributes to inject.
+   * Defaults to ''
+   * An example is 'lang="en"'
+   * This is still experimental and might be changed in the future.
+   */
+  htmlAttrs?: string;
   /**
    * HTML headers to inject.
    * Defaults to:

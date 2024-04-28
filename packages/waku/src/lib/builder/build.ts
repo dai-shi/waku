@@ -494,7 +494,7 @@ const emitHtmlFiles = async (
     rootDir,
     config.distDir,
     config.publicDir,
-    config.indexHtml,
+    'index.html',
   );
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
@@ -557,7 +557,7 @@ const emitHtmlFiles = async (
             ? pathname
             : pathname === '/404'
               ? '404.html' // HACK special treatment for 404, better way?
-              : pathname + '/' + config.indexHtml,
+              : pathname + '/index.html',
         );
         const htmlReadable = await renderHtml({
           config,

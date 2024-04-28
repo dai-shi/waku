@@ -6,13 +6,14 @@ export function rscIndexPlugin(opts: {
   basePath: string;
   srcDir: string;
   mainJs: string;
+  htmlAttrs: string;
   htmlHead: string;
-  indexHtml: string;
   cssAssets?: string[];
 }): Plugin {
+  const indexHtml = 'index.html';
   const html = `
 <!doctype html>
-<html>
+<html${opts.htmlAttrs ? ' ' + opts.htmlAttrs : ''}>
   <head>
 ${opts.htmlHead}
   </head>
@@ -23,6 +24,28 @@ ${opts.htmlHead}
 `;
   return {
     name: 'rsc-index-plugin',
+    config() {
+      return {
+        optimizeDeps: {
+          entries: [`${opts.srcDir}/${opts.mainJs}`.replace(/\.js$/, '.*')],
+        },
+      };
+    },
+    options(options) {
+      if (typeof options.input === 'string') {
+        throw new Error('string input is unsupported');
+      }
+      if (Array.isArray(options.input)) {
+        throw new Error('array input is unsupported');
+      }
+      return {
+        ...options,
+        input: {
+          indexHtml,
+          ...options.input,
+        },
+      };
+    },
     configureServer(server) {
       return () => {
         server.middlewares.use((req, res) => {
@@ -41,35 +64,13 @@ ${opts.htmlHead}
         });
       };
     },
-    config() {
-      return {
-        optimizeDeps: {
-          entries: [`${opts.srcDir}/${opts.mainJs}`.replace(/\.js$/, '.*')],
-        },
-      };
-    },
-    options(options) {
-      if (typeof options.input === 'string') {
-        throw new Error('string input is unsupported');
-      }
-      if (Array.isArray(options.input)) {
-        throw new Error('array input is unsupported');
-      }
-      return {
-        ...options,
-        input: {
-          indexHtml: opts.indexHtml,
-          ...options.input,
-        },
-      };
-    },
     resolveId(id) {
-      if (id === opts.indexHtml) {
-        return { id: opts.indexHtml, moduleSideEffects: true };
+      if (id === indexHtml) {
+        return { id: indexHtml, moduleSideEffects: true };
       }
     },
     load(id) {
-      if (id === opts.indexHtml) {
+      if (id === indexHtml) {
         return html;
       }
     },

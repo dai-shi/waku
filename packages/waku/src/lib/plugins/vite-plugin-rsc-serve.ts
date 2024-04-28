@@ -4,7 +4,6 @@ export function rscServePlugin(opts: {
   serveJs: string;
   distDir: string;
   publicDir: string;
-  indexHtml: string;
   entriesFile: string;
   srcServeFile: string;
   serve:
@@ -28,9 +27,6 @@ export function rscServePlugin(opts: {
         'import.meta.env.WAKU_CONFIG_DIST_DIR': JSON.stringify(opts.distDir),
         'import.meta.env.WAKU_CONFIG_PUBLIC_DIR': JSON.stringify(
           opts.publicDir,
-        ),
-        'import.meta.env.WAKU_CONFIG_INDEX_HTML': JSON.stringify(
-          opts.indexHtml,
         ),
       };
       if (opts.serve === 'cloudflare' || opts.serve === 'partykit') {
