@@ -17,6 +17,11 @@ const resolveFileName = (fname: string) => {
   return fname; // returning the default one
 };
 
+const stripExt = (fname: string) => {
+  const ext = extname(fname);
+  return ext ? fname.slice(0, -ext.length) : fname;
+};
+
 const getManagedMain = () => `
 import { Component, StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
@@ -57,13 +62,15 @@ const addSuffixX = (fname: string | undefined) => {
 };
 
 export function rscManagedPlugin(opts: {
+  basePath: string;
   srcDir: string;
   addEntriesToInput?: boolean;
   addMainToInput?: boolean;
 }): Plugin {
   let entriesFile: string | undefined;
   let mainFile: string | undefined;
-  const mainJsPath = '/' + joinPath(opts.srcDir, SRC_MAIN_JS);
+  const mainJsWithoutExt = SRC_MAIN_JS.replace(/\.js$/, '');
+  const mainPath = `${opts.basePath}${opts.srcDir}/${mainJsWithoutExt}`;
   let managedEntries = false;
   let managedMain = false;
   return {
@@ -95,11 +102,15 @@ export function rscManagedPlugin(opts: {
       const resolved = await this.resolve(id, importer, options);
       if (!resolved && id === entriesFile) {
         managedEntries = true;
-        return addSuffixX(id);
+        return addSuffixX(entriesFile);
       }
-      if (!resolved && (id === mainFile || id === mainJsPath)) {
+      if (!resolved && id === mainFile) {
         managedMain = true;
-        return addSuffixX(id);
+        return addSuffixX(mainFile);
+      }
+      if (!resolved && stripExt(id) === mainPath) {
+        managedMain = true;
+        return mainPath + '.jsx';
       }
       return resolved;
     },
@@ -109,7 +120,7 @@ export function rscManagedPlugin(opts: {
       }
       if (
         managedMain &&
-        (id === addSuffixX(mainFile) || id === addSuffixX(mainJsPath))
+        (id === addSuffixX(mainFile) || id === mainPath + '.jsx')
       ) {
         return getManagedMain();
       }

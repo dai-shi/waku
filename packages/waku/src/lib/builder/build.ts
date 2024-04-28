@@ -107,10 +107,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   await buildVite({
     plugins: [
       rscAnalyzePlugin(clientFileSet, serverFileSet, fileHashMap),
-      rscManagedPlugin({
-        srcDir: config.srcDir,
-        addEntriesToInput: true,
-      }),
+      rscManagedPlugin({ ...config, addEntriesToInput: true }),
     ],
     ssr: {
       target: 'webworker',
@@ -178,7 +175,7 @@ const buildServerBundle = async (
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
       rscManagedPlugin({
-        srcDir: config.srcDir,
+        ...config,
         addEntriesToInput: true,
       }),
       rscEntriesPlugin({
@@ -288,10 +285,7 @@ const buildSsrBundle = async (
       }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
-      rscManagedPlugin({
-        srcDir: config.srcDir,
-        addMainToInput: true,
-      }),
+      rscManagedPlugin({ ...config, addMainToInput: true }),
     ],
     ssr: isNodeCompatible
       ? {
@@ -361,10 +355,7 @@ const buildClientBundle = async (
       }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
-      rscManagedPlugin({
-        srcDir: config.srcDir,
-        addMainToInput: true,
-      }),
+      rscManagedPlugin({ ...config, addMainToInput: true }),
     ],
     build: {
       outDir: joinPath(rootDir, config.distDir, config.publicDir),

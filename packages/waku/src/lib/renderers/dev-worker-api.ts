@@ -77,6 +77,7 @@ export function initializeWorker(config: ResolvedConfig) {
           '__WAKU_PRIVATE_ENV__',
           (globalThis as any).__WAKU_PRIVATE_ENV__,
         );
+        setEnvironmentData('CONFIG_BASE_PATH', config.basePath);
         setEnvironmentData('CONFIG_SRC_DIR', config.srcDir);
         setEnvironmentData('CONFIG_ENTRIES_JS', SRC_ENTRIES_JS);
         setEnvironmentData('CONFIG_PRIVATE_DIR', config.privateDir);

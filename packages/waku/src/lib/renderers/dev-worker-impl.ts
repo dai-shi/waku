@@ -40,6 +40,7 @@ if (HAS_MODULE_REGISTER) {
 (globalThis as any).__WAKU_PRIVATE_ENV__ = getEnvironmentData(
   '__WAKU_PRIVATE_ENV__',
 );
+const configBasePath = getEnvironmentData('CONFIG_BASE_PATH') as string;
 const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR') as string;
 const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS') as string;
 const configPrivateDir = getEnvironmentData('CONFIG_PRIVATE_DIR') as string;
@@ -182,7 +183,7 @@ const mergedViteConfig = await mergeUserViteConfig({
     nonjsResolvePlugin(),
     rscEnvPlugin({}),
     rscPrivatePlugin({ privateDir: configPrivateDir, hotUpdateCallback }),
-    rscManagedPlugin({ srcDir: configSrcDir }),
+    rscManagedPlugin({ basePath: configBasePath, srcDir: configSrcDir }),
     rscTransformPlugin({ isBuild: false }),
     rscDelegatePlugin(hotUpdateCallback),
   ],
