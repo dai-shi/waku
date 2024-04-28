@@ -21,6 +21,9 @@ import {
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
 
+// HACK depending on these constants is not ideal
+import { SRC_MAIN_JS } from '../plugins/vite-plugin-rsc-managed.js';
+
 export const CLIENT_MODULE_MAP = {
   react: 'react',
   'rd-server': 'react-dom/server.edge',
@@ -368,7 +371,7 @@ export const renderHtml = async (
     .pipeThrough(
       injectScript(
         config.basePath + config.rscPath + '/' + encodeInput(ssrConfig.input),
-        isDev ? `${config.basePath}${config.srcDir}/${config.mainJs}` : '',
+        isDev ? `${config.basePath}${config.srcDir}/${SRC_MAIN_JS}` : '',
       ),
     )
     .pipeThrough(injectRSCPayload(stream2));

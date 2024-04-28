@@ -182,7 +182,7 @@ const mergedViteConfig = await mergeUserViteConfig({
     nonjsResolvePlugin(),
     rscEnvPlugin({}),
     rscPrivatePlugin({ privateDir: configPrivateDir, hotUpdateCallback }),
-    rscManagedPlugin({ srcDir: configSrcDir, entriesJs: configEntriesJs }),
+    rscManagedPlugin({ srcDir: configSrcDir }),
     rscTransformPlugin({ isBuild: false }),
     rscDelegatePlugin(hotUpdateCallback),
   ],
@@ -231,14 +231,14 @@ const loadServerModule = async (id: string) => {
   return vite.ssrLoadModule(id);
 };
 
-const loadEntries = async (config: { srcDir: string; entriesJs: string }) => {
+const loadEntries = async (config: { srcDir: string }) => {
   const vite = await vitePromise;
-  const filePath = joinPath(vite.config.root, config.srcDir, config.entriesJs);
+  const filePath = joinPath(vite.config.root, config.srcDir, configEntriesJs);
   return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
 };
 
 // load entries eagerly
-loadEntries({ srcDir: configSrcDir, entriesJs: configEntriesJs }).catch(() => {
+loadEntries({ srcDir: configSrcDir }).catch(() => {
   // ignore
 });
 

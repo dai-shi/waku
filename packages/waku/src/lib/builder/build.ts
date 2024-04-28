@@ -77,14 +77,10 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
 
 // Some file and dir names for dist
 // We may change this in the future
-export const ENTRIES_JS = 'entries.js';
-export const SERVE_JS = 'serve.js';
+export const DIST_ENTRIES_JS = 'entries.js';
+export const DIST_SERVE_JS = 'serve.js';
 
-const analyzeEntries = async (
-  rootDir: string,
-  config: ResolvedConfig,
-  entriesFile: string,
-) => {
+const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   const wakuClientDist = decodeFilePathFromAbsolute(
     joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
   );
@@ -111,7 +107,10 @@ const analyzeEntries = async (
   await buildVite({
     plugins: [
       rscAnalyzePlugin(clientFileSet, serverFileSet, fileHashMap),
-      rscManagedPlugin(config),
+      rscManagedPlugin({
+        srcDir: config.srcDir,
+        addEntriesJsToInput: true,
+      }),
     ],
     ssr: {
       target: 'webworker',
@@ -127,10 +126,7 @@ const analyzeEntries = async (
       target: 'node18',
       rollupOptions: {
         onwarn,
-        input: {
-          ...Object.fromEntries(moduleFileMap),
-          entries: entriesFile,
-        },
+        input: Object.fromEntries(moduleFileMap),
       },
     },
   });
@@ -158,7 +154,6 @@ const analyzeEntries = async (
 const buildServerBundle = async (
   rootDir: string,
   config: ResolvedConfig,
-  entriesFile: string,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
   serverModuleFiles: Record<string, string>,
@@ -182,9 +177,12 @@ const buildServerBundle = async (
       }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
-      rscManagedPlugin(config),
+      rscManagedPlugin({
+        srcDir: config.srcDir,
+        addEntriesJsToInput: true,
+      }),
       rscEntriesPlugin({
-        entriesFile,
+        srcDir: config.srcDir,
         moduleMap: {
           ...Object.fromEntries(
             Object.keys(SERVER_MODULE_MAP).map((key) => [key, `./${key}.js`]),
@@ -213,8 +211,7 @@ const buildServerBundle = async (
         ? [
             rscServePlugin({
               ...config,
-              serveJs: SERVE_JS,
-              entriesFile,
+              distServeJs: DIST_SERVE_JS,
               srcServeFile: decodeFilePathFromAbsolute(
                 joinPath(
                   fileURLToFilePath(import.meta.url),
@@ -257,7 +254,6 @@ const buildServerBundle = async (
       rollupOptions: {
         onwarn,
         input: {
-          entries: entriesFile,
           ...SERVER_MODULE_MAP,
           ...serverModuleFiles,
           ...clientEntryFiles,
@@ -276,7 +272,6 @@ const buildServerBundle = async (
 const buildSsrBundle = async (
   rootDir: string,
   config: ResolvedConfig,
-  mainJsFile: string,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
   isNodeCompatible: boolean,
@@ -290,11 +285,13 @@ const buildSsrBundle = async (
       rscIndexPlugin({
         ...config,
         cssAssets,
-        mainJs: mainJsFile.split('/').pop()!,
       }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
-      rscManagedPlugin(config),
+      rscManagedPlugin({
+        srcDir: config.srcDir,
+        addMainJsToInput: true,
+      }),
     ],
     ssr: isNodeCompatible
       ? {
@@ -322,7 +319,6 @@ const buildSsrBundle = async (
       rollupOptions: {
         onwarn,
         input: {
-          main: mainJsFile,
           ...clientEntryFiles,
           ...CLIENT_MODULE_MAP,
         },
@@ -348,7 +344,6 @@ const buildSsrBundle = async (
 const buildClientBundle = async (
   rootDir: string,
   config: ResolvedConfig,
-  mainJsFile: string,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
 ) => {
@@ -363,21 +358,20 @@ const buildClientBundle = async (
       rscIndexPlugin({
         ...config,
         cssAssets,
-        mainJs: mainJsFile.split('/').pop()!,
       }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
-      rscManagedPlugin(config),
+      rscManagedPlugin({
+        srcDir: config.srcDir,
+        addMainJsToInput: true,
+      }),
     ],
     build: {
       outDir: joinPath(rootDir, config.distDir, config.publicDir),
       rollupOptions: {
         onwarn,
-        input: {
-          main: mainJsFile,
-          // rollup will ouput the style files related to clientEntryFiles, but since it does not find any link to them in the index.html file, it will not inject them. They are only mentioned by the standalone `clientEntryFiles`
-          ...clientEntryFiles,
-        },
+        // rollup will ouput the style files related to clientEntryFiles, but since it does not find any link to them in the index.html file, it will not inject them. They are only mentioned by the standalone `clientEntryFiles`
+        input: clientEntryFiles,
         preserveEntrySignatures: 'exports-only',
         output: {
           entryFileNames: (chunkInfo) => {
@@ -615,16 +609,6 @@ export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
   await appendFile(distEntriesFile, code);
 };
 
-const resolveFileName = (fname: string) => {
-  for (const ext of EXTENSIONS) {
-    const resolvedName = fname.slice(0, -extname(fname).length) + ext;
-    if (existsSync(resolvedName)) {
-      return resolvedName;
-    }
-  }
-  return fname; // returning the default one
-};
-
 export async function build(options: {
   config: Config;
   env?: Record<string, string>;
@@ -644,24 +628,17 @@ export async function build(options: {
   const rootDir = (
     await resolveViteConfig({}, 'build', 'production', 'production')
   ).root;
-  const entriesFile = resolveFileName(
-    joinPath(rootDir, config.srcDir, config.entriesJs),
-  );
-  const distEntriesFile = joinPath(rootDir, config.distDir, ENTRIES_JS);
-  const mainJsFile = resolveFileName(
-    joinPath(rootDir, config.srcDir, config.mainJs),
-  );
+  const distEntriesFile = joinPath(rootDir, config.distDir, DIST_ENTRIES_JS);
   const isNodeCompatible =
     options.deploy !== 'cloudflare' &&
     options.deploy !== 'partykit' &&
     options.deploy !== 'deno';
 
   const { clientEntryFiles, serverEntryFiles, serverModuleFiles } =
-    await analyzeEntries(rootDir, config, entriesFile);
+    await analyzeEntries(rootDir, config);
   const serverBuildOutput = await buildServerBundle(
     rootDir,
     config,
-    entriesFile,
     clientEntryFiles,
     serverEntryFiles,
     serverModuleFiles,
@@ -676,7 +653,6 @@ export async function build(options: {
   await buildSsrBundle(
     rootDir,
     config,
-    mainJsFile,
     clientEntryFiles,
     serverBuildOutput,
     isNodeCompatible,
@@ -684,7 +660,6 @@ export async function build(options: {
   const clientBuildOutput = await buildClientBundle(
     rootDir,
     config,
-    mainJsFile,
     clientEntryFiles,
     serverBuildOutput,
   );
@@ -715,20 +690,20 @@ export async function build(options: {
     await emitVercelOutput(
       rootDir,
       config,
-      SERVE_JS,
+      DIST_SERVE_JS,
       options.deploy.slice('vercel-'.length) as 'static' | 'serverless',
     );
   } else if (options.deploy?.startsWith('netlify-')) {
     await emitNetlifyOutput(
       rootDir,
       config,
-      SERVE_JS,
+      DIST_SERVE_JS,
       options.deploy.slice('netlify-'.length) as 'static' | 'functions',
     );
   } else if (options.deploy === 'cloudflare') {
-    await emitCloudflareOutput(rootDir, config, SERVE_JS);
+    await emitCloudflareOutput(rootDir, config, DIST_SERVE_JS);
   } else if (options.deploy === 'partykit') {
-    await emitPartyKitOutput(rootDir, config, SERVE_JS);
+    await emitPartyKitOutput(rootDir, config, DIST_SERVE_JS);
   } else if (options.deploy === 'aws-lambda') {
     await emitAwsLambdaOutput(config);
   }

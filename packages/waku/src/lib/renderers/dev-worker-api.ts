@@ -8,6 +8,9 @@ import type { HotUpdatePayload } from '../plugins/vite-plugin-rsc-hmr.js';
 import type { RenderRscArgs, GetSsrConfigArgs } from './rsc-renderer.js';
 import type { ClonableModuleNode } from '../middleware/types.js';
 
+// HACK depending on these constants is not ideal
+import { SRC_ENTRIES_JS } from '../plugins/vite-plugin-rsc-managed.js';
+
 export type BuildOutput = {
   rscFiles: string[];
   htmlFiles: string[];
@@ -75,7 +78,7 @@ export function initializeWorker(config: ResolvedConfig) {
           (globalThis as any).__WAKU_PRIVATE_ENV__,
         );
         setEnvironmentData('CONFIG_SRC_DIR', config.srcDir);
-        setEnvironmentData('CONFIG_ENTRIES_JS', config.entriesJs);
+        setEnvironmentData('CONFIG_ENTRIES_JS', SRC_ENTRIES_JS);
         setEnvironmentData('CONFIG_PRIVATE_DIR', config.privateDir);
         const worker = new Worker(
           new URL('dev-worker-impl.js', import.meta.url),

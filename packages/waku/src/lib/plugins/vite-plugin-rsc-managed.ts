@@ -1,7 +1,22 @@
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import type { Plugin } from 'vite';
 
 import { EXTENSIONS } from '../config.js';
-import { joinPath } from '../utils/path.js';
+import { extname, joinPath } from '../utils/path.js';
+
+export const SRC_MAIN_JS = 'main.js';
+export const SRC_ENTRIES_JS = 'entries.js';
+
+const resolveFileName = (fname: string) => {
+  for (const ext of EXTENSIONS) {
+    const resolvedName = fname.slice(0, -extname(fname).length) + ext;
+    if (existsSync(resolvedName)) {
+      return resolvedName;
+    }
+  }
+  return fname; // returning the default one
+};
 
 const getManagedMain = () => `
 import { Component, StrictMode } from 'react';
@@ -44,22 +59,41 @@ const addSuffixX = (fname: string | undefined) => {
 
 export function rscManagedPlugin(opts: {
   srcDir: string;
-  entriesJs: string;
-  mainJs?: string;
+  addEntriesJsToInput?: boolean;
+  addMainJsToInput?: boolean;
 }): Plugin {
   let entriesFile: string | undefined;
   let mainFile: string | undefined;
-  const mainJsPath = opts.mainJs && '/' + joinPath(opts.srcDir, opts.mainJs);
+  const mainJsPath = '/' + joinPath(opts.srcDir, SRC_MAIN_JS);
   let managedEntries = false;
   let managedMain = false;
   return {
     name: 'rsc-managed-plugin',
     enforce: 'pre',
     configResolved(config) {
-      entriesFile = joinPath(config.root, opts.srcDir, opts.entriesJs);
-      if (opts.mainJs) {
-        mainFile = joinPath(config.root, opts.srcDir, opts.mainJs);
+      entriesFile = resolveFileName(
+        path.resolve(config.root, opts.srcDir, SRC_ENTRIES_JS),
+      );
+      mainFile = resolveFileName(
+        joinPath(config.root, opts.srcDir, SRC_MAIN_JS),
+      );
+    },
+    options(options) {
+      if (typeof options.input === 'string') {
+        throw new Error('string input is unsupported');
       }
+      if (Array.isArray(options.input)) {
+        throw new Error('array input is unsupported');
+      }
+      return {
+        ...options,
+        input: {
+          ...(opts.addEntriesJsToInput &&
+            entriesFile && { entries: entriesFile }),
+          ...(opts.addMainJsToInput && mainFile && { main: mainFile }),
+          ...options.input,
+        },
+      };
     },
     async resolveId(id, importer, options) {
       const resolved = await this.resolve(id, importer, options);
