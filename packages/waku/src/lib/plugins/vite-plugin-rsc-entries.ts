@@ -5,7 +5,7 @@ import type { Plugin } from 'vite';
 
 // HACK Depending on a different plugin isn't ideal.
 // Maybe we could put in vite config object?
-import { SRC_ENTRIES_JS } from './vite-plugin-rsc-managed.js';
+import { SRC_ENTRIES } from './vite-plugin-rsc-managed.js';
 
 import { extname } from '../utils/path.js';
 
@@ -35,19 +35,14 @@ export function loadModule(id) {
   }
 }
 `;
-  let entriesFileWithoutExt = '';
+  let entriesFile = '';
   return {
     name: 'rsc-entries-plugin',
     configResolved(config) {
-      entriesFileWithoutExt = stripExt(
-        path.join(config.root, opts.srcDir, SRC_ENTRIES_JS),
-      );
+      entriesFile = path.join(config.root, opts.srcDir, SRC_ENTRIES);
       if (existsSync(CONFIG_FILE)) {
         const file = normalizePath(
-          path.relative(
-            path.dirname(entriesFileWithoutExt),
-            path.resolve(CONFIG_FILE),
-          ),
+          path.relative(path.dirname(entriesFile), path.resolve(CONFIG_FILE)),
         );
         codeToAppend += `
 export const loadConfig = async () => (await import('${file}')).default;
@@ -65,7 +60,7 @@ export const loadConfig = async () => ({});
       ) {
         return codeToPrepend + code;
       }
-      if (stripExt(id) === entriesFileWithoutExt) {
+      if (stripExt(id) === entriesFile) {
         return code + codeToAppend;
       }
     },

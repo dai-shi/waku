@@ -4,7 +4,7 @@ import type { Plugin } from 'vite';
 
 // HACK: Depending on a different plugin isn't ideal.
 // Maybe we could put in vite config object?
-import { SRC_ENTRIES_JS } from './vite-plugin-rsc-managed.js';
+import { SRC_ENTRIES } from './vite-plugin-rsc-managed.js';
 
 import { EXTENSIONS } from '../config.js';
 import { extname } from '../utils/path.js';
@@ -36,8 +36,9 @@ export function rscServePlugin(opts: {
   return {
     name: 'rsc-serve-plugin',
     config(viteConfig) {
+      // FIXME This seems too hacky (The use of viteConfig.root, '.', path.resolve and resolveFileName)
       const entriesFile = resolveFileName(
-        path.resolve(viteConfig.root || '.', opts.srcDir, SRC_ENTRIES_JS),
+        path.resolve(viteConfig.root || '.', opts.srcDir, SRC_ENTRIES + '.js'),
       );
       const { input } = viteConfig.build?.rollupOptions ?? {};
       if (input && !(typeof input === 'string') && !(input instanceof Array)) {

@@ -18,7 +18,7 @@ import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import {
   // HACK depending on these constants is not ideal
-  SRC_ENTRIES_JS,
+  SRC_ENTRIES,
   SRC_MAIN_JS,
   rscManagedPlugin,
 } from '../plugins/vite-plugin-rsc-managed.js';
@@ -91,7 +91,7 @@ export const devServer: Middleware = (options) => {
         include: ['react-server-dom-webpack/client', 'react-dom'],
         exclude: ['waku'],
         entries: [
-          `${config.srcDir}/${SRC_ENTRIES_JS}`.replace(/\.js$/, '.*'),
+          `${config.srcDir}/${SRC_ENTRIES}.*`,
           // HACK hard-coded "pages"
           `${config.srcDir}/pages/**/*.*`,
         ],

@@ -42,7 +42,7 @@ if (HAS_MODULE_REGISTER) {
 );
 const configBasePath = getEnvironmentData('CONFIG_BASE_PATH') as string;
 const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR') as string;
-const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS') as string;
+const configEntries = getEnvironmentData('CONFIG_ENTRIES') as string;
 const configPrivateDir = getEnvironmentData('CONFIG_PRIVATE_DIR') as string;
 
 const resolveClientEntryForDev = (
@@ -191,7 +191,7 @@ const mergedViteConfig = await mergeUserViteConfig({
     include: ['react-server-dom-webpack/client', 'react-dom'],
     exclude: ['waku'],
     entries: [
-      `${configSrcDir}/${configEntriesJs}`.replace(/\.js$/, '.*'),
+      `${configSrcDir}/${configEntries}.*`,
       // HACK hard-coded "pages"
       `${configSrcDir}/pages/**/*.*`,
     ],
@@ -234,7 +234,7 @@ const loadServerModule = async (id: string) => {
 
 const loadEntries = async (config: { srcDir: string }) => {
   const vite = await vitePromise;
-  const filePath = joinPath(vite.config.root, config.srcDir, configEntriesJs);
+  const filePath = joinPath(vite.config.root, config.srcDir, configEntries);
   return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
 };
 

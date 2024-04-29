@@ -9,7 +9,7 @@ import type { RenderRscArgs, GetSsrConfigArgs } from './rsc-renderer.js';
 import type { ClonableModuleNode } from '../middleware/types.js';
 
 // HACK depending on these constants is not ideal
-import { SRC_ENTRIES_JS } from '../plugins/vite-plugin-rsc-managed.js';
+import { SRC_ENTRIES } from '../plugins/vite-plugin-rsc-managed.js';
 
 export type BuildOutput = {
   rscFiles: string[];
@@ -79,7 +79,7 @@ export function initializeWorker(config: ResolvedConfig) {
         );
         setEnvironmentData('CONFIG_BASE_PATH', config.basePath);
         setEnvironmentData('CONFIG_SRC_DIR', config.srcDir);
-        setEnvironmentData('CONFIG_ENTRIES_JS', SRC_ENTRIES_JS);
+        setEnvironmentData('CONFIG_ENTRIES', SRC_ENTRIES);
         setEnvironmentData('CONFIG_PRIVATE_DIR', config.privateDir);
         const worker = new Worker(
           new URL('dev-worker-impl.js', import.meta.url),
