@@ -19,7 +19,7 @@ import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import {
   // HACK depending on these constants is not ideal
   SRC_ENTRIES,
-  SRC_MAIN_JS,
+  SRC_MAIN,
   rscManagedPlugin,
 } from '../plugins/vite-plugin-rsc-managed.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
@@ -175,7 +175,7 @@ export const devServer: Middleware = (options) => {
     if (!initialModules) {
       // pre-process the mainJs file to see which modules are being sent to the browser by vite
       // and using the same modules if possible in the bundlerConfig in the stream
-      const mainJs = `${config.basePath}${config.srcDir}/${SRC_MAIN_JS}`;
+      const mainJs = `${config.basePath}${config.srcDir}/${SRC_MAIN}`;
       await vite.transformRequest(mainJs);
       const resolved = await vite.pluginContainer.resolveId(mainJs);
       const resolvedModule = vite.moduleGraph.idToModuleMap.get(resolved!.id)!;

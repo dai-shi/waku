@@ -2,7 +2,7 @@ import type { Plugin } from 'vite';
 
 // HACK Depending on a different plugin isn't ideal.
 // Maybe we could put in vite config object?
-import { SRC_MAIN_JS } from './vite-plugin-rsc-managed.js';
+import { SRC_MAIN } from './vite-plugin-rsc-managed.js';
 
 import { codeToInject } from '../renderers/utils.js';
 
@@ -14,7 +14,6 @@ export function rscIndexPlugin(opts: {
   cssAssets?: string[];
 }): Plugin {
   const indexHtml = 'index.html';
-  const mainJsWithoutExt = SRC_MAIN_JS.replace(/\.js$/, '');
   const html = `
 <!doctype html>
 <html${opts.htmlAttrs ? ' ' + opts.htmlAttrs : ''}>
@@ -22,7 +21,7 @@ export function rscIndexPlugin(opts: {
 ${opts.htmlHead}
   </head>
   <body>
-    <script src="${opts.basePath}${opts.srcDir}/${mainJsWithoutExt}" async type="module"></script>
+    <script src="${opts.basePath}${opts.srcDir}/${SRC_MAIN}" async type="module"></script>
   </body>
 </html>
 `;
@@ -31,7 +30,7 @@ ${opts.htmlHead}
     config() {
       return {
         optimizeDeps: {
-          entries: [`${opts.srcDir}/${mainJsWithoutExt}.*`],
+          entries: [`${opts.srcDir}/${SRC_MAIN}.*`],
         },
       };
     },

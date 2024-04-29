@@ -1,21 +1,10 @@
-import { existsSync } from 'node:fs';
 import type { Plugin } from 'vite';
 
 import { EXTENSIONS } from '../config.js';
 import { extname, joinPath } from '../utils/path.js';
 
-export const SRC_MAIN_JS = 'main.js';
+export const SRC_MAIN = 'main';
 export const SRC_ENTRIES = 'entries';
-
-const resolveFileName = (fname: string) => {
-  for (const ext of EXTENSIONS) {
-    const resolvedName = fname.slice(0, -extname(fname).length) + ext;
-    if (existsSync(resolvedName)) {
-      return resolvedName;
-    }
-  }
-  return fname; // returning the default one
-};
 
 const stripExt = (fname: string) => {
   const ext = extname(fname);
@@ -51,16 +40,6 @@ if (document.body.dataset.hydrate) {
 }
 `;
 
-const addSuffixX = (fname: string | undefined) => {
-  if (!fname) {
-    return fname;
-  }
-  if (fname.endsWith('x')) {
-    return fname;
-  }
-  return fname + 'x';
-};
-
 export function rscManagedPlugin(opts: {
   basePath: string;
   srcDir: string;
@@ -69,8 +48,7 @@ export function rscManagedPlugin(opts: {
 }): Plugin {
   let entriesFile: string | undefined;
   let mainFile: string | undefined;
-  const mainJsWithoutExt = SRC_MAIN_JS.replace(/\.js$/, '');
-  const mainPath = `${opts.basePath}${opts.srcDir}/${mainJsWithoutExt}`;
+  const mainPath = `${opts.basePath}${opts.srcDir}/${SRC_MAIN}`;
   let managedEntries = false;
   let managedMain = false;
   return {
@@ -78,7 +56,7 @@ export function rscManagedPlugin(opts: {
     enforce: 'pre',
     configResolved(config) {
       entriesFile = joinPath(config.root, opts.srcDir, SRC_ENTRIES);
-      mainFile = joinPath(config.root, opts.srcDir, SRC_MAIN_JS);
+      mainFile = joinPath(config.root, opts.srcDir, SRC_MAIN);
     },
     options(options) {
       if (typeof options.input === 'string') {
@@ -91,7 +69,7 @@ export function rscManagedPlugin(opts: {
         ...options,
         input: {
           ...(opts.addEntriesToInput && { entries: entriesFile! }),
-          ...(opts.addMainToInput && { main: resolveFileName(mainFile!) }),
+          ...(opts.addMainToInput && { main: mainFile! }),
           ...options.input,
         },
       };
@@ -102,11 +80,11 @@ export function rscManagedPlugin(opts: {
         managedEntries = true;
         return entriesFile + '.jsx';
       }
-      if (!resolved && id === mainFile) {
+      if ((!resolved || resolved.id === id) && id === mainFile) {
         managedMain = true;
-        return addSuffixX(mainFile);
+        return mainFile + '.jsx';
       }
-      if (!resolved && stripExt(id) === mainPath) {
+      if ((!resolved || resolved.id === id) && stripExt(id) === mainPath) {
         managedMain = true;
         return mainPath + '.jsx';
       }
@@ -118,7 +96,7 @@ export function rscManagedPlugin(opts: {
       }
       if (
         managedMain &&
-        (id === addSuffixX(mainFile) || id === mainPath + '.jsx')
+        (id === mainFile + '.jsx' || id === mainPath + '.jsx')
       ) {
         return getManagedMain();
       }
