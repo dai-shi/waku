@@ -40,6 +40,6 @@ test.describe(`high volume static site generation`, () => {
     ]);
     await waitPort({ port });
     await page.goto(`http://localhost:${port}/path-3`);
-    await expect(page.getByRole('heading')).toHaveText('path-3');
+    await expect(page.getByRole('heading')).toHaveText('/path-3');
   });
 });

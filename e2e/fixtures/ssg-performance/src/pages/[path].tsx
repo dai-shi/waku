@@ -1,6 +1,8 @@
-export default async function Test({ path }: { path: string }) {
+import { Path } from '../Path.js';
+
+export default async function Test() {
   await new Promise((resolve) => setTimeout(resolve, 1000));
-  return <h1>{path}</h1>;
+  return <Path />;
 }
 
 export async function getConfig() {
