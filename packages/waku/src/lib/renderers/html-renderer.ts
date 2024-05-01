@@ -155,14 +155,27 @@ const rectifyHtml = () => {
   });
 };
 
+const parseHtmlAttrs = (attrs: string): Record<string, string> => {
+  // HACK this is very brittle
+  const result: Record<string, string> = {};
+  const kebab2camel = (s: string) =>
+    s.replace(/-./g, (m) => m[1]!.toUpperCase());
+  const matches = attrs.matchAll(/(?<=^|\s)([^\s=]+)="([^"]+)"(?=\s|$)/g);
+  for (const match of matches) {
+    result[kebab2camel(match[1]!)] = match[2]!;
+  }
+  return result;
+};
+
 const buildHtml = (
   createElement: typeof createElementType,
+  attrs: string,
   head: string,
   body: ReactNode,
 ) =>
   createElement(
     'html',
-    null,
+    attrs ? parseHtmlAttrs(attrs) : null,
     createElement('head', { dangerouslySetInnerHTML: { __html: head } }),
     createElement('body', { 'data-hydrate': true }, body),
   );
@@ -334,6 +347,7 @@ export const renderHtml = async (
     await renderToReadableStream(
       buildHtml(
         createElement,
+        config.htmlAttrs,
         htmlHead,
         createElement(
           ServerRoot as FunctionComponent<

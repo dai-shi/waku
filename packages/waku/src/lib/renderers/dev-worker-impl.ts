@@ -24,6 +24,7 @@ import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
+import type { HotUpdatePayload } from '../plugins/vite-plugin-rsc-hmr.js';
 import { viteHot } from '../plugins/vite-plugin-rsc-hmr.js';
 import type { ClonableModuleNode } from '../middleware/types.js';
 
@@ -168,6 +169,11 @@ const handleGetSsrConfig = async (
 
 const dummyServer = new Server(); // FIXME we hope to avoid this hack
 
+const hotUpdateCallback = (payload: HotUpdatePayload) => {
+  const mesg: MessageRes = { type: 'hot-update', payload };
+  parentPort!.postMessage(mesg);
+};
+
 const mergedViteConfig = await mergeUserViteConfig({
   // Since we have multiple instances of vite, different ones might overwrite the others' cache.
   cacheDir: 'node_modules/.vite/waku-dev-worker',
@@ -175,13 +181,10 @@ const mergedViteConfig = await mergeUserViteConfig({
     viteReact(),
     nonjsResolvePlugin(),
     rscEnvPlugin({}),
-    rscPrivatePlugin({ privateDir: configPrivateDir }),
+    rscPrivatePlugin({ privateDir: configPrivateDir, hotUpdateCallback }),
     rscManagedPlugin({ srcDir: configSrcDir, entriesJs: configEntriesJs }),
     rscTransformPlugin({ isBuild: false }),
-    rscDelegatePlugin((payload) => {
-      const mesg: MessageRes = { type: 'hot-update', payload };
-      parentPort!.postMessage(mesg);
-    }),
+    rscDelegatePlugin(hotUpdateCallback),
   ],
   optimizeDeps: {
     include: ['react-server-dom-webpack/client', 'react-dom'],

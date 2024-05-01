@@ -36,7 +36,7 @@ export const emitVercelOutput = async (
       );
     }
     const vcConfigJson = {
-      runtime: 'nodejs18.x',
+      runtime: 'nodejs20.x',
       handler: `${config.distDir}/${config.serveJs}`,
       launcherType: 'Nodejs',
     };
