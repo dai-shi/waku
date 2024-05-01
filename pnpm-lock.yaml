@@ -153,24 +153,24 @@ importers:
   e2e/fixtures/ssg-performance:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -2443,7 +2443,7 @@ packages:
   /@vanilla-extract/vite-plugin@4.0.7(@types/node@20.12.5)(vite@5.2.8):
     resolution: {integrity: sha512-uRAFWdq5Eq0ybpgW2P0LNOw8eW+MTg/OFo5K0Hsl2cKu/Tu2tabCsBf6vNjfhDrm4jBShHy1wJIVcYxf6sczVQ==}
     peerDependencies:
-      vite: 5.2.8
+      vite: ^4.0.3 || ^5.0.0
     dependencies:
       '@vanilla-extract/integration': 7.1.2(@types/node@20.12.5)
       vite: 5.2.8(@types/node@20.12.5)
@@ -2467,7 +2467,7 @@ packages:
     resolution: {integrity: sha512-oojO9IDc4nCUUi8qIR11KoQm0XFFLIwsRBwHRR4d/88IWghn1y6ckz/bJ8GHDCsYEJee8mDzqtJxh15/cisJNQ==}
     engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
-      vite: 5.2.8
+      vite: ^4.2.0 || ^5.0.0
     dependencies:
       '@babel/core': 7.24.4
       '@babel/plugin-transform-react-jsx-self': 7.24.1(@babel/core@7.24.4)
@@ -6226,6 +6226,15 @@ packages:
       scheduler: 0.25.0-beta-4508873393-20240430
     dev: false
 
+  /react-dom@19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405):
+    resolution: {integrity: sha512-rLmRhyj0CiO0H5lWTIeP1izYsjjp03Dt36dufxjlPWVVpbHdKoIHUU/cDNin7Le2H+hNQfDQk7VcOb6Z7Z+W0g==}
+    peerDependencies:
+      react: 19.0.0-canary-e3ebcd54b-20240405
+    dependencies:
+      react: 19.0.0-canary-e3ebcd54b-20240405
+      scheduler: 0.25.0-canary-e3ebcd54b-20240405
+    dev: false
+
   /react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
     dev: true
@@ -6251,6 +6260,21 @@ packages:
       neo-async: 2.6.2
       react: 19.0.0-beta-4508873393-20240430
       react-dom: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
+      webpack: 5.91.0
+    dev: false
+
+  /react-server-dom-webpack@19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0):
+    resolution: {integrity: sha512-wzZhAOr3GBc6n6M7kivf0Tp2qmVOq+GYQcjzeB0KSPtMoj2jSQHMa0E+xDwHT9OYRWXVYtG2bdFD8MP6kuXkkw==}
+    engines: {node: '>=0.10.0'}
+    peerDependencies:
+      react: 19.0.0-canary-e3ebcd54b-20240405
+      react-dom: 19.0.0-canary-e3ebcd54b-20240405
+      webpack: ^5.59.0
+    dependencies:
+      acorn-loose: 8.4.0
+      neo-async: 2.6.2
+      react: 19.0.0-canary-e3ebcd54b-20240405
+      react-dom: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
       webpack: 5.91.0
     dev: false
 
@@ -6292,6 +6316,11 @@ packages:
 
   /react@19.0.0-beta-4508873393-20240430:
     resolution: {integrity: sha512-//89udV7fhVq5pEzpNH7vlpmS5D4wDbPn0oif+G7vwDsuSks5yJGdqrE1uzn2CyFNL73FjV3/R3Pjyaxs+xnvg==}
+    engines: {node: '>=0.10.0'}
+    dev: false
+
+  /react@19.0.0-canary-e3ebcd54b-20240405:
+    resolution: {integrity: sha512-cJE4hNNSAZSkMGplceUigybvn9cnUrvgFuljOahB2LStTLGVK4bZcszJ0sppwPbr9XVelEvyNmKj/0HRQPc53w==}
     engines: {node: '>=0.10.0'}
     dev: false
 
@@ -6517,6 +6546,10 @@ packages:
 
   /scheduler@0.25.0-beta-4508873393-20240430:
     resolution: {integrity: sha512-gk9vDoDOjTys0DpLgFll+hYk5gLhLnTipi81Pl+XSRtWkQnqQdjxLO2RF726t0g0jQ5tvwjLfBCgsvusgB6Luw==}
+    dev: false
+
+  /scheduler@0.25.0-canary-e3ebcd54b-20240405:
+    resolution: {integrity: sha512-xI+jJ4zTJfULtwgO1GgoT3I3MiEV1OisswVdS9LdoQr0QwKpH0Al7IlW68R5ceIXE/a8RfuYZc7Aq34DwBqr7A==}
     dev: false
 
   /schema-utils@3.3.0:
@@ -7451,7 +7484,7 @@ packages:
   /vite-tsconfig-paths@4.3.2(typescript@5.4.4)(vite@5.2.8):
     resolution: {integrity: sha512-0Vd/a6po6Q+86rPlntHye7F31zA2URZMbH8M3saAZ/xR9QoGN/L21bxEGfXdWmFdNkqPpRdxFT7nmNe12e9/uA==}
     peerDependencies:
-      vite: 5.2.8
+      vite: '*'
     peerDependenciesMeta:
       vite:
         optional: true
