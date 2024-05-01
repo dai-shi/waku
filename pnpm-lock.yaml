@@ -24,11 +24,11 @@ importers:
         specifier: ^20.12.5
         version: 20.12.5
       '@types/react':
-        specifier: ^18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: ^18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       '@typescript-eslint/eslint-plugin':
         specifier: ^7.5.0
         version: 7.5.0(@typescript-eslint/parser@7.5.0)(eslint@8.57.0)(typescript@5.4.4)
@@ -75,24 +75,24 @@ importers:
   e2e/fixtures/rsc-basic:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -100,24 +100,24 @@ importers:
   e2e/fixtures/rsc-router:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -125,24 +125,24 @@ importers:
   e2e/fixtures/ssr-basic:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -150,24 +150,24 @@ importers:
   e2e/fixtures/ssr-context-provider:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -175,27 +175,27 @@ importers:
   e2e/fixtures/ssr-swr:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       swr:
         specifier: 2.2.5
-        version: 2.2.5(react@19.0.0-canary-e3ebcd54b-20240405)
+        version: 2.2.5(react@19.0.0-beta-4508873393-20240430)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -203,27 +203,27 @@ importers:
   e2e/fixtures/ssr-target-bundle:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       react-textarea-autosize:
         specifier: 8.5.3
-        version: 8.5.3(@types/react@18.2.74)(react@19.0.0-canary-e3ebcd54b-20240405)
+        version: 8.5.3(@types/react@18.3.1)(react@19.0.0-beta-4508873393-20240430)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -231,24 +231,24 @@ importers:
   examples/01_template:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       autoprefixer:
         specifier: 10.4.19
         version: 10.4.19(postcss@8.4.38)
@@ -262,14 +262,14 @@ importers:
   examples/02_template_js:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
@@ -284,24 +284,24 @@ importers:
   examples/03_demo:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       autoprefixer:
         specifier: 10.4.19
         version: 10.4.19(postcss@8.4.38)
@@ -315,24 +315,24 @@ importers:
   examples/04_cssmodules:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -340,24 +340,24 @@ importers:
   examples/07_router:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       server-only:
         specifier: 0.0.1
         version: 0.0.1
@@ -371,14 +371,14 @@ importers:
         specifier: 0.6.0
         version: 0.6.0
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
@@ -390,11 +390,11 @@ importers:
         specifier: 20.12.5
         version: 20.12.5
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -402,24 +402,24 @@ importers:
   examples/10_fs-router:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -427,24 +427,24 @@ importers:
   examples/11_form:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -461,24 +461,24 @@ importers:
         specifier: 2.3.2
         version: 2.3.2
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       '@vanilla-extract/vite-plugin':
         specifier: 4.0.7
         version: 4.0.7(@types/node@20.12.5)(vite@5.2.8)
@@ -495,24 +495,24 @@ importers:
   examples/13_path-alias:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -526,27 +526,27 @@ importers:
   examples/14_react-tweet:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       react-tweet:
         specifier: ^3.2.0
-        version: 3.2.0(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)
+        version: 3.2.0(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       autoprefixer:
         specifier: 10.4.19
         version: 10.4.19(postcss@8.4.38)
@@ -560,24 +560,24 @@ importers:
   examples/20_minimal:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -585,14 +585,14 @@ importers:
   examples/21_minimal_js:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
@@ -600,24 +600,24 @@ importers:
   examples/22_promise:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -625,27 +625,27 @@ importers:
   examples/23_actions:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       react-wrap-balancer:
         specifier: 1.1.0
-        version: 1.1.0(react@19.0.0-canary-e3ebcd54b-20240405)
+        version: 1.1.0(react@19.0.0-beta-4508873393-20240430)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -653,24 +653,24 @@ importers:
   examples/24_nesting:
     dependencies:
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: 0.20.1
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
-        specifier: 18.2.74
-        version: 18.2.74
+        specifier: 18.3.1
+        version: 18.3.1
       '@types/react-dom':
-        specifier: 18.2.24
-        version: 18.2.24
+        specifier: 18.3.0
+        version: 18.3.0
       typescript:
         specifier: 5.4.4
         version: 5.4.4
@@ -723,14 +723,14 @@ importers:
         specifier: 4.2.2
         version: 4.2.2
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       rsc-html-stream:
         specifier: 0.0.3
         version: 0.0.3
@@ -764,22 +764,22 @@ importers:
         version: 2.3.2
       framer-motion:
         specifier: ^11.0.25
-        version: 11.0.25(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)
+        version: 11.0.25(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)
       jotai:
         specifier: ^2.7.2
-        version: 2.7.2(@types/react@18.2.74)(react@19.0.0-canary-e3ebcd54b-20240405)
+        version: 2.7.2(@types/react@18.2.74)(react@19.0.0-beta-4508873393-20240430)
       next-mdx-remote:
         specifier: ^4.4.1
-        version: 4.4.1(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)
+        version: 4.4.1(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)
       react:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
       react-dom:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
         specifier: workspace:*
         version: link:../waku
@@ -1619,14 +1619,14 @@ packages:
       - supports-color
     dev: false
 
-  /@mdx-js/react@2.3.0(react@19.0.0-canary-e3ebcd54b-20240405):
+  /@mdx-js/react@2.3.0(react@19.0.0-beta-4508873393-20240430):
     resolution: {integrity: sha512-zQH//gdOmuu7nt2oJR29vFhDv88oGPmVw6BggmrHeMI+xgEkp1B2dX9/bMBSYtK0dyLX/aOmesKS09g222K1/g==}
     peerDependencies:
       react: '>=16'
     dependencies:
       '@types/mdx': 2.0.12
-      '@types/react': 18.2.74
-      react: 19.0.0-canary-e3ebcd54b-20240405
+      '@types/react': 18.3.1
+      react: 19.0.0-beta-4508873393-20240430
     dev: false
 
   /@mole-inc/bin-wrapper@8.0.1:
@@ -2156,11 +2156,23 @@ packages:
   /@types/react-dom@18.2.24:
     resolution: {integrity: sha512-cN6upcKd8zkGy4HU9F1+/s98Hrp6D4MOcippK4PoE8OZRngohHZpbJn1GsaDLz87MqvHNoT13nHvNqM9ocRHZg==}
     dependencies:
-      '@types/react': 18.2.74
+      '@types/react': 18.3.1
+    dev: true
+
+  /@types/react-dom@18.3.0:
+    resolution: {integrity: sha512-EhwApuTmMBmXuFOikhQLIBUn6uFg81SwLMOAUgodJF14SOBOCMdU04gDoYi0WOJJHD144TL32z4yDqCW3dnkQg==}
+    dependencies:
+      '@types/react': 18.3.1
     dev: true
 
   /@types/react@18.2.74:
     resolution: {integrity: sha512-9AEqNZZyBx8OdZpxzQlaFEVCSFUM2YXJH46yPOiOpm078k6ZLOCcuAzGum/zK8YBwY+dbahVNbHrbgrAwIRlqw==}
+    dependencies:
+      '@types/prop-types': 15.7.12
+      csstype: 3.1.3
+
+  /@types/react@18.3.1:
+    resolution: {integrity: sha512-V0kuGBX3+prX+DQ/7r2qsv1NsdfnCLnTgnRJ1pYnxykBhGMz+qj+box5lq7XsO5mtZsBqpjwwTu/7wszPfMBcw==}
     dependencies:
       '@types/prop-types': 15.7.12
       csstype: 3.1.3
@@ -2378,7 +2390,7 @@ packages:
   /@vanilla-extract/vite-plugin@4.0.7(@types/node@20.12.5)(vite@5.2.8):
     resolution: {integrity: sha512-uRAFWdq5Eq0ybpgW2P0LNOw8eW+MTg/OFo5K0Hsl2cKu/Tu2tabCsBf6vNjfhDrm4jBShHy1wJIVcYxf6sczVQ==}
     peerDependencies:
-      vite: ^4.0.3 || ^5.0.0
+      vite: 5.2.8
     dependencies:
       '@vanilla-extract/integration': 7.1.2(@types/node@20.12.5)
       vite: 5.2.8(@types/node@20.12.5)
@@ -2402,7 +2414,7 @@ packages:
     resolution: {integrity: sha512-oojO9IDc4nCUUi8qIR11KoQm0XFFLIwsRBwHRR4d/88IWghn1y6ckz/bJ8GHDCsYEJee8mDzqtJxh15/cisJNQ==}
     engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
-      vite: ^4.2.0 || ^5.0.0
+      vite: 5.2.8
     dependencies:
       '@babel/core': 7.24.4
       '@babel/plugin-transform-react-jsx-self': 7.24.1(@babel/core@7.24.4)
@@ -3993,7 +4005,7 @@ packages:
     resolution: {integrity: sha512-ZsDfxO51wGAXREY55a7la9LScWpwv9RxIrYABrlvOFBlH/ShPnrtsXeuUIfXKKOVicNxQ+o8JTbJvjS4M89yew==}
     dev: true
 
-  /framer-motion@11.0.25(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405):
+  /framer-motion@11.0.25(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430):
     resolution: {integrity: sha512-mRt7vQGzA7++wTgb+PW1TrlXXgndqR6hCiJ48fXr2X9alte2hPQiAq556HRwDCt0Q5X98MNvcSe4KUa27Gm5Lg==}
     peerDependencies:
       '@emotion/is-prop-valid': '*'
@@ -4007,8 +4019,8 @@ packages:
       react-dom:
         optional: true
     dependencies:
-      react: 19.0.0-canary-e3ebcd54b-20240405
-      react-dom: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+      react: 19.0.0-beta-4508873393-20240430
+      react-dom: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       tslib: 2.6.2
     dev: false
 
@@ -4658,7 +4670,7 @@ packages:
     hasBin: true
     dev: true
 
-  /jotai@2.7.2(@types/react@18.2.74)(react@19.0.0-canary-e3ebcd54b-20240405):
+  /jotai@2.7.2(@types/react@18.2.74)(react@19.0.0-beta-4508873393-20240430):
     resolution: {integrity: sha512-6Ft5kpNu8p93Ssf1Faoza3hYQZRIYp7rioK8MwTTFnbQKwUyZElwquPwl1h6U0uo9hC0jr+ghO3gcSjc6P35/Q==}
     engines: {node: '>=12.20.0'}
     peerDependencies:
@@ -4671,7 +4683,7 @@ packages:
         optional: true
     dependencies:
       '@types/react': 18.2.74
-      react: 19.0.0-canary-e3ebcd54b-20240405
+      react: 19.0.0-beta-4508873393-20240430
     dev: false
 
   /js-tokens@4.0.0:
@@ -5412,7 +5424,7 @@ packages:
     resolution: {integrity: sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==}
     dev: false
 
-  /next-mdx-remote@4.4.1(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405):
+  /next-mdx-remote@4.4.1(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430):
     resolution: {integrity: sha512-1BvyXaIou6xy3XoNF4yaMZUCb6vD2GTAa5ciOa6WoO+gAUTYsb1K4rI/HSC2ogAWLrb/7VSV52skz07vOzmqIQ==}
     engines: {node: '>=14', npm: '>=7'}
     peerDependencies:
@@ -5420,9 +5432,9 @@ packages:
       react-dom: '>=16.x <=18.x'
     dependencies:
       '@mdx-js/mdx': 2.3.0
-      '@mdx-js/react': 2.3.0(react@19.0.0-canary-e3ebcd54b-20240405)
-      react: 19.0.0-canary-e3ebcd54b-20240405
-      react-dom: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+      '@mdx-js/react': 2.3.0(react@19.0.0-beta-4508873393-20240430)
+      react: 19.0.0-beta-4508873393-20240430
+      react-dom: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       vfile: 5.3.7
       vfile-matter: 3.0.1
     transitivePeerDependencies:
@@ -5993,13 +6005,13 @@ packages:
       strip-json-comments: 2.0.1
     dev: true
 
-  /react-dom@19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405):
-    resolution: {integrity: sha512-rLmRhyj0CiO0H5lWTIeP1izYsjjp03Dt36dufxjlPWVVpbHdKoIHUU/cDNin7Le2H+hNQfDQk7VcOb6Z7Z+W0g==}
+  /react-dom@19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430):
+    resolution: {integrity: sha512-/j97ai1qF3c6O3XV0nVzzExPV/0U2v8M75Sq6ThXYxePCi33kAnm+xRsCDpZOZOrIjz6nurLU/FzzPZIzXVvKQ==}
     peerDependencies:
-      react: 19.0.0-canary-e3ebcd54b-20240405
+      react: 19.0.0-beta-4508873393-20240430
     dependencies:
-      react: 19.0.0-canary-e3ebcd54b-20240405
-      scheduler: 0.25.0-canary-e3ebcd54b-20240405
+      react: 19.0.0-beta-4508873393-20240430
+      scheduler: 0.25.0-beta-4508873393-20240430
     dev: false
 
   /react-is@16.13.1:
@@ -6015,36 +6027,36 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: false
 
-  /react-server-dom-webpack@19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0):
-    resolution: {integrity: sha512-wzZhAOr3GBc6n6M7kivf0Tp2qmVOq+GYQcjzeB0KSPtMoj2jSQHMa0E+xDwHT9OYRWXVYtG2bdFD8MP6kuXkkw==}
+  /react-server-dom-webpack@19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0):
+    resolution: {integrity: sha512-/rRIMqNoeReqyioWwfLyqu/qUfZ39YLXOfkhLrXOStzG2g7Q2a5DoLD0eZOcCIpvpWg+/QRw1xOGZLm75mK+Aw==}
     engines: {node: '>=0.10.0'}
     peerDependencies:
-      react: 19.0.0-canary-e3ebcd54b-20240405
-      react-dom: 19.0.0-canary-e3ebcd54b-20240405
+      react: 19.0.0-beta-4508873393-20240430
+      react-dom: 19.0.0-beta-4508873393-20240430
       webpack: ^5.59.0
     dependencies:
       acorn-loose: 8.4.0
       neo-async: 2.6.2
-      react: 19.0.0-canary-e3ebcd54b-20240405
-      react-dom: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
+      react: 19.0.0-beta-4508873393-20240430
+      react-dom: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
       webpack: 5.91.0
     dev: false
 
-  /react-textarea-autosize@8.5.3(@types/react@18.2.74)(react@19.0.0-canary-e3ebcd54b-20240405):
+  /react-textarea-autosize@8.5.3(@types/react@18.3.1)(react@19.0.0-beta-4508873393-20240430):
     resolution: {integrity: sha512-XT1024o2pqCuZSuBt9FwHlaDeNtVrtCXu0Rnz88t1jUGheCLa3PhjE1GH8Ctm2axEtvdCl5SUHYschyQ0L5QHQ==}
     engines: {node: '>=10'}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
     dependencies:
       '@babel/runtime': 7.23.9
-      react: 19.0.0-canary-e3ebcd54b-20240405
-      use-composed-ref: 1.3.0(react@19.0.0-canary-e3ebcd54b-20240405)
-      use-latest: 1.2.1(@types/react@18.2.74)(react@19.0.0-canary-e3ebcd54b-20240405)
+      react: 19.0.0-beta-4508873393-20240430
+      use-composed-ref: 1.3.0(react@19.0.0-beta-4508873393-20240430)
+      use-latest: 1.2.1(@types/react@18.3.1)(react@19.0.0-beta-4508873393-20240430)
     transitivePeerDependencies:
       - '@types/react'
     dev: false
 
-  /react-tweet@3.2.0(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405):
+  /react-tweet@3.2.0(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430):
     resolution: {integrity: sha512-eYLAX5ViOICQT/vkte/IzYZZDoBnl7hDO3Ns4++lKEFr/+BohPK5Rg+Lvbfx78Qtn3AjfDG5c6n+rOt7c2J6qg==}
     peerDependencies:
       react: '>= 18.0.0'
@@ -6053,21 +6065,21 @@ packages:
       '@swc/helpers': 0.5.6
       clsx: 2.1.0
       date-fns: 2.30.0
-      react: 19.0.0-canary-e3ebcd54b-20240405
-      react-dom: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
-      swr: 2.2.5(react@19.0.0-canary-e3ebcd54b-20240405)
+      react: 19.0.0-beta-4508873393-20240430
+      react-dom: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
+      swr: 2.2.5(react@19.0.0-beta-4508873393-20240430)
     dev: false
 
-  /react-wrap-balancer@1.1.0(react@19.0.0-canary-e3ebcd54b-20240405):
+  /react-wrap-balancer@1.1.0(react@19.0.0-beta-4508873393-20240430):
     resolution: {integrity: sha512-EhF3jOZm5Fjx+Cx41e423qOv2c2aOvXAtym2OHqrGeMUnwERIyNsRBgnfT3plB170JmuYvts8K2KSPEIerKr5A==}
     peerDependencies:
       react: '>=16.8.0 || ^17.0.0 || ^18'
     dependencies:
-      react: 19.0.0-canary-e3ebcd54b-20240405
+      react: 19.0.0-beta-4508873393-20240430
     dev: false
 
-  /react@19.0.0-canary-e3ebcd54b-20240405:
-    resolution: {integrity: sha512-cJE4hNNSAZSkMGplceUigybvn9cnUrvgFuljOahB2LStTLGVK4bZcszJ0sppwPbr9XVelEvyNmKj/0HRQPc53w==}
+  /react@19.0.0-beta-4508873393-20240430:
+    resolution: {integrity: sha512-//89udV7fhVq5pEzpNH7vlpmS5D4wDbPn0oif+G7vwDsuSks5yJGdqrE1uzn2CyFNL73FjV3/R3Pjyaxs+xnvg==}
     engines: {node: '>=0.10.0'}
     dev: false
 
@@ -6284,8 +6296,8 @@ packages:
       is-regex: 1.1.4
     dev: true
 
-  /scheduler@0.25.0-canary-e3ebcd54b-20240405:
-    resolution: {integrity: sha512-xI+jJ4zTJfULtwgO1GgoT3I3MiEV1OisswVdS9LdoQr0QwKpH0Al7IlW68R5ceIXE/a8RfuYZc7Aq34DwBqr7A==}
+  /scheduler@0.25.0-beta-4508873393-20240430:
+    resolution: {integrity: sha512-gk9vDoDOjTys0DpLgFll+hYk5gLhLnTipi81Pl+XSRtWkQnqQdjxLO2RF726t0g0jQ5tvwjLfBCgsvusgB6Luw==}
     dev: false
 
   /schema-utils@3.3.0:
@@ -6659,14 +6671,14 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /swr@2.2.5(react@19.0.0-canary-e3ebcd54b-20240405):
+  /swr@2.2.5(react@19.0.0-beta-4508873393-20240430):
     resolution: {integrity: sha512-QtxqyclFeAsxEUeZIYmsaQ0UjimSq1RZ9Un7I68/0ClKK/U3LoyQunwkQfJZr2fc22DfIXLNDc2wFyTEikCUpg==}
     peerDependencies:
       react: ^16.11.0 || ^17.0.0 || ^18.0.0
     dependencies:
       client-only: 0.0.1
-      react: 19.0.0-canary-e3ebcd54b-20240405
-      use-sync-external-store: 1.2.0(react@19.0.0-canary-e3ebcd54b-20240405)
+      react: 19.0.0-beta-4508873393-20240430
+      use-sync-external-store: 1.2.0(react@19.0.0-beta-4508873393-20240430)
     dev: false
 
   /tailwindcss@3.4.3:
@@ -7058,15 +7070,15 @@ packages:
     resolution: {integrity: sha512-Qp95D4TPJl1kC9SKigDcqgyM2VDVO4RiJc2d4qe5GrYm+zbIQCWWKAFaJNQ4BhdFeDGwBmAxqJBwWSJDb9T3BQ==}
     dev: true
 
-  /use-composed-ref@1.3.0(react@19.0.0-canary-e3ebcd54b-20240405):
+  /use-composed-ref@1.3.0(react@19.0.0-beta-4508873393-20240430):
     resolution: {integrity: sha512-GLMG0Jc/jiKov/3Ulid1wbv3r54K9HlMW29IWcDFPEqFkSO2nS0MuefWgMJpeHQ9YJeXDL3ZUF+P3jdXlZX/cQ==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
     dependencies:
-      react: 19.0.0-canary-e3ebcd54b-20240405
+      react: 19.0.0-beta-4508873393-20240430
     dev: false
 
-  /use-isomorphic-layout-effect@1.1.2(@types/react@18.2.74)(react@19.0.0-canary-e3ebcd54b-20240405):
+  /use-isomorphic-layout-effect@1.1.2(@types/react@18.3.1)(react@19.0.0-beta-4508873393-20240430):
     resolution: {integrity: sha512-49L8yCO3iGT/ZF9QttjwLF/ZD9Iwto5LnH5LmEdk/6cFmXddqi2ulF0edxTwjj+7mqvpVVGQWvbXZdn32wRSHA==}
     peerDependencies:
       '@types/react': '*'
@@ -7075,11 +7087,11 @@ packages:
       '@types/react':
         optional: true
     dependencies:
-      '@types/react': 18.2.74
-      react: 19.0.0-canary-e3ebcd54b-20240405
+      '@types/react': 18.3.1
+      react: 19.0.0-beta-4508873393-20240430
     dev: false
 
-  /use-latest@1.2.1(@types/react@18.2.74)(react@19.0.0-canary-e3ebcd54b-20240405):
+  /use-latest@1.2.1(@types/react@18.3.1)(react@19.0.0-beta-4508873393-20240430):
     resolution: {integrity: sha512-xA+AVm/Wlg3e2P/JiItTziwS7FK92LWrDB0p+hgXloIMuVCeJJ8v6f0eeHyPZaJrM+usM1FkFfbNCrJGs8A/zw==}
     peerDependencies:
       '@types/react': '*'
@@ -7088,17 +7100,17 @@ packages:
       '@types/react':
         optional: true
     dependencies:
-      '@types/react': 18.2.74
-      react: 19.0.0-canary-e3ebcd54b-20240405
-      use-isomorphic-layout-effect: 1.1.2(@types/react@18.2.74)(react@19.0.0-canary-e3ebcd54b-20240405)
+      '@types/react': 18.3.1
+      react: 19.0.0-beta-4508873393-20240430
+      use-isomorphic-layout-effect: 1.1.2(@types/react@18.3.1)(react@19.0.0-beta-4508873393-20240430)
     dev: false
 
-  /use-sync-external-store@1.2.0(react@19.0.0-canary-e3ebcd54b-20240405):
+  /use-sync-external-store@1.2.0(react@19.0.0-beta-4508873393-20240430):
     resolution: {integrity: sha512-eEgnFxGQ1Ife9bzYs6VLi8/4X6CObHMw9Qr9tPY43iKwsPw8xE8+EFsf/2cFZ5S3esXgpWgtSCtLNS41F+sKPA==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
     dependencies:
-      react: 19.0.0-canary-e3ebcd54b-20240405
+      react: 19.0.0-beta-4508873393-20240430
     dev: false
 
   /util-deprecate@1.0.2:
@@ -7187,7 +7199,7 @@ packages:
   /vite-tsconfig-paths@4.3.2(typescript@5.4.4)(vite@5.2.8):
     resolution: {integrity: sha512-0Vd/a6po6Q+86rPlntHye7F31zA2URZMbH8M3saAZ/xR9QoGN/L21bxEGfXdWmFdNkqPpRdxFT7nmNe12e9/uA==}
     peerDependencies:
-      vite: '*'
+      vite: 5.2.8
     peerDependenciesMeta:
       vite:
         optional: true
