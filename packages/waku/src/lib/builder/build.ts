@@ -408,6 +408,7 @@ const emitRscFiles = async (
   config: ResolvedConfig,
   distEntries: EntriesPrd,
   buildConfig: BuildConfig,
+  partial: boolean,
 ) => {
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (input: string, id: string) => {
@@ -440,6 +441,10 @@ const emitRscFiles = async (
           config.rscPath,
           encodeInput(input),
         );
+        // In partial mode, skip if the file already exists.
+        if (partial && existsSync(destRscFile)) {
+          continue;
+        }
         await mkdir(joinPath(destRscFile, '..'), { recursive: true });
         const readable = await renderRsc(
           {
@@ -488,6 +493,7 @@ const emitHtmlFiles = async (
   buildConfig: BuildConfig,
   getClientModules: (input: string) => string[],
   clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
+  partial: boolean,
 ) => {
   const nonJsAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
@@ -563,6 +569,10 @@ const emitHtmlFiles = async (
               ? '404.html' // HACK special treatment for 404, better way?
               : pathname + '/index.html',
         );
+        // In partial mode, skip if the file already exists.
+        if (partial && existsSync(destHtmlFile)) {
+          return;
+        }
         const htmlReadable = await renderHtml({
           config,
           pathname,
@@ -677,6 +687,7 @@ export async function build(options: {
       (options.deploy === 'deno' ? 'deno' : false) ||
       (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
     isNodeCompatible,
+    !!options.partial,
   );
   await buildSsrBundle(
     rootDir,
@@ -685,6 +696,7 @@ export async function build(options: {
     clientEntryFiles,
     serverBuildOutput,
     isNodeCompatible,
+    !!options.partial,
   );
   const clientBuildOutput = await buildClientBundle(
     rootDir,
@@ -692,6 +704,7 @@ export async function build(options: {
     mainJsFile,
     clientEntryFiles,
     serverBuildOutput,
+    !!options.partial,
   );
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
@@ -705,6 +718,7 @@ export async function build(options: {
     config,
     distEntries,
     buildConfig,
+    options.partial || false,
   );
   await emitHtmlFiles(
     rootDir,
@@ -714,6 +728,7 @@ export async function build(options: {
     buildConfig,
     getClientModules,
     clientBuildOutput,
+    options.partial || false,
   );
 
   if (options.deploy?.startsWith('vercel-')) {
