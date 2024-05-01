@@ -46,6 +46,9 @@ const { values, positionals } = parseArgs({
     'with-aws-lambda': {
       type: 'boolean',
     },
+    partial: {
+      type: 'boolean',
+    },
     port: {
       type: 'string',
       short: 'p',
@@ -102,6 +105,7 @@ async function runBuild() {
   await build({
     config,
     env: process.env as any,
+    partial: !!values.partial,
     deploy:
       (values['with-vercel'] ?? !!process.env.VERCEL
         ? values['with-vercel-static']

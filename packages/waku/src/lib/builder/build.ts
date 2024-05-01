@@ -622,6 +622,7 @@ const resolveFileName = (fname: string) => {
 export async function build(options: {
   config: Config;
   env?: Record<string, string>;
+  partial?: boolean;
   deploy?:
     | 'vercel-static'
     | 'vercel-serverless'
