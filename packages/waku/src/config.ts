@@ -37,11 +37,6 @@ export interface Config {
    */
   ssrDir?: string;
   /**
-   * The index.html file for any directories.
-   * Defaults to "index.html".
-   */
-  indexHtml?: string;
-  /**
    * The client main file relative to srcDir.
    * The extension should be `.js`,
    * but resolved with other extensions in the development mode.
@@ -78,6 +73,13 @@ export interface Config {
    * Defaults to "RSC".
    */
   rscPath?: string;
+  /**
+   * HTML attributes to inject.
+   * Defaults to ''
+   * An example is 'lang="en"'
+   * This is still experimental and might be changed in the future.
+   */
+  htmlAttrs?: string;
   /**
    * HTML headers to inject.
    * Defaults to:

@@ -48,7 +48,7 @@ export const loadConfig = async () => ({});
     transform(code, id) {
       if (
         // FIXME this is too hacky and not the right place to patch
-        id.endsWith('/react-server-dom-webpack-server.edge.production.min.js')
+        id.endsWith('/react-server-dom-webpack-server.edge.production.js')
       ) {
         return codeToPrepend + code;
       }
