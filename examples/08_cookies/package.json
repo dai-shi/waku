@@ -10,16 +10,16 @@
   },
   "dependencies": {
     "cookie": "0.6.0",
-    "react": "19.0.0-canary-e3ebcd54b-20240405",
-    "react-dom": "19.0.0-canary-e3ebcd54b-20240405",
-    "react-server-dom-webpack": "19.0.0-canary-e3ebcd54b-20240405",
+    "react": "19.0.0-beta-4508873393-20240430",
+    "react-dom": "19.0.0-beta-4508873393-20240430",
+    "react-server-dom-webpack": "19.0.0-beta-4508873393-20240430",
     "waku": "0.20.1"
   },
   "devDependencies": {
     "@types/cookie": "0.6.0",
     "@types/node": "20.12.5",
-    "@types/react": "18.2.74",
-    "@types/react-dom": "18.2.24",
+    "@types/react": "18.3.1",
+    "@types/react-dom": "18.3.0",
     "typescript": "5.4.4"
   }
 }
