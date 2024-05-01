@@ -156,16 +156,16 @@ export function unstable_defineRouter(
     const pathConfig = await getMyPathConfig();
     const path2moduleIds: Record<string, string[]> = {};
 
-    const promises = pathConfig.map(async ({ pathname: pathSpec, pattern }) => {
-      if (pathSpec.some(({ type }) => type !== 'literal')) {
-        return;
-      }
-      const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
-      const input = getInputString(pathname);
-      path2moduleIds[pattern] = await unstable_collectClientModules(input);
-    });
-
-    await Promise.all(promises);
+    await Promise.all(
+      pathConfig.map(async ({ pathname: pathSpec, pattern }) => {
+        if (pathSpec.some(({ type }) => type !== 'literal')) {
+          return;
+        }
+        const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
+        const input = getInputString(pathname);
+        path2moduleIds[pattern] = await unstable_collectClientModules(input);
+      }),
+    );
 
     const customCode = `
 globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
