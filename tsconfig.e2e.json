@@ -23,6 +23,9 @@
     },
     {
       "path": "./e2e/fixtures/ssr-context-provider/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/partial-build/tsconfig.json"
     }
   ]
 }
