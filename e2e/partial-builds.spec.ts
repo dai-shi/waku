@@ -34,7 +34,7 @@ test.describe(`partial builds`, () => {
   test('does not change pages that already exist', async () => {
     const htmlBefore = statSync(`${cwd}/dist/public/page/a/index.html`);
     const rscBefore = statSync(`${cwd}/dist/public/RSC/page/a.txt`);
-    execSync(`pnpm partial:b`, { cwd });
+    execSync(`pnpm partial`, { cwd, env: { PAGE: 'a,b' } });
     const htmlAfter = statSync(`${cwd}/dist/public/page/a/index.html`);
     const rscAfter = statSync(`${cwd}/dist/public/RSC/page/a.txt`);
     expect(htmlBefore.mtimeMs).toBe(htmlAfter.mtimeMs);
@@ -42,13 +42,13 @@ test.describe(`partial builds`, () => {
   });
 
   test('adds new pages', async ({ page }) => {
-    execSync(`pnpm partial:b`, { cwd });
+    execSync(`pnpm partial`, { cwd, env: { PAGE: 'a,b' } });
     await page.goto(`http://localhost:${port}/page/b`);
     expect(await page.getByTestId('title').textContent()).toBe('b');
   });
 
   test('does not delete old pages', async ({ page }) => {
-    execSync(`pnpm partial:c`, { cwd });
+    execSync(`pnpm partial`, { cwd, env: { PAGE: 'c' } });
     await page.goto(`http://localhost:${port}/page/a`);
     expect(await page.getByTestId('title').textContent()).toBe('a');
     await page.goto(`http://localhost:${port}/page/c`);

@@ -7,8 +7,7 @@
     "dev": "waku dev",
     "build": "PAGES=a waku build",
     "start": "waku start",
-    "partial:b": "PAGES=a,b waku build --partial",
-    "partial:c": "PAGES=c waku build --partial"
+    "partial": "waku build --partial"
   },
   "dependencies": {
     "react": "19.0.0-beta-4508873393-20240430",
