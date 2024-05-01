@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "waku dev",
-    "build": "PAGES=a waku build",
+    "build": "waku build",
     "start": "waku start",
     "partial": "waku build --partial"
   },
