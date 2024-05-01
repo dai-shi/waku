@@ -79,6 +79,7 @@ const analyzeEntries = async (
   rootDir: string,
   config: ResolvedConfig,
   entriesFile: string,
+  partial: boolean,
 ) => {
   const wakuClientDist = decodeFilePathFromAbsolute(
     joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
@@ -117,6 +118,7 @@ const analyzeEntries = async (
       noExternal: /^(?!node:)/,
     },
     build: {
+      emptyOutDir: !partial,
       write: false,
       ssr: true,
       target: 'node18',
@@ -166,6 +168,7 @@ const buildServerBundle = async (
     | 'aws-lambda'
     | false,
   isNodeCompatible: boolean,
+  partial: boolean,
 ) => {
   const serverBuildOutput = await buildVite({
     plugins: [
@@ -244,6 +247,7 @@ const buildServerBundle = async (
     },
     publicDir: false,
     build: {
+      emptyOutDir: !partial,
       ssr: true,
       ssrEmitAssets: true,
       target: 'node18',
@@ -274,6 +278,7 @@ const buildSsrBundle = async (
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
   isNodeCompatible: boolean,
+  partial: boolean,
 ) => {
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
@@ -310,6 +315,7 @@ const buildSsrBundle = async (
     },
     publicDir: false,
     build: {
+      emptyOutDir: !partial,
       ssr: true,
       target: 'node18',
       outDir: joinPath(rootDir, config.distDir, config.ssrDir),
@@ -345,6 +351,7 @@ const buildClientBundle = async (
   mainJsFile: string,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
+  partial: boolean,
 ) => {
   const nonJsAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
@@ -364,6 +371,7 @@ const buildClientBundle = async (
       rscManagedPlugin(config),
     ],
     build: {
+      emptyOutDir: !partial,
       outDir: joinPath(rootDir, config.distDir, config.publicDir),
       rollupOptions: {
         onwarn,
@@ -654,7 +662,7 @@ export async function build(options: {
     options.deploy !== 'deno';
 
   const { clientEntryFiles, serverEntryFiles, serverModuleFiles } =
-    await analyzeEntries(rootDir, config, entriesFile);
+    await analyzeEntries(rootDir, config, entriesFile, !!options.partial);
   const serverBuildOutput = await buildServerBundle(
     rootDir,
     config,
