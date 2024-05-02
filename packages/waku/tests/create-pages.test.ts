@@ -83,6 +83,7 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
+        pattern: '^/test$',
       },
     ]);
 
@@ -119,6 +120,7 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
+        pattern: '^/test$',
       },
     ]);
     const setShouldSkip = vi.fn();
@@ -160,6 +162,7 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
+        pattern: '^/test$',
       },
     ]);
 
@@ -212,6 +215,7 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
+        pattern: '^/test$',
       },
     ]);
 
@@ -261,6 +265,7 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
+        pattern: '^/test/nested$',
       },
     ]);
     const setShouldSkip = vi.fn();
@@ -299,6 +304,7 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
+        pattern: '^/test/nested$',
       },
     ]);
     const setShouldSkip = vi.fn();
@@ -345,6 +351,7 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
+        pattern: '^/test/([^/]+)/([^/]+)$',
       },
       {
         data: undefined,
@@ -364,6 +371,7 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
+        pattern: '^/test/([^/]+)/([^/]+)$',
       },
     ]);
     const setShouldSkip = vi.fn();
@@ -408,6 +416,7 @@ describe('createPages', () => {
             type: 'group',
           },
         ],
+        pattern: '^/test/([^/]+)/([^/]+)$',
       },
     ]);
     const setShouldSkip = vi.fn();
@@ -463,6 +472,7 @@ describe('createPages', () => {
             type: 'wildcard',
           },
         ],
+        pattern: '^/test/(.*)$',
       },
     ]);
     const setShouldSkip = vi.fn();
@@ -520,6 +530,7 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
+        pattern: '^/static$',
       },
       {
         data: undefined,
@@ -531,6 +542,7 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
+        pattern: '^/dynamic$',
       },
     ]);
   });
@@ -561,6 +573,7 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
+        pattern: '^/static$',
       },
       {
         data: undefined,
@@ -572,6 +585,7 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
+        pattern: '^/dynamic$',
       },
     ]);
   });
