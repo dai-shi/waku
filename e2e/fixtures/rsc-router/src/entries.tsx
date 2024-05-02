@@ -6,7 +6,7 @@ export default unstable_defineRouter(
   // getPathConfig
   async () =>
     STATIC_PATHS.map((path) => ({
-      pattern: `/^${path}/`,
+      pattern: `^${path}$`,
       path: path
         .split('/')
         .filter(Boolean)
