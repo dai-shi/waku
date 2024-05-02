@@ -1,7 +1,6 @@
-import { getEnv } from 'waku';
+import { getEnv } from 'waku/server';
 
 export default function Test({ title }: { title: string }) {
-  console.log('rendering', title);
   return <div data-testid="title">{title}</div>;
 }
 
