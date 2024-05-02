@@ -2,6 +2,7 @@ import path from 'node:path';
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 
 import type { ResolvedConfig } from '../config.js';
+import { DIST_PUBLIC } from './build.js';
 
 export const emitNetlifyOutput = async (
   rootDir: string,
@@ -17,7 +18,7 @@ export const emitNetlifyOutput = async (
     const notFoundFile = path.join(
       rootDir,
       config.distDir,
-      config.publicDir,
+      DIST_PUBLIC,
       '404.html',
     );
     const notFoundHtml = existsSync(notFoundFile)
@@ -42,7 +43,7 @@ export const config = {
       `
 [build]
   command = "npm run build -- --with-netlify"
-  publish = "${config.distDir}/${config.publicDir}"
+  publish = "${config.distDir}/${DIST_PUBLIC}"
 [functions]
   included_files = ["${config.privateDir}/**"]
 `,

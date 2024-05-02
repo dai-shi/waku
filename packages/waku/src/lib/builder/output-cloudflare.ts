@@ -2,6 +2,7 @@ import path from 'node:path';
 import { existsSync, writeFileSync } from 'node:fs';
 
 import type { ResolvedConfig } from '../config.js';
+import { DIST_PUBLIC } from './build.js';
 
 // XXX this can be very limited. FIXME if anyone has better knowledge.
 export const emitCloudflareOutput = async (
@@ -20,7 +21,7 @@ compatibility_date = "2023-12-06"
 compatibility_flags = [ "nodejs_als" ]
 
 [site]
-bucket = "./${config.distDir}/${config.publicDir}"
+bucket = "./${config.distDir}/${DIST_PUBLIC}"
 `,
     );
   }

@@ -10,7 +10,7 @@ import * as dotenv from 'dotenv';
 
 import type { Config } from './config.js';
 import { runner } from './lib/hono/runner.js';
-import { DIST_ENTRIES_JS, build } from './lib/builder/build.js';
+import { DIST_ENTRIES_JS, DIST_PUBLIC, build } from './lib/builder/build.js';
 
 const require = createRequire(new URL('.', import.meta.url));
 
@@ -120,15 +120,15 @@ async function runBuild() {
   });
 }
 
-async function runStart({ distDir = 'dist', publicDir = 'public' }) {
+async function runStart({ distDir = 'dist' }) {
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, DIST_ENTRIES_JS)).toString());
   const app = new Hono();
-  app.use('*', serveStatic({ root: path.join(distDir, publicDir) }));
+  app.use('*', serveStatic({ root: path.join(distDir, DIST_PUBLIC) }));
   app.use('*', runner({ cmd: 'start', loadEntries, env: process.env as any }));
   app.notFound((c) => {
     // FIXME better implementation using node stream?
-    const file = path.join(distDir, publicDir, '404.html');
+    const file = path.join(distDir, DIST_PUBLIC, '404.html');
     if (existsSync(file)) {
       return c.html(readFileSync(file, 'utf8'), 404);
     }

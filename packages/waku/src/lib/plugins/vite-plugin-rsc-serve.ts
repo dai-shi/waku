@@ -23,7 +23,7 @@ export function rscServePlugin(opts: {
   srcDir: string;
   distServeJs: string;
   distDir: string;
-  publicDir: string;
+  distPublic: string;
   srcServeFile: string;
   serve:
     | 'vercel'
@@ -49,7 +49,7 @@ export function rscServePlugin(opts: {
         'import.meta.env.WAKU_ENTRIES_FILE': JSON.stringify(entriesFile),
         'import.meta.env.WAKU_CONFIG_DIST_DIR': JSON.stringify(opts.distDir),
         'import.meta.env.WAKU_CONFIG_PUBLIC_DIR': JSON.stringify(
-          opts.publicDir,
+          opts.distPublic,
         ),
       };
       if (opts.serve === 'cloudflare' || opts.serve === 'partykit') {

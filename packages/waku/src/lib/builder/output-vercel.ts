@@ -2,6 +2,7 @@ import path from 'node:path';
 import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 
 import type { ResolvedConfig } from '../config.js';
+import { DIST_PUBLIC } from './build.js';
 
 // https://vercel.com/docs/build-output-api/v3
 export const emitVercelOutput = async (
@@ -10,7 +11,7 @@ export const emitVercelOutput = async (
   serveJs: string,
   type: 'static' | 'serverless',
 ) => {
-  const publicDir = path.join(rootDir, config.distDir, config.publicDir);
+  const publicDir = path.join(rootDir, config.distDir, DIST_PUBLIC);
   const outputDir = path.resolve('.vercel', 'output');
   cpSync(publicDir, path.join(outputDir, 'static'), { recursive: true });
 

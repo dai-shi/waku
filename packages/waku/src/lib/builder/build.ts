@@ -79,6 +79,9 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
 // We may change this in the future
 export const DIST_ENTRIES_JS = 'entries.js';
 export const DIST_SERVE_JS = 'serve.js';
+export const DIST_PUBLIC = 'public';
+export const DIST_ASSETS = 'assets';
+export const DIST_SSR = 'ssr';
 
 const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   const wakuClientDist = decodeFilePathFromAbsolute(
@@ -129,13 +132,13 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   });
   const clientEntryFiles = Object.fromEntries(
     Array.from(clientFileSet).map((fname, i) => [
-      `${config.assetsDir}/rsc${i}-${fileHashMap.get(fname)}`,
+      `${DIST_ASSETS}/rsc${i}-${fileHashMap.get(fname)}`,
       fname,
     ]),
   );
   const serverEntryFiles = Object.fromEntries(
     Array.from(serverFileSet).map((fname, i) => [
-      `${config.assetsDir}/rsf${i}`,
+      `${DIST_ASSETS}/rsf${i}`,
       fname,
     ]),
   );
@@ -187,13 +190,13 @@ const buildServerBundle = async (
           ...Object.fromEntries(
             Object.keys(CLIENT_MODULE_MAP).map((key) => [
               `${CLIENT_PREFIX}${key}`,
-              `./${config.ssrDir}/${key}.js`,
+              `./${DIST_SSR}/${key}.js`,
             ]),
           ),
           ...Object.fromEntries(
             Object.keys(clientEntryFiles || {}).map((key) => [
-              `${config.ssrDir}/${key}.js`,
-              `./${config.ssrDir}/${key}.js`,
+              `${DIST_SSR}/${key}.js`,
+              `./${DIST_SSR}/${key}.js`,
             ]),
           ),
           ...Object.fromEntries(
@@ -209,6 +212,7 @@ const buildServerBundle = async (
             rscServePlugin({
               ...config,
               distServeJs: DIST_SERVE_JS,
+              distPublic: DIST_PUBLIC,
               srcServeFile: decodeFilePathFromAbsolute(
                 joinPath(
                   fileURLToFilePath(import.meta.url),
@@ -309,7 +313,7 @@ const buildSsrBundle = async (
     build: {
       ssr: true,
       target: 'node18',
-      outDir: joinPath(rootDir, config.distDir, config.ssrDir),
+      outDir: joinPath(rootDir, config.distDir, DIST_SSR),
       rollupOptions: {
         onwarn,
         input: {
@@ -326,7 +330,7 @@ const buildSsrBundle = async (
             ) {
               return '[name].js';
             }
-            return config.assetsDir + '/[name]-[hash].js';
+            return DIST_ASSETS + '/[name]-[hash].js';
           },
         },
       },
@@ -358,7 +362,7 @@ const buildClientBundle = async (
       rscManagedPlugin({ ...config, addMainToInput: true }),
     ],
     build: {
-      outDir: joinPath(rootDir, config.distDir, config.publicDir),
+      outDir: joinPath(rootDir, config.distDir, DIST_PUBLIC),
       rollupOptions: {
         onwarn,
         // rollup will ouput the style files related to clientEntryFiles, but since it does not find any link to them in the index.html file, it will not inject them. They are only mentioned by the standalone `clientEntryFiles`
@@ -369,7 +373,7 @@ const buildClientBundle = async (
             if (clientEntryFiles[chunkInfo.name]) {
               return '[name].js';
             }
-            return config.assetsDir + '/[name]-[hash].js';
+            return DIST_ASSETS + '/[name]-[hash].js';
           },
         },
       },
@@ -380,7 +384,7 @@ const buildClientBundle = async (
   }
   for (const nonJsAsset of nonJsAssets) {
     const from = joinPath(rootDir, config.distDir, nonJsAsset);
-    const to = joinPath(rootDir, config.distDir, config.publicDir, nonJsAsset);
+    const to = joinPath(rootDir, config.distDir, DIST_PUBLIC, nonJsAsset);
     await rename(from, to);
   }
   return clientBuildOutput;
@@ -419,7 +423,7 @@ const emitRscFiles = async (
         const destRscFile = joinPath(
           rootDir,
           config.distDir,
-          config.publicDir,
+          DIST_PUBLIC,
           config.rscPath,
           encodeInput(input),
         );
@@ -480,7 +484,7 @@ const emitHtmlFiles = async (
   const publicIndexHtmlFile = joinPath(
     rootDir,
     config.distDir,
-    config.publicDir,
+    DIST_PUBLIC,
     'index.html',
   );
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
@@ -539,7 +543,7 @@ const emitHtmlFiles = async (
         const destHtmlFile = joinPath(
           rootDir,
           config.distDir,
-          config.publicDir,
+          DIST_PUBLIC,
           extname(pathname)
             ? pathname
             : pathname === '/404'

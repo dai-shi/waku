@@ -23,6 +23,7 @@ import { encodeInput, hasStatusCode } from './utils.js';
 
 // HACK depending on these constants is not ideal
 import { SRC_MAIN } from '../plugins/vite-plugin-rsc-managed.js';
+import { DIST_SSR } from '../builder/build.js';
 
 export const CLIENT_MODULE_MAP = {
   react: 'react',
@@ -323,7 +324,7 @@ export const renderHtml = async (
                 moduleLoading.set(
                   id,
                   opts
-                    .loadModule(joinPath(config.ssrDir, id))
+                    .loadModule(joinPath(DIST_SSR, id))
                     .then((m: any) => {
                       moduleCache.set(id, m);
                     }),

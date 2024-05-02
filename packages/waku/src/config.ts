@@ -20,22 +20,6 @@ export interface Config {
    */
   distDir?: string;
   /**
-   * The public directory relative to distDir.
-   * It's different from Vite's build.publicDir config.
-   * Defaults to "public".
-   */
-  publicDir?: string;
-  /**
-   * The assets directory relative to distDir and publicDir.
-   * Defaults to "assets".
-   */
-  assetsDir?: string;
-  /**
-   * The SSR directory relative to distDir.
-   * Defaults to "ssr".
-   */
-  ssrDir?: string;
-  /**
   /**
    * The list of directries to preserve server module structure.
    * Relative to srcDir.
