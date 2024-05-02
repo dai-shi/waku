@@ -10,7 +10,8 @@ import * as dotenv from 'dotenv';
 
 import type { Config } from './config.js';
 import { runner } from './lib/hono/runner.js';
-import { DIST_ENTRIES_JS, DIST_PUBLIC, build } from './lib/builder/build.js';
+import { build } from './lib/builder/build.js';
+import { DIST_ENTRIES_JS, DIST_PUBLIC } from './lib/builder/constants.js';
 
 const require = createRequire(new URL('.', import.meta.url));
 

@@ -2,7 +2,7 @@ import path from 'node:path';
 import { existsSync, writeFileSync } from 'node:fs';
 
 import type { ResolvedConfig } from '../config.js';
-import { DIST_PUBLIC } from './build.js';
+import { DIST_PUBLIC } from './constants.js';
 
 // XXX this can be very limited. FIXME if anyone has better knowledge.
 export const emitCloudflareOutput = async (

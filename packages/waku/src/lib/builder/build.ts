@@ -54,6 +54,13 @@ import { emitNetlifyOutput } from './output-netlify.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
 import { emitPartyKitOutput } from './output-partykit.js';
 import { emitAwsLambdaOutput } from './output-aws-lambda.js';
+import {
+  DIST_ENTRIES_JS,
+  DIST_SERVE_JS,
+  DIST_PUBLIC,
+  DIST_ASSETS,
+  DIST_SSR,
+} from './constants.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -74,14 +81,6 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   }
   defaultHandler(warning);
 };
-
-// Some file and dir names for dist
-// We may change this in the future
-export const DIST_ENTRIES_JS = 'entries.js';
-export const DIST_SERVE_JS = 'serve.js';
-export const DIST_PUBLIC = 'public';
-export const DIST_ASSETS = 'assets';
-export const DIST_SSR = 'ssr';
 
 const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   const wakuClientDist = decodeFilePathFromAbsolute(

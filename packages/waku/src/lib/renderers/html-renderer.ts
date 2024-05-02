@@ -23,7 +23,7 @@ import { encodeInput, hasStatusCode } from './utils.js';
 
 // HACK depending on these constants is not ideal
 import { SRC_MAIN } from '../plugins/vite-plugin-rsc-managed.js';
-import { DIST_SSR } from '../builder/build.js';
+import { DIST_SSR } from '../builder/constants.js';
 
 export const CLIENT_MODULE_MAP = {
   react: 'react',

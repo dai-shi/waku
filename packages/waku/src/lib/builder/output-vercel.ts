@@ -2,7 +2,7 @@ import path from 'node:path';
 import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 
 import type { ResolvedConfig } from '../config.js';
-import { DIST_PUBLIC } from './build.js';
+import { DIST_PUBLIC } from './constants.js';
 
 // https://vercel.com/docs/build-output-api/v3
 export const emitVercelOutput = async (
