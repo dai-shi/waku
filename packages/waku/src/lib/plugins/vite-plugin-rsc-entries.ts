@@ -7,7 +7,7 @@ import type { Plugin } from 'vite';
 // Maybe we could put in vite config object?
 import { SRC_ENTRIES } from './vite-plugin-rsc-managed.js';
 
-import { extname } from '../utils/path.js';
+import { extname, joinPath } from '../utils/path.js';
 
 const stripExt = (fname: string) => {
   const ext = extname(fname);
@@ -39,7 +39,7 @@ export function loadModule(id) {
   return {
     name: 'rsc-entries-plugin',
     configResolved(config) {
-      entriesFile = path.join(config.root, opts.srcDir, SRC_ENTRIES);
+      entriesFile = joinPath(config.root, opts.srcDir, SRC_ENTRIES);
       if (existsSync(CONFIG_FILE)) {
         const file = normalizePath(
           path.relative(path.dirname(entriesFile), path.resolve(CONFIG_FILE)),
