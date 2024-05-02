@@ -23,6 +23,12 @@
     },
     {
       "path": "./e2e/fixtures/ssr-context-provider/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/render-type/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/ssg-performance/tsconfig.json"
     }
   ]
 }

@@ -31,6 +31,7 @@ type ShouldSkipValue = ShouldSkip[number][1];
 export function unstable_defineRouter(
   getPathConfig: () => Promise<
     Iterable<{
+      pattern: string;
       path: PathSpec;
       isStatic?: boolean;
       noSsr?: boolean;
@@ -51,6 +52,7 @@ export function unstable_defineRouter(
   >,
 ): ReturnType<typeof defineEntries> {
   type MyPathConfig = {
+    pattern: string;
     pathname: PathSpec;
     isStatic?: boolean | undefined;
     customData: { noSsr?: boolean; is404: boolean; data: unknown };
@@ -69,6 +71,7 @@ export function unstable_defineRouter(
           item.path[0]!.type === 'literal' &&
           item.path[0]!.name === '404';
         return {
+          pattern: item.pattern,
           pathname: item.path,
           isStatic: item.isStatic,
           customData: { is404, noSsr: !!item.noSsr, data: item.data },
@@ -93,10 +96,6 @@ export function unstable_defineRouter(
         ? ['NOT_FOUND', 'HAS_404']
         : ['NOT_FOUND'];
   };
-  const shouldSkipObj: {
-    [componentId: ShouldSkip[number][0]]: ShouldSkip[number][1];
-  } = {};
-
   const renderEntries: RenderEntries = async (
     input,
     { searchParams, buildConfig },
@@ -105,6 +104,10 @@ export function unstable_defineRouter(
     if ((await existsPath(pathname, buildConfig))[0] === 'NOT_FOUND') {
       return null;
     }
+    const shouldSkipObj: {
+      [componentId: ShouldSkip[number][0]]: ShouldSkip[number][1];
+    } = {};
+
     const skip = searchParams.getAll(PARAM_KEY_SKIP) || [];
     searchParams.delete(PARAM_KEY_SKIP); // delete all
     const componentIds = getComponentIds(pathname);
@@ -152,20 +155,26 @@ export function unstable_defineRouter(
   ) => {
     const pathConfig = await getMyPathConfig();
     const path2moduleIds: Record<string, string[]> = {};
-    for (const { pathname: pathSpec } of pathConfig) {
-      if (pathSpec.some(({ type }) => type !== 'literal')) {
-        continue;
-      }
-      const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
-      const input = getInputString(pathname);
-      const moduleIds = await unstable_collectClientModules(input);
-      path2moduleIds[pathname] = moduleIds;
-    }
+
+    await Promise.all(
+      pathConfig.map(async ({ pathname: pathSpec, pattern }) => {
+        if (pathSpec.some(({ type }) => type !== 'literal')) {
+          return;
+        }
+        const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
+        const input = getInputString(pathname);
+        path2moduleIds[pattern] = await unstable_collectClientModules(input);
+      }),
+    );
+
     const customCode = `
 globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   const path2ids = ${JSON.stringify(path2moduleIds)};
-  for (const id of path2ids[path] || []) {
-    import(id);
+  const pattern = Object.keys(path2ids).find((key) => new RegExp(key).test(path));
+  if (pattern && path2ids[pattern]) {
+    for (const id of path2ids[pattern] || []) {
+      import(id);
+    }
   }
 };`;
     const buildConfig: BuildConfig = [];

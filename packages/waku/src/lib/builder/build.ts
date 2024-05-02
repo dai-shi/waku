@@ -686,6 +686,8 @@ export async function build(options: {
   );
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
+
+  // TODO: Add progress indication for static builds.
   const buildConfig = await getBuildConfig({ config, entries: distEntries });
   await appendFile(
     distEntriesFile,

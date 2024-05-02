@@ -7,6 +7,7 @@ import {
   joinPath,
   parsePathWithSlug,
   getPathMapping,
+  path2regexp,
 } from '../lib/utils/path.js';
 import type { BuildConfig } from '../server.js';
 import type { PathSpec } from '../lib/utils/path.js';
@@ -247,6 +248,7 @@ export function createPages(
     async () => {
       await configure();
       const paths: {
+        pattern: string;
         path: PathSpec;
         isStatic: boolean;
         noSsr: boolean;
@@ -258,6 +260,7 @@ export function createPages(
           ([layoutPathSpec]) => !hasPathSpecPrefix(layoutPathSpec, pathSpec),
         );
         paths.push({
+          pattern: path2regexp(parsePathWithSlug(path)),
           path: pathSpec,
           isStatic,
           noSsr,
@@ -267,6 +270,7 @@ export function createPages(
       for (const [path, [pathSpec]] of dynamicPagePathMap) {
         const noSsr = noSsrSet.has(pathSpec);
         paths.push({
+          pattern: path2regexp(parsePathWithSlug(path)),
           path: pathSpec,
           isStatic: false,
           noSsr,
@@ -276,6 +280,7 @@ export function createPages(
       for (const [path, [pathSpec]] of wildcardPagePathMap) {
         const noSsr = noSsrSet.has(pathSpec);
         paths.push({
+          pattern: path2regexp(parsePathWithSlug(path)),
           path: pathSpec,
           isStatic: false,
           noSsr,
