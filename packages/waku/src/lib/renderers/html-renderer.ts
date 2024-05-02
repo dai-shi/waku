@@ -323,11 +323,9 @@ export const renderHtml = async (
               if (!moduleLoading.has(id)) {
                 moduleLoading.set(
                   id,
-                  opts
-                    .loadModule(joinPath(DIST_SSR, id))
-                    .then((m: any) => {
-                      moduleCache.set(id, m);
-                    }),
+                  opts.loadModule(joinPath(DIST_SSR, id)).then((m: any) => {
+                    moduleCache.set(id, m);
+                  }),
                 );
               }
               return { id, chunks: [id], name };
