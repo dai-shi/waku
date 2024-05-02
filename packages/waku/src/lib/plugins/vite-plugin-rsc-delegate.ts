@@ -3,15 +3,13 @@ import * as swc from '@swc/core';
 
 import { EXTENSIONS } from '../config.js';
 import { extname } from '../utils/path.js';
+import { parseOpts } from '../utils/swc.js';
 import type { HotUpdatePayload } from './vite-plugin-rsc-hmr.js';
 
 const isClientEntry = (id: string, code: string) => {
   const ext = extname(id);
   if (EXTENSIONS.includes(ext)) {
-    const mod = swc.parseSync(code, {
-      syntax: 'typescript',
-      tsx: ext.endsWith('x'),
-    });
+    const mod = swc.parseSync(code, parseOpts(ext));
     for (const item of mod.body) {
       if (
         item.type === 'ExpressionStatement' &&
@@ -102,10 +100,7 @@ export function rscDelegatePlugin(
     async transform(code, id) {
       const ext = extname(id);
       if (mode === 'development' && EXTENSIONS.includes(ext)) {
-        const mod = swc.parseSync(code, {
-          syntax: 'typescript',
-          tsx: ext.endsWith('x'),
-        });
+        const mod = swc.parseSync(code, parseOpts(ext));
         for (const item of mod.body) {
           if (item.type === 'ImportDeclaration') {
             if (item.source.value.startsWith('virtual:')) {
