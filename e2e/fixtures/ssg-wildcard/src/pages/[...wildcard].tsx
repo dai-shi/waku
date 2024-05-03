@@ -1,6 +1,6 @@
-const Page = ({ path }: { path: string }) => (
+const Page = ({ wildcard }: { wildcard: string[] }) => (
   <div>
-    <h1>{path}</h1>
+    <h1>/{wildcard.join('/')}</h1>
   </div>
 );
 
