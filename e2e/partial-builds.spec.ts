@@ -40,7 +40,7 @@ test.describe(`partial builds`, () => {
   test('does not change pages that already exist', async () => {
     const htmlBefore = statSync(`${cwd}/dist/public/page/a/index.html`);
     const rscBefore = statSync(`${cwd}/dist/public/RSC/page/a.txt`);
-    execSync(`node ${waku} build --partial`, {
+    execSync(`node ${waku} build --experimental-partial`, {
       cwd,
       env: { ...process.env, PAGES: 'a,b' },
     });
@@ -51,7 +51,7 @@ test.describe(`partial builds`, () => {
   });
 
   test('adds new pages', async ({ page }) => {
-    execSync(`node ${waku} build --partial`, {
+    execSync(`node ${waku} build --experimental-partial`, {
       cwd,
       env: { ...process.env, PAGES: 'a,b' },
     });
@@ -60,7 +60,7 @@ test.describe(`partial builds`, () => {
   });
 
   test('does not delete old pages', async ({ page }) => {
-    execSync(`node ${waku} build --partial`, {
+    execSync(`node ${waku} build --experimental-partial`, {
       cwd,
       env: { ...process.env, PAGES: 'c' },
     });
