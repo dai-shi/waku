@@ -718,7 +718,7 @@ export async function build(options: {
     config,
     distEntries,
     buildConfig,
-    options.partial || false,
+    !!options.partial,
   );
   await emitHtmlFiles(
     rootDir,
