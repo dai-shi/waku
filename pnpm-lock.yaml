@@ -72,6 +72,34 @@ importers:
         specifier: workspace:*
         version: link:packages/waku
 
+  e2e/fixtures/partial-build:
+    dependencies:
+      react:
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
+      react-dom:
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
+      react-server-dom-webpack:
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
+      serve:
+        specifier: ^14.2.3
+        version: 14.2.3
+      waku:
+        specifier: workspace:*
+        version: link:../../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 18.3.1
+        version: 18.3.1
+      '@types/react-dom':
+        specifier: 18.3.0
+        version: 18.3.0
+      typescript:
+        specifier: 5.4.4
+        version: 5.4.4
+
   e2e/fixtures/render-type:
     dependencies:
       react:
