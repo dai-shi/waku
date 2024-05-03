@@ -728,7 +728,7 @@ export async function build(options: {
     buildConfig,
     getClientModules,
     clientBuildOutput,
-    options.partial || false,
+    !!options.partial,
   );
 
   if (options.deploy?.startsWith('vercel-')) {
