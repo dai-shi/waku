@@ -40,8 +40,9 @@ if (HAS_MODULE_REGISTER) {
 (globalThis as any).__WAKU_PRIVATE_ENV__ = getEnvironmentData(
   '__WAKU_PRIVATE_ENV__',
 );
+const configBasePath = getEnvironmentData('CONFIG_BASE_PATH') as string;
 const configSrcDir = getEnvironmentData('CONFIG_SRC_DIR') as string;
-const configEntriesJs = getEnvironmentData('CONFIG_ENTRIES_JS') as string;
+const configEntries = getEnvironmentData('CONFIG_ENTRIES') as string;
 const configPrivateDir = getEnvironmentData('CONFIG_PRIVATE_DIR') as string;
 
 const resolveClientEntryForDev = (
@@ -182,7 +183,7 @@ const mergedViteConfig = await mergeUserViteConfig({
     nonjsResolvePlugin(),
     rscEnvPlugin({}),
     rscPrivatePlugin({ privateDir: configPrivateDir, hotUpdateCallback }),
-    rscManagedPlugin({ srcDir: configSrcDir, entriesJs: configEntriesJs }),
+    rscManagedPlugin({ basePath: configBasePath, srcDir: configSrcDir }),
     rscTransformPlugin({ isBuild: false }),
     rscDelegatePlugin(hotUpdateCallback),
   ],
@@ -190,7 +191,7 @@ const mergedViteConfig = await mergeUserViteConfig({
     include: ['react-server-dom-webpack/client', 'react-dom'],
     exclude: ['waku'],
     entries: [
-      `${configSrcDir}/${configEntriesJs}`.replace(/\.js$/, '.*'),
+      `${configSrcDir}/${configEntries}.*`,
       // HACK hard-coded "pages"
       `${configSrcDir}/pages/**/*.*`,
     ],
@@ -231,14 +232,14 @@ const loadServerModule = async (id: string) => {
   return vite.ssrLoadModule(id);
 };
 
-const loadEntries = async (config: { srcDir: string; entriesJs: string }) => {
+const loadEntries = async (config: { srcDir: string }) => {
   const vite = await vitePromise;
-  const filePath = joinPath(vite.config.root, config.srcDir, config.entriesJs);
+  const filePath = joinPath(vite.config.root, config.srcDir, configEntries);
   return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
 };
 
 // load entries eagerly
-loadEntries({ srcDir: configSrcDir, entriesJs: configEntriesJs }).catch(() => {
+loadEntries({ srcDir: configSrcDir }).catch(() => {
   // ignore
 });
 

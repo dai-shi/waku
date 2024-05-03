@@ -2,10 +2,12 @@ import path from 'node:path';
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 
 import type { ResolvedConfig } from '../config.js';
+import { DIST_PUBLIC } from './constants.js';
 
 export const emitNetlifyOutput = async (
   rootDir: string,
   config: ResolvedConfig,
+  serveJs: string,
   type: 'static' | 'functions',
 ) => {
   if (type === 'functions') {
@@ -16,7 +18,7 @@ export const emitNetlifyOutput = async (
     const notFoundFile = path.join(
       rootDir,
       config.distDir,
-      config.publicDir,
+      DIST_PUBLIC,
       '404.html',
     );
     const notFoundHtml = existsSync(notFoundFile)
@@ -26,7 +28,7 @@ export const emitNetlifyOutput = async (
       path.join(functionsDir, 'serve.js'),
       `
 globalThis.__WAKU_NOT_FOUND_HTML__ = ${JSON.stringify(notFoundHtml)};
-export { default } from '../../${config.distDir}/${config.serveJs}';
+export { default } from '../../${config.distDir}/${serveJs}';
 export const config = {
   preferStatic: true,
   path: ['/', '/*'],
@@ -41,7 +43,7 @@ export const config = {
       `
 [build]
   command = "npm run build -- --with-netlify"
-  publish = "${config.distDir}/${config.publicDir}"
+  publish = "${config.distDir}/${DIST_PUBLIC}"
 [functions]
   included_files = ["${config.privateDir}/**"]
 `,
