@@ -101,7 +101,7 @@ export type CreatePage = <
   ) & { unstable_disableSSR?: boolean },
 ) => void;
 
-type CreateLayout = <T extends string>(layout: {
+export type CreateLayout = <T extends string>(layout: {
   render: 'static' | 'dynamic';
   path: PathWithoutSlug<T>;
   component: FunctionComponent<

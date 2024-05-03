@@ -2,6 +2,7 @@ import { expect, vi, describe, it, beforeEach, assert } from 'vitest';
 import type { MockedFunction } from 'vitest';
 import { createPages } from '../src/router/create-pages.js';
 import type {
+  CreateLayout,
   CreatePage,
   PathWithoutSlug,
   PathWithSlug,
@@ -13,46 +14,110 @@ import type { PropsWithChildren } from 'react';
 import { renderToString } from 'react-dom/server';
 import { expectType } from 'ts-expect';
 
-expectType<PathWithoutSlug<'/test'>>('/test');
-expectType<PathWithoutSlug<'/test/a'>>('/test/a');
-// @ts-expect-error: PathWithoutSlug does not allow slugs - surprise!
-expectType<PathWithoutSlug<'/test/[slug]'>>('/test/[slug]');
-
-expectType<PathWithSlug<'/test/[slug]', 'slug'>>('/test/[slug]');
-expectType<PathWithSlug<'/test/[a]/[b]', 'a'>>('/test/[a]/[b]');
-expectType<PathWithSlug<'/test/[a]/[b]', 'b'>>('/test/[a]/[b]');
-// @ts-expect-error: PathWithSlug fails if the path does not match.
-expectType<PathWithSlug<'/test/[a]', 'a'>>('/test/[a]/[b]');
-// @ts-expect-error: PathWithSlug fails if the slug-id is not in the path.
-expectType<PathWithSlug<'/test/[a]/[b]', 'c'>>('/test/[a]/[b]');
-
-expectType<PathWithWildcard<'/test/[...path]', never, 'path'>>(
-  '/test/[...path]',
-);
-expectType<PathWithWildcard<'/test/[slug]/[...path]', 'slug', 'path'>>(
-  '/test/[slug]/[...path]',
-);
-expectType<PathWithWildcard<'/test/[slug]/[...path]', 'slug', 'path'>>(
-  // @ts-expect-error: PathWithWildcard fails if the path does not match.
-  '/test/[a]/[...path]',
-);
-
-// TODO: type tests for CreatePage and CreateLayout
 describe('type tests', () => {
-  it('CreatePage', () => {
-    const createPage: CreatePage = vi.fn();
-    // @ts-expect-error: render is not valid
-    createPage({ render: 'foo' });
-    // @ts-expect-error: path is required
-    createPage({ render: 'static' });
-    // @ts-expect-error: path is invalid
-    createPage({ render: 'static', path: 'bar' });
-    // @ts-expect-error: component is missing
-    createPage({ render: 'static', path: '/' });
-    // @ts-expect-error: component is not a function
-    createPage({ render: 'static', path: '/', component: 123 });
-    // good
-    createPage({ render: 'static', path: '/', component: () => 'Hello' });
+  it('PathWithoutSlug', () => {
+    expectType<PathWithoutSlug<'/test'>>('/test');
+    expectType<PathWithoutSlug<'/test/a'>>('/test/a');
+    // @ts-expect-error: PathWithoutSlug does not allow slugs - surprise!
+    expectType<PathWithoutSlug<'/test/[slug]'>>('/test/[slug]');
+  });
+  it('PathWithSlug', () => {
+    expectType<PathWithSlug<'/test/[slug]', 'slug'>>('/test/[slug]');
+    expectType<PathWithSlug<'/test/[a]/[b]', 'a'>>('/test/[a]/[b]');
+    expectType<PathWithSlug<'/test/[a]/[b]', 'b'>>('/test/[a]/[b]');
+    // @ts-expect-error: PathWithSlug fails if the path does not match.
+    expectType<PathWithSlug<'/test/[a]', 'a'>>('/test/[a]/[b]');
+    // @ts-expect-error: PathWithSlug fails if the slug-id is not in the path.
+    expectType<PathWithSlug<'/test/[a]/[b]', 'c'>>('/test/[a]/[b]');
+  });
+  it('PathWithWildcard', () => {
+    expectType<PathWithWildcard<'/test/[...path]', never, 'path'>>(
+      '/test/[...path]',
+    );
+    expectType<PathWithWildcard<'/test/[slug]/[...path]', 'slug', 'path'>>(
+      '/test/[slug]/[...path]',
+    );
+    expectType<PathWithWildcard<'/test/[slug]/[...path]', 'slug', 'path'>>(
+      // @ts-expect-error: PathWithWildcard fails if the path does not match.
+      '/test/[a]/[...path]',
+    );
+  });
+  describe('CreatePage', () => {
+    it('static', () => {
+      const createPage: CreatePage = vi.fn();
+      // @ts-expect-error: render is not valid
+      createPage({ render: 'foo' });
+      // @ts-expect-error: path is required
+      createPage({ render: 'static' });
+      // @ts-expect-error: path is invalid
+      createPage({ render: 'static', path: 'bar' });
+      // @ts-expect-error: component is missing
+      createPage({ render: 'static', path: '/' });
+      // @ts-expect-error: component is not a function
+      createPage({ render: 'static', path: '/', component: 123 });
+      // @ts-expect-error: missing static paths
+      createPage({ render: 'static', path: '/[a]', component: () => 'Hello' });
+      // TODO: This fails at runtime, but not at type level.
+      // \@ts-expect-error: static paths do not match the slug pattern
+      createPage({
+        render: 'static',
+        path: '/test/[a]/[b]',
+        staticPaths: ['c'],
+        component: () => 'Hello',
+      });
+
+      // good
+      createPage({
+        render: 'static',
+        path: '/test/[a]',
+        staticPaths: ['x', 'y', 'z'],
+        component: () => 'Hello',
+      });
+    });
+    it('dynamic', () => {
+      const createPage: CreatePage = vi.fn();
+      // @ts-expect-error: render is not valid
+      createPage({ render: 'foo' });
+      // @ts-expect-error: path is required
+      createPage({ render: 'dynamic' });
+      // @ts-expect-error: path is invalid
+      createPage({ render: 'dynamic', path: 'bar' });
+      // @ts-expect-error: component is missing
+      createPage({ render: 'dynamic', path: '/' });
+      // @ts-expect-error: component is not a function
+      createPage({ render: 'dynamic', path: '/', component: 123 });
+
+      // good
+      createPage({ render: 'dynamic', path: '/[a]', component: () => 'Hello' });
+    });
+  });
+  describe('CreateLayout', () => {
+    it('static', () => {
+      const createLayout: CreateLayout = vi.fn();
+      // @ts-expect-error: render is not valid
+      createLayout({ render: 'foo' });
+      // @ts-expect-error: path is invalid
+      createLayout({ render: 'static', path: 'bar' });
+      // @ts-expect-error: component is missing
+      createLayout({ render: 'static' });
+      // @ts-expect-error: component is not a function
+      createLayout({ render: 'static', component: 123 });
+
+      // good
+      createLayout({ render: 'static', path: '/', component: () => 'Hello' });
+    });
+    it('dynamic', () => {
+      const createLayout: CreateLayout = vi.fn();
+      // @ts-expect-error: path is invalid
+      createLayout({ render: 'dynamic', path: 'bar' });
+      // @ts-expect-error: component is missing
+      createLayout({ render: 'dynamic' });
+      // @ts-expect-error: component is not a function
+      createLayout({ render: 'static', component: 123 });
+
+      // good
+      createLayout({ render: 'dynamic', path: '/', component: () => 'Hello' });
+    });
   });
 });
 
