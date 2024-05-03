@@ -408,7 +408,6 @@ const emitRscFiles = async (
   config: ResolvedConfig,
   distEntries: EntriesPrd,
   buildConfig: BuildConfig,
-  partial: boolean,
 ) => {
   const clientModuleMap = new Map<string, Set<string>>();
   const addClientModule = (input: string, id: string) => {
@@ -441,8 +440,8 @@ const emitRscFiles = async (
           config.rscPath,
           encodeInput(input),
         );
-        // In partial mode, skip if the file already exists.
-        if (partial && existsSync(destRscFile)) {
+        // Skip if the file already exists.
+        if (existsSync(destRscFile)) {
           continue;
         }
         await mkdir(joinPath(destRscFile, '..'), { recursive: true });
@@ -493,7 +492,6 @@ const emitHtmlFiles = async (
   buildConfig: BuildConfig,
   getClientModules: (input: string) => string[],
   clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
-  partial: boolean,
 ) => {
   const nonJsAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
@@ -570,7 +568,7 @@ const emitHtmlFiles = async (
               : pathname + '/index.html',
         );
         // In partial mode, skip if the file already exists.
-        if (partial && existsSync(destHtmlFile)) {
+        if (existsSync(destHtmlFile)) {
           return;
         }
         const htmlReadable = await renderHtml({
@@ -720,7 +718,6 @@ export async function build(options: {
     config,
     distEntries,
     buildConfig,
-    !!options.partial,
   );
   await emitHtmlFiles(
     rootDir,
@@ -730,7 +727,6 @@ export async function build(options: {
     buildConfig,
     getClientModules,
     clientBuildOutput,
-    !!options.partial,
   );
 
   if (options.deploy?.startsWith('vercel-')) {
