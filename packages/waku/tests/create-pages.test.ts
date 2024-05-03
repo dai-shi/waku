@@ -2,6 +2,7 @@ import { expect, vi, describe, it, beforeEach, assert } from 'vitest';
 import type { MockedFunction } from 'vitest';
 import { createPages } from '../src/router/create-pages.js';
 import type {
+  CreatePage,
   PathWithoutSlug,
   PathWithSlug,
   PathWithWildcard,
@@ -37,6 +38,23 @@ expectType<PathWithWildcard<'/test/[slug]/[...path]', 'slug', 'path'>>(
 );
 
 // TODO: type tests for CreatePage and CreateLayout
+describe('type tests', () => {
+  it('CreatePage', () => {
+    const createPage: CreatePage = vi.fn();
+    // @ts-expect-error: render is not valid
+    createPage({ render: 'foo' });
+    // @ts-expect-error: path is required
+    createPage({ render: 'static' });
+    // @ts-expect-error: path is invalid
+    createPage({ render: 'static', path: 'bar' });
+    // @ts-expect-error: component is missing
+    createPage({ render: 'static', path: '/' });
+    // @ts-expect-error: component is not a function
+    createPage({ render: 'static', path: '/', component: 123 });
+    // good
+    createPage({ render: 'static', path: '/', component: () => 'Hello' });
+  });
+});
 
 const defineRouterMock = unstable_defineRouter as MockedFunction<
   typeof unstable_defineRouter
