@@ -34,6 +34,10 @@
       "types": "./dist/node-loader.d.ts",
       "default": "./dist/node-loader.js"
     },
+    "./internals": {
+      "types": "./dist/internals.d.ts",
+      "default": "./dist/internals.js"
+    },
     "./client": {
       "types": "./dist/client.d.ts",
       "default": "./dist/client.js"

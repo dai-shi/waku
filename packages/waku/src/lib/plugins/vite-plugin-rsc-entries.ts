@@ -3,7 +3,11 @@ import path from 'node:path';
 import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 
-import { extname } from '../utils/path.js';
+// HACK Depending on a different plugin isn't ideal.
+// Maybe we could put in vite config object?
+import { SRC_ENTRIES } from './vite-plugin-rsc-managed.js';
+
+import { extname, joinPath } from '../utils/path.js';
 
 const stripExt = (fname: string) => {
   const ext = extname(fname);
@@ -13,7 +17,7 @@ const stripExt = (fname: string) => {
 const CONFIG_FILE = 'waku.config.ts'; // XXX only ts extension
 
 export function rscEntriesPlugin(opts: {
-  entriesFile: string;
+  srcDir: string;
   moduleMap: Record<string, string>;
 }): Plugin {
   const codeToPrepend = `
@@ -31,20 +35,24 @@ export function loadModule(id) {
   }
 }
 `;
-  if (existsSync(CONFIG_FILE)) {
-    const file = normalizePath(
-      path.relative(path.dirname(opts.entriesFile), path.resolve(CONFIG_FILE)),
-    );
-    codeToAppend += `
-export const loadConfig = async () => (await import('${file}')).default;
-`;
-  } else {
-    codeToAppend += `
-export const loadConfig = async () => ({});
-`;
-  }
+  let entriesFile = '';
   return {
     name: 'rsc-entries-plugin',
+    configResolved(config) {
+      entriesFile = joinPath(config.root, opts.srcDir, SRC_ENTRIES);
+      if (existsSync(CONFIG_FILE)) {
+        const file = normalizePath(
+          path.relative(path.dirname(entriesFile), path.resolve(CONFIG_FILE)),
+        );
+        codeToAppend += `
+export const loadConfig = async () => (await import('${file}')).default;
+`;
+      } else {
+        codeToAppend += `
+export const loadConfig = async () => ({});
+`;
+      }
+    },
     transform(code, id) {
       if (
         // FIXME this is too hacky and not the right place to patch
@@ -52,7 +60,7 @@ export const loadConfig = async () => ({});
       ) {
         return codeToPrepend + code;
       }
-      if (stripExt(id) === stripExt(opts.entriesFile)) {
+      if (stripExt(id) === entriesFile) {
         return code + codeToAppend;
       }
     },
