@@ -82,7 +82,7 @@ export type CreatePage = <
       }
     | {
         render: 'static';
-        path: PathWithSlug<Path, SlugKey | `...${WildSlugKey}`>;
+        path: PathWithWildcard<Path, SlugKey, WildSlugKey>;
         staticPaths: string[] | string[][];
         component: FunctionComponent<RouteProps & Record<SlugKey, string>>;
       }
@@ -180,7 +180,7 @@ export function createPages(
         if (staticPath.length !== numSlugs && numWildcards === 0) {
           throw new Error('staticPaths does not match with slug pattern');
         }
-        const mapping: Record<string, string> = {};
+        const mapping: Record<string, string | string[]> = {};
         let slugIndex = 0;
         const pathItems = [] as string[];
         pathSpec.forEach(({ type, name }) => {
@@ -189,12 +189,14 @@ export function createPages(
               pathItems.push(name!);
               break;
             case 'wildcard':
+              mapping[name!] = staticPath.slice(slugIndex);
               staticPath.slice(slugIndex++).forEach((slug) => {
                 pathItems.push(slug);
               });
               break;
             case 'group':
               pathItems.push(staticPath[slugIndex++]!);
+              mapping[name!] = pathItems[pathItems.length - 1]!;
               break;
           }
         });
