@@ -153,6 +153,31 @@ importers:
         specifier: 5.4.4
         version: 5.4.4
 
+  e2e/fixtures/rsc-css-modules:
+    dependencies:
+      react:
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430
+      react-dom:
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react@19.0.0-beta-4508873393-20240430)
+      react-server-dom-webpack:
+        specifier: 19.0.0-beta-4508873393-20240430
+        version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
+      waku:
+        specifier: workspace:*
+        version: link:../../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 18.3.1
+        version: 18.3.1
+      '@types/react-dom':
+        specifier: 18.3.0
+        version: 18.3.0
+      typescript:
+        specifier: 5.4.4
+        version: 5.4.4
+
   e2e/fixtures/rsc-router:
     dependencies:
       react:
@@ -321,7 +346,7 @@ importers:
         specifier: 19.0.0-beta-4508873393-20240430
         version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -352,7 +377,7 @@ importers:
         specifier: 19.0.0-beta-4508873393-20240430
         version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
     devDependencies:
       autoprefixer:
@@ -374,7 +399,7 @@ importers:
         specifier: 19.0.0-beta-4508873393-20240430
         version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -405,7 +430,7 @@ importers:
         specifier: 19.0.0-beta-4508873393-20240430
         version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -430,7 +455,7 @@ importers:
         specifier: 19.0.0-beta-4508873393-20240430
         version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -461,7 +486,7 @@ importers:
         specifier: 19.0.0-beta-4508873393-20240430
         version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/cookie':
@@ -492,7 +517,7 @@ importers:
         specifier: 19.0.0-beta-4508873393-20240430
         version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -517,7 +542,7 @@ importers:
         specifier: 19.0.0-beta-4508873393-20240430
         version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -551,7 +576,7 @@ importers:
         specifier: 19.0.0-beta-4508873393-20240430
         version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -585,7 +610,7 @@ importers:
         specifier: 19.0.0-beta-4508873393-20240430
         version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -619,7 +644,7 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -650,7 +675,7 @@ importers:
         specifier: 19.0.0-beta-4508873393-20240430
         version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -675,7 +700,7 @@ importers:
         specifier: 19.0.0-beta-4508873393-20240430
         version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
 
   examples/22_promise:
@@ -690,7 +715,7 @@ importers:
         specifier: 19.0.0-beta-4508873393-20240430
         version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -718,7 +743,7 @@ importers:
         specifier: 1.1.0
         version: 1.1.0(react@19.0.0-beta-4508873393-20240430)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -743,7 +768,7 @@ importers:
         specifier: 19.0.0-beta-4508873393-20240430
         version: 19.0.0-beta-4508873393-20240430(react-dom@19.0.0-beta-4508873393-20240430)(react@19.0.0-beta-4508873393-20240430)(webpack@5.91.0)
       waku:
-        specifier: 0.20.1
+        specifier: 0.20.2-alpha.0
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -2471,7 +2496,7 @@ packages:
   /@vanilla-extract/vite-plugin@4.0.7(@types/node@20.12.5)(vite@5.2.8):
     resolution: {integrity: sha512-uRAFWdq5Eq0ybpgW2P0LNOw8eW+MTg/OFo5K0Hsl2cKu/Tu2tabCsBf6vNjfhDrm4jBShHy1wJIVcYxf6sczVQ==}
     peerDependencies:
-      vite: ^4.0.3 || ^5.0.0
+      vite: 5.2.8
     dependencies:
       '@vanilla-extract/integration': 7.1.2(@types/node@20.12.5)
       vite: 5.2.8(@types/node@20.12.5)
@@ -2495,7 +2520,7 @@ packages:
     resolution: {integrity: sha512-oojO9IDc4nCUUi8qIR11KoQm0XFFLIwsRBwHRR4d/88IWghn1y6ckz/bJ8GHDCsYEJee8mDzqtJxh15/cisJNQ==}
     engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
-      vite: ^4.2.0 || ^5.0.0
+      vite: 5.2.8
     dependencies:
       '@babel/core': 7.24.4
       '@babel/plugin-transform-react-jsx-self': 7.24.1(@babel/core@7.24.4)
@@ -7479,7 +7504,7 @@ packages:
   /vite-tsconfig-paths@4.3.2(typescript@5.4.4)(vite@5.2.8):
     resolution: {integrity: sha512-0Vd/a6po6Q+86rPlntHye7F31zA2URZMbH8M3saAZ/xR9QoGN/L21bxEGfXdWmFdNkqPpRdxFT7nmNe12e9/uA==}
     peerDependencies:
-      vite: '*'
+      vite: 5.2.8
     peerDependenciesMeta:
       vite:
         optional: true
