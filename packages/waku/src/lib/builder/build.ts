@@ -82,11 +82,7 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   defaultHandler(warning);
 };
 
-const analyzeEntries = async (
-  rootDir: string,
-  config: ResolvedConfig,
-  partial: boolean,
-) => {
+const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   const wakuClientDist = decodeFilePathFromAbsolute(
     joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
   );
@@ -124,7 +120,6 @@ const analyzeEntries = async (
       noExternal: /^(?!node:)/,
     },
     build: {
-      emptyOutDir: !partial,
       write: false,
       ssr: true,
       target: 'node18',
@@ -649,7 +644,7 @@ export async function build(options: {
     options.deploy !== 'deno';
 
   const { clientEntryFiles, serverEntryFiles, serverModuleFiles } =
-    await analyzeEntries(rootDir, config, !!options.partial);
+    await analyzeEntries(rootDir, config);
   const serverBuildOutput = await buildServerBundle(
     rootDir,
     config,
