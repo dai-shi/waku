@@ -165,6 +165,7 @@ const buildServerBundle = async (
     | 'aws-lambda'
     | false,
   isNodeCompatible: boolean,
+  partial: boolean,
 ) => {
   const serverBuildOutput = await buildVite({
     plugins: [
@@ -247,6 +248,7 @@ const buildServerBundle = async (
     },
     publicDir: false,
     build: {
+      emptyOutDir: !partial,
       ssr: true,
       ssrEmitAssets: true,
       target: 'node18',
@@ -275,6 +277,7 @@ const buildSsrBundle = async (
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
   isNodeCompatible: boolean,
+  partial: boolean,
 ) => {
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
@@ -310,6 +313,7 @@ const buildSsrBundle = async (
     },
     publicDir: false,
     build: {
+      emptyOutDir: !partial,
       ssr: true,
       target: 'node18',
       outDir: joinPath(rootDir, config.distDir, DIST_SSR),
@@ -343,6 +347,7 @@ const buildClientBundle = async (
   config: ResolvedConfig,
   clientEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
+  partial: boolean,
 ) => {
   const nonJsAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
@@ -361,6 +366,7 @@ const buildClientBundle = async (
       rscManagedPlugin({ ...config, addMainToInput: true }),
     ],
     build: {
+      emptyOutDir: !partial,
       outDir: joinPath(rootDir, config.distDir, DIST_PUBLIC),
       rollupOptions: {
         onwarn,
@@ -426,6 +432,10 @@ const emitRscFiles = async (
           config.rscPath,
           encodeInput(input),
         );
+        // Skip if the file already exists.
+        if (existsSync(destRscFile)) {
+          continue;
+        }
         await mkdir(joinPath(destRscFile, '..'), { recursive: true });
         const readable = await renderRsc(
           {
@@ -549,6 +559,10 @@ const emitHtmlFiles = async (
               ? '404.html' // HACK special treatment for 404, better way?
               : pathname + '/index.html',
         );
+        // In partial mode, skip if the file already exists.
+        if (existsSync(destHtmlFile)) {
+          return;
+        }
         const htmlReadable = await renderHtml({
           config,
           pathname,
@@ -606,6 +620,7 @@ export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
 export async function build(options: {
   config: Config;
   env?: Record<string, string>;
+  partial?: boolean;
   deploy?:
     | 'vercel-static'
     | 'vercel-serverless'
@@ -643,6 +658,7 @@ export async function build(options: {
       (options.deploy === 'deno' ? 'deno' : false) ||
       (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
     isNodeCompatible,
+    !!options.partial,
   );
   await buildSsrBundle(
     rootDir,
@@ -650,12 +666,14 @@ export async function build(options: {
     clientEntryFiles,
     serverBuildOutput,
     isNodeCompatible,
+    !!options.partial,
   );
   const clientBuildOutput = await buildClientBundle(
     rootDir,
     config,
     clientEntryFiles,
     serverBuildOutput,
+    !!options.partial,
   );
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));

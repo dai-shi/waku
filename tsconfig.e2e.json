@@ -32,6 +32,9 @@
     },
     {
       "path": "./e2e/fixtures/ssg-performance/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/partial-build/tsconfig.json"
     }
   ]
 }
