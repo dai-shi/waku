@@ -1,0 +1,9 @@
+.counterWrapper {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
+
+.counterButton {
+  padding: 8px;
+}
