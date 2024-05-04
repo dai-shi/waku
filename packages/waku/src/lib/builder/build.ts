@@ -514,7 +514,7 @@ const emitHtmlFiles = async (
         let htmlHead = publicIndexHtmlHead;
         if (cssAssets.length) {
           const cssStr = cssAssets
-            .map((asset) => `<link rel="stylesheet" href="${asset}">`)
+            .map((asset) => `<link rel="stylesheet" href="/${asset}">`)
             .join('\n');
           // HACK is this too naive to inject style code?
           htmlStr = htmlStr.replace(/<\/head>/, cssStr);
