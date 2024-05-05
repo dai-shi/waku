@@ -10,6 +10,9 @@
       "path": "./e2e/fixtures/rsc-basic/tsconfig.json"
     },
     {
+      "path": "./e2e/fixtures/rsc-css-modules/tsconfig.json"
+    },
+    {
       "path": "./e2e/fixtures/ssr-basic/tsconfig.json"
     },
     {
@@ -32,6 +35,9 @@
     },
     {
       "path": "./e2e/fixtures/ssg-wildcard/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/partial-build/tsconfig.json"
     }
   ]
 }

@@ -1,7 +1,10 @@
 {
   "name": "waku",
   "description": "⛩️ The minimal React framework",
-  "version": "0.20.1",
+  "version": "0.20.2-alpha.0",
+  "publishConfig": {
+    "tag": "next"
+  },
   "type": "module",
   "author": "Daishi Kato",
   "homepage": "https://waku.gg",
@@ -33,6 +36,10 @@
     "./node-loader": {
       "types": "./dist/node-loader.d.ts",
       "default": "./dist/node-loader.js"
+    },
+    "./internals": {
+      "types": "./dist/internals.d.ts",
+      "default": "./dist/internals.js"
     },
     "./client": {
       "types": "./dist/client.d.ts",
