@@ -79,9 +79,6 @@ ${opts.htmlHead}
     },
     transformIndexHtml() {
       return [
-        // HACK without <base>, some relative assets don't work.
-        // FIXME ideally, we should avoid this.
-        { tag: 'base', attrs: { href: opts.basePath } },
         {
           tag: 'script',
           attrs: { type: 'module', async: true },
@@ -89,7 +86,7 @@ ${opts.htmlHead}
         },
         ...(opts.cssAssets || []).map((href) => ({
           tag: 'link',
-          attrs: { rel: 'stylesheet', href },
+          attrs: { rel: 'stylesheet', href: `${opts.basePath}${href}` },
           injectTo: 'head' as const,
         })),
       ];

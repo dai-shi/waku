@@ -515,19 +515,50 @@ describe('createPages', () => {
     expect(TestPage).toHaveBeenCalledWith({ a: 'w', b: 'x' }, undefined);
   });
 
-  it('fails when trying to create a static page with wildcards', async () => {
+  it('creates a static page with wildcards', async () => {
+    const TestPage = vi.fn();
     createPages(async ({ createPage }) => {
-      // @ts-expect-error: this already fails at type level, but we also want to test runtime
       createPage({
         render: 'static',
         path: '/test/[...path]',
-        component: () => null,
+        staticPaths: [['a', 'b']],
+        component: TestPage,
       });
     });
-    const { getPathConfig } = injectedFunctions();
-    await expect(getPathConfig).rejects.toThrowError(
-      `Invalid page configuration`,
-    );
+    const { getPathConfig, getComponent } = injectedFunctions();
+    expect(await getPathConfig!()).toEqual([
+      {
+        data: undefined,
+        isStatic: true,
+        noSsr: false,
+        path: [
+          {
+            name: 'test',
+            type: 'literal',
+          },
+          {
+            name: 'a',
+            type: 'literal',
+          },
+          {
+            name: 'b',
+            type: 'literal',
+          },
+        ],
+        pattern: '^/test/(.*)$',
+      },
+    ]);
+    const setShouldSkip = vi.fn();
+    const WrappedComponent = await getComponent('test/a/b/page', {
+      unstable_setShouldSkip: setShouldSkip,
+      unstable_buildConfig: undefined,
+    });
+    assert(WrappedComponent);
+    expect(setShouldSkip).toHaveBeenCalledTimes(1);
+    expect(setShouldSkip).toHaveBeenCalledWith([]);
+    renderToString(createElement(WrappedComponent as any));
+    expect(TestPage).toHaveBeenCalledTimes(1);
+    expect(TestPage).toHaveBeenCalledWith({ path: ['a', 'b'] }, undefined);
   });
 
   it('creates a dynamic page with wildcards', async () => {
