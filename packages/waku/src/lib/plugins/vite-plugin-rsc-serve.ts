@@ -38,7 +38,7 @@ export function rscServePlugin(opts: {
     config(viteConfig) {
       // FIXME This seems too hacky (The use of viteConfig.root, '.', path.resolve and resolveFileName)
       const entriesFile = resolveFileName(
-        path.resolve(viteConfig.root || '.', opts.srcDir, SRC_ENTRIES + '.js'),
+        path.resolve(viteConfig.root || '.', opts.srcDir, SRC_ENTRIES + '.jsx'),
       );
       const { input } = viteConfig.build?.rollupOptions ?? {};
       if (input && !(typeof input === 'string') && !(input instanceof Array)) {
