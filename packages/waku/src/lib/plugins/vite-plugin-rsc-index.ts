@@ -86,7 +86,7 @@ ${opts.htmlHead}
         },
         ...(opts.cssAssets || []).map((href) => ({
           tag: 'link',
-          attrs: { rel: 'stylesheet', href: `/${href}` },
+          attrs: { rel: 'stylesheet', href: `${opts.basePath}${href}` },
           injectTo: 'head' as const,
         })),
       ];
