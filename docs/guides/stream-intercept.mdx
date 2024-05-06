@@ -58,7 +58,7 @@ export default streamInterceptor;
 
 ### Step 2: Register the middleware
 
-In your `waku.config.ts` file, import the middleware and add it to the `middlewares` array:
+In your `waku.config.ts` file, import the middleware and add it to the `middleware` array:
 
 ```ts
 import streamInterceptor from "./src/middleware/streamInterceptor";
@@ -68,7 +68,7 @@ const DO_NOT_BUNDLE = "";
 /** @type {import('waku/config').Config} */
 export default {
   // ...
-  middlewares: (cmd: "dev" | "start") => [
+  middleware: (cmd: "dev" | "start") => [
     import("./src/middleware/themePreload.js"), // + this is the one we just added
     ...(cmd === "dev"
       ? [
