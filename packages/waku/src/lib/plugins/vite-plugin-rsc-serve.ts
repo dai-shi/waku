@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 
 // HACK: Depending on a different plugin isn't ideal.
@@ -37,8 +38,14 @@ export function rscServePlugin(opts: {
     name: 'rsc-serve-plugin',
     config(viteConfig) {
       // FIXME This seems too hacky (The use of viteConfig.root, '.', path.resolve and resolveFileName)
-      const entriesFile = resolveFileName(
-        path.resolve(viteConfig.root || '.', opts.srcDir, SRC_ENTRIES + '.js'),
+      const entriesFile = normalizePath(
+        resolveFileName(
+          path.resolve(
+            viteConfig.root || '.',
+            opts.srcDir,
+            SRC_ENTRIES + '.jsx',
+          ),
+        ),
       );
       const { input } = viteConfig.build?.rollupOptions ?? {};
       if (input && !(typeof input === 'string') && !(input instanceof Array)) {
