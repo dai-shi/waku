@@ -69,7 +69,7 @@
     "@types/react-dom": "18.3.0",
     "@typescript-eslint/eslint-plugin": "^7.8.0",
     "@typescript-eslint/parser": "^7.8.0",
-    "eslint": "9.2.0",
+    "eslint": "8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "^2.29.1",
@@ -84,7 +84,7 @@
   },
   "pnpm": {
     "overrides": {
-      "vite": "5.2.8"
+      "vite": "5.2.11"
     }
   }
 }
