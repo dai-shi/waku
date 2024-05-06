@@ -38,8 +38,8 @@ export function rscServePlugin(opts: {
     name: 'rsc-serve-plugin',
     config(viteConfig) {
       // FIXME This seems too hacky (The use of viteConfig.root, '.', path.resolve and resolveFileName)
-      const entriesFile = resolveFileName(
-        normalizePath(
+      const entriesFile = normalizePath(
+        resolveFileName(
           path.resolve(
             viteConfig.root || '.',
             opts.srcDir,
