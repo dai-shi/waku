@@ -57,13 +57,16 @@ const mergeElements = (a: Elements, b: Elements): Elements => {
           resolve(nextElements);
         })
         .catch((e) => {
-          a.then((a) => {
-            promise.prev = a;
-            reject(e);
-          }).catch(() => {
-            promise.prev = a.prev;
-            reject(e);
-          });
+          a.then(
+            (a) => {
+              promise.prev = a;
+              reject(e);
+            },
+            () => {
+              promise.prev = a.prev;
+              reject(e);
+            },
+          );
         });
     });
     return promise;

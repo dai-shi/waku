@@ -15,6 +15,7 @@ import {
 import type {
   ComponentProps,
   FunctionComponent,
+  MutableRefObject,
   ReactNode,
   AnchorHTMLAttributes,
   ReactElement,
@@ -289,19 +290,21 @@ const equalRouteProps = (a: RouteProps, b: RouteProps) => {
 const RouterSlot = ({
   route,
   routerData,
+  cachedRef,
   id,
   fallback,
   children,
 }: {
   route: RouteProps;
   routerData: RouterData;
+  cachedRef: MutableRefObject<Record<string, RouteProps>>;
   id: string;
   fallback?: ReactNode;
   children?: ReactNode;
 }) => {
   const unstable_shouldRenderPrev = (_err: unknown) => {
     const shouldSkip = routerData[0];
-    const skip = getSkipList(shouldSkip, [id], route, {});
+    const skip = getSkipList(shouldSkip, [id], route, cachedRef.current);
     return skip.length > 0;
   };
   return createElement(
@@ -444,7 +447,11 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
 
   const children = componentIds.reduceRight(
     (acc: ReactNode, id) =>
-      createElement(RouterSlot, { route, routerData, id, fallback: acc }, acc),
+      createElement(
+        RouterSlot,
+        { route, routerData, cachedRef, id, fallback: acc },
+        acc,
+      ),
     null,
   );
 
