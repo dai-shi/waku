@@ -7,7 +7,7 @@ export const Header = () => {
         <Link to="/">Waku pokemon</Link>
       </h2>
       <a
-        href="https://github.com/dai-shi/waku/tree/main/examples/02_demo/src"
+        href="https://github.com/dai-shi/waku/tree/main/examples/03_demo"
         target="_blank"
         rel="noreferrer"
         className="text-sm hover:underline"
