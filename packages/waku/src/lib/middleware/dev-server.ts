@@ -16,7 +16,12 @@ import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscHmrPlugin, hotUpdate } from '../plugins/vite-plugin-rsc-hmr.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
-import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
+import {
+  // HACK depending on these constants is not ideal
+  SRC_ENTRIES,
+  SRC_MAIN,
+  rscManagedPlugin,
+} from '../plugins/vite-plugin-rsc-managed.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import type { ClonableModuleNode, Middleware } from './types.js';
 
@@ -86,7 +91,7 @@ export const devServer: Middleware = (options) => {
         include: ['react-server-dom-webpack/client', 'react-dom'],
         exclude: ['waku'],
         entries: [
-          `${config.srcDir}/${config.entriesJs}`.replace(/\.js$/, '.*'),
+          `${config.srcDir}/${SRC_ENTRIES}.*`,
           // HACK hard-coded "pages"
           `${config.srcDir}/pages/**/*.*`,
         ],
@@ -170,7 +175,7 @@ export const devServer: Middleware = (options) => {
     if (!initialModules) {
       // pre-process the mainJs file to see which modules are being sent to the browser by vite
       // and using the same modules if possible in the bundlerConfig in the stream
-      const mainJs = `${config.basePath}${config.srcDir}/${config.mainJs}`;
+      const mainJs = `${config.basePath}${config.srcDir}/${SRC_MAIN}`;
       await vite.transformRequest(mainJs);
       const resolved = await vite.pluginContainer.resolveId(mainJs);
       const resolvedModule = vite.moduleGraph.idToModuleMap.get(resolved!.id)!;

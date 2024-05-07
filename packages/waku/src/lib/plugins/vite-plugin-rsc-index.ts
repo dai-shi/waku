@@ -1,11 +1,14 @@
 import type { Plugin } from 'vite';
 
+// HACK Depending on a different plugin isn't ideal.
+// Maybe we could put in vite config object?
+import { SRC_MAIN } from './vite-plugin-rsc-managed.js';
+
 import { codeToInject } from '../renderers/utils.js';
 
 export function rscIndexPlugin(opts: {
   basePath: string;
   srcDir: string;
-  mainJs: string;
   htmlAttrs: string;
   htmlHead: string;
   cssAssets?: string[];
@@ -18,7 +21,7 @@ export function rscIndexPlugin(opts: {
 ${opts.htmlHead}
   </head>
   <body>
-    <script src="${opts.basePath}${opts.srcDir}/${opts.mainJs}" async type="module"></script>
+    <script src="${opts.basePath}${opts.srcDir}/${SRC_MAIN}" async type="module"></script>
   </body>
 </html>
 `;
@@ -27,7 +30,7 @@ ${opts.htmlHead}
     config() {
       return {
         optimizeDeps: {
-          entries: [`${opts.srcDir}/${opts.mainJs}`.replace(/\.js$/, '.*')],
+          entries: [`${opts.srcDir}/${SRC_MAIN}.*`],
         },
       };
     },
@@ -76,9 +79,6 @@ ${opts.htmlHead}
     },
     transformIndexHtml() {
       return [
-        // HACK without <base>, some relative assets don't work.
-        // FIXME ideally, we should avoid this.
-        { tag: 'base', attrs: { href: opts.basePath } },
         {
           tag: 'script',
           attrs: { type: 'module', async: true },
@@ -86,7 +86,7 @@ ${opts.htmlHead}
         },
         ...(opts.cssAssets || []).map((href) => ({
           tag: 'link',
-          attrs: { rel: 'stylesheet', href },
+          attrs: { rel: 'stylesheet', href: `${opts.basePath}${href}` },
           injectTo: 'head' as const,
         })),
       ];

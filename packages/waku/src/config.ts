@@ -10,7 +10,6 @@ export interface Config {
   basePath?: string;
   /**
    * The source directory relative to root.
-   * This will be the actual root in the development mode.
    * Defaults to  "src".
    */
   srcDir?: string;
@@ -21,35 +20,6 @@ export interface Config {
    */
   distDir?: string;
   /**
-   * The public directory relative to distDir.
-   * It's different from Vite's build.publicDir config.
-   * Defaults to "public".
-   */
-  publicDir?: string;
-  /**
-   * The assets directory relative to distDir and publicDir.
-   * Defaults to "assets".
-   */
-  assetsDir?: string;
-  /**
-   * The SSR directory relative to distDir.
-   * Defaults to "ssr".
-   */
-  ssrDir?: string;
-  /**
-   * The client main file relative to srcDir.
-   * The extension should be `.js`,
-   * but resolved with other extensions in the development mode.
-   * Defaults to "main.js".
-   */
-  mainJs?: string;
-  /**
-   * The entries.js file relative to srcDir or distDir.
-   * The extension should be `.js`,
-   * but resolved with other extensions in the development mode.
-   * Defaults to "entries.js".
-   */
-  entriesJs?: string;
   /**
    * The list of directries to preserve server module structure.
    * Relative to srcDir.
@@ -62,12 +32,6 @@ export interface Config {
    * Defaults to  "private".
    */
   privateDir?: string;
-  /**
-   * The serve.js file relative distDir.
-   * This file is used for deployment.
-   * Defaults to "serve.js".
-   */
-  serveJs?: string;
   /**
    * Prefix for HTTP requests to indicate RSC requests.
    * Defaults to "RSC".

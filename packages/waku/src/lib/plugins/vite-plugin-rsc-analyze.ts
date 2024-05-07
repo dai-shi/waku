@@ -3,6 +3,7 @@ import * as swc from '@swc/core';
 
 import { EXTENSIONS } from '../config.js';
 import { extname } from '../utils/path.js';
+import { parseOpts } from '../utils/swc.js';
 // HACK: Is it common to depend on another plugin like this?
 import { rscTransformPlugin } from './vite-plugin-rsc-transform.js';
 
@@ -30,10 +31,7 @@ export function rscAnalyzePlugin(
     async transform(code, id, options) {
       const ext = extname(id);
       if (EXTENSIONS.includes(ext)) {
-        const mod = swc.parseSync(code, {
-          syntax: 'typescript',
-          tsx: ext.endsWith('x'),
-        });
+        const mod = swc.parseSync(code, parseOpts(ext));
         for (const item of mod.body) {
           if (
             item.type === 'ExpressionStatement' &&
