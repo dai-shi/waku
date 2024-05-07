@@ -1,7 +1,26 @@
 import type { Plugin } from 'vite';
 
 import { EXTENSIONS } from '../config.js';
-import { joinPath } from '../utils/path.js';
+import { extname, joinPath } from '../utils/path.js';
+
+export const SRC_MAIN = 'main';
+export const SRC_ENTRIES = 'entries';
+
+const stripExt = (fname: string) => {
+  const ext = extname(fname);
+  return ext ? fname.slice(0, -ext.length) : fname;
+};
+
+const getManagedEntries = () => `
+import { fsRouter } from 'waku/router/server';
+
+export default fsRouter(
+  import.meta.url,
+  (file) => import.meta.glob('./pages/**/*.{${EXTENSIONS.map((ext) =>
+    ext.replace(/^\./, ''),
+  ).join(',')}}')[\`./pages/\${file}\`]?.(),
+);
+`;
 
 const getManagedMain = () => `
 import { Component, StrictMode } from 'react';
@@ -21,65 +40,63 @@ if (document.body.dataset.hydrate) {
 }
 `;
 
-const getManagedEntries = () => `
-import { fsRouter } from 'waku/router/server';
-
-export default fsRouter(
-  import.meta.url,
-  (file) => import.meta.glob('./pages/**/*.{${EXTENSIONS.map((ext) =>
-    ext.replace(/^\./, ''),
-  ).join(',')}}')[\`./pages/\${file}\`]?.(),
-);
-`;
-
-const addSuffixX = (fname: string | undefined) => {
-  if (!fname) {
-    return fname;
-  }
-  if (fname.endsWith('x')) {
-    return fname;
-  }
-  return fname + 'x';
-};
-
 export function rscManagedPlugin(opts: {
+  basePath: string;
   srcDir: string;
-  entriesJs: string;
-  mainJs?: string;
+  addEntriesToInput?: boolean;
+  addMainToInput?: boolean;
 }): Plugin {
   let entriesFile: string | undefined;
   let mainFile: string | undefined;
-  const mainJsPath = opts.mainJs && '/' + joinPath(opts.srcDir, opts.mainJs);
+  const mainPath = `${opts.basePath}${opts.srcDir}/${SRC_MAIN}`;
   let managedEntries = false;
   let managedMain = false;
   return {
     name: 'rsc-managed-plugin',
     enforce: 'pre',
     configResolved(config) {
-      entriesFile = joinPath(config.root, opts.srcDir, opts.entriesJs);
-      if (opts.mainJs) {
-        mainFile = joinPath(config.root, opts.srcDir, opts.mainJs);
+      entriesFile = joinPath(config.root, opts.srcDir, SRC_ENTRIES);
+      mainFile = joinPath(config.root, opts.srcDir, SRC_MAIN);
+    },
+    options(options) {
+      if (typeof options.input === 'string') {
+        throw new Error('string input is unsupported');
       }
+      if (Array.isArray(options.input)) {
+        throw new Error('array input is unsupported');
+      }
+      return {
+        ...options,
+        input: {
+          ...(opts.addEntriesToInput && { entries: entriesFile! }),
+          ...(opts.addMainToInput && { main: mainFile! }),
+          ...options.input,
+        },
+      };
     },
     async resolveId(id, importer, options) {
       const resolved = await this.resolve(id, importer, options);
-      if (!resolved && id === entriesFile) {
+      if ((!resolved || resolved.id === id) && id === entriesFile) {
         managedEntries = true;
-        return addSuffixX(id);
+        return entriesFile + '.jsx';
       }
-      if (!resolved && (id === mainFile || id === mainJsPath)) {
+      if ((!resolved || resolved.id === id) && id === mainFile) {
         managedMain = true;
-        return addSuffixX(id);
+        return mainFile + '.jsx';
+      }
+      if ((!resolved || resolved.id === id) && stripExt(id) === mainPath) {
+        managedMain = true;
+        return mainPath + '.jsx';
       }
       return resolved;
     },
     load(id) {
-      if (managedEntries && id === addSuffixX(entriesFile)) {
+      if (managedEntries && id === entriesFile + '.jsx') {
         return getManagedEntries();
       }
       if (
         managedMain &&
-        (id === addSuffixX(mainFile) || id === addSuffixX(mainJsPath))
+        (id === mainFile + '.jsx' || id === mainPath + '.jsx')
       ) {
         return getManagedMain();
       }
