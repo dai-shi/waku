@@ -236,9 +236,6 @@ importers:
       react-dom:
         specifier: 19.0.0-canary-e3ebcd54b-20240405
         version: 19.0.0-canary-e3ebcd54b-20240405(react@19.0.0-canary-e3ebcd54b-20240405)
-      react-server-dom-webpack:
-        specifier: 19.0.0-canary-e3ebcd54b-20240405
-        version: 19.0.0-canary-e3ebcd54b-20240405(react-dom@19.0.0-canary-e3ebcd54b-20240405)(react@19.0.0-canary-e3ebcd54b-20240405)(webpack@5.91.0)
     devDependencies:
       '@types/react':
         specifier: 18.2.74

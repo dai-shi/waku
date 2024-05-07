@@ -8,9 +8,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "react-server-dom-webpack": "19.0.0-canary-e3ebcd54b-20240405"
-  },
   "peerDependencies": {
     "react": "19.0.0-canary-e3ebcd54b-20240405",
     "react-dom": "19.0.0-canary-e3ebcd54b-20240405"
