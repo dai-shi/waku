@@ -15,6 +15,7 @@ import {
 import type {
   ComponentProps,
   FunctionComponent,
+  MutableRefObject,
   ReactNode,
   AnchorHTMLAttributes,
   ReactElement,
@@ -286,7 +287,34 @@ const equalRouteProps = (a: RouteProps, b: RouteProps) => {
   return true;
 };
 
-function InnerRouter({ routerData }: { routerData: RouterData }) {
+const RouterSlot = ({
+  route,
+  routerData,
+  cachedRef,
+  id,
+  fallback,
+  children,
+}: {
+  route: RouteProps;
+  routerData: RouterData;
+  cachedRef: MutableRefObject<Record<string, RouteProps>>;
+  id: string;
+  fallback?: ReactNode;
+  children?: ReactNode;
+}) => {
+  const unstable_shouldRenderPrev = (_err: unknown) => {
+    const shouldSkip = routerData[0];
+    const skip = getSkipList(shouldSkip, [id], route, cachedRef.current);
+    return skip.length > 0;
+  };
+  return createElement(
+    Slot,
+    { id, fallback, unstable_shouldRenderPrev },
+    children,
+  );
+};
+
+const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
   const refetch = useRefetch();
 
   const [route, setRoute] = useState(() =>
@@ -418,7 +446,12 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
   });
 
   const children = componentIds.reduceRight(
-    (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
+    (acc: ReactNode, id) =>
+      createElement(
+        RouterSlot,
+        { route, routerData, cachedRef, id, fallback: acc },
+        acc,
+      ),
     null,
   );
 
@@ -427,7 +460,7 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
     { value: { route, changeRoute, prefetchRoute } },
     children,
   );
-}
+};
 
 // Note: The router data must be a stable mutable object (array).
 type RouterData = [

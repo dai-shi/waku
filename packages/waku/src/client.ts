@@ -39,25 +39,43 @@ const checkStatus = async (
   return response;
 };
 
-type Elements = Promise<Record<string, ReactNode>>;
+type Elements = Promise<Record<string, ReactNode>> & {
+  prev?: Record<string, ReactNode> | undefined;
+};
 
 const getCached = <T>(c: () => T, m: WeakMap<object, T>, k: object): T =>
   (m.has(k) ? m : m.set(k, c())).get(k) as T;
 const cache1 = new WeakMap();
-const mergeElements = (
-  a: Elements,
-  b: Elements | Awaited<Elements>,
-): Elements => {
-  const getResult = async () => {
-    const nextElements = { ...(await a), ...(await b) };
-    delete nextElements._value;
-    return nextElements;
+const mergeElements = (a: Elements, b: Elements): Elements => {
+  const getResult = () => {
+    const promise: Elements = new Promise((resolve, reject) => {
+      Promise.all([a, b])
+        .then(([a, b]) => {
+          const nextElements = { ...a, ...b };
+          delete nextElements._value;
+          promise.prev = a;
+          resolve(nextElements);
+        })
+        .catch((e) => {
+          a.then(
+            (a) => {
+              promise.prev = a;
+              reject(e);
+            },
+            () => {
+              promise.prev = a.prev;
+              reject(e);
+            },
+          );
+        });
+    });
+    return promise;
   };
   const cache2 = getCached(() => new WeakMap(), cache1, a);
   return getCached(getResult, cache2, b);
 };
 
-type SetElements = (updater: Elements | ((prev: Elements) => Elements)) => void;
+type SetElements = (updater: (prev: Elements) => Elements) => void;
 type CacheEntry = [
   input: string,
   searchParamsString: string,
@@ -191,10 +209,12 @@ export const Slot = ({
   id,
   children,
   fallback,
+  unstable_shouldRenderPrev,
 }: {
   id: string;
   children?: ReactNode;
   fallback?: ReactNode;
+  unstable_shouldRenderPrev?: (err: unknown) => boolean;
 }) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
@@ -204,12 +224,16 @@ export const Slot = ({
   try {
     elements = use(elementsPromise);
   } catch (e) {
-    if (e instanceof Error) {
+    if (e instanceof Error && !('statusCode' in e)) {
       // HACK we assume any error as Not Found,
       // probably caused by history api fallback
       (e as any).statusCode = 404;
     }
-    throw e;
+    if (unstable_shouldRenderPrev?.(e) && elementsPromise.prev) {
+      elements = elementsPromise.prev;
+    } else {
+      throw e;
+    }
   }
   if (!(id in elements)) {
     if (fallback) {
