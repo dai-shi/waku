@@ -4,8 +4,6 @@ import type { Plugin } from 'vite';
 // Maybe we could put in vite config object?
 import { SRC_MAIN } from './vite-plugin-rsc-managed.js';
 
-import { codeToInject } from '../renderers/utils.js';
-
 export function rscIndexPlugin(opts: {
   basePath: string;
   srcDir: string;
@@ -78,18 +76,11 @@ ${opts.htmlHead}
       }
     },
     transformIndexHtml() {
-      return [
-        {
-          tag: 'script',
-          attrs: { type: 'module', async: true },
-          children: codeToInject,
-        },
-        ...(opts.cssAssets || []).map((href) => ({
-          tag: 'link',
-          attrs: { rel: 'stylesheet', href: `${opts.basePath}${href}` },
-          injectTo: 'head' as const,
-        })),
-      ];
+      return (opts.cssAssets || []).map((href) => ({
+        tag: 'link',
+        attrs: { rel: 'stylesheet', href: `${opts.basePath}${href}` },
+        injectTo: 'head' as const,
+      }));
     },
   };
 }

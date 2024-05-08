@@ -40,6 +40,7 @@ import {
   CLIENT_PREFIX,
   renderHtml,
 } from '../renderers/html-renderer.js';
+import { rscRsdwPlugin } from '../plugins/vite-plugin-rsc-rsdw.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
@@ -175,6 +176,7 @@ const buildServerBundle = async (
         clientEntryFiles,
         serverEntryFiles,
       }),
+      rscRsdwPlugin(),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
       rscManagedPlugin({
@@ -285,6 +287,7 @@ const buildSsrBundle = async (
   await buildVite({
     base: config.basePath,
     plugins: [
+      rscRsdwPlugin(),
       rscIndexPlugin({
         ...config,
         cssAssets,
@@ -357,6 +360,7 @@ const buildClientBundle = async (
     base: config.basePath,
     plugins: [
       viteReact(),
+      rscRsdwPlugin(),
       rscIndexPlugin({
         ...config,
         cssAssets,
