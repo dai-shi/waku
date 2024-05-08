@@ -50,8 +50,8 @@ const resolveClientEntryForDev = (
   config: { rootDir: string; basePath: string },
   initialModules: ClonableModuleNode[],
 ) => {
+  console.log(config.rootDir, '---', id, initialModules);
   for (const moduleNode of initialModules) {
-    console.log('---', id, moduleNode.file);
     if (
       moduleNode.file === id ||
       (id.startsWith('file://') && moduleNode.file === fileURLToFilePath(id))
