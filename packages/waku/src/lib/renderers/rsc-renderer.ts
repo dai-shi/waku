@@ -41,7 +41,6 @@ type RenderRscOpts =
       isDev: true;
       entries: EntriesDev;
       loadServerFile: (fileURL: string) => Promise<unknown>;
-      loadServerModule: (id: string) => Promise<unknown>;
       resolveClientEntry: (id: string) => string;
     };
 
@@ -85,11 +84,9 @@ export async function renderRsc(
     { runWithRenderStore },
   ] = await Promise.all([
     loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server'),
-    (isDev
-      ? opts.loadServerModule(SERVER_MODULE_MAP['waku-server'])
-      : loadModule('waku-server')) as Promise<{
-      runWithRenderStore: typeof runWithRenderStoreType;
-    }>,
+    loadServerModule<{ runWithRenderStore: typeof runWithRenderStoreType }>(
+      'waku-server',
+    ),
   ]);
 
   const bundlerConfig = new Proxy(
