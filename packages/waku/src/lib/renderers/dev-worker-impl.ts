@@ -60,6 +60,7 @@ const resolveClientEntryForDev = (
     }
   }
   let file = id.startsWith('file://') ? fileURLToFilePath(id) : id;
+  console.log('===', file);
   if (file.startsWith(config.rootDir)) {
     file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
   } else {

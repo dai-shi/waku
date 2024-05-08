@@ -10,7 +10,7 @@ const ABSOLUTE_WIN32_PATH_REGEXP = /^\/[a-zA-Z]:\//;
 
 export const encodeFilePathToAbsolute = (filePath: string) => {
   if (ABSOLUTE_WIN32_PATH_REGEXP.test(filePath)) {
-    throw new Error('Unsupported absolute file path');
+    throw new Error('Unsupported absolute file path: ' + filePath);
   }
   if (filePath.startsWith('/')) {
     return filePath;
