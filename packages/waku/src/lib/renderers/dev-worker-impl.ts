@@ -13,6 +13,7 @@ import {
   joinPath,
   fileURLToFilePath,
   encodeFilePathToAbsolute,
+  decodeFilePathFromAbsolute,
 } from '../utils/path.js';
 import { deepFreeze, hasStatusCode } from './utils.js';
 import type { MessageReq, MessageRes } from './dev-worker-api.js';
@@ -50,12 +51,14 @@ const resolveClientEntryForDev = (
   config: { rootDir: string; basePath: string },
   initialModules: ClonableModuleNode[],
 ) => {
+  let file = id.startsWith('file://')
+    ? decodeFilePathFromAbsolute(fileURLToFilePath(id))
+    : id;
   for (const moduleNode of initialModules) {
-    if (moduleNode.file === id) {
+    if (moduleNode.file === file) {
       return moduleNode.url;
     }
   }
-  let file = id.startsWith('file://') ? fileURLToFilePath(id) : id;
   if (file.startsWith(config.rootDir)) {
     file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
   } else {
@@ -95,7 +98,6 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
       {
         isDev: true,
         loadServerFile,
-        loadServerModule,
         resolveClientEntry: (id: string) =>
           resolveClientEntryForDev(
             id,
@@ -201,16 +203,7 @@ const mergedViteConfig = await mergeUserViteConfig({
       conditions: ['react-server', 'workerd'],
       externalConditions: ['react-server', 'workerd'],
     },
-    external: [
-      // FIXME We want to externalize waku, but it fails on windows.
-      // 'waku',
-      // 'waku/client',
-      // 'waku/server',
-      // 'waku/router/client',
-      // 'waku/router/server',
-    ],
-    // FIXME We want to externalize waku, but it fails on windows.
-    noExternal: ['waku'],
+    external: ['waku'],
   },
   appType: 'custom',
   server: { middlewareMode: true, hmr: { server: dummyServer } },
@@ -225,11 +218,6 @@ const vitePromise = createViteServer(mergedViteConfig).then(async (vite) => {
 const loadServerFile = async (fileURL: string) => {
   const vite = await vitePromise;
   return vite.ssrLoadModule(fileURLToFilePath(fileURL));
-};
-
-const loadServerModule = async (id: string) => {
-  const vite = await vitePromise;
-  return vite.ssrLoadModule(id);
 };
 
 const loadEntries = async (config: { srcDir: string }) => {
