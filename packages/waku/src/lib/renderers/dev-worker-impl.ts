@@ -51,7 +51,10 @@ const resolveClientEntryForDev = (
   initialModules: ClonableModuleNode[],
 ) => {
   for (const moduleNode of initialModules) {
-    if (moduleNode.file === id) {
+    if (
+      moduleNode.file === id ||
+      (id.startsWith('file://') && moduleNode.file === fileURLToFilePath(id))
+    ) {
       return moduleNode.url;
     }
   }
@@ -200,9 +203,7 @@ const mergedViteConfig = await mergeUserViteConfig({
       conditions: ['react-server', 'workerd'],
       externalConditions: ['react-server', 'workerd'],
     },
-    // FIXME We hope to make 'waku' external like dev-server.ts
-    // external: ['waku'],
-    noExternal: ['waku'],
+    external: ['waku'],
   },
   appType: 'custom',
   server: { middlewareMode: true, hmr: { server: dummyServer } },
