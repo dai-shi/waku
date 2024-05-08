@@ -97,13 +97,7 @@ export const devServer: Middleware = (options) => {
         ],
       },
       ssr: {
-        external: [
-          'waku',
-          'waku/client',
-          'waku/server',
-          'waku/router/client',
-          'waku/router/server',
-        ],
+        external: ['waku'],
       },
       server: { middlewareMode: true },
     });
