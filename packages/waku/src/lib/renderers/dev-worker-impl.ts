@@ -55,10 +55,7 @@ const resolveClientEntryForDev = (
     ? decodeFilePathFromAbsolute(fileURLToFilePath(id))
     : id;
   for (const moduleNode of initialModules) {
-    if (
-      // moduleNode.file === id ||
-      moduleNode.file === file
-    ) {
+    if (moduleNode.file === file) {
       return moduleNode.url;
     }
   }
