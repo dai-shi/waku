@@ -95,7 +95,6 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
       {
         isDev: true,
         loadServerFile,
-        loadServerModule,
         resolveClientEntry: (id: string) =>
           resolveClientEntryForDev(
             id,
@@ -218,11 +217,6 @@ const vitePromise = createViteServer(mergedViteConfig).then(async (vite) => {
 const loadServerFile = async (fileURL: string) => {
   const vite = await vitePromise;
   return vite.ssrLoadModule(fileURLToFilePath(fileURL));
-};
-
-const loadServerModule = async (id: string) => {
-  const vite = await vitePromise;
-  return vite.ssrLoadModule(id);
 };
 
 const loadEntries = async (config: { srcDir: string }) => {
