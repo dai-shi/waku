@@ -54,13 +54,14 @@ const resolveClientEntryForDev = (
   let file = id.startsWith('file://')
     ? decodeFilePathFromAbsolute(fileURLToFilePath(id))
     : id;
-  console.log('---', { id, file }, initialModules);
   for (const moduleNode of initialModules) {
-    if (moduleNode.file === id || moduleNode.file === file) {
+    if (
+      // moduleNode.file === id ||
+      moduleNode.file === file
+    ) {
       return moduleNode.url;
     }
   }
-  console.log('===not found, root =', config.rootDir);
   if (file.startsWith(config.rootDir)) {
     file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
   } else {
