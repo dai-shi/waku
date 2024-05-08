@@ -86,7 +86,7 @@ export async function renderRsc(
   ] = await Promise.all([
     loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server'),
     (isDev
-      ? opts.loadServerModule(SERVER_MODULE_MAP['waku-server'])
+      ? import(/* @vite-ignore */ SERVER_MODULE_MAP['waku-server'])
       : loadModule('waku-server')) as Promise<{
       runWithRenderStore: typeof runWithRenderStoreType;
     }>,
