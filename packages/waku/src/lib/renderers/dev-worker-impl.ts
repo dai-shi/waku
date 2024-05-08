@@ -201,7 +201,9 @@ const mergedViteConfig = await mergeUserViteConfig({
       conditions: ['react-server', 'workerd'],
       externalConditions: ['react-server', 'workerd'],
     },
-    external: ['waku'],
+    // FIXME We hope to make 'waku' external like dev-server.ts
+    // external: ['waku'],
+    noExternal: ['waku'],
   },
   appType: 'custom',
   server: { middlewareMode: true, hmr: { server: dummyServer } },
