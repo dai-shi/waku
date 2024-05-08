@@ -13,6 +13,7 @@ import {
   joinPath,
   fileURLToFilePath,
   encodeFilePathToAbsolute,
+  decodeFilePathFromAbsolute,
 } from '../utils/path.js';
 import { deepFreeze, hasStatusCode } from './utils.js';
 import type { MessageReq, MessageRes } from './dev-worker-api.js';
@@ -50,17 +51,16 @@ const resolveClientEntryForDev = (
   config: { rootDir: string; basePath: string },
   initialModules: ClonableModuleNode[],
 ) => {
-  console.log(config.rootDir, '---', id, initialModules);
+  let file = id.startsWith('file://')
+    ? decodeFilePathFromAbsolute(fileURLToFilePath(id))
+    : id;
+  console.log('---', { id, file }, initialModules);
   for (const moduleNode of initialModules) {
-    if (
-      moduleNode.file === id ||
-      (id.startsWith('file://') && moduleNode.file === fileURLToFilePath(id))
-    ) {
+    if (moduleNode.file === id || moduleNode.file === file) {
       return moduleNode.url;
     }
   }
-  let file = id.startsWith('file://') ? fileURLToFilePath(id) : id;
-  console.log('===', file);
+  console.log('===not found, root =', config.rootDir);
   if (file.startsWith(config.rootDir)) {
     file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
   } else {
