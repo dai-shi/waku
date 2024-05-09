@@ -12,6 +12,7 @@ import {
 } from '../renderers/dev-worker-api.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
+import { rscRsdwPlugin } from '../plugins/vite-plugin-rsc-rsdw.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscHmrPlugin, hotUpdate } from '../plugins/vite-plugin-rsc-hmr.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
@@ -81,6 +82,7 @@ export const devServer: Middleware = (options) => {
       plugins: [
         patchReactRefresh(viteReact()),
         nonjsResolvePlugin(),
+        rscRsdwPlugin(),
         rscEnvPlugin({ config }),
         rscPrivatePlugin(config),
         rscManagedPlugin(config),
@@ -98,6 +100,7 @@ export const devServer: Middleware = (options) => {
       },
       ssr: {
         external: ['waku'],
+        noExternal: ['react-server-dom-webpack'],
       },
       server: { middlewareMode: true },
     });

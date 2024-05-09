@@ -29,6 +29,7 @@ export function rscRsdwPlugin(): Plugin {
   return {
     name: 'rsc-rsdw-plugin',
     transform(code, id) {
+      const file = id.split('?')[0]!;
       if (
         [
           '/react-server-dom-webpack-server.edge.production.js',
@@ -37,11 +38,10 @@ export function rscRsdwPlugin(): Plugin {
           '/react-server-dom-webpack-client.edge.development.js',
           '/react-server-dom-webpack-client.browser.production.js',
           '/react-server-dom-webpack-client.browser.development.js',
-        ].some((file) => id.split('?')[0]!.endsWith(file))
+          '/react-server-dom-webpack_client.js',
+        ].some((suffix) => file.endsWith(suffix))
       ) {
         return patchRsdw(code);
-      } else if (code.includes('__webpack')) {
-        console.log('transform', id);
       }
     },
   };

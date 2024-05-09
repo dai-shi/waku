@@ -19,6 +19,7 @@ import { deepFreeze, hasStatusCode } from './utils.js';
 import type { MessageReq, MessageRes } from './dev-worker-api.js';
 import { renderRsc, getSsrConfig } from './rsc-renderer.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
+import { rscRsdwPlugin } from '../plugins/vite-plugin-rsc-rsdw.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
@@ -183,6 +184,7 @@ const mergedViteConfig = await mergeUserViteConfig({
   plugins: [
     viteReact(),
     nonjsResolvePlugin(),
+    rscRsdwPlugin(),
     rscEnvPlugin({}),
     rscPrivatePlugin({ privateDir: configPrivateDir, hotUpdateCallback }),
     rscManagedPlugin({ basePath: configBasePath, srcDir: configSrcDir }),
@@ -204,6 +206,7 @@ const mergedViteConfig = await mergeUserViteConfig({
       externalConditions: ['react-server', 'workerd'],
     },
     external: ['waku'],
+    noExternal: ['react-server-dom-webpack'],
   },
   appType: 'custom',
   server: { middlewareMode: true, hmr: { server: dummyServer } },
