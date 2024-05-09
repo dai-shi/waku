@@ -1,6 +1,7 @@
 import { Readable, Writable } from 'node:stream';
 import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
+import viteCommonjs from 'vite-plugin-commonjs';
 
 import { resolveConfig } from '../config.js';
 import { fileURLToFilePath } from '../utils/path.js';
@@ -81,6 +82,14 @@ export const devServer: Middleware = (options) => {
       base: config.basePath,
       plugins: [
         patchReactRefresh(viteReact()),
+        // @ts-expect-error FIXME why does it complain?
+        viteCommonjs({
+          filter(id: string) {
+            if (id.includes('node_modules/react-server-dom-webpack')) {
+              return true;
+            }
+          },
+        }),
         nonjsResolvePlugin(),
         rscRsdwPlugin(),
         rscEnvPlugin({ config }),
