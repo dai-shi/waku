@@ -33,6 +33,30 @@ export const CLIENT_MODULE_MAP = {
 } as const;
 export const CLIENT_PREFIX = 'client/';
 
+// We need this hack for DEV
+(globalThis as any).__waku_module_loading__ ||= new Map();
+(globalThis as any).__waku_module_cache__ ||= new Map();
+(globalThis as any).__waku_chunk_load__ ||= (
+  id: string,
+  customImport?: (id: string) => Promise<unknown>,
+) => {
+  if (!(globalThis as any).__waku_module_loading__.has(id)) {
+    (globalThis as any).__waku_module_loading__.set(
+      id,
+      customImport
+        ? customImport(id).then((m) => {
+            (globalThis as any).__waku_module_cache__.set(id, m);
+          })
+        : import(id).then((m) => {
+            (globalThis as any).__waku_module_cache__.set(id, m);
+          }),
+    );
+  }
+  return (globalThis as any).__waku_module_loading__.get(id);
+};
+(globalThis as any).__waku_require__ ||= (id: string) =>
+  (globalThis as any).__waku_module_cache__.get(id);
+
 const fakeFetchCode = `
 Promise.resolve(new Response(new ReadableStream({
   start(c) {
