@@ -32,6 +32,7 @@ export type HandlerContext = {
     renderRscWithWorker: typeof renderRscWithWorker;
     getSsrConfigWithWorker: typeof getSsrConfigWithWorker;
     loadServerFile: (fileURL: string) => Promise<Record<string, any>>;
+    loadServerModule: (id: string) => Promise<Record<string, any>>;
     transformIndexHtml: (
       pathname: string,
     ) => Promise<TransformStream<any, any>>;

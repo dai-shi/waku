@@ -124,6 +124,11 @@ export const devServer: Middleware = (options) => {
     return vite.ssrLoadModule(fileURLToFilePath(fileURL));
   };
 
+  const loadServerModule = async (id: string) => {
+    const vite = await vitePromise;
+    return vite.ssrLoadModule(id);
+  };
+
   const transformIndexHtml = async (pathname: string) => {
     const vite = await vitePromise;
     const encoder = new TextEncoder();
@@ -202,6 +207,7 @@ export const devServer: Middleware = (options) => {
       renderRscWithWorker,
       getSsrConfigWithWorker,
       loadServerFile,
+      loadServerModule,
       transformIndexHtml,
       willBeHandledLater,
     };

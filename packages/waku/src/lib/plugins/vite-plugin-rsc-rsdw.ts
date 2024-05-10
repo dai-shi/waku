@@ -50,7 +50,9 @@ export function rscRsdwPlugin(): Plugin {
       }
     },
     transform(code, id) {
+      const [file, opt] = id.split('?');
       if (
+        !['commonjs-exports', 'commonjs-proxy'].includes(opt!) &&
         [
           '/react-server-dom-webpack-server.edge.production.js',
           '/react-server-dom-webpack-server.edge.development.js',
@@ -59,7 +61,7 @@ export function rscRsdwPlugin(): Plugin {
           '/react-server-dom-webpack-client.browser.production.js',
           '/react-server-dom-webpack-client.browser.development.js',
           '/react-server-dom-webpack_client.js',
-        ].some((suffix) => id.endsWith(suffix))
+        ].some((suffix) => file!.endsWith(suffix))
       ) {
         return patchRsdw(code);
       }

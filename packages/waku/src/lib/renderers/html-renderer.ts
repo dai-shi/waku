@@ -222,6 +222,7 @@ export const renderHtml = async (
         isDev: true;
         rootDir: string;
         loadServerFile: (fileURL: string) => Promise<unknown>;
+        loadServerModule: (id: string) => Promise<unknown>;
       }
   ),
 ): Promise<ReadableStream | null> => {
@@ -237,7 +238,7 @@ export const renderHtml = async (
 
   const loadClientModule = <T>(key: keyof typeof CLIENT_MODULE_MAP) =>
     (isDev
-      ? import(/* @vite-ignore */ CLIENT_MODULE_MAP[key])
+      ? opts.loadServerModule(CLIENT_MODULE_MAP[key])
       : opts.loadModule(CLIENT_PREFIX + key)) as Promise<T>;
 
   const [

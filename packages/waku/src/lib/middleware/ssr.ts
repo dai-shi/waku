@@ -69,6 +69,7 @@ export const ssr: Middleware = (options) => {
                   ),
                 rootDir: devServer.rootDir,
                 loadServerFile: devServer.loadServerFile,
+                loadServerModule: devServer.loadServerModule,
               }
             : {
                 isDev: false,
