@@ -85,7 +85,11 @@ export const devServer: Middleware = (options) => {
         // @ts-expect-error FIXME why does it complain?
         viteCommonjs({
           filter(id: string) {
-            if (id.includes('node_modules/react-server-dom-webpack')) {
+            if (
+              id.includes('/node_modules/react-server-dom-webpack/') ||
+              id.includes('/node_modules/react-dom/') ||
+              id.includes('/node_modules/react/')
+            ) {
               return true;
             }
           },

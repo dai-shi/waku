@@ -187,7 +187,7 @@ const mergedViteConfig = await mergeUserViteConfig({
     // @ts-expect-error FIXME why does it complain?
     viteCommonjs({
       filter(id: string) {
-        if (id.includes('node_modules/react-server-dom-webpack')) {
+        if (id.includes('/node_modules/react-server-dom-webpack/')) {
           return true;
         }
       },

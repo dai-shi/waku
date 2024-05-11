@@ -312,9 +312,8 @@ export const renderHtml = async (
                     fileWithAbsolutePath
                       .slice(wakuDist.length)
                       .replace(/\.\w+$/, '');
-                  (globalThis as any).__waku_chunk_load__(
-                    id,
-                    (id: string) => import(/* @vite-ignore */ id),
+                  (globalThis as any).__waku_chunk_load__(id, (id: string) =>
+                    opts.loadServerModule(id),
                   );
                   return { id, chunks: [id], name };
                 }
