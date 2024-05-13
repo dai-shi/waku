@@ -7,6 +7,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import type { TransferListItem } from 'node:worker_threads';
 import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
+import viteCommonjs from 'vite-plugin-commonjs';
 
 import type { EntriesDev } from '../../server.js';
 import {
@@ -182,6 +183,12 @@ const mergedViteConfig = await mergeUserViteConfig({
   cacheDir: 'node_modules/.vite/waku-dev-worker',
   plugins: [
     viteReact(),
+    // @ts-expect-error FIXME why does it complain?
+    viteCommonjs({
+      filter() {
+        return true;
+      },
+    }),
     nonjsResolvePlugin(),
     rscEnvPlugin({}),
     rscPrivatePlugin({ privateDir: configPrivateDir, hotUpdateCallback }),
@@ -203,7 +210,7 @@ const mergedViteConfig = await mergeUserViteConfig({
       conditions: ['react-server', 'workerd'],
       externalConditions: ['react-server', 'workerd'],
     },
-    external: ['waku'],
+    noExternal: /^(?!node:)/,
   },
   appType: 'custom',
   server: { middlewareMode: true, hmr: { server: dummyServer } },

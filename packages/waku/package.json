@@ -83,7 +83,8 @@
     "dotenv": "16.4.5",
     "hono": "4.3.2",
     "rsc-html-stream": "0.0.3",
-    "vite": "5.2.11"
+    "vite": "5.2.11",
+    "vite-plugin-commonjs": "0.10.1"
   },
   "devDependencies": {
     "@netlify/functions": "^2.6.3",
