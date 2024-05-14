@@ -76,11 +76,22 @@ ${opts.htmlHead}
       }
     },
     transformIndexHtml() {
-      return (opts.cssAssets || []).map((href) => ({
-        tag: 'link',
-        attrs: { rel: 'stylesheet', href: `${opts.basePath}${href}` },
-        injectTo: 'head' as const,
-      }));
+      return [
+        // HACK: vite won't inject __vite__injectQuery anymore
+        {
+          tag: 'script',
+          attrs: { type: 'module', async: true },
+          children: `
+globalThis.__waku_hack_import = (id) => import(id);
+`,
+        },
+
+        ...(opts.cssAssets || []).map((href) => ({
+          tag: 'link',
+          attrs: { rel: 'stylesheet', href: `${opts.basePath}${href}` },
+          injectTo: 'head' as const,
+        })),
+      ];
     },
   };
 }

@@ -19,7 +19,7 @@ globalThis.__waku_chunk_load__ ||= (id, customImport) => {
         ? customImport(id).then((m) => {
             globalThis.__waku_module_cache__.set(id, m);
           })
-        : import(id).then((m) => {
+        : globalThis.__waku_hack_import(id).then((m) => {
             globalThis.__waku_module_cache__.set(id, m);
           })
     );
