@@ -12,9 +12,9 @@
     "@stylexjs/stylex": "0.6.1",
     "@vanilla-extract/css": "1.15.1",
     "classnames": "2.3.2",
-    "react": "19.0.0-beta-e7d213dfb0-20240507",
-    "react-dom": "19.0.0-beta-e7d213dfb0-20240507",
-    "react-server-dom-webpack": "19.0.0-beta-e7d213dfb0-20240507",
+    "react": "19.0.0-rc-915b914b3a-20240515",
+    "react-dom": "19.0.0-rc-915b914b3a-20240515",
+    "react-server-dom-webpack": "19.0.0-rc-915b914b3a-20240515",
     "waku": "0.20.2"
   },
   "devDependencies": {
