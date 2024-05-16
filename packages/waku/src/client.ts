@@ -7,6 +7,7 @@ import {
   memo,
   use,
   useCallback,
+  useEffect,
   useState,
   startTransition,
 } from 'react';
@@ -76,26 +77,26 @@ const mergeElements = (a: Elements, b: Elements): Elements => {
 };
 
 type SetElements = (updater: (prev: Elements) => Elements) => void;
-type CacheEntry = [
-  input: string,
-  searchParamsString: string,
-  setElements: SetElements,
-  elements: Elements,
-];
 
-const fetchCache: [CacheEntry?] = [];
+const ENTRY = 'e';
+const SET_ELEMENTS = 's';
+
+type FetchCache = {
+  [ENTRY]?: [input: string, searchParamsString: string, elements: Elements];
+  [SET_ELEMENTS]?: SetElements;
+};
+
+const defaultFetchCache: FetchCache = {};
 
 export const fetchRSC = (
   input: string,
   searchParamsString: string,
-  setElements: SetElements,
-  cache = fetchCache,
+  fetchCache = defaultFetchCache,
   unstable_onFetchData?: (data: unknown) => void,
 ): Elements => {
-  let entry: CacheEntry | undefined = cache[0];
+  const entry = fetchCache[ENTRY];
   if (entry && entry[0] === input && entry[1] === searchParamsString) {
-    entry[2] = setElements;
-    return entry[3];
+    return entry[2];
   }
   const options = {
     async callServer(actionId: string, args: unknown[]) {
@@ -111,10 +112,9 @@ export const fetchRSC = (
         options,
       );
       unstable_onFetchData?.(data);
-      const setElements = entry![2];
       startTransition(() => {
         // FIXME this causes rerenders even if data is empty
-        setElements((prev) => mergeElements(prev, data));
+        fetchCache[SET_ELEMENTS]?.((prev) => mergeElements(prev, data));
       });
       return (await data)._value;
     },
@@ -132,7 +132,7 @@ export const fetchRSC = (
   );
   unstable_onFetchData?.(data);
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  cache[0] = entry = [input, searchParamsString, setElements, data];
+  fetchCache[ENTRY] = [input, searchParamsString, data];
   return data;
 };
 
@@ -160,13 +160,13 @@ const ElementsContext = createContext<Elements | null>(null);
 export const Root = ({
   initialInput,
   initialSearchParamsString,
-  cache,
+  fetchCache = defaultFetchCache,
   unstable_onFetchData,
   children,
 }: {
   initialInput?: string;
   initialSearchParamsString?: string;
-  cache?: typeof fetchCache;
+  fetchCache?: FetchCache;
   unstable_onFetchData?: (data: unknown) => void;
   children: ReactNode;
 }) => {
@@ -174,24 +174,26 @@ export const Root = ({
     fetchRSC(
       initialInput || '',
       initialSearchParamsString || '',
-      (fn) => setElements(fn),
-      cache,
+      fetchCache,
       unstable_onFetchData,
     ),
   );
+  useEffect(() => {
+    fetchCache[SET_ELEMENTS] = setElements;
+  }, [fetchCache, setElements]);
   const refetch = useCallback(
     (input: string, searchParams?: URLSearchParams) => {
-      (cache || fetchCache).splice(0); // clear cache before fetching
+      // clear cache entry before fetching
+      delete fetchCache[ENTRY];
       const data = fetchRSC(
         input,
         searchParams?.toString() || '',
-        setElements,
-        cache,
+        fetchCache,
         unstable_onFetchData,
       );
       setElements((prev) => mergeElements(prev, data));
     },
-    [cache, unstable_onFetchData],
+    [fetchCache, unstable_onFetchData],
   );
   return createElement(
     RefetchContext.Provider,
