@@ -1,10 +1,7 @@
 {
   "name": "waku",
   "description": "⛩️ The minimal React framework",
-  "version": "0.20.2-alpha.1",
-  "publishConfig": {
-    "tag": "next"
-  },
+  "version": "0.20.2",
   "type": "module",
   "author": "Daishi Kato",
   "homepage": "https://waku.gg",
@@ -94,8 +91,8 @@
     "vitest": "^1.6.0"
   },
   "peerDependencies": {
-    "react": "19.0.0-beta-e7d213dfb0-20240507",
-    "react-dom": "19.0.0-beta-e7d213dfb0-20240507",
-    "react-server-dom-webpack": "19.0.0-beta-e7d213dfb0-20240507"
+    "react": "19.0.0-rc-915b914b3a-20240515",
+    "react-dom": "19.0.0-rc-915b914b3a-20240515",
+    "react-server-dom-webpack": "19.0.0-rc-915b914b3a-20240515"
   }
 }
