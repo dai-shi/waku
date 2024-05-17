@@ -1,8 +1,60 @@
 import type { Plugin } from 'vite';
+import * as swc from '@swc/core';
 import * as RSDWNodeLoader from 'react-server-dom-webpack/node-loader';
 
+import { extname } from '../utils/path.js';
+import { parseOpts } from '../utils/swc.js';
+
+const transformClient = (code: string, id: string) => {
+  const ext = extname(id);
+  const mod = swc.parseSync(code, parseOpts(ext));
+  let hasUseServer = false;
+  for (const item of mod.body) {
+    if (item.type === 'ExpressionStatement') {
+      if (
+        item.expression.type === 'StringLiteral' &&
+        item.expression.value === 'use server'
+      ) {
+        hasUseServer = true;
+      }
+    } else {
+      break;
+    }
+  }
+  if (hasUseServer) {
+    const exportNames = new Set<string>();
+    for (const item of mod.body) {
+      if (item.type === 'ExportDeclaration') {
+        if (item.declaration.type === 'FunctionDeclaration') {
+          exportNames.add(item.declaration.identifier.value);
+        } else if (item.declaration.type === 'VariableDeclaration') {
+          for (const d of item.declaration.declarations) {
+            if (d.id.type === 'Identifier') {
+              exportNames.add(d.id.value);
+            }
+          }
+        }
+      } else if (item.type === 'ExportNamedDeclaration') {
+        // TODO
+      } else if (item.type === 'ExportDefaultDeclaration') {
+        // TODO
+      }
+    }
+    let code = `
+import { createServerReference } from 'react-server-dom-webpack/client';
+import { callServerRSC } from 'waku/client';
+`;
+    for (const name of exportNames) {
+      code += `
+export const ${name} = createServerReference('${id}#${name}', callServerRSC);
+`;
+    }
+    return code;
+  }
+};
+
 export function rscTransformPlugin(
-  opts:
+  opts: { isClient?: boolean } & (
     | {
         isBuild: false;
       }
@@ -10,7 +62,8 @@ export function rscTransformPlugin(
         isBuild: true;
         clientEntryFiles: Record<string, string>;
         serverEntryFiles: Record<string, string>;
-      },
+      }
+  ),
 ): Plugin {
   const getClientId = (id: string) => {
     if (!opts.isBuild) {
@@ -37,6 +90,16 @@ export function rscTransformPlugin(
   return {
     name: 'rsc-transform-plugin',
     async transform(code, id, options) {
+      if (opts.isClient) {
+        if (options?.ssr) {
+          return;
+        }
+        if (opts.isBuild) {
+          // TODO
+          throw new Error('not implemented yet');
+        }
+        return transformClient(code, id);
+      }
       if (!options?.ssr) {
         return;
       }
