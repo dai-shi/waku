@@ -29,9 +29,12 @@ export async function mergeUserViteConfig(config: UserConfig) {
       // FIXME weird error around plugin duplication when removed
       plugins: resolvedViteConfig.plugins.filter(
         (plugin) =>
-          !['vite:css-post', 'vite:import-analysis', 'vite:json'].includes(
-            plugin.name,
-          ),
+          ![
+            'vite:css-post',
+            'vite:import-analysis',
+            'vite:json',
+            'vite:client-inject',
+          ].includes(plugin.name),
       ),
     },
     {
