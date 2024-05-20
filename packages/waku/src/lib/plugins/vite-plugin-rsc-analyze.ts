@@ -23,7 +23,10 @@ export function rscAnalyzePlugin(
   serverFileSet: Set<string>,
   fileHashMap: Map<string, string>,
 ): Plugin {
-  const rscTransform = rscTransformPlugin({ isBuild: false }).transform;
+  const rscTransform = rscTransformPlugin({
+    isClient: false,
+    isBuild: false,
+  }).transform;
   const clientEntryCallback = (id: string) => clientFileSet.add(id);
   const serverEntryCallback = (id: string) => serverFileSet.add(id);
   return {

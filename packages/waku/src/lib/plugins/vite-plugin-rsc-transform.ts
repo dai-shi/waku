@@ -6,7 +6,11 @@ import { EXTENSIONS } from '../config.js';
 import { extname } from '../utils/path.js';
 import { parseOpts } from '../utils/swc.js';
 
-const transformClient = (code: string, id: string) => {
+const transformClient = (
+  code: string,
+  id: string,
+  getServerId: (id: string) => string,
+) => {
   const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseServer = false;
@@ -53,7 +57,7 @@ import { callServerRSC } from 'waku/client';
 `;
     for (const name of exportNames) {
       code += `
-export ${name === 'default' ? name : `const ${name} =`} createServerReference('${id}#${name}', callServerRSC);
+export ${name === 'default' ? name : `const ${name} =`} createServerReference('${getServerId(id)}#${name}', callServerRSC);
 `;
     }
     return code;
@@ -61,20 +65,30 @@ export ${name === 'default' ? name : `const ${name} =`} createServerReference('$
 };
 
 export function rscTransformPlugin(
-  opts: { isClient?: boolean } & (
+  opts:
     | {
+        isClient: true;
         isBuild: false;
       }
     | {
+        isClient: true;
+        isBuild: true;
+        serverEntryFiles: Record<string, string>;
+      }
+    | {
+        isClient: false;
+        isBuild: false;
+      }
+    | {
+        isClient: false;
         isBuild: true;
         clientEntryFiles: Record<string, string>;
         serverEntryFiles: Record<string, string>;
-      }
-  ),
+      },
 ): Plugin {
   const getClientId = (id: string) => {
-    if (!opts.isBuild) {
-      throw new Error('not buiding');
+    if (opts.isClient || !opts.isBuild) {
+      throw new Error('not buiding for server');
     }
     for (const [k, v] of Object.entries(opts.clientEntryFiles)) {
       if (v === id) {
@@ -105,11 +119,11 @@ export function rscTransformPlugin(
         if (options?.ssr) {
           return;
         }
-        if (opts.isBuild) {
-          // TODO
-          throw new Error('not implemented yet');
-        }
-        return transformClient(code, id);
+        return transformClient(
+          code,
+          id,
+          opts.isBuild ? getServerId : (id) => id,
+        );
       }
       if (!options?.ssr) {
         return;
