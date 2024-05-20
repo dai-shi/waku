@@ -35,9 +35,15 @@ const transformClient = (code: string, id: string) => {
           }
         }
       } else if (item.type === 'ExportNamedDeclaration') {
-        // TODO
+        for (const s of item.specifiers) {
+          if (s.type === 'ExportSpecifier') {
+            exportNames.add(s.orig.value);
+          }
+        }
+      } else if (item.type === 'ExportDefaultExpression') {
+        exportNames.add('default');
       } else if (item.type === 'ExportDefaultDeclaration') {
-        // TODO
+        exportNames.add('default');
       }
     }
     let code = `
@@ -46,7 +52,7 @@ import { callServerRSC } from 'waku/client';
 `;
     for (const name of exportNames) {
       code += `
-export const ${name} = createServerReference('${id}#${name}', callServerRSC);
+export ${name === 'default' ? name : `const ${name} =`} createServerReference('${id}#${name}', callServerRSC);
 `;
     }
     return code;
