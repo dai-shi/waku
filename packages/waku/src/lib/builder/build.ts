@@ -73,7 +73,6 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
     return;
   } else if (
     warning.code === 'SOURCEMAP_ERROR' &&
-    warning.loc?.file?.endsWith('.tsx') &&
     warning.loc?.column === 0 &&
     warning.loc?.line === 1
   ) {
@@ -108,7 +107,12 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   }
   await buildVite({
     plugins: [
-      rscAnalyzePlugin(clientFileSet, serverFileSet, fileHashMap),
+      rscAnalyzePlugin({
+        isClient: false,
+        clientFileSet,
+        serverFileSet,
+        fileHashMap,
+      }),
       rscManagedPlugin({ ...config, addEntriesToInput: true }),
     ],
     ssr: {
@@ -135,6 +139,25 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
       fname,
     ]),
   );
+  await buildVite({
+    plugins: [
+      rscAnalyzePlugin({ isClient: true, serverFileSet }),
+      rscManagedPlugin({ ...config, addEntriesToInput: true }),
+    ],
+    ssr: {
+      target: 'webworker',
+      noExternal: /^(?!node:)/,
+    },
+    build: {
+      write: false,
+      ssr: true,
+      target: 'node18',
+      rollupOptions: {
+        onwarn,
+        input: clientEntryFiles,
+      },
+    },
+  });
   const serverEntryFiles = Object.fromEntries(
     Array.from(serverFileSet).map((fname, i) => [
       `${DIST_ASSETS}/rsf${i}`,
