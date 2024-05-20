@@ -30,6 +30,7 @@ export async function mergeUserViteConfig(config: UserConfig) {
       plugins: resolvedViteConfig.plugins.filter(
         (plugin) =>
           ![
+            'vite:css',
             'vite:css-post',
             'vite:import-analysis',
             'vite:json',
