@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { greet } from './funcs';
+import { greet } from './funcs2';
 
 export const TextBox = () => {
   const [text, setText] = useState('hello');
