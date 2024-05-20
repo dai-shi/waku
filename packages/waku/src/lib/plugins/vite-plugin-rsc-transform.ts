@@ -2,6 +2,7 @@ import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 import * as RSDWNodeLoader from 'react-server-dom-webpack/node-loader';
 
+import { EXTENSIONS } from '../config.js';
 import { extname } from '../utils/path.js';
 import { parseOpts } from '../utils/swc.js';
 
@@ -97,6 +98,10 @@ export function rscTransformPlugin(
     name: 'rsc-transform-plugin',
     async transform(code, id, options) {
       if (opts.isClient) {
+        const ext = extname(id);
+        if (!EXTENSIONS.includes(ext)) {
+          return;
+        }
         if (options?.ssr) {
           return;
         }
