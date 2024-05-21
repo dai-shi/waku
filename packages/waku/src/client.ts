@@ -16,6 +16,7 @@ import RSDWClient from 'react-server-dom-webpack/client';
 
 import { encodeInput, encodeActionId } from './lib/renderers/utils.js';
 
+console.log("hereeeee", __vite_ssr_import_0__.registerClientReference)
 const { createFromFetch, encodeReply } = RSDWClient;
 
 declare global {

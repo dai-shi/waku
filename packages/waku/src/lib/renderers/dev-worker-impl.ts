@@ -5,7 +5,7 @@ import { parentPort, getEnvironmentData } from 'node:worker_threads';
 import { Server } from 'node:http';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { TransferListItem } from 'node:worker_threads';
-import { createServer as createViteServer } from 'vite';
+import { createServer as createViteServer, transformWithEsbuild } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import viteCommonjs from 'vite-plugin-commonjs';
 
@@ -178,17 +178,45 @@ const hotUpdateCallback = (payload: HotUpdatePayload) => {
   parentPort!.postMessage(mesg);
 };
 
+const multilineCommentsRE = /\/\*(.|[\r\n])*?\*\//gm
+const singlelineCommentsRE = /\/\/.*/g
+const commonjsRE = /\b(?:require|module|exports)\b/ 
+
+// https://github.com/vite-plugin/vite-plugin-commonjs/blob/main/src/utils.ts
+export function isCommonjs(code: string) {
+  // Avoid matching the content of the comment
+  code = code
+    .replace(multilineCommentsRE, '')
+    .replace(singlelineCommentsRE, '')
+  return commonjsRE.test(code)
+}
+
 const mergedViteConfig = await mergeUserViteConfig({
   // Since we have multiple instances of vite, different ones might overwrite the others' cache.
   cacheDir: 'node_modules/.vite/waku-dev-worker',
   plugins: [
+    {
+      name: 'temp',
+      async transform(source, id) {
+        if (!isCommonjs(source)) {
+          return null
+        }
+        console.log(id);
+        const { code, map } = await transformWithEsbuild(source, id, {
+          format: 'esm',
+          banner: "import { createRequire as topLevelCreateRequire } from 'module';\n const require = topLevelCreateRequire(import.meta.url);"
+        });
+        console.log('id', code)
+        return { code, map };
+      },
+    },
     viteReact(),
     // @ts-expect-error FIXME why does it complain?
-    viteCommonjs({
-      filter() {
-        return true;
-      },
-    }),
+    // viteCommonjs({
+    //   filter() {
+    //     return true;
+    //   },
+    // }),
     nonjsResolvePlugin(),
     rscEnvPlugin({}),
     rscPrivatePlugin({ privateDir: configPrivateDir, hotUpdateCallback }),
@@ -211,6 +239,7 @@ const mergedViteConfig = await mergeUserViteConfig({
       externalConditions: ['react-server', 'workerd'],
     },
     noExternal: /^(?!node:)/,
+    // external: ['waku'],
   },
   appType: 'custom',
   server: { middlewareMode: true, hmr: { server: dummyServer } },
