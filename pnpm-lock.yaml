@@ -468,6 +468,40 @@ importers:
         specifier: 5.4.5
         version: 5.4.5
 
+  examples/05_nossr:
+    dependencies:
+      react:
+        specifier: 19.0.0-rc-915b914b3a-20240515
+        version: 19.0.0-rc-915b914b3a-20240515
+      react-dom:
+        specifier: 19.0.0-rc-915b914b3a-20240515
+        version: 19.0.0-rc-915b914b3a-20240515(react@19.0.0-rc-915b914b3a-20240515)
+      react-server-dom-webpack:
+        specifier: 19.0.0-rc-915b914b3a-20240515
+        version: 19.0.0-rc-915b914b3a-20240515(react-dom@19.0.0-rc-915b914b3a-20240515)(react@19.0.0-rc-915b914b3a-20240515)(webpack@5.91.0)
+      waku:
+        specifier: 0.20.2
+        version: link:../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 18.3.1
+        version: 18.3.1
+      '@types/react-dom':
+        specifier: 18.3.0
+        version: 18.3.0
+      autoprefixer:
+        specifier: 10.4.19
+        version: 10.4.19(postcss@8.4.38)
+      tailwindcss:
+        specifier: 3.4.3
+        version: 3.4.3
+      typescript:
+        specifier: 5.4.5
+        version: 5.4.5
+      vite:
+        specifier: 5.2.11
+        version: 5.2.11(@types/node@20.12.8)
+
   examples/07_router:
     dependencies:
       react:
