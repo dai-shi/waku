@@ -112,11 +112,10 @@ export function rscTransformPlugin(
     name: 'rsc-transform-plugin',
     async transform(code, id, options) {
       if (opts.isClient) {
-        const ext = extname(id);
-        if (!EXTENSIONS.includes(ext)) {
+        if (options?.ssr) {
           return;
         }
-        if (options?.ssr) {
+        if (!EXTENSIONS.includes(extname(id))) {
           return;
         }
         return transformClient(
@@ -125,6 +124,7 @@ export function rscTransformPlugin(
           opts.isBuild ? getServerId : (id) => id,
         );
       }
+      // isClient === false
       if (!options?.ssr) {
         return;
       }

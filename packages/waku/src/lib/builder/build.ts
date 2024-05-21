@@ -142,7 +142,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   await buildVite({
     plugins: [
       rscAnalyzePlugin({ isClient: true, serverFileSet }),
-      rscManagedPlugin({ ...config, addEntriesToInput: true }),
+      rscManagedPlugin(config),
     ],
     ssr: {
       target: 'webworker',
