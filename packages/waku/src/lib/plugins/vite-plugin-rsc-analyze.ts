@@ -19,13 +19,22 @@ const hash = async (code: string): Promise<string> => {
 };
 
 export function rscAnalyzePlugin(
-  clientFileSet: Set<string>,
-  serverFileSet: Set<string>,
-  fileHashMap: Map<string, string>,
+  opts:
+    | {
+        isClient: true;
+        serverFileSet: Set<string>;
+      }
+    | {
+        isClient: false;
+        clientFileSet: Set<string>;
+        serverFileSet: Set<string>;
+        fileHashMap: Map<string, string>;
+      },
 ): Plugin {
-  const rscTransform = rscTransformPlugin({ isBuild: false }).transform;
-  const clientEntryCallback = (id: string) => clientFileSet.add(id);
-  const serverEntryCallback = (id: string) => serverFileSet.add(id);
+  const rscTransform = rscTransformPlugin({
+    isClient: false,
+    isBuild: false,
+  }).transform;
   return {
     name: 'rsc-analyze-plugin',
     async transform(code, id, options) {
@@ -37,17 +46,17 @@ export function rscAnalyzePlugin(
             item.type === 'ExpressionStatement' &&
             item.expression.type === 'StringLiteral'
           ) {
-            if (item.expression.value === 'use client') {
-              clientEntryCallback(id);
-              fileHashMap.set(id, await hash(code));
+            if (!opts.isClient && item.expression.value === 'use client') {
+              opts.clientFileSet.add(id);
+              opts.fileHashMap.set(id, await hash(code));
             } else if (item.expression.value === 'use server') {
-              serverEntryCallback(id);
+              opts.serverFileSet.add(id);
             }
           }
         }
       }
       // Avoid walking after the client boundary
-      if (clientFileSet.has(id)) {
+      if (!opts.isClient && opts.clientFileSet.has(id)) {
         // TODO this isn't efficient. let's refactor it in the future.
         return (
           rscTransform as typeof rscTransform & { handler: undefined }

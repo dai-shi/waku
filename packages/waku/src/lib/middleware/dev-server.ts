@@ -11,6 +11,7 @@ import {
   getSsrConfigWithWorker,
 } from '../renderers/dev-worker-api.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
+import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscHmrPlugin, hotUpdate } from '../plugins/vite-plugin-rsc-hmr.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
@@ -84,6 +85,7 @@ export const devServer: Middleware = (options) => {
         rscPrivatePlugin(config),
         rscManagedPlugin(config),
         rscIndexPlugin(config),
+        rscTransformPlugin({ isClient: true, isBuild: false }),
         rscHmrPlugin(),
       ],
       optimizeDeps: {
