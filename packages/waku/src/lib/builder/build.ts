@@ -74,7 +74,6 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
     return;
   } else if (
     warning.code === 'SOURCEMAP_ERROR' &&
-    warning.loc?.file?.endsWith('.tsx') &&
     warning.loc?.column === 0 &&
     warning.loc?.line === 1
   ) {
@@ -109,7 +108,12 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   }
   await buildVite({
     plugins: [
-      rscAnalyzePlugin(clientFileSet, serverFileSet, fileHashMap),
+      rscAnalyzePlugin({
+        isClient: false,
+        clientFileSet,
+        serverFileSet,
+        fileHashMap,
+      }),
       rscManagedPlugin({ ...config, addEntriesToInput: true }),
     ],
     ssr: {
@@ -136,6 +140,25 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
       fname,
     ]),
   );
+  await buildVite({
+    plugins: [
+      rscAnalyzePlugin({ isClient: true, serverFileSet }),
+      rscManagedPlugin(config),
+    ],
+    ssr: {
+      target: 'webworker',
+      noExternal: /^(?!node:)/,
+    },
+    build: {
+      write: false,
+      ssr: true,
+      target: 'node18',
+      rollupOptions: {
+        onwarn,
+        input: clientEntryFiles,
+      },
+    },
+  });
   const serverEntryFiles = Object.fromEntries(
     Array.from(serverFileSet).map((fname, i) => [
       `${DIST_ASSETS}/rsf${i}`,
@@ -172,6 +195,7 @@ const buildServerBundle = async (
     plugins: [
       nonjsResolvePlugin(),
       rscTransformPlugin({
+        isClient: false,
         isBuild: true,
         clientEntryFiles,
         serverEntryFiles,
@@ -277,6 +301,7 @@ const buildSsrBundle = async (
   rootDir: string,
   config: ResolvedConfig,
   clientEntryFiles: Record<string, string>,
+  serverEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
   isNodeCompatible: boolean,
   partial: boolean,
@@ -295,6 +320,7 @@ const buildSsrBundle = async (
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
       rscManagedPlugin({ ...config, addMainToInput: true }),
+      rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
     ],
     ssr: isNodeCompatible
       ? {
@@ -349,6 +375,7 @@ const buildClientBundle = async (
   rootDir: string,
   config: ResolvedConfig,
   clientEntryFiles: Record<string, string>,
+  serverEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
   partial: boolean,
 ) => {
@@ -368,6 +395,7 @@ const buildClientBundle = async (
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
       rscManagedPlugin({ ...config, addMainToInput: true }),
+      rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
     ],
     build: {
       emptyOutDir: !partial,
@@ -671,6 +699,7 @@ export async function build(options: {
     rootDir,
     config,
     clientEntryFiles,
+    serverEntryFiles,
     serverBuildOutput,
     isNodeCompatible,
     !!options.partial,
@@ -679,6 +708,7 @@ export async function build(options: {
     rootDir,
     config,
     clientEntryFiles,
+    serverEntryFiles,
     serverBuildOutput,
     !!options.partial,
   );

@@ -197,7 +197,7 @@ const mergedViteConfig = await mergeUserViteConfig({
     rscEnvPlugin({}),
     rscPrivatePlugin({ privateDir: configPrivateDir, hotUpdateCallback }),
     rscManagedPlugin({ basePath: configBasePath, srcDir: configSrcDir }),
-    rscTransformPlugin({ isBuild: false }),
+    rscTransformPlugin({ isClient: false, isBuild: false }),
     rscDelegatePlugin(hotUpdateCallback),
   ],
   optimizeDeps: {

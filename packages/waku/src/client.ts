@@ -77,48 +77,54 @@ const mergeElements = (a: Elements, b: Elements): Elements => {
 };
 
 type SetElements = (updater: (prev: Elements) => Elements) => void;
+type OnFetchData = (data: unknown) => void;
 
 const ENTRY = 'e';
 const SET_ELEMENTS = 's';
+const ON_FETCH_DATA = 'o';
 
 type FetchCache = {
   [ENTRY]?: [input: string, searchParamsString: string, elements: Elements];
   [SET_ELEMENTS]?: SetElements;
+  [ON_FETCH_DATA]?: OnFetchData | undefined;
 };
 
 const defaultFetchCache: FetchCache = {};
+
+/**
+ * callServer callback
+ * This is not a public API.
+ */
+export const callServerRSC = async (
+  actionId: string,
+  args: unknown[],
+  fetchCache = defaultFetchCache,
+) => {
+  const response = fetch(BASE_PATH + encodeInput(encodeActionId(actionId)), {
+    method: 'POST',
+    body: await encodeReply(args),
+  });
+  const data = createFromFetch<Awaited<Elements>>(checkStatus(response), {
+    callServer: (actionId: string, args: unknown[]) =>
+      callServerRSC(actionId, args, fetchCache),
+  });
+  fetchCache[ON_FETCH_DATA]?.(data);
+  startTransition(() => {
+    // FIXME this causes rerenders even if data is empty
+    fetchCache[SET_ELEMENTS]?.((prev) => mergeElements(prev, data));
+  });
+  return (await data)._value;
+};
 
 export const fetchRSC = (
   input: string,
   searchParamsString: string,
   fetchCache = defaultFetchCache,
-  unstable_onFetchData?: (data: unknown) => void,
 ): Elements => {
   const entry = fetchCache[ENTRY];
   if (entry && entry[0] === input && entry[1] === searchParamsString) {
     return entry[2];
   }
-  const options = {
-    async callServer(actionId: string, args: unknown[]) {
-      const response = fetch(
-        BASE_PATH + encodeInput(encodeActionId(actionId)),
-        {
-          method: 'POST',
-          body: await encodeReply(args),
-        },
-      );
-      const data = createFromFetch<Awaited<Elements>>(
-        checkStatus(response),
-        options,
-      );
-      unstable_onFetchData?.(data);
-      startTransition(() => {
-        // FIXME this causes rerenders even if data is empty
-        fetchCache[SET_ELEMENTS]?.((prev) => mergeElements(prev, data));
-      });
-      return (await data)._value;
-    },
-  };
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
   const url =
     BASE_PATH +
@@ -126,11 +132,11 @@ export const fetchRSC = (
     (searchParamsString ? '?' + searchParamsString : '');
   const response = prefetched[url] || fetch(url);
   delete prefetched[url];
-  const data = createFromFetch<Awaited<Elements>>(
-    checkStatus(response),
-    options,
-  );
-  unstable_onFetchData?.(data);
+  const data = createFromFetch<Awaited<Elements>>(checkStatus(response), {
+    callServer: (actionId: string, args: unknown[]) =>
+      callServerRSC(actionId, args, fetchCache),
+  });
+  fetchCache[ON_FETCH_DATA]?.(data);
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
   fetchCache[ENTRY] = [input, searchParamsString, data];
   return data;
@@ -170,13 +176,9 @@ export const Root = ({
   unstable_onFetchData?: (data: unknown) => void;
   children: ReactNode;
 }) => {
+  fetchCache[ON_FETCH_DATA] = unstable_onFetchData;
   const [elements, setElements] = useState(() =>
-    fetchRSC(
-      initialInput || '',
-      initialSearchParamsString || '',
-      fetchCache,
-      unstable_onFetchData,
-    ),
+    fetchRSC(initialInput || '', initialSearchParamsString || '', fetchCache),
   );
   useEffect(() => {
     fetchCache[SET_ELEMENTS] = setElements;
@@ -185,15 +187,10 @@ export const Root = ({
     (input: string, searchParams?: URLSearchParams) => {
       // clear cache entry before fetching
       delete fetchCache[ENTRY];
-      const data = fetchRSC(
-        input,
-        searchParams?.toString() || '',
-        fetchCache,
-        unstable_onFetchData,
-      );
+      const data = fetchRSC(input, searchParams?.toString() || '', fetchCache);
       setElements((prev) => mergeElements(prev, data));
     },
-    [fetchCache, unstable_onFetchData],
+    [fetchCache],
   );
   return createElement(
     RefetchContext.Provider,
