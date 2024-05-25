@@ -1,10 +1,37 @@
 import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
-import * as RSDWNodeLoader from 'react-server-dom-webpack/node-loader';
 
 import { EXTENSIONS } from '../config.js';
 import { extname } from '../utils/path.js';
 import { parseOpts } from '../utils/swc.js';
+
+const collectExportNames = (mod: swc.Module) => {
+  const exportNames = new Set<string>();
+  for (const item of mod.body) {
+    if (item.type === 'ExportDeclaration') {
+      if (item.declaration.type === 'FunctionDeclaration') {
+        exportNames.add(item.declaration.identifier.value);
+      } else if (item.declaration.type === 'VariableDeclaration') {
+        for (const d of item.declaration.declarations) {
+          if (d.id.type === 'Identifier') {
+            exportNames.add(d.id.value);
+          }
+        }
+      }
+    } else if (item.type === 'ExportNamedDeclaration') {
+      for (const s of item.specifiers) {
+        if (s.type === 'ExportSpecifier') {
+          exportNames.add(s.exported ? s.exported.value : s.orig.value);
+        }
+      }
+    } else if (item.type === 'ExportDefaultExpression') {
+      exportNames.add('default');
+    } else if (item.type === 'ExportDefaultDeclaration') {
+      exportNames.add('default');
+    }
+  }
+  return exportNames;
+};
 
 const transformClient = (
   code: string,
@@ -27,40 +54,70 @@ const transformClient = (
     }
   }
   if (hasUseServer) {
-    const exportNames = new Set<string>();
-    for (const item of mod.body) {
-      if (item.type === 'ExportDeclaration') {
-        if (item.declaration.type === 'FunctionDeclaration') {
-          exportNames.add(item.declaration.identifier.value);
-        } else if (item.declaration.type === 'VariableDeclaration') {
-          for (const d of item.declaration.declarations) {
-            if (d.id.type === 'Identifier') {
-              exportNames.add(d.id.value);
-            }
-          }
-        }
-      } else if (item.type === 'ExportNamedDeclaration') {
-        for (const s of item.specifiers) {
-          if (s.type === 'ExportSpecifier') {
-            exportNames.add(s.orig.value);
-          }
-        }
-      } else if (item.type === 'ExportDefaultExpression') {
-        exportNames.add('default');
-      } else if (item.type === 'ExportDefaultDeclaration') {
-        exportNames.add('default');
-      }
-    }
-    let code = `
+    const exportNames = collectExportNames(mod);
+    let newCode = `
 import { createServerReference } from 'react-server-dom-webpack/client';
 import { callServerRSC } from 'waku/client';
 `;
     for (const name of exportNames) {
-      code += `
+      newCode += `
 export ${name === 'default' ? name : `const ${name} =`} createServerReference('${getServerId(id)}#${name}', callServerRSC);
 `;
     }
-    return code;
+    return newCode;
+  }
+};
+
+const transformServer = (
+  code: string,
+  id: string,
+  getClientId: (id: string) => string,
+  getServerId: (id: string) => string,
+) => {
+  const ext = extname(id);
+  const mod = swc.parseSync(code, parseOpts(ext));
+  let hasUseClient = false;
+  let hasUseServer = false;
+  for (const item of mod.body) {
+    if (item.type === 'ExpressionStatement') {
+      if (item.expression.type === 'StringLiteral') {
+        if (item.expression.value === 'use client') {
+          hasUseClient = true;
+        } else if (item.expression.value === 'use server') {
+          hasUseServer = true;
+        }
+      }
+    } else {
+      // HACK we can't stop the loop here, because vite may put some import statements before the directives
+      // break;
+    }
+  }
+  if (hasUseClient) {
+    const exportNames = collectExportNames(mod);
+    let newCode = `
+import { registerClientReference } from 'react-server-dom-webpack/server';
+`;
+    for (const name of exportNames) {
+      newCode += `
+export ${name === 'default' ? name : `const ${name} =`} registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getClientId(id)}#${name}'); }, '${getClientId(id)}', '${name}');
+`;
+    }
+    return newCode;
+  } else if (hasUseServer) {
+    const exportNames = collectExportNames(mod);
+    let newCode =
+      code +
+      `
+import { registerServerReference } from 'react-server-dom-webpack/server';
+`;
+    for (const name of exportNames) {
+      newCode += `
+if (typeof ${name} === 'function') {
+  registerServerReference(${name}, '${getServerId(id)}', '${name}');
+}
+`;
+    }
+    return newCode;
   }
 };
 
@@ -111,11 +168,11 @@ export function rscTransformPlugin(
   return {
     name: 'rsc-transform-plugin',
     async transform(code, id, options) {
+      if (!EXTENSIONS.includes(extname(id))) {
+        return;
+      }
       if (opts.isClient) {
         if (options?.ssr) {
-          return;
-        }
-        if (!EXTENSIONS.includes(extname(id))) {
           return;
         }
         return transformClient(
@@ -128,59 +185,12 @@ export function rscTransformPlugin(
       if (!options?.ssr) {
         return;
       }
-      const resolve = async (
-        specifier: string,
-        { parentURL }: { parentURL: string },
-      ) => {
-        if (!specifier) {
-          return { url: '' };
-        }
-        const url = (await this.resolve(specifier, parentURL))!.id;
-        return { url };
-      };
-      const load = async (url: string) => {
-        let source = url === id ? code : (await this.load({ id: url })).code;
-        // HACK move directives before import statements.
-        source = source!.replace(
-          /^((?:import [^;]+;\s*)*)((?:"use [^"]+";\s*)*)/,
-          '$2$1',
-        );
-        return { format: 'module', source };
-      };
-      RSDWNodeLoader.resolve(
-        '',
-        { conditions: ['react-server', 'workerd'], parentURL: '' },
-        resolve,
+      return transformServer(
+        code,
+        id,
+        opts.isBuild ? getClientId : (id) => id,
+        opts.isBuild ? getServerId : (id) => id,
       );
-      let { source } = await RSDWNodeLoader.load(id, null, load);
-      if (opts.isBuild) {
-        // TODO we should parse the source code by ourselves with SWC
-        if (
-          /^import {registerClientReference} from "react-server-dom-webpack\/server";/.test(
-            source,
-          )
-        ) {
-          // HACK tweak registerClientReference for production
-          source = source.replace(
-            /registerClientReference\(function\(\) {throw new Error\("([^"]*)"\);},"[^"]*","([^"]*)"\);/gs,
-            `registerClientReference(function() {return "$1";}, "${getClientId(
-              id,
-            )}", "$2");`,
-          );
-        }
-        if (
-          /;import {registerServerReference} from "react-server-dom-webpack\/server";/.test(
-            source,
-          )
-        ) {
-          // HACK tweak registerServerReference for production
-          source = source.replace(
-            /registerServerReference\(([^,]*),"[^"]*","([^"]*)"\);/gs,
-            `registerServerReference($1, "${getServerId(id)}", "$2");`,
-          );
-        }
-      }
-      return source;
     },
   };
 }

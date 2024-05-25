@@ -13,12 +13,12 @@
     "react": "19.0.0-rc-915b914b3a-20240515",
     "react-dom": "19.0.0-rc-915b914b3a-20240515",
     "react-server-dom-webpack": "19.0.0-rc-915b914b3a-20240515",
-    "waku": "0.20.2"
+    "waku": "0.21.0-alpha.0"
   },
   "devDependencies": {
     "@types/cookie": "0.6.0",
-    "@types/node": "20.12.8",
-    "@types/react": "18.3.1",
+    "@types/node": "20.12.12",
+    "@types/react": "18.3.2",
     "@types/react-dom": "18.3.0",
     "typescript": "5.4.5"
   }
