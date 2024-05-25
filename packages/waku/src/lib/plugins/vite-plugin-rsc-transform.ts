@@ -80,17 +80,12 @@ const transformServer = (
   let hasUseServer = false;
   for (const item of mod.body) {
     if (item.type === 'ExpressionStatement') {
-      if (
-        item.expression.type === 'StringLiteral' &&
-        item.expression.value === 'use client'
-      ) {
-        hasUseClient = true;
-      }
-      if (
-        item.expression.type === 'StringLiteral' &&
-        item.expression.value === 'use server'
-      ) {
-        hasUseServer = true;
+      if (item.expression.type === 'StringLiteral') {
+        if (item.expression.value === 'use client') {
+          hasUseClient = true;
+        } else if (item.expression.value === 'use server') {
+          hasUseServer = true;
+        }
       }
     } else {
       // HACK we can't stop the loop here, because vite may put some import statements before the directives
