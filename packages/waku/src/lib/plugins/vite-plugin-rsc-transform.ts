@@ -103,7 +103,7 @@ import { registerClientReference } from 'react-server-dom-webpack/server';
 `;
     for (const name of exportNames) {
       newCode += `
-export ${name === 'default' ? name : `const ${name} =`} registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${id}#${name}'); }, '${getClientId(id)}', '${name}');
+export ${name === 'default' ? name : `const ${name} =`} registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getClientId(id)}#${name}'); }, '${getClientId(id)}', '${name}');
 `;
     }
     return newCode;
