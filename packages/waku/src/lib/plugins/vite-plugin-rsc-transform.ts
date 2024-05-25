@@ -93,7 +93,8 @@ const transformServer = (
         hasUseServer = true;
       }
     } else {
-      break;
+      // HACK we can't stop the loop here, because vite may put some import statements before the directives
+      // break;
     }
   }
   if (hasUseClient) {
