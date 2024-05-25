@@ -140,7 +140,7 @@ export async function parseExampleOption(
   }
 
   // NOTE check github origin
-  if (repoUrl.origin !== 'https://github.com') {
+  if (repoUrl.origin !== 'https://github.com' && repoUrl.origin !== 'https://www.github.com') {
     console.error(
       `Invalid URL: ${red(
         `"${example}"`,
