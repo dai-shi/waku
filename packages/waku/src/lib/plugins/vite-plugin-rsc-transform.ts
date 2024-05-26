@@ -68,6 +68,43 @@ export ${name === 'default' ? name : `const ${name} =`} createServerReference('$
   }
 };
 
+const collectServerActions = (stmts: swc.Statement[]) => {
+  //TODO
+  for (const stmt of stmts) {
+    console.log(stmt);
+  }
+};
+
+const transformServerActions = (mod: swc.Module): swc.Module | void => {
+  let changed = false;
+  const walk = (node: swc.ModuleDeclaration | swc.Statement) => {
+    if (node.type === 'FunctionDeclaration'&& node.body) {
+        collectServerActions(node.body.stmts);
+    } else if (node.type === 'VariableDeclaration') {
+      for (const d of node.declarations) {
+        if (d.init?.type === 'FunctionExpression' && d.init.body) {
+          collectServerActions(d.init.body.stmts);
+        }
+      }
+    } else if (node.type === 'ExportDeclaration') {
+      walk(node.declaration);
+    } else if (node.type === 'ExportDefaultExpression') {
+      if (
+        node.expression.type === 'FunctionExpression' &&
+        node.expression.body
+      ) {
+        collectServerActions(node.expression.body.stmts);
+      }
+    } else if (node.type === 'ExportDefaultDeclaration') {
+      if (node.decl.type === 'FunctionExpression' && node.decl.body) {
+        collectServerActions(node.decl.body.stmts);
+      }
+    }
+  };
+  mod.body.forEach(walk);
+  // TODO
+};
+
 const transformServer = (
   code: string,
   id: string,
@@ -118,6 +155,11 @@ if (typeof ${name} === 'function') {
 `;
     }
     return newCode;
+  }
+  // transform server actions in server components
+  const newMod = transformServerActions(mod);
+  if (newMod) {
+    return swc.printSync(newMod).code;
   }
 };
 

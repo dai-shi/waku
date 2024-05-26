@@ -3,9 +3,10 @@ import ButtonClient from './ButtonClient';
 let counter = 0;
 
 const ButtonServer = ({ name }: { name: string }) => {
+  const now = Date.now();
   async function handleClick() {
     'use server';
-    console.log('Button clicked!', name, ++counter);
+    console.log('Button clicked!', name, now, ++counter);
   }
   return <ButtonClient onClick={handleClick} />;
 };
