@@ -15,7 +15,7 @@ visit [waku.gg](https://waku.gg) or `npm create waku@latest`
 
 **Waku** _(wah-ku)_ or **わく** means “framework” in Japanese. As the minimal React framework, it’s designed to accelerate the work of developers at startups and agencies building small to medium-sized React projects. These include marketing websites, light ecommerce, and web applications.
 
-We recommend other frameworks for heavy ecommerce or enterprise applications. Waku is a lightweight alternative bringing a fun developer experience to the modern React server components era. Yes, let’s make React development fun again!
+We recommend other frameworks for heavy ecommerce or enterprise applications. Waku is a lightweight alternative bringing a fun developer experience to the server components era. Yes, let’s make React development fun again!
 
 > Waku is in rapid development and some features are currently missing. Please try it on non-production projects and report any issues you may encounter. Expect that there will be some breaking changes on the road towards a stable v1 release. Contributors are welcome.
 
@@ -31,7 +31,7 @@ npm create waku@latest
 
 ## Rendering
 
-While there’s a little bit of a learning curve to modern React rendering, it introduces powerful new patterns of full-stack composability that are only possible with the advent of [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md).
+While there’s a bit of a learning curve to modern React rendering, it introduces powerful new patterns of full-stack composability that are only possible with the advent of [server components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md).
 
 So please don’t be intimidated by the `'use client'` directive! Once you get the hang of it, you’ll appreciate how awesome it is to flexibly move server-client boundaries with a single line of code as your full-stack React codebase evolves over time. It’s way simpler than maintaining separate codebases for your backend and frontend.
 
@@ -125,7 +125,7 @@ export const Providers = ({ children }) => {
 
 #### Server-side rendering
 
-Waku provides static prerendering (SSG) and server-side rendering (SSR) options for both layouts and pages including all of their server _and_ client components. SSR is a distinct concept from RSC.
+Waku provides static prerendering (SSG) and server-side rendering (SSR) options for both layouts and pages including all of their server _and_ client components. Note that SSR is a distinct concept from RSC.
 
 #### tl;dr:
 
@@ -135,17 +135,17 @@ It begins with a server component at the top of the tree. Then at points down th
 
 Server components can be rendered below this boundary, but only via composition (e.g., `children` props). Together they form [a new “React server” layer](https://github.com/reactwg/server-components/discussions/4) that runs _before_ the traditional “React client” layer with which you’re already familiar.
 
-Client components are server-side rendered as SSR is separate from RSC. See the [linked diagrams](https://github.com/reactwg/server-components/discussions/4) for a helpful visual.
+Client components are still server-side rendered as SSR is separate from RSC. Please see the [linked diagrams](https://github.com/reactwg/server-components/discussions/4) for a helpful visual.
 
 #### Further reading
 
-To learn more about the modern React architecture, we recommend [Making Sense of React Server Components](https://www.joshwcomeau.com/react/server-components/) and [The Two Reacts: Part 1](https://overreacted.io/the-two-reacts/).
+To learn more about the modern React architecture, we recommend [Making Sense of React Server Components](https://www.joshwcomeau.com/react/server-components/) and [The Two Reacts](https://overreacted.io/the-two-reacts/).
 
 ## Routing
 
-Waku provides minimal file-based “pages router” experience built for the modern React server components era.
+Waku provides a minimal file-based “pages router” experience built for the server components era.
 
-Its underlying [low-level API](https://github.com/dai-shi/waku/blob/main/docs/create-pages.mdx) is also available for those that prefer programmatic routing. This documentation covers file-based routing since many React developers prefer it, but feel free to try both and see which you prefer.
+Its underlying [low-level API](https://github.com/dai-shi/waku/blob/main/docs/create-pages.mdx) is also available for those that prefer programmatic routing. This documentation covers file-based routing since many React developers prefer it, but please feel free to try both and see which you like more!
 
 ### Overview
 
@@ -255,7 +255,7 @@ export const getConfig = async () => {
 
 Segment routes (e.g., `[slug].tsx` or `[slug]/index.tsx`) are marked with brackets.
 
-The rendered React component automatically receives a prop named by the segment (e.g, `slug`) with the value of the rendered segment (e.g., `'introducing-waku'`).
+The rendered React component automatically receives a prop named by the segment (e.g., `slug`) with the value of the rendered segment (e.g., `'introducing-waku'`).
 
 If statically prerendering a segment route at build time, a `staticPaths` array must also be provided.
 
@@ -547,7 +547,7 @@ export const Component = () => {
 
 ## Metadata
 
-Waku automatically hoists any title, meta, and link tags to the document head. So adding meta tags is as simple as adding it to any of your layout or page components.
+Waku automatically hoists any title, meta, and link tags to the document head. That means adding meta tags is as simple as adding them to any of your layout or page components.
 
 ```tsx
 // ./src/pages/_layout.tsx
@@ -691,7 +691,8 @@ Files placed in a special `./private` folder of the Waku project root directory 
 ```tsx
 export default async function HomePage() {
   const file = readFileSync('./private/README.md', 'utf8');
-  /* ... */
+
+  return <>{/* ...*/}</>;
 }
 
 export const getConfig = async () => {
@@ -705,7 +706,7 @@ export const getConfig = async () => {
 
 ### Server
 
-All of the wonderful patterns of React server components are supported. For example, you can compile MDX files or perform code syntax highlighting on the server with zero impact on the client bundle size.
+All of the wonderful patterns enabled by React server components are supported. For example, you can compile MDX files or perform code syntax highlighting on the server with zero impact on the client bundle size.
 
 ```tsx
 // ./src/pages/blog/[slug].tsx
@@ -736,13 +737,13 @@ export const getConfig = async () => {
 
 ### Client
 
-Data should be fetched on the server when possible for the best user experience, but all data fetching libraries such as React Query should be compatible with Waku.
+Data should be fetched on the server when possible for the best user experience, but all data fetching libraries such as React Query are compatible with Waku.
 
 ## State management
 
-We recommend [Jotai](https://jotai.org) for global React state management based on the atomic model’s performance and scalability, but Waku should be compatible with all React state management libraries such as Zustand and Valtio.
+We recommend [Jotai](https://jotai.org) for global React state management based on the atomic model’s performance and scalability, but Waku is compatible with all React state management libraries such as Zustand and Valtio.
 
-We’re exploring a deeper integration of atomic state management into Waku to achieve the performance and developer experience of signals while preserving React’s declarative programming model.
+> We’re exploring a deeper integration of atomic state management into Waku to achieve the performance and developer experience of signals while preserving React’s declarative programming model.
 
 ## Environment variables
 
@@ -750,7 +751,7 @@ It’s important to distinguish environment variables that must be kept secret f
 
 #### Private
 
-By default all environment variables are considered private and accessible only in server components, which can be rendered exclusively in a secure environment. You must still take care not to inadvertently pass the variable as props to any client components.
+By default all environment variables are considered private and are accessible only in server components, which can be rendered exclusively in a secure environment. You must still take care not to inadvertently pass the variable as props to any client components.
 
 #### Public
 
