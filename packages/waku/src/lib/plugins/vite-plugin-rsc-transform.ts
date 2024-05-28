@@ -68,41 +68,215 @@ export ${name === 'default' ? name : `const ${name} =`} createServerReference('$
   }
 };
 
-const collectServerActions = (stmts: swc.Statement[]) => {
-  //TODO
-  for (const stmt of stmts) {
-    console.log(stmt);
+// HACK this doesn't work for 100% of cases
+const collectIndentifiers = (node: swc.Node, ids: Set<string>) => {
+  if (node.type === 'Identifier') {
+    ids.add((node as swc.Identifier).value);
+  } else if (node.type === 'MemberExpression') {
+    collectIndentifiers((node as swc.MemberExpression).object, ids);
+  } else if (node.type === 'KeyValuePatternProperty') {
+    collectIndentifiers((node as swc.KeyValuePatternProperty).key, ids);
+  } else if (node.type === 'AssignmentPatternProperty') {
+    collectIndentifiers((node as swc.AssignmentPatternProperty).key, ids);
+  } else {
+    Object.values(node).forEach((value) => {
+      if (Array.isArray(value)) {
+        value.forEach((v) => collectIndentifiers(v, ids));
+      } else if (typeof value === 'object' && value !== null) {
+        collectIndentifiers(value, ids);
+      }
+    });
   }
 };
 
-const transformServerActions = (mod: swc.Module): swc.Module | void => {
-  let changed = false;
+// HACK this doesn't work for 100% of cases
+const collectLocalNames = (
+  fn: swc.Fn | swc.ArrowFunctionExpression,
+  ids: Set<string>,
+) => {
+  fn.params.forEach((param) => {
+    collectIndentifiers(param, ids);
+  });
+  let stmts: swc.Statement[];
+  if (!fn.body) {
+    stmts = [];
+  } else if (fn.body?.type === 'BlockStatement') {
+    stmts = fn.body.stmts;
+  } else {
+    // body is Expression
+    stmts = [
+      {
+        type: 'ReturnStatement',
+        argument: fn.body,
+        span: { start: 0, end: 0, ctxt: 0 },
+      },
+    ];
+  }
+  for (const stmt of stmts) {
+    if (stmt.type === 'VariableDeclaration') {
+      for (const decl of stmt.declarations) {
+        collectIndentifiers(decl.id, ids);
+      }
+    }
+  }
+};
+
+const createIdentifier = (value: string): swc.Identifier => ({
+  type: 'Identifier',
+  value,
+  optional: false,
+  span: { start: 0, end: 0, ctxt: 0 },
+});
+
+const createStringLiteral = (value: string): swc.StringLiteral => ({
+  type: 'StringLiteral',
+  value,
+  span: { start: 0, end: 0, ctxt: 0 },
+});
+
+const transformServerActions = (
+  mod: swc.Module,
+  actionId: string,
+): swc.Module | void => {
+  const moduleItems = new Set<swc.ModuleItem>();
+  let actionIndex = 0;
+  const processServerAction = (
+    parentFn: swc.Fn | swc.ArrowFunctionExpression,
+    fn: swc.FunctionDeclaration,
+  ) => {
+    const parentFnVarNames = new Set<string>();
+    collectLocalNames(parentFn, parentFnVarNames);
+    const fnVarNames = new Set<string>();
+    collectIndentifiers(fn, fnVarNames);
+    const varNames = Array.from(parentFnVarNames).filter((n) =>
+      fnVarNames.has(n),
+    );
+    const newParams: swc.Param[] = [
+      ...varNames.map((n) => ({
+        type: 'Parameter' as const,
+        pat: createIdentifier(n),
+        span: { start: 0, end: 0, ctxt: 0 },
+      })),
+      ...fn.params,
+    ];
+    const actionName = `__waku_rsf${actionIndex++}`;
+    const restArgsName = '__waku_args';
+    const origBodyStmts = fn.body!.stmts.splice(0);
+    fn.params = [
+      {
+        type: 'Parameter' as const,
+        pat: {
+          type: 'RestElement',
+          rest: { start: 0, end: 0, ctxt: 0 },
+          argument: createIdentifier(restArgsName),
+          span: { start: 0, end: 0, ctxt: 0 },
+        },
+        span: { start: 0, end: 0, ctxt: 0 },
+      },
+    ];
+    fn.body!.stmts.push({
+      type: 'ReturnStatement',
+      argument: {
+        type: 'CallExpression',
+        callee: createIdentifier(actionName),
+        arguments: [
+          ...varNames.map((n) => ({ expression: createIdentifier(n) })),
+          {
+            // FIXME is this correct for rest parameters?
+            expression: createIdentifier('...' + restArgsName),
+          },
+        ],
+        span: { start: 0, end: 0, ctxt: 0 },
+      },
+      span: { start: 0, end: 0, ctxt: 0 },
+    });
+    moduleItems.add({
+      type: 'ExportDeclaration',
+      declaration: {
+        type: 'FunctionDeclaration',
+        declare: false,
+        generator: false,
+        async: false,
+        span: { start: 0, end: 0, ctxt: 0 },
+        identifier: createIdentifier(actionName),
+        params: newParams,
+        body: {
+          type: 'BlockStatement',
+          stmts: origBodyStmts,
+          span: { start: 0, end: 0, ctxt: 0 },
+        },
+      },
+      span: { start: 0, end: 0, ctxt: 0 },
+    });
+    moduleItems.add({
+      type: 'ExpressionStatement',
+      expression: {
+        type: 'CallExpression',
+        // HACK hard-coded function name
+        callee: createIdentifier('registerServerReference'),
+        arguments: [
+          { expression: createIdentifier(actionName) },
+          { expression: createStringLiteral(actionId) },
+          { expression: createStringLiteral(actionName) },
+        ],
+        span: { start: 0, end: 0, ctxt: 0 },
+      },
+      span: { start: 0, end: 0, ctxt: 0 },
+    });
+  };
+  const collectServerActions = (
+    parentFn: swc.Fn | swc.ArrowFunctionExpression,
+    stmts: swc.Statement[],
+  ) => {
+    for (const stmt of stmts) {
+      if (
+        stmt.type === 'FunctionDeclaration' &&
+        stmt.body?.stmts.some(
+          (s) =>
+            s.type === 'ExpressionStatement' &&
+            s.expression.type === 'StringLiteral' &&
+            s.expression.value === 'use server',
+        )
+      ) {
+        processServerAction(parentFn, stmt);
+      }
+    }
+  };
   const walk = (node: swc.ModuleDeclaration | swc.Statement) => {
-    if (node.type === 'FunctionDeclaration'&& node.body) {
-        collectServerActions(node.body.stmts);
+    if (node.type === 'FunctionDeclaration' && node.body) {
+      collectServerActions(node, node.body.stmts);
     } else if (node.type === 'VariableDeclaration') {
       for (const d of node.declarations) {
-        if (d.init?.type === 'FunctionExpression' && d.init.body) {
-          collectServerActions(d.init.body.stmts);
+        if (
+          (d.init?.type === 'FunctionExpression' ||
+            d.init?.type === 'ArrowFunctionExpression') &&
+          d.init.body?.type === 'BlockStatement'
+        ) {
+          collectServerActions(d.init, d.init.body.stmts);
         }
       }
     } else if (node.type === 'ExportDeclaration') {
       walk(node.declaration);
     } else if (node.type === 'ExportDefaultExpression') {
       if (
-        node.expression.type === 'FunctionExpression' &&
-        node.expression.body
+        (node.expression.type === 'FunctionExpression' ||
+          node.expression.type === 'ArrowFunctionExpression') &&
+        node.expression.body?.type === 'BlockStatement'
       ) {
-        collectServerActions(node.expression.body.stmts);
+        collectServerActions(node.expression, node.expression.body.stmts);
       }
     } else if (node.type === 'ExportDefaultDeclaration') {
       if (node.decl.type === 'FunctionExpression' && node.decl.body) {
-        collectServerActions(node.decl.body.stmts);
+        collectServerActions(node.decl, node.decl.body.stmts);
       }
     }
   };
   mod.body.forEach(walk);
-  // TODO
+  if (actionIndex === 0) {
+    return;
+  }
+  mod.body.push(...moduleItems);
+  return mod;
 };
 
 const transformServer = (
@@ -157,9 +331,26 @@ if (typeof ${name} === 'function') {
     return newCode;
   }
   // transform server actions in server components
-  const newMod = transformServerActions(mod);
+  const newMod = transformServerActions(mod, getServerId(id));
   if (newMod) {
-    return swc.printSync(newMod).code;
+    newMod.body.push({
+      type: 'ImportDeclaration',
+      specifiers: [
+        {
+          type: 'ImportSpecifier',
+          // HACK hard-coded function name
+          local: createIdentifier('registerServerReference'),
+          isTypeOnly: false,
+          span: { start: 0, end: 0, ctxt: 0 },
+        },
+      ],
+      source: createStringLiteral('react-server-dom-webpack/server'),
+      typeOnly: false,
+      span: { start: 0, end: 0, ctxt: 0 },
+    });
+    const newCode = swc.printSync(newMod).code;
+    console.log('newCode', newCode);
+    return newCode;
   }
 };
 
