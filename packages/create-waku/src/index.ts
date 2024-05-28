@@ -16,6 +16,8 @@ import {
   parseExampleOption,
   downloadAndExtract,
 } from './helpers/example-option.js';
+import process from 'node:process';
+import { sync } from 'cross-spawn';
 
 const userAgent = process.env.npm_config_user_agent || '';
 const packageManager = /pnpm/.test(userAgent)
@@ -30,7 +32,7 @@ const commands = {
     create: 'pnpm create waku',
   },
   yarn: {
-    install: 'yarn',
+    install: 'yarn install',
     dev: 'yarn dev',
     create: 'yarn create waku',
   },
@@ -202,15 +204,29 @@ async function init() {
     await installTemplate(root, packageName, templateRoot, templateName);
   }
 
-  // TODO automatically installing dependencies
   // 1. check packageManager
   // 2. and then install dependencies
+  process.chdir(targetDir);
+  const [, installFlag] = commands.install.split(' ');
 
-  console.log(`\nDone. Now run:\n`);
-  console.log(`${bold(green(`cd ${targetDir}`))}`);
-  console.log(`${bold(green(commands.install))}`);
-  console.log(`${bold(green(commands.dev))}`);
-  console.log();
+  // synchronously install all the deps
+  const installProcess = sync('npm', [installFlag!], {
+    stdio: 'inherit',
+  });
+  const error = installProcess.error;
+
+  if (error) {
+    console.error(`Could not execute ${commands.install}. Please run`);
+    console.log(`${bold(green(`cd ${targetDir}`))}`);
+    console.log(`${bold(green(commands.install))}`);
+    console.log(`${bold(green(commands.dev))}`);
+    console.log();
+  } else {
+    console.log(`\nDone. Now run:\n`);
+    console.log(`${bold(green(`cd ${targetDir}`))}`);
+    console.log(`${bold(green(commands.dev))}`);
+    console.log();
+  }
 }
 
 init()
