@@ -206,11 +206,14 @@ async function init() {
 
   // 1. check packageManager
   // 2. and then install dependencies
+  console.log();
+  console.log(`Installing dependencies by running ${commands.install}...`);
+
   process.chdir(targetDir);
   const [, installFlag] = commands.install.split(' ');
 
   // synchronously install all the deps
-  const installProcess = sync('npm', [installFlag!], {
+  const installProcess = sync(packageManager, [installFlag!], {
     stdio: 'inherit',
   });
   const error = installProcess.error;
