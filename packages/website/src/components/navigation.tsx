@@ -25,12 +25,12 @@ export const Navigation = ({ isHome }: NavigationProps) => {
           ? 'pointer-events-auto opacity-100'
           : 'pointer-events-none opacity-0',
         isHome && !hasScrolled
-          ? '2xl:pointer-events-none 2xl:opacity-0'
-          : '2xl:pointer-events-auto 2xl:opacity-100',
-        'fixed inset-0 z-90 flex-shrink-0 flex-col overflow-clip border-gray-800 bg-gray-950 transition-opacity duration-300 ease-in-out 2xl:pointer-events-auto 2xl:bottom-auto 2xl:left-12 2xl:right-auto 2xl:top-12 2xl:z-[9999] 2xl:h-[calc(100svh-6rem)] 2xl:rounded-xl 2xl:border',
+          ? 'xl:pointer-events-none xl:opacity-0'
+          : 'xl:pointer-events-auto xl:opacity-100',
+        'fixed inset-0 z-90 flex-shrink-0 flex-col overflow-clip border-gray-800 bg-gray-950 transition-opacity duration-300 ease-in-out xl:pointer-events-auto xl:bottom-auto xl:left-12 xl:right-auto xl:top-12 xl:z-[9999] xl:h-[calc(100svh-6rem)] xl:rounded-xl xl:border',
       )}
     >
-      <div className="relative z-10 flex h-full max-h-full w-full flex-shrink-0 flex-col items-center justify-start gap-8 !overflow-y-auto p-8 text-white md:p-8 2xl:gap-12 2xl:p-12">
+      <div className="relative z-10 flex h-full max-h-full w-full flex-shrink-0 flex-col items-center justify-start gap-8 !overflow-y-auto p-8 text-white md:p-8 xl:gap-12 xl:p-12">
         <div className="flex w-full flex-col items-center justify-center">
           {isHome ? (
             <button
@@ -55,7 +55,7 @@ export const Navigation = ({ isHome }: NavigationProps) => {
             The minimal React framework
           </div>
         </div>
-        <div className="relative flex max-h-full w-full max-w-[16rem] flex-grow flex-col gap-0.5 md:left-auto 2xl:gap-1.5">
+        <div className="relative flex max-h-full w-full max-w-[16rem] flex-grow flex-col gap-0.5 md:left-auto xl:gap-1.5">
           {docs.map((link) => {
             return isHome ? (
               <DocLink key={link.to} link={link} />
@@ -124,7 +124,7 @@ const DocLink = ({ link }: LinkProps) => {
   );
 };
 
-const linkClassNames = `block text-balance font-simple text-[11px] font-bold uppercase tracking-[0.125em] text-gray-500 transition duration-300 ease-in-out hover:text-white p-0.5 2xl:p-0 !whitespace-nowrap`;
+const linkClassNames = `block text-balance font-simple text-[11px] font-bold uppercase tracking-[0.125em] text-gray-500 transition duration-300 ease-in-out hover:text-white p-0.5 xl:p-0 !whitespace-nowrap`;
 
 export const MenuLink = ({ link }: LinkProps) => {
   const setIsMenuOpen = useSetAtom(menuAtom);

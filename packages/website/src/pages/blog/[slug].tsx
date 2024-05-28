@@ -39,7 +39,7 @@ export default async function BlogArticlePage({ slug }: BlogArticlePageProps) {
         title={`${frontmatter.title} — Waku`}
         description={frontmatter.description}
       />
-      <div className="relative z-10 mx-auto w-full max-w-[80ch] pt-16 text-white lg:pt-64">
+      <div className="relative z-10 mx-auto w-full max-w-[80ch] pt-16 text-white lg:pt-36 xl:-right-[calc(296px/2)] 2xl:right-auto">
         <div className="mb-8 flex items-center gap-2 sm:gap-4">
           {frontmatter.release && (
             <div>
@@ -81,10 +81,10 @@ export default async function BlogArticlePage({ slug }: BlogArticlePageProps) {
         </a>
         <hr className="mt-2 h-px border-none bg-gray-800" />
       </div>
-      <div className="relative z-10 mx-auto w-full max-w-[80ch] pt-8 lg:pt-16">
+      <div className="relative z-10 mx-auto w-full max-w-[80ch] pt-8 lg:pt-16 xl:-right-[calc(296px/2)] 2xl:right-auto">
         {content}
       </div>
-      <div className="relative z-10 mx-auto mb-8 mt-16 flex w-full max-w-[80ch] justify-center sm:mb-0 lg:mt-32">
+      <div className="relative z-10 mx-auto mb-8 mt-16 flex w-full max-w-[80ch] justify-center sm:mb-0 lg:mt-32 xl:-right-[calc(296px/2)] 2xl:right-auto">
         <a
           href="https://github.com/dai-shi/waku"
           target="_blank"
