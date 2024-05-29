@@ -132,33 +132,24 @@ const transformServerActions = (
       }
     }
   };
-  const walk = (node: swc.ModuleDeclaration | swc.Statement) => {
-    if (node.type === 'FunctionDeclaration' && node.body) {
+  const walk = (
+    node: swc.ModuleDeclaration | swc.Statement | swc.Expression,
+  ) => {
+    if (
+      (node.type === 'FunctionDeclaration' ||
+        node.type === 'FunctionExpression' ||
+        node.type === 'ArrowFunctionExpression') &&
+      node.body?.type === 'BlockStatement'
+    ) {
       registerServerActions(node.body.stmts);
     } else if (node.type === 'VariableDeclaration') {
-      for (const d of node.declarations) {
-        if (
-          (d.init?.type === 'FunctionExpression' ||
-            d.init?.type === 'ArrowFunctionExpression') &&
-          d.init.body?.type === 'BlockStatement'
-        ) {
-          registerServerActions(d.init.body.stmts);
-        }
-      }
+      node.declarations.forEach((d) => d.init && walk(d.init));
     } else if (node.type === 'ExportDeclaration') {
       walk(node.declaration);
     } else if (node.type === 'ExportDefaultExpression') {
-      if (
-        (node.expression.type === 'FunctionExpression' ||
-          node.expression.type === 'ArrowFunctionExpression') &&
-        node.expression.body?.type === 'BlockStatement'
-      ) {
-        registerServerActions(node.expression.body.stmts);
-      }
+      walk(node.expression);
     } else if (node.type === 'ExportDefaultDeclaration') {
-      if (node.decl.type === 'FunctionExpression' && node.decl.body) {
-        registerServerActions(node.decl.body.stmts);
-      }
+      walk(node.decl);
     }
   };
   mod.body.forEach(walk);
