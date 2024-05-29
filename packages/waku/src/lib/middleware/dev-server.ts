@@ -10,6 +10,7 @@ import {
   renderRscWithWorker,
   getSsrConfigWithWorker,
 } from '../renderers/dev-worker-api.js';
+import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
@@ -79,7 +80,7 @@ export const devServer: Middleware = (options) => {
       cacheDir: 'node_modules/.vite/waku-dev-server',
       base: config.basePath,
       plugins: [
-        viteReact(),
+        patchReactRefresh(viteReact()),
         nonjsResolvePlugin(),
         rscEnvPlugin({ config }),
         rscPrivatePlugin(config),

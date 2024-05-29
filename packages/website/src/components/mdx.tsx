@@ -10,7 +10,7 @@ export const components = {
     return (
       <h2
         id={id}
-        className="mb-2 mt-16 scroll-mt-16 text-balance text-3xl font-bold leading-none text-white first:mt-0 sm:text-[2.75rem] xl:mt-32"
+        className="mb-2 mt-16 scroll-mt-16 text-balance text-3xl font-bold leading-none text-white first:mt-0 sm:text-[2.75rem] xl:mt-32 xl:scroll-mt-32"
         {...rest}
       >
         <a href={`#${id}`}>{children}</a>
