@@ -20,7 +20,8 @@ const App = ({ name }: { name: string }) => {
         increment={increment as unknown as ServerFunction<typeof increment>}
       />
       <Balancer>My Awesome Title</Balancer>
-      <ButtonServer name="ButtonServer" />
+      <ButtonServer name="Button1" />
+      <ButtonServer name="Button2" />
     </div>
   );
 };

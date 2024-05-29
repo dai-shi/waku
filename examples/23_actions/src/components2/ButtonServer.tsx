@@ -8,7 +8,11 @@ const ButtonServer = ({ name }: { name: string }) => {
     'use server';
     console.log('Button clicked!', name, now, ++counter);
   }
-  return <ButtonClient onClick={handleClick} />;
+  return (
+    <div>
+      {name} <ButtonClient onClick={handleClick} />
+    </div>
+  );
 };
 
 export default ButtonServer;

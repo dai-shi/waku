@@ -5,6 +5,5 @@ export default function ButtonClient({
 }: {
   onClick: () => Promise<void>;
 }) {
-  console.log(onClick);
-  return <button onClick={onClick}>Click me!</button>;
+  return <button onClick={() => onClick()}>Click me!</button>;
 }

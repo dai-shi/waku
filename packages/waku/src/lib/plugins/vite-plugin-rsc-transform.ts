@@ -68,59 +68,6 @@ export ${name === 'default' ? name : `const ${name} =`} createServerReference('$
   }
 };
 
-// HACK this doesn't work for 100% of cases
-const collectIndentifiers = (node: swc.Node, ids: Set<string>) => {
-  if (node.type === 'Identifier') {
-    ids.add((node as swc.Identifier).value);
-  } else if (node.type === 'MemberExpression') {
-    collectIndentifiers((node as swc.MemberExpression).object, ids);
-  } else if (node.type === 'KeyValuePatternProperty') {
-    collectIndentifiers((node as swc.KeyValuePatternProperty).key, ids);
-  } else if (node.type === 'AssignmentPatternProperty') {
-    collectIndentifiers((node as swc.AssignmentPatternProperty).key, ids);
-  } else {
-    Object.values(node).forEach((value) => {
-      if (Array.isArray(value)) {
-        value.forEach((v) => collectIndentifiers(v, ids));
-      } else if (typeof value === 'object' && value !== null) {
-        collectIndentifiers(value, ids);
-      }
-    });
-  }
-};
-
-// HACK this doesn't work for 100% of cases
-const collectLocalNames = (
-  fn: swc.Fn | swc.ArrowFunctionExpression,
-  ids: Set<string>,
-) => {
-  fn.params.forEach((param) => {
-    collectIndentifiers(param, ids);
-  });
-  let stmts: swc.Statement[];
-  if (!fn.body) {
-    stmts = [];
-  } else if (fn.body?.type === 'BlockStatement') {
-    stmts = fn.body.stmts;
-  } else {
-    // body is Expression
-    stmts = [
-      {
-        type: 'ReturnStatement',
-        argument: fn.body,
-        span: { start: 0, end: 0, ctxt: 0 },
-      },
-    ];
-  }
-  for (const stmt of stmts) {
-    if (stmt.type === 'VariableDeclaration') {
-      for (const decl of stmt.declarations) {
-        collectIndentifiers(decl.id, ids);
-      }
-    }
-  }
-};
-
 const createIdentifier = (value: string): swc.Identifier => ({
   type: 'Identifier',
   value,
@@ -134,102 +81,44 @@ const createStringLiteral = (value: string): swc.StringLiteral => ({
   span: { start: 0, end: 0, ctxt: 0 },
 });
 
+const serverActionsInitCode = swc.parseSync(`
+import { registerServerReference as __waku_registerServerReference__ } from 'react-server-dom-webpack/server';
+export const __waku_serverActions__ = new Map();
+let __waku_actionIndex__ = 0;
+function __waku_registerServerAction__(fn, actionId) {
+  const actionName = 'action' + __waku_actionIndex__++;
+  __waku_registerServerReference__(fn, actionId, actionName);
+  // FIXME this can cause memory leaks
+  __waku_serverActions__.set(actionName, fn);
+}
+`).body;
+
 const transformServerActions = (
   mod: swc.Module,
   actionId: string,
 ): swc.Module | void => {
-  const moduleItems = new Set<swc.ModuleItem>();
-  let actionIndex = 0;
-  const processServerAction = (
-    parentFn: swc.Fn | swc.ArrowFunctionExpression,
-    fn: swc.FunctionDeclaration,
-  ) => {
-    const parentFnVarNames = new Set<string>();
-    collectLocalNames(parentFn, parentFnVarNames);
-    const fnVarNames = new Set<string>();
-    collectIndentifiers(fn, fnVarNames);
-    const varNames = Array.from(parentFnVarNames).filter((n) =>
-      fnVarNames.has(n),
-    );
-    const newParams: swc.Param[] = [
-      ...varNames.map((n) => ({
-        type: 'Parameter' as const,
-        pat: createIdentifier(n),
-        span: { start: 0, end: 0, ctxt: 0 },
-      })),
-      ...fn.params,
-    ];
-    const actionName = `__waku_rsf${actionIndex++}`;
-    const restArgsName = '__waku_args';
-    const origBodyStmts = fn.body!.stmts.splice(0);
-    fn.params = [
-      {
-        type: 'Parameter' as const,
-        pat: {
-          type: 'RestElement',
-          rest: { start: 0, end: 0, ctxt: 0 },
-          argument: createIdentifier(restArgsName),
-          span: { start: 0, end: 0, ctxt: 0 },
-        },
-        span: { start: 0, end: 0, ctxt: 0 },
-      },
-    ];
-    fn.body!.stmts.push({
-      type: 'ReturnStatement',
-      argument: {
-        type: 'CallExpression',
-        callee: createIdentifier(actionName),
-        arguments: [
-          ...varNames.map((n) => ({ expression: createIdentifier(n) })),
-          {
-            // FIXME is this correct for rest parameters?
-            expression: createIdentifier('...' + restArgsName),
-          },
-        ],
-        span: { start: 0, end: 0, ctxt: 0 },
-      },
-      span: { start: 0, end: 0, ctxt: 0 },
-    });
-    moduleItems.add({
-      type: 'ExportDeclaration',
-      declaration: {
-        type: 'FunctionDeclaration',
-        declare: false,
-        generator: false,
-        async: false,
-        span: { start: 0, end: 0, ctxt: 0 },
-        identifier: createIdentifier(actionName),
-        params: newParams,
-        body: {
-          type: 'BlockStatement',
-          stmts: origBodyStmts,
-          span: { start: 0, end: 0, ctxt: 0 },
-        },
-      },
-      span: { start: 0, end: 0, ctxt: 0 },
-    });
-    moduleItems.add({
+  let hasServerActions = false;
+  const registerServerAction = (fn: swc.FunctionDeclaration): swc.Statement => {
+    hasServerActions = true;
+    return {
       type: 'ExpressionStatement',
       expression: {
         type: 'CallExpression',
-        // HACK hard-coded function name
-        callee: createIdentifier('registerServerReference'),
+        callee: createIdentifier('__waku_registerServerAction__'),
         arguments: [
-          { expression: createIdentifier(actionName) },
+          { expression: fn.identifier },
           { expression: createStringLiteral(actionId) },
-          { expression: createStringLiteral(actionName) },
         ],
         span: { start: 0, end: 0, ctxt: 0 },
       },
       span: { start: 0, end: 0, ctxt: 0 },
-    });
+    };
   };
-  const collectServerActions = (
-    parentFn: swc.Fn | swc.ArrowFunctionExpression,
-    stmts: swc.Statement[],
-  ) => {
-    for (const stmt of stmts) {
+  const registerServerActions = (stmts: swc.Statement[]) => {
+    for (let i = 0; i < stmts.length; ++i) {
+      const stmt = stmts[i]!;
       if (
+        // Should we support FunctionExpression and ArrowFunctionExpression?
         stmt.type === 'FunctionDeclaration' &&
         stmt.body?.stmts.some(
           (s) =>
@@ -238,13 +127,14 @@ const transformServerActions = (
             s.expression.value === 'use server',
         )
       ) {
-        processServerAction(parentFn, stmt);
+        const registerStmt = registerServerAction(stmt);
+        stmts.splice(++i, 0, registerStmt);
       }
     }
   };
   const walk = (node: swc.ModuleDeclaration | swc.Statement) => {
     if (node.type === 'FunctionDeclaration' && node.body) {
-      collectServerActions(node, node.body.stmts);
+      registerServerActions(node.body.stmts);
     } else if (node.type === 'VariableDeclaration') {
       for (const d of node.declarations) {
         if (
@@ -252,7 +142,7 @@ const transformServerActions = (
             d.init?.type === 'ArrowFunctionExpression') &&
           d.init.body?.type === 'BlockStatement'
         ) {
-          collectServerActions(d.init, d.init.body.stmts);
+          registerServerActions(d.init.body.stmts);
         }
       }
     } else if (node.type === 'ExportDeclaration') {
@@ -263,19 +153,19 @@ const transformServerActions = (
           node.expression.type === 'ArrowFunctionExpression') &&
         node.expression.body?.type === 'BlockStatement'
       ) {
-        collectServerActions(node.expression, node.expression.body.stmts);
+        registerServerActions(node.expression.body.stmts);
       }
     } else if (node.type === 'ExportDefaultDeclaration') {
       if (node.decl.type === 'FunctionExpression' && node.decl.body) {
-        collectServerActions(node.decl, node.decl.body.stmts);
+        registerServerActions(node.decl.body.stmts);
       }
     }
   };
   mod.body.forEach(walk);
-  if (actionIndex === 0) {
+  if (!hasServerActions) {
     return;
   }
-  mod.body.push(...moduleItems);
+  mod.body.push(...serverActionsInitCode);
   return mod;
 };
 
@@ -333,21 +223,6 @@ if (typeof ${name} === 'function') {
   // transform server actions in server components
   const newMod = transformServerActions(mod, getServerId(id));
   if (newMod) {
-    newMod.body.push({
-      type: 'ImportDeclaration',
-      specifiers: [
-        {
-          type: 'ImportSpecifier',
-          // HACK hard-coded function name
-          local: createIdentifier('registerServerReference'),
-          isTypeOnly: false,
-          span: { start: 0, end: 0, ctxt: 0 },
-        },
-      ],
-      source: createStringLiteral('react-server-dom-webpack/server'),
-      typeOnly: false,
-      span: { start: 0, end: 0, ctxt: 0 },
-    });
     const newCode = swc.printSync(newMod).code;
     console.log('newCode', newCode);
     return newCode;
