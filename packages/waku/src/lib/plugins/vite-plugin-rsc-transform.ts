@@ -103,84 +103,97 @@ const containsUseServer = (body: swc.BlockStatement | undefined) =>
       s.expression.value === 'use server',
   );
 
-const isFunctionWithBlockBody = (
-  node: swc.Node,
-): node is (
-  | swc.FunctionDeclaration
-  | swc.FunctionExpression
-  | swc.ArrowFunctionExpression
-) & { body: swc.BlockStatement } =>
-  (node.type === 'FunctionDeclaration' ||
-    node.type === 'FunctionExpression' ||
-    node.type === 'ArrowFunctionExpression') &&
-  (
-    node as
-      | swc.FunctionDeclaration
-      | swc.FunctionExpression
-      | swc.ArrowFunctionExpression
-  ).body?.type === 'BlockStatement';
-
 const transformServerActions = (
   mod: swc.Module,
   actionId: string,
 ): swc.Module | void => {
   let hasServerActions = false;
-  const registerServerAction = (fn: swc.FunctionDeclaration): swc.Statement => {
+  const registerServerAction: {
+    (fn: swc.FunctionDeclaration): swc.Statement;
+    (fn: swc.FunctionExpression | swc.ArrowFunctionExpression): swc.Expression;
+  } = (fn): any => {
     hasServerActions = true;
+    const exp: swc.CallExpression = {
+      type: 'CallExpression',
+      callee: createIdentifier('__waku_registerServerAction__'),
+      arguments: [
+        { expression: fn.type === 'FunctionDeclaration' ? fn.identifier : fn },
+        { expression: createStringLiteral(actionId) },
+      ],
+      span: { start: 0, end: 0, ctxt: 0 },
+    };
+    if (fn.type !== 'FunctionDeclaration') {
+      return exp;
+    }
     return {
       type: 'ExpressionStatement',
-      expression: {
-        type: 'CallExpression',
-        callee: createIdentifier('__waku_registerServerAction__'),
-        arguments: [
-          { expression: fn.identifier },
-          { expression: createStringLiteral(actionId) },
-        ],
-        span: { start: 0, end: 0, ctxt: 0 },
-      },
+      expression: exp,
       span: { start: 0, end: 0, ctxt: 0 },
     };
   };
   const registerServerActions = (stmts: swc.Statement[] | swc.ModuleItem[]) => {
     for (let i = 0; i < stmts.length; ++i) {
       const stmt = stmts[i]!;
-      if (
-        // TODO Should we support FunctionExpression and ArrowFunctionExpression?
-        stmt.type === 'FunctionDeclaration' &&
-        containsUseServer(stmt.body)
-      ) {
+      if (stmt.type === 'FunctionDeclaration' && containsUseServer(stmt.body)) {
         const registerStmt = registerServerAction(stmt);
         stmts.splice(++i, 0, registerStmt);
       }
     }
   };
-  registerServerActions(mod.body);
-  mod.body.forEach((node) => {
-    if (isFunctionWithBlockBody(node)) {
-      registerServerActions(node.body.stmts);
-    } else if (node.type === 'VariableDeclaration') {
-      node.declarations.forEach((d) => {
-        if (d.init && isFunctionWithBlockBody(d.init)) {
-          registerServerActions(d.init.body.stmts);
-        }
-      });
-    } else if (
-      node.type === 'ExportDeclaration' &&
-      isFunctionWithBlockBody(node.declaration)
-    ) {
-      registerServerActions(node.declaration.body.stmts);
-    } else if (
-      node.type === 'ExportDefaultExpression' &&
-      isFunctionWithBlockBody(node.expression)
-    ) {
-      registerServerActions(node.expression.body.stmts);
-    } else if (
-      node.type === 'ExportDefaultDeclaration' &&
-      isFunctionWithBlockBody(node.decl)
-    ) {
-      registerServerActions(node.decl.body.stmts);
+  const walk = (node: swc.Node | undefined) => {
+    if (!node) {
+      return;
     }
-  });
+    switch (node.type) {
+      case 'Module': {
+        const { body } = node as swc.Module;
+        registerServerActions(body);
+        body.forEach(walk);
+        break;
+      }
+      case 'BlockStatement': {
+        const { stmts } = node as swc.BlockStatement;
+        registerServerActions(stmts);
+        stmts.forEach(walk);
+        break;
+      }
+      case 'FunctionDeclaration': {
+        const { body } = node as swc.FunctionDeclaration;
+        walk(body);
+        break;
+      }
+      case 'FunctionExpression':
+      case 'ArrowFunctionExpression': {
+        const { body } = node as
+          | swc.FunctionExpression
+          | swc.ArrowFunctionExpression;
+        walk(body);
+        break;
+      }
+      case 'ExportDeclaration': {
+        const { declaration } = node as swc.ExportDeclaration;
+        walk(declaration);
+        break;
+      }
+      case 'ExportDefaultExpression': {
+        const { expression } = node as swc.ExportDefaultExpression;
+        walk(expression);
+        break;
+      }
+      case 'ExportDefaultDeclaration': {
+        const { decl } = node as swc.ExportDefaultDeclaration;
+        walk(decl);
+        break;
+      }
+      case 'VariableDeclaration': {
+        const { declarations } = node as swc.VariableDeclaration;
+        declarations.forEach((d) => walk(d.init));
+        break;
+      }
+      // TODO
+    }
+  };
+  walk(mod);
   if (!hasServerActions) {
     return;
   }
