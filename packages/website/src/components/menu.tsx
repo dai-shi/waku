@@ -13,7 +13,7 @@ export const Menu = () => {
 
   return (
     <>
-      <div className="fixed right-0 top-0 z-100 p-5 2xl:hidden">
+      <div className="fixed right-0 top-0 z-100 p-5 xl:hidden">
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className={cx(

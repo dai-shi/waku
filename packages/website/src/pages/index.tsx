@@ -31,11 +31,11 @@ export default async function HomePage() {
       </div>
       <div
         id="content"
-        className="relative z-10 mx-auto w-full max-w-[80ch] scroll-mt-16 lg:scroll-mt-32"
+        className="relative z-10 mx-auto w-full max-w-[80ch] scroll-mt-16 lg:scroll-mt-32 xl:-right-[calc(296px/2)] 2xl:right-auto"
       >
         {content}
       </div>
-      <div className="relative z-10 mx-auto mb-8 mt-16 flex w-full max-w-[80ch] justify-center sm:mb-0 lg:mt-32">
+      <div className="relative z-10 mx-auto mb-8 mt-16 flex w-full max-w-[80ch] justify-center sm:mb-0 lg:mt-32 xl:-right-[calc(296px/2)] 2xl:right-auto">
         <a
           href="https://github.com/dai-shi/waku"
           target="_blank"

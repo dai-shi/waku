@@ -31,7 +31,7 @@ type MainProps = {
 
 const Main = ({ children }: MainProps) => {
   return (
-    <main id="top" className="px-8 pb-24 lg:pb-32">
+    <main id="top" className="relative px-8 pb-24 lg:pb-32">
       {children}
     </main>
   );
