@@ -250,7 +250,8 @@ if (typeof ${name} === 'function') {
     return newCode;
   }
   // transform server actions in server components
-  const newMod = transformServerActions(mod, getServerId(id));
+  const newMod =
+    code.includes('use server') && transformServerActions(mod, getServerId(id));
   if (newMod) {
     const newCode = swc.printSync(newMod).code;
     return newCode;
