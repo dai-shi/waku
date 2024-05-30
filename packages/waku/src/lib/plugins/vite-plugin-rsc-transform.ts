@@ -93,6 +93,32 @@ function __waku_registerServerAction__(fn, actionId) {
 }
 `).body;
 
+const containsUseServer = (body: swc.BlockStatement | undefined) =>
+  !!body &&
+  body.stmts.some(
+    (s) =>
+      s.type === 'ExpressionStatement' &&
+      s.expression.type === 'StringLiteral' &&
+      s.expression.value === 'use server',
+  );
+
+const isFunctionWithBlockBody = (
+  node: swc.Node,
+): node is (
+  | swc.FunctionDeclaration
+  | swc.FunctionExpression
+  | swc.ArrowFunctionExpression
+) & { body: swc.BlockStatement } =>
+  (node.type === 'FunctionDeclaration' ||
+    node.type === 'FunctionExpression' ||
+    node.type === 'ArrowFunctionExpression') &&
+  (
+    node as
+      | swc.FunctionDeclaration
+      | swc.FunctionExpression
+      | swc.ArrowFunctionExpression
+  ).body?.type === 'BlockStatement';
+
 const transformServerActions = (
   mod: swc.Module,
   actionId: string,
@@ -114,49 +140,54 @@ const transformServerActions = (
       span: { start: 0, end: 0, ctxt: 0 },
     };
   };
-  const registerServerActions = (stmts: swc.Statement[]) => {
+  const registerServerActions = (stmts: swc.Statement[] | swc.ModuleItem[]) => {
     for (let i = 0; i < stmts.length; ++i) {
       const stmt = stmts[i]!;
       if (
         // Should we support FunctionExpression and ArrowFunctionExpression?
         stmt.type === 'FunctionDeclaration' &&
-        stmt.body?.stmts.some(
-          (s) =>
-            s.type === 'ExpressionStatement' &&
-            s.expression.type === 'StringLiteral' &&
-            s.expression.value === 'use server',
-        )
+        containsUseServer(stmt.body)
       ) {
         const registerStmt = registerServerAction(stmt);
         stmts.splice(++i, 0, registerStmt);
       }
     }
   };
-  const walk = (
-    node: swc.ModuleDeclaration | swc.Statement | swc.Expression,
-  ) => {
-    if (
-      (node.type === 'FunctionDeclaration' ||
-        node.type === 'FunctionExpression' ||
-        node.type === 'ArrowFunctionExpression') &&
-      node.body?.type === 'BlockStatement'
-    ) {
+  registerServerActions(mod.body);
+  mod.body.forEach((node) => {
+    if (isFunctionWithBlockBody(node)) {
       registerServerActions(node.body.stmts);
     } else if (node.type === 'VariableDeclaration') {
-      node.declarations.forEach((d) => d.init && walk(d.init));
-    } else if (node.type === 'ExportDeclaration') {
-      walk(node.declaration);
-    } else if (node.type === 'ExportDefaultExpression') {
-      walk(node.expression);
-    } else if (node.type === 'ExportDefaultDeclaration') {
-      walk(node.decl);
+      node.declarations.forEach((d) => {
+        if (d.init && isFunctionWithBlockBody(d.init)) {
+          registerServerActions(d.init.body.stmts);
+        }
+      });
+    } else if (
+      node.type === 'ExportDeclaration' &&
+      isFunctionWithBlockBody(node.declaration)
+    ) {
+      registerServerActions(node.declaration.body.stmts);
+    } else if (
+      node.type === 'ExportDefaultExpression' &&
+      isFunctionWithBlockBody(node.expression)
+    ) {
+      registerServerActions(node.expression.body.stmts);
+    } else if (
+      node.type === 'ExportDefaultDeclaration' &&
+      isFunctionWithBlockBody(node.decl)
+    ) {
+      registerServerActions(node.decl.body.stmts);
     }
-  };
-  mod.body.forEach(walk);
+  });
   if (!hasServerActions) {
     return;
   }
-  mod.body.push(...serverActionsInitCode);
+  const lastImportIndex = mod.body.findIndex(
+    (node) =>
+      node.type !== 'ExpressionStatement' && node.type !== 'ImportDeclaration',
+  );
+  mod.body.splice(lastImportIndex, 0, ...serverActionsInitCode);
   return mod;
 };
 
@@ -215,7 +246,6 @@ if (typeof ${name} === 'function') {
   const newMod = transformServerActions(mod, getServerId(id));
   if (newMod) {
     const newCode = swc.printSync(newMod).code;
-    console.log('newCode', newCode);
     return newCode;
   }
 };
