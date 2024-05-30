@@ -90,6 +90,7 @@ function __waku_registerServerAction__(fn, actionId) {
   __waku_registerServerReference__(fn, actionId, actionName);
   // FIXME this can cause memory leaks
   __waku_serverActions__.set(actionName, fn);
+  return fn;
 }
 `).body;
 
@@ -144,7 +145,7 @@ const transformServerActions = (
     for (let i = 0; i < stmts.length; ++i) {
       const stmt = stmts[i]!;
       if (
-        // Should we support FunctionExpression and ArrowFunctionExpression?
+        // TODO Should we support FunctionExpression and ArrowFunctionExpression?
         stmt.type === 'FunctionDeclaration' &&
         containsUseServer(stmt.body)
       ) {
