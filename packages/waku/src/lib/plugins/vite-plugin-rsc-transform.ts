@@ -94,9 +94,18 @@ function __waku_registerServerAction__(fn, actionId) {
 }
 `).body;
 
-const containsUseServer = (body: swc.BlockStatement | undefined) =>
-  !!body &&
-  body.stmts.some(
+type FunctionWithBlockBody = (
+  | swc.FunctionDeclaration
+  | swc.FunctionExpression
+  | swc.ArrowFunctionExpression
+) & { body: swc.BlockStatement };
+
+const isServerAction = (node: swc.Node): node is FunctionWithBlockBody =>
+  (node.type === 'FunctionDeclaration' ||
+    node.type === 'FunctionExpression' ||
+    node.type === 'ArrowFunctionExpression') &&
+  (node as { body?: { type: string } }).body?.type === 'BlockStatement' &&
+  (node as FunctionWithBlockBody).body.stmts.some(
     (s) =>
       s.type === 'ExpressionStatement' &&
       s.expression.type === 'StringLiteral' &&
@@ -109,8 +118,10 @@ const transformServerActions = (
 ): swc.Module | void => {
   let hasServerActions = false;
   const registerServerAction: {
-    (fn: swc.FunctionDeclaration): swc.Statement;
-    (fn: swc.FunctionExpression | swc.ArrowFunctionExpression): swc.Expression;
+    (fn: swc.FunctionDeclaration): swc.ExpressionStatement;
+    (
+      fn: swc.FunctionExpression | swc.ArrowFunctionExpression,
+    ): swc.CallExpression;
   } = (fn): any => {
     hasServerActions = true;
     const exp: swc.CallExpression = {
@@ -131,66 +142,48 @@ const transformServerActions = (
       span: { start: 0, end: 0, ctxt: 0 },
     };
   };
-  const registerServerActions = (stmts: swc.Statement[] | swc.ModuleItem[]) => {
+  const handleStatements = (stmts: swc.Statement[] | swc.ModuleItem[]) => {
     for (let i = 0; i < stmts.length; ++i) {
       const stmt = stmts[i]!;
-      if (stmt.type === 'FunctionDeclaration' && containsUseServer(stmt.body)) {
+      if (isServerAction(stmt)) {
         const registerStmt = registerServerAction(stmt);
         stmts.splice(++i, 0, registerStmt);
       }
     }
   };
-  const walk = (node: swc.Node | undefined) => {
-    if (!node) {
-      return;
+  const handleExpression = (exp: swc.Expression) => {
+    if (isServerAction(exp)) {
+      const callExp = registerServerAction(Object.assign({}, exp));
+      Object.keys(exp).forEach((key) => {
+        delete exp[key as keyof typeof exp];
+      });
+      Object.assign(exp, callExp);
     }
-    switch (node.type) {
-      case 'Module': {
-        const { body } = node as swc.Module;
-        registerServerActions(body);
-        body.forEach(walk);
-        break;
-      }
-      case 'BlockStatement': {
-        const { stmts } = node as swc.BlockStatement;
-        registerServerActions(stmts);
-        stmts.forEach(walk);
-        break;
-      }
-      case 'FunctionDeclaration': {
-        const { body } = node as swc.FunctionDeclaration;
-        walk(body);
-        break;
-      }
-      case 'FunctionExpression':
-      case 'ArrowFunctionExpression': {
-        const { body } = node as
-          | swc.FunctionExpression
-          | swc.ArrowFunctionExpression;
-        walk(body);
-        break;
-      }
-      case 'ExportDeclaration': {
-        const { declaration } = node as swc.ExportDeclaration;
-        walk(declaration);
-        break;
-      }
-      case 'ExportDefaultExpression': {
-        const { expression } = node as swc.ExportDefaultExpression;
-        walk(expression);
-        break;
-      }
-      case 'ExportDefaultDeclaration': {
-        const { decl } = node as swc.ExportDefaultDeclaration;
-        walk(decl);
-        break;
-      }
-      case 'VariableDeclaration': {
-        const { declarations } = node as swc.VariableDeclaration;
-        declarations.forEach((d) => walk(d.init));
-        break;
-      }
-      // TODO
+  };
+  const walk = (node: swc.Node) => {
+    // FIXME do we need to walk the entire tree? feels inefficient
+    Object.values(node).forEach((value) => {
+      (Array.isArray(value) ? value : [value]).forEach((v) => {
+        if (typeof v?.type === 'string') {
+          walk(v);
+        } else if (typeof v?.expression?.type === 'string') {
+          walk(v.expression);
+        }
+      });
+    });
+    if (node.type === 'Module') {
+      const { body } = node as swc.Module;
+      handleStatements(body);
+    } else if (node.type === 'BlockStatement') {
+      const { stmts } = node as swc.BlockStatement;
+      handleStatements(stmts);
+    } else if (
+      node.type === 'FunctionExpression' ||
+      node.type === 'ArrowFunctionExpression'
+    ) {
+      handleExpression(
+        node as swc.FunctionExpression | swc.ArrowFunctionExpression,
+      );
     }
   };
   walk(mod);
