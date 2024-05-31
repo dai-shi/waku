@@ -114,7 +114,7 @@ const isServerAction = (node: swc.Node): node is FunctionWithBlockBody =>
 
 const transformServerActions = (
   mod: swc.Module,
-  actionId: string,
+  getActionId: () => string,
 ): swc.Module | void => {
   let hasServerActions = false;
   const registerServerAction: {
@@ -129,7 +129,7 @@ const transformServerActions = (
       callee: createIdentifier('__waku_registerServerAction__'),
       arguments: [
         { expression: fn.type === 'FunctionDeclaration' ? fn.identifier : fn },
-        { expression: createStringLiteral(actionId) },
+        { expression: createStringLiteral(getActionId()) },
       ],
       span: { start: 0, end: 0, ctxt: 0 },
     };
@@ -251,7 +251,8 @@ if (typeof ${name} === 'function') {
   }
   // transform server actions in server components
   const newMod =
-    code.includes('use server') && transformServerActions(mod, getServerId(id));
+    code.includes('use server') &&
+    transformServerActions(mod, () => getServerId(id));
   if (newMod) {
     const newCode = swc.printSync(newMod).code;
     return newCode;
