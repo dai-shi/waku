@@ -18,6 +18,54 @@ const hash = async (code: string): Promise<string> => {
     .slice(0, 9);
 };
 
+const isServerAction = (
+  node:
+    | swc.FunctionDeclaration
+    | swc.FunctionExpression
+    | swc.ArrowFunctionExpression,
+): boolean =>
+  node.body?.type === 'BlockStatement' &&
+  node.body.stmts.some(
+    (s) =>
+      s.type === 'ExpressionStatement' &&
+      s.expression.type === 'StringLiteral' &&
+      s.expression.value === 'use server',
+  );
+
+const containsServerAction = (mod: swc.Module): boolean => {
+  const walk = (node: swc.Node): boolean => {
+    if (
+      node.type === 'FunctionDeclaration' ||
+      node.type === 'FunctionExpression' ||
+      node.type === 'ArrowFunctionExpression'
+    ) {
+      if (
+        isServerAction(
+          node as
+            | swc.FunctionDeclaration
+            | swc.FunctionExpression
+            | swc.ArrowFunctionExpression,
+        )
+      ) {
+        return true;
+      }
+    }
+    // FIXME do we need to walk the entire tree? feels inefficient
+    return Object.values(node).some((value) =>
+      (Array.isArray(value) ? value : [value]).some((v) => {
+        if (typeof v?.type === 'string') {
+          return walk(v);
+        }
+        if (typeof v?.expression?.type === 'string') {
+          return walk(v.expression);
+        }
+        return false;
+      }),
+    );
+  };
+  return walk(mod);
+};
+
 export function rscAnalyzePlugin(
   opts:
     | {
@@ -53,6 +101,15 @@ export function rscAnalyzePlugin(
               opts.serverFileSet.add(id);
             }
           }
+        }
+        if (
+          !opts.isClient &&
+          !opts.clientFileSet.has(id) &&
+          !opts.serverFileSet.has(id) &&
+          code.includes('use server') &&
+          containsServerAction(mod)
+        ) {
+          opts.serverFileSet.add(id);
         }
       }
       // Avoid walking after the client boundary

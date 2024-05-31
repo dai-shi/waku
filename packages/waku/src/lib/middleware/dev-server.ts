@@ -11,6 +11,7 @@ import {
   renderRscWithWorker,
   getSsrConfigWithWorker,
 } from '../renderers/dev-worker-api.js';
+import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscRsdwPlugin } from '../plugins/vite-plugin-rsc-rsdw.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
@@ -81,8 +82,7 @@ export const devServer: Middleware = (options) => {
       cacheDir: 'node_modules/.vite/waku-dev-server',
       base: config.basePath,
       plugins: [
-        viteReact(),
-        // @ts-expect-error FIXME why does it complain?
+        patchReactRefresh(viteReact()),
         viteCommonjs({
           filter(id: string) {
             if (
