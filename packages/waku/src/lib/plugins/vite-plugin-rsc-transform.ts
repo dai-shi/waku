@@ -68,6 +68,136 @@ export ${name === 'default' ? name : `const ${name} =`} createServerReference('$
   }
 };
 
+const createIdentifier = (value: string): swc.Identifier => ({
+  type: 'Identifier',
+  value,
+  optional: false,
+  span: { start: 0, end: 0, ctxt: 0 },
+});
+
+const createStringLiteral = (value: string): swc.StringLiteral => ({
+  type: 'StringLiteral',
+  value,
+  span: { start: 0, end: 0, ctxt: 0 },
+});
+
+const serverActionsInitCode = swc.parseSync(`
+import { registerServerReference as __waku_registerServerReference__ } from 'react-server-dom-webpack/server';
+export const __waku_serverActions__ = new Map();
+let __waku_actionIndex__ = 0;
+function __waku_registerServerAction__(fn, actionId) {
+  const actionName = 'action' + __waku_actionIndex__++;
+  __waku_registerServerReference__(fn, actionId, actionName);
+  // FIXME this can cause memory leaks
+  __waku_serverActions__.set(actionName, fn);
+  return fn;
+}
+`).body;
+
+type FunctionWithBlockBody = (
+  | swc.FunctionDeclaration
+  | swc.FunctionExpression
+  | swc.ArrowFunctionExpression
+) & { body: swc.BlockStatement };
+
+const isServerAction = (node: swc.Node): node is FunctionWithBlockBody =>
+  (node.type === 'FunctionDeclaration' ||
+    node.type === 'FunctionExpression' ||
+    node.type === 'ArrowFunctionExpression') &&
+  (node as { body?: { type: string } }).body?.type === 'BlockStatement' &&
+  (node as FunctionWithBlockBody).body.stmts.some(
+    (s) =>
+      s.type === 'ExpressionStatement' &&
+      s.expression.type === 'StringLiteral' &&
+      s.expression.value === 'use server',
+  );
+
+const transformServerActions = (
+  mod: swc.Module,
+  getActionId: () => string,
+): swc.Module | void => {
+  let hasServerActions = false;
+  const registerServerAction: {
+    (fn: swc.FunctionDeclaration): swc.ExpressionStatement;
+    (
+      fn: swc.FunctionExpression | swc.ArrowFunctionExpression,
+    ): swc.CallExpression;
+  } = (fn): any => {
+    hasServerActions = true;
+    const exp: swc.CallExpression = {
+      type: 'CallExpression',
+      callee: createIdentifier('__waku_registerServerAction__'),
+      arguments: [
+        { expression: fn.type === 'FunctionDeclaration' ? fn.identifier : fn },
+        { expression: createStringLiteral(getActionId()) },
+      ],
+      span: { start: 0, end: 0, ctxt: 0 },
+    };
+    if (fn.type !== 'FunctionDeclaration') {
+      return exp;
+    }
+    return {
+      type: 'ExpressionStatement',
+      expression: exp,
+      span: { start: 0, end: 0, ctxt: 0 },
+    };
+  };
+  const handleStatements = (stmts: swc.Statement[] | swc.ModuleItem[]) => {
+    for (let i = 0; i < stmts.length; ++i) {
+      const stmt = stmts[i]!;
+      if (isServerAction(stmt)) {
+        const registerStmt = registerServerAction(stmt);
+        stmts.splice(++i, 0, registerStmt);
+      }
+    }
+  };
+  const handleExpression = (exp: swc.Expression) => {
+    if (isServerAction(exp)) {
+      const callExp = registerServerAction(Object.assign({}, exp));
+      Object.keys(exp).forEach((key) => {
+        delete exp[key as keyof typeof exp];
+      });
+      Object.assign(exp, callExp);
+    }
+  };
+  const walk = (node: swc.Node) => {
+    // FIXME do we need to walk the entire tree? feels inefficient
+    Object.values(node).forEach((value) => {
+      (Array.isArray(value) ? value : [value]).forEach((v) => {
+        if (typeof v?.type === 'string') {
+          walk(v);
+        } else if (typeof v?.expression?.type === 'string') {
+          walk(v.expression);
+        }
+      });
+    });
+    if (node.type === 'Module') {
+      const { body } = node as swc.Module;
+      handleStatements(body);
+    } else if (node.type === 'BlockStatement') {
+      const { stmts } = node as swc.BlockStatement;
+      handleStatements(stmts);
+    } else if (
+      node.type === 'FunctionExpression' ||
+      node.type === 'ArrowFunctionExpression'
+    ) {
+      handleExpression(
+        node as swc.FunctionExpression | swc.ArrowFunctionExpression,
+      );
+    }
+  };
+  walk(mod);
+  if (!hasServerActions) {
+    return;
+  }
+  const lastImportIndex = mod.body.findIndex(
+    (node) =>
+      node.type !== 'ExpressionStatement' && node.type !== 'ImportDeclaration',
+  );
+  mod.body.splice(lastImportIndex, 0, ...serverActionsInitCode);
+  return mod;
+};
+
 const transformServer = (
   code: string,
   id: string,
@@ -117,6 +247,14 @@ if (typeof ${name} === 'function') {
 }
 `;
     }
+    return newCode;
+  }
+  // transform server actions in server components
+  const newMod =
+    code.includes('use server') &&
+    transformServerActions(mod, () => getServerId(id));
+  if (newMod) {
+    const newCode = swc.printSync(newMod).code;
     return newCode;
   }
 };
