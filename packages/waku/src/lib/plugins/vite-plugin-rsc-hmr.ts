@@ -126,13 +126,18 @@ export function rscHmrPlugin(): Plugin {
     handleHotUpdate({ file }) {
       const moduleLoading = (globalThis as any).__webpack_module_loading__;
       const moduleCache = (globalThis as any).__webpack_module_cache__;
+      if (!moduleLoading || !moduleCache) {
+        return;
+      }
+      if (file.startsWith(viteServer.config.root)) {
+        file = file.slice(viteServer.config.root.length);
+      }
       const id = filePathToFileURL(file);
-      if (moduleLoading.has(id) && moduleCache.has(id)) {
-        moduleLoading.delete(id);
-        moduleCache.delete(id);
+      if (moduleLoading.has(id)) {
         moduleLoading.set(
           id,
           viteServer.ssrLoadModule(file).then((m) => {
+            // XXX There can be a race condition, but it should be very rare.
             moduleCache.set(id, m);
           }),
         );
