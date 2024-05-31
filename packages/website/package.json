@@ -11,24 +11,24 @@
   },
   "dependencies": {
     "@sindresorhus/slugify": "^2.2.1",
-    "classnames": "2.3.2",
-    "framer-motion": "^11.2.6",
-    "jotai": "^2.8.1",
-    "next-mdx-remote": "^4.4.1",
+    "classnames": "2.5.1",
+    "framer-motion": "^11.2.10",
+    "jotai": "^2.8.2",
+    "next-mdx-remote": "^5.0.0",
     "react": "19.0.0-rc-9d4fba0788-20240530",
     "react-dom": "19.0.0-rc-9d4fba0788-20240530",
     "react-server-dom-webpack": "19.0.0-rc-9d4fba0788-20240530",
     "waku": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "^18.3.2",
+    "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.19",
     "prettier": "^3.2.5",
-    "prettier-plugin-tailwindcss": "^0.5.14",
-    "shiki": "^1.6.0",
+    "prettier-plugin-tailwindcss": "^0.6.0",
+    "shiki": "^1.6.1",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.4.5",
-    "vite": "5.2.11"
+    "vite": "5.2.12"
   }
 }

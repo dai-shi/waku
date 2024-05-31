@@ -11,18 +11,18 @@
   "dependencies": {
     "@stylexjs/stylex": "0.6.1",
     "@vanilla-extract/css": "1.15.2",
-    "classnames": "2.3.2",
+    "classnames": "2.5.1",
     "react": "19.0.0-rc-9d4fba0788-20240530",
     "react-dom": "19.0.0-rc-9d4fba0788-20240530",
     "react-server-dom-webpack": "19.0.0-rc-9d4fba0788-20240530",
     "waku": "0.21.0-alpha.0"
   },
   "devDependencies": {
-    "@types/react": "18.3.2",
+    "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "@vanilla-extract/vite-plugin": "4.0.10",
     "typescript": "5.4.5",
-    "vite": "5.2.11",
-    "vite-plugin-stylex-dev": "0.4.1"
+    "vite": "5.2.12",
+    "vite-plugin-stylex-dev": "0.7.5"
   }
 }
