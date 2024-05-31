@@ -77,13 +77,13 @@
     "node": "^20.8.0 || ^18.17.0"
   },
   "dependencies": {
-    "@hono/node-server": "1.11.1",
-    "@swc/core": "1.5.7",
-    "@vitejs/plugin-react": "4.2.1",
+    "@hono/node-server": "1.11.2",
+    "@swc/core": "1.5.24",
+    "@vitejs/plugin-react": "4.3.0",
     "dotenv": "16.4.5",
-    "hono": "4.3.9",
+    "hono": "4.4.2",
     "rsc-html-stream": "0.0.3",
-    "vite": "5.2.11"
+    "vite": "5.2.12"
   },
   "devDependencies": {
     "@netlify/functions": "^2.7.0",
