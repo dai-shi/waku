@@ -10,9 +10,9 @@
     "partial": "waku build --experimental-partial"
   },
   "dependencies": {
-    "react": "19.0.0-rc-915b914b3a-20240515",
-    "react-dom": "19.0.0-rc-915b914b3a-20240515",
-    "react-server-dom-webpack": "19.0.0-rc-915b914b3a-20240515",
+    "react": "19.0.0-rc-9d4fba0788-20240530",
+    "react-dom": "19.0.0-rc-9d4fba0788-20240530",
+    "react-server-dom-webpack": "19.0.0-rc-9d4fba0788-20240530",
     "serve": "^14.2.3",
     "waku": "workspace:*"
   },
