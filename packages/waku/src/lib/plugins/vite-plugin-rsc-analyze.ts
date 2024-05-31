@@ -32,10 +32,7 @@ const isServerAction = (
       s.expression.value === 'use server',
   );
 
-const containsServerAction = (code: string, mod: swc.Module): boolean => {
-  if (!code.includes('use server')) {
-    return false;
-  }
+const containsServerAction = (mod: swc.Module): boolean => {
   const walk = (node: swc.Node): boolean => {
     if (
       node.type === 'FunctionDeclaration' ||
@@ -105,7 +102,13 @@ export function rscAnalyzePlugin(
             }
           }
         }
-        if (!opts.isClient && containsServerAction(code, mod)) {
+        if (
+          !opts.isClient &&
+          !opts.clientFileSet.has(id) &&
+          !opts.serverFileSet.has(id) &&
+          code.includes('use server') &&
+          containsServerAction(mod)
+        ) {
           opts.serverFileSet.add(id);
         }
       }
