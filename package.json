@@ -67,8 +67,8 @@
     "@playwright/test": "^1.44.1",
     "@types/babel__core": "^7.20.5",
     "@types/node": "^20.12.13",
-    "@types/react": "18.3.3",
-    "@types/react-dom": "18.3.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^7.11.0",
     "@typescript-eslint/parser": "^7.11.0",
     "eslint": "8.57.0",
@@ -86,7 +86,7 @@
   },
   "pnpm": {
     "overrides": {
-      "vite": "5.2.11"
+      "vite": "5.2.12"
     }
   }
 }
