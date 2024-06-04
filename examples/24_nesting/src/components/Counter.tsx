@@ -9,10 +9,10 @@ export const Counter = ({ enableInnerApp }: { enableInnerApp?: boolean }) => {
   const refetch = useRefetch();
   const handleClick = () => {
     if (enableInnerApp) {
-      startTransition(() => {
+      startTransition(async () => {
         const nextCount = count + 1;
         setCount(nextCount);
-        refetch('InnerApp=' + nextCount);
+        await refetch('InnerApp=' + nextCount);
       });
     } else {
       setCount((c) => c + 1);

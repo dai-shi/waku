@@ -64,7 +64,7 @@ type ChangeRoute = (
     checkCache?: boolean;
     skipRefetch?: boolean;
   },
-) => void;
+) => void | Promise<void>;
 
 type PrefetchRoute = (route: RouteProps) => void;
 
@@ -81,7 +81,7 @@ export function useRouter_UNSTABLE() {
   }
   const { route, changeRoute, prefetchRoute } = router;
   const push = useCallback(
-    (to: string) => {
+    async (to: string) => {
       const url = new URL(to, window.location.href);
       window.history.pushState(
         {
@@ -91,21 +91,21 @@ export function useRouter_UNSTABLE() {
         '',
         url,
       );
-      changeRoute(parseRoute(url));
+      await changeRoute(parseRoute(url));
     },
     [changeRoute],
   );
   const replace = useCallback(
-    (to: string) => {
+    async (to: string) => {
       const url = new URL(to, window.location.href);
       window.history.replaceState(window.history.state, '', url);
-      changeRoute(parseRoute(url));
+      await changeRoute(parseRoute(url));
     },
     [changeRoute],
   );
-  const reload = useCallback(() => {
+  const reload = useCallback(async () => {
     const url = new URL(window.location.href);
-    changeRoute(parseRoute(url));
+    await changeRoute(parseRoute(url));
   }, [changeRoute]);
   const back = useCallback(() => {
     // FIXME is this correct?
@@ -201,7 +201,7 @@ export function Link({
     if (url.href !== window.location.href) {
       const route = parseRoute(url);
       prefetchRoute(route);
-      startTransition(() => {
+      startTransition(async () => {
         window.history.pushState(
           {
             ...window.history.state,
@@ -210,7 +210,7 @@ export function Link({
           '',
           url,
         );
-        changeRoute(route);
+        await changeRoute(route);
       });
     }
     props.onClick?.(event);
@@ -331,7 +331,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
   }, [cached]);
 
   const changeRoute: ChangeRoute = useCallback(
-    (route, options) => {
+    async (route, options) => {
       const { checkCache, skipRefetch } = options || {};
       setRoute(route);
       const componentIds = getComponentIds(route.path);
@@ -355,15 +355,6 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
         return; // everything is skipped
       }
       const input = getInputString(route.path);
-      if (!skipRefetch) {
-        refetch(
-          input,
-          new URLSearchParams([
-            ...Array.from(route.searchParams.entries()),
-            ...skip.map((id) => [PARAM_KEY_SKIP, id]),
-          ]),
-        );
-      }
       setCached((prev) => ({
         ...prev,
         ...Object.fromEntries(
@@ -372,6 +363,15 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
           ),
         ),
       }));
+      if (!skipRefetch) {
+        await refetch(
+          input,
+          new URLSearchParams([
+            ...Array.from(route.searchParams.entries()),
+            ...skip.map((id) => [PARAM_KEY_SKIP, id]),
+          ]),
+        );
+      }
     },
     [refetch, routerData],
   );
@@ -401,9 +401,9 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
   );
 
   useEffect(() => {
-    const callback = () => {
+    const callback = async () => {
       const route = parseRoute(new URL(window.location.href));
-      changeRoute(route, { checkCache: true });
+      await changeRoute(route, { checkCache: true });
     };
     window.addEventListener('popstate', callback);
     return () => {
@@ -412,7 +412,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
   }, [changeRoute]);
 
   useEffect(() => {
-    const callback = (pathname: string, searchParamsString: string) => {
+    const callback = async (pathname: string, searchParamsString: string) => {
       const url = new URL(window.location.href);
       url.pathname = pathname;
       url.search = searchParamsString;
@@ -425,7 +425,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
         '',
         url,
       );
-      changeRoute(parseRoute(url), { skipRefetch: true });
+      await changeRoute(parseRoute(url), { skipRefetch: true });
     };
     const listeners = (routerData[1] ||= new Set());
     listeners.add(callback);
