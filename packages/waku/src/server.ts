@@ -68,11 +68,9 @@ export function getEnv(key: string): string | undefined {
   return (globalThis as any).__WAKU_PRIVATE_ENV__[key];
 }
 
-type RenderStore<
-  CustomContext extends Record<string, unknown> = Record<string, unknown>,
-> = {
+type RenderStore<> = {
   rerender: (input: string, searchParams?: URLSearchParams) => void;
-  context: CustomContext;
+  context: Record<string, unknown>;
 };
 
 let renderStorage: AsyncLocalStorageType<RenderStore> | undefined;

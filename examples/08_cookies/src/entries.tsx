@@ -1,7 +1,10 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fsPromises from 'node:fs/promises';
-import { defineEntries, unstable_getCustomContext as getCustomContext } from 'waku/server';
+import {
+  defineEntries,
+  unstable_getCustomContext as getCustomContext,
+} from 'waku/server';
 import { Slot } from 'waku/client';
 
 import App from './components/App';

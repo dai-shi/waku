@@ -1,5 +1,5 @@
 import { Suspense, cache } from 'react';
-import { unstable_getCustomContext as  getCustomContext } from 'waku/server';
+import { unstable_getCustomContext as getCustomContext } from 'waku/server';
 
 import { Counter } from './Counter';
 
