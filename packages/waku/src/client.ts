@@ -157,7 +157,7 @@ export const prefetchRSC = (
 };
 
 const RefetchContext = createContext<
-  (input: string, searchParams?: URLSearchParams) => void
+  (input: string, searchParams?: URLSearchParams) => Promise<void>
 >(() => {
   throw new Error('Missing Root component');
 });
@@ -184,11 +184,14 @@ export const Root = ({
     fetchCache[SET_ELEMENTS] = setElements;
   }, [fetchCache, setElements]);
   const refetch = useCallback(
-    (input: string, searchParams?: URLSearchParams) => {
+    async (input: string, searchParams?: URLSearchParams) => {
       // clear cache entry before fetching
       delete fetchCache[ENTRY];
       const data = fetchRSC(input, searchParams?.toString() || '', fetchCache);
-      setElements((prev) => mergeElements(prev, data));
+      startTransition(() => {
+        setElements((prev) => mergeElements(prev, data));
+      });
+      await data;
     },
     [fetchCache],
   );
