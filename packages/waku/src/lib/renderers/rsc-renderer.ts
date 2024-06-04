@@ -33,6 +33,7 @@ export type RenderRscArgs = {
   body?: ReadableStream | undefined;
   contentType?: string | undefined;
   moduleIdCallback?: ((id: string) => void) | undefined;
+  onError?: (err: unknown) => void;
 };
 
 type RenderRscOpts =
@@ -57,6 +58,7 @@ export async function renderRsc(
     context,
     body,
     moduleIdCallback,
+    onError,
   } = args;
   const { isDev, entries } = opts;
 
@@ -125,7 +127,9 @@ export async function renderRsc(
       if (Object.keys(elements).some((key) => key.startsWith('_'))) {
         throw new Error('"_" prefix is reserved');
       }
-      return renderToReadableStream(elements, bundlerConfig);
+      return renderToReadableStream(elements, bundlerConfig, {
+        onError,
+      });
     });
   };
 
@@ -164,6 +168,9 @@ export async function renderRsc(
       return renderToReadableStream(
         { ...elements, _value: actionValue },
         bundlerConfig,
+        {
+          onError,
+        },
       );
     });
   };

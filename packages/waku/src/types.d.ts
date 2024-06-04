@@ -1,3 +1,7 @@
+interface Reference {}
+
+type TemporaryReferenceSet = Map<string, Reference | symbol>;
+
 type ImportManifestEntry = {
   id: string;
   chunks: string[];
@@ -31,6 +35,15 @@ type ClientManifest = {
 declare module 'react-server-dom-webpack/node-loader';
 
 declare module 'react-server-dom-webpack/server.edge' {
+  type Options = {
+    environmentName?: string;
+    identifierPrefix?: string;
+    signal?: AbortSignal;
+    temporaryReferences?: TemporaryReferenceSet;
+    onError?: ((error: unknown) => void) | undefined;
+    onPostpone?: ((reason: string) => void) | undefined;
+  };
+
   export function renderToReadableStream(
     model: ReactClientValue,
     webpackMap: ClientManifest,
@@ -43,12 +56,23 @@ declare module 'react-server-dom-webpack/server.edge' {
 }
 
 declare module 'react-server-dom-webpack/client' {
+  type CallServerCallback = <T, A extends unknown[] = unknown[]>(
+    string,
+    args: A,
+  ) => Promise<T>;
+
+  type Options<T> = {
+    callServer?: CallServerCallback<T>;
+    temporaryReferences?: TemporaryReferenceSet;
+  };
+
   export function createFromFetch<T>(
     promiseForResponse: Promise<Response>,
-    options?: Options,
+    options?: Options<T>,
   ): Promise<T>;
   export function encodeReply(
     value: ReactServerValue,
+    options?: { temporaryReferences?: TemporaryReferenceSet },
   ): Promise<string | URLSearchParams | FormData>;
 }
 
@@ -59,7 +83,7 @@ declare module 'react-server-dom-webpack/client.edge' {
   };
   export function createFromReadableStream<T>(
     stream: ReadableStream,
-    options: Options,
+    options: Options<T>,
   ): Promise<T>;
 }
 
