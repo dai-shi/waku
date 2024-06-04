@@ -82,14 +82,14 @@ const createStringLiteral = (value: string): swc.StringLiteral => ({
 });
 
 const serverActionsInitCode = swc.parseSync(`
-import { registerServerReference as __waku_registerServerReference__ } from 'react-server-dom-webpack/server';
-export const __waku_serverActions__ = new Map();
-let __waku_actionIndex__ = 0;
-function __waku_registerServerAction__(fn, actionId) {
-  const actionName = 'action' + __waku_actionIndex__++;
-  __waku_registerServerReference__(fn, actionId, actionName);
+import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server';
+export const __waku_serverActions = new Map();
+let __waku_actionIndex = 0;
+function __waku_registerServerAction(fn, actionId) {
+  const actionName = 'action' + __waku_actionIndex++;
+  __waku_registerServerReference(fn, actionId, actionName);
   // FIXME this can cause memory leaks
-  __waku_serverActions__.set(actionName, fn);
+  __waku_serverActions.set(actionName, fn);
   return fn;
 }
 `).body;
@@ -126,7 +126,7 @@ const transformServerActions = (
     hasServerActions = true;
     const exp: swc.CallExpression = {
       type: 'CallExpression',
-      callee: createIdentifier('__waku_registerServerAction__'),
+      callee: createIdentifier('__waku_registerServerAction'),
       arguments: [
         { expression: fn.type === 'FunctionDeclaration' ? fn.identifier : fn },
         { expression: createStringLiteral(getActionId()) },
