@@ -45,9 +45,9 @@ export const hasStatusCode = (x: unknown): x is { statusCode: number } =>
   typeof (x as any)?.statusCode === 'number';
 
 export const codeToInject = `
-globalThis.__waku_module_cache__ = new Map();
-globalThis.__webpack_chunk_load__ = (id) => import(id).then((m) => globalThis.__waku_module_cache__.set(id, m));
-globalThis.__webpack_require__ = (id) => globalThis.__waku_module_cache__.get(id);`;
+globalThis.__WAKU_MODULE_CACHE__ = new Map();
+globalThis.__webpack_chunk_load__ = (id) => import(id).then((m) => globalThis.__WAKU_MODULE_CACHE__.set(id, m));
+globalThis.__webpack_require__ = (id) => globalThis.__WAKU_MODULE_CACHE__.get(id);`;
 
 export const generatePrefetchCode = (
   basePrefix: string,
