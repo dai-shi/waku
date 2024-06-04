@@ -4,6 +4,7 @@ import { renderHtml } from '../renderers/html-renderer.js';
 import { hasStatusCode, encodeInput } from '../renderers/utils.js';
 import { getSsrConfig } from '../renderers/rsc-renderer.js';
 import type { Middleware } from './types.js';
+import { stringToStream } from '../utils/stream.js';
 
 export const ssr: Middleware = (options) => {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
@@ -94,6 +95,7 @@ export const ssr: Middleware = (options) => {
         }
       }
     } catch (err) {
+      ctx.res.body = stringToStream(`${err}`);
       if (hasStatusCode(err)) {
         ctx.res.status = err.statusCode;
       } else {

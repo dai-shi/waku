@@ -67,6 +67,14 @@ const resolveClientEntryForDev = (
   return config.basePath + file;
 };
 
+const handleErr = (id: number, err: unknown) => {
+  const mesg: MessageRes = { id, type: 'err', err: `${err}` };
+  if (hasStatusCode(err)) {
+    mesg.statusCode = err.statusCode;
+  }
+  parentPort!.postMessage(mesg);
+};
+
 const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
   const vite = await vitePromise;
   const {
@@ -94,6 +102,9 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
         body: rest.body,
         contentType: rest.contentType,
         moduleIdCallback,
+        onError: (err) => {
+          handleErr(id, err);
+        },
       },
       {
         isDev: true,
@@ -119,11 +130,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
     parentPort!.postMessage(mesg, [readable as unknown as TransferListItem]);
     deepFreeze(rest.context);
   } catch (err) {
-    const mesg: MessageRes = { id, type: 'err', err: `${err}` };
-    if (hasStatusCode(err)) {
-      mesg.statusCode = err.statusCode;
-    }
-    parentPort!.postMessage(mesg);
+    handleErr(id, err);
   }
 };
 
@@ -162,11 +169,7 @@ const handleGetSsrConfig = async (
       ssrConfig ? [ssrConfig.body as unknown as TransferListItem] : undefined,
     );
   } catch (err) {
-    const mesg: MessageRes = { id, type: 'err', err: `${err}` };
-    if (hasStatusCode(err)) {
-      mesg.statusCode = err.statusCode;
-    }
-    parentPort!.postMessage(mesg);
+    handleErr(id, err);
   }
 };
 
