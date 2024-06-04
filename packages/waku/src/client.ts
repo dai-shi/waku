@@ -188,7 +188,9 @@ export const Root = ({
       // clear cache entry before fetching
       delete fetchCache[ENTRY];
       const data = fetchRSC(input, searchParams?.toString() || '', fetchCache);
-      setElements((prev) => mergeElements(prev, data));
+      startTransition(() => {
+        setElements((prev) => mergeElements(prev, data));
+      });
     },
     [fetchCache],
   );
