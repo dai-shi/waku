@@ -86,7 +86,10 @@
   },
   "pnpm": {
     "overrides": {
-      "vite": "5.2.12"
+      "vite": "5.2.12",
+      "react": "19.0.0-rc.0",
+      "react-dom": "19.0.0-rc.0",
+      "react-server-dom-webpack": "19.0.0-rc.0"
     }
   }
 }
