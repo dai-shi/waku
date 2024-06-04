@@ -1,7 +1,10 @@
 import type { Plugin } from 'vite';
 
 const patchRsdw = (code: string) => {
-  code = code.replace(/__webpack_(\w+)__/g, '__waku_$1__');
+  code = code.replace(
+    /__webpack_(\w+)__/g,
+    (_, p1) => `__WAKU_${p1.toUpperCase()}__`,
+  );
   const index = code.indexOf('\nfunction requireAsyncModule');
   if (index === -1) {
     throw new Error('rscRsdwPlugin: Unexpected code structure');
@@ -9,24 +12,24 @@ const patchRsdw = (code: string) => {
   code =
     code.slice(0, index) +
     `
-globalThis.__waku_module_loading__ ||= new Map();
-globalThis.__waku_module_cache__ ||= new Map();
-globalThis.__waku_chunk_load__ ||= (id, customImport) => {
-  if (!globalThis.__waku_module_loading__.has(id)) {
-    globalThis.__waku_module_loading__.set(
+globalThis.__WAKU_MODULE_LOADING__ ||= new Map();
+globalThis.__WAKU_MODULE_CACHE__ ||= new Map();
+globalThis.__WAKU_CHUNK_LOAD__ ||= (id, customImport) => {
+  if (!globalThis.__WAKU_MODULE_LOADING__.has(id)) {
+    globalThis.__WAKU_MODULE_LOADING__.set(
       id,
       customImport
         ? customImport(id).then((m) => {
-            globalThis.__waku_module_cache__.set(id, m);
+            globalThis.__WAKU_MODULE_CACHE__.set(id, m);
           })
         : import(id).then((m) => {
-            globalThis.__waku_module_cache__.set(id, m);
+            globalThis.__WAKU_MODULE_CACHE__.set(id, m);
           })
     );
   }
-  return globalThis.__waku_module_loading__.get(id);
+  return globalThis.__WAKU_MODULE_LOADING__.get(id);
 };
-globalThis.__waku_require__ ||= (id) => globalThis.__waku_module_cache__.get(id);
+globalThis.__WAKU_REQUIRE__ ||= (id) => globalThis.__WAKU_MODULE_CACHE__.get(id);
 ` +
     code.slice(index);
   return code;
