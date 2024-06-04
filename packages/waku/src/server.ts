@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 import type { Config } from './config.js';
 import type { PathSpec } from './lib/utils/path.js';
+import { REQUEST_HEADERS } from './lib/middleware/headers.js';
 
 type Elements = Record<string, ReactNode>;
 
@@ -132,4 +133,11 @@ export function unstable_getCustomContext<
     throw new Error('Render store is not available');
   }
   return renderStore.context as CustomContext;
+}
+
+export function unstable_getRequestHeaders(): Record<string, string> {
+  return (unstable_getCustomContext()[REQUEST_HEADERS] || {}) as Record<
+    string,
+    string
+  >;
 }
