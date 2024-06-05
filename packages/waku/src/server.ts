@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 import type { Config } from './config.js';
 import type { PathSpec } from './lib/utils/path.js';
+import { REQUEST_HEADERS } from './lib/middleware/headers.js';
 
 type Elements = Record<string, ReactNode>;
 
@@ -68,11 +69,9 @@ export function getEnv(key: string): string | undefined {
   return (globalThis as any).__WAKU_PRIVATE_ENV__[key];
 }
 
-type RenderStore<
-  RscContext extends Record<string, unknown> = Record<string, unknown>,
-> = {
+type RenderStore<> = {
   rerender: (input: string, searchParams?: URLSearchParams) => void;
-  context: RscContext;
+  context: Record<string, unknown>;
 };
 
 let renderStorage: AsyncLocalStorageType<RenderStore> | undefined;
@@ -83,7 +82,7 @@ let renderStorage: AsyncLocalStorageType<RenderStore> | undefined;
 //   renderStorage = new AsyncLocalStorage();
 // } catch (e) {
 //   console.warn(
-//     'AsyncLocalStorage is not available, rerender and getContext are only available in sync.',
+//     'AsyncLocalStorage is not available, rerender and getCustomContext are only available in sync.',
 //   );
 // }
 import('node:async_hooks')
@@ -92,7 +91,7 @@ import('node:async_hooks')
   })
   .catch(() => {
     console.warn(
-      'AsyncLocalStorage is not available, rerender and getContext are only available in sync.',
+      'AsyncLocalStorage is not available, rerender and getCustomContext are only available in sync.',
     );
   });
 
@@ -126,12 +125,19 @@ export function rerender(input: string, searchParams?: URLSearchParams) {
   renderStore.rerender(input, searchParams);
 }
 
-export function getContext<
-  RscContext extends Record<string, unknown> = Record<string, unknown>,
->(): RscContext {
+export function unstable_getCustomContext<
+  CustomContext extends Record<string, unknown> = Record<string, unknown>,
+>(): CustomContext {
   const renderStore = renderStorage?.getStore() ?? currentRenderStore;
   if (!renderStore) {
     throw new Error('Render store is not available');
   }
-  return renderStore.context as RscContext;
+  return renderStore.context as CustomContext;
+}
+
+export function unstable_getHeaders(): Record<string, string> {
+  return (unstable_getCustomContext()[REQUEST_HEADERS] || {}) as Record<
+    string,
+    string
+  >;
 }
