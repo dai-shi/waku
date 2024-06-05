@@ -554,11 +554,9 @@ class ErrorBoundary extends Component<
     super(props);
     this.state = {};
   }
-
   static getDerivedStateFromError(error: unknown) {
     return { error };
   }
-
   render() {
     if ('error' in this.state) {
       if (
