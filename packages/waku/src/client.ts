@@ -2,6 +2,7 @@
 'use client';
 
 import {
+  Component,
   createContext,
   createElement,
   memo,
@@ -206,6 +207,51 @@ export const useRefetch = () => use(RefetchContext);
 const ChildrenContext = createContext<ReactNode>(undefined);
 const ChildrenContextProvider = memo(ChildrenContext.Provider);
 
+type OuterSlotProps = {
+  elementsPromise: Elements;
+  shouldRenderPrev: ((err: unknown) => boolean) | undefined;
+  renderSlot: (elements: Record<string, ReactNode>) => ReactNode;
+  children?: ReactNode;
+};
+
+class OuterSlot extends Component<OuterSlotProps, { error?: unknown }> {
+  constructor(props: OuterSlotProps) {
+    super(props);
+    this.state = {};
+  }
+  static getDerivedStateFromError(error: unknown) {
+    return { error };
+  }
+  render() {
+    if ('error' in this.state) {
+      const e = this.state.error;
+      if (e instanceof Error && !('statusCode' in e)) {
+        // HACK we assume any error as Not Found,
+        // probably caused by history api fallback
+        (e as any).statusCode = 404;
+      }
+      if (this.props.shouldRenderPrev?.(e) && this.props.elementsPromise.prev) {
+        const elements = this.props.elementsPromise.prev;
+        return this.props.renderSlot(elements);
+      } else {
+        throw e;
+      }
+    }
+    return this.props.children;
+  }
+}
+
+const InnerSlot = ({
+  elementsPromise,
+  renderSlot,
+}: {
+  elementsPromise: Elements;
+  renderSlot: (elements: Record<string, ReactNode>) => ReactNode;
+}) => {
+  const elements = use(elementsPromise);
+  return renderSlot(elements);
+};
+
 export const Slot = ({
   id,
   children,
@@ -221,31 +267,27 @@ export const Slot = ({
   if (!elementsPromise) {
     throw new Error('Missing Root component');
   }
-  let elements: Awaited<Elements>;
-  try {
-    elements = use(elementsPromise);
-  } catch (e) {
-    if (e instanceof Error && !('statusCode' in e)) {
-      // HACK we assume any error as Not Found,
-      // probably caused by history api fallback
-      (e as any).statusCode = 404;
+  const renderSlot = (elements: Record<string, ReactNode>) => {
+    if (!(id in elements)) {
+      if (fallback) {
+        return fallback;
+      }
+      throw new Error('Not found: ' + id);
     }
-    if (unstable_shouldRenderPrev?.(e) && elementsPromise.prev) {
-      elements = elementsPromise.prev;
-    } else {
-      throw e;
-    }
-  }
-  if (!(id in elements)) {
-    if (fallback) {
-      return fallback;
-    }
-    throw new Error('Not found: ' + id);
-  }
+    return createElement(
+      ChildrenContextProvider,
+      { value: children },
+      elements[id],
+    );
+  };
   return createElement(
-    ChildrenContextProvider,
-    { value: children },
-    elements[id],
+    OuterSlot,
+    {
+      elementsPromise,
+      shouldRenderPrev: unstable_shouldRenderPrev,
+      renderSlot,
+    },
+    createElement(InnerSlot, { elementsPromise, renderSlot }),
   );
 };
 
