@@ -374,7 +374,7 @@ importers:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -405,7 +405,7 @@ importers:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       autoprefixer:
@@ -427,7 +427,7 @@ importers:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -458,7 +458,7 @@ importers:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -483,7 +483,7 @@ importers:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -517,7 +517,7 @@ importers:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -548,7 +548,7 @@ importers:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       '@types/cookie':
@@ -579,7 +579,7 @@ importers:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -604,7 +604,7 @@ importers:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -638,7 +638,7 @@ importers:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -672,7 +672,7 @@ importers:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -706,7 +706,7 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -737,7 +737,7 @@ importers:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -762,7 +762,7 @@ importers:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
 
   examples/22_promise:
@@ -777,7 +777,7 @@ importers:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -805,7 +805,7 @@ importers:
         specifier: 1.1.0
         version: 1.1.0(react@19.0.0-rc.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -830,7 +830,7 @@ importers:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
-        specifier: 0.21.0-alpha.1
+        specifier: 0.21.0-alpha.2
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
