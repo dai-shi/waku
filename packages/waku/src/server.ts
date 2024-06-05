@@ -135,7 +135,7 @@ export function unstable_getCustomContext<
   return renderStore.context as CustomContext;
 }
 
-export function unstable_getRequestHeaders(): Record<string, string> {
+export function unstable_getHeaders(): Record<string, string> {
   return (unstable_getCustomContext()[REQUEST_HEADERS] || {}) as Record<
     string,
     string
