@@ -22,6 +22,7 @@ const DEFAULT_MIDDLEWARE = (cmd: 'dev' | 'start') => [
   ...(cmd === 'dev'
     ? [import(/* @vite-ignore */ DO_NOT_BUNDLE + 'waku/middleware/dev-server')]
     : []),
+  import('waku/middleware/headers'),
   import('waku/middleware/ssr'),
   import('waku/middleware/rsc'),
 ];

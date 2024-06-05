@@ -20,12 +20,10 @@ export type HandlerRes = {
   status?: number;
 };
 
-export type RscContext = Record<string, unknown>;
-
 export type HandlerContext = {
   readonly req: HandlerReq;
   readonly res: HandlerRes;
-  readonly context: RscContext;
+  readonly context: Record<string, unknown>;
   devServer?: {
     rootDir: string;
     initialModules: ClonableModuleNode[];
