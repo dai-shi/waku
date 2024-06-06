@@ -11,7 +11,7 @@ export default {
           ),
         ]
       : []),
-  import('waku/middleware/headers'),
+    import('waku/middleware/headers'),
     import('waku/middleware/ssr'),
     import('waku/middleware/rsc'),
   ],

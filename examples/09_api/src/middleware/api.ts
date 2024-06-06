@@ -12,7 +12,7 @@ const stringToStream = (str: string): ReadableStream => {
 
 const apiMiddleware: Middleware = () => {
   return async (ctx, next) => {
-    const path = ctx.req.url.pathname
+    const path = ctx.req.url.pathname;
     if (path === '/api/hello') {
       ctx.res.body = stringToStream('world');
       return;
