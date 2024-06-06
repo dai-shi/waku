@@ -567,6 +567,31 @@ importers:
         specifier: 5.4.5
         version: 5.4.5
 
+  examples/09_api:
+    dependencies:
+      react:
+        specifier: 19.0.0-rc.0
+        version: 19.0.0-rc.0
+      react-dom:
+        specifier: 19.0.0-rc.0
+        version: 19.0.0-rc.0(react@19.0.0-rc.0)
+      react-server-dom-webpack:
+        specifier: 19.0.0-rc.0
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+      waku:
+        specifier: 0.21.0-alpha.2
+        version: link:../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 18.3.3
+        version: 18.3.3
+      '@types/react-dom':
+        specifier: 18.3.0
+        version: 18.3.0
+      typescript:
+        specifier: 5.4.5
+        version: 5.4.5
+
   examples/10_fs-router:
     dependencies:
       react:

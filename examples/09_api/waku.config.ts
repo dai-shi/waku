@@ -3,7 +3,7 @@ const DO_NOT_BUNDLE = '';
 /** @type {import('waku/config').Config} */
 export default {
   middleware: (cmd: 'dev' | 'start') => [
-    import('./src/middleware/cookie.js'),
+    import('./src/middleware/api.js'),
     ...(cmd === 'dev'
       ? [
           import(
@@ -11,7 +11,7 @@ export default {
           ),
         ]
       : []),
-    import('waku/middleware/headers'),
+  import('waku/middleware/headers'),
     import('waku/middleware/ssr'),
     import('waku/middleware/rsc'),
   ],
