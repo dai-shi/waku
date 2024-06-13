@@ -8,7 +8,18 @@ import { parseOpts } from '../utils/swc.js';
 const collectExportNames = (mod: swc.Module) => {
   const exportNames = new Set<string>();
   for (const item of mod.body) {
-    if (item.type === 'ExportDeclaration') {
+    if (item.type === 'FunctionDeclaration') {
+      const rscDeclaration = item.body?.stmts[0];
+      if (
+        rscDeclaration?.type === 'ExpressionStatement' &&
+        rscDeclaration.expression.type === 'StringLiteral' &&
+        rscDeclaration.expression.value === 'use server'
+      ) {
+        exportNames.add(item.identifier.value);
+      }
+    }
+    // fixme: this might be incorrect, not all exports from server file can be registered as server references
+    else if (item.type === 'ExportDeclaration') {
       if (item.declaration.type === 'FunctionDeclaration') {
         exportNames.add(item.declaration.identifier.value);
       } else if (item.declaration.type === 'VariableDeclaration') {
