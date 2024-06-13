@@ -139,4 +139,40 @@ test.describe('useRouter', async () => {
       await terminate(pid!);
     });
   });
+
+  test.describe('retrieves hashes', () => {
+    test(`on dynamic pages`, async ({ page }) => {
+      const [port, pid] = await start();
+      await page.goto(`http://localhost:${port}/dynamic#42`);
+      await expect(page.getByTestId('hash')).toHaveText('Hash: 42');
+      await terminate(pid!);
+    });
+    test(`on static pages`, async ({ page }) => {
+      const [port, pid] = await start();
+      await page.goto(`http://localhost:${port}/static#42`);
+      await expect(page.getByTestId('query')).toHaveText('Hash: 42');
+      await terminate(pid!);
+    });
+  });
+
+  test.describe('updates hashes', () => {
+    test(`on dynamic pages`, async ({ page }) => {
+      const [port, pid] = await start();
+      await page.goto(`http://localhost:${port}/dynamic`);
+      await page.click('text=Increment hash');
+      await expect(page.getByTestId('hash')).toHaveText('Hash: 1');
+      await page.click('text=Increment hash (push)');
+      await expect(page.getByTestId('hash')).toHaveText('Hash: 2');
+      await terminate(pid!);
+    });
+    test(`on static pages`, async ({ page }) => {
+      const [port, pid] = await start();
+      await page.goto(`http://localhost:${port}/static`);
+      await page.click('text=Increment hash');
+      await expect(page.getByTestId('hash')).toHaveText('Hash: 1');
+      await page.click('text=Increment hash (push)');
+      await expect(page.getByTestId('hash')).toHaveText('Hash: 2');
+      await terminate(pid!);
+    });
+  });
 });
