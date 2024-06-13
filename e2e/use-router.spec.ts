@@ -150,7 +150,7 @@ test.describe('useRouter', async () => {
     test(`on static pages`, async ({ page }) => {
       const [port, pid] = await start();
       await page.goto(`http://localhost:${port}/static#42`);
-      await expect(page.getByTestId('query')).toHaveText('Hash: 42');
+      await expect(page.getByTestId('hash')).toHaveText('Hash: 42');
       await terminate(pid!);
     });
   });
