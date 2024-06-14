@@ -50,7 +50,7 @@ const normalizeRoutePath = (path: string) => {
 
 const parseRoute = (url: URL): RouteProps => {
   if ((globalThis as any).__WAKU_ROUTER_404__) {
-    return { path: '/404', searchParams: new URLSearchParams() };
+    return { path: '/404', searchParams: new URLSearchParams(), hash: '' };
   }
   const { pathname, searchParams } = url;
   if (searchParams.has(PARAM_KEY_SKIP)) {
