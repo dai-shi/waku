@@ -256,9 +256,6 @@ export ${name === 'default' ? name : `const ${name} =`} registerClientReference(
     let newCode: string;
     if (newMod) {
       code = swc.printSync(newMod).code;
-    } else {
-      // no need to transform
-      return;
     }
     const { exports, internal } = collectExportNames(mod);
     newCode =

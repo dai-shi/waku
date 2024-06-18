@@ -201,6 +201,7 @@ export async function renderRsc(
       const moduleMap = new Proxy({} as Record<string, ImportManifestEntry>, {
         get(_target, rsfId: string): ImportManifestEntry {
           const [fileId, name] = rsfId.split('#') as [string, string];
+          // fixme: race condition, server actions are not initialized in the first time
           if (!moduleLoading.has(fileId)) {
             if (!opts.isDev) {
               moduleLoading.set(
