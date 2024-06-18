@@ -11,7 +11,7 @@ function wrapAction(action, options) {
   return innerAction.bind(null, { action, options });
 }
 
-export function createAI(actions) {
+export function createAI({ actions }) {
   const wrappedActions = {};
   for (const name in actions) {
     wrappedActions[name] = wrapAction(actions[name]);
