@@ -2,13 +2,13 @@
 import { InternalProvider } from './shared.js';
 import { jsx } from 'react/jsx-runtime';
 
-async function innerAction({ action }, state, ...args) {
+async function innerAction({ action }, ...args) {
   'use server';
   return await action(...args);
 }
 
-function wrapAction(action, options) {
-  return innerAction.bind(null, { action, options });
+function wrapAction(action) {
+  return innerAction.bind(null, { action });
 }
 
 export function createAI({ actions }) {

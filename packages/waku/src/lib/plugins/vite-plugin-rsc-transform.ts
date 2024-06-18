@@ -5,8 +5,14 @@ import { EXTENSIONS } from '../config.js';
 import { extname } from '../utils/path.js';
 import { parseOpts } from '../utils/swc.js';
 
-const collectExportNames = (mod: swc.Module) => {
+const collectExportNames = (
+  mod: swc.Module,
+): {
+  exports: Set<string>;
+  internal: Set<string>;
+} => {
   const exportNames = new Set<string>();
+  const internalNames = new Set<string>();
   for (const item of mod.body) {
     if (item.type === 'FunctionDeclaration') {
       const rscDeclaration = item.body?.stmts[0];
@@ -15,11 +21,9 @@ const collectExportNames = (mod: swc.Module) => {
         rscDeclaration.expression.type === 'StringLiteral' &&
         rscDeclaration.expression.value === 'use server'
       ) {
-        exportNames.add(item.identifier.value);
+        internalNames.add(item.identifier.value);
       }
-    }
-    // fixme: this might be incorrect, not all exports from server file can be registered as server references
-    else if (item.type === 'ExportDeclaration') {
+    } else if (item.type === 'ExportDeclaration') {
       if (item.declaration.type === 'FunctionDeclaration') {
         exportNames.add(item.declaration.identifier.value);
       } else if (item.declaration.type === 'VariableDeclaration') {
@@ -41,7 +45,10 @@ const collectExportNames = (mod: swc.Module) => {
       exportNames.add('default');
     }
   }
-  return exportNames;
+  return {
+    exports: exportNames,
+    internal: internalNames,
+  };
 };
 
 const transformClient = (
@@ -65,12 +72,12 @@ const transformClient = (
     }
   }
   if (hasUseServer) {
-    const exportNames = collectExportNames(mod);
+    const { exports, internal } = collectExportNames(mod);
     let newCode = `
 import { createServerReference } from 'react-server-dom-webpack/client';
 import { callServerRSC } from 'waku/client';
 `;
-    for (const name of exportNames) {
+    for (const name of [...exports, ...internal]) {
       newCode += `
 export ${name === 'default' ? name : `const ${name} =`} createServerReference('${getServerId(id)}#${name}', callServerRSC);
 `;
@@ -218,14 +225,11 @@ const transformServer = (
   const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseClient = false;
-  let hasUseServer = false;
   for (const item of mod.body) {
     if (item.type === 'ExpressionStatement') {
       if (item.expression.type === 'StringLiteral') {
         if (item.expression.value === 'use client') {
           hasUseClient = true;
-        } else if (item.expression.value === 'use server') {
-          hasUseServer = true;
         }
       }
     } else {
@@ -234,38 +238,47 @@ const transformServer = (
     }
   }
   if (hasUseClient) {
-    const exportNames = collectExportNames(mod);
+    const { exports, internal } = collectExportNames(mod);
     let newCode = `
 import { registerClientReference } from 'react-server-dom-webpack/server';
 `;
-    for (const name of exportNames) {
+    for (const name of [...exports, ...internal]) {
       newCode += `
 export ${name === 'default' ? name : `const ${name} =`} registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getClientId(id)}#${name}'); }, '${getClientId(id)}', '${name}');
 `;
     }
     return newCode;
-  } else if (hasUseServer) {
-    const exportNames = collectExportNames(mod);
-    let newCode =
+  } else {
+    // transform server actions in server components
+    const newMod =
+      code.includes('use server') &&
+      transformServerActions(mod, () => getServerId(id));
+    let newCode: string;
+    if (newMod) {
+      code = swc.printSync(newMod).code;
+    } else {
+      // no need to transform
+      return;
+    }
+    const { exports, internal } = collectExportNames(mod);
+    newCode =
       code +
       `
 import { registerServerReference } from 'react-server-dom-webpack/server';
 `;
-    for (const name of exportNames) {
+    for (const name of [...exports, ...internal]) {
+      if (name === 'default') {
+        continue;
+      }
       newCode += `
 if (typeof ${name} === 'function') {
   registerServerReference(${name}, '${getServerId(id)}', '${name}');
 }
 `;
+      if (internal.has(name)) {
+        newCode += `export { ${name} };\n`;
+      }
     }
-    return newCode;
-  }
-  // transform server actions in server components
-  const newMod =
-    code.includes('use server') &&
-    transformServerActions(mod, () => getServerId(id));
-  if (newMod) {
-    const newCode = swc.printSync(newMod).code;
     return newCode;
   }
 };
