@@ -12,6 +12,16 @@ import { parseFormData } from '../utils/form.js';
 import { streamToString } from '../utils/stream.js';
 import { decodeActionId } from '../renderers/utils.js';
 
+// HACK for react-server-dom-webpack without webpack
+(globalThis as any).__webpack_module_loading__ ||= new Map();
+(globalThis as any).__webpack_module_cache__ ||= new Map();
+(globalThis as any).__webpack_chunk_load__ ||= async (id: string) =>
+  (globalThis as any).__webpack_module_loading__.get(id);
+(globalThis as any).__webpack_require__ ||= (id: string) =>
+  (globalThis as any).__webpack_module_cache__.get(id);
+const moduleLoading = (globalThis as any).__webpack_module_loading__;
+const moduleCache = (globalThis as any).__webpack_module_cache__;
+
 export const SERVER_MODULE_MAP = {
   'rsdw-server': 'react-server-dom-webpack/server.edge',
   'waku-server': 'waku/server',
@@ -189,7 +199,45 @@ export async function renderRsc(
     ) {
       // XXX This doesn't support streaming unlike busboy
       const formData = parseFormData(bodyStr, contentType);
-      args = await decodeReply(formData);
+      const moduleMap = new Proxy({} as Record<string, ImportManifestEntry>, {
+        get(_target, rsfId: string): ImportManifestEntry {
+          const [fileId, name] = rsfId.split('#') as [string, string];
+          if (!moduleLoading.has(fileId)) {
+            if (!opts.isDev) {
+              moduleLoading.set(
+                fileId,
+                import(
+                  /* @vite-ignore */
+                  fileId
+                ).then((m: any) => {
+                  moduleCache.set(
+                    fileId,
+                    Object.fromEntries(m['__waku_serverActions']),
+                  );
+                }),
+              );
+            } else {
+              moduleLoading.set(
+                fileId,
+                opts
+                  .loadServerFile(filePathToFileURL(fileId))
+                  .then((m: any) => {
+                    moduleCache.set(
+                      fileId,
+                      Object.fromEntries(m['__waku_serverActions']),
+                    );
+                  }),
+              );
+            }
+          }
+          return {
+            id: fileId,
+            chunks: [],
+            name,
+          };
+        },
+      });
+      args = await decodeReply(formData, moduleMap);
     } else if (bodyStr) {
       args = await decodeReply(bodyStr);
     }
