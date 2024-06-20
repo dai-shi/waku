@@ -192,17 +192,12 @@ export async function renderRsc(
     } else if (bodyStr) {
       args = await decodeReply(bodyStr);
     }
-    const [fileId, name] = rsfId.split('#') as [string, string];
-    let mod: any;
-    if (isDev) {
-      mod = await opts.loadServerFile(filePathToFileURL(fileId));
-    } else {
-      if (!fileId.startsWith('@id/')) {
-        throw new Error('Unexpected server entry in PRD');
-      }
-      mod = await loadModule(fileId.slice('@id/'.length));
+    const { getServerActions } = await import('../../rsc.js');
+    const actions = getServerActions()
+    const fn = actions[rsfId.split('#')[0]!]! as (...args: any[]) => any
+    if (!fn) {
+      throw new Error(`Unknown action ID: ${rsfId}`);
     }
-    const fn = mod.__waku_serverActions?.get(name) || mod[name] || mod;
     return renderWithContextWithAction(context, fn, args);
   }
 

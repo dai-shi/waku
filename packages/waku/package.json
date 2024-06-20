@@ -56,6 +56,10 @@
     "./router/server": {
       "types": "./dist/router/server.d.ts",
       "default": "./dist/router/server.js"
+    },
+    "./rsc": {
+      "types": "./dist/rsc.d.ts",
+      "react-server": "./dist/rsc.js"
     }
   },
   "bin": {
@@ -83,6 +87,7 @@
     "dotenv": "16.4.5",
     "hono": "4.4.2",
     "rsc-html-stream": "0.0.3",
+    "swc-plugin-react-server": "^0.2.2",
     "vite": "5.2.12"
   },
   "devDependencies": {
