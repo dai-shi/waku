@@ -7,7 +7,6 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import type { TransferListItem } from 'node:worker_threads';
 import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
-import viteCommonjs from 'vite-plugin-commonjs';
 
 import type { EntriesDev } from '../../server.js';
 import {
@@ -20,6 +19,7 @@ import { deepFreeze, hasStatusCode } from './utils.js';
 import type { MessageReq, MessageRes } from './dev-worker-api.js';
 import { renderRsc, getSsrConfig } from './rsc-renderer.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
+import { devCommonJsPlugin } from '../plugins/vite-plugin-dev-commonjs.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
@@ -186,13 +186,8 @@ const mergedViteConfig = await mergeUserViteConfig({
   cacheDir: 'node_modules/.vite/waku-dev-worker',
   plugins: [
     viteReact(),
-    // @ts-expect-error FIXME why does it complain?
-    viteCommonjs({
-      filter() {
-        return true;
-      },
-    }),
     nonjsResolvePlugin(),
+    devCommonJsPlugin(),
     rscEnvPlugin({}),
     rscPrivatePlugin({ privateDir: configPrivateDir, hotUpdateCallback }),
     rscManagedPlugin({ basePath: configBasePath, srcDir: configSrcDir }),
@@ -214,6 +209,13 @@ const mergedViteConfig = await mergeUserViteConfig({
       externalConditions: ['react-server', 'workerd'],
     },
     noExternal: /^(?!node:)/,
+    optimizeDeps: {
+      include: [
+        'react-server-dom-webpack/server',
+        'react',
+        'react/jsx-dev-runtime',
+      ],
+    },
   },
   appType: 'custom',
   server: { middlewareMode: true, hmr: { server: dummyServer } },
