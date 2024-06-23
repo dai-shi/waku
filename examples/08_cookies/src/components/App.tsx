@@ -1,5 +1,5 @@
 import { Suspense, cache } from 'react';
-import { getContext } from 'waku/server';
+import { unstable_getCustomContext as getCustomContext } from 'waku/server';
 
 import { Counter } from './Counter';
 
@@ -12,12 +12,12 @@ const InternalAsyncComponent = async () => {
   if (val1 !== val2) {
     throw new Error('Cache not working');
   }
-  console.log(getContext());
+  console.log(getCustomContext());
   return null;
 };
 
 const App = ({ name, items }: { name: string; items: unknown[] }) => {
-  const context = getContext<{ count: number }>();
+  const context = getCustomContext<{ count: number }>();
   return (
     <div style={{ border: '3px red dashed', margin: '1em', padding: '1em' }}>
       <title>Waku</title>

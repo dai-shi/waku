@@ -13,7 +13,7 @@
     "react": "19.0.0-rc.0",
     "react-dom": "19.0.0-rc.0",
     "react-server-dom-webpack": "19.0.0-rc.0",
-    "waku": "0.21.0-alpha.1"
+    "waku": "0.21.0-alpha.2"
   },
   "devDependencies": {
     "@types/cookie": "0.6.0",
