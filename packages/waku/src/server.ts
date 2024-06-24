@@ -87,7 +87,10 @@ let renderStorage: AsyncLocalStorageType<RenderStore> | undefined;
 // }
 import('node:async_hooks')
   .then(({ AsyncLocalStorage }) => {
-    renderStorage = new AsyncLocalStorage();
+    // renderStorage = new AsyncLocalStorage();
+    // TEMP hack: until we eliminate the worker thread
+    (globalThis as any).__WAKU_RENDER_STORAGE__ ||= new AsyncLocalStorage();
+    renderStorage = (globalThis as any).__WAKU_RENDER_STORAGE__;
   })
   .catch(() => {
     console.warn(
