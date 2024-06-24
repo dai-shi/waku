@@ -88,7 +88,7 @@ let renderStorage: AsyncLocalStorageType<RenderStore> | undefined;
 import('node:async_hooks')
   .then(({ AsyncLocalStorage }) => {
     // renderStorage = new AsyncLocalStorage();
-    // TEMP hack: until we eliminate the worker thread
+    // TEMP HACK: until we eliminate the worker thread
     (globalThis as any).__WAKU_RENDER_STORAGE__ ||= new AsyncLocalStorage();
     renderStorage = (globalThis as any).__WAKU_RENDER_STORAGE__;
   })
@@ -97,6 +97,8 @@ import('node:async_hooks')
       'AsyncLocalStorage is not available, rerender and getCustomContext are only available in sync.',
     );
   });
+// TEMP HACK: until we eliminate the worker thread
+renderStorage = (globalThis as any).__WAKU_RENDER_STORAGE__;
 
 let previousRenderStore: RenderStore | undefined;
 let currentRenderStore: RenderStore | undefined;
