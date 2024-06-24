@@ -306,6 +306,10 @@ export function rscTransformPlugin(
   return {
     name: 'rsc-transform-plugin',
     async transform(code, id, options) {
+      if (!opts.isBuild) {
+        // id can contain query string with vite deps optimization
+        id = id.split('?')[0] as string;
+      }
       if (!EXTENSIONS.includes(extname(id))) {
         return;
       }
