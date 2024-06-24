@@ -18,7 +18,7 @@ jobs:
       - uses: pnpm/action-setup@v2
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
@@ -31,7 +31,7 @@ jobs:
       - uses: pnpm/action-setup@v2
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
@@ -60,7 +60,7 @@ jobs:
       matrix:
         shared: [1, 2, 3, 4]
         os: [ubuntu-latest, windows-latest, macos-latest]
-        version: [18.17.0, 20.8.0]
+        version: [18.17.0, 20.8.0, 22.3.0]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
