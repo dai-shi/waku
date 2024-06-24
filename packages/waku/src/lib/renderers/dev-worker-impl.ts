@@ -213,6 +213,7 @@ const mergedViteConfig = await mergeUserViteConfig({
       include: [
         'react-server-dom-webpack/server',
         'react',
+        'react/jsx-runtime',
         'react/jsx-dev-runtime',
       ],
     },
