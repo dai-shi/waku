@@ -17,7 +17,7 @@ import {
   downloadAndExtract,
 } from './helpers/example-option.js';
 import process from 'node:process';
-import { sync } from 'cross-spawn';
+import { spawn } from 'node:child_process';
 
 const userAgent = process.env.npm_config_user_agent || '';
 const packageManager = /pnpm/.test(userAgent)
@@ -32,7 +32,7 @@ const commands = {
     create: 'pnpm create waku',
   },
   yarn: {
-    install: 'yarn install',
+    install: 'yarn',
     dev: 'yarn dev',
     create: 'yarn create waku',
   },
@@ -210,26 +210,34 @@ async function init() {
   console.log(`Installing dependencies by running ${commands.install}...`);
 
   process.chdir(targetDir);
-  const [, installFlag] = commands.install.split(' ');
 
-  // synchronously install all the deps
-  const installProcess = sync(packageManager, [installFlag!], {
-    stdio: 'inherit',
+  const installProcess = spawn(packageManager, ['install']);
+
+  installProcess.stdout.setEncoding('utf8');
+  installProcess.stdout.on('data', (data) => {
+    console.log(data);
   });
-  const error = installProcess.error;
 
-  if (error) {
-    console.error(`Could not execute ${commands.install}. Please run`);
-    console.log(`${bold(green(`cd ${targetDir}`))}`);
-    console.log(`${bold(green(commands.install))}`);
-    console.log(`${bold(green(commands.dev))}`);
-    console.log();
-  } else {
-    console.log(`\nDone. Now run:\n`);
-    console.log(`${bold(green(`cd ${targetDir}`))}`);
-    console.log(`${bold(green(commands.dev))}`);
-    console.log();
-  }
+  installProcess.stderr.setEncoding('utf8');
+  installProcess.stderr.on('data', (data) => {
+    console.log(data);
+  });
+
+  installProcess.on('close', (code) => {
+    // process exit code
+    if (code !== 0) {
+      console.error(`Could not execute ${commands.install}. Please run`);
+      console.log(`${bold(green(`cd ${targetDir}`))}`);
+      console.log(`${bold(green(commands.install))}`);
+      console.log(`${bold(green(commands.dev))}`);
+      console.log();
+    } else {
+      console.log(`\nDone. Now run:\n`);
+      console.log(`${bold(green(`cd ${targetDir}`))}`);
+      console.log(`${bold(green(commands.dev))}`);
+      console.log();
+    }
+  });
 }
 
 init()

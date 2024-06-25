@@ -842,9 +842,6 @@ importers:
 
   packages/create-waku:
     devDependencies:
-      '@types/cross-spawn':
-        specifier: ^6.0.6
-        version: 6.0.6
       '@types/fs-extra':
         specifier: ^11.0.4
         version: 11.0.4
@@ -857,9 +854,6 @@ importers:
       '@vercel/ncc':
         specifier: ^0.38.1
         version: 0.38.1
-      cross-spawn:
-        specifier: ^7.0.3
-        version: 7.0.3
       fs-extra:
         specifier: ^11.2.0
         version: 11.2.0
@@ -2379,12 +2373,6 @@ packages:
 
   /@types/cookie@0.6.0:
     resolution: {integrity: sha512-4Kh9a6B2bQciAhf7FSuMRRkUWecJgJu9nPnx3yzpsfXX/c50REIqpHY4C82bXP90qrLtXtkDxTZosYO3UpOwlA==}
-    dev: true
-
-  /@types/cross-spawn@6.0.6:
-    resolution: {integrity: sha512-fXRhhUkG4H3TQk5dBhQ7m/JDdSNHKwR2BBia62lhwEIq9xGiQKLxd6LymNhn47SjXhsUEPmxi+PKw2OkW4LLjA==}
-    dependencies:
-      '@types/node': 20.12.12
     dev: true
 
   /@types/debug@4.1.12:
