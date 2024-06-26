@@ -16,7 +16,6 @@ import {
   parseExampleOption,
   downloadAndExtract,
 } from './helpers/example-option.js';
-import process from 'node:process';
 import { spawn } from 'node:child_process';
 
 const userAgent = process.env.npm_config_user_agent || '';
