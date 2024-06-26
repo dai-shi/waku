@@ -1,27 +1,8 @@
 import { build } from 'vite';
 import { expect, test, describe } from 'vitest';
 import { rscAnalyzePlugin } from '../src/lib/plugins/vite-plugin-rsc-analyze.js';
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import type { LoggingFunction, RollupLog } from 'rollup';
-
-const root = fileURLToPath(new URL('./fixtures', import.meta.url));
-
-const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
-  if (
-    warning.code === 'MODULE_LEVEL_DIRECTIVE' &&
-    /"use (client|server)"/.test(warning.message)
-  ) {
-    return;
-  } else if (
-    warning.code === 'SOURCEMAP_ERROR' &&
-    warning.loc?.column === 0 &&
-    warning.loc?.line === 1
-  ) {
-    return;
-  }
-  defaultHandler(warning);
-};
+import { fixturesRoot, getDefaultRollupOptions } from './utils.js';
 
 async function runTest(
   root: string,
@@ -39,8 +20,7 @@ async function runTest(
     build: {
       write: false,
       rollupOptions: {
-        onwarn,
-        cache: false,
+        ...getDefaultRollupOptions(),
         input: path.resolve(root, inputFile),
       },
     },
@@ -75,7 +55,7 @@ async function runTest(
 describe('vite-plugin-rsc-analyze', () => {
   test('server - server', async () => {
     await runTest(
-      path.resolve(root, './plugin-rsc-analyze'),
+      path.resolve(fixturesRoot, './plugin-rsc-analyze'),
       false,
       'server.ts',
       new Set(),
@@ -85,7 +65,7 @@ describe('vite-plugin-rsc-analyze', () => {
 
   test('client - server', async () => {
     await runTest(
-      path.resolve(root, './plugin-rsc-analyze'),
+      path.resolve(fixturesRoot, './plugin-rsc-analyze'),
       true,
       'server.ts',
       new Set(),
@@ -95,7 +75,7 @@ describe('vite-plugin-rsc-analyze', () => {
 
   test('server - client', async () => {
     await runTest(
-      path.resolve(root, './plugin-rsc-analyze'),
+      path.resolve(fixturesRoot, './plugin-rsc-analyze'),
       false,
       'client.ts',
       new Set(['client.ts']),
@@ -105,7 +85,7 @@ describe('vite-plugin-rsc-analyze', () => {
 
   test('client - client', async () => {
     await runTest(
-      path.resolve(root, './plugin-rsc-analyze'),
+      path.resolve(fixturesRoot, './plugin-rsc-analyze'),
       true,
       'client.ts',
       new Set(),
@@ -115,7 +95,7 @@ describe('vite-plugin-rsc-analyze', () => {
 
   test('server - import client', async () => {
     await runTest(
-      path.resolve(root, './plugin-rsc-analyze'),
+      path.resolve(fixturesRoot, './plugin-rsc-analyze'),
       false,
       'import-client.ts',
       new Set(['client.ts']),
@@ -125,7 +105,7 @@ describe('vite-plugin-rsc-analyze', () => {
 
   test('client - import client', async () => {
     await runTest(
-      path.resolve(root, './plugin-rsc-analyze'),
+      path.resolve(fixturesRoot, './plugin-rsc-analyze'),
       true,
       'import-client.ts',
       new Set(),
@@ -135,7 +115,7 @@ describe('vite-plugin-rsc-analyze', () => {
 
   test('server - import server', async () => {
     await runTest(
-      path.resolve(root, './plugin-rsc-analyze'),
+      path.resolve(fixturesRoot, './plugin-rsc-analyze'),
       false,
       'import-server.ts',
       new Set(),
@@ -145,7 +125,7 @@ describe('vite-plugin-rsc-analyze', () => {
 
   test('client - import server', async () => {
     await runTest(
-      path.resolve(root, './plugin-rsc-analyze'),
+      path.resolve(fixturesRoot, './plugin-rsc-analyze'),
       true,
       'import-server.ts',
       new Set(),
