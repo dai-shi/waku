@@ -49,7 +49,7 @@ async function runTest(environment: 'client' | 'server', inputCode: string) {
 }
 
 describe('vite-plugin-rsc-transform', () => {
-  test('server-basic.ts', async () => {
+  test('export a server action', async () => {
     const { output } = await runTest(
       'server',
       `'use server';
@@ -68,6 +68,69 @@ export async function foo () {
       }
       export {
         foo
+      };
+      "
+    `);
+  });
+
+  // grammar error: `if (typeof default === 'function') {`
+  test.fails('export a server action with a default export', async () => {
+    const { output } = await runTest(
+      'server',
+      `'use server';
+export default async function foo () {
+  return 'foo';
+}`,
+    );
+    expect(output.length).toBe(1);
+    expect(hiddenPathFromCode(root, output[0].code)).toMatchInlineSnapshot();
+  });
+
+  // vercel ai case
+  test('export a server action inside another server action', async () => {
+    const { output } = await runTest(
+      'server',
+      `
+async function inner () {
+  'use server';
+  return 'foo';
+}
+async function foo () {
+  'use server';
+  return inner();
+}
+
+export const actions = {
+  foo
+};`,
+    );
+    expect(output.length).toBe(1);
+    expect(hiddenPathFromCode(root, output[0].code)).toMatchInlineSnapshot(`
+      "import { registerServerReference } from "react-server-dom-webpack/server";
+      const __waku_serverActions = /* @__PURE__ */ new Map();
+      let __waku_actionIndex = 0;
+      function __waku_registerServerAction(fn, actionId) {
+        const actionName = "action" + __waku_actionIndex++;
+        registerServerReference(fn, actionId, actionName);
+        __waku_serverActions.set(actionName, fn);
+        return fn;
+      }
+      async function inner() {
+        "use server";
+        return "foo";
+      }
+      __waku_registerServerAction(inner, "<hidden>/31469b79.ts");
+      async function foo() {
+        "use server";
+        return inner();
+      }
+      __waku_registerServerAction(foo, "<hidden>/31469b79.ts");
+      const actions = {
+        foo
+      };
+      export {
+        __waku_serverActions,
+        actions
       };
       "
     `);
