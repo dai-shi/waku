@@ -198,7 +198,7 @@ const transformServerActions = (
   return mod;
 };
 
-const transformServer = (
+export const transformServer = (
   code: string,
   id: string,
   getClientId: (id: string) => string,

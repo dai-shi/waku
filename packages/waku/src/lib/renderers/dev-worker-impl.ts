@@ -3,6 +3,7 @@
 import { pathToFileURL } from 'node:url';
 import { parentPort, getEnvironmentData } from 'node:worker_threads';
 import { Server } from 'node:http';
+import { readFile } from 'node:fs/promises';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { TransferListItem } from 'node:worker_threads';
 import { createServer as createViteServer } from 'vite';
@@ -20,7 +21,10 @@ import type { MessageReq, MessageRes } from './dev-worker-api.js';
 import { renderRsc, getSsrConfig } from './rsc-renderer.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { devCommonJsPlugin } from '../plugins/vite-plugin-dev-commonjs.js';
-import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
+import {
+  rscTransformPlugin,
+  transformServer,
+} from '../plugins/vite-plugin-rsc-transform.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
@@ -216,6 +220,27 @@ const mergedViteConfig = await mergeUserViteConfig({
         'react/jsx-runtime',
         'react/jsx-dev-runtime',
       ],
+      esbuildOptions: {
+        plugins: [
+          {
+            name: 'transform-rsc',
+            setup(build) {
+              build.onLoad({ filter: /.*/ }, async (args) => {
+                const text = await readFile(args.path, 'utf8');
+                const code = transformServer(
+                  text,
+                  args.path,
+                  (id) => id,
+                  (id) => id,
+                );
+                if (code) {
+                  return { contents: code };
+                }
+              });
+            },
+          },
+        ],
+      },
     },
   },
   appType: 'custom',
