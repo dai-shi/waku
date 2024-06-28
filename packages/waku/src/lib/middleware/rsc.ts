@@ -42,9 +42,13 @@ export const rsc: Middleware = (options) => {
           body: ctx.req.body,
           contentType: headers['content-type'] || '',
         };
-        const readable = await (ctx.devServer
-          ? ctx.devServer.renderRscWithWorker(args, {
-              initialModules: ctx.devServer.initialModules,
+        const { unstable_devServer: devServer } = ctx;
+        const readable = await (devServer
+          ? renderRsc(args, {
+              isDev: true,
+              loadServerFileRsc: devServer.loadServerFileRsc,
+              resolveClientEntry: devServer.resolveClientEntryDev,
+              entries: await devServer.loadEntriesDev(config),
             })
           : renderRsc(args, { isDev: false, entries }));
         ctx.res.body = readable;
