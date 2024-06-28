@@ -9,7 +9,9 @@ export default ({ mode }: { mode: string }) => {
         ],
       },
       ssr: {
-        noExternal: ['react-tweet'],
+        optimizeDeps: {
+          include: ['react-tweet'],
+        },
       },
     };
   }

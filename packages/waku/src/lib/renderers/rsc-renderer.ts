@@ -42,6 +42,7 @@ type RenderRscOpts =
       isDev: true;
       entries: EntriesDev;
       loadServerFileRsc: (fileURL: string) => Promise<unknown>;
+      loadServerModuleRsc: (id: string) => Promise<unknown>;
       resolveClientEntry: (id: string) => string;
     };
 
@@ -76,7 +77,7 @@ export async function renderRsc(
 
   const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
     (isDev
-      ? import(/* @vite-ignore */ SERVER_MODULE_MAP[key])
+      ? opts.loadServerModuleRsc(SERVER_MODULE_MAP[key])
       : loadModule(key)) as Promise<T>;
 
   const [
@@ -273,6 +274,7 @@ type GetSsrConfigOpts =
   | {
       isDev: true;
       entries: EntriesDev;
+      loadServerModuleRsc: (id: string) => Promise<unknown>;
       resolveClientEntry: (id: string) => string;
     };
 
@@ -294,9 +296,15 @@ export async function getSsrConfig(
   } = entries as
     | (EntriesDev & { loadModule: never; buildConfig: never })
     | EntriesPrd;
-  const { renderToReadableStream } = await (isDev
-    ? import(/* @vite-ignore */ SERVER_MODULE_MAP['rsdw-server'])
-    : loadModule('rsdw-server').then((m: any) => m.default));
+
+  const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
+    (isDev
+      ? opts.loadServerModuleRsc(SERVER_MODULE_MAP[key])
+      : loadModule(key)) as Promise<T>;
+
+  const {
+    default: { renderToReadableStream },
+  } = await loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server');
 
   const ssrConfig = await getSsrConfig?.(pathname, {
     searchParams,

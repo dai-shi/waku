@@ -1,5 +1,6 @@
 import { Readable, Writable } from 'node:stream';
 import { Server } from 'node:http';
+import { readFile } from 'node:fs/promises';
 import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
@@ -13,7 +14,11 @@ import {
 } from '../utils/path.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
-import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
+import { devCommonJsPlugin } from '../plugins/vite-plugin-dev-commonjs.js';
+import {
+  rscTransformPlugin,
+  transformServer,
+} from '../plugins/vite-plugin-rsc-transform.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscHmrPlugin, hotUpdate } from '../plugins/vite-plugin-rsc-hmr.js';
 import type { HotUpdatePayload } from '../plugins/vite-plugin-rsc-hmr.js';
@@ -185,6 +190,7 @@ const createRscViteServer = (
       plugins: [
         viteReact(),
         nonjsResolvePlugin(),
+        devCommonJsPlugin(),
         rscEnvPlugin({}),
         rscPrivatePlugin({ privateDir: config.privateDir, hotUpdateCallback }),
         rscManagedPlugin({ basePath: config.basePath, srcDir: config.srcDir }),
@@ -205,7 +211,36 @@ const createRscViteServer = (
           conditions: ['react-server', 'workerd'],
           externalConditions: ['react-server', 'workerd'],
         },
-        external: ['waku'],
+        noExternal: /^(?!node:)/,
+        optimizeDeps: {
+          include: [
+            'react-server-dom-webpack/server.edge',
+            'react',
+            'react/jsx-runtime',
+            'react/jsx-dev-runtime',
+          ],
+          esbuildOptions: {
+            plugins: [
+              {
+                name: 'transform-rsc',
+                setup(build) {
+                  build.onLoad({ filter: /.*/ }, async (args) => {
+                    const text = await readFile(args.path, 'utf8');
+                    const code = transformServer(
+                      text,
+                      args.path,
+                      (id) => id,
+                      (id) => id,
+                    );
+                    if (code) {
+                      return { contents: code };
+                    }
+                  });
+                },
+              },
+            ],
+          },
+        },
       },
       appType: 'custom',
       server: { middlewareMode: true, hmr: { server: dummyServer } },
@@ -217,6 +252,11 @@ const createRscViteServer = (
   const loadServerFileRsc = async (fileURL: string) => {
     const vite = await vitePromise;
     return vite.ssrLoadModule(fileURLToFilePath(fileURL));
+  };
+
+  const loadServerModuleRsc = async (id: string) => {
+    const vite = await vitePromise;
+    return vite.ssrLoadModule(id);
   };
 
   const loadEntriesDev = async (config: { srcDir: string }) => {
@@ -248,6 +288,7 @@ const createRscViteServer = (
 
   return {
     loadServerFileRsc,
+    loadServerModuleRsc,
     loadEntriesDev,
     resolveClientEntry,
   };
@@ -269,8 +310,12 @@ export const devServer: Middleware = (options) => {
     willBeHandledLater,
   } = createMainViteServer(configPromise);
 
-  const { loadServerFileRsc, loadEntriesDev, resolveClientEntry } =
-    createRscViteServer(configPromise);
+  const {
+    loadServerFileRsc,
+    loadServerModuleRsc,
+    loadEntriesDev,
+    resolveClientEntry,
+  } = createRscViteServer(configPromise);
 
   let initialModules: ClonableModuleNode[];
 
@@ -310,6 +355,7 @@ export const devServer: Middleware = (options) => {
           initialModules,
         ),
       loadServerFileRsc,
+      loadServerModuleRsc,
       loadEntriesDev,
       loadServerFileMain,
       transformIndexHtml,

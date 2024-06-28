@@ -24,6 +24,7 @@ export type HandlerContext = {
     rootDir: string;
     resolveClientEntryDev: (id: string) => string;
     loadServerFileRsc: (fileURL: string) => Promise<Record<string, any>>;
+    loadServerModuleRsc: (id: string) => Promise<Record<string, any>>;
     loadEntriesDev: (config: { srcDir: string }) => Promise<EntriesDev>;
     loadServerFileMain: (fileURL: string) => Promise<Record<string, any>>;
     transformIndexHtml: (

@@ -63,6 +63,7 @@ export const ssr: Middleware = (options) => {
                     { config, pathname, searchParams },
                     {
                       isDev: true,
+                      loadServerModuleRsc: devServer.loadServerModuleRsc,
                       resolveClientEntry: devServer.resolveClientEntryDev,
                       entries: entriesDev!,
                     },

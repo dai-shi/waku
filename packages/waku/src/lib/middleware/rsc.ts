@@ -47,6 +47,7 @@ export const rsc: Middleware = (options) => {
           ? renderRsc(args, {
               isDev: true,
               loadServerFileRsc: devServer.loadServerFileRsc,
+              loadServerModuleRsc: devServer.loadServerModuleRsc,
               resolveClientEntry: devServer.resolveClientEntryDev,
               entries: await devServer.loadEntriesDev(config),
             })
