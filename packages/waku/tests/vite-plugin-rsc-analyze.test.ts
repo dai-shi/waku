@@ -1,11 +1,16 @@
 import { build } from 'vite';
 import { expect, test, describe } from 'vitest';
-import { rscAnalyzePlugin } from '../src/lib/plugins/vite-plugin-rsc-analyze.js';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import type { LoggingFunction, RollupLog } from 'rollup';
 
+import { rscAnalyzePlugin } from '../src/lib/plugins/vite-plugin-rsc-analyze.js';
+
 const root = fileURLToPath(new URL('./fixtures', import.meta.url));
+
+// FIXME vitest node environment does not have crypto
+globalThis.crypto = crypto as any;
 
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   if (
