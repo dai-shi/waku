@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { default as RSDWServerType } from 'react-server-dom-webpack/server.edge';
+import type { ViteDevServer } from 'vite';
 
 import type {
   EntriesDev,
@@ -11,6 +12,92 @@ import { filePathToFileURL } from '../utils/path.js';
 import { parseFormData } from '../utils/form.js';
 import { streamToString } from '../utils/stream.js';
 import { decodeActionId } from '../renderers/utils.js';
+
+// TEMP HACK: until we eliminate the worker thread
+let vitePromiseInWorker: Promise<ViteDevServer> | undefined;
+const loadModuleForDev = async (
+  id: (typeof SERVER_MODULE_MAP)[keyof typeof SERVER_MODULE_MAP],
+) => {
+  if (!vitePromiseInWorker) {
+    vitePromiseInWorker = Promise.all([
+      import('node:fs/promises'),
+      import('vite'),
+      import('@vitejs/plugin-react'),
+      import('../utils/merge-vite-config.js'),
+      import('../plugins/vite-plugin-nonjs-resolve.js'),
+      import('../plugins/vite-plugin-dev-commonjs.js'),
+      import('../plugins/vite-plugin-rsc-transform.js'),
+    ]).then(
+      async ([
+        { readFile },
+        { createServer },
+        { default: viteReact },
+        { mergeUserViteConfig },
+        { nonjsResolvePlugin },
+        { devCommonJsPlugin },
+        { transformServer },
+      ]) => {
+        return mergeUserViteConfig({
+          cacheDir: 'node_modules/.vite/waku-dev-worker',
+          plugins: [
+            viteReact(),
+            nonjsResolvePlugin(),
+            devCommonJsPlugin(),
+            { name: 'rsc-env-plugin' }, // dummy to match with dev-worker-impl.ts
+            { name: 'rsc-private-plugin' }, // dummy to match with dev-worker-impl.ts
+            { name: 'rsc-managed-plugin' }, // dummy to match with dev-worker-impl.ts
+            { name: 'rsc-transform-plugin' }, // dummy to match with dev-worker-impl.ts
+            { name: 'rsc-delegate-plugin' }, // dummy to match with dev-worker-impl.ts
+          ],
+          optimizeDeps: {
+            include: ['react-server-dom-webpack/client', 'react-dom'],
+            exclude: ['waku'],
+          },
+          ssr: {
+            resolve: {
+              conditions: ['react-server', 'workerd'],
+              externalConditions: ['react-server', 'workerd'],
+            },
+            noExternal: /^(?!node:)/,
+            optimizeDeps: {
+              include: [
+                'react-server-dom-webpack/server',
+                'react',
+                'react/jsx-runtime',
+                'react/jsx-dev-runtime',
+              ],
+              esbuildOptions: {
+                plugins: [
+                  {
+                    name: 'transform-rsc',
+                    setup(build) {
+                      build.onLoad({ filter: /.*/ }, async (args) => {
+                        const text = await readFile(args.path, 'utf8');
+                        const code = transformServer(
+                          text,
+                          args.path,
+                          (id) => id,
+                          (id) => id,
+                        );
+                        if (code) {
+                          return { contents: code };
+                        }
+                      });
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        }).then((mergedViteConfig) => createServer(mergedViteConfig));
+      },
+    );
+  }
+  const vite = await vitePromiseInWorker;
+  const mod = await vite.ssrLoadModule(id);
+  console.log('loaded', id, mod);
+  return mod;
+};
 
 export const SERVER_MODULE_MAP = {
   'rsdw-server': 'react-server-dom-webpack/server.edge',
@@ -76,7 +163,7 @@ export async function renderRsc(
 
   const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
     (isDev
-      ? import(/* @vite-ignore */ SERVER_MODULE_MAP[key])
+      ? loadModuleForDev(SERVER_MODULE_MAP[key])
       : loadModule(key)) as Promise<T>;
 
   const [
@@ -295,7 +382,7 @@ export async function getSsrConfig(
     | (EntriesDev & { loadModule: never; buildConfig: never })
     | EntriesPrd;
   const { renderToReadableStream } = await (isDev
-    ? import(/* @vite-ignore */ SERVER_MODULE_MAP['rsdw-server'])
+    ? loadModuleForDev(SERVER_MODULE_MAP['rsdw-server']).then((m) => m.default)
     : loadModule('rsdw-server').then((m: any) => m.default));
 
   const ssrConfig = await getSsrConfig?.(pathname, {
