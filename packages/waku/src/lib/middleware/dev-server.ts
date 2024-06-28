@@ -66,18 +66,13 @@ const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
   return [writable, promise];
 };
 
-export const devServer: Middleware = (options) => {
-  if (options.cmd !== 'dev') {
-    // pass through if not dev command
-    return (_ctx, next) => next();
-  }
-
-  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
-  const configPromise = resolveConfig(options.config);
+const createMainViteServer = (
+  configPromise: ReturnType<typeof resolveConfig>,
+) => {
   const vitePromise = configPromise.then(async (config) => {
     const mergedViteConfig = await mergeUserViteConfig({
       // Since we have multiple instances of vite, different ones might overwrite the others' cache.
-      cacheDir: 'node_modules/.vite/waku-dev-server',
+      cacheDir: 'node_modules/.vite/waku-dev-server-main',
       base: config.basePath,
       plugins: [
         patchReactRefresh(viteReact()),
@@ -109,7 +104,7 @@ export const devServer: Middleware = (options) => {
     return vite;
   });
 
-  const loadServerFile = async (fileURL: string) => {
+  const loadServerFileMain = async (fileURL: string) => {
     const vite = await vitePromise;
     return vite.ssrLoadModule(fileURLToFilePath(fileURL));
   };
@@ -160,6 +155,30 @@ export const devServer: Middleware = (options) => {
     }
   };
 
+  return {
+    vitePromise,
+    loadServerFileMain,
+    transformIndexHtml,
+    willBeHandledLater,
+  };
+};
+
+export const devServer: Middleware = (options) => {
+  if (options.cmd !== 'dev') {
+    // pass through if not dev command
+    return (_ctx, next) => next();
+  }
+
+  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
+  const configPromise = resolveConfig(options.config);
+
+  const {
+    vitePromise,
+    loadServerFileMain,
+    transformIndexHtml,
+    willBeHandledLater,
+  } = createMainViteServer(configPromise);
+
   let initialModules: ClonableModuleNode[];
 
   return async (ctx, next) => {
@@ -191,7 +210,7 @@ export const devServer: Middleware = (options) => {
       initialModules,
       renderRscWithWorker,
       getSsrConfigWithWorker,
-      loadServerFile,
+      loadServerFileMain,
       transformIndexHtml,
       willBeHandledLater,
     };

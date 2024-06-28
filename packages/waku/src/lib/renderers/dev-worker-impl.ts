@@ -108,7 +108,7 @@ const handleRender = async (mesg: MessageReq & { type: 'render' }) => {
       },
       {
         isDev: true,
-        loadServerFile,
+        loadServerFileRsc,
         resolveClientEntry: (id: string) =>
           resolveClientEntryForDev(
             id,
@@ -182,7 +182,7 @@ const hotUpdateCallback = (payload: HotUpdatePayload) => {
 
 const mergedViteConfig = await mergeUserViteConfig({
   // Since we have multiple instances of vite, different ones might overwrite the others' cache.
-  cacheDir: 'node_modules/.vite/waku-dev-worker',
+  cacheDir: 'node_modules/.vite/waku-dev-server-rsc',
   plugins: [
     viteReact(),
     nonjsResolvePlugin(),
@@ -218,7 +218,7 @@ const vitePromise = createViteServer(mergedViteConfig).then(async (vite) => {
   return vite;
 });
 
-const loadServerFile = async (fileURL: string) => {
+const loadServerFileRsc = async (fileURL: string) => {
   const vite = await vitePromise;
   return vite.ssrLoadModule(fileURLToFilePath(fileURL));
 };
