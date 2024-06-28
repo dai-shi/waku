@@ -41,7 +41,7 @@ type RenderRscOpts =
   | {
       isDev: true;
       entries: EntriesDev;
-      loadServerFile: (fileURL: string) => Promise<unknown>;
+      loadServerFileRsc: (fileURL: string) => Promise<unknown>;
       resolveClientEntry: (id: string) => string;
     };
 
@@ -195,7 +195,7 @@ export async function renderRsc(
     const [fileId, name] = rsfId.split('#') as [string, string];
     let mod: any;
     if (isDev) {
-      mod = await opts.loadServerFile(filePathToFileURL(fileId));
+      mod = await opts.loadServerFileRsc(filePathToFileURL(fileId));
     } else {
       if (!fileId.startsWith('@id/')) {
         throw new Error('Unexpected server entry in PRD');
