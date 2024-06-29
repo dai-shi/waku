@@ -33,10 +33,6 @@
       "types": "./dist/middleware/*.d.ts",
       "default": "./dist/middleware/*.js"
     },
-    "./node-loader": {
-      "types": "./dist/node-loader.d.ts",
-      "default": "./dist/node-loader.js"
-    },
     "./internals": {
       "types": "./dist/internals.d.ts",
       "default": "./dist/internals.js"
