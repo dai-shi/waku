@@ -82,7 +82,7 @@ ${opts.htmlHead}
           tag: 'script',
           attrs: { type: 'module', async: true },
           children: `
-globalThis.__waku_hack_import = (id) => import(id);
+globalThis.__waku_hackImport = (id) => import(id);
 `,
         },
 
