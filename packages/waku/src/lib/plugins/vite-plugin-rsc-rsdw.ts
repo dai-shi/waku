@@ -1,32 +1,35 @@
 import type { Plugin } from 'vite';
 
 const patchRsdw = (code: string) => {
-  code = code.replace(/__webpack_(\w+)__/g, '__waku_$1__');
-  const index = code.indexOf('\nfunction requireAsyncModule');
+  code = code.replace(
+    /__webpack_(\w+)__/g,
+    (_, p1) => `__WAKU_${p1.toUpperCase()}__`,
+  );
+  const index = code.indexOf('function requireAsyncModule(id)');
   if (index === -1) {
     throw new Error('rscRsdwPlugin: Unexpected code structure');
   }
   code =
     code.slice(0, index) +
     `
-globalThis.__waku_module_loading__ ||= new Map();
-globalThis.__waku_module_cache__ ||= new Map();
-globalThis.__waku_chunk_load__ ||= (id, customImport) => {
-  if (!globalThis.__waku_module_loading__.has(id)) {
-    globalThis.__waku_module_loading__.set(
+globalThis.__WAKU_MODULE_LOADING__ ||= new Map();
+globalThis.__WAKU_MODULE_CACHE__ ||= new Map();
+globalThis.__WAKU_CHUNK_LOAD__ ||= (id, customImport) => {
+  if (!globalThis.__WAKU_MODULE_LOADING__.has(id)) {
+    globalThis.__WAKU_MODULE_LOADING__.set(
       id,
       customImport
         ? customImport(id).then((m) => {
-            globalThis.__waku_module_cache__.set(id, m);
+            globalThis.__WAKU_MODULE_CACHE__.set(id, m);
           })
         : globalThis.__waku_hack_import(id).then((m) => {
-            globalThis.__waku_module_cache__.set(id, m);
+            globalThis.__WAKU_MODULE_CACHE__.set(id, m);
           })
     );
   }
-  return globalThis.__waku_module_loading__.get(id);
+  return globalThis.__WAKU_MODULE_LOADING__.get(id);
 };
-globalThis.__waku_require__ ||= (id) => globalThis.__waku_module_cache__.get(id);
+globalThis.__WAKU_REQUIRE__ ||= (id) => globalThis.__WAKU_MODULE_CACHE__.get(id);
 ` +
     code.slice(index);
   return code;
@@ -40,12 +43,17 @@ export function rscRsdwPlugin(): Plugin {
     config(_config, env) {
       mode = env.mode;
     },
-    resolveId(id, importer, options) {
-      // HACK vite-plugin-commonjs does not work for this file
-      if (id.endsWith('/react-server-dom-webpack/server.edge.js')) {
+    async resolveId(id, importer, options) {
+      if (id === 'react-server-dom-webpack/client.edge') {
+        const resolved = await this.resolve(id, importer, options);
+        if (resolved) {
+          id = resolved.id;
+        }
+      }
+      if (id.endsWith('/react-server-dom-webpack/client.edge.js')) {
         id =
-          id.slice(0, -'/server.edge.js'.length) +
-          `/cjs/react-server-dom-webpack-server.edge.${mode === 'production' ? 'production' : 'development'}.js`;
+          id.slice(0, -'/client.edge.js'.length) +
+          `/cjs/react-server-dom-webpack-client.edge.${mode === 'production' ? 'production' : 'development'}.js`;
         return this.resolve(id, importer, options);
       }
     },
@@ -56,6 +64,7 @@ export function rscRsdwPlugin(): Plugin {
         [
           '/react-server-dom-webpack-server.edge.production.js',
           '/react-server-dom-webpack-server.edge.development.js',
+          '/react-server-dom-webpack_server__edge.js',
           '/react-server-dom-webpack-client.edge.production.js',
           '/react-server-dom-webpack-client.edge.development.js',
           '/react-server-dom-webpack-client.browser.production.js',

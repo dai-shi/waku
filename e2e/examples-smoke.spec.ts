@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import waitPort from 'wait-port';
 import { readdir, rm } from 'node:fs/promises';
 import { basename } from 'node:path';
-import { debugChildProcess, getFreePort, terminate, test } from './utils.js';
+import { getFreePort, terminate, test } from './utils.js';
 import { error, info } from '@actions/core';
 
 const examplesDir = fileURLToPath(new URL('../examples', import.meta.url));
@@ -29,21 +29,6 @@ const commands = [
   },
 ];
 
-const specialExamples = [
-  {
-    name: '08_cookies',
-    commands: [
-      {
-        command: 'node dev.js',
-      },
-      {
-        build: 'waku build',
-        command: 'node start.js',
-      },
-    ],
-  },
-].slice(Infinity); // FIXME: remove, as no longer needed
-
 const examples = [
   ...(await readdir(examplesDir)).map((example) =>
     fileURLToPath(new URL(`../examples/${example}`, import.meta.url)),
@@ -51,93 +36,51 @@ const examples = [
 ];
 
 for (const cwd of examples) {
-  const specialExample = specialExamples.find(({ name }) => cwd.includes(name));
-  if (specialExample) {
-    for (const { build, command } of specialExample.commands) {
-      test.describe(`smoke test on ${basename(cwd)}: ${command}`, () => {
-        let cp: ChildProcess;
-        let port: number;
-        test.beforeAll('remove cache', async () => {
-          await rm(`${cwd}/dist`, {
-            recursive: true,
-            force: true,
-          });
-        });
-
-        test.beforeAll(async () => {
-          if (build) {
-            execSync(build, {
-              cwd,
-              env: process.env,
-            });
-          }
-          port = await getFreePort();
-          cp = exec(`${command} --port ${port}`, { cwd });
-          debugChildProcess(cp, fileURLToPath(import.meta.url), [
-            /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
-          ]);
-          await waitPort({ port });
-        });
-
-        test.afterAll(async () => {
-          await terminate(cp.pid!);
-        });
-
-        test('check title', async ({ page }) => {
-          await page.goto(`http://localhost:${port}/`);
-          // title maybe doesn't ready yet
-          await page.waitForLoadState('load');
-          await expect.poll(() => page.title()).toMatch(/^Waku/);
+  for (const { build, command } of commands) {
+    test.describe(`smoke test on ${basename(cwd)}: ${command}`, () => {
+      let cp: ChildProcess;
+      let port: number;
+      test.beforeAll('remove cache', async () => {
+        await rm(`${cwd}/dist`, {
+          recursive: true,
+          force: true,
         });
       });
-    }
-  } else {
-    for (const { build, command } of commands) {
-      test.describe(`smoke test on ${basename(cwd)}: ${command}`, () => {
-        let cp: ChildProcess;
-        let port: number;
-        test.beforeAll('remove cache', async () => {
-          await rm(`${cwd}/dist`, {
-            recursive: true,
-            force: true,
-          });
-        });
 
-        test.beforeAll(async () => {
-          if (build) {
-            execSync(`node ${waku} ${build}`, { cwd });
+      test.beforeAll(async () => {
+        if (build) {
+          execSync(`node ${waku} ${build}`, { cwd });
+        }
+        port = await getFreePort();
+        cp = exec(`node ${waku} ${command} --port ${port}`, { cwd });
+        cp.stdout?.on('data', (data) => {
+          info(`${port} stdout: ${data}`);
+          console.log(`${port} stdout: `, `${data}`);
+        });
+        cp.stderr?.on('data', (data) => {
+          if (
+            command === 'dev' &&
+            /WebSocket server error: Port is already in use/.test(`${data}`)
+          ) {
+            // ignore this error
+            return;
           }
-          port = await getFreePort();
-          cp = exec(`node ${waku} ${command} --port ${port}`, { cwd });
-          cp.stdout?.on('data', (data) => {
-            info(`${port} stdout: ${data}`);
-            console.log(`${port} stdout: `, `${data}`);
-          });
-          cp.stderr?.on('data', (data) => {
-            if (
-              command === 'dev' &&
-              /WebSocket server error: Port is already in use/.test(`${data}`)
-            ) {
-              // ignore this error
-              return;
-            }
-            error(`${port} stderr: ${data}`);
-            console.error(`${port} stderr: `, `${data}`);
-          });
-          await waitPort({ port });
+          error(`${port} stderr: ${data}`);
+          console.error(`${port} stderr: `, `${data}`);
         });
-
-        test.afterAll(async () => {
-          await terminate(cp.pid!);
-        });
-
-        test('check title', async ({ page }) => {
-          await page.goto(`http://localhost:${port}/`);
-          // title maybe doesn't ready yet
-          await page.waitForLoadState('load');
-          await expect.poll(() => page.title()).toMatch(/^Waku/);
-        });
+        await waitPort({ port });
       });
-    }
+
+      test.afterAll(async () => {
+        await terminate(cp.pid!);
+      });
+
+      test('check title', async ({ page }) => {
+        await page.goto(`http://localhost:${port}/`);
+        // title maybe doesn't ready yet
+        await page.waitForLoadState('load');
+        await expect.poll(() => page.title()).toMatch(/^Waku/);
+      });
+    });
   }
 }

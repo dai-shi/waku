@@ -1,5 +1,6 @@
 import { Counter } from './Counter';
 import { Form } from './Form';
+import { ServerForm } from './ServerForm';
 import { getMessage, greet, increment } from './funcs';
 
 type ServerFunction<T> = T extends (...args: infer A) => infer R
@@ -19,6 +20,7 @@ const App = ({ name }: { name: string }) => {
         message={getMessage()}
         greet={greet as unknown as ServerFunction<typeof greet>}
       />
+      <ServerForm />
     </div>
   );
 };

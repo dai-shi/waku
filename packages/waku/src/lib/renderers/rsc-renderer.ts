@@ -33,6 +33,7 @@ export type RenderRscArgs = {
   body?: ReadableStream | undefined;
   contentType?: string | undefined;
   moduleIdCallback?: ((id: string) => void) | undefined;
+  onError?: (err: unknown) => void;
 };
 
 type RenderRscOpts =
@@ -40,7 +41,8 @@ type RenderRscOpts =
   | {
       isDev: true;
       entries: EntriesDev;
-      loadServerFile: (fileURL: string) => Promise<unknown>;
+      loadServerFileRsc: (fileURL: string) => Promise<unknown>;
+      loadServerModuleRsc: (id: string) => Promise<unknown>;
       resolveClientEntry: (id: string) => string;
     };
 
@@ -57,6 +59,7 @@ export async function renderRsc(
     context,
     body,
     moduleIdCallback,
+    onError,
   } = args;
   const { isDev, entries } = opts;
 
@@ -74,7 +77,7 @@ export async function renderRsc(
 
   const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
     (isDev
-      ? import(/* @vite-ignore */ SERVER_MODULE_MAP[key])
+      ? opts.loadServerModuleRsc(SERVER_MODULE_MAP[key])
       : loadModule(key)) as Promise<T>;
 
   const [
@@ -125,7 +128,9 @@ export async function renderRsc(
       if (Object.keys(elements).some((key) => key.startsWith('_'))) {
         throw new Error('"_" prefix is reserved');
       }
-      return renderToReadableStream(elements, bundlerConfig);
+      return renderToReadableStream(elements, bundlerConfig, {
+        onError,
+      });
     });
   };
 
@@ -164,6 +169,9 @@ export async function renderRsc(
       return renderToReadableStream(
         { ...elements, _value: actionValue },
         bundlerConfig,
+        {
+          onError,
+        },
       );
     });
   };
@@ -188,14 +196,14 @@ export async function renderRsc(
     const [fileId, name] = rsfId.split('#') as [string, string];
     let mod: any;
     if (isDev) {
-      mod = await opts.loadServerFile(filePathToFileURL(fileId));
+      mod = await opts.loadServerFileRsc(filePathToFileURL(fileId));
     } else {
       if (!fileId.startsWith('@id/')) {
         throw new Error('Unexpected server entry in PRD');
       }
       mod = await loadModule(fileId.slice('@id/'.length));
     }
-    const fn = mod[name] || mod;
+    const fn = mod.__waku_serverActions?.get(name) || mod[name] || mod;
     return renderWithContextWithAction(context, fn, args);
   }
 
@@ -266,6 +274,7 @@ type GetSsrConfigOpts =
   | {
       isDev: true;
       entries: EntriesDev;
+      loadServerModuleRsc: (id: string) => Promise<unknown>;
       resolveClientEntry: (id: string) => string;
     };
 
@@ -287,9 +296,15 @@ export async function getSsrConfig(
   } = entries as
     | (EntriesDev & { loadModule: never; buildConfig: never })
     | EntriesPrd;
-  const { renderToReadableStream } = await (isDev
-    ? import(/* @vite-ignore */ SERVER_MODULE_MAP['rsdw-server'])
-    : loadModule('rsdw-server').then((m: any) => m.default));
+
+  const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
+    (isDev
+      ? opts.loadServerModuleRsc(SERVER_MODULE_MAP[key])
+      : loadModule(key)) as Promise<T>;
+
+  const {
+    default: { renderToReadableStream },
+  } = await loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server');
 
   const ssrConfig = await getSsrConfig?.(pathname, {
     searchParams,
