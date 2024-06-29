@@ -11,6 +11,9 @@ export function devCommonJsPlugin(): Plugin {
   return {
     name: 'dev-commonjs-plugin',
     async transform(code, id) {
+      if (code.startsWith("import { createRequire } from 'module';")) {
+        return;
+      }
       if (!isCommonjs(code)) {
         return;
       }
