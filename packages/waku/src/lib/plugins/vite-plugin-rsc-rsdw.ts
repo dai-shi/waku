@@ -36,22 +36,9 @@ globalThis.__WAKU_REQUIRE__ ||= (id) => globalThis.__WAKU_MODULE_CACHE__.get(id)
 };
 
 export function rscRsdwPlugin(): Plugin {
-  let mode: string;
   return {
     name: 'rsc-rsdw-plugin',
     enforce: 'pre',
-    config(_config, env) {
-      mode = env.mode;
-    },
-    resolveId(id, importer, options) {
-      // HACK vite-plugin-commonjs does not work for this file
-      if (id.endsWith('/react-server-dom-webpack/server.edge.js')) {
-        id =
-          id.slice(0, -'/server.edge.js'.length) +
-          `/cjs/react-server-dom-webpack-server.edge.${mode === 'production' ? 'production' : 'development'}.js`;
-        return this.resolve(id, importer, options);
-      }
-    },
     transform(code, id) {
       const [file, opt] = id.split('?');
       if (

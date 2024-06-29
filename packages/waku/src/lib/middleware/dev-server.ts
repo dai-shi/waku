@@ -3,7 +3,6 @@ import { Server } from 'node:http';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
-import viteCommonjs from 'vite-plugin-commonjs';
 
 import type { EntriesDev } from '../../server.js';
 import { resolveConfig } from '../config.js';
@@ -14,8 +13,8 @@ import {
   decodeFilePathFromAbsolute,
 } from '../utils/path.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
-import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { devCommonJsPlugin } from '../plugins/vite-plugin-dev-commonjs.js';
+import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscRsdwPlugin } from '../plugins/vite-plugin-rsc-rsdw.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
@@ -94,17 +93,6 @@ const createMainViteServer = (
       base: config.basePath,
       plugins: [
         patchReactRefresh(viteReact()),
-        viteCommonjs({
-          filter(id: string) {
-            if (
-              id.includes('/node_modules/react-server-dom-webpack/') ||
-              id.includes('/node_modules/react-dom/') ||
-              id.includes('/node_modules/react/')
-            ) {
-              return true;
-            }
-          },
-        }),
         nonjsResolvePlugin(),
         rscRsdwPlugin(),
         rscEnvPlugin({ config }),
@@ -210,8 +198,8 @@ const createRscViteServer = (
       cacheDir: 'node_modules/.vite/waku-dev-server-rsc',
       plugins: [
         viteReact(),
-        nonjsResolvePlugin(),
         devCommonJsPlugin(),
+        nonjsResolvePlugin(),
         rscRsdwPlugin(),
         rscEnvPlugin({}),
         rscPrivatePlugin({ privateDir: config.privateDir, hotUpdateCallback }),
