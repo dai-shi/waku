@@ -20,7 +20,7 @@ export const ssr: Middleware = (options) => {
       : resolveConfig(options.config);
 
   return async (ctx, next) => {
-    const { devServer } = ctx;
+    const { unstable_devServer: devServer } = ctx;
     if (
       devServer &&
       (await devServer.willBeHandledLater(ctx.req.url.pathname))
@@ -32,6 +32,7 @@ export const ssr: Middleware = (options) => {
       configPromise,
       entriesPromise,
     ]);
+    const entriesDev = devServer && (await devServer.loadEntriesDev(config));
     try {
       const htmlHead = devServer
         ? config.htmlHead
@@ -58,14 +59,13 @@ export const ssr: Middleware = (options) => {
             ? {
                 isDev: true,
                 getSsrConfigForHtml: (pathname, searchParams) =>
-                  devServer.getSsrConfigWithWorker(
+                  getSsrConfig(
+                    { config, pathname, searchParams },
                     {
-                      config,
-                      pathname,
-                      searchParams,
-                    },
-                    {
-                      initialModules: devServer.initialModules,
+                      isDev: true,
+                      loadServerModuleRsc: devServer.loadServerModuleRsc,
+                      resolveClientEntry: devServer.resolveClientEntryDev,
+                      entries: entriesDev!,
                     },
                   ),
                 rootDir: devServer.rootDir,

@@ -1,20 +1,24 @@
 import { Readable, Writable } from 'node:stream';
+import { Server } from 'node:http';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
+import type { EntriesDev } from '../../server.js';
 import { resolveConfig } from '../config.js';
-import { fileURLToFilePath } from '../utils/path.js';
 import {
-  initializeWorker,
-  registerHotUpdateCallback,
-  renderRscWithWorker,
-  getSsrConfigWithWorker,
-} from '../renderers/dev-worker-api.js';
+  joinPath,
+  fileURLToFilePath,
+  encodeFilePathToAbsolute,
+  decodeFilePathFromAbsolute,
+} from '../utils/path.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
+import { devCommonJsPlugin } from '../plugins/vite-plugin-dev-commonjs.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscHmrPlugin, hotUpdate } from '../plugins/vite-plugin-rsc-hmr.js';
+import type { HotUpdatePayload } from '../plugins/vite-plugin-rsc-hmr.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import {
@@ -23,8 +27,14 @@ import {
   SRC_MAIN,
   rscManagedPlugin,
 } from '../plugins/vite-plugin-rsc-managed.js';
+import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import type { ClonableModuleNode, Middleware } from './types.js';
+
+// TODO there is huge room for refactoring in this file
+
+// For react-server-dom-webpack/server.edge
+(globalThis as any).AsyncLocalStorage = AsyncLocalStorage;
 
 const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
   let controller: ReadableStreamDefaultController | undefined;
@@ -66,6 +76,12 @@ const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
   return [writable, promise];
 };
 
+const hotUpdateCallbackSet = new Set<(payload: HotUpdatePayload) => void>();
+const registerHotUpdateCallback = (fn: (payload: HotUpdatePayload) => void) =>
+  hotUpdateCallbackSet.add(fn);
+const hotUpdateCallback = (payload: HotUpdatePayload) =>
+  hotUpdateCallbackSet.forEach((fn) => fn(payload));
+
 const createMainViteServer = (
   configPromise: ReturnType<typeof resolveConfig>,
 ) => {
@@ -99,7 +115,6 @@ const createMainViteServer = (
       server: { middlewareMode: true },
     });
     const vite = await createViteServer(mergedViteConfig);
-    initializeWorker(config);
     registerHotUpdateCallback((payload) => hotUpdate(vite, payload));
     return vite;
   });
@@ -163,6 +178,102 @@ const createMainViteServer = (
   };
 };
 
+const createRscViteServer = (
+  configPromise: ReturnType<typeof resolveConfig>,
+) => {
+  const dummyServer = new Server(); // FIXME we hope to avoid this hack
+
+  const vitePromise = configPromise.then(async (config) => {
+    const mergedViteConfig = await mergeUserViteConfig({
+      // Since we have multiple instances of vite, different ones might overwrite the others' cache.
+      cacheDir: 'node_modules/.vite/waku-dev-server-rsc',
+      plugins: [
+        viteReact(),
+        nonjsResolvePlugin(),
+        devCommonJsPlugin(),
+        rscEnvPlugin({}),
+        rscPrivatePlugin({ privateDir: config.privateDir, hotUpdateCallback }),
+        rscManagedPlugin({ basePath: config.basePath, srcDir: config.srcDir }),
+        rscTransformPlugin({ isClient: false, isBuild: false }),
+        rscDelegatePlugin(hotUpdateCallback),
+      ],
+      optimizeDeps: {
+        include: ['react-server-dom-webpack/client', 'react-dom'],
+        exclude: ['waku'],
+        entries: [
+          `${config.srcDir}/${SRC_ENTRIES}.*`,
+          // HACK hard-coded "pages"
+          `${config.srcDir}/pages/**/*.*`,
+        ],
+      },
+      ssr: {
+        resolve: {
+          conditions: ['react-server', 'workerd'],
+          externalConditions: ['react-server', 'workerd'],
+        },
+        noExternal: /^(?!node:)/,
+        optimizeDeps: {
+          include: [
+            'react-server-dom-webpack/server.edge',
+            'react',
+            'react/jsx-runtime',
+            'react/jsx-dev-runtime',
+          ],
+          exclude: ['waku'],
+        },
+      },
+      appType: 'custom',
+      server: { middlewareMode: true, hmr: { server: dummyServer } },
+    });
+    const vite = await createViteServer(mergedViteConfig);
+    return vite;
+  });
+
+  const loadServerFileRsc = async (fileURL: string) => {
+    const vite = await vitePromise;
+    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
+  };
+
+  const loadServerModuleRsc = async (id: string) => {
+    const vite = await vitePromise;
+    return vite.ssrLoadModule(id);
+  };
+
+  const loadEntriesDev = async (config: { srcDir: string }) => {
+    const vite = await vitePromise;
+    const filePath = joinPath(vite.config.root, config.srcDir, SRC_ENTRIES);
+    return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
+  };
+
+  const resolveClientEntry = (
+    id: string,
+    config: { rootDir: string; basePath: string },
+    initialModules: ClonableModuleNode[],
+  ) => {
+    let file = id.startsWith('file://')
+      ? decodeFilePathFromAbsolute(fileURLToFilePath(id))
+      : id;
+    for (const moduleNode of initialModules) {
+      if (moduleNode.file === file) {
+        return moduleNode.url;
+      }
+    }
+    if (file.startsWith(config.rootDir)) {
+      file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
+    } else {
+      file = '@fs' + encodeFilePathToAbsolute(file);
+    }
+    return config.basePath + file;
+  };
+
+  return {
+    loadServerFileRsc,
+    loadServerModuleRsc,
+    loadEntriesDev,
+    resolveClientEntry,
+  };
+};
+
 export const devServer: Middleware = (options) => {
   if (options.cmd !== 'dev') {
     // pass through if not dev command
@@ -178,6 +289,13 @@ export const devServer: Middleware = (options) => {
     transformIndexHtml,
     willBeHandledLater,
   } = createMainViteServer(configPromise);
+
+  const {
+    loadServerFileRsc,
+    loadServerModuleRsc,
+    loadEntriesDev,
+    resolveClientEntry,
+  } = createRscViteServer(configPromise);
 
   let initialModules: ClonableModuleNode[];
 
@@ -205,11 +323,20 @@ export const devServer: Middleware = (options) => {
       );
     }
 
-    ctx.devServer = {
+    ctx.unstable_devServer = {
       rootDir: vite.config.root,
-      initialModules,
-      renderRscWithWorker,
-      getSsrConfigWithWorker,
+      resolveClientEntryDev: (id: string) =>
+        resolveClientEntry(
+          id,
+          {
+            rootDir: vite.config.root,
+            basePath: config.basePath,
+          },
+          initialModules,
+        ),
+      loadServerFileRsc,
+      loadServerModuleRsc,
+      loadEntriesDev,
       loadServerFileMain,
       transformIndexHtml,
       willBeHandledLater,
