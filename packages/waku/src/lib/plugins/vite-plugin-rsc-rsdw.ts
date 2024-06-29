@@ -5,7 +5,7 @@ const patchRsdw = (code: string) => {
     /__webpack_(\w+)__/g,
     (_, p1) => `__WAKU_${p1.toUpperCase()}__`,
   );
-  const index = code.indexOf('\nfunction requireAsyncModule');
+  const index = code.indexOf('function requireAsyncModule(id)');
   if (index === -1) {
     throw new Error('rscRsdwPlugin: Unexpected code structure');
   }
@@ -36,9 +36,27 @@ globalThis.__WAKU_REQUIRE__ ||= (id) => globalThis.__WAKU_MODULE_CACHE__.get(id)
 };
 
 export function rscRsdwPlugin(): Plugin {
+  let mode: string;
   return {
     name: 'rsc-rsdw-plugin',
     enforce: 'pre',
+    config(_config, env) {
+      mode = env.mode;
+    },
+    async resolveId(id, importer, options) {
+      if (id === 'react-server-dom-webpack/client.edge') {
+        const resolved = await this.resolve(id, importer, options);
+        if (resolved) {
+          id = resolved.id;
+        }
+      }
+      if (id.endsWith('/react-server-dom-webpack/client.edge.js')) {
+        id =
+          id.slice(0, -'/client.edge.js'.length) +
+          `/cjs/react-server-dom-webpack-client.edge.${mode === 'production' ? 'production' : 'development'}.js`;
+        return this.resolve(id, importer, options);
+      }
+    },
     transform(code, id) {
       const [file, opt] = id.split('?');
       if (
@@ -46,6 +64,7 @@ export function rscRsdwPlugin(): Plugin {
         [
           '/react-server-dom-webpack-server.edge.production.js',
           '/react-server-dom-webpack-server.edge.development.js',
+          '/react-server-dom-webpack_server__edge.js',
           '/react-server-dom-webpack-client.edge.production.js',
           '/react-server-dom-webpack-client.edge.development.js',
           '/react-server-dom-webpack-client.browser.production.js',
