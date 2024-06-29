@@ -93,6 +93,17 @@ const createMainViteServer = (
       base: config.basePath,
       plugins: [
         patchReactRefresh(viteReact()),
+        devCommonJsPlugin({
+          filter: (id) => {
+            if (
+              id.includes('/node_modules/react-server-dom-webpack/') ||
+              id.includes('/node_modules/react-dom/') ||
+              id.includes('/node_modules/react/')
+            ) {
+              return true;
+            }
+          },
+        }),
         nonjsResolvePlugin(),
         rscRsdwPlugin(),
         rscEnvPlugin({ config }),
@@ -198,7 +209,7 @@ const createRscViteServer = (
       cacheDir: 'node_modules/.vite/waku-dev-server-rsc',
       plugins: [
         viteReact(),
-        devCommonJsPlugin(),
+        devCommonJsPlugin({}),
         nonjsResolvePlugin(),
         rscRsdwPlugin(),
         rscEnvPlugin({}),
