@@ -1,6 +1,7 @@
 import { Readable, Writable } from 'node:stream';
 import { Server } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
@@ -35,6 +36,9 @@ import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import type { ClonableModuleNode, Middleware } from './types.js';
 
 // TODO there is huge room for refactoring in this file
+
+// For react-server-dom-webpack/server.edge
+(globalThis as any).AsyncLocalStorage = AsyncLocalStorage;
 
 const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
   let controller: ReadableStreamDefaultController | undefined;
