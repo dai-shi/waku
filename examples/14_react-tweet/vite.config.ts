@@ -8,11 +8,6 @@ export default ({ mode }: { mode: string }) => {
           'react-tweet > date-fns/format/index.js',
         ],
       },
-      ssr: {
-        optimizeDeps: {
-          include: ['react-tweet'],
-        },
-      },
     };
   }
   return {};
