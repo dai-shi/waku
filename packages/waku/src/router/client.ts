@@ -4,6 +4,7 @@ import {
   Component,
   createContext,
   createElement,
+  startTransition,
   useCallback,
   useContext,
   useEffect,
@@ -333,7 +334,9 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
   const changeRoute: ChangeRoute = useCallback(
     (route, options) => {
       const { checkCache, skipRefetch } = options || {};
-      setRoute(route);
+      startTransition(() => {
+        setRoute(route);
+      });
       const componentIds = getComponentIds(route.path);
       if (
         checkCache &&
@@ -364,14 +367,16 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
           ]),
         );
       }
-      setCached((prev) => ({
-        ...prev,
-        ...Object.fromEntries(
-          componentIds.flatMap((id) =>
-            skip.includes(id) ? [] : [[id, route]],
+      startTransition(() => {
+        setCached((prev) => ({
+          ...prev,
+          ...Object.fromEntries(
+            componentIds.flatMap((id) =>
+              skip.includes(id) ? [] : [[id, route]],
+            ),
           ),
-        ),
-      }));
+        }));
+      });
     },
     [refetch, routerData],
   );
@@ -554,11 +559,9 @@ class ErrorBoundary extends Component<
     super(props);
     this.state = {};
   }
-
   static getDerivedStateFromError(error: unknown) {
     return { error };
   }
-
   render() {
     if ('error' in this.state) {
       if (

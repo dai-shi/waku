@@ -82,7 +82,7 @@ const createStringLiteral = (value: string): swc.StringLiteral => ({
 });
 
 const serverActionsInitCode = swc.parseSync(`
-import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server';
+import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
 export const __waku_serverActions = new Map();
 let __waku_actionIndex = 0;
 function __waku_registerServerAction(fn, actionId) {
@@ -225,7 +225,7 @@ const transformServer = (
   if (hasUseClient) {
     const exportNames = collectExportNames(mod);
     let newCode = `
-import { registerClientReference } from 'react-server-dom-webpack/server';
+import { registerClientReference } from 'react-server-dom-webpack/server.edge';
 `;
     for (const name of exportNames) {
       newCode += `
@@ -238,7 +238,7 @@ export ${name === 'default' ? name : `const ${name} =`} registerClientReference(
     let newCode =
       code +
       `
-import { registerServerReference } from 'react-server-dom-webpack/server';
+import { registerServerReference } from 'react-server-dom-webpack/server.edge';
 `;
     for (const name of exportNames) {
       newCode += `
@@ -306,6 +306,10 @@ export function rscTransformPlugin(
   return {
     name: 'rsc-transform-plugin',
     async transform(code, id, options) {
+      if (!opts.isBuild) {
+        // id can contain query string with vite deps optimization
+        id = id.split('?')[0] as string;
+      }
       if (!EXTENSIONS.includes(extname(id))) {
         return;
       }
