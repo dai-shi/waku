@@ -118,8 +118,8 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
     ssr: {
       target: 'webworker',
       resolve: {
-        conditions: ['react-server', 'workerd'],
-        externalConditions: ['react-server', 'workerd'],
+        conditions: ['react-server'],
+        externalConditions: ['react-server'],
       },
       noExternal: /^(?!node:)/,
     },
@@ -251,16 +251,16 @@ const buildServerBundle = async (
     ssr: isNodeCompatible
       ? {
           resolve: {
-            conditions: ['react-server', 'workerd'],
-            externalConditions: ['react-server', 'workerd'],
+            conditions: ['react-server'],
+            externalConditions: ['react-server'],
           },
           noExternal: /^(?!node:)/,
         }
       : {
           target: 'webworker',
           resolve: {
-            conditions: ['react-server', 'workerd', 'worker'],
-            externalConditions: ['react-server', 'workerd', 'worker'],
+            conditions: ['react-server', 'worker'],
+            externalConditions: ['react-server', 'worker'],
           },
           noExternal: /^(?!node:)/,
         },
