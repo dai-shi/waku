@@ -47,7 +47,7 @@ export const CLIENT_PREFIX = 'client/';
         ? customImport(id).then((m) => {
             (globalThis as any).__WAKU_MODULE_CACHE__.set(id, m);
           })
-        : import(id).then((m) => {
+        : import(/* @vite-ignore */ id).then((m) => {
             (globalThis as any).__WAKU_MODULE_CACHE__.set(id, m);
           }),
     );
