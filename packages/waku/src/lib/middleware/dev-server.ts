@@ -208,8 +208,8 @@ const createRscViteServer = (
       },
       ssr: {
         resolve: {
-          conditions: ['react-server', 'workerd'],
-          externalConditions: ['react-server', 'workerd'],
+          conditions: ['react-server'],
+          externalConditions: ['react-server'],
         },
         noExternal: /^(?!node:)/,
         optimizeDeps: {
