@@ -102,3 +102,43 @@ export default function App() {
       `);
   });
 });
+
+describe('internal transform function for client environment', () => {
+  const { transform } = rscTransformPlugin({
+    isClient: true,
+    isBuild: false,
+  }) as {
+    transform(
+      code: string,
+      id: string,
+      options?: { ssr?: boolean },
+    ): Promise<string | undefined>;
+  };
+
+  test('no transformation', async () => {
+    const code = `
+export const log = (mesg) => {
+  console.log(mesg);
+};
+`;
+    expect(await transform(code, '/src/func.ts')).toBeUndefined();
+  });
+
+  test('top-level use server', async () => {
+    const code = `
+'use server';
+
+export const log = (mesg) => {
+  console.log(mesg);
+};
+`;
+    expect(await transform(code, '/src/func.ts')).toMatchInlineSnapshot(`
+      "
+      import { createServerReference } from 'react-server-dom-webpack/client';
+      import { callServerRSC } from 'waku/client';
+
+      export const log = createServerReference('/src/func.ts#log', callServerRSC);
+      "
+    `);
+  });
+});
