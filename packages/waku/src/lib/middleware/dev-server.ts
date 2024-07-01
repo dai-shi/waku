@@ -13,8 +13,8 @@ import {
   decodeFilePathFromAbsolute,
 } from '../utils/path.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
-import { devCommonJsPlugin } from '../plugins/vite-plugin-dev-commonjs.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
+import { devCommonJsPlugin } from '../plugins/vite-plugin-dev-commonjs.js';
 import { rscRsdwPlugin } from '../plugins/vite-plugin-rsc-rsdw.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
@@ -93,6 +93,7 @@ const createMainViteServer = (
       base: config.basePath,
       plugins: [
         patchReactRefresh(viteReact()),
+        nonjsResolvePlugin(),
         devCommonJsPlugin({
           filter: (id) => {
             if (
@@ -104,7 +105,6 @@ const createMainViteServer = (
             }
           },
         }),
-        nonjsResolvePlugin(),
         rscRsdwPlugin(),
         rscEnvPlugin({ config }),
         rscPrivatePlugin(config),
@@ -209,8 +209,8 @@ const createRscViteServer = (
       cacheDir: 'node_modules/.vite/waku-dev-server-rsc',
       plugins: [
         viteReact(),
-        devCommonJsPlugin({}),
         nonjsResolvePlugin(),
+        devCommonJsPlugin({}),
         rscRsdwPlugin(),
         rscEnvPlugin({}),
         rscPrivatePlugin({ privateDir: config.privateDir, hotUpdateCallback }),
