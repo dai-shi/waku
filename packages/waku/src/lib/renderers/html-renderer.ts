@@ -260,17 +260,7 @@ export const renderHtml = async (
     throw e;
   }
   const moduleMap = new Proxy(
-    {} as Record<
-      string,
-      Record<
-        string,
-        {
-          id: string;
-          chunks: string[];
-          name: string;
-        }
-      >
-    >,
+    {} as Record<string, Record<string, ImportManifestEntry>>,
     {
       get(_target, filePath: string) {
         return new Proxy(
