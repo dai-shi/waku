@@ -1,9 +1,9 @@
 import type { Plugin } from 'vite';
 
-const patchRsdw = (code: string) => {
+const patchRsdw = (code: string, type: 'SERVER' | 'CLIENT') => {
   code = code.replace(
     /__webpack_(\w+)__/g,
-    (_, p1) => `__WAKU_${p1.toUpperCase()}__`,
+    (_, p1) => `__WAKU_${type}_${p1.toUpperCase()}__`,
   );
   const index = code.indexOf('function requireAsyncModule(id)');
   if (index === -1) {
@@ -12,20 +12,23 @@ const patchRsdw = (code: string) => {
   code =
     code.slice(0, index) +
     `
-globalThis.__WAKU_MODULE_LOADING__ ||= new Map();
-globalThis.__WAKU_MODULE_CACHE__ ||= new Map();
-globalThis.__WAKU_CHUNK_LOAD__ ||= (id, customImport = globalThis.__WAKU_HACK_IMPORT__) => {
-  if (!globalThis.__WAKU_MODULE_LOADING__.has(id)) {
-    globalThis.__WAKU_MODULE_LOADING__.set(
+globalThis.__WAKU_${type}_MODULE_LOADING__ ||= new Map();
+globalThis.__WAKU_${type}_MODULE_CACHE__ ||= new Map();
+globalThis.__WAKU_${type}_CHUNK_LOAD__ ||= (
+  id,
+  customImport = globalThis.__WAKU_HACK_IMPORT__
+) => {
+  if (!globalThis.__WAKU_${type}_MODULE_LOADING__.has(id)) {
+    globalThis.__WAKU_${type}_MODULE_LOADING__.set(
       id,
       customImport(id).then((m) => {
-        globalThis.__WAKU_MODULE_CACHE__.set(id, m);
+        globalThis.__WAKU_${type}_MODULE_CACHE__.set(id, m);
       })
     );
   }
-  return globalThis.__WAKU_MODULE_LOADING__.get(id);
+  return globalThis.__WAKU_${type}_MODULE_LOADING__.get(id);
 };
-globalThis.__WAKU_REQUIRE__ ||= (id) => globalThis.__WAKU_MODULE_CACHE__.get(id);
+globalThis.__WAKU_${type}_REQUIRE__ ||= (id) => globalThis.__WAKU_${type}_MODULE_CACHE__.get(id);
 ` +
     code.slice(index);
   return code;
@@ -56,13 +59,21 @@ export function rscRsdwPlugin(): Plugin {
     transform(code, id) {
       const [file, opt] = id.split('?');
       if (
-        !['commonjs-exports', 'commonjs-proxy', 'commonjs-entry'].includes(
-          opt!,
-        ) &&
+        ['commonjs-exports', 'commonjs-proxy', 'commonjs-entry'].includes(opt!)
+      ) {
+        return;
+      }
+      if (
         [
           '/react-server-dom-webpack-server.edge.production.js',
           '/react-server-dom-webpack-server.edge.development.js',
           '/react-server-dom-webpack_server__edge.js',
+        ].some((suffix) => file!.endsWith(suffix))
+      ) {
+        return patchRsdw(code, 'SERVER');
+      }
+      if (
+        [
           '/react-server-dom-webpack-client.edge.production.js',
           '/react-server-dom-webpack-client.edge.development.js',
           '/react-server-dom-webpack-client.browser.production.js',
@@ -70,7 +81,7 @@ export function rscRsdwPlugin(): Plugin {
           '/react-server-dom-webpack_client.js',
         ].some((suffix) => file!.endsWith(suffix))
       ) {
-        return patchRsdw(code);
+        return patchRsdw(code, 'CLIENT');
       }
     },
   };

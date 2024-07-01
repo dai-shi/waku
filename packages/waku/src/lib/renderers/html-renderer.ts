@@ -33,30 +33,6 @@ export const CLIENT_MODULE_MAP = {
 } as const;
 export const CLIENT_PREFIX = 'client/';
 
-// We need this hack for DEV
-(globalThis as any).__WAKU_MODULE_LOADING__ ||= new Map();
-(globalThis as any).__WAKU_MODULE_CACHE__ ||= new Map();
-(globalThis as any).__WAKU_CHUNK_LOAD__ ||= (
-  id: string,
-  customImport?: (id: string) => Promise<unknown>,
-) => {
-  if (!(globalThis as any).__WAKU_MODULE_LOADING__.has(id)) {
-    (globalThis as any).__WAKU_MODULE_LOADING__.set(
-      id,
-      customImport
-        ? customImport(id).then((m) => {
-            (globalThis as any).__WAKU_MODULE_CACHE__.set(id, m);
-          })
-        : import(/* @vite-ignore */ id).then((m) => {
-            (globalThis as any).__WAKU_MODULE_CACHE__.set(id, m);
-          }),
-    );
-  }
-  return (globalThis as any).__WAKU_MODULE_LOADING__.get(id);
-};
-(globalThis as any).__WAKU_REQUIRE__ ||= (id: string) =>
-  (globalThis as any).__WAKU_MODULE_CACHE__.get(id);
-
 const fakeFetchCode = `
 Promise.resolve(new Response(new ReadableStream({
   start(c) {
@@ -302,20 +278,22 @@ export const renderHtml = async (
                     fileWithAbsolutePath
                       .slice(wakuDist.length)
                       .replace(/\.\w+$/, '');
-                  (globalThis as any).__WAKU_CHUNK_LOAD__(id, (id: string) =>
-                    opts.loadServerModule(id),
+                  (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(
+                    id,
+                    (id: string) => opts.loadServerModule(id),
                   );
                   return { id, chunks: [id], name };
                 }
                 const id = filePathToFileURL(file);
-                (globalThis as any).__WAKU_CHUNK_LOAD__(id, (id: string) =>
-                  opts.loadServerFile(id),
+                (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(
+                  id,
+                  (id: string) => opts.loadServerFile(id),
                 );
                 return { id, chunks: [id], name };
               }
               // !isDev
               const id = filePath.slice(config.basePath.length);
-              (globalThis as any).__WAKU_CHUNK_LOAD__(id, (id: string) =>
+              (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(id, (id: string) =>
                 opts.loadModule(joinPath(DIST_SSR, id)),
               );
               return { id, chunks: [id], name };
