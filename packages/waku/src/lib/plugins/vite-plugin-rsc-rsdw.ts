@@ -14,17 +14,13 @@ const patchRsdw = (code: string) => {
     `
 globalThis.__WAKU_MODULE_LOADING__ ||= new Map();
 globalThis.__WAKU_MODULE_CACHE__ ||= new Map();
-globalThis.__WAKU_CHUNK_LOAD__ ||= (id, customImport) => {
+globalThis.__WAKU_CHUNK_LOAD__ ||= (id, customImport = globalThis.__WAKU_HACK_IMPORT__) => {
   if (!globalThis.__WAKU_MODULE_LOADING__.has(id)) {
     globalThis.__WAKU_MODULE_LOADING__.set(
       id,
-      customImport
-        ? customImport(id).then((m) => {
-            globalThis.__WAKU_MODULE_CACHE__.set(id, m);
-          })
-        : globalThis.__waku_hackImport(id).then((m) => {
-            globalThis.__WAKU_MODULE_CACHE__.set(id, m);
-          })
+      customImport(id).then((m) => {
+        globalThis.__WAKU_MODULE_CACHE__.set(id, m);
+      })
     );
   }
   return globalThis.__WAKU_MODULE_LOADING__.get(id);
