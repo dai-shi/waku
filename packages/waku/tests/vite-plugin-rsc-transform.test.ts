@@ -33,9 +33,8 @@ export default function App() {
   return <div>Hello World</div>;
 }
 `;
-    expect(
-      await transform(code, '/src/App.tsx', { ssr: true }),
-    ).toMatchInlineSnapshot(`
+    expect(await transform(code, '/src/App.tsx', { ssr: true }))
+      .toMatchInlineSnapshot(`
       "
       import { registerClientReference } from 'react-server-dom-webpack/server.edge';
 
@@ -52,9 +51,8 @@ export const log = (mesg) => {
   console.log(mesg);
 };
 `;
-    expect(
-      await transform(code, '/src/App.tsx', { ssr: true }),
-    ).toMatchInlineSnapshot(`
+    expect(await transform(code, '/src/App.tsx', { ssr: true }))
+      .toMatchInlineSnapshot(`
       "
       'use server';
 
@@ -69,5 +67,38 @@ export const log = (mesg) => {
       }
       "
     `);
+  });
+
+  test('inline use server', async () => {
+    const code = `
+export default function App() {
+  function log(mesg) {
+    'use server';
+    console.log(mesg);
+  }
+  return <Hello log={log} />;
+}
+`;
+    expect(await transform(code, '/src/App.tsx', { ssr: true }))
+      .toMatchInlineSnapshot(`
+        "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
+        export const __waku_serverActions = new Map();
+        let __waku_actionIndex = 0;
+        function __waku_registerServerAction(fn, actionId) {
+            const actionName = 'action' + __waku_actionIndex++;
+            __waku_registerServerReference(fn, actionId, actionName);
+            __waku_serverActions.set(actionName, fn);
+            return fn;
+        }
+        export default function App() {
+            function log(mesg) {
+                'use server';
+                console.log(mesg);
+            }
+            __waku_registerServerAction(log, "/src/App.tsx");
+            return <Hello log={log}/>;
+        }
+        "
+      `);
   });
 });
