@@ -69,7 +69,7 @@ export const log = (mesg) => {
     `);
   });
 
-  test('inline use server', async () => {
+  test('inline use server (function declaration)', async () => {
     const code = `
 export default function App() {
   function log(mesg) {
@@ -100,6 +100,70 @@ export default function App() {
         }
         "
       `);
+  });
+
+  test('inline use server (const function expression)', async () => {
+    const code = `
+export default function App() {
+  const log = function (mesg) {
+    'use server';
+    console.log(mesg);
+  };
+  return <Hello log={log} />;
+}
+`;
+    expect(await transform(code, '/src/App.tsx', { ssr: true }))
+      .toMatchInlineSnapshot(`
+      "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
+      export const __waku_serverActions = new Map();
+      let __waku_actionIndex = 0;
+      function __waku_registerServerAction(fn, actionId) {
+          const actionName = 'action' + __waku_actionIndex++;
+          __waku_registerServerReference(fn, actionId, actionName);
+          __waku_serverActions.set(actionName, fn);
+          return fn;
+      }
+      export default function App() {
+          const log = __waku_registerServerAction(function(mesg) {
+              'use server';
+              console.log(mesg);
+          }, "/src/App.tsx");
+          return <Hello log={log}/>;
+      }
+      "
+    `);
+  });
+
+  test('inline use server (const arrow function)', async () => {
+    const code = `
+export default function App() {
+  const log = (mesg) => {
+    'use server';
+    console.log(mesg);
+  };
+  return <Hello log={log} />;
+}
+`;
+    expect(await transform(code, '/src/App.tsx', { ssr: true }))
+      .toMatchInlineSnapshot(`
+      "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
+      export const __waku_serverActions = new Map();
+      let __waku_actionIndex = 0;
+      function __waku_registerServerAction(fn, actionId) {
+          const actionName = 'action' + __waku_actionIndex++;
+          __waku_registerServerReference(fn, actionId, actionName);
+          __waku_serverActions.set(actionName, fn);
+          return fn;
+      }
+      export default function App() {
+          const log = __waku_registerServerAction((mesg)=>{
+              'use server';
+              console.log(mesg);
+          }, "/src/App.tsx");
+          return <Hello log={log}/>;
+      }
+      "
+    `);
   });
 });
 
