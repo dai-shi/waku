@@ -77,10 +77,11 @@ ${opts.htmlHead}
     },
     transformIndexHtml() {
       return [
-        // HACK: vite won't inject __vite__injectQuery anymore
         {
           tag: 'script',
           attrs: { type: 'module', async: true },
+          // HACK: vite won't inject __vite__injectQuery anymore
+          // Vite optimizes `import()` so it adds `?import` to imported urls. That'd cause double module hazard! This way, I hack it to use a global function so it does not get optimized.
           children: `
 globalThis.__WAKU_HACK_IMPORT__ = (id) => import(id);
 `,
