@@ -165,6 +165,42 @@ export default function App() {
       "
     `);
   });
+
+  test('inline use server (in an object)', async () => {
+    const code = `
+const actions = {
+  log: (mesg) => {
+    'use server';
+    console.log(mesg);
+  },
+};
+export default function App() {
+  return <Hello log={actions.log} />;
+}
+`;
+    expect(await transform(code, '/src/App.tsx', { ssr: true }))
+      .toMatchInlineSnapshot(`
+      "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
+      export const __waku_serverActions = new Map();
+      let __waku_actionIndex = 0;
+      function __waku_registerServerAction(fn, actionId) {
+          const actionName = 'action' + __waku_actionIndex++;
+          __waku_registerServerReference(fn, actionId, actionName);
+          __waku_serverActions.set(actionName, fn);
+          return fn;
+      }
+      const actions = {
+          log: __waku_registerServerAction((mesg)=>{
+              'use server';
+              console.log(mesg);
+          }, "/src/App.tsx")
+      };
+      export default function App() {
+          return <Hello log={actions.log}/>;
+      }
+      "
+    `);
+  });
 });
 
 describe('internal transform function for client environment', () => {
