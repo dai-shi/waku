@@ -82,11 +82,7 @@ export default function App() {
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         export default function App() {
-            function log(mesg) {
-                'use server';
-                console.log(mesg);
-            }
-            __waku_registerServerAction(log, "/src/App.tsx");
+            const log = __waku_serverAction1.bind(null);
             return <Hello log={log}/>;
         }
         "
@@ -107,10 +103,7 @@ export default function App() {
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         export default function App() {
-            const log = __waku_registerServerAction(function(mesg) {
-                'use server';
-                console.log(mesg);
-            }, "/src/App.tsx");
+            const log = __waku_serverAction1.bind(null);
             return <Hello log={log}/>;
         }
         "
@@ -131,10 +124,7 @@ export default function App() {
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         export default function App() {
-            const log = __waku_registerServerAction((mesg)=>{
-                'use server';
-                console.log(mesg);
-            }, "/src/App.tsx");
+            const log = __waku_serverAction1.bind(null);
             return <Hello log={log}/>;
         }
         "
@@ -157,10 +147,7 @@ export default function App() {
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         const actions = {
-            log: __waku_registerServerAction((mesg)=>{
-                'use server';
-                console.log(mesg);
-            }, "/src/App.tsx")
+            log: __waku_serverAction1.bind(null)
         };
         export default function App() {
             return <Hello log={actions.log}/>;

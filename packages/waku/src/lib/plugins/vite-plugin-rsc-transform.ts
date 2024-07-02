@@ -103,43 +103,62 @@ const isServerAction = (node: swc.Node): node is FunctionWithBlockBody =>
       s.expression.value === 'use server',
   );
 
+const collectClosureVars = (): string[] => {
+  // TODO implement it
+  return [];
+};
+
 const transformServerActions = (
   mod: swc.Module,
   getActionId: () => string,
 ): swc.Module | void => {
-  let hasServerActions = false;
-  const registerServerAction: {
-    (fn: swc.FunctionDeclaration): swc.ExpressionStatement;
-    (
-      fn: swc.FunctionExpression | swc.ArrowFunctionExpression,
-    ): swc.CallExpression;
-  } = (fn): any => {
-    hasServerActions = true;
-    const exp: swc.CallExpression = {
+  let serverActionIndex = 0;
+  const serverActions = new Map<
+    number,
+    readonly [FunctionWithBlockBody, string[]]
+  >();
+  const registerServerAction = (
+    fn: FunctionWithBlockBody,
+  ): swc.CallExpression => {
+    const closureVars = collectClosureVars();
+    serverActions.set(++serverActionIndex, [fn, closureVars]);
+    return {
       type: 'CallExpression',
-      callee: createIdentifier('__waku_registerServerAction'),
+      callee: {
+        type: 'MemberExpression',
+        object: createIdentifier('__waku_serverAction' + serverActionIndex),
+        property: createIdentifier('bind'),
+        span: { start: 0, end: 0, ctxt: 0 },
+      },
       arguments: [
-        { expression: fn.type === 'FunctionDeclaration' ? fn.identifier : fn },
-        { expression: createStringLiteral(getActionId()) },
+        { expression: createIdentifier('null') },
+        ...closureVars.map((v) => ({ expression: createIdentifier(v) })),
       ],
       span: { start: 0, end: 0, ctxt: 0 },
     };
-    if (fn.type !== 'FunctionDeclaration') {
-      return exp;
-    }
-    return {
-      type: 'ExpressionStatement',
-      expression: exp,
-      span: { start: 0, end: 0, ctxt: 0 },
-    };
   };
-  const handleStatements = (stmts: swc.Statement[] | swc.ModuleItem[]) => {
-    for (let i = 0; i < stmts.length; ++i) {
-      const stmt = stmts[i]!;
-      if (isServerAction(stmt)) {
-        const registerStmt = registerServerAction(stmt);
-        stmts.splice(++i, 0, registerStmt);
-      }
+  const handleDeclaration = (decl: swc.Declaration) => {
+    if (isServerAction(decl)) {
+      const callExp = registerServerAction(decl);
+      const newDecl: swc.VariableDeclaration = {
+        type: 'VariableDeclaration',
+        kind: 'const',
+        declare: false,
+        declarations: [
+          {
+            type: 'VariableDeclarator',
+            id: createIdentifier(decl.identifier.value),
+            init: callExp,
+            definite: false,
+            span: { start: 0, end: 0, ctxt: 0 },
+          },
+        ],
+        span: { start: 0, end: 0, ctxt: 0 },
+      };
+      Object.keys(decl).forEach((key) => {
+        delete decl[key as keyof typeof decl];
+      });
+      Object.assign(decl, newDecl);
     }
   };
   const handleExpression = (exp: swc.Expression) => {
@@ -162,12 +181,8 @@ const transformServerActions = (
         }
       });
     });
-    if (node.type === 'Module') {
-      const { body } = node as swc.Module;
-      handleStatements(body);
-    } else if (node.type === 'BlockStatement') {
-      const { stmts } = node as swc.BlockStatement;
-      handleStatements(stmts);
+    if (node.type === 'FunctionDeclaration') {
+      handleDeclaration(node as swc.FunctionDeclaration);
     } else if (
       node.type === 'FunctionExpression' ||
       node.type === 'ArrowFunctionExpression'
@@ -178,7 +193,7 @@ const transformServerActions = (
     }
   };
   walk(mod);
-  if (!hasServerActions) {
+  if (!serverActionIndex) {
     return;
   }
   const lastImportIndex = mod.body.findIndex(
@@ -186,6 +201,9 @@ const transformServerActions = (
       node.type !== 'ExpressionStatement' && node.type !== 'ImportDeclaration',
   );
   mod.body.splice(lastImportIndex, 0, ...serverActionsInitCode);
+  for (const [actionId, [actionFn, closureVars]] of serverActions) {
+    // TODO add server actions
+  }
   return mod;
 };
 
