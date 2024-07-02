@@ -81,14 +81,14 @@ export default function App({ a }) {
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-        export default function App({ a }) {
-            const log = __waku_action1.bind(null, a);
-            return <Hello log={log}/>;
-        }
         export function __waku_action1(a, mesg) {
             console.log(mesg, a);
         }
         __waku_registerServerReference(__waku_action1, "/src/App.tsx", "__waku_action1");
+        export default function App({ a }) {
+            const log = __waku_action1.bind(null, a);
+            return <Hello log={log}/>;
+        }
         "
       `);
   });
@@ -107,14 +107,14 @@ export default function App() {
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
+        export const __waku_action1 = __waku_registerServerReference(function(rand, mesg, rand) {
+            console.log(mesg, rand);
+        }, "/src/App.tsx", "__waku_action1");
         export default function App() {
             const rand = Math.random();
             const log = __waku_action1.bind(null, rand);
             return <Hello log={log}/>;
         }
-        export const __waku_action1 = __waku_registerServerReference(function(rand, mesg, rand) {
-            console.log(mesg, rand);
-        }, "/src/App.tsx", "__waku_action1");
         "
       `);
   });
@@ -133,14 +133,14 @@ export default function App() {
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
+        export const __waku_action1 = __waku_registerServerReference((mesg)=>{
+            console.log(mesg, now);
+        }, "/src/App.tsx", "__waku_action1");
         const now = Date.now();
         export default function App() {
             const log = __waku_action1.bind(null);
             return <Hello log={log}/>;
         }
-        export const __waku_action1 = __waku_registerServerReference((mesg)=>{
-            console.log(mesg, now);
-        }, "/src/App.tsx", "__waku_action1");
         "
       `);
   });
@@ -160,15 +160,15 @@ export default function App() {
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
+        export const __waku_action1 = __waku_registerServerReference((mesg)=>{
+            console.log(mesg);
+        }, "/src/App.tsx", "__waku_action1");
         const actions = {
             log: __waku_action1.bind(null)
         };
         export default function App() {
             return <Hello log={actions.log}/>;
         }
-        export const __waku_action1 = __waku_registerServerReference((mesg)=>{
-            console.log(mesg);
-        }, "/src/App.tsx", "__waku_action1");
         "
       `);
   });

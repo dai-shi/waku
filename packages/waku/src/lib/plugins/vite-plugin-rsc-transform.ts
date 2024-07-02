@@ -323,11 +323,7 @@ const transformServerActions = (
   if (!serverActionIndex) {
     return;
   }
-  const lastImportIndex = mod.body.findIndex(
-    (node) =>
-      node.type !== 'ExpressionStatement' && node.type !== 'ImportDeclaration',
-  );
-  mod.body.splice(lastImportIndex, 0, ...serverActionsInitCode);
+  const serverActionsCode = [...serverActionsInitCode];
   for (const [actionIndex, [actionFn, closureVars]] of serverActions) {
     if (actionFn.type === 'FunctionDeclaration') {
       const stmt1: swc.ExportDeclaration = {
@@ -347,7 +343,7 @@ const transformServerActions = (
         ),
         span: { start: 0, end: 0, ctxt: 0 },
       };
-      mod.body.push(stmt1, stmt2);
+      serverActionsCode.push(stmt1, stmt2);
     } else {
       const stmt: swc.ExportDeclaration = {
         type: 'ExportDeclaration',
@@ -375,9 +371,14 @@ const transformServerActions = (
         },
         span: { start: 0, end: 0, ctxt: 0 },
       };
-      mod.body.push(stmt);
+      serverActionsCode.push(stmt);
     }
   }
+  const lastImportIndex = mod.body.findIndex(
+    (node) =>
+      node.type !== 'ExpressionStatement' && node.type !== 'ImportDeclaration',
+  );
+  mod.body.splice(lastImportIndex, 0, ...serverActionsCode);
   return mod;
 };
 
