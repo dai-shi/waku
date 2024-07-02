@@ -166,10 +166,14 @@ const transformServerActions = (
   ): swc.CallExpression => {
     const closureVars = collectClosureVars();
     serverActions.set(++serverActionIndex, [fn, closureVars]);
+    const name = '__waku_serverAction' + serverActionIndex;
+    if (fn.type === 'FunctionDeclaration') {
+      fn.identifier = createIdentifier(name);
+    }
     return createCallExpression(
       {
         type: 'MemberExpression',
-        object: createIdentifier('__waku_serverAction' + serverActionIndex),
+        object: createIdentifier(name),
         property: createIdentifier('bind'),
         span: { start: 0, end: 0, ctxt: 0 },
       },
@@ -245,7 +249,19 @@ const transformServerActions = (
   mod.body.splice(lastImportIndex, 0, ...serverActionsInitCode);
   for (const [actionIndex, [actionFn, closureVars]] of serverActions) {
     if (actionFn.type === 'FunctionDeclaration') {
-      // TODO function decl
+      const stmt: swc.ExpressionStatement = {
+        type: 'ExpressionStatement',
+        expression: createCallExpression(
+          createIdentifier('__waku_registerServerReference'),
+          [
+            createIdentifier(actionFn.identifier.value),
+            createStringLiteral(getActionId()),
+            createStringLiteral('action' + actionIndex),
+          ],
+        ),
+        span: { start: 0, end: 0, ctxt: 0 },
+      };
+      mod.body.push(prependArgsToFn(actionFn, closureVars), stmt);
     } else {
       const stmt: swc.VariableDeclaration = {
         type: 'VariableDeclaration',

@@ -85,6 +85,10 @@ export default function App() {
             const log = __waku_serverAction1.bind(null, foo, bar);
             return <Hello log={log}/>;
         }
+        function __waku_serverAction1(foo, bar, mesg) {
+            console.log(mesg);
+        }
+        __waku_registerServerReference(__waku_serverAction1, "/src/App.tsx", "action1");
         "
       `);
   });
