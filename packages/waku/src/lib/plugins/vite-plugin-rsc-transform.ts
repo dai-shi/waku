@@ -83,15 +83,6 @@ const createStringLiteral = (value: string): swc.StringLiteral => ({
 
 const serverActionsInitCode = swc.parseSync(`
 import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-export const __waku_serverActions = new Map();
-let __waku_actionIndex = 0;
-function __waku_registerServerAction(fn, actionId) {
-  const actionName = 'action' + __waku_actionIndex++;
-  __waku_registerServerReference(fn, actionId, actionName);
-  // FIXME this can cause memory leaks
-  __waku_serverActions.set(actionName, fn);
-  return fn;
-}
 `).body;
 
 type FunctionWithBlockBody = (
@@ -207,14 +198,14 @@ const transformServer = (
   const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseClient = false;
-  let hasUseServer = false;
+  let hasUseServer: swc.ExpressionStatement | undefined;
   for (const item of mod.body) {
     if (item.type === 'ExpressionStatement') {
       if (item.expression.type === 'StringLiteral') {
         if (item.expression.value === 'use client') {
           hasUseClient = true;
         } else if (item.expression.value === 'use server') {
-          hasUseServer = true;
+          hasUseServer = item;
         }
       }
     } else {
@@ -234,19 +225,34 @@ export ${name === 'default' ? name : `const ${name} =`} registerClientReference(
     }
     return newCode;
   } else if (hasUseServer) {
-    const exportNames = collectExportNames(mod);
-    let newCode =
-      code +
-      `
-import { registerServerReference } from 'react-server-dom-webpack/server.edge';
-`;
-    for (const name of exportNames) {
-      newCode += `
-if (typeof ${name} === 'function') {
-  registerServerReference(${name}, '${getServerId(id)}', '${name}');
-}
-`;
+    const useServerPosStart = hasUseServer.span.start - mod.span.start;
+    const useServerPosEnd = hasUseServer.span.end - mod.span.start;
+    const lastImportIndex = mod.body.findIndex(
+      (node) =>
+        node.type !== 'ExpressionStatement' &&
+        node.type !== 'ImportDeclaration',
+    );
+    let lastImportPos =
+      lastImportIndex === -1 ? 0 : mod.body[lastImportIndex]!.span.end;
+    if (lastImportIndex < useServerPosEnd) {
+      lastImportPos = useServerPosEnd;
     }
+    const exportNames = collectExportNames(mod);
+    const newCode = [
+      code.slice(0, useServerPosStart),
+      code.slice(useServerPosEnd, lastImportPos),
+      `
+import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
+`,
+      code.slice(lastImportPos),
+      [...exportNames].map(
+        (name) => `
+if (typeof ${name} === 'function') {
+  __waku_registerServerReference(${name}, '${getServerId(id)}', '${name}');
+}
+`,
+      ),
+    ].join('');
     return newCode;
   }
   // transform server actions in server components
