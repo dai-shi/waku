@@ -147,9 +147,73 @@ const prependArgsToFn = <Fn extends FunctionWithBlockBody>(
   };
 };
 
-const collectClosureVars = (): string[] => {
-  // TODO implement it
-  return ['foo', 'bar'];
+// HACK this doesn't work for 100% of cases
+const collectIndentifiers = (node: swc.Node, ids: Set<string>) => {
+  if (node.type === 'Identifier') {
+    ids.add((node as swc.Identifier).value);
+  } else if (node.type === 'MemberExpression') {
+    collectIndentifiers((node as swc.MemberExpression).object, ids);
+  } else if (node.type === 'KeyValuePatternProperty') {
+    collectIndentifiers((node as swc.KeyValuePatternProperty).key, ids);
+  } else if (node.type === 'AssignmentPatternProperty') {
+    collectIndentifiers((node as swc.AssignmentPatternProperty).key, ids);
+  } else {
+    Object.values(node).forEach((value) => {
+      if (Array.isArray(value)) {
+        value.forEach((v) => collectIndentifiers(v, ids));
+      } else if (typeof value === 'object' && value !== null) {
+        collectIndentifiers(value, ids);
+      }
+    });
+  }
+};
+
+// HACK this doesn't work for 100% of cases
+const collectLocalNames = (
+  fn: swc.Fn | swc.ArrowFunctionExpression,
+  ids: Set<string>,
+) => {
+  fn.params.forEach((param) => {
+    collectIndentifiers(param, ids);
+  });
+  let stmts: swc.Statement[];
+  if (!fn.body) {
+    stmts = [];
+  } else if (fn.body?.type === 'BlockStatement') {
+    stmts = fn.body.stmts;
+  } else {
+    // body is Expression
+    stmts = [
+      {
+        type: 'ReturnStatement',
+        argument: fn.body,
+        span: { start: 0, end: 0, ctxt: 0 },
+      },
+    ];
+  }
+  for (const stmt of stmts) {
+    if (stmt.type === 'VariableDeclaration') {
+      for (const decl of stmt.declarations) {
+        collectIndentifiers(decl.id, ids);
+      }
+    }
+  }
+};
+
+const collectClosureVars = (
+  parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
+  fn: FunctionWithBlockBody,
+): string[] => {
+  const parentFnVarNames = new Set<string>();
+  if (parentFn) {
+    collectLocalNames(parentFn, parentFnVarNames);
+  }
+  const fnVarNames = new Set<string>();
+  collectIndentifiers(fn, fnVarNames);
+  const varNames = Array.from(parentFnVarNames).filter((n) =>
+    fnVarNames.has(n),
+  );
+  return varNames;
 };
 
 const transformServerActions = (
@@ -162,9 +226,10 @@ const transformServerActions = (
     readonly [FunctionWithBlockBody, string[]]
   >();
   const registerServerAction = (
+    parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
     fn: FunctionWithBlockBody,
   ): swc.CallExpression => {
-    const closureVars = collectClosureVars();
+    const closureVars = collectClosureVars(parentFn, fn);
     serverActions.set(++serverActionIndex, [fn, closureVars]);
     const name = '__waku_serverAction' + serverActionIndex;
     if (fn.type === 'FunctionDeclaration') {
@@ -183,9 +248,12 @@ const transformServerActions = (
       ],
     );
   };
-  const handleDeclaration = (decl: swc.Declaration) => {
+  const handleDeclaration = (
+    parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
+    decl: swc.Declaration,
+  ) => {
     if (isServerAction(decl)) {
-      const callExp = registerServerAction(Object.assign({}, decl));
+      const callExp = registerServerAction(parentFn, Object.assign({}, decl));
       const newDecl: swc.VariableDeclaration = {
         type: 'VariableDeclaration',
         kind: 'const',
@@ -207,38 +275,51 @@ const transformServerActions = (
       Object.assign(decl, newDecl);
     }
   };
-  const handleExpression = (exp: swc.Expression) => {
+  const handleExpression = (
+    parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
+    exp: swc.Expression,
+  ) => {
     if (isServerAction(exp)) {
-      const callExp = registerServerAction(Object.assign({}, exp));
+      const callExp = registerServerAction(parentFn, Object.assign({}, exp));
       Object.keys(exp).forEach((key) => {
         delete exp[key as keyof typeof exp];
       });
       Object.assign(exp, callExp);
     }
   };
-  const walk = (node: swc.Node) => {
+  const walk = (
+    parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
+    node: swc.Node,
+  ) => {
     // FIXME do we need to walk the entire tree? feels inefficient
     Object.values(node).forEach((value) => {
+      const fn =
+        node.type === 'FunctionDeclaration' ||
+        node.type === 'FunctionExpression' ||
+        node.type === 'ArrowFunctionExpression'
+          ? (node as swc.Fn | swc.ArrowFunctionExpression)
+          : parentFn;
       (Array.isArray(value) ? value : [value]).forEach((v) => {
         if (typeof v?.type === 'string') {
-          walk(v);
+          walk(fn, v);
         } else if (typeof v?.expression?.type === 'string') {
-          walk(v.expression);
+          walk(fn, v.expression);
         }
       });
     });
     if (node.type === 'FunctionDeclaration') {
-      handleDeclaration(node as swc.FunctionDeclaration);
+      handleDeclaration(parentFn, node as swc.FunctionDeclaration);
     } else if (
       node.type === 'FunctionExpression' ||
       node.type === 'ArrowFunctionExpression'
     ) {
       handleExpression(
+        parentFn,
         node as swc.FunctionExpression | swc.ArrowFunctionExpression,
       );
     }
   };
-  walk(mod);
+  walk(undefined, mod);
   if (!serverActionIndex) {
     return;
   }
