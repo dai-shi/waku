@@ -81,17 +81,18 @@ const createStringLiteral = (value: string): swc.StringLiteral => ({
   span: { start: 0, end: 0, ctxt: 0 },
 });
 
+const createCallExpression = (
+  callee: swc.Expression,
+  args: swc.Expression[],
+): swc.CallExpression => ({
+  type: 'CallExpression',
+  callee,
+  arguments: args.map((expression) => ({ expression })),
+  span: { start: 0, end: 0, ctxt: 0 },
+});
+
 const serverActionsInitCode = swc.parseSync(`
 import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-export const __waku_serverActions = new Map();
-let __waku_actionIndex = 0;
-function __waku_registerServerAction(fn, actionId) {
-  const actionName = 'action' + __waku_actionIndex++;
-  __waku_registerServerReference(fn, actionId, actionName);
-  // FIXME this can cause memory leaks
-  __waku_serverActions.set(actionName, fn);
-  return fn;
-}
 `).body;
 
 type FunctionWithBlockBody = (
@@ -100,101 +101,284 @@ type FunctionWithBlockBody = (
   | swc.ArrowFunctionExpression
 ) & { body: swc.BlockStatement };
 
+const isUseServerDirective = (node: swc.Node) =>
+  node.type === 'ExpressionStatement' &&
+  (node as swc.ExpressionStatement).expression.type === 'StringLiteral' &&
+  ((node as swc.ExpressionStatement).expression as swc.StringLiteral).value ===
+    'use server';
+
 const isServerAction = (node: swc.Node): node is FunctionWithBlockBody =>
   (node.type === 'FunctionDeclaration' ||
     node.type === 'FunctionExpression' ||
     node.type === 'ArrowFunctionExpression') &&
   (node as { body?: { type: string } }).body?.type === 'BlockStatement' &&
-  (node as FunctionWithBlockBody).body.stmts.some(
-    (s) =>
-      s.type === 'ExpressionStatement' &&
-      s.expression.type === 'StringLiteral' &&
-      s.expression.value === 'use server',
+  (node as FunctionWithBlockBody).body.stmts.some(isUseServerDirective);
+
+const prependArgsToFn = <Fn extends FunctionWithBlockBody>(
+  fn: Fn,
+  args: string[],
+): Fn => {
+  if (fn.type === 'ArrowFunctionExpression') {
+    return {
+      ...fn,
+      params: [...args.map(createIdentifier), ...fn.params],
+      body: {
+        type: 'BlockStatement',
+        stmts: fn.body.stmts.filter((stmt) => !isUseServerDirective(stmt)),
+        span: { start: 0, end: 0, ctxt: 0 },
+      },
+    };
+  }
+  return {
+    ...fn,
+    params: [
+      ...args.map((arg) => ({
+        type: 'Parameter',
+        pat: createIdentifier(arg),
+        span: { start: 0, end: 0, ctxt: 0 },
+      })),
+      ...fn.params,
+    ],
+    body: {
+      type: 'BlockStatement',
+      stmts: fn.body.stmts.filter((stmt) => !isUseServerDirective(stmt)),
+      span: { start: 0, end: 0, ctxt: 0 },
+    },
+  };
+};
+
+// HACK this doesn't work for 100% of cases
+const collectIndentifiers = (node: swc.Node, ids: Set<string>) => {
+  if (node.type === 'Identifier') {
+    ids.add((node as swc.Identifier).value);
+  } else if (node.type === 'MemberExpression') {
+    collectIndentifiers((node as swc.MemberExpression).object, ids);
+  } else if (node.type === 'KeyValuePatternProperty') {
+    collectIndentifiers((node as swc.KeyValuePatternProperty).key, ids);
+  } else if (node.type === 'AssignmentPatternProperty') {
+    collectIndentifiers((node as swc.AssignmentPatternProperty).key, ids);
+  } else {
+    Object.values(node).forEach((value) => {
+      if (Array.isArray(value)) {
+        value.forEach((v) => collectIndentifiers(v, ids));
+      } else if (typeof value === 'object' && value !== null) {
+        collectIndentifiers(value, ids);
+      }
+    });
+  }
+};
+
+// HACK this doesn't work for 100% of cases
+const collectLocalNames = (
+  fn: swc.Fn | swc.ArrowFunctionExpression,
+  ids: Set<string>,
+) => {
+  fn.params.forEach((param) => {
+    collectIndentifiers(param, ids);
+  });
+  let stmts: swc.Statement[];
+  if (!fn.body) {
+    stmts = [];
+  } else if (fn.body?.type === 'BlockStatement') {
+    stmts = fn.body.stmts;
+  } else {
+    // body is Expression
+    stmts = [
+      {
+        type: 'ReturnStatement',
+        argument: fn.body,
+        span: { start: 0, end: 0, ctxt: 0 },
+      },
+    ];
+  }
+  for (const stmt of stmts) {
+    if (stmt.type === 'VariableDeclaration') {
+      for (const decl of stmt.declarations) {
+        collectIndentifiers(decl.id, ids);
+      }
+    }
+  }
+};
+
+const collectClosureVars = (
+  parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
+  fn: FunctionWithBlockBody,
+): string[] => {
+  const parentFnVarNames = new Set<string>();
+  if (parentFn) {
+    collectLocalNames(parentFn, parentFnVarNames);
+  }
+  const fnVarNames = new Set<string>();
+  collectIndentifiers(fn, fnVarNames);
+  const varNames = Array.from(parentFnVarNames).filter((n) =>
+    fnVarNames.has(n),
   );
+  return varNames;
+};
 
 const transformServerActions = (
   mod: swc.Module,
   getActionId: () => string,
 ): swc.Module | void => {
-  let hasServerActions = false;
-  const registerServerAction: {
-    (fn: swc.FunctionDeclaration): swc.ExpressionStatement;
-    (
-      fn: swc.FunctionExpression | swc.ArrowFunctionExpression,
-    ): swc.CallExpression;
-  } = (fn): any => {
-    hasServerActions = true;
-    const exp: swc.CallExpression = {
-      type: 'CallExpression',
-      callee: createIdentifier('__waku_registerServerAction'),
-      arguments: [
-        { expression: fn.type === 'FunctionDeclaration' ? fn.identifier : fn },
-        { expression: createStringLiteral(getActionId()) },
+  let serverActionIndex = 0;
+  const serverActions = new Map<
+    number,
+    readonly [FunctionWithBlockBody, string[]]
+  >();
+  const registerServerAction = (
+    parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
+    fn: FunctionWithBlockBody,
+  ): swc.CallExpression => {
+    const closureVars = collectClosureVars(parentFn, fn);
+    serverActions.set(++serverActionIndex, [fn, closureVars]);
+    const name = '__waku_action' + serverActionIndex;
+    if (fn.type === 'FunctionDeclaration') {
+      fn.identifier = createIdentifier(name);
+    }
+    return createCallExpression(
+      {
+        type: 'MemberExpression',
+        object: createIdentifier(name),
+        property: createIdentifier('bind'),
+        span: { start: 0, end: 0, ctxt: 0 },
+      },
+      [
+        createIdentifier('null'),
+        ...closureVars.map((v) => createIdentifier(v)),
       ],
-      span: { start: 0, end: 0, ctxt: 0 },
-    };
-    if (fn.type !== 'FunctionDeclaration') {
-      return exp;
-    }
-    return {
-      type: 'ExpressionStatement',
-      expression: exp,
-      span: { start: 0, end: 0, ctxt: 0 },
-    };
+    );
   };
-  const handleStatements = (stmts: swc.Statement[] | swc.ModuleItem[]) => {
-    for (let i = 0; i < stmts.length; ++i) {
-      const stmt = stmts[i]!;
-      if (isServerAction(stmt)) {
-        const registerStmt = registerServerAction(stmt);
-        stmts.splice(++i, 0, registerStmt);
-      }
+  const handleDeclaration = (
+    parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
+    decl: swc.Declaration,
+  ) => {
+    if (isServerAction(decl)) {
+      const callExp = registerServerAction(parentFn, Object.assign({}, decl));
+      const newDecl: swc.VariableDeclaration = {
+        type: 'VariableDeclaration',
+        kind: 'const',
+        declare: false,
+        declarations: [
+          {
+            type: 'VariableDeclarator',
+            id: createIdentifier(decl.identifier.value),
+            init: callExp,
+            definite: false,
+            span: { start: 0, end: 0, ctxt: 0 },
+          },
+        ],
+        span: { start: 0, end: 0, ctxt: 0 },
+      };
+      Object.keys(decl).forEach((key) => {
+        delete decl[key as keyof typeof decl];
+      });
+      Object.assign(decl, newDecl);
     }
   };
-  const handleExpression = (exp: swc.Expression) => {
+  const handleExpression = (
+    parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
+    exp: swc.Expression,
+  ) => {
     if (isServerAction(exp)) {
-      const callExp = registerServerAction(Object.assign({}, exp));
+      const callExp = registerServerAction(parentFn, Object.assign({}, exp));
       Object.keys(exp).forEach((key) => {
         delete exp[key as keyof typeof exp];
       });
       Object.assign(exp, callExp);
     }
   };
-  const walk = (node: swc.Node) => {
+  const walk = (
+    parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
+    node: swc.Node,
+  ) => {
     // FIXME do we need to walk the entire tree? feels inefficient
     Object.values(node).forEach((value) => {
+      const fn =
+        node.type === 'FunctionDeclaration' ||
+        node.type === 'FunctionExpression' ||
+        node.type === 'ArrowFunctionExpression'
+          ? (node as swc.Fn | swc.ArrowFunctionExpression)
+          : parentFn;
       (Array.isArray(value) ? value : [value]).forEach((v) => {
         if (typeof v?.type === 'string') {
-          walk(v);
+          walk(fn, v);
         } else if (typeof v?.expression?.type === 'string') {
-          walk(v.expression);
+          walk(fn, v.expression);
         }
       });
     });
-    if (node.type === 'Module') {
-      const { body } = node as swc.Module;
-      handleStatements(body);
-    } else if (node.type === 'BlockStatement') {
-      const { stmts } = node as swc.BlockStatement;
-      handleStatements(stmts);
+    if (node.type === 'FunctionDeclaration') {
+      handleDeclaration(parentFn, node as swc.FunctionDeclaration);
     } else if (
       node.type === 'FunctionExpression' ||
       node.type === 'ArrowFunctionExpression'
     ) {
       handleExpression(
+        parentFn,
         node as swc.FunctionExpression | swc.ArrowFunctionExpression,
       );
     }
   };
-  walk(mod);
-  if (!hasServerActions) {
+  walk(undefined, mod);
+  if (!serverActionIndex) {
     return;
+  }
+  const serverActionsCode = [...serverActionsInitCode];
+  for (const [actionIndex, [actionFn, closureVars]] of serverActions) {
+    if (actionFn.type === 'FunctionDeclaration') {
+      const stmt1: swc.ExportDeclaration = {
+        type: 'ExportDeclaration',
+        declaration: prependArgsToFn(actionFn, closureVars),
+        span: { start: 0, end: 0, ctxt: 0 },
+      };
+      const stmt2: swc.ExpressionStatement = {
+        type: 'ExpressionStatement',
+        expression: createCallExpression(
+          createIdentifier('__waku_registerServerReference'),
+          [
+            createIdentifier(actionFn.identifier.value),
+            createStringLiteral(getActionId()),
+            createStringLiteral('__waku_action' + actionIndex),
+          ],
+        ),
+        span: { start: 0, end: 0, ctxt: 0 },
+      };
+      serverActionsCode.push(stmt1, stmt2);
+    } else {
+      const stmt: swc.ExportDeclaration = {
+        type: 'ExportDeclaration',
+        declaration: {
+          type: 'VariableDeclaration',
+          kind: 'const',
+          declare: false,
+          declarations: [
+            {
+              type: 'VariableDeclarator',
+              id: createIdentifier('__waku_action' + actionIndex),
+              init: createCallExpression(
+                createIdentifier('__waku_registerServerReference'),
+                [
+                  prependArgsToFn(actionFn, closureVars),
+                  createStringLiteral(getActionId()),
+                  createStringLiteral('__waku_action' + actionIndex),
+                ],
+              ),
+              definite: false,
+              span: { start: 0, end: 0, ctxt: 0 },
+            },
+          ],
+          span: { start: 0, end: 0, ctxt: 0 },
+        },
+        span: { start: 0, end: 0, ctxt: 0 },
+      };
+      serverActionsCode.push(stmt);
+    }
   }
   const lastImportIndex = mod.body.findIndex(
     (node) =>
       node.type !== 'ExpressionStatement' && node.type !== 'ImportDeclaration',
   );
-  mod.body.splice(lastImportIndex, 0, ...serverActionsInitCode);
+  mod.body.splice(lastImportIndex, 0, ...serverActionsCode);
   return mod;
 };
 
@@ -207,14 +391,14 @@ const transformServer = (
   const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseClient = false;
-  let hasUseServer = false;
+  let hasUseServer: swc.ExpressionStatement | undefined;
   for (const item of mod.body) {
     if (item.type === 'ExpressionStatement') {
       if (item.expression.type === 'StringLiteral') {
         if (item.expression.value === 'use client') {
           hasUseClient = true;
         } else if (item.expression.value === 'use server') {
-          hasUseServer = true;
+          hasUseServer = item;
         }
       }
     } else {
@@ -234,19 +418,34 @@ export ${name === 'default' ? name : `const ${name} =`} registerClientReference(
     }
     return newCode;
   } else if (hasUseServer) {
-    const exportNames = collectExportNames(mod);
-    let newCode =
-      code +
-      `
-import { registerServerReference } from 'react-server-dom-webpack/server.edge';
-`;
-    for (const name of exportNames) {
-      newCode += `
-if (typeof ${name} === 'function') {
-  registerServerReference(${name}, '${getServerId(id)}', '${name}');
-}
-`;
+    const useServerPosStart = hasUseServer.span.start - mod.span.start;
+    const useServerPosEnd = hasUseServer.span.end - mod.span.start;
+    const lastImportIndex = mod.body.findIndex(
+      (node) =>
+        node.type !== 'ExpressionStatement' &&
+        node.type !== 'ImportDeclaration',
+    );
+    let lastImportPos =
+      lastImportIndex === -1 ? 0 : mod.body[lastImportIndex]!.span.end;
+    if (lastImportIndex < useServerPosEnd) {
+      lastImportPos = useServerPosEnd;
     }
+    const exportNames = collectExportNames(mod);
+    const newCode = [
+      code.slice(0, useServerPosStart),
+      code.slice(useServerPosEnd, lastImportPos),
+      `
+import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
+`,
+      code.slice(lastImportPos),
+      ...[...exportNames].map(
+        (name) => `
+if (typeof ${name} === 'function') {
+  __waku_registerServerReference(${name}, '${getServerId(id)}', '${name}');
+}
+`,
+      ),
+    ].join('');
     return newCode;
   }
   // transform server actions in server components
