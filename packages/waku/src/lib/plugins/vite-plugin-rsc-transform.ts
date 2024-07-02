@@ -231,7 +231,7 @@ const transformServerActions = (
   ): swc.CallExpression => {
     const closureVars = collectClosureVars(parentFn, fn);
     serverActions.set(++serverActionIndex, [fn, closureVars]);
-    const name = '__waku_serverAction' + serverActionIndex;
+    const name = '__waku_action' + serverActionIndex;
     if (fn.type === 'FunctionDeclaration') {
       fn.identifier = createIdentifier(name);
     }
@@ -330,40 +330,49 @@ const transformServerActions = (
   mod.body.splice(lastImportIndex, 0, ...serverActionsInitCode);
   for (const [actionIndex, [actionFn, closureVars]] of serverActions) {
     if (actionFn.type === 'FunctionDeclaration') {
-      const stmt: swc.ExpressionStatement = {
+      const stmt1: swc.ExportDeclaration = {
+        type: 'ExportDeclaration',
+        declaration: prependArgsToFn(actionFn, closureVars),
+        span: { start: 0, end: 0, ctxt: 0 },
+      };
+      const stmt2: swc.ExpressionStatement = {
         type: 'ExpressionStatement',
         expression: createCallExpression(
           createIdentifier('__waku_registerServerReference'),
           [
             createIdentifier(actionFn.identifier.value),
             createStringLiteral(getActionId()),
-            createStringLiteral('action' + actionIndex),
+            createStringLiteral('__waku_action' + actionIndex),
           ],
         ),
         span: { start: 0, end: 0, ctxt: 0 },
       };
-      mod.body.push(prependArgsToFn(actionFn, closureVars), stmt);
+      mod.body.push(stmt1, stmt2);
     } else {
-      const stmt: swc.VariableDeclaration = {
-        type: 'VariableDeclaration',
-        kind: 'const',
-        declare: false,
-        declarations: [
-          {
-            type: 'VariableDeclarator',
-            id: createIdentifier('__waku_serverAction' + actionIndex),
-            init: createCallExpression(
-              createIdentifier('__waku_registerServerReference'),
-              [
-                prependArgsToFn(actionFn, closureVars),
-                createStringLiteral(getActionId()),
-                createStringLiteral('action' + actionIndex),
-              ],
-            ),
-            definite: false,
-            span: { start: 0, end: 0, ctxt: 0 },
-          },
-        ],
+      const stmt: swc.ExportDeclaration = {
+        type: 'ExportDeclaration',
+        declaration: {
+          type: 'VariableDeclaration',
+          kind: 'const',
+          declare: false,
+          declarations: [
+            {
+              type: 'VariableDeclarator',
+              id: createIdentifier('__waku_action' + actionIndex),
+              init: createCallExpression(
+                createIdentifier('__waku_registerServerReference'),
+                [
+                  prependArgsToFn(actionFn, closureVars),
+                  createStringLiteral(getActionId()),
+                  createStringLiteral('__waku_action' + actionIndex),
+                ],
+              ),
+              definite: false,
+              span: { start: 0, end: 0, ctxt: 0 },
+            },
+          ],
+          span: { start: 0, end: 0, ctxt: 0 },
+        },
         span: { start: 0, end: 0, ctxt: 0 },
       };
       mod.body.push(stmt);
@@ -428,7 +437,7 @@ export ${name === 'default' ? name : `const ${name} =`} registerClientReference(
 import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
 `,
       code.slice(lastImportPos),
-      [...exportNames].map(
+      ...[...exportNames].map(
         (name) => `
 if (typeof ${name} === 'function') {
   __waku_registerServerReference(${name}, '${getServerId(id)}', '${name}');
