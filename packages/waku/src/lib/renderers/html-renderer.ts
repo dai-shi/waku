@@ -33,16 +33,6 @@ export const CLIENT_MODULE_MAP = {
 } as const;
 export const CLIENT_PREFIX = 'client/';
 
-// HACK for react-server-dom-webpack without webpack
-(globalThis as any).__webpack_module_loading__ ||= new Map();
-(globalThis as any).__webpack_module_cache__ ||= new Map();
-(globalThis as any).__webpack_chunk_load__ ||= async (id: string) =>
-  (globalThis as any).__webpack_module_loading__.get(id);
-(globalThis as any).__webpack_require__ ||= (id: string) =>
-  (globalThis as any).__webpack_module_cache__.get(id);
-const moduleLoading = (globalThis as any).__webpack_module_loading__;
-const moduleCache = (globalThis as any).__webpack_module_cache__;
-
 const fakeFetchCode = `
 Promise.resolve(new Response(new ReadableStream({
   start(c) {
@@ -208,6 +198,7 @@ export const renderHtml = async (
         isDev: true;
         rootDir: string;
         loadServerFile: (fileURL: string) => Promise<unknown>;
+        loadServerModule: (id: string) => Promise<unknown>;
       }
   ),
 ): Promise<ReadableStream | null> => {
@@ -223,7 +214,7 @@ export const renderHtml = async (
 
   const loadClientModule = <T>(key: keyof typeof CLIENT_MODULE_MAP) =>
     (isDev
-      ? import(/* @vite-ignore */ CLIENT_MODULE_MAP[key])
+      ? opts.loadServerModule(CLIENT_MODULE_MAP[key])
       : opts.loadModule(CLIENT_PREFIX + key)) as Promise<T>;
 
   const [
@@ -287,37 +278,24 @@ export const renderHtml = async (
                     fileWithAbsolutePath
                       .slice(wakuDist.length)
                       .replace(/\.\w+$/, '');
-                  if (!moduleLoading.has(id)) {
-                    moduleLoading.set(
-                      id,
-                      import(/* @vite-ignore */ id).then((m) => {
-                        moduleCache.set(id, m);
-                      }),
-                    );
-                  }
+                  (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(
+                    id,
+                    (id: string) => opts.loadServerModule(id),
+                  );
                   return { id, chunks: [id], name };
                 }
                 const id = filePathToFileURL(file);
-                if (!moduleLoading.has(id)) {
-                  moduleLoading.set(
-                    id,
-                    opts.loadServerFile(id).then((m) => {
-                      moduleCache.set(id, m);
-                    }),
-                  );
-                }
+                (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(
+                  id,
+                  (id: string) => opts.loadServerFile(id),
+                );
                 return { id, chunks: [id], name };
               }
               // !isDev
               const id = filePath.slice(config.basePath.length);
-              if (!moduleLoading.has(id)) {
-                moduleLoading.set(
-                  id,
-                  opts.loadModule(joinPath(DIST_SSR, id)).then((m: any) => {
-                    moduleCache.set(id, m);
-                  }),
-                );
-              }
+              (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(id, (id: string) =>
+                opts.loadModule(joinPath(DIST_SSR, id)),
+              );
               return { id, chunks: [id], name };
             },
           },

@@ -70,6 +70,7 @@ export const ssr: Middleware = (options) => {
                   ),
                 rootDir: devServer.rootDir,
                 loadServerFile: devServer.loadServerFileMain,
+                loadServerModule: devServer.loadServerModuleMain,
               }
             : {
                 isDev: false,

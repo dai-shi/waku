@@ -7,15 +7,23 @@ const isCommonjs = (code: string) =>
     code.replace(/\/\*(.|[\r\n])*?\*\//gm, '').replace(/\/\/.*/g, ''),
   );
 
-export function devCommonJsPlugin(): Plugin {
+export function devCommonJsPlugin(opts: {
+  filter?: (id: string) => boolean | undefined;
+}): Plugin {
   return {
     name: 'dev-commonjs-plugin',
     async transform(code, id) {
-      if (code.startsWith("import { createRequire } from 'module';")) {
-        return;
-      }
-      if (!isCommonjs(code)) {
-        return;
+      if (opts.filter) {
+        if (!opts.filter(id)) {
+          return;
+        }
+      } else {
+        if (code.startsWith("import { createRequire } from 'module';")) {
+          return;
+        }
+        if (!isCommonjs(code)) {
+          return;
+        }
       }
       const result = await transformWithEsbuild(code, id, {
         format: 'esm',
