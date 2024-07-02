@@ -124,8 +124,8 @@ export function rscHmrPlugin(): Plugin {
       }
     },
     handleHotUpdate({ file }) {
-      const moduleLoading = (globalThis as any).__webpack_module_loading__;
-      const moduleCache = (globalThis as any).__webpack_module_cache__;
+      const moduleLoading = (globalThis as any).__WAKU_CLIENT_MODULE_LOADING__;
+      const moduleCache = (globalThis as any).__WAKU_CLIENT_MODULE_CACHE__;
       if (!moduleLoading || !moduleCache) {
         return;
       }

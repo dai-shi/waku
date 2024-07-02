@@ -1,7 +1,7 @@
 {
   "name": "waku",
   "description": "⛩️ The minimal React framework",
-  "version": "0.21.0-alpha.2",
+  "version": "0.21.0-beta.0",
   "publishConfig": {
     "tag": "next"
   },
@@ -32,10 +32,6 @@
     "./middleware/*": {
       "types": "./dist/middleware/*.d.ts",
       "default": "./dist/middleware/*.js"
-    },
-    "./node-loader": {
-      "types": "./dist/node-loader.d.ts",
-      "default": "./dist/node-loader.js"
     },
     "./internals": {
       "types": "./dist/internals.d.ts",

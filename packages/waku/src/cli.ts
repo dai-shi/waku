@@ -81,7 +81,7 @@ if (values.version) {
       await runBuild();
       break;
     case 'start':
-      await runStart({});
+      await runStart();
       break;
     default:
       if (cmd) {
@@ -125,7 +125,8 @@ async function runBuild() {
   });
 }
 
-async function runStart({ distDir = 'dist' }) {
+async function runStart() {
+  const { distDir = 'dist' } = await loadConfig();
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, DIST_ENTRIES_JS)).toString());
   const app = new Hono();

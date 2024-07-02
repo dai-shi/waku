@@ -44,11 +44,6 @@ export const decodeActionId = (encoded: string) => {
 export const hasStatusCode = (x: unknown): x is { statusCode: number } =>
   typeof (x as any)?.statusCode === 'number';
 
-export const codeToInject = `
-globalThis.__WAKU_MODULE_CACHE__ = new Map();
-globalThis.__webpack_chunk_load__ = (id) => import(id).then((m) => globalThis.__WAKU_MODULE_CACHE__.set(id, m));
-globalThis.__webpack_require__ = (id) => globalThis.__WAKU_MODULE_CACHE__.get(id);`;
-
 export const generatePrefetchCode = (
   basePrefix: string,
   inputs: Iterable<string>,

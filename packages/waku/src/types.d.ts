@@ -32,8 +32,6 @@ type ClientManifest = {
   [id: string]: ImportManifestEntry;
 };
 
-declare module 'react-server-dom-webpack/node-loader';
-
 declare module 'react-server-dom-webpack/server.edge' {
   type Options = {
     environmentName?: string;
