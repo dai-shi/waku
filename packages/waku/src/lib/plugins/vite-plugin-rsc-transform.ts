@@ -81,6 +81,16 @@ const createStringLiteral = (value: string): swc.StringLiteral => ({
   span: { start: 0, end: 0, ctxt: 0 },
 });
 
+const createCallExpression = (
+  callee: swc.Expression,
+  args: swc.Expression[],
+): swc.CallExpression => ({
+  type: 'CallExpression',
+  callee,
+  arguments: args.map((expression) => ({ expression })),
+  span: { start: 0, end: 0, ctxt: 0 },
+});
+
 const serverActionsInitCode = swc.parseSync(`
 import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
 `).body;
@@ -91,21 +101,50 @@ type FunctionWithBlockBody = (
   | swc.ArrowFunctionExpression
 ) & { body: swc.BlockStatement };
 
+const isUseServerDirective = (node: swc.Node) =>
+  node.type === 'ExpressionStatement' &&
+  (node as swc.ExpressionStatement).expression.type === 'StringLiteral' &&
+  ((node as swc.ExpressionStatement).expression as swc.StringLiteral).value ===
+    'use server';
+
 const isServerAction = (node: swc.Node): node is FunctionWithBlockBody =>
   (node.type === 'FunctionDeclaration' ||
     node.type === 'FunctionExpression' ||
     node.type === 'ArrowFunctionExpression') &&
   (node as { body?: { type: string } }).body?.type === 'BlockStatement' &&
-  (node as FunctionWithBlockBody).body.stmts.some(
-    (s) =>
-      s.type === 'ExpressionStatement' &&
-      s.expression.type === 'StringLiteral' &&
-      s.expression.value === 'use server',
-  );
+  (node as FunctionWithBlockBody).body.stmts.some(isUseServerDirective);
+
+const prependArgsToFn = <Fn extends FunctionWithBlockBody>(
+  fn: Fn,
+  args: string[],
+): Fn => {
+  return fn;
+  // TODO
+  if (fn.type === 'ArrowFunctionExpression') {
+    return {
+      ...fn,
+      params: [...args.map(createIdentifier), fn.params],
+      body: {
+        type: 'BlockStatement',
+        stmts: fn.body.stmts.filter((stmt) => !isUseServerDirective(stmt)),
+        span: { start: 0, end: 0, ctxt: 0 },
+      },
+    };
+  }
+  return {
+    ...fn,
+    params: [...args.map((arg) => ({ pat: createIdentifier(arg) })), fn.params],
+    body: {
+      type: 'BlockStatement',
+      stmts: fn.body.stmts.filter((stmt) => !isUseServerDirective(stmt)),
+      span: { start: 0, end: 0, ctxt: 0 },
+    },
+  };
+};
 
 const collectClosureVars = (): string[] => {
   // TODO implement it
-  return [];
+  return ['foo', 'bar'];
 };
 
 const transformServerActions = (
@@ -122,24 +161,22 @@ const transformServerActions = (
   ): swc.CallExpression => {
     const closureVars = collectClosureVars();
     serverActions.set(++serverActionIndex, [fn, closureVars]);
-    return {
-      type: 'CallExpression',
-      callee: {
+    return createCallExpression(
+      {
         type: 'MemberExpression',
         object: createIdentifier('__waku_serverAction' + serverActionIndex),
         property: createIdentifier('bind'),
         span: { start: 0, end: 0, ctxt: 0 },
       },
-      arguments: [
-        { expression: createIdentifier('null') },
-        ...closureVars.map((v) => ({ expression: createIdentifier(v) })),
+      [
+        createIdentifier('null'),
+        ...closureVars.map((v) => createIdentifier(v)),
       ],
-      span: { start: 0, end: 0, ctxt: 0 },
-    };
+    );
   };
   const handleDeclaration = (decl: swc.Declaration) => {
     if (isServerAction(decl)) {
-      const callExp = registerServerAction(decl);
+      const callExp = registerServerAction(Object.assign({}, decl));
       const newDecl: swc.VariableDeclaration = {
         type: 'VariableDeclaration',
         kind: 'const',
@@ -201,8 +238,34 @@ const transformServerActions = (
       node.type !== 'ExpressionStatement' && node.type !== 'ImportDeclaration',
   );
   mod.body.splice(lastImportIndex, 0, ...serverActionsInitCode);
-  for (const [actionId, [actionFn, closureVars]] of serverActions) {
-    // TODO add server actions
+  for (const [actionIndex, [actionFn, closureVars]] of serverActions) {
+    if (actionFn.type === 'FunctionDeclaration') {
+      // TODO function decl
+    } else {
+      const stmt: swc.VariableDeclaration = {
+        type: 'VariableDeclaration',
+        kind: 'const',
+        declare: false,
+        declarations: [
+          {
+            type: 'VariableDeclarator',
+            id: createIdentifier('__waku_serverAction' + actionIndex),
+            init: createCallExpression(
+              createIdentifier('__waku_registerServerReference'),
+              [
+                prependArgsToFn(actionFn, closureVars),
+                createStringLiteral(getActionId()),
+                createStringLiteral('action' + actionIndex),
+              ],
+            ),
+            definite: false,
+            span: { start: 0, end: 0, ctxt: 0 },
+          },
+        ],
+        span: { start: 0, end: 0, ctxt: 0 },
+      };
+      mod.body.push(stmt);
+    }
   }
   return mod;
 };

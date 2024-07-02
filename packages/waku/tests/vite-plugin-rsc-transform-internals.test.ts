@@ -82,7 +82,7 @@ export default function App() {
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         export default function App() {
-            const log = __waku_serverAction1.bind(null);
+            const log = __waku_serverAction1.bind(null, foo, bar);
             return <Hello log={log}/>;
         }
         "
@@ -103,9 +103,13 @@ export default function App() {
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         export default function App() {
-            const log = __waku_serverAction1.bind(null);
+            const log = __waku_serverAction1.bind(null, foo, bar);
             return <Hello log={log}/>;
         }
+        const __waku_serverAction1 = __waku_registerServerReference(function(mesg) {
+            'use server';
+            console.log(mesg);
+        }, "/src/App.tsx", "action1");
         "
       `);
   });
@@ -124,9 +128,13 @@ export default function App() {
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         export default function App() {
-            const log = __waku_serverAction1.bind(null);
+            const log = __waku_serverAction1.bind(null, foo, bar);
             return <Hello log={log}/>;
         }
+        const __waku_serverAction1 = __waku_registerServerReference((mesg)=>{
+            'use server';
+            console.log(mesg);
+        }, "/src/App.tsx", "action1");
         "
       `);
   });
@@ -147,11 +155,15 @@ export default function App() {
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         const actions = {
-            log: __waku_serverAction1.bind(null)
+            log: __waku_serverAction1.bind(null, foo, bar)
         };
         export default function App() {
             return <Hello log={actions.log}/>;
         }
+        const __waku_serverAction1 = __waku_registerServerReference((mesg)=>{
+            'use server';
+            console.log(mesg);
+        }, "/src/App.tsx", "action1");
         "
       `);
   });
