@@ -34,7 +34,7 @@ importers:
         version: 18.3.0
       '@typescript-eslint/eslint-plugin':
         specifier: ^7.11.0
-        version: 7.11.0(@typescript-eslint/parser@7.11.0)(eslint@8.57.0)(typescript@5.4.5)
+        version: 7.11.0(@typescript-eslint/parser@7.11.0(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5)
       '@typescript-eslint/parser':
         specifier: ^7.11.0
         version: 7.11.0(eslint@8.57.0)(typescript@5.4.5)
@@ -46,10 +46,10 @@ importers:
         version: 9.1.0(eslint@8.57.0)
       eslint-import-resolver-typescript:
         specifier: ^3.6.1
-        version: 3.6.1(@typescript-eslint/parser@7.11.0)(eslint-plugin-import@2.29.1)(eslint@8.57.0)
+        version: 3.6.1(@typescript-eslint/parser@7.11.0(eslint@8.57.0)(typescript@5.4.5))(eslint-plugin-import@2.29.1)(eslint@8.57.0)
       eslint-plugin-import:
         specifier: ^2.29.1
-        version: 2.29.1(@typescript-eslint/parser@7.11.0)(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
+        version: 2.29.1(@typescript-eslint/parser@7.11.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
       eslint-plugin-react:
         specifier: ^7.34.2
         version: 7.34.2(eslint@8.57.0)
@@ -85,7 +85,7 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       serve:
         specifier: ^14.2.3
         version: 14.2.3
@@ -113,7 +113,7 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       serve:
         specifier: ^14.2.3
         version: 14.2.3
@@ -133,6 +133,9 @@ importers:
 
   e2e/fixtures/rsc-basic:
     dependencies:
+      ai:
+        specifier: link:./modules/ai
+        version: link:modules/ai
       react:
         specifier: 19.0.0-rc.0
         version: 19.0.0-rc.0
@@ -141,7 +144,7 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -166,7 +169,7 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -191,7 +194,7 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -216,7 +219,7 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -241,7 +244,7 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -266,7 +269,7 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -291,7 +294,7 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -316,7 +319,7 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       swr:
         specifier: 2.2.5
         version: 2.2.5(react@19.0.0-rc.0)
@@ -344,7 +347,7 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       react-textarea-autosize:
         specifier: 8.5.3
         version: 8.5.3(@types/react@18.3.3)(react@19.0.0-rc.0)
@@ -372,10 +375,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -403,10 +406,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       autoprefixer:
         specifier: 10.4.19
@@ -425,10 +428,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -456,10 +459,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -481,10 +484,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -503,7 +506,7 @@ importers:
         version: 5.4.5
       vite:
         specifier: 5.2.12
-        version: 5.2.12(@types/node@20.12.13)
+        version: 5.2.12(@types/node@20.12.13)(terser@5.31.0)
 
   examples/07_router:
     dependencies:
@@ -515,10 +518,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -546,10 +549,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/cookie':
         specifier: 0.6.0
@@ -577,10 +580,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -602,10 +605,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -627,10 +630,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -661,10 +664,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -674,16 +677,16 @@ importers:
         version: 18.3.0
       '@vanilla-extract/vite-plugin':
         specifier: 4.0.10
-        version: 4.0.10(@types/node@20.12.13)(vite@5.2.12)
+        version: 4.0.10(@types/node@20.12.13)(terser@5.31.0)(vite@5.2.12(@types/node@20.12.13)(terser@5.31.0))
       typescript:
         specifier: 5.4.5
         version: 5.4.5
       vite:
         specifier: 5.2.12
-        version: 5.2.12(@types/node@20.12.13)
+        version: 5.2.12(@types/node@20.12.13)(terser@5.31.0)
       vite-plugin-stylex-dev:
         specifier: 0.7.5
-        version: 0.7.5
+        version: 0.7.5(rollup@4.18.0)
 
   examples/13_path-alias:
     dependencies:
@@ -695,10 +698,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -711,10 +714,10 @@ importers:
         version: 5.4.5
       vite:
         specifier: 5.2.12
-        version: 5.2.12(@types/node@20.12.13)
+        version: 5.2.12(@types/node@20.12.13)(terser@5.31.0)
       vite-tsconfig-paths:
         specifier: 4.3.2
-        version: 4.3.2(typescript@5.4.5)(vite@5.2.12)
+        version: 4.3.2(typescript@5.4.5)(vite@5.2.12(@types/node@20.12.13)(terser@5.31.0))
 
   examples/14_react-tweet:
     dependencies:
@@ -726,13 +729,13 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       react-tweet:
         specifier: ^3.2.0
-        version: 3.2.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)
+        version: 3.2.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -760,10 +763,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -785,10 +788,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
 
   examples/22_promise:
     dependencies:
@@ -800,10 +803,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -825,13 +828,13 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       react-wrap-balancer:
         specifier: 1.1.0
         version: 1.1.0(react@19.0.0-rc.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -853,10 +856,10 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: link:../../packages/waku
+        version: 0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0)
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -905,10 +908,10 @@ importers:
         version: 1.11.2
       '@swc/core':
         specifier: 1.5.24
-        version: 1.5.24
+        version: 1.5.24(@swc/helpers@0.5.6)
       '@vitejs/plugin-react':
         specifier: 4.3.0
-        version: 4.3.0(vite@5.2.12)
+        version: 4.3.0(vite@5.2.12(@types/node@20.12.13)(terser@5.31.0))
       dotenv:
         specifier: 16.4.5
         version: 16.4.5
@@ -923,20 +926,20 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0(@swc/core@1.5.24(@swc/helpers@0.5.6)))
       rsc-html-stream:
         specifier: 0.0.3
         version: 0.0.3
       vite:
         specifier: 5.2.12
-        version: 5.2.12(@types/node@20.12.13)
+        version: 5.2.12(@types/node@20.12.13)(terser@5.31.0)
     devDependencies:
       '@netlify/functions':
         specifier: ^2.7.0
         version: 2.7.0(@opentelemetry/api@1.8.0)
       '@swc/cli':
         specifier: ^0.3.12
-        version: 0.3.12(@swc/core@1.5.24)
+        version: 0.3.12(@swc/core@1.5.24(@swc/helpers@0.5.6))(chokidar@3.6.0)
       rollup:
         specifier: ^4.18.0
         version: 4.18.0
@@ -945,7 +948,7 @@ importers:
         version: 1.3.0
       vitest:
         specifier: ^1.6.0
-        version: 1.6.0(@types/node@20.12.13)
+        version: 1.6.0(@types/node@20.12.13)(terser@5.31.0)
 
   packages/website:
     dependencies:
@@ -957,7 +960,7 @@ importers:
         version: 2.5.1
       framer-motion:
         specifier: ^11.2.10
-        version: 11.2.10(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)
+        version: 11.2.10(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)
       jotai:
         specifier: ^2.8.2
         version: 2.8.2(@types/react@18.3.3)(react@19.0.0-rc.0)
@@ -972,7 +975,7 @@ importers:
         version: 19.0.0-rc.0(react@19.0.0-rc.0)
       react-server-dom-webpack:
         specifier: 19.0.0-rc.0
-        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0)
+        version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
       waku:
         specifier: workspace:*
         version: link:../waku
@@ -1003,7 +1006,7 @@ importers:
         version: 5.4.5
       vite:
         specifier: 5.2.12
-        version: 5.2.12(@types/node@20.12.13)
+        version: 5.2.12(@types/node@20.12.13)(terser@5.31.0)
 
 packages:
 
@@ -4723,6 +4726,15 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  waku@0.21.0-beta.0:
+    resolution: {integrity: sha512-SshD7rV5P0d4htnwK8F+N7J9GcD6HXZvB6UWHzBqCkqg1Hkh8zzwfFE9xETujd9+58TiiMKYw6q7zD22rpKKgg==}
+    engines: {node: ^20.8.0 || ^18.17.0}
+    hasBin: true
+    peerDependencies:
+      react: 19.0.0-rc.0
+      react-dom: 19.0.0-rc.0
+      react-server-dom-webpack: 19.0.0-rc.0
+
   watchpack@2.4.1:
     resolution: {integrity: sha512-8wrBCMtVhqcXP2Sup1ctSkga6uc2Bx0IIvKyT7yTFier5AXHooSI+QyQQAtTb7+E0IUCCKyTFmXqdqgum2XWGg==}
     engines: {node: '>=10.13.0'}
@@ -5354,11 +5366,13 @@ snapshots:
     dependencies:
       playwright: 1.44.1
 
-  '@rollup/pluginutils@5.1.0':
+  '@rollup/pluginutils@5.1.0(rollup@4.18.0)':
     dependencies:
       '@types/estree': 1.0.5
       estree-walker: 2.0.2
       picomatch: 2.3.1
+    optionalDependencies:
+      rollup: 4.18.0
 
   '@rollup/rollup-android-arm-eabi@4.18.0':
     optional: true
@@ -5456,10 +5470,10 @@ snapshots:
       invariant: 2.2.4
       styleq: 0.1.3
 
-  '@swc/cli@0.3.12(@swc/core@1.5.24)':
+  '@swc/cli@0.3.12(@swc/core@1.5.24(@swc/helpers@0.5.6))(chokidar@3.6.0)':
     dependencies:
       '@mole-inc/bin-wrapper': 8.0.1
-      '@swc/core': 1.5.24
+      '@swc/core': 1.5.24(@swc/helpers@0.5.6)
       '@swc/counter': 0.1.3
       commander: 8.3.0
       fast-glob: 3.3.2
@@ -5468,6 +5482,8 @@ snapshots:
       semver: 7.6.2
       slash: 3.0.0
       source-map: 0.7.4
+    optionalDependencies:
+      chokidar: 3.6.0
 
   '@swc/core-darwin-arm64@1.5.24':
     optional: true
@@ -5499,7 +5515,7 @@ snapshots:
   '@swc/core-win32-x64-msvc@1.5.24':
     optional: true
 
-  '@swc/core@1.5.24':
+  '@swc/core@1.5.24(@swc/helpers@0.5.6)':
     dependencies:
       '@swc/counter': 0.1.3
       '@swc/types': 0.1.7
@@ -5514,6 +5530,7 @@ snapshots:
       '@swc/core-win32-arm64-msvc': 1.5.24
       '@swc/core-win32-ia32-msvc': 1.5.24
       '@swc/core-win32-x64-msvc': 1.5.24
+      '@swc/helpers': 0.5.6
 
   '@swc/counter@0.1.3': {}
 
@@ -5649,7 +5666,7 @@ snapshots:
 
   '@types/unist@3.0.2': {}
 
-  '@typescript-eslint/eslint-plugin@7.11.0(@typescript-eslint/parser@7.11.0)(eslint@8.57.0)(typescript@5.4.5)':
+  '@typescript-eslint/eslint-plugin@7.11.0(@typescript-eslint/parser@7.11.0(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5)':
     dependencies:
       '@eslint-community/regexpp': 4.10.0
       '@typescript-eslint/parser': 7.11.0(eslint@8.57.0)(typescript@5.4.5)
@@ -5662,6 +5679,7 @@ snapshots:
       ignore: 5.3.1
       natural-compare: 1.4.0
       ts-api-utils: 1.3.0(typescript@5.4.5)
+    optionalDependencies:
       typescript: 5.4.5
     transitivePeerDependencies:
       - supports-color
@@ -5674,6 +5692,7 @@ snapshots:
       '@typescript-eslint/visitor-keys': 7.11.0
       debug: 4.3.4
       eslint: 8.57.0
+    optionalDependencies:
       typescript: 5.4.5
     transitivePeerDependencies:
       - supports-color
@@ -5690,6 +5709,7 @@ snapshots:
       debug: 4.3.4
       eslint: 8.57.0
       ts-api-utils: 1.3.0(typescript@5.4.5)
+    optionalDependencies:
       typescript: 5.4.5
     transitivePeerDependencies:
       - supports-color
@@ -5706,6 +5726,7 @@ snapshots:
       minimatch: 9.0.4
       semver: 7.6.2
       ts-api-utils: 1.3.0(typescript@5.4.5)
+    optionalDependencies:
       typescript: 5.4.5
     transitivePeerDependencies:
       - supports-color
@@ -5750,7 +5771,7 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
 
-  '@vanilla-extract/integration@7.1.5(@types/node@20.12.13)':
+  '@vanilla-extract/integration@7.1.5(@types/node@20.12.13)(terser@5.31.0)':
     dependencies:
       '@babel/core': 7.24.6
       '@babel/plugin-syntax-typescript': 7.24.6(@babel/core@7.24.6)
@@ -5762,8 +5783,8 @@ snapshots:
       find-up: 5.0.0
       javascript-stringify: 2.1.0
       mlly: 1.7.0
-      vite: 5.2.12(@types/node@20.12.13)
-      vite-node: 1.6.0(@types/node@20.12.13)
+      vite: 5.2.12(@types/node@20.12.13)(terser@5.31.0)
+      vite-node: 1.6.0(@types/node@20.12.13)(terser@5.31.0)
     transitivePeerDependencies:
       - '@types/node'
       - babel-plugin-macros
@@ -5777,10 +5798,10 @@ snapshots:
 
   '@vanilla-extract/private@1.0.5': {}
 
-  '@vanilla-extract/vite-plugin@4.0.10(@types/node@20.12.13)(vite@5.2.12)':
+  '@vanilla-extract/vite-plugin@4.0.10(@types/node@20.12.13)(terser@5.31.0)(vite@5.2.12(@types/node@20.12.13)(terser@5.31.0))':
     dependencies:
-      '@vanilla-extract/integration': 7.1.5(@types/node@20.12.13)
-      vite: 5.2.12(@types/node@20.12.13)
+      '@vanilla-extract/integration': 7.1.5(@types/node@20.12.13)(terser@5.31.0)
+      vite: 5.2.12(@types/node@20.12.13)(terser@5.31.0)
     transitivePeerDependencies:
       - '@types/node'
       - babel-plugin-macros
@@ -5794,14 +5815,14 @@ snapshots:
 
   '@vercel/ncc@0.38.1': {}
 
-  '@vitejs/plugin-react@4.3.0(vite@5.2.12)':
+  '@vitejs/plugin-react@4.3.0(vite@5.2.12(@types/node@20.12.13)(terser@5.31.0))':
     dependencies:
       '@babel/core': 7.24.6
       '@babel/plugin-transform-react-jsx-self': 7.24.6(@babel/core@7.24.6)
       '@babel/plugin-transform-react-jsx-source': 7.24.6(@babel/core@7.24.6)
       '@types/babel__core': 7.20.5
       react-refresh: 0.14.2
-      vite: 5.2.12(@types/node@20.12.13)
+      vite: 5.2.12(@types/node@20.12.13)(terser@5.31.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -6597,13 +6618,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.11.0)(eslint-plugin-import@2.29.1)(eslint@8.57.0):
+  eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.11.0(eslint@8.57.0)(typescript@5.4.5))(eslint-plugin-import@2.29.1)(eslint@8.57.0):
     dependencies:
       debug: 4.3.4
       enhanced-resolve: 5.16.1
       eslint: 8.57.0
-      eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.11.0)(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
-      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.11.0)(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
+      eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.11.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.11.0(eslint@8.57.0)(typescript@5.4.5))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0)
+      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.11.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
       fast-glob: 3.3.2
       get-tsconfig: 4.7.5
       is-core-module: 2.13.1
@@ -6614,19 +6635,19 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-module-utils@2.8.1(@typescript-eslint/parser@7.11.0)(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0):
+  eslint-module-utils@2.8.1(@typescript-eslint/parser@7.11.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.11.0(eslint@8.57.0)(typescript@5.4.5))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0):
     dependencies:
-      '@typescript-eslint/parser': 7.11.0(eslint@8.57.0)(typescript@5.4.5)
       debug: 3.2.7
+    optionalDependencies:
+      '@typescript-eslint/parser': 7.11.0(eslint@8.57.0)(typescript@5.4.5)
       eslint: 8.57.0
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.6.1(@typescript-eslint/parser@7.11.0)(eslint-plugin-import@2.29.1)(eslint@8.57.0)
+      eslint-import-resolver-typescript: 3.6.1(@typescript-eslint/parser@7.11.0(eslint@8.57.0)(typescript@5.4.5))(eslint-plugin-import@2.29.1)(eslint@8.57.0)
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.29.1(@typescript-eslint/parser@7.11.0)(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0):
+  eslint-plugin-import@2.29.1(@typescript-eslint/parser@7.11.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0):
     dependencies:
-      '@typescript-eslint/parser': 7.11.0(eslint@8.57.0)(typescript@5.4.5)
       array-includes: 3.1.8
       array.prototype.findlastindex: 1.2.5
       array.prototype.flat: 1.3.2
@@ -6635,7 +6656,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 8.57.0
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.11.0)(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
+      eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.11.0(eslint@8.57.0)(typescript@5.4.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.11.0(eslint@8.57.0)(typescript@5.4.5))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0)
       hasown: 2.0.2
       is-core-module: 2.13.1
       is-glob: 4.0.3
@@ -6645,6 +6666,8 @@ snapshots:
       object.values: 1.2.0
       semver: 6.3.1
       tsconfig-paths: 3.15.0
+    optionalDependencies:
+      '@typescript-eslint/parser': 7.11.0(eslint@8.57.0)(typescript@5.4.5)
     transitivePeerDependencies:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack
@@ -6919,11 +6942,12 @@ snapshots:
 
   fraction.js@4.3.7: {}
 
-  framer-motion@11.2.10(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0):
+  framer-motion@11.2.10(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0):
     dependencies:
+      tslib: 2.6.2
+    optionalDependencies:
       react: 19.0.0-rc.0
       react-dom: 19.0.0-rc.0(react@19.0.0-rc.0)
-      tslib: 2.6.2
 
   from@0.1.7: {}
 
@@ -7329,7 +7353,7 @@ snapshots:
   jiti@1.21.0: {}
 
   jotai@2.8.2(@types/react@18.3.3)(react@19.0.0-rc.0):
-    dependencies:
+    optionalDependencies:
       '@types/react': 18.3.3
       react: 19.0.0-rc.0
 
@@ -8054,8 +8078,9 @@ snapshots:
   postcss-load-config@4.0.2(postcss@8.4.38):
     dependencies:
       lilconfig: 3.1.1
-      postcss: 8.4.38
       yaml: 2.4.2
+    optionalDependencies:
+      postcss: 8.4.38
 
   postcss-nested@6.0.1(postcss@8.4.38):
     dependencies:
@@ -8145,7 +8170,15 @@ snapshots:
 
   react-refresh@0.14.2: {}
 
-  react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0)(webpack@5.91.0):
+  react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0(@swc/core@1.5.24(@swc/helpers@0.5.6))):
+    dependencies:
+      acorn-loose: 8.4.0
+      neo-async: 2.6.2
+      react: 19.0.0-rc.0
+      react-dom: 19.0.0-rc.0(react@19.0.0-rc.0)
+      webpack: 5.91.0(@swc/core@1.5.24(@swc/helpers@0.5.6))
+
+  react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0):
     dependencies:
       acorn-loose: 8.4.0
       neo-async: 2.6.2
@@ -8162,7 +8195,7 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
-  react-tweet@3.2.0(react-dom@19.0.0-rc.0)(react@19.0.0-rc.0):
+  react-tweet@3.2.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0):
     dependencies:
       '@swc/helpers': 0.5.6
       clsx: 2.1.0
@@ -8631,6 +8664,17 @@ snapshots:
     dependencies:
       ps-tree: 1.2.0
 
+  terser-webpack-plugin@5.3.10(@swc/core@1.5.24(@swc/helpers@0.5.6))(webpack@5.91.0(@swc/core@1.5.24(@swc/helpers@0.5.6))):
+    dependencies:
+      '@jridgewell/trace-mapping': 0.3.25
+      jest-worker: 27.5.1
+      schema-utils: 3.3.0
+      serialize-javascript: 6.0.2
+      terser: 5.31.0
+      webpack: 5.91.0(@swc/core@1.5.24(@swc/helpers@0.5.6))
+    optionalDependencies:
+      '@swc/core': 1.5.24(@swc/helpers@0.5.6)
+
   terser-webpack-plugin@5.3.10(webpack@5.91.0):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.25
@@ -8693,7 +8737,7 @@ snapshots:
   ts-interface-checker@0.1.13: {}
 
   tsconfck@3.1.0(typescript@5.4.5):
-    dependencies:
+    optionalDependencies:
       typescript: 5.4.5
 
   tsconfig-paths@3.15.0:
@@ -8848,14 +8892,16 @@ snapshots:
 
   use-isomorphic-layout-effect@1.1.2(@types/react@18.3.3)(react@19.0.0-rc.0):
     dependencies:
-      '@types/react': 18.3.3
       react: 19.0.0-rc.0
+    optionalDependencies:
+      '@types/react': 18.3.3
 
   use-latest@1.2.1(@types/react@18.3.3)(react@19.0.0-rc.0):
     dependencies:
-      '@types/react': 18.3.3
       react: 19.0.0-rc.0
       use-isomorphic-layout-effect: 1.1.2(@types/react@18.3.3)(react@19.0.0-rc.0)
+    optionalDependencies:
+      '@types/react': 18.3.3
 
   use-sync-external-store@1.2.2(react@19.0.0-rc.0):
     dependencies:
@@ -8883,13 +8929,13 @@ snapshots:
       unist-util-stringify-position: 4.0.0
       vfile-message: 4.0.2
 
-  vite-node@1.6.0(@types/node@20.12.13):
+  vite-node@1.6.0(@types/node@20.12.13)(terser@5.31.0):
     dependencies:
       cac: 6.7.14
       debug: 4.3.4
       pathe: 1.1.2
       picocolors: 1.0.1
-      vite: 5.2.12(@types/node@20.12.13)
+      vite: 5.2.12(@types/node@20.12.13)(terser@5.31.0)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -8900,38 +8946,39 @@ snapshots:
       - supports-color
       - terser
 
-  vite-plugin-stylex-dev@0.7.5:
+  vite-plugin-stylex-dev@0.7.5(rollup@4.18.0):
     dependencies:
       '@babel/core': 7.24.6
-      '@rollup/pluginutils': 5.1.0
+      '@rollup/pluginutils': 5.1.0(rollup@4.18.0)
       '@stylex-extend/babel-plugin': 0.3.1
       '@stylexjs/babel-plugin': 0.6.1
     transitivePeerDependencies:
       - rollup
       - supports-color
 
-  vite-tsconfig-paths@4.3.2(typescript@5.4.5)(vite@5.2.12):
+  vite-tsconfig-paths@4.3.2(typescript@5.4.5)(vite@5.2.12(@types/node@20.12.13)(terser@5.31.0)):
     dependencies:
       debug: 4.3.4
       globrex: 0.1.2
       tsconfck: 3.1.0(typescript@5.4.5)
-      vite: 5.2.12(@types/node@20.12.13)
+    optionalDependencies:
+      vite: 5.2.12(@types/node@20.12.13)(terser@5.31.0)
     transitivePeerDependencies:
       - supports-color
       - typescript
 
-  vite@5.2.12(@types/node@20.12.13):
+  vite@5.2.12(@types/node@20.12.13)(terser@5.31.0):
     dependencies:
-      '@types/node': 20.12.13
       esbuild: 0.20.2
       postcss: 8.4.38
       rollup: 4.18.0
     optionalDependencies:
-      fsevents: 2.3.3
-
-  vitest@1.6.0(@types/node@20.12.13):
-    dependencies:
       '@types/node': 20.12.13
+      fsevents: 2.3.3
+      terser: 5.31.0
+
+  vitest@1.6.0(@types/node@20.12.13)(terser@5.31.0):
+    dependencies:
       '@vitest/expect': 1.6.0
       '@vitest/runner': 1.6.0
       '@vitest/snapshot': 1.6.0
@@ -8949,9 +8996,11 @@ snapshots:
       strip-literal: 2.1.0
       tinybench: 2.8.0
       tinypool: 0.8.4
-      vite: 5.2.12(@types/node@20.12.13)
-      vite-node: 1.6.0(@types/node@20.12.13)
+      vite: 5.2.12(@types/node@20.12.13)(terser@5.31.0)
+      vite-node: 1.6.0(@types/node@20.12.13)(terser@5.31.0)
       why-is-node-running: 2.2.2
+    optionalDependencies:
+      '@types/node': 20.12.13
     transitivePeerDependencies:
       - less
       - lightningcss
@@ -8968,6 +9017,29 @@ snapshots:
       debug: 4.3.4
     transitivePeerDependencies:
       - supports-color
+
+  waku@0.21.0-beta.0(@swc/helpers@0.5.6)(@types/node@20.12.13)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0))(react@19.0.0-rc.0)(terser@5.31.0):
+    dependencies:
+      '@hono/node-server': 1.11.2
+      '@swc/core': 1.5.24(@swc/helpers@0.5.6)
+      '@vitejs/plugin-react': 4.3.0(vite@5.2.12(@types/node@20.12.13)(terser@5.31.0))
+      dotenv: 16.4.5
+      hono: 4.4.2
+      react: 19.0.0-rc.0
+      react-dom: 19.0.0-rc.0(react@19.0.0-rc.0)
+      react-server-dom-webpack: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.91.0)
+      rsc-html-stream: 0.0.3
+      vite: 5.2.12(@types/node@20.12.13)(terser@5.31.0)
+    transitivePeerDependencies:
+      - '@swc/helpers'
+      - '@types/node'
+      - less
+      - lightningcss
+      - sass
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
 
   watchpack@2.4.1:
     dependencies:
@@ -9000,6 +9072,37 @@ snapshots:
       schema-utils: 3.3.0
       tapable: 2.2.1
       terser-webpack-plugin: 5.3.10(webpack@5.91.0)
+      watchpack: 2.4.1
+      webpack-sources: 3.2.3
+    transitivePeerDependencies:
+      - '@swc/core'
+      - esbuild
+      - uglify-js
+
+  webpack@5.91.0(@swc/core@1.5.24(@swc/helpers@0.5.6)):
+    dependencies:
+      '@types/eslint-scope': 3.7.7
+      '@types/estree': 1.0.5
+      '@webassemblyjs/ast': 1.12.1
+      '@webassemblyjs/wasm-edit': 1.12.1
+      '@webassemblyjs/wasm-parser': 1.12.1
+      acorn: 8.11.3
+      acorn-import-assertions: 1.9.0(acorn@8.11.3)
+      browserslist: 4.23.0
+      chrome-trace-event: 1.0.4
+      enhanced-resolve: 5.16.1
+      es-module-lexer: 1.5.3
+      eslint-scope: 5.1.1
+      events: 3.3.0
+      glob-to-regexp: 0.4.1
+      graceful-fs: 4.2.11
+      json-parse-even-better-errors: 2.3.1
+      loader-runner: 4.3.0
+      mime-types: 2.1.35
+      neo-async: 2.6.2
+      schema-utils: 3.3.0
+      tapable: 2.2.1
+      terser-webpack-plugin: 5.3.10(@swc/core@1.5.24(@swc/helpers@0.5.6))(webpack@5.91.0(@swc/core@1.5.24(@swc/helpers@0.5.6)))
       watchpack: 2.4.1
       webpack-sources: 3.2.3
     transitivePeerDependencies:
