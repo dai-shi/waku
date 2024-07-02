@@ -89,8 +89,7 @@ for (const { build, command } of commands) {
         '["foo"]',
       );
       const result = await page.evaluate(() => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
+        // @ts-expect-error no types
         return globalThis.actions.foo();
       });
       expect(result).toBe(0);
