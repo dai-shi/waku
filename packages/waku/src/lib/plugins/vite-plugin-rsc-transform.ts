@@ -118,12 +118,10 @@ const prependArgsToFn = <Fn extends FunctionWithBlockBody>(
   fn: Fn,
   args: string[],
 ): Fn => {
-  return fn;
-  // TODO
   if (fn.type === 'ArrowFunctionExpression') {
     return {
       ...fn,
-      params: [...args.map(createIdentifier), fn.params],
+      params: [...args.map(createIdentifier), ...fn.params],
       body: {
         type: 'BlockStatement',
         stmts: fn.body.stmts.filter((stmt) => !isUseServerDirective(stmt)),
@@ -133,7 +131,14 @@ const prependArgsToFn = <Fn extends FunctionWithBlockBody>(
   }
   return {
     ...fn,
-    params: [...args.map((arg) => ({ pat: createIdentifier(arg) })), fn.params],
+    params: [
+      ...args.map((arg) => ({
+        type: 'Parameter',
+        pat: createIdentifier(arg),
+        span: { start: 0, end: 0, ctxt: 0 },
+      })),
+      ...fn.params,
+    ],
     body: {
       type: 'BlockStatement',
       stmts: fn.body.stmts.filter((stmt) => !isUseServerDirective(stmt)),

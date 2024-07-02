@@ -106,8 +106,7 @@ export default function App() {
             const log = __waku_serverAction1.bind(null, foo, bar);
             return <Hello log={log}/>;
         }
-        const __waku_serverAction1 = __waku_registerServerReference(function(mesg) {
-            'use server';
+        const __waku_serverAction1 = __waku_registerServerReference(function(foo, bar, mesg) {
             console.log(mesg);
         }, "/src/App.tsx", "action1");
         "
@@ -131,8 +130,7 @@ export default function App() {
             const log = __waku_serverAction1.bind(null, foo, bar);
             return <Hello log={log}/>;
         }
-        const __waku_serverAction1 = __waku_registerServerReference((mesg)=>{
-            'use server';
+        const __waku_serverAction1 = __waku_registerServerReference((foo, bar, mesg)=>{
             console.log(mesg);
         }, "/src/App.tsx", "action1");
         "
@@ -160,8 +158,7 @@ export default function App() {
         export default function App() {
             return <Hello log={actions.log}/>;
         }
-        const __waku_serverAction1 = __waku_registerServerReference((mesg)=>{
-            'use server';
+        const __waku_serverAction1 = __waku_registerServerReference((foo, bar, mesg)=>{
             console.log(mesg);
         }, "/src/App.tsx", "action1");
         "
