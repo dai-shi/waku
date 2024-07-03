@@ -391,7 +391,7 @@ const transformServer = (
   const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseClient = false;
-  let hasUseServer: swc.ExpressionStatement | undefined;
+  let hasUseServer: swc.ExpressionStatement | true | undefined;
   for (const item of mod.body) {
     if (item.type === 'ExpressionStatement') {
       if (item.expression.type === 'StringLiteral') {
@@ -417,44 +417,96 @@ export ${name === 'default' ? name : `const ${name} =`} registerClientReference(
 `;
     }
     return newCode;
-  } else if (hasUseServer) {
-    const useServerPosStart = hasUseServer.span.start - mod.span.start;
-    const useServerPosEnd = hasUseServer.span.end - mod.span.start;
-    const lastImportIndex = mod.body.findIndex(
-      (node) =>
-        node.type !== 'ExpressionStatement' &&
-        node.type !== 'ImportDeclaration',
-    );
-    let lastImportPos =
-      lastImportIndex === -1 ? 0 : mod.body[lastImportIndex]!.span.end;
-    if (lastImportIndex < useServerPosEnd) {
-      lastImportPos = useServerPosEnd;
-    }
-    const exportNames = collectExportNames(mod);
-    const newCode = [
-      code.slice(0, useServerPosStart),
-      code.slice(useServerPosEnd, lastImportPos),
-      `
-import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-`,
-      code.slice(lastImportPos),
-      ...[...exportNames].map(
-        (name) => `
+  } else {
+    const walkFindServerAction = (
+      parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
+      node: swc.Node,
+    ) => {
+      // FIXME do we need to walk the entire tree? feels inefficient
+      Object.values(node).forEach((value) => {
+        const fn =
+          node.type === 'FunctionDeclaration' ||
+          node.type === 'FunctionExpression' ||
+          node.type === 'ArrowFunctionExpression'
+            ? (node as swc.Fn | swc.ArrowFunctionExpression)
+            : parentFn;
+        (Array.isArray(value) ? value : [value]).forEach((v) => {
+          if (typeof v?.type === 'string') {
+            walkFindServerAction(fn, v);
+          } else if (typeof v?.expression?.type === 'string') {
+            walkFindServerAction(fn, v.expression);
+          }
+        });
+      });
+      if (
+        node.type === 'FunctionExpression' ||
+        node.type === 'ArrowFunctionExpression' ||
+        node.type === 'FunctionDeclaration'
+      ) {
+        const fnNode = node as
+          | swc.FunctionExpression
+          | swc.ArrowFunctionExpression
+          | swc.FunctionDeclaration;
+        if (
+          fnNode.body &&
+          'stmts' in fnNode.body &&
+          fnNode.body.stmts.find(
+            (stmt) =>
+              stmt.type === 'ExpressionStatement' &&
+              stmt.expression.type === 'StringLiteral' &&
+              stmt.expression.value === 'use server',
+          )
+        ) {
+          hasUseServer = true;
+        }
+      }
+    };
+
+    walkFindServerAction(undefined, mod);
+    if (hasUseServer) {
+      const exportNames = collectExportNames(mod);
+      // transform server actions in server components
+      const newMod = transformServerActions(mod, () => getServerId(id));
+      if (newMod) {
+        code = swc.printSync(newMod).code;
+      }
+      let useServerPosStart: number;
+      let useServerPosEnd: number;
+      if (hasUseServer === true) {
+        useServerPosStart = 0;
+        useServerPosEnd = 0;
+      } else {
+        useServerPosStart = hasUseServer.span.start - mod.span.start;
+        useServerPosEnd = hasUseServer.span.end - mod.span.start;
+      }
+      const lastImportIndex = mod.body.findIndex(
+        (node) =>
+          node.type !== 'ExpressionStatement' &&
+          node.type !== 'ImportDeclaration',
+      );
+      let lastImportPos =
+        lastImportIndex === -1 ? 0 : mod.body[lastImportIndex]!.span.end;
+      if (lastImportIndex < useServerPosEnd) {
+        lastImportPos = useServerPosEnd;
+      }
+      return [
+        newMod === undefined
+          ? `import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';`
+          : '',
+        code.slice(0, useServerPosStart),
+        code.slice(useServerPosEnd, lastImportPos),
+        code.slice(lastImportPos),
+        ...[...exportNames].map((name) =>
+          name === 'default'
+            ? ``
+            : `
 if (typeof ${name} === 'function') {
   __waku_registerServerReference(${name}, '${getServerId(id)}', '${name}');
 }
 `,
-      ),
-    ].join('');
-    return newCode;
-  }
-  // transform server actions in server components
-  const newMod =
-    code.includes('use server') &&
-    transformServerActions(mod, () => getServerId(id));
-  if (newMod) {
-    const newCode = swc.printSync(newMod).code;
-    return newCode;
+        ),
+      ].join('');
+    }
   }
 };
 
