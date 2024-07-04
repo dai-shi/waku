@@ -15,6 +15,7 @@ import {
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { devCommonJsPlugin } from '../plugins/vite-plugin-dev-commonjs.js';
+import { rscRsdwPlugin } from '../plugins/vite-plugin-rsc-rsdw.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscHmrPlugin, hotUpdate } from '../plugins/vite-plugin-rsc-hmr.js';
@@ -93,6 +94,18 @@ const createMainViteServer = (
       plugins: [
         patchReactRefresh(viteReact()),
         nonjsResolvePlugin(),
+        devCommonJsPlugin({
+          filter: (id) => {
+            if (
+              id.includes('/node_modules/react-server-dom-webpack/') ||
+              id.includes('/node_modules/react-dom/') ||
+              id.includes('/node_modules/react/')
+            ) {
+              return true;
+            }
+          },
+        }),
+        rscRsdwPlugin(),
         rscEnvPlugin({ config }),
         rscPrivatePlugin(config),
         rscManagedPlugin(config),
@@ -111,6 +124,7 @@ const createMainViteServer = (
       },
       ssr: {
         external: ['waku'],
+        noExternal: ['react-server-dom-webpack'],
       },
       server: { middlewareMode: true },
     });
@@ -122,6 +136,16 @@ const createMainViteServer = (
   const loadServerFileMain = async (fileURL: string) => {
     const vite = await vitePromise;
     return vite.ssrLoadModule(fileURLToFilePath(fileURL));
+  };
+
+  const loadServerModuleMain = async (id: string) => {
+    if (id === 'waku' || id.startsWith('waku/')) {
+      // HACK I don't know why this is necessary.
+      // `external: ['waku']` doesn't somehow work?
+      return import(id);
+    }
+    const vite = await vitePromise;
+    return vite.ssrLoadModule(id);
   };
 
   const transformIndexHtml = async (pathname: string) => {
@@ -173,6 +197,7 @@ const createMainViteServer = (
   return {
     vitePromise,
     loadServerFileMain,
+    loadServerModuleMain,
     transformIndexHtml,
     willBeHandledLater,
   };
@@ -190,7 +215,8 @@ const createRscViteServer = (
       plugins: [
         viteReact(),
         nonjsResolvePlugin(),
-        devCommonJsPlugin(),
+        devCommonJsPlugin({}),
+        rscRsdwPlugin(),
         rscEnvPlugin({}),
         rscPrivatePlugin({ privateDir: config.privateDir, hotUpdateCallback }),
         rscManagedPlugin({ basePath: config.basePath, srcDir: config.srcDir }),
@@ -286,6 +312,7 @@ export const devServer: Middleware = (options) => {
   const {
     vitePromise,
     loadServerFileMain,
+    loadServerModuleMain,
     transformIndexHtml,
     willBeHandledLater,
   } = createMainViteServer(configPromise);
@@ -338,6 +365,7 @@ export const devServer: Middleware = (options) => {
       loadServerModuleRsc,
       loadEntriesDev,
       loadServerFileMain,
+      loadServerModuleMain,
       transformIndexHtml,
       willBeHandledLater,
     };

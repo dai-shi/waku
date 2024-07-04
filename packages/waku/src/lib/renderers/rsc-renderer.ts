@@ -203,7 +203,7 @@ export async function renderRsc(
       }
       mod = await loadModule(fileId.slice('@id/'.length));
     }
-    const fn = mod.__waku_serverActions?.get(name) || mod[name] || mod;
+    const fn = mod[name] || mod;
     return renderWithContextWithAction(context, fn, args);
   }
 
