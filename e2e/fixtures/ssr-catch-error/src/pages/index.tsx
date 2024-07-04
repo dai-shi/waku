@@ -4,9 +4,7 @@ export default async function HomePage() {
   return (
     <div>
       <p>Home Page</p>
-      <Link to="/invalid">
-        Invalid page
-      </Link>
+      <Link to="/invalid">Invalid page</Link>
     </div>
   );
 }

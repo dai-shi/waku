@@ -8,11 +8,17 @@ const FallbackComponent = ({ error }: { error: any }) => {
     <div role="alert">
       <p>Something went wrong:</p>
       <pre style={{ color: 'red' }}>{error.message}</pre>
-      {error.statusCode && <pre style={{ color: 'red' }}>{error.statusCode}</pre>}
+      {error.statusCode && (
+        <pre style={{ color: 'red' }}>{error.statusCode}</pre>
+      )}
     </div>
   );
-}
+};
 
 export const ClientLayout = ({ children }: { children: ReactNode }) => {
-  return <ErrorBoundary FallbackComponent={FallbackComponent}>{children}</ErrorBoundary>;
+  return (
+    <ErrorBoundary FallbackComponent={FallbackComponent}>
+      {children}
+    </ErrorBoundary>
+  );
 };
