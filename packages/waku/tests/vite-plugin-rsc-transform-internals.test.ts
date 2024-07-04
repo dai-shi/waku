@@ -53,14 +53,12 @@ export const log = (mesg) => {
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
-        "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';;
-
-        export const log = (mesg) => {
-          console.log(mesg);
+        "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
+        export const log = (mesg)=>{
+            console.log(mesg);
         };
-
-        if (typeof log === 'function') {
-          __waku_registerServerReference(log, '/src/App.tsx', 'log');
+        if (typeof log === "function") {
+            __waku_registerServerReference(log, "/src/App.tsx", "log");
         }
         "
       `);
@@ -102,10 +100,6 @@ export function ServerProvider({ children }: { children: ReactNode }) {
         }) {
             return <AI>{children}</AI>;
         }
-
-        if (typeof ServerProvider === 'function') {
-          __waku_registerServerReference(ServerProvider, '/src/App.tsx', 'ServerProvider');
-        }
         "
       `);
   });
@@ -139,8 +133,7 @@ export function createAI({ actions }) {
 }`;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
-        "
-        import { InternalProvider } from './shared.js';
+        "import { InternalProvider } from './shared.js';
         import { jsx } from 'react/jsx-runtime';
         import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         export async function __waku_action1({ action }, ...args) {
@@ -165,9 +158,8 @@ export function createAI({ actions }) {
                 });
             };
         }
-
-        if (typeof createAI === 'function') {
-          __waku_registerServerReference(createAI, '/src/App.tsx', 'createAI');
+        if (typeof createAI === "function") {
+            __waku_registerServerReference(createAI, "/src/App.tsx", "createAI");
         }
         "
       `);
