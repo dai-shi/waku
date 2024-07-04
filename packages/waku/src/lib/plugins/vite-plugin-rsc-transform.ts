@@ -91,9 +91,17 @@ const createCallExpression = (
   span: { start: 0, end: 0, ctxt: 0 },
 });
 
-const serverActionsInitCode = swc.parseSync(`
+const serverInitCode = swc.parseSync(`
 import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
 `).body;
+
+const findLastImportIndex = (mod: swc.Module) => {
+  const lastImportIndex = mod.body.findIndex(
+    (node) =>
+      node.type !== 'ExpressionStatement' && node.type !== 'ImportDeclaration',
+  );
+  return lastImportIndex === -1 ? 0 : lastImportIndex;
+};
 
 type FunctionWithBlockBody = (
   | swc.FunctionDeclaration
@@ -323,62 +331,59 @@ const transformServerActions = (
   if (!serverActionIndex) {
     return;
   }
-  const serverActionsCode = [...serverActionsInitCode];
-  for (const [actionIndex, [actionFn, closureVars]] of serverActions) {
-    if (actionFn.type === 'FunctionDeclaration') {
-      const stmt1: swc.ExportDeclaration = {
-        type: 'ExportDeclaration',
-        declaration: prependArgsToFn(actionFn, closureVars),
-        span: { start: 0, end: 0, ctxt: 0 },
-      };
-      const stmt2: swc.ExpressionStatement = {
-        type: 'ExpressionStatement',
-        expression: createCallExpression(
-          createIdentifier('__waku_registerServerReference'),
-          [
-            createIdentifier(actionFn.identifier.value),
-            createStringLiteral(getActionId()),
-            createStringLiteral('__waku_action' + actionIndex),
-          ],
-        ),
-        span: { start: 0, end: 0, ctxt: 0 },
-      };
-      serverActionsCode.push(stmt1, stmt2);
-    } else {
-      const stmt: swc.ExportDeclaration = {
-        type: 'ExportDeclaration',
-        declaration: {
-          type: 'VariableDeclaration',
-          kind: 'const',
-          declare: false,
-          declarations: [
-            {
-              type: 'VariableDeclarator',
-              id: createIdentifier('__waku_action' + actionIndex),
-              init: createCallExpression(
-                createIdentifier('__waku_registerServerReference'),
-                [
-                  prependArgsToFn(actionFn, closureVars),
-                  createStringLiteral(getActionId()),
-                  createStringLiteral('__waku_action' + actionIndex),
-                ],
-              ),
-              definite: false,
-              span: { start: 0, end: 0, ctxt: 0 },
-            },
-          ],
+  const serverActionsCode = Array.from(serverActions).flatMap(
+    ([actionIndex, [actionFn, closureVars]]) => {
+      if (actionFn.type === 'FunctionDeclaration') {
+        const stmt1: swc.ExportDeclaration = {
+          type: 'ExportDeclaration',
+          declaration: prependArgsToFn(actionFn, closureVars),
           span: { start: 0, end: 0, ctxt: 0 },
-        },
-        span: { start: 0, end: 0, ctxt: 0 },
-      };
-      serverActionsCode.push(stmt);
-    }
-  }
-  const lastImportIndex = mod.body.findIndex(
-    (node) =>
-      node.type !== 'ExpressionStatement' && node.type !== 'ImportDeclaration',
+        };
+        const stmt2: swc.ExpressionStatement = {
+          type: 'ExpressionStatement',
+          expression: createCallExpression(
+            createIdentifier('__waku_registerServerReference'),
+            [
+              createIdentifier(actionFn.identifier.value),
+              createStringLiteral(getActionId()),
+              createStringLiteral('__waku_action' + actionIndex),
+            ],
+          ),
+          span: { start: 0, end: 0, ctxt: 0 },
+        };
+        return [stmt1, stmt2];
+      } else {
+        const stmt: swc.ExportDeclaration = {
+          type: 'ExportDeclaration',
+          declaration: {
+            type: 'VariableDeclaration',
+            kind: 'const',
+            declare: false,
+            declarations: [
+              {
+                type: 'VariableDeclarator',
+                id: createIdentifier('__waku_action' + actionIndex),
+                init: createCallExpression(
+                  createIdentifier('__waku_registerServerReference'),
+                  [
+                    prependArgsToFn(actionFn, closureVars),
+                    createStringLiteral(getActionId()),
+                    createStringLiteral('__waku_action' + actionIndex),
+                  ],
+                ),
+                definite: false,
+                span: { start: 0, end: 0, ctxt: 0 },
+              },
+            ],
+            span: { start: 0, end: 0, ctxt: 0 },
+          },
+          span: { start: 0, end: 0, ctxt: 0 },
+        };
+        return [stmt];
+      }
+    },
   );
-  mod.body.splice(lastImportIndex, 0, ...serverActionsCode);
+  mod.body.splice(findLastImportIndex(mod), 0, ...serverActionsCode);
   return mod;
 };
 
@@ -391,14 +396,18 @@ const transformServer = (
   const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseClient = false;
-  let hasUseServer: swc.ExpressionStatement | undefined;
-  for (const item of mod.body) {
+  let hasUseServer = false;
+  for (let i = 0; i < mod.body.length; ++i) {
+    const item = mod.body[i]!;
     if (item.type === 'ExpressionStatement') {
       if (item.expression.type === 'StringLiteral') {
         if (item.expression.value === 'use client') {
           hasUseClient = true;
+          break;
         } else if (item.expression.value === 'use server') {
-          hasUseServer = item;
+          hasUseServer = true;
+          mod.body.splice(i, 1); // remove this directive
+          break;
         }
       }
     } else {
@@ -417,42 +426,56 @@ export ${name === 'default' ? name : `const ${name} =`} registerClientReference(
 `;
     }
     return newCode;
-  } else if (hasUseServer) {
-    const useServerPosStart = hasUseServer.span.start - mod.span.start;
-    const useServerPosEnd = hasUseServer.span.end - mod.span.start;
-    const lastImportIndex = mod.body.findIndex(
-      (node) =>
-        node.type !== 'ExpressionStatement' &&
-        node.type !== 'ImportDeclaration',
-    );
-    let lastImportPos =
-      lastImportIndex === -1 ? 0 : mod.body[lastImportIndex]!.span.end;
-    if (lastImportIndex < useServerPosEnd) {
-      lastImportPos = useServerPosEnd;
-    }
+  }
+  if (hasUseServer) {
     const exportNames = collectExportNames(mod);
-    const newCode = [
-      code.slice(0, useServerPosStart),
-      code.slice(useServerPosEnd, lastImportPos),
-      `
-import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-`,
-      code.slice(lastImportPos),
-      ...[...exportNames].map(
-        (name) => `
-if (typeof ${name} === 'function') {
-  __waku_registerServerReference(${name}, '${getServerId(id)}', '${name}');
-}
-`,
-      ),
-    ].join('');
-    return newCode;
+    const serverActionsCode = Array.from(exportNames).map((name) => {
+      const blockStmt: swc.BlockStatement = {
+        type: 'BlockStatement',
+        stmts: [
+          {
+            type: 'ExpressionStatement',
+            expression: createCallExpression(
+              createIdentifier('__waku_registerServerReference'),
+              [
+                createIdentifier(name),
+                createStringLiteral(getServerId(id)),
+                createStringLiteral(name),
+              ],
+            ),
+            span: { start: 0, end: 0, ctxt: 0 },
+          },
+        ],
+        span: { start: 0, end: 0, ctxt: 0 },
+      };
+      const ifStmt: swc.IfStatement = {
+        type: 'IfStatement',
+        test: {
+          type: 'BinaryExpression',
+          operator: '===',
+          left: {
+            type: 'UnaryExpression',
+            operator: 'typeof',
+            argument: createIdentifier(name),
+            span: { start: 0, end: 0, ctxt: 0 },
+          },
+          right: createStringLiteral('function'),
+          span: { start: 0, end: 0, ctxt: 0 },
+        },
+        consequent: blockStmt,
+        span: { start: 0, end: 0, ctxt: 0 },
+      };
+      return ifStmt;
+    });
+    mod.body.push(...serverActionsCode);
   }
   // transform server actions in server components
   const newMod =
-    code.includes('use server') &&
-    transformServerActions(mod, () => getServerId(id));
+    (code.includes('use server') &&
+      transformServerActions(mod, () => getServerId(id))) ||
+    (hasUseServer && mod);
   if (newMod) {
+    newMod.body.splice(findLastImportIndex(newMod), 0, ...serverInitCode);
     const newCode = swc.printSync(newMod).code;
     return newCode;
   }
