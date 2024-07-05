@@ -375,7 +375,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -406,7 +406,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       autoprefixer:
         specifier: 10.4.19
@@ -428,7 +428,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -459,7 +459,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -484,7 +484,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -518,7 +518,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -549,7 +549,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/cookie':
         specifier: 0.6.0
@@ -580,7 +580,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -605,7 +605,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -630,7 +630,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -664,7 +664,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -698,7 +698,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -732,7 +732,7 @@ importers:
         version: 3.2.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -763,7 +763,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -788,7 +788,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
 
   examples/22_promise:
     dependencies:
@@ -803,7 +803,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -831,7 +831,7 @@ importers:
         version: 1.1.0(react@19.0.0-rc.0)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -856,7 +856,7 @@ importers:
         version: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
       waku:
         specifier: 0.21.0-beta.0
-        version: 0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1)
+        version: link:../../packages/waku
     devDependencies:
       '@types/react':
         specifier: 18.3.3
@@ -1310,10 +1310,6 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
-  '@hono/node-server@1.11.2':
-    resolution: {integrity: sha512-JhX0nUC66GeDxpIdMKWDRMEwtQBa64CY907iAF1sYqb4m2p2PdSU7zkbnNhAZLg/6IjSlTuj6CF307JlBXVvpg==}
-    engines: {node: '>=18.14.1'}
-
   '@hono/node-server@1.12.0':
     resolution: {integrity: sha512-e6oHjNiErRxsZRZBmc2KucuvY3btlO/XPncIpP2X75bRdTilF9GLjm3NHvKKunpJbbJJj31/FoPTksTf8djAVw==}
     engines: {node: '>=18.14.1'}
@@ -1699,22 +1695,10 @@ packages:
       chokidar:
         optional: true
 
-  '@swc/core-darwin-arm64@1.5.24':
-    resolution: {integrity: sha512-M7oLOcC0sw+UTyAuL/9uyB9GeO4ZpaBbH76JSH6g1m0/yg7LYJZGRmplhDmwVSDAR5Fq4Sjoi1CksmmGkgihGA==}
-    engines: {node: '>=10'}
-    cpu: [arm64]
-    os: [darwin]
-
   '@swc/core-darwin-arm64@1.6.7':
     resolution: {integrity: sha512-sNb+ghP2OhZyUjS7E5Mf3PqSvoXJ5gY6GBaH2qp8WQxx9VL7ozC4HVo6vkeFJBN5cmYqUCLnhrM3HU4W+7yMSA==}
     engines: {node: '>=10'}
     cpu: [arm64]
-    os: [darwin]
-
-  '@swc/core-darwin-x64@1.5.24':
-    resolution: {integrity: sha512-MfcFjGGYognpSBSos2pYUNYJSmqEhuw5ceGr6qAdME7ddbjGXliza4W6FggsM+JnWwpqa31+e7/R+GetW4WkaQ==}
-    engines: {node: '>=10'}
-    cpu: [x64]
     os: [darwin]
 
   '@swc/core-darwin-x64@1.6.7':
@@ -1723,32 +1707,14 @@ packages:
     cpu: [x64]
     os: [darwin]
 
-  '@swc/core-linux-arm-gnueabihf@1.5.24':
-    resolution: {integrity: sha512-amI2pwtcWV3E/m/nf+AQtn1LWDzKLZyjCmWd3ms7QjEueWYrY8cU1Y4Wp7wNNsxIoPOi8zek1Uj2wwFD/pttNQ==}
-    engines: {node: '>=10'}
-    cpu: [arm]
-    os: [linux]
-
   '@swc/core-linux-arm-gnueabihf@1.6.7':
     resolution: {integrity: sha512-kEDzVhNci38LX3kdY99t68P2CDf+2QFDk5LawVamXH0iN5DRAO/+wjOhxL8KOHa6wQVqKEt5WrhD+Rrvk/34Yw==}
     engines: {node: '>=10'}
     cpu: [arm]
     os: [linux]
 
-  '@swc/core-linux-arm64-gnu@1.5.24':
-    resolution: {integrity: sha512-sTSvmqMmgT1ynH/nP75Pc51s+iT4crZagHBiDOf5cq+kudUYjda9lWMs7xkXB/TUKFHPCRK0HGunl8bkwiIbuw==}
-    engines: {node: '>=10'}
-    cpu: [arm64]
-    os: [linux]
-
   '@swc/core-linux-arm64-gnu@1.6.7':
     resolution: {integrity: sha512-SyOBUGfl31xLGpIJ/Jd6GKHtkfZyHBXSwFlK7FmPN//MBQLtTBm4ZaWTnWnGo4aRsJwQdXWDKPyqlMBtnIl1nQ==}
-    engines: {node: '>=10'}
-    cpu: [arm64]
-    os: [linux]
-
-  '@swc/core-linux-arm64-musl@1.5.24':
-    resolution: {integrity: sha512-vd2/hfOBGbrX21FxsFdXCUaffjkHvlZkeE2UMRajdXifwv79jqOHIJg3jXG1F3ZrhCghCzirFts4tAZgcG8XWg==}
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [linux]
@@ -1759,20 +1725,8 @@ packages:
     cpu: [arm64]
     os: [linux]
 
-  '@swc/core-linux-x64-gnu@1.5.24':
-    resolution: {integrity: sha512-Zrdzi7NqzQxm2BvAG5KyOSBEggQ7ayrxh599AqqevJmsUXJ8o2nMiWQOBvgCGp7ye+Biz3pvZn1EnRzAp+TpUg==}
-    engines: {node: '>=10'}
-    cpu: [x64]
-    os: [linux]
-
   '@swc/core-linux-x64-gnu@1.6.7':
     resolution: {integrity: sha512-Gp7uCwPsNO5ATxbyvfTyeNCHUGD9oA+xKMm43G1tWCy+l07gLqWMKp7DIr3L3qPD05TfAVo3OuiOn2abpzOFbw==}
-    engines: {node: '>=10'}
-    cpu: [x64]
-    os: [linux]
-
-  '@swc/core-linux-x64-musl@1.5.24':
-    resolution: {integrity: sha512-1F8z9NRi52jdZQCGc5sflwYSctL6omxiVmIFVp8TC9nngjQKc00TtX/JC2Eo2HwvgupkFVl5YQJidAck9YtmJw==}
     engines: {node: '>=10'}
     cpu: [x64]
     os: [linux]
@@ -1783,22 +1737,10 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  '@swc/core-win32-arm64-msvc@1.5.24':
-    resolution: {integrity: sha512-cKpP7KvS6Xr0jFSTBXY53HZX/YfomK5EMQYpCVDOvfsZeYHN20sQSKXfpVLvA/q2igVt1zzy1XJcOhpJcgiKLg==}
-    engines: {node: '>=10'}
-    cpu: [arm64]
-    os: [win32]
-
   '@swc/core-win32-arm64-msvc@1.6.7':
     resolution: {integrity: sha512-ouRqgSnT95lTCiU/6kJRNS5b1o+p8I/V9jxtL21WUj/JOVhsFmBErqQ0MZyCu514noWiR5BIqOrZXR8C1Knx6Q==}
     engines: {node: '>=10'}
     cpu: [arm64]
-    os: [win32]
-
-  '@swc/core-win32-ia32-msvc@1.5.24':
-    resolution: {integrity: sha512-IoPWfi0iwqjZuf7gE223+B97/ZwkKbu7qL5KzGP7g3hJrGSKAvv7eC5Y9r2iKKtLKyv5R/T6Ho0kFR/usi7rHw==}
-    engines: {node: '>=10'}
-    cpu: [ia32]
     os: [win32]
 
   '@swc/core-win32-ia32-msvc@1.6.7':
@@ -1807,26 +1749,11 @@ packages:
     cpu: [ia32]
     os: [win32]
 
-  '@swc/core-win32-x64-msvc@1.5.24':
-    resolution: {integrity: sha512-zHgF2k1uVJL8KIW+PnVz1To4a3Cz9THbh2z2lbehaF/gKHugH4c3djBozU4das1v35KOqf5jWIEviBLql2wDLQ==}
-    engines: {node: '>=10'}
-    cpu: [x64]
-    os: [win32]
-
   '@swc/core-win32-x64-msvc@1.6.7':
     resolution: {integrity: sha512-QOdE+7GQg1UQPS6p0KxzJOh/8GLbJ5zI1vqKArCCB0unFqUfKIjYb2TaH0geEBy3w9qtXxe3ZW6hzxtZSS9lDg==}
     engines: {node: '>=10'}
     cpu: [x64]
     os: [win32]
-
-  '@swc/core@1.5.24':
-    resolution: {integrity: sha512-Eph9zvO4xvqWZGVzTdtdEJ0Vqf0VIML/o/e4Qd2RLOqtfgnlRi7avmMu5C0oqciJ0tk+hqdUKVUZ4JPoPaiGvQ==}
-    engines: {node: '>=10'}
-    peerDependencies:
-      '@swc/helpers': '*'
-    peerDependenciesMeta:
-      '@swc/helpers':
-        optional: true
 
   '@swc/core@1.6.7':
     resolution: {integrity: sha512-BBzORL9qWz5hZqAZ83yn+WNaD54RH5eludjqIOboolFOK/Pw+2l00/H77H4CEBJnzCIBQszsyqtITmrn4evp0g==}
@@ -2033,12 +1960,6 @@ packages:
   '@vercel/ncc@0.38.1':
     resolution: {integrity: sha512-IBBb+iI2NLu4VQn3Vwldyi2QwaXt5+hTyh58ggAMoCGE6DJmPvwL3KPBWcJl1m9LYPChBLE980Jw+CS4Wokqxw==}
     hasBin: true
-
-  '@vitejs/plugin-react@4.3.0':
-    resolution: {integrity: sha512-KcEbMsn4Dpk+LIbHMj7gDPRKaTMStxxWRkRmxsg/jVdFdJCZWt1SchZcf0M4t8lIKdwwMsEyzhrcOXRrDPtOBw==}
-    engines: {node: ^14.18.0 || >=16.0.0}
-    peerDependencies:
-      vite: 5.3.3
 
   '@vitejs/plugin-react@4.3.1':
     resolution: {integrity: sha512-m/V2syj5CuVnaxcUJOQRel/Wr31FFXRFlnOoq1TVtkCxsY5veGMTEmpWHndrhB2U8ScHtCQB1e+4hWYExQc6Lg==}
@@ -3094,10 +3015,6 @@ packages:
 
   hono@4.4.11:
     resolution: {integrity: sha512-R5RADpjoRsR3/VsnFovpsYNLPnC1f+FgdfsePk3qIgjb4D41Sg7uW5QCj41kzEOwXCjBg0sVvOZMvUNZ0DKB7g==}
-    engines: {node: '>=16.0.0'}
-
-  hono@4.4.2:
-    resolution: {integrity: sha512-bRhZ+BM9r04lRN2i9wiZ18yQNbZxHsmmRIItoAb43nRkHnIDsFhFh4mJ0seEs06FvenibpAgSVNHQ8ZzcDQx2A==}
     engines: {node: '>=16.0.0'}
 
   http-cache-semantics@4.1.1:
@@ -4817,15 +4734,6 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  waku@0.21.0-beta.0:
-    resolution: {integrity: sha512-SshD7rV5P0d4htnwK8F+N7J9GcD6HXZvB6UWHzBqCkqg1Hkh8zzwfFE9xETujd9+58TiiMKYw6q7zD22rpKKgg==}
-    engines: {node: ^20.8.0 || ^18.17.0}
-    hasBin: true
-    peerDependencies:
-      react: 19.0.0-rc.0
-      react-dom: 19.0.0-rc.0
-      react-server-dom-webpack: 19.0.0-rc.0
-
   watchpack@2.4.1:
     resolution: {integrity: sha512-8wrBCMtVhqcXP2Sup1ctSkga6uc2Bx0IIvKyT7yTFier5AXHooSI+QyQQAtTb7+E0IUCCKyTFmXqdqgum2XWGg==}
     engines: {node: '>=10.13.0'}
@@ -5214,8 +5122,6 @@ snapshots:
       long: 5.2.3
       protobufjs: 7.3.2
       yargs: 17.7.2
-
-  '@hono/node-server@1.11.2': {}
 
   '@hono/node-server@1.12.0': {}
 
@@ -5662,82 +5568,35 @@ snapshots:
     optionalDependencies:
       chokidar: 3.6.0
 
-  '@swc/core-darwin-arm64@1.5.24':
-    optional: true
-
   '@swc/core-darwin-arm64@1.6.7':
-    optional: true
-
-  '@swc/core-darwin-x64@1.5.24':
     optional: true
 
   '@swc/core-darwin-x64@1.6.7':
     optional: true
 
-  '@swc/core-linux-arm-gnueabihf@1.5.24':
-    optional: true
-
   '@swc/core-linux-arm-gnueabihf@1.6.7':
-    optional: true
-
-  '@swc/core-linux-arm64-gnu@1.5.24':
     optional: true
 
   '@swc/core-linux-arm64-gnu@1.6.7':
     optional: true
 
-  '@swc/core-linux-arm64-musl@1.5.24':
-    optional: true
-
   '@swc/core-linux-arm64-musl@1.6.7':
-    optional: true
-
-  '@swc/core-linux-x64-gnu@1.5.24':
     optional: true
 
   '@swc/core-linux-x64-gnu@1.6.7':
     optional: true
 
-  '@swc/core-linux-x64-musl@1.5.24':
-    optional: true
-
   '@swc/core-linux-x64-musl@1.6.7':
-    optional: true
-
-  '@swc/core-win32-arm64-msvc@1.5.24':
     optional: true
 
   '@swc/core-win32-arm64-msvc@1.6.7':
     optional: true
 
-  '@swc/core-win32-ia32-msvc@1.5.24':
-    optional: true
-
   '@swc/core-win32-ia32-msvc@1.6.7':
-    optional: true
-
-  '@swc/core-win32-x64-msvc@1.5.24':
     optional: true
 
   '@swc/core-win32-x64-msvc@1.6.7':
     optional: true
-
-  '@swc/core@1.5.24(@swc/helpers@0.5.11)':
-    dependencies:
-      '@swc/counter': 0.1.3
-      '@swc/types': 0.1.9
-    optionalDependencies:
-      '@swc/core-darwin-arm64': 1.5.24
-      '@swc/core-darwin-x64': 1.5.24
-      '@swc/core-linux-arm-gnueabihf': 1.5.24
-      '@swc/core-linux-arm64-gnu': 1.5.24
-      '@swc/core-linux-arm64-musl': 1.5.24
-      '@swc/core-linux-x64-gnu': 1.5.24
-      '@swc/core-linux-x64-musl': 1.5.24
-      '@swc/core-win32-arm64-msvc': 1.5.24
-      '@swc/core-win32-ia32-msvc': 1.5.24
-      '@swc/core-win32-x64-msvc': 1.5.24
-      '@swc/helpers': 0.5.11
 
   '@swc/core@1.6.7(@swc/helpers@0.5.11)':
     dependencies:
@@ -6045,17 +5904,6 @@ snapshots:
       - terser
 
   '@vercel/ncc@0.38.1': {}
-
-  '@vitejs/plugin-react@4.3.0(vite@5.3.3(@types/node@20.14.9)(terser@5.31.1))':
-    dependencies:
-      '@babel/core': 7.24.7
-      '@babel/plugin-transform-react-jsx-self': 7.24.7(@babel/core@7.24.7)
-      '@babel/plugin-transform-react-jsx-source': 7.24.7(@babel/core@7.24.7)
-      '@types/babel__core': 7.20.5
-      react-refresh: 0.14.2
-      vite: 5.3.3(@types/node@20.14.9)(terser@5.31.1)
-    transitivePeerDependencies:
-      - supports-color
 
   '@vitejs/plugin-react@4.3.1(vite@5.3.3(@types/node@20.14.9)(terser@5.31.1))':
     dependencies:
@@ -7378,8 +7226,6 @@ snapshots:
       '@types/hast': 3.0.4
 
   hono@4.4.11: {}
-
-  hono@4.4.2: {}
 
   http-cache-semantics@4.1.1: {}
 
@@ -9294,29 +9140,6 @@ snapshots:
       debug: 4.3.5
     transitivePeerDependencies:
       - supports-color
-
-  waku@0.21.0-beta.0(@swc/helpers@0.5.11)(@types/node@20.14.9)(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react-server-dom-webpack@19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1))(react@19.0.0-rc.0)(terser@5.31.1):
-    dependencies:
-      '@hono/node-server': 1.11.2
-      '@swc/core': 1.5.24(@swc/helpers@0.5.11)
-      '@vitejs/plugin-react': 4.3.0(vite@5.3.3(@types/node@20.14.9)(terser@5.31.1))
-      dotenv: 16.4.5
-      hono: 4.4.2
-      react: 19.0.0-rc.0
-      react-dom: 19.0.0-rc.0(react@19.0.0-rc.0)
-      react-server-dom-webpack: 19.0.0-rc.0(react-dom@19.0.0-rc.0(react@19.0.0-rc.0))(react@19.0.0-rc.0)(webpack@5.92.1)
-      rsc-html-stream: 0.0.3
-      vite: 5.3.3(@types/node@20.14.9)(terser@5.31.1)
-    transitivePeerDependencies:
-      - '@swc/helpers'
-      - '@types/node'
-      - less
-      - lightningcss
-      - sass
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
 
   watchpack@2.4.1:
     dependencies:
