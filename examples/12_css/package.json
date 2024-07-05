@@ -9,8 +9,8 @@
     "start": "waku start"
   },
   "dependencies": {
-    "@stylexjs/stylex": "0.6.1",
-    "@vanilla-extract/css": "1.15.2",
+    "@stylexjs/stylex": "0.7.5",
+    "@vanilla-extract/css": "1.15.3",
     "classnames": "2.5.1",
     "react": "19.0.0-rc.0",
     "react-dom": "19.0.0-rc.0",
@@ -21,8 +21,8 @@
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "@vanilla-extract/vite-plugin": "4.0.10",
-    "typescript": "5.4.5",
-    "vite": "5.2.12",
+    "typescript": "5.5.3",
+    "vite": "5.3.3",
     "vite-plugin-stylex-dev": "0.7.5"
   }
 }
