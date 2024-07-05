@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "cookie": "0.6.0",
-    "react": "19.0.0-rc.0",
-    "react-dom": "19.0.0-rc.0",
-    "react-server-dom-webpack": "19.0.0-rc.0",
+    "react": "19.0.0-rc-3da26163a3-20240704",
+    "react-dom": "19.0.0-rc-3da26163a3-20240704",
+    "react-server-dom-webpack": "19.0.0-rc-3da26163a3-20240704",
     "waku": "0.21.0-beta.0"
   },
   "devDependencies": {
