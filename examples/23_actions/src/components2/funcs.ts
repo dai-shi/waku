@@ -14,9 +14,9 @@ export const greet = async (name: string) => {
 // module state on server
 let counter = 0;
 
-export const getCounter = () => counter;
+export const getCounter = async () => counter;
 
-export const increment = () => {
+export const increment = async () => {
   counter += 1;
   rerender('Waku');
 };
