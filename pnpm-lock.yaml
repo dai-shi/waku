@@ -133,6 +133,9 @@ importers:
 
   e2e/fixtures/rsc-basic:
     dependencies:
+      ai:
+        specifier: link:./modules/ai
+        version: link:modules/ai
       react:
         specifier: 19.0.0-rc-3da26163a3-20240704
         version: 19.0.0-rc-3da26163a3-20240704
