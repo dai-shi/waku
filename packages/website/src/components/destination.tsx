@@ -10,7 +10,15 @@ export const Destination = () => {
   const [destination, setDestination] = useAtom(destinationAtom);
 
   useEffect(() => {
-    if (destination) {
+    if (destination === 'nudge') {
+      setTimeout(() => {
+        scrollTo('nudge');
+        setDestination('');
+      }, 50);
+      setTimeout(() => {
+        scrollTo('top');
+      }, 100);
+    } else if (destination) {
       setTimeout(() => {
         scrollTo(destination);
         setDestination('');
