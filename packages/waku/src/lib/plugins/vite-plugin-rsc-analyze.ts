@@ -46,7 +46,7 @@ export function rscAnalyzePlugin(
         if (!opts.isClient && isClientEntry) {
           opts.clientFileSet.add(id);
           opts.fileHashMap.set(id, await hash(code));
-        } else if (!isClientEntry && isServerAction) {
+        } else if (!isClientEntry || isServerAction) {
           opts.serverFileSet.add(id);
         }
       }
