@@ -126,7 +126,7 @@ describe('vite-plugin-rsc-analyze', () => {
       false,
       'import-client.ts',
       new Set(['client.ts']),
-      new Set(),
+      new Set(['import-client.ts']),
     );
   });
 
@@ -146,7 +146,7 @@ describe('vite-plugin-rsc-analyze', () => {
       false,
       'import-server.ts',
       new Set(),
-      new Set(['server.ts']),
+      new Set(['import-server.ts', 'server.ts']),
     );
   });
 

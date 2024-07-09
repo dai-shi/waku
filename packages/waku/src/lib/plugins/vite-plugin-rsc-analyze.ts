@@ -60,7 +60,10 @@ export function rscAnalyzePlugin(
             break;
           }
           case 'Isomorphic': {
-            // we don't handle isomorphic files here
+            if (!opts.isClient) {
+              opts.serverFileSet.add(id);
+              opts.fileHashMap.set(id, await hash(code));
+            }
             break;
           }
         }
