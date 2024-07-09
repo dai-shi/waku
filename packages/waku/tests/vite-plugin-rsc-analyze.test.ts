@@ -10,7 +10,9 @@ import { rscAnalyzePlugin } from '../src/lib/plugins/vite-plugin-rsc-analyze.js'
 const root = fileURLToPath(new URL('./fixtures', import.meta.url));
 
 // FIXME vitest node environment does not have crypto
-globalThis.crypto = crypto as any;
+if (!globalThis.crypto) {
+  globalThis.crypto = crypto as any;
+}
 
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   if (

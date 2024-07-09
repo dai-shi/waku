@@ -78,7 +78,7 @@
     "@vitejs/plugin-react": "4.3.1",
     "dotenv": "16.4.5",
     "hono": "4.4.11",
-    "react-server-action": "0.2.13",
+    "react-server-action": "0.2.15",
     "rsc-html-stream": "0.0.3",
     "vite": "5.3.3"
   },

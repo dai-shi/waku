@@ -922,8 +922,8 @@ importers:
         specifier: 19.0.0-rc-3da26163a3-20240704
         version: 19.0.0-rc-3da26163a3-20240704(react@19.0.0-rc-3da26163a3-20240704)
       react-server-action:
-        specifier: 0.2.13
-        version: 0.2.13
+        specifier: 0.2.15
+        version: 0.2.15
       react-server-dom-webpack:
         specifier: 19.0.0-rc-3da26163a3-20240704
         version: 19.0.0-rc-3da26163a3-20240704(react-dom@19.0.0-rc-3da26163a3-20240704(react@19.0.0-rc-3da26163a3-20240704))(react@19.0.0-rc-3da26163a3-20240704)(webpack@5.92.1(@swc/core@1.6.7(@swc/helpers@0.5.11)))
@@ -4006,68 +4006,68 @@ packages:
     resolution: {integrity: sha512-jCvmsr+1IUSMUyzOkRcvnVbX3ZYC6g9TDrDbFuFmRDq7PD4yaGbLKNQL6k2jnArV8hjYxh7hVhAZB6s9HDGpZA==}
     engines: {node: '>=0.10.0'}
 
-  react-server-action-android-arm-eabi@0.2.13:
-    resolution: {integrity: sha512-J87EfOomhhyRe3Q0L75IUGcYN9KMKVtTCMc9mAQMZ05fA8eej1dqVEm7aHkO+aL3JVN8xRsM4zuhh8df0rbGYw==}
+  react-server-action-android-arm-eabi@0.2.15:
+    resolution: {integrity: sha512-QxzF6I3j5O2CkHtHh9YWGKLUk2pN5zLK2HOGod/PqLMHjPd2UJDk9dC8zTj1yDw4XTh51pxfKEnPMxVrt+EEUA==}
     cpu: [arm]
     os: [android]
 
-  react-server-action-android-arm64@0.2.13:
-    resolution: {integrity: sha512-1o7QiphhaELEUYVC2mFR10I8lEjICBuKQY+XwLUaxv011Pq3xTa4dCNhfgXH4GngdiTnsFCSg6WZ4YLerDrx0A==}
+  react-server-action-android-arm64@0.2.15:
+    resolution: {integrity: sha512-+Hq0ETPqawa+F1MpLG42kMEyry8HiDpaml/3/t0UJR/Vs54x4Rt9l6JLEwbLCPMAOOtbg+YJpBsz+U7RWHpHvQ==}
     cpu: [arm64]
     os: [android]
 
-  react-server-action-darwin-arm64@0.2.13:
-    resolution: {integrity: sha512-xwoKMnvzRMMPlMOhS/CTKDQSkw4lU7A9TxSiI64zh22nDQVs4rpnbDXudjFGuxnWP4Ah3u1/GybRUAE7cw+3RQ==}
+  react-server-action-darwin-arm64@0.2.15:
+    resolution: {integrity: sha512-Z35JB1IyNFubo0p9luTHbe3YVwbe0jOuL8FwriEwtQMC5ZUasoYdnqy/8XcBv8fsEcF1wgR2iu/GCzeLiTSYPA==}
     cpu: [arm64]
     os: [darwin]
 
-  react-server-action-darwin-x64@0.2.13:
-    resolution: {integrity: sha512-VrT0HjwuCEet7/hs1Ac5NLzvIBWOBTbA41S9C7FnRw39KETDMFIvqLWweWFazMkswC/UpxBsNGictTALN7EgtA==}
+  react-server-action-darwin-x64@0.2.15:
+    resolution: {integrity: sha512-knV3/Czd569vT3U3BUIpOYfWgqxIVbaYfjSbiPcvNCZoeba2dD/lYgqSTl8v0OA/PKUQ1fvv2RoSZu81s+c1Sw==}
     cpu: [x64]
     os: [darwin]
 
-  react-server-action-linux-arm-gnueabihf@0.2.13:
-    resolution: {integrity: sha512-O7X8NKwiYib7ynao+HyriTIaWyNJCZU1teRcxYsIZVmwMvWAFFNhJuKSCZgqk+SPi+AzzjKS510AEkpk3PgxaA==}
+  react-server-action-linux-arm-gnueabihf@0.2.15:
+    resolution: {integrity: sha512-9VH2YMmGmykpthkKqp407lT5hLNlqPyjkItxjNrM5NcfoFGjopwlBfKB3Dcr7RpGF4beguImLtodzMVYx4Msqw==}
     cpu: [arm]
     os: [linux]
 
-  react-server-action-linux-arm64-gnu@0.2.13:
-    resolution: {integrity: sha512-IVyZYCQTZCE2XfkFdlnWXbKFBn/nklHii01lLRowbsdVzUqKAyryndkYsB66yo8LcjZenY/A49qKpTGNoCjQlw==}
+  react-server-action-linux-arm64-gnu@0.2.15:
+    resolution: {integrity: sha512-C6GjSpDOkeuT6x5Ky7QCmQANortxTPs9FUAB8SmPPJ48WF00ryjLNRh5kdImsHuFwP/du1tGfRwU9Z9t4Xtorg==}
     cpu: [arm64]
     os: [linux]
 
-  react-server-action-linux-arm64-musl@0.2.13:
-    resolution: {integrity: sha512-n5vqa/SLgdcSTxyfCk0mRQVo10GKQ/wd+oenLXCZ6KMTBrTy3ypYKoVO0rNQc8ERVpjQ5ZCDFlVJiWpvNHiUfA==}
+  react-server-action-linux-arm64-musl@0.2.15:
+    resolution: {integrity: sha512-23gGHsob/QzpfkvyzVwnqsXt7RibSdNiGLUHiXVIK3jwL6RYqgV3pBOkC0pkeJ9pkVOkm2WLm8fMIX35OECBaw==}
     cpu: [arm64]
     os: [linux]
 
-  react-server-action-linux-x64-gnu@0.2.13:
-    resolution: {integrity: sha512-k3jKgnK9nLY7iAzHSNLi1y8j9z1R7hZm0VRUF9HM8TNj6iv4NYnmFOzSjlwPoxeEVcIbRGxtElISmkSpDvDWOg==}
+  react-server-action-linux-x64-gnu@0.2.15:
+    resolution: {integrity: sha512-kbZWEciHTsFq33WncL/IgfpHShT7aH7K8bBRoxhmwYsxUm03D5adcdoOzI/PYJcHpRoOOvXk+iYEm4uvl+GydA==}
     cpu: [x64]
     os: [linux]
 
-  react-server-action-linux-x64-musl@0.2.13:
-    resolution: {integrity: sha512-c73idmfZOTTT4P9WAxx3KRn3u7W99JIF0VoJH3LYumd4kCpfXLHWxYohuu92+4jpDAsz+Fl+U8fBVS+rOH8YRg==}
+  react-server-action-linux-x64-musl@0.2.15:
+    resolution: {integrity: sha512-DjXTY0zzWNPNNWCMcO0TigKnWjUP9kq1fm/T3ubiFVc/hTayBLZsDfLzySoPE9o+Gqny01WFPQKN9DwVIpcXgQ==}
     cpu: [x64]
     os: [linux]
 
-  react-server-action-win32-arm64-msvc@0.2.13:
-    resolution: {integrity: sha512-UZdk1dxN/kqtcCib3conC3GD7/n5q8zfCbrLD7DN35VNkMj5/ToM2wJVIxeOduUIexCxxYzfemwmn14F3cM+vA==}
+  react-server-action-win32-arm64-msvc@0.2.15:
+    resolution: {integrity: sha512-TqZjTpDRT61/5u7Ogcvdupv6F4G3nIt0OxMVX4uJ1teQ6rG5qzXRS6wI6Ip4kBNmWcUJl/K5Lnw/C3Ov5K0lwA==}
     cpu: [arm64]
     os: [win32]
 
-  react-server-action-win32-ia32-msvc@0.2.13:
-    resolution: {integrity: sha512-Pf0cwXckRlMgXNUb6EQNbuVHu71qNvR2hvqrbLaq9V+uwhhF/cfx6r+RaOt4TetQxwFqV28d1pEyKJcMyMUmBw==}
+  react-server-action-win32-ia32-msvc@0.2.15:
+    resolution: {integrity: sha512-3LKoEHXbp8XYPlWTPMdGpVqY1ia++FJ80uWMeRJEWXjH8S1JEID6+eWm9cmqFhfPBbhE+k4C8Go2vP5Xb6B81A==}
     cpu: [ia32]
     os: [win32]
 
-  react-server-action-win32-x64-msvc@0.2.13:
-    resolution: {integrity: sha512-1iW7xGrJwf1Z0xLDL8yXFJVZR9fpNEHxDxZ9C5xqy9+B5axEhmiMcIfpQ6tVk0+rFGF/vL8irS30djse/dZ2tQ==}
+  react-server-action-win32-x64-msvc@0.2.15:
+    resolution: {integrity: sha512-xdNs9clH3w3SzO8jt5ukhckGapo3BA8eGUpB+QbJcqmZcet67lvaXN/ofKKuGJ5DE4zqLNXzeabNRDupQfcQeQ==}
     cpu: [x64]
     os: [win32]
 
-  react-server-action@0.2.13:
-    resolution: {integrity: sha512-2BVVk9Smx8gF+qUCavDchcMErlEUxv5aXeUhzzuwh88jZAErYlRweQW4SEVZIB0QxigMy5Z1oJi+TmfRg41LvQ==}
+  react-server-action@0.2.15:
+    resolution: {integrity: sha512-gxu3vPCtMW3iAAJKR0HlSsbbUY3iCW+4nCfpUh7uekVO7n3VoVgAK9xVAjPDn1nW/QvYoQE44BRhh5yinkYmSw==}
 
   react-server-dom-webpack@19.0.0-rc-3da26163a3-20240704:
     resolution: {integrity: sha512-92JXajJVtT23xtWMM5TlAN7lIwiAbcPEkeLeu9Jhnsh8XigwlqXW3dmYW4Oy2ZKSt4CqbVBzvLjykz54/79Jeg==}
@@ -8338,56 +8338,56 @@ snapshots:
 
   react-refresh@0.14.2: {}
 
-  react-server-action-android-arm-eabi@0.2.13:
+  react-server-action-android-arm-eabi@0.2.15:
     optional: true
 
-  react-server-action-android-arm64@0.2.13:
+  react-server-action-android-arm64@0.2.15:
     optional: true
 
-  react-server-action-darwin-arm64@0.2.13:
+  react-server-action-darwin-arm64@0.2.15:
     optional: true
 
-  react-server-action-darwin-x64@0.2.13:
+  react-server-action-darwin-x64@0.2.15:
     optional: true
 
-  react-server-action-linux-arm-gnueabihf@0.2.13:
+  react-server-action-linux-arm-gnueabihf@0.2.15:
     optional: true
 
-  react-server-action-linux-arm64-gnu@0.2.13:
+  react-server-action-linux-arm64-gnu@0.2.15:
     optional: true
 
-  react-server-action-linux-arm64-musl@0.2.13:
+  react-server-action-linux-arm64-musl@0.2.15:
     optional: true
 
-  react-server-action-linux-x64-gnu@0.2.13:
+  react-server-action-linux-x64-gnu@0.2.15:
     optional: true
 
-  react-server-action-linux-x64-musl@0.2.13:
+  react-server-action-linux-x64-musl@0.2.15:
     optional: true
 
-  react-server-action-win32-arm64-msvc@0.2.13:
+  react-server-action-win32-arm64-msvc@0.2.15:
     optional: true
 
-  react-server-action-win32-ia32-msvc@0.2.13:
+  react-server-action-win32-ia32-msvc@0.2.15:
     optional: true
 
-  react-server-action-win32-x64-msvc@0.2.13:
+  react-server-action-win32-x64-msvc@0.2.15:
     optional: true
 
-  react-server-action@0.2.13:
+  react-server-action@0.2.15:
     optionalDependencies:
-      react-server-action-android-arm-eabi: 0.2.13
-      react-server-action-android-arm64: 0.2.13
-      react-server-action-darwin-arm64: 0.2.13
-      react-server-action-darwin-x64: 0.2.13
-      react-server-action-linux-arm-gnueabihf: 0.2.13
-      react-server-action-linux-arm64-gnu: 0.2.13
-      react-server-action-linux-arm64-musl: 0.2.13
-      react-server-action-linux-x64-gnu: 0.2.13
-      react-server-action-linux-x64-musl: 0.2.13
-      react-server-action-win32-arm64-msvc: 0.2.13
-      react-server-action-win32-ia32-msvc: 0.2.13
-      react-server-action-win32-x64-msvc: 0.2.13
+      react-server-action-android-arm-eabi: 0.2.15
+      react-server-action-android-arm64: 0.2.15
+      react-server-action-darwin-arm64: 0.2.15
+      react-server-action-darwin-x64: 0.2.15
+      react-server-action-linux-arm-gnueabihf: 0.2.15
+      react-server-action-linux-arm64-gnu: 0.2.15
+      react-server-action-linux-arm64-musl: 0.2.15
+      react-server-action-linux-x64-gnu: 0.2.15
+      react-server-action-linux-x64-musl: 0.2.15
+      react-server-action-win32-arm64-msvc: 0.2.15
+      react-server-action-win32-ia32-msvc: 0.2.15
+      react-server-action-win32-x64-msvc: 0.2.15
 
   react-server-dom-webpack@19.0.0-rc-3da26163a3-20240704(react-dom@19.0.0-rc-3da26163a3-20240704(react@19.0.0-rc-3da26163a3-20240704))(react@19.0.0-rc-3da26163a3-20240704)(webpack@5.92.1(@swc/core@1.6.7(@swc/helpers@0.5.11))):
     dependencies:

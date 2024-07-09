@@ -39,19 +39,30 @@ export function rscAnalyzePlugin(
     async transform(code, id, options) {
       const ext = extname(id);
       if (EXTENSIONS.includes(ext)) {
-        const { isClientEntry, error, isServerAction } = validate(
-          code,
-          id,
-          !opts.isClient,
-        );
+        const { fileType, error } = validate(code, id, !opts.isClient);
         if (error) {
           throw error;
         }
-        if (!opts.isClient && isClientEntry) {
-          opts.clientFileSet.add(id);
-          opts.fileHashMap.set(id, await hash(code));
-        } else if (!isClientEntry || isServerAction) {
-          opts.serverFileSet.add(id);
+        switch (fileType) {
+          case 'Client': {
+            if (!opts.isClient) {
+              opts.clientFileSet.add(id);
+            }
+            break;
+          }
+          case 'Server': {
+            if (opts.isClient) {
+              opts.serverFileSet.add(id);
+            } else {
+              opts.serverFileSet.add(id);
+              opts.fileHashMap.set(id, await hash(code));
+            }
+            break;
+          }
+          case 'Isomorphic': {
+            // we don't handle isomorphic files here
+            break;
+          }
         }
       }
       // Avoid walking after the client boundary
