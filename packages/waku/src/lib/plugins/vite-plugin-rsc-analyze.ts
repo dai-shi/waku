@@ -39,7 +39,11 @@ export function rscAnalyzePlugin(
     async transform(code, id, options) {
       const ext = extname(id);
       if (EXTENSIONS.includes(ext)) {
-        const { isClientEntry, error, isServerAction } = await validate(id, !opts.isClient);
+        const { isClientEntry, error, isServerAction } = validate(
+          code,
+          id,
+          !opts.isClient,
+        );
         if (error) {
           throw error;
         }
