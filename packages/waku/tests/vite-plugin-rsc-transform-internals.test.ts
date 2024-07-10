@@ -361,16 +361,38 @@ export const log = (mesg) => {
     const code = `
 'use server';
 
-export const log = (mesg) => {
+const privateFunction = () => "Secret";
+
+// const function expression
+export const log1 = async function(mesg) {
+  console.log(mesg);
+}
+
+// const arrow function
+export const log3 = async (mesg) => {
   console.log(mesg);
 };
+
+// function declaration
+export async function log3(mesg) {
+  console.log(mesg);
+}
+
+// default export
+export default async function log4(mesg) {
+  console.log(mesg);
+}
 `;
     expect(await transform(code, '/src/func.ts')).toMatchInlineSnapshot(`
       "
       import { createServerReference } from 'react-server-dom-webpack/client';
       import { callServerRSC } from 'waku/client';
 
-      export const log = createServerReference('/src/func.ts#log', callServerRSC);
+      export const log1 = createServerReference('/src/func.ts#log1', callServerRSC);
+
+      export const log3 = createServerReference('/src/func.ts#log3', callServerRSC);
+
+      export default createServerReference('/src/func.ts#default', callServerRSC);
       "
     `);
   });
