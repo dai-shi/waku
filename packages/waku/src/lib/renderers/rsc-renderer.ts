@@ -178,6 +178,7 @@ export async function renderRsc(
 
   if (method === 'POST') {
     // FIXME: this is a hack to make the RSC work
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     globalThis.__WAKU_HACK_IMPORT__ = async (id: string) => {
       let mod: any;

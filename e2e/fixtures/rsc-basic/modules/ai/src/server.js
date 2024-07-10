@@ -4,10 +4,7 @@ import { jsx } from 'react/jsx-runtime';
 
 async function innerAction({ action }, state, ...args) {
   'use server';
-  const result = await action(...args);
-  // eslint-disable-next-line no-undef
-  console.log('wrapped action', result);
-  return result;
+  return action(...args);
 }
 
 function wrapAction(action, options) {
