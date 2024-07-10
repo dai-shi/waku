@@ -28,7 +28,6 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
         .map(async (middleware) => (await middleware).default(options)),
     ),
   );
-
   return async (c, next) => {
     const ctx: HandlerContext = {
       req: {
