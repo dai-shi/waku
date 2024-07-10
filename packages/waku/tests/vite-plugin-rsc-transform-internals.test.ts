@@ -61,18 +61,36 @@ export default function App() {
     const code = `
 'use server';
 
-export const log = (mesg) => {
+const privateFunction = () => "Secret";
+
+export const log = async (mesg) => {
   console.log(mesg);
 };
+
+export async function greet(name) {
+  return 'Hello ' + name;
+}
+
+// TODO support default export
+// export default async function() {
+//   return Date.now();
+// }
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-        export const log = (mesg)=>{
+        const privateFunction = ()=>"Secret";
+        export const log = async (mesg)=>{
             console.log(mesg);
         };
+        export async function greet(name) {
+            return 'Hello ' + name;
+        }
         if (typeof log === "function") {
             __waku_registerServerReference(log, "/src/App.tsx", "log");
+        }
+        if (typeof greet === "function") {
+            __waku_registerServerReference(greet, "/src/App.tsx", "greet");
         }
         "
       `);
