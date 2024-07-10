@@ -281,6 +281,34 @@ importers:
         specifier: 5.5.3
         version: 5.5.3
 
+  e2e/fixtures/ssr-catch-error:
+    dependencies:
+      react:
+        specifier: 19.0.0-rc-3da26163a3-20240704
+        version: 19.0.0-rc-3da26163a3-20240704
+      react-dom:
+        specifier: 19.0.0-rc-3da26163a3-20240704
+        version: 19.0.0-rc-3da26163a3-20240704(react@19.0.0-rc-3da26163a3-20240704)
+      react-error-boundary:
+        specifier: 4.0.13
+        version: 4.0.13(react@19.0.0-rc-3da26163a3-20240704)
+      react-server-dom-webpack:
+        specifier: 19.0.0-rc-3da26163a3-20240704
+        version: 19.0.0-rc-3da26163a3-20240704(react-dom@19.0.0-rc-3da26163a3-20240704(react@19.0.0-rc-3da26163a3-20240704))(react@19.0.0-rc-3da26163a3-20240704)(webpack@5.92.1)
+      waku:
+        specifier: workspace:*
+        version: link:../../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 18.3.3
+        version: 18.3.3
+      '@types/react-dom':
+        specifier: 18.3.0
+        version: 18.3.0
+      typescript:
+        specifier: 5.5.3
+        version: 5.5.3
+
   e2e/fixtures/ssr-context-provider:
     dependencies:
       react:
@@ -3993,6 +4021,11 @@ packages:
     peerDependencies:
       react: 19.0.0-rc-3da26163a3-20240704
 
+  react-error-boundary@4.0.13:
+    resolution: {integrity: sha512-b6PwbdSv8XeOSYvjt8LpgpKrZ0yGdtZokYwkwV2wlcZbxgopHX/hgPl5VgpnoVOWd868n1hktM8Qm4b+02MiLQ==}
+    peerDependencies:
+      react: 19.0.0-rc-3da26163a3-20240704
+
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
@@ -6452,7 +6485,7 @@ snapshots:
 
   date-fns@2.30.0:
     dependencies:
-      '@babel/runtime': 7.23.9
+      '@babel/runtime': 7.24.7
 
   debug@2.6.9:
     dependencies:
@@ -8265,6 +8298,11 @@ snapshots:
     dependencies:
       react: 19.0.0-rc-3da26163a3-20240704
       scheduler: 0.25.0-rc-3da26163a3-20240704
+
+  react-error-boundary@4.0.13(react@19.0.0-rc-3da26163a3-20240704):
+    dependencies:
+      '@babel/runtime': 7.24.7
+      react: 19.0.0-rc-3da26163a3-20240704
 
   react-is@16.13.1: {}
 

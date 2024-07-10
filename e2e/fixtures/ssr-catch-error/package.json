@@ -1,0 +1,23 @@
+{
+  "name": "ssr-catch-error",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "waku dev",
+    "build": "waku build",
+    "start": "waku start"
+  },
+  "dependencies": {
+    "react": "19.0.0-rc-3da26163a3-20240704",
+    "react-dom": "19.0.0-rc-3da26163a3-20240704",
+    "react-error-boundary": "4.0.13",
+    "react-server-dom-webpack": "19.0.0-rc-3da26163a3-20240704",
+    "waku": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "typescript": "5.5.3"
+  }
+}
