@@ -4,22 +4,9 @@ import { renderRsc } from '../renderers/rsc-renderer.js';
 import type { RenderRscArgs } from '../renderers/rsc-renderer.js';
 import type { Middleware } from './types.js';
 import { stringToStream } from '../utils/stream.js';
-import { filePathToFileURL } from '../utils/path.js';
 
 export const rsc: Middleware = (options) => {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
-  (globalThis as any).__WAKU_HACK_IMPORT__ = async (id: string) => {
-    let mod: any;
-    if (options.cmd === 'dev') {
-      mod = await opts.loadServerFileRsc(filePathToFileURL(id));
-    } else {
-      if (!id.startsWith('@id/')) {
-        throw new Error('Unexpected server entry in PRD');
-      }
-      mod = await loadModule(id.slice('@id/'.length));
-    }
-    return mod;
-  };
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()

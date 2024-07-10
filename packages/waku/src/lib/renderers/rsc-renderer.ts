@@ -177,32 +177,6 @@ export async function renderRsc(
   };
 
   if (method === 'POST') {
-    // FIXME: this is a hack to make the RSC work
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    globalThis.__WAKU_HACK_IMPORT__ = async (id: string) => {
-      let mod: any;
-      if (isDev) {
-        mod = await opts.loadServerFileRsc(filePathToFileURL(id));
-      } else {
-        if (!id.startsWith('@id/')) {
-          throw new Error('Unexpected server entry in PRD');
-        }
-        mod = await loadModule(id.slice('@id/'.length));
-      }
-      return mod;
-    };
-    const bundlerConfig = new Proxy(
-      {},
-      {
-        get(_target, encodedId: string) {
-          const [file, name] = encodedId.split('#') as [string, string];
-          const id = resolveClientEntry(file, config);
-          moduleIdCallback?.(id);
-          return { id, chunks: [id], name, async: true };
-        },
-      },
-    );
     const rsfId = decodeActionId(input);
     let args: unknown[] = [];
     let bodyStr = '';
