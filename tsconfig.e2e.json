@@ -38,6 +38,9 @@
     },
     {
       "path": "./e2e/fixtures/partial-build/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/ssr-catch-error/tsconfig.json"
     }
   ]
 }
