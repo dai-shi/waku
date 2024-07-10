@@ -11,7 +11,6 @@ import {
   fileURLToFilePath,
   encodeFilePathToAbsolute,
   decodeFilePathFromAbsolute,
-  filePathToFileURL,
 } from '../utils/path.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
@@ -309,9 +308,6 @@ export const devServer: Middleware = (options) => {
 
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(options.config);
-
-  (globalThis as any).__WAKU_HACK_IMPORT__ = async (id: string) =>
-    loadServerFileRsc(filePathToFileURL(id));
 
   const {
     vitePromise,
