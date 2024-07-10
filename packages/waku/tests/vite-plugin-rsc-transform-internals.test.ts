@@ -71,7 +71,8 @@ export async function greet(name) {
   return 'Hello ' + name;
 }
 
-// TODO support default export
+// TODO https://github.com/dai-shi/waku/issues/777
+// support default export
 // export default async function() {
 //   return Date.now();
 // }
@@ -303,7 +304,8 @@ const log4 = async (mesg) => {
   console.log(mesg);
 };
 
-// TODO default export anonymous function
+// TODO https://github.com/dai-shi/waku/issues/777
+// default export anonymous function
 // export default async function(mesg) {
 //   'use server';
 //   console.log(mesg);
@@ -369,7 +371,7 @@ export const log1 = async function(mesg) {
 }
 
 // const arrow function
-export const log3 = async (mesg) => {
+export const log2 = async (mesg) => {
   console.log(mesg);
 };
 
@@ -389,6 +391,8 @@ export default async function log4(mesg) {
       import { callServerRSC } from 'waku/client';
 
       export const log1 = createServerReference('/src/func.ts#log1', callServerRSC);
+
+      export const log2 = createServerReference('/src/func.ts#log2', callServerRSC);
 
       export const log3 = createServerReference('/src/func.ts#log3', callServerRSC);
 
