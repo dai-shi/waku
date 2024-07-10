@@ -14,7 +14,6 @@ function wrapAction(action, options) {
 export function createAI(actions) {
   const wrappedActions = {};
   for (const name in actions) {
-    console.log('action', name, actions, actions[name]);
     wrappedActions[name] = wrapAction(actions[name]);
   }
   return function AI(props) {
