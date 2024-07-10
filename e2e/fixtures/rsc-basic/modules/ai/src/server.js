@@ -4,7 +4,6 @@ import { jsx } from 'react/jsx-runtime';
 
 async function innerAction({ action }, state, ...args) {
   'use server';
-  debugger;
   const result = await action(...args);
   // eslint-disable-next-line no-undef
   console.log('wrapped action', result);
