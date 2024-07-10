@@ -139,6 +139,7 @@ export function ServerProvider({ children }: { children: ReactNode }) {
   test('create server with bind', async () => {
     const code = `
 'use server';
+
 import { InternalProvider } from './shared.js';
 import { jsx } from 'react/jsx-runtime';
 
@@ -274,17 +275,39 @@ export default function App() {
       `);
   });
 
-  test('inline use server (in an object)', async () => {
+  test('inline use server (various patterns)', async () => {
     const code = `
+// in an object
 const actions = {
   log: async (mesg) => {
     'use server';
     console.log(mesg);
   },
 };
-export default function App() {
-  return <Hello log={actions.log} />;
+
+// non-exported function declaration
+async function log2 (mesg) {
+  'use server';
+  console.log(mesg);
 }
+
+// non-exported const anonymous function expression
+const log3 = async function(mesg) {
+  'use server';
+  console.log(mesg);
+}
+
+// non-exported const anonymous arrorw function
+const log4 = async (mesg) => {
+  'use server';
+  console.log(mesg);
+};
+
+// TODO default export anonymous function
+// export default async function(mesg) {
+//   'use server';
+//   console.log(mesg);
+// }
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
@@ -292,12 +315,22 @@ export default function App() {
         export const __waku_action1 = __waku_registerServerReference(async (mesg)=>{
             console.log(mesg);
         }, "/src/App.tsx", "__waku_action1");
+        export async function __waku_action2(mesg) {
+            console.log(mesg);
+        }
+        __waku_registerServerReference(__waku_action2, "/src/App.tsx", "__waku_action2");
+        export const __waku_action3 = __waku_registerServerReference(async function(mesg) {
+            console.log(mesg);
+        }, "/src/App.tsx", "__waku_action3");
+        export const __waku_action4 = __waku_registerServerReference(async (mesg)=>{
+            console.log(mesg);
+        }, "/src/App.tsx", "__waku_action4");
         const actions = {
             log: __waku_action1.bind(null)
         };
-        export default function App() {
-            return <Hello log={actions.log}/>;
-        }
+        const log2 = __waku_action2.bind(null);
+        const log3 = __waku_action3.bind(null);
+        const log4 = __waku_action4.bind(null);
         "
       `);
   });
