@@ -86,7 +86,7 @@ for (const { build, command } of commands) {
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
       await expect(page.getByTestId('ai-internal-provider')).toHaveText(
-        '["foo"]',
+        'globalThis.actions: ["foo"]',
       );
       const result = await page.evaluate(() => {
         // @ts-expect-error no types
