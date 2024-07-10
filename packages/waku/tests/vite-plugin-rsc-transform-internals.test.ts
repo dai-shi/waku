@@ -29,36 +29,69 @@ export default function App() {
     const code = `
 'use client';
 
+export const Empty = () => null;
+
+function Private() {
+  return "Secret";
+}
+
+export function Greet({ name }: { name: string }) {
+  return <>Hello {name}</>;
+}
+
 export default function App() {
   return <div>Hello World</div>;
 }
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
-      "
-      import { registerClientReference } from 'react-server-dom-webpack/server.edge';
+        "
+        import { registerClientReference } from 'react-server-dom-webpack/server.edge';
 
-      export default registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#default'); }, '/src/App.tsx', 'default');
-      "
-    `);
+        export const Empty = registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Empty'); }, '/src/App.tsx', 'Empty');
+
+        export const Greet = registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Greet'); }, '/src/App.tsx', 'Greet');
+
+        export default registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#default'); }, '/src/App.tsx', 'default');
+        "
+      `);
   });
 
   test('top-level use server', async () => {
     const code = `
 'use server';
 
-export const log = (mesg) => {
+const privateFunction = () => "Secret";
+
+export const log = async (mesg) => {
   console.log(mesg);
 };
+
+export async function greet(name) {
+  return 'Hello ' + name;
+}
+
+// TODO https://github.com/dai-shi/waku/issues/777
+// support default export
+// export default async function() {
+//   return Date.now();
+// }
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-        export const log = (mesg)=>{
+        const privateFunction = ()=>"Secret";
+        export const log = async (mesg)=>{
             console.log(mesg);
         };
+        export async function greet(name) {
+            return 'Hello ' + name;
+        }
         if (typeof log === "function") {
             __waku_registerServerReference(log, "/src/App.tsx", "log");
+        }
+        if (typeof greet === "function") {
+            __waku_registerServerReference(greet, "/src/App.tsx", "greet");
         }
         "
       `);
@@ -107,6 +140,7 @@ export function ServerProvider({ children }: { children: ReactNode }) {
   test('create server with bind', async () => {
     const code = `
 'use server';
+
 import { InternalProvider } from './shared.js';
 import { jsx } from 'react/jsx-runtime';
 
@@ -242,17 +276,40 @@ export default function App() {
       `);
   });
 
-  test('inline use server (in an object)', async () => {
+  test('inline use server (various patterns)', async () => {
     const code = `
+// in an object
 const actions = {
   log: async (mesg) => {
     'use server';
     console.log(mesg);
   },
 };
-export default function App() {
-  return <Hello log={actions.log} />;
+
+// non-exported function declaration
+async function log2 (mesg) {
+  'use server';
+  console.log(mesg);
 }
+
+// non-exported const anonymous function expression
+const log3 = async function(mesg) {
+  'use server';
+  console.log(mesg);
+}
+
+// non-exported const anonymous arrorw function
+const log4 = async (mesg) => {
+  'use server';
+  console.log(mesg);
+};
+
+// TODO https://github.com/dai-shi/waku/issues/777
+// default export anonymous function
+// export default async function(mesg) {
+//   'use server';
+//   console.log(mesg);
+// }
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
@@ -260,12 +317,22 @@ export default function App() {
         export const __waku_action1 = __waku_registerServerReference(async (mesg)=>{
             console.log(mesg);
         }, "/src/App.tsx", "__waku_action1");
+        export async function __waku_action2(mesg) {
+            console.log(mesg);
+        }
+        __waku_registerServerReference(__waku_action2, "/src/App.tsx", "__waku_action2");
+        export const __waku_action3 = __waku_registerServerReference(async function(mesg) {
+            console.log(mesg);
+        }, "/src/App.tsx", "__waku_action3");
+        export const __waku_action4 = __waku_registerServerReference(async (mesg)=>{
+            console.log(mesg);
+        }, "/src/App.tsx", "__waku_action4");
         const actions = {
             log: __waku_action1.bind(null)
         };
-        export default function App() {
-            return <Hello log={actions.log}/>;
-        }
+        const log2 = __waku_action2.bind(null);
+        const log3 = __waku_action3.bind(null);
+        const log4 = __waku_action4.bind(null);
         "
       `);
   });
@@ -296,16 +363,40 @@ export const log = (mesg) => {
     const code = `
 'use server';
 
-export const log = (mesg) => {
+const privateFunction = () => "Secret";
+
+// const function expression
+export const log1 = async function(mesg) {
+  console.log(mesg);
+}
+
+// const arrow function
+export const log2 = async (mesg) => {
   console.log(mesg);
 };
+
+// function declaration
+export async function log3(mesg) {
+  console.log(mesg);
+}
+
+// default export
+export default async function log4(mesg) {
+  console.log(mesg);
+}
 `;
     expect(await transform(code, '/src/func.ts')).toMatchInlineSnapshot(`
       "
       import { createServerReference } from 'react-server-dom-webpack/client';
       import { callServerRSC } from 'waku/client';
 
-      export const log = createServerReference('/src/func.ts#log', callServerRSC);
+      export const log1 = createServerReference('/src/func.ts#log1', callServerRSC);
+
+      export const log2 = createServerReference('/src/func.ts#log2', callServerRSC);
+
+      export const log3 = createServerReference('/src/func.ts#log3', callServerRSC);
+
+      export default createServerReference('/src/func.ts#default', callServerRSC);
       "
     `);
   });
