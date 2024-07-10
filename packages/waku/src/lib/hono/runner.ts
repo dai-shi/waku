@@ -2,7 +2,6 @@ import type { MiddlewareHandler } from 'hono';
 
 import { resolveConfig } from '../config.js';
 import type { HandlerContext, MiddlewareOptions } from '../middleware/types.js';
-import { filePathToFileURL } from 'waku/lib/utils/path';
 
 const createEmptyReadableStream = () =>
   new ReadableStream({
