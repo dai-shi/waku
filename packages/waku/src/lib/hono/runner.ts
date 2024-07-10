@@ -30,11 +30,8 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
   );
 
   (globalThis as any).__WAKU_HACK_IMPORT__ = async (id: string) => {
-    if (!id.startsWith('@id/')) {
-      throw new Error('Unexpected server entry in PRD');
-    }
     const { loadModule } = await entriesPromise;
-    return loadModule(id.slice('@id/'.length));
+    return loadModule(id.slice('/'.length));
   };
 
   return async (c, next) => {
