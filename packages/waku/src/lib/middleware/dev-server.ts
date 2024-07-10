@@ -11,7 +11,6 @@ import {
   fileURLToFilePath,
   encodeFilePathToAbsolute,
   decodeFilePathFromAbsolute,
-  filePathToFileURL,
 } from '../utils/path.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
@@ -324,9 +323,6 @@ export const devServer: Middleware = (options) => {
     loadEntriesDev,
     resolveClientEntry,
   } = createRscViteServer(configPromise);
-
-  (globalThis as any).__WAKU_HACK_IMPORT__ = async (id: string) =>
-    loadServerFileRsc(filePathToFileURL(id));
 
   let initialModules: ClonableModuleNode[];
 
