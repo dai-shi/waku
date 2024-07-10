@@ -29,18 +29,32 @@ export default function App() {
     const code = `
 'use client';
 
+export const Empty = () => null;
+
+function Private() {
+  return "Secret";
+}
+
+export function Greet({ name }: { name: string }) {
+  return <>Hello {name}</>;
+}
+
 export default function App() {
   return <div>Hello World</div>;
 }
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
-      "
-      import { registerClientReference } from 'react-server-dom-webpack/server.edge';
+        "
+        import { registerClientReference } from 'react-server-dom-webpack/server.edge';
 
-      export default registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#default'); }, '/src/App.tsx', 'default');
-      "
-    `);
+        export const Empty = registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Empty'); }, '/src/App.tsx', 'Empty');
+
+        export const Greet = registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Greet'); }, '/src/App.tsx', 'Greet');
+
+        export default registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#default'); }, '/src/App.tsx', 'default');
+        "
+      `);
   });
 
   test('top-level use server', async () => {
