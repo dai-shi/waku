@@ -309,6 +309,9 @@ export const devServer: Middleware = (options) => {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(options.config);
 
+  (globalThis as any).__WAKU_HACK_IMPORT__ = async (id: string) =>
+    loadServerFileRsc(id);
+
   const {
     vitePromise,
     loadServerFileMain,

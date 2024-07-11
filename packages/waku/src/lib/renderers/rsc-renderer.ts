@@ -92,7 +92,7 @@ export async function renderRsc(
     ),
   ]);
 
-  const bundlerConfig = new Proxy(
+  const clientBundlerConfig = new Proxy(
     {},
     {
       get(_target, encodedId: string) {
@@ -100,6 +100,22 @@ export async function renderRsc(
         const id = resolveClientEntry(file, config);
         moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
+      },
+    },
+  );
+
+  const serverBundlerConfig = new Proxy(
+    {},
+    {
+      get(_target, encodedId: string) {
+        const [fileId, name] = encodedId.split('#') as [string, string];
+        const id = filePathToFileURL(fileId);
+        if (fileId.startsWith('@id/assets/')) {
+          const id = '.' + fileId.slice('@id'.length);
+          return { id, chunks: [id], name, async: true };
+        } else {
+          return { id, chunks: [id], name, async: true };
+        }
       },
     },
   );
@@ -128,7 +144,7 @@ export async function renderRsc(
       if (Object.keys(elements).some((key) => key.startsWith('_'))) {
         throw new Error('"_" prefix is reserved');
       }
-      return renderToReadableStream(elements, bundlerConfig, {
+      return renderToReadableStream(elements, clientBundlerConfig, {
         onError,
       });
     });
@@ -168,7 +184,7 @@ export async function renderRsc(
       }
       return renderToReadableStream(
         { ...elements, _value: actionValue },
-        bundlerConfig,
+        clientBundlerConfig,
         {
           onError,
         },
@@ -189,9 +205,9 @@ export async function renderRsc(
     ) {
       // XXX This doesn't support streaming unlike busboy
       const formData = parseFormData(bodyStr, contentType);
-      args = await decodeReply(formData);
+      args = await decodeReply(formData, serverBundlerConfig);
     } else if (bodyStr) {
-      args = await decodeReply(bodyStr);
+      args = await decodeReply(bodyStr, serverBundlerConfig);
     }
     const [fileId, name] = rsfId.split('#') as [string, string];
     let mod: any;

@@ -21,7 +21,7 @@ globalThis.__WAKU_${type}_CHUNK_LOAD__ ||= (
   if (!globalThis.__WAKU_${type}_MODULE_LOADING__.has(id)) {
     globalThis.__WAKU_${type}_MODULE_LOADING__.set(
       id,
-      customImport(id).then((m) => {
+      (customImport ? customImport(id) : import(id)).then((m) => {
         globalThis.__WAKU_${type}_MODULE_CACHE__.set(id, m);
       })
     );

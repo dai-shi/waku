@@ -81,5 +81,18 @@ for (const { build, command } of commands) {
         page.getByTestId('server-ping').getByTestId('counter'),
       ).toHaveText('2');
     });
+
+    test('server action', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/`);
+      await expect(page.getByTestId('app-name')).toHaveText('Waku');
+      await expect(page.getByTestId('ai-internal-provider')).toHaveText(
+        'globalThis.actions: ["foo"]',
+      );
+      const result = await page.evaluate(() => {
+        // @ts-expect-error no types
+        return globalThis.actions.foo();
+      });
+      expect(result).toBe(0);
+    });
   });
 }
