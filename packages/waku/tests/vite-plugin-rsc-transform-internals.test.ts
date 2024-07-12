@@ -84,15 +84,11 @@ export async function greet(name) {
         export const log = async (mesg)=>{
             console.log(mesg);
         };
+        __waku_registerServerReference(log, "/src/App.tsx", "log");
         export async function greet(name) {
             return 'Hello ' + name;
         }
-        if (typeof log === "function") {
-            __waku_registerServerReference(log, "/src/App.tsx", "log");
-        }
-        if (typeof greet === "function") {
-            __waku_registerServerReference(greet, "/src/App.tsx", "greet");
-        }
+        __waku_registerServerReference(greet, "/src/App.tsx", "greet");
         "
       `);
   });
@@ -137,7 +133,7 @@ export function ServerProvider({ children }: { children: ReactNode }) {
       `);
   });
 
-  test('create server with bind', async () => {
+  test('top-level use server and inline use server', async () => {
     const code = `
 'use server';
 
@@ -153,18 +149,11 @@ function wrapAction(action) {
   return innerAction.bind(null, { action });
 }
 
-export function createAI({ actions }) {
-  const wrappedActions = {};
-  for (const name in actions) {
-    wrappedActions[name] = wrapAction(actions[name]);
-  }
-  return function AI(props) {
-    return jsx(InternalProvider, {
-      actions: wrappedActions,
-      children: props.children,
-    });
-  };
-}`;
+export async function exportedAction() {
+  'use server';
+  return null;
+}
+`;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
         "import { InternalProvider } from './shared.js';
@@ -180,21 +169,10 @@ export function createAI({ actions }) {
                 action
             });
         }
-        export function createAI({ actions }) {
-            const wrappedActions = {};
-            for(const name in actions){
-                wrappedActions[name] = wrapAction(actions[name]);
-            }
-            return function AI(props) {
-                return jsx(InternalProvider, {
-                    actions: wrappedActions,
-                    children: props.children
-                });
-            };
+        export async function exportedAction() {
+            return null;
         }
-        if (typeof createAI === "function") {
-            __waku_registerServerReference(createAI, "/src/App.tsx", "createAI");
-        }
+        __waku_registerServerReference(exportedAction, "/src/App.tsx", "exportedAction");
         "
       `);
   });
