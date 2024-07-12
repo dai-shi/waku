@@ -380,19 +380,40 @@ const transformInlineServerActions = (
   const handleExpression = (
     parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
     exp: swc.Expression,
-  ) => {
+  ): swc.CallExpression | undefined => {
     if (isInlineServerAction(exp)) {
       const callExp = registerServerAction(parentFn, Object.assign({}, exp));
       Object.keys(exp).forEach((key) => {
         delete exp[key as keyof typeof exp];
       });
-      Object.assign(exp, callExp);
+      return Object.assign(exp, callExp);
     }
   };
   const walk = (
     parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
     node: swc.Node,
   ) => {
+    if (node.type === 'ExportDefaultDeclaration') {
+      const item = node as swc.ExportDefaultDeclaration;
+      if (item.decl.type === 'FunctionExpression') {
+        const callExp = handleExpression(
+          parentFn,
+          item.decl as swc.FunctionExpression,
+        );
+        if (callExp) {
+          const decl: swc.ExportDefaultExpression = {
+            type: 'ExportDefaultExpression',
+            expression: callExp,
+            span: { start: 0, end: 0, ctxt: 0 },
+          };
+          Object.keys(item).forEach((key) => {
+            delete item[key as keyof typeof item];
+          });
+          Object.assign(item, decl);
+          return;
+        }
+      }
+    }
     // FIXME do we need to walk the entire tree? feels inefficient
     Object.values(node).forEach((value) => {
       const fn =

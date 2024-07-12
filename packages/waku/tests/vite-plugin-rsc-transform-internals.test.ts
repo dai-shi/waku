@@ -285,12 +285,10 @@ const log4 = async (mesg) => {
   console.log(mesg);
 };
 
-// TODO https://github.com/dai-shi/waku/issues/777
-// default export anonymous function
-// export default async function(mesg) {
-//   'use server';
-//   console.log(mesg);
-// }
+export default async function(mesg) {
+  'use server';
+  console.log(mesg);
+}
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
@@ -308,12 +306,16 @@ const log4 = async (mesg) => {
         export const __waku_action4 = __waku_registerServerReference(async (mesg)=>{
             console.log(mesg);
         }, "/src/App.tsx", "__waku_action4");
+        export const __waku_action5 = __waku_registerServerReference(async function(mesg) {
+            console.log(mesg);
+        }, "/src/App.tsx", "__waku_action5");
         const actions = {
             log: __waku_action1.bind(null)
         };
         const log2 = __waku_action2.bind(null);
         const log3 = __waku_action3.bind(null);
         const log4 = __waku_action4.bind(null);
+        export default __waku_action5.bind(null);
         "
       `);
   });
