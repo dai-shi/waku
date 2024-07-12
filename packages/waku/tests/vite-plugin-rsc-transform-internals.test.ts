@@ -84,15 +84,11 @@ export async function greet(name) {
         export const log = async (mesg)=>{
             console.log(mesg);
         };
+        __waku_registerServerReference(log, "/src/App.tsx", "log");
         export async function greet(name) {
             return 'Hello ' + name;
         }
-        if (typeof log === "function") {
-            __waku_registerServerReference(log, "/src/App.tsx", "log");
-        }
-        if (typeof greet === "function") {
-            __waku_registerServerReference(greet, "/src/App.tsx", "greet");
-        }
+        __waku_registerServerReference(greet, "/src/App.tsx", "greet");
         "
       `);
   });
@@ -167,20 +163,16 @@ export async function exportedAction() {
             return await action(...args);
         }
         __waku_registerServerReference(__waku_action1, "/src/App.tsx", "__waku_action1");
-        export async function __waku_action2() {
-            return null;
-        }
-        __waku_registerServerReference(__waku_action2, "/src/App.tsx", "__waku_action2");
         const innerAction = __waku_action1.bind(null);
         function wrapAction(action) {
             return innerAction.bind(null, {
                 action
             });
         }
-        export const exportedAction = __waku_action2.bind(null);
-        if (typeof exportedAction === "function") {
-            __waku_registerServerReference(exportedAction, "/src/App.tsx", "exportedAction");
+        export async function exportedAction() {
+            return null;
         }
+        __waku_registerServerReference(exportedAction, "/src/App.tsx", "exportedAction");
         "
       `);
   });

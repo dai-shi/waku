@@ -109,48 +109,57 @@ const findLastImportIndex = (mod: swc.Module) => {
 const transformExportedServerActions = (
   mod: swc.Module,
   getActionId: () => string,
-): swc.Module | undefined => {
-  const exportNames = collectExportNames(mod);
-  const serverActionsCode = Array.from(exportNames).map((name) => {
-    const blockStmt: swc.BlockStatement = {
-      type: 'BlockStatement',
-      stmts: [
-        {
-          type: 'ExpressionStatement',
-          expression: createCallExpression(
-            createIdentifier('__waku_registerServerReference'),
-            [
-              createIdentifier(name),
-              createStringLiteral(getActionId()),
-              createStringLiteral(name),
-            ],
-          ),
-          span: { start: 0, end: 0, ctxt: 0 },
-        },
-      ],
-      span: { start: 0, end: 0, ctxt: 0 },
-    };
-    const ifStmt: swc.IfStatement = {
-      type: 'IfStatement',
-      test: {
-        type: 'BinaryExpression',
-        operator: '===',
-        left: {
-          type: 'UnaryExpression',
-          operator: 'typeof',
-          argument: createIdentifier(name),
-          span: { start: 0, end: 0, ctxt: 0 },
-        },
-        right: createStringLiteral('function'),
+): boolean => {
+  let changed = false;
+  for (let i = 0; i < mod.body.length; ++i) {
+    const item = mod.body[i]!;
+    const addRegisterStatement = (
+      name: string,
+      fn:
+        | swc.FunctionDeclaration
+        | swc.FunctionExpression
+        | swc.ArrowFunctionExpression,
+    ) => {
+      changed = true;
+      if (fn.body?.type === 'BlockStatement') {
+        fn.body.stmts = fn.body.stmts.filter(
+          (stmt) => !isUseServerDirective(stmt),
+        );
+      }
+      const stmt: swc.ExpressionStatement = {
+        type: 'ExpressionStatement',
+        expression: createCallExpression(
+          createIdentifier('__waku_registerServerReference'),
+          [
+            createIdentifier(name),
+            createStringLiteral(getActionId()),
+            createStringLiteral(name),
+          ],
+        ),
         span: { start: 0, end: 0, ctxt: 0 },
-      },
-      consequent: blockStmt,
-      span: { start: 0, end: 0, ctxt: 0 },
+      };
+      mod.body.splice(++i, 0, stmt);
     };
-    return ifStmt;
-  });
-  mod.body.push(...serverActionsCode);
-  return mod;
+    if (item.type === 'ExportDeclaration') {
+      if (item.declaration.type === 'FunctionDeclaration') {
+        addRegisterStatement(
+          item.declaration.identifier.value,
+          item.declaration,
+        );
+      } else if (item.declaration.type === 'VariableDeclaration') {
+        for (const d of item.declaration.declarations) {
+          if (
+            d.id.type === 'Identifier' &&
+            (d.init?.type === 'FunctionExpression' ||
+              d.init?.type === 'ArrowFunctionExpression')
+          ) {
+            addRegisterStatement(d.id.value, d.init);
+          }
+        }
+      }
+    }
+  }
+  return changed;
 };
 
 type FunctionWithBlockBody = (
@@ -277,7 +286,7 @@ const collectClosureVars = (
 const transformInlineServerActions = (
   mod: swc.Module,
   getActionId: () => string,
-): swc.Module | undefined => {
+): boolean => {
   let serverActionIndex = 0;
   const serverActions = new Map<
     number,
@@ -379,7 +388,7 @@ const transformInlineServerActions = (
   };
   walk(undefined, mod);
   if (!serverActionIndex) {
-    return;
+    return false;
   }
   const serverActionsCode = Array.from(serverActions).flatMap(
     ([actionIndex, [actionFn, closureVars]]) => {
@@ -434,7 +443,7 @@ const transformInlineServerActions = (
     },
   );
   mod.body.splice(findLastImportIndex(mod), 0, ...serverActionsCode);
-  return mod;
+  return true;
 };
 
 const transformServer = (
@@ -480,14 +489,13 @@ export ${name === 'default' ? name : `const ${name} =`} registerClientReference(
     }
     return newCode;
   }
-  let newMod =
+  let transformed =
     hasUseServer && transformExportedServerActions(mod, () => getServerId(id));
-  newMod =
-    transformInlineServerActions(newMod || mod, () => getServerId(id)) ||
-    newMod;
-  if (newMod) {
-    newMod.body.splice(findLastImportIndex(newMod), 0, ...serverInitCode);
-    const newCode = swc.printSync(newMod).code;
+  transformed =
+    transformInlineServerActions(mod, () => getServerId(id)) || transformed;
+  if (transformed) {
+    mod.body.splice(findLastImportIndex(mod), 0, ...serverInitCode);
+    const newCode = swc.printSync(mod).code;
     return newCode;
   }
 };
