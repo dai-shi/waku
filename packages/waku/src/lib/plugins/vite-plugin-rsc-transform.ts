@@ -106,6 +106,13 @@ const findLastImportIndex = (mod: swc.Module) => {
   return lastImportIndex === -1 ? 0 : lastImportIndex;
 };
 
+const replaceNode = <T extends swc.Node>(origNode: swc.Node, newNode: T): T => {
+  Object.keys(origNode).forEach((key) => {
+    delete origNode[key as never];
+  });
+  return Object.assign(origNode, newNode);
+};
+
 const transformExportedServerActions = (
   mod: swc.Module,
   getActionId: () => string,
@@ -152,10 +159,7 @@ const transformExportedServerActions = (
           createStringLiteral(name),
         ],
       );
-      Object.keys(fn).forEach((key) => {
-        delete fn[key as keyof typeof fn];
-      });
-      Object.assign(fn, callExp);
+      replaceNode(fn, callExp);
     };
     if (item.type === 'ExportDeclaration') {
       if (item.declaration.type === 'FunctionDeclaration') {
@@ -180,10 +184,7 @@ const transformExportedServerActions = (
           expression: callExp,
           span: { start: 0, end: 0, ctxt: 0 },
         };
-        Object.keys(item).forEach((key) => {
-          delete item[key as keyof typeof item];
-        });
-        Object.assign(item, decl);
+        replaceNode(item, decl);
       }
     } else if (item.type === 'ExportDefaultExpression') {
       if (
@@ -371,10 +372,7 @@ const transformInlineServerActions = (
         ],
         span: { start: 0, end: 0, ctxt: 0 },
       };
-      Object.keys(decl).forEach((key) => {
-        delete decl[key as keyof typeof decl];
-      });
-      Object.assign(decl, newDecl);
+      replaceNode(decl, newDecl);
     }
   };
   const handleExpression = (
@@ -383,10 +381,7 @@ const transformInlineServerActions = (
   ): swc.CallExpression | undefined => {
     if (isInlineServerAction(exp)) {
       const callExp = registerServerAction(parentFn, Object.assign({}, exp));
-      Object.keys(exp).forEach((key) => {
-        delete exp[key as keyof typeof exp];
-      });
-      return Object.assign(exp, callExp);
+      return replaceNode(exp, callExp);
     }
   };
   const walk = (
@@ -406,10 +401,7 @@ const transformInlineServerActions = (
             expression: callExp,
             span: { start: 0, end: 0, ctxt: 0 },
           };
-          Object.keys(item).forEach((key) => {
-            delete item[key as keyof typeof item];
-          });
-          Object.assign(item, decl);
+          replaceNode(item, decl);
           return;
         }
       }
