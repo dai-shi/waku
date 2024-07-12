@@ -38,6 +38,9 @@ const transformClient = (
   id: string,
   getServerId: (id: string) => string,
 ) => {
+  if (!code.includes('use server')) {
+    return;
+  }
   const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseServer = false;
@@ -103,6 +106,53 @@ const findLastImportIndex = (mod: swc.Module) => {
   return lastImportIndex === -1 ? 0 : lastImportIndex;
 };
 
+const transformExportedServerActions = (
+  mod: swc.Module,
+  getActionId: () => string,
+): swc.Module | undefined => {
+  const exportNames = collectExportNames(mod);
+  const serverActionsCode = Array.from(exportNames).map((name) => {
+    const blockStmt: swc.BlockStatement = {
+      type: 'BlockStatement',
+      stmts: [
+        {
+          type: 'ExpressionStatement',
+          expression: createCallExpression(
+            createIdentifier('__waku_registerServerReference'),
+            [
+              createIdentifier(name),
+              createStringLiteral(getActionId()),
+              createStringLiteral(name),
+            ],
+          ),
+          span: { start: 0, end: 0, ctxt: 0 },
+        },
+      ],
+      span: { start: 0, end: 0, ctxt: 0 },
+    };
+    const ifStmt: swc.IfStatement = {
+      type: 'IfStatement',
+      test: {
+        type: 'BinaryExpression',
+        operator: '===',
+        left: {
+          type: 'UnaryExpression',
+          operator: 'typeof',
+          argument: createIdentifier(name),
+          span: { start: 0, end: 0, ctxt: 0 },
+        },
+        right: createStringLiteral('function'),
+        span: { start: 0, end: 0, ctxt: 0 },
+      },
+      consequent: blockStmt,
+      span: { start: 0, end: 0, ctxt: 0 },
+    };
+    return ifStmt;
+  });
+  mod.body.push(...serverActionsCode);
+  return mod;
+};
+
 type FunctionWithBlockBody = (
   | swc.FunctionDeclaration
   | swc.FunctionExpression
@@ -115,7 +165,7 @@ const isUseServerDirective = (node: swc.Node) =>
   ((node as swc.ExpressionStatement).expression as swc.StringLiteral).value ===
     'use server';
 
-const isServerAction = (node: swc.Node): node is FunctionWithBlockBody =>
+const isInlineServerAction = (node: swc.Node): node is FunctionWithBlockBody =>
   (node.type === 'FunctionDeclaration' ||
     node.type === 'FunctionExpression' ||
     node.type === 'ArrowFunctionExpression') &&
@@ -224,10 +274,10 @@ const collectClosureVars = (
   return varNames;
 };
 
-const transformServerActions = (
+const transformInlineServerActions = (
   mod: swc.Module,
   getActionId: () => string,
-): swc.Module | void => {
+): swc.Module | undefined => {
   let serverActionIndex = 0;
   const serverActions = new Map<
     number,
@@ -260,7 +310,7 @@ const transformServerActions = (
     parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
     decl: swc.Declaration,
   ) => {
-    if (isServerAction(decl)) {
+    if (isInlineServerAction(decl)) {
       const callExp = registerServerAction(parentFn, Object.assign({}, decl));
       const newDecl: swc.VariableDeclaration = {
         type: 'VariableDeclaration',
@@ -287,7 +337,7 @@ const transformServerActions = (
     parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
     exp: swc.Expression,
   ) => {
-    if (isServerAction(exp)) {
+    if (isInlineServerAction(exp)) {
       const callExp = registerServerAction(parentFn, Object.assign({}, exp));
       Object.keys(exp).forEach((key) => {
         delete exp[key as keyof typeof exp];
@@ -393,6 +443,9 @@ const transformServer = (
   getClientId: (id: string) => string,
   getServerId: (id: string) => string,
 ) => {
+  if (!code.includes('use client') && !code.includes('use server')) {
+    return;
+  }
   const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseClient = false;
@@ -427,53 +480,11 @@ export ${name === 'default' ? name : `const ${name} =`} registerClientReference(
     }
     return newCode;
   }
-  if (hasUseServer) {
-    const exportNames = collectExportNames(mod);
-    const serverActionsCode = Array.from(exportNames).map((name) => {
-      const blockStmt: swc.BlockStatement = {
-        type: 'BlockStatement',
-        stmts: [
-          {
-            type: 'ExpressionStatement',
-            expression: createCallExpression(
-              createIdentifier('__waku_registerServerReference'),
-              [
-                createIdentifier(name),
-                createStringLiteral(getServerId(id)),
-                createStringLiteral(name),
-              ],
-            ),
-            span: { start: 0, end: 0, ctxt: 0 },
-          },
-        ],
-        span: { start: 0, end: 0, ctxt: 0 },
-      };
-      const ifStmt: swc.IfStatement = {
-        type: 'IfStatement',
-        test: {
-          type: 'BinaryExpression',
-          operator: '===',
-          left: {
-            type: 'UnaryExpression',
-            operator: 'typeof',
-            argument: createIdentifier(name),
-            span: { start: 0, end: 0, ctxt: 0 },
-          },
-          right: createStringLiteral('function'),
-          span: { start: 0, end: 0, ctxt: 0 },
-        },
-        consequent: blockStmt,
-        span: { start: 0, end: 0, ctxt: 0 },
-      };
-      return ifStmt;
-    });
-    mod.body.push(...serverActionsCode);
-  }
-  // transform server actions in server components
-  const newMod =
-    (code.includes('use server') &&
-      transformServerActions(mod, () => getServerId(id))) ||
-    (hasUseServer && mod);
+  let newMod =
+    hasUseServer && transformExportedServerActions(mod, () => getServerId(id));
+  newMod =
+    transformInlineServerActions(newMod || mod, () => getServerId(id)) ||
+    newMod;
   if (newMod) {
     newMod.body.splice(findLastImportIndex(newMod), 0, ...serverInitCode);
     const newCode = swc.printSync(newMod).code;

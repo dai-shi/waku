@@ -137,7 +137,7 @@ export function ServerProvider({ children }: { children: ReactNode }) {
       `);
   });
 
-  test('create server with bind', async () => {
+  test('top-level use server and inline use server', async () => {
     const code = `
 'use server';
 
@@ -153,18 +153,11 @@ function wrapAction(action) {
   return innerAction.bind(null, { action });
 }
 
-export function createAI({ actions }) {
-  const wrappedActions = {};
-  for (const name in actions) {
-    wrappedActions[name] = wrapAction(actions[name]);
-  }
-  return function AI(props) {
-    return jsx(InternalProvider, {
-      actions: wrappedActions,
-      children: props.children,
-    });
-  };
-}`;
+export async function exportedAction() {
+  'use server';
+  return null;
+}
+`;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
         "import { InternalProvider } from './shared.js';
@@ -174,26 +167,19 @@ export function createAI({ actions }) {
             return await action(...args);
         }
         __waku_registerServerReference(__waku_action1, "/src/App.tsx", "__waku_action1");
+        export async function __waku_action2() {
+            return null;
+        }
+        __waku_registerServerReference(__waku_action2, "/src/App.tsx", "__waku_action2");
         const innerAction = __waku_action1.bind(null);
         function wrapAction(action) {
             return innerAction.bind(null, {
                 action
             });
         }
-        export function createAI({ actions }) {
-            const wrappedActions = {};
-            for(const name in actions){
-                wrappedActions[name] = wrapAction(actions[name]);
-            }
-            return function AI(props) {
-                return jsx(InternalProvider, {
-                    actions: wrappedActions,
-                    children: props.children
-                });
-            };
-        }
-        if (typeof createAI === "function") {
-            __waku_registerServerReference(createAI, "/src/App.tsx", "createAI");
+        export const exportedAction = __waku_action2.bind(null);
+        if (typeof exportedAction === "function") {
+            __waku_registerServerReference(exportedAction, "/src/App.tsx", "exportedAction");
         }
         "
       `);
