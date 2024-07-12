@@ -427,48 +427,6 @@ export ${name === 'default' ? name : `const ${name} =`} registerClientReference(
     }
     return newCode;
   }
-  if (hasUseServer) {
-    const exportNames = collectExportNames(mod);
-    const serverActionsCode = Array.from(exportNames).map((name) => {
-      const blockStmt: swc.BlockStatement = {
-        type: 'BlockStatement',
-        stmts: [
-          {
-            type: 'ExpressionStatement',
-            expression: createCallExpression(
-              createIdentifier('__waku_registerServerReference'),
-              [
-                createIdentifier(name),
-                createStringLiteral(getServerId(id)),
-                createStringLiteral(name),
-              ],
-            ),
-            span: { start: 0, end: 0, ctxt: 0 },
-          },
-        ],
-        span: { start: 0, end: 0, ctxt: 0 },
-      };
-      const ifStmt: swc.IfStatement = {
-        type: 'IfStatement',
-        test: {
-          type: 'BinaryExpression',
-          operator: '===',
-          left: {
-            type: 'UnaryExpression',
-            operator: 'typeof',
-            argument: createIdentifier(name),
-            span: { start: 0, end: 0, ctxt: 0 },
-          },
-          right: createStringLiteral('function'),
-          span: { start: 0, end: 0, ctxt: 0 },
-        },
-        consequent: blockStmt,
-        span: { start: 0, end: 0, ctxt: 0 },
-      };
-      return ifStmt;
-    });
-    mod.body.push(...serverActionsCode);
-  }
   // transform server actions in server components
   const newMod =
     (code.includes('use server') &&
