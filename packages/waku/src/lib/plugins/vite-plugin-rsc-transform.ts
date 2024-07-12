@@ -113,15 +113,9 @@ const transformExportedServerActions = (
   let changed = false;
   for (let i = 0; i < mod.body.length; ++i) {
     const item = mod.body[i]!;
-    const addRegisterStatement = (
-      name: string,
-      fn:
-        | swc.FunctionDeclaration
-        | swc.FunctionExpression
-        | swc.ArrowFunctionExpression,
-    ) => {
+    const handleDeclaration = (name: string, fn: swc.FunctionDeclaration) => {
       changed = true;
-      if (fn.body?.type === 'BlockStatement') {
+      if (fn.body) {
         fn.body.stmts = fn.body.stmts.filter(
           (stmt) => !isUseServerDirective(stmt),
         );
@@ -140,12 +134,32 @@ const transformExportedServerActions = (
       };
       mod.body.splice(++i, 0, stmt);
     };
+    const handleExpression = (
+      name: string,
+      fn: swc.FunctionExpression | swc.ArrowFunctionExpression,
+    ) => {
+      changed = true;
+      if (fn.body?.type === 'BlockStatement') {
+        fn.body.stmts = fn.body.stmts.filter(
+          (stmt) => !isUseServerDirective(stmt),
+        );
+      }
+      const callExp = createCallExpression(
+        createIdentifier('__waku_registerServerReference'),
+        [
+          Object.assign({}, fn),
+          createStringLiteral(getActionId()),
+          createStringLiteral(name),
+        ],
+      );
+      Object.keys(fn).forEach((key) => {
+        delete fn[key as keyof typeof fn];
+      });
+      Object.assign(fn, callExp);
+    };
     if (item.type === 'ExportDeclaration') {
       if (item.declaration.type === 'FunctionDeclaration') {
-        addRegisterStatement(
-          item.declaration.identifier.value,
-          item.declaration,
-        );
+        handleDeclaration(item.declaration.identifier.value, item.declaration);
       } else if (item.declaration.type === 'VariableDeclaration') {
         for (const d of item.declaration.declarations) {
           if (
@@ -153,9 +167,30 @@ const transformExportedServerActions = (
             (d.init?.type === 'FunctionExpression' ||
               d.init?.type === 'ArrowFunctionExpression')
           ) {
-            addRegisterStatement(d.id.value, d.init);
+            handleExpression(d.id.value, d.init);
           }
         }
+      }
+    } else if (item.type === 'ExportDefaultDeclaration') {
+      if (item.decl.type === 'FunctionExpression') {
+        handleExpression('default', item.decl);
+        const callExp = item.decl;
+        const decl: swc.ExportDefaultExpression = {
+          type: 'ExportDefaultExpression',
+          expression: callExp,
+          span: { start: 0, end: 0, ctxt: 0 },
+        };
+        Object.keys(item).forEach((key) => {
+          delete item[key as keyof typeof item];
+        });
+        Object.assign(item, decl);
+      }
+    } else if (item.type === 'ExportDefaultExpression') {
+      if (
+        item.expression.type === 'FunctionExpression' ||
+        item.expression.type === 'ArrowFunctionExpression'
+      ) {
+        handleExpression('default', item.expression);
       }
     }
   }
