@@ -71,24 +71,24 @@ export async function greet(name) {
   return 'Hello ' + name;
 }
 
-// TODO https://github.com/dai-shi/waku/issues/777
-// support default export
-// export default async function() {
-//   return Date.now();
-// }
+export default async function() {
+  return Date.now();
+}
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         const privateFunction = ()=>"Secret";
-        export const log = async (mesg)=>{
+        export const log = __waku_registerServerReference(async (mesg)=>{
             console.log(mesg);
-        };
-        __waku_registerServerReference(log, "/src/App.tsx", "log");
+        }, "/src/App.tsx", "log");
         export async function greet(name) {
             return 'Hello ' + name;
         }
         __waku_registerServerReference(greet, "/src/App.tsx", "greet");
+        export default __waku_registerServerReference(async function() {
+            return Date.now();
+        }, "/src/App.tsx", "default");
         "
       `);
   });
@@ -153,6 +153,8 @@ export async function exportedAction() {
   'use server';
   return null;
 }
+
+export default async () => null;
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
@@ -173,6 +175,7 @@ export async function exportedAction() {
             return null;
         }
         __waku_registerServerReference(exportedAction, "/src/App.tsx", "exportedAction");
+        export default __waku_registerServerReference(async ()=>null, "/src/App.tsx", "default");
         "
       `);
   });
@@ -282,12 +285,10 @@ const log4 = async (mesg) => {
   console.log(mesg);
 };
 
-// TODO https://github.com/dai-shi/waku/issues/777
-// default export anonymous function
-// export default async function(mesg) {
-//   'use server';
-//   console.log(mesg);
-// }
+export default async function(mesg) {
+  'use server';
+  console.log(mesg);
+}
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
@@ -305,12 +306,16 @@ const log4 = async (mesg) => {
         export const __waku_action4 = __waku_registerServerReference(async (mesg)=>{
             console.log(mesg);
         }, "/src/App.tsx", "__waku_action4");
+        export const __waku_action5 = __waku_registerServerReference(async function(mesg) {
+            console.log(mesg);
+        }, "/src/App.tsx", "__waku_action5");
         const actions = {
             log: __waku_action1.bind(null)
         };
         const log2 = __waku_action2.bind(null);
         const log3 = __waku_action3.bind(null);
         const log4 = __waku_action4.bind(null);
+        export default __waku_action5.bind(null);
         "
       `);
   });
