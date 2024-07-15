@@ -850,7 +850,20 @@ Adding the `--with-netlify-static` flag to the build script will produce static 
 }
 ```
 
-### Cloudflare (experimental)
+### Cloudflare Pages (experimental)
+
+**Note:** the current integration with Cloudflare Pages requires a `waku.config.ts` file to be
+added at the root of your project, with the basePath set like so:
+
+```
+export default {
+  basePath: "/public/"
+}
+```
+
+From here, it's recommended to follow Cloudflare Page's workflow of creating a new Pages
+application and connecting it to your GitHub or GitLab repo for automatic deployments.
+See [the docs](https://developers.cloudflare.com/pages/get-started/git-integration/).
 
 ```
 npm run build -- --with-cloudflare
