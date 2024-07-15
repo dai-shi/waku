@@ -59,18 +59,18 @@ export function rscServePlugin(opts: {
           opts.distPublic,
         ),
       };
-      if (opts.serve === 'cloudflare' || opts.serve === 'partykit') {
+      if (opts.serve === 'partykit') {
         viteConfig.build ||= {};
         viteConfig.build.rollupOptions ||= {};
         viteConfig.build.rollupOptions.external ||= [];
         if (Array.isArray(viteConfig.build.rollupOptions.external)) {
           viteConfig.build.rollupOptions.external.push('hono');
-          if (opts.serve === 'cloudflare') {
-            viteConfig.build.rollupOptions.external.push(
-              'hono/cloudflare-workers',
-              '__STATIC_CONTENT_MANIFEST',
-            );
-          }
+          // if (opts.serve === 'cloudflare') {
+          //   viteConfig.build.rollupOptions.external.push(
+          //     'hono/cloudflare-workers',
+          //     '__STATIC_CONTENT_MANIFEST',
+          //   );
+          // }
         } else {
           throw new Error(
             'Unsupported: build.rollupOptions.external is not an array',
