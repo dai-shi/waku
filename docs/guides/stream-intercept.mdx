@@ -61,20 +61,12 @@ In your `waku.config.ts` file, import the middleware and add it to the `middlewa
 ```ts
 import streamInterceptor from './src/middleware/stream-interceptor';
 
-const DO_NOT_BUNDLE = '';
-
 /** @type {import('waku/config').Config} */
 export default {
   // ...
-  middleware: (cmd: 'dev' | 'start') => [
+  middleware: () => [
     import('./src/middleware/themePreload.js'), // + this is the one we just added
-    ...(cmd === 'dev'
-      ? [
-          import(
-            /* @vite-ignore */ DO_NOT_BUNDLE + 'waku/middleware/dev-server'
-          ),
-        ]
-      : []),
+    import('waku/middleware/dev-server'),
     import('waku/middleware/ssr'),
     import('waku/middleware/rsc'),
   ],
