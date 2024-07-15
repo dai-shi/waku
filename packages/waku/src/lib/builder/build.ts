@@ -298,6 +298,24 @@ const buildServerBundle = async (
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
+
+  if (serve === 'cloudflare') {
+    // For Cloudflare Pages, create `_routes.json` which prevents calls to
+    // static client assets from invoking the server-side function.
+    // TODO: check for existing `_routes.json` in users' root directory? And
+    // merge this with default staticRoutes provided below
+    const routesJsonFilePath = joinPath(rootDir,
+      config.distDir,
+      '_routes.json');
+    const staticRoutes = {
+      version: 1,
+      include: ['/*'],
+      exclude: ['/public/assets/*']
+    };
+
+    await writeFile(routesJsonFilePath, JSON.stringify(staticRoutes));
+  }
+
   return serverBuildOutput;
 };
 
