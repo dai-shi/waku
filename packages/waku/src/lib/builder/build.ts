@@ -752,7 +752,7 @@ export async function build(options: {
       options.deploy.slice('netlify-'.length) as 'static' | 'functions',
     );
   } else if (options.deploy === 'cloudflare') {
-    await emitCloudflareOutput(rootDir, config, DIST_SERVE_JS);
+    await emitCloudflareOutput(rootDir, config);
   } else if (options.deploy === 'partykit') {
     await emitPartyKitOutput(rootDir, config, DIST_SERVE_JS);
   } else if (options.deploy === 'aws-lambda') {

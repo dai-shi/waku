@@ -7,8 +7,7 @@ import { DIST_PUBLIC } from './constants.js';
 // XXX this can be very limited. FIXME if anyone has better knowledge.
 export const emitCloudflareOutput = async (
   rootDir: string,
-  config: ResolvedConfig,
-  serveJs: string,
+  config: ResolvedConfig
 ) => {
   const wranglerTomlFile = path.join(rootDir, 'wrangler.toml');
   if (!existsSync(wranglerTomlFile)) {
@@ -16,12 +15,10 @@ export const emitCloudflareOutput = async (
       wranglerTomlFile,
       `
 name = "waku-project"
-main = "${config.distDir}/${serveJs}"
-compatibility_date = "2023-12-06"
-compatibility_flags = [ "nodejs_als" ]
+compatibility_date = "2024-04-05"
+compatibility_flags = ["nodejs_compat"]
 
-[site]
-bucket = "./${config.distDir}/${DIST_PUBLIC}"
+pages_build_output_dir = "./${config.distDir}/${DIST_PUBLIC}"
 `,
     );
   }
