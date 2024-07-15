@@ -58,6 +58,7 @@ import { emitAwsLambdaOutput } from './output-aws-lambda.js';
 import {
   DIST_ENTRIES_JS,
   DIST_SERVE_JS,
+  DIST_WORKER_JS,
   DIST_PUBLIC,
   DIST_ASSETS,
   DIST_SSR,
@@ -237,7 +238,11 @@ const buildServerBundle = async (
         ? [
             rscServePlugin({
               ...config,
-              distServeJs: DIST_SERVE_JS,
+              distServeJs: serve !== 'cloudflare'
+                ? DIST_SERVE_JS
+                // Cloudflare Pages advanced mode requires the dist entry file
+                // to be named `_worker.js`
+                : DIST_WORKER_JS,
               distPublic: DIST_PUBLIC,
               srcServeFile: decodeFilePathFromAbsolute(
                 joinPath(
