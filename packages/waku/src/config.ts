@@ -54,14 +54,14 @@ export interface Config {
   /**
    * Middleware to use
    * Defaults to:
-   * (cmd: 'dev' | 'start') => [
-   *   ...(cmd === 'dev' ? [import('waku/middleware/dev-server')] : []),
+   * () => [
+   *   import('waku/middleware/dev-server'),
    *   import('waku/middleware/headers'),
    *   import('waku/middleware/ssr'),
    *   import('waku/middleware/rsc'),
    * ]
    */
-  middleware?: (cmd: 'dev' | 'start') => Promise<{ default: Middleware }>[];
+  middleware?: () => Promise<{ default: Middleware }>[];
 }
 
 export function defineConfig(config: Config) {

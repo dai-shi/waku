@@ -98,6 +98,8 @@ export function rscDelegatePlugin(
       }
     },
     async transform(code, id) {
+      // id can contain query string with vite deps optimization
+      id = id.split('?')[0] as string;
       const ext = extname(id);
       if (mode === 'development' && EXTENSIONS.includes(ext)) {
         const mod = swc.parseSync(code, parseOpts(ext));

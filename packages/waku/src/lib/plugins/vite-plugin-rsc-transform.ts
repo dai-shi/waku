@@ -38,6 +38,9 @@ const transformClient = (
   id: string,
   getServerId: (id: string) => string,
 ) => {
+  if (!code.includes('use server')) {
+    return;
+  }
   const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseServer = false;
@@ -81,18 +84,119 @@ const createStringLiteral = (value: string): swc.StringLiteral => ({
   span: { start: 0, end: 0, ctxt: 0 },
 });
 
-const serverActionsInitCode = swc.parseSync(`
-import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server';
-export const __waku_serverActions = new Map();
-let __waku_actionIndex = 0;
-function __waku_registerServerAction(fn, actionId) {
-  const actionName = 'action' + __waku_actionIndex++;
-  __waku_registerServerReference(fn, actionId, actionName);
-  // FIXME this can cause memory leaks
-  __waku_serverActions.set(actionName, fn);
-  return fn;
-}
+const createCallExpression = (
+  callee: swc.Expression,
+  args: swc.Expression[],
+): swc.CallExpression => ({
+  type: 'CallExpression',
+  callee,
+  arguments: args.map((expression) => ({ expression })),
+  span: { start: 0, end: 0, ctxt: 0 },
+});
+
+const serverInitCode = swc.parseSync(`
+import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
 `).body;
+
+const findLastImportIndex = (mod: swc.Module) => {
+  const lastImportIndex = mod.body.findIndex(
+    (node) =>
+      node.type !== 'ExpressionStatement' && node.type !== 'ImportDeclaration',
+  );
+  return lastImportIndex === -1 ? 0 : lastImportIndex;
+};
+
+const replaceNode = <T extends swc.Node>(origNode: swc.Node, newNode: T): T => {
+  Object.keys(origNode).forEach((key) => {
+    delete origNode[key as never];
+  });
+  return Object.assign(origNode, newNode);
+};
+
+const transformExportedServerActions = (
+  mod: swc.Module,
+  getActionId: () => string,
+): boolean => {
+  let changed = false;
+  for (let i = 0; i < mod.body.length; ++i) {
+    const item = mod.body[i]!;
+    const handleDeclaration = (name: string, fn: swc.FunctionDeclaration) => {
+      changed = true;
+      if (fn.body) {
+        fn.body.stmts = fn.body.stmts.filter(
+          (stmt) => !isUseServerDirective(stmt),
+        );
+      }
+      const stmt: swc.ExpressionStatement = {
+        type: 'ExpressionStatement',
+        expression: createCallExpression(
+          createIdentifier('__waku_registerServerReference'),
+          [
+            createIdentifier(name),
+            createStringLiteral(getActionId()),
+            createStringLiteral(name),
+          ],
+        ),
+        span: { start: 0, end: 0, ctxt: 0 },
+      };
+      mod.body.splice(++i, 0, stmt);
+    };
+    const handleExpression = (
+      name: string,
+      fn: swc.FunctionExpression | swc.ArrowFunctionExpression,
+    ) => {
+      changed = true;
+      if (fn.body?.type === 'BlockStatement') {
+        fn.body.stmts = fn.body.stmts.filter(
+          (stmt) => !isUseServerDirective(stmt),
+        );
+      }
+      const callExp = createCallExpression(
+        createIdentifier('__waku_registerServerReference'),
+        [
+          Object.assign({}, fn),
+          createStringLiteral(getActionId()),
+          createStringLiteral(name),
+        ],
+      );
+      replaceNode(fn, callExp);
+    };
+    if (item.type === 'ExportDeclaration') {
+      if (item.declaration.type === 'FunctionDeclaration') {
+        handleDeclaration(item.declaration.identifier.value, item.declaration);
+      } else if (item.declaration.type === 'VariableDeclaration') {
+        for (const d of item.declaration.declarations) {
+          if (
+            d.id.type === 'Identifier' &&
+            (d.init?.type === 'FunctionExpression' ||
+              d.init?.type === 'ArrowFunctionExpression')
+          ) {
+            handleExpression(d.id.value, d.init);
+          }
+        }
+      }
+    } else if (item.type === 'ExportDefaultDeclaration') {
+      if (item.decl.type === 'FunctionExpression') {
+        handleExpression('default', item.decl);
+        const callExp = item.decl;
+        const decl: swc.ExportDefaultExpression = {
+          type: 'ExportDefaultExpression',
+          expression: callExp,
+          span: { start: 0, end: 0, ctxt: 0 },
+        };
+        replaceNode(item, decl);
+      }
+    } else if (item.type === 'ExportDefaultExpression') {
+      if (
+        item.expression.type === 'FunctionExpression' ||
+        item.expression.type === 'ArrowFunctionExpression'
+      ) {
+        handleExpression('default', item.expression);
+      }
+    }
+  }
+  return changed;
+};
 
 type FunctionWithBlockBody = (
   | swc.FunctionDeclaration
@@ -100,102 +204,294 @@ type FunctionWithBlockBody = (
   | swc.ArrowFunctionExpression
 ) & { body: swc.BlockStatement };
 
-const isServerAction = (node: swc.Node): node is FunctionWithBlockBody =>
+const isUseServerDirective = (node: swc.Node) =>
+  node.type === 'ExpressionStatement' &&
+  (node as swc.ExpressionStatement).expression.type === 'StringLiteral' &&
+  ((node as swc.ExpressionStatement).expression as swc.StringLiteral).value ===
+    'use server';
+
+const isInlineServerAction = (node: swc.Node): node is FunctionWithBlockBody =>
   (node.type === 'FunctionDeclaration' ||
     node.type === 'FunctionExpression' ||
     node.type === 'ArrowFunctionExpression') &&
   (node as { body?: { type: string } }).body?.type === 'BlockStatement' &&
-  (node as FunctionWithBlockBody).body.stmts.some(
-    (s) =>
-      s.type === 'ExpressionStatement' &&
-      s.expression.type === 'StringLiteral' &&
-      s.expression.value === 'use server',
-  );
+  (node as FunctionWithBlockBody).body.stmts.some(isUseServerDirective);
 
-const transformServerActions = (
-  mod: swc.Module,
-  getActionId: () => string,
-): swc.Module | void => {
-  let hasServerActions = false;
-  const registerServerAction: {
-    (fn: swc.FunctionDeclaration): swc.ExpressionStatement;
-    (
-      fn: swc.FunctionExpression | swc.ArrowFunctionExpression,
-    ): swc.CallExpression;
-  } = (fn): any => {
-    hasServerActions = true;
-    const exp: swc.CallExpression = {
-      type: 'CallExpression',
-      callee: createIdentifier('__waku_registerServerAction'),
-      arguments: [
-        { expression: fn.type === 'FunctionDeclaration' ? fn.identifier : fn },
-        { expression: createStringLiteral(getActionId()) },
-      ],
-      span: { start: 0, end: 0, ctxt: 0 },
-    };
-    if (fn.type !== 'FunctionDeclaration') {
-      return exp;
-    }
+const prependArgsToFn = <Fn extends FunctionWithBlockBody>(
+  fn: Fn,
+  args: string[],
+): Fn => {
+  if (fn.type === 'ArrowFunctionExpression') {
     return {
-      type: 'ExpressionStatement',
-      expression: exp,
-      span: { start: 0, end: 0, ctxt: 0 },
+      ...fn,
+      params: [...args.map(createIdentifier), ...fn.params],
+      body: {
+        type: 'BlockStatement',
+        stmts: fn.body.stmts.filter((stmt) => !isUseServerDirective(stmt)),
+        span: { start: 0, end: 0, ctxt: 0 },
+      },
     };
+  }
+  return {
+    ...fn,
+    params: [
+      ...args.map((arg) => ({
+        type: 'Parameter',
+        pat: createIdentifier(arg),
+        span: { start: 0, end: 0, ctxt: 0 },
+      })),
+      ...fn.params,
+    ],
+    body: {
+      type: 'BlockStatement',
+      stmts: fn.body.stmts.filter((stmt) => !isUseServerDirective(stmt)),
+      span: { start: 0, end: 0, ctxt: 0 },
+    },
   };
-  const handleStatements = (stmts: swc.Statement[] | swc.ModuleItem[]) => {
-    for (let i = 0; i < stmts.length; ++i) {
-      const stmt = stmts[i]!;
-      if (isServerAction(stmt)) {
-        const registerStmt = registerServerAction(stmt);
-        stmts.splice(++i, 0, registerStmt);
+};
+
+// HACK this doesn't work for 100% of cases
+const collectIndentifiers = (node: swc.Node, ids: Set<string>) => {
+  if (node.type === 'Identifier') {
+    ids.add((node as swc.Identifier).value);
+  } else if (node.type === 'MemberExpression') {
+    collectIndentifiers((node as swc.MemberExpression).object, ids);
+  } else if (node.type === 'KeyValuePatternProperty') {
+    collectIndentifiers((node as swc.KeyValuePatternProperty).key, ids);
+  } else if (node.type === 'AssignmentPatternProperty') {
+    collectIndentifiers((node as swc.AssignmentPatternProperty).key, ids);
+  } else {
+    Object.values(node).forEach((value) => {
+      if (Array.isArray(value)) {
+        value.forEach((v) => collectIndentifiers(v, ids));
+      } else if (typeof value === 'object' && value !== null) {
+        collectIndentifiers(value, ids);
+      }
+    });
+  }
+};
+
+// HACK this doesn't work for 100% of cases
+const collectLocalNames = (
+  fn: swc.Fn | swc.ArrowFunctionExpression,
+  ids: Set<string>,
+) => {
+  fn.params.forEach((param) => {
+    collectIndentifiers(param, ids);
+  });
+  let stmts: swc.Statement[];
+  if (!fn.body) {
+    stmts = [];
+  } else if (fn.body?.type === 'BlockStatement') {
+    stmts = fn.body.stmts;
+  } else {
+    // body is Expression
+    stmts = [
+      {
+        type: 'ReturnStatement',
+        argument: fn.body,
+        span: { start: 0, end: 0, ctxt: 0 },
+      },
+    ];
+  }
+  for (const stmt of stmts) {
+    if (stmt.type === 'VariableDeclaration') {
+      for (const decl of stmt.declarations) {
+        collectIndentifiers(decl.id, ids);
       }
     }
+  }
+};
+
+const collectClosureVars = (
+  parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
+  fn: FunctionWithBlockBody,
+): string[] => {
+  const parentFnVarNames = new Set<string>();
+  if (parentFn) {
+    collectLocalNames(parentFn, parentFnVarNames);
+  }
+  const fnVarNames = new Set<string>();
+  collectIndentifiers(fn, fnVarNames);
+  const varNames = Array.from(parentFnVarNames).filter((n) =>
+    fnVarNames.has(n),
+  );
+  return varNames;
+};
+
+const transformInlineServerActions = (
+  mod: swc.Module,
+  getActionId: () => string,
+): boolean => {
+  let serverActionIndex = 0;
+  const serverActions = new Map<
+    number,
+    readonly [FunctionWithBlockBody, string[]]
+  >();
+  const registerServerAction = (
+    parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
+    fn: FunctionWithBlockBody,
+  ): swc.CallExpression => {
+    const closureVars = collectClosureVars(parentFn, fn);
+    serverActions.set(++serverActionIndex, [fn, closureVars]);
+    const name = '__waku_action' + serverActionIndex;
+    if (fn.type === 'FunctionDeclaration') {
+      fn.identifier = createIdentifier(name);
+    }
+    return createCallExpression(
+      {
+        type: 'MemberExpression',
+        object: createIdentifier(name),
+        property: createIdentifier('bind'),
+        span: { start: 0, end: 0, ctxt: 0 },
+      },
+      [
+        createIdentifier('null'),
+        ...closureVars.map((v) => createIdentifier(v)),
+      ],
+    );
   };
-  const handleExpression = (exp: swc.Expression) => {
-    if (isServerAction(exp)) {
-      const callExp = registerServerAction(Object.assign({}, exp));
-      Object.keys(exp).forEach((key) => {
-        delete exp[key as keyof typeof exp];
-      });
-      Object.assign(exp, callExp);
+  const handleDeclaration = (
+    parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
+    decl: swc.Declaration,
+  ) => {
+    if (isInlineServerAction(decl)) {
+      const callExp = registerServerAction(parentFn, Object.assign({}, decl));
+      const newDecl: swc.VariableDeclaration = {
+        type: 'VariableDeclaration',
+        kind: 'const',
+        declare: false,
+        declarations: [
+          {
+            type: 'VariableDeclarator',
+            id: createIdentifier(decl.identifier.value),
+            init: callExp,
+            definite: false,
+            span: { start: 0, end: 0, ctxt: 0 },
+          },
+        ],
+        span: { start: 0, end: 0, ctxt: 0 },
+      };
+      replaceNode(decl, newDecl);
     }
   };
-  const walk = (node: swc.Node) => {
+  const handleExpression = (
+    parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
+    exp: swc.Expression,
+  ): swc.CallExpression | undefined => {
+    if (isInlineServerAction(exp)) {
+      const callExp = registerServerAction(parentFn, Object.assign({}, exp));
+      return replaceNode(exp, callExp);
+    }
+  };
+  const walk = (
+    parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
+    node: swc.Node,
+  ) => {
+    if (node.type === 'ExportDefaultDeclaration') {
+      const item = node as swc.ExportDefaultDeclaration;
+      if (item.decl.type === 'FunctionExpression') {
+        const callExp = handleExpression(
+          parentFn,
+          item.decl as swc.FunctionExpression,
+        );
+        if (callExp) {
+          const decl: swc.ExportDefaultExpression = {
+            type: 'ExportDefaultExpression',
+            expression: callExp,
+            span: { start: 0, end: 0, ctxt: 0 },
+          };
+          replaceNode(item, decl);
+          return;
+        }
+      }
+    }
     // FIXME do we need to walk the entire tree? feels inefficient
     Object.values(node).forEach((value) => {
+      const fn =
+        node.type === 'FunctionDeclaration' ||
+        node.type === 'FunctionExpression' ||
+        node.type === 'ArrowFunctionExpression'
+          ? (node as swc.Fn | swc.ArrowFunctionExpression)
+          : parentFn;
       (Array.isArray(value) ? value : [value]).forEach((v) => {
         if (typeof v?.type === 'string') {
-          walk(v);
+          walk(fn, v);
         } else if (typeof v?.expression?.type === 'string') {
-          walk(v.expression);
+          walk(fn, v.expression);
         }
       });
     });
-    if (node.type === 'Module') {
-      const { body } = node as swc.Module;
-      handleStatements(body);
-    } else if (node.type === 'BlockStatement') {
-      const { stmts } = node as swc.BlockStatement;
-      handleStatements(stmts);
+    if (node.type === 'FunctionDeclaration') {
+      handleDeclaration(parentFn, node as swc.FunctionDeclaration);
     } else if (
       node.type === 'FunctionExpression' ||
       node.type === 'ArrowFunctionExpression'
     ) {
       handleExpression(
+        parentFn,
         node as swc.FunctionExpression | swc.ArrowFunctionExpression,
       );
     }
   };
-  walk(mod);
-  if (!hasServerActions) {
-    return;
+  walk(undefined, mod);
+  if (!serverActionIndex) {
+    return false;
   }
-  const lastImportIndex = mod.body.findIndex(
-    (node) =>
-      node.type !== 'ExpressionStatement' && node.type !== 'ImportDeclaration',
+  const serverActionsCode = Array.from(serverActions).flatMap(
+    ([actionIndex, [actionFn, closureVars]]) => {
+      if (actionFn.type === 'FunctionDeclaration') {
+        const stmt1: swc.ExportDeclaration = {
+          type: 'ExportDeclaration',
+          declaration: prependArgsToFn(actionFn, closureVars),
+          span: { start: 0, end: 0, ctxt: 0 },
+        };
+        const stmt2: swc.ExpressionStatement = {
+          type: 'ExpressionStatement',
+          expression: createCallExpression(
+            createIdentifier('__waku_registerServerReference'),
+            [
+              createIdentifier(actionFn.identifier.value),
+              createStringLiteral(getActionId()),
+              createStringLiteral('__waku_action' + actionIndex),
+            ],
+          ),
+          span: { start: 0, end: 0, ctxt: 0 },
+        };
+        return [stmt1, stmt2];
+      } else {
+        const stmt: swc.ExportDeclaration = {
+          type: 'ExportDeclaration',
+          declaration: {
+            type: 'VariableDeclaration',
+            kind: 'const',
+            declare: false,
+            declarations: [
+              {
+                type: 'VariableDeclarator',
+                id: createIdentifier('__waku_action' + actionIndex),
+                init: createCallExpression(
+                  createIdentifier('__waku_registerServerReference'),
+                  [
+                    prependArgsToFn(actionFn, closureVars),
+                    createStringLiteral(getActionId()),
+                    createStringLiteral('__waku_action' + actionIndex),
+                  ],
+                ),
+                definite: false,
+                span: { start: 0, end: 0, ctxt: 0 },
+              },
+            ],
+            span: { start: 0, end: 0, ctxt: 0 },
+          },
+          span: { start: 0, end: 0, ctxt: 0 },
+        };
+        return [stmt];
+      }
+    },
   );
-  mod.body.splice(lastImportIndex, 0, ...serverActionsInitCode);
-  return mod;
+  mod.body.splice(findLastImportIndex(mod), 0, ...serverActionsCode);
+  return true;
 };
 
 const transformServer = (
@@ -204,17 +500,24 @@ const transformServer = (
   getClientId: (id: string) => string,
   getServerId: (id: string) => string,
 ) => {
+  if (!code.includes('use client') && !code.includes('use server')) {
+    return;
+  }
   const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseClient = false;
   let hasUseServer = false;
-  for (const item of mod.body) {
+  for (let i = 0; i < mod.body.length; ++i) {
+    const item = mod.body[i]!;
     if (item.type === 'ExpressionStatement') {
       if (item.expression.type === 'StringLiteral') {
         if (item.expression.value === 'use client') {
           hasUseClient = true;
+          break;
         } else if (item.expression.value === 'use server') {
           hasUseServer = true;
+          mod.body.splice(i, 1); // remove this directive
+          break;
         }
       }
     } else {
@@ -225,7 +528,7 @@ const transformServer = (
   if (hasUseClient) {
     const exportNames = collectExportNames(mod);
     let newCode = `
-import { registerClientReference } from 'react-server-dom-webpack/server';
+import { registerClientReference } from 'react-server-dom-webpack/server.edge';
 `;
     for (const name of exportNames) {
       newCode += `
@@ -233,28 +536,14 @@ export ${name === 'default' ? name : `const ${name} =`} registerClientReference(
 `;
     }
     return newCode;
-  } else if (hasUseServer) {
-    const exportNames = collectExportNames(mod);
-    let newCode =
-      code +
-      `
-import { registerServerReference } from 'react-server-dom-webpack/server';
-`;
-    for (const name of exportNames) {
-      newCode += `
-if (typeof ${name} === 'function') {
-  registerServerReference(${name}, '${getServerId(id)}', '${name}');
-}
-`;
-    }
-    return newCode;
   }
-  // transform server actions in server components
-  const newMod =
-    code.includes('use server') &&
-    transformServerActions(mod, () => getServerId(id));
-  if (newMod) {
-    const newCode = swc.printSync(newMod).code;
+  let transformed =
+    hasUseServer && transformExportedServerActions(mod, () => getServerId(id));
+  transformed =
+    transformInlineServerActions(mod, () => getServerId(id)) || transformed;
+  if (transformed) {
+    mod.body.splice(findLastImportIndex(mod), 0, ...serverInitCode);
+    const newCode = swc.printSync(mod).code;
     return newCode;
   }
 };
@@ -306,6 +595,10 @@ export function rscTransformPlugin(
   return {
     name: 'rsc-transform-plugin',
     async transform(code, id, options) {
+      if (!opts.isBuild) {
+        // id can contain query string with vite deps optimization
+        id = id.split('?')[0] as string;
+      }
       if (!EXTENSIONS.includes(extname(id))) {
         return;
       }
