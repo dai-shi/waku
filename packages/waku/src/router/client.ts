@@ -332,7 +332,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
   // Update the route post-load to include the current hash.
   useEffect(() => {
     setRoute(parseRoute(new URL(window.location.href)));
-  }, [setRoute]);
+  }, [window.location.href]);
 
   const componentIds = getComponentIds(route.path);
 
