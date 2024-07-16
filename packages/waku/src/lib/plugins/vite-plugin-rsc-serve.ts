@@ -67,9 +67,6 @@ export function rscServePlugin(opts: {
           viteConfig.build.rollupOptions.external.push('hono');
           if (opts.serve === 'cloudflare') {
             viteConfig.build.rollupOptions.external.push(
-              // Needs investigating: when building from Cloudflare's dashboard,
-              // an error is thrown because `hono` & `hono/cloudflare-pages` are
-              // not properly externalised despite being added here.
               'hono/cloudflare-pages'
             );
           }
