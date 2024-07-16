@@ -48,7 +48,7 @@ const normalizeRoutePath = (path: string) => {
   return path;
 };
 
-const parseRoute = (url: URL): RouteProps => {
+const parseRoute = (url: URL, ignore_hash: boolean = false): RouteProps => {
   if ((globalThis as any).__WAKU_ROUTER_404__) {
     return { path: '/404', searchParams: new URLSearchParams(), hash: '' };
   }
@@ -56,7 +56,11 @@ const parseRoute = (url: URL): RouteProps => {
   if (searchParams.has(PARAM_KEY_SKIP)) {
     console.warn(`The search param "${PARAM_KEY_SKIP}" is reserved`);
   }
-  return { path: normalizeRoutePath(pathname), searchParams, hash: url.hash };
+  return {
+    path: normalizeRoutePath(pathname),
+    searchParams,
+    hash: ignore_hash ? '' : url.hash,
+  };
 };
 
 type ChangeRoute = (
@@ -318,15 +322,8 @@ const RouterSlot = ({
 const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
   const refetch = useRefetch();
 
-  const [route, setRoute] = useState(
-    () =>
-      ({
-        ...parseRoute(new URL(window.location.href)),
-        // Make sure there is no hash on the initial route,
-        // so it matches the server-rendered version. Otherwise
-        // there might be hydration errors.
-        hash: '',
-      }) as RouteProps,
+  const [route, setRoute] = useState(() =>
+    parseRoute(new URL(window.location.href), true),
   );
 
   // Update the route post-load to include the current hash.
