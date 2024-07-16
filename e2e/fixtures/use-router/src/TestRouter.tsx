@@ -8,7 +8,7 @@ export default function TestRouter() {
   //       is a URLSearchParams object, but on the server it's an array.
   //       Without explicitly converting it to a URLSearchParams object,
   //       the code will break on the server because 'get' is not a function.
-  const params = new URLSearchParams(router.searchParams);
+  const params = router.searchParams;
   const queryCount = parseInt(params.get('count') || '0');
   const hashCount = parseInt(router.hash?.substr(1) || '0');
   return (
