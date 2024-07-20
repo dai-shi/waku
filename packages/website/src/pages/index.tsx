@@ -1,12 +1,11 @@
-// @ts-expect-error no exported member
 import { compileMDX } from 'next-mdx-remote/rsc';
 
-import { Page } from '../components/page.js';
-import { Meta } from '../components/meta.js';
-import { components } from '../components/mdx.js';
-import { Start } from '../components/start.js';
-import { Destination } from '../components/destination.js';
-import { loadReadme } from '../lib/load-readme.js';
+import { Page } from '../components/page';
+import { Meta } from '../components/meta';
+import { components } from '../components/mdx';
+import { Start } from '../components/start';
+import { Destination } from '../components/destination';
+import { loadReadme } from '../lib/load-readme';
 
 export default async function HomePage() {
   const file = loadReadme();
@@ -20,7 +19,10 @@ export default async function HomePage() {
 
   return (
     <Page isHome={true}>
-      <Meta title="Waku" description="The minimal React framework" />
+      <Meta
+        title="Waku, the minimal React framework"
+        description="A lightweight alternative React framework with a fun developer experience. Loved by React developers at startups and agencies."
+      />
       <div className="relative flex h-svh w-full flex-col items-center justify-center overflow-clip font-sans">
         <Start />
         <div className="sr-only" suppressHydrationWarning>
@@ -29,11 +31,11 @@ export default async function HomePage() {
       </div>
       <div
         id="content"
-        className="relative z-10 mx-auto w-full max-w-[80ch] scroll-mt-16 lg:scroll-mt-32"
+        className="relative z-10 mx-auto w-full max-w-[80ch] scroll-mt-16 lg:scroll-mt-32 xl:-right-[calc(296px/2)] 2xl:right-auto"
       >
         {content}
       </div>
-      <div className="relative z-10 mx-auto mb-8 mt-16 flex w-full max-w-[80ch] justify-center sm:mb-0 lg:mt-32">
+      <div className="relative z-10 mx-auto mb-8 mt-16 flex w-full max-w-[80ch] justify-center sm:mb-0 lg:mt-32 xl:-right-[calc(296px/2)] 2xl:right-auto">
         <a
           href="https://github.com/dai-shi/waku"
           target="_blank"
@@ -43,6 +45,7 @@ export default async function HomePage() {
           star Waku on GitHub!
         </a>
       </div>
+      <div id="nudge" className="absolute top-px inline-block size-px" />
       <Destination />
     </Page>
   );

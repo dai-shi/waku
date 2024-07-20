@@ -1,0 +1,9 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.text {
+  font-size: 18px;
+  color: blue;
+}

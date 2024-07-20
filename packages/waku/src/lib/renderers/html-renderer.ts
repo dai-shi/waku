@@ -21,6 +21,10 @@ import {
 } from '../utils/path.js';
 import { encodeInput, hasStatusCode } from './utils.js';
 
+// HACK depending on these constants is not ideal
+import { SRC_MAIN } from '../plugins/vite-plugin-rsc-managed.js';
+import { DIST_SSR } from '../builder/constants.js';
+
 export const CLIENT_MODULE_MAP = {
   react: 'react',
   'rd-server': 'react-dom/server.edge',
@@ -28,16 +32,6 @@ export const CLIENT_MODULE_MAP = {
   'waku-client': 'waku/client',
 } as const;
 export const CLIENT_PREFIX = 'client/';
-
-// HACK for react-server-dom-webpack without webpack
-(globalThis as any).__webpack_module_loading__ ||= new Map();
-(globalThis as any).__webpack_module_cache__ ||= new Map();
-(globalThis as any).__webpack_chunk_load__ ||= async (id: string) =>
-  (globalThis as any).__webpack_module_loading__.get(id);
-(globalThis as any).__webpack_require__ ||= (id: string) =>
-  (globalThis as any).__webpack_module_cache__.get(id);
-const moduleLoading = (globalThis as any).__webpack_module_loading__;
-const moduleCache = (globalThis as any).__webpack_module_cache__;
 
 const fakeFetchCode = `
 Promise.resolve(new Response(new ReadableStream({
@@ -155,14 +149,27 @@ const rectifyHtml = () => {
   });
 };
 
+const parseHtmlAttrs = (attrs: string): Record<string, string> => {
+  // HACK this is very brittle
+  const result: Record<string, string> = {};
+  const kebab2camel = (s: string) =>
+    s.replace(/-./g, (m) => m[1]!.toUpperCase());
+  const matches = attrs.matchAll(/(?<=^|\s)([^\s=]+)="([^"]+)"(?=\s|$)/g);
+  for (const match of matches) {
+    result[kebab2camel(match[1]!)] = match[2]!;
+  }
+  return result;
+};
+
 const buildHtml = (
   createElement: typeof createElementType,
+  attrs: string,
   head: string,
   body: ReactNode,
 ) =>
   createElement(
     'html',
-    null,
+    attrs ? parseHtmlAttrs(attrs) : null,
     createElement('head', { dangerouslySetInnerHTML: { __html: head } }),
     createElement('body', { 'data-hydrate': true }, body),
   );
@@ -191,6 +198,7 @@ export const renderHtml = async (
         isDev: true;
         rootDir: string;
         loadServerFile: (fileURL: string) => Promise<unknown>;
+        loadServerModule: (id: string) => Promise<unknown>;
       }
   ),
 ): Promise<ReadableStream | null> => {
@@ -206,7 +214,7 @@ export const renderHtml = async (
 
   const loadClientModule = <T>(key: keyof typeof CLIENT_MODULE_MAP) =>
     (isDev
-      ? import(/* @vite-ignore */ CLIENT_MODULE_MAP[key])
+      ? opts.loadServerModule(CLIENT_MODULE_MAP[key])
       : opts.loadModule(CLIENT_PREFIX + key)) as Promise<T>;
 
   const [
@@ -243,17 +251,7 @@ export const renderHtml = async (
     throw e;
   }
   const moduleMap = new Proxy(
-    {} as Record<
-      string,
-      Record<
-        string,
-        {
-          id: string;
-          chunks: string[];
-          name: string;
-        }
-      >
-    >,
+    {} as Record<string, Record<string, ImportManifestEntry>>,
     {
       get(_target, filePath: string) {
         return new Proxy(
@@ -262,51 +260,42 @@ export const renderHtml = async (
             get(_target, name: string) {
               if (isDev) {
                 // TODO too long, we need to refactor this logic
-                let file = filePath.slice(config.basePath.length);
-                file = file.split('?')[0]!;
-                file = file.startsWith('@fs/')
-                  ? file.slice('@fs'.length)
+                let file = filePath
+                  .slice(config.basePath.length)
+                  .split('?')[0]!;
+                const isFsPath = file.startsWith('@fs/');
+                file = '/' + (isFsPath ? file.slice('@fs/'.length) : file);
+                const fileWithAbsolutePath = isFsPath
+                  ? file
                   : encodeFilePathToAbsolute(joinPath(opts.rootDir, file));
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
                 );
-                if (file.startsWith(wakuDist)) {
+                if (fileWithAbsolutePath.startsWith(wakuDist)) {
                   const id =
-                    'waku' + file.slice(wakuDist.length).replace(/\.\w+$/, '');
-                  if (!moduleLoading.has(id)) {
-                    moduleLoading.set(
-                      id,
-                      import(/* @vite-ignore */ id).then((m) => {
-                        moduleCache.set(id, m);
-                      }),
-                    );
-                  }
+                    'waku' +
+                    fileWithAbsolutePath
+                      .slice(wakuDist.length)
+                      .replace(/\.\w+$/, '');
+                  (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(
+                    id,
+                    (id: string) => opts.loadServerModule(id),
+                  );
                   return { id, chunks: [id], name };
                 }
                 const id = filePathToFileURL(file);
-                if (!moduleLoading.has(id)) {
-                  moduleLoading.set(
-                    id,
-                    opts.loadServerFile(id).then((m) => {
-                      moduleCache.set(id, m);
-                    }),
-                  );
-                }
+                (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(
+                  id,
+                  (id: string) => opts.loadServerFile(id),
+                );
                 return { id, chunks: [id], name };
               }
               // !isDev
               const id = filePath.slice(config.basePath.length);
-              if (!moduleLoading.has(id)) {
-                moduleLoading.set(
-                  id,
-                  opts
-                    .loadModule(joinPath(config.ssrDir, id))
-                    .then((m: any) => {
-                      moduleCache.set(id, m);
-                    }),
-                );
-              }
+              (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(id, (id: string) =>
+                opts.loadModule(joinPath(DIST_SSR, id)),
+              );
               return { id, chunks: [id], name };
             },
           },
@@ -328,6 +317,7 @@ export const renderHtml = async (
     await renderToReadableStream(
       buildHtml(
         createElement,
+        config.htmlAttrs,
         htmlHead,
         createElement(
           ServerRoot as FunctionComponent<
@@ -348,7 +338,7 @@ export const renderHtml = async (
     .pipeThrough(
       injectScript(
         config.basePath + config.rscPath + '/' + encodeInput(ssrConfig.input),
-        isDev ? `${config.basePath}${config.srcDir}/${config.mainJs}` : '',
+        isDev ? `${config.basePath}${config.srcDir}/${SRC_MAIN}` : '',
       ),
     )
     .pipeThrough(injectRSCPayload(stream2));

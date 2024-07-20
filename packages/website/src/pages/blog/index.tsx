@@ -1,11 +1,11 @@
 import { Link } from 'waku';
 import { readdirSync, readFileSync } from 'node:fs';
-// @ts-expect-error no exported member
 import { compileMDX } from 'next-mdx-remote/rsc';
 
-import { Page } from '../../components/page.js';
-import { Meta } from '../../components/meta.js';
-import { getAuthor } from '../../lib/get-author.js';
+import { Page } from '../../components/page';
+import { Meta } from '../../components/meta';
+import { getAuthor } from '../../lib/get-author';
+import type { BlogFrontmatter } from '../../types';
 
 export default async function BlogIndexPage() {
   const articles = await getArticles();
@@ -13,7 +13,7 @@ export default async function BlogIndexPage() {
   return (
     <Page>
       <Meta title="Waku blog" description="The official Waku developer blog." />
-      <div className="relative z-10 mx-auto w-full max-w-[80ch] pt-16 text-white lg:pt-64">
+      <div className="relative z-10 mx-auto w-full max-w-[80ch] pt-16 text-white lg:pt-36 xl:-right-[calc(296px/2)] 2xl:right-auto">
         <ul className="-mx-4 -mt-px flex flex-col gap-6 sm:-mx-6 md:-mx-12 lg:gap-12">
           {articles.map((article) => (
             <li
@@ -69,7 +69,7 @@ const getArticles = async () => {
       source,
       options: { parseFrontmatter: true },
     });
-    const { frontmatter } = mdx;
+    const frontmatter = mdx.frontmatter as BlogFrontmatter;
 
     const author = getAuthor(frontmatter.author);
     const date = new Date(frontmatter.date).toLocaleDateString('en-US', {

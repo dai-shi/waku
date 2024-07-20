@@ -4,6 +4,7 @@ import {
   Component,
   createContext,
   createElement,
+  startTransition,
   useCallback,
   useContext,
   useEffect,
@@ -15,6 +16,7 @@ import {
 import type {
   ComponentProps,
   FunctionComponent,
+  MutableRefObject,
   ReactNode,
   AnchorHTMLAttributes,
   ReactElement,
@@ -144,6 +146,7 @@ export type LinkProps = {
   notPending?: ReactNode;
   children: ReactNode;
   unstable_prefetchOnEnter?: boolean;
+  unstable_prefetchOnView?: boolean;
 } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>;
 
 export function Link({
@@ -152,6 +155,7 @@ export function Link({
   pending,
   notPending,
   unstable_prefetchOnEnter,
+  unstable_prefetchOnView,
   ...props
 }: LinkProps): ReactElement {
   const router = useContext(RouterContext);
@@ -166,6 +170,32 @@ export function Link({
         throw new Error('Missing Router');
       };
   const [isPending, startTransition] = useTransition();
+  const ref = useRef<HTMLAnchorElement>();
+
+  useEffect(() => {
+    if (unstable_prefetchOnView && ref.current) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const url = new URL(to, window.location.href);
+              if (router && url.href !== window.location.href) {
+                const route = parseRoute(url);
+                router.prefetchRoute(route);
+              }
+            }
+          });
+        },
+        { threshold: 0.1 },
+      );
+
+      observer.observe(ref.current);
+
+      return () => {
+        observer.disconnect();
+      };
+    }
+  }, [unstable_prefetchOnView, router, to]);
   const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     const url = new URL(to, window.location.href);
@@ -198,7 +228,7 @@ export function Link({
     : props.onMouseEnter;
   const ele = createElement(
     'a',
-    { ...props, href: to, onClick, onMouseEnter },
+    { ...props, href: to, onClick, onMouseEnter, ref },
     children,
   );
   if (isPending && pending !== undefined) {
@@ -258,7 +288,34 @@ const equalRouteProps = (a: RouteProps, b: RouteProps) => {
   return true;
 };
 
-function InnerRouter({ routerData }: { routerData: RouterData }) {
+const RouterSlot = ({
+  route,
+  routerData,
+  cachedRef,
+  id,
+  fallback,
+  children,
+}: {
+  route: RouteProps;
+  routerData: RouterData;
+  cachedRef: MutableRefObject<Record<string, RouteProps>>;
+  id: string;
+  fallback?: ReactNode;
+  children?: ReactNode;
+}) => {
+  const unstable_shouldRenderPrev = (_err: unknown) => {
+    const shouldSkip = routerData[0];
+    const skip = getSkipList(shouldSkip, [id], route, cachedRef.current);
+    return skip.length > 0;
+  };
+  return createElement(
+    Slot,
+    { id, fallback, unstable_shouldRenderPrev },
+    children,
+  );
+};
+
+const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
   const refetch = useRefetch();
 
   const [route, setRoute] = useState(() =>
@@ -277,7 +334,9 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
   const changeRoute: ChangeRoute = useCallback(
     (route, options) => {
       const { checkCache, skipRefetch } = options || {};
-      setRoute(route);
+      startTransition(() => {
+        setRoute(route);
+      });
       const componentIds = getComponentIds(route.path);
       if (
         checkCache &&
@@ -308,14 +367,16 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
           ]),
         );
       }
-      setCached((prev) => ({
-        ...prev,
-        ...Object.fromEntries(
-          componentIds.flatMap((id) =>
-            skip.includes(id) ? [] : [[id, route]],
+      startTransition(() => {
+        setCached((prev) => ({
+          ...prev,
+          ...Object.fromEntries(
+            componentIds.flatMap((id) =>
+              skip.includes(id) ? [] : [[id, route]],
+            ),
           ),
-        ),
-      }));
+        }));
+      });
     },
     [refetch, routerData],
   );
@@ -361,6 +422,14 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
       url.pathname = pathname;
       url.search = searchParamsString;
       url.hash = '';
+      window.history.pushState(
+        {
+          ...window.history.state,
+          waku_new_path: url.pathname !== window.location.pathname,
+        },
+        '',
+        url,
+      );
       changeRoute(parseRoute(url), { skipRefetch: true });
     };
     const listeners = (routerData[1] ||= new Set());
@@ -382,7 +451,12 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
   });
 
   const children = componentIds.reduceRight(
-    (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
+    (acc: ReactNode, id) =>
+      createElement(
+        RouterSlot,
+        { route, routerData, cachedRef, id, fallback: acc },
+        acc,
+      ),
     null,
   );
 
@@ -391,7 +465,7 @@ function InnerRouter({ routerData }: { routerData: RouterData }) {
     { value: { route, changeRoute, prefetchRoute } },
     children,
   );
-}
+};
 
 // Note: The router data must be a stable mutable object (array).
 type RouterData = [
@@ -485,11 +559,9 @@ class ErrorBoundary extends Component<
     super(props);
     this.state = {};
   }
-
   static getDerivedStateFromError(error: unknown) {
     return { error };
   }
-
   render() {
     if ('error' in this.state) {
       if (

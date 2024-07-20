@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 
-import { Menu } from '../components/menu.js';
-import { Fade } from '../components/fade.js';
-import { Sponsors } from '../components/sponsors.js';
-import { Credits } from '../components/credits.js';
-import { Scroll } from '../components/scroll.js';
+import { Menu } from '../components/menu';
+import { Fade } from '../components/fade';
+import { Credits } from '../components/credits';
+import { Scroll } from '../components/scroll';
+import { Navigation } from './navigation';
 
 type PageProps = {
   isHome?: boolean;
@@ -14,11 +14,11 @@ type PageProps = {
 export const Page = async ({ isHome = false, children }: PageProps) => {
   return (
     <>
-      <Menu isHome={isHome} />
+      <Menu />
       <Background />
       <Fade always={!isHome} />
+      <Navigation isHome={isHome} />
       <Main>{children}</Main>
-      <Sponsors className="fixed bottom-0 left-0 z-80 hidden p-[16px] lg:block" />
       <Credits />
       <Scroll />
     </>
@@ -31,7 +31,7 @@ type MainProps = {
 
 const Main = ({ children }: MainProps) => {
   return (
-    <main id="top" className="px-8 pb-24 lg:pb-32">
+    <main id="top" className="relative px-8 pb-24 lg:pb-32">
       {children}
     </main>
   );

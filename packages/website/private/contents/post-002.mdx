@@ -25,8 +25,8 @@ Both `createLayout` and `createPage` accept a configuration object to specify th
 // ./src/entries.tsx
 import { createPages } from 'waku';
 
-import { RootLayout } from './templates/root-layout.js';
-import { HomePage } from './templates/home-page.js';
+import { RootLayout } from './templates/root-layout';
+import { HomePage } from './templates/home-page';
 
 export default createPages(async ({ createPage, createLayout }) => {
   // Create root layout
@@ -55,8 +55,8 @@ Pages can be rendered as a single route (e.g., `/about`).
 // ./src/entries.tsx
 import { createPages } from 'waku';
 
-import { AboutPage } from './templates/about-page.js';
-import { BlogIndexPage } from './templates/blog-index-page.js';
+import { AboutPage } from './templates/about-page';
+import { BlogIndexPage } from './templates/blog-index-page';
 
 export default createPages(async ({ createPage }) => {
   // Create about page
@@ -83,8 +83,8 @@ Pages can also render a segment route (e.g., `/blog/[slug]`). The rendered React
 // ./src/entries.tsx
 import { createPages } from 'waku';
 
-import { BlogArticlePage } from './templates/blog-article-page.js';
-import { ProductCategoryPage } from './templates/product-category-page.js';
+import { BlogArticlePage } from './templates/blog-article-page';
+import { ProductCategoryPage } from './templates/product-category-page';
 
 export default createPages(async ({ createPage }) => {
   // Create blog article pages
@@ -112,8 +112,8 @@ Static paths (or other values) could also be generated programmatically.
 // ./src/entries.tsx
 import { createPages } from 'waku';
 
-import { getBlogPaths } from './lib/get-blog-paths.js';
-import { BlogArticlePage } from './templates/blog-article-page.js';
+import { getBlogPaths } from './lib/get-blog-paths';
+import { BlogArticlePage } from './templates/blog-article-page';
 
 export default createPages(async ({ createPage }) => {
   const blogPaths = await getBlogPaths();
@@ -135,7 +135,7 @@ Routes can contain multiple segments (e.g., `/shop/[category]/[product]`).
 // ./src/entries.tsx
 import { createPages } from 'waku';
 
-import { ProductDetailPage } from './templates/product-detail-page.js';
+import { ProductDetailPage } from './templates/product-detail-page';
 
 export default createPages(async ({ createPage }) => {
   // Create product detail pages
@@ -154,7 +154,7 @@ For static prerendering of nested segment routes, the `staticPaths` array is ins
 // ./src/entries.tsx
 import { createPages } from 'waku';
 
-import { ProductDetailPage } from './templates/product-detail-page.js';
+import { ProductDetailPage } from './templates/product-detail-page';
 
 export default createPages(async ({ createPage }) => {
   // Create product detail pages
@@ -181,7 +181,7 @@ For example, the `/app/profile/settings` route would receive a `catchAll` prop w
 // ./src/entries.tsx
 import { createPages } from 'waku';
 
-import { DashboardPage } from './templates/dashboard-page.js';
+import { DashboardPage } from './templates/dashboard-page';
 
 export default createPages(async ({ createPage }) => {
   // Create account dashboard
@@ -206,7 +206,7 @@ The root layout rendered at `path: '/'` is especially useful. It can be used for
 // ./src/entries.tsx
 import { createPages } from 'waku';
 
-import { RootLayout } from './templates/root-layout.js';
+import { RootLayout } from './templates/root-layout';
 
 export default createPages(async ({ createLayout }) => {
   // Add a global header and footer
@@ -222,9 +222,9 @@ export default createPages(async ({ createLayout }) => {
 // ./src/templates/root-layout.tsx
 import '../styles.css';
 
-import { Providers } from '../components/providers.js';
-import { Header } from '../components/header.js';
-import { Footer } from '../components/footer.js';
+import { Providers } from '../components/providers';
+import { Header } from '../components/header';
+import { Footer } from '../components/footer';
 
 export const RootLayout = async ({ children }) => {
   return (
@@ -260,7 +260,7 @@ Layouts are also helpful further down the tree. For example, you could add a lay
 // ./src/entries.tsx
 import { createPages } from 'waku';
 
-import { BlogLayout } from './templates/blog-layout.js';
+import { BlogLayout } from './templates/blog-layout';
 
 export default createPages(async ({ createLayout }) => {
   // Add a sidebar to the blog index and blog article pages
@@ -274,7 +274,7 @@ export default createPages(async ({ createLayout }) => {
 
 ```tsx
 // ./src/templates/blog-layout.tsx
-import { Sidebar } from '../components/sidebar.js';
+import { Sidebar } from '../components/sidebar';
 
 export const BlogLayout = async ({ children }) => {
   return (

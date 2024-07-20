@@ -34,18 +34,14 @@ for (const { build, command } of commands) {
 
     test.beforeAll(async () => {
       if (build) {
-        execSync(`node ${waku} ${build}`, {
-          cwd,
-        });
+        execSync(`node ${waku} ${build}`, { cwd });
       }
       port = await getFreePort();
-      cp = exec(`node ${waku} ${command} --port ${port}`, {
-        cwd,
-      });
-      debugChildProcess(cp, fileURLToPath(import.meta.url));
-      await waitPort({
-        port,
-      });
+      cp = exec(`node ${waku} ${command} --port ${port}`, { cwd });
+      debugChildProcess(cp, fileURLToPath(import.meta.url), [
+        /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
+      ]);
+      await waitPort({ port });
     });
 
     test.afterAll(async () => {
@@ -54,9 +50,7 @@ for (const { build, command } of commands) {
 
     test('basic', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
-
       await expect(page.getByTestId('app-name')).toHaveText('Waku');
-
       await expect(
         page.getByTestId('client-counter').getByTestId('count'),
       ).toHaveText('0');
@@ -68,7 +62,6 @@ for (const { build, command } of commands) {
       await expect(
         page.getByTestId('client-counter').getByTestId('count'),
       ).toHaveText('2');
-
       await expect(
         page.getByTestId('server-ping').getByTestId('pong'),
       ).toBeEmpty();
@@ -87,6 +80,19 @@ for (const { build, command } of commands) {
       await expect(
         page.getByTestId('server-ping').getByTestId('counter'),
       ).toHaveText('2');
+    });
+
+    test('server action', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/`);
+      await expect(page.getByTestId('app-name')).toHaveText('Waku');
+      await expect(page.getByTestId('ai-internal-provider')).toHaveText(
+        'globalThis.actions: ["foo"]',
+      );
+      const result = await page.evaluate(() => {
+        // @ts-expect-error no types
+        return globalThis.actions.foo();
+      });
+      expect(result).toBe(0);
     });
   });
 }

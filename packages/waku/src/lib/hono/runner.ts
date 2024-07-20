@@ -24,7 +24,7 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
   const handlersPromise = configPromise.then((config) =>
     Promise.all(
       config
-        .middleware(options.cmd)
+        .middleware()
         .map(async (middleware) => (await middleware).default(options)),
     ),
   );

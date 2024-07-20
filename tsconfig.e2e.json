@@ -10,6 +10,9 @@
       "path": "./e2e/fixtures/rsc-basic/tsconfig.json"
     },
     {
+      "path": "./e2e/fixtures/rsc-css-modules/tsconfig.json"
+    },
+    {
       "path": "./e2e/fixtures/ssr-basic/tsconfig.json"
     },
     {
@@ -20,6 +23,24 @@
     },
     {
       "path": "./e2e/fixtures/ssr-swr/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/ssr-context-provider/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/render-type/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/ssg-performance/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/ssg-wildcard/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/partial-build/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/ssr-catch-error/tsconfig.json"
     }
   ]
 }

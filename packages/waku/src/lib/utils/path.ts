@@ -10,7 +10,7 @@ const ABSOLUTE_WIN32_PATH_REGEXP = /^\/[a-zA-Z]:\//;
 
 export const encodeFilePathToAbsolute = (filePath: string) => {
   if (ABSOLUTE_WIN32_PATH_REGEXP.test(filePath)) {
-    throw new Error('Unsupported absolute file path');
+    throw new Error('Unsupported absolute file path: ' + filePath);
   }
   if (filePath.startsWith('/')) {
     return filePath;
@@ -88,6 +88,22 @@ export const parsePathWithSlug = (path: string): PathSpec =>
       }
       return { type, name };
     });
+
+/**
+ * Transform a path spec to a regular expression.
+ */
+export const path2regexp = (path: PathSpec) => {
+  const parts = path.map(({ type, name }) => {
+    if (type === 'literal') {
+      return name;
+    } else if (type === 'group') {
+      return `([^/]+)`;
+    } else {
+      return `(.*)`;
+    }
+  });
+  return `^/${parts.join('/')}$`;
+};
 
 export const getPathMapping = (
   pathSpec: PathSpec,

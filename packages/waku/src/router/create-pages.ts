@@ -7,6 +7,7 @@ import {
   joinPath,
   parsePathWithSlug,
   getPathMapping,
+  path2regexp,
 } from '../lib/utils/path.js';
 import type { BuildConfig } from '../server.js';
 import type { PathSpec } from '../lib/utils/path.js';
@@ -47,13 +48,14 @@ type HasSlugInPath<T, K extends string> = T extends `/[${K}]/${infer _}`
     : T extends `/[${K}]`
       ? true
       : false;
-type PathWithSlug<T, K extends string> =
+
+export type PathWithSlug<T, K extends string> =
   IsValidPath<T> extends true
     ? HasSlugInPath<T, K> extends true
       ? T
       : never
     : never;
-type PathWithoutSlug<T> = T extends '/'
+export type PathWithoutSlug<T> = T extends '/'
   ? T
   : IsValidPath<T> extends true
     ? HasSlugInPath<T, string> extends true
@@ -61,7 +63,13 @@ type PathWithoutSlug<T> = T extends '/'
       : T
     : never;
 
-type CreatePage = <
+export type PathWithWildcard<
+  Path,
+  SlugKey extends string,
+  WildSlugKey extends string,
+> = PathWithSlug<Path, SlugKey | `...${WildSlugKey}`>;
+
+export type CreatePage = <
   Path extends string,
   SlugKey extends string,
   WildSlugKey extends string,
@@ -74,7 +82,7 @@ type CreatePage = <
       }
     | {
         render: 'static';
-        path: PathWithSlug<Path, SlugKey>;
+        path: PathWithWildcard<Path, SlugKey, WildSlugKey>;
         staticPaths: string[] | string[][];
         component: FunctionComponent<RouteProps & Record<SlugKey, string>>;
       }
@@ -85,7 +93,7 @@ type CreatePage = <
       }
     | {
         render: 'dynamic';
-        path: PathWithSlug<Path, SlugKey | `...${WildSlugKey}`>;
+        path: PathWithWildcard<Path, SlugKey, WildSlugKey>;
         component: FunctionComponent<
           RouteProps & Record<SlugKey, string> & Record<WildSlugKey, string[]>
         >;
@@ -93,7 +101,7 @@ type CreatePage = <
   ) & { unstable_disableSSR?: boolean },
 ) => void;
 
-type CreateLayout = <T extends string>(layout: {
+export type CreateLayout = <T extends string>(layout: {
   render: 'static' | 'dynamic';
   path: PathWithoutSlug<T>;
   component: FunctionComponent<
@@ -162,27 +170,35 @@ export function createPages(
       staticPathSet.add([page.path, pathSpec]);
       const id = joinPath(page.path, 'page').replace(/^\//, '');
       registerStaticComponent(id, page.component);
-    } else if (page.render === 'static' && numSlugs > 0 && numWildcards === 0) {
+    } else if (page.render === 'static' && numSlugs > 0) {
       const staticPaths = (
         page as {
           staticPaths: string[] | string[][];
         }
       ).staticPaths.map((item) => (Array.isArray(item) ? item : [item]));
       for (const staticPath of staticPaths) {
-        if (staticPath.length !== numSlugs) {
+        if (staticPath.length !== numSlugs && numWildcards === 0) {
           throw new Error('staticPaths does not match with slug pattern');
         }
-        const mapping: Record<string, string> = {};
+        const mapping: Record<string, string | string[]> = {};
         let slugIndex = 0;
-        const pathItems = pathSpec.map(({ type, name }) => {
-          if (type !== 'literal') {
-            const actualName = staticPath[slugIndex++]!;
-            if (name) {
-              mapping[name] = actualName;
-            }
-            return actualName;
+        const pathItems = [] as string[];
+        pathSpec.forEach(({ type, name }) => {
+          switch (type) {
+            case 'literal':
+              pathItems.push(name!);
+              break;
+            case 'wildcard':
+              mapping[name!] = staticPath.slice(slugIndex);
+              staticPath.slice(slugIndex++).forEach((slug) => {
+                pathItems.push(slug);
+              });
+              break;
+            case 'group':
+              pathItems.push(staticPath[slugIndex++]!);
+              mapping[name!] = pathItems[pathItems.length - 1]!;
+              break;
           }
-          return name;
         });
         staticPathSet.add([
           page.path,
@@ -247,6 +263,7 @@ export function createPages(
     async () => {
       await configure();
       const paths: {
+        pattern: string;
         path: PathSpec;
         isStatic: boolean;
         noSsr: boolean;
@@ -258,6 +275,7 @@ export function createPages(
           ([layoutPathSpec]) => !hasPathSpecPrefix(layoutPathSpec, pathSpec),
         );
         paths.push({
+          pattern: path2regexp(parsePathWithSlug(path)),
           path: pathSpec,
           isStatic,
           noSsr,
@@ -267,6 +285,7 @@ export function createPages(
       for (const [path, [pathSpec]] of dynamicPagePathMap) {
         const noSsr = noSsrSet.has(pathSpec);
         paths.push({
+          pattern: path2regexp(parsePathWithSlug(path)),
           path: pathSpec,
           isStatic: false,
           noSsr,
@@ -276,6 +295,7 @@ export function createPages(
       for (const [path, [pathSpec]] of wildcardPagePathMap) {
         const noSsr = noSsrSet.has(pathSpec);
         paths.push({
+          pattern: path2regexp(parsePathWithSlug(path)),
           path: pathSpec,
           isStatic: false,
           noSsr,

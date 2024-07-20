@@ -1,0 +1,91 @@
+# Chapter One
+
+## Getting Started
+
+To create a new **Waku** project run the following command in your terminal:
+
+```
+npm create waku@latest
+```
+
+Follow the CLI instructions and name the project something like `waku-tutorial`. Then open the project, install dependencies, and run the development server:
+
+```bash
+cd waku-tutorial
+npm install
+npm run dev
+```
+
+Now open up your browser and go to [http://localhost:3000](http://localhost:3000/). You should see a simple Waku app with an interactive counter.
+
+Let’s take a look at the files and code that we were given:
+
+- `/src/pages` contains our [layouts and pages](https://waku.gg/#routing)
+- `/src/components` contains our reusable [UI components](https://react.dev/learn/your-first-component)
+- `/public` contains our [static assets](https://waku.gg/#static-assets)
+
+## Server Components
+
+If we take a deeper look at `/src/pages/index.tsx`, we notice that our component is an `async` [server component](https://waku.gg/#server-components):
+
+```tsx
+// line 5
+export default async function HomePage() {
+  const data = await getData();
+  // ...rest of the file
+}
+```
+
+This allows us to make an `async` call to get some data that happens securely on the server.
+
+**Server components** can access files and databases directly, keep the client bundle size smaller, and perform other server-side logic! Keep in mind that they only run once on the server (i.e., they never re-render).
+
+## Client Components
+
+Go ahead and open up `/src/components/counter.tsx`:
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+
+export const Counter = () => {
+  const [count, setCount] = useState(0);
+  // ...rest of the file
+};
+```
+
+As you can see on top of the file, it contains a `'use client'` directive. This tell us it (and any components it imports) will be **client components**. These are the traditional React components that we’ve come to know and love, which can use all of the familiar React client API such as `useEffect` and `useState`.
+
+## Routing
+
+To handle routing in Waku, there is a familiar **[pages router](https://waku.gg/#routing)**.
+
+Everything that’s inside the `/src/pages` directory abides by the router’s rules:
+
+- `/pages/_layout.tsx` is a [layout](https://waku.gg/#layouts)
+- `/pages/index.tsx` is a single route page
+- `/pages/about.tsx` is a single route page
+
+As you can see, there’s two ways to create **pages**:
+
+1. use an `index` file (e.g., `/pages/contact/index.tsx`)
+2. use a single named file (e.g., `/pages/contact.tsx`)
+
+Either of these would render under the `/contact` route.
+
+**Layouts** are created with the special `_layout.tsx` filename and are how we create a shared layout that wraps a route and its descendents.
+
+The layout at `/pages/_layout.tsx` is the [root layout](https://waku.gg/#root-layout), which wraps the entire site. Layouts can be nested as well, which we’ll see in later chapters. We’ll also discover **segment routes**, **nested segment routes**, and **catch-all routes** as well as Waku’s two rendering methods: **static prerendering** at build time and **dynamic rendering** at request time.
+
+## And that’s all you need to get started
+
+In the next chapters we’ll dive deeper into everything to understand how powerful, but simple Waku is! 🙂
+
+---
+
+## Next Steps
+
+In **Chapter 2** we will start building a small **Todo Application** to get some hands on experience with Waku.
+
+You’ll learn more about server components, client components, router, navigation, and more!

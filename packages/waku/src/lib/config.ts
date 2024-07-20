@@ -16,12 +16,9 @@ const ADDITIONAL_HTML_HEAD = `
 <meta name="generator" content="Waku" />
 `.trim();
 
-const DO_NOT_BUNDLE = '';
-
-const DEFAULT_MIDDLEWARE = (cmd: 'dev' | 'start') => [
-  ...(cmd === 'dev'
-    ? [import(/* @vite-ignore */ DO_NOT_BUNDLE + 'waku/middleware/dev-server')]
-    : []),
+const DEFAULT_MIDDLEWARE = () => [
+  import('waku/middleware/dev-server'),
+  import('waku/middleware/headers'),
   import('waku/middleware/ssr'),
   import('waku/middleware/rsc'),
 ];
@@ -32,16 +29,10 @@ export async function resolveConfig(config: Config) {
     basePath: '/',
     srcDir: 'src',
     distDir: 'dist',
-    publicDir: 'public',
-    assetsDir: 'assets',
-    ssrDir: 'ssr',
-    indexHtml: 'index.html',
-    mainJs: 'main.js',
-    entriesJs: 'entries.js',
     preserveModuleDirs: ['pages', 'templates', 'routes', 'components'],
     privateDir: 'private',
-    serveJs: 'serve.js',
     rscPath: 'RSC',
+    htmlAttrs: '',
     htmlHead: DEFAULT_HTML_HEAD,
     middleware: DEFAULT_MIDDLEWARE,
     ...config,

@@ -40,6 +40,7 @@ import {
   CLIENT_PREFIX,
   renderHtml,
 } from '../renderers/html-renderer.js';
+import { rscRsdwPlugin } from '../plugins/vite-plugin-rsc-rsdw.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
@@ -54,6 +55,13 @@ import { emitNetlifyOutput } from './output-netlify.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
 import { emitPartyKitOutput } from './output-partykit.js';
 import { emitAwsLambdaOutput } from './output-aws-lambda.js';
+import {
+  DIST_ENTRIES_JS,
+  DIST_SERVE_JS,
+  DIST_PUBLIC,
+  DIST_ASSETS,
+  DIST_SSR,
+} from './constants.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -66,7 +74,6 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
     return;
   } else if (
     warning.code === 'SOURCEMAP_ERROR' &&
-    warning.loc?.file?.endsWith('.tsx') &&
     warning.loc?.column === 0 &&
     warning.loc?.line === 1
   ) {
@@ -75,11 +82,7 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   defaultHandler(warning);
 };
 
-const analyzeEntries = async (
-  rootDir: string,
-  config: ResolvedConfig,
-  entriesFile: string,
-) => {
+const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   const wakuClientDist = decodeFilePathFromAbsolute(
     joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
   );
@@ -105,14 +108,19 @@ const analyzeEntries = async (
   }
   await buildVite({
     plugins: [
-      rscAnalyzePlugin(clientFileSet, serverFileSet, fileHashMap),
-      rscManagedPlugin(config),
+      rscAnalyzePlugin({
+        isClient: false,
+        clientFileSet,
+        serverFileSet,
+        fileHashMap,
+      }),
+      rscManagedPlugin({ ...config, addEntriesToInput: true }),
     ],
     ssr: {
       target: 'webworker',
       resolve: {
-        conditions: ['react-server', 'workerd'],
-        externalConditions: ['react-server', 'workerd'],
+        conditions: ['react-server'],
+        externalConditions: ['react-server'],
       },
       noExternal: /^(?!node:)/,
     },
@@ -122,22 +130,38 @@ const analyzeEntries = async (
       target: 'node18',
       rollupOptions: {
         onwarn,
-        input: {
-          ...Object.fromEntries(moduleFileMap),
-          entries: entriesFile,
-        },
+        input: Object.fromEntries(moduleFileMap),
       },
     },
   });
   const clientEntryFiles = Object.fromEntries(
     Array.from(clientFileSet).map((fname, i) => [
-      `${config.assetsDir}/rsc${i}-${fileHashMap.get(fname)}`,
+      `${DIST_ASSETS}/rsc${i}-${fileHashMap.get(fname)}`,
       fname,
     ]),
   );
+  await buildVite({
+    plugins: [
+      rscAnalyzePlugin({ isClient: true, serverFileSet }),
+      rscManagedPlugin(config),
+    ],
+    ssr: {
+      target: 'webworker',
+      noExternal: /^(?!node:)/,
+    },
+    build: {
+      write: false,
+      ssr: true,
+      target: 'node18',
+      rollupOptions: {
+        onwarn,
+        input: clientEntryFiles,
+      },
+    },
+  });
   const serverEntryFiles = Object.fromEntries(
     Array.from(serverFileSet).map((fname, i) => [
-      `${config.assetsDir}/rsf${i}`,
+      `${DIST_ASSETS}/rsf${i}`,
       fname,
     ]),
   );
@@ -153,7 +177,6 @@ const analyzeEntries = async (
 const buildServerBundle = async (
   rootDir: string,
   config: ResolvedConfig,
-  entriesFile: string,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
   serverModuleFiles: Record<string, string>,
@@ -166,20 +189,26 @@ const buildServerBundle = async (
     | 'aws-lambda'
     | false,
   isNodeCompatible: boolean,
+  partial: boolean,
 ) => {
   const serverBuildOutput = await buildVite({
     plugins: [
       nonjsResolvePlugin(),
       rscTransformPlugin({
+        isClient: false,
         isBuild: true,
         clientEntryFiles,
         serverEntryFiles,
       }),
+      rscRsdwPlugin(),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
-      rscManagedPlugin(config),
+      rscManagedPlugin({
+        ...config,
+        addEntriesToInput: true,
+      }),
       rscEntriesPlugin({
-        entriesFile,
+        srcDir: config.srcDir,
         moduleMap: {
           ...Object.fromEntries(
             Object.keys(SERVER_MODULE_MAP).map((key) => [key, `./${key}.js`]),
@@ -187,13 +216,13 @@ const buildServerBundle = async (
           ...Object.fromEntries(
             Object.keys(CLIENT_MODULE_MAP).map((key) => [
               `${CLIENT_PREFIX}${key}`,
-              `./${config.ssrDir}/${key}.js`,
+              `./${DIST_SSR}/${key}.js`,
             ]),
           ),
           ...Object.fromEntries(
             Object.keys(clientEntryFiles || {}).map((key) => [
-              `${config.ssrDir}/${key}.js`,
-              `./${config.ssrDir}/${key}.js`,
+              `${DIST_SSR}/${key}.js`,
+              `./${DIST_SSR}/${key}.js`,
             ]),
           ),
           ...Object.fromEntries(
@@ -208,7 +237,8 @@ const buildServerBundle = async (
         ? [
             rscServePlugin({
               ...config,
-              entriesFile,
+              distServeJs: DIST_SERVE_JS,
+              distPublic: DIST_PUBLIC,
               srcServeFile: decodeFilePathFromAbsolute(
                 joinPath(
                   fileURLToFilePath(import.meta.url),
@@ -223,16 +253,16 @@ const buildServerBundle = async (
     ssr: isNodeCompatible
       ? {
           resolve: {
-            conditions: ['react-server', 'workerd'],
-            externalConditions: ['react-server', 'workerd'],
+            conditions: ['react-server'],
+            externalConditions: ['react-server'],
           },
           noExternal: /^(?!node:)/,
         }
       : {
           target: 'webworker',
           resolve: {
-            conditions: ['react-server', 'workerd', 'worker'],
-            externalConditions: ['react-server', 'workerd', 'worker'],
+            conditions: ['react-server', 'worker'],
+            externalConditions: ['react-server', 'worker'],
           },
           noExternal: /^(?!node:)/,
         },
@@ -244,6 +274,7 @@ const buildServerBundle = async (
     },
     publicDir: false,
     build: {
+      emptyOutDir: !partial,
       ssr: true,
       ssrEmitAssets: true,
       target: 'node18',
@@ -251,7 +282,6 @@ const buildServerBundle = async (
       rollupOptions: {
         onwarn,
         input: {
-          entries: entriesFile,
           ...SERVER_MODULE_MAP,
           ...serverModuleFiles,
           ...clientEntryFiles,
@@ -270,10 +300,11 @@ const buildServerBundle = async (
 const buildSsrBundle = async (
   rootDir: string,
   config: ResolvedConfig,
-  mainJsFile: string,
   clientEntryFiles: Record<string, string>,
+  serverEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
   isNodeCompatible: boolean,
+  partial: boolean,
 ) => {
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
@@ -281,14 +312,15 @@ const buildSsrBundle = async (
   await buildVite({
     base: config.basePath,
     plugins: [
+      rscRsdwPlugin(),
       rscIndexPlugin({
         ...config,
         cssAssets,
-        mainJs: mainJsFile.split('/').pop()!,
       }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
-      rscManagedPlugin(config),
+      rscManagedPlugin({ ...config, addMainToInput: true }),
+      rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
     ],
     ssr: isNodeCompatible
       ? {
@@ -310,13 +342,13 @@ const buildSsrBundle = async (
     },
     publicDir: false,
     build: {
+      emptyOutDir: !partial,
       ssr: true,
       target: 'node18',
-      outDir: joinPath(rootDir, config.distDir, config.ssrDir),
+      outDir: joinPath(rootDir, config.distDir, DIST_SSR),
       rollupOptions: {
         onwarn,
         input: {
-          main: mainJsFile,
           ...clientEntryFiles,
           ...CLIENT_MODULE_MAP,
         },
@@ -330,7 +362,7 @@ const buildSsrBundle = async (
             ) {
               return '[name].js';
             }
-            return config.assetsDir + '/[name]-[hash].js';
+            return DIST_ASSETS + '/[name]-[hash].js';
           },
         },
       },
@@ -342,9 +374,10 @@ const buildSsrBundle = async (
 const buildClientBundle = async (
   rootDir: string,
   config: ResolvedConfig,
-  mainJsFile: string,
   clientEntryFiles: Record<string, string>,
+  serverEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
+  partial: boolean,
 ) => {
   const nonJsAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
@@ -354,30 +387,30 @@ const buildClientBundle = async (
     base: config.basePath,
     plugins: [
       viteReact(),
+      rscRsdwPlugin(),
       rscIndexPlugin({
         ...config,
         cssAssets,
-        mainJs: mainJsFile.split('/').pop()!,
       }),
       rscEnvPlugin({ config }),
       rscPrivatePlugin(config),
-      rscManagedPlugin(config),
+      rscManagedPlugin({ ...config, addMainToInput: true }),
+      rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
     ],
     build: {
-      outDir: joinPath(rootDir, config.distDir, config.publicDir),
+      emptyOutDir: !partial,
+      outDir: joinPath(rootDir, config.distDir, DIST_PUBLIC),
       rollupOptions: {
         onwarn,
-        input: {
-          main: mainJsFile,
-          ...clientEntryFiles,
-        },
+        // rollup will ouput the style files related to clientEntryFiles, but since it does not find any link to them in the index.html file, it will not inject them. They are only mentioned by the standalone `clientEntryFiles`
+        input: clientEntryFiles,
         preserveEntrySignatures: 'exports-only',
         output: {
           entryFileNames: (chunkInfo) => {
             if (clientEntryFiles[chunkInfo.name]) {
               return '[name].js';
             }
-            return config.assetsDir + '/[name]-[hash].js';
+            return DIST_ASSETS + '/[name]-[hash].js';
           },
         },
       },
@@ -388,7 +421,7 @@ const buildClientBundle = async (
   }
   for (const nonJsAsset of nonJsAssets) {
     const from = joinPath(rootDir, config.distDir, nonJsAsset);
-    const to = joinPath(rootDir, config.distDir, config.publicDir, nonJsAsset);
+    const to = joinPath(rootDir, config.distDir, DIST_PUBLIC, nonJsAsset);
     await rename(from, to);
   }
   return clientBuildOutput;
@@ -427,10 +460,14 @@ const emitRscFiles = async (
         const destRscFile = joinPath(
           rootDir,
           config.distDir,
-          config.publicDir,
+          DIST_PUBLIC,
           config.rscPath,
           encodeInput(input),
         );
+        // Skip if the file already exists.
+        if (existsSync(destRscFile)) {
+          continue;
+        }
         await mkdir(joinPath(destRscFile, '..'), { recursive: true });
         const readable = await renderRsc(
           {
@@ -478,13 +515,18 @@ const emitHtmlFiles = async (
   distEntries: EntriesPrd,
   buildConfig: BuildConfig,
   getClientModules: (input: string) => string[],
+  clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
 ) => {
+  const nonJsAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
+    type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
+  );
+  const cssAssets = nonJsAssets.filter((asset) => asset.endsWith('.css'));
   const basePrefix = config.basePath + config.rscPath + '/';
   const publicIndexHtmlFile = joinPath(
     rootDir,
     config.distDir,
-    config.publicDir,
-    config.indexHtml,
+    DIST_PUBLIC,
+    'index.html',
   );
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
@@ -502,6 +544,17 @@ const emitHtmlFiles = async (
           typeof pathname === 'string' ? pathname2pathSpec(pathname) : pathname;
         let htmlStr = publicIndexHtml;
         let htmlHead = publicIndexHtmlHead;
+        if (cssAssets.length) {
+          const cssStr = cssAssets
+            .map(
+              (asset) =>
+                `<link rel="stylesheet" href="${config.basePath}${asset}">`,
+            )
+            .join('\n');
+          // HACK is this too naive to inject style code?
+          htmlStr = htmlStr.replace(/<\/head>/, cssStr);
+          htmlHead += cssStr;
+        }
         const inputsForPrefetch = new Set<string>();
         const moduleIdsForPrefetch = new Set<string>();
         for (const { input, skipPrefetch } of entries || []) {
@@ -534,13 +587,17 @@ const emitHtmlFiles = async (
         const destHtmlFile = joinPath(
           rootDir,
           config.distDir,
-          config.publicDir,
+          DIST_PUBLIC,
           extname(pathname)
             ? pathname
             : pathname === '/404'
               ? '404.html' // HACK special treatment for 404, better way?
-              : pathname + '/' + config.indexHtml,
+              : pathname + '/index.html',
         );
+        // In partial mode, skip if the file already exists.
+        if (existsSync(destHtmlFile)) {
+          return;
+        }
         const htmlReadable = await renderHtml({
           config,
           pathname,
@@ -595,19 +652,10 @@ export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
   await appendFile(distEntriesFile, code);
 };
 
-const resolveFileName = (fname: string) => {
-  for (const ext of EXTENSIONS) {
-    const resolvedName = fname.slice(0, -extname(fname).length) + ext;
-    if (existsSync(resolvedName)) {
-      return resolvedName;
-    }
-  }
-  return fname; // returning the default one
-};
-
 export async function build(options: {
   config: Config;
   env?: Record<string, string>;
+  partial?: boolean;
   deploy?:
     | 'vercel-static'
     | 'vercel-serverless'
@@ -624,26 +672,17 @@ export async function build(options: {
   const rootDir = (
     await resolveViteConfig({}, 'build', 'production', 'production')
   ).root;
-  const entriesFile = resolveFileName(
-    joinPath(rootDir, config.srcDir, config.entriesJs),
-  );
-  const distEntriesFile = resolveFileName(
-    joinPath(rootDir, config.distDir, config.entriesJs),
-  );
-  const mainJsFile = resolveFileName(
-    joinPath(rootDir, config.srcDir, config.mainJs),
-  );
+  const distEntriesFile = joinPath(rootDir, config.distDir, DIST_ENTRIES_JS);
   const isNodeCompatible =
     options.deploy !== 'cloudflare' &&
     options.deploy !== 'partykit' &&
     options.deploy !== 'deno';
 
   const { clientEntryFiles, serverEntryFiles, serverModuleFiles } =
-    await analyzeEntries(rootDir, config, entriesFile);
+    await analyzeEntries(rootDir, config);
   const serverBuildOutput = await buildServerBundle(
     rootDir,
     config,
-    entriesFile,
     clientEntryFiles,
     serverEntryFiles,
     serverModuleFiles,
@@ -654,24 +693,29 @@ export async function build(options: {
       (options.deploy === 'deno' ? 'deno' : false) ||
       (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
     isNodeCompatible,
+    !!options.partial,
   );
   await buildSsrBundle(
     rootDir,
     config,
-    mainJsFile,
     clientEntryFiles,
+    serverEntryFiles,
     serverBuildOutput,
     isNodeCompatible,
+    !!options.partial,
   );
-  await buildClientBundle(
+  const clientBuildOutput = await buildClientBundle(
     rootDir,
     config,
-    mainJsFile,
     clientEntryFiles,
+    serverEntryFiles,
     serverBuildOutput,
+    !!options.partial,
   );
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
+
+  // TODO: Add progress indication for static builds.
   const buildConfig = await getBuildConfig({ config, entries: distEntries });
   await appendFile(
     distEntriesFile,
@@ -690,24 +734,27 @@ export async function build(options: {
     distEntries,
     buildConfig,
     getClientModules,
+    clientBuildOutput,
   );
 
   if (options.deploy?.startsWith('vercel-')) {
     await emitVercelOutput(
       rootDir,
       config,
+      DIST_SERVE_JS,
       options.deploy.slice('vercel-'.length) as 'static' | 'serverless',
     );
   } else if (options.deploy?.startsWith('netlify-')) {
     await emitNetlifyOutput(
       rootDir,
       config,
+      DIST_SERVE_JS,
       options.deploy.slice('netlify-'.length) as 'static' | 'functions',
     );
   } else if (options.deploy === 'cloudflare') {
-    await emitCloudflareOutput(rootDir, config);
+    await emitCloudflareOutput(rootDir, config, DIST_SERVE_JS);
   } else if (options.deploy === 'partykit') {
-    await emitPartyKitOutput(rootDir, config);
+    await emitPartyKitOutput(rootDir, config, DIST_SERVE_JS);
   } else if (options.deploy === 'aws-lambda') {
     await emitAwsLambdaOutput(config);
   }

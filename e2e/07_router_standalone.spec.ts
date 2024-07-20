@@ -21,9 +21,7 @@ const { version } = createRequire(import.meta.url)(
 );
 
 async function testRouterExample(page: Page, port: number) {
-  await waitPort({
-    port,
-  });
+  await waitPort({ port });
 
   await page.goto(`http://localhost:${port}`);
   await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
@@ -78,11 +76,11 @@ test.describe('07_router standalone', () => {
       const port = await getFreePort();
       const cp = exec(
         `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start --port ${port}`,
-        {
-          cwd: standaloneDir,
-        },
+        { cwd: standaloneDir },
       );
-      debugChildProcess(cp, fileURLToPath(import.meta.url));
+      debugChildProcess(cp, fileURLToPath(import.meta.url), [
+        /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
+      ]);
       await testRouterExample(page, port);
       await terminate(cp.pid!);
     });
@@ -92,11 +90,12 @@ test.describe('07_router standalone', () => {
       const port = await getFreePort();
       const cp = exec(
         `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} dev --port ${port}`,
-        {
-          cwd: standaloneDir,
-        },
+        { cwd: standaloneDir },
       );
-      debugChildProcess(cp, fileURLToPath(import.meta.url));
+      debugChildProcess(cp, fileURLToPath(import.meta.url), [
+        /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
+        /WebSocket server error: Port is already in use/,
+      ]);
       await testRouterExample(page, port);
       await terminate(cp.pid!);
     });

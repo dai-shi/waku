@@ -25,9 +25,9 @@ export function fsRouter(
           { join, dirname, extname, sep },
           { fileURLToPath },
         ] = await Promise.all([
-          import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:fs/promises'),
-          import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:path'),
-          import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:url'),
+          import(DO_NOT_BUNDLE + 'node:fs/promises'),
+          import(DO_NOT_BUNDLE + 'node:path'),
+          import(DO_NOT_BUNDLE + 'node:url'),
         ]);
         const pagesDir = join(dirname(fileURLToPath(importMetaUrl)), pages);
         files = await readdir(pagesDir, {
@@ -41,7 +41,7 @@ export function fsRouter(
             return [];
           }
           // HACK: replace "_slug_" to "[slug]" for build
-          file = file.replace(/(^|\/|\\)_([^/]+)_(\/|\\|\.)/g, '$1[$2]$3');
+          file = file.replace(/(?<=^|\/|\\)_([^/]+)_(?=\/|\\|\.)/g, '[$1]');
           // For Windows
           file = sep === '/' ? file : file.replace(/\\/g, '/');
           // HACK: resolve different extensions for build

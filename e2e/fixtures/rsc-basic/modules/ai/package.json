@@ -1,0 +1,21 @@
+{
+  "name": "ai",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Vercel AI mockup",
+  "exports": {
+    "./rsc": {
+      "types": "./src/index.d.ts",
+      "react-server": "./src/server.js",
+      "import": "./src/client.js"
+    }
+  },
+  "devDependencies": {
+    "react-dom": "^18",
+    "react-server-dom-webpack": "18.3.0-canary-eb33bd747-20240312"
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19"
+  },
+  "private": true
+}

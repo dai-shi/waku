@@ -83,9 +83,9 @@ export function rscHmrPlugin(): Plugin {
             `
 {
   const refetchRsc = () => {
-    cache.splice(0);
-    const data = fetchRSC(input, searchParamsString, setElements, cache);
-    setElements(data);
+    delete fetchCache[ENTRY];
+    const data = fetchRSC(input, searchParamsString, fetchCache);
+    fetchCache[SET_ELEMENTS](() => data);
   };
   globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];
   const index = globalThis.__WAKU_RSC_RELOAD_LISTENERS__.indexOf(globalThis.__WAKU_REFETCH_RSC__);
@@ -124,15 +124,20 @@ export function rscHmrPlugin(): Plugin {
       }
     },
     handleHotUpdate({ file }) {
-      const moduleLoading = (globalThis as any).__webpack_module_loading__;
-      const moduleCache = (globalThis as any).__webpack_module_cache__;
+      const moduleLoading = (globalThis as any).__WAKU_CLIENT_MODULE_LOADING__;
+      const moduleCache = (globalThis as any).__WAKU_CLIENT_MODULE_CACHE__;
+      if (!moduleLoading || !moduleCache) {
+        return;
+      }
+      if (file.startsWith(viteServer.config.root)) {
+        file = file.slice(viteServer.config.root.length);
+      }
       const id = filePathToFileURL(file);
-      if (moduleLoading.has(id) && moduleCache.has(id)) {
-        moduleLoading.delete(id);
-        moduleCache.delete(id);
+      if (moduleLoading.has(id)) {
         moduleLoading.set(
           id,
           viteServer.ssrLoadModule(file).then((m) => {
+            // XXX There can be a race condition, but it should be very rare.
             moduleCache.set(id, m);
           }),
         );
@@ -194,38 +199,30 @@ async function generateInitialScripts(
   }
 
   const scripts: HtmlTagDescriptor[] = [];
-  let injectedBlockingViteClient = false;
 
   for (const result of sources.values()) {
-    // CSS modules do not support result.source (empty) since ssr-transforming them gives the css keys
-    // and client-transforming them gives the script tag for injecting them.
     if (result.id.endsWith('.module.css')) {
-      if (!injectedBlockingViteClient) {
-        // since we use the client-transformed script tag, we need to avoid FOUC by parse-blocking the vite client that the script imports
-        // this way we make sure to run the CSS modules script tag before everything
-        // blocking this way is not ideal but it works. It should be revisited.
-        scripts.push({
-          tag: 'script',
-          attrs: { type: 'module', blocking: 'render', src: '/@vite/client' },
-          injectTo: 'head-prepend',
-        });
-        injectedBlockingViteClient = true;
-      }
+      // CSS modules do not support result.source (empty) since ssr-transforming them gives the css keys and client-transforming them gives the script tag for injecting them.
+      // Since we use the client-transformed script tag, we need to avoid FOUC by blocking render
       scripts.push({
         tag: 'script',
-        // tried render blocking this script tag by data url imports but it gives `/@vite/client: Invalid relative url or base scheme isn't hierarchical.` which could not find a way to fix.
-        attrs: { type: 'module', 'waku-module-id': result.id },
+        attrs: {
+          type: 'module',
+          async: true,
+          blocking: 'render',
+          'waku-module-id': result.id,
+        },
         children: result.code,
-        injectTo: 'head-prepend',
+        injectTo: 'head',
       });
-      continue;
+    } else {
+      scripts.push({
+        tag: 'style',
+        attrs: { type: 'text/css', 'waku-module-id': result.id },
+        children: result.source,
+        injectTo: 'head',
+      });
     }
-    scripts.push({
-      tag: 'style',
-      attrs: { type: 'text/css', 'waku-module-id': result.id },
-      children: result.source,
-      injectTo: 'head-prepend',
-    });
   }
   return scripts;
 }
