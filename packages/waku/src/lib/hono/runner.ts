@@ -53,10 +53,12 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
       });
     };
     await run(0);
-    return c.body(
-      ctx.res.body || null,
-      (ctx.res.status as any) || 200,
-      ctx.res.headers || {},
-    );
+    if (!c.finalized) {
+      return c.body(
+        ctx.res.body || null,
+        (ctx.res.status as any) || 200,
+        ctx.res.headers || {},
+      );
+    }
   };
 };
