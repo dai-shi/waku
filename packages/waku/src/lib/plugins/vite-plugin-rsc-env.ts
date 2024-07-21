@@ -1,4 +1,5 @@
 import type { Plugin } from 'vite';
+import * as dotenv from 'dotenv';
 
 export function rscEnvPlugin({
   config,
@@ -11,6 +12,11 @@ export function rscEnvPlugin({
   return {
     name: 'rsc-env-plugin',
     config(viteConfig) {
+      const env = {}
+      console.log(dotenv.config({ path: ['.env.local', '.env'], processEnv: env }));
+      
+      ;(globalThis as any).__WAKU_PRIVATE_ENV__ = env;
+      console.log('rsc-env-plugin', (globalThis as any).__WAKU_PRIVATE_ENV__)
       viteConfig.define = {
         ...viteConfig.define,
         ...Object.fromEntries([
