@@ -12,8 +12,12 @@ export function rscEnvPlugin({
   return {
     name: 'rsc-env-plugin',
     config(viteConfig) {
-      dotenv.config({ path: ['.env.local', '.env'], processEnv: (globalThis as any).__WAKU_PRIVATE_ENV__, override: true });
-      
+      dotenv.config({
+        path: ['.env.local', '.env'],
+        processEnv: (globalThis as any).__WAKU_PRIVATE_ENV__,
+        override: true,
+      });
+
       viteConfig.define = {
         ...viteConfig.define,
         ...Object.fromEntries([
