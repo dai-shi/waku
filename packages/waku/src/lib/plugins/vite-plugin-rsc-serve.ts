@@ -65,12 +65,6 @@ export function rscServePlugin(opts: {
         viteConfig.build.rollupOptions.external ||= [];
         if (Array.isArray(viteConfig.build.rollupOptions.external)) {
           viteConfig.build.rollupOptions.external.push('hono');
-          // if (opts.serve === 'cloudflare') {
-          //   viteConfig.build.rollupOptions.external.push(
-          //     'hono/cloudflare-workers',
-          //     '__STATIC_CONTENT_MANIFEST',
-          //   );
-          // }
         } else {
           throw new Error(
             'Unsupported: build.rollupOptions.external is not an array',
