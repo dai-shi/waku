@@ -96,6 +96,8 @@ async function runDev() {
   const config = await loadConfig();
   const app = new Hono();
   app.use('*', runner({ cmd: 'dev', config, env: process.env as any }));
+  // @ts-expect-error bypassing hono default notFound handler
+  app.use('*', (_c, _next) => {})
   const port = parseInt(values.port || '3000', 10);
   await startServer(app, port);
 }

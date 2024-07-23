@@ -53,7 +53,8 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
       });
     };
     await run(0);
-    if (!c.finalized) {
+    /* checking ctx.res.body is a workaround for dev server 404 response */
+    if (!c.finalized/* || ctx.res.body*/) {
       return c.body(
         ctx.res.body || null,
         (ctx.res.status as any) || 200,
