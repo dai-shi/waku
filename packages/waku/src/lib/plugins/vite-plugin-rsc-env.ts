@@ -2,8 +2,10 @@ import type { Plugin } from 'vite';
 import * as dotenv from 'dotenv';
 
 export function rscEnvPlugin({
+  isDev,
   config,
 }: {
+  isDev: boolean;
   config?: {
     basePath: string;
     rscPath: string;
@@ -12,11 +14,13 @@ export function rscEnvPlugin({
   return {
     name: 'rsc-env-plugin',
     config(viteConfig) {
-      dotenv.config({
-        path: ['.env.local', '.env'],
-        processEnv: (globalThis as any).__WAKU_PRIVATE_ENV__,
-        override: true,
-      });
+      if (isDev) {
+        dotenv.config({
+          path: ['.env.local', '.env'],
+          processEnv: (globalThis as any).__WAKU_PRIVATE_ENV__,
+          override: true,
+        });
+      }
 
       viteConfig.define = {
         ...viteConfig.define,

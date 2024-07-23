@@ -7,6 +7,7 @@ import type { Middleware } from './types.js';
 import { stringToStream } from '../utils/stream.js';
 
 export const ssr: Middleware = (options) => {
+  console.log('ssr', options.env);
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const entriesPromise =
     options.cmd === 'start'
