@@ -215,7 +215,7 @@ export const getConfig = async () => {
 
 ### Pages
 
-Pages render a single route, segment route, or catch-all route based on the file system path (conventions below). All page components automatically receive two props related to the rendered route: `path` (string) and `searchParams` ([URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams)).
+Pages render a single route, segment route, or catch-all route based on the file system path (conventions below). All page components automatically receive two props related to the rendered route: `path` (string) and `query` (string).
 
 #### Single routes
 
@@ -493,7 +493,7 @@ The `useRouter` hook can be used to inspect the current route or perform program
 
 #### router properties
 
-The `router` object has two properties related to the current route: `path` (string) and `searchParams` ([URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams)).
+The `router` object has two properties related to the current route: `path` (string) and `query` (string).
 
 ```tsx
 'use client';
@@ -501,12 +501,12 @@ The `router` object has two properties related to the current route: `path` (str
 import { useRouter_UNSTABLE as useRouter } from 'waku';
 
 export const Component = () => {
-  const { path, searchParams } = useRouter();
+  const { path, query } = useRouter();
 
   return (
     <>
       <div>current path: {path}</div>
-      <div>current searchParams: {searchParams.toString()}</div>
+      <div>current query: {query}</div>
     </>
   );
 };
