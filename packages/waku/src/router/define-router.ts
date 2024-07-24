@@ -22,7 +22,7 @@ import { getPathMapping } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
 import { ServerRouter } from './client.js';
 
-type RoutePropsForLayout = Omit<RouteProps, 'searchParams'> & {
+type RoutePropsForLayout = Omit<RouteProps, 'query'> & {
   children: ReactNode;
 };
 
@@ -219,7 +219,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
       ServerRouter as FunctionComponent<
         Omit<ComponentProps<typeof ServerRouter>, 'children'>
       >,
-      { route: { path: pathname, searchParams } },
+      { route: { path: pathname, query: searchParams.toString() } },
       componentIds.reduceRight(
         (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
         null,
