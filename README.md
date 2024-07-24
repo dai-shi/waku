@@ -24,7 +24,7 @@ We recommend other frameworks for heavy ecommerce or enterprise applications. Wa
 Start a new Waku project with the `create` command for your preferred package manager. It will scaffold a new project with our default [Waku starter](https://github.com/dai-shi/waku/tree/main/examples/01_template).
 
 ```
-npm create waku@latest
+npm create waku@next
 ```
 
 **Node.js version requirement:** `^20.8.0` or `^18.17.0`
