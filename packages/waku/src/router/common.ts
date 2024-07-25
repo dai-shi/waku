@@ -1,6 +1,5 @@
 export type RouteProps = {
   path: string;
-  searchParams: URLSearchParams;
   query: string;
   hash: string;
 };
