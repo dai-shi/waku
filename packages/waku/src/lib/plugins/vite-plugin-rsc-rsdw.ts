@@ -16,7 +16,7 @@ globalThis.__WAKU_${type}_MODULE_LOADING__ ||= new Map();
 globalThis.__WAKU_${type}_MODULE_CACHE__ ||= new Map();
 globalThis.__WAKU_${type}_CHUNK_LOAD__ ||= (
   id,
-  customImport = globalThis.__WAKU_HACK_IMPORT__
+  customImport = globalThis.__WAKU_${type}_HACK_IMPORT__
 ) => {
   if (!globalThis.__WAKU_${type}_MODULE_LOADING__.has(id)) {
     globalThis.__WAKU_${type}_MODULE_LOADING__.set(
