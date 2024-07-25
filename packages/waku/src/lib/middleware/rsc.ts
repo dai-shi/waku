@@ -46,9 +46,8 @@ export const rsc: Middleware = (options) => {
         const readable = await (devServer
           ? renderRsc(args, {
               isDev: true,
-              loadServerFileRsc: devServer.loadServerFileRsc,
               loadServerModuleRsc: devServer.loadServerModuleRsc,
-              resolveClientEntry: devServer.resolveClientEntryDev,
+              resolveClientEntry: devServer.resolveClientEntry,
               entries: await devServer.loadEntriesDev(config),
             })
           : renderRsc(args, { isDev: false, entries }));

@@ -64,13 +64,12 @@ export const ssr: Middleware = (options) => {
                     {
                       isDev: true,
                       loadServerModuleRsc: devServer.loadServerModuleRsc,
-                      resolveClientEntry: devServer.resolveClientEntryDev,
+                      resolveClientEntry: devServer.resolveClientEntry,
                       entries: entriesDev!,
                     },
                   ),
                 rootDir: devServer.rootDir,
-                loadServerFile: devServer.loadServerFileMain,
-                loadServerModule: devServer.loadServerModuleMain,
+                loadServerModuleMain: devServer.loadServerModuleMain,
               }
             : {
                 isDev: false,

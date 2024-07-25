@@ -22,12 +22,10 @@ export type HandlerContext = {
   readonly context: Record<string, unknown>;
   unstable_devServer?: {
     rootDir: string;
-    resolveClientEntryDev: (id: string) => string;
-    loadServerFileRsc: (fileURL: string) => Promise<Record<string, any>>;
-    loadServerModuleRsc: (id: string) => Promise<Record<string, any>>;
+    resolveClientEntry: (id: string) => string;
+    loadServerModuleRsc: (idOrFileURL: string) => Promise<Record<string, any>>;
     loadEntriesDev: (config: { srcDir: string }) => Promise<EntriesDev>;
-    loadServerFileMain: (fileURL: string) => Promise<Record<string, any>>;
-    loadServerModuleMain: (id: string) => Promise<Record<string, any>>;
+    loadServerModuleMain: (idOrFileURL: string) => Promise<Record<string, any>>;
     transformIndexHtml: (
       pathname: string,
     ) => Promise<TransformStream<any, any>>;
