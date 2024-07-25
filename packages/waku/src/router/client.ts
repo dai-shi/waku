@@ -58,7 +58,7 @@ const parseRoute = (url: URL, ignore_hash: boolean = false): RouteProps => {
   }
   return {
     path: normalizeRoutePath(pathname),
-    searchParams: searchParams.toString(),
+    query: searchParams.toString(),
     hash: ignore_hash ? '' : url.hash,
   };
 };
