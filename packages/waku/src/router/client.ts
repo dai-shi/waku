@@ -48,7 +48,7 @@ const normalizeRoutePath = (path: string) => {
   return path;
 };
 
-const parseRoute = (url: URL, ignore_hash: boolean = false): RouteProps => {
+const parseRoute = (url: URL, ignoreHash = false): RouteProps => {
   if ((globalThis as any).__WAKU_ROUTER_404__) {
     return { path: '/404', query: '', hash: '' };
   }
