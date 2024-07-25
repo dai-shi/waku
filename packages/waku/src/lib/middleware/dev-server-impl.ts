@@ -133,19 +133,18 @@ const createMainViteServer = (
     return vite;
   });
 
-  const loadServerFileMain = async (fileURL: string) => {
-    const vite = await vitePromise;
-    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
-  };
-
-  const loadServerModuleMain = async (id: string) => {
-    if (id === 'waku' || id.startsWith('waku/')) {
+  const loadServerModuleMain = async (idOrFileURL: string) => {
+    if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
       // HACK I don't know why this is necessary.
       // `external: ['waku']` doesn't somehow work?
-      return import(id);
+      return import(/* @vite-ignore */ idOrFileURL);
     }
     const vite = await vitePromise;
-    return vite.ssrLoadModule(id);
+    return vite.ssrLoadModule(
+      idOrFileURL.startsWith('file://')
+        ? fileURLToFilePath(idOrFileURL)
+        : idOrFileURL,
+    );
   };
 
   const transformIndexHtml = async (pathname: string) => {
@@ -196,7 +195,6 @@ const createMainViteServer = (
 
   return {
     vitePromise,
-    loadServerFileMain,
     loadServerModuleMain,
     transformIndexHtml,
     willBeHandledLater,
@@ -255,14 +253,13 @@ const createRscViteServer = (
     return vite;
   });
 
-  const loadServerFileRsc = async (fileURL: string) => {
+  const loadServerModuleRsc = async (idOrFileURL: string) => {
     const vite = await vitePromise;
-    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
-  };
-
-  const loadServerModuleRsc = async (id: string) => {
-    const vite = await vitePromise;
-    return vite.ssrLoadModule(id);
+    return vite.ssrLoadModule(
+      idOrFileURL.startsWith('file://')
+        ? fileURLToFilePath(idOrFileURL)
+        : idOrFileURL,
+    );
   };
 
   const loadEntriesDev = async (config: { srcDir: string }) => {
@@ -293,7 +290,6 @@ const createRscViteServer = (
   };
 
   return {
-    loadServerFileRsc,
     loadServerModuleRsc,
     loadEntriesDev,
     resolveClientEntry,
@@ -309,23 +305,21 @@ export const devServer: Middleware = (options) => {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(options.config);
 
-  (globalThis as any).__WAKU_HACK_IMPORT__ = async (id: string) =>
-    loadServerFileRsc(id);
+  (globalThis as any).__WAKU_SERVER_HACK_IMPORT__ = (idOrFileURL: string) =>
+    loadServerModuleRsc(idOrFileURL);
+
+  (globalThis as any).__WAKU_CLIENT_HACK_IMPORT__ = (idOrFileURL: string) =>
+    loadServerModuleMain(idOrFileURL);
 
   const {
     vitePromise,
-    loadServerFileMain,
     loadServerModuleMain,
     transformIndexHtml,
     willBeHandledLater,
   } = createMainViteServer(configPromise);
 
-  const {
-    loadServerFileRsc,
-    loadServerModuleRsc,
-    loadEntriesDev,
-    resolveClientEntry,
-  } = createRscViteServer(configPromise);
+  const { loadServerModuleRsc, loadEntriesDev, resolveClientEntry } =
+    createRscViteServer(configPromise);
 
   let initialModules: ClonableModuleNode[];
 
@@ -355,7 +349,7 @@ export const devServer: Middleware = (options) => {
 
     ctx.unstable_devServer = {
       rootDir: vite.config.root,
-      resolveClientEntryDev: (id: string) =>
+      resolveClientEntry: (id: string) =>
         resolveClientEntry(
           id,
           {
@@ -364,10 +358,8 @@ export const devServer: Middleware = (options) => {
           },
           initialModules,
         ),
-      loadServerFileRsc,
       loadServerModuleRsc,
       loadEntriesDev,
-      loadServerFileMain,
       loadServerModuleMain,
       transformIndexHtml,
       willBeHandledLater,

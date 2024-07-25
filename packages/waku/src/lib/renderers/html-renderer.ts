@@ -197,8 +197,7 @@ export const renderHtml = async (
     | {
         isDev: true;
         rootDir: string;
-        loadServerFile: (fileURL: string) => Promise<unknown>;
-        loadServerModule: (id: string) => Promise<unknown>;
+        loadServerModuleMain: (idOrFileURL: string) => Promise<unknown>;
       }
   ),
 ): Promise<ReadableStream | null> => {
@@ -214,7 +213,7 @@ export const renderHtml = async (
 
   const loadClientModule = <T>(key: keyof typeof CLIENT_MODULE_MAP) =>
     (isDev
-      ? opts.loadServerModule(CLIENT_MODULE_MAP[key])
+      ? opts.loadServerModuleMain(CLIENT_MODULE_MAP[key])
       : opts.loadModule(CLIENT_PREFIX + key)) as Promise<T>;
 
   const [
@@ -278,17 +277,11 @@ export const renderHtml = async (
                     fileWithAbsolutePath
                       .slice(wakuDist.length)
                       .replace(/\.\w+$/, '');
-                  (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(
-                    id,
-                    (id: string) => opts.loadServerModule(id),
-                  );
+                  (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(id);
                   return { id, chunks: [id], name };
                 }
                 const id = filePathToFileURL(file);
-                (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(
-                  id,
-                  (id: string) => opts.loadServerFile(id),
-                );
+                (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(id);
                 return { id, chunks: [id], name };
               }
               // !isDev
