@@ -305,6 +305,10 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
   const refetch = useRefetch();
 
   const [route, setRoute] = useState(() =>
+    // This is the first initialization of the route, and it has
+    // to ignore the hash, because on server side there is none.
+    // Otherwise there will be a hydration error.
+    // The client side rout will be updated in the effect below.
     parseRoute(new URL(window.location.href), true),
   );
 
