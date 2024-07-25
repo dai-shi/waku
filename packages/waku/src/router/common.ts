@@ -1,6 +1,7 @@
 export type RouteProps = {
   path: string;
   query: string;
+  hash: string;
 };
 
 export function getComponentIds(path: string): readonly string[] {

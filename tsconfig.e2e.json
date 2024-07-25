@@ -41,6 +41,9 @@
     },
     {
       "path": "./e2e/fixtures/ssr-catch-error/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/use-router/tsconfig.json"
     }
   ]
 }
