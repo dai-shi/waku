@@ -137,7 +137,7 @@ const createMainViteServer = (
     if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
       // HACK I don't know why this is necessary.
       // `external: ['waku']` doesn't somehow work?
-      return import(idOrFileURL);
+      return import(/* @vite-ignore */ idOrFileURL);
     }
     const vite = await vitePromise;
     return vite.ssrLoadModule(
