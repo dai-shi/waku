@@ -25,9 +25,9 @@ export function fsRouter(
           { join, dirname, extname, sep },
           { fileURLToPath },
         ] = await Promise.all([
-          import(DO_NOT_BUNDLE + 'node:fs/promises'),
-          import(DO_NOT_BUNDLE + 'node:path'),
-          import(DO_NOT_BUNDLE + 'node:url'),
+          import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:fs/promises'),
+          import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:path'),
+          import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:url'),
         ]);
         const pagesDir = join(dirname(fileURLToPath(importMetaUrl)), pages);
         files = await readdir(pagesDir, {

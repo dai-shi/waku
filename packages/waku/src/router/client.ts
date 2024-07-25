@@ -50,7 +50,7 @@ const normalizeRoutePath = (path: string) => {
 
 const parseRoute = (url: URL, ignore_hash: boolean = false): RouteProps => {
   if ((globalThis as any).__WAKU_ROUTER_404__) {
-    return { path: '/404', searchParams: new URLSearchParams(), hash: '' };
+    return { path: '/404', query: '', hash: '' };
   }
   const { pathname, searchParams } = url;
   if (searchParams.has(PARAM_KEY_SKIP)) {
@@ -58,7 +58,7 @@ const parseRoute = (url: URL, ignore_hash: boolean = false): RouteProps => {
   }
   return {
     path: normalizeRoutePath(pathname),
-    searchParams,
+    searchParams: searchParams.toString(),
     hash: ignore_hash ? '' : url.hash,
   };
 };
@@ -128,12 +128,6 @@ export function useRouter_UNSTABLE() {
     [prefetchRoute],
   );
   return {
-    get value() {
-      console.warn(
-        'router.value is deprecated. Use router.path and router.searchParams instead.',
-      );
-      return route;
-    },
     ...route,
     push,
     replace,
@@ -263,12 +257,7 @@ const getSkipList = (
     if (shouldCheck[0] && route.path !== prevProps.path) {
       return false;
     }
-    if (
-      shouldCheck[1]?.some(
-        (key) =>
-          route.searchParams.get(key) !== prevProps.searchParams.get(key),
-      )
-    ) {
+    if (shouldCheck[0] && route.query !== prevProps.query) {
       return false;
     }
     return true;
@@ -279,14 +268,7 @@ const equalRouteProps = (a: RouteProps, b: RouteProps) => {
   if (a.path !== b.path) {
     return false;
   }
-  if (a.searchParams.size !== b.searchParams.size) {
-    return false;
-  }
-  if (
-    Array.from(a.searchParams.entries()).some(
-      ([key, val]) => val !== b.searchParams.get(key),
-    )
-  ) {
+  if (a.query !== b.query) {
     return false;
   }
   return true;
@@ -373,7 +355,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
         refetch(
           input,
           new URLSearchParams([
-            ...Array.from(route.searchParams.entries()),
+            ...Array.from(new URLSearchParams(route.query).entries()),
             ...skip.map((id) => [PARAM_KEY_SKIP, id]),
           ]),
         );
@@ -407,7 +389,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       }
       const input = getInputString(route.path);
       const searchParamsString = new URLSearchParams([
-        ...Array.from(route.searchParams.entries()),
+        ...Array.from(new URLSearchParams(route.query).entries()),
         ...skip.map((id) => [PARAM_KEY_SKIP, id]),
       ]).toString();
       prefetchRSC(input, searchParamsString);
@@ -481,9 +463,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
 // Note: The router data must be a stable mutable object (array).
 type RouterData = [
   shouldSkip?: ShouldSkip,
-  locationListners?: Set<
-    (pathname: string, searchParamsString: string) => void
-  >,
+  locationListners?: Set<(path: string, query: string) => void>,
 ];
 
 const DEFAULT_ROUTER_DATA: RouterData = [];
@@ -491,7 +471,7 @@ const DEFAULT_ROUTER_DATA: RouterData = [];
 export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
   const route = parseRoute(new URL(window.location.href));
   const initialInput = getInputString(route.path);
-  const initialSearchParamsString = route.searchParams.toString();
+  const initialSearchParamsString = route.query;
   const unstable_onFetchData = (data: unknown) => {
     Promise.resolve(data)
       .then((data) => {

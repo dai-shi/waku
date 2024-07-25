@@ -14,7 +14,7 @@ export const devServer: Middleware = (options) => {
     return (_ctx, next) => next();
   }
   const devServerImplPromise = import(
-    DO_NOT_BUNDLE + './dev-server-impl.js'
+    /* @vite-ignore */ DO_NOT_BUNDLE + './dev-server-impl.js'
   ).then(({ devServer }) => devServer(options));
   return async (ctx, next) => {
     const devServerImpl = await devServerImplPromise;
