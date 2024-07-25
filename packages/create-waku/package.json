@@ -1,6 +1,6 @@
 {
   "name": "create-waku",
-  "version": "0.9.2-beta.2",
+  "version": "0.9.2-beta.3",
   "publishConfig": {
     "tag": "next"
   },
