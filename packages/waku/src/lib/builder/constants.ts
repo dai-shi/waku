@@ -5,3 +5,4 @@ export const DIST_SERVE_JS = 'serve.js';
 export const DIST_PUBLIC = 'public';
 export const DIST_ASSETS = 'assets';
 export const DIST_SSR = 'ssr';
+export const DOT_MIME = ':mime:';

@@ -61,6 +61,7 @@ import {
   DIST_PUBLIC,
   DIST_ASSETS,
   DIST_SSR,
+  DOT_MIME,
 } from './constants.js';
 
 // TODO this file and functions in it are too long. will fix.
@@ -593,7 +594,8 @@ const emitHtmlFiles = async (
             : pathname === '/404'
               ? '404.html' // HACK special treatment for 404, better way?
               : pathname + '/index.html',
-        );
+        ).replace(DOT_MIME, '.');
+
         // In partial mode, skip if the file already exists.
         if (existsSync(destHtmlFile)) {
           return;

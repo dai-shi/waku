@@ -11,6 +11,7 @@ import {
 } from '../lib/utils/path.js';
 import type { BuildConfig } from '../server.js';
 import type { PathSpec } from '../lib/utils/path.js';
+import { DOT_MIME } from '../lib/builder/constants.js';
 
 const hasPathSpecPrefix = (prefix: PathSpec, path: PathSpec) => {
   for (let i = 0; i < prefix.length; i++) {
@@ -175,7 +176,11 @@ export function createPages(
         page as {
           staticPaths: string[] | string[][];
         }
-      ).staticPaths.map((item) => (Array.isArray(item) ? item : [item]));
+      ).staticPaths.map((item) =>
+        Array.isArray(item)
+          ? item.map((i) => i.replace(/\./g, DOT_MIME))
+          : [item.replace(/\./g, DOT_MIME)],
+      );
       for (const staticPath of staticPaths) {
         if (staticPath.length !== numSlugs && numWildcards === 0) {
           throw new Error('staticPaths does not match with slug pattern');
