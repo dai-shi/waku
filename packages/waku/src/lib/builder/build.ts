@@ -61,7 +61,7 @@ import {
   DIST_PUBLIC,
   DIST_ASSETS,
   DIST_SSR,
-  DOT_MIME,
+  PERIOD_ESCAPE,
 } from './constants.js';
 
 // TODO this file and functions in it are too long. will fix.
@@ -595,7 +595,7 @@ const emitHtmlFiles = async (
           rootDir,
           config.distDir,
           DIST_PUBLIC,
-          fileName.replace(DOT_MIME, '.'),
+          fileName.replace(PERIOD_ESCAPE, '.'),
         );
 
         // In partial mode, skip if the file already exists.
