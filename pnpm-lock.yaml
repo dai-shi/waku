@@ -54,7 +54,7 @@ importers:
         specifier: ^4.6.2
         version: 4.6.2(eslint@8.57.0)
       prettier:
-        specifier: ^3.3.2
+        specifier: ^3.3.3
         version: 3.3.3
       prettier-plugin-tailwindcss:
         specifier: ^0.6.5
