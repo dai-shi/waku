@@ -585,16 +585,18 @@ const emitHtmlFiles = async (
           return;
         }
         pathname = pathSpec2pathname(pathSpec);
+        const fileName = extname(pathname)
+          ? pathname
+          : pathname === '/404'
+            ? '404.html' // HACK special treatment for 404, better way?
+            : pathname + '/index.html';
+
         const destHtmlFile = joinPath(
           rootDir,
           config.distDir,
           DIST_PUBLIC,
-          extname(pathname)
-            ? pathname
-            : pathname === '/404'
-              ? '404.html' // HACK special treatment for 404, better way?
-              : pathname + '/index.html',
-        ).replace(DOT_MIME, '.');
+          fileName.replace(DOT_MIME, '.'),
+        );
 
         // In partial mode, skip if the file already exists.
         if (existsSync(destHtmlFile)) {
