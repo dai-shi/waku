@@ -1,5 +1,7 @@
 // This file should not include Node specific code.
 
+import { PERIOD_ESCAPE } from '../builder/constants.js';
+
 export const encodeInput = (input: string) => {
   if (input === '') {
     return 'index.txt';
@@ -13,7 +15,7 @@ export const encodeInput = (input: string) => {
   if (input.endsWith('/')) {
     throw new Error('Input should not end with `/`');
   }
-  return input + '.txt';
+  return input.replace(PERIOD_ESCAPE, '.') + '.txt';
 };
 
 export const decodeInput = (encodedInput: string) => {
