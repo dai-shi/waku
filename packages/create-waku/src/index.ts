@@ -210,18 +210,10 @@ async function init() {
 
   process.chdir(targetDir);
 
-  const installProcess = spawn(packageManager, ['install']);
-
-  installProcess.stdout.setEncoding('utf8');
-  installProcess.stdout.on('data', (data) => {
-    console.log(data);
+  const installProcess = spawn(packageManager, ['install'], {
+    stdio: 'inherit'
   });
-
-  installProcess.stderr.setEncoding('utf8');
-  installProcess.stderr.on('data', (data) => {
-    console.log(data);
-  });
-
+ 
   installProcess.on('close', (code) => {
     // process exit code
     if (code !== 0) {
