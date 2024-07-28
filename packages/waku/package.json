@@ -1,7 +1,7 @@
 {
   "name": "waku",
   "description": "⛩️ The minimal React framework",
-  "version": "0.21.0-alpha.0",
+  "version": "0.21.0-beta.3",
   "publishConfig": {
     "tag": "next"
   },
@@ -32,10 +32,6 @@
     "./middleware/*": {
       "types": "./dist/middleware/*.d.ts",
       "default": "./dist/middleware/*.js"
-    },
-    "./node-loader": {
-      "types": "./dist/node-loader.d.ts",
-      "default": "./dist/node-loader.js"
     },
     "./internals": {
       "types": "./dist/internals.d.ts",
@@ -77,24 +73,24 @@
     "node": "^20.8.0 || ^18.17.0"
   },
   "dependencies": {
-    "@hono/node-server": "1.11.1",
-    "@swc/core": "1.5.7",
-    "@vitejs/plugin-react": "4.2.1",
+    "@hono/node-server": "1.12.0",
+    "@swc/core": "1.6.7",
+    "@vitejs/plugin-react": "4.3.1",
     "dotenv": "16.4.5",
-    "hono": "4.3.9",
+    "hono": "4.4.11",
     "rsc-html-stream": "0.0.3",
-    "vite": "5.2.11"
+    "vite": "5.3.3"
   },
   "devDependencies": {
-    "@netlify/functions": "^2.7.0",
-    "@swc/cli": "^0.3.12",
+    "@netlify/functions": "^2.8.0",
+    "@swc/cli": "^0.4.0",
     "rollup": "^4.18.0",
     "ts-expect": "^1.3.0",
     "vitest": "^1.6.0"
   },
   "peerDependencies": {
-    "react": "19.0.0-rc-915b914b3a-20240515",
-    "react-dom": "19.0.0-rc-915b914b3a-20240515",
-    "react-server-dom-webpack": "19.0.0-rc-915b914b3a-20240515"
+    "react": "19.0.0-rc-76002254-20240724",
+    "react-dom": "19.0.0-rc-76002254-20240724",
+    "react-server-dom-webpack": "19.0.0-rc-76002254-20240724"
   }
 }

@@ -17,6 +17,7 @@ type NavigationProps = {
 export const Navigation = ({ isHome }: NavigationProps) => {
   const [isMenuOpen, setIsMenuOpen] = useAtom(menuAtom);
   const hasScrolled = useAtomValue(scrolledAtom);
+  const setDestination = useSetAtom(destinationAtom);
 
   return (
     <nav
@@ -25,9 +26,9 @@ export const Navigation = ({ isHome }: NavigationProps) => {
           ? 'pointer-events-auto opacity-100'
           : 'pointer-events-none opacity-0',
         isHome && !hasScrolled
-          ? 'xl:pointer-events-none xl:opacity-0'
-          : 'xl:pointer-events-auto xl:opacity-100',
-        'fixed inset-0 z-90 flex-shrink-0 flex-col overflow-clip border-gray-800 bg-gray-950 transition-opacity duration-300 ease-in-out xl:pointer-events-auto xl:bottom-auto xl:left-12 xl:right-auto xl:top-12 xl:z-[9999] xl:h-[calc(100svh-6rem)] xl:rounded-xl xl:border',
+          ? 'xl:!pointer-events-none xl:!opacity-0'
+          : 'xl:!pointer-events-auto xl:!opacity-100',
+        'fixed inset-0 z-90 flex-shrink-0 flex-col overflow-clip border-gray-800 bg-gray-950 transition-opacity duration-300 ease-in-out xl:pointer-events-auto xl:bottom-auto xl:left-0 xl:right-auto xl:top-0 xl:z-[9999] xl:h-screen xl:border-r 2xl:left-12 2xl:top-12 2xl:h-[calc(100vh-6rem)] 2xl:rounded-xl 2xl:border',
       )}
     >
       <div className="relative z-10 flex h-full max-h-full w-full flex-shrink-0 flex-col items-center justify-start gap-8 !overflow-y-auto p-8 text-white md:p-8 xl:gap-12 xl:p-12">
@@ -45,7 +46,10 @@ export const Navigation = ({ isHome }: NavigationProps) => {
           ) : (
             <Link
               to="/"
-              onClick={() => setIsMenuOpen(false)}
+              onClick={() => {
+                setDestination('nudge');
+                setIsMenuOpen(false);
+              }}
               className={logoClassNames}
             >
               <Logo />

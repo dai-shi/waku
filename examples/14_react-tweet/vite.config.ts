@@ -8,9 +8,6 @@ export default ({ mode }: { mode: string }) => {
           'react-tweet > date-fns/format/index.js',
         ],
       },
-      ssr: {
-        noExternal: ['react-tweet'],
-      },
     };
   }
   return {};

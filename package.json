@@ -2,7 +2,7 @@
   "name": "waku-monorepo",
   "version": "0.1.0",
   "type": "module",
-  "packageManager": "pnpm@8.15.0",
+  "packageManager": "pnpm@9.4.0",
   "private": true,
   "scripts": {
     "dev": "pnpm -r --filter='./packages/*' run dev",
@@ -18,6 +18,7 @@
     "examples:dev:05_nossr": "NAME=05_nossr pnpm run examples:dev",
     "examples:dev:07_router": "NAME=07_router pnpm run examples:dev",
     "examples:dev:08_cookies": "NAME=08_cookies pnpm run examples:dev",
+    "examples:dev:09_api": "NAME=09_api pnpm run examples:dev",
     "examples:dev:10_fs-router": "NAME=10_fs-router pnpm run examples:dev",
     "examples:dev:11_form": "NAME=11_form pnpm run examples:dev",
     "examples:dev:12_css": "NAME=12_css pnpm run examples:dev",
@@ -37,6 +38,7 @@
     "examples:prd:05_nossr": "NAME=05_nossr pnpm run examples:prd",
     "examples:prd:07_router": "NAME=07_router pnpm run examples:prd",
     "examples:prd:08_cookies": "NAME=08_cookies pnpm run examples:prd",
+    "examples:prd:09_api": "NAME=09_api pnpm run examples:prd",
     "examples:prd:10_fs-router": "NAME=10_fs-router pnpm run examples:prd",
     "examples:prd:11_form": "NAME=11_form pnpm run examples:prd",
     "examples:prd:12_css": "NAME=12_css pnpm run examples:prd",
@@ -64,29 +66,29 @@
   },
   "devDependencies": {
     "@actions/core": "^1.10.1",
-    "@playwright/test": "^1.44.0",
+    "@playwright/test": "^1.45.1",
     "@types/babel__core": "^7.20.5",
-    "@types/node": "^20.12.12",
-    "@types/react": "18.3.2",
-    "@types/react-dom": "18.3.0",
-    "@typescript-eslint/eslint-plugin": "^7.10.0",
-    "@typescript-eslint/parser": "^7.10.0",
+    "@types/node": "^20.14.9",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^7.15.0",
+    "@typescript-eslint/parser": "^7.15.0",
     "eslint": "8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-react": "^7.34.1",
+    "eslint-plugin-react": "^7.34.3",
     "eslint-plugin-react-hooks": "^4.6.2",
-    "prettier": "^3.2.5",
-    "prettier-plugin-tailwindcss": "^0.5.14",
-    "terminate": "^2.6.1",
-    "typescript": "^5.4.5",
+    "prettier": "^3.3.2",
+    "prettier-plugin-tailwindcss": "^0.6.5",
+    "terminate": "^2.8.0",
+    "typescript": "^5.5.3",
     "wait-port": "^1.1.0",
     "waku": "workspace:*"
   },
   "pnpm": {
     "overrides": {
-      "vite": "5.2.11"
+      "vite": "5.3.3"
     }
   }
 }

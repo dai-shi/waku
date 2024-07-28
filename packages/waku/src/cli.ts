@@ -81,7 +81,7 @@ if (values.version) {
       await runBuild();
       break;
     case 'start':
-      await runStart({});
+      await runStart();
       break;
     default:
       if (cmd) {
@@ -96,6 +96,9 @@ async function runDev() {
   const config = await loadConfig();
   const app = new Hono();
   app.use('*', runner({ cmd: 'dev', config, env: process.env as any }));
+  // bypassing hono default notFound handler
+  // @ts-expect-error FIXME there might be a better way to handle this
+  app.use('*', (_c, _next) => {});
   const port = parseInt(values.port || '3000', 10);
   await startServer(app, port);
 }
@@ -125,7 +128,8 @@ async function runBuild() {
   });
 }
 
-async function runStart({ distDir = 'dist' }) {
+async function runStart() {
+  const { distDir = 'dist' } = await loadConfig();
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, DIST_ENTRIES_JS)).toString());
   const app = new Hono();

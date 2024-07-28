@@ -40,6 +40,7 @@ import {
   CLIENT_PREFIX,
   renderHtml,
 } from '../renderers/html-renderer.js';
+import { rscRsdwPlugin } from '../plugins/vite-plugin-rsc-rsdw.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
@@ -118,8 +119,8 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
     ssr: {
       target: 'webworker',
       resolve: {
-        conditions: ['react-server', 'workerd'],
-        externalConditions: ['react-server', 'workerd'],
+        conditions: ['react-server'],
+        externalConditions: ['react-server'],
       },
       noExternal: /^(?!node:)/,
     },
@@ -199,7 +200,8 @@ const buildServerBundle = async (
         clientEntryFiles,
         serverEntryFiles,
       }),
-      rscEnvPlugin({ config }),
+      rscRsdwPlugin(),
+      rscEnvPlugin({ isDev: false, config }),
       rscPrivatePlugin(config),
       rscManagedPlugin({
         ...config,
@@ -251,16 +253,16 @@ const buildServerBundle = async (
     ssr: isNodeCompatible
       ? {
           resolve: {
-            conditions: ['react-server', 'workerd'],
-            externalConditions: ['react-server', 'workerd'],
+            conditions: ['react-server'],
+            externalConditions: ['react-server'],
           },
           noExternal: /^(?!node:)/,
         }
       : {
           target: 'webworker',
           resolve: {
-            conditions: ['react-server', 'workerd', 'worker'],
-            externalConditions: ['react-server', 'workerd', 'worker'],
+            conditions: ['react-server', 'worker'],
+            externalConditions: ['react-server', 'worker'],
           },
           noExternal: /^(?!node:)/,
         },
@@ -310,11 +312,12 @@ const buildSsrBundle = async (
   await buildVite({
     base: config.basePath,
     plugins: [
+      rscRsdwPlugin(),
       rscIndexPlugin({
         ...config,
         cssAssets,
       }),
-      rscEnvPlugin({ config }),
+      rscEnvPlugin({ isDev: false, config }),
       rscPrivatePlugin(config),
       rscManagedPlugin({ ...config, addMainToInput: true }),
       rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
@@ -384,11 +387,12 @@ const buildClientBundle = async (
     base: config.basePath,
     plugins: [
       viteReact(),
+      rscRsdwPlugin(),
       rscIndexPlugin({
         ...config,
         cssAssets,
       }),
-      rscEnvPlugin({ config }),
+      rscEnvPlugin({ isDev: false, config }),
       rscPrivatePlugin(config),
       rscManagedPlugin({ ...config, addMainToInput: true }),
       rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),

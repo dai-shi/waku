@@ -4,6 +4,8 @@
 import { ClientCounter } from './ClientCounter.js';
 import { ServerPing } from './ServerPing/index.js';
 import { ServerBox } from './Box.js';
+import { ServerProvider } from './ServerAction/Server.js';
+import { ClientActionsConsumer } from './ServerAction/Client.js';
 
 const App = ({ name }: { name: string }) => {
   return (
@@ -12,6 +14,9 @@ const App = ({ name }: { name: string }) => {
       <p data-testid="app-name">{name}</p>
       <ClientCounter />
       <ServerPing />
+      <ServerProvider>
+        <ClientActionsConsumer />
+      </ServerProvider>
     </ServerBox>
   );
 };

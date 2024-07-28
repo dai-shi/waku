@@ -33,6 +33,7 @@ export type RenderRscArgs = {
   body?: ReadableStream | undefined;
   contentType?: string | undefined;
   moduleIdCallback?: ((id: string) => void) | undefined;
+  onError?: (err: unknown) => void;
 };
 
 type RenderRscOpts =
@@ -40,7 +41,7 @@ type RenderRscOpts =
   | {
       isDev: true;
       entries: EntriesDev;
-      loadServerFile: (fileURL: string) => Promise<unknown>;
+      loadServerModuleRsc: (idOrFileURL: string) => Promise<unknown>;
       resolveClientEntry: (id: string) => string;
     };
 
@@ -57,6 +58,7 @@ export async function renderRsc(
     context,
     body,
     moduleIdCallback,
+    onError,
   } = args;
   const { isDev, entries } = opts;
 
@@ -74,7 +76,7 @@ export async function renderRsc(
 
   const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
     (isDev
-      ? import(/* @vite-ignore */ SERVER_MODULE_MAP[key])
+      ? opts.loadServerModuleRsc(SERVER_MODULE_MAP[key])
       : loadModule(key)) as Promise<T>;
 
   const [
@@ -89,7 +91,7 @@ export async function renderRsc(
     ),
   ]);
 
-  const bundlerConfig = new Proxy(
+  const clientBundlerConfig = new Proxy(
     {},
     {
       get(_target, encodedId: string) {
@@ -97,6 +99,22 @@ export async function renderRsc(
         const id = resolveClientEntry(file, config);
         moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
+      },
+    },
+  );
+
+  const serverBundlerConfig = new Proxy(
+    {},
+    {
+      get(_target, encodedId: string) {
+        const [fileId, name] = encodedId.split('#') as [string, string];
+        const id = filePathToFileURL(fileId);
+        if (fileId.startsWith('@id/assets/')) {
+          const id = '.' + fileId.slice('@id'.length);
+          return { id, chunks: [id], name, async: true };
+        } else {
+          return { id, chunks: [id], name, async: true };
+        }
       },
     },
   );
@@ -125,7 +143,9 @@ export async function renderRsc(
       if (Object.keys(elements).some((key) => key.startsWith('_'))) {
         throw new Error('"_" prefix is reserved');
       }
-      return renderToReadableStream(elements, bundlerConfig);
+      return renderToReadableStream(elements, clientBundlerConfig, {
+        onError,
+      });
     });
   };
 
@@ -163,7 +183,10 @@ export async function renderRsc(
       }
       return renderToReadableStream(
         { ...elements, _value: actionValue },
-        bundlerConfig,
+        clientBundlerConfig,
+        {
+          onError,
+        },
       );
     });
   };
@@ -181,14 +204,14 @@ export async function renderRsc(
     ) {
       // XXX This doesn't support streaming unlike busboy
       const formData = parseFormData(bodyStr, contentType);
-      args = await decodeReply(formData);
+      args = await decodeReply(formData, serverBundlerConfig);
     } else if (bodyStr) {
-      args = await decodeReply(bodyStr);
+      args = await decodeReply(bodyStr, serverBundlerConfig);
     }
     const [fileId, name] = rsfId.split('#') as [string, string];
     let mod: any;
     if (isDev) {
-      mod = await opts.loadServerFile(filePathToFileURL(fileId));
+      mod = await opts.loadServerModuleRsc(filePathToFileURL(fileId));
     } else {
       if (!fileId.startsWith('@id/')) {
         throw new Error('Unexpected server entry in PRD');
@@ -266,6 +289,7 @@ type GetSsrConfigOpts =
   | {
       isDev: true;
       entries: EntriesDev;
+      loadServerModuleRsc: (id: string) => Promise<unknown>;
       resolveClientEntry: (id: string) => string;
     };
 
@@ -287,9 +311,15 @@ export async function getSsrConfig(
   } = entries as
     | (EntriesDev & { loadModule: never; buildConfig: never })
     | EntriesPrd;
-  const { renderToReadableStream } = await (isDev
-    ? import(/* @vite-ignore */ SERVER_MODULE_MAP['rsdw-server'])
-    : loadModule('rsdw-server').then((m: any) => m.default));
+
+  const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
+    (isDev
+      ? opts.loadServerModuleRsc(SERVER_MODULE_MAP[key])
+      : loadModule(key)) as Promise<T>;
+
+  const {
+    default: { renderToReadableStream },
+  } = await loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server');
 
   const ssrConfig = await getSsrConfig?.(pathname, {
     searchParams,

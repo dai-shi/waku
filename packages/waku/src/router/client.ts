@@ -4,6 +4,7 @@ import {
   Component,
   createContext,
   createElement,
+  startTransition,
   useCallback,
   useContext,
   useEffect,
@@ -49,13 +50,17 @@ const normalizeRoutePath = (path: string) => {
 
 const parseRoute = (url: URL): RouteProps => {
   if ((globalThis as any).__WAKU_ROUTER_404__) {
-    return { path: '/404', searchParams: new URLSearchParams() };
+    return { path: '/404', query: '', hash: '' };
   }
-  const { pathname, searchParams } = url;
+  const { pathname, searchParams, hash } = url;
   if (searchParams.has(PARAM_KEY_SKIP)) {
     console.warn(`The search param "${PARAM_KEY_SKIP}" is reserved`);
   }
-  return { path: normalizeRoutePath(pathname), searchParams };
+  return {
+    path: normalizeRoutePath(pathname),
+    query: searchParams.toString(),
+    hash,
+  };
 };
 
 type ChangeRoute = (
@@ -123,12 +128,6 @@ export function useRouter_UNSTABLE() {
     [prefetchRoute],
   );
   return {
-    get value() {
-      console.warn(
-        'router.value is deprecated. Use router.path and router.searchParams instead.',
-      );
-      return route;
-    },
     ...route,
     push,
     replace,
@@ -258,12 +257,7 @@ const getSkipList = (
     if (shouldCheck[0] && route.path !== prevProps.path) {
       return false;
     }
-    if (
-      shouldCheck[1]?.some(
-        (key) =>
-          route.searchParams.get(key) !== prevProps.searchParams.get(key),
-      )
-    ) {
+    if (shouldCheck[0] && route.query !== prevProps.query) {
       return false;
     }
     return true;
@@ -274,14 +268,7 @@ const equalRouteProps = (a: RouteProps, b: RouteProps) => {
   if (a.path !== b.path) {
     return false;
   }
-  if (a.searchParams.size !== b.searchParams.size) {
-    return false;
-  }
-  if (
-    Array.from(a.searchParams.entries()).some(
-      ([key, val]) => val !== b.searchParams.get(key),
-    )
-  ) {
+  if (a.query !== b.query) {
     return false;
   }
   return true;
@@ -317,9 +304,33 @@ const RouterSlot = ({
 const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
   const refetch = useRefetch();
 
-  const [route, setRoute] = useState(() =>
-    parseRoute(new URL(window.location.href)),
-  );
+  const initialRouteRef = useRef<RouteProps>();
+  if (!initialRouteRef.current) {
+    initialRouteRef.current = parseRoute(new URL(window.location.href));
+  }
+  const [route, setRoute] = useState(() => ({
+    // This is the first initialization of the route, and it has
+    // to ignore the hash, because on server side there is none.
+    // Otherwise there will be a hydration error.
+    // The client side route, including the hash, will be updated in the effect below.
+    ...initialRouteRef.current!,
+    hash: '',
+  }));
+  // Update the route post-load to include the current hash.
+  useEffect(() => {
+    const initialRoute = initialRouteRef.current!;
+    setRoute((prev) => {
+      if (
+        prev.path === initialRoute.path &&
+        prev.query === initialRoute.query &&
+        prev.hash === initialRoute.hash
+      ) {
+        return prev;
+      }
+      return initialRoute;
+    });
+  }, []);
+
   const componentIds = getComponentIds(route.path);
 
   const [cached, setCached] = useState<Record<string, RouteProps>>(() => {
@@ -333,7 +344,9 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
   const changeRoute: ChangeRoute = useCallback(
     (route, options) => {
       const { checkCache, skipRefetch } = options || {};
-      setRoute(route);
+      startTransition(() => {
+        setRoute(route);
+      });
       const componentIds = getComponentIds(route.path);
       if (
         checkCache &&
@@ -359,19 +372,21 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
         refetch(
           input,
           new URLSearchParams([
-            ...Array.from(route.searchParams.entries()),
+            ...Array.from(new URLSearchParams(route.query).entries()),
             ...skip.map((id) => [PARAM_KEY_SKIP, id]),
           ]),
         );
       }
-      setCached((prev) => ({
-        ...prev,
-        ...Object.fromEntries(
-          componentIds.flatMap((id) =>
-            skip.includes(id) ? [] : [[id, route]],
+      startTransition(() => {
+        setCached((prev) => ({
+          ...prev,
+          ...Object.fromEntries(
+            componentIds.flatMap((id) =>
+              skip.includes(id) ? [] : [[id, route]],
+            ),
           ),
-        ),
-      }));
+        }));
+      });
     },
     [refetch, routerData],
   );
@@ -391,7 +406,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       }
       const input = getInputString(route.path);
       const searchParamsString = new URLSearchParams([
-        ...Array.from(route.searchParams.entries()),
+        ...Array.from(new URLSearchParams(route.query).entries()),
         ...skip.map((id) => [PARAM_KEY_SKIP, id]),
       ]).toString();
       prefetchRSC(input, searchParamsString);
@@ -465,9 +480,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
 // Note: The router data must be a stable mutable object (array).
 type RouterData = [
   shouldSkip?: ShouldSkip,
-  locationListners?: Set<
-    (pathname: string, searchParamsString: string) => void
-  >,
+  locationListners?: Set<(path: string, query: string) => void>,
 ];
 
 const DEFAULT_ROUTER_DATA: RouterData = [];
@@ -475,7 +488,7 @@ const DEFAULT_ROUTER_DATA: RouterData = [];
 export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
   const route = parseRoute(new URL(window.location.href));
   const initialInput = getInputString(route.path);
-  const initialSearchParamsString = route.searchParams.toString();
+  const initialSearchParamsString = route.query;
   const unstable_onFetchData = (data: unknown) => {
     Promise.resolve(data)
       .then((data) => {
@@ -554,11 +567,9 @@ class ErrorBoundary extends Component<
     super(props);
     this.state = {};
   }
-
   static getDerivedStateFromError(error: unknown) {
     return { error };
   }
-
   render() {
     if ('error' in this.state) {
       if (

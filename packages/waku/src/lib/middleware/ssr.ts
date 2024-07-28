@@ -4,6 +4,7 @@ import { renderHtml } from '../renderers/html-renderer.js';
 import { hasStatusCode, encodeInput } from '../renderers/utils.js';
 import { getSsrConfig } from '../renderers/rsc-renderer.js';
 import type { Middleware } from './types.js';
+import { stringToStream } from '../utils/stream.js';
 
 export const ssr: Middleware = (options) => {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
@@ -19,7 +20,7 @@ export const ssr: Middleware = (options) => {
       : resolveConfig(options.config);
 
   return async (ctx, next) => {
-    const { devServer } = ctx;
+    const { unstable_devServer: devServer } = ctx;
     if (
       devServer &&
       (await devServer.willBeHandledLater(ctx.req.url.pathname))
@@ -31,6 +32,7 @@ export const ssr: Middleware = (options) => {
       configPromise,
       entriesPromise,
     ]);
+    const entriesDev = devServer && (await devServer.loadEntriesDev(config));
     try {
       const htmlHead = devServer
         ? config.htmlHead
@@ -57,18 +59,17 @@ export const ssr: Middleware = (options) => {
             ? {
                 isDev: true,
                 getSsrConfigForHtml: (pathname, searchParams) =>
-                  devServer.getSsrConfigWithWorker(
+                  getSsrConfig(
+                    { config, pathname, searchParams },
                     {
-                      config,
-                      pathname,
-                      searchParams,
-                    },
-                    {
-                      initialModules: devServer.initialModules,
+                      isDev: true,
+                      loadServerModuleRsc: devServer.loadServerModuleRsc,
+                      resolveClientEntry: devServer.resolveClientEntry,
+                      entries: entriesDev!,
                     },
                   ),
                 rootDir: devServer.rootDir,
-                loadServerFile: devServer.loadServerFile,
+                loadServerModuleMain: devServer.loadServerModuleMain,
               }
             : {
                 isDev: false,
@@ -94,6 +95,7 @@ export const ssr: Middleware = (options) => {
         }
       }
     } catch (err) {
+      ctx.res.body = stringToStream(`${err}`);
       if (hasStatusCode(err)) {
         ctx.res.status = err.statusCode;
       } else {

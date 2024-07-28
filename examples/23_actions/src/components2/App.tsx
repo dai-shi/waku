@@ -2,10 +2,7 @@ import { Balancer } from 'react-wrap-balancer';
 
 import Counter from './Counter';
 import { greet, getCounter, increment } from './funcs';
-
-type ServerFunction<T> = T extends (...args: infer A) => infer R
-  ? (...args: A) => Promise<R>
-  : never;
+import ButtonServer from './ButtonServer';
 
 const App = ({ name }: { name: string }) => {
   return (
@@ -14,11 +11,10 @@ const App = ({ name }: { name: string }) => {
       <h1>Hello {name}!!</h1>
       <h3>This is a server component.</h3>
       <p>Server counter: {getCounter()}</p>
-      <Counter
-        greet={greet}
-        increment={increment as unknown as ServerFunction<typeof increment>}
-      />
+      <Counter greet={greet} increment={increment} />
       <Balancer>My Awesome Title</Balancer>
+      <ButtonServer name="Button1" />
+      <ButtonServer name="Button2" />
     </div>
   );
 };
