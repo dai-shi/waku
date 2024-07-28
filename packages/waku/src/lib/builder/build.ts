@@ -61,7 +61,6 @@ import {
   DIST_PUBLIC,
   DIST_ASSETS,
   DIST_SSR,
-  PERIOD_ESCAPE,
 } from './constants.js';
 
 // TODO this file and functions in it are too long. will fix.
@@ -585,19 +584,16 @@ const emitHtmlFiles = async (
           return;
         }
         pathname = pathSpec2pathname(pathSpec);
-        const fileName = extname(pathname)
-          ? pathname
-          : pathname === '/404'
-            ? '404.html' // HACK special treatment for 404, better way?
-            : pathname + '/index.html';
-
         const destHtmlFile = joinPath(
           rootDir,
           config.distDir,
           DIST_PUBLIC,
-          fileName.replace(PERIOD_ESCAPE, '.'),
+          extname(pathname)
+            ? pathname
+            : pathname === '/404'
+              ? '404.html' // HACK special treatment for 404, better way?
+              : pathname + '/index.html',
         );
-
         // In partial mode, skip if the file already exists.
         if (existsSync(destHtmlFile)) {
           return;

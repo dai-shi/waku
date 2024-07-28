@@ -11,7 +11,6 @@ import {
 } from '../lib/utils/path.js';
 import type { BuildConfig } from '../server.js';
 import type { PathSpec } from '../lib/utils/path.js';
-import { PERIOD_ESCAPE } from '../lib/builder/constants.js';
 
 const hasPathSpecPrefix = (prefix: PathSpec, path: PathSpec) => {
   for (let i = 0; i < prefix.length; i++) {
@@ -178,8 +177,8 @@ export function createPages(
         }
       ).staticPaths.map((item) =>
         Array.isArray(item)
-          ? item.map((i) => i.replace(/\./g, PERIOD_ESCAPE))
-          : [item.replace(/\./g, PERIOD_ESCAPE)],
+          ? item.map((i) => i.replace(/\./g, ''))
+          : [item.replace(/\./g, '')],
       );
       for (const staticPath of staticPaths) {
         if (staticPath.length !== numSlugs && numWildcards === 0) {
