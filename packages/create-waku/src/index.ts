@@ -211,9 +211,9 @@ async function init() {
   process.chdir(targetDir);
 
   const installProcess = spawn(packageManager, ['install'], {
-    stdio: 'inherit'
+    stdio: 'inherit',
   });
- 
+
   installProcess.on('close', (code) => {
     // process exit code
     if (code !== 0) {
