@@ -175,11 +175,11 @@ export function createPages(
         page as {
           staticPaths: string[] | string[][];
         }
-      ).staticPaths.map((item) =>
-        Array.isArray(item)
-          ? item.map((i) => i.replace(/\./g, ''))
-          : [item.replace(/\./g, '')],
-      );
+      ).staticPaths
+        .map((item) => (Array.isArray(item) ? item : [item]))
+        .map((slug) =>
+          slug.map((i) => i.replace(/\./g, '').replace(/ /g, '-')),
+        );
       for (const staticPath of staticPaths) {
         if (staticPath.length !== numSlugs && numWildcards === 0) {
           throw new Error('staticPaths does not match with slug pattern');
