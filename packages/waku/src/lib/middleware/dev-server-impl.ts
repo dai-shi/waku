@@ -127,6 +127,7 @@ const createMainViteServer = (
         noExternal: ['react-server-dom-webpack'],
       },
       // FIXME Can we make 'mpa' and let fallback middleware handle DEV?
+      // It will remove `willBeHandled` hack.
       appType: 'spa',
       server: { middlewareMode: true },
     });
@@ -366,7 +367,11 @@ export const devServer: Middleware = (options) => {
       transformIndexHtml,
     };
 
-    if (!(await willBeHandled(ctx.req.url.pathname))) {
+    if (
+      !(await willBeHandled(ctx.req.url.pathname)) ||
+      // HACK this shouldn't depend on `rscPath`
+      ctx.req.url.pathname.startsWith(config.basePath + config.rscPath + '/')
+    ) {
       await next();
       if (ctx.res.body) {
         return;
