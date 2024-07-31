@@ -70,6 +70,8 @@ export default createPages(async ({ createPage }) => {
 
 Pages can also render a segment route (e.g., `/blog/[slug]`). The rendered React component automatically receives a prop named by the segment (e.g, `slug`) with the value of the rendered segment (e.g., `'introducing-waku'`). If statically prerendering a segment route at build time, a `staticPaths` array must also be provided.
 
+**Note:** Slugs will be sanitized to remove `.` and replace spaces with `-`.
+
 ```tsx
 // ./src/entries.tsx
 import { createPages } from 'waku';
