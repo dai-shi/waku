@@ -176,10 +176,7 @@ export function createPages(
           staticPaths: string[] | string[][];
         }
       ).staticPaths
-        .map((item) => (Array.isArray(item) ? item : [item]))
-        .map((slug) =>
-          slug.map((i) => i.replace(/\./g, '').replace(/ /g, '-')),
-        );
+        .map((item) => (Array.isArray(item) ? item : [item]).map((i) => i.replace(/\./g, '').replace(/ /g, '-'));
       for (const staticPath of staticPaths) {
         if (staticPath.length !== numSlugs && numWildcards === 0) {
           throw new Error('staticPaths does not match with slug pattern');
