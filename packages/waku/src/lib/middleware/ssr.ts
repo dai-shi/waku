@@ -21,17 +21,18 @@ export const ssr: Middleware = (options) => {
 
   return async (ctx, next) => {
     const { unstable_devServer: devServer } = ctx;
-    if (
-      devServer &&
-      (await devServer.willBeHandledLater(ctx.req.url.pathname))
-    ) {
-      await next();
-      return;
-    }
     const [{ middleware: _removed, ...config }, entries] = await Promise.all([
       configPromise,
       entriesPromise,
     ]);
+    if (
+      devServer &&
+      // HACK depending on `rscPath` is a bad idea
+      ctx.req.url.pathname.startsWith(config.basePath + config.rscPath + '/')
+    ) {
+      await next();
+      return;
+    }
     const entriesDev = devServer && (await devServer.loadEntriesDev(config));
     try {
       const htmlHead = devServer
