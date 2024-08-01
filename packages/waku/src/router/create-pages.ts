@@ -25,6 +25,9 @@ const hasPathSpecPrefix = (prefix: PathSpec, path: PathSpec) => {
   return true;
 };
 
+const sanitizeSlug = (slug: string) =>
+  slug.replace(/\./g, '').replace(/ /g, '-');
+
 // createPages API (a wrapper around unstable_defineRouter)
 
 // FIXME we should add unit tests for some functions and type utils.
@@ -175,7 +178,9 @@ export function createPages(
         page as {
           staticPaths: string[] | string[][];
         }
-      ).staticPaths.map((item) => (Array.isArray(item) ? item : [item]));
+      ).staticPaths.map((item) =>
+        (Array.isArray(item) ? item : [item]).map(sanitizeSlug),
+      );
       for (const staticPath of staticPaths) {
         if (staticPath.length !== numSlugs && numWildcards === 0) {
           throw new Error('staticPaths does not match with slug pattern');
