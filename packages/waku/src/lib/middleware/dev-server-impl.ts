@@ -368,9 +368,9 @@ export const devServer: Middleware = (options) => {
     };
 
     if (
-      !(await willBeHandled(ctx.req.url.pathname)) ||
-      // HACK this shouldn't depend on `rscPath`
-      ctx.req.url.pathname.startsWith(config.basePath + config.rscPath + '/')
+      // HACK depending on `rscPath` is a bad idea
+      ctx.req.url.pathname.startsWith(config.basePath + config.rscPath + '/') ||
+      !(await willBeHandled(ctx.req.url.pathname))
     ) {
       await next();
       if (ctx.res.body) {
