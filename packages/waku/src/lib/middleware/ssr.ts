@@ -25,6 +25,14 @@ export const ssr: Middleware = (options) => {
       configPromise,
       entriesPromise,
     ]);
+    if (
+      devServer &&
+      // HACK depending on `rscPath` is a bad idea
+      ctx.req.url.pathname.startsWith(config.basePath + config.rscPath + '/')
+    ) {
+      await next();
+      return;
+    }
     const entriesDev = devServer && (await devServer.loadEntriesDev(config));
     try {
       const htmlHead = devServer
