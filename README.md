@@ -829,6 +829,8 @@ Adding the `--with-vercel-static` flag to the build script will produce static s
 }
 ```
 
+Note: When rendering in static mode, please be sure to return `render: 'static'` from each of your page files' `getConfig()`.
+
 ### Netlify
 
 Waku projects can be deployed to Netlify with the [Netlify CLI](https://docs.netlify.com/cli/get-started/).
@@ -849,6 +851,8 @@ Adding the `--with-netlify-static` flag to the build script will produce static 
   }
 }
 ```
+
+Note: When rendering in static mode, please be sure to return `render: 'static'` from each of your page files' `getConfig()`.
 
 ### Cloudflare (experimental)
 
