@@ -52,6 +52,14 @@ type HasSlugInPath<T, K extends string> = T extends `/[${K}]/${infer _}`
       ? true
       : false;
 
+type HasWildcardInPath<T> = T extends `/[...${string}]/${string}`
+  ? true
+  : T extends `/${infer _}/${infer U}`
+    ? HasWildcardInPath<`/${U}`>
+    : T extends `/[...${string}]`
+      ? true
+      : false;
+
 export type PathWithSlug<T, K extends string> =
   IsValidPath<T> extends true
     ? HasSlugInPath<T, K> extends true
@@ -62,6 +70,17 @@ export type PathWithoutSlug<T> = T extends '/'
   ? T
   : IsValidPath<T> extends true
     ? HasSlugInPath<T, string> extends true
+      ? never
+      : T
+    : never;
+
+/**
+ * Path with static slugs allows slugs, but not wildcards.
+ */
+export type PathWithStaticSlugs<T extends string> = T extends `/`
+  ? T
+  : IsValidPath<T> extends true
+    ? HasWildcardInPath<T> extends true
       ? never
       : T
     : never;
@@ -85,7 +104,7 @@ export type CreatePage = <
       }
     | {
         render: 'static';
-        path: PathWithWildcard<Path, SlugKey, WildSlugKey>;
+        path: PathWithStaticSlugs<Path>;
         staticPaths: string[] | string[][];
         component: FunctionComponent<RouteProps & Record<SlugKey, string>>;
       }

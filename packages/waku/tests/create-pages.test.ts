@@ -57,11 +57,11 @@ describe('type tests', () => {
       createPage({ render: 'static', path: '/', component: 123 });
       // @ts-expect-error: missing static paths
       createPage({ render: 'static', path: '/[a]', component: () => 'Hello' });
-      // TODO: This fails at runtime, but not at type level.
-      // \@ts-expect-error: static paths do not match the slug pattern
+
       createPage({
         render: 'static',
-        path: '/test/[a]/[b]',
+        // @ts-expect-error: static paths do not match the slug pattern
+        path: '/test/[...a]',
         staticPaths: ['c'],
         component: () => 'Hello',
       });
@@ -70,6 +70,14 @@ describe('type tests', () => {
       createPage({
         render: 'static',
         path: '/test/[a]',
+        staticPaths: ['x', 'y', 'z'],
+        component: () => 'Hello',
+      });
+
+      // also good
+      createPage({
+        render: 'static',
+        path: '/test/[a]/[b]',
         staticPaths: ['x', 'y', 'z'],
         component: () => 'Hello',
       });
