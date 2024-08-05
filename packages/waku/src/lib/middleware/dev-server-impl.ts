@@ -368,6 +368,7 @@ export const devServer: Middleware = (options) => {
 
     if (
       // HACK depending on `rscPath` is a bad idea
+      // FIXME This hack should be removed as well as `willBeHandled`
       ctx.req.url.pathname.startsWith(config.basePath + config.rscPath + '/') ||
       !(await willBeHandled(ctx.req.url.pathname))
     ) {
