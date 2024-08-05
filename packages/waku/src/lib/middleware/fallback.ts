@@ -3,8 +3,15 @@ import type { Middleware } from './types.js';
 
 export const fallback: Middleware = (options) => {
   if (options.cmd === 'dev') {
-    // pass through in dev command
-    return (_ctx, next) => next();
+    return (ctx, next) => {
+      if (!ctx.res.body) {
+        ctx.req.url = new URL(
+          options.config.basePath + 'index.html',
+          ctx.req.url,
+        );
+      }
+      return next();
+    };
   }
 
   const entriesPromise = options.loadEntries();
