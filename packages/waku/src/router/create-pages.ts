@@ -115,7 +115,9 @@ type StaticSlugRoutePathsTuple<
     : never;
 
 export type StaticSlugRoutePaths<T extends string> =
-  StaticSlugRoutePathsTuple<T>[];
+  StaticSlugRoutePathsTuple<T> extends [string]
+    ? string[]
+    : StaticSlugRoutePathsTuple<T>[];
 
 export type PathWithoutSlug<T> = T extends '/'
   ? T
@@ -239,6 +241,9 @@ export function createPages(
     const numWildcards = pathSpec.filter(
       ({ type }) => type === 'wildcard',
     ).length;
+    if (page.render === 'static' && numWildcards > 0) {
+      throw new Error('wildcards are not allowed for static builds');
+    }
     if (page.render === 'static' && numSlugs === 0) {
       staticPathSet.add([page.path, pathSpec]);
       const id = joinPath(page.path, 'page').replace(/^\//, '');

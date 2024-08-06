@@ -74,11 +74,23 @@ describe('type tests', () => {
         component: () => 'Hello',
       });
 
-      // also good
+      // bad static paths
       createPage({
         render: 'static',
         path: '/test/[a]/[b]',
+        // @ts-expect-error: staticPaths should be an array of strings
         staticPaths: ['x', 'y', 'z'],
+        component: () => 'Hello',
+      });
+
+      // good static paths
+      createPage({
+        render: 'static',
+        path: '/test/[a]/[b]',
+        staticPaths: [
+          ['w', 'a'],
+          ['k', 'u'],
+        ],
         component: () => 'Hello',
       });
     });
@@ -523,50 +535,28 @@ describe('createPages', () => {
     expect(TestPage).toHaveBeenCalledWith({ a: 'w', b: 'x' }, undefined);
   });
 
-  it('creates a static page with wildcards', async () => {
+  // FIXME it should not be possible to create a static page with wildcards
+  it('fails to create a static page with wildcards', async () => {
     const TestPage = vi.fn();
+
     createPages(async ({ createPage }) => {
-      createPage({
-        render: 'static',
-        path: '/test/[...path]',
-        staticPaths: [['a', 'b']],
-        component: TestPage,
-      });
-    });
-    const { getPathConfig, getComponent } = injectedFunctions();
-    expect(await getPathConfig!()).toEqual([
       {
-        data: undefined,
-        isStatic: true,
-        noSsr: false,
-        path: [
-          {
-            name: 'test',
-            type: 'literal',
-          },
-          {
-            name: 'a',
-            type: 'literal',
-          },
-          {
-            name: 'b',
-            type: 'literal',
-          },
-        ],
-        pattern: '^/test/(.*)$',
-      },
-    ]);
-    const setShouldSkip = vi.fn();
-    const WrappedComponent = await getComponent('test/a/b/page', {
-      unstable_setShouldSkip: setShouldSkip,
-      unstable_buildConfig: undefined,
+        const res = createPage({
+          render: 'static',
+          // @ts-expect-error: wildcards are not allowed for static builds
+          path: '/hello/[...path]',
+          staticPaths: [['a', 'b']],
+          component: TestPage,
+        });
+        expect(res).toBeUndefined();
+      }
     });
-    assert(WrappedComponent);
-    expect(setShouldSkip).toHaveBeenCalledTimes(1);
-    expect(setShouldSkip).toHaveBeenCalledWith([]);
-    renderToString(createElement(WrappedComponent as any));
-    expect(TestPage).toHaveBeenCalledTimes(1);
-    expect(TestPage).toHaveBeenCalledWith({ path: ['a', 'b'] }, undefined);
+
+    const { getPathConfig } = injectedFunctions();
+
+    await expect(getPathConfig).rejects.toThrowError(
+      'wildcards are not allowed for static builds',
+    );
   });
 
   it('creates a dynamic page with wildcards', async () => {
@@ -615,6 +605,7 @@ describe('createPages', () => {
       createPage({
         render: 'static',
         path: '/test/[a]/[b]',
+        // @ts-expect-error: staticPaths should be an array of strings
         staticPaths: [['w']],
         component: () => null,
       });
