@@ -126,9 +126,7 @@ const createMainViteServer = (
         external: ['waku'],
         noExternal: ['react-server-dom-webpack'],
       },
-      // FIXME Can we make 'mpa' and let fallback middleware handle DEV?
-      // It will remove `willBeHandled` hack.
-      appType: 'spa',
+      appType: 'mpa',
       server: { middlewareMode: true },
     });
     const vite = await createViteServer(mergedViteConfig);
@@ -186,6 +184,7 @@ const createMainViteServer = (
     });
   };
 
+  // TODO We might be able to elminate this function
   const willBeHandled = async (pathname: string) => {
     const vite = await vitePromise;
     try {
@@ -369,6 +368,7 @@ export const devServer: Middleware = (options) => {
 
     if (
       // HACK depending on `rscPath` is a bad idea
+      // FIXME This hack should be removed as well as `willBeHandled`
       ctx.req.url.pathname.startsWith(config.basePath + config.rscPath + '/') ||
       !(await willBeHandled(ctx.req.url.pathname))
     ) {

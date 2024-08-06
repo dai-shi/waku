@@ -96,9 +96,14 @@ async function runDev() {
   const config = await loadConfig();
   const app = new Hono();
   app.use('*', runner({ cmd: 'dev', config, env: process.env as any }));
-  // bypassing hono default notFound handler
-  // @ts-expect-error FIXME there might be a better way to handle this
-  app.use('*', (_c, _next) => {});
+  app.notFound((c) => {
+    // FIXME can we avoid hardcoding the public path?
+    const file = path.join('public', '404.html');
+    if (existsSync(file)) {
+      return c.html(readFileSync(file, 'utf8'), 404);
+    }
+    return c.text('404 Not Found', 404);
+  });
   const port = parseInt(values.port || '3000', 10);
   await startServer(app, port);
 }
