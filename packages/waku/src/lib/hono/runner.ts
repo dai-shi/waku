@@ -42,7 +42,7 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
     const handlers = await handlersPromise;
     const run = async (index: number) => {
       if (index >= handlers.length) {
-        return next();
+        return;
       }
       let alreadyCalled = false;
       await handlers[index]!(ctx, async () => {
@@ -53,12 +53,13 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
       });
     };
     await run(0);
-    if (!c.finalized) {
+    if (ctx.res.body) {
       return c.body(
-        ctx.res.body || null,
+        ctx.res.body,
         (ctx.res.status as any) || 200,
         ctx.res.headers || {},
       );
     }
+    await next();
   };
 };

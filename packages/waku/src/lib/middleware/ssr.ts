@@ -2,7 +2,8 @@ import { resolveConfig } from '../config.js';
 import { getPathMapping } from '../utils/path.js';
 import { renderHtml } from '../renderers/html-renderer.js';
 import { hasStatusCode, encodeInput } from '../renderers/utils.js';
-import { getSsrConfig } from '../renderers/rsc-renderer.js';
+import { getSsrConfig, renderRsc } from '../renderers/rsc-renderer.js';
+import type { RenderRscArgs } from '../renderers/rsc-renderer.js';
 import type { Middleware } from './types.js';
 import { stringToStream } from '../utils/stream.js';
 
@@ -25,14 +26,6 @@ export const ssr: Middleware = (options) => {
       configPromise,
       entriesPromise,
     ]);
-    if (
-      devServer &&
-      // HACK depending on `rscPath` is a bad idea
-      ctx.req.url.pathname.startsWith(config.basePath + config.rscPath + '/')
-    ) {
-      await next();
-      return;
-    }
     const entriesDev = devServer && (await devServer.loadEntriesDev(config));
     try {
       const htmlHead = devServer
@@ -50,11 +43,24 @@ export const ssr: Middleware = (options) => {
             ctx.req.url.pathname =
               config.basePath + config.rscPath + '/' + encodeInput(input);
             ctx.req.url.search = searchParams.toString();
-            await next();
-            if (!ctx.res.body) {
-              throw new Error('No body');
-            }
-            return ctx.res.body;
+            const args: RenderRscArgs = {
+              config,
+              input,
+              searchParams: ctx.req.url.searchParams,
+              method: 'GET',
+              context: ctx.context,
+              body: ctx.req.body,
+              contentType: '',
+            };
+            const readable = await (devServer
+              ? renderRsc(args, {
+                  isDev: true,
+                  loadServerModuleRsc: devServer.loadServerModuleRsc,
+                  resolveClientEntry: devServer.resolveClientEntry,
+                  entries: await devServer.loadEntriesDev(config),
+                })
+              : renderRsc(args, { isDev: false, entries }));
+            return readable;
           },
           ...(devServer
             ? {
