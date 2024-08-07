@@ -116,12 +116,12 @@ async function runBuild() {
     env: process.env as any,
     partial: !!values['experimental-partial'],
     deploy:
-      (values['with-vercel'] ?? !!process.env.VERCEL
+      ((values['with-vercel'] ?? !!process.env.VERCEL)
         ? values['with-vercel-static']
           ? 'vercel-static'
           : 'vercel-serverless'
         : undefined) ||
-      (values['with-netlify'] ?? !!process.env.NETLIFY
+      ((values['with-netlify'] ?? !!process.env.NETLIFY)
         ? values['with-netlify-static']
           ? 'netlify-static'
           : 'netlify-functions'
