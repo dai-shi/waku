@@ -99,7 +99,7 @@ type _GetSlugs<
       : never
     : Result;
 
-export type GetSlugs<Route extends string> = _GetSlugs<Route>;
+type GetSlugs<Route extends string> = _GetSlugs<Route>;
 
 type StaticSlugRoutePathsTuple<
   T extends string,
@@ -111,7 +111,7 @@ type StaticSlugRoutePathsTuple<
     ? StaticSlugRoutePathsTuple<T, Rest, [...Result, string]>
     : never;
 
-export type StaticSlugRoutePaths<T extends string> =
+type StaticSlugRoutePaths<T extends string> =
   HasWildcardInPath<T> extends true
     ? string[] | string[][]
     : StaticSlugRoutePathsTuple<T> extends [string]
@@ -129,7 +129,7 @@ export type PathWithoutSlug<T> = T extends '/'
 /**
  * Path with static slugs allows slugs, but not wildcards.
  */
-export type PathWithStaticSlugs<T extends string> = T extends `/`
+type PathWithStaticSlugs<T extends string> = T extends `/`
   ? T
   : IsValidPath<T> extends true
     ? T
