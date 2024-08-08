@@ -4,12 +4,13 @@ import { Page } from '../components/page';
 import { Meta } from '../components/meta';
 import { components } from '../components/mdx';
 import { Start } from '../components/start';
+import { AllSponsors } from '../components/all-sponsors';
 import { Destination } from '../components/destination';
 import { loadReadme } from '../lib/load-readme';
 
 export default async function HomePage() {
   const file = loadReadme();
-  const source = `## Introduction${file.split('## Introduction')[1]}`;
+  const source = `## Introduction${file.split('## Introduction')[1]}## Sponsors\n\nThanks to all our wonderful sponsors.`;
   const mdx = await compileMDX({
     source,
     components,
@@ -34,6 +35,7 @@ export default async function HomePage() {
         className="relative z-10 mx-auto w-full max-w-[80ch] scroll-mt-16 lg:scroll-mt-32 xl:-right-[calc(296px/2)] 2xl:right-auto"
       >
         {content}
+        <AllSponsors />
       </div>
       <div className="relative z-10 mx-auto mb-8 mt-16 flex w-full max-w-[80ch] justify-center sm:mb-0 lg:mt-32 xl:-right-[calc(296px/2)] 2xl:right-auto">
         <a
