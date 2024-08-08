@@ -40,10 +40,7 @@ const sanitizeSlug = (slug: string) =>
  * type Case2 = Split<'a,b,c', ','>
  * ```
  */
-export type Split<
-  Str extends string,
-  Del extends string | number,
-> = string extends Str
+type Split<Str extends string, Del extends string | number> = string extends Str
   ? string[]
   : '' extends Str
     ? []
