@@ -30,6 +30,24 @@ const sanitizeSlug = (slug: string) =>
 
 // createPages API (a wrapper around unstable_defineRouter)
 
+/**
+ * Type version of `String.prototype.split()`. Splits the first string argument by the second string argument
+ * @example
+ * ```ts
+ * // ['a', 'b', 'c']
+ * type Case1 = Split<'abc', ''>
+ * // ['a', 'b', 'c']
+ * type Case2 = Split<'a,b,c', ','>
+ * ```
+ */
+type Split<Str extends string, Del extends string | number> = string extends Str
+  ? string[]
+  : '' extends Str
+    ? []
+    : Str extends `${infer T}${Del}${infer U}`
+      ? [T, ...Split<U, Del>]
+      : [Str];
+
 // FIXME we should add unit tests for some functions and type utils.
 
 type IsValidPathItem<T> = T extends `/${infer _}`
@@ -52,18 +70,69 @@ type HasSlugInPath<T, K extends string> = T extends `/[${K}]/${infer _}`
       ? true
       : false;
 
+type HasWildcardInPath<T> = T extends `/[...${string}]/${string}`
+  ? true
+  : T extends `/${infer _}/${infer U}`
+    ? HasWildcardInPath<`/${U}`>
+    : T extends `/[...${string}]`
+      ? true
+      : false;
+
 export type PathWithSlug<T, K extends string> =
   IsValidPath<T> extends true
     ? HasSlugInPath<T, K> extends true
       ? T
       : never
     : never;
+
+type _GetSlugs<
+  Route extends string,
+  SplitRoute extends string[] = Split<Route, '/'>,
+  Result extends string[] = [],
+> = SplitRoute extends []
+  ? Result
+  : SplitRoute extends [`${infer MaybeSlug}`, ...infer Rest]
+    ? Rest extends string[]
+      ? MaybeSlug extends `[${infer Slug}]`
+        ? _GetSlugs<Route, Rest, [...Result, Slug]>
+        : _GetSlugs<Route, Rest, Result>
+      : never
+    : Result;
+
+type GetSlugs<Route extends string> = _GetSlugs<Route>;
+
+type StaticSlugRoutePathsTuple<
+  T extends string,
+  Slugs extends unknown[] = GetSlugs<T>,
+  Result extends string[] = [],
+> = Slugs extends []
+  ? Result
+  : Slugs extends [infer _, ...infer Rest]
+    ? StaticSlugRoutePathsTuple<T, Rest, [...Result, string]>
+    : never;
+
+type StaticSlugRoutePaths<T extends string> =
+  HasWildcardInPath<T> extends true
+    ? string[] | string[][]
+    : StaticSlugRoutePathsTuple<T> extends [string]
+      ? string[]
+      : StaticSlugRoutePathsTuple<T>[];
+
 export type PathWithoutSlug<T> = T extends '/'
   ? T
   : IsValidPath<T> extends true
     ? HasSlugInPath<T, string> extends true
       ? never
       : T
+    : never;
+
+/**
+ * Path with static slugs allows slugs, but not wildcards.
+ */
+type PathWithStaticSlugs<T extends string> = T extends `/`
+  ? T
+  : IsValidPath<T> extends true
+    ? T
     : never;
 
 export type PathWithWildcard<
@@ -85,8 +154,8 @@ export type CreatePage = <
       }
     | {
         render: 'static';
-        path: PathWithWildcard<Path, SlugKey, WildSlugKey>;
-        staticPaths: string[] | string[][];
+        path: PathWithStaticSlugs<Path>;
+        staticPaths: StaticSlugRoutePaths<Path>;
         component: FunctionComponent<RouteProps & Record<SlugKey, string>>;
       }
     | {

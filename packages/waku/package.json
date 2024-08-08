@@ -64,6 +64,7 @@
   "scripts": {
     "dev": "swc src -d dist -w --strip-leading-paths",
     "test": "vitest run",
+    "test:watch": "vitest",
     "compile": "rm -rf dist *.tsbuildinfo && pnpm run compile:code && pnpm run compile:types && cp ../../README.md .",
     "compile:code": "swc src -d dist --strip-leading-paths",
     "compile:types": "tsc --project tsconfig.json"
