@@ -105,6 +105,21 @@ export const path2regexp = (path: PathSpec) => {
   return `^/${parts.join('/')}$`;
 };
 
+/**
+ * Helper function to get the path mapping from the path spec and the pathname.
+ *
+ * @param pathSpec
+ * @param pathname - route as a string
+ * @example
+ * getPathMapping(
+ *   [
+ *     { type: 'literal', name: 'foo' },
+ *     { type: 'group', name: 'a' },
+ *   ],
+ *   '/foo/bar',
+ * );
+ * // => { a: 'bar' }
+ */
 export const getPathMapping = (
   pathSpec: PathSpec,
   pathname: string,
