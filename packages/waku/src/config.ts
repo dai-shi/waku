@@ -57,8 +57,8 @@ export interface Config {
    * () => [
    *   import('waku/middleware/dev-server'),
    *   import('waku/middleware/headers'),
-   *   import('waku/middleware/ssr'),
    *   import('waku/middleware/rsc'),
+   *   import('waku/middleware/ssr'),
    * ]
    */
   middleware?: () => Promise<{ default: Middleware }>[];

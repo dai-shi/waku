@@ -9,3 +9,5 @@ dist
 .vscode
 *.tsbuildinfo
 .cache
+.nvmrc
+.node-version

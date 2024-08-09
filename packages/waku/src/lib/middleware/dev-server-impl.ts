@@ -126,6 +126,7 @@ const createMainViteServer = (
         external: ['waku'],
         noExternal: ['react-server-dom-webpack'],
       },
+      appType: 'mpa',
       server: { middlewareMode: true },
     });
     const vite = await createViteServer(mergedViteConfig);
@@ -183,7 +184,8 @@ const createMainViteServer = (
     });
   };
 
-  const willBeHandledLater = async (pathname: string) => {
+  // TODO We might be able to elminate this function
+  const willBeHandled = async (pathname: string) => {
     const vite = await vitePromise;
     try {
       const result = await vite.transformRequest(pathname);
@@ -197,7 +199,7 @@ const createMainViteServer = (
     vitePromise,
     loadServerModuleMain,
     transformIndexHtml,
-    willBeHandledLater,
+    willBeHandled,
   };
 };
 
@@ -315,7 +317,7 @@ export const devServer: Middleware = (options) => {
     vitePromise,
     loadServerModuleMain,
     transformIndexHtml,
-    willBeHandledLater,
+    willBeHandled,
   } = createMainViteServer(configPromise);
 
   const { loadServerModuleRsc, loadEntriesDev, resolveClientEntry } =
@@ -362,12 +364,18 @@ export const devServer: Middleware = (options) => {
       loadEntriesDev,
       loadServerModuleMain,
       transformIndexHtml,
-      willBeHandledLater,
     };
 
-    await next();
-    if (ctx.res.body) {
-      return;
+    if (
+      // HACK depending on `rscPath` is a bad idea
+      // FIXME This hack should be removed as well as `willBeHandled`
+      ctx.req.url.pathname.startsWith(config.basePath + config.rscPath + '/') ||
+      !(await willBeHandled(ctx.req.url.pathname))
+    ) {
+      await next();
+      if (ctx.res.body) {
+        return;
+      }
     }
 
     const viteUrl = ctx.req.url.toString().slice(ctx.req.url.origin.length);
