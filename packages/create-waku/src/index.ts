@@ -211,6 +211,7 @@ async function init() {
   // process.chdir(targetDir);
 
   const installProcess = spawn(packageManager, ['install'], {
+    cwd: targetDir,
     stdio: 'inherit',
   });
 
