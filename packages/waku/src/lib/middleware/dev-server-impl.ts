@@ -37,7 +37,7 @@ import type { ClonableModuleNode, Middleware } from './types.js';
 // For react-server-dom-webpack/server.edge
 (globalThis as any).AsyncLocalStorage = AsyncLocalStorage;
 
-const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
+const createStreamPair = (): [Writable, Promise<ReadableStream>] => {
   let controller: ReadableStreamDefaultController | undefined;
   const readable = new ReadableStream({
     start(c) {
@@ -47,8 +47,8 @@ const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
       controller = undefined;
     },
   });
-  let resolve: (value: ReadableStream | null) => void;
-  const promise = new Promise<ReadableStream | null>((r) => (resolve = r));
+  let resolve: (value: ReadableStream) => void;
+  const promise = new Promise<ReadableStream>((r) => (resolve = r));
   let hasData = false;
   const writable = new Writable({
     write(chunk, encoding, callback) {
@@ -68,7 +68,7 @@ const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
       if (controller) {
         controller.close();
         if (!hasData) {
-          resolve(null);
+          resolve(readable);
         }
       }
       callback();
@@ -407,7 +407,7 @@ export const devServer: Middleware = (options) => {
     };
     vite.middlewares(viteReq, viteRes);
     const body = await readablePromise;
-    if (body) {
+    if (ctx.res.status) {
       ctx.res.body = body;
     }
   };
