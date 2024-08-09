@@ -30,10 +30,10 @@ importers:
         specifier: ^18.3.0
         version: 18.3.0
       '@typescript-eslint/eslint-plugin':
-        specifier: 8.0.1
+        specifier: ^8.0.1
         version: 8.0.1(@typescript-eslint/parser@8.0.1(eslint@8.57.0)(typescript@5.5.4))(eslint@8.57.0)(typescript@5.5.4)
       '@typescript-eslint/parser':
-        specifier: 8.0.1
+        specifier: ^8.0.1
         version: 8.0.1(eslint@8.57.0)(typescript@5.5.4)
       eslint:
         specifier: 8.57.0
@@ -63,7 +63,7 @@ importers:
         specifier: ^2.8.0
         version: 2.8.0
       typescript:
-        specifier: 5.5.4
+        specifier: ^5.5.4
         version: 5.5.4
       wait-port:
         specifier: ^1.1.0
@@ -1052,7 +1052,7 @@ importers:
         specifier: ^3.4.7
         version: 3.4.7
       typescript:
-        specifier: 5.5.4
+        specifier: ^5.5.4
         version: 5.5.4
       vite:
         specifier: 5.3.5
@@ -4222,11 +4222,6 @@ packages:
         optional: true
       uglify-js:
         optional: true
-
-  terser@5.31.3:
-    resolution: {integrity: sha512-pAfYn3NIZLyZpa83ZKigvj6Rn9c/vd5KfYGX7cN1mnzqgDcxWvrU5ZtAfIKhEXz9nRecw4z3LXkjaq96/qZqAA==}
-    engines: {node: '>=10'}
-    hasBin: true
 
   terser@5.31.5:
     resolution: {integrity: sha512-YPmas0L0rE1UyLL/llTWA0SiDOqIcAQYLeUj7cJYzXHlRTAnMSg9pPe4VJ5PlKvTrPQsdVFuiRiwyeNlYgwh2Q==}
@@ -8272,7 +8267,7 @@ snapshots:
       jest-worker: 27.5.1
       schema-utils: 3.3.0
       serialize-javascript: 6.0.2
-      terser: 5.31.3
+      terser: 5.31.5
       webpack: 5.93.0(@swc/core@1.6.13(@swc/helpers@0.5.12))
     optionalDependencies:
       '@swc/core': 1.6.13(@swc/helpers@0.5.12)
@@ -8285,13 +8280,6 @@ snapshots:
       serialize-javascript: 6.0.2
       terser: 5.31.5
       webpack: 5.93.0
-
-  terser@5.31.3:
-    dependencies:
-      '@jridgewell/source-map': 0.3.6
-      acorn: 8.12.1
-      commander: 2.20.3
-      source-map-support: 0.5.21
 
   terser@5.31.5:
     dependencies:
