@@ -37,7 +37,7 @@ import type { ClonableModuleNode, Middleware } from './types.js';
 // For react-server-dom-webpack/server.edge
 (globalThis as any).AsyncLocalStorage = AsyncLocalStorage;
 
-const createStreamPair = (): [Writable, ReadableStream] => {
+const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
   let controller: ReadableStreamDefaultController | undefined;
   const readable = new ReadableStream({
     start(c) {
@@ -47,6 +47,9 @@ const createStreamPair = (): [Writable, ReadableStream] => {
       controller = undefined;
     },
   });
+  let resolve: (value: ReadableStream | null) => void;
+  const promise = new Promise<ReadableStream | null>((r) => (resolve = r));
+  let hasData = false;
   const writable = new Writable({
     write(chunk, encoding, callback) {
       if (encoding !== ('buffer' as any)) {
@@ -54,17 +57,24 @@ const createStreamPair = (): [Writable, ReadableStream] => {
       }
       if (controller) {
         controller.enqueue(chunk);
+        if (!hasData) {
+          hasData = true;
+          resolve(readable);
+        }
       }
       callback();
     },
     final(callback) {
       if (controller) {
         controller.close();
+        if (!hasData) {
+          resolve(null);
+        }
       }
       callback();
     },
   });
-  return [writable, readable];
+  return [writable, promise];
 };
 
 const hotUpdateCallbackSet = new Set<(payload: HotUpdatePayload) => void>();
@@ -373,7 +383,7 @@ export const devServer: Middleware = (options) => {
     viteReq.method = ctx.req.method;
     viteReq.url = viteUrl;
     viteReq.headers = ctx.req.headers;
-    const [writable, readable] = createStreamPair();
+    const [writable, readablePromise] = createStreamPair();
     const viteRes: any = writable;
     Object.defineProperty(viteRes, 'statusCode', {
       set(code) {
@@ -396,8 +406,9 @@ export const devServer: Middleware = (options) => {
       }
     };
     vite.middlewares(viteReq, viteRes);
-    if (ctx.res.status) {
-      ctx.res.body = readable;
+    const body = await readablePromise;
+    if (body) {
+      ctx.res.body = body;
     }
   };
 };
