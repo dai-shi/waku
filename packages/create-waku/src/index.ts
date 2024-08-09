@@ -16,7 +16,7 @@ import {
   parseExampleOption,
   downloadAndExtract,
 } from './helpers/example-option.js';
-import { spawn } from 'node:child_process';
+// import { spawn } from 'node:child_process';
 
 const userAgent = process.env.npm_config_user_agent || '';
 const packageManager = /pnpm/.test(userAgent)
@@ -205,31 +205,35 @@ async function init() {
 
   // 1. check packageManager
   // 2. and then install dependencies
+  console.log(`\nDone. Now run:\n`);
+  console.log(`${bold(green(`cd ${targetDir}`))}`);
+  console.log(`${bold(green(commands.install))}`);
+  console.log(`${bold(green(commands.dev))}`);
   console.log();
-  console.log(`Installing dependencies by running ${commands.install}...`);
+  // console.log(`Installing dependencies by running ${commands.install}...`);
 
   // process.chdir(targetDir);
 
-  const installProcess = spawn(packageManager, ['install'], {
-    cwd: targetDir,
-    stdio: 'inherit',
-  });
+  // const installProcess = spawn(packageManager, ['install'], {
+  //   cwd: targetDir,
+  //   stdio: 'inherit',
+  // });
 
-  installProcess.on('close', (code) => {
-    // process exit code
-    if (code !== 0) {
-      console.error(`Could not execute ${commands.install}. Please run`);
-      console.log(`${bold(green(`cd ${targetDir}`))}`);
-      console.log(`${bold(green(commands.install))}`);
-      console.log(`${bold(green(commands.dev))}`);
-      console.log();
-    } else {
-      console.log(`\nDone. Now run:\n`);
-      console.log(`${bold(green(`cd ${targetDir}`))}`);
-      console.log(`${bold(green(commands.dev))}`);
-      console.log();
-    }
-  });
+  // installProcess.on('close', (code) => {
+  //   // process exit code
+  //   if (code !== 0) {
+  //     console.error(`Could not execute ${commands.install}. Please run`);
+  //     console.log(`${bold(green(`cd ${targetDir}`))}`);
+  //     console.log(`${bold(green(commands.install))}`);
+  //     console.log(`${bold(green(commands.dev))}`);
+  //     console.log();
+  //   } else {
+  //     console.log(`\nDone. Now run:\n`);
+  //     console.log(`${bold(green(`cd ${targetDir}`))}`);
+  //     console.log(`${bold(green(commands.dev))}`);
+  //     console.log();
+  //   }
+  // });
 }
 
 init()
