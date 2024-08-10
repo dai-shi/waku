@@ -53,9 +53,9 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
       });
     };
     await run(0);
-    if (ctx.res.body) {
+    if (ctx.res.body || ctx.res.status) {
       return c.body(
-        ctx.res.body,
+        ctx.res.body || null,
         (ctx.res.status as any) || 200,
         ctx.res.headers || {},
       );
