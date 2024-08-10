@@ -212,7 +212,7 @@ async function init() {
   console.log();
   // console.log(`Installing dependencies by running ${commands.install}...`);
 
-  // process.chdir(targetDir);
+  process.chdir(targetDir);
 
   // const installProcess = spawn(packageManager, ['install'], {
   //   cwd: targetDir,
