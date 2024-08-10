@@ -16,7 +16,7 @@ import {
   parseExampleOption,
   downloadAndExtract,
 } from './helpers/example-option.js';
-// import { spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 
 const userAgent = process.env.npm_config_user_agent || '';
 const packageManager = /pnpm/.test(userAgent)
@@ -214,10 +214,9 @@ async function init() {
 
   process.chdir(targetDir);
 
-  // const installProcess = spawn(packageManager, ['install'], {
-  //   cwd: targetDir,
-  //   stdio: 'inherit',
-  // });
+  spawn(packageManager, ['install'], {
+    stdio: 'inherit',
+  });
 
   // installProcess.on('close', (code) => {
   //   // process exit code
