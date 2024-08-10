@@ -134,16 +134,18 @@ const createMainViteServer = (
   });
 
   const loadServerFileMain = async (fileURL: string) => {
+    console.log('loadServerFileMain', fileURL)
     const vite = await vitePromise;
     return vite.ssrLoadModule(fileURLToFilePath(fileURL));
   };
 
   const loadServerModuleMain = async (id: string) => {
-    if (id === 'waku' || id.startsWith('waku/')) {
-      // HACK I don't know why this is necessary.
-      // `external: ['waku']` doesn't somehow work?
-      return import(id);
-    }
+    console.log('loadServerModuleMain', id)
+    // if (id === 'waku' || id.startsWith('waku/')) {
+    //   // HACK I don't know why this is necessary.
+    //   // `external: ['waku']` doesn't somehow work?
+    //   return import(/* @vite-ignore */ id);
+    // }
     const vite = await vitePromise;
     return vite.ssrLoadModule(id);
   };
@@ -256,11 +258,13 @@ const createRscViteServer = (
   });
 
   const loadServerFileRsc = async (fileURL: string) => {
+    console.log('loadServerFileRsc', fileURL)
     const vite = await vitePromise;
     return vite.ssrLoadModule(fileURLToFilePath(fileURL));
   };
 
   const loadServerModuleRsc = async (id: string) => {
+    console.log('loadServerModuleRsc', id)
     const vite = await vitePromise;
     return vite.ssrLoadModule(id);
   };
@@ -268,6 +272,7 @@ const createRscViteServer = (
   const loadEntriesDev = async (config: { srcDir: string }) => {
     const vite = await vitePromise;
     const filePath = joinPath(vite.config.root, config.srcDir, SRC_ENTRIES);
+    console.log('loadEntriesDev')
     return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
   };
 
@@ -336,21 +341,39 @@ export const devServer: Middleware = (options) => {
     ]);
 
     if (!initialModules) {
-      // pre-process the mainJs file to see which modules are being sent to the browser by vite
-      // and using the same modules if possible in the bundlerConfig in the stream
-      const mainJs = `${config.basePath}${config.srcDir}/${SRC_MAIN}`;
-      await vite.transformRequest(mainJs);
-      const resolved = await vite.pluginContainer.resolveId(mainJs);
-      const resolvedModule = vite.moduleGraph.idToModuleMap.get(resolved!.id)!;
-      await Promise.all(
-        [...resolvedModule.importedModules].map(({ id }) =>
-          id ? vite.warmupRequest(id) : null,
-        ),
-      );
+      const processedModules = new Set<string>();
 
-      initialModules = Array.from(vite.moduleGraph.idToModuleMap.values()).map(
-        (m) => ({ url: m.url, file: m.file! }),
-      );
+      const processModule = async (modulePath: string) => {
+        if (processedModules.has(modulePath)) return;
+        processedModules.add(modulePath);
+
+        console.log('Processing module:', modulePath);
+        await vite.transformRequest(modulePath);
+        const resolved = await vite.pluginContainer.resolveId(modulePath);
+        if (!resolved) return;
+
+        const module = vite.moduleGraph.idToModuleMap.get(resolved.id);
+        if (!module) return;
+
+        await Promise.all(
+          Array.from(module.importedModules).map(async (importedModule) => {
+            if (importedModule.id) {
+              await vite.warmupRequest(importedModule.id);
+              await processModule(importedModule.id);
+            }
+          })
+        );
+      };
+
+      const mainJs = `${config.basePath}${config.srcDir}/${SRC_MAIN}`;
+      const entriesFile = `${vite.config.root}${config.basePath}${config.srcDir}/${SRC_ENTRIES}`;
+
+      await processModule(mainJs);
+      await processModule(entriesFile);
+
+      initialModules = Array.from(vite.moduleGraph.idToModuleMap.values())
+        .filter((m) => m.file)
+        .map((m) => ({ url: m.url, file: m.file! }));
     }
 
     ctx.unstable_devServer = {
