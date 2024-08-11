@@ -53,25 +53,32 @@ Promise.resolve(new Response(new ReadableStream({
   .map((line) => line.trim())
   .join('');
 
+const CLOSING_HEAD = '</head>';
+const CLOSING_BODY = '</body>';
+
 const injectHtmlHead = (
   urlForFakeFetch: string,
   htmlHead: string,
   mainJsPath: string, // for DEV only, pass `''` for PRD
 ) => {
-  const modifyHead = (data: string) => {
-    const matchPrefetched = data.match(
+  const modifyHeadAndBody = (data: string) => {
+    const closingHeadIndex = data.indexOf(CLOSING_HEAD);
+    let [head, body] =
+      closingHeadIndex === -1
+        ? ['<head>' + CLOSING_HEAD, data]
+        : [
+            data.slice(0, closingHeadIndex + CLOSING_HEAD.length),
+            data.slice(closingHeadIndex + CLOSING_HEAD.length),
+          ];
+    const matchPrefetched = head.match(
       // HACK This is very brittle
       /(.*<script[^>]*>\nglobalThis\.__WAKU_PREFETCHED__ = {\n)(.*?)(\n};.*)/s,
     );
     if (matchPrefetched) {
-      data =
+      head =
         matchPrefetched[1] +
         `  '${urlForFakeFetch}': ${fakeFetchCode},` +
         matchPrefetched[3];
-    }
-    const closingHeadIndex = data.indexOf('</head>');
-    if (closingHeadIndex === -1) {
-      throw new Error('closing head not found');
     }
     let code = '';
     if (!matchPrefetched) {
@@ -81,15 +88,33 @@ globalThis.__WAKU_PREFETCHED__ = {
 };
 `;
     }
-    data =
-      data.slice(0, closingHeadIndex) +
+    head =
+      head.slice(0, -CLOSING_HEAD.length) +
       (code ? `<script type="module" async>${code}</script>` : '') +
       DEFAULT_HTML_HEAD +
       htmlHead +
-      data
-        .slice(closingHeadIndex)
-        .replace(/^<\/head><body/, '</head><body data-hydrate="true"');
-    return data;
+      CLOSING_HEAD;
+    const replacedBody = body.replace(
+      /<body([^>])*>/,
+      '<body data-hydrate="true"$1>',
+    );
+    if (replacedBody === body) {
+      body = '<body data-hydrate="true">' + body;
+    } else {
+      body = replacedBody;
+    }
+    if (mainJsPath) {
+      const closingBodyIndex = body.indexOf(CLOSING_BODY);
+      const [firstPart, secondPart] =
+        closingBodyIndex === -1
+          ? [body, '']
+          : [body.slice(0, closingBodyIndex), body.slice(closingBodyIndex)];
+      body =
+        firstPart +
+        `<script src="${mainJsPath}" async type="module"></script>` +
+        secondPart;
+    }
+    return head + body;
   };
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
@@ -102,25 +127,22 @@ globalThis.__WAKU_PREFETCHED__ = {
       }
       data += decoder.decode(chunk);
       if (!headSent) {
-        if (!/<\/head><body[^>]*>/.test(data)) {
+        if (!/<body[^>]*>/.test(data)) {
           return;
         }
         headSent = true;
-        data = modifyHead(data);
-        if (mainJsPath) {
-          const closingBodyIndex = data.indexOf('</body>');
-          const [firstPart, secondPart] =
-            closingBodyIndex === -1
-              ? [data, '']
-              : [data.slice(0, closingBodyIndex), data.slice(closingBodyIndex)];
-          data =
-            firstPart +
-            `<script src="${mainJsPath}" async type="module"></script>` +
-            secondPart;
-        }
+        data = modifyHeadAndBody(data);
       }
       controller.enqueue(encoder.encode(data));
       data = '';
+    },
+    flush(controller) {
+      if (!headSent) {
+        headSent = true;
+        data = modifyHeadAndBody(data);
+        controller.enqueue(encoder.encode(data));
+        data = '';
+      }
     },
   });
 };
