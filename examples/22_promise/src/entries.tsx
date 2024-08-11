@@ -24,9 +24,14 @@ export default defineEntries(
         return {
           input: '',
           html: (
-            <Slot id="App">
-              <h3>A client element</h3>
-            </Slot>
+            <html>
+              <head></head>
+              <body>
+                <Slot id="App">
+                  <h3>A client element</h3>
+                </Slot>
+              </body>
+            </html>
           ),
         };
       default:

@@ -6,7 +6,14 @@ export default async function RootLayout({
 }: {
   children: ReactNode;
 }) {
-  return <ClientLayout>{children}</ClientLayout>;
+  return (
+    <html>
+      <head></head>
+      <body>
+        <ClientLayout>{children}</ClientLayout>
+      </body>
+    </html>
+  );
 }
 
 export const getConfig = async () => {

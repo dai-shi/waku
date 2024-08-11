@@ -80,7 +80,9 @@ const injectHtmlHead = (
         `  '${urlForFakeFetch}': ${fakeFetchCode},` +
         matchPrefetched[3];
     }
-    let code = '';
+    let code = `
+globalThis.__WAKU_HYDRATE__ = true;
+`;
     if (!matchPrefetched) {
       code += `
 globalThis.__WAKU_PREFETCHED__ = {
@@ -94,15 +96,6 @@ globalThis.__WAKU_PREFETCHED__ = {
       DEFAULT_HTML_HEAD +
       htmlHead +
       CLOSING_HEAD;
-    const replacedBody = body.replace(
-      /<body([^>])*>/,
-      '<body data-hydrate="true"$1>',
-    );
-    if (replacedBody === body) {
-      body = '<body data-hydrate="true">' + body;
-    } else {
-      body = replacedBody;
-    }
     if (mainJsPath) {
       const closingBodyIndex = body.indexOf(CLOSING_BODY);
       const [firstPart, secondPart] =

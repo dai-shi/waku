@@ -37,7 +37,14 @@ export default defineEntries(
       case '/':
         return {
           input: '',
-          html: <Slot id="App" />,
+          html: (
+            <html>
+              <head></head>
+              <body>
+                <Slot id="App" />
+              </body>
+            </html>
+          ),
         };
       default:
         return null;
