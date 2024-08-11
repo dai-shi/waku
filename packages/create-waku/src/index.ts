@@ -210,12 +210,13 @@ async function init() {
   console.log(`${bold(green(commands.install))}`);
   console.log(`${bold(green(commands.dev))}`);
   console.log();
-  // console.log(`Installing dependencies by running ${commands.install}...`);
+  console.log(`Installing dependencies by running ${commands.install}...`);
 
   process.chdir(targetDir);
 
   spawn(packageManager, ['install'], {
     stdio: 'inherit',
+    shell: process.platform === 'win32',
   });
 
   // installProcess.on('close', (code) => {
