@@ -1,6 +1,5 @@
 import type {
   default as ReactType,
-  createElement as createElementType,
   ReactNode,
   FunctionComponent,
   ComponentProps,
@@ -24,6 +23,7 @@ import { encodeInput, hasStatusCode } from './utils.js';
 // HACK depending on these constants is not ideal
 import { SRC_MAIN } from '../plugins/vite-plugin-rsc-managed.js';
 import { DIST_SSR } from '../builder/constants.js';
+import { DEFAULT_HTML_HEAD } from '../plugins/vite-plugin-rsc-index.js';
 
 export const CLIENT_MODULE_MAP = {
   react: 'react',
@@ -53,8 +53,9 @@ Promise.resolve(new Response(new ReadableStream({
   .map((line) => line.trim())
   .join('');
 
-const injectScript = (
+const injectHtmlHead = (
   urlForFakeFetch: string,
+  htmlHead: string,
   mainJsPath: string, // for DEV only, pass `''` for PRD
 ) => {
   const modifyHead = (data: string) => {
@@ -80,12 +81,14 @@ globalThis.__WAKU_PREFETCHED__ = {
 };
 `;
     }
-    if (code) {
-      data =
-        data.slice(0, closingHeadIndex) +
-        `<script type="module" async>${code}</script>` +
-        data.slice(closingHeadIndex);
-    }
+    data =
+      data.slice(0, closingHeadIndex) +
+      (code ? `<script type="module" async>${code}</script>` : '') +
+      DEFAULT_HTML_HEAD +
+      htmlHead +
+      data
+        .slice(closingHeadIndex)
+        .replace(/^<\/head><body/, '</head><body data-hydrate="true"');
     return data;
   };
   const encoder = new TextEncoder();
@@ -149,31 +152,6 @@ const rectifyHtml = () => {
   });
 };
 
-const parseHtmlAttrs = (attrs: string): Record<string, string> => {
-  // HACK this is very brittle
-  const result: Record<string, string> = {};
-  const kebab2camel = (s: string) =>
-    s.replace(/-./g, (m) => m[1]!.toUpperCase());
-  const matches = attrs.matchAll(/(?<=^|\s)([^\s=]+)="([^"]+)"(?=\s|$)/g);
-  for (const match of matches) {
-    result[kebab2camel(match[1]!)] = match[2]!;
-  }
-  return result;
-};
-
-const buildHtml = (
-  createElement: typeof createElementType,
-  attrs: string,
-  head: string,
-  body: ReactNode,
-) =>
-  createElement(
-    'html',
-    attrs ? parseHtmlAttrs(attrs) : null,
-    createElement('head', { dangerouslySetInnerHTML: { __html: head } }),
-    createElement('body', { 'data-hydrate': true }, body),
-  );
-
 export const renderHtml = async (
   opts: {
     config: Omit<ResolvedConfig, 'middleware'>;
@@ -190,7 +168,7 @@ export const renderHtml = async (
     ) => Promise<{
       input: string;
       searchParams?: URLSearchParams;
-      body: ReadableStream;
+      html: ReadableStream;
     } | null>;
   } & (
     | { isDev: false; loadModule: EntriesPrd['loadModule'] }
@@ -303,22 +281,17 @@ export const renderHtml = async (
       ssrManifest: { moduleMap, moduleLoading: null },
     },
   );
-  const body: Promise<ReactNode> = createFromReadableStream(ssrConfig.body, {
+  const html: Promise<ReactNode> = createFromReadableStream(ssrConfig.html, {
     ssrManifest: { moduleMap, moduleLoading: null },
   });
   const readable = (
     await renderToReadableStream(
-      buildHtml(
-        createElement,
-        config.htmlAttrs,
-        htmlHead,
-        createElement(
-          ServerRoot as FunctionComponent<
-            Omit<ComponentProps<typeof ServerRoot>, 'children'>
-          >,
-          { elements },
-          body as any,
-        ),
+      createElement(
+        ServerRoot as FunctionComponent<
+          Omit<ComponentProps<typeof ServerRoot>, 'children'>
+        >,
+        { elements },
+        html as any,
       ),
       {
         onError(err: unknown) {
@@ -329,8 +302,9 @@ export const renderHtml = async (
   )
     .pipeThrough(rectifyHtml())
     .pipeThrough(
-      injectScript(
+      injectHtmlHead(
         config.basePath + config.rscPath + '/' + encodeInput(ssrConfig.input),
+        htmlHead,
         isDev ? `${config.basePath}${config.srcDir}/${SRC_MAIN}` : '',
       ),
     )

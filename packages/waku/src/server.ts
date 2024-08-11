@@ -41,7 +41,7 @@ export type GetSsrConfig = (
 ) => Promise<{
   input: string;
   searchParams?: URLSearchParams;
-  body: ReactNode;
+  html: ReactNode;
 } | null>;
 
 export function defineEntries(
