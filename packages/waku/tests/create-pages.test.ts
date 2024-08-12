@@ -4,9 +4,14 @@ import { createPages } from '../src/router/create-pages.js';
 import type {
   CreateLayout,
   CreatePage,
+  GetSlugs,
+  HasSlugInPath,
+  HasWildcardInPath,
+  IsValidPathInSlugPath,
   PathWithoutSlug,
   PathWithSlug,
   PathWithWildcard,
+  StaticSlugRoutePathsTuple,
 } from '../src/router/create-pages.js';
 import { unstable_defineRouter } from '../src/router/define-router.js';
 import { createElement } from 'react';
@@ -42,6 +47,51 @@ describe('type tests', () => {
       '/test/[a]/[...path]',
     );
   });
+  it('HasSlugInPath', () => {
+    expectType<HasSlugInPath<'/test/[a]/[b]', 'a'>>(true);
+    expectType<HasSlugInPath<'/test/[a]/[b]', 'b'>>(true);
+    expectType<HasSlugInPath<'/test/[a]/[b]', 'c'>>(false);
+    expectType<HasSlugInPath<'/test/[a]/[b]', 'd'>>(false);
+  });
+  it('IsValidPathInSlugPath', () => {
+    expectType<IsValidPathInSlugPath<'/test/[a]/[b]'>>(true);
+    expectType<IsValidPathInSlugPath<'/test/[a]/[b]'>>(true);
+    expectType<IsValidPathInSlugPath<'/test'>>(true);
+
+    expectType<IsValidPathInSlugPath<'foobar'>>(false);
+    expectType<IsValidPathInSlugPath<'/'>>(false);
+  });
+  it('HasWildcardInPath', () => {
+    expectType<HasWildcardInPath<'/test/[...path]'>>(true);
+    expectType<HasWildcardInPath<'/test/[a]/[...path]'>>(true);
+    expectType<HasWildcardInPath<'/test/[a]/[b]/[...path]'>>(true);
+
+    expectType<HasWildcardInPath<'/test/[a]/[b]'>>(false);
+    expectType<HasWildcardInPath<'/test'>>(false);
+    expectType<HasWildcardInPath<'/'>>(false);
+  });
+  it('GetSlugs', () => {
+    expectType<GetSlugs<'/test/[a]/[b]'>>(['a', 'b']);
+    expectType<GetSlugs<'/test/[a]/[b]'>>(['a', 'b']);
+    expectType<GetSlugs<'/test/[a]/[b]/[c]'>>(['a', 'b', 'c']);
+    expectType<GetSlugs<'/test/[a]/[b]/[c]/[d]'>>(['a', 'b', 'c', 'd']);
+  });
+  it('StaticSlugRoutePathsTuple', () => {
+    expectType<StaticSlugRoutePathsTuple<'/test/[a]/[b]'>>(['a', 'b']);
+    expectType<StaticSlugRoutePathsTuple<'/test/[a]/[b]/[c]'>>([
+      'foo',
+      'bar',
+      'buzz',
+    ]);
+    // @ts-expect-error: Too many slugs
+    expectType<StaticSlugRoutePathsTuple<'/test/[a]/[b]/[c]'>>([
+      'foo',
+      'bar',
+      'buzz',
+      'baz',
+    ]);
+  });
+
   describe('CreatePage', () => {
     it('static', () => {
       const createPage: CreatePage = vi.fn();
@@ -71,6 +121,21 @@ describe('type tests', () => {
         render: 'static',
         path: '/test/[a]',
         staticPaths: ['x', 'y', 'z'],
+        component: () => 'Hello',
+      });
+      createPage({
+        render: 'static',
+        path: '/test/[a]/[b]',
+        staticPaths: [
+          ['a', 'b'],
+          ['c', 'd'],
+        ],
+        component: () => 'Hello',
+      });
+      createPage({
+        render: 'static',
+        path: '/test/[...wild]',
+        staticPaths: ['c', 'd', 'e'],
         component: () => 'Hello',
       });
     });
