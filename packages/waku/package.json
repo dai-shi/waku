@@ -58,7 +58,6 @@
     "waku": "./cli.js"
   },
   "files": [
-    "src",
     "dist"
   ],
   "scripts": {
