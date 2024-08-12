@@ -8,14 +8,6 @@ type DeepRequired<T> = T extends (...args: any[]) => any
 
 export type ResolvedConfig = DeepRequired<Config>;
 
-const DEFAULT_HTML_HEAD = `
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-`.trim();
-const ADDITIONAL_HTML_HEAD = `
-<meta name="generator" content="Waku" />
-`.trim();
-
 const DEFAULT_MIDDLEWARE = () => [
   import('waku/middleware/dev-server'),
   import('waku/middleware/headers'),
@@ -32,14 +24,9 @@ export async function resolveConfig(config: Config) {
     preserveModuleDirs: ['pages', 'templates', 'routes', 'components'],
     privateDir: 'private',
     rscPath: 'RSC',
-    htmlAttrs: '',
-    htmlHead: DEFAULT_HTML_HEAD,
     middleware: DEFAULT_MIDDLEWARE,
     ...config,
   };
-  if (!resolvedConfig.htmlHead.includes(ADDITIONAL_HTML_HEAD)) {
-    resolvedConfig.htmlHead += ADDITIONAL_HTML_HEAD;
-  }
   return resolvedConfig;
 }
 

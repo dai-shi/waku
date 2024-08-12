@@ -215,7 +215,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
     }
     const componentIds = getComponentIds(pathname);
     const input = getInputString(pathname);
-    const body = createElement(
+    const html = createElement(
       ServerRouter as FunctionComponent<
         Omit<ComponentProps<typeof ServerRouter>, 'children'>
       >,
@@ -225,7 +225,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         null,
       ),
     );
-    return { input, body };
+    return { input, html };
   };
 
   return { renderEntries, getBuildConfig, getSsrConfig };

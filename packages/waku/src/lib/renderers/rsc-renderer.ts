@@ -340,6 +340,6 @@ export async function getSsrConfig(
   );
   return {
     ...ssrConfig,
-    body: renderToReadableStream(ssrConfig.body, bundlerConfig),
+    html: renderToReadableStream(ssrConfig.html, bundlerConfig),
   };
 }

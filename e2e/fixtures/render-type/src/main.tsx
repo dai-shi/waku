@@ -8,7 +8,7 @@ const rootElement = (
   </StrictMode>
 );
 
-if (document.body.dataset.hydrate) {
+if ((globalThis as any).__WAKU_HYDRATE__) {
   hydrateRoot(document.body, rootElement);
 } else {
   createRoot(document.body).render(rootElement);
