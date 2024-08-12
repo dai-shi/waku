@@ -70,6 +70,11 @@ const injectHtmlHead = (
             data.slice(0, closingHeadIndex + CLOSING_HEAD.length),
             data.slice(closingHeadIndex + CLOSING_HEAD.length),
           ];
+    head =
+      head.slice(0, -CLOSING_HEAD.length) +
+      DEFAULT_HTML_HEAD +
+      htmlHead +
+      CLOSING_HEAD;
     const matchPrefetched = head.match(
       // HACK This is very brittle
       /(.*<script[^>]*>\nglobalThis\.__WAKU_PREFETCHED__ = {\n)(.*?)(\n};.*)/s,
@@ -90,12 +95,12 @@ globalThis.__WAKU_PREFETCHED__ = {
 };
 `;
     }
-    head =
-      head.slice(0, -CLOSING_HEAD.length) +
-      (code ? `<script type="module" async>${code}</script>` : '') +
-      DEFAULT_HTML_HEAD +
-      htmlHead +
-      CLOSING_HEAD;
+    if (code) {
+      head =
+        head.slice(0, -CLOSING_HEAD.length) +
+        `<script type="module" async>${code}</script>` +
+        CLOSING_HEAD;
+    }
     if (mainJsPath) {
       const closingBodyIndex = body.indexOf(CLOSING_BODY);
       const [firstPart, secondPart] =
