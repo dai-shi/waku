@@ -9,7 +9,7 @@ const rootElement = (
 );
 
 if ((globalThis as any).__WAKU_HYDRATE__) {
-  hydrateRoot(document, rootElement);
+  hydrateRoot(document.body, rootElement);
 } else {
-  createRoot(document as any).render(rootElement);
+  createRoot(document.body).render(rootElement);
 }

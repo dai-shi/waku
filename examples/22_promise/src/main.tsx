@@ -5,14 +5,9 @@ import { Root, Slot } from 'waku/client';
 const rootElement = (
   <StrictMode>
     <Root>
-      <html>
-        <head></head>
-        <body>
-          <Slot id="App">
-            <h3>A client element</h3>
-          </Slot>
-        </body>
-      </html>
+      <Slot id="App">
+        <h3>A client element</h3>
+      </Slot>
     </Root>
   </StrictMode>
 );
