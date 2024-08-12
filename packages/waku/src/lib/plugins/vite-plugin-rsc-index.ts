@@ -4,19 +4,23 @@ import type { Plugin } from 'vite';
 // Maybe we could put in vite config object?
 import { SRC_MAIN } from './vite-plugin-rsc-managed.js';
 
+export const DEFAULT_HTML_HEAD = `
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="generator" content="Waku" />
+`.trim();
+
 export function rscIndexPlugin(opts: {
   basePath: string;
   srcDir: string;
-  htmlAttrs: string;
-  htmlHead: string;
   cssAssets?: string[];
 }): Plugin {
   const indexHtml = 'index.html';
   const html = `
 <!doctype html>
-<html${opts.htmlAttrs ? ' ' + opts.htmlAttrs : ''}>
+<html>
   <head>
-${opts.htmlHead}
+${DEFAULT_HTML_HEAD}
   </head>
   <body>
     <script src="${opts.basePath}${opts.srcDir}/${SRC_MAIN}" async type="module"></script>

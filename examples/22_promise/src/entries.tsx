@@ -23,7 +23,7 @@ export default defineEntries(
       case '/':
         return {
           input: '',
-          body: (
+          html: (
             <Slot id="App">
               <h3>A client element</h3>
             </Slot>

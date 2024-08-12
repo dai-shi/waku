@@ -9,15 +9,21 @@ import { ClientActionsConsumer } from './ServerAction/Client.js';
 
 const App = ({ name }: { name: string }) => {
   return (
-    <ServerBox>
-      <title>Waku example</title>
-      <p data-testid="app-name">{name}</p>
-      <ClientCounter />
-      <ServerPing />
-      <ServerProvider>
-        <ClientActionsConsumer />
-      </ServerProvider>
-    </ServerBox>
+    <html>
+      <head>
+        <title>Waku example</title>
+      </head>
+      <body>
+        <ServerBox>
+          <p data-testid="app-name">{name}</p>
+          <ClientCounter />
+          <ServerPing />
+          <ServerProvider>
+            <ClientActionsConsumer />
+          </ServerProvider>
+        </ServerBox>
+      </body>
+    </html>
   );
 };
 

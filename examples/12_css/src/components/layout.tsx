@@ -5,12 +5,17 @@ import './layout.styles.css';
 
 const Layout = ({ children }: { children: ReactNode }) => {
   return (
-    <div>
-      {children}
-      <Suspense fallback="Pending...">
-        <ServerMessage />
-      </Suspense>
-    </div>
+    <html>
+      <head></head>
+      <body>
+        <div>
+          {children}
+          <Suspense fallback="Pending...">
+            <ServerMessage />
+          </Suspense>
+        </div>
+      </body>
+    </html>
   );
 };
 

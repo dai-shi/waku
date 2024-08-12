@@ -29,11 +29,11 @@ export const ssr: Middleware = (options) => {
     const entriesDev = devServer && (await devServer.loadEntriesDev(config));
     try {
       const htmlHead = devServer
-        ? config.htmlHead
+        ? ''
         : entries.dynamicHtmlPaths.find(([pathSpec]) =>
             getPathMapping(pathSpec, ctx.req.url.pathname),
           )?.[1];
-      if (htmlHead) {
+      if (typeof htmlHead === 'string') {
         const readable = await renderHtml({
           config,
           pathname: ctx.req.url.pathname,
