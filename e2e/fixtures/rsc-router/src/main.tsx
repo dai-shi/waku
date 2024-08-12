@@ -4,12 +4,7 @@ import { Router } from 'waku/router/client';
 
 const rootElement = (
   <StrictMode>
-    <html>
-      <head></head>
-      <body>
-        <Router />
-      </body>
-    </html>
+    <Router />
   </StrictMode>
 );
 
