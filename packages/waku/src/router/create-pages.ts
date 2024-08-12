@@ -48,21 +48,24 @@ type Split<Str extends string, Del extends string | number> = string extends Str
       ? [T, ...Split<U, Del>]
       : [Str];
 
-// FIXME we should add unit tests for some functions and type utils.
-
+/** Assumes that the path is a part of a slug path. */
 type IsValidPathItem<T> = T extends `/${infer _}`
   ? false
   : T extends '[]' | ''
     ? false
     : true;
-type IsValidPath<T> = T extends `/${infer L}/${infer R}`
+/**
+ * This is a helper type to check if a path is valid in a slug path.
+ */
+export type IsValidPathInSlugPath<T> = T extends `/${infer L}/${infer R}`
   ? IsValidPathItem<L> extends true
-    ? IsValidPath<`/${R}`>
+    ? IsValidPathInSlugPath<`/${R}`>
     : false
   : T extends `/${infer U}`
     ? IsValidPathItem<U>
     : false;
-type HasSlugInPath<T, K extends string> = T extends `/[${K}]/${infer _}`
+/** Checks if a particular slug name exists in a path. */
+export type HasSlugInPath<T, K extends string> = T extends `/[${K}]/${infer _}`
   ? true
   : T extends `/${infer _}/${infer U}`
     ? HasSlugInPath<`/${U}`, K>
@@ -70,7 +73,7 @@ type HasSlugInPath<T, K extends string> = T extends `/[${K}]/${infer _}`
       ? true
       : false;
 
-type HasWildcardInPath<T> = T extends `/[...${string}]/${string}`
+export type HasWildcardInPath<T> = T extends `/[...${string}]/${string}`
   ? true
   : T extends `/${infer _}/${infer U}`
     ? HasWildcardInPath<`/${U}`>
@@ -79,7 +82,7 @@ type HasWildcardInPath<T> = T extends `/[...${string}]/${string}`
       : false;
 
 export type PathWithSlug<T, K extends string> =
-  IsValidPath<T> extends true
+  IsValidPathInSlugPath<T> extends true
     ? HasSlugInPath<T, K> extends true
       ? T
       : never
@@ -99,9 +102,9 @@ type _GetSlugs<
       : never
     : Result;
 
-type GetSlugs<Route extends string> = _GetSlugs<Route>;
+export type GetSlugs<Route extends string> = _GetSlugs<Route>;
 
-type StaticSlugRoutePathsTuple<
+export type StaticSlugRoutePathsTuple<
   T extends string,
   Slugs extends unknown[] = GetSlugs<T>,
   Result extends string[] = [],
@@ -120,18 +123,15 @@ type StaticSlugRoutePaths<T extends string> =
 
 export type PathWithoutSlug<T> = T extends '/'
   ? T
-  : IsValidPath<T> extends true
+  : IsValidPathInSlugPath<T> extends true
     ? HasSlugInPath<T, string> extends true
       ? never
       : T
     : never;
 
-/**
- * Path with static slugs allows slugs, but not wildcards.
- */
 type PathWithStaticSlugs<T extends string> = T extends `/`
   ? T
-  : IsValidPath<T> extends true
+  : IsValidPathInSlugPath<T> extends true
     ? T
     : never;
 
@@ -234,20 +234,29 @@ export function createPages(
     if (page.unstable_disableSSR) {
       noSsrSet.add(pathSpec);
     }
-    const numSlugs = pathSpec.filter(({ type }) => type !== 'literal').length;
-    const numWildcards = pathSpec.filter(
-      ({ type }) => type === 'wildcard',
-    ).length;
+    const { numSlugs, numWildcards } = (() => {
+      let numSlugs = 0;
+      let numWildcards = 0;
+      for (const slug of pathSpec) {
+        if (slug.type !== 'literal') {
+          numSlugs++;
+        }
+        if (slug.type === 'wildcard') {
+          numWildcards++;
+        }
+      }
+      return { numSlugs, numWildcards };
+    })();
     if (page.render === 'static' && numSlugs === 0) {
       staticPathSet.add([page.path, pathSpec]);
       const id = joinPath(page.path, 'page').replace(/^\//, '');
       registerStaticComponent(id, page.component);
-    } else if (page.render === 'static' && numSlugs > 0) {
-      const staticPaths = (
-        page as {
-          staticPaths: string[] | string[][];
-        }
-      ).staticPaths.map((item) =>
+    } else if (
+      page.render === 'static' &&
+      numSlugs > 0 &&
+      'staticPaths' in page
+    ) {
+      const staticPaths = page.staticPaths.map((item) =>
         (Array.isArray(item) ? item : [item]).map(sanitizeSlug),
       );
       for (const staticPath of staticPaths) {
@@ -256,7 +265,7 @@ export function createPages(
         }
         const mapping: Record<string, string | string[]> = {};
         let slugIndex = 0;
-        const pathItems = [] as string[];
+        const pathItems: string[] = [];
         pathSpec.forEach(({ type, name }) => {
           switch (type) {
             case 'literal':
@@ -345,9 +354,15 @@ export function createPages(
       }[] = [];
       for (const [path, pathSpec] of staticPathSet) {
         const noSsr = noSsrSet.has(pathSpec);
-        const isStatic = Array.from(dynamicLayoutPathMap.values()).every(
-          ([layoutPathSpec]) => !hasPathSpecPrefix(layoutPathSpec, pathSpec),
-        );
+        const isStatic = (() => {
+          for (const [_, [layoutPathSpec]] of dynamicLayoutPathMap) {
+            if (hasPathSpecPrefix(layoutPathSpec, pathSpec)) {
+              return false;
+            }
+          }
+          return true;
+        })();
+
         paths.push({
           pattern: path2regexp(parsePathWithSlug(path)),
           path: pathSpec,
@@ -385,7 +400,7 @@ export function createPages(
         unstable_setShouldSkip([]);
         return staticComponent;
       }
-      for (const [pathSpec, Component] of dynamicPagePathMap.values()) {
+      for (const [_, [pathSpec, Component]] of dynamicPagePathMap) {
         const mapping = getPathMapping(
           [...pathSpec, { type: 'literal', name: 'page' }],
           id,
@@ -401,7 +416,7 @@ export function createPages(
           return WrappedComponent;
         }
       }
-      for (const [pathSpec, Component] of wildcardPagePathMap.values()) {
+      for (const [_, [pathSpec, Component]] of wildcardPagePathMap) {
         const mapping = getPathMapping(
           [...pathSpec, { type: 'literal', name: 'page' }],
           id,
@@ -413,7 +428,7 @@ export function createPages(
           return WrappedComponent;
         }
       }
-      for (const [pathSpec, Component] of dynamicLayoutPathMap.values()) {
+      for (const [_, [pathSpec, Component]] of dynamicLayoutPathMap) {
         const mapping = getPathMapping(
           [...pathSpec, { type: 'literal', name: 'layout' }],
           id,
