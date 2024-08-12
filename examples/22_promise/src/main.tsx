@@ -5,9 +5,14 @@ import { Root, Slot } from 'waku/client';
 const rootElement = (
   <StrictMode>
     <Root>
-      <Slot id="App">
-        <h3>A client element</h3>
-      </Slot>
+      <html>
+        <head></head>
+        <body>
+          <Slot id="App">
+            <h3>A client element</h3>
+          </Slot>
+        </body>
+      </html>
     </Root>
   </StrictMode>
 );
@@ -15,5 +20,5 @@ const rootElement = (
 if ((globalThis as any).__WAKU_HYDRATE__) {
   hydrateRoot(document, rootElement);
 } else {
-  createRoot(document.body).render(rootElement);
+  createRoot(document as any).render(rootElement);
 }

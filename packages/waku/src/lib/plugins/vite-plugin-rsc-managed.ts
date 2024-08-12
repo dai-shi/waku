@@ -36,7 +36,7 @@ const rootElement = (
 if (globalThis.__WAKU_HYDRATE__) {
   hydrateRoot(document, rootElement);
 } else {
-  createRoot(document.body).render(rootElement);
+  createRoot(document).render(rootElement);
 }
 `;
 
