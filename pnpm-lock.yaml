@@ -491,19 +491,19 @@ importers:
         specifier: ^22.2.0
         version: 22.2.0
       '@types/react':
-        specifier: 18.3.3
+        specifier: ^18.3.3
         version: 18.3.3
       '@types/react-dom':
-        specifier: 18.3.0
+        specifier: ^18.3.0
         version: 18.3.0
       autoprefixer:
-        specifier: 10.4.20
+        specifier: ^10.4.20
         version: 10.4.20(postcss@8.4.41)
       tailwindcss:
-        specifier: 3.4.9
+        specifier: ^3.4.9
         version: 3.4.9
       typescript:
-        specifier: 5.5.4
+        specifier: ^5.5.4
         version: 5.5.4
 
   examples/01_template:
