@@ -1,30 +1,31 @@
-"use client"
-import { Suspense, useEffect, useRef, useState } from 'react'
+'use client';
 
-import { useUIState, useActions } from 'ai/rsc'
-import { UserMessage } from '../components/llm-stocks/message'
+import { useEffect, useRef, useState } from 'react';
 
-import { ChatScrollAnchor } from '../lib/hooks/chat-scroll-anchor'
-import { FooterText } from '../components/footer'
-import Textarea from 'react-textarea-autosize'
-import { useEnterSubmit } from '../lib/hooks/use-enter-submit'
+import { useUIState, useActions } from 'ai/rsc';
+import { UserMessage } from '../components/llm-stocks/message.js';
+
+import { ChatScrollAnchor } from '../lib/hooks/chat-scroll-anchor.js';
+import { FooterText } from '../components/footer.js';
+import Textarea from 'react-textarea-autosize';
+import { useEnterSubmit } from '../lib/hooks/use-enter-submit.js';
 import {
   Tooltip,
   TooltipContent,
-  TooltipTrigger
-} from '../components/ui/tooltip'
-import { IconArrowElbow, IconPlus } from '../components/ui/icons'
-import { Button } from '../components/ui/button'
-import { ChatList } from '../components/chat-list'
-import { EmptyScreen } from '../components/empty-screen'
-import { AI } from '../actions'
+  TooltipTrigger,
+} from '../components/ui/tooltip.js';
+import { IconArrowElbow, IconPlus } from '../components/ui/icons.js';
+import { Button } from '../components/ui/button.js';
+import { ChatList } from '../components/chat-list.js';
+import { EmptyScreen } from '../components/empty-screen.js';
+import { AI } from '../actions/index.js';
 
 export const Inner = () => {
-  const [messages, setMessages] = useUIState<typeof AI>()
-  const { submitUserMessage } = useActions<typeof AI>()
-  const [inputValue, setInputValue] = useState('')
-  const { formRef, onKeyDown } = useEnterSubmit()
-  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const [messages, setMessages] = useUIState<typeof AI>();
+  const { submitUserMessage } = useActions<typeof AI>();
+  const [inputValue, setInputValue] = useState('');
+  const { formRef, onKeyDown } = useEnterSubmit();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -33,29 +34,29 @@ export const Inner = () => {
           e.target &&
           ['INPUT', 'TEXTAREA'].includes((e.target as any).nodeName)
         ) {
-          return
+          return;
         }
-        e.preventDefault()
-        e.stopPropagation()
+        e.preventDefault();
+        e.stopPropagation();
         if (inputRef?.current) {
-          inputRef.current.focus()
+          inputRef.current.focus();
         }
       }
-    }
+    };
 
-    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [inputRef])
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [inputRef]);
 
   return (
     <div>
       <div className="pb-[200px] pt-4 md:pt-10">
         {messages.length ? (
           <>
-            <ChatList messages={messages}/>
+            <ChatList messages={messages} />
           </>
         ) : (
           <EmptyScreen
@@ -65,76 +66,73 @@ export const Inner = () => {
                 ...currentMessages,
                 {
                   id: Date.now(),
-                  display: <UserMessage>{message}</UserMessage>
-                }
-              ])
+                  display: <UserMessage>{message}</UserMessage>,
+                },
+              ]);
 
               // Submit and get response message
-              const responseMessage = await submitUserMessage(message)
+              const responseMessage = await submitUserMessage(message);
               setMessages((currentMessages) => [
                 ...currentMessages,
-                responseMessage
-              ])
+                responseMessage,
+              ]);
             }}
           />
         )}
-        <ChatScrollAnchor trackVisibility={true}/>
+        <ChatScrollAnchor trackVisibility={true} />
       </div>
-      <div
-        className="fixed inset-x-0 bottom-0 w-full bg-gradient-to-b from-muted/30 from-0% to-muted/30 to-50% duration-300 ease-in-out animate-in dark:from-background/10 dark:from-10% dark:to-background/80 peer-[[data-state=open]]:group-[]:lg:pl-[250px] peer-[[data-state=open]]:group-[]:xl:pl-[300px]">
+      <div className="from-muted/30 to-muted/30 animate-in dark:from-background/10 dark:to-background/80 fixed inset-x-0 bottom-0 w-full bg-gradient-to-b from-0% to-50% duration-300 ease-in-out peer-[[data-state=open]]:group-[]:lg:pl-[250px] peer-[[data-state=open]]:group-[]:xl:pl-[300px] dark:from-10%">
         <div className="mx-auto sm:max-w-2xl sm:px-4">
-          <div
-            className="px-4 py-2 space-y-4 border-t shadow-lg bg-background sm:rounded-t-xl sm:border md:py-4">
+          <div className="bg-background space-y-4 border-t px-4 py-2 shadow-lg sm:rounded-t-xl sm:border md:py-4">
             <form
               ref={formRef}
               onSubmit={async (e: any) => {
-                e.preventDefault()
+                e.preventDefault();
 
                 // Blur focus on mobile
                 if (window.innerWidth < 600) {
-                  e.target['message']?.blur()
+                  e.target['message']?.blur();
                 }
 
-                const value = inputValue.trim()
-                setInputValue('')
-                if (!value) return
+                const value = inputValue.trim();
+                setInputValue('');
+                if (!value) return;
 
                 // Add user message UI
                 setMessages((currentMessages) => [
                   ...currentMessages,
                   {
                     id: Date.now(),
-                    display: <UserMessage>{value}</UserMessage>
-                  }
-                ])
+                    display: <UserMessage>{value}</UserMessage>,
+                  },
+                ]);
 
                 try {
                   // Submit and get response message
-                  const responseMessage = await submitUserMessage(value)
+                  const responseMessage = await submitUserMessage(value);
                   setMessages((currentMessages) => [
                     ...currentMessages,
-                    responseMessage
-                  ])
+                    responseMessage,
+                  ]);
                 } catch (error) {
                   // You may want to show a toast or trigger an error state.
-                  console.error(error)
+                  console.error(error);
                 }
               }}
             >
-              <div
-                className="relative flex flex-col w-full px-8 overflow-hidden max-h-60 grow bg-background sm:rounded-md sm:border sm:px-12">
+              <div className="bg-background relative flex max-h-60 w-full grow flex-col overflow-hidden px-8 sm:rounded-md sm:border sm:px-12">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="outline"
                       size="icon"
-                      className="absolute left-0 w-8 h-8 p-0 rounded-full top-4 bg-background sm:left-4"
+                      className="bg-background absolute left-0 top-4 h-8 w-8 rounded-full p-0 sm:left-4"
                       onClick={(e) => {
-                        e.preventDefault()
-                        window.location.reload()
+                        e.preventDefault();
+                        window.location.reload();
                       }}
                     >
-                      <IconPlus/>
+                      <IconPlus />
                       <span className="sr-only">New Chat</span>
                     </Button>
                   </TooltipTrigger>
@@ -163,7 +161,7 @@ export const Inner = () => {
                         size="icon"
                         disabled={inputValue === ''}
                       >
-                        <IconArrowElbow/>
+                        <IconArrowElbow />
                         <span className="sr-only">Send message</span>
                       </Button>
                     </TooltipTrigger>
@@ -172,10 +170,10 @@ export const Inner = () => {
                 </div>
               </div>
             </form>
-            <FooterText className="hidden sm:block"/>
+            <FooterText className="hidden sm:block" />
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 /**
  * Any array of ToolDefinitions.
@@ -22,10 +22,10 @@ export type TToolDefinitionMap<
 > = TToolDefinitionArray extends [infer TFirst, ...infer Rest]
   ? TFirst extends TAnyToolDefinitionArray[number]
     ? Rest extends TAnyToolDefinitionArray
-      ? Readonly<{ [K in TFirst["name"]]: TFirst }> & TToolDefinitionMap<Rest>
+      ? Readonly<{ [K in TFirst['name']]: TFirst }> & TToolDefinitionMap<Rest>
       : never
     : never
-  : Readonly<{}>;
+  : Readonly<{}>; // eslint-disable-line @typescript-eslint/no-empty-object-type
 
 /**
  * A tool definition contains all information required for a language model to generate tool calls.

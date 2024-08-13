@@ -1,4 +1,4 @@
-import { format, parseISO } from "date-fns";
+import { format, parseISO } from 'date-fns';
 
 interface Event {
   date: string;
@@ -8,16 +8,16 @@ interface Event {
 
 export function Events({ events }: { events: Event[] }) {
   return (
-    <div className="flex flex-col sm:flex-row gap-2 overflow-scroll py-4 -mt-2">
+    <div className="-mt-2 flex flex-col gap-2 overflow-scroll py-4 sm:flex-row">
       {events.map((event) => (
         <div
           key={event.date}
-          className="flex flex-col p-4 bg-zinc-900 rounded-md max-w-96 flex-shrink-0"
+          className="bg-zinc-900 flex max-w-96 flex-shrink-0 flex-col rounded-md p-4"
         >
           <div className="text-zinc-400 text-sm">
-            {format(parseISO(event.date), "dd LLL, yyyy")}
+            {format(parseISO(event.date), 'dd LLL, yyyy')}
           </div>
-          <div className="text-base font-bold text-zinc-200">
+          <div className="text-zinc-200 text-base font-bold">
             {event.headline.slice(0, 30)}
           </div>
           <div className="text-zinc-500">

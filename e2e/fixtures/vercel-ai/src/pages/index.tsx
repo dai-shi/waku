@@ -1,11 +1,12 @@
-"use server";
-import { AI } from '../actions'
-import { Inner } from './inner'
+'use server';
 
-export default function Page () {
+import { AI } from '../actions/index.js';
+import { Inner } from './inner.js';
+
+export default function Page() {
   return (
     <AI>
-      <Inner/>
+      <Inner />
     </AI>
-  )
+  );
 }

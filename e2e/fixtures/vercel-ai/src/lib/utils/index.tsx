@@ -1,13 +1,19 @@
-import { TAnyToolDefinitionArray, TToolDefinitionMap } from "./tool-definition";
-import { OpenAIStream } from "ai";
-import type OpenAI from "openai";
-import zodToJsonSchema from "zod-to-json-schema";
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
-import { z } from "zod";
+/* eslint @typescript-eslint/no-floating-promises: off */
+
+import {
+  TAnyToolDefinitionArray,
+  TToolDefinitionMap,
+} from './tool-definition.js';
+import { OpenAIStream } from 'ai';
+import type { OpenAI } from 'openai';
+import { zodToJsonSchema } from 'zod-to-json-schema';
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import { z } from 'zod';
 
 const consumeStream = async (stream: ReadableStream) => {
   const reader = stream.getReader();
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { done } = await reader.read();
     if (done) break;
@@ -17,7 +23,7 @@ const consumeStream = async (stream: ReadableStream) => {
 export function runOpenAICompletion<
   T extends Omit<
     Parameters<typeof OpenAI.prototype.chat.completions.create>[0],
-    "functions"
+    'functions'
   >,
   const TFunctions extends TAnyToolDefinitionArray,
 >(
@@ -26,7 +32,7 @@ export function runOpenAICompletion<
     functions: TFunctions;
   },
 ) {
-  let text = "";
+  let text = '';
   let hasFunction = false;
 
   type TToolMap = TToolDefinitionMap<TFunctions>;
@@ -37,7 +43,7 @@ export function runOpenAICompletion<
     functionsMap[fn.name] = fn;
   }
 
-  let onFunctionCall = {} as any;
+  const onFunctionCall = {} as any;
 
   const { functions, ...rest } = params;
 
@@ -54,8 +60,8 @@ export function runOpenAICompletion<
               string,
               unknown
             >,
-          })),
-        })) as any,
+          })) as any,
+        } as any)) as any,
         {
           async experimental_onFunctionCall(functionCallPayload) {
             hasFunction = true;
@@ -66,7 +72,8 @@ export function runOpenAICompletion<
 
             // we need to convert arguments from z.input to z.output
             // this is necessary if someone uses a .default in their schema
-            const zodSchema = functionsMap[functionCallPayload.name].parameters;
+            const zodSchema =
+              functionsMap[functionCallPayload.name]!.parameters;
             const parsedArgs = zodSchema.safeParse(
               functionCallPayload.arguments,
             );
@@ -81,7 +88,7 @@ export function runOpenAICompletion<
           },
           onToken(token) {
             text += token;
-            if (text.startsWith("{")) return;
+            if (text.startsWith('{')) return;
             onTextContent(text, false);
           },
           onFinal() {
@@ -99,14 +106,14 @@ export function runOpenAICompletion<
     ) => {
       onTextContent = callback;
     },
-    onFunctionCall: <TName extends TFunctions[number]["name"]>(
+    onFunctionCall: <TName extends TFunctions[number]['name']>(
       name: TName,
       callback: (
         args: z.output<
           TName extends keyof TToolMap
             ? TToolMap[TName] extends infer TToolDef
               ? TToolDef extends TAnyToolDefinitionArray[number]
-                ? TToolDef["parameters"]
+                ? TToolDef['parameters']
                 : never
               : never
             : never
@@ -123,9 +130,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const formatNumber = (value: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
   }).format(value);
 
 export const runAsyncFnWithoutBlocking = (

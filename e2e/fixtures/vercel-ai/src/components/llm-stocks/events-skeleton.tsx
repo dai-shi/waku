@@ -1,14 +1,14 @@
 export const EventsSkeleton = () => {
   return (
-    <div className="flex flex-col sm:flex-row gap-2 overflow-scroll py-4 -mt-2">
-      <div className="flex flex-col p-4 bg-zinc-900 max-w-96 flex-shrink-0 rounded-lg">
-        <div className="text-sm text-transparent w-fit bg-zinc-700 rounded-md mb-1">
-          {"xxxxx"}
+    <div className="-mt-2 flex flex-col gap-2 overflow-scroll py-4 sm:flex-row">
+      <div className="bg-zinc-900 flex max-w-96 flex-shrink-0 flex-col rounded-lg p-4">
+        <div className="bg-zinc-700 mb-1 w-fit rounded-md text-sm text-transparent">
+          {'xxxxx'}
         </div>
-        <div className="text-transparent w-fit bg-zinc-700 rounded-md mb-1">
-          {"xxxxxxxxxxx"}
+        <div className="bg-zinc-700 mb-1 w-fit rounded-md text-transparent">
+          {'xxxxxxxxxxx'}
         </div>
-        <div className="text-transparent bg-zinc-700 rounded-md sm:w-[352px] w-auto h-[42px]"></div>
+        <div className="bg-zinc-700 h-[42px] w-auto rounded-md text-transparent sm:w-[352px]"></div>
       </div>
     </div>
   );

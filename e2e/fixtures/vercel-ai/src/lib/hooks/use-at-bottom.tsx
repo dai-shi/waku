@@ -1,4 +1,4 @@
-import * as React from "react";
+import * as React from 'react';
 
 export function useAtBottom(offset = 0) {
   const [isAtBottom, setIsAtBottom] = React.useState(false);
@@ -11,11 +11,11 @@ export function useAtBottom(offset = 0) {
       );
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, [offset]);
 
