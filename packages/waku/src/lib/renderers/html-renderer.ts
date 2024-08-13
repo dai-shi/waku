@@ -1,6 +1,5 @@
 import type {
   default as ReactType,
-  createElement as createElementType,
   ReactNode,
   FunctionComponent,
   ComponentProps,
@@ -24,6 +23,7 @@ import { encodeInput, hasStatusCode } from './utils.js';
 // HACK depending on these constants is not ideal
 import { SRC_MAIN } from '../plugins/vite-plugin-rsc-managed.js';
 import { DIST_SSR } from '../builder/constants.js';
+import { DEFAULT_HTML_HEAD } from '../plugins/vite-plugin-rsc-index.js';
 
 export const CLIENT_MODULE_MAP = {
   react: 'react',
@@ -53,26 +53,41 @@ Promise.resolve(new Response(new ReadableStream({
   .map((line) => line.trim())
   .join('');
 
-const injectScript = (
+const CLOSING_HEAD = '</head>';
+const CLOSING_BODY = '</body>';
+
+const injectHtmlHead = (
   urlForFakeFetch: string,
+  htmlHead: string,
   mainJsPath: string, // for DEV only, pass `''` for PRD
 ) => {
-  const modifyHead = (data: string) => {
-    const matchPrefetched = data.match(
+  const modifyHeadAndBody = (data: string) => {
+    const closingHeadIndex = data.indexOf(CLOSING_HEAD);
+    let [head, body] =
+      closingHeadIndex === -1
+        ? ['<head>' + CLOSING_HEAD, data]
+        : [
+            data.slice(0, closingHeadIndex + CLOSING_HEAD.length),
+            data.slice(closingHeadIndex + CLOSING_HEAD.length),
+          ];
+    head =
+      head.slice(0, -CLOSING_HEAD.length) +
+      DEFAULT_HTML_HEAD +
+      htmlHead +
+      CLOSING_HEAD;
+    const matchPrefetched = head.match(
       // HACK This is very brittle
       /(.*<script[^>]*>\nglobalThis\.__WAKU_PREFETCHED__ = {\n)(.*?)(\n};.*)/s,
     );
     if (matchPrefetched) {
-      data =
+      head =
         matchPrefetched[1] +
         `  '${urlForFakeFetch}': ${fakeFetchCode},` +
         matchPrefetched[3];
     }
-    const closingHeadIndex = data.indexOf('</head>');
-    if (closingHeadIndex === -1) {
-      throw new Error('closing head not found');
-    }
-    let code = '';
+    let code = `
+globalThis.__WAKU_HYDRATE__ = true;
+`;
     if (!matchPrefetched) {
       code += `
 globalThis.__WAKU_PREFETCHED__ = {
@@ -81,12 +96,23 @@ globalThis.__WAKU_PREFETCHED__ = {
 `;
     }
     if (code) {
-      data =
-        data.slice(0, closingHeadIndex) +
+      head =
+        head.slice(0, -CLOSING_HEAD.length) +
         `<script type="module" async>${code}</script>` +
-        data.slice(closingHeadIndex);
+        CLOSING_HEAD;
     }
-    return data;
+    if (mainJsPath) {
+      const closingBodyIndex = body.indexOf(CLOSING_BODY);
+      const [firstPart, secondPart] =
+        closingBodyIndex === -1
+          ? [body, '']
+          : [body.slice(0, closingBodyIndex), body.slice(closingBodyIndex)];
+      body =
+        firstPart +
+        `<script src="${mainJsPath}" async type="module"></script>` +
+        secondPart;
+    }
+    return head + body;
   };
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
@@ -99,25 +125,22 @@ globalThis.__WAKU_PREFETCHED__ = {
       }
       data += decoder.decode(chunk);
       if (!headSent) {
-        if (!/<\/head><body[^>]*>/.test(data)) {
+        if (!/<body[^>]*>/.test(data)) {
           return;
         }
         headSent = true;
-        data = modifyHead(data);
-        if (mainJsPath) {
-          const closingBodyIndex = data.indexOf('</body>');
-          const [firstPart, secondPart] =
-            closingBodyIndex === -1
-              ? [data, '']
-              : [data.slice(0, closingBodyIndex), data.slice(closingBodyIndex)];
-          data =
-            firstPart +
-            `<script src="${mainJsPath}" async type="module"></script>` +
-            secondPart;
-        }
+        data = modifyHeadAndBody(data);
       }
       controller.enqueue(encoder.encode(data));
       data = '';
+    },
+    flush(controller) {
+      if (!headSent) {
+        headSent = true;
+        data = modifyHeadAndBody(data);
+        controller.enqueue(encoder.encode(data));
+        data = '';
+      }
     },
   });
 };
@@ -149,31 +172,6 @@ const rectifyHtml = () => {
   });
 };
 
-const parseHtmlAttrs = (attrs: string): Record<string, string> => {
-  // HACK this is very brittle
-  const result: Record<string, string> = {};
-  const kebab2camel = (s: string) =>
-    s.replace(/-./g, (m) => m[1]!.toUpperCase());
-  const matches = attrs.matchAll(/(?<=^|\s)([^\s=]+)="([^"]+)"(?=\s|$)/g);
-  for (const match of matches) {
-    result[kebab2camel(match[1]!)] = match[2]!;
-  }
-  return result;
-};
-
-const buildHtml = (
-  createElement: typeof createElementType,
-  attrs: string,
-  head: string,
-  body: ReactNode,
-) =>
-  createElement(
-    'html',
-    attrs ? parseHtmlAttrs(attrs) : null,
-    createElement('head', { dangerouslySetInnerHTML: { __html: head } }),
-    createElement('body', { 'data-hydrate': true }, body),
-  );
-
 export const renderHtml = async (
   opts: {
     config: Omit<ResolvedConfig, 'middleware'>;
@@ -190,7 +188,7 @@ export const renderHtml = async (
     ) => Promise<{
       input: string;
       searchParams?: URLSearchParams;
-      body: ReadableStream;
+      html: ReadableStream;
     } | null>;
   } & (
     | { isDev: false; loadModule: EntriesPrd['loadModule'] }
@@ -303,22 +301,17 @@ export const renderHtml = async (
       ssrManifest: { moduleMap, moduleLoading: null },
     },
   );
-  const body: Promise<ReactNode> = createFromReadableStream(ssrConfig.body, {
+  const html: Promise<ReactNode> = createFromReadableStream(ssrConfig.html, {
     ssrManifest: { moduleMap, moduleLoading: null },
   });
   const readable = (
     await renderToReadableStream(
-      buildHtml(
-        createElement,
-        config.htmlAttrs,
-        htmlHead,
-        createElement(
-          ServerRoot as FunctionComponent<
-            Omit<ComponentProps<typeof ServerRoot>, 'children'>
-          >,
-          { elements },
-          body as any,
-        ),
+      createElement(
+        ServerRoot as FunctionComponent<
+          Omit<ComponentProps<typeof ServerRoot>, 'children'>
+        >,
+        { elements },
+        html as any,
       ),
       {
         onError(err: unknown) {
@@ -329,8 +322,9 @@ export const renderHtml = async (
   )
     .pipeThrough(rectifyHtml())
     .pipeThrough(
-      injectScript(
+      injectHtmlHead(
         config.basePath + config.rscPath + '/' + encodeInput(ssrConfig.input),
+        htmlHead,
         isDev ? `${config.basePath}${config.srcDir}/${SRC_MAIN}` : '',
       ),
     )

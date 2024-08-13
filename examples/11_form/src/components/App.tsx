@@ -5,14 +5,22 @@ import { getMessage, greet, increment } from './funcs';
 
 const App = ({ name }: { name: string }) => {
   return (
-    <div style={{ border: '3px red dashed', margin: '1em', padding: '1em' }}>
-      <title>Waku</title>
-      <h1>Hello {name}!!</h1>
-      <h3>This is a server component.</h3>
-      <Counter increment={increment} />
-      <Form message={getMessage()} greet={greet} />
-      <ServerForm />
-    </div>
+    <html>
+      <head>
+        <title>Waku</title>
+      </head>
+      <body>
+        <div
+          style={{ border: '3px red dashed', margin: '1em', padding: '1em' }}
+        >
+          <h1>Hello {name}!!</h1>
+          <h3>This is a server component.</h3>
+          <Counter increment={increment} />
+          <Form message={getMessage()} greet={greet} />
+          <ServerForm />
+        </div>
+      </body>
+    </html>
   );
 };
 

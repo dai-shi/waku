@@ -6,5 +6,10 @@ export default function Layout({
   path,
 }: PropsWithChildren<{ path: string }>) {
   setPath(path);
-  return children;
+  return (
+    <html>
+      <head></head>
+      <body>{children}</body>
+    </html>
+  );
 }

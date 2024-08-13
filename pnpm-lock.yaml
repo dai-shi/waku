@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  vite: 5.3.5
+  vite: 5.4.0
 
 importers:
 
@@ -21,8 +21,8 @@ importers:
         specifier: ^7.20.5
         version: 7.20.5
       '@types/node':
-        specifier: ^22.1.0
-        version: 22.1.0
+        specifier: ^22.2.0
+        version: 22.2.0
       '@types/react':
         specifier: ^18.3.3
         version: 18.3.3
@@ -30,11 +30,11 @@ importers:
         specifier: ^18.3.0
         version: 18.3.0
       '@typescript-eslint/eslint-plugin':
-        specifier: 7.18.0
-        version: 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.3))(eslint@8.57.0)(typescript@5.5.3)
+        specifier: ^8.1.0
+        version: 8.1.0(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.5.4))(eslint@8.57.0)(typescript@5.5.4)
       '@typescript-eslint/parser':
-        specifier: 7.18.0
-        version: 7.18.0(eslint@8.57.0)(typescript@5.5.3)
+        specifier: ^8.1.0
+        version: 8.1.0(eslint@8.57.0)(typescript@5.5.4)
       eslint:
         specifier: 8.57.0
         version: 8.57.0
@@ -43,10 +43,10 @@ importers:
         version: 9.1.0(eslint@8.57.0)
       eslint-import-resolver-typescript:
         specifier: ^3.6.1
-        version: 3.6.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.3))(eslint-plugin-import@2.29.1)(eslint@8.57.0)
+        version: 3.6.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.5.4))(eslint-plugin-import@2.29.1)(eslint@8.57.0)
       eslint-plugin-import:
         specifier: ^2.29.1
-        version: 2.29.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.3))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
+        version: 2.29.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
       eslint-plugin-react:
         specifier: ^7.35.0
         version: 7.35.0(eslint@8.57.0)
@@ -57,14 +57,14 @@ importers:
         specifier: ^3.3.3
         version: 3.3.3
       prettier-plugin-tailwindcss:
-        specifier: ^0.6.5
-        version: 0.6.5(prettier@3.3.3)
+        specifier: ^0.6.6
+        version: 0.6.6(prettier@3.3.3)
       terminate:
         specifier: ^2.8.0
         version: 2.8.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: ^5.5.4
+        version: 5.5.4
       wait-port:
         specifier: ^1.1.0
         version: 1.1.0
@@ -75,14 +75,14 @@ importers:
   e2e/fixtures/partial-build:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       serve:
         specifier: ^14.2.3
         version: 14.2.3
@@ -97,20 +97,20 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   e2e/fixtures/render-type:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       serve:
         specifier: ^14.2.3
         version: 14.2.3
@@ -125,23 +125,23 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   e2e/fixtures/rsc-basic:
     dependencies:
       ai:
-        specifier: link:./modules/ai
+        specifier: link:modules/ai
         version: link:modules/ai
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -153,20 +153,20 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   e2e/fixtures/rsc-css-modules:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -178,20 +178,20 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   e2e/fixtures/rsc-router:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -203,20 +203,20 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   e2e/fixtures/ssg-performance:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -228,20 +228,20 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   e2e/fixtures/ssg-wildcard:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -253,20 +253,20 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   e2e/fixtures/ssr-basic:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -278,23 +278,23 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   e2e/fixtures/ssr-catch-error:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-error-boundary:
         specifier: 4.0.13
-        version: 4.0.13(react@19.0.0-rc-187dd6a7-20240806)
+        version: 4.0.13(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -306,20 +306,20 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   e2e/fixtures/ssr-context-provider:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -331,23 +331,23 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   e2e/fixtures/ssr-swr:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       swr:
         specifier: 2.2.5
-        version: 2.2.5(react@19.0.0-rc-187dd6a7-20240806)
+        version: 2.2.5(react@19.0.0-rc-68dbd84b-20240812)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -359,23 +359,23 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   e2e/fixtures/ssr-target-bundle:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       react-textarea-autosize:
         specifier: 8.5.3
-        version: 8.5.3(@types/react@18.3.3)(react@19.0.0-rc-187dd6a7-20240806)
+        version: 8.5.3(@types/react@18.3.3)(react@19.0.0-rc-68dbd84b-20240812)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -387,20 +387,20 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   e2e/fixtures/use-router:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
         specifier: workspace:*
         version: link:../../../packages/waku
@@ -412,22 +412,22 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   examples/01_template:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -440,47 +440,47 @@ importers:
         specifier: 10.4.20
         version: 10.4.20(postcss@8.4.41)
       tailwindcss:
-        specifier: 3.4.7
-        version: 3.4.7
+        specifier: 3.4.9
+        version: 3.4.9
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   examples/02_template_js:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       autoprefixer:
         specifier: 10.4.20
         version: 10.4.20(postcss@8.4.41)
       tailwindcss:
-        specifier: 3.4.7
-        version: 3.4.7
+        specifier: 3.4.9
+        version: 3.4.9
 
   examples/03_demo:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -493,25 +493,25 @@ importers:
         specifier: 10.4.20
         version: 10.4.20(postcss@8.4.41)
       tailwindcss:
-        specifier: 3.4.7
-        version: 3.4.7
+        specifier: 3.4.9
+        version: 3.4.9
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   examples/04_cssmodules:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -521,22 +521,22 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   examples/05_nossr:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -549,28 +549,28 @@ importers:
         specifier: 10.4.20
         version: 10.4.20(postcss@8.4.41)
       tailwindcss:
-        specifier: 3.4.7
-        version: 3.4.7
+        specifier: 3.4.9
+        version: 3.4.9
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
       vite:
-        specifier: 5.3.5
-        version: 5.3.5(@types/node@22.1.0)(terser@5.31.3)
+        specifier: 5.4.0
+        version: 5.4.0(@types/node@22.2.0)(terser@5.31.5)
 
   examples/07_router:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -583,8 +583,8 @@ importers:
         specifier: 0.0.1
         version: 0.0.1
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   examples/08_cookies:
     dependencies:
@@ -592,24 +592,24 @@ importers:
         specifier: 0.6.0
         version: 0.6.0
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/cookie':
         specifier: 0.6.0
         version: 0.6.0
       '@types/node':
-        specifier: 22.1.0
-        version: 22.1.0
+        specifier: 22.2.0
+        version: 22.2.0
       '@types/react':
         specifier: 18.3.3
         version: 18.3.3
@@ -617,22 +617,22 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   examples/09_api:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -642,22 +642,22 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   examples/10_fs-router:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -667,22 +667,22 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   examples/11_form:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -692,8 +692,8 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   examples/12_css:
     dependencies:
@@ -707,16 +707,16 @@ importers:
         specifier: 2.3.2
         version: 2.3.2
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -727,13 +727,13 @@ importers:
         version: 18.3.0
       '@vanilla-extract/vite-plugin':
         specifier: 4.0.10
-        version: 4.0.10(@types/node@22.1.0)(terser@5.31.3)(vite@5.3.5(@types/node@22.1.0)(terser@5.31.3))
+        version: 4.0.10(@types/node@22.2.0)(terser@5.31.5)(vite@5.4.0(@types/node@22.2.0)(terser@5.31.5))
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
       vite:
-        specifier: 5.3.5
-        version: 5.3.5(@types/node@22.1.0)(terser@5.31.3)
+        specifier: 5.4.0
+        version: 5.4.0(@types/node@22.2.0)(terser@5.31.5)
       vite-plugin-stylex-dev:
         specifier: 0.7.5
         version: 0.7.5(rollup@4.20.0)
@@ -741,16 +741,16 @@ importers:
   examples/13_path-alias:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -760,31 +760,31 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
       vite:
-        specifier: 5.3.5
-        version: 5.3.5(@types/node@22.1.0)(terser@5.31.3)
+        specifier: 5.4.0
+        version: 5.4.0(@types/node@22.2.0)(terser@5.31.5)
       vite-tsconfig-paths:
-        specifier: 4.3.2
-        version: 4.3.2(typescript@5.5.3)(vite@5.3.5(@types/node@22.1.0)(terser@5.31.3))
+        specifier: 5.0.1
+        version: 5.0.1(typescript@5.5.4)(vite@5.4.0(@types/node@22.2.0)(terser@5.31.5))
 
   examples/14_react-tweet:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       react-tweet:
         specifier: ^3.2.0
-        version: 3.2.0(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)
+        version: 3.2.0(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -797,25 +797,25 @@ importers:
         specifier: 10.4.20
         version: 10.4.20(postcss@8.4.41)
       tailwindcss:
-        specifier: 3.4.7
-        version: 3.4.7
+        specifier: 3.4.9
+        version: 3.4.9
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   examples/20_minimal:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -825,37 +825,37 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   examples/21_minimal_js:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
 
   examples/22_promise:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -865,25 +865,25 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   examples/23_actions:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       react-wrap-balancer:
         specifier: 1.1.0
-        version: 1.1.0(react@19.0.0-rc-187dd6a7-20240806)
+        version: 1.1.0(react@19.0.0-rc-68dbd84b-20240812)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -893,22 +893,22 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   examples/24_nesting:
     dependencies:
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
-        specifier: 0.21.0-beta.4
+        specifier: 0.21.0-beta.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -918,8 +918,8 @@ importers:
         specifier: 18.3.0
         version: 18.3.0
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: 5.5.4
+        version: 5.5.4
 
   packages/create-waku:
     devDependencies:
@@ -961,28 +961,28 @@ importers:
         version: 1.6.13(@swc/helpers@0.5.12)
       '@vitejs/plugin-react':
         specifier: 4.3.1
-        version: 4.3.1(vite@5.3.5(@types/node@22.1.0)(terser@5.31.3))
+        version: 4.3.1(vite@5.4.0(@types/node@22.2.0)(terser@5.31.5))
       dotenv:
         specifier: 16.4.5
         version: 16.4.5
       hono:
-        specifier: 4.5.4
-        version: 4.5.4
+        specifier: 4.5.5
+        version: 4.5.5
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0(@swc/core@1.6.13(@swc/helpers@0.5.12)))
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0(@swc/core@1.6.13(@swc/helpers@0.5.12)))
       rsc-html-stream:
         specifier: 0.0.3
         version: 0.0.3
       vite:
-        specifier: 5.3.5
-        version: 5.3.5(@types/node@22.1.0)(terser@5.31.3)
+        specifier: 5.4.0
+        version: 5.4.0(@types/node@22.2.0)(terser@5.31.5)
     devDependencies:
       '@netlify/functions':
         specifier: ^2.8.1
@@ -998,7 +998,7 @@ importers:
         version: 1.3.0
       vitest:
         specifier: ^2.0.5
-        version: 2.0.5(@types/node@22.1.0)(terser@5.31.3)
+        version: 2.0.5(@types/node@22.2.0)(terser@5.31.5)
 
   packages/website:
     dependencies:
@@ -1009,23 +1009,23 @@ importers:
         specifier: 2.3.2
         version: 2.3.2
       framer-motion:
-        specifier: ^11.3.21
-        version: 11.3.21(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: ^11.3.24
+        version: 11.3.24(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)
       jotai:
-        specifier: ^2.9.1
-        version: 2.9.1(@types/react@18.3.3)(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: ^2.9.3
+        version: 2.9.3(@types/react@18.3.3)(react@19.0.0-rc-68dbd84b-20240812)
       next-mdx-remote:
         specifier: ^5.0.0
-        version: 5.0.0(@types/react@18.3.3)(react@19.0.0-rc-187dd6a7-20240806)
+        version: 5.0.0(@types/react@18.3.3)(react@19.0.0-rc-68dbd84b-20240812)
       react:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812
       react-dom:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       react-server-dom-webpack:
-        specifier: 19.0.0-rc-187dd6a7-20240806
-        version: 19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0)
+        specifier: 19.0.0-rc-68dbd84b-20240812
+        version: 19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0)
       waku:
         specifier: workspace:*
         version: link:../waku
@@ -1043,20 +1043,20 @@ importers:
         specifier: ^3.3.3
         version: 3.3.3
       prettier-plugin-tailwindcss:
-        specifier: ^0.6.5
-        version: 0.6.5(prettier@3.3.3)
+        specifier: ^0.6.6
+        version: 0.6.6(prettier@3.3.3)
       shiki:
         specifier: ^1.12.1
         version: 1.12.1
       tailwindcss:
-        specifier: ^3.4.7
-        version: 3.4.7
+        specifier: ^3.4.9
+        version: 3.4.9
       typescript:
-        specifier: 5.5.3
-        version: 5.5.3
+        specifier: ^5.5.4
+        version: 5.5.4
       vite:
-        specifier: 5.3.5
-        version: 5.3.5(@types/node@22.1.0)(terser@5.31.3)
+        specifier: 5.4.0
+        version: 5.4.0(@types/node@22.2.0)(terser@5.31.5)
 
 packages:
 
@@ -1721,8 +1721,8 @@ packages:
   '@types/ms@0.7.34':
     resolution: {integrity: sha512-nG96G3Wp6acyAgJqGasjODb+acrI7KltPiRxzHPXnP3NgI28bpQDRv53olbqGXbfcgF5aiiHmO3xpwEpS5Ld9g==}
 
-  '@types/node@22.1.0':
-    resolution: {integrity: sha512-AOmuRF0R2/5j1knA3c6G3HOk523Ga+l+ZXltX8SF1+5oqcXijjfTd8fY3XRZqSihEu9XhtQnKYLmkFaoxgsJHw==}
+  '@types/node@22.2.0':
+    resolution: {integrity: sha512-bm6EG6/pCpkxDf/0gDNDdtDILMOHgaQBVOJGdwsqClnxA3xL6jtMv76rLBc006RVMWbmaf0xbmom4Z/5o2nRkQ==}
 
   '@types/prompts@2.4.9':
     resolution: {integrity: sha512-qTxFi6Buiu8+50/+3DGIWLHM6QuWsEKugJnnP6iv2Mc4ncxE4A/OJkjuVOA+5X0X1S/nq5VJRa8Lu+nwcvbrKA==}
@@ -1748,63 +1748,62 @@ packages:
   '@types/unist@3.0.2':
     resolution: {integrity: sha512-dqId9J8K/vGi5Zr7oo212BGii5m3q5Hxlkwy3WpYuKPklmBEvsbMYYyLxAQpSffdLl/gdW0XUpKWFvYmyoWCoQ==}
 
-  '@typescript-eslint/eslint-plugin@7.18.0':
-    resolution: {integrity: sha512-94EQTWZ40mzBc42ATNIBimBEDltSJ9RQHCC8vc/PDbxi4k8dVwUAv4o98dk50M1zB+JGFxp43FP7f8+FP8R6Sw==}
-    engines: {node: ^18.18.0 || >=20.0.0}
+  '@typescript-eslint/eslint-plugin@8.1.0':
+    resolution: {integrity: sha512-LlNBaHFCEBPHyD4pZXb35mzjGkuGKXU5eeCA1SxvHfiRES0E82dOounfVpL4DCqYvJEKab0bZIA0gCRpdLKkCw==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
-      '@typescript-eslint/parser': ^7.0.0
-      eslint: ^8.56.0
+      '@typescript-eslint/parser': ^8.0.0 || ^8.0.0-alpha.0
+      eslint: ^8.57.0 || ^9.0.0
       typescript: '*'
     peerDependenciesMeta:
       typescript:
         optional: true
 
-  '@typescript-eslint/parser@7.18.0':
-    resolution: {integrity: sha512-4Z+L8I2OqhZV8qA132M4wNL30ypZGYOQVBfMgxDH/K5UX0PNqTu1c6za9ST5r9+tavvHiTWmBnKzpCJ/GlVFtg==}
-    engines: {node: ^18.18.0 || >=20.0.0}
+  '@typescript-eslint/parser@8.1.0':
+    resolution: {integrity: sha512-U7iTAtGgJk6DPX9wIWPPOlt1gO57097G06gIcl0N0EEnNw8RGD62c+2/DiP/zL7KrkqnnqF7gtFGR7YgzPllTA==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
-      eslint: ^8.56.0
+      eslint: ^8.57.0 || ^9.0.0
       typescript: '*'
     peerDependenciesMeta:
       typescript:
         optional: true
 
-  '@typescript-eslint/scope-manager@7.18.0':
-    resolution: {integrity: sha512-jjhdIE/FPF2B7Z1uzc6i3oWKbGcHb87Qw7AWj6jmEqNOfDFbJWtjt/XfwCpvNkpGWlcJaog5vTR+VV8+w9JflA==}
-    engines: {node: ^18.18.0 || >=20.0.0}
+  '@typescript-eslint/scope-manager@8.1.0':
+    resolution: {integrity: sha512-DsuOZQji687sQUjm4N6c9xABJa7fjvfIdjqpSIIVOgaENf2jFXiM9hIBZOL3hb6DHK9Nvd2d7zZnoMLf9e0OtQ==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@typescript-eslint/type-utils@7.18.0':
-    resolution: {integrity: sha512-XL0FJXuCLaDuX2sYqZUUSOJ2sG5/i1AAze+axqmLnSkNEVMVYLF+cbwlB2w8D1tinFuSikHmFta+P+HOofrLeA==}
-    engines: {node: ^18.18.0 || >=20.0.0}
-    peerDependencies:
-      eslint: ^8.56.0
-      typescript: '*'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-
-  '@typescript-eslint/types@7.18.0':
-    resolution: {integrity: sha512-iZqi+Ds1y4EDYUtlOOC+aUmxnE9xS/yCigkjA7XpTKV6nCBd3Hp/PRGGmdwnfkV2ThMyYldP1wRpm/id99spTQ==}
-    engines: {node: ^18.18.0 || >=20.0.0}
-
-  '@typescript-eslint/typescript-estree@7.18.0':
-    resolution: {integrity: sha512-aP1v/BSPnnyhMHts8cf1qQ6Q1IFwwRvAQGRvBFkWlo3/lH29OXA3Pts+c10nxRxIBrDnoMqzhgdwVe5f2D6OzA==}
-    engines: {node: ^18.18.0 || >=20.0.0}
+  '@typescript-eslint/type-utils@8.1.0':
+    resolution: {integrity: sha512-oLYvTxljVvsMnldfl6jIKxTaU7ok7km0KDrwOt1RHYu6nxlhN3TIx8k5Q52L6wR33nOwDgM7VwW1fT1qMNfFIA==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
     peerDependencies:
       typescript: '*'
     peerDependenciesMeta:
       typescript:
         optional: true
 
-  '@typescript-eslint/utils@7.18.0':
-    resolution: {integrity: sha512-kK0/rNa2j74XuHVcoCZxdFBMF+aq/vH83CXAOHieC+2Gis4mF8jJXT5eAfyD3K0sAxtPuwxaIOIOvhwzVDt/kw==}
-    engines: {node: ^18.18.0 || >=20.0.0}
-    peerDependencies:
-      eslint: ^8.56.0
+  '@typescript-eslint/types@8.1.0':
+    resolution: {integrity: sha512-q2/Bxa0gMOu/2/AKALI0tCKbG2zppccnRIRCW6BaaTlRVaPKft4oVYPp7WOPpcnsgbr0qROAVCVKCvIQ0tbWog==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@typescript-eslint/visitor-keys@7.18.0':
-    resolution: {integrity: sha512-cDF0/Gf81QpY3xYyJKDV14Zwdmid5+uuENhjH2EqFaF0ni+yAyq/LzMaIJdhNJXZI7uLzwIlA+V7oWoyn6Curg==}
-    engines: {node: ^18.18.0 || >=20.0.0}
+  '@typescript-eslint/typescript-estree@8.1.0':
+    resolution: {integrity: sha512-NTHhmufocEkMiAord/g++gWKb0Fr34e9AExBRdqgWdVBaKoei2dIyYKD9Q0jBnvfbEA5zaf8plUFMUH6kQ0vGg==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    peerDependencies:
+      typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
+  '@typescript-eslint/utils@8.1.0':
+    resolution: {integrity: sha512-ypRueFNKTIFwqPeJBfeIpxZ895PQhNyH4YID6js0UoBImWYoSjBsahUn9KMiJXh94uOjVBgHD9AmkyPsPnFwJA==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    peerDependencies:
+      eslint: ^8.57.0 || ^9.0.0
+
+  '@typescript-eslint/visitor-keys@8.1.0':
+    resolution: {integrity: sha512-ba0lNI19awqZ5ZNKh6wCModMwoZs457StTebQ0q1NP58zSi2F6MOZRXwfKZy+jB78JNJ/WH8GSh2IQNzXX8Nag==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   '@ungap/structured-clone@1.2.0':
     resolution: {integrity: sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==}
@@ -1824,7 +1823,7 @@ packages:
   '@vanilla-extract/vite-plugin@4.0.10':
     resolution: {integrity: sha512-bjX5ioQeBTKuV/MOweeSCrGU5m7z4a76yf8J/r4gC5MGJrEvYu0YHaQIiiL7o2wlFSc929JUEUO1ahnVXUET6A==}
     peerDependencies:
-      vite: 5.3.5
+      vite: 5.4.0
 
   '@vercel/ncc@0.38.1':
     resolution: {integrity: sha512-IBBb+iI2NLu4VQn3Vwldyi2QwaXt5+hTyh58ggAMoCGE6DJmPvwL3KPBWcJl1m9LYPChBLE980Jw+CS4Wokqxw==}
@@ -1834,7 +1833,7 @@ packages:
     resolution: {integrity: sha512-m/V2syj5CuVnaxcUJOQRel/Wr31FFXRFlnOoq1TVtkCxsY5veGMTEmpWHndrhB2U8ScHtCQB1e+4hWYExQc6Lg==}
     engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
-      vite: 5.3.5
+      vite: 5.4.0
 
   '@vitest/expect@2.0.5':
     resolution: {integrity: sha512-yHZtwuP7JZivj65Gxoi8upUN2OzHTi3zVfjwdpu2WrvCZPLwsJ2Ey5ILIPccoW23dd/zQBlJ4/dhi7DWNyXCpA==}
@@ -2112,8 +2111,8 @@ packages:
     resolution: {integrity: sha512-xlx1yCK2Oc1APsPXDL2LdlNP6+uu8OCDdhOBSVT279M/S+y75O30C2VuD8T2ogdePBBl7PfPF4504tnLgX3zfw==}
     engines: {node: '>=14.16'}
 
-  caniuse-lite@1.0.30001649:
-    resolution: {integrity: sha512-fJegqZZ0ZX8HOWr6rcafGr72+xcgJKI9oWfDW5DrD7ExUtgZC7a7R7ZYmZqplh7XDocFdGeIFn7roAxhOeYrPQ==}
+  caniuse-lite@1.0.30001651:
+    resolution: {integrity: sha512-9Cf+Xv1jJNe1xPZLGuUXLNkE1BoDkqRqYyFJ9TDYSqhduqA4hu4oR9HluGoWYQC/aj8WHjsGVV+bwkh0+tegRg==}
 
   ccount@2.0.1:
     resolution: {integrity: sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==}
@@ -2393,8 +2392,8 @@ packages:
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
 
-  electron-to-chromium@1.5.5:
-    resolution: {integrity: sha512-QR7/A7ZkMS8tZuoftC/jfqNkZLQO779SSW3YuZHP4eXpj3EffGLFcB/Xu9AAZQzLccTiCV+EmUo3ha4mQ9wnlA==}
+  electron-to-chromium@1.5.6:
+    resolution: {integrity: sha512-jwXWsM5RPf6j9dPYzaorcBSUg6AiqocPEyMpkchkvntaH9HGfOOMZwxMJjDY/XEs3T5dM7uyH1VhRMkqUU9qVw==}
 
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
@@ -2680,15 +2679,15 @@ packages:
   for-each@0.3.3:
     resolution: {integrity: sha512-jqYfLp7mo9vIyQf8ykW2v7A+2N4QjeCeI5+Dz9XraiO1ign81wjiH7Fb9vSOWvQfNtmSa4H2RoQTrrXivdUZmw==}
 
-  foreground-child@3.2.1:
-    resolution: {integrity: sha512-PXUUyLqrR2XCWICfv6ukppP96sdFwWbNEnfEMt7jNsISjMsvaLNinAHNDYyvkyU+SZG2BTSbT5NjG+vZslfGTA==}
+  foreground-child@3.3.0:
+    resolution: {integrity: sha512-Ld2g8rrAyMYFXBhEqMz8ZAHBi4J4uS1i/CxGMDnjyFWddMXLVcDp051DZfu+t7+ab7Wv6SMqpWmyFIj5UbfFvg==}
     engines: {node: '>=14'}
 
   fraction.js@4.3.7:
     resolution: {integrity: sha512-ZsDfxO51wGAXREY55a7la9LScWpwv9RxIrYABrlvOFBlH/ShPnrtsXeuUIfXKKOVicNxQ+o8JTbJvjS4M89yew==}
 
-  framer-motion@11.3.21:
-    resolution: {integrity: sha512-D+hfIsvzV8eL/iycld4K+tKlg2Q2LdwnrcBEohtGw3cG1AIuNYATbT5RUqIM1ndsAk+EfGhoSGf0UaiFodc5Tw==}
+  framer-motion@11.3.24:
+    resolution: {integrity: sha512-kl0YI7HwAtyV0VOAWuU/rXoOS8+z5qSkMN6rZS+a9oe6fIha6SC3vjJN6u/hBpvjrg5MQNdSnqnjYxm0WYTX9g==}
     peerDependencies:
       '@emotion/is-prop-valid': '*'
       react: ^18.0.0
@@ -2855,8 +2854,8 @@ packages:
   hast-util-whitespace@3.0.0:
     resolution: {integrity: sha512-88JUN06ipLwsnv+dVn+OIYOvAuvBMy/Qoi6O7mQHxdPXpjy+Cd6xRkWwux7DKO+4sYILtLBRIKgsdpS2gQc7qw==}
 
-  hono@4.5.4:
-    resolution: {integrity: sha512-k2IguJfRgNCpDbAfpxk+o+fZBLFHl4+eIZUpjc1ItZWHeZ37SmT3efA1UpkIaC0hSf1NJg0E79/wWn6g9LQ4Cw==}
+  hono@4.5.5:
+    resolution: {integrity: sha512-fXBXHqaVfimWofbelLXci8pZyIwBMkDIwCa4OwZvK+xVbEyYLELVP4DfbGaj1aEM6ZY3hHgs4qLvCO2ChkhgQw==}
     engines: {node: '>=16.0.0'}
 
   http-cache-semantics@4.1.1:
@@ -2879,6 +2878,10 @@ packages:
 
   ignore@5.3.1:
     resolution: {integrity: sha512-5Fytz/IraMjqpwfd34ke28PTVMjZjJG2MPn5t7OE4eUCUNf8BAa7b5WUS9/Qvr6mwOQS7Mk6vdsMno5he+T8Xw==}
+    engines: {node: '>= 4'}
+
+  ignore@5.3.2:
+    resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
     engines: {node: '>= 4'}
 
   import-fresh@3.3.0:
@@ -3092,8 +3095,8 @@ packages:
     resolution: {integrity: sha512-2yTgeWTWzMWkHu6Jp9NKgePDaYHbntiwvYuuJLbbN9vl7DC9DvXKOB2BC3ZZ92D3cvV/aflH0osDfwpHepQ53w==}
     hasBin: true
 
-  jotai@2.9.1:
-    resolution: {integrity: sha512-t4Q7FIqQB3N/1art4OcqdlEtPmQ2h4DNIzTFhvt06WE0kCpQ1QoG+1A1IGTaQBi2KdDRsnywj+ojmHHKgw6PDA==}
+  jotai@2.9.3:
+    resolution: {integrity: sha512-IqMWKoXuEzWSShjd9UhalNsRGbdju5G2FrqNLQJT+Ih6p41VNYe2sav5hnwQx4HJr25jq9wRqvGSWGviGG6Gjw==}
     engines: {node: '>=12.20.0'}
     peerDependencies:
       '@types/react': '>=17.0.0'
@@ -3613,8 +3616,8 @@ packages:
   pause-stream@0.0.11:
     resolution: {integrity: sha512-e3FBlXLmN/D1S+zHzanP4E/4Z60oFAa3O051qt1pxa7DEJWKAyil6upYVXCWadEnuoqa4Pkc9oUx9zsxYeRv8A==}
 
-  peek-readable@5.1.3:
-    resolution: {integrity: sha512-kCsc9HwH5RgVA3H3VqkWFyGQwsxUxLdiSX1d5nqAm7hnMFjNFX1VhBLmJoUY0hZNc8gmDNgBkLjfhiWPsziXWA==}
+  peek-readable@5.1.4:
+    resolution: {integrity: sha512-E7mY2VmKqw9jYuXrSWGHFuPCW2SLQenzXLF3amGaY6lXXg4/b3gj5HVM7h8ZjCO/nZS9ICs0Cz285+32FvNd/A==}
     engines: {node: '>=14.16'}
 
   periscopic@3.1.0:
@@ -3685,8 +3688,8 @@ packages:
     peerDependencies:
       postcss: ^8.2.14
 
-  postcss-selector-parser@6.1.1:
-    resolution: {integrity: sha512-b4dlw/9V8A71rLIDsSwVmak9z2DuBUB7CA1/wSdelNEzqsjoSPeADTWNO09lpH49Diy3/JIZ2bSPB1dI3LJCHg==}
+  postcss-selector-parser@6.1.2:
+    resolution: {integrity: sha512-Q8qQfPiZ+THO/3ZrOrO0cJJKfpYCagtMUkXbnEfmgUjwXg6z/WBeOyS9APBBPCTSiDV+s4SwQGu8yFsiMRIudg==}
     engines: {node: '>=4'}
 
   postcss-value-parser@4.2.0:
@@ -3700,8 +3703,8 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
-  prettier-plugin-tailwindcss@0.6.5:
-    resolution: {integrity: sha512-axfeOArc/RiGHjOIy9HytehlC0ZLeMaqY09mm8YCkMzznKiDkwFzOpBvtuhuv3xG5qB73+Mj7OCe2j/L1ryfuQ==}
+  prettier-plugin-tailwindcss@0.6.6:
+    resolution: {integrity: sha512-OPva5S7WAsPLEsOuOWXATi13QrCKACCiIonFgIR6V4lYv4QLp++UXVhZSzRbZxXGimkQtQT86CC6fQqTOybGng==}
     engines: {node: '>=14.21.3'}
     peerDependencies:
       '@ianvs/prettier-plugin-sort-imports': '*'
@@ -3715,6 +3718,7 @@ packages:
       prettier-plugin-import-sort: '*'
       prettier-plugin-jsdoc: '*'
       prettier-plugin-marko: '*'
+      prettier-plugin-multiline-arrays: '*'
       prettier-plugin-organize-attributes: '*'
       prettier-plugin-organize-imports: '*'
       prettier-plugin-sort-imports: '*'
@@ -3740,6 +3744,8 @@ packages:
       prettier-plugin-jsdoc:
         optional: true
       prettier-plugin-marko:
+        optional: true
+      prettier-plugin-multiline-arrays:
         optional: true
       prettier-plugin-organize-attributes:
         optional: true
@@ -3803,10 +3809,10 @@ packages:
     resolution: {integrity: sha512-y3bGgqKj3QBdxLbLkomlohkvsA8gdAiUQlSBJnBhfn+BPxg4bc62d8TcBW15wavDfgexCgccckhcZvywyQYPOw==}
     hasBin: true
 
-  react-dom@19.0.0-rc-187dd6a7-20240806:
-    resolution: {integrity: sha512-Lh7E4AolPf6iEBXQhSzSQoNDtwBPBG5255RLM/3lRzmWh+9jjXYpYd3YuMGQ5ZVCCaytHq5vkYtuFxWxBAfXCw==}
+  react-dom@19.0.0-rc-68dbd84b-20240812:
+    resolution: {integrity: sha512-GY3wH9Ze7ZaPvDtKYrrStKfdHc38DCzT+yko5mKa8VjsjrmEmlAqvpX5EE6gZz9gQLzKVW6NAGRb4UwDVOuGmw==}
     peerDependencies:
-      react: 19.0.0-rc-187dd6a7-20240806
+      react: 19.0.0-rc-68dbd84b-20240812
 
   react-error-boundary@4.0.13:
     resolution: {integrity: sha512-b6PwbdSv8XeOSYvjt8LpgpKrZ0yGdtZokYwkwV2wlcZbxgopHX/hgPl5VgpnoVOWd868n1hktM8Qm4b+02MiLQ==}
@@ -3820,12 +3826,12 @@ packages:
     resolution: {integrity: sha512-jCvmsr+1IUSMUyzOkRcvnVbX3ZYC6g9TDrDbFuFmRDq7PD4yaGbLKNQL6k2jnArV8hjYxh7hVhAZB6s9HDGpZA==}
     engines: {node: '>=0.10.0'}
 
-  react-server-dom-webpack@19.0.0-rc-187dd6a7-20240806:
-    resolution: {integrity: sha512-Mz0lRLEFUx9L7qjh+uSDXQJBUzswE2M8OJUWb3VWZ0cK0oaHJOtSo/sMMDPyqugbt8grPz+QU2DXfwYuEtSkMw==}
+  react-server-dom-webpack@19.0.0-rc-68dbd84b-20240812:
+    resolution: {integrity: sha512-SNS8wSpQaoaw7FZrdIM0Tjz0O9D+KsetcV1LLDzYlfjd+J7csepx3Lbx0OlsBcuiaAFrCvDh4Vt4p4kftmgKvw==}
     engines: {node: '>=0.10.0'}
     peerDependencies:
-      react: 19.0.0-rc-187dd6a7-20240806
-      react-dom: 19.0.0-rc-187dd6a7-20240806
+      react: 19.0.0-rc-68dbd84b-20240812
+      react-dom: 19.0.0-rc-68dbd84b-20240812
       webpack: ^5.59.0
 
   react-textarea-autosize@8.5.3:
@@ -3845,8 +3851,8 @@ packages:
     peerDependencies:
       react: '>=16.8.0 || ^17.0.0 || ^18'
 
-  react@19.0.0-rc-187dd6a7-20240806:
-    resolution: {integrity: sha512-FbbwQBNk/UVmAgt57q5ao9NC3ducJhDfwxLoSf9A5p+O4rh8Lje4ucDCPevXMPm81GrxzkEF3rIVJdIhNf9tPw==}
+  react@19.0.0-rc-68dbd84b-20240812:
+    resolution: {integrity: sha512-pkGiNBzeEplebGB4uLPhtZ3OnSw4lTsJeKoUKxV9jLM0UsVb6MT08HMz0NNdbqYcnG0PNZ9rTlKilWrarL/HdQ==}
     engines: {node: '>=0.10.0'}
 
   read-cache@1.0.0:
@@ -3957,8 +3963,8 @@ packages:
     resolution: {integrity: sha512-CdASjNJPvRa7roO6Ra/gLYBTzYzzPyyBXxIMdGW3USQLyjWEls2RgW5UBTXaQVp+OrpeCK3bLem8smtmheoRuw==}
     engines: {node: '>= 0.4'}
 
-  scheduler@0.25.0-rc-187dd6a7-20240806:
-    resolution: {integrity: sha512-U40NT+/QH0t7oBP0m/oQJvOC+iCNJTlugDkfPQI+vSVWrbmHGYK9fso6zJ5g5y5OwDu4pELEys5BEUrXMOdxmw==}
+  scheduler@0.25.0-rc-68dbd84b-20240812:
+    resolution: {integrity: sha512-VX9z5fxvePEM4F6cXtSklONXJmYi4Qo/oDilJZqgJ4KmrLNVDCkqA5gvdxe8sWVBw2ZSrgpTVYAEII1YfI646w==}
 
   schema-utils@3.3.0:
     resolution: {integrity: sha512-pN/yOAvcC+5rQ5nERGuwrjLlYvLTbCibnZ1I7B1LaiAz9BRBlE9GMgE/eqV30P7aJQUf7Ddimy/RsbYO/GrVGg==}
@@ -4191,8 +4197,8 @@ packages:
     peerDependencies:
       react: ^16.11.0 || ^17.0.0 || ^18.0.0
 
-  tailwindcss@3.4.7:
-    resolution: {integrity: sha512-rxWZbe87YJb4OcSopb7up2Ba4U82BoiSGUdoDr3Ydrg9ckxFS/YWsvhN323GMcddgU65QRy7JndC7ahhInhvlQ==}
+  tailwindcss@3.4.9:
+    resolution: {integrity: sha512-1SEOvRr6sSdV5IDf9iC+NU4dhwdqzF4zKKq3sAbasUWHEM6lsMhX+eNN5gkPx1BvLFEnZQEUFbXnGj8Qlp83Pg==}
     engines: {node: '>=14.0.0'}
     hasBin: true
 
@@ -4224,8 +4230,8 @@ packages:
       uglify-js:
         optional: true
 
-  terser@5.31.3:
-    resolution: {integrity: sha512-pAfYn3NIZLyZpa83ZKigvj6Rn9c/vd5KfYGX7cN1mnzqgDcxWvrU5ZtAfIKhEXz9nRecw4z3LXkjaq96/qZqAA==}
+  terser@5.31.5:
+    resolution: {integrity: sha512-YPmas0L0rE1UyLL/llTWA0SiDOqIcAQYLeUj7cJYzXHlRTAnMSg9pPe4VJ5PlKvTrPQsdVFuiRiwyeNlYgwh2Q==}
     engines: {node: '>=10'}
     hasBin: true
 
@@ -4342,8 +4348,8 @@ packages:
     resolution: {integrity: sha512-/OxDN6OtAk5KBpGb28T+HZc2M+ADtvRxXrKKbUwtsLgdoxgX13hyy7ek6bFRl5+aBs2yZzB0c4CnQfAtVypW/g==}
     engines: {node: '>= 0.4'}
 
-  typescript@5.5.3:
-    resolution: {integrity: sha512-/hreyEujaB0w76zKo6717l3L0o/qEUtRgdvUBvlkhoWeOVMjMuHNHk0BRBzikzuGDqNmPQbg5ifMEqsHLiIUcQ==}
+  typescript@5.5.4:
+    resolution: {integrity: sha512-Mtq29sKDAEYP7aljRgtPOpTvOfbwRWlS6dPRzwjdE+C0R4brX/GUyhHSecbHMFLNBLcJIPt9nl9yG5TZ1weH+Q==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -4473,16 +4479,16 @@ packages:
   vite-plugin-stylex-dev@0.7.5:
     resolution: {integrity: sha512-MY4kuBDP6zVvcqepCZ/yG8njjXCXgxkceD7Ma4+CqSd+yBrIU5CF5dAdITbb69cG4oq9gmsV+zIXl+/5V9HN/w==}
 
-  vite-tsconfig-paths@4.3.2:
-    resolution: {integrity: sha512-0Vd/a6po6Q+86rPlntHye7F31zA2URZMbH8M3saAZ/xR9QoGN/L21bxEGfXdWmFdNkqPpRdxFT7nmNe12e9/uA==}
+  vite-tsconfig-paths@5.0.1:
+    resolution: {integrity: sha512-yqwv+LstU7NwPeNqajZzLEBVpUFU6Dugtb2P84FXuvaoYA+/70l9MHE+GYfYAycVyPSDYZ7mjOFuYBRqlEpTig==}
     peerDependencies:
-      vite: 5.3.5
+      vite: 5.4.0
     peerDependenciesMeta:
       vite:
         optional: true
 
-  vite@5.3.5:
-    resolution: {integrity: sha512-MdjglKR6AQXQb9JGiS7Rc2wC6uMjcm7Go/NHNO63EwiJXfuk9PgqiP/n5IDJCziMkfw9n4Ubp7lttNwz+8ZVKA==}
+  vite@5.4.0:
+    resolution: {integrity: sha512-5xokfMX0PIiwCMCMb9ZJcMyh5wbBun0zUzKib+L65vAZ8GY9ePZMXxFrHbr/Kyll2+LSCY7xtERPpxkBDKngwg==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
     peerDependencies:
@@ -4490,6 +4496,7 @@ packages:
       less: '*'
       lightningcss: ^1.21.0
       sass: '*'
+      sass-embedded: '*'
       stylus: '*'
       sugarss: '*'
       terser: ^5.4.0
@@ -4501,6 +4508,8 @@ packages:
       lightningcss:
         optional: true
       sass:
+        optional: true
+      sass-embedded:
         optional: true
       stylus:
         optional: true
@@ -4960,11 +4969,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@mdx-js/react@3.0.1(@types/react@18.3.3)(react@19.0.0-rc-187dd6a7-20240806)':
+  '@mdx-js/react@3.0.1(@types/react@18.3.3)(react@19.0.0-rc-68dbd84b-20240812)':
     dependencies:
       '@types/mdx': 2.0.13
       '@types/react': 18.3.3
-      react: 19.0.0-rc-187dd6a7-20240806
+      react: 19.0.0-rc-68dbd84b-20240812
 
   '@mole-inc/bin-wrapper@8.0.1':
     dependencies:
@@ -5229,7 +5238,7 @@ snapshots:
     dependencies:
       '@types/http-cache-semantics': 4.0.4
       '@types/keyv': 3.1.4
-      '@types/node': 22.1.0
+      '@types/node': 22.2.0
       '@types/responselike': 1.0.3
 
   '@types/cookie@0.6.0': {}
@@ -5257,7 +5266,7 @@ snapshots:
   '@types/fs-extra@11.0.4':
     dependencies:
       '@types/jsonfile': 6.1.4
-      '@types/node': 22.1.0
+      '@types/node': 22.2.0
 
   '@types/hast@3.0.4':
     dependencies:
@@ -5271,11 +5280,11 @@ snapshots:
 
   '@types/jsonfile@6.1.4':
     dependencies:
-      '@types/node': 22.1.0
+      '@types/node': 22.2.0
 
   '@types/keyv@3.1.4':
     dependencies:
-      '@types/node': 22.1.0
+      '@types/node': 22.2.0
 
   '@types/mdast@4.0.4':
     dependencies:
@@ -5285,13 +5294,13 @@ snapshots:
 
   '@types/ms@0.7.34': {}
 
-  '@types/node@22.1.0':
+  '@types/node@22.2.0':
     dependencies:
       undici-types: 6.13.0
 
   '@types/prompts@2.4.9':
     dependencies:
-      '@types/node': 22.1.0
+      '@types/node': 22.2.0
       kleur: 3.0.3
 
   '@types/prop-types@15.7.12': {}
@@ -5307,96 +5316,96 @@ snapshots:
 
   '@types/responselike@1.0.3':
     dependencies:
-      '@types/node': 22.1.0
+      '@types/node': 22.2.0
 
   '@types/tar@6.1.13':
     dependencies:
-      '@types/node': 22.1.0
+      '@types/node': 22.2.0
       minipass: 4.2.8
 
   '@types/unist@2.0.10': {}
 
   '@types/unist@3.0.2': {}
 
-  '@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.3))(eslint@8.57.0)(typescript@5.5.3)':
+  '@typescript-eslint/eslint-plugin@8.1.0(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.5.4))(eslint@8.57.0)(typescript@5.5.4)':
     dependencies:
       '@eslint-community/regexpp': 4.11.0
-      '@typescript-eslint/parser': 7.18.0(eslint@8.57.0)(typescript@5.5.3)
-      '@typescript-eslint/scope-manager': 7.18.0
-      '@typescript-eslint/type-utils': 7.18.0(eslint@8.57.0)(typescript@5.5.3)
-      '@typescript-eslint/utils': 7.18.0(eslint@8.57.0)(typescript@5.5.3)
-      '@typescript-eslint/visitor-keys': 7.18.0
+      '@typescript-eslint/parser': 8.1.0(eslint@8.57.0)(typescript@5.5.4)
+      '@typescript-eslint/scope-manager': 8.1.0
+      '@typescript-eslint/type-utils': 8.1.0(eslint@8.57.0)(typescript@5.5.4)
+      '@typescript-eslint/utils': 8.1.0(eslint@8.57.0)(typescript@5.5.4)
+      '@typescript-eslint/visitor-keys': 8.1.0
       eslint: 8.57.0
       graphemer: 1.4.0
-      ignore: 5.3.1
+      ignore: 5.3.2
       natural-compare: 1.4.0
-      ts-api-utils: 1.3.0(typescript@5.5.3)
+      ts-api-utils: 1.3.0(typescript@5.5.4)
     optionalDependencies:
-      typescript: 5.5.3
+      typescript: 5.5.4
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.3)':
+  '@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.5.4)':
     dependencies:
-      '@typescript-eslint/scope-manager': 7.18.0
-      '@typescript-eslint/types': 7.18.0
-      '@typescript-eslint/typescript-estree': 7.18.0(typescript@5.5.3)
-      '@typescript-eslint/visitor-keys': 7.18.0
+      '@typescript-eslint/scope-manager': 8.1.0
+      '@typescript-eslint/types': 8.1.0
+      '@typescript-eslint/typescript-estree': 8.1.0(typescript@5.5.4)
+      '@typescript-eslint/visitor-keys': 8.1.0
       debug: 4.3.6
       eslint: 8.57.0
     optionalDependencies:
-      typescript: 5.5.3
+      typescript: 5.5.4
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/scope-manager@7.18.0':
+  '@typescript-eslint/scope-manager@8.1.0':
     dependencies:
-      '@typescript-eslint/types': 7.18.0
-      '@typescript-eslint/visitor-keys': 7.18.0
+      '@typescript-eslint/types': 8.1.0
+      '@typescript-eslint/visitor-keys': 8.1.0
 
-  '@typescript-eslint/type-utils@7.18.0(eslint@8.57.0)(typescript@5.5.3)':
+  '@typescript-eslint/type-utils@8.1.0(eslint@8.57.0)(typescript@5.5.4)':
     dependencies:
-      '@typescript-eslint/typescript-estree': 7.18.0(typescript@5.5.3)
-      '@typescript-eslint/utils': 7.18.0(eslint@8.57.0)(typescript@5.5.3)
+      '@typescript-eslint/typescript-estree': 8.1.0(typescript@5.5.4)
+      '@typescript-eslint/utils': 8.1.0(eslint@8.57.0)(typescript@5.5.4)
       debug: 4.3.6
-      eslint: 8.57.0
-      ts-api-utils: 1.3.0(typescript@5.5.3)
+      ts-api-utils: 1.3.0(typescript@5.5.4)
     optionalDependencies:
-      typescript: 5.5.3
+      typescript: 5.5.4
     transitivePeerDependencies:
+      - eslint
       - supports-color
 
-  '@typescript-eslint/types@7.18.0': {}
+  '@typescript-eslint/types@8.1.0': {}
 
-  '@typescript-eslint/typescript-estree@7.18.0(typescript@5.5.3)':
+  '@typescript-eslint/typescript-estree@8.1.0(typescript@5.5.4)':
     dependencies:
-      '@typescript-eslint/types': 7.18.0
-      '@typescript-eslint/visitor-keys': 7.18.0
+      '@typescript-eslint/types': 8.1.0
+      '@typescript-eslint/visitor-keys': 8.1.0
       debug: 4.3.6
       globby: 11.1.0
       is-glob: 4.0.3
       minimatch: 9.0.5
       semver: 7.6.3
-      ts-api-utils: 1.3.0(typescript@5.5.3)
+      ts-api-utils: 1.3.0(typescript@5.5.4)
     optionalDependencies:
-      typescript: 5.5.3
+      typescript: 5.5.4
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/utils@7.18.0(eslint@8.57.0)(typescript@5.5.3)':
+  '@typescript-eslint/utils@8.1.0(eslint@8.57.0)(typescript@5.5.4)':
     dependencies:
       '@eslint-community/eslint-utils': 4.4.0(eslint@8.57.0)
-      '@typescript-eslint/scope-manager': 7.18.0
-      '@typescript-eslint/types': 7.18.0
-      '@typescript-eslint/typescript-estree': 7.18.0(typescript@5.5.3)
+      '@typescript-eslint/scope-manager': 8.1.0
+      '@typescript-eslint/types': 8.1.0
+      '@typescript-eslint/typescript-estree': 8.1.0(typescript@5.5.4)
       eslint: 8.57.0
     transitivePeerDependencies:
       - supports-color
       - typescript
 
-  '@typescript-eslint/visitor-keys@7.18.0':
+  '@typescript-eslint/visitor-keys@8.1.0':
     dependencies:
-      '@typescript-eslint/types': 7.18.0
+      '@typescript-eslint/types': 8.1.0
       eslint-visitor-keys: 3.4.3
 
   '@ungap/structured-clone@1.2.0': {}
@@ -5423,7 +5432,7 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
 
-  '@vanilla-extract/integration@7.1.7(@types/node@22.1.0)(terser@5.31.3)':
+  '@vanilla-extract/integration@7.1.7(@types/node@22.2.0)(terser@5.31.5)':
     dependencies:
       '@babel/core': 7.25.2
       '@babel/plugin-syntax-typescript': 7.24.7(@babel/core@7.25.2)
@@ -5435,14 +5444,15 @@ snapshots:
       find-up: 5.0.0
       javascript-stringify: 2.1.0
       mlly: 1.7.1
-      vite: 5.3.5(@types/node@22.1.0)(terser@5.31.3)
-      vite-node: 1.6.0(@types/node@22.1.0)(terser@5.31.3)
+      vite: 5.4.0(@types/node@22.2.0)(terser@5.31.5)
+      vite-node: 1.6.0(@types/node@22.2.0)(terser@5.31.5)
     transitivePeerDependencies:
       - '@types/node'
       - babel-plugin-macros
       - less
       - lightningcss
       - sass
+      - sass-embedded
       - stylus
       - sugarss
       - supports-color
@@ -5450,16 +5460,17 @@ snapshots:
 
   '@vanilla-extract/private@1.0.5': {}
 
-  '@vanilla-extract/vite-plugin@4.0.10(@types/node@22.1.0)(terser@5.31.3)(vite@5.3.5(@types/node@22.1.0)(terser@5.31.3))':
+  '@vanilla-extract/vite-plugin@4.0.10(@types/node@22.2.0)(terser@5.31.5)(vite@5.4.0(@types/node@22.2.0)(terser@5.31.5))':
     dependencies:
-      '@vanilla-extract/integration': 7.1.7(@types/node@22.1.0)(terser@5.31.3)
-      vite: 5.3.5(@types/node@22.1.0)(terser@5.31.3)
+      '@vanilla-extract/integration': 7.1.7(@types/node@22.2.0)(terser@5.31.5)
+      vite: 5.4.0(@types/node@22.2.0)(terser@5.31.5)
     transitivePeerDependencies:
       - '@types/node'
       - babel-plugin-macros
       - less
       - lightningcss
       - sass
+      - sass-embedded
       - stylus
       - sugarss
       - supports-color
@@ -5467,14 +5478,14 @@ snapshots:
 
   '@vercel/ncc@0.38.1': {}
 
-  '@vitejs/plugin-react@4.3.1(vite@5.3.5(@types/node@22.1.0)(terser@5.31.3))':
+  '@vitejs/plugin-react@4.3.1(vite@5.4.0(@types/node@22.2.0)(terser@5.31.5))':
     dependencies:
       '@babel/core': 7.25.2
       '@babel/plugin-transform-react-jsx-self': 7.24.7(@babel/core@7.25.2)
       '@babel/plugin-transform-react-jsx-source': 7.24.7(@babel/core@7.25.2)
       '@types/babel__core': 7.20.5
       react-refresh: 0.14.2
-      vite: 5.3.5(@types/node@22.1.0)(terser@5.31.3)
+      vite: 5.4.0(@types/node@22.2.0)(terser@5.31.5)
     transitivePeerDependencies:
       - supports-color
 
@@ -5735,7 +5746,7 @@ snapshots:
   autoprefixer@10.4.20(postcss@8.4.41):
     dependencies:
       browserslist: 4.23.3
-      caniuse-lite: 1.0.30001649
+      caniuse-lite: 1.0.30001651
       fraction.js: 4.3.7
       normalize-range: 0.1.2
       picocolors: 1.0.1
@@ -5794,8 +5805,8 @@ snapshots:
 
   browserslist@4.23.3:
     dependencies:
-      caniuse-lite: 1.0.30001649
-      electron-to-chromium: 1.5.5
+      caniuse-lite: 1.0.30001651
+      electron-to-chromium: 1.5.6
       node-releases: 2.0.18
       update-browserslist-db: 1.1.0(browserslist@4.23.3)
 
@@ -5831,7 +5842,7 @@ snapshots:
 
   camelcase@7.0.1: {}
 
-  caniuse-lite@1.0.30001649: {}
+  caniuse-lite@1.0.30001651: {}
 
   ccount@2.0.1: {}
 
@@ -6074,7 +6085,7 @@ snapshots:
 
   eastasianwidth@0.2.0: {}
 
-  electron-to-chromium@1.5.5: {}
+  electron-to-chromium@1.5.6: {}
 
   emoji-regex@8.0.0: {}
 
@@ -6229,13 +6240,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.3))(eslint-plugin-import@2.29.1)(eslint@8.57.0):
+  eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.5.4))(eslint-plugin-import@2.29.1)(eslint@8.57.0):
     dependencies:
       debug: 4.3.6
       enhanced-resolve: 5.17.1
       eslint: 8.57.0
-      eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.3))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0)
-      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.3))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
+      eslint-module-utils: 2.8.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.5.4))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0)
+      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0)
       fast-glob: 3.3.2
       get-tsconfig: 4.7.6
       is-core-module: 2.15.0
@@ -6246,18 +6257,18 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-module-utils@2.8.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.3))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0):
+  eslint-module-utils@2.8.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.5.4))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
-      '@typescript-eslint/parser': 7.18.0(eslint@8.57.0)(typescript@5.5.3)
+      '@typescript-eslint/parser': 8.1.0(eslint@8.57.0)(typescript@5.5.4)
       eslint: 8.57.0
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.6.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.3))(eslint-plugin-import@2.29.1)(eslint@8.57.0)
+      eslint-import-resolver-typescript: 3.6.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.5.4))(eslint-plugin-import@2.29.1)(eslint@8.57.0)
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.29.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.3))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0):
+  eslint-plugin-import@2.29.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-typescript@3.6.1)(eslint@8.57.0):
     dependencies:
       array-includes: 3.1.8
       array.prototype.findlastindex: 1.2.5
@@ -6267,7 +6278,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 8.57.0
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.5.3))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0)
+      eslint-module-utils: 2.8.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1(@typescript-eslint/parser@8.1.0(eslint@8.57.0)(typescript@5.5.4))(eslint-plugin-import@2.29.1)(eslint@8.57.0))(eslint@8.57.0)
       hasown: 2.0.2
       is-core-module: 2.15.0
       is-glob: 4.0.3
@@ -6278,7 +6289,7 @@ snapshots:
       semver: 6.3.1
       tsconfig-paths: 3.15.0
     optionalDependencies:
-      '@typescript-eslint/parser': 7.18.0(eslint@8.57.0)(typescript@5.5.3)
+      '@typescript-eslint/parser': 8.1.0(eslint@8.57.0)(typescript@5.5.4)
     transitivePeerDependencies:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack
@@ -6417,7 +6428,7 @@ snapshots:
 
   eval@0.1.8:
     dependencies:
-      '@types/node': 22.1.0
+      '@types/node': 22.2.0
       require-like: 0.1.2
 
   event-stream@3.3.4:
@@ -6546,19 +6557,19 @@ snapshots:
     dependencies:
       is-callable: 1.2.7
 
-  foreground-child@3.2.1:
+  foreground-child@3.3.0:
     dependencies:
       cross-spawn: 7.0.3
       signal-exit: 4.1.0
 
   fraction.js@4.3.7: {}
 
-  framer-motion@11.3.21(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806):
+  framer-motion@11.3.24(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812):
     dependencies:
       tslib: 2.6.3
     optionalDependencies:
-      react: 19.0.0-rc-187dd6a7-20240806
-      react-dom: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+      react: 19.0.0-rc-68dbd84b-20240812
+      react-dom: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
 
   from@0.1.7: {}
 
@@ -6631,7 +6642,7 @@ snapshots:
 
   glob@10.4.5:
     dependencies:
-      foreground-child: 3.2.1
+      foreground-child: 3.3.0
       jackspeak: 3.4.3
       minimatch: 9.0.5
       minipass: 7.1.2
@@ -6663,7 +6674,7 @@ snapshots:
       array-union: 2.1.0
       dir-glob: 3.0.1
       fast-glob: 3.3.2
-      ignore: 5.3.1
+      ignore: 5.3.2
       merge2: 1.4.1
       slash: 3.0.0
 
@@ -6758,7 +6769,7 @@ snapshots:
     dependencies:
       '@types/hast': 3.0.4
 
-  hono@4.5.4: {}
+  hono@4.5.5: {}
 
   http-cache-semantics@4.1.1: {}
 
@@ -6774,6 +6785,8 @@ snapshots:
   ieee754@1.2.1: {}
 
   ignore@5.3.1: {}
+
+  ignore@5.3.2: {}
 
   import-fresh@3.3.0:
     dependencies:
@@ -6958,16 +6971,16 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 22.1.0
+      '@types/node': 22.2.0
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
   jiti@1.21.6: {}
 
-  jotai@2.9.1(@types/react@18.3.3)(react@19.0.0-rc-187dd6a7-20240806):
+  jotai@2.9.3(@types/react@18.3.3)(react@19.0.0-rc-68dbd84b-20240812):
     optionalDependencies:
       '@types/react': 18.3.3
-      react: 19.0.0-rc-187dd6a7-20240806
+      react: 19.0.0-rc-68dbd84b-20240812
 
   js-tokens@4.0.0: {}
 
@@ -7454,12 +7467,12 @@ snapshots:
 
   neo-async@2.6.2: {}
 
-  next-mdx-remote@5.0.0(@types/react@18.3.3)(react@19.0.0-rc-187dd6a7-20240806):
+  next-mdx-remote@5.0.0(@types/react@18.3.3)(react@19.0.0-rc-68dbd84b-20240812):
     dependencies:
       '@babel/code-frame': 7.24.7
       '@mdx-js/mdx': 3.0.1
-      '@mdx-js/react': 3.0.1(@types/react@18.3.3)(react@19.0.0-rc-187dd6a7-20240806)
-      react: 19.0.0-rc-187dd6a7-20240806
+      '@mdx-js/react': 3.0.1(@types/react@18.3.3)(react@19.0.0-rc-68dbd84b-20240812)
+      react: 19.0.0-rc-68dbd84b-20240812
       unist-util-remove: 3.1.1
       vfile: 6.0.2
       vfile-matter: 5.0.0
@@ -7626,7 +7639,7 @@ snapshots:
     dependencies:
       through: 2.3.8
 
-  peek-readable@5.1.3: {}
+  peek-readable@5.1.4: {}
 
   periscopic@3.1.0:
     dependencies:
@@ -7684,9 +7697,9 @@ snapshots:
   postcss-nested@6.2.0(postcss@8.4.41):
     dependencies:
       postcss: 8.4.41
-      postcss-selector-parser: 6.1.1
+      postcss-selector-parser: 6.1.2
 
-  postcss-selector-parser@6.1.1:
+  postcss-selector-parser@6.1.2:
     dependencies:
       cssesc: 3.0.0
       util-deprecate: 1.0.2
@@ -7701,7 +7714,7 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-  prettier-plugin-tailwindcss@0.6.5(prettier@3.3.3):
+  prettier-plugin-tailwindcss@0.6.6(prettier@3.3.3):
     dependencies:
       prettier: 3.3.3
 
@@ -7752,59 +7765,59 @@ snapshots:
       minimist: 1.2.8
       strip-json-comments: 2.0.1
 
-  react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806):
+  react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812):
     dependencies:
-      react: 19.0.0-rc-187dd6a7-20240806
-      scheduler: 0.25.0-rc-187dd6a7-20240806
+      react: 19.0.0-rc-68dbd84b-20240812
+      scheduler: 0.25.0-rc-68dbd84b-20240812
 
-  react-error-boundary@4.0.13(react@19.0.0-rc-187dd6a7-20240806):
+  react-error-boundary@4.0.13(react@19.0.0-rc-68dbd84b-20240812):
     dependencies:
       '@babel/runtime': 7.24.6
-      react: 19.0.0-rc-187dd6a7-20240806
+      react: 19.0.0-rc-68dbd84b-20240812
 
   react-is@16.13.1: {}
 
   react-refresh@0.14.2: {}
 
-  react-server-dom-webpack@19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0(@swc/core@1.6.13(@swc/helpers@0.5.12))):
+  react-server-dom-webpack@19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0(@swc/core@1.6.13(@swc/helpers@0.5.12))):
     dependencies:
       acorn-loose: 8.4.0
       neo-async: 2.6.2
-      react: 19.0.0-rc-187dd6a7-20240806
-      react-dom: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+      react: 19.0.0-rc-68dbd84b-20240812
+      react-dom: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       webpack: 5.93.0(@swc/core@1.6.13(@swc/helpers@0.5.12))
 
-  react-server-dom-webpack@19.0.0-rc-187dd6a7-20240806(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806)(webpack@5.93.0):
+  react-server-dom-webpack@19.0.0-rc-68dbd84b-20240812(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812)(webpack@5.93.0):
     dependencies:
       acorn-loose: 8.4.0
       neo-async: 2.6.2
-      react: 19.0.0-rc-187dd6a7-20240806
-      react-dom: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
+      react: 19.0.0-rc-68dbd84b-20240812
+      react-dom: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
       webpack: 5.93.0
 
-  react-textarea-autosize@8.5.3(@types/react@18.3.3)(react@19.0.0-rc-187dd6a7-20240806):
+  react-textarea-autosize@8.5.3(@types/react@18.3.3)(react@19.0.0-rc-68dbd84b-20240812):
     dependencies:
       '@babel/runtime': 7.23.9
-      react: 19.0.0-rc-187dd6a7-20240806
-      use-composed-ref: 1.3.0(react@19.0.0-rc-187dd6a7-20240806)
-      use-latest: 1.2.1(@types/react@18.3.3)(react@19.0.0-rc-187dd6a7-20240806)
+      react: 19.0.0-rc-68dbd84b-20240812
+      use-composed-ref: 1.3.0(react@19.0.0-rc-68dbd84b-20240812)
+      use-latest: 1.2.1(@types/react@18.3.3)(react@19.0.0-rc-68dbd84b-20240812)
     transitivePeerDependencies:
       - '@types/react'
 
-  react-tweet@3.2.0(react-dom@19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806))(react@19.0.0-rc-187dd6a7-20240806):
+  react-tweet@3.2.0(react-dom@19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812))(react@19.0.0-rc-68dbd84b-20240812):
     dependencies:
       '@swc/helpers': 0.5.6
       clsx: 2.1.0
       date-fns: 2.30.0
-      react: 19.0.0-rc-187dd6a7-20240806
-      react-dom: 19.0.0-rc-187dd6a7-20240806(react@19.0.0-rc-187dd6a7-20240806)
-      swr: 2.2.5(react@19.0.0-rc-187dd6a7-20240806)
+      react: 19.0.0-rc-68dbd84b-20240812
+      react-dom: 19.0.0-rc-68dbd84b-20240812(react@19.0.0-rc-68dbd84b-20240812)
+      swr: 2.2.5(react@19.0.0-rc-68dbd84b-20240812)
 
-  react-wrap-balancer@1.1.0(react@19.0.0-rc-187dd6a7-20240806):
+  react-wrap-balancer@1.1.0(react@19.0.0-rc-68dbd84b-20240812):
     dependencies:
-      react: 19.0.0-rc-187dd6a7-20240806
+      react: 19.0.0-rc-68dbd84b-20240812
 
-  react@19.0.0-rc-187dd6a7-20240806: {}
+  react@19.0.0-rc-68dbd84b-20240812: {}
 
   read-cache@1.0.0:
     dependencies:
@@ -7957,7 +7970,7 @@ snapshots:
       es-errors: 1.3.0
       is-regex: 1.1.4
 
-  scheduler@0.25.0-rc-187dd6a7-20240806: {}
+  scheduler@0.25.0-rc-68dbd84b-20240812: {}
 
   schema-utils@3.3.0:
     dependencies:
@@ -8176,7 +8189,7 @@ snapshots:
   strtok3@7.1.1:
     dependencies:
       '@tokenizer/token': 0.3.0
-      peek-readable: 5.1.3
+      peek-readable: 5.1.4
 
   style-to-object@0.4.4:
     dependencies:
@@ -8214,13 +8227,13 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  swr@2.2.5(react@19.0.0-rc-187dd6a7-20240806):
+  swr@2.2.5(react@19.0.0-rc-68dbd84b-20240812):
     dependencies:
       client-only: 0.0.1
-      react: 19.0.0-rc-187dd6a7-20240806
-      use-sync-external-store: 1.2.2(react@19.0.0-rc-187dd6a7-20240806)
+      react: 19.0.0-rc-68dbd84b-20240812
+      use-sync-external-store: 1.2.2(react@19.0.0-rc-68dbd84b-20240812)
 
-  tailwindcss@3.4.7:
+  tailwindcss@3.4.9:
     dependencies:
       '@alloc/quick-lru': 5.2.0
       arg: 5.0.2
@@ -8241,7 +8254,7 @@ snapshots:
       postcss-js: 4.0.1(postcss@8.4.41)
       postcss-load-config: 4.0.2(postcss@8.4.41)
       postcss-nested: 6.2.0(postcss@8.4.41)
-      postcss-selector-parser: 6.1.1
+      postcss-selector-parser: 6.1.2
       resolve: 1.22.8
       sucrase: 3.35.0
     transitivePeerDependencies:
@@ -8268,7 +8281,7 @@ snapshots:
       jest-worker: 27.5.1
       schema-utils: 3.3.0
       serialize-javascript: 6.0.2
-      terser: 5.31.3
+      terser: 5.31.5
       webpack: 5.93.0(@swc/core@1.6.13(@swc/helpers@0.5.12))
     optionalDependencies:
       '@swc/core': 1.6.13(@swc/helpers@0.5.12)
@@ -8279,10 +8292,10 @@ snapshots:
       jest-worker: 27.5.1
       schema-utils: 3.3.0
       serialize-javascript: 6.0.2
-      terser: 5.31.3
+      terser: 5.31.5
       webpack: 5.93.0
 
-  terser@5.31.3:
+  terser@5.31.5:
     dependencies:
       '@jridgewell/source-map': 0.3.6
       acorn: 8.12.1
@@ -8328,17 +8341,17 @@ snapshots:
 
   trough@2.2.0: {}
 
-  ts-api-utils@1.3.0(typescript@5.5.3):
+  ts-api-utils@1.3.0(typescript@5.5.4):
     dependencies:
-      typescript: 5.5.3
+      typescript: 5.5.4
 
   ts-expect@1.3.0: {}
 
   ts-interface-checker@0.1.13: {}
 
-  tsconfck@3.1.1(typescript@5.5.3):
+  tsconfck@3.1.1(typescript@5.5.4):
     optionalDependencies:
-      typescript: 5.5.3
+      typescript: 5.5.4
 
   tsconfig-paths@3.15.0:
     dependencies:
@@ -8393,7 +8406,7 @@ snapshots:
       is-typed-array: 1.1.13
       possible-typed-array-names: 1.0.0
 
-  typescript@5.5.3: {}
+  typescript@5.5.4: {}
 
   ufo@1.5.4: {}
 
@@ -8486,26 +8499,26 @@ snapshots:
 
   urlpattern-polyfill@8.0.2: {}
 
-  use-composed-ref@1.3.0(react@19.0.0-rc-187dd6a7-20240806):
+  use-composed-ref@1.3.0(react@19.0.0-rc-68dbd84b-20240812):
     dependencies:
-      react: 19.0.0-rc-187dd6a7-20240806
+      react: 19.0.0-rc-68dbd84b-20240812
 
-  use-isomorphic-layout-effect@1.1.2(@types/react@18.3.3)(react@19.0.0-rc-187dd6a7-20240806):
+  use-isomorphic-layout-effect@1.1.2(@types/react@18.3.3)(react@19.0.0-rc-68dbd84b-20240812):
     dependencies:
-      react: 19.0.0-rc-187dd6a7-20240806
+      react: 19.0.0-rc-68dbd84b-20240812
     optionalDependencies:
       '@types/react': 18.3.3
 
-  use-latest@1.2.1(@types/react@18.3.3)(react@19.0.0-rc-187dd6a7-20240806):
+  use-latest@1.2.1(@types/react@18.3.3)(react@19.0.0-rc-68dbd84b-20240812):
     dependencies:
-      react: 19.0.0-rc-187dd6a7-20240806
-      use-isomorphic-layout-effect: 1.1.2(@types/react@18.3.3)(react@19.0.0-rc-187dd6a7-20240806)
+      react: 19.0.0-rc-68dbd84b-20240812
+      use-isomorphic-layout-effect: 1.1.2(@types/react@18.3.3)(react@19.0.0-rc-68dbd84b-20240812)
     optionalDependencies:
       '@types/react': 18.3.3
 
-  use-sync-external-store@1.2.2(react@19.0.0-rc-187dd6a7-20240806):
+  use-sync-external-store@1.2.2(react@19.0.0-rc-68dbd84b-20240812):
     dependencies:
-      react: 19.0.0-rc-187dd6a7-20240806
+      react: 19.0.0-rc-68dbd84b-20240812
 
   util-deprecate@1.0.2: {}
 
@@ -8529,35 +8542,37 @@ snapshots:
       unist-util-stringify-position: 4.0.0
       vfile-message: 4.0.2
 
-  vite-node@1.6.0(@types/node@22.1.0)(terser@5.31.3):
+  vite-node@1.6.0(@types/node@22.2.0)(terser@5.31.5):
     dependencies:
       cac: 6.7.14
       debug: 4.3.6
       pathe: 1.1.2
       picocolors: 1.0.1
-      vite: 5.3.5(@types/node@22.1.0)(terser@5.31.3)
+      vite: 5.4.0(@types/node@22.2.0)(terser@5.31.5)
     transitivePeerDependencies:
       - '@types/node'
       - less
       - lightningcss
       - sass
+      - sass-embedded
       - stylus
       - sugarss
       - supports-color
       - terser
 
-  vite-node@2.0.5(@types/node@22.1.0)(terser@5.31.3):
+  vite-node@2.0.5(@types/node@22.2.0)(terser@5.31.5):
     dependencies:
       cac: 6.7.14
       debug: 4.3.6
       pathe: 1.1.2
       tinyrainbow: 1.2.0
-      vite: 5.3.5(@types/node@22.1.0)(terser@5.31.3)
+      vite: 5.4.0(@types/node@22.2.0)(terser@5.31.5)
     transitivePeerDependencies:
       - '@types/node'
       - less
       - lightningcss
       - sass
+      - sass-embedded
       - stylus
       - sugarss
       - supports-color
@@ -8573,28 +8588,28 @@ snapshots:
       - rollup
       - supports-color
 
-  vite-tsconfig-paths@4.3.2(typescript@5.5.3)(vite@5.3.5(@types/node@22.1.0)(terser@5.31.3)):
+  vite-tsconfig-paths@5.0.1(typescript@5.5.4)(vite@5.4.0(@types/node@22.2.0)(terser@5.31.5)):
     dependencies:
       debug: 4.3.6
       globrex: 0.1.2
-      tsconfck: 3.1.1(typescript@5.5.3)
+      tsconfck: 3.1.1(typescript@5.5.4)
     optionalDependencies:
-      vite: 5.3.5(@types/node@22.1.0)(terser@5.31.3)
+      vite: 5.4.0(@types/node@22.2.0)(terser@5.31.5)
     transitivePeerDependencies:
       - supports-color
       - typescript
 
-  vite@5.3.5(@types/node@22.1.0)(terser@5.31.3):
+  vite@5.4.0(@types/node@22.2.0)(terser@5.31.5):
     dependencies:
       esbuild: 0.21.5
       postcss: 8.4.41
       rollup: 4.20.0
     optionalDependencies:
-      '@types/node': 22.1.0
+      '@types/node': 22.2.0
       fsevents: 2.3.3
-      terser: 5.31.3
+      terser: 5.31.5
 
-  vitest@2.0.5(@types/node@22.1.0)(terser@5.31.3):
+  vitest@2.0.5(@types/node@22.2.0)(terser@5.31.5):
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@vitest/expect': 2.0.5
@@ -8612,15 +8627,16 @@ snapshots:
       tinybench: 2.9.0
       tinypool: 1.0.0
       tinyrainbow: 1.2.0
-      vite: 5.3.5(@types/node@22.1.0)(terser@5.31.3)
-      vite-node: 2.0.5(@types/node@22.1.0)(terser@5.31.3)
+      vite: 5.4.0(@types/node@22.2.0)(terser@5.31.5)
+      vite-node: 2.0.5(@types/node@22.2.0)(terser@5.31.5)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 22.1.0
+      '@types/node': 22.2.0
     transitivePeerDependencies:
       - less
       - lightningcss
       - sass
+      - sass-embedded
       - stylus
       - sugarss
       - supports-color

@@ -47,7 +47,7 @@ export default defineEntries(
       case '/':
         return {
           input: '',
-          body: <Slot id="App" />,
+          html: <Slot id="App" />,
         };
       case '/no-ssr':
         return null;

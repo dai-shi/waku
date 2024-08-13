@@ -7,15 +7,20 @@ export default async function RootLayout({ children }) {
   const data = await getData();
 
   return (
-    <div className="font-['Nunito']">
-      <meta property="description" content={data.description} />
-      <link rel="icon" type="image/png" href={data.icon} />
-      <Header />
-      <main className="m-6 flex items-center *:min-h-64 *:min-w-64 lg:m-0 lg:min-h-svh lg:justify-center">
-        {children}
-      </main>
-      <Footer />
-    </div>
+    <html>
+      <head></head>
+      <body>
+        <div className="font-['Nunito']">
+          <meta property="description" content={data.description} />
+          <link rel="icon" type="image/png" href={data.icon} />
+          <Header />
+          <main className="m-6 flex items-center *:min-h-64 *:min-w-64 lg:m-0 lg:min-h-svh lg:justify-center">
+            {children}
+          </main>
+          <Footer />
+        </div>
+      </body>
+    </html>
   );
 }
 
