@@ -77,9 +77,9 @@
     "@swc/core": "1.6.13",
     "@vitejs/plugin-react": "4.3.1",
     "dotenv": "16.4.5",
-    "hono": "4.5.4",
+    "hono": "4.5.5",
     "rsc-html-stream": "0.0.3",
-    "vite": "5.3.5"
+    "vite": "5.4.0"
   },
   "devDependencies": {
     "@netlify/functions": "^2.8.1",
@@ -89,8 +89,8 @@
     "vitest": "^2.0.5"
   },
   "peerDependencies": {
-    "react": "19.0.0-rc-187dd6a7-20240806",
-    "react-dom": "19.0.0-rc-187dd6a7-20240806",
-    "react-server-dom-webpack": "19.0.0-rc-187dd6a7-20240806"
+    "react": "19.0.0-rc-68dbd84b-20240812",
+    "react-dom": "19.0.0-rc-68dbd84b-20240812",
+    "react-server-dom-webpack": "19.0.0-rc-68dbd84b-20240812"
   }
 }
