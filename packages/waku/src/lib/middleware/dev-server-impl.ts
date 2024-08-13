@@ -136,11 +136,11 @@ const createMainViteServer = (
 
   const loadServerModuleMain = async (idOrFileURL: string) => {
     console.log('loadServerModuleMain', idOrFileURL);
-    // if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
-    //   // HACK I don't know why this is necessary.
-    //   // `external: ['waku']` doesn't somehow work?
-    //   return import(/* @vite-ignore */ idOrFileURL);
-    // }
+    if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
+      // HACK I don't know why this is necessary.
+      // `external: ['waku']` doesn't somehow work?
+      return import(/* @vite-ignore */ idOrFileURL);
+    }
     const vite = await vitePromise;
     return vite.ssrLoadModule(
       idOrFileURL.startsWith('file://')
