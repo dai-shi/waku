@@ -38,6 +38,9 @@ const transformClient = (
   id: string,
   getServerId: (id: string) => string,
 ) => {
+  if (!code.includes('use server')) {
+    return;
+  }
   const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseServer = false;
@@ -103,6 +106,98 @@ const findLastImportIndex = (mod: swc.Module) => {
   return lastImportIndex === -1 ? 0 : lastImportIndex;
 };
 
+const replaceNode = <T extends swc.Node>(origNode: swc.Node, newNode: T): T => {
+  Object.keys(origNode).forEach((key) => {
+    delete origNode[key as never];
+  });
+  return Object.assign(origNode, newNode);
+};
+
+const transformExportedServerActions = (
+  mod: swc.Module,
+  getActionId: () => string,
+): boolean => {
+  let changed = false;
+  for (let i = 0; i < mod.body.length; ++i) {
+    const item = mod.body[i]!;
+    const handleDeclaration = (name: string, fn: swc.FunctionDeclaration) => {
+      changed = true;
+      if (fn.body) {
+        fn.body.stmts = fn.body.stmts.filter(
+          (stmt) => !isUseServerDirective(stmt),
+        );
+      }
+      const stmt: swc.ExpressionStatement = {
+        type: 'ExpressionStatement',
+        expression: createCallExpression(
+          createIdentifier('__waku_registerServerReference'),
+          [
+            createIdentifier(name),
+            createStringLiteral(getActionId()),
+            createStringLiteral(name),
+          ],
+        ),
+        span: { start: 0, end: 0, ctxt: 0 },
+      };
+      mod.body.splice(++i, 0, stmt);
+    };
+    const handleExpression = (
+      name: string,
+      fn: swc.FunctionExpression | swc.ArrowFunctionExpression,
+    ) => {
+      changed = true;
+      if (fn.body?.type === 'BlockStatement') {
+        fn.body.stmts = fn.body.stmts.filter(
+          (stmt) => !isUseServerDirective(stmt),
+        );
+      }
+      const callExp = createCallExpression(
+        createIdentifier('__waku_registerServerReference'),
+        [
+          Object.assign({}, fn),
+          createStringLiteral(getActionId()),
+          createStringLiteral(name),
+        ],
+      );
+      replaceNode(fn, callExp);
+    };
+    if (item.type === 'ExportDeclaration') {
+      if (item.declaration.type === 'FunctionDeclaration') {
+        handleDeclaration(item.declaration.identifier.value, item.declaration);
+      } else if (item.declaration.type === 'VariableDeclaration') {
+        for (const d of item.declaration.declarations) {
+          if (
+            d.id.type === 'Identifier' &&
+            (d.init?.type === 'FunctionExpression' ||
+              d.init?.type === 'ArrowFunctionExpression')
+          ) {
+            handleExpression(d.id.value, d.init);
+          }
+        }
+      }
+    } else if (item.type === 'ExportDefaultDeclaration') {
+      if (item.decl.type === 'FunctionExpression') {
+        handleExpression('default', item.decl);
+        const callExp = item.decl;
+        const decl: swc.ExportDefaultExpression = {
+          type: 'ExportDefaultExpression',
+          expression: callExp,
+          span: { start: 0, end: 0, ctxt: 0 },
+        };
+        replaceNode(item, decl);
+      }
+    } else if (item.type === 'ExportDefaultExpression') {
+      if (
+        item.expression.type === 'FunctionExpression' ||
+        item.expression.type === 'ArrowFunctionExpression'
+      ) {
+        handleExpression('default', item.expression);
+      }
+    }
+  }
+  return changed;
+};
+
 type FunctionWithBlockBody = (
   | swc.FunctionDeclaration
   | swc.FunctionExpression
@@ -115,7 +210,7 @@ const isUseServerDirective = (node: swc.Node) =>
   ((node as swc.ExpressionStatement).expression as swc.StringLiteral).value ===
     'use server';
 
-const isServerAction = (node: swc.Node): node is FunctionWithBlockBody =>
+const isInlineServerAction = (node: swc.Node): node is FunctionWithBlockBody =>
   (node.type === 'FunctionDeclaration' ||
     node.type === 'FunctionExpression' ||
     node.type === 'ArrowFunctionExpression') &&
@@ -224,10 +319,10 @@ const collectClosureVars = (
   return varNames;
 };
 
-const transformServerActions = (
+const transformInlineServerActions = (
   mod: swc.Module,
   getActionId: () => string,
-): swc.Module | void => {
+): boolean => {
   let serverActionIndex = 0;
   const serverActions = new Map<
     number,
@@ -260,7 +355,7 @@ const transformServerActions = (
     parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
     decl: swc.Declaration,
   ) => {
-    if (isServerAction(decl)) {
+    if (isInlineServerAction(decl)) {
       const callExp = registerServerAction(parentFn, Object.assign({}, decl));
       const newDecl: swc.VariableDeclaration = {
         type: 'VariableDeclaration',
@@ -277,28 +372,40 @@ const transformServerActions = (
         ],
         span: { start: 0, end: 0, ctxt: 0 },
       };
-      Object.keys(decl).forEach((key) => {
-        delete decl[key as keyof typeof decl];
-      });
-      Object.assign(decl, newDecl);
+      replaceNode(decl, newDecl);
     }
   };
   const handleExpression = (
     parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
     exp: swc.Expression,
-  ) => {
-    if (isServerAction(exp)) {
+  ): swc.CallExpression | undefined => {
+    if (isInlineServerAction(exp)) {
       const callExp = registerServerAction(parentFn, Object.assign({}, exp));
-      Object.keys(exp).forEach((key) => {
-        delete exp[key as keyof typeof exp];
-      });
-      Object.assign(exp, callExp);
+      return replaceNode(exp, callExp);
     }
   };
   const walk = (
     parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
     node: swc.Node,
   ) => {
+    if (node.type === 'ExportDefaultDeclaration') {
+      const item = node as swc.ExportDefaultDeclaration;
+      if (item.decl.type === 'FunctionExpression') {
+        const callExp = handleExpression(
+          parentFn,
+          item.decl as swc.FunctionExpression,
+        );
+        if (callExp) {
+          const decl: swc.ExportDefaultExpression = {
+            type: 'ExportDefaultExpression',
+            expression: callExp,
+            span: { start: 0, end: 0, ctxt: 0 },
+          };
+          replaceNode(item, decl);
+          return;
+        }
+      }
+    }
     // FIXME do we need to walk the entire tree? feels inefficient
     Object.values(node).forEach((value) => {
       const fn =
@@ -329,7 +436,7 @@ const transformServerActions = (
   };
   walk(undefined, mod);
   if (!serverActionIndex) {
-    return;
+    return false;
   }
   const serverActionsCode = Array.from(serverActions).flatMap(
     ([actionIndex, [actionFn, closureVars]]) => {
@@ -384,7 +491,7 @@ const transformServerActions = (
     },
   );
   mod.body.splice(findLastImportIndex(mod), 0, ...serverActionsCode);
-  return mod;
+  return true;
 };
 
 const transformServer = (
@@ -393,6 +500,9 @@ const transformServer = (
   getClientId: (id: string) => string,
   getServerId: (id: string) => string,
 ) => {
+  if (!code.includes('use client') && !code.includes('use server')) {
+    return;
+  }
   const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseClient = false;
@@ -427,14 +537,13 @@ export ${name === 'default' ? name : `const ${name} =`} registerClientReference(
     }
     return newCode;
   }
-  // transform server actions in server components
-  const newMod =
-    (code.includes('use server') &&
-      transformServerActions(mod, () => getServerId(id))) ||
-    (hasUseServer && mod);
-  if (newMod) {
-    newMod.body.splice(findLastImportIndex(newMod), 0, ...serverInitCode);
-    const newCode = swc.printSync(newMod).code;
+  let transformed =
+    hasUseServer && transformExportedServerActions(mod, () => getServerId(id));
+  transformed =
+    transformInlineServerActions(mod, () => getServerId(id)) || transformed;
+  if (transformed) {
+    mod.body.splice(findLastImportIndex(mod), 0, ...serverInitCode);
+    const newCode = swc.printSync(mod).code;
     return newCode;
   }
 };

@@ -327,12 +327,11 @@ export async function foo() {
 }`;
     expect(await transform(code, '/src/func.ts', { ssr: true }))
       .toMatchInlineSnapshot(`
-      "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-      export async function __waku_action1() {}
-      __waku_registerServerReference(__waku_action1, "/src/func.ts", "__waku_action1");
-      export const foo = __waku_action1.bind(null);
-      "
-    `);
+        "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
+        export async function foo() {}
+        __waku_registerServerReference(foo, "/src/func.ts", "foo");
+        "
+      `);
   });
 });
 
