@@ -1,10 +1,14 @@
 import type { ReactNode } from 'react';
 
 const Layout = ({ children }: { children: ReactNode }) => (
-  <div>
-    <title>Waku</title>
-    {children}
-  </div>
+  <html>
+    <head>
+      <title>Waku</title>
+    </head>
+    <body>
+      <div>{children}</div>
+    </body>
+  </html>
 );
 
 export default Layout;

@@ -126,6 +126,7 @@ const createMainViteServer = (
         external: ['waku'],
         noExternal: ['react-server-dom-webpack'],
       },
+      appType: 'mpa',
       server: { middlewareMode: true },
     });
     const vite = await createViteServer(mergedViteConfig);
@@ -133,21 +134,19 @@ const createMainViteServer = (
     return vite;
   });
 
-  const loadServerFileMain = async (fileURL: string) => {
-    console.log('loadServerFileMain', fileURL)
-    const vite = await vitePromise;
-    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
-  };
-
-  const loadServerModuleMain = async (id: string) => {
-    console.log('loadServerModuleMain', id)
-    // if (id === 'waku' || id.startsWith('waku/')) {
+  const loadServerModuleMain = async (idOrFileURL: string) => {
+    console.log('loadServerModuleMain', idOrFileURL);
+    // if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
     //   // HACK I don't know why this is necessary.
     //   // `external: ['waku']` doesn't somehow work?
-    //   return import(/* @vite-ignore */ id);
+    //   return import(/* @vite-ignore */ idOrFileURL);
     // }
     const vite = await vitePromise;
-    return vite.ssrLoadModule(id);
+    return vite.ssrLoadModule(
+      idOrFileURL.startsWith('file://')
+        ? fileURLToFilePath(idOrFileURL)
+        : idOrFileURL,
+    );
   };
 
   const transformIndexHtml = async (pathname: string) => {
@@ -186,7 +185,8 @@ const createMainViteServer = (
     });
   };
 
-  const willBeHandledLater = async (pathname: string) => {
+  // TODO We might be able to elminate this function
+  const willBeHandled = async (pathname: string) => {
     const vite = await vitePromise;
     try {
       const result = await vite.transformRequest(pathname);
@@ -198,10 +198,9 @@ const createMainViteServer = (
 
   return {
     vitePromise,
-    loadServerFileMain,
     loadServerModuleMain,
     transformIndexHtml,
-    willBeHandledLater,
+    willBeHandled,
   };
 };
 
@@ -257,22 +256,20 @@ const createRscViteServer = (
     return vite;
   });
 
-  const loadServerFileRsc = async (fileURL: string) => {
-    console.log('loadServerFileRsc', fileURL)
+  const loadServerModuleRsc = async (idOrFileURL: string) => {
+    console.log('loadServerModuleRsc', idOrFileURL);
     const vite = await vitePromise;
-    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
-  };
-
-  const loadServerModuleRsc = async (id: string) => {
-    console.log('loadServerModuleRsc', id)
-    const vite = await vitePromise;
-    return vite.ssrLoadModule(id);
+    return vite.ssrLoadModule(
+      idOrFileURL.startsWith('file://')
+        ? fileURLToFilePath(idOrFileURL)
+        : idOrFileURL,
+    );
   };
 
   const loadEntriesDev = async (config: { srcDir: string }) => {
     const vite = await vitePromise;
     const filePath = joinPath(vite.config.root, config.srcDir, SRC_ENTRIES);
-    console.log('loadEntriesDev')
+    console.log('loadEntriesDev');
     return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
   };
 
@@ -298,7 +295,6 @@ const createRscViteServer = (
   };
 
   return {
-    loadServerFileRsc,
     loadServerModuleRsc,
     loadEntriesDev,
     resolveClientEntry,
@@ -314,23 +310,21 @@ export const devServer: Middleware = (options) => {
   (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
   const configPromise = resolveConfig(options.config);
 
-  (globalThis as any).__WAKU_HACK_IMPORT__ = async (id: string) =>
-    loadServerFileRsc(id);
+  (globalThis as any).__WAKU_SERVER_HACK_IMPORT__ = (idOrFileURL: string) =>
+    loadServerModuleRsc(idOrFileURL);
+
+  (globalThis as any).__WAKU_CLIENT_HACK_IMPORT__ = (idOrFileURL: string) =>
+    loadServerModuleMain(idOrFileURL);
 
   const {
     vitePromise,
-    loadServerFileMain,
     loadServerModuleMain,
     transformIndexHtml,
-    willBeHandledLater,
+    willBeHandled,
   } = createMainViteServer(configPromise);
 
-  const {
-    loadServerFileRsc,
-    loadServerModuleRsc,
-    loadEntriesDev,
-    resolveClientEntry,
-  } = createRscViteServer(configPromise);
+  const { loadServerModuleRsc, loadEntriesDev, resolveClientEntry } =
+    createRscViteServer(configPromise);
 
   let initialModules: ClonableModuleNode[];
 
@@ -361,7 +355,7 @@ export const devServer: Middleware = (options) => {
               await vite.warmupRequest(importedModule.id);
               await processModule(importedModule.id);
             }
-          })
+          }),
         );
       };
 
@@ -378,7 +372,7 @@ export const devServer: Middleware = (options) => {
 
     ctx.unstable_devServer = {
       rootDir: vite.config.root,
-      resolveClientEntryDev: (id: string) =>
+      resolveClientEntry: (id: string) =>
         resolveClientEntry(
           id,
           {
@@ -387,18 +381,22 @@ export const devServer: Middleware = (options) => {
           },
           initialModules,
         ),
-      loadServerFileRsc,
       loadServerModuleRsc,
       loadEntriesDev,
-      loadServerFileMain,
       loadServerModuleMain,
       transformIndexHtml,
-      willBeHandledLater,
     };
 
-    await next();
-    if (ctx.res.body) {
-      return;
+    if (
+      // HACK depending on `rscPath` is a bad idea
+      // FIXME This hack should be removed as well as `willBeHandled`
+      ctx.req.url.pathname.startsWith(config.basePath + config.rscPath + '/') ||
+      !(await willBeHandled(ctx.req.url.pathname))
+    ) {
+      await next();
+      if (ctx.res.body) {
+        return;
+      }
     }
 
     const viteUrl = ctx.req.url.toString().slice(ctx.req.url.origin.length);

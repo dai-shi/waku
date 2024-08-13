@@ -38,27 +38,13 @@ export interface Config {
    */
   rscPath?: string;
   /**
-   * HTML attributes to inject.
-   * Defaults to ''
-   * An example is 'lang="en"'
-   * This is still experimental and might be changed in the future.
-   */
-  htmlAttrs?: string;
-  /**
-   * HTML headers to inject.
-   * Defaults to:
-   * <meta charset="utf-8" />
-   * <meta name="viewport" content="width=device-width, initial-scale=1" />
-   */
-  htmlHead?: string;
-  /**
    * Middleware to use
    * Defaults to:
    * () => [
    *   import('waku/middleware/dev-server'),
    *   import('waku/middleware/headers'),
-   *   import('waku/middleware/ssr'),
    *   import('waku/middleware/rsc'),
+   *   import('waku/middleware/ssr'),
    * ]
    */
   middleware?: () => Promise<{ default: Middleware }>[];

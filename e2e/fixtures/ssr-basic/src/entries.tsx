@@ -19,7 +19,7 @@ export default defineEntries(
       case '/':
         return {
           input: '',
-          body: <Slot id="App" />,
+          html: <Slot id="App" />,
         };
       default:
         return null;

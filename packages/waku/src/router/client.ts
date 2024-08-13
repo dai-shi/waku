@@ -50,13 +50,17 @@ const normalizeRoutePath = (path: string) => {
 
 const parseRoute = (url: URL): RouteProps => {
   if ((globalThis as any).__WAKU_ROUTER_404__) {
-    return { path: '/404', query: '' };
+    return { path: '/404', query: '', hash: '' };
   }
-  const { pathname, searchParams } = url;
+  const { pathname, searchParams, hash } = url;
   if (searchParams.has(PARAM_KEY_SKIP)) {
     console.warn(`The search param "${PARAM_KEY_SKIP}" is reserved`);
   }
-  return { path: normalizeRoutePath(pathname), query: searchParams.toString() };
+  return {
+    path: normalizeRoutePath(pathname),
+    query: searchParams.toString(),
+    hash,
+  };
 };
 
 type ChangeRoute = (
@@ -300,9 +304,33 @@ const RouterSlot = ({
 const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
   const refetch = useRefetch();
 
-  const [route, setRoute] = useState(() =>
-    parseRoute(new URL(window.location.href)),
-  );
+  const initialRouteRef = useRef<RouteProps>();
+  if (!initialRouteRef.current) {
+    initialRouteRef.current = parseRoute(new URL(window.location.href));
+  }
+  const [route, setRoute] = useState(() => ({
+    // This is the first initialization of the route, and it has
+    // to ignore the hash, because on server side there is none.
+    // Otherwise there will be a hydration error.
+    // The client side route, including the hash, will be updated in the effect below.
+    ...initialRouteRef.current!,
+    hash: '',
+  }));
+  // Update the route post-load to include the current hash.
+  useEffect(() => {
+    const initialRoute = initialRouteRef.current!;
+    setRoute((prev) => {
+      if (
+        prev.path === initialRoute.path &&
+        prev.query === initialRoute.query &&
+        prev.hash === initialRoute.hash
+      ) {
+        return prev;
+      }
+      return initialRoute;
+    });
+  }, []);
+
   const componentIds = getComponentIds(route.path);
 
   const [cached, setCached] = useState<Record<string, RouteProps>>(() => {
