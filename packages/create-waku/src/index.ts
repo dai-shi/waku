@@ -214,26 +214,26 @@ async function init() {
 
   process.chdir(targetDir);
 
-  spawn(packageManager, ['install'], {
+  const installProcess = spawn(packageManager, ['install'], {
     stdio: 'inherit',
     shell: process.platform === 'win32',
   });
 
-  // installProcess.on('close', (code) => {
-  //   // process exit code
-  //   if (code !== 0) {
-  //     console.error(`Could not execute ${commands.install}. Please run`);
-  //     console.log(`${bold(green(`cd ${targetDir}`))}`);
-  //     console.log(`${bold(green(commands.install))}`);
-  //     console.log(`${bold(green(commands.dev))}`);
-  //     console.log();
-  //   } else {
-  //     console.log(`\nDone. Now run:\n`);
-  //     console.log(`${bold(green(`cd ${targetDir}`))}`);
-  //     console.log(`${bold(green(commands.dev))}`);
-  //     console.log();
-  //   }
-  // });
+  installProcess.on('close', (code) => {
+    // process exit code
+    if (code !== 0) {
+      console.error(`Could not execute ${commands.install}. Please run`);
+      console.log(`${bold(green(`cd ${targetDir}`))}`);
+      console.log(`${bold(green(commands.install))}`);
+      console.log(`${bold(green(commands.dev))}`);
+      console.log();
+    } else {
+      console.log(`\nDone. Now run:\n`);
+      console.log(`${bold(green(`cd ${targetDir}`))}`);
+      console.log(`${bold(green(commands.dev))}`);
+      console.log();
+    }
+  });
 }
 
 init()
