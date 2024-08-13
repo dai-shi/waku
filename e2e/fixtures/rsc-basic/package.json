@@ -9,10 +9,10 @@
     "start": "waku start"
   },
   "dependencies": {
-    "ai": "link:./modules/ai",
-    "react": "19.0.0-rc-187dd6a7-20240806",
-    "react-dom": "19.0.0-rc-187dd6a7-20240806",
-    "react-server-dom-webpack": "19.0.0-rc-187dd6a7-20240806",
+    "ai": "link:modules/ai",
+    "react": "19.0.0-rc-68dbd84b-20240812",
+    "react-dom": "19.0.0-rc-68dbd84b-20240812",
+    "react-server-dom-webpack": "19.0.0-rc-68dbd84b-20240812",
     "waku": "workspace:*"
   },
   "devDependencies": {
