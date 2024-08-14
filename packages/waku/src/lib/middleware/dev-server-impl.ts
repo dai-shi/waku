@@ -352,7 +352,7 @@ export const devServer: Middleware = (options) => {
         await Promise.all(
           Array.from(module.importedModules).map(async (importedModule) => {
             if (importedModule.id) {
-              await vite.warmupRequest(importedModule.id);
+              // await vite.warmupRequest(importedModule.id);
               await processModule(importedModule.id);
             }
           }),
