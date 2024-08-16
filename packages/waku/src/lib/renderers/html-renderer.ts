@@ -187,7 +187,7 @@ export const renderHtml = async (
       searchParams: URLSearchParams,
     ) => Promise<{
       input: string;
-      params: unknown;
+      params?: unknown;
       html: ReadableStream;
     } | null>;
   } & (

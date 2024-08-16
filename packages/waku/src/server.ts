@@ -40,7 +40,7 @@ export type GetSsrConfig = (
   },
 ) => Promise<{
   input: string;
-  params: unknown;
+  params?: unknown;
   html: ReactNode;
 } | null>;
 
