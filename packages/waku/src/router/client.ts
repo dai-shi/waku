@@ -253,7 +253,7 @@ const getSkipList = (
     if (shouldCheck[0] && route.path !== prevProps.path) {
       return false;
     }
-    if (shouldCheck[0] && route.query !== prevProps.query) {
+    if (shouldCheck[1] && route.query !== prevProps.query) {
       return false;
     }
     return true;
@@ -488,6 +488,7 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
         if (data && typeof data === 'object') {
           // We need to process SHOULD_SKIP_ID before LOCATION_ID
           if (SHOULD_SKIP_ID in data) {
+            // TODO replacing the whole array is not ideal
             routerData[0] = data[SHOULD_SKIP_ID] as ShouldSkip;
           }
           if (LOCATION_ID in data) {

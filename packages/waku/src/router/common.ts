@@ -40,6 +40,6 @@ export type ShouldSkip = (readonly [
   componentId: string,
   readonly [
     path?: boolean, // if we compare path
-    keys?: string[], // searchParams keys to compare
+    query?: boolean, // if we compare query
   ],
 ])[];
