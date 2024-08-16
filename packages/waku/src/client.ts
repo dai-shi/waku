@@ -131,14 +131,19 @@ export const fetchRSC = (
   }
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
   const url = BASE_PATH + encodeInput(input);
-  const response =
-    prefetched[url] && prefetchedParams.get(prefetched[url]) === params
-      ? prefetched[url]
-      : params === undefined
-        ? fetch(url)
-        : encodeReply(params).then((body) =>
-            fetch(url, { method: 'POST', body }),
-          );
+  const hasValidPrefetchedResponse =
+    !!prefetched[url] &&
+    // HACK .has() is for the initial hydration
+    // It's limited and may result in a wrong result. FIXME
+    (!prefetchedParams.has(prefetched[url]) ||
+      prefetchedParams.get(prefetched[url]) === params);
+  const response = hasValidPrefetchedResponse
+    ? prefetched[url]
+    : params === undefined
+      ? fetch(url)
+      : encodeReply(params).then((body) =>
+          fetch(url, { method: 'POST', body }),
+        );
   delete prefetched[url];
   const data = createFromFetch<Awaited<Elements>>(checkStatus(response), {
     callServer: (actionId: string, args: unknown[]) =>
