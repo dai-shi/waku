@@ -111,7 +111,7 @@ export function unstable_defineRouter(
     const paramsSkip = (params as { skip?: unknown } | undefined)?.skip;
 
     const query = typeof paramsQuery === 'string' ? paramsQuery : '';
-    const skip = Array.isArray(paramsSkip) ? paramsSkip : [];
+    const skip = Array.isArray(paramsSkip) ? (paramsSkip as unknown[]) : [];
     const componentIds = getComponentIds(pathname);
     const entries: (readonly [string, ReactNode])[] = (
       await Promise.all(
