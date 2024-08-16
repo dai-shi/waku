@@ -85,7 +85,7 @@ const SET_ELEMENTS = 's';
 const ON_FETCH_DATA = 'o';
 
 type FetchCache = {
-  [ENTRY]?: [input: string, searchParamsString: string, elements: Elements];
+  [ENTRY]?: [input: string, params: unknown, elements: Elements];
   [SET_ELEMENTS]?: SetElements;
   [ON_FETCH_DATA]?: OnFetchData | undefined;
 };
@@ -98,13 +98,14 @@ const defaultFetchCache: FetchCache = {};
  */
 export const callServerRSC = async (
   actionId: string,
-  args: unknown[],
+  args?: unknown[],
   fetchCache = defaultFetchCache,
 ) => {
-  const response = fetch(BASE_PATH + encodeInput(encodeActionId(actionId)), {
-    method: 'POST',
-    body: await encodeReply(args),
-  });
+  const url = BASE_PATH + encodeInput(encodeActionId(actionId));
+  const response =
+    args === undefined
+      ? fetch(url)
+      : encodeReply(args).then((body) => fetch(url, { method: 'POST', body }));
   const data = createFromFetch<Awaited<Elements>>(checkStatus(response), {
     callServer: (actionId: string, args: unknown[]) =>
       callServerRSC(actionId, args, fetchCache),
@@ -117,21 +118,32 @@ export const callServerRSC = async (
   return (await data)._value;
 };
 
+const prefetchedParams = new WeakMap<Promise<unknown>, unknown>();
+
 export const fetchRSC = (
   input: string,
-  searchParamsString: string,
+  params?: unknown,
   fetchCache = defaultFetchCache,
 ): Elements => {
   const entry = fetchCache[ENTRY];
-  if (entry && entry[0] === input && entry[1] === searchParamsString) {
+  if (entry && entry[0] === input && entry[1] === params) {
     return entry[2];
   }
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-  const url =
-    BASE_PATH +
-    encodeInput(input) +
-    (searchParamsString ? '?' + searchParamsString : '');
-  const response = prefetched[url] || fetch(url);
+  const url = BASE_PATH + encodeInput(input);
+  const hasValidPrefetchedResponse =
+    !!prefetched[url] &&
+    // HACK .has() is for the initial hydration
+    // It's limited and may result in a wrong result. FIXME
+    (!prefetchedParams.has(prefetched[url]) ||
+      prefetchedParams.get(prefetched[url]) === params);
+  const response = hasValidPrefetchedResponse
+    ? prefetched[url]
+    : params === undefined
+      ? fetch(url)
+      : encodeReply(params).then((body) =>
+          fetch(url, { method: 'POST', body }),
+        );
   delete prefetched[url];
   const data = createFromFetch<Awaited<Elements>>(checkStatus(response), {
     callServer: (actionId: string, args: unknown[]) =>
@@ -139,56 +151,56 @@ export const fetchRSC = (
   });
   fetchCache[ON_FETCH_DATA]?.(data);
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  fetchCache[ENTRY] = [input, searchParamsString, data];
+  fetchCache[ENTRY] = [input, params, data];
   return data;
 };
 
-export const prefetchRSC = (
-  input: string,
-  searchParamsString: string,
-): void => {
+export const prefetchRSC = (input: string, params?: unknown): void => {
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-  const url =
-    BASE_PATH +
-    encodeInput(input) +
-    (searchParamsString ? '?' + searchParamsString : '');
+  const url = BASE_PATH + encodeInput(input);
   if (!(url in prefetched)) {
-    prefetched[url] = fetch(url);
+    prefetched[url] =
+      params === undefined
+        ? fetch(url)
+        : encodeReply(params).then((body) =>
+            fetch(url, { method: 'POST', body }),
+          );
+    prefetchedParams.set(prefetched[url], params);
   }
 };
 
-const RefetchContext = createContext<
-  (input: string, searchParams?: URLSearchParams) => void
->(() => {
-  throw new Error('Missing Root component');
-});
+const RefetchContext = createContext<(input: string, params?: unknown) => void>(
+  () => {
+    throw new Error('Missing Root component');
+  },
+);
 const ElementsContext = createContext<Elements | null>(null);
 
 export const Root = ({
   initialInput,
-  initialSearchParamsString,
+  initialParams,
   fetchCache = defaultFetchCache,
   unstable_onFetchData,
   children,
 }: {
   initialInput?: string;
-  initialSearchParamsString?: string;
+  initialParams?: unknown;
   fetchCache?: FetchCache;
   unstable_onFetchData?: (data: unknown) => void;
   children: ReactNode;
 }) => {
   fetchCache[ON_FETCH_DATA] = unstable_onFetchData;
   const [elements, setElements] = useState(() =>
-    fetchRSC(initialInput || '', initialSearchParamsString || '', fetchCache),
+    fetchRSC(initialInput || '', initialParams, fetchCache),
   );
   useEffect(() => {
     fetchCache[SET_ELEMENTS] = setElements;
   }, [fetchCache, setElements]);
   const refetch = useCallback(
-    (input: string, searchParams?: URLSearchParams) => {
+    (input: string, params?: unknown) => {
       // clear cache entry before fetching
       delete fetchCache[ENTRY];
-      const data = fetchRSC(input, searchParams?.toString() || '', fetchCache);
+      const data = fetchRSC(input, params, fetchCache);
       startTransition(() => {
         setElements((prev) => mergeElements(prev, data));
       });
