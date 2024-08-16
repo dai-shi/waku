@@ -27,9 +27,9 @@ const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
 export type RenderRscArgs = {
   config: Omit<ResolvedConfig, 'middleware'>;
   input: string;
-  searchParams: URLSearchParams;
-  method: 'GET' | 'POST';
   context: Record<string, unknown> | undefined;
+  // TODO we hope to get only decoded one
+  decodedBody?: unknown;
   body?: ReadableStream | undefined;
   contentType?: string | undefined;
   moduleIdCallback?: ((id: string) => void) | undefined;
@@ -52,8 +52,6 @@ export async function renderRsc(
   const {
     config,
     input,
-    searchParams,
-    method,
     contentType,
     context,
     body,
@@ -122,7 +120,7 @@ export async function renderRsc(
   const renderWithContext = async (
     context: Record<string, unknown> | undefined,
     input: string,
-    searchParams: URLSearchParams,
+    params: unknown,
   ) => {
     const renderStore = {
       context: context || {},
@@ -132,7 +130,7 @@ export async function renderRsc(
     };
     return runWithRenderStore(renderStore, async () => {
       const elements = await renderEntries(input, {
-        searchParams,
+        params,
         buildConfig,
       });
       if (elements === null) {
@@ -160,13 +158,13 @@ export async function renderRsc(
     let rendered = false;
     const renderStore = {
       context: context || {},
-      rerender: async (input: string, searchParams = new URLSearchParams()) => {
+      rerender: async (input: string, params?: unknown) => {
         if (rendered) {
           throw new Error('already rendered');
         }
         elementsPromise = Promise.all([
           elementsPromise,
-          renderEntries(input, { searchParams, buildConfig }),
+          renderEntries(input, { params, buildConfig }),
         ]).then(([oldElements, newElements]) => ({
           ...oldElements,
           // FIXME we should actually check if newElements is null and send an error
@@ -191,24 +189,25 @@ export async function renderRsc(
     });
   };
 
-  if (method === 'POST') {
-    const rsfId = decodeActionId(input);
-    let args: unknown[] = [];
-    let bodyStr = '';
-    if (body) {
-      bodyStr = await streamToString(body);
-    }
+  let decodedBody: unknown | undefined = args.decodedBody;
+  if (body) {
+    const bodyStr = await streamToString(body);
     if (
       typeof contentType === 'string' &&
       contentType.startsWith('multipart/form-data')
     ) {
       // XXX This doesn't support streaming unlike busboy
       const formData = parseFormData(bodyStr, contentType);
-      args = await decodeReply(formData, serverBundlerConfig);
+      decodedBody = await decodeReply(formData, serverBundlerConfig);
     } else if (bodyStr) {
-      args = await decodeReply(bodyStr, serverBundlerConfig);
+      decodedBody = await decodeReply(bodyStr, serverBundlerConfig);
     }
-    const [fileId, name] = rsfId.split('#') as [string, string];
+  }
+
+  const actionId = decodeActionId(input);
+  if (actionId) {
+    const args = Array.isArray(decodedBody) ? decodedBody : [];
+    const [fileId, name] = actionId.split('#') as [string, string];
     let mod: any;
     if (isDev) {
       mod = await opts.loadServerModuleRsc(filePathToFileURL(fileId));
@@ -222,8 +221,7 @@ export async function renderRsc(
     return renderWithContextWithAction(context, fn, args);
   }
 
-  // method === 'GET'
-  return renderWithContext(context, input, searchParams);
+  return renderWithContext(context, input, decodedBody);
 }
 
 export async function getBuildConfig(opts: {
@@ -250,8 +248,6 @@ export async function getBuildConfig(opts: {
       {
         config,
         input,
-        searchParams: new URLSearchParams(),
-        method: 'GET',
         context: undefined,
         moduleIdCallback: (id) => idSet.add(id),
       },
