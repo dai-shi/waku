@@ -23,7 +23,7 @@ export type BuildConfig = {
 export type RenderEntries = (
   input: string,
   options: {
-    searchParams: URLSearchParams;
+    params: unknown | undefined;
     buildConfig: BuildConfig | undefined;
   },
 ) => Promise<Elements | null>;
@@ -40,7 +40,7 @@ export type GetSsrConfig = (
   },
 ) => Promise<{
   input: string;
-  searchParams?: URLSearchParams;
+  params?: unknown;
   html: ReactNode;
 } | null>;
 
@@ -70,7 +70,7 @@ export function getEnv(key: string): string | undefined {
 }
 
 type RenderStore<> = {
-  rerender: (input: string, searchParams?: URLSearchParams) => void;
+  rerender: (input: string, params?: unknown) => void;
   context: Record<string, unknown>;
 };
 
@@ -117,12 +117,12 @@ export const runWithRenderStore = <T>(
   }
 };
 
-export function rerender(input: string, searchParams?: URLSearchParams) {
+export function rerender(input: string, params?: unknown) {
   const renderStore = renderStorage?.getStore() ?? currentRenderStore;
   if (!renderStore) {
     throw new Error('Render store is not available');
   }
-  renderStore.rerender(input, searchParams);
+  renderStore.rerender(input, params);
 }
 
 export function unstable_getCustomContext<

@@ -180,14 +180,14 @@ export const renderHtml = async (
     htmlHead: string;
     renderRscForHtml: (
       input: string,
-      searchParams: URLSearchParams,
+      params?: unknown,
     ) => Promise<ReadableStream>;
     getSsrConfigForHtml: (
       pathname: string,
       searchParams: URLSearchParams,
     ) => Promise<{
       input: string;
-      searchParams?: URLSearchParams;
+      params?: unknown;
       html: ReadableStream;
     } | null>;
   } & (
@@ -237,10 +237,7 @@ export const renderHtml = async (
   }
   let stream: ReadableStream;
   try {
-    stream = await renderRscForHtml(
-      ssrConfig.input,
-      ssrConfig.searchParams || searchParams,
-    );
+    stream = await renderRscForHtml(ssrConfig.input, ssrConfig.params);
   } catch (e) {
     if (hasStatusCode(e) && e.statusCode === 404) {
       return null;

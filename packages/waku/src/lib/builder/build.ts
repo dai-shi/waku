@@ -472,8 +472,6 @@ const emitRscFiles = async (
         const readable = await renderRsc(
           {
             input,
-            searchParams: new URLSearchParams(),
-            method: 'GET',
             config,
             context,
             moduleIdCallback: (id) => addClientModule(input, id),
@@ -603,14 +601,13 @@ const emitHtmlFiles = async (
           pathname,
           searchParams: new URLSearchParams(),
           htmlHead,
-          renderRscForHtml: (input, searchParams) =>
+          renderRscForHtml: (input, params) =>
             renderRsc(
               {
                 config,
                 input,
-                searchParams,
-                method: 'GET',
                 context,
+                decodedBody: params,
               },
               {
                 isDev: false,

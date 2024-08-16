@@ -27,7 +27,6 @@ import { prefetchRSC, Root, Slot, useRefetch } from '../client.js';
 import {
   getComponentIds,
   getInputString,
-  PARAM_KEY_SKIP,
   SHOULD_SKIP_ID,
   LOCATION_ID,
 } from './common.js';
@@ -53,9 +52,6 @@ const parseRoute = (url: URL): RouteProps => {
     return { path: '/404', query: '', hash: '' };
   }
   const { pathname, searchParams, hash } = url;
-  if (searchParams.has(PARAM_KEY_SKIP)) {
-    console.warn(`The search param "${PARAM_KEY_SKIP}" is reserved`);
-  }
   return {
     path: normalizeRoutePath(pathname),
     query: searchParams.toString(),
@@ -257,11 +253,19 @@ const getSkipList = (
     if (shouldCheck[0] && route.path !== prevProps.path) {
       return false;
     }
-    if (shouldCheck[0] && route.query !== prevProps.query) {
+    if (shouldCheck[1] && route.query !== prevProps.query) {
       return false;
     }
     return true;
   });
+};
+
+let previousParams: unknown;
+const getStableParams = <T>(params: T): T => {
+  if (JSON.stringify(params) === JSON.stringify(previousParams)) {
+    return previousParams as T;
+  }
+  return (previousParams = params);
 };
 
 const equalRouteProps = (a: RouteProps, b: RouteProps) => {
@@ -369,13 +373,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       }
       const input = getInputString(route.path);
       if (!skipRefetch) {
-        refetch(
-          input,
-          new URLSearchParams([
-            ...Array.from(new URLSearchParams(route.query).entries()),
-            ...skip.map((id) => [PARAM_KEY_SKIP, id]),
-          ]),
-        );
+        refetch(input, getStableParams({ query: route.query, skip }));
       }
       startTransition(() => {
         setCached((prev) => ({
@@ -405,11 +403,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
         return; // everything is cached
       }
       const input = getInputString(route.path);
-      const searchParamsString = new URLSearchParams([
-        ...Array.from(new URLSearchParams(route.query).entries()),
-        ...skip.map((id) => [PARAM_KEY_SKIP, id]),
-      ]).toString();
-      prefetchRSC(input, searchParamsString);
+      prefetchRSC(input, getStableParams({ query: route.query, skip }));
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(route.path);
     },
     [routerData],
@@ -488,13 +482,13 @@ const DEFAULT_ROUTER_DATA: RouterData = [];
 export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
   const route = parseRoute(new URL(window.location.href));
   const initialInput = getInputString(route.path);
-  const initialSearchParamsString = route.query;
   const unstable_onFetchData = (data: unknown) => {
     Promise.resolve(data)
       .then((data) => {
         if (data && typeof data === 'object') {
           // We need to process SHOULD_SKIP_ID before LOCATION_ID
           if (SHOULD_SKIP_ID in data) {
+            // TODO replacing the whole array is not ideal
             routerData[0] = data[SHOULD_SKIP_ID] as ShouldSkip;
           }
           if (LOCATION_ID in data) {
@@ -516,12 +510,13 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
       })
       .catch(() => {});
   };
+  const initialParams = getStableParams({ query: route.query });
   return createElement(
     ErrorBoundary,
     null,
     createElement(
       Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
-      { initialInput, initialSearchParamsString, unstable_onFetchData },
+      { initialInput, initialParams, unstable_onFetchData },
       createElement(InnerRouter, { routerData }),
     ),
   );
