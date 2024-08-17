@@ -365,9 +365,9 @@ export const devServer: Middleware = (options) => {
       await processModule(mainJs);
       await processModule(entriesFile);
 
-      initialModules = Array.from(vite.moduleGraph.idToModuleMap.values())
-        .filter((m) => m.file)
-        .map((m) => ({ url: m.url, file: m.file! }));
+      initialModules = Array.from(
+        vite.moduleGraph.idToModuleMap.values(),
+      ).flatMap((m) => (m.file ? [{ url: m.url, file: m.file }] : []));
     }
 
     ctx.unstable_devServer = {
