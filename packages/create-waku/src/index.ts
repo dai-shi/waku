@@ -216,7 +216,7 @@ async function init() {
 
   const installProcess = spawn(packageManager, ['install'], {
     stdio: 'inherit',
-    shell: process.platform === 'win32',
+    shell: true,
   });
 
   installProcess.on('close', (code) => {
