@@ -28,24 +28,17 @@ export const decodeInput = (encodedInput: string) => {
   throw err;
 };
 
-const ACTION_PREFIX = 'ACTION_';
-
 export const encodeActionId = (actionId: string) => {
   const [file, name] = actionId.split('#') as [string, string];
   if (name.includes('/')) {
     throw new Error('Unsupported action name');
   }
-  return ACTION_PREFIX + file + '/' + name;
+  return '_' + file + '/' + name;
 };
 
 export const decodeActionId = (encoded: string) => {
-  if (!encoded.startsWith(ACTION_PREFIX)) {
-    return null;
-  }
   const index = encoded.lastIndexOf('/');
-  return (
-    encoded.slice(ACTION_PREFIX.length, index) + '#' + encoded.slice(index + 1)
-  );
+  return encoded.slice(1, index) + '#' + encoded.slice(index + 1);
 };
 
 export const hasStatusCode = (x: unknown): x is { statusCode: number } =>

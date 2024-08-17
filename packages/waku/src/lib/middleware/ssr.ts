@@ -1,7 +1,7 @@
 import { resolveConfig } from '../config.js';
 import { getPathMapping } from '../utils/path.js';
 import { renderHtml } from '../renderers/html-renderer.js';
-import { hasStatusCode } from '../renderers/utils.js';
+import { hasStatusCode, encodeInput } from '../renderers/utils.js';
 import { getSsrConfig, renderRsc } from '../renderers/rsc-renderer.js';
 import type { RenderRscArgs } from '../renderers/rsc-renderer.js';
 import type { Middleware } from './types.js';
@@ -39,12 +39,17 @@ export const ssr: Middleware = (options) => {
           pathname: ctx.req.url.pathname,
           searchParams: ctx.req.url.searchParams,
           htmlHead,
-          renderRscForHtml: async (input, params) => {
+          renderRscForHtml: async (input, searchParams) => {
+            ctx.req.url.pathname =
+              config.basePath + config.rscPath + '/' + encodeInput(input);
+            ctx.req.url.search = searchParams.toString();
             const args: RenderRscArgs = {
               config,
               input,
+              searchParams: ctx.req.url.searchParams,
+              method: 'GET',
               context: ctx.context,
-              decodedBody: params,
+              body: ctx.req.body,
               contentType: '',
             };
             const readable = await (devServer
