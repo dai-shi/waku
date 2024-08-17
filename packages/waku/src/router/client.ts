@@ -342,6 +342,8 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
         refetch(input, getStableParams({ query: route.query, skip }));
       }
       startTransition(() => {
+        // HACK this is just guessing the waku/client behavior
+        // There should be a better way with exposing something from waku/client
         setCached((prev) => new Set([...prev, ...componentIds]));
       });
     },
