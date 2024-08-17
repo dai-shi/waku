@@ -25,10 +25,7 @@ export const rsc: Middleware = (options) => {
     ]);
     const basePrefix = config.basePath + config.rscPath + '/';
     if (ctx.req.url.pathname.startsWith(basePrefix)) {
-      const { method, headers } = ctx.req;
-      if (method !== 'GET' && method !== 'POST') {
-        throw new Error(`Unsupported method '${method}'`);
-      }
+      const { headers } = ctx.req;
       try {
         const input = decodeInput(
           ctx.req.url.pathname.slice(basePrefix.length),
@@ -36,8 +33,6 @@ export const rsc: Middleware = (options) => {
         const args: RenderRscArgs = {
           config,
           input,
-          searchParams: ctx.req.url.searchParams,
-          method,
           context: ctx.context,
           body: ctx.req.body,
           contentType: headers['content-type'] || '',
