@@ -124,7 +124,6 @@ const createMainViteServer = (
       },
       ssr: {
         external: ['waku'],
-        noExternal: ['react-server-dom-webpack'],
       },
       appType: 'mpa',
       server: { middlewareMode: true },
@@ -136,9 +135,15 @@ const createMainViteServer = (
 
   const loadServerModuleMain = async (idOrFileURL: string) => {
     if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
-      // HACK I don't know why this is necessary.
-      // `external: ['waku']` doesn't somehow work?
+      // HACK `external: ['waku']` doesn't do the same
       return import(/* @vite-ignore */ idOrFileURL);
+    }
+    if (
+      idOrFileURL.startsWith('file://') &&
+      idOrFileURL.includes('/node_modules/')
+    ) {
+      // HACK node_modules should be externalized
+      return import(/* @vite-ignore */ fileURLToFilePath(idOrFileURL));
     }
     const vite = await vitePromise;
     return vite.ssrLoadModule(
@@ -332,21 +337,37 @@ export const devServer: Middleware = (options) => {
     ]);
 
     if (!initialModules) {
-      // pre-process the mainJs file to see which modules are being sent to the browser by vite
-      // and using the same modules if possible in the bundlerConfig in the stream
-      const mainJs = `${config.basePath}${config.srcDir}/${SRC_MAIN}`;
-      await vite.transformRequest(mainJs);
-      const resolved = await vite.pluginContainer.resolveId(mainJs);
-      const resolvedModule = vite.moduleGraph.idToModuleMap.get(resolved!.id)!;
-      await Promise.all(
-        [...resolvedModule.importedModules].map(({ id }) =>
-          id ? vite.warmupRequest(id) : null,
-        ),
-      );
+      const processedModules = new Set<string>();
 
-      initialModules = Array.from(vite.moduleGraph.idToModuleMap.values()).map(
-        (m) => ({ url: m.url, file: m.file! }),
-      );
+      const processModule = async (modulePath: string) => {
+        if (processedModules.has(modulePath)) return;
+        processedModules.add(modulePath);
+
+        await vite.transformRequest(modulePath);
+        const resolved = await vite.pluginContainer.resolveId(modulePath);
+        if (!resolved) return;
+
+        const module = vite.moduleGraph.idToModuleMap.get(resolved.id);
+        if (!module) return;
+
+        await Promise.all(
+          Array.from(module.importedModules).map(async (importedModule) => {
+            if (importedModule.id) {
+              await processModule(importedModule.id);
+            }
+          }),
+        );
+      };
+
+      const mainJs = `${config.basePath}${config.srcDir}/${SRC_MAIN}`;
+      const entriesFile = `${vite.config.root}${config.basePath}${config.srcDir}/${SRC_ENTRIES}`;
+
+      await processModule(mainJs);
+      await processModule(entriesFile);
+
+      initialModules = Array.from(
+        vite.moduleGraph.idToModuleMap.values(),
+      ).flatMap((m) => (m.file ? [{ url: m.url, file: m.file }] : []));
     }
 
     ctx.unstable_devServer = {
