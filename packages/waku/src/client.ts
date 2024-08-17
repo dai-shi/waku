@@ -120,6 +120,15 @@ export const callServerRSC = async (
 
 const prefetchedParams = new WeakMap<Promise<unknown>, unknown>();
 
+const fetchRSCInternal = (url: string, params: unknown) =>
+  params === undefined
+    ? fetch(url)
+    : typeof params === 'string'
+      ? fetch(url, { headers: { 'X-Waku-Params': params } })
+      : encodeReply(params).then((body) =>
+          fetch(url, { method: 'POST', body }),
+        );
+
 export const fetchRSC = (
   input: string,
   params?: unknown,
@@ -139,11 +148,7 @@ export const fetchRSC = (
       prefetchedParams.get(prefetched[url]) === params);
   const response = hasValidPrefetchedResponse
     ? prefetched[url]
-    : params === undefined
-      ? fetch(url)
-      : encodeReply(params).then((body) =>
-          fetch(url, { method: 'POST', body }),
-        );
+    : fetchRSCInternal(url, params);
   delete prefetched[url];
   const data = createFromFetch<Awaited<Elements>>(checkStatus(response), {
     callServer: (actionId: string, args: unknown[]) =>
@@ -159,12 +164,7 @@ export const prefetchRSC = (input: string, params?: unknown): void => {
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
   const url = BASE_PATH + encodeInput(input);
   if (!(url in prefetched)) {
-    prefetched[url] =
-      params === undefined
-        ? fetch(url)
-        : encodeReply(params).then((body) =>
-            fetch(url, { method: 'POST', body }),
-          );
+    prefetched[url] = fetchRSCInternal(url, params);
     prefetchedParams.set(prefetched[url], params);
   }
 };

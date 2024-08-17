@@ -25,6 +25,20 @@ type RoutePropsForLayout = Omit<RouteProps, 'query'> & {
   children: ReactNode;
 };
 
+const safeJsonParse = (str: unknown) => {
+  if (typeof str === 'string') {
+    try {
+      const obj = JSON.parse(str);
+      if (typeof obj === 'object') {
+        return obj as Record<string, unknown>;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return undefined;
+};
+
 export function unstable_defineRouter(
   getPathConfig: () => Promise<
     Iterable<{
@@ -104,11 +118,13 @@ export function unstable_defineRouter(
     }
     const componentConfigs: ComponentConfigs = {};
 
-    const paramsQuery = (params as { query?: unknown[] } | undefined)?.query;
-    const paramsSkip = (params as { skip?: unknown } | undefined)?.skip;
+    const parsedParams = safeJsonParse(params);
 
-    const query = typeof paramsQuery === 'string' ? paramsQuery : '';
-    const skip = Array.isArray(paramsSkip) ? (paramsSkip as unknown[]) : [];
+    const query =
+      typeof parsedParams?.query === 'string' ? parsedParams.query : '';
+    const skip = Array.isArray(parsedParams?.skip)
+      ? (parsedParams.skip as unknown[])
+      : [];
     const componentIds = getComponentIds(pathname);
     const entries: (readonly [string, ReactNode])[] = (
       await Promise.all(
@@ -222,7 +238,11 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         null,
       ),
     );
-    return { input, params: { query: searchParams.toString() }, html };
+    return {
+      input,
+      params: JSON.stringify({ query: searchParams.toString() }),
+      html,
+    };
   };
 
   return { renderEntries, getBuildConfig, getSsrConfig };
