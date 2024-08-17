@@ -141,6 +141,13 @@ const createMainViteServer = (
       // `external: ['waku']` doesn't somehow work?
       return import(/* @vite-ignore */ idOrFileURL);
     }
+    if (idOrFileURL.includes('rsc-shared.mjs')) {
+      return import(
+        /* @vite-ignore */ idOrFileURL.startsWith('file://')
+          ? fileURLToFilePath(idOrFileURL)
+          : idOrFileURL
+      );
+    }
     const vite = await vitePromise;
     return vite.ssrLoadModule(
       idOrFileURL.startsWith('file://')
@@ -257,7 +264,6 @@ const createRscViteServer = (
   });
 
   const loadServerModuleRsc = async (idOrFileURL: string) => {
-    console.log('loadServerModuleRsc', idOrFileURL);
     const vite = await vitePromise;
     return vite.ssrLoadModule(
       idOrFileURL.startsWith('file://')
@@ -269,7 +275,6 @@ const createRscViteServer = (
   const loadEntriesDev = async (config: { srcDir: string }) => {
     const vite = await vitePromise;
     const filePath = joinPath(vite.config.root, config.srcDir, SRC_ENTRIES);
-    console.log('loadEntriesDev');
     return vite.ssrLoadModule(filePath) as Promise<EntriesDev>;
   };
 
@@ -341,7 +346,6 @@ export const devServer: Middleware = (options) => {
         if (processedModules.has(modulePath)) return;
         processedModules.add(modulePath);
 
-        console.log('Processing module:', modulePath);
         await vite.transformRequest(modulePath);
         const resolved = await vite.pluginContainer.resolveId(modulePath);
         if (!resolved) return;
@@ -352,7 +356,6 @@ export const devServer: Middleware = (options) => {
         await Promise.all(
           Array.from(module.importedModules).map(async (importedModule) => {
             if (importedModule.id) {
-              // await vite.warmupRequest(importedModule.id);
               await processModule(importedModule.id);
             }
           }),
