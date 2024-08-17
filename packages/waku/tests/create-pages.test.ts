@@ -235,16 +235,16 @@ describe('createPages', () => {
       },
     ]);
 
-    const setShouldSkip = vi.fn();
+    const setComponentConfig = vi.fn();
 
     expect(
       await getComponent!('test/page', {
-        unstable_setShouldSkip: setShouldSkip,
+        unstable_setComponentConfig: setComponentConfig,
         unstable_buildConfig: undefined,
       }),
     ).toBe(TestPage);
-    expect(setShouldSkip).toHaveBeenCalledTimes(1);
-    expect(setShouldSkip).toHaveBeenCalledWith([]);
+    expect(setComponentConfig).toHaveBeenCalledTimes(1);
+    expect(setComponentConfig).toHaveBeenCalledWith('static');
   });
 
   it('creates a simple dynamic page', async () => {
@@ -271,15 +271,15 @@ describe('createPages', () => {
         pattern: '^/test$',
       },
     ]);
-    const setShouldSkip = vi.fn();
+    const setComponentConfig = vi.fn();
     expect(
       await getComponent('test/page', {
-        unstable_setShouldSkip: setShouldSkip,
+        unstable_setComponentConfig: setComponentConfig,
         unstable_buildConfig: undefined,
       }),
     ).toBe(TestPage);
-    expect(setShouldSkip).toHaveBeenCalledTimes(1);
-    expect(setShouldSkip).toHaveBeenCalledWith();
+    expect(setComponentConfig).toHaveBeenCalledTimes(1);
+    expect(setComponentConfig).toHaveBeenCalledWith('dynamic');
   });
 
   it('creates a simple static page with a layout', async () => {
@@ -314,25 +314,25 @@ describe('createPages', () => {
       },
     ]);
 
-    const setShouldSkip = vi.fn();
+    const setComponentConfig = vi.fn();
     expect(
       await getComponent('test/page', {
-        unstable_setShouldSkip: setShouldSkip,
+        unstable_setComponentConfig: setComponentConfig,
         unstable_buildConfig: undefined,
       }),
     ).toBe(TestPage);
-    expect(setShouldSkip).toHaveBeenCalledTimes(1);
-    expect(setShouldSkip).toHaveBeenCalledWith([]);
+    expect(setComponentConfig).toHaveBeenCalledTimes(1);
+    expect(setComponentConfig).toHaveBeenCalledWith('static');
 
-    const setShouldSkipLayout = vi.fn();
+    const setComponentConfigLayout = vi.fn();
     expect(
       await getComponent('layout', {
-        unstable_setShouldSkip: setShouldSkipLayout,
+        unstable_setComponentConfig: setComponentConfigLayout,
         unstable_buildConfig: undefined,
       }),
     ).toBe(TestLayout);
-    expect(setShouldSkipLayout).toHaveBeenCalledTimes(1);
-    expect(setShouldSkipLayout).toHaveBeenCalledWith([]);
+    expect(setComponentConfigLayout).toHaveBeenCalledTimes(1);
+    expect(setComponentConfigLayout).toHaveBeenCalledWith('static');
   });
 
   it('creates a simple dynamic page with a layout', async () => {
@@ -367,25 +367,25 @@ describe('createPages', () => {
       },
     ]);
 
-    const setShouldSkip = vi.fn();
+    const setComponentConfig = vi.fn();
     expect(
       await getComponent('test/page', {
-        unstable_setShouldSkip: setShouldSkip,
+        unstable_setComponentConfig: setComponentConfig,
         unstable_buildConfig: undefined,
       }),
     ).toBe(TestPage);
-    expect(setShouldSkip).toHaveBeenCalledTimes(1);
-    expect(setShouldSkip).toHaveBeenCalledWith();
+    expect(setComponentConfig).toHaveBeenCalledTimes(1);
+    expect(setComponentConfig).toHaveBeenCalledWith('dynamic');
 
-    const setShouldSkipLayout = vi.fn();
+    const setComponentConfigLayout = vi.fn();
     expect(
       await getComponent('layout', {
-        unstable_setShouldSkip: setShouldSkipLayout,
+        unstable_setComponentConfig: setComponentConfigLayout,
         unstable_buildConfig: undefined,
       }),
     ).toBe(TestLayout);
-    expect(setShouldSkipLayout).toHaveBeenCalledTimes(1);
-    expect(setShouldSkipLayout).toHaveBeenCalledWith();
+    expect(setComponentConfigLayout).toHaveBeenCalledTimes(1);
+    expect(setComponentConfigLayout).toHaveBeenCalledWith('dynamic');
   });
 
   it('creates a nested static page', async () => {
@@ -416,15 +416,15 @@ describe('createPages', () => {
         pattern: '^/test/nested$',
       },
     ]);
-    const setShouldSkip = vi.fn();
+    const setComponentConfig = vi.fn();
     expect(
       await getComponent('test/nested/page', {
-        unstable_setShouldSkip: setShouldSkip,
+        unstable_setComponentConfig: setComponentConfig,
         unstable_buildConfig: undefined,
       }),
     ).toBe(TestPage);
-    expect(setShouldSkip).toHaveBeenCalledTimes(1);
-    expect(setShouldSkip).toHaveBeenCalledWith([]);
+    expect(setComponentConfig).toHaveBeenCalledTimes(1);
+    expect(setComponentConfig).toHaveBeenCalledWith('static');
   });
 
   it('creates a nested dynamic page', async () => {
@@ -455,15 +455,15 @@ describe('createPages', () => {
         pattern: '^/test/nested$',
       },
     ]);
-    const setShouldSkip = vi.fn();
+    const setComponentConfig = vi.fn();
     expect(
       await getComponent('test/nested/page', {
-        unstable_setShouldSkip: setShouldSkip,
+        unstable_setComponentConfig: setComponentConfig,
         unstable_buildConfig: undefined,
       }),
     ).toBe(TestPage);
-    expect(setShouldSkip).toHaveBeenCalledTimes(1);
-    expect(setShouldSkip).toHaveBeenCalledWith();
+    expect(setComponentConfig).toHaveBeenCalledTimes(1);
+    expect(setComponentConfig).toHaveBeenCalledWith('dynamic');
   });
 
   it('creates a static page with slugs', async () => {
@@ -522,14 +522,14 @@ describe('createPages', () => {
         pattern: '^/test/([^/]+)/([^/]+)$',
       },
     ]);
-    const setShouldSkip = vi.fn();
+    const setComponentConfig = vi.fn();
     const WrappedComponent = await getComponent('test/w/x/page', {
-      unstable_setShouldSkip: setShouldSkip,
+      unstable_setComponentConfig: setComponentConfig,
       unstable_buildConfig: undefined,
     });
     assert(WrappedComponent);
-    expect(setShouldSkip).toHaveBeenCalledTimes(1);
-    expect(setShouldSkip).toHaveBeenCalledWith([]);
+    expect(setComponentConfig).toHaveBeenCalledTimes(1);
+    expect(setComponentConfig).toHaveBeenCalledWith('static');
     renderToString(createElement(WrappedComponent as any));
     expect(TestPage).toHaveBeenCalledTimes(1);
     expect(TestPage).toHaveBeenCalledWith({ a: 'w', b: 'x' }, undefined);
@@ -567,14 +567,14 @@ describe('createPages', () => {
         pattern: '^/test/([^/]+)/([^/]+)$',
       },
     ]);
-    const setShouldSkip = vi.fn();
+    const setComponentConfig = vi.fn();
     const WrappedComponent = await getComponent('test/w/x/page', {
-      unstable_setShouldSkip: setShouldSkip,
+      unstable_setComponentConfig: setComponentConfig,
       unstable_buildConfig: undefined,
     });
     assert(WrappedComponent);
-    expect(setShouldSkip).toHaveBeenCalledTimes(1);
-    expect(setShouldSkip).toHaveBeenCalledWith();
+    expect(setComponentConfig).toHaveBeenCalledTimes(1);
+    expect(setComponentConfig).toHaveBeenCalledWith('dynamic');
     renderToString(createElement(WrappedComponent as any));
     expect(TestPage).toHaveBeenCalledTimes(1);
     expect(TestPage).toHaveBeenCalledWith({ a: 'w', b: 'x' }, undefined);
@@ -613,14 +613,14 @@ describe('createPages', () => {
         pattern: '^/test/(.*)$',
       },
     ]);
-    const setShouldSkip = vi.fn();
+    const setComponentConfig = vi.fn();
     const WrappedComponent = await getComponent('test/a/b/page', {
-      unstable_setShouldSkip: setShouldSkip,
+      unstable_setComponentConfig: setComponentConfig,
       unstable_buildConfig: undefined,
     });
     assert(WrappedComponent);
-    expect(setShouldSkip).toHaveBeenCalledTimes(1);
-    expect(setShouldSkip).toHaveBeenCalledWith([]);
+    expect(setComponentConfig).toHaveBeenCalledTimes(1);
+    expect(setComponentConfig).toHaveBeenCalledWith('static');
     renderToString(createElement(WrappedComponent as any));
     expect(TestPage).toHaveBeenCalledTimes(1);
     expect(TestPage).toHaveBeenCalledWith({ path: ['a', 'b'] }, undefined);
@@ -654,14 +654,14 @@ describe('createPages', () => {
         pattern: '^/test/(.*)$',
       },
     ]);
-    const setShouldSkip = vi.fn();
+    const setComponentConfig = vi.fn();
     const WrappedComponent = await getComponent('test/a/b/page', {
-      unstable_setShouldSkip: setShouldSkip,
+      unstable_setComponentConfig: setComponentConfig,
       unstable_buildConfig: undefined,
     });
     assert(WrappedComponent);
-    expect(setShouldSkip).toHaveBeenCalledTimes(1);
-    expect(setShouldSkip).toHaveBeenCalledWith();
+    expect(setComponentConfig).toHaveBeenCalledTimes(1);
+    expect(setComponentConfig).toHaveBeenCalledWith('dynamic');
     renderToString(createElement(WrappedComponent as any));
     expect(TestPage).toHaveBeenCalledTimes(1);
     expect(TestPage).toHaveBeenCalledWith({ path: ['a', 'b'] }, undefined);

@@ -13,10 +13,10 @@ import {
   getComponentIds,
   getInputString,
   parseInputString,
-  SHOULD_SKIP_ID,
+  COMPONENT_CONFIGS_ID,
   LOCATION_ID,
 } from './common.js';
-import type { RouteProps, ShouldSkip } from './common.js';
+import type { RouteProps, ComponentConfigs } from './common.js';
 import { getPathMapping } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
 import { ServerRouter } from './client.js';
@@ -24,8 +24,6 @@ import { ServerRouter } from './client.js';
 type RoutePropsForLayout = Omit<RouteProps, 'query'> & {
   children: ReactNode;
 };
-
-type ShouldSkipValue = ShouldSkip[number][1];
 
 const safeJsonParse = (str: unknown) => {
   if (typeof str === 'string') {
@@ -54,8 +52,9 @@ export function unstable_defineRouter(
   getComponent: (
     componentId: string, // "**/layout" or "**/page"
     options: {
-      // TODO setShouldSkip API is too hard to understand
-      unstable_setShouldSkip: (val?: ShouldSkipValue) => void;
+      unstable_setComponentConfig: (
+        ...args: [render?: 'static' | 'dynamic']
+      ) => void;
       unstable_buildConfig: BuildConfig | undefined;
     },
   ) => Promise<
@@ -117,9 +116,7 @@ export function unstable_defineRouter(
     if ((await existsPath(pathname, buildConfig))[0] === 'NOT_FOUND') {
       return null;
     }
-    const shouldSkipObj: {
-      [componentId: ShouldSkip[number][0]]: ShouldSkip[number][1];
-    } = {};
+    const componentConfigs: ComponentConfigs = {};
 
     const parsedParams = safeJsonParse(params);
 
@@ -135,15 +132,13 @@ export function unstable_defineRouter(
           if (skip?.includes(id)) {
             return [];
           }
-          const setShoudSkip = (val?: ShouldSkipValue) => {
-            if (val) {
-              shouldSkipObj[id] = val;
-            } else {
-              delete shouldSkipObj[id];
-            }
+          const setComponentConfig = (
+            ...args: [render?: 'static' | 'dynamic']
+          ) => {
+            componentConfigs[id] = args;
           };
           const component = await getComponent(id, {
-            unstable_setShouldSkip: setShoudSkip,
+            unstable_setComponentConfig: setComponentConfig,
             unstable_buildConfig: buildConfig,
           });
           if (!component) {
@@ -163,7 +158,7 @@ export function unstable_defineRouter(
         }),
       )
     ).flat();
-    entries.push([SHOULD_SKIP_ID, Object.entries(shouldSkipObj)]);
+    entries.push([COMPONENT_CONFIGS_ID, Object.entries(componentConfigs)]);
     entries.push([LOCATION_ID, [pathname, query]]);
     return Object.fromEntries(entries);
   };
@@ -256,7 +251,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
 export function unstable_redirect(
   pathname: string,
   query?: string,
-  skip?: string[],
+  skip?: string[], // FIXME how could we specify this??
 ) {
   const input = getInputString(pathname);
   rerender(input, { query, skip });
