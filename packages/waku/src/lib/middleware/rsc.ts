@@ -34,14 +34,10 @@ export const rsc: Middleware = (options) => {
           config,
           input,
           context: ctx.context,
+          decodedBody: headers['x-waku-params'],
+          body: ctx.req.body,
           contentType: headers['content-type'] || '',
         };
-        const headersParams = headers['x-waku-params'];
-        if (headersParams) {
-          args.decodedBody = headersParams;
-        } else {
-          args.body = ctx.req.body;
-        }
         const { unstable_devServer: devServer } = ctx;
         const readable = await (devServer
           ? renderRsc(args, {
