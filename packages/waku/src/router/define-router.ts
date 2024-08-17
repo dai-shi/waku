@@ -13,7 +13,6 @@ import {
   getComponentIds,
   getInputString,
   parseInputString,
-  PARAM_KEY_SKIP,
   SHOULD_SKIP_ID,
   LOCATION_ID,
 } from './common.js';
@@ -98,7 +97,7 @@ export function unstable_defineRouter(
   };
   const renderEntries: RenderEntries = async (
     input,
-    { searchParams, buildConfig },
+    { params, buildConfig },
   ) => {
     const pathname = parseInputString(input);
     if ((await existsPath(pathname, buildConfig))[0] === 'NOT_FOUND') {
@@ -108,8 +107,11 @@ export function unstable_defineRouter(
       [componentId: ShouldSkip[number][0]]: ShouldSkip[number][1];
     } = {};
 
-    const skip = searchParams.getAll(PARAM_KEY_SKIP) || [];
-    searchParams.delete(PARAM_KEY_SKIP); // delete all
+    const paramsQuery = (params as { query?: unknown[] } | undefined)?.query;
+    const paramsSkip = (params as { skip?: unknown } | undefined)?.skip;
+
+    const query = typeof paramsQuery === 'string' ? paramsQuery : '';
+    const skip = Array.isArray(paramsSkip) ? (paramsSkip as unknown[]) : [];
     const componentIds = getComponentIds(pathname);
     const entries: (readonly [string, ReactNode])[] = (
       await Promise.all(
@@ -134,11 +136,11 @@ export function unstable_defineRouter(
           const element = createElement(
             component as FunctionComponent<{
               path: string;
-              searchParams?: URLSearchParams;
+              query?: string;
             }>,
             id.endsWith('/layout')
               ? { path: pathname }
-              : { path: pathname, searchParams },
+              : { path: pathname, query },
             createElement(Children),
           );
           return [[id, element]] as const;
@@ -146,7 +148,7 @@ export function unstable_defineRouter(
       )
     ).flat();
     entries.push([SHOULD_SKIP_ID, Object.entries(shouldSkipObj)]);
-    entries.push([LOCATION_ID, [pathname, searchParams.toString()]]);
+    entries.push([LOCATION_ID, [pathname, query]]);
     return Object.fromEntries(entries);
   };
 
@@ -225,7 +227,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         null,
       ),
     );
-    return { input, html };
+    return { input, params: { query: searchParams.toString() }, html };
   };
 
   return { renderEntries, getBuildConfig, getSsrConfig };
@@ -233,15 +235,9 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
 
 export function unstable_redirect(
   pathname: string,
-  searchParams?: URLSearchParams,
+  query?: string,
   skip?: string[],
 ) {
-  if (skip) {
-    searchParams = new URLSearchParams(searchParams);
-    for (const id of skip) {
-      searchParams.append(PARAM_KEY_SKIP, id);
-    }
-  }
   const input = getInputString(pathname);
-  rerender(input, searchParams);
+  rerender(input, { query, skip });
 }
