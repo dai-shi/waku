@@ -260,14 +260,6 @@ const getSkipList = (
   });
 };
 
-let previousParams: unknown;
-const getStableParams = <T>(params: T): T => {
-  if (JSON.stringify(params) === JSON.stringify(previousParams)) {
-    return previousParams as T;
-  }
-  return (previousParams = params);
-};
-
 const equalRouteProps = (a: RouteProps, b: RouteProps) => {
   if (a.path !== b.path) {
     return false;
@@ -373,7 +365,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       }
       const input = getInputString(route.path);
       if (!skipRefetch) {
-        refetch(input, getStableParams({ query: route.query, skip }));
+        refetch(input, JSON.stringify({ query: route.query, skip }));
       }
       startTransition(() => {
         setCached((prev) => ({
@@ -403,7 +395,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
         return; // everything is cached
       }
       const input = getInputString(route.path);
-      prefetchRSC(input, getStableParams({ query: route.query, skip }));
+      prefetchRSC(input, JSON.stringify({ query: route.query, skip }));
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(route.path);
     },
     [routerData],
@@ -510,7 +502,7 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
       })
       .catch(() => {});
   };
-  const initialParams = getStableParams({ query: route.query });
+  const initialParams = JSON.stringify({ query: route.query });
   return createElement(
     ErrorBoundary,
     null,
