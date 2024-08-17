@@ -124,7 +124,7 @@ const createMainViteServer = (
       },
       ssr: {
         external: ['waku'],
-        noExternal: ['react-server-dom-webpack'],
+        // noExternal: ['react-server-dom-webpack'],
       },
       appType: 'mpa',
       server: { middlewareMode: true },
@@ -135,18 +135,16 @@ const createMainViteServer = (
   });
 
   const loadServerModuleMain = async (idOrFileURL: string) => {
-    console.log('loadServerModuleMain', idOrFileURL);
     if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
-      // HACK I don't know why this is necessary.
-      // `external: ['waku']` doesn't somehow work?
+      // HACK `external: ['waku']` doesn't do the same
       return import(/* @vite-ignore */ idOrFileURL);
     }
-    if (idOrFileURL.includes('rsc-shared.mjs')) {
-      return import(
-        /* @vite-ignore */ idOrFileURL.startsWith('file://')
-          ? fileURLToFilePath(idOrFileURL)
-          : idOrFileURL
-      );
+    if (
+      idOrFileURL.startsWith('file://') &&
+      idOrFileURL.includes('/node_modules/')
+    ) {
+      // HACK node_modules should be externalized
+      return import(/* @vite-ignore */ fileURLToFilePath(idOrFileURL));
     }
     const vite = await vitePromise;
     return vite.ssrLoadModule(
