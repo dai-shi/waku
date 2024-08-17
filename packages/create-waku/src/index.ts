@@ -205,10 +205,6 @@ async function init() {
 
   // 1. check packageManager
   // 2. and then install dependencies
-  console.log(`\nDone. Now run:\n`);
-  console.log(`${bold(green(`cd ${targetDir}`))}`);
-  console.log(`${bold(green(commands.install))}`);
-  console.log(`${bold(green(commands.dev))}`);
   console.log();
   console.log(`Installing dependencies by running ${commands.install}...`);
 
