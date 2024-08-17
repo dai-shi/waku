@@ -243,7 +243,11 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         null,
       ),
     );
-    return { input, params: { query: searchParams.toString() }, html };
+    return {
+      input,
+      params: JSON.stringify({ query: searchParams.toString() }),
+      html,
+    };
   };
 
   return { renderEntries, getBuildConfig, getSsrConfig };
