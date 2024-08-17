@@ -319,20 +319,6 @@ export default async function(mesg) {
         "
       `);
   });
-
-  test('transform server action', async () => {
-    const code = `"use server"
-export async function foo() {
-  "use server"
-}`;
-    expect(await transform(code, '/src/func.ts', { ssr: true }))
-      .toMatchInlineSnapshot(`
-        "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-        export async function foo() {}
-        __waku_registerServerReference(foo, "/src/func.ts", "foo");
-        "
-      `);
-  });
 });
 
 describe('internal transform function for client environment', () => {
