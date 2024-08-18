@@ -34,6 +34,7 @@ export const rsc: Middleware = (options) => {
           config,
           input,
           context: ctx.context,
+          decodedBody: headers['x-waku-params'],
           body: ctx.req.body,
           contentType: headers['content-type'] || '',
         };
