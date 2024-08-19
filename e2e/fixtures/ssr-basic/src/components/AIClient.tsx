@@ -17,19 +17,19 @@ export const AIClient = () => {
         <h2>AI state</h2>
         <div>
           user name:
-          <span data-testid="user">{aiState.user}</span>
+          <span data-testid="ai-state-user">{aiState.user}</span>
         </div>
       </div>
       <div>
         <h2>UI state</h2>
         <div>
-          click count:<span data-testid="count">{uiState.count}</span>
+          click count:<span data-testid="ui-state-count">{uiState.count}</span>
         </div>
       </div>
       <div>
         <h2>Actions</h2>
         <button
-          data-testid="foo"
+          data-testid="action-foo"
           onClick={() => {
             startTransition(() => {
               foo();

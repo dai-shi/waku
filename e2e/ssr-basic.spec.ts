@@ -64,15 +64,15 @@ for (const { build, command } of commands) {
       await aiLocator.waitFor({
         state: 'visible',
       });
-      await expect(aiLocator.getByTestId('user')).toHaveText('guest');
-      await expect(aiLocator.getByTestId('count')).toHaveText('0');
-      await aiLocator.getByTestId('foo').click();
-      await expect(aiLocator.getByTestId('user')).toHaveText('admin');
-      await expect(aiLocator.getByTestId('count')).toHaveText('1');
-      await aiLocator.getByTestId('foo').click();
-      await expect(aiLocator.getByTestId('count')).toHaveText('2');
-      await aiLocator.getByTestId('foo').click();
-      await expect(aiLocator.getByTestId('count')).toHaveText('3');
+      await expect(aiLocator.getByTestId('ai-state-user')).toHaveText('guest');
+      await expect(aiLocator.getByTestId('ui-state-count')).toHaveText('0');
+      await aiLocator.getByTestId('action-foo').click();
+      await expect(aiLocator.getByTestId('ai-state-user')).toHaveText('admin');
+      await expect(aiLocator.getByTestId('ui-state-count')).toHaveText('1');
+      await aiLocator.getByTestId('action-foo').click();
+      await expect(aiLocator.getByTestId('ai-state-count')).toHaveText('2');
+      await aiLocator.getByTestId('action-foo').click();
+      await expect(aiLocator.getByTestId('ui-state-count')).toHaveText('3');
     });
 
     test('no js environment should have first screen', async ({ browser }) => {
@@ -86,8 +86,8 @@ for (const { build, command } of commands) {
       await page.getByTestId('increment').click();
       await expect(page.getByTestId('count')).toHaveText('0');
       const aiLocator = page.getByTestId('vercel-ai');
-      await expect(aiLocator.getByTestId('user')).toHaveText('guest');
-      await expect(aiLocator.getByTestId('count')).toHaveText('0');
+      await expect(aiLocator.getByTestId('ai-state-user')).toHaveText('guest');
+      await expect(aiLocator.getByTestId('ui-state-count')).toHaveText('0');
       await page.close();
       await context.close();
     });
