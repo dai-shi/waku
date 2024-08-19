@@ -247,7 +247,7 @@ export async function getBuildConfig(
   const {
     default: { getBuildConfig },
     loadModule,
-  } = entries
+  } = entries;
   if (!getBuildConfig) {
     console.warn(
       "getBuildConfig is undefined. It's recommended for optimization and sometimes required.",
