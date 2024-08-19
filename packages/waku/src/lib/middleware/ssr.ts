@@ -1,3 +1,4 @@
+import { setAllEnvInternal } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import { getPathMapping } from '../utils/path.js';
 import { renderHtml } from '../renderers/html-renderer.js';
@@ -8,7 +9,7 @@ import type { Middleware } from './types.js';
 import { stringToStream } from '../utils/stream.js';
 
 export const ssr: Middleware = (options) => {
-  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
+  setAllEnvInternal(options.env || {});
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()

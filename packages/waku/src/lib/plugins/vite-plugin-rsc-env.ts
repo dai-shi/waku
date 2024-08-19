@@ -3,9 +3,11 @@ import * as dotenv from 'dotenv';
 
 export function rscEnvPlugin({
   isDev,
+  env,
   config,
 }: {
   isDev: boolean;
+  env: Record<string, string>;
   config?: {
     basePath: string;
     rscPath: string;
@@ -17,7 +19,7 @@ export function rscEnvPlugin({
       if (isDev) {
         dotenv.config({
           path: ['.env.local', '.env'],
-          processEnv: (globalThis as any).__WAKU_PRIVATE_ENV__,
+          processEnv: env,
           override: true,
         });
       }
@@ -37,18 +39,16 @@ export function rscEnvPlugin({
                 ],
               ]
             : []),
-          ...Object.entries((globalThis as any).__WAKU_PRIVATE_ENV__).flatMap(
-            ([k, v]) =>
-              k.startsWith('WAKU_PUBLIC_')
-                ? [[`import.meta.env.${k}`, JSON.stringify(v)]]
-                : [],
+          ...Object.entries(env).flatMap(([k, v]) =>
+            k.startsWith('WAKU_PUBLIC_')
+              ? [[`import.meta.env.${k}`, JSON.stringify(v)]]
+              : [],
           ),
           // Node style `process.env` for traditional compatibility
-          ...Object.entries((globalThis as any).__WAKU_PRIVATE_ENV__).flatMap(
-            ([k, v]) =>
-              k.startsWith('WAKU_PUBLIC_')
-                ? [[`process.env.${k}`, JSON.stringify(v)]]
-                : [],
+          ...Object.entries(env).flatMap(([k, v]) =>
+            k.startsWith('WAKU_PUBLIC_')
+              ? [[`process.env.${k}`, JSON.stringify(v)]]
+              : [],
           ),
         ]),
       };

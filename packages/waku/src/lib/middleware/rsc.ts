@@ -1,3 +1,4 @@
+import { setAllEnvInternal } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import { decodeInput, hasStatusCode } from '../renderers/utils.js';
 import { renderRsc } from '../renderers/rsc-renderer.js';
@@ -6,7 +7,7 @@ import type { Middleware } from './types.js';
 import { stringToStream } from '../utils/stream.js';
 
 export const rsc: Middleware = (options) => {
-  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
+  setAllEnvInternal(options.env || {});
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()

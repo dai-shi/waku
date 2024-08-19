@@ -4,7 +4,7 @@ import type { default as RSDWServerType } from 'react-server-dom-webpack/server.
 import type {
   EntriesDev,
   EntriesPrd,
-  runWithRenderStore as runWithRenderStoreType,
+  runWithRenderStoreInternal as runWithRenderStoreInternalType,
 } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { filePathToFileURL } from '../utils/path.js';
@@ -81,12 +81,12 @@ export async function renderRsc(
     {
       default: { renderToReadableStream, decodeReply },
     },
-    { runWithRenderStore },
+    { runWithRenderStoreInternal },
   ] = await Promise.all([
     loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server'),
-    loadServerModule<{ runWithRenderStore: typeof runWithRenderStoreType }>(
-      'waku-server',
-    ),
+    loadServerModule<{
+      runWithRenderStoreInternal: typeof runWithRenderStoreInternalType;
+    }>('waku-server'),
   ]);
 
   const clientBundlerConfig = new Proxy(
@@ -128,7 +128,7 @@ export async function renderRsc(
         throw new Error('Cannot rerender');
       },
     };
-    return runWithRenderStore(renderStore, async () => {
+    return runWithRenderStoreInternal(renderStore, async () => {
       const elements = await renderEntries(input, {
         params,
         buildConfig,
@@ -172,7 +172,7 @@ export async function renderRsc(
         }));
       },
     };
-    return runWithRenderStore(renderStore, async () => {
+    return runWithRenderStoreInternal(renderStore, async () => {
       const actionValue = await actionFn(...actionArgs);
       const elements = await elementsPromise;
       rendered = true;

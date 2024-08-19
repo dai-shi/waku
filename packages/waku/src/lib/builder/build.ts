@@ -6,6 +6,7 @@ import viteReact from '@vitejs/plugin-react';
 import type { LoggingFunction, RollupLog } from 'rollup';
 
 import type { Config } from '../../config.js';
+import { setAllEnvInternal } from '../../server.js';
 import type { BuildConfig, EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { resolveConfig, EXTENSIONS } from '../config.js';
@@ -176,6 +177,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
 // For RSC
 const buildServerBundle = async (
   rootDir: string,
+  env: Record<string, string>,
   config: ResolvedConfig,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
@@ -201,7 +203,7 @@ const buildServerBundle = async (
         serverEntryFiles,
       }),
       rscRsdwPlugin(),
-      rscEnvPlugin({ isDev: false, config }),
+      rscEnvPlugin({ isDev: false, env, config }),
       rscPrivatePlugin(config),
       rscManagedPlugin({
         ...config,
@@ -299,6 +301,7 @@ const buildServerBundle = async (
 // For SSR (render client components on server to generate HTML)
 const buildSsrBundle = async (
   rootDir: string,
+  env: Record<string, string>,
   config: ResolvedConfig,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
@@ -317,7 +320,7 @@ const buildSsrBundle = async (
         ...config,
         cssAssets,
       }),
-      rscEnvPlugin({ isDev: false, config }),
+      rscEnvPlugin({ isDev: false, env, config }),
       rscPrivatePlugin(config),
       rscManagedPlugin({ ...config, addMainToInput: true }),
       rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
@@ -373,6 +376,7 @@ const buildSsrBundle = async (
 // For Browsers
 const buildClientBundle = async (
   rootDir: string,
+  env: Record<string, string>,
   config: ResolvedConfig,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
@@ -392,7 +396,7 @@ const buildClientBundle = async (
         ...config,
         cssAssets,
       }),
-      rscEnvPlugin({ isDev: false, config }),
+      rscEnvPlugin({ isDev: false, env, config }),
       rscPrivatePlugin(config),
       rscManagedPlugin({ ...config, addMainToInput: true }),
       rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
@@ -664,7 +668,7 @@ export async function build(options: {
     | 'aws-lambda'
     | undefined;
 }) {
-  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
+  setAllEnvInternal(options.env || {});
   const config = await resolveConfig(options.config);
   const rootDir = (
     await resolveViteConfig({}, 'build', 'production', 'production')
@@ -679,6 +683,7 @@ export async function build(options: {
     await analyzeEntries(rootDir, config);
   const serverBuildOutput = await buildServerBundle(
     rootDir,
+    options.env || {},
     config,
     clientEntryFiles,
     serverEntryFiles,
@@ -694,6 +699,7 @@ export async function build(options: {
   );
   await buildSsrBundle(
     rootDir,
+    options.env || {},
     config,
     clientEntryFiles,
     serverEntryFiles,
@@ -703,6 +709,7 @@ export async function build(options: {
   );
   const clientBuildOutput = await buildClientBundle(
     rootDir,
+    options.env || {},
     config,
     clientEntryFiles,
     serverEntryFiles,
