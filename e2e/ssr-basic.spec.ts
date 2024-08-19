@@ -70,7 +70,7 @@ for (const { build, command } of commands) {
       await expect(aiLocator.getByTestId('ai-state-user')).toHaveText('admin');
       await expect(aiLocator.getByTestId('ui-state-count')).toHaveText('1');
       await aiLocator.getByTestId('action-foo').click();
-      await expect(aiLocator.getByTestId('ai-state-count')).toHaveText('2');
+      await expect(aiLocator.getByTestId('ui-state-count')).toHaveText('2');
       await aiLocator.getByTestId('action-foo').click();
       await expect(aiLocator.getByTestId('ui-state-count')).toHaveText('3');
     });
