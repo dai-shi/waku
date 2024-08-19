@@ -176,6 +176,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
 // For RSC
 const buildServerBundle = async (
   rootDir: string,
+  env: Record<string, string>,
   config: ResolvedConfig,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
@@ -201,7 +202,7 @@ const buildServerBundle = async (
         serverEntryFiles,
       }),
       rscRsdwPlugin(),
-      rscEnvPlugin({ isDev: false, config }),
+      rscEnvPlugin({ isDev: false, env, config }),
       rscPrivatePlugin(config),
       rscManagedPlugin({
         ...config,
@@ -299,6 +300,7 @@ const buildServerBundle = async (
 // For SSR (render client components on server to generate HTML)
 const buildSsrBundle = async (
   rootDir: string,
+  env: Record<string, string>,
   config: ResolvedConfig,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
@@ -317,7 +319,7 @@ const buildSsrBundle = async (
         ...config,
         cssAssets,
       }),
-      rscEnvPlugin({ isDev: false, config }),
+      rscEnvPlugin({ isDev: false, env, config }),
       rscPrivatePlugin(config),
       rscManagedPlugin({ ...config, addMainToInput: true }),
       rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
@@ -373,6 +375,7 @@ const buildSsrBundle = async (
 // For Browsers
 const buildClientBundle = async (
   rootDir: string,
+  env: Record<string, string>,
   config: ResolvedConfig,
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
@@ -392,7 +395,7 @@ const buildClientBundle = async (
         ...config,
         cssAssets,
       }),
-      rscEnvPlugin({ isDev: false, config }),
+      rscEnvPlugin({ isDev: false, env, config }),
       rscPrivatePlugin(config),
       rscManagedPlugin({ ...config, addMainToInput: true }),
       rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
@@ -429,6 +432,7 @@ const buildClientBundle = async (
 
 const emitRscFiles = async (
   rootDir: string,
+  env: Record<string, string>,
   config: ResolvedConfig,
   distEntries: EntriesPrd,
   buildConfig: BuildConfig,
@@ -471,8 +475,9 @@ const emitRscFiles = async (
         await mkdir(joinPath(destRscFile, '..'), { recursive: true });
         const readable = await renderRsc(
           {
-            input,
+            env,
             config,
+            input,
             context,
             moduleIdCallback: (id) => addClientModule(input, id),
           },
@@ -508,6 +513,7 @@ const pathSpec2pathname = (pathSpec: PathSpec): string => {
 
 const emitHtmlFiles = async (
   rootDir: string,
+  env: Record<string, string>,
   config: ResolvedConfig,
   distEntriesFile: string,
   distEntries: EntriesPrd,
@@ -603,28 +609,13 @@ const emitHtmlFiles = async (
           htmlHead,
           renderRscForHtml: (input, params) =>
             renderRsc(
-              {
-                config,
-                input,
-                context,
-                decodedBody: params,
-              },
-              {
-                isDev: false,
-                entries: distEntries,
-              },
+              { env, config, input, context, decodedBody: params },
+              { isDev: false, entries: distEntries },
             ),
           getSsrConfigForHtml: (pathname, searchParams) =>
             getSsrConfig(
-              {
-                config,
-                pathname,
-                searchParams,
-              },
-              {
-                isDev: false,
-                entries: distEntries,
-              },
+              { env, config, pathname, searchParams },
+              { isDev: false, entries: distEntries },
             ),
           isDev: false,
           loadModule: distEntries.loadModule,
@@ -664,7 +655,7 @@ export async function build(options: {
     | 'aws-lambda'
     | undefined;
 }) {
-  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
+  const env = options.env || {};
   const config = await resolveConfig(options.config);
   const rootDir = (
     await resolveViteConfig({}, 'build', 'production', 'production')
@@ -679,6 +670,7 @@ export async function build(options: {
     await analyzeEntries(rootDir, config);
   const serverBuildOutput = await buildServerBundle(
     rootDir,
+    env,
     config,
     clientEntryFiles,
     serverEntryFiles,
@@ -694,6 +686,7 @@ export async function build(options: {
   );
   await buildSsrBundle(
     rootDir,
+    env,
     config,
     clientEntryFiles,
     serverEntryFiles,
@@ -703,6 +696,7 @@ export async function build(options: {
   );
   const clientBuildOutput = await buildClientBundle(
     rootDir,
+    env,
     config,
     clientEntryFiles,
     serverEntryFiles,
@@ -713,19 +707,24 @@ export async function build(options: {
   const distEntries = await import(filePathToFileURL(distEntriesFile));
 
   // TODO: Add progress indication for static builds.
-  const buildConfig = await getBuildConfig({ config, entries: distEntries });
+  const buildConfig = await getBuildConfig(
+    { env, config },
+    { entries: distEntries },
+  );
   await appendFile(
     distEntriesFile,
     `export const buildConfig = ${JSON.stringify(buildConfig)};`,
   );
   const { getClientModules } = await emitRscFiles(
     rootDir,
+    env,
     config,
     distEntries,
     buildConfig,
   );
   await emitHtmlFiles(
     rootDir,
+    env,
     config,
     distEntriesFile,
     distEntries,

@@ -64,9 +64,17 @@ export type EntriesPrd = EntriesDev & {
   publicIndexHtml: string;
 };
 
+let serverEnv: Record<string, string> = {};
+
+/**
+ * This is an internal function and not for public use.
+ */
+export function setAllEnvInternal(newEnv: typeof serverEnv) {
+  serverEnv = newEnv;
+}
+
 export function getEnv(key: string): string | undefined {
-  // HACK we may want to use a server-side context or something
-  return (globalThis as any).__WAKU_PRIVATE_ENV__[key];
+  return serverEnv[key];
 }
 
 type RenderStore<> = {
@@ -101,7 +109,7 @@ let currentRenderStore: RenderStore | undefined;
 /**
  * This is an internal function and not for public use.
  */
-export const runWithRenderStore = <T>(
+export const runWithRenderStoreInternal = <T>(
   renderStore: RenderStore,
   fn: () => T,
 ): T => {

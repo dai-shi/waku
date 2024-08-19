@@ -6,7 +6,7 @@ import type { Middleware } from './types.js';
 import { stringToStream } from '../utils/stream.js';
 
 export const rsc: Middleware = (options) => {
-  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
+  const env = options.env || {};
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()
@@ -31,6 +31,7 @@ export const rsc: Middleware = (options) => {
           ctx.req.url.pathname.slice(basePrefix.length),
         );
         const args: RenderRscArgs = {
+          env,
           config,
           input,
           context: ctx.context,
