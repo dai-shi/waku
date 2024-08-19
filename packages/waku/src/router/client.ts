@@ -371,9 +371,9 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
   }, [changeRoute]);
 
   useEffect(() => {
-    const callback = (pathname: string, query: string) => {
+    const callback = (path: string, query: string) => {
       const url = new URL(window.location.href);
-      url.pathname = pathname;
+      url.pathname = path;
       url.search = query;
       url.hash = '';
       window.history.pushState(
