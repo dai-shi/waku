@@ -64,16 +64,17 @@ export type EntriesPrd = EntriesDev & {
   publicIndexHtml: string;
 };
 
+let serverEnv: Record<string, string> = {};
+
 /**
  * This is an internal function and not for public use.
  */
-export function setAllEnvInternal(newEnv: Record<string, string>) {
-  (globalThis as any).__WAKU_PRIVATE_ENV__ = newEnv;
+export function setAllEnvInternal(newEnv: typeof serverEnv) {
+  serverEnv = newEnv;
 }
 
 export function getEnv(key: string): string | undefined {
-  // HACK for now. we may want to use module state or render store.
-  return (globalThis as any).__WAKU_PRIVATE_ENV__[key];
+  return serverEnv[key];
 }
 
 type RenderStore<> = {

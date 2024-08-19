@@ -1,4 +1,3 @@
-import { setAllEnvInternal } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import { decodeInput, hasStatusCode } from '../renderers/utils.js';
 import { renderRsc } from '../renderers/rsc-renderer.js';
@@ -7,7 +6,6 @@ import type { Middleware } from './types.js';
 import { stringToStream } from '../utils/stream.js';
 
 export const rsc: Middleware = (options) => {
-  setAllEnvInternal(options.env || {});
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()
@@ -32,6 +30,7 @@ export const rsc: Middleware = (options) => {
           ctx.req.url.pathname.slice(basePrefix.length),
         );
         const args: RenderRscArgs = {
+          env: options.env || {},
           config,
           input,
           context: ctx.context,

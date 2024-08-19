@@ -4,6 +4,7 @@ import type { default as RSDWServerType } from 'react-server-dom-webpack/server.
 import type {
   EntriesDev,
   EntriesPrd,
+  setAllEnvInternal as setAllEnvInternalType,
   runWithRenderStoreInternal as runWithRenderStoreInternalType,
 } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
@@ -25,6 +26,7 @@ const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
 };
 
 export type RenderRscArgs = {
+  env: Record<string, string>;
   config: Omit<ResolvedConfig, 'middleware'>;
   input: string;
   context: Record<string, unknown> | undefined;
@@ -50,6 +52,7 @@ export async function renderRsc(
   opts: RenderRscOpts,
 ): Promise<ReadableStream> {
   const {
+    env,
     config,
     input,
     contentType,
@@ -81,13 +84,16 @@ export async function renderRsc(
     {
       default: { renderToReadableStream, decodeReply },
     },
-    { runWithRenderStoreInternal },
+    { setAllEnvInternal, runWithRenderStoreInternal },
   ] = await Promise.all([
     loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server'),
     loadServerModule<{
+      setAllEnvInternal: typeof setAllEnvInternalType;
       runWithRenderStoreInternal: typeof runWithRenderStoreInternalType;
     }>('waku-server'),
   ]);
+
+  setAllEnvInternal(env);
 
   const clientBundlerConfig = new Proxy(
     {},
@@ -225,10 +231,11 @@ export async function renderRsc(
 }
 
 export async function getBuildConfig(opts: {
+  env: Record<string, string>;
   config: ResolvedConfig;
   entries: EntriesPrd;
 }) {
-  const { config, entries } = opts;
+  const { env, config, entries } = opts;
 
   const {
     default: { getBuildConfig },
@@ -246,6 +253,7 @@ export async function getBuildConfig(opts: {
     const idSet = new Set<string>();
     const readable = await renderRsc(
       {
+        env,
         config,
         input,
         context: undefined,

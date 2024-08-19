@@ -4,7 +4,6 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
-import { setAllEnvInternal } from '../../server.js';
 import type { EntriesDev } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import {
@@ -312,7 +311,6 @@ export const devServer: Middleware = (options) => {
     return (_ctx, next) => next();
   }
 
-  setAllEnvInternal(options.env || {});
   const configPromise = resolveConfig(options.config);
 
   (globalThis as any).__WAKU_SERVER_HACK_IMPORT__ = (idOrFileURL: string) =>

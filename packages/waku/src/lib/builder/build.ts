@@ -6,7 +6,6 @@ import viteReact from '@vitejs/plugin-react';
 import type { LoggingFunction, RollupLog } from 'rollup';
 
 import type { Config } from '../../config.js';
-import { setAllEnvInternal } from '../../server.js';
 import type { BuildConfig, EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { resolveConfig, EXTENSIONS } from '../config.js';
@@ -433,6 +432,7 @@ const buildClientBundle = async (
 
 const emitRscFiles = async (
   rootDir: string,
+  env: Record<string, string>,
   config: ResolvedConfig,
   distEntries: EntriesPrd,
   buildConfig: BuildConfig,
@@ -475,8 +475,9 @@ const emitRscFiles = async (
         await mkdir(joinPath(destRscFile, '..'), { recursive: true });
         const readable = await renderRsc(
           {
-            input,
+            env,
             config,
+            input,
             context,
             moduleIdCallback: (id) => addClientModule(input, id),
           },
@@ -512,6 +513,7 @@ const pathSpec2pathname = (pathSpec: PathSpec): string => {
 
 const emitHtmlFiles = async (
   rootDir: string,
+  env: Record<string, string>,
   config: ResolvedConfig,
   distEntriesFile: string,
   distEntries: EntriesPrd,
@@ -608,6 +610,7 @@ const emitHtmlFiles = async (
           renderRscForHtml: (input, params) =>
             renderRsc(
               {
+                env,
                 config,
                 input,
                 context,
@@ -668,7 +671,7 @@ export async function build(options: {
     | 'aws-lambda'
     | undefined;
 }) {
-  setAllEnvInternal(options.env || {});
+  const env = options.env || {};
   const config = await resolveConfig(options.config);
   const rootDir = (
     await resolveViteConfig({}, 'build', 'production', 'production')
@@ -720,19 +723,25 @@ export async function build(options: {
   const distEntries = await import(filePathToFileURL(distEntriesFile));
 
   // TODO: Add progress indication for static builds.
-  const buildConfig = await getBuildConfig({ config, entries: distEntries });
+  const buildConfig = await getBuildConfig({
+    env,
+    config,
+    entries: distEntries,
+  });
   await appendFile(
     distEntriesFile,
     `export const buildConfig = ${JSON.stringify(buildConfig)};`,
   );
   const { getClientModules } = await emitRscFiles(
     rootDir,
+    env,
     config,
     distEntries,
     buildConfig,
   );
   await emitHtmlFiles(
     rootDir,
+    env,
     config,
     distEntriesFile,
     distEntries,

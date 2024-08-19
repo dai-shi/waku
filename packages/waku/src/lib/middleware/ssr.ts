@@ -1,4 +1,3 @@
-import { setAllEnvInternal } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import { getPathMapping } from '../utils/path.js';
 import { renderHtml } from '../renderers/html-renderer.js';
@@ -9,7 +8,6 @@ import type { Middleware } from './types.js';
 import { stringToStream } from '../utils/stream.js';
 
 export const ssr: Middleware = (options) => {
-  setAllEnvInternal(options.env || {});
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()
@@ -42,6 +40,7 @@ export const ssr: Middleware = (options) => {
           htmlHead,
           renderRscForHtml: async (input, params) => {
             const args: RenderRscArgs = {
+              env: options.env || {},
               config,
               input,
               context: ctx.context,
