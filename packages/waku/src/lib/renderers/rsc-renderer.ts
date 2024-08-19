@@ -114,7 +114,7 @@ export async function renderRsc(
         const [fileId, name] = encodedId.split('#') as [string, string];
         const id = filePathToFileURL(fileId);
         if (fileId.startsWith('@id/assets/')) {
-          const id = '.' + fileId.slice('@id'.length);
+          const id = '.' + fileId.slice('@id/assets'.length);
           return { id, chunks: [id], name, async: true };
         } else {
           return { id, chunks: [id], name, async: true };

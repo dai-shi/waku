@@ -1,4 +1,6 @@
 import { Counter } from './Counter.js';
+import { AIProvider } from '../ai/index.js';
+import { AIClient } from './AIClient.js';
 
 const App = ({ name }: { name: string }) => {
   return (
@@ -12,6 +14,11 @@ const App = ({ name }: { name: string }) => {
         >
           <h1 data-testid="app-name">{name}</h1>
           <Counter />
+          <section data-testid="vercel-ai">
+            <AIProvider>
+              <AIClient />
+            </AIProvider>
+          </section>
         </div>
       </body>
     </html>
