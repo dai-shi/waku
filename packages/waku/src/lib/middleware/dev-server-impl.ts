@@ -84,6 +84,7 @@ const hotUpdateCallback = (payload: HotUpdatePayload) =>
   hotUpdateCallbackSet.forEach((fn) => fn(payload));
 
 const createMainViteServer = (
+  env: Record<string, string>,
   configPromise: ReturnType<typeof resolveConfig>,
 ) => {
   const vitePromise = configPromise.then(async (config) => {
@@ -106,7 +107,7 @@ const createMainViteServer = (
           },
         }),
         rscRsdwPlugin(),
-        rscEnvPlugin({ isDev: true, config }),
+        rscEnvPlugin({ isDev: true, env, config }),
         rscPrivatePlugin(config),
         rscManagedPlugin(config),
         rscIndexPlugin(config),
@@ -209,6 +210,7 @@ const createMainViteServer = (
 };
 
 const createRscViteServer = (
+  env: Record<string, string>,
   configPromise: ReturnType<typeof resolveConfig>,
 ) => {
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
@@ -222,7 +224,7 @@ const createRscViteServer = (
         nonjsResolvePlugin(),
         devCommonJsPlugin({}),
         rscRsdwPlugin(),
-        rscEnvPlugin({ isDev: true }),
+        rscEnvPlugin({ isDev: true, env }),
         rscPrivatePlugin({ privateDir: config.privateDir, hotUpdateCallback }),
         rscManagedPlugin({ basePath: config.basePath, srcDir: config.srcDir }),
         rscTransformPlugin({ isClient: false, isBuild: false }),
@@ -309,7 +311,7 @@ export const devServer: Middleware = (options) => {
     return (_ctx, next) => next();
   }
 
-  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
+  const env = options.env || {};
   const configPromise = resolveConfig(options.config);
 
   (globalThis as any).__WAKU_SERVER_HACK_IMPORT__ = (idOrFileURL: string) =>
@@ -323,10 +325,10 @@ export const devServer: Middleware = (options) => {
     loadServerModuleMain,
     transformIndexHtml,
     willBeHandled,
-  } = createMainViteServer(configPromise);
+  } = createMainViteServer(env, configPromise);
 
   const { loadServerModuleRsc, loadEntriesDev, resolveClientEntry } =
-    createRscViteServer(configPromise);
+    createRscViteServer(env, configPromise);
 
   let initialModules: ClonableModuleNode[];
 

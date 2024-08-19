@@ -4,7 +4,8 @@ import type { default as RSDWServerType } from 'react-server-dom-webpack/server.
 import type {
   EntriesDev,
   EntriesPrd,
-  runWithRenderStore as runWithRenderStoreType,
+  setAllEnvInternal as setAllEnvInternalType,
+  runWithRenderStoreInternal as runWithRenderStoreInternalType,
 } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { filePathToFileURL } from '../utils/path.js';
@@ -25,6 +26,7 @@ const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
 };
 
 export type RenderRscArgs = {
+  env: Record<string, string>;
   config: Omit<ResolvedConfig, 'middleware'>;
   input: string;
   context: Record<string, unknown> | undefined;
@@ -50,6 +52,7 @@ export async function renderRsc(
   opts: RenderRscOpts,
 ): Promise<ReadableStream> {
   const {
+    env,
     config,
     input,
     contentType,
@@ -81,13 +84,16 @@ export async function renderRsc(
     {
       default: { renderToReadableStream, decodeReply },
     },
-    { runWithRenderStore },
+    { setAllEnvInternal, runWithRenderStoreInternal },
   ] = await Promise.all([
     loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server'),
-    loadServerModule<{ runWithRenderStore: typeof runWithRenderStoreType }>(
-      'waku-server',
-    ),
+    loadServerModule<{
+      setAllEnvInternal: typeof setAllEnvInternalType;
+      runWithRenderStoreInternal: typeof runWithRenderStoreInternalType;
+    }>('waku-server'),
   ]);
+
+  setAllEnvInternal(env);
 
   const clientBundlerConfig = new Proxy(
     {},
@@ -128,7 +134,7 @@ export async function renderRsc(
         throw new Error('Cannot rerender');
       },
     };
-    return runWithRenderStore(renderStore, async () => {
+    return runWithRenderStoreInternal(renderStore, async () => {
       const elements = await renderEntries(input, {
         params,
         buildConfig,
@@ -172,7 +178,7 @@ export async function renderRsc(
         }));
       },
     };
-    return runWithRenderStore(renderStore, async () => {
+    return runWithRenderStoreInternal(renderStore, async () => {
       const actionValue = await actionFn(...actionArgs);
       const elements = await elementsPromise;
       rendered = true;
@@ -224,14 +230,23 @@ export async function renderRsc(
   return renderWithContext(context, input, decodedBody);
 }
 
-export async function getBuildConfig(opts: {
-  config: ResolvedConfig;
-  entries: EntriesPrd;
-}) {
-  const { config, entries } = opts;
+type GetBuildConfigArgs = {
+  env: Record<string, string>;
+  config: Omit<ResolvedConfig, 'middleware'>;
+};
+
+type GetBuildConfigOpts = { entries: EntriesPrd };
+
+export async function getBuildConfig(
+  args: GetBuildConfigArgs,
+  opts: GetBuildConfigOpts,
+) {
+  const { env, config } = args;
+  const { entries } = opts;
 
   const {
     default: { getBuildConfig },
+    loadModule,
   } = entries;
   if (!getBuildConfig) {
     console.warn(
@@ -240,21 +255,31 @@ export async function getBuildConfig(opts: {
     return [];
   }
 
+  const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
+    loadModule(key) as Promise<T>;
+
+  const [{ setAllEnvInternal }] = await Promise.all([
+    loadServerModule<{
+      setAllEnvInternal: typeof setAllEnvInternalType;
+      runWithRenderStoreInternal: typeof runWithRenderStoreInternalType;
+    }>('waku-server'),
+  ]);
+
+  setAllEnvInternal(env);
+
   const unstable_collectClientModules = async (
     input: string,
   ): Promise<string[]> => {
     const idSet = new Set<string>();
     const readable = await renderRsc(
       {
+        env,
         config,
         input,
         context: undefined,
         moduleIdCallback: (id) => idSet.add(id),
       },
-      {
-        isDev: false,
-        entries,
-      },
+      { isDev: false, entries },
     );
     await new Promise<void>((resolve, reject) => {
       const writable = new WritableStream({
@@ -275,6 +300,7 @@ export async function getBuildConfig(opts: {
 }
 
 export type GetSsrConfigArgs = {
+  env: Record<string, string>;
   config: Omit<ResolvedConfig, 'middleware'>;
   pathname: string;
   searchParams: URLSearchParams;
@@ -293,7 +319,7 @@ export async function getSsrConfig(
   args: GetSsrConfigArgs,
   opts: GetSsrConfigOpts,
 ) {
-  const { config, pathname, searchParams } = args;
+  const { env, config, pathname, searchParams } = args;
   const { isDev, entries } = opts;
 
   const resolveClientEntry = isDev
@@ -313,9 +339,20 @@ export async function getSsrConfig(
       ? opts.loadServerModuleRsc(SERVER_MODULE_MAP[key])
       : loadModule(key)) as Promise<T>;
 
-  const {
-    default: { renderToReadableStream },
-  } = await loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server');
+  const [
+    {
+      default: { renderToReadableStream },
+    },
+    { setAllEnvInternal },
+  ] = await Promise.all([
+    loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server'),
+    loadServerModule<{
+      setAllEnvInternal: typeof setAllEnvInternalType;
+      runWithRenderStoreInternal: typeof runWithRenderStoreInternalType;
+    }>('waku-server'),
+  ]);
+
+  setAllEnvInternal(env);
 
   const ssrConfig = await getSsrConfig?.(pathname, {
     searchParams,

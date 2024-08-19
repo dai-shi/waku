@@ -84,7 +84,7 @@ export function rscHmrPlugin(): Plugin {
 {
   const refetchRsc = () => {
     delete fetchCache[ENTRY];
-    const data = fetchRSC(input, searchParamsString, fetchCache);
+    const data = fetchRSC(input, params, fetchCache);
     fetchCache[SET_ELEMENTS](() => data);
   };
   globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];
