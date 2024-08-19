@@ -371,10 +371,10 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
   }, [changeRoute]);
 
   useEffect(() => {
-    const callback = (pathname: string, searchParamsString: string) => {
+    const callback = (pathname: string, query: string) => {
       const url = new URL(window.location.href);
       url.pathname = pathname;
-      url.search = searchParamsString;
+      url.search = query;
       url.hash = '';
       window.history.pushState(
         {
