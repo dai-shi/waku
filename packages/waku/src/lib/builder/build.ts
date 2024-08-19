@@ -686,7 +686,7 @@ export async function build(options: {
     await analyzeEntries(rootDir, config);
   const serverBuildOutput = await buildServerBundle(
     rootDir,
-    options.env || {},
+    env,
     config,
     clientEntryFiles,
     serverEntryFiles,
@@ -702,7 +702,7 @@ export async function build(options: {
   );
   await buildSsrBundle(
     rootDir,
-    options.env || {},
+    env,
     config,
     clientEntryFiles,
     serverEntryFiles,
@@ -712,7 +712,7 @@ export async function build(options: {
   );
   const clientBuildOutput = await buildClientBundle(
     rootDir,
-    options.env || {},
+    env,
     config,
     clientEntryFiles,
     serverEntryFiles,
