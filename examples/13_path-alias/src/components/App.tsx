@@ -1,5 +1,8 @@
+import { getEnv } from 'waku';
 import { Counter } from '@/components/Counter';
 import { MyFragment } from '@/components/MyFragment';
+
+console.log('FOO', getEnv('FOO'));
 
 const App = ({ name }: { name: string }) => {
   return (
