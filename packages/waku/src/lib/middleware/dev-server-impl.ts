@@ -311,6 +311,7 @@ export const devServer: Middleware = (options) => {
     return (_ctx, next) => next();
   }
 
+  const env = options.env || {};
   const configPromise = resolveConfig(options.config);
 
   (globalThis as any).__WAKU_SERVER_HACK_IMPORT__ = (idOrFileURL: string) =>
@@ -324,10 +325,10 @@ export const devServer: Middleware = (options) => {
     loadServerModuleMain,
     transformIndexHtml,
     willBeHandled,
-  } = createMainViteServer(options.env || {}, configPromise);
+  } = createMainViteServer(env, configPromise);
 
   const { loadServerModuleRsc, loadEntriesDev, resolveClientEntry } =
-    createRscViteServer(options.env || {}, configPromise);
+    createRscViteServer(env, configPromise);
 
   let initialModules: ClonableModuleNode[];
 

@@ -6,6 +6,7 @@ import type { Middleware } from './types.js';
 import { stringToStream } from '../utils/stream.js';
 
 export const rsc: Middleware = (options) => {
+  const env = options.env || {};
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()
@@ -30,7 +31,7 @@ export const rsc: Middleware = (options) => {
           ctx.req.url.pathname.slice(basePrefix.length),
         );
         const args: RenderRscArgs = {
-          env: options.env || {},
+          env,
           config,
           input,
           context: ctx.context,

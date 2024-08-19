@@ -279,10 +279,7 @@ export async function getBuildConfig(
         context: undefined,
         moduleIdCallback: (id) => idSet.add(id),
       },
-      {
-        isDev: false,
-        entries: entries as EntriesPrd,
-      },
+      { isDev: false, entries },
     );
     await new Promise<void>((resolve, reject) => {
       const writable = new WritableStream({
