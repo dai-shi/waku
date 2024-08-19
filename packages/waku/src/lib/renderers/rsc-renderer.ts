@@ -230,22 +230,42 @@ export async function renderRsc(
   return renderWithContext(context, input, decodedBody);
 }
 
-export async function getBuildConfig(opts: {
+type GetBuildConfigArgs = {
   env: Record<string, string>;
-  config: ResolvedConfig;
-  entries: EntriesPrd;
-}) {
-  const { env, config, entries } = opts;
+  config: Omit<ResolvedConfig, 'middleware'>;
+};
+
+type GetBuildConfigOpts = { entries: EntriesPrd };
+
+export async function getBuildConfig(
+  args: GetBuildConfigArgs,
+  opts: GetBuildConfigOpts,
+) {
+  const { env, config } = args;
+  const { entries } = opts;
 
   const {
     default: { getBuildConfig },
-  } = entries;
+    loadModule,
+  } = entries
   if (!getBuildConfig) {
     console.warn(
       "getBuildConfig is undefined. It's recommended for optimization and sometimes required.",
     );
     return [];
   }
+
+  const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
+    loadModule(key) as Promise<T>;
+
+  const [{ setAllEnvInternal }] = await Promise.all([
+    loadServerModule<{
+      setAllEnvInternal: typeof setAllEnvInternalType;
+      runWithRenderStoreInternal: typeof runWithRenderStoreInternalType;
+    }>('waku-server'),
+  ]);
+
+  setAllEnvInternal(env);
 
   const unstable_collectClientModules = async (
     input: string,
@@ -261,7 +281,7 @@ export async function getBuildConfig(opts: {
       },
       {
         isDev: false,
-        entries,
+        entries: entries as EntriesPrd,
       },
     );
     await new Promise<void>((resolve, reject) => {
@@ -283,6 +303,7 @@ export async function getBuildConfig(opts: {
 }
 
 export type GetSsrConfigArgs = {
+  env: Record<string, string>;
   config: Omit<ResolvedConfig, 'middleware'>;
   pathname: string;
   searchParams: URLSearchParams;
@@ -301,7 +322,7 @@ export async function getSsrConfig(
   args: GetSsrConfigArgs,
   opts: GetSsrConfigOpts,
 ) {
-  const { config, pathname, searchParams } = args;
+  const { env, config, pathname, searchParams } = args;
   const { isDev, entries } = opts;
 
   const resolveClientEntry = isDev
@@ -321,9 +342,20 @@ export async function getSsrConfig(
       ? opts.loadServerModuleRsc(SERVER_MODULE_MAP[key])
       : loadModule(key)) as Promise<T>;
 
-  const {
-    default: { renderToReadableStream },
-  } = await loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server');
+  const [
+    {
+      default: { renderToReadableStream },
+    },
+    { setAllEnvInternal },
+  ] = await Promise.all([
+    loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server'),
+    loadServerModule<{
+      setAllEnvInternal: typeof setAllEnvInternalType;
+      runWithRenderStoreInternal: typeof runWithRenderStoreInternalType;
+    }>('waku-server'),
+  ]);
+
+  setAllEnvInternal(env);
 
   const ssrConfig = await getSsrConfig?.(pathname, {
     searchParams,

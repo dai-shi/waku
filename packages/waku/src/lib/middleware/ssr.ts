@@ -8,6 +8,7 @@ import type { Middleware } from './types.js';
 import { stringToStream } from '../utils/stream.js';
 
 export const ssr: Middleware = (options) => {
+  const env = options.env || {};
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()
@@ -40,7 +41,7 @@ export const ssr: Middleware = (options) => {
           htmlHead,
           renderRscForHtml: async (input, params) => {
             const args: RenderRscArgs = {
-              env: options.env || {},
+              env,
               config,
               input,
               context: ctx.context,
@@ -62,7 +63,7 @@ export const ssr: Middleware = (options) => {
                 isDev: true,
                 getSsrConfigForHtml: (pathname, searchParams) =>
                   getSsrConfig(
-                    { config, pathname, searchParams },
+                    { env, config, pathname, searchParams },
                     {
                       isDev: true,
                       loadServerModuleRsc: devServer.loadServerModuleRsc,
@@ -77,7 +78,7 @@ export const ssr: Middleware = (options) => {
                 isDev: false,
                 getSsrConfigForHtml: (pathname, searchParams) =>
                   getSsrConfig(
-                    { config, pathname, searchParams },
+                    { env, config, pathname, searchParams },
                     { isDev: false, entries },
                   ),
                 loadModule: entries.loadModule,

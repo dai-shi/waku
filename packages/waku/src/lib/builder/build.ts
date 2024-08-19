@@ -609,29 +609,13 @@ const emitHtmlFiles = async (
           htmlHead,
           renderRscForHtml: (input, params) =>
             renderRsc(
-              {
-                env,
-                config,
-                input,
-                context,
-                decodedBody: params,
-              },
-              {
-                isDev: false,
-                entries: distEntries,
-              },
+              { env, config, input, context, decodedBody: params },
+              { isDev: false, entries: distEntries },
             ),
           getSsrConfigForHtml: (pathname, searchParams) =>
             getSsrConfig(
-              {
-                config,
-                pathname,
-                searchParams,
-              },
-              {
-                isDev: false,
-                entries: distEntries,
-              },
+              { env, config, pathname, searchParams },
+              { isDev: false, entries: distEntries },
             ),
           isDev: false,
           loadModule: distEntries.loadModule,
@@ -723,11 +707,10 @@ export async function build(options: {
   const distEntries = await import(filePathToFileURL(distEntriesFile));
 
   // TODO: Add progress indication for static builds.
-  const buildConfig = await getBuildConfig({
-    env,
-    config,
-    entries: distEntries,
-  });
+  const buildConfig = await getBuildConfig(
+    { env, config },
+    { entries: distEntries },
+  );
   await appendFile(
     distEntriesFile,
     `export const buildConfig = ${JSON.stringify(buildConfig)};`,
