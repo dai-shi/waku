@@ -102,7 +102,7 @@ export const components = {
   code: ({ children, ...rest }: any) => {
     return (
       <span
-        className="-my-0.5 inline-block rounded bg-gray-900 px-1.5 py-px font-mono text-[13px] text-white/80 sm:text-base"
+        className="-my-0.5 inline-block rounded bg-gray-900 px-1.5 py-px font-mono text-[13px] text-white/80 sm:text-base group-[.blockquote]:sm:text-sm"
         {...rest}
       >
         {children}
@@ -120,8 +120,8 @@ export const components = {
   },
   blockquote: ({ children, ...rest }: any) => {
     return (
-      <div className="overflow-clip rounded-xl bg-gray-950 sm:!-mx-3">
-        <blockquote className="p-4 sm:p-6" {...rest}>
+      <div className="mb-6 overflow-clip rounded-xl bg-gray-950 sm:!-mx-3">
+        <blockquote className="blockquote group p-4 sm:p-6" {...rest}>
           <div className="mb-1 flex items-center gap-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
