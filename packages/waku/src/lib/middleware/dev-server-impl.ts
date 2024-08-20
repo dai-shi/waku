@@ -116,7 +116,7 @@ const createMainViteServer = (
       ],
       optimizeDeps: {
         include: ['react-server-dom-webpack/client', 'react-dom'],
-        exclude: ['waku'],
+        exclude: ['waku', 'rsc-html-stream/server'],
         entries: [
           `${config.srcDir}/${SRC_ENTRIES}.*`,
           // HACK hard-coded "pages"
