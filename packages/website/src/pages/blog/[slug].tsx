@@ -103,7 +103,9 @@ const getFileName = async (slug: string) => {
   const blogSlugToFileName: Record<string, string> = {};
 
   readdirSync('./private/contents').forEach((fileName) => {
-    blogFileNames.push(fileName);
+    if (fileName.endsWith('.mdx')) {
+      blogFileNames.push(fileName);
+    }
   });
 
   for await (const fileName of blogFileNames) {
@@ -136,7 +138,9 @@ const getBlogPaths = async () => {
   const blogFileNames: Array<string> = [];
 
   readdirSync('./private/contents').forEach((fileName) => {
-    blogFileNames.push(fileName);
+    if (fileName.endsWith('.mdx')) {
+      blogFileNames.push(fileName);
+    }
   });
 
   for await (const fileName of blogFileNames) {

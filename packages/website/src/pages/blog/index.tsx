@@ -59,7 +59,9 @@ const getArticles = async () => {
   const blogArticles: Array<any> = [];
 
   readdirSync('./private/contents').forEach((fileName) => {
-    blogFileNames.push(fileName);
+    if (fileName.endsWith('.mdx')) {
+      blogFileNames.push(fileName);
+    }
   });
 
   for await (const fileName of blogFileNames) {
