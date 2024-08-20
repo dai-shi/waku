@@ -10,11 +10,11 @@
   },
   "dependencies": {
     "@stylexjs/stylex": "0.7.5",
-    "@vanilla-extract/css": "1.15.3",
+    "@vanilla-extract/css": "1.15.4",
     "classnames": "2.3.2",
-    "react": "19.0.0-rc-68dbd84b-20240812",
-    "react-dom": "19.0.0-rc-68dbd84b-20240812",
-    "react-server-dom-webpack": "19.0.0-rc-68dbd84b-20240812",
+    "react": "19.0.0-rc-6ebfd5b0-20240818",
+    "react-dom": "19.0.0-rc-6ebfd5b0-20240818",
+    "react-server-dom-webpack": "19.0.0-rc-6ebfd5b0-20240818",
     "waku": "0.21.0-beta.5"
   },
   "devDependencies": {
@@ -22,7 +22,7 @@
     "@types/react-dom": "18.3.0",
     "@vanilla-extract/vite-plugin": "4.0.10",
     "typescript": "5.5.4",
-    "vite": "5.4.0",
+    "vite": "5.4.1",
     "vite-plugin-stylex-dev": "0.7.5"
   }
 }

@@ -9,9 +9,9 @@
     "start": "waku start"
   },
   "dependencies": {
-    "react": "19.0.0-rc-68dbd84b-20240812",
-    "react-dom": "19.0.0-rc-68dbd84b-20240812",
-    "react-server-dom-webpack": "19.0.0-rc-68dbd84b-20240812",
+    "react": "19.0.0-rc-6ebfd5b0-20240818",
+    "react-dom": "19.0.0-rc-6ebfd5b0-20240818",
+    "react-server-dom-webpack": "19.0.0-rc-6ebfd5b0-20240818",
     "react-textarea-autosize": "^8.5.3",
     "waku": "workspace:*"
   },
