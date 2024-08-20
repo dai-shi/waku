@@ -184,6 +184,7 @@ const docs = [
   { to: '/#static-assets', label: 'Static Assets' },
   { to: '/#file-system', label: 'File System' },
   { to: '/#data-fetching', label: 'Data Fetching' },
+  { to: '/#mutations', label: 'Mutations' },
   { to: '/#state-management', label: 'State Management' },
   { to: '/#environment-variables', label: 'Environment Variables' },
   { to: '/#deployment', label: 'Deployment' },
