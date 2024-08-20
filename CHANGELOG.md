@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.21.0] - 2024-08-20
+
+### Added
+
+- Server actions support
+- Various improvements
+- Cloudflare pages support (experimental)
+
 ## [0.20.2] - 2024-05-13
 
 ### Changed
