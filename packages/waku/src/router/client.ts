@@ -16,6 +16,7 @@ import {
 import type {
   ComponentProps,
   FunctionComponent,
+  MutableRefObject,
   ReactNode,
   AnchorHTMLAttributes,
   ReactElement,
@@ -26,10 +27,10 @@ import { prefetchRSC, Root, Slot, useRefetch } from '../client.js';
 import {
   getComponentIds,
   getInputString,
-  COMPONENT_CONFIGS_ID,
+  SHOULD_SKIP_ID,
   LOCATION_ID,
 } from './common.js';
-import type { RouteProps, ComponentConfigs } from './common.js';
+import type { RouteProps, ShouldSkip } from './common.js';
 
 declare global {
   interface ImportMeta {
@@ -61,7 +62,7 @@ const parseRoute = (url: URL): RouteProps => {
 type ChangeRoute = (
   route: RouteProps,
   options?: {
-    unstable_checkCache?: boolean; // TODO this doesn't work 100% correctly
+    checkCache?: boolean;
     skipRefetch?: boolean;
   },
 ) => void;
@@ -234,36 +235,59 @@ export function Link({
 }
 
 const getSkipList = (
-  componentConfigs: ComponentConfigs | undefined,
+  shouldSkip: ShouldSkip | undefined,
   componentIds: readonly string[],
+  route: RouteProps,
+  cached: Record<string, RouteProps>,
 ): string[] => {
+  const shouldSkipObj = Object.fromEntries(shouldSkip || []);
   return componentIds.filter((id) => {
-    const config = componentConfigs?.[id];
-    if (!config) {
-      return false; // no config
+    const prevProps = cached[id];
+    if (!prevProps) {
+      return false;
     }
-    const [render] = config;
-    if (!render) {
-      return true; // no component
+    const shouldCheck = shouldSkipObj[id];
+    if (!shouldCheck) {
+      return false;
     }
-    return render === 'static'; // static component
+    if (shouldCheck[0] && route.path !== prevProps.path) {
+      return false;
+    }
+    if (shouldCheck[1] && route.query !== prevProps.query) {
+      return false;
+    }
+    return true;
   });
 };
 
+const equalRouteProps = (a: RouteProps, b: RouteProps) => {
+  if (a.path !== b.path) {
+    return false;
+  }
+  if (a.query !== b.query) {
+    return false;
+  }
+  return true;
+};
+
 const RouterSlot = ({
+  route,
   routerData,
+  cachedRef,
   id,
   fallback,
   children,
 }: {
+  route: RouteProps;
   routerData: RouterData;
+  cachedRef: MutableRefObject<Record<string, RouteProps>>;
   id: string;
   fallback?: ReactNode;
   children?: ReactNode;
 }) => {
   const unstable_shouldRenderPrev = (_err: unknown) => {
     const shouldSkip = routerData[0];
-    const skip = getSkipList(shouldSkip, [id]);
+    const skip = getSkipList(shouldSkip, [id], route, cachedRef.current);
     return skip.length > 0;
   };
   return createElement(
@@ -305,7 +329,9 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
 
   const componentIds = getComponentIds(route.path);
 
-  const [cached, setCached] = useState(() => new Set<string>(componentIds));
+  const [cached, setCached] = useState<Record<string, RouteProps>>(() => {
+    return Object.fromEntries(componentIds.map((id) => [id, route]));
+  });
   const cachedRef = useRef(cached);
   useEffect(() => {
     cachedRef.current = cached;
@@ -313,19 +339,27 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
 
   const changeRoute: ChangeRoute = useCallback(
     (route, options) => {
-      const { unstable_checkCache, skipRefetch } = options || {};
+      const { checkCache, skipRefetch } = options || {};
       startTransition(() => {
         setRoute(route);
       });
       const componentIds = getComponentIds(route.path);
       if (
-        unstable_checkCache &&
-        componentIds.every((id) => cachedRef.current.has(id))
+        checkCache &&
+        componentIds.every((id) => {
+          const cachedLoc = cachedRef.current[id];
+          return cachedLoc && equalRouteProps(cachedLoc, route);
+        })
       ) {
         return; // everything is cached
       }
       const shouldSkip = routerData[0];
-      const skip = getSkipList(shouldSkip, componentIds);
+      const skip = getSkipList(
+        shouldSkip,
+        componentIds,
+        route,
+        cachedRef.current,
+      );
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is skipped
       }
@@ -334,9 +368,14 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
         refetch(input, JSON.stringify({ query: route.query, skip }));
       }
       startTransition(() => {
-        // HACK this is just guessing the waku/client behavior
-        // There should be a better way with exposing something from waku/client
-        setCached((prev) => new Set([...prev, ...componentIds]));
+        setCached((prev) => ({
+          ...prev,
+          ...Object.fromEntries(
+            componentIds.flatMap((id) =>
+              skip.includes(id) ? [] : [[id, route]],
+            ),
+          ),
+        }));
       });
     },
     [refetch, routerData],
@@ -346,7 +385,12 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
     (route) => {
       const componentIds = getComponentIds(route.path);
       const shouldSkip = routerData[0];
-      const skip = getSkipList(shouldSkip, componentIds);
+      const skip = getSkipList(
+        shouldSkip,
+        componentIds,
+        route,
+        cachedRef.current,
+      );
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is cached
       }
@@ -360,9 +404,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
   useEffect(() => {
     const callback = () => {
       const route = parseRoute(new URL(window.location.href));
-      // TODO unstable_checkCache only works for going back just once
-      // can we recover state from the History API?
-      changeRoute(route, { unstable_checkCache: true });
+      changeRoute(route, { checkCache: true });
     };
     window.addEventListener('popstate', callback);
     return () => {
@@ -406,7 +448,11 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
 
   const children = componentIds.reduceRight(
     (acc: ReactNode, id) =>
-      createElement(RouterSlot, { routerData, id, fallback: acc }, acc),
+      createElement(
+        RouterSlot,
+        { route, routerData, cachedRef, id, fallback: acc },
+        acc,
+      ),
     null,
   );
 
@@ -419,7 +465,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
 
 // Note: The router data must be a stable mutable object (array).
 type RouterData = [
-  componentConfigs?: ComponentConfigs,
+  shouldSkip?: ShouldSkip,
   locationListners?: Set<(path: string, query: string) => void>,
 ];
 
@@ -432,21 +478,24 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
     Promise.resolve(data)
       .then((data) => {
         if (data && typeof data === 'object') {
-          // We need to process COMPONENT_CONFIGS_ID before LOCATION_ID
-          if (COMPONENT_CONFIGS_ID in data) {
-            routerData[0] = {
-              ...routerData[0],
-              ...Object.fromEntries(data[COMPONENT_CONFIGS_ID] as any),
-            };
+          // We need to process SHOULD_SKIP_ID before LOCATION_ID
+          if (SHOULD_SKIP_ID in data) {
+            // TODO replacing the whole array is not ideal
+            routerData[0] = data[SHOULD_SKIP_ID] as ShouldSkip;
           }
           if (LOCATION_ID in data) {
-            const [pathname, query] = data[LOCATION_ID] as [string, string];
+            const [pathname, searchParamsString] = data[LOCATION_ID] as [
+              string,
+              string,
+            ];
             // FIXME this check here seems ad-hoc (less readable code)
             if (
               window.location.pathname !== pathname ||
-              window.location.search.replace(/^\?/, '') !== query
+              window.location.search.replace(/^\?/, '') !== searchParamsString
             ) {
-              routerData[1]?.forEach((listener) => listener(pathname, query));
+              routerData[1]?.forEach((listener) =>
+                listener(pathname, searchParamsString),
+              );
             }
           }
         }
