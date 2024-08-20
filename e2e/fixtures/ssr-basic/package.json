@@ -9,6 +9,7 @@
     "start": "waku start"
   },
   "dependencies": {
+    "ai": "^3.3.10",
     "react": "19.0.0-rc-68dbd84b-20240812",
     "react-dom": "19.0.0-rc-68dbd84b-20240812",
     "react-server-dom-webpack": "19.0.0-rc-68dbd84b-20240812",
