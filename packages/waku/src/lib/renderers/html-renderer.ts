@@ -1,6 +1,6 @@
 import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
+import type * as RDServerType from 'react-dom/server.edge';
 import { createElement } from 'react';
-import { renderToReadableStream } from 'react-dom/server.edge';
 import { createFromReadableStream } from 'react-server-dom-webpack/client.edge';
 import { injectRSCPayload } from 'rsc-html-stream/server';
 
@@ -204,6 +204,19 @@ export const renderHtml = async (
     getSsrConfigForHtml,
     isDev,
   } = opts;
+
+  const loadClientModule = <T>(key: keyof typeof CLIENT_MODULE_MAP) =>
+    (isDev
+      ? opts.loadServerModuleMain(CLIENT_MODULE_MAP[key])
+      : opts.loadModule(CLIENT_PREFIX + key)) as Promise<T>;
+
+  const [
+    {
+      default: { renderToReadableStream },
+    },
+  ] = await Promise.all([
+    loadClientModule<{ default: typeof RDServerType }>('rd-server'),
+  ]);
 
   const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
   if (!ssrConfig) {
