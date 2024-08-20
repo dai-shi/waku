@@ -393,11 +393,11 @@ export function createPages(
       }
       return paths;
     },
-    async (id, { unstable_setComponentConfig, unstable_buildConfig }) => {
+    async (id, { unstable_setShouldSkip, unstable_buildConfig }) => {
       await configure(unstable_buildConfig);
       const staticComponent = staticComponentMap.get(id);
       if (staticComponent) {
-        unstable_setComponentConfig('static');
+        unstable_setShouldSkip([]);
         return staticComponent;
       }
       for (const [_, [pathSpec, Component]] of dynamicPagePathMap) {
@@ -407,12 +407,12 @@ export function createPages(
         );
         if (mapping) {
           if (Object.keys(mapping).length === 0) {
-            unstable_setComponentConfig('dynamic');
+            unstable_setShouldSkip();
             return Component;
           }
           const WrappedComponent = (props: Record<string, unknown>) =>
             createElement(Component, { ...props, ...mapping });
-          unstable_setComponentConfig('dynamic');
+          unstable_setShouldSkip();
           return WrappedComponent;
         }
       }
@@ -424,7 +424,7 @@ export function createPages(
         if (mapping) {
           const WrappedComponent = (props: Record<string, unknown>) =>
             createElement(Component, { ...props, ...mapping });
-          unstable_setComponentConfig('dynamic');
+          unstable_setShouldSkip();
           return WrappedComponent;
         }
       }
@@ -437,11 +437,11 @@ export function createPages(
           if (Object.keys(mapping).length) {
             throw new Error('[Bug] layout should not have slugs');
           }
-          unstable_setComponentConfig('dynamic');
+          unstable_setShouldSkip();
           return Component;
         }
       }
-      unstable_setComponentConfig(); // negative cache
+      unstable_setShouldSkip([]); // negative cache
       return null; // not found
     },
   );
