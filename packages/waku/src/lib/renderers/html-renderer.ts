@@ -4,7 +4,7 @@ import { createElement } from 'react';
 import { createFromReadableStream } from 'react-server-dom-webpack/client.edge';
 import { injectRSCPayload } from 'rsc-html-stream/server';
 
-import { ServerRoot } from '../../client.js';
+import type * as WakuClientType from '../../client.js';
 import type { EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { concatUint8Arrays } from '../utils/stream.js';
@@ -214,8 +214,10 @@ export const renderHtml = async (
     {
       default: { renderToReadableStream },
     },
+    { ServerRoot },
   ] = await Promise.all([
     loadClientModule<{ default: typeof RDServerType }>('rd-server'),
+    loadClientModule<typeof WakuClientType>('waku-client'),
   ]);
 
   const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
