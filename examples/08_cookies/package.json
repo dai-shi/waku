@@ -10,14 +10,14 @@
   },
   "dependencies": {
     "cookie": "0.6.0",
-    "react": "19.0.0-rc-68dbd84b-20240812",
-    "react-dom": "19.0.0-rc-68dbd84b-20240812",
-    "react-server-dom-webpack": "19.0.0-rc-68dbd84b-20240812",
+    "react": "19.0.0-rc-6ebfd5b0-20240818",
+    "react-dom": "19.0.0-rc-6ebfd5b0-20240818",
+    "react-server-dom-webpack": "19.0.0-rc-6ebfd5b0-20240818",
     "waku": "0.21.0-beta.5"
   },
   "devDependencies": {
     "@types/cookie": "0.6.0",
-    "@types/node": "22.2.0",
+    "@types/node": "22.4.1",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "typescript": "5.5.4"

@@ -9,16 +9,16 @@
     "start": "waku start"
   },
   "dependencies": {
-    "react": "19.0.0-rc-68dbd84b-20240812",
-    "react-dom": "19.0.0-rc-68dbd84b-20240812",
-    "react-server-dom-webpack": "19.0.0-rc-68dbd84b-20240812",
+    "react": "19.0.0-rc-6ebfd5b0-20240818",
+    "react-dom": "19.0.0-rc-6ebfd5b0-20240818",
+    "react-server-dom-webpack": "19.0.0-rc-6ebfd5b0-20240818",
     "waku": "0.21.0-beta.5"
   },
   "devDependencies": {
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "typescript": "5.5.4",
-    "vite": "5.4.0",
+    "vite": "5.4.1",
     "vite-tsconfig-paths": "5.0.1"
   }
 }
