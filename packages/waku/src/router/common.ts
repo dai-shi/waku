@@ -30,11 +30,16 @@ export function parseInputString(input: string): string {
 }
 
 // It starts with "/" to avoid conflicting with normal component ids.
-export const COMPONENT_CONFIGS_ID = '/CONFIGS';
+export const SHOULD_SKIP_ID = '/SHOULD_SKIP';
 
 // It starts with "/" to avoid conflicting with normal component ids.
 export const LOCATION_ID = '/LOCATION';
 
-export type ComponentConfigs = {
-  [componentId: string]: [render?: 'static' | 'dynamic'];
-};
+// TODO revisit shouldSkip API
+export type ShouldSkip = (readonly [
+  componentId: string,
+  readonly [
+    path?: boolean, // if we compare path
+    query?: boolean, // if we compare query
+  ],
+])[];
