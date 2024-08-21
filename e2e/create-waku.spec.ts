@@ -26,6 +26,8 @@ test('should create waku with default setup work', async () => {
       const str = data.toString();
       if (str.includes('Project Name')) {
         stdin.write('\n'); // use default
+      } else if (str.includes('Choose a starter template')) {
+        stdin.write('\n'); // use default
       }
       if (str.includes('Done.')) {
         resolve();
@@ -77,6 +79,8 @@ test('should create waku with update notify work', async () => {
   for await (const data of childProcess.stdout!) {
     const str = data.toString();
     if (str.includes('Project Name')) {
+      await writeNewLine();
+    } else if (str.includes('Choose a starter template')) {
       await writeNewLine();
     }
     if (str.includes(`A new version of 'create-waku' is available!`)) {
