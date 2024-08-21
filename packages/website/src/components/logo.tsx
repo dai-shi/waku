@@ -26,7 +26,10 @@ export const Logo = ({ className = '' }: LogoProps) => {
       <img
         onContextMenu={handleContextMenu}
         src="https://cdn.candycode.com/waku/waku-logo-shadow.svg"
-        alt="Waku"
+        alt="Waku, the minimal React framework"
+        title={
+          '“I think that it’s extraordinarily important that we in computer science keep fun in computing.” — Alan J. Perlis'
+        }
         className={cx('block w-full', className)}
       />
       <span className="sr-only">Waku</span>

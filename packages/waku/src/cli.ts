@@ -81,7 +81,7 @@ if (values.version) {
       await runBuild();
       break;
     case 'start':
-      await runStart({});
+      await runStart();
       break;
     default:
       if (cmd) {
@@ -96,6 +96,14 @@ async function runDev() {
   const config = await loadConfig();
   const app = new Hono();
   app.use('*', runner({ cmd: 'dev', config, env: process.env as any }));
+  app.notFound((c) => {
+    // FIXME can we avoid hardcoding the public path?
+    const file = path.join('public', '404.html');
+    if (existsSync(file)) {
+      return c.html(readFileSync(file, 'utf8'), 404);
+    }
+    return c.text('404 Not Found', 404);
+  });
   const port = parseInt(values.port || '3000', 10);
   await startServer(app, port);
 }
@@ -108,12 +116,12 @@ async function runBuild() {
     env: process.env as any,
     partial: !!values['experimental-partial'],
     deploy:
-      (values['with-vercel'] ?? !!process.env.VERCEL
+      ((values['with-vercel'] ?? !!process.env.VERCEL)
         ? values['with-vercel-static']
           ? 'vercel-static'
           : 'vercel-serverless'
         : undefined) ||
-      (values['with-netlify'] ?? !!process.env.NETLIFY
+      ((values['with-netlify'] ?? !!process.env.NETLIFY)
         ? values['with-netlify-static']
           ? 'netlify-static'
           : 'netlify-functions'
@@ -125,7 +133,8 @@ async function runBuild() {
   });
 }
 
-async function runStart({ distDir = 'dist' }) {
+async function runStart() {
+  const { distDir = 'dist' } = await loadConfig();
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, DIST_ENTRIES_JS)).toString());
   const app = new Hono();

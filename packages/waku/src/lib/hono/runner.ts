@@ -24,7 +24,7 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
   const handlersPromise = configPromise.then((config) =>
     Promise.all(
       config
-        .middleware(options.cmd)
+        .middleware()
         .map(async (middleware) => (await middleware).default(options)),
     ),
   );
@@ -42,7 +42,7 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
     const handlers = await handlersPromise;
     const run = async (index: number) => {
       if (index >= handlers.length) {
-        return next();
+        return;
       }
       let alreadyCalled = false;
       await handlers[index]!(ctx, async () => {
@@ -53,10 +53,13 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
       });
     };
     await run(0);
-    return c.body(
-      ctx.res.body || null,
-      (ctx.res.status as any) || 200,
-      ctx.res.headers || {},
-    );
+    if (ctx.res.body || ctx.res.status) {
+      return c.body(
+        ctx.res.body || null,
+        (ctx.res.status as any) || 200,
+        ctx.res.headers || {},
+      );
+    }
+    await next();
   };
 };

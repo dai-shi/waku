@@ -25,23 +25,47 @@ const hasPathSpecPrefix = (prefix: PathSpec, path: PathSpec) => {
   return true;
 };
 
+const sanitizeSlug = (slug: string) =>
+  slug.replace(/\./g, '').replace(/ /g, '-');
+
 // createPages API (a wrapper around unstable_defineRouter)
 
-// FIXME we should add unit tests for some functions and type utils.
+/**
+ * Type version of `String.prototype.split()`. Splits the first string argument by the second string argument
+ * @example
+ * ```ts
+ * // ['a', 'b', 'c']
+ * type Case1 = Split<'abc', ''>
+ * // ['a', 'b', 'c']
+ * type Case2 = Split<'a,b,c', ','>
+ * ```
+ */
+type Split<Str extends string, Del extends string | number> = string extends Str
+  ? string[]
+  : '' extends Str
+    ? []
+    : Str extends `${infer T}${Del}${infer U}`
+      ? [T, ...Split<U, Del>]
+      : [Str];
 
+/** Assumes that the path is a part of a slug path. */
 type IsValidPathItem<T> = T extends `/${infer _}`
   ? false
   : T extends '[]' | ''
     ? false
     : true;
-type IsValidPath<T> = T extends `/${infer L}/${infer R}`
+/**
+ * This is a helper type to check if a path is valid in a slug path.
+ */
+export type IsValidPathInSlugPath<T> = T extends `/${infer L}/${infer R}`
   ? IsValidPathItem<L> extends true
-    ? IsValidPath<`/${R}`>
+    ? IsValidPathInSlugPath<`/${R}`>
     : false
   : T extends `/${infer U}`
     ? IsValidPathItem<U>
     : false;
-type HasSlugInPath<T, K extends string> = T extends `/[${K}]/${infer _}`
+/** Checks if a particular slug name exists in a path. */
+export type HasSlugInPath<T, K extends string> = T extends `/[${K}]/${infer _}`
   ? true
   : T extends `/${infer _}/${infer U}`
     ? HasSlugInPath<`/${U}`, K>
@@ -49,18 +73,66 @@ type HasSlugInPath<T, K extends string> = T extends `/[${K}]/${infer _}`
       ? true
       : false;
 
+export type HasWildcardInPath<T> = T extends `/[...${string}]/${string}`
+  ? true
+  : T extends `/${infer _}/${infer U}`
+    ? HasWildcardInPath<`/${U}`>
+    : T extends `/[...${string}]`
+      ? true
+      : false;
+
 export type PathWithSlug<T, K extends string> =
-  IsValidPath<T> extends true
+  IsValidPathInSlugPath<T> extends true
     ? HasSlugInPath<T, K> extends true
       ? T
       : never
     : never;
+
+type _GetSlugs<
+  Route extends string,
+  SplitRoute extends string[] = Split<Route, '/'>,
+  Result extends string[] = [],
+> = SplitRoute extends []
+  ? Result
+  : SplitRoute extends [`${infer MaybeSlug}`, ...infer Rest]
+    ? Rest extends string[]
+      ? MaybeSlug extends `[${infer Slug}]`
+        ? _GetSlugs<Route, Rest, [...Result, Slug]>
+        : _GetSlugs<Route, Rest, Result>
+      : never
+    : Result;
+
+export type GetSlugs<Route extends string> = _GetSlugs<Route>;
+
+export type StaticSlugRoutePathsTuple<
+  T extends string,
+  Slugs extends unknown[] = GetSlugs<T>,
+  Result extends string[] = [],
+> = Slugs extends []
+  ? Result
+  : Slugs extends [infer _, ...infer Rest]
+    ? StaticSlugRoutePathsTuple<T, Rest, [...Result, string]>
+    : never;
+
+type StaticSlugRoutePaths<T extends string> =
+  HasWildcardInPath<T> extends true
+    ? string[] | string[][]
+    : StaticSlugRoutePathsTuple<T> extends [string]
+      ? string[]
+      : StaticSlugRoutePathsTuple<T>[];
+
 export type PathWithoutSlug<T> = T extends '/'
   ? T
-  : IsValidPath<T> extends true
+  : IsValidPathInSlugPath<T> extends true
     ? HasSlugInPath<T, string> extends true
       ? never
       : T
+    : never;
+
+type PathWithStaticSlugs<T extends string> = T extends `/`
+  ? T
+  : IsValidPathInSlugPath<T> extends true
+    ? T
     : never;
 
 export type PathWithWildcard<
@@ -82,8 +154,8 @@ export type CreatePage = <
       }
     | {
         render: 'static';
-        path: PathWithSlug<Path, SlugKey>;
-        staticPaths: string[] | string[][];
+        path: PathWithStaticSlugs<Path>;
+        staticPaths: StaticSlugRoutePaths<Path>;
         component: FunctionComponent<RouteProps & Record<SlugKey, string>>;
       }
     | {
@@ -162,35 +234,54 @@ export function createPages(
     if (page.unstable_disableSSR) {
       noSsrSet.add(pathSpec);
     }
-    const numSlugs = pathSpec.filter(({ type }) => type !== 'literal').length;
-    const numWildcards = pathSpec.filter(
-      ({ type }) => type === 'wildcard',
-    ).length;
+    const { numSlugs, numWildcards } = (() => {
+      let numSlugs = 0;
+      let numWildcards = 0;
+      for (const slug of pathSpec) {
+        if (slug.type !== 'literal') {
+          numSlugs++;
+        }
+        if (slug.type === 'wildcard') {
+          numWildcards++;
+        }
+      }
+      return { numSlugs, numWildcards };
+    })();
     if (page.render === 'static' && numSlugs === 0) {
       staticPathSet.add([page.path, pathSpec]);
       const id = joinPath(page.path, 'page').replace(/^\//, '');
       registerStaticComponent(id, page.component);
-    } else if (page.render === 'static' && numSlugs > 0 && numWildcards === 0) {
-      const staticPaths = (
-        page as {
-          staticPaths: string[] | string[][];
-        }
-      ).staticPaths.map((item) => (Array.isArray(item) ? item : [item]));
+    } else if (
+      page.render === 'static' &&
+      numSlugs > 0 &&
+      'staticPaths' in page
+    ) {
+      const staticPaths = page.staticPaths.map((item) =>
+        (Array.isArray(item) ? item : [item]).map(sanitizeSlug),
+      );
       for (const staticPath of staticPaths) {
-        if (staticPath.length !== numSlugs) {
+        if (staticPath.length !== numSlugs && numWildcards === 0) {
           throw new Error('staticPaths does not match with slug pattern');
         }
-        const mapping: Record<string, string> = {};
+        const mapping: Record<string, string | string[]> = {};
         let slugIndex = 0;
-        const pathItems = pathSpec.map(({ type, name }) => {
-          if (type !== 'literal') {
-            const actualName = staticPath[slugIndex++]!;
-            if (name) {
-              mapping[name] = actualName;
-            }
-            return actualName;
+        const pathItems: string[] = [];
+        pathSpec.forEach(({ type, name }) => {
+          switch (type) {
+            case 'literal':
+              pathItems.push(name!);
+              break;
+            case 'wildcard':
+              mapping[name!] = staticPath.slice(slugIndex);
+              staticPath.slice(slugIndex++).forEach((slug) => {
+                pathItems.push(slug);
+              });
+              break;
+            case 'group':
+              pathItems.push(staticPath[slugIndex++]!);
+              mapping[name!] = pathItems[pathItems.length - 1]!;
+              break;
           }
-          return name;
         });
         staticPathSet.add([
           page.path,
@@ -263,9 +354,15 @@ export function createPages(
       }[] = [];
       for (const [path, pathSpec] of staticPathSet) {
         const noSsr = noSsrSet.has(pathSpec);
-        const isStatic = Array.from(dynamicLayoutPathMap.values()).every(
-          ([layoutPathSpec]) => !hasPathSpecPrefix(layoutPathSpec, pathSpec),
-        );
+        const isStatic = (() => {
+          for (const [_, [layoutPathSpec]] of dynamicLayoutPathMap) {
+            if (hasPathSpecPrefix(layoutPathSpec, pathSpec)) {
+              return false;
+            }
+          }
+          return true;
+        })();
+
         paths.push({
           pattern: path2regexp(parsePathWithSlug(path)),
           path: pathSpec,
@@ -303,7 +400,7 @@ export function createPages(
         unstable_setShouldSkip([]);
         return staticComponent;
       }
-      for (const [pathSpec, Component] of dynamicPagePathMap.values()) {
+      for (const [_, [pathSpec, Component]] of dynamicPagePathMap) {
         const mapping = getPathMapping(
           [...pathSpec, { type: 'literal', name: 'page' }],
           id,
@@ -319,7 +416,7 @@ export function createPages(
           return WrappedComponent;
         }
       }
-      for (const [pathSpec, Component] of wildcardPagePathMap.values()) {
+      for (const [_, [pathSpec, Component]] of wildcardPagePathMap) {
         const mapping = getPathMapping(
           [...pathSpec, { type: 'literal', name: 'page' }],
           id,
@@ -331,7 +428,7 @@ export function createPages(
           return WrappedComponent;
         }
       }
-      for (const [pathSpec, Component] of dynamicLayoutPathMap.values()) {
+      for (const [_, [pathSpec, Component]] of dynamicLayoutPathMap) {
         const mapping = getPathMapping(
           [...pathSpec, { type: 'literal', name: 'layout' }],
           id,

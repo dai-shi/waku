@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 import type { Config } from './config.js';
 import type { PathSpec } from './lib/utils/path.js';
+import { REQUEST_HEADERS } from './lib/middleware/headers.js';
 
 type Elements = Record<string, ReactNode>;
 
@@ -22,7 +23,7 @@ export type BuildConfig = {
 export type RenderEntries = (
   input: string,
   options: {
-    searchParams: URLSearchParams;
+    params: unknown | undefined;
     buildConfig: BuildConfig | undefined;
   },
 ) => Promise<Elements | null>;
@@ -39,8 +40,8 @@ export type GetSsrConfig = (
   },
 ) => Promise<{
   input: string;
-  searchParams?: URLSearchParams;
-  body: ReactNode;
+  params?: unknown;
+  html: ReactNode;
 } | null>;
 
 export function defineEntries(
@@ -63,16 +64,22 @@ export type EntriesPrd = EntriesDev & {
   publicIndexHtml: string;
 };
 
-export function getEnv(key: string): string | undefined {
-  // HACK we may want to use a server-side context or something
-  return (globalThis as any).__WAKU_PRIVATE_ENV__[key];
+let serverEnv: Record<string, string> = {};
+
+/**
+ * This is an internal function and not for public use.
+ */
+export function setAllEnvInternal(newEnv: typeof serverEnv) {
+  serverEnv = newEnv;
 }
 
-type RenderStore<
-  RscContext extends Record<string, unknown> = Record<string, unknown>,
-> = {
-  rerender: (input: string, searchParams?: URLSearchParams) => void;
-  context: RscContext;
+export function getEnv(key: string): string | undefined {
+  return serverEnv[key];
+}
+
+type RenderStore<> = {
+  rerender: (input: string, params?: unknown) => void;
+  context: Record<string, unknown>;
 };
 
 let renderStorage: AsyncLocalStorageType<RenderStore> | undefined;
@@ -83,7 +90,7 @@ let renderStorage: AsyncLocalStorageType<RenderStore> | undefined;
 //   renderStorage = new AsyncLocalStorage();
 // } catch (e) {
 //   console.warn(
-//     'AsyncLocalStorage is not available, rerender and getContext are only available in sync.',
+//     'AsyncLocalStorage is not available, rerender and getCustomContext are only available in sync.',
 //   );
 // }
 import('node:async_hooks')
@@ -92,7 +99,7 @@ import('node:async_hooks')
   })
   .catch(() => {
     console.warn(
-      'AsyncLocalStorage is not available, rerender and getContext are only available in sync.',
+      'AsyncLocalStorage is not available, rerender and getCustomContext are only available in sync.',
     );
   });
 
@@ -102,7 +109,7 @@ let currentRenderStore: RenderStore | undefined;
 /**
  * This is an internal function and not for public use.
  */
-export const runWithRenderStore = <T>(
+export const runWithRenderStoreInternal = <T>(
   renderStore: RenderStore,
   fn: () => T,
 ): T => {
@@ -118,20 +125,27 @@ export const runWithRenderStore = <T>(
   }
 };
 
-export function rerender(input: string, searchParams?: URLSearchParams) {
+export function rerender(input: string, params?: unknown) {
   const renderStore = renderStorage?.getStore() ?? currentRenderStore;
   if (!renderStore) {
     throw new Error('Render store is not available');
   }
-  renderStore.rerender(input, searchParams);
+  renderStore.rerender(input, params);
 }
 
-export function getContext<
-  RscContext extends Record<string, unknown> = Record<string, unknown>,
->(): RscContext {
+export function unstable_getCustomContext<
+  CustomContext extends Record<string, unknown> = Record<string, unknown>,
+>(): CustomContext {
   const renderStore = renderStorage?.getStore() ?? currentRenderStore;
   if (!renderStore) {
     throw new Error('Render store is not available');
   }
-  return renderStore.context as RscContext;
+  return renderStore.context as CustomContext;
+}
+
+export function unstable_getHeaders(): Record<string, string> {
+  return (unstable_getCustomContext()[REQUEST_HEADERS] || {}) as Record<
+    string,
+    string
+  >;
 }

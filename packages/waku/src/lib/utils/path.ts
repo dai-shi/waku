@@ -10,7 +10,7 @@ const ABSOLUTE_WIN32_PATH_REGEXP = /^\/[a-zA-Z]:\//;
 
 export const encodeFilePathToAbsolute = (filePath: string) => {
   if (ABSOLUTE_WIN32_PATH_REGEXP.test(filePath)) {
-    throw new Error('Unsupported absolute file path');
+    throw new Error('Unsupported absolute file path: ' + filePath);
   }
   if (filePath.startsWith('/')) {
     return filePath;
@@ -105,6 +105,21 @@ export const path2regexp = (path: PathSpec) => {
   return `^/${parts.join('/')}$`;
 };
 
+/**
+ * Helper function to get the path mapping from the path spec and the pathname.
+ *
+ * @param pathSpec
+ * @param pathname - route as a string
+ * @example
+ * getPathMapping(
+ *   [
+ *     { type: 'literal', name: 'foo' },
+ *     { type: 'group', name: 'a' },
+ *   ],
+ *   '/foo/bar',
+ * );
+ * // => { a: 'bar' }
+ */
 export const getPathMapping = (
   pathSpec: PathSpec,
   pathname: string,

@@ -28,26 +28,28 @@ export const decodeInput = (encodedInput: string) => {
   throw err;
 };
 
+const ACTION_PREFIX = 'ACTION_';
+
 export const encodeActionId = (actionId: string) => {
   const [file, name] = actionId.split('#') as [string, string];
   if (name.includes('/')) {
     throw new Error('Unsupported action name');
   }
-  return '_' + file + '/' + name;
+  return ACTION_PREFIX + file + '/' + name;
 };
 
 export const decodeActionId = (encoded: string) => {
+  if (!encoded.startsWith(ACTION_PREFIX)) {
+    return null;
+  }
   const index = encoded.lastIndexOf('/');
-  return encoded.slice(1, index) + '#' + encoded.slice(index + 1);
+  return (
+    encoded.slice(ACTION_PREFIX.length, index) + '#' + encoded.slice(index + 1)
+  );
 };
 
 export const hasStatusCode = (x: unknown): x is { statusCode: number } =>
   typeof (x as any)?.statusCode === 'number';
-
-export const codeToInject = `
-globalThis.__waku_module_cache__ = new Map();
-globalThis.__webpack_chunk_load__ = (id) => import(id).then((m) => globalThis.__waku_module_cache__.set(id, m));
-globalThis.__webpack_require__ = (id) => globalThis.__waku_module_cache__.get(id);`;
 
 export const generatePrefetchCode = (
   basePrefix: string,

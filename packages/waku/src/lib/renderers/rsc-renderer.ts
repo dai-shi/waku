@@ -4,7 +4,8 @@ import type { default as RSDWServerType } from 'react-server-dom-webpack/server.
 import type {
   EntriesDev,
   EntriesPrd,
-  runWithRenderStore as runWithRenderStoreType,
+  setAllEnvInternal as setAllEnvInternalType,
+  runWithRenderStoreInternal as runWithRenderStoreInternalType,
 } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { filePathToFileURL } from '../utils/path.js';
@@ -25,14 +26,16 @@ const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
 };
 
 export type RenderRscArgs = {
+  env: Record<string, string>;
   config: Omit<ResolvedConfig, 'middleware'>;
   input: string;
-  searchParams: URLSearchParams;
-  method: 'GET' | 'POST';
   context: Record<string, unknown> | undefined;
+  // TODO we hope to get only decoded one
+  decodedBody?: unknown;
   body?: ReadableStream | undefined;
   contentType?: string | undefined;
   moduleIdCallback?: ((id: string) => void) | undefined;
+  onError?: (err: unknown) => void;
 };
 
 type RenderRscOpts =
@@ -40,8 +43,7 @@ type RenderRscOpts =
   | {
       isDev: true;
       entries: EntriesDev;
-      loadServerFile: (fileURL: string) => Promise<unknown>;
-      loadServerModule: (id: string) => Promise<unknown>;
+      loadServerModuleRsc: (idOrFileURL: string) => Promise<unknown>;
       resolveClientEntry: (id: string) => string;
     };
 
@@ -50,14 +52,14 @@ export async function renderRsc(
   opts: RenderRscOpts,
 ): Promise<ReadableStream> {
   const {
+    env,
     config,
     input,
-    searchParams,
-    method,
     contentType,
     context,
     body,
     moduleIdCallback,
+    onError,
   } = args;
   const { isDev, entries } = opts;
 
@@ -75,24 +77,25 @@ export async function renderRsc(
 
   const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
     (isDev
-      ? import(/* @vite-ignore */ SERVER_MODULE_MAP[key])
+      ? opts.loadServerModuleRsc(SERVER_MODULE_MAP[key])
       : loadModule(key)) as Promise<T>;
 
   const [
     {
       default: { renderToReadableStream, decodeReply },
     },
-    { runWithRenderStore },
+    { setAllEnvInternal, runWithRenderStoreInternal },
   ] = await Promise.all([
     loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server'),
-    (isDev
-      ? opts.loadServerModule(SERVER_MODULE_MAP['waku-server'])
-      : loadModule('waku-server')) as Promise<{
-      runWithRenderStore: typeof runWithRenderStoreType;
-    }>,
+    loadServerModule<{
+      setAllEnvInternal: typeof setAllEnvInternalType;
+      runWithRenderStoreInternal: typeof runWithRenderStoreInternalType;
+    }>('waku-server'),
   ]);
 
-  const bundlerConfig = new Proxy(
+  setAllEnvInternal(env);
+
+  const clientBundlerConfig = new Proxy(
     {},
     {
       get(_target, encodedId: string) {
@@ -104,10 +107,23 @@ export async function renderRsc(
     },
   );
 
+  const serverBundlerConfig = new Proxy(
+    {},
+    {
+      get(_target, encodedId: string) {
+        const [fileId, name] = encodedId.split('#') as [string, string];
+        const id = fileId.startsWith('@id/')
+          ? fileId.slice('@id/'.length)
+          : filePathToFileURL(fileId);
+        return { id, chunks: [id], name, async: true };
+      },
+    },
+  );
+
   const renderWithContext = async (
     context: Record<string, unknown> | undefined,
     input: string,
-    searchParams: URLSearchParams,
+    params: unknown,
   ) => {
     const renderStore = {
       context: context || {},
@@ -115,9 +131,9 @@ export async function renderRsc(
         throw new Error('Cannot rerender');
       },
     };
-    return runWithRenderStore(renderStore, async () => {
+    return runWithRenderStoreInternal(renderStore, async () => {
       const elements = await renderEntries(input, {
-        searchParams,
+        params,
         buildConfig,
       });
       if (elements === null) {
@@ -128,7 +144,9 @@ export async function renderRsc(
       if (Object.keys(elements).some((key) => key.startsWith('_'))) {
         throw new Error('"_" prefix is reserved');
       }
-      return renderToReadableStream(elements, bundlerConfig);
+      return renderToReadableStream(elements, clientBundlerConfig, {
+        onError,
+      });
     });
   };
 
@@ -143,13 +161,13 @@ export async function renderRsc(
     let rendered = false;
     const renderStore = {
       context: context || {},
-      rerender: async (input: string, searchParams = new URLSearchParams()) => {
+      rerender: async (input: string, params?: unknown) => {
         if (rendered) {
           throw new Error('already rendered');
         }
         elementsPromise = Promise.all([
           elementsPromise,
-          renderEntries(input, { searchParams, buildConfig }),
+          renderEntries(input, { params, buildConfig }),
         ]).then(([oldElements, newElements]) => ({
           ...oldElements,
           // FIXME we should actually check if newElements is null and send an error
@@ -157,7 +175,7 @@ export async function renderRsc(
         }));
       },
     };
-    return runWithRenderStore(renderStore, async () => {
+    return runWithRenderStoreInternal(renderStore, async () => {
       const actionValue = await actionFn(...actionArgs);
       const elements = await elementsPromise;
       rendered = true;
@@ -166,32 +184,36 @@ export async function renderRsc(
       }
       return renderToReadableStream(
         { ...elements, _value: actionValue },
-        bundlerConfig,
+        clientBundlerConfig,
+        {
+          onError,
+        },
       );
     });
   };
 
-  if (method === 'POST') {
-    const rsfId = decodeActionId(input);
-    let args: unknown[] = [];
-    let bodyStr = '';
-    if (body) {
-      bodyStr = await streamToString(body);
-    }
+  let decodedBody: unknown | undefined = args.decodedBody;
+  if (body) {
+    const bodyStr = await streamToString(body);
     if (
       typeof contentType === 'string' &&
       contentType.startsWith('multipart/form-data')
     ) {
       // XXX This doesn't support streaming unlike busboy
       const formData = parseFormData(bodyStr, contentType);
-      args = await decodeReply(formData);
+      decodedBody = await decodeReply(formData, serverBundlerConfig);
     } else if (bodyStr) {
-      args = await decodeReply(bodyStr);
+      decodedBody = await decodeReply(bodyStr, serverBundlerConfig);
     }
-    const [fileId, name] = rsfId.split('#') as [string, string];
+  }
+
+  const actionId = decodeActionId(input);
+  if (actionId) {
+    const args = Array.isArray(decodedBody) ? decodedBody : [];
+    const [fileId, name] = actionId.split('#') as [string, string];
     let mod: any;
     if (isDev) {
-      mod = await opts.loadServerFile(filePathToFileURL(fileId));
+      mod = await opts.loadServerModuleRsc(filePathToFileURL(fileId));
     } else {
       if (!fileId.startsWith('@id/')) {
         throw new Error('Unexpected server entry in PRD');
@@ -202,18 +224,26 @@ export async function renderRsc(
     return renderWithContextWithAction(context, fn, args);
   }
 
-  // method === 'GET'
-  return renderWithContext(context, input, searchParams);
+  return renderWithContext(context, input, decodedBody);
 }
 
-export async function getBuildConfig(opts: {
-  config: ResolvedConfig;
-  entries: EntriesPrd;
-}) {
-  const { config, entries } = opts;
+type GetBuildConfigArgs = {
+  env: Record<string, string>;
+  config: Omit<ResolvedConfig, 'middleware'>;
+};
+
+type GetBuildConfigOpts = { entries: EntriesPrd };
+
+export async function getBuildConfig(
+  args: GetBuildConfigArgs,
+  opts: GetBuildConfigOpts,
+) {
+  const { env, config } = args;
+  const { entries } = opts;
 
   const {
     default: { getBuildConfig },
+    loadModule,
   } = entries;
   if (!getBuildConfig) {
     console.warn(
@@ -222,23 +252,31 @@ export async function getBuildConfig(opts: {
     return [];
   }
 
+  const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
+    loadModule(key) as Promise<T>;
+
+  const [{ setAllEnvInternal }] = await Promise.all([
+    loadServerModule<{
+      setAllEnvInternal: typeof setAllEnvInternalType;
+      runWithRenderStoreInternal: typeof runWithRenderStoreInternalType;
+    }>('waku-server'),
+  ]);
+
+  setAllEnvInternal(env);
+
   const unstable_collectClientModules = async (
     input: string,
   ): Promise<string[]> => {
     const idSet = new Set<string>();
     const readable = await renderRsc(
       {
+        env,
         config,
         input,
-        searchParams: new URLSearchParams(),
-        method: 'GET',
         context: undefined,
         moduleIdCallback: (id) => idSet.add(id),
       },
-      {
-        isDev: false,
-        entries,
-      },
+      { isDev: false, entries },
     );
     await new Promise<void>((resolve, reject) => {
       const writable = new WritableStream({
@@ -259,6 +297,7 @@ export async function getBuildConfig(opts: {
 }
 
 export type GetSsrConfigArgs = {
+  env: Record<string, string>;
   config: Omit<ResolvedConfig, 'middleware'>;
   pathname: string;
   searchParams: URLSearchParams;
@@ -269,6 +308,7 @@ type GetSsrConfigOpts =
   | {
       isDev: true;
       entries: EntriesDev;
+      loadServerModuleRsc: (id: string) => Promise<unknown>;
       resolveClientEntry: (id: string) => string;
     };
 
@@ -276,7 +316,7 @@ export async function getSsrConfig(
   args: GetSsrConfigArgs,
   opts: GetSsrConfigOpts,
 ) {
-  const { config, pathname, searchParams } = args;
+  const { env, config, pathname, searchParams } = args;
   const { isDev, entries } = opts;
 
   const resolveClientEntry = isDev
@@ -290,9 +330,26 @@ export async function getSsrConfig(
   } = entries as
     | (EntriesDev & { loadModule: never; buildConfig: never })
     | EntriesPrd;
-  const { renderToReadableStream } = await (isDev
-    ? import(/* @vite-ignore */ SERVER_MODULE_MAP['rsdw-server'])
-    : loadModule('rsdw-server').then((m: any) => m.default));
+
+  const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
+    (isDev
+      ? opts.loadServerModuleRsc(SERVER_MODULE_MAP[key])
+      : loadModule(key)) as Promise<T>;
+
+  const [
+    {
+      default: { renderToReadableStream },
+    },
+    { setAllEnvInternal },
+  ] = await Promise.all([
+    loadServerModule<{ default: typeof RSDWServerType }>('rsdw-server'),
+    loadServerModule<{
+      setAllEnvInternal: typeof setAllEnvInternalType;
+      runWithRenderStoreInternal: typeof runWithRenderStoreInternalType;
+    }>('waku-server'),
+  ]);
+
+  setAllEnvInternal(env);
 
   const ssrConfig = await getSsrConfig?.(pathname, {
     searchParams,
@@ -313,6 +370,6 @@ export async function getSsrConfig(
   );
   return {
     ...ssrConfig,
-    body: renderToReadableStream(ssrConfig.body, bundlerConfig),
+    html: renderToReadableStream(ssrConfig.html, bundlerConfig),
   };
 }

@@ -34,6 +34,7 @@ export function loadModule(id) {
     default: throw new Error('Cannot find module: ' + id);
   }
 }
+globalThis.__WAKU_SERVER_HACK_IMPORT__ = loadModule;
 `;
   let entriesFile = '';
   return {

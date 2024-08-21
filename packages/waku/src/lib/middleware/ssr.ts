@@ -1,12 +1,14 @@
 import { resolveConfig } from '../config.js';
 import { getPathMapping } from '../utils/path.js';
 import { renderHtml } from '../renderers/html-renderer.js';
-import { hasStatusCode, encodeInput } from '../renderers/utils.js';
-import { getSsrConfig } from '../renderers/rsc-renderer.js';
+import { hasStatusCode } from '../renderers/utils.js';
+import { getSsrConfig, renderRsc } from '../renderers/rsc-renderer.js';
+import type { RenderRscArgs } from '../renderers/rsc-renderer.js';
 import type { Middleware } from './types.js';
+import { stringToStream } from '../utils/stream.js';
 
 export const ssr: Middleware = (options) => {
-  (globalThis as any).__WAKU_PRIVATE_ENV__ = options.env || {};
+  const env = options.env || {};
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()
@@ -19,62 +21,64 @@ export const ssr: Middleware = (options) => {
       : resolveConfig(options.config);
 
   return async (ctx, next) => {
-    const { devServer } = ctx;
-    if (
-      devServer &&
-      (await devServer.willBeHandledLater(ctx.req.url.pathname))
-    ) {
-      await next();
-      return;
-    }
+    const { unstable_devServer: devServer } = ctx;
     const [{ middleware: _removed, ...config }, entries] = await Promise.all([
       configPromise,
       entriesPromise,
     ]);
+    const entriesDev = devServer && (await devServer.loadEntriesDev(config));
     try {
       const htmlHead = devServer
-        ? config.htmlHead
+        ? ''
         : entries.dynamicHtmlPaths.find(([pathSpec]) =>
             getPathMapping(pathSpec, ctx.req.url.pathname),
           )?.[1];
-      if (htmlHead) {
+      if (typeof htmlHead === 'string') {
         const readable = await renderHtml({
           config,
           pathname: ctx.req.url.pathname,
           searchParams: ctx.req.url.searchParams,
           htmlHead,
-          renderRscForHtml: async (input, searchParams) => {
-            ctx.req.url.pathname =
-              config.basePath + config.rscPath + '/' + encodeInput(input);
-            ctx.req.url.search = searchParams.toString();
-            await next();
-            if (!ctx.res.body) {
-              throw new Error('No body');
-            }
-            return ctx.res.body;
+          renderRscForHtml: async (input, params) => {
+            const args: RenderRscArgs = {
+              env,
+              config,
+              input,
+              context: ctx.context,
+              decodedBody: params,
+              contentType: '',
+            };
+            const readable = await (devServer
+              ? renderRsc(args, {
+                  isDev: true,
+                  loadServerModuleRsc: devServer.loadServerModuleRsc,
+                  resolveClientEntry: devServer.resolveClientEntry,
+                  entries: await devServer.loadEntriesDev(config),
+                })
+              : renderRsc(args, { isDev: false, entries }));
+            return readable;
           },
           ...(devServer
             ? {
                 isDev: true,
                 getSsrConfigForHtml: (pathname, searchParams) =>
-                  devServer.getSsrConfigWithWorker(
+                  getSsrConfig(
+                    { env, config, pathname, searchParams },
                     {
-                      config,
-                      pathname,
-                      searchParams,
-                    },
-                    {
-                      initialModules: devServer.initialModules,
+                      isDev: true,
+                      loadServerModuleRsc: devServer.loadServerModuleRsc,
+                      resolveClientEntry: devServer.resolveClientEntry,
+                      entries: entriesDev!,
                     },
                   ),
                 rootDir: devServer.rootDir,
-                loadServerFile: devServer.loadServerFile,
+                loadServerModuleMain: devServer.loadServerModuleMain,
               }
             : {
                 isDev: false,
                 getSsrConfigForHtml: (pathname, searchParams) =>
                   getSsrConfig(
-                    { config, pathname, searchParams },
+                    { env, config, pathname, searchParams },
                     { isDev: false, entries },
                   ),
                 loadModule: entries.loadModule,
@@ -94,6 +98,7 @@ export const ssr: Middleware = (options) => {
         }
       }
     } catch (err) {
+      ctx.res.body = stringToStream(`${err}`);
       if (hasStatusCode(err)) {
         ctx.res.status = err.statusCode;
       } else {

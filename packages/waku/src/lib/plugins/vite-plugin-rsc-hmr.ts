@@ -83,9 +83,9 @@ export function rscHmrPlugin(): Plugin {
             `
 {
   const refetchRsc = () => {
-    cache.splice(0);
-    const data = fetchRSC(input, searchParamsString, setElements, cache);
-    setElements(data);
+    delete fetchCache[ENTRY];
+    const data = fetchRSC(input, params, fetchCache);
+    fetchCache[SET_ELEMENTS](() => data);
   };
   globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];
   const index = globalThis.__WAKU_RSC_RELOAD_LISTENERS__.indexOf(globalThis.__WAKU_REFETCH_RSC__);
@@ -124,15 +124,20 @@ export function rscHmrPlugin(): Plugin {
       }
     },
     handleHotUpdate({ file }) {
-      const moduleLoading = (globalThis as any).__webpack_module_loading__;
-      const moduleCache = (globalThis as any).__webpack_module_cache__;
+      const moduleLoading = (globalThis as any).__WAKU_CLIENT_MODULE_LOADING__;
+      const moduleCache = (globalThis as any).__WAKU_CLIENT_MODULE_CACHE__;
+      if (!moduleLoading || !moduleCache) {
+        return;
+      }
+      if (file.startsWith(viteServer.config.root)) {
+        file = file.slice(viteServer.config.root.length);
+      }
       const id = filePathToFileURL(file);
-      if (moduleLoading.has(id) && moduleCache.has(id)) {
-        moduleLoading.delete(id);
-        moduleCache.delete(id);
+      if (moduleLoading.has(id)) {
         moduleLoading.set(
           id,
           viteServer.ssrLoadModule(file).then((m) => {
+            // XXX There can be a race condition, but it should be very rare.
             moduleCache.set(id, m);
           }),
         );

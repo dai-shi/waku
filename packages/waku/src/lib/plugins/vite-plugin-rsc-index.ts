@@ -4,21 +4,23 @@ import type { Plugin } from 'vite';
 // Maybe we could put in vite config object?
 import { SRC_MAIN } from './vite-plugin-rsc-managed.js';
 
-import { codeToInject } from '../renderers/utils.js';
+export const DEFAULT_HTML_HEAD = `
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="generator" content="Waku" />
+`.trim();
 
 export function rscIndexPlugin(opts: {
   basePath: string;
   srcDir: string;
-  htmlAttrs: string;
-  htmlHead: string;
   cssAssets?: string[];
 }): Plugin {
   const indexHtml = 'index.html';
   const html = `
 <!doctype html>
-<html${opts.htmlAttrs ? ' ' + opts.htmlAttrs : ''}>
+<html>
   <head>
-${opts.htmlHead}
+${DEFAULT_HTML_HEAD}
   </head>
   <body>
     <script src="${opts.basePath}${opts.srcDir}/${SRC_MAIN}" async type="module"></script>
@@ -82,7 +84,11 @@ ${opts.htmlHead}
         {
           tag: 'script',
           attrs: { type: 'module', async: true },
-          children: codeToInject,
+          // HACK: vite won't inject __vite__injectQuery anymore
+          // Vite optimizes `import()` so it adds `?import` to imported urls. That'd cause double module hazard! This way, I hack it to use a global function so it does not get optimized.
+          children: `
+globalThis.__WAKU_CLIENT_HACK_IMPORT__ = (id) => import(id);
+`,
         },
         ...(opts.cssAssets || []).map((href) => ({
           tag: 'link',

@@ -1,10 +1,5 @@
-import type {
-  default as ReactType,
-  createElement as createElementType,
-  ReactNode,
-  FunctionComponent,
-  ComponentProps,
-} from 'react';
+import { createElement } from 'react';
+import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
 import type * as RDServerType from 'react-dom/server.edge';
 import type { default as RSDWClientType } from 'react-server-dom-webpack/client.edge';
 import { injectRSCPayload } from 'rsc-html-stream/server';
@@ -24,24 +19,14 @@ import { encodeInput, hasStatusCode } from './utils.js';
 // HACK depending on these constants is not ideal
 import { SRC_MAIN } from '../plugins/vite-plugin-rsc-managed.js';
 import { DIST_SSR } from '../builder/constants.js';
+import { DEFAULT_HTML_HEAD } from '../plugins/vite-plugin-rsc-index.js';
 
 export const CLIENT_MODULE_MAP = {
-  react: 'react',
   'rd-server': 'react-dom/server.edge',
   'rsdw-client': 'react-server-dom-webpack/client.edge',
   'waku-client': 'waku/client',
 } as const;
 export const CLIENT_PREFIX = 'client/';
-
-// HACK for react-server-dom-webpack without webpack
-(globalThis as any).__webpack_module_loading__ ||= new Map();
-(globalThis as any).__webpack_module_cache__ ||= new Map();
-(globalThis as any).__webpack_chunk_load__ ||= async (id: string) =>
-  (globalThis as any).__webpack_module_loading__.get(id);
-(globalThis as any).__webpack_require__ ||= (id: string) =>
-  (globalThis as any).__webpack_module_cache__.get(id);
-const moduleLoading = (globalThis as any).__webpack_module_loading__;
-const moduleCache = (globalThis as any).__webpack_module_cache__;
 
 const fakeFetchCode = `
 Promise.resolve(new Response(new ReadableStream({
@@ -63,26 +48,41 @@ Promise.resolve(new Response(new ReadableStream({
   .map((line) => line.trim())
   .join('');
 
-const injectScript = (
+const CLOSING_HEAD = '</head>';
+const CLOSING_BODY = '</body>';
+
+const injectHtmlHead = (
   urlForFakeFetch: string,
+  htmlHead: string,
   mainJsPath: string, // for DEV only, pass `''` for PRD
 ) => {
-  const modifyHead = (data: string) => {
-    const matchPrefetched = data.match(
+  const modifyHeadAndBody = (data: string) => {
+    const closingHeadIndex = data.indexOf(CLOSING_HEAD);
+    let [head, body] =
+      closingHeadIndex === -1
+        ? ['<head>' + CLOSING_HEAD, data]
+        : [
+            data.slice(0, closingHeadIndex + CLOSING_HEAD.length),
+            data.slice(closingHeadIndex + CLOSING_HEAD.length),
+          ];
+    head =
+      head.slice(0, -CLOSING_HEAD.length) +
+      DEFAULT_HTML_HEAD +
+      htmlHead +
+      CLOSING_HEAD;
+    const matchPrefetched = head.match(
       // HACK This is very brittle
       /(.*<script[^>]*>\nglobalThis\.__WAKU_PREFETCHED__ = {\n)(.*?)(\n};.*)/s,
     );
     if (matchPrefetched) {
-      data =
+      head =
         matchPrefetched[1] +
         `  '${urlForFakeFetch}': ${fakeFetchCode},` +
         matchPrefetched[3];
     }
-    const closingHeadIndex = data.indexOf('</head>');
-    if (closingHeadIndex === -1) {
-      throw new Error('closing head not found');
-    }
-    let code = '';
+    let code = `
+globalThis.__WAKU_HYDRATE__ = true;
+`;
     if (!matchPrefetched) {
       code += `
 globalThis.__WAKU_PREFETCHED__ = {
@@ -91,12 +91,23 @@ globalThis.__WAKU_PREFETCHED__ = {
 `;
     }
     if (code) {
-      data =
-        data.slice(0, closingHeadIndex) +
+      head =
+        head.slice(0, -CLOSING_HEAD.length) +
         `<script type="module" async>${code}</script>` +
-        data.slice(closingHeadIndex);
+        CLOSING_HEAD;
     }
-    return data;
+    if (mainJsPath) {
+      const closingBodyIndex = body.indexOf(CLOSING_BODY);
+      const [firstPart, secondPart] =
+        closingBodyIndex === -1
+          ? [body, '']
+          : [body.slice(0, closingBodyIndex), body.slice(closingBodyIndex)];
+      body =
+        firstPart +
+        `<script src="${mainJsPath}" async type="module"></script>` +
+        secondPart;
+    }
+    return head + body;
   };
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
@@ -109,25 +120,22 @@ globalThis.__WAKU_PREFETCHED__ = {
       }
       data += decoder.decode(chunk);
       if (!headSent) {
-        if (!/<\/head><body[^>]*>/.test(data)) {
+        if (!/<body[^>]*>/.test(data)) {
           return;
         }
         headSent = true;
-        data = modifyHead(data);
-        if (mainJsPath) {
-          const closingBodyIndex = data.indexOf('</body>');
-          const [firstPart, secondPart] =
-            closingBodyIndex === -1
-              ? [data, '']
-              : [data.slice(0, closingBodyIndex), data.slice(closingBodyIndex)];
-          data =
-            firstPart +
-            `<script src="${mainJsPath}" async type="module"></script>` +
-            secondPart;
-        }
+        data = modifyHeadAndBody(data);
       }
       controller.enqueue(encoder.encode(data));
       data = '';
+    },
+    flush(controller) {
+      if (!headSent) {
+        headSent = true;
+        data = modifyHeadAndBody(data);
+        controller.enqueue(encoder.encode(data));
+        data = '';
+      }
     },
   });
 };
@@ -159,31 +167,6 @@ const rectifyHtml = () => {
   });
 };
 
-const parseHtmlAttrs = (attrs: string): Record<string, string> => {
-  // HACK this is very brittle
-  const result: Record<string, string> = {};
-  const kebab2camel = (s: string) =>
-    s.replace(/-./g, (m) => m[1]!.toUpperCase());
-  const matches = attrs.matchAll(/(?<=^|\s)([^\s=]+)="([^"]+)"(?=\s|$)/g);
-  for (const match of matches) {
-    result[kebab2camel(match[1]!)] = match[2]!;
-  }
-  return result;
-};
-
-const buildHtml = (
-  createElement: typeof createElementType,
-  attrs: string,
-  head: string,
-  body: ReactNode,
-) =>
-  createElement(
-    'html',
-    attrs ? parseHtmlAttrs(attrs) : null,
-    createElement('head', { dangerouslySetInnerHTML: { __html: head } }),
-    createElement('body', { 'data-hydrate': true }, body),
-  );
-
 export const renderHtml = async (
   opts: {
     config: Omit<ResolvedConfig, 'middleware'>;
@@ -192,22 +175,22 @@ export const renderHtml = async (
     htmlHead: string;
     renderRscForHtml: (
       input: string,
-      searchParams: URLSearchParams,
+      params?: unknown,
     ) => Promise<ReadableStream>;
     getSsrConfigForHtml: (
       pathname: string,
       searchParams: URLSearchParams,
     ) => Promise<{
       input: string;
-      searchParams?: URLSearchParams;
-      body: ReadableStream;
+      params?: unknown;
+      html: ReadableStream;
     } | null>;
   } & (
     | { isDev: false; loadModule: EntriesPrd['loadModule'] }
     | {
         isDev: true;
         rootDir: string;
-        loadServerFile: (fileURL: string) => Promise<unknown>;
+        loadServerModuleMain: (idOrFileURL: string) => Promise<unknown>;
       }
   ),
 ): Promise<ReadableStream | null> => {
@@ -223,13 +206,10 @@ export const renderHtml = async (
 
   const loadClientModule = <T>(key: keyof typeof CLIENT_MODULE_MAP) =>
     (isDev
-      ? import(/* @vite-ignore */ CLIENT_MODULE_MAP[key])
+      ? opts.loadServerModuleMain(CLIENT_MODULE_MAP[key])
       : opts.loadModule(CLIENT_PREFIX + key)) as Promise<T>;
 
   const [
-    {
-      default: { createElement },
-    },
     {
       default: { renderToReadableStream },
     },
@@ -238,21 +218,18 @@ export const renderHtml = async (
     },
     { ServerRoot },
   ] = await Promise.all([
-    loadClientModule<{ default: typeof ReactType }>('react'),
     loadClientModule<{ default: typeof RDServerType }>('rd-server'),
     loadClientModule<{ default: typeof RSDWClientType }>('rsdw-client'),
     loadClientModule<typeof WakuClientType>('waku-client'),
   ]);
+
   const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
   if (!ssrConfig) {
     return null;
   }
   let stream: ReadableStream;
   try {
-    stream = await renderRscForHtml(
-      ssrConfig.input,
-      ssrConfig.searchParams || searchParams,
-    );
+    stream = await renderRscForHtml(ssrConfig.input, ssrConfig.params);
   } catch (e) {
     if (hasStatusCode(e) && e.statusCode === 404) {
       return null;
@@ -260,17 +237,7 @@ export const renderHtml = async (
     throw e;
   }
   const moduleMap = new Proxy(
-    {} as Record<
-      string,
-      Record<
-        string,
-        {
-          id: string;
-          chunks: string[];
-          name: string;
-        }
-      >
-    >,
+    {} as Record<string, Record<string, ImportManifestEntry>>,
     {
       get(_target, filePath: string) {
         return new Proxy(
@@ -297,37 +264,18 @@ export const renderHtml = async (
                     fileWithAbsolutePath
                       .slice(wakuDist.length)
                       .replace(/\.\w+$/, '');
-                  if (!moduleLoading.has(id)) {
-                    moduleLoading.set(
-                      id,
-                      import(/* @vite-ignore */ id).then((m) => {
-                        moduleCache.set(id, m);
-                      }),
-                    );
-                  }
+                  (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(id);
                   return { id, chunks: [id], name };
                 }
                 const id = filePathToFileURL(file);
-                if (!moduleLoading.has(id)) {
-                  moduleLoading.set(
-                    id,
-                    opts.loadServerFile(id).then((m) => {
-                      moduleCache.set(id, m);
-                    }),
-                  );
-                }
+                (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(id);
                 return { id, chunks: [id], name };
               }
               // !isDev
               const id = filePath.slice(config.basePath.length);
-              if (!moduleLoading.has(id)) {
-                moduleLoading.set(
-                  id,
-                  opts.loadModule(joinPath(DIST_SSR, id)).then((m: any) => {
-                    moduleCache.set(id, m);
-                  }),
-                );
-              }
+              (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(id, (id: string) =>
+                opts.loadModule(joinPath(DIST_SSR, id)),
+              );
               return { id, chunks: [id], name };
             },
           },
@@ -342,22 +290,17 @@ export const renderHtml = async (
       ssrManifest: { moduleMap, moduleLoading: null },
     },
   );
-  const body: Promise<ReactNode> = createFromReadableStream(ssrConfig.body, {
+  const html: Promise<ReactNode> = createFromReadableStream(ssrConfig.html, {
     ssrManifest: { moduleMap, moduleLoading: null },
   });
   const readable = (
     await renderToReadableStream(
-      buildHtml(
-        createElement,
-        config.htmlAttrs,
-        htmlHead,
-        createElement(
-          ServerRoot as FunctionComponent<
-            Omit<ComponentProps<typeof ServerRoot>, 'children'>
-          >,
-          { elements },
-          body as any,
-        ),
+      createElement(
+        ServerRoot as FunctionComponent<
+          Omit<ComponentProps<typeof ServerRoot>, 'children'>
+        >,
+        { elements },
+        html as any,
       ),
       {
         onError(err: unknown) {
@@ -368,8 +311,9 @@ export const renderHtml = async (
   )
     .pipeThrough(rectifyHtml())
     .pipeThrough(
-      injectScript(
+      injectHtmlHead(
         config.basePath + config.rscPath + '/' + encodeInput(ssrConfig.input),
+        htmlHead,
         isDev ? `${config.basePath}${config.srcDir}/${SRC_MAIN}` : '',
       ),
     )
