@@ -9,8 +9,8 @@
   "author": "",
   "license": "ISC",
   "peerDependencies": {
-    "react": "19.0.0-canary-e3ebcd54b-20240405",
-    "react-dom": "19.0.0-canary-e3ebcd54b-20240405"
+    "react": "19.0.0-rc-6ebfd5b0-20240818",
+    "react-dom": "19.0.0-rc-6ebfd5b0-20240818"
   },
   "devDependencies": {
     "@types/react": "18.2.74",
