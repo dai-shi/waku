@@ -22,7 +22,6 @@ import { DIST_SSR } from '../builder/constants.js';
 import { DEFAULT_HTML_HEAD } from '../plugins/vite-plugin-rsc-index.js';
 
 export const CLIENT_MODULE_MAP = {
-  react: 'react',
   'rd-server': 'react-dom/server.edge',
   'rsdw-client': 'react-server-dom-webpack/client.edge',
   'waku-client': 'waku/client',
