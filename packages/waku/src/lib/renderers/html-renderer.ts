@@ -1,7 +1,7 @@
+import { createElement } from 'react';
 import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
 import type * as RDServerType from 'react-dom/server.edge';
-import { createElement } from 'react';
-import { createFromReadableStream } from 'react-server-dom-webpack/client.edge';
+import type { default as RSDWClientType } from 'react-server-dom-webpack/client.edge';
 import { injectRSCPayload } from 'rsc-html-stream/server';
 
 import type * as WakuClientType from '../../client.js';
@@ -214,9 +214,13 @@ export const renderHtml = async (
     {
       default: { renderToReadableStream },
     },
+    {
+      default: { createFromReadableStream },
+    },
     { ServerRoot },
   ] = await Promise.all([
     loadClientModule<{ default: typeof RDServerType }>('rd-server'),
+    loadClientModule<{ default: typeof RSDWClientType }>('rsdw-client'),
     loadClientModule<typeof WakuClientType>('waku-client'),
   ]);
 
