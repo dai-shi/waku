@@ -314,11 +314,11 @@ export const devServer: Middleware = (options) => {
   const env = options.env || {};
   const configPromise = resolveConfig(options.config);
 
-  (globalThis as any).__WAKU_SERVER_HACK_IMPORT__ = (idOrFileURL: string) =>
-    loadServerModuleRsc(idOrFileURL);
+  (globalThis as any).__WAKU_SERVER_IMPORT__ = (id: string) =>
+    loadServerModuleRsc(id);
 
-  (globalThis as any).__WAKU_CLIENT_HACK_IMPORT__ = (idOrFileURL: string) =>
-    loadServerModuleMain(idOrFileURL);
+  (globalThis as any).__WAKU_CLIENT_IMPORT__ = (id: string) =>
+    loadServerModuleMain(id);
 
   const {
     vitePromise,
