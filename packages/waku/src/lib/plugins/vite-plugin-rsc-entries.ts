@@ -18,6 +18,7 @@ const CONFIG_FILE = 'waku.config.ts'; // XXX only ts extension
 
 export function rscEntriesPlugin(opts: {
   srcDir: string;
+  ssrDir: string;
   moduleMap: Record<string, string>;
 }): Plugin {
   const codeToPrepend = `
@@ -34,7 +35,8 @@ export function loadModule(id) {
     default: throw new Error('Cannot find module: ' + id);
   }
 }
-globalThis.__WAKU_SERVER_HACK_IMPORT__ = loadModule;
+globalThis.__WAKU_SERVER_IMPORT__ = loadModule;
+globalThis.__WAKU_CLIENT_IMPORT__ = (id) => loadModule('${opts.ssrDir}/' + id);
 `;
   let entriesFile = '';
   return {

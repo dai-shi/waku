@@ -18,7 +18,6 @@ import { encodeInput, hasStatusCode } from './utils.js';
 
 // HACK depending on these constants is not ideal
 import { SRC_MAIN } from '../plugins/vite-plugin-rsc-managed.js';
-import { DIST_SSR } from '../builder/constants.js';
 import { DEFAULT_HTML_HEAD } from '../plugins/vite-plugin-rsc-index.js';
 
 export const CLIENT_MODULE_MAP = {
@@ -273,9 +272,7 @@ export const renderHtml = async (
               }
               // !isDev
               const id = filePath.slice(config.basePath.length);
-              (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(id, (id: string) =>
-                opts.loadModule(joinPath(DIST_SSR, id)),
-              );
+              (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(id);
               return { id, chunks: [id], name };
             },
           },
