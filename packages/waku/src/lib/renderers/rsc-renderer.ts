@@ -112,13 +112,10 @@ export async function renderRsc(
     {
       get(_target, encodedId: string) {
         const [fileId, name] = encodedId.split('#') as [string, string];
-        const id = filePathToFileURL(fileId);
-        if (fileId.startsWith('@id/assets/')) {
-          const id = '.' + fileId.slice('@id'.length);
-          return { id, chunks: [id], name, async: true };
-        } else {
-          return { id, chunks: [id], name, async: true };
-        }
+        const id = fileId.startsWith('@id/')
+          ? fileId.slice('@id/'.length)
+          : filePathToFileURL(fileId);
+        return { id, chunks: [id], name, async: true };
       },
     },
   );

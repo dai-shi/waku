@@ -24,7 +24,7 @@ We recommend other frameworks for heavy ecommerce or enterprise applications. Wa
 Start a new Waku project with the `create` command for your preferred package manager. It will scaffold a new project with our default [Waku starter](https://github.com/dai-shi/waku/tree/main/examples/01_template).
 
 ```
-npm create waku@next
+npm create waku@latest
 ```
 
 **Node.js version requirement:** `^20.8.0` or `^18.17.0`
@@ -738,6 +738,155 @@ export const getConfig = async () => {
 ### Client
 
 Data should be fetched on the server when possible for the best user experience, but all data fetching libraries such as React Query are compatible with Waku.
+
+## Mutations
+
+Data mutations can be performed via [server actions](https://react.dev/reference/rsc/server-actions) or API endpoints (coming soon).
+
+### Server actions
+
+Server actions allow you to define and securely execute server-side logic directly from your React components without the need for manually setting up API endpoints, sending `POST` requests to them with `fetch`, or managing pending states and errors.
+
+#### Defining and protecting actions
+
+The `'use server'` directive marks an async function as a server action. Waku automatically creates a reference to the action that can be passed as props or imported into client components, which can then call the referenced function.
+
+When the directive is placed at the top of a function body, it will mark that specific function as an action. Alternatively, the directive can be placed at the top of a file, which will mark _all_ exported functions as actions at once.
+
+Be careful not to add the directive where inappropriate and inadvertently create unwanted endpoints. Endpoints created by server actions are _not_ secured unless you add your own authentication and authorization logic inside the function body.
+
+> The `'use server'` directive has no relation to the`'use client'` directive. It does **not** mark a component as a server component and should **not** be placed at the top of server components!
+
+#### Making and consuming actions
+
+When creating an inline server action within a server component, it can be passed as props to a client component.
+
+```tsx
+// ./src/pages/contact.tsx
+
+import db from 'some-db';
+
+export default async function ContactPage() {
+  const sendMessage = async (message: string) => {
+    'use server';
+    await db.messages.create(message);
+  };
+
+  return <ContactForm sendMessage={sendMessage} />;
+}
+```
+
+```tsx
+// ./src/components/contact-form.tsx
+'use client';
+
+import { useState } from 'react';
+
+export const ContactForm = ({ sendMessage }) => {
+  const [message, setMessage] = useState('');
+
+  return (
+    <>
+      <textarea
+        value={message}
+        onChange={(event) => setMessage(event.target.value)}
+        rows={4}
+      />
+      <button onClick={() => sendMessage(message)}>Send message</button>
+    </>
+  );
+};
+```
+
+When creating server actions in a separate file, they can be imported directly into client components.
+
+> When using a top-level `'use server'` directive, note that _all_ exported functions will be made into API endpoints. So be careful only to export functions intended for this purpose. Add server-side logic to validate proper authentication and authorization if appropriate.
+
+```tsx
+// ./src/actions/send-message.ts
+'use server';
+
+import db from 'some-db';
+
+export async function sendMessage(message: string) {
+  await db.messages.create(message);
+}
+```
+
+```tsx
+// ./src/components/contact-button.tsx
+'use client';
+
+import { sendMessage } from '../actions/send-message';
+
+export const ContactButton = () => {
+  const message = `Hello world!`;
+
+  return <button onClick={() => sendMessage(message)}>Send message</button>;
+};
+```
+
+#### Invoking actions
+
+Actions can be invoked via event handlers such as `onClick` or `onSubmit`, as in the examples above, or in a `useEffect` hook, based on whichever conditions you choose.
+
+They can also be invoked via an `action` prop on native `<form>` elements. In this case the server action will automatically receive a parameter of `FormData` with all of the form field values, including hidden ones.
+
+```tsx
+// ./src/actions/send-message.ts
+'use server';
+
+import db from 'some-db';
+
+export async function sendMessage(formData: FormData) {
+  const message = formData.get('message');
+
+  await db.messages.create(message);
+}
+```
+
+```tsx
+// ./src/components/create-todo-button.tsx
+'use client';
+
+import { sendMessage } from '../actions/send-message';
+
+export const ContactForm = () => {
+  return (
+    <form action={sendMessage}>
+      <textarea name="message" rows={4} />
+      <input type="hidden" name="secret-message" value="This too!" />
+      <button type="submit">Send message</button>
+    </form>
+  );
+};
+```
+
+If you must pass additional arguments to a form action beyond its native form fields, you can use the `bind` method to create an extended server action with the extra arguments.
+
+```tsx
+// ./src/components/create-todo-button.tsx
+'use client';
+
+import { sendMessage } from '../actions/send-message';
+
+export const ContactForm = ({ author = 'guest' }) => {
+  const sendMessageWithAuthor = sendMessage.bind(null, author);
+
+  return (
+    <form action={sendMessageWithAuthor}>
+      <textarea name="message" rows={4} />
+      <button type="submit">Send message</button>
+    </form>
+  );
+};
+```
+
+#### Enhancing actions
+
+Server actions integrate with many other React APIs such as the [`useTransition`](https://react.dev/reference/react/useTransition) hook for handling pending states, the [`useActionState`](https://react.dev/reference/react/useActionState) hook for accessing returned values, and the [`useOptimistic`](https://react.dev/reference/react/useOptimistic) hook for performing optimistic UI updates.
+
+See the talk [What’s new in React 19?](https://www.youtube.com/watch?v=AJOGzVygGcY) to learn more.
 
 ## State management
 

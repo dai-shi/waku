@@ -1,9 +1,5 @@
-import type {
-  default as ReactType,
-  ReactNode,
-  FunctionComponent,
-  ComponentProps,
-} from 'react';
+import { createElement } from 'react';
+import type { ReactNode, FunctionComponent, ComponentProps } from 'react';
 import type * as RDServerType from 'react-dom/server.edge';
 import type { default as RSDWClientType } from 'react-server-dom-webpack/client.edge';
 import { injectRSCPayload } from 'rsc-html-stream/server';
@@ -22,11 +18,9 @@ import { encodeInput, hasStatusCode } from './utils.js';
 
 // HACK depending on these constants is not ideal
 import { SRC_MAIN } from '../plugins/vite-plugin-rsc-managed.js';
-import { DIST_SSR } from '../builder/constants.js';
 import { DEFAULT_HTML_HEAD } from '../plugins/vite-plugin-rsc-index.js';
 
 export const CLIENT_MODULE_MAP = {
-  react: 'react',
   'rd-server': 'react-dom/server.edge',
   'rsdw-client': 'react-server-dom-webpack/client.edge',
   'waku-client': 'waku/client',
@@ -216,9 +210,6 @@ export const renderHtml = async (
 
   const [
     {
-      default: { createElement },
-    },
-    {
       default: { renderToReadableStream },
     },
     {
@@ -226,11 +217,11 @@ export const renderHtml = async (
     },
     { ServerRoot },
   ] = await Promise.all([
-    loadClientModule<{ default: typeof ReactType }>('react'),
     loadClientModule<{ default: typeof RDServerType }>('rd-server'),
     loadClientModule<{ default: typeof RSDWClientType }>('rsdw-client'),
     loadClientModule<typeof WakuClientType>('waku-client'),
   ]);
+
   const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
   if (!ssrConfig) {
     return null;
@@ -281,9 +272,7 @@ export const renderHtml = async (
               }
               // !isDev
               const id = filePath.slice(config.basePath.length);
-              (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(id, (id: string) =>
-                opts.loadModule(joinPath(DIST_SSR, id)),
-              );
+              (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(id);
               return { id, chunks: [id], name };
             },
           },

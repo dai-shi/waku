@@ -210,6 +210,7 @@ const buildServerBundle = async (
       }),
       rscEntriesPlugin({
         srcDir: config.srcDir,
+        ssrDir: DIST_SSR,
         moduleMap: {
           ...Object.fromEntries(
             Object.keys(SERVER_MODULE_MAP).map((key) => [key, `./${key}.js`]),
