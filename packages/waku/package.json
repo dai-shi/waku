@@ -71,7 +71,7 @@
   },
   "dependencies": {
     "@hono/node-server": "1.12.1",
-    "@swc/core": "1.6.13",
+    "@swc/core": "1.6.7",
     "@vitejs/plugin-react": "4.3.1",
     "dotenv": "16.4.5",
     "hono": "4.5.6",
