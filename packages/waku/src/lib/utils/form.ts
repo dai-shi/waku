@@ -1,7 +1,13 @@
 // TODO is this correct? better to use a library?
 export const parseFormData = (body: ArrayBuffer, contentType: string) => {
   const boundary = contentType.split('boundary=')[1];
-  const parts = new TextDecoder().decode(body).split(`--${boundary}`);
+  const parts = new Uint8Array(body)
+    .reduce<string[]>((acc, byte) => {
+      acc.push(String.fromCharCode(byte));
+      return acc;
+    }, [])
+    .join('')
+    .split(`--${boundary}`);
 
   const formData = new FormData();
 
@@ -25,8 +31,10 @@ export const parseFormData = (body: ArrayBuffer, contentType: string) => {
         const filename = filenameMatch[1];
         const type = headers['content-type'] || 'application/octet-stream';
 
-        const encoder = new TextEncoder();
-        const uint8Array = encoder.encode(content!);
+        const uint8Array = Uint8Array.from(
+          content!,
+          (char) => char.charCodeAt(0) & 0xff,
+        );
 
         const blob = new Blob([uint8Array], { type });
         formData.append(name!, blob, filename);
