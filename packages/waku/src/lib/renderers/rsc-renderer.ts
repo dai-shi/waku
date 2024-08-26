@@ -195,7 +195,6 @@ export async function renderRsc(
   let decodedBody: unknown | undefined = args.decodedBody;
   if (body) {
     const bodyBuf = await streamToArrayBuffer(body);
-    const bodyStr = arrayBufferToString(bodyBuf);
     if (
       typeof contentType === 'string' &&
       contentType.startsWith('multipart/form-data')
@@ -203,7 +202,8 @@ export async function renderRsc(
       // XXX This doesn't support streaming unlike busboy
       const formData = parseFormData(bodyBuf, contentType);
       decodedBody = await decodeReply(formData, serverBundlerConfig);
-    } else if (bodyStr) {
+    } else if (bodyBuf.byteLength > 0) {
+      const bodyStr = arrayBufferToString(bodyBuf);
       decodedBody = await decodeReply(bodyStr, serverBundlerConfig);
     }
   }
