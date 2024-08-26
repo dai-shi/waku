@@ -10,7 +10,7 @@ import type {
 import type { ResolvedConfig } from '../config.js';
 import { filePathToFileURL } from '../utils/path.js';
 import { parseFormData } from '../utils/form.js';
-import { streamToString } from '../utils/stream.js';
+import { streamToArrayBuffer, arrayBufferToString } from '../utils/stream.js';
 import { decodeActionId } from '../renderers/utils.js';
 
 export const SERVER_MODULE_MAP = {
@@ -194,13 +194,14 @@ export async function renderRsc(
 
   let decodedBody: unknown | undefined = args.decodedBody;
   if (body) {
-    const bodyStr = await streamToString(body);
+    const bodyBuf = await streamToArrayBuffer(body);
+    const bodyStr = arrayBufferToString(bodyBuf);
     if (
       typeof contentType === 'string' &&
       contentType.startsWith('multipart/form-data')
     ) {
       // XXX This doesn't support streaming unlike busboy
-      const formData = parseFormData(bodyStr, contentType);
+      const formData = parseFormData(bodyBuf, contentType);
       decodedBody = await decodeReply(formData, serverBundlerConfig);
     } else if (bodyStr) {
       decodedBody = await decodeReply(bodyStr, serverBundlerConfig);
