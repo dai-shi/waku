@@ -536,7 +536,10 @@ const emitHtmlFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  await unlink(publicIndexHtmlFile);
+  if (buildConfig.length) {
+    // Delete the default index.html file unless buildConfig is empty.
+    await unlink(publicIndexHtmlFile);
+  }
   const publicIndexHtmlHead = publicIndexHtml.replace(
     /.*?<head>(.*?)<\/head>.*/s,
     '$1',
