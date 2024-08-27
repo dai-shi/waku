@@ -12,33 +12,42 @@ const PNG_HEADER = new Uint8Array([
 ]);
 
 describe('parseFormData', () => {
-  it('should parse text fields correctly', () => {
+  it('should parse text fields correctly', async () => {
     const boundary = 'boundary123';
     const body = `--${boundary}\r\nContent-Disposition: form-data; name="field1"\r\n\r\nvalue1\r\n--${boundary}--`;
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
-    const formData = parseFormData(new TextEncoder().encode(body), contentType);
+    const formData = await parseFormData(
+      new TextEncoder().encode(body),
+      contentType,
+    );
 
     expect(formData.get('field1')).toBe('value1');
   });
 
-  it('should parse multiple text fields', () => {
+  it('should parse multiple text fields', async () => {
     const boundary = 'boundary123';
     const body = `--${boundary}\r\nContent-Disposition: form-data; name="field1"\r\n\r\nvalue1\r\n--${boundary}\r\nContent-Disposition: form-data; name="field2"\r\n\r\nvalue2\r\n--${boundary}--`;
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
-    const formData = parseFormData(new TextEncoder().encode(body), contentType);
+    const formData = await parseFormData(
+      new TextEncoder().encode(body),
+      contentType,
+    );
 
     expect(formData.get('field1')).toBe('value1');
     expect(formData.get('field2')).toBe('value2');
   });
 
-  it('should parse file fields correctly', () => {
+  it('should parse file fields correctly', async () => {
     const boundary = 'boundary123';
     const body = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="test.txt"\r\nContent-Type: text/plain\r\n\r\nfile content\r\n--${boundary}--`;
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
-    const formData = parseFormData(new TextEncoder().encode(body), contentType);
+    const formData = await parseFormData(
+      new TextEncoder().encode(body),
+      contentType,
+    );
 
     const file = formData.get('file') as File;
     expect(file).toBeInstanceOf(File);
@@ -46,12 +55,15 @@ describe('parseFormData', () => {
     expect(file.type).toBe('text/plain');
   });
 
-  it('should handle mixed text and file fields', () => {
+  it('should handle mixed text and file fields', async () => {
     const boundary = 'boundary123';
     const body = `--${boundary}\r\nContent-Disposition: form-data; name="field1"\r\n\r\nvalue1\r\n--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="test.txt"\r\nContent-Type: text/plain\r\n\r\nfile content\r\n--${boundary}--`;
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
-    const formData = parseFormData(new TextEncoder().encode(body), contentType);
+    const formData = await parseFormData(
+      new TextEncoder().encode(body),
+      contentType,
+    );
 
     expect(formData.get('field1')).toBe('value1');
     const file = formData.get('file') as File;
@@ -59,32 +71,41 @@ describe('parseFormData', () => {
     expect(file.name).toBe('test.txt');
   });
 
-  it('should handle empty fields', () => {
+  it('should handle empty fields', async () => {
     const boundary = 'boundary123';
     const body = `--${boundary}\r\nContent-Disposition: form-data; name="emptyField"\r\n\r\n\r\n--${boundary}--`;
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
-    const formData = parseFormData(new TextEncoder().encode(body), contentType);
+    const formData = await parseFormData(
+      new TextEncoder().encode(body),
+      contentType,
+    );
 
     expect(formData.get('emptyField')).toBe('');
   });
 
-  it('should handle fields with special characters', () => {
+  it('should handle fields with special characters', async () => {
     const boundary = 'boundary123';
     const body = `--${boundary}\r\nContent-Disposition: form-data; name="special"\r\n\r\n!@#$%^&*()\r\n--${boundary}--`;
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
-    const formData = parseFormData(new TextEncoder().encode(body), contentType);
+    const formData = await parseFormData(
+      new TextEncoder().encode(body),
+      contentType,
+    );
 
     expect(formData.get('special')).toBe('!@#$%^&*()');
   });
 
-  it('should handle fields with line breaks', () => {
+  it('should handle fields with line breaks', async () => {
     const boundary = 'boundary123';
     const body = `--${boundary}\r\nContent-Disposition: form-data; name="multiline"\r\n\r\nLine 1\r\nLine 2\r\nLine 3\r\n--${boundary}--`;
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
-    const formData = parseFormData(new TextEncoder().encode(body), contentType);
+    const formData = await parseFormData(
+      new TextEncoder().encode(body),
+      contentType,
+    );
 
     expect(formData.get('multiline')).toBe('Line 1\r\nLine 2\r\nLine 3');
   });
@@ -95,7 +116,10 @@ describe('parseFormData', () => {
     const body = `--${boundary}\r\nContent-Disposition: form-data; name="textFile"; filename="test.txt"\r\nContent-Type: text/plain\r\n\r\n${fileContent}\r\n--${boundary}--`;
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
-    const formData = parseFormData(new TextEncoder().encode(body), contentType);
+    const formData = await parseFormData(
+      new TextEncoder().encode(body),
+      contentType,
+    );
 
     const file = formData.get('textFile') as File;
     expect(file).toBeInstanceOf(File);
@@ -112,7 +136,10 @@ describe('parseFormData', () => {
     const body = `--${boundary}\r\nContent-Disposition: form-data; name="pngFile"; filename="test.png"\r\nContent-Type: image/png\r\n\r\n${pngContent}\r\n--${boundary}--`;
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
-    const formData = parseFormData(new TextEncoder().encode(body), contentType);
+    const formData = await parseFormData(
+      new TextEncoder().encode(body),
+      contentType,
+    );
 
     const file = formData.get('pngFile') as File;
     expect(file).toBeInstanceOf(File);
@@ -134,7 +161,10 @@ describe('parseFormData', () => {
     const body = `--${boundary}\r\nContent-Disposition: form-data; name="textField"\r\n\r\n${textFieldContent}\r\n--${boundary}\r\nContent-Disposition: form-data; name="textFile"; filename="test.txt"\r\nContent-Type: text/plain\r\n\r\n${textFileContent}\r\n--${boundary}\r\nContent-Disposition: form-data; name="pngFile"; filename="test.png"\r\nContent-Type: image/png\r\n\r\n${pngContent}\r\n--${boundary}--`;
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
-    const formData = parseFormData(new TextEncoder().encode(body), contentType);
+    const formData = await parseFormData(
+      new TextEncoder().encode(body),
+      contentType,
+    );
 
     expect(formData.get('textField')).toBe(textFieldContent);
 
@@ -162,7 +192,10 @@ describe('parseFormData', () => {
     const body = `--${boundary}\r\nContent-Disposition: form-data; name="base64Field"\r\nContent-Transfer-Encoding: base64\r\n\r\n${base64Content}\r\n--${boundary}--`;
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
-    const formData = parseFormData(new TextEncoder().encode(body), contentType);
+    const formData = await parseFormData(
+      new TextEncoder().encode(body),
+      contentType,
+    );
 
     const decodedContent = Buffer.from(
       formData.get('base64Field') as string,
@@ -178,7 +211,10 @@ describe('parseFormData', () => {
     const body = `--${boundary}\r\nContent-Disposition: form-data; name="qpField"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n${quotedPrintableContent}\r\n--${boundary}--`;
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
-    const formData = parseFormData(new TextEncoder().encode(body), contentType);
+    const formData = await parseFormData(
+      new TextEncoder().encode(body),
+      contentType,
+    );
 
     expect(formData.get('qpField')).toBe(originalContent);
   });
@@ -192,7 +228,10 @@ describe('parseFormData', () => {
     const body = `--${boundary}\r\nContent-Disposition: form-data; name="binaryField"; filename="test.bin"\r\nContent-Type: application/octet-stream\r\nContent-Transfer-Encoding: binary\r\n\r\n${binaryContent}\r\n--${boundary}--`;
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
-    const formData = parseFormData(new TextEncoder().encode(body), contentType);
+    const formData = await parseFormData(
+      new TextEncoder().encode(body),
+      contentType,
+    );
 
     const file = formData.get('binaryField') as File;
     expect(file).toBeInstanceOf(File);
@@ -217,7 +256,10 @@ describe('parseFormData', () => {
     const body = `--${boundary}\r\nContent-Disposition: form-data; name="plainField"\r\n\r\n${plainContent}\r\n--${boundary}\r\nContent-Disposition: form-data; name="base64Field"\r\nContent-Transfer-Encoding: base64\r\n\r\n${base64Content}\r\n--${boundary}\r\nContent-Disposition: form-data; name="qpField"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n${quotedPrintableContent}\r\n--${boundary}\r\nContent-Disposition: form-data; name="binaryField"; filename="test.bin"\r\nContent-Type: application/octet-stream\r\nContent-Transfer-Encoding: binary\r\n\r\n${binaryContent}\r\n--${boundary}--`;
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
-    const formData = parseFormData(new TextEncoder().encode(body), contentType);
+    const formData = await parseFormData(
+      new TextEncoder().encode(body),
+      contentType,
+    );
 
     expect(formData.get('plainField')).toBe(plainContent);
     expect(

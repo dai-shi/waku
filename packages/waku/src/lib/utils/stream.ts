@@ -56,13 +56,6 @@ export const streamToString = async (
   return outs.join('');
 };
 
-export function arrayBufferToString(buffer: ArrayBuffer): string {
-  const uint8Array = new Uint8Array(buffer);
-  return Array.from(uint8Array)
-    .map((byte) => String.fromCharCode(byte))
-    .join('');
-}
-
 export const stringToStream = (str: string): ReadableStream => {
   const encoder = new TextEncoder();
   return new ReadableStream({
