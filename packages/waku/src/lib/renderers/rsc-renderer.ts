@@ -11,8 +11,7 @@ import type { ResolvedConfig } from '../config.js';
 import { filePathToFileURL } from '../utils/path.js';
 import { streamToArrayBuffer } from '../utils/stream.js';
 import { decodeActionId } from '../renderers/utils.js';
-
-import { bufferToFormData, bufferToString } from 'hono/utils/buffer';
+import { bufferToString, parseFormData } from '../utils/buffer.js';
 
 export const SERVER_MODULE_MAP = {
   'rsdw-server': 'react-server-dom-webpack/server.edge',
@@ -201,7 +200,7 @@ export async function renderRsc(
       contentType.startsWith('multipart/form-data')
     ) {
       // XXX This doesn't support streaming unlike busboy
-      const formData = await bufferToFormData(bodyBuf, contentType);
+      const formData = await parseFormData(bodyBuf, contentType);
       decodedBody = await decodeReply(formData, serverBundlerConfig);
     } else if (bodyBuf.byteLength > 0) {
       const bodyStr = bufferToString(bodyBuf);
