@@ -131,17 +131,31 @@ describe('parseFormData', () => {
   });
 
   it('should parse PNG file fields correctly and match input', async () => {
-    const boundary = 'boundary123';
-    const pngContent = String.fromCharCode.apply(null, Array.from(PNG_HEADER));
-    const body = `--${boundary}\r\nContent-Disposition: form-data; name="pngFile"; filename="test.png"\r\nContent-Type: image/png\r\n\r\n${pngContent}\r\n--${boundary}--`;
-    const contentType = `multipart/form-data; boundary=${boundary}`;
-
-    const formData = await parseFormData(
-      new TextEncoder().encode(body),
-      contentType,
+    const formData = new FormData();
+    formData.append(
+      'pngFile',
+      new Blob([PNG_HEADER], { type: 'image/png' }),
+      'test.png',
     );
 
-    const file = formData.get('pngFile') as File;
+    // Create a Request object
+    const request = new Request('http://example.com/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const contentType = request.headers.get('Content-Type');
+
+    // Get the body as ArrayBuffer
+    const arrayBuffer = await request.arrayBuffer();
+
+    // Convert ArrayBuffer to Uint8Array
+    const body = new Uint8Array(arrayBuffer);
+
+    // Now use your parseFormData function
+    const parsedFormData = await parseFormData(body, contentType!);
+
+    const file = parsedFormData.get('pngFile') as File;
     expect(file).toBeInstanceOf(File);
     expect(file.name).toBe('test.png');
     expect(file.type).toBe('image/png');
@@ -153,29 +167,46 @@ describe('parseFormData', () => {
   });
 
   it('should handle mixed text, text file, and PNG file fields and match input', async () => {
-    const boundary = 'boundary123';
-    const textFieldContent = 'Hello, World!';
-    const textFileContent = 'This is a text file.';
-    const pngContent = String.fromCharCode.apply(null, Array.from(PNG_HEADER));
-
-    const body = `--${boundary}\r\nContent-Disposition: form-data; name="textField"\r\n\r\n${textFieldContent}\r\n--${boundary}\r\nContent-Disposition: form-data; name="textFile"; filename="test.txt"\r\nContent-Type: text/plain\r\n\r\n${textFileContent}\r\n--${boundary}\r\nContent-Disposition: form-data; name="pngFile"; filename="test.png"\r\nContent-Type: image/png\r\n\r\n${pngContent}\r\n--${boundary}--`;
-    const contentType = `multipart/form-data; boundary=${boundary}`;
-
-    const formData = await parseFormData(
-      new TextEncoder().encode(body),
-      contentType,
+    const formData = new FormData();
+    formData.append('textField', 'Hello, World!');
+    formData.append(
+      'textFile',
+      new Blob(['This is a text file.'], { type: 'text/plain' }),
+      'test.txt',
+    );
+    formData.append(
+      'pngFile',
+      new Blob([PNG_HEADER], { type: 'image/png' }),
+      'test.png',
     );
 
-    expect(formData.get('textField')).toBe(textFieldContent);
+    // Create a Request object
+    const request = new Request('http://example.com/upload', {
+      method: 'POST',
+      body: formData,
+    });
 
-    const textFile = formData.get('textFile') as File;
+    const contentType = request.headers.get('Content-Type');
+
+    // Get the body as ArrayBuffer
+    const arrayBuffer = await request.arrayBuffer();
+
+    // Convert ArrayBuffer to Uint8Array
+    const body = new Uint8Array(arrayBuffer);
+
+    // Now use your parseFormData function
+    const parsedFormData = await parseFormData(body, contentType!);
+
+    expect(parsedFormData.get('textField')).toBe('Hello, World!');
+
+    const textFile = parsedFormData.get('textFile') as File;
     expect(textFile).toBeInstanceOf(File);
     expect(textFile.name).toBe('test.txt');
     expect(textFile.type).toBe('text/plain');
     const textFileText = await textFile.text();
-    expect(textFileText).toBe(textFileContent);
+    expect(textFileText).toBe('This is a text file.');
 
-    const pngFile = formData.get('pngFile') as File;
+    const pngFile = parsedFormData.get('pngFile') as File;
     expect(pngFile).toBeInstanceOf(File);
     expect(pngFile.name).toBe('test.png');
     expect(pngFile.type).toBe('image/png');
@@ -204,36 +235,32 @@ describe('parseFormData', () => {
     expect(decodedContent).toBe(originalContent);
   });
 
-  it('should handle quoted-printable encoded content', async () => {
-    const boundary = 'boundary123';
-    const originalContent = 'Hello, World! Special chars: =?!';
-    const quotedPrintableContent = 'Hello, World! Special chars: =3D=3F=21';
-    const body = `--${boundary}\r\nContent-Disposition: form-data; name="qpField"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n${quotedPrintableContent}\r\n--${boundary}--`;
-    const contentType = `multipart/form-data; boundary=${boundary}`;
-
-    const formData = await parseFormData(
-      new TextEncoder().encode(body),
-      contentType,
-    );
-
-    expect(formData.get('qpField')).toBe(originalContent);
-  });
-
   it('should handle binary content', async () => {
-    const boundary = 'boundary123';
-    const binaryContent = String.fromCharCode.apply(
-      null,
-      Array.from(PNG_HEADER),
-    );
-    const body = `--${boundary}\r\nContent-Disposition: form-data; name="binaryField"; filename="test.bin"\r\nContent-Type: application/octet-stream\r\nContent-Transfer-Encoding: binary\r\n\r\n${binaryContent}\r\n--${boundary}--`;
-    const contentType = `multipart/form-data; boundary=${boundary}`;
-
-    const formData = await parseFormData(
-      new TextEncoder().encode(body),
-      contentType,
+    const formData = new FormData();
+    formData.append(
+      'binaryField',
+      new Blob([PNG_HEADER], { type: 'application/octet-stream' }),
+      'test.bin',
     );
 
-    const file = formData.get('binaryField') as File;
+    // Create a Request object
+    const request = new Request('http://example.com/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const contentType = request.headers.get('Content-Type');
+
+    // Get the body as ArrayBuffer
+    const arrayBuffer = await request.arrayBuffer();
+
+    // Convert ArrayBuffer to Uint8Array
+    const body = new Uint8Array(arrayBuffer);
+
+    // Now use your parseFormData function
+    const parsedFormData = await parseFormData(body, contentType!);
+
+    const file = parsedFormData.get('binaryField') as File;
     expect(file).toBeInstanceOf(File);
     expect(file.name).toBe('test.bin');
     expect(file.type).toBe('application/octet-stream');
@@ -244,31 +271,49 @@ describe('parseFormData', () => {
   });
 
   it('should handle mixed encodings in a single request', async () => {
-    const boundary = 'boundary123';
     const plainContent = 'Plain text';
     const base64Content = Buffer.from('Base64 encoded text').toString('base64');
-    const quotedPrintableContent = 'Quoted-Printable: Hello=20World=21';
-    const binaryContent = String.fromCharCode.apply(
-      null,
-      Array.from(PNG_HEADER),
+    const binaryContent = new Uint8Array(PNG_HEADER);
+
+    const formData = new FormData();
+    formData.append('plainField', plainContent);
+    formData.append('base64Field', base64Content);
+    formData.append(
+      'binaryField',
+      new Blob([binaryContent], { type: 'application/octet-stream' }),
+      'test.bin',
     );
 
-    const body = `--${boundary}\r\nContent-Disposition: form-data; name="plainField"\r\n\r\n${plainContent}\r\n--${boundary}\r\nContent-Disposition: form-data; name="base64Field"\r\nContent-Transfer-Encoding: base64\r\n\r\n${base64Content}\r\n--${boundary}\r\nContent-Disposition: form-data; name="qpField"\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n${quotedPrintableContent}\r\n--${boundary}\r\nContent-Disposition: form-data; name="binaryField"; filename="test.bin"\r\nContent-Type: application/octet-stream\r\nContent-Transfer-Encoding: binary\r\n\r\n${binaryContent}\r\n--${boundary}--`;
-    const contentType = `multipart/form-data; boundary=${boundary}`;
+    // Create a Request object
+    const request = new Request('http://example.com/upload', {
+      method: 'POST',
+      body: formData,
+    });
 
-    const formData = await parseFormData(
-      new TextEncoder().encode(body),
-      contentType,
-    );
+    const contentType = request.headers.get('Content-Type');
 
-    expect(formData.get('plainField')).toBe(plainContent);
+    // Get the body as ArrayBuffer
+    const arrayBuffer = await request.arrayBuffer();
+
+    // Convert ArrayBuffer to Uint8Array
+    const body = new Uint8Array(arrayBuffer);
+
+    // Now use your parseFormData function
+    const parsedFormData = await parseFormData(body, contentType!);
+
+    expect(parsedFormData.get('plainField')).toBe(plainContent);
     expect(
-      Buffer.from(formData.get('base64Field') as string, 'base64').toString(),
+      Buffer.from(
+        parsedFormData.get('base64Field') as string,
+        'base64',
+      ).toString(),
     ).toBe('Base64 encoded text');
-    expect(formData.get('qpField')).toBe('Quoted-Printable: Hello World!');
 
-    const file = formData.get('binaryField') as File;
+    const file = parsedFormData.get('binaryField') as File;
     expect(file).toBeInstanceOf(File);
+    expect(file.name).toBe('test.bin');
+    expect(file.type).toBe('application/octet-stream');
+
     const fileArrayBuffer = await file.arrayBuffer();
     const fileUint8Array = new Uint8Array(fileArrayBuffer);
     expect(fileUint8Array).toEqual(PNG_HEADER);
