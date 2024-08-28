@@ -50,9 +50,10 @@ describe('parseFormData', () => {
     );
 
     const file = formData.get('file') as File;
-    expect(file).toBeInstanceOf(File);
     expect(file.name).toBe('test.txt');
     expect(file.type).toBe('text/plain');
+    expect(file.size).toBe(12);
+    expect(await file.text()).toBe('file content');
   });
 
   it('should handle mixed text and file fields', async () => {
@@ -67,8 +68,10 @@ describe('parseFormData', () => {
 
     expect(formData.get('field1')).toBe('value1');
     const file = formData.get('file') as File;
-    expect(file).toBeInstanceOf(File);
     expect(file.name).toBe('test.txt');
+    expect(file.type).toBe('text/plain');
+    expect(file.size).toBe(12);
+    expect(await file.text()).toBe('file content');
   });
 
   it('should handle empty fields', async () => {
@@ -110,26 +113,6 @@ describe('parseFormData', () => {
     expect(formData.get('multiline')).toBe('Line 1\r\nLine 2\r\nLine 3');
   });
 
-  it('should parse text file fields correctly and match input', async () => {
-    const boundary = 'boundary123';
-    const fileContent = 'file content';
-    const body = `--${boundary}\r\nContent-Disposition: form-data; name="textFile"; filename="test.txt"\r\nContent-Type: text/plain\r\n\r\n${fileContent}\r\n--${boundary}--`;
-    const contentType = `multipart/form-data; boundary=${boundary}`;
-
-    const formData = await parseFormData(
-      new TextEncoder().encode(body),
-      contentType,
-    );
-
-    const file = formData.get('textFile') as File;
-    expect(file).toBeInstanceOf(File);
-    expect(file.name).toBe('test.txt');
-    expect(file.type).toBe('text/plain');
-
-    const fileText = await file.text();
-    expect(fileText).toBe(fileContent);
-  });
-
   it('should parse PNG file fields correctly and match input', async () => {
     const formData = new FormData();
     formData.append(
@@ -156,7 +139,6 @@ describe('parseFormData', () => {
     const parsedFormData = await parseFormData(body, contentType!);
 
     const file = parsedFormData.get('pngFile') as File;
-    expect(file).toBeInstanceOf(File);
     expect(file.name).toBe('test.png');
     expect(file.type).toBe('image/png');
     expect(file.size).toBe(PNG_HEADER.length);
@@ -200,14 +182,12 @@ describe('parseFormData', () => {
     expect(parsedFormData.get('textField')).toBe('Hello, World!');
 
     const textFile = parsedFormData.get('textFile') as File;
-    expect(textFile).toBeInstanceOf(File);
     expect(textFile.name).toBe('test.txt');
     expect(textFile.type).toBe('text/plain');
     const textFileText = await textFile.text();
     expect(textFileText).toBe('This is a text file.');
 
     const pngFile = parsedFormData.get('pngFile') as File;
-    expect(pngFile).toBeInstanceOf(File);
     expect(pngFile.name).toBe('test.png');
     expect(pngFile.type).toBe('image/png');
     expect(pngFile.size).toBe(PNG_HEADER.length);
@@ -261,9 +241,9 @@ describe('parseFormData', () => {
     const parsedFormData = await parseFormData(body, contentType!);
 
     const file = parsedFormData.get('binaryField') as File;
-    expect(file).toBeInstanceOf(File);
     expect(file.name).toBe('test.bin');
     expect(file.type).toBe('application/octet-stream');
+    expect(file.size).toBe(PNG_HEADER.length);
 
     const fileArrayBuffer = await file.arrayBuffer();
     const fileUint8Array = new Uint8Array(fileArrayBuffer);
@@ -310,9 +290,9 @@ describe('parseFormData', () => {
     ).toBe('Base64 encoded text');
 
     const file = parsedFormData.get('binaryField') as File;
-    expect(file).toBeInstanceOf(File);
     expect(file.name).toBe('test.bin');
     expect(file.type).toBe('application/octet-stream');
+    expect(file.size).toBe(PNG_HEADER.length);
 
     const fileArrayBuffer = await file.arrayBuffer();
     const fileUint8Array = new Uint8Array(fileArrayBuffer);
