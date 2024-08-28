@@ -88,12 +88,24 @@ const createMainViteServer = (
   configPromise: ReturnType<typeof resolveConfig>,
 ) => {
   const vitePromise = configPromise.then(async (config) => {
+    const reactCompilerOptions =
+      typeof config.reactCompiler === 'boolean' ? {} : config.reactCompiler;
     const mergedViteConfig = await mergeUserViteConfig({
       // Since we have multiple instances of vite, different ones might overwrite the others' cache.
       cacheDir: 'node_modules/.vite/waku-dev-server-main',
       base: config.basePath,
       plugins: [
-        patchReactRefresh(viteReact()),
+        patchReactRefresh(
+          viteReact({
+            babel: {
+              plugins: [
+                config.reactCompiler
+                  ? ['babel-plugin-react-compiler', reactCompilerOptions]
+                  : [],
+              ],
+            },
+          }),
+        ),
         nonjsResolvePlugin(),
         devCommonJsPlugin({
           filter: (id) => {

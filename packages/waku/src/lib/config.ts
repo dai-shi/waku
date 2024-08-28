@@ -24,6 +24,9 @@ export async function resolveConfig(config: Config) {
     preserveModuleDirs: ['pages', 'templates', 'routes', 'components'],
     privateDir: 'private',
     rscPath: 'RSC',
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    reactCompiler: false,
     middleware: DEFAULT_MIDDLEWARE,
     ...config,
   };

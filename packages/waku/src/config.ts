@@ -2,6 +2,11 @@ import type { Middleware } from './lib/middleware/types.js';
 
 export type { Middleware };
 
+export interface ReactCompilerOptions {
+  compilationMode?: 'infer' | 'annotation' | 'all'
+  panicThreshold?: 'ALL_ERRORS' | 'CRITICAL_ERRORS' | 'NONE'
+}
+
 export interface Config {
   /**
    * The base path for serve HTTP.
@@ -37,6 +42,13 @@ export interface Config {
    * Defaults to "RSC".
    */
   rscPath?: string;
+  /**
+   * Enable experimental React compiler optimization.
+   * Configuration accepts partial config object to the compiler, if provided
+   * compiler will be enabled.
+   * Defaults to false.
+   */
+  reactCompiler?: boolean | ReactCompilerOptions
   /**
    * Middleware to use
    * Defaults to:
