@@ -4,13 +4,13 @@ export const parseFormData = async (
 ): Promise<FormData> => {
   const response = new Response(buffer, {
     headers: {
-      'Content-Type': contentType,
+      'content-type': contentType,
     },
   });
   return response.formData();
 };
 
 export const bufferToString = (buffer: ArrayBuffer): string => {
-  const enc = new TextDecoder('utf-8');
+  const enc = new TextDecoder();
   return enc.decode(buffer);
 };
