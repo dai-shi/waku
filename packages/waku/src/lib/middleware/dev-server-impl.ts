@@ -96,15 +96,15 @@ const createMainViteServer = (
       base: config.basePath,
       plugins: [
         patchReactRefresh(
-          viteReact({
-            babel: {
-              plugins: [
-                config.reactCompiler
-                  ? ['babel-plugin-react-compiler', reactCompilerOptions]
-                  : [],
-              ],
-            },
-          }),
+          config.reactCompiler
+            ? viteReact({
+                babel: {
+                  plugins: [
+                    ['babel-plugin-react-compiler', reactCompilerOptions],
+                  ],
+                },
+              })
+            : viteReact(),
         ),
         nonjsResolvePlugin(),
         devCommonJsPlugin({

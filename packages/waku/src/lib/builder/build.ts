@@ -387,20 +387,26 @@ const buildClientBundle = async (
     type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
   );
   const cssAssets = nonJsAssets.filter((asset) => asset.endsWith('.css'));
-  const compilerOptions = typeof config.reactCompiler === 'boolean' ? {} : config.reactCompiler
+  const compilerOptions =
+    typeof config.reactCompiler === 'boolean' ? {} : config.reactCompiler;
   const clientBuildOutput = await buildVite({
     base: config.basePath,
     plugins: [
-      viteReact({
-        babel: {
-          plugins: [
-            config.reactCompiler ? ["babel-plugin-react-compiler", {
-              panicThreshold: 'NONE',
-              ...compilerOptions
-            }] : []
-          ]
-        }
-      }),
+      config.reactCompiler
+        ? viteReact({
+            babel: {
+              plugins: [
+                [
+                  'babel-plugin-react-compiler',
+                  {
+                    panicThreshold: 'NONE',
+                    ...compilerOptions,
+                  },
+                ],
+              ],
+            },
+          })
+        : viteReact(),
       rscRsdwPlugin(),
       rscIndexPlugin({
         ...config,
