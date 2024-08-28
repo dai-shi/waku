@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseFormData } from '../src/lib/utils/buffer';
+import { bufferToString, parseFormData } from '../src/lib/utils/buffer';
 
 // Minimal valid 1x1 pixel PNG image
 const PNG_HEADER = new Uint8Array([
@@ -317,5 +317,42 @@ describe('parseFormData', () => {
     const fileArrayBuffer = await file.arrayBuffer();
     const fileUint8Array = new Uint8Array(fileArrayBuffer);
     expect(fileUint8Array).toEqual(PNG_HEADER);
+  });
+});
+
+describe('bufferToString', () => {
+  it('should convert an empty ArrayBuffer to an empty string', () => {
+    const buffer = new ArrayBuffer(0);
+    expect(bufferToString(buffer)).toBe('');
+  });
+
+  it('should convert a simple ASCII string', () => {
+    const text = 'Hello, World!';
+    const buffer = new TextEncoder().encode(text).buffer;
+    expect(bufferToString(buffer)).toBe(text);
+  });
+
+  it('should handle Unicode characters', () => {
+    const text = '你好，世界！😊';
+    const buffer = new TextEncoder().encode(text).buffer;
+    expect(bufferToString(buffer)).toBe(text);
+  });
+
+  it('should handle a mix of ASCII and Unicode characters', () => {
+    const text = 'Hello, 世界! 🌍';
+    const buffer = new TextEncoder().encode(text).buffer;
+    expect(bufferToString(buffer)).toBe(text);
+  });
+
+  it('should handle a large string', () => {
+    const text = 'a'.repeat(1000000); // 1 million 'a' characters
+    const buffer = new TextEncoder().encode(text).buffer;
+    expect(bufferToString(buffer)).toBe(text);
+  });
+
+  it('should handle null characters', () => {
+    const text = 'Hello\0World';
+    const buffer = new TextEncoder().encode(text).buffer;
+    expect(bufferToString(buffer)).toBe(text);
   });
 });
