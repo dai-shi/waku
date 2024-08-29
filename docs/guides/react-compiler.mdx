@@ -1,0 +1,31 @@
+---
+slug: guides/react-compiler
+title: Enabling React Compiler in Waku
+description: Learn how to enable the React Compiler in your Waku project using the Vite Plugin to optimize your React applications.
+---
+
+The React Compiler is a build-time tool designed to optimize React applications automatically. This guide will show you how to enable the React Compiler by integrating it with the `@vitejs/plugin-react`.
+
+```ts
+// vite.config.ts
+import react from '@vitejs/plugin-react';
+
+const ReactCompilerConfig = { /* ... */ };
+
+export default defineConfig(() => {
+  return {
+    plugins: [
+      react({
+        babel: {
+          plugins: [
+            ["babel-plugin-react-compiler", ReactCompilerConfig],
+          ],
+        },
+      }),
+    ],
+    // ...
+  };
+});
+```
+
+For a practical demonstration, visit this [StackBlitz demo](https://stackblitz.com/edit/github-ukt9tm?file=vite.config.ts) which provides a real-world example of the configuration in action.
