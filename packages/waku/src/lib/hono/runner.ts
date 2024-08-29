@@ -3,6 +3,9 @@ import type { MiddlewareHandler } from 'hono';
 import { resolveConfig } from '../config.js';
 import type { HandlerContext, MiddlewareOptions } from '../middleware/types.js';
 
+// Experimental Unstable API
+const HONO_CONTEXT = '__hono_context';
+
 const createEmptyReadableStream = () =>
   new ReadableStream({
     start(controller) {
@@ -37,7 +40,9 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
         headers: c.req.header(),
       },
       res: {},
-      context: {},
+      context: {
+        [HONO_CONTEXT]: c,
+      },
     };
     const handlers = await handlersPromise;
     const run = async (index: number) => {
