@@ -31,7 +31,7 @@ export const Navigation = ({ isHome }: NavigationProps) => {
         'fixed inset-0 z-90 flex-shrink-0 flex-col overflow-clip border-gray-800 bg-gray-950 transition-opacity duration-300 ease-in-out xl:pointer-events-auto xl:bottom-auto xl:left-0 xl:right-auto xl:top-0 xl:z-[9999] xl:h-screen xl:border-r 2xl:left-12 2xl:top-12 2xl:h-[calc(100vh-6rem)] 2xl:rounded-xl 2xl:border',
       )}
     >
-      <div className="relative z-10 flex h-full max-h-full w-full flex-shrink-0 flex-col items-center justify-start gap-8 !overflow-y-auto p-8 text-white md:p-8 xl:gap-12 xl:p-12">
+      <div className="relative z-10 flex h-full max-h-full w-full flex-shrink-0 flex-col items-center justify-start gap-8 !overflow-y-auto p-8 pb-16 text-white md:justify-center md:p-8 xl:justify-start xl:gap-12 xl:p-12">
         <div className="flex w-full flex-col items-center justify-center">
           {isHome ? (
             <button
@@ -59,7 +59,7 @@ export const Navigation = ({ isHome }: NavigationProps) => {
             The minimal React framework
           </div>
         </div>
-        <div className="relative flex max-h-full w-full max-w-[16rem] flex-grow flex-col gap-0.5 md:left-auto xl:gap-1.5">
+        <div className="relative flex max-h-full w-full max-w-[16rem] flex-col gap-0.5 md:left-auto xl:flex-grow xl:gap-1.5">
           {docs.map((link) => {
             return isHome ? (
               <DocLink key={link.to} link={link} />
@@ -72,7 +72,7 @@ export const Navigation = ({ isHome }: NavigationProps) => {
           {links.map((link) => {
             return <MenuLink key={link.to} link={link} />;
           })}
-          <Sponsors />
+          <Sponsors className="pt-4" />
         </ul>
       </div>
     </nav>
