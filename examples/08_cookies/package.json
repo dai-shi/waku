@@ -10,15 +10,15 @@
   },
   "dependencies": {
     "cookie": "0.6.0",
-    "react": "19.0.0-rc-6ebfd5b0-20240818",
-    "react-dom": "19.0.0-rc-6ebfd5b0-20240818",
-    "react-server-dom-webpack": "19.0.0-rc-6ebfd5b0-20240818",
+    "react": "19.0.0-rc-7771d3a7-20240827",
+    "react-dom": "19.0.0-rc-7771d3a7-20240827",
+    "react-server-dom-webpack": "19.0.0-rc-7771d3a7-20240827",
     "waku": "0.21.0"
   },
   "devDependencies": {
     "@types/cookie": "0.6.0",
-    "@types/node": "22.4.1",
-    "@types/react": "18.3.3",
+    "@types/node": "22.5.1",
+    "@types/react": "18.3.4",
     "@types/react-dom": "18.3.0",
     "typescript": "5.5.4"
   }
