@@ -9,9 +9,9 @@ import type {
 } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { filePathToFileURL } from '../utils/path.js';
-import { parseFormData } from '../utils/form.js';
-import { streamToString } from '../utils/stream.js';
+import { streamToArrayBuffer } from '../utils/stream.js';
 import { decodeActionId } from '../renderers/utils.js';
+import { bufferToString, parseFormData } from '../utils/buffer.js';
 
 export const SERVER_MODULE_MAP = {
   'rsdw-server': 'react-server-dom-webpack/server.edge',
@@ -194,15 +194,16 @@ export async function renderRsc(
 
   let decodedBody: unknown | undefined = args.decodedBody;
   if (body) {
-    const bodyStr = await streamToString(body);
+    const bodyBuf = await streamToArrayBuffer(body);
     if (
       typeof contentType === 'string' &&
       contentType.startsWith('multipart/form-data')
     ) {
       // XXX This doesn't support streaming unlike busboy
-      const formData = parseFormData(bodyStr, contentType);
+      const formData = await parseFormData(bodyBuf, contentType);
       decodedBody = await decodeReply(formData, serverBundlerConfig);
-    } else if (bodyStr) {
+    } else if (bodyBuf.byteLength > 0) {
+      const bodyStr = bufferToString(bodyBuf);
       decodedBody = await decodeReply(bodyStr, serverBundlerConfig);
     }
   }
