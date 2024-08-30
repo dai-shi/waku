@@ -762,10 +762,6 @@ export async function build(options: {
     getClientModules,
     clientBuildOutput,
   );
-  await appendFile(
-    distEntriesFile,
-    `export const buildData = ${JSON.stringify(platformObject.buildData)};`,
-  );
 
   if (options.deploy?.startsWith('vercel-')) {
     await emitVercelOutput(
@@ -788,4 +784,9 @@ export async function build(options: {
   } else if (options.deploy === 'aws-lambda') {
     await emitAwsLambdaOutput(config);
   }
+
+  await appendFile(
+    distEntriesFile,
+    `export const buildData = ${JSON.stringify(platformObject.buildData)};`,
+  );
 }
