@@ -10,7 +10,6 @@ import {
   useCallback,
   useEffect,
   useState,
-  startTransition,
 } from 'react';
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
@@ -111,10 +110,8 @@ export const callServerRSC = async (
       callServerRSC(actionId, args, fetchCache),
   });
   fetchCache[ON_FETCH_DATA]?.(data);
-  startTransition(() => {
-    // FIXME this causes rerenders even if data is empty
-    fetchCache[SET_ELEMENTS]?.((prev) => mergeElements(prev, data));
-  });
+  // FIXME this causes rerenders even if data is empty
+  fetchCache[SET_ELEMENTS]?.((prev) => mergeElements(prev, data));
   return (await data)._value;
 };
 
@@ -201,9 +198,7 @@ export const Root = ({
       // clear cache entry before fetching
       delete fetchCache[ENTRY];
       const data = fetchRSC(input, params, fetchCache);
-      startTransition(() => {
-        setElements((prev) => mergeElements(prev, data));
-      });
+      setElements((prev) => mergeElements(prev, data));
     },
     [fetchCache],
   );
