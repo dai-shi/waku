@@ -745,10 +745,6 @@ export async function build(options: {
     { env, config },
     { entries: distEntries },
   );
-  await appendFile(
-    distEntriesFile,
-    `export const buildConfig = ${JSON.stringify(buildConfig)};`,
-  );
   const { getClientModules } = await emitRscFiles(
     rootDir,
     env,
@@ -765,6 +761,10 @@ export async function build(options: {
     buildConfig,
     getClientModules,
     clientBuildOutput,
+  );
+  await appendFile(
+    distEntriesFile,
+    `export const buildData = ${JSON.stringify(platformObject.buildData)};`,
   );
 
   if (options.deploy?.startsWith('vercel-')) {

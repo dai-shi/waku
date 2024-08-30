@@ -17,14 +17,12 @@ export type BuildConfig = {
   }[];
   context?: Record<string, unknown>;
   customCode?: string; // optional code to inject TODO hope to remove this
-  customData?: unknown; // should be serializable with JSON.stringify
 }[];
 
 export type RenderEntries = (
   input: string,
   options: {
     params: unknown | undefined;
-    buildConfig: BuildConfig | undefined;
   },
 ) => Promise<Elements | null>;
 
@@ -36,7 +34,6 @@ export type GetSsrConfig = (
   pathname: string,
   options: {
     searchParams: URLSearchParams;
-    buildConfig?: BuildConfig | undefined;
   },
 ) => Promise<{
   input: string;
@@ -59,9 +56,9 @@ export type EntriesDev = {
 export type EntriesPrd = EntriesDev & {
   loadConfig: () => Promise<Config>;
   loadModule: (id: string) => Promise<unknown>;
-  buildConfig?: BuildConfig;
   dynamicHtmlPaths: [pathSpec: PathSpec, htmlHead: string][];
   publicIndexHtml: string;
+  buildData?: Record<string, unknown>; // must be JSON serializable
 };
 
 let serverEnv: Readonly<Record<string, string>> = {};
@@ -151,7 +148,7 @@ export function unstable_getHeaders(): Record<string, string> {
 }
 
 type PlatformObject = {
-  buildData?: unknown; // must be JSON serializable
+  buildData?: Record<string, unknown>; // must be JSON serializable
   buildOptions?: {
     deploy?:
       | 'vercel-static'
