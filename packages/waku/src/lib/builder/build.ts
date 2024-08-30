@@ -524,12 +524,11 @@ const willEmitPublicIndexHtml = async (
       typeof pathname === 'string' ? pathname2pathSpec(pathname) : pathname;
     return !!getPathMapping(pathSpec, '/');
   });
-  console.log('indexConfig', indexConfig);
   if (!indexConfig) {
     return false;
   }
-  if (indexConfig.isStatic) {
-    return true;
+  if (!indexConfig.isStatic) {
+    return false;
   }
   return !!(await getSsrConfig(
     { env, config, pathname: '/', searchParams: new URLSearchParams() },
