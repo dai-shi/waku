@@ -240,7 +240,6 @@ describe('createPages', () => {
     expect(
       await getComponent!('test/page', {
         unstable_setShouldSkip: setShouldSkip,
-        unstable_buildConfig: undefined,
       }),
     ).toBe(TestPage);
     expect(setShouldSkip).toHaveBeenCalledTimes(1);
@@ -275,7 +274,6 @@ describe('createPages', () => {
     expect(
       await getComponent('test/page', {
         unstable_setShouldSkip: setShouldSkip,
-        unstable_buildConfig: undefined,
       }),
     ).toBe(TestPage);
     expect(setShouldSkip).toHaveBeenCalledTimes(1);
@@ -318,7 +316,6 @@ describe('createPages', () => {
     expect(
       await getComponent('test/page', {
         unstable_setShouldSkip: setShouldSkip,
-        unstable_buildConfig: undefined,
       }),
     ).toBe(TestPage);
     expect(setShouldSkip).toHaveBeenCalledTimes(1);
@@ -328,7 +325,6 @@ describe('createPages', () => {
     expect(
       await getComponent('layout', {
         unstable_setShouldSkip: setShouldSkipLayout,
-        unstable_buildConfig: undefined,
       }),
     ).toBe(TestLayout);
     expect(setShouldSkipLayout).toHaveBeenCalledTimes(1);
@@ -371,7 +367,6 @@ describe('createPages', () => {
     expect(
       await getComponent('test/page', {
         unstable_setShouldSkip: setShouldSkip,
-        unstable_buildConfig: undefined,
       }),
     ).toBe(TestPage);
     expect(setShouldSkip).toHaveBeenCalledTimes(1);
@@ -381,7 +376,6 @@ describe('createPages', () => {
     expect(
       await getComponent('layout', {
         unstable_setShouldSkip: setShouldSkipLayout,
-        unstable_buildConfig: undefined,
       }),
     ).toBe(TestLayout);
     expect(setShouldSkipLayout).toHaveBeenCalledTimes(1);
@@ -420,7 +414,6 @@ describe('createPages', () => {
     expect(
       await getComponent('test/nested/page', {
         unstable_setShouldSkip: setShouldSkip,
-        unstable_buildConfig: undefined,
       }),
     ).toBe(TestPage);
     expect(setShouldSkip).toHaveBeenCalledTimes(1);
@@ -459,7 +452,6 @@ describe('createPages', () => {
     expect(
       await getComponent('test/nested/page', {
         unstable_setShouldSkip: setShouldSkip,
-        unstable_buildConfig: undefined,
       }),
     ).toBe(TestPage);
     expect(setShouldSkip).toHaveBeenCalledTimes(1);
@@ -525,7 +517,6 @@ describe('createPages', () => {
     const setShouldSkip = vi.fn();
     const WrappedComponent = await getComponent('test/w/x/page', {
       unstable_setShouldSkip: setShouldSkip,
-      unstable_buildConfig: undefined,
     });
     assert(WrappedComponent);
     expect(setShouldSkip).toHaveBeenCalledTimes(1);
@@ -570,7 +561,6 @@ describe('createPages', () => {
     const setShouldSkip = vi.fn();
     const WrappedComponent = await getComponent('test/w/x/page', {
       unstable_setShouldSkip: setShouldSkip,
-      unstable_buildConfig: undefined,
     });
     assert(WrappedComponent);
     expect(setShouldSkip).toHaveBeenCalledTimes(1);
@@ -616,7 +606,6 @@ describe('createPages', () => {
     const setShouldSkip = vi.fn();
     const WrappedComponent = await getComponent('test/a/b/page', {
       unstable_setShouldSkip: setShouldSkip,
-      unstable_buildConfig: undefined,
     });
     assert(WrappedComponent);
     expect(setShouldSkip).toHaveBeenCalledTimes(1);
@@ -657,7 +646,6 @@ describe('createPages', () => {
     const setShouldSkip = vi.fn();
     const WrappedComponent = await getComponent('test/a/b/page', {
       unstable_setShouldSkip: setShouldSkip,
-      unstable_buildConfig: undefined,
     });
     assert(WrappedComponent);
     expect(setShouldSkip).toHaveBeenCalledTimes(1);
@@ -716,49 +704,6 @@ describe('createPages', () => {
         data: undefined,
         isStatic: false,
         noSsr: true,
-        path: [
-          {
-            name: 'dynamic',
-            type: 'literal',
-          },
-        ],
-        pattern: '^/dynamic$',
-      },
-    ]);
-  });
-
-  it('allows to inject build data', async () => {
-    createPages(async ({ createPage, unstable_setBuildData }) => {
-      unstable_setBuildData('/static', { foo: 'bar' });
-      createPage({
-        render: 'static',
-        path: '/static',
-        component: () => null,
-      });
-      createPage({
-        render: 'dynamic',
-        path: '/dynamic',
-        component: () => null,
-      });
-    });
-    const { getPathConfig } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
-      {
-        data: { foo: 'bar' },
-        isStatic: true,
-        noSsr: false,
-        path: [
-          {
-            name: 'static',
-            type: 'literal',
-          },
-        ],
-        pattern: '^/static$',
-      },
-      {
-        data: undefined,
-        isStatic: false,
-        noSsr: false,
         path: [
           {
             name: 'dynamic',
