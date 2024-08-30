@@ -64,7 +64,7 @@ export type EntriesPrd = EntriesDev & {
   publicIndexHtml: string;
 };
 
-let serverEnv: Record<string, string> = {};
+let serverEnv: Readonly<Record<string, string>> = {};
 
 /**
  * This is an internal function and not for public use.
@@ -148,4 +148,27 @@ export function unstable_getHeaders(): Record<string, string> {
     string,
     string
   >;
+}
+
+type PlatformObject = {
+  buildData?: unknown; // must be JSON serializable
+  buildOptions?: {
+    deploy?:
+      | 'vercel-static'
+      | 'vercel-serverless'
+      | 'netlify-static'
+      | 'netlify-functions'
+      | 'cloudflare'
+      | 'partykit'
+      | 'deno'
+      | 'aws-lambda'
+      | undefined;
+  };
+} & Record<string, unknown>;
+
+const platformObject: PlatformObject = {};
+
+// TODO tentative name
+export function unstable_getPlatformObject(): PlatformObject {
+  return platformObject;
 }

@@ -6,6 +6,7 @@ import viteReact from '@vitejs/plugin-react';
 import type { LoggingFunction, RollupLog } from 'rollup';
 
 import type { Config } from '../../config.js';
+import { unstable_getPlatformObject } from '../../server.js';
 import type { BuildConfig, EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
 import { resolveConfig, EXTENSIONS } from '../config.js';
@@ -694,6 +695,10 @@ export async function build(options: {
     options.deploy !== 'cloudflare' &&
     options.deploy !== 'partykit' &&
     options.deploy !== 'deno';
+
+  const platformObject = unstable_getPlatformObject();
+  platformObject.buildOptions ||= {};
+  platformObject.buildOptions.deploy = options.deploy;
 
   const { clientEntryFiles, serverEntryFiles, serverModuleFiles } =
     await analyzeEntries(rootDir, config);
