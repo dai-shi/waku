@@ -210,7 +210,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
       });
     }
     platformObject.buildData ||= {};
-    platformObject.buildData.defineRouterPathConfigs = buildConfig;
+    platformObject.buildData.defineRouterPathConfigs = pathConfig;
     return buildConfig;
   };
 
