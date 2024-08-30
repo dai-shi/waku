@@ -201,9 +201,7 @@ export const Root = ({
       // clear cache entry before fetching
       delete fetchCache[ENTRY];
       const data = fetchRSC(input, params, fetchCache);
-      startTransition(() => {
-        setElements((prev) => mergeElements(prev, data));
-      });
+      setElements((prev) => mergeElements(prev, data));
     },
     [fetchCache],
   );
