@@ -519,15 +519,12 @@ const willEmitPublicIndexHtml = async (
   distEntries: EntriesPrd,
   buildConfig: BuildConfig,
 ) => {
-  const indexConfig = buildConfig.find(({ pathname }) => {
+  const hasConfig = buildConfig.some(({ pathname }) => {
     const pathSpec =
       typeof pathname === 'string' ? pathname2pathSpec(pathname) : pathname;
     return !!getPathMapping(pathSpec, '/');
   });
-  if (!indexConfig) {
-    return false;
-  }
-  if (indexConfig.isStatic) {
+  if (!hasConfig) {
     return false;
   }
   try {
