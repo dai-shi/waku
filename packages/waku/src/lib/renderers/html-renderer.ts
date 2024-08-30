@@ -222,7 +222,7 @@ export const renderHtml = async (
     loadClientModule<typeof WakuClientType>('waku-client'),
   ]);
 
-  const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
+  const ssrConfig = await getSsrConfigForHtml(pathname, searchParams);
   if (!ssrConfig) {
     return null;
   }

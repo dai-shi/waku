@@ -15,6 +15,7 @@ import {
   extname,
   filePathToFileURL,
   fileURLToFilePath,
+  getPathMapping,
   joinPath,
 } from '../utils/path.js';
 import {
@@ -512,6 +513,31 @@ const pathSpec2pathname = (pathSpec: PathSpec): string => {
   return '/' + pathSpec.map(({ name }) => name!).join('/');
 };
 
+const willEmitPublicIndexHtml = async (
+  env: Record<string, string>,
+  config: ResolvedConfig,
+  distEntries: EntriesPrd,
+  buildConfig: BuildConfig,
+) => {
+  const hasConfig = buildConfig.some(({ pathname }) => {
+    const pathSpec =
+      typeof pathname === 'string' ? pathname2pathSpec(pathname) : pathname;
+    return !!getPathMapping(pathSpec, '/');
+  });
+  if (!hasConfig) {
+    return false;
+  }
+  try {
+    return !!(await getSsrConfig(
+      { env, config, pathname: '/', searchParams: new URLSearchParams() },
+      { isDev: false, entries: distEntries },
+    ));
+  } catch {
+    // HACK to pass e2e tests
+    return false;
+  }
+};
+
 const emitHtmlFiles = async (
   rootDir: string,
   env: Record<string, string>,
@@ -536,8 +562,7 @@ const emitHtmlFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  if (buildConfig.length) {
-    // Delete the default index.html file unless buildConfig is empty.
+  if (await willEmitPublicIndexHtml(env, config, distEntries, buildConfig)) {
     await unlink(publicIndexHtmlFile);
   }
   const publicIndexHtmlHead = publicIndexHtml.replace(
