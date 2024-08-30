@@ -9,7 +9,6 @@ import {
   getPathMapping,
   path2regexp,
 } from '../lib/utils/path.js';
-import type { BuildConfig } from '../server.js';
 import type { PathSpec } from '../lib/utils/path.js';
 
 const hasPathSpecPrefix = (prefix: PathSpec, path: PathSpec) => {
@@ -182,16 +181,10 @@ export type CreateLayout = <T extends string>(layout: {
 }) => void;
 
 export function createPages(
-  fn: (
-    fns: {
-      createPage: CreatePage;
-      createLayout: CreateLayout;
-      unstable_setBuildData: (path: string, data: unknown) => void;
-    },
-    opts: {
-      unstable_buildConfig: BuildConfig | undefined;
-    },
-  ) => Promise<void>,
+  fn: (fns: {
+    createPage: CreatePage;
+    createLayout: CreateLayout;
+  }) => Promise<void>,
 ) {
   let configured = false;
 
@@ -211,7 +204,6 @@ export function createPages(
   >();
   const staticComponentMap = new Map<string, FunctionComponent<any>>();
   const noSsrSet = new WeakSet<PathSpec>();
-  const buildDataMap = new Map<string, unknown>();
 
   const registerStaticComponent = (
     id: string,
@@ -325,17 +317,10 @@ export function createPages(
     }
   };
 
-  const unstable_setBuildData = (path: string, data: unknown) => {
-    buildDataMap.set(path, data);
-  };
-
   let ready: Promise<void> | undefined;
-  const configure = async (buildConfig?: BuildConfig) => {
+  const configure = async () => {
     if (!configured && !ready) {
-      ready = fn(
-        { createPage, createLayout, unstable_setBuildData },
-        { unstable_buildConfig: buildConfig },
-      );
+      ready = fn({ createPage, createLayout });
       await ready;
       configured = true;
     }
@@ -350,7 +335,6 @@ export function createPages(
         path: PathSpec;
         isStatic: boolean;
         noSsr: boolean;
-        data: unknown;
       }[] = [];
       for (const [path, pathSpec] of staticPathSet) {
         const noSsr = noSsrSet.has(pathSpec);
@@ -368,7 +352,6 @@ export function createPages(
           path: pathSpec,
           isStatic,
           noSsr,
-          data: buildDataMap.get(path),
         });
       }
       for (const [path, [pathSpec]] of dynamicPagePathMap) {
@@ -378,7 +361,6 @@ export function createPages(
           path: pathSpec,
           isStatic: false,
           noSsr,
-          data: buildDataMap.get(path),
         });
       }
       for (const [path, [pathSpec]] of wildcardPagePathMap) {
@@ -388,13 +370,12 @@ export function createPages(
           path: pathSpec,
           isStatic: false,
           noSsr,
-          data: buildDataMap.get(path),
         });
       }
       return paths;
     },
-    async (id, { unstable_setShouldSkip, unstable_buildConfig }) => {
-      await configure(unstable_buildConfig);
+    async (id, { unstable_setShouldSkip }) => {
+      await configure();
       const staticComponent = staticComponentMap.get(id);
       if (staticComponent) {
         unstable_setShouldSkip([]);

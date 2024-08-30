@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { default as RSDWServerType } from 'react-server-dom-webpack/server.edge';
 
+import { unstable_getPlatformObject } from '../../server.js';
 import type {
   EntriesDev,
   EntriesPrd,
@@ -70,9 +71,9 @@ export async function renderRsc(
   const {
     default: { renderEntries },
     loadModule,
-    buildConfig,
+    buildData,
   } = entries as
-    | (EntriesDev & { loadModule: never; buildConfig: never })
+    | (EntriesDev & { loadModule: never; buildData: never })
     | EntriesPrd;
 
   const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
@@ -94,6 +95,9 @@ export async function renderRsc(
   ]);
 
   setAllEnvInternal(env);
+  if (buildData) {
+    unstable_getPlatformObject().buildData = buildData;
+  }
 
   const clientBundlerConfig = new Proxy(
     {},
@@ -132,10 +136,7 @@ export async function renderRsc(
       },
     };
     return runWithRenderStoreInternal(renderStore, async () => {
-      const elements = await renderEntries(input, {
-        params,
-        buildConfig,
-      });
+      const elements = await renderEntries(input, { params });
       if (elements === null) {
         const err = new Error('No function component found');
         (err as any).statusCode = 404; // HACK our convention for NotFound
@@ -167,7 +168,7 @@ export async function renderRsc(
         }
         elementsPromise = Promise.all([
           elementsPromise,
-          renderEntries(input, { params, buildConfig }),
+          renderEntries(input, { params }),
         ]).then(([oldElements, newElements]) => ({
           ...oldElements,
           // FIXME we should actually check if newElements is null and send an error
@@ -327,9 +328,9 @@ export async function getSsrConfig(
   const {
     default: { getSsrConfig },
     loadModule,
-    buildConfig,
+    buildData,
   } = entries as
-    | (EntriesDev & { loadModule: never; buildConfig: never })
+    | (EntriesDev & { loadModule: never; buildData: never })
     | EntriesPrd;
 
   const loadServerModule = <T>(key: keyof typeof SERVER_MODULE_MAP) =>
@@ -351,11 +352,11 @@ export async function getSsrConfig(
   ]);
 
   setAllEnvInternal(env);
+  if (buildData) {
+    unstable_getPlatformObject().buildData = buildData;
+  }
 
-  const ssrConfig = await getSsrConfig?.(pathname, {
-    searchParams,
-    buildConfig,
-  });
+  const ssrConfig = await getSsrConfig?.(pathname, { searchParams });
   if (!ssrConfig) {
     return null;
   }

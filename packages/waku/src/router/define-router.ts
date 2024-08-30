@@ -1,7 +1,11 @@
 import { createElement } from 'react';
 import type { ComponentProps, FunctionComponent, ReactNode } from 'react';
 
-import { defineEntries, rerender } from '../server.js';
+import {
+  defineEntries,
+  rerender,
+  unstable_getPlatformObject,
+} from '../server.js';
 import type {
   BuildConfig,
   RenderEntries,
@@ -48,7 +52,6 @@ export function unstable_defineRouter(
       path: PathSpec;
       isStatic?: boolean;
       noSsr?: boolean;
-      data?: unknown; // For build: put in customData
     }>
   >,
   getComponent: (
@@ -56,7 +59,6 @@ export function unstable_defineRouter(
     options: {
       // TODO setShouldSkip API is too hard to understand
       unstable_setShouldSkip: (val?: ShouldSkipValue) => void;
-      unstable_buildConfig: BuildConfig | undefined;
     },
   ) => Promise<
     | FunctionComponent<RouteProps>
@@ -64,18 +66,18 @@ export function unstable_defineRouter(
     | null
   >,
 ): ReturnType<typeof defineEntries> {
+  const platformObject = unstable_getPlatformObject();
   type MyPathConfig = {
     pattern: string;
     pathname: PathSpec;
     isStatic?: boolean | undefined;
-    customData: { noSsr?: boolean; is404: boolean; data: unknown };
+    specs: { noSsr?: boolean; is404: boolean };
   }[];
   let cachedPathConfig: MyPathConfig | undefined;
-  const getMyPathConfig = async (
-    buildConfig?: BuildConfig,
-  ): Promise<MyPathConfig> => {
-    if (buildConfig) {
-      return buildConfig as MyPathConfig;
+  const getMyPathConfig = async (): Promise<MyPathConfig> => {
+    const pathConfig = platformObject.buildData?.defineRouterPathConfigs;
+    if (pathConfig) {
+      return pathConfig as MyPathConfig;
     }
     if (!cachedPathConfig) {
       cachedPathConfig = Array.from(await getPathConfig()).map((item) => {
@@ -87,7 +89,7 @@ export function unstable_defineRouter(
           pattern: item.pattern,
           pathname: item.path,
           isStatic: item.isStatic,
-          customData: { is404, noSsr: !!item.noSsr, data: item.data },
+          specs: { is404, noSsr: !!item.noSsr },
         };
       });
     }
@@ -95,26 +97,22 @@ export function unstable_defineRouter(
   };
   const existsPath = async (
     pathname: string,
-    buildConfig: BuildConfig | undefined,
   ): Promise<['FOUND', 'NO_SSR'?] | ['NOT_FOUND', 'HAS_404'?]> => {
-    const pathConfig = await getMyPathConfig(buildConfig);
+    const pathConfig = await getMyPathConfig();
     const found = pathConfig.find(({ pathname: pathSpec }) =>
       getPathMapping(pathSpec, pathname),
     );
     return found
-      ? found.customData.noSsr
+      ? found.specs.noSsr
         ? ['FOUND', 'NO_SSR']
         : ['FOUND']
-      : pathConfig.some(({ customData: { is404 } }) => is404) // FIXMEs should avoid re-computation
+      : pathConfig.some(({ specs: { is404 } }) => is404) // FIXMEs should avoid re-computation
         ? ['NOT_FOUND', 'HAS_404']
         : ['NOT_FOUND'];
   };
-  const renderEntries: RenderEntries = async (
-    input,
-    { params, buildConfig },
-  ) => {
+  const renderEntries: RenderEntries = async (input, { params }) => {
     const pathname = parseInputString(input);
-    if ((await existsPath(pathname, buildConfig))[0] === 'NOT_FOUND') {
+    if ((await existsPath(pathname))[0] === 'NOT_FOUND') {
       return null;
     }
     const shouldSkipObj: {
@@ -144,7 +142,6 @@ export function unstable_defineRouter(
           };
           const component = await getComponent(id, {
             unstable_setShouldSkip: setShoudSkip,
-            unstable_buildConfig: buildConfig,
           });
           if (!component) {
             return [];
@@ -196,7 +193,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   }
 };`;
     const buildConfig: BuildConfig = [];
-    for (const { pathname: pathSpec, isStatic, customData } of pathConfig) {
+    for (const { pathname: pathSpec, isStatic, specs } of pathConfig) {
       const entries: BuildConfig[number]['entries'] = [];
       if (pathSpec.every(({ type }) => type === 'literal')) {
         const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
@@ -209,18 +206,16 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         entries,
         customCode:
           customCode +
-          (customData.is404 ? 'globalThis.__WAKU_ROUTER_404__ = true;' : ''),
-        customData,
+          (specs.is404 ? 'globalThis.__WAKU_ROUTER_404__ = true;' : ''),
       });
     }
+    platformObject.buildData ||= {};
+    platformObject.buildData.defineRouterPathConfigs = pathConfig;
     return buildConfig;
   };
 
-  const getSsrConfig: GetSsrConfig = async (
-    pathname,
-    { searchParams, buildConfig },
-  ) => {
-    const pathStatus = await existsPath(pathname, buildConfig);
+  const getSsrConfig: GetSsrConfig = async (pathname, { searchParams }) => {
+    const pathStatus = await existsPath(pathname);
     if (pathStatus[1] === 'NO_SSR') {
       return null;
     }
