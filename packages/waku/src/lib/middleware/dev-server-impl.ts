@@ -135,6 +135,7 @@ const createMainViteServer = (
   });
 
   const loadServerModuleMain = async (idOrFileURL: string) => {
+    const vite = await vitePromise;
     if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
       // HACK `external: ['waku']` doesn't do the same
       return import(/* @vite-ignore */ idOrFileURL);
@@ -144,9 +145,12 @@ const createMainViteServer = (
       idOrFileURL.includes('/node_modules/')
     ) {
       // HACK node_modules should be externalized
-      return import(/* @vite-ignore */ fileURLToFilePath(idOrFileURL));
+      const file = fileURLToFilePath(idOrFileURL);
+      const fileWithAbsolutePath = file.startsWith('/')
+        ? file
+        : joinPath(vite.config.root, file);
+      return import(/* @vite-ignore */ fileWithAbsolutePath);
     }
-    const vite = await vitePromise;
     return vite.ssrLoadModule(
       idOrFileURL.startsWith('file://')
         ? fileURLToFilePath(idOrFileURL)
