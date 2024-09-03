@@ -278,3 +278,30 @@ export const BlogLayout = async ({ children }) => {
   );
 };
 ```
+
+### Client entry point
+
+The file `./src/entries.tsx` is the entry point for the server.
+For the client, the entry point file is `./src/main.tsx`.
+
+The default client entry file content is the following.
+
+```tsx
+import { Component, StrictMode } from 'react';
+import { createRoot, hydrateRoot } from 'react-dom/client';
+import { Router } from 'waku/router/client';
+
+const rootElement = (
+  <StrictMode>
+    <Router />
+  </StrictMode>
+);
+
+if (globalThis.__WAKU_HYDRATE__) {
+  hydrateRoot(document, rootElement);
+} else {
+  createRoot(document).render(rootElement);
+}
+```
+
+You can omit `./src/main.tsx` unless you need to modify it.
