@@ -700,8 +700,10 @@ export async function build(options: {
   platformObject.buildOptions ||= {};
   platformObject.buildOptions.deploy = options.deploy;
 
+  platformObject.buildOptions.unstable_phase = 'analyzeEntries';
   const { clientEntryFiles, serverEntryFiles, serverModuleFiles } =
     await analyzeEntries(rootDir, config);
+  platformObject.buildOptions.unstable_phase = 'buildServerBundle';
   const serverBuildOutput = await buildServerBundle(
     rootDir,
     env,
@@ -718,6 +720,7 @@ export async function build(options: {
     isNodeCompatible,
     !!options.partial,
   );
+  platformObject.buildOptions.unstable_phase = 'buildSsrBundle';
   await buildSsrBundle(
     rootDir,
     env,
@@ -728,6 +731,7 @@ export async function build(options: {
     isNodeCompatible,
     !!options.partial,
   );
+  platformObject.buildOptions.unstable_phase = 'buildClientBundle';
   const clientBuildOutput = await buildClientBundle(
     rootDir,
     env,
@@ -737,6 +741,7 @@ export async function build(options: {
     serverBuildOutput,
     !!options.partial,
   );
+  delete platformObject.buildOptions.unstable_phase;
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
 

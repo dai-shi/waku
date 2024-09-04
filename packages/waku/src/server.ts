@@ -160,6 +160,11 @@ type PlatformObject = {
       | 'deno'
       | 'aws-lambda'
       | undefined;
+    unstable_phase?:
+      | 'analyzeEntries'
+      | 'buildServerBundle'
+      | 'buildSsrBundle'
+      | 'buildClientBundle';
   };
 } & Record<string, unknown>;
 
