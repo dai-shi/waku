@@ -28,7 +28,7 @@ const resolveFileName = (fname: string) => {
 };
 
 const srcServeFile = decodeFilePathFromAbsolute(
-  joinPath(fileURLToFilePath(import.meta.url), '../builder/serve-vercel.js'),
+  joinPath(fileURLToFilePath(import.meta.url), '../../builder/serve-vercel.js'),
 );
 
 export function deployVercelPlugin(opts: {

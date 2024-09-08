@@ -675,11 +675,37 @@ export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
 
 // For Deploy
 const buildDeploy = async (rootDir: string, config: ResolvedConfig) => {
+  const DUMMY = 'dummy-entry';
   await buildVite({
-    plugins: deployPlugins(config),
+    plugins: [
+      {
+        // FIXME This is too hacky. There must be a better way.
+        name: 'dummy-entry-plugin',
+        resolveId(source) {
+          if (source === DUMMY) {
+            return source;
+          }
+        },
+        load(id) {
+          if (id === DUMMY) {
+            return '';
+          }
+        },
+        generateBundle(_options, bundle) {
+          Object.entries(bundle).forEach(([key, value]) => {
+            if (value.name === DUMMY) {
+              delete bundle[key];
+            }
+          });
+        },
+      },
+      ...deployPlugins(config),
+    ],
     publicDir: false,
     build: {
       emptyOutDir: false,
+      ssr: true,
+      rollupOptions: { input: { [DUMMY]: DUMMY } },
       outDir: joinPath(rootDir, config.distDir),
     },
   });
@@ -783,6 +809,10 @@ export async function build(options: {
     clientBuildOutput,
   );
 
+  platformObject.buildOptions.unstable_phase = 'buildDeploy';
+  await buildDeploy(rootDir, config);
+  delete platformObject.buildOptions.unstable_phase;
+
   if (options.deploy?.startsWith('netlify-')) {
     await emitNetlifyOutput(
       rootDir,
@@ -797,10 +827,6 @@ export async function build(options: {
   } else if (options.deploy === 'aws-lambda') {
     await emitAwsLambdaOutput(config);
   }
-
-  platformObject.buildOptions.unstable_phase = 'buildDeploy';
-  await buildDeploy(rootDir, config);
-  delete platformObject.buildOptions.unstable_phase;
 
   await appendFile(
     distEntriesFile,
