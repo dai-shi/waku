@@ -45,9 +45,8 @@ export function deployVercelPlugin(opts: {
     config(viteConfig) {
       const { deploy, unstable_phase } = platformObject.buildOptions || {};
       if (
-        unstable_phase !== 'buildServerBundle' &&
-        deploy !== 'vercel-serverless' &&
-        deploy !== 'vercel-static'
+        unstable_phase !== 'buildServerBundle' ||
+        (deploy !== 'vercel-serverless' && deploy !== 'vercel-static')
       ) {
         return;
       }
@@ -79,9 +78,8 @@ export function deployVercelPlugin(opts: {
     closeBundle() {
       const { deploy, unstable_phase } = platformObject.buildOptions || {};
       if (
-        unstable_phase !== 'buildDeploy' &&
-        deploy !== 'vercel-serverless' &&
-        deploy !== 'vercel-static'
+        unstable_phase !== 'buildDeploy' ||
+        (deploy !== 'vercel-serverless' && deploy !== 'vercel-static')
       ) {
         return;
       }
