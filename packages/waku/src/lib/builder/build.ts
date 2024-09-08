@@ -705,7 +705,14 @@ const buildDeploy = async (rootDir: string, config: ResolvedConfig) => {
     build: {
       emptyOutDir: false,
       ssr: true,
-      rollupOptions: { input: { [DUMMY]: DUMMY } },
+      rollupOptions: {
+        onwarn: (warning, warn) => {
+          if (!warning.message.startsWith('Generated an empty chunk:')) {
+            warn(warning);
+          }
+        },
+        input: { [DUMMY]: DUMMY },
+      },
       outDir: joinPath(rootDir, config.distDir),
     },
   });
