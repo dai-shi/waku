@@ -164,7 +164,8 @@ type PlatformObject = {
       | 'analyzeEntries'
       | 'buildServerBundle'
       | 'buildSsrBundle'
-      | 'buildClientBundle';
+      | 'buildClientBundle'
+      | 'buildDeploy';
   };
 } & Record<string, unknown>;
 

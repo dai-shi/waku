@@ -52,7 +52,6 @@ import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
-import { emitVercelOutput } from './output-vercel.js';
 import { emitNetlifyOutput } from './output-netlify.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
 import { emitPartyKitOutput } from './output-partykit.js';
@@ -64,6 +63,7 @@ import {
   DIST_ASSETS,
   DIST_SSR,
 } from './constants.js';
+import { deployVercelPlugin } from '../plugins/vite-plugin-deploy-vercel.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -83,6 +83,8 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   }
   defaultHandler(warning);
 };
+
+const deployPlugins = (config: ResolvedConfig) => [deployVercelPlugin(config)];
 
 const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   const wakuClientDist = decodeFilePathFromAbsolute(
@@ -237,7 +239,7 @@ const buildServerBundle = async (
           ),
         },
       }),
-      ...(serve
+      ...(serve && serve !== 'vercel'
         ? [
             rscServePlugin({
               ...config,
@@ -253,6 +255,7 @@ const buildServerBundle = async (
             }),
           ]
         : []),
+      ...deployPlugins(config),
     ],
     ssr: isNodeCompatible
       ? {
@@ -670,6 +673,18 @@ export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
   await appendFile(distEntriesFile, code);
 };
 
+// For Deploy
+const buildDeploy = async (rootDir: string, config: ResolvedConfig) => {
+  await buildVite({
+    plugins: deployPlugins(config),
+    publicDir: false,
+    build: {
+      emptyOutDir: false,
+      outDir: joinPath(rootDir, config.distDir),
+    },
+  });
+};
+
 export async function build(options: {
   config: Config;
   env?: Record<string, string>;
@@ -768,14 +783,7 @@ export async function build(options: {
     clientBuildOutput,
   );
 
-  if (options.deploy?.startsWith('vercel-')) {
-    await emitVercelOutput(
-      rootDir,
-      config,
-      DIST_SERVE_JS,
-      options.deploy.slice('vercel-'.length) as 'static' | 'serverless',
-    );
-  } else if (options.deploy?.startsWith('netlify-')) {
+  if (options.deploy?.startsWith('netlify-')) {
     await emitNetlifyOutput(
       rootDir,
       config,
@@ -789,6 +797,10 @@ export async function build(options: {
   } else if (options.deploy === 'aws-lambda') {
     await emitAwsLambdaOutput(config);
   }
+
+  platformObject.buildOptions.unstable_phase = 'buildDeploy';
+  await buildDeploy(rootDir, config);
+  delete platformObject.buildOptions.unstable_phase;
 
   await appendFile(
     distEntriesFile,

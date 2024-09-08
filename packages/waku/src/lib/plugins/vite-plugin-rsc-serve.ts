@@ -26,13 +26,7 @@ export function rscServePlugin(opts: {
   distDir: string;
   distPublic: string;
   srcServeFile: string;
-  serve:
-    | 'vercel'
-    | 'netlify'
-    | 'cloudflare'
-    | 'partykit'
-    | 'deno'
-    | 'aws-lambda';
+  serve: 'netlify' | 'cloudflare' | 'partykit' | 'deno' | 'aws-lambda';
 }): Plugin {
   return {
     name: 'rsc-serve-plugin',
