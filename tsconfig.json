@@ -20,7 +20,8 @@
     "paths": {
       "waku": ["./packages/waku/src/main.ts"],
       "waku/*": ["./packages/waku/src/*.ts"]
-    }
+    },
+    "noErrorTruncation": true
   },
   "files": [],
   "include": [],
