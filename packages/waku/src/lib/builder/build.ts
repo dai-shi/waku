@@ -52,7 +52,6 @@ import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
-import { emitNetlifyOutput } from './output-netlify.js';
 import { emitCloudflareOutput } from './output-cloudflare.js';
 import { emitPartyKitOutput } from './output-partykit.js';
 import { emitAwsLambdaOutput } from './output-aws-lambda.js';
@@ -64,6 +63,7 @@ import {
   DIST_SSR,
 } from './constants.js';
 import { deployVercelPlugin } from '../plugins/vite-plugin-deploy-vercel.js';
+import { deployNetlifyPlugin } from '../plugins/vite-plugin-deploy-netlify.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -84,7 +84,10 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   defaultHandler(warning);
 };
 
-const deployPlugins = (config: ResolvedConfig) => [deployVercelPlugin(config)];
+const deployPlugins = (config: ResolvedConfig) => [
+  deployVercelPlugin(config),
+  deployNetlifyPlugin(config),
+];
 
 const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   const wakuClientDist = decodeFilePathFromAbsolute(
@@ -820,14 +823,7 @@ export async function build(options: {
   await buildDeploy(rootDir, config);
   delete platformObject.buildOptions.unstable_phase;
 
-  if (options.deploy?.startsWith('netlify-')) {
-    await emitNetlifyOutput(
-      rootDir,
-      config,
-      DIST_SERVE_JS,
-      options.deploy.slice('netlify-'.length) as 'static' | 'functions',
-    );
-  } else if (options.deploy === 'cloudflare') {
+  if (options.deploy === 'cloudflare') {
     await emitCloudflareOutput(rootDir, config, DIST_SERVE_JS);
   } else if (options.deploy === 'partykit') {
     await emitPartyKitOutput(rootDir, config, DIST_SERVE_JS);
