@@ -48,15 +48,11 @@ import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscEntriesPlugin } from '../plugins/vite-plugin-rsc-entries.js';
-import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
-import { emitPartyKitOutput } from './output-partykit.js';
-import { emitAwsLambdaOutput } from './output-aws-lambda.js';
 import {
   DIST_ENTRIES_JS,
-  DIST_SERVE_JS,
   DIST_PUBLIC,
   DIST_ASSETS,
   DIST_SSR,
@@ -64,6 +60,9 @@ import {
 import { deployVercelPlugin } from '../plugins/vite-plugin-deploy-vercel.js';
 import { deployNetlifyPlugin } from '../plugins/vite-plugin-deploy-netlify.js';
 import { deployCloudflarePlugin } from '../plugins/vite-plugin-deploy-cloudflare.js';
+import { deployDenoPlugin } from '../plugins/vite-plugin-deploy-deno.js';
+import { deployPartykitPlugin } from '../plugins/vite-plugin-deploy-partykit.js';
+import { deployAwsLambdaPlugin } from '../plugins/vite-plugin-deploy-aws-lambda.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -88,6 +87,9 @@ const deployPlugins = (config: ResolvedConfig) => [
   deployVercelPlugin(config),
   deployNetlifyPlugin(config),
   deployCloudflarePlugin(config),
+  deployDenoPlugin(config),
+  deployPartykitPlugin(config),
+  deployAwsLambdaPlugin(config),
 ];
 
 const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
@@ -189,14 +191,6 @@ const buildServerBundle = async (
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
   serverModuleFiles: Record<string, string>,
-  serve:
-    | 'vercel'
-    | 'netlify'
-    | 'cloudflare'
-    | 'partykit'
-    | 'deno'
-    | 'aws-lambda'
-    | false,
   isNodeCompatible: boolean,
   partial: boolean,
 ) => {
@@ -243,25 +237,6 @@ const buildServerBundle = async (
           ),
         },
       }),
-      ...(serve &&
-      serve !== 'vercel' &&
-      serve !== 'netlify' &&
-      serve !== 'cloudflare'
-        ? [
-            rscServePlugin({
-              ...config,
-              distServeJs: DIST_SERVE_JS,
-              distPublic: DIST_PUBLIC,
-              srcServeFile: decodeFilePathFromAbsolute(
-                joinPath(
-                  fileURLToFilePath(import.meta.url),
-                  `../serve-${serve}.js`,
-                ),
-              ),
-              serve,
-            }),
-          ]
-        : []),
       ...deployPlugins(config),
     ],
     ssr: isNodeCompatible
@@ -766,12 +741,6 @@ export async function build(options: {
     clientEntryFiles,
     serverEntryFiles,
     serverModuleFiles,
-    (options.deploy === 'vercel-serverless' ? 'vercel' : false) ||
-      (options.deploy === 'netlify-functions' ? 'netlify' : false) ||
-      (options.deploy === 'cloudflare' ? 'cloudflare' : false) ||
-      (options.deploy === 'partykit' ? 'partykit' : false) ||
-      (options.deploy === 'deno' ? 'deno' : false) ||
-      (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
     isNodeCompatible,
     !!options.partial,
   );
@@ -826,12 +795,6 @@ export async function build(options: {
   platformObject.buildOptions.unstable_phase = 'buildDeploy';
   await buildDeploy(rootDir, config);
   delete platformObject.buildOptions.unstable_phase;
-
-  if (options.deploy === 'partykit') {
-    await emitPartyKitOutput(rootDir, config, DIST_SERVE_JS);
-  } else if (options.deploy === 'aws-lambda') {
-    await emitAwsLambdaOutput(config);
-  }
 
   await appendFile(
     distEntriesFile,
