@@ -52,7 +52,6 @@ import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
-import { emitCloudflareOutput } from './output-cloudflare.js';
 import { emitPartyKitOutput } from './output-partykit.js';
 import { emitAwsLambdaOutput } from './output-aws-lambda.js';
 import {
@@ -64,6 +63,7 @@ import {
 } from './constants.js';
 import { deployVercelPlugin } from '../plugins/vite-plugin-deploy-vercel.js';
 import { deployNetlifyPlugin } from '../plugins/vite-plugin-deploy-netlify.js';
+import { deployCloudflarePlugin } from '../plugins/vite-plugin-deploy-cloudflare.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -87,6 +87,7 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
 const deployPlugins = (config: ResolvedConfig) => [
   deployVercelPlugin(config),
   deployNetlifyPlugin(config),
+  deployCloudflarePlugin(config),
 ];
 
 const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
@@ -242,7 +243,10 @@ const buildServerBundle = async (
           ),
         },
       }),
-      ...(serve && serve !== 'vercel'
+      ...(serve &&
+      serve !== 'vercel' &&
+      serve !== 'netlify' &&
+      serve !== 'cloudflare'
         ? [
             rscServePlugin({
               ...config,
@@ -823,9 +827,7 @@ export async function build(options: {
   await buildDeploy(rootDir, config);
   delete platformObject.buildOptions.unstable_phase;
 
-  if (options.deploy === 'cloudflare') {
-    await emitCloudflareOutput(rootDir, config, DIST_SERVE_JS);
-  } else if (options.deploy === 'partykit') {
+  if (options.deploy === 'partykit') {
     await emitPartyKitOutput(rootDir, config, DIST_SERVE_JS);
   } else if (options.deploy === 'aws-lambda') {
     await emitAwsLambdaOutput(config);
