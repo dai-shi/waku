@@ -41,14 +41,30 @@ const srcServeFile = decodeFilePathFromAbsolute(
   ),
 );
 
+const getFiles = (dir: string, files: string[] = []): string[] => {
+  const entries = readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      getFiles(fullPath, files);
+    } else {
+      files.push(fullPath);
+    }
+  }
+  return files;
+};
+
 const WORKER_JS_NAME = '_worker.js';
 const ROUTES_JSON_NAME = '_routes.json';
+const HEADERS_NAME = '_headers';
 
 type StaticRoutes = { version: number; include: string[]; exclude: string[] };
 
 export function deployCloudflarePlugin(opts: {
   srcDir: string;
   distDir: string;
+  rscPath: string;
+  privateDir: string;
 }): Plugin {
   const platformObject = unstable_getPlatformObject();
   let rootDir: string;
@@ -120,22 +136,36 @@ export default {
       const routesFile = path.join(outDir, ROUTES_JSON_NAME);
       const publicDir = path.join(outDir, WORKER_JS_NAME, DIST_PUBLIC);
       if (!existsSync(path.join(publicDir, ROUTES_JSON_NAME))) {
-        const staticPaths: string[] = [];
-        const paths = readdirSync(publicDir, {
-          withFileTypes: true,
-        });
+        // exclude strategy
+        const staticPaths: string[] = ['/assets/*'];
+        const paths = getFiles(publicDir);
         for (const p of paths) {
-          if (p.isDirectory()) {
-            const entry = `/${p.name}/*`;
-            if (!staticPaths.includes(entry)) {
-              staticPaths.push(entry);
-            }
-          } else {
-            if (p.name === WORKER_JS_NAME) {
-              return;
-            }
-            staticPaths.push(`/${p.name}`);
+          const basePath = path.dirname(p.replace(publicDir, '')) || '/';
+          const name = path.basename(p);
+          const entry =
+            name === 'index.html'
+              ? basePath + (basePath !== '/' ? '/' : '')
+              : path.join(basePath, name.replace(/\.html$/, ''));
+          if (
+            entry.startsWith('/assets/') ||
+            entry.startsWith('/' + WORKER_JS_NAME + '/') ||
+            entry === '/' + WORKER_JS_NAME ||
+            entry === '/' + ROUTES_JSON_NAME ||
+            entry === '/' + HEADERS_NAME
+          ) {
+            continue;
           }
+          if (!staticPaths.includes(entry)) {
+            staticPaths.push(entry);
+          }
+        }
+        const MAX_CLOUDFLARE_RULES = 100;
+        if (staticPaths.length + 1 > MAX_CLOUDFLARE_RULES) {
+          throw new Error(
+            `The number of static paths exceeds the limit of ${MAX_CLOUDFLARE_RULES}. ` +
+              `You need to create a custom ${ROUTES_JSON_NAME} file in the public folder. ` +
+              `See https://developers.cloudflare.com/pages/functions/routing/#functions-invocation-routes`,
+          );
         }
         const staticRoutes: StaticRoutes = {
           version: 1,
