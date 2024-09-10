@@ -48,22 +48,21 @@ import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscEntriesPlugin } from '../plugins/vite-plugin-rsc-entries.js';
-import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
-import { emitVercelOutput } from './output-vercel.js';
-import { emitNetlifyOutput } from './output-netlify.js';
-import { emitCloudflareOutput } from './output-cloudflare.js';
-import { emitPartyKitOutput } from './output-partykit.js';
-import { emitAwsLambdaOutput } from './output-aws-lambda.js';
 import {
   DIST_ENTRIES_JS,
-  DIST_SERVE_JS,
   DIST_PUBLIC,
   DIST_ASSETS,
   DIST_SSR,
 } from './constants.js';
+import { deployVercelPlugin } from '../plugins/vite-plugin-deploy-vercel.js';
+import { deployNetlifyPlugin } from '../plugins/vite-plugin-deploy-netlify.js';
+import { deployCloudflarePlugin } from '../plugins/vite-plugin-deploy-cloudflare.js';
+import { deployDenoPlugin } from '../plugins/vite-plugin-deploy-deno.js';
+import { deployPartykitPlugin } from '../plugins/vite-plugin-deploy-partykit.js';
+import { deployAwsLambdaPlugin } from '../plugins/vite-plugin-deploy-aws-lambda.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -83,6 +82,15 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   }
   defaultHandler(warning);
 };
+
+const deployPlugins = (config: ResolvedConfig) => [
+  deployVercelPlugin(config),
+  deployNetlifyPlugin(config),
+  deployCloudflarePlugin(config),
+  deployDenoPlugin(config),
+  deployPartykitPlugin(config),
+  deployAwsLambdaPlugin(config),
+];
 
 const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   const wakuClientDist = decodeFilePathFromAbsolute(
@@ -183,14 +191,6 @@ const buildServerBundle = async (
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
   serverModuleFiles: Record<string, string>,
-  serve:
-    | 'vercel'
-    | 'netlify'
-    | 'cloudflare'
-    | 'partykit'
-    | 'deno'
-    | 'aws-lambda'
-    | false,
   isNodeCompatible: boolean,
   partial: boolean,
 ) => {
@@ -237,22 +237,7 @@ const buildServerBundle = async (
           ),
         },
       }),
-      ...(serve
-        ? [
-            rscServePlugin({
-              ...config,
-              distServeJs: DIST_SERVE_JS,
-              distPublic: DIST_PUBLIC,
-              srcServeFile: decodeFilePathFromAbsolute(
-                joinPath(
-                  fileURLToFilePath(import.meta.url),
-                  `../serve-${serve}.js`,
-                ),
-              ),
-              serve,
-            }),
-          ]
-        : []),
+      ...deployPlugins(config),
     ],
     ssr: isNodeCompatible
       ? {
@@ -670,6 +655,51 @@ export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
   await appendFile(distEntriesFile, code);
 };
 
+// For Deploy
+const buildDeploy = async (rootDir: string, config: ResolvedConfig) => {
+  const DUMMY = 'dummy-entry';
+  await buildVite({
+    plugins: [
+      {
+        // FIXME This is too hacky. There must be a better way.
+        name: 'dummy-entry-plugin',
+        resolveId(source) {
+          if (source === DUMMY) {
+            return source;
+          }
+        },
+        load(id) {
+          if (id === DUMMY) {
+            return '';
+          }
+        },
+        generateBundle(_options, bundle) {
+          Object.entries(bundle).forEach(([key, value]) => {
+            if (value.name === DUMMY) {
+              delete bundle[key];
+            }
+          });
+        },
+      },
+      ...deployPlugins(config),
+    ],
+    publicDir: false,
+    build: {
+      emptyOutDir: false,
+      ssr: true,
+      rollupOptions: {
+        onwarn: (warning, warn) => {
+          if (!warning.message.startsWith('Generated an empty chunk:')) {
+            warn(warning);
+          }
+        },
+        input: { [DUMMY]: DUMMY },
+      },
+      outDir: joinPath(rootDir, config.distDir),
+    },
+  });
+};
+
 export async function build(options: {
   config: Config;
   env?: Record<string, string>;
@@ -700,8 +730,10 @@ export async function build(options: {
   platformObject.buildOptions ||= {};
   platformObject.buildOptions.deploy = options.deploy;
 
+  platformObject.buildOptions.unstable_phase = 'analyzeEntries';
   const { clientEntryFiles, serverEntryFiles, serverModuleFiles } =
     await analyzeEntries(rootDir, config);
+  platformObject.buildOptions.unstable_phase = 'buildServerBundle';
   const serverBuildOutput = await buildServerBundle(
     rootDir,
     env,
@@ -709,15 +741,10 @@ export async function build(options: {
     clientEntryFiles,
     serverEntryFiles,
     serverModuleFiles,
-    (options.deploy === 'vercel-serverless' ? 'vercel' : false) ||
-      (options.deploy === 'netlify-functions' ? 'netlify' : false) ||
-      (options.deploy === 'cloudflare' ? 'cloudflare' : false) ||
-      (options.deploy === 'partykit' ? 'partykit' : false) ||
-      (options.deploy === 'deno' ? 'deno' : false) ||
-      (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
     isNodeCompatible,
     !!options.partial,
   );
+  platformObject.buildOptions.unstable_phase = 'buildSsrBundle';
   await buildSsrBundle(
     rootDir,
     env,
@@ -728,6 +755,7 @@ export async function build(options: {
     isNodeCompatible,
     !!options.partial,
   );
+  platformObject.buildOptions.unstable_phase = 'buildClientBundle';
   const clientBuildOutput = await buildClientBundle(
     rootDir,
     env,
@@ -737,6 +765,7 @@ export async function build(options: {
     serverBuildOutput,
     !!options.partial,
   );
+  delete platformObject.buildOptions.unstable_phase;
 
   const distEntries = await import(filePathToFileURL(distEntriesFile));
 
@@ -763,27 +792,9 @@ export async function build(options: {
     clientBuildOutput,
   );
 
-  if (options.deploy?.startsWith('vercel-')) {
-    await emitVercelOutput(
-      rootDir,
-      config,
-      DIST_SERVE_JS,
-      options.deploy.slice('vercel-'.length) as 'static' | 'serverless',
-    );
-  } else if (options.deploy?.startsWith('netlify-')) {
-    await emitNetlifyOutput(
-      rootDir,
-      config,
-      DIST_SERVE_JS,
-      options.deploy.slice('netlify-'.length) as 'static' | 'functions',
-    );
-  } else if (options.deploy === 'cloudflare') {
-    await emitCloudflareOutput(rootDir, config, DIST_SERVE_JS);
-  } else if (options.deploy === 'partykit') {
-    await emitPartyKitOutput(rootDir, config, DIST_SERVE_JS);
-  } else if (options.deploy === 'aws-lambda') {
-    await emitAwsLambdaOutput(config);
-  }
+  platformObject.buildOptions.unstable_phase = 'buildDeploy';
+  await buildDeploy(rootDir, config);
+  delete platformObject.buildOptions.unstable_phase;
 
   await appendFile(
     distEntriesFile,
