@@ -173,5 +173,5 @@ type PlatformObject = {
 
 // TODO tentative name
 export function unstable_getPlatformObject(): PlatformObject {
-  return (globalThis as any).__WAKU_PLATFORM_OBJECT__ as PlatformObject;
+  return (globalThis as any).__WAKU_PLATFORM_OBJECT__;
 }
