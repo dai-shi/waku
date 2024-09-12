@@ -55,6 +55,12 @@
       "rules": {
         "import/no-unresolved": "off"
       }
+    },
+    {
+      "files": ["packages/waku/src/lib/plugins/**/*.ts"],
+      "rules": {
+        "react/no-is-mounted": "off"
+      }
     }
   ]
 }
