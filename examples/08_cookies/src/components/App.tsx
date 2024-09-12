@@ -12,7 +12,8 @@ const InternalAsyncComponent = async () => {
   if (val1 !== val2) {
     throw new Error('Cache not working');
   }
-  console.log(getCustomContext());
+  // console.log(getCustomContext()); // fails when it's sent to the browser
+  console.log(Object.keys(getCustomContext()));
   return null;
 };
 
