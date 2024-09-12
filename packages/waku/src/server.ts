@@ -169,9 +169,9 @@ type PlatformObject = {
   };
 } & Record<string, unknown>;
 
-const platformObject: PlatformObject = {};
+(globalThis as any).__WAKU_PLATFORM_OBJECT__ ||= {};
 
 // TODO tentative name
 export function unstable_getPlatformObject(): PlatformObject {
-  return platformObject;
+  return (globalThis as any).__WAKU_PLATFORM_OBJECT__;
 }
