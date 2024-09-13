@@ -80,5 +80,6 @@ export function fsRouter(
         });
       }
     }
+    return []; // TODO this type support for fsRouter pages
   });
 }

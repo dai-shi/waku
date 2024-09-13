@@ -19,22 +19,64 @@ import { createPages } from 'waku';
 import { RootLayout } from './templates/root-layout';
 import { HomePage } from './templates/home-page';
 
-export default createPages(async ({ createPage, createLayout }) => {
+const pages = createPages(async ({ createPage, createLayout }) => [
   // Create root layout
   createLayout({
     render: 'static',
     path: '/',
     component: RootLayout,
-  });
+  }),
 
   // Create home page
   createPage({
     render: 'dynamic',
     path: '/',
     component: HomePage,
-  });
-});
+  }),
+]);
+
+export default pages;
 ```
+
+### Router Paths Type Safety
+
+Waku provides inference for the router paths when created pages are returned from the callback passed into `createPages`. The following example shows how a minimal example for how to setup the router paths type safety.
+
+```tsx
+// ./src/entries.tsx
+import { createPages } from 'waku';
+import type { PathsForPages } from 'waku/router';
+
+import { HomePage } from './templates/home-page';
+
+const pages = createPages(async ({ createPage, createLayout }) => [
+  // Create root layout
+  createLayout({
+    render: 'static',
+    path: '/',
+    component: RootLayout,
+  }),
+
+  // Create home page
+  createPage({
+    render: 'dynamic',
+    path: '/',
+    component: HomePage,
+  }),
+]);
+
+declare module 'waku/router' {
+  interface RouteConfig {
+    paths: PathsForPages<typeof pages>;
+  }
+}
+
+export default pages;
+```
+
+Once this is done, any `<Link />` component or hook from `waku/router` that uses paths in your app will use this type. In this case, the one valid use would be `<Link to="/" />`, but as you add more pages to the router, this type will grow to include them.
+
+Note: The file-based router paths will be supported in the future with some form of code-generation to get the types from your local page files.
 
 ### Pages
 
@@ -49,21 +91,21 @@ import { createPages } from 'waku';
 import { AboutPage } from './templates/about-page';
 import { BlogIndexPage } from './templates/blog-index-page';
 
-export default createPages(async ({ createPage }) => {
+export default createPages(async ({ createPage }) => [
   // Create about page
   createPage({
     render: 'static',
     path: '/about',
     component: AboutPage,
-  });
+  }),
 
   // Create blog index page
   createPage({
     render: 'static',
     path: '/blog',
     component: BlogIndexPage,
-  });
-});
+  }),
+]);
 ```
 
 #### Segment routes
@@ -79,7 +121,7 @@ import { createPages } from 'waku';
 import { BlogArticlePage } from './templates/blog-article-page';
 import { ProductCategoryPage } from './templates/product-category-page';
 
-export default createPages(async ({ createPage }) => {
+export default createPages(async ({ createPage }) => [
   // Create blog article pages
   // `<BlogArticlePage>` receives `slug` prop
   createPage({
@@ -87,7 +129,7 @@ export default createPages(async ({ createPage }) => {
     path: '/blog/[slug]',
     staticPaths: ['introducing-waku', 'introducing-create-pages'],
     component: BlogArticlePage,
-  });
+  }),
 
   // Create product category pages
   // `<ProductCategoryPage>` receives `category` prop
@@ -95,8 +137,8 @@ export default createPages(async ({ createPage }) => {
     render: 'dynamic',
     path: '/shop/[category]',
     component: ProductCategoryPage,
-  });
-});
+  }),
+]);
 ```
 
 Static paths (or other values) could also be generated programmatically.
@@ -111,12 +153,14 @@ import { BlogArticlePage } from './templates/blog-article-page';
 export default createPages(async ({ createPage }) => {
   const blogPaths = await getBlogPaths();
 
-  createPage({
-    render: 'static',
-    path: '/blog/[slug]',
-    staticPaths: blogPaths,
-    component: BlogArticlePage,
-  });
+  return [
+    createPage({
+      render: 'static',
+      path: '/blog/[slug]',
+      staticPaths: blogPaths,
+      component: BlogArticlePage,
+    }),
+  ];
 });
 ```
 
@@ -130,15 +174,15 @@ import { createPages } from 'waku';
 
 import { ProductDetailPage } from './templates/product-detail-page';
 
-export default createPages(async ({ createPage }) => {
+export default createPages(async ({ createPage }) => [
   // Create product detail pages
   // `<ProductDetailPage>` receives `category` and `product` props
   createPage({
     render: 'dynamic',
     path: '/shop/[category]/[product]',
     component: ProductDetailPage,
-  });
-});
+  }),
+]);
 ```
 
 For static prerendering of nested segment routes, the `staticPaths` array is instead composed of ordered arrays.
@@ -149,7 +193,7 @@ import { createPages } from 'waku';
 
 import { ProductDetailPage } from './templates/product-detail-page';
 
-export default createPages(async ({ createPage }) => {
+export default createPages(async ({ createPage }) => [
   // Create product detail pages
   // `<ProductDetailPage>` receives `category` and `product` props
   createPage({
@@ -160,8 +204,8 @@ export default createPages(async ({ createPage }) => {
       ['some-category', 'another-product'],
     ],
     component: ProductDetailPage,
-  });
-});
+  }),
+]);
 ```
 
 #### Catch-all routes
@@ -176,7 +220,7 @@ import { createPages } from 'waku';
 
 import { DashboardPage } from './templates/dashboard-page';
 
-export default createPages(async ({ createPage }) => {
+export default createPages(async ({ createPage }) => [
   // Create account dashboard
   // `<DashboardPage>` receives `catchAll` prop (string[])
   createPage({
@@ -184,7 +228,7 @@ export default createPages(async ({ createPage }) => {
     path: '/app/[...catchAll]',
     component: DashboardPage,
   });
-});
+]);
 ```
 
 ### Layouts
@@ -201,14 +245,14 @@ import { createPages } from 'waku';
 
 import { RootLayout } from './templates/root-layout';
 
-export default createPages(async ({ createLayout }) => {
+export default createPages(async ({ createLayout }) => [
   // Add a global header and footer
   createLayout({
     render: 'static',
     path: '/',
     component: RootLayout,
-  });
-});
+  }),
+]);
 ```
 
 ```tsx
@@ -255,14 +299,14 @@ import { createPages } from 'waku';
 
 import { BlogLayout } from './templates/blog-layout';
 
-export default createPages(async ({ createLayout }) => {
+export default createPages(async ({ createLayout }) => [
   // Add a sidebar to the blog index and blog article pages
   createLayout({
     render: 'static',
     path: '/blog',
     component: BlogLayout,
-  });
-});
+  }),
+]);
 ```
 
 ```tsx
