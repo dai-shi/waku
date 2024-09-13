@@ -1,7 +1,7 @@
 {
   "name": "waku",
   "description": "⛩️ The minimal React framework",
-  "version": "0.21.1",
+  "version": "0.21.2",
   "type": "module",
   "author": "Daishi Kato",
   "homepage": "https://waku.gg",
