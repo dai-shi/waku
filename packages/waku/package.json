@@ -34,6 +34,10 @@
       "types": "./dist/internals.d.ts",
       "default": "./dist/internals.js"
     },
+    "./hono": {
+      "types": "./dist/hono.d.ts",
+      "default": "./dist/hono.js"
+    },
     "./client": {
       "types": "./dist/client.d.ts",
       "default": "./dist/client.js"

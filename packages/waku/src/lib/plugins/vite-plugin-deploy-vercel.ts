@@ -6,27 +6,18 @@ import { unstable_getPlatformObject } from '../../server.js';
 import { SRC_ENTRIES } from '../constants.js';
 import { DIST_PUBLIC } from '../builder/constants.js';
 
-export function deployVercelPlugin(opts: {
-  srcDir: string;
-  distDir: string;
-  basePath: string;
-  rscPath: string;
-  privateDir: string;
-}): Plugin {
-  const platformObject = unstable_getPlatformObject();
-  let rootDir: string;
-  const serveJs = `${opts.srcDir}/serve-vercel.js`;
-  const serveJsContent = `
+const getServeJsContent = (
+  distDir: string,
+  distPublic: string,
+  srcEntriesFile: string,
+) => `
 import path from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { Hono } from 'hono';
-import { getRequestListener } from '@hono/node-server';
+import { runner, Hono, getRequestListener } from 'waku/hono';
 
-import { runner } from '../hono/runner.js';
-
-const distDir = '${opts.distDir}';
-const publicDir = '${DIST_PUBLIC}';
-const loadEntries = () => import('./${SRC_ENTRIES}');
+const distDir = '${distDir}';
+const publicDir = '${distPublic}';
+const loadEntries = () => import('${srcEntriesFile}');
 
 const app = new Hono();
 app.use('*', runner({ cmd: 'start', loadEntries, env: process.env }));
@@ -38,12 +29,21 @@ app.notFound((c) => {
   }
   return c.text('404 Not Found', 404);
 });
-const requestListener = getRequestListener(app.fetch);
 
-export default function handler(req, res) {
-  return requestListener(req, res);
-}
+export default getRequestListener(app.fetch);
 `;
+
+export function deployVercelPlugin(opts: {
+  srcDir: string;
+  distDir: string;
+  basePath: string;
+  rscPath: string;
+  privateDir: string;
+}): Plugin {
+  const platformObject = unstable_getPlatformObject();
+  let rootDir: string;
+  let entriesFile: string;
+  const serveJs = 'serve-vercel.js';
   return {
     name: 'deploy-vercel-plugin',
     config(viteConfig) {
@@ -56,21 +56,22 @@ export default function handler(req, res) {
       }
       const { input } = viteConfig.build?.rollupOptions ?? {};
       if (input && !(typeof input === 'string') && !(input instanceof Array)) {
-        input[serveJs.replace(/\.js$/, '')] = serveJs;
-      }
-    },
-    resolveId(source) {
-      if (source === serveJs) {
-        return source;
-      }
-    },
-    load(id) {
-      if (id === serveJs) {
-        return serveJsContent;
+        input[serveJs.replace(/\.js$/, '')] = `${opts.srcDir}/${serveJs}`;
       }
     },
     configResolved(config) {
       rootDir = config.root;
+      entriesFile = `${rootDir}/${opts.srcDir}/${SRC_ENTRIES}`;
+    },
+    resolveId(source) {
+      if (source === `${opts.srcDir}/${serveJs}`) {
+        return source;
+      }
+    },
+    load(id) {
+      if (id === `${opts.srcDir}/${serveJs}`) {
+        return getServeJsContent(opts.distDir, DIST_PUBLIC, entriesFile);
+      }
     },
     closeBundle() {
       const { deploy, unstable_phase } = platformObject.buildOptions || {};
