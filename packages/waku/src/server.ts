@@ -147,8 +147,11 @@ export function unstable_getHeaders(): Record<string, string> {
   >;
 }
 
-type PlatformObject = {
-  buildData?: Record<string, unknown>; // must be JSON serializable
+type PlatformObject<
+  T = Record<string, unknown>,
+  BuildData = Record<string, unknown>,
+> = {
+  buildData?: BuildData; // must be JSON serializable
   buildOptions?: {
     deploy?:
       | 'vercel-static'
@@ -167,11 +170,13 @@ type PlatformObject = {
       | 'buildClientBundle'
       | 'buildDeploy';
   };
-} & Record<string, unknown>;
+} & T;
 
 (globalThis as any).__WAKU_PLATFORM_OBJECT__ ||= {};
 
 // TODO tentative name
-export function unstable_getPlatformObject(): PlatformObject {
+export function unstable_getPlatformObject<
+  T = Record<string, unknown>,
+>(): PlatformObject<T> {
   return (globalThis as any).__WAKU_PLATFORM_OBJECT__;
 }
