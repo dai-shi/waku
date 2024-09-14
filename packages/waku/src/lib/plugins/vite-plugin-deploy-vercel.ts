@@ -13,7 +13,7 @@ const getServeJsContent = (
 ) => `
 import path from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { runner, Hono, getRequestListener } from 'waku/hono';
+import { runner, Hono, getRequestListener } from 'waku/unstable_hono';
 
 const distDir = '${distDir}';
 const publicDir = '${distPublic}';
