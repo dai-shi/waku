@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 
 export const useOnEscape = (handler: () => void) => {
   const handleEscape = useCallback(
@@ -42,4 +42,25 @@ export const useOnClickOutside = (
       document.removeEventListener('touchstart', listener);
     };
   }, [handler, node]);
+};
+
+export const useInterval = (callback: () => void, delay: number) => {
+  const intervalRef = useRef<any>(null);
+
+  const savedCallback = useRef(callback);
+
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+
+  useEffect(() => {
+    const tick = () => savedCallback.current();
+
+    if (typeof delay === 'number') {
+      intervalRef.current = window.setInterval(tick, delay);
+      return () => window.clearInterval(intervalRef.current);
+    }
+  }, [delay]);
+
+  return intervalRef;
 };

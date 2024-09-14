@@ -8,7 +8,7 @@ description: The minimal Waku API for library authors.
 
 ### Server API
 
-To use React Server Components in Waku, you need to create an `entries.ts` file in the project root directory with a `renderEntries` function that returns a server component module.
+To use React Server Components in Waku, you need to create an `entries.tsx` file in the project root directory with a `renderEntries` function that returns a server component module.
 
 ```tsx
 import { lazy } from 'react';
@@ -31,6 +31,8 @@ The `id` parameter is the ID of the React Server Component that you want to load
 ### Client API
 
 To render a React Server Component on the client, you can use the `Root` and `Slot` components from `waku/client` with the RSC ID to create a wrapper component.
+
+This file should be `./src/main.tsx`.
 
 ```tsx
 import { createRoot } from 'react-dom/client';
@@ -64,7 +66,7 @@ const Component = () => {
 ### Additional Server API
 
 In addition to the `renderEntries` function, you can also optionally specify `getBuildConfig` function in
-`entries.ts`.
+`entries.tsx`.
 
 ```tsx
 import { defineEntries } from 'waku/server';

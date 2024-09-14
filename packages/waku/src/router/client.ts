@@ -31,6 +31,11 @@ import {
   LOCATION_ID,
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
+import type { RouteConfig } from './base-types.js';
+
+type InferredPaths = RouteConfig extends { paths: infer UserPaths }
+  ? UserPaths
+  : string;
 
 declare global {
   interface ImportMeta {
@@ -82,7 +87,7 @@ export function useRouter_UNSTABLE() {
   }
   const { route, changeRoute, prefetchRoute } = router;
   const push = useCallback(
-    (to: string) => {
+    (to: InferredPaths) => {
       const url = new URL(to, window.location.href);
       window.history.pushState(
         {
@@ -97,7 +102,7 @@ export function useRouter_UNSTABLE() {
     [changeRoute],
   );
   const replace = useCallback(
-    (to: string) => {
+    (to: InferredPaths) => {
       const url = new URL(to, window.location.href);
       window.history.replaceState(window.history.state, '', url);
       changeRoute(parseRoute(url));
@@ -135,7 +140,7 @@ export function useRouter_UNSTABLE() {
 }
 
 export type LinkProps = {
-  to: string;
+  to: InferredPaths;
   pending?: ReactNode;
   notPending?: ReactNode;
   children: ReactNode;

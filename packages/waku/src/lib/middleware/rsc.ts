@@ -28,7 +28,7 @@ export const rsc: Middleware = (options) => {
       const { headers } = ctx.req;
       try {
         const input = decodeInput(
-          ctx.req.url.pathname.slice(basePrefix.length),
+          decodeURI(ctx.req.url.pathname.slice(basePrefix.length)),
         );
         const args: RenderRscArgs = {
           env,

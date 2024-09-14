@@ -1,5 +1,5 @@
-import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { existsSync, writeFileSync } from 'node:fs';
 import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 
@@ -7,8 +7,15 @@ import type { Plugin } from 'vite';
 // Maybe we could put in vite config object?
 import { SRC_ENTRIES } from './vite-plugin-rsc-managed.js';
 
+import { unstable_getPlatformObject } from '../../server.js';
 import { EXTENSIONS } from '../config.js';
-import { extname } from '../utils/path.js';
+import {
+  decodeFilePathFromAbsolute,
+  extname,
+  fileURLToFilePath,
+  joinPath,
+} from '../utils/path.js';
+import { DIST_SERVE_JS, DIST_PUBLIC } from '../builder/constants.js';
 
 const resolveFileName = (fname: string) => {
   for (const ext of EXTENSIONS) {
@@ -20,23 +27,26 @@ const resolveFileName = (fname: string) => {
   return fname; // returning the default one
 };
 
-export function rscServePlugin(opts: {
+const srcServeFile = decodeFilePathFromAbsolute(
+  joinPath(
+    fileURLToFilePath(import.meta.url),
+    '../../builder/serve-aws-lambda.js',
+  ),
+);
+
+export function deployAwsLambdaPlugin(opts: {
   srcDir: string;
-  distServeJs: string;
   distDir: string;
-  distPublic: string;
-  srcServeFile: string;
-  serve:
-    | 'vercel'
-    | 'netlify'
-    | 'cloudflare'
-    | 'partykit'
-    | 'deno'
-    | 'aws-lambda';
 }): Plugin {
+  const platformObject = unstable_getPlatformObject();
   return {
-    name: 'rsc-serve-plugin',
+    name: 'deploy-aws-lambda-plugin',
     config(viteConfig) {
+      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      if (unstable_phase !== 'buildServerBundle' || deploy !== 'aws-lambda') {
+        return;
+      }
+
       // FIXME This seems too hacky (The use of viteConfig.root, '.', path.resolve and resolveFileName)
       const entriesFile = normalizePath(
         resolveFileName(
@@ -49,28 +59,24 @@ export function rscServePlugin(opts: {
       );
       const { input } = viteConfig.build?.rollupOptions ?? {};
       if (input && !(typeof input === 'string') && !(input instanceof Array)) {
-        input[opts.distServeJs.replace(/\.js$/, '')] = opts.srcServeFile;
+        input[DIST_SERVE_JS.replace(/\.js$/, '')] = srcServeFile;
       }
       viteConfig.define = {
         ...viteConfig.define,
         'import.meta.env.WAKU_ENTRIES_FILE': JSON.stringify(entriesFile),
-        'import.meta.env.WAKU_CONFIG_DIST_DIR': JSON.stringify(opts.distDir),
-        'import.meta.env.WAKU_CONFIG_PUBLIC_DIR': JSON.stringify(
-          opts.distPublic,
-        ),
+        'import.meta.env.WAKU_CONFIG_PUBLIC_DIR': JSON.stringify(DIST_PUBLIC),
       };
-      if (opts.serve === 'partykit') {
-        viteConfig.build ||= {};
-        viteConfig.build.rollupOptions ||= {};
-        viteConfig.build.rollupOptions.external ||= [];
-        if (Array.isArray(viteConfig.build.rollupOptions.external)) {
-          viteConfig.build.rollupOptions.external.push('hono');
-        } else {
-          throw new Error(
-            'Unsupported: build.rollupOptions.external is not an array',
-          );
-        }
+    },
+    closeBundle() {
+      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      if (unstable_phase !== 'buildDeploy' || deploy !== 'aws-lambda') {
+        return;
       }
+
+      writeFileSync(
+        path.join(opts.distDir, 'package.json'),
+        JSON.stringify({ type: 'module' }, null, 2),
+      );
     },
   };
 }

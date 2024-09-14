@@ -222,7 +222,7 @@ export const renderHtml = async (
     loadClientModule<typeof WakuClientType>('waku-client'),
   ]);
 
-  const ssrConfig = await getSsrConfigForHtml?.(pathname, searchParams);
+  const ssrConfig = await getSsrConfigForHtml(pathname, searchParams);
   if (!ssrConfig) {
     return null;
   }
@@ -249,7 +249,7 @@ export const renderHtml = async (
                   .slice(config.basePath.length)
                   .split('?')[0]!;
                 const isFsPath = file.startsWith('@fs/');
-                file = '/' + (isFsPath ? file.slice('@fs/'.length) : file);
+                file = isFsPath ? file.slice('@fs'.length) : file;
                 const fileWithAbsolutePath = isFsPath
                   ? file
                   : encodeFilePathToAbsolute(joinPath(opts.rootDir, file));
