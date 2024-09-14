@@ -69,6 +69,20 @@ export function deployPartykitPlugin(opts: {
     },
     configResolved(config) {
       rootDir = config.root;
+      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      if (
+        (unstable_phase !== 'buildServerBundle' &&
+          unstable_phase !== 'buildSsrBundle') ||
+        deploy !== 'cloudflare'
+      ) {
+        return;
+      }
+      config.ssr.target = 'webworker';
+      config.ssr.resolve ||= {};
+      config.ssr.resolve.conditions ||= [];
+      config.ssr.resolve.conditions.push('worker');
+      config.ssr.resolve.externalConditions ||= [];
+      config.ssr.resolve.externalConditions.push('worker');
     },
     closeBundle() {
       const { deploy, unstable_phase } = platformObject.buildOptions || {};
