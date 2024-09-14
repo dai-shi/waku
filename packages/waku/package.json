@@ -30,9 +30,13 @@
       "types": "./dist/middleware/*.d.ts",
       "default": "./dist/middleware/*.js"
     },
-    "./internals": {
-      "types": "./dist/internals.d.ts",
-      "default": "./dist/internals.js"
+    "./unstable_internals": {
+      "types": "./dist/unstable_internals.d.ts",
+      "default": "./dist/unstable_internals.js"
+    },
+    "./unstable_hono": {
+      "types": "./dist/unstable_hono.d.ts",
+      "default": "./dist/unstable_hono.js"
     },
     "./client": {
       "types": "./dist/client.d.ts",

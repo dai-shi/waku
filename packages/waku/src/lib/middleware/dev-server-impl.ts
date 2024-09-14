@@ -6,6 +6,7 @@ import viteReact from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../../server.js';
 import { resolveConfig } from '../config.js';
+import { SRC_MAIN, SRC_ENTRIES } from '../constants.js';
 import {
   joinPath,
   fileURLToFilePath,
@@ -22,12 +23,7 @@ import { rscHmrPlugin, hotUpdate } from '../plugins/vite-plugin-rsc-hmr.js';
 import type { HotUpdatePayload } from '../plugins/vite-plugin-rsc-hmr.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
-import {
-  // HACK depending on these constants is not ideal
-  SRC_ENTRIES,
-  SRC_MAIN,
-  rscManagedPlugin,
-} from '../plugins/vite-plugin-rsc-managed.js';
+import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import type { ClonableModuleNode, Middleware } from './types.js';

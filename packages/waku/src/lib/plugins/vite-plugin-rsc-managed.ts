@@ -1,10 +1,7 @@
 import type { Plugin } from 'vite';
 
-import { EXTENSIONS } from '../config.js';
+import { EXTENSIONS, SRC_MAIN, SRC_ENTRIES } from '../constants.js';
 import { extname, joinPath } from '../utils/path.js';
-
-export const SRC_MAIN = 'main';
-export const SRC_ENTRIES = 'entries';
 
 const stripExt = (fname: string) => {
   const ext = extname(fname);
