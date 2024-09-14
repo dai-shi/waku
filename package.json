@@ -51,7 +51,7 @@
     "examples:prd:24_nesting": "NAME=24_nesting pnpm run examples:prd",
     "website:dev": "(cd packages/website && pnpm run dev)",
     "website:build": "cd packages/website && pnpm run build",
-    "website:vercel": "pnpm run compile && pnpm run website:build && mv packages/website/.vercel/output .vercel/",
+    "website:vercel": "pnpm run compile && pnpm run website:build --with-vercel-static && mv packages/website/.vercel/output .vercel/",
     "website:prd": "pnpm run website:build && (cd packages/website && pnpm start)"
   },
   "prettier": {
