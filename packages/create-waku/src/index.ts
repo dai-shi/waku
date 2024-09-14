@@ -16,7 +16,7 @@ import {
   parseExampleOption,
   downloadAndExtract,
 } from './helpers/example-option.js';
-import { spawn } from 'node:child_process';
+import { spawn } from 'cross-spawn';
 
 const userAgent = process.env.npm_config_user_agent || '';
 const packageManager = /pnpm/.test(userAgent)
@@ -212,7 +212,6 @@ async function init() {
 
   const installProcess = spawn(packageManager, ['install'], {
     stdio: 'inherit',
-    shell: process.platform === 'win32',
   });
 
   installProcess.on('close', (code) => {
