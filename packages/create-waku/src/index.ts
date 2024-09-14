@@ -16,7 +16,7 @@ import {
   parseExampleOption,
   downloadAndExtract,
 } from './helpers/example-option.js';
-import { spawn } from 'cross-spawn';
+import { spawn } from 'node:child_process';
 
 const userAgent = process.env.npm_config_user_agent || '';
 const packageManager = /pnpm/.test(userAgent)
