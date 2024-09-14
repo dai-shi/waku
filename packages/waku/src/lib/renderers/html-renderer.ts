@@ -6,6 +6,7 @@ import { injectRSCPayload } from 'rsc-html-stream/server';
 
 import type * as WakuClientType from '../../client.js';
 import type { EntriesPrd } from '../../server.js';
+import { SRC_MAIN } from '../constants.js';
 import type { ResolvedConfig } from '../config.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import {
@@ -17,7 +18,6 @@ import {
 import { encodeInput, hasStatusCode } from './utils.js';
 
 // HACK depending on these constants is not ideal
-import { SRC_MAIN } from '../plugins/vite-plugin-rsc-managed.js';
 import { DEFAULT_HTML_HEAD } from '../plugins/vite-plugin-rsc-index.js';
 
 export const CLIENT_MODULE_MAP = {

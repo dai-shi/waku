@@ -1,7 +1,7 @@
 import type { Plugin, ViteDevServer } from 'vite';
 import * as swc from '@swc/core';
 
-import { EXTENSIONS } from '../config.js';
+import { EXTENSIONS } from '../constants.js';
 import { extname } from '../utils/path.js';
 import { parseOpts } from '../utils/swc.js';
 import type { HotUpdatePayload } from './vite-plugin-rsc-hmr.js';

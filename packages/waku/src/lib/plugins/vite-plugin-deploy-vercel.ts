@@ -1,35 +1,10 @@
 import path from 'node:path';
 import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 
-// HACK: Depending on a different plugin isn't ideal.
-// Maybe we could put in vite config object?
-import { SRC_ENTRIES } from './vite-plugin-rsc-managed.js';
-
 import { unstable_getPlatformObject } from '../../server.js';
-import { EXTENSIONS } from '../config.js';
-import {
-  decodeFilePathFromAbsolute,
-  extname,
-  fileURLToFilePath,
-  joinPath,
-} from '../utils/path.js';
-import { DIST_SERVE_JS, DIST_PUBLIC } from '../builder/constants.js';
-
-const resolveFileName = (fname: string) => {
-  for (const ext of EXTENSIONS) {
-    const resolvedName = fname.slice(0, -extname(fname).length) + ext;
-    if (existsSync(resolvedName)) {
-      return resolvedName;
-    }
-  }
-  return fname; // returning the default one
-};
-
-const srcServeFile = decodeFilePathFromAbsolute(
-  joinPath(fileURLToFilePath(import.meta.url), '../../builder/serve-vercel.js'),
-);
+import { SRC_ENTRIES } from '../constants.js';
+import { DIST_PUBLIC } from '../builder/constants.js';
 
 export function deployVercelPlugin(opts: {
   srcDir: string;
@@ -40,6 +15,35 @@ export function deployVercelPlugin(opts: {
 }): Plugin {
   const platformObject = unstable_getPlatformObject();
   let rootDir: string;
+  const serveJs = `${opts.srcDir}/serve-vercel.js`;
+  const serveJsContent = `
+import path from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { Hono } from 'hono';
+import { getRequestListener } from '@hono/node-server';
+
+import { runner } from '../hono/runner.js';
+
+const distDir = '${opts.distDir}';
+const publicDir = '${DIST_PUBLIC}';
+const loadEntries = () => import('./${SRC_ENTRIES}');
+
+const app = new Hono();
+app.use('*', runner({ cmd: 'start', loadEntries, env: process.env }));
+app.notFound((c) => {
+  // FIXME better implementation using node stream?
+  const file = path.join(distDir, publicDir, '404.html');
+  if (existsSync(file)) {
+    return c.html(readFileSync(file, 'utf8'), 404);
+  }
+  return c.text('404 Not Found', 404);
+});
+const requestListener = getRequestListener(app.fetch);
+
+export default function handler(req, res) {
+  return requestListener(req, res);
+}
+`;
   return {
     name: 'deploy-vercel-plugin',
     config(viteConfig) {
@@ -50,27 +54,20 @@ export function deployVercelPlugin(opts: {
       ) {
         return;
       }
-
-      // FIXME This seems too hacky (The use of viteConfig.root, '.', path.resolve and resolveFileName)
-      const entriesFile = normalizePath(
-        resolveFileName(
-          path.resolve(
-            viteConfig.root || '.',
-            opts.srcDir,
-            SRC_ENTRIES + '.jsx',
-          ),
-        ),
-      );
       const { input } = viteConfig.build?.rollupOptions ?? {};
       if (input && !(typeof input === 'string') && !(input instanceof Array)) {
-        input[DIST_SERVE_JS.replace(/\.js$/, '')] = srcServeFile;
+        input[serveJs.replace(/\.js$/, '')] = serveJs;
       }
-      viteConfig.define = {
-        ...viteConfig.define,
-        'import.meta.env.WAKU_ENTRIES_FILE': JSON.stringify(entriesFile),
-        'import.meta.env.WAKU_CONFIG_DIST_DIR': JSON.stringify(opts.distDir),
-        'import.meta.env.WAKU_CONFIG_PUBLIC_DIR': JSON.stringify(DIST_PUBLIC),
-      };
+    },
+    resolveId(source) {
+      if (source === serveJs) {
+        return source;
+      }
+    },
+    load(id) {
+      if (id === serveJs) {
+        return serveJsContent;
+      }
     },
     configResolved(config) {
       rootDir = config.root;
@@ -112,7 +109,7 @@ export function deployVercelPlugin(opts: {
         }
         const vcConfigJson = {
           runtime: 'nodejs20.x',
-          handler: `${opts.distDir}/${DIST_SERVE_JS}`,
+          handler: `${opts.distDir}/${serveJs}`,
           launcherType: 'Nodejs',
         };
         writeFileSync(

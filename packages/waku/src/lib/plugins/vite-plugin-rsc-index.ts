@@ -1,8 +1,6 @@
 import type { Plugin } from 'vite';
 
-// HACK Depending on a different plugin isn't ideal.
-// Maybe we could put in vite config object?
-import { SRC_MAIN } from './vite-plugin-rsc-managed.js';
+import { SRC_MAIN } from '../constants.js';
 
 export const DEFAULT_HTML_HEAD = `
 <meta charset="utf-8" />
