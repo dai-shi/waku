@@ -3,12 +3,8 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 
-// HACK: Depending on a different plugin isn't ideal.
-// Maybe we could put in vite config object?
-import { SRC_ENTRIES } from './vite-plugin-rsc-managed.js';
-
 import { unstable_getPlatformObject } from '../../server.js';
-import { EXTENSIONS } from '../config.js';
+import { EXTENSIONS, SRC_ENTRIES } from '../constants.js';
 import {
   decodeFilePathFromAbsolute,
   extname,

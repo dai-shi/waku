@@ -9,7 +9,8 @@ import type { Config } from '../../config.js';
 import { unstable_getPlatformObject } from '../../server.js';
 import type { BuildConfig, EntriesPrd } from '../../server.js';
 import type { ResolvedConfig } from '../config.js';
-import { resolveConfig, EXTENSIONS } from '../config.js';
+import { resolveConfig } from '../config.js';
+import { EXTENSIONS } from '../constants.js';
 import type { PathSpec } from '../utils/path.js';
 import {
   decodeFilePathFromAbsolute,

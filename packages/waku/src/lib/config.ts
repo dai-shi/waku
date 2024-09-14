@@ -29,5 +29,3 @@ export async function resolveConfig(config: Config) {
   };
   return resolvedConfig;
 }
-
-export const EXTENSIONS = ['.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs'];

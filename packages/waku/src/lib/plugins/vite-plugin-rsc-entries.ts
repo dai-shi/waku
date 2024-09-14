@@ -3,10 +3,7 @@ import path from 'node:path';
 import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 
-// HACK Depending on a different plugin isn't ideal.
-// Maybe we could put in vite config object?
-import { SRC_ENTRIES } from './vite-plugin-rsc-managed.js';
-
+import { SRC_ENTRIES } from '../constants.js';
 import { extname, joinPath } from '../utils/path.js';
 
 const stripExt = (fname: string) => {
