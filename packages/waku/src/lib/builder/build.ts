@@ -125,6 +125,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
         fileHashMap,
       }),
       rscManagedPlugin({ ...config, addEntriesToInput: true }),
+      ...deployPlugins(config),
     ],
     ssr: {
       target: 'webworker',
@@ -154,6 +155,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
     plugins: [
       rscAnalyzePlugin({ isClient: true, serverFileSet }),
       rscManagedPlugin(config),
+      ...deployPlugins(config),
     ],
     ssr: {
       target: 'webworker',
@@ -191,7 +193,6 @@ const buildServerBundle = async (
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
   serverModuleFiles: Record<string, string>,
-  isNodeCompatible: boolean,
   partial: boolean,
 ) => {
   const serverBuildOutput = await buildVite({
@@ -239,22 +240,13 @@ const buildServerBundle = async (
       }),
       ...deployPlugins(config),
     ],
-    ssr: isNodeCompatible
-      ? {
-          resolve: {
-            conditions: ['react-server'],
-            externalConditions: ['react-server'],
-          },
-          noExternal: /^(?!node:)/,
-        }
-      : {
-          target: 'webworker',
-          resolve: {
-            conditions: ['react-server', 'worker'],
-            externalConditions: ['react-server', 'worker'],
-          },
-          noExternal: /^(?!node:)/,
-        },
+    ssr: {
+      resolve: {
+        conditions: ['react-server'],
+        externalConditions: ['react-server'],
+      },
+      noExternal: /^(?!node:)/,
+    },
     esbuild: {
       jsx: 'automatic',
     },
@@ -293,7 +285,6 @@ const buildSsrBundle = async (
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
-  isNodeCompatible: boolean,
   partial: boolean,
 ) => {
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
@@ -311,19 +302,11 @@ const buildSsrBundle = async (
       rscPrivatePlugin(config),
       rscManagedPlugin({ ...config, addMainToInput: true }),
       rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
+      ...deployPlugins(config),
     ],
-    ssr: isNodeCompatible
-      ? {
-          noExternal: /^(?!node:)/,
-        }
-      : {
-          target: 'webworker',
-          resolve: {
-            conditions: ['worker'],
-            externalConditions: ['worker'],
-          },
-          noExternal: /^(?!node:)/,
-        },
+    ssr: {
+      noExternal: /^(?!node:)/,
+    },
     esbuild: {
       jsx: 'automatic',
     },
@@ -387,6 +370,7 @@ const buildClientBundle = async (
       rscPrivatePlugin(config),
       rscManagedPlugin({ ...config, addMainToInput: true }),
       rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
+      ...deployPlugins(config),
     ],
     build: {
       emptyOutDir: !partial,
@@ -656,6 +640,7 @@ export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
 };
 
 // For Deploy
+// FIXME Is this a good approach? I wonder if there's something missing.
 const buildDeploy = async (rootDir: string, config: ResolvedConfig) => {
   const DUMMY = 'dummy-entry';
   await buildVite({
@@ -721,10 +706,6 @@ export async function build(options: {
     await resolveViteConfig({}, 'build', 'production', 'production')
   ).root;
   const distEntriesFile = joinPath(rootDir, config.distDir, DIST_ENTRIES_JS);
-  const isNodeCompatible =
-    options.deploy !== 'cloudflare' &&
-    options.deploy !== 'partykit' &&
-    options.deploy !== 'deno';
 
   const platformObject = unstable_getPlatformObject();
   platformObject.buildOptions ||= {};
@@ -741,7 +722,6 @@ export async function build(options: {
     clientEntryFiles,
     serverEntryFiles,
     serverModuleFiles,
-    isNodeCompatible,
     !!options.partial,
   );
   platformObject.buildOptions.unstable_phase = 'buildSsrBundle';
@@ -752,7 +732,6 @@ export async function build(options: {
     clientEntryFiles,
     serverEntryFiles,
     serverBuildOutput,
-    isNodeCompatible,
     !!options.partial,
   );
   platformObject.buildOptions.unstable_phase = 'buildClientBundle';
