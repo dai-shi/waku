@@ -6,6 +6,8 @@ import { unstable_getPlatformObject } from '../../server.js';
 import { SRC_ENTRIES } from '../constants.js';
 import { DIST_PUBLIC } from '../builder/constants.js';
 
+const SERVE_JS = 'serve-vercel.js';
+
 const getServeJsContent = (
   distDir: string,
   distPublic: string,
@@ -43,7 +45,6 @@ export function deployVercelPlugin(opts: {
   const platformObject = unstable_getPlatformObject();
   let rootDir: string;
   let entriesFile: string;
-  const serveJs = 'serve-vercel.js';
   return {
     name: 'deploy-vercel-plugin',
     config(viteConfig) {
@@ -56,7 +57,7 @@ export function deployVercelPlugin(opts: {
       }
       const { input } = viteConfig.build?.rollupOptions ?? {};
       if (input && !(typeof input === 'string') && !(input instanceof Array)) {
-        input[serveJs.replace(/\.js$/, '')] = `${opts.srcDir}/${serveJs}`;
+        input[SERVE_JS.replace(/\.js$/, '')] = `${opts.srcDir}/${SERVE_JS}`;
       }
     },
     configResolved(config) {
@@ -64,12 +65,12 @@ export function deployVercelPlugin(opts: {
       entriesFile = `${rootDir}/${opts.srcDir}/${SRC_ENTRIES}`;
     },
     resolveId(source) {
-      if (source === `${opts.srcDir}/${serveJs}`) {
+      if (source === `${opts.srcDir}/${SERVE_JS}`) {
         return source;
       }
     },
     load(id) {
-      if (id === `${opts.srcDir}/${serveJs}`) {
+      if (id === `${opts.srcDir}/${SERVE_JS}`) {
         return getServeJsContent(opts.distDir, DIST_PUBLIC, entriesFile);
       }
     },
@@ -110,7 +111,7 @@ export function deployVercelPlugin(opts: {
         }
         const vcConfigJson = {
           runtime: 'nodejs20.x',
-          handler: `${opts.distDir}/${serveJs}`,
+          handler: `${opts.distDir}/${SERVE_JS}`,
           launcherType: 'Nodejs',
         };
         writeFileSync(
