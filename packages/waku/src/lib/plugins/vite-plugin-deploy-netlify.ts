@@ -1,34 +1,30 @@
 import path from 'node:path';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 
 import { unstable_getPlatformObject } from '../../server.js';
-import { EXTENSIONS, SRC_ENTRIES } from '../constants.js';
-import {
-  decodeFilePathFromAbsolute,
-  extname,
-  fileURLToFilePath,
-  joinPath,
-} from '../utils/path.js';
-import { DIST_SERVE_JS, DIST_PUBLIC } from '../builder/constants.js';
+import { SRC_ENTRIES } from '../constants.js';
+import { DIST_PUBLIC } from '../builder/constants.js';
 
-const resolveFileName = (fname: string) => {
-  for (const ext of EXTENSIONS) {
-    const resolvedName = fname.slice(0, -extname(fname).length) + ext;
-    if (existsSync(resolvedName)) {
-      return resolvedName;
-    }
+const SERVE_JS = 'serve-netlify.js';
+
+const getServeJsContent = (srcEntriesFile: string) => `
+import { runner, Hono } from 'waku/unstable_hono';
+
+const loadEntries = () => import('${srcEntriesFile}');
+
+const app = new Hono();
+app.use('*', runner({ cmd: 'start', loadEntries, env: process.env }));
+app.notFound((c) => {
+  const notFoundHtml = globalThis.__WAKU_NOT_FOUND_HTML__;
+  if (typeof notFoundHtml === 'string') {
+    return c.html(notFoundHtml, 404);
   }
-  return fname; // returning the default one
-};
+  return c.text('404 Not Found', 404);
+});
 
-const srcServeFile = decodeFilePathFromAbsolute(
-  joinPath(
-    fileURLToFilePath(import.meta.url),
-    '../../builder/serve-netlify.js',
-  ),
-);
+export default async (req, context) => app.fetch(req, { context });
+`;
 
 export function deployNetlifyPlugin(opts: {
   srcDir: string;
@@ -37,6 +33,7 @@ export function deployNetlifyPlugin(opts: {
 }): Plugin {
   const platformObject = unstable_getPlatformObject();
   let rootDir: string;
+  let entriesFile: string;
   return {
     name: 'deploy-netlify-plugin',
     config(viteConfig) {
@@ -47,28 +44,24 @@ export function deployNetlifyPlugin(opts: {
       ) {
         return;
       }
-
-      // FIXME This seems too hacky (The use of viteConfig.root, '.', path.resolve and resolveFileName)
-      const entriesFile = normalizePath(
-        resolveFileName(
-          path.resolve(
-            viteConfig.root || '.',
-            opts.srcDir,
-            SRC_ENTRIES + '.jsx',
-          ),
-        ),
-      );
       const { input } = viteConfig.build?.rollupOptions ?? {};
       if (input && !(typeof input === 'string') && !(input instanceof Array)) {
-        input[DIST_SERVE_JS.replace(/\.js$/, '')] = srcServeFile;
+        input[SERVE_JS.replace(/\.js$/, '')] = `${opts.srcDir}/${SERVE_JS}`;
       }
-      viteConfig.define = {
-        ...viteConfig.define,
-        'import.meta.env.WAKU_ENTRIES_FILE': JSON.stringify(entriesFile),
-      };
     },
     configResolved(config) {
       rootDir = config.root;
+      entriesFile = `${rootDir}/${opts.srcDir}/${SRC_ENTRIES}`;
+    },
+    resolveId(source) {
+      if (source === `${opts.srcDir}/${SERVE_JS}`) {
+        return source;
+      }
+    },
+    load(id) {
+      if (id === `${opts.srcDir}/${SERVE_JS}`) {
+        return getServeJsContent(entriesFile);
+      }
     },
     closeBundle() {
       const { deploy, unstable_phase } = platformObject.buildOptions || {};
@@ -97,7 +90,7 @@ export function deployNetlifyPlugin(opts: {
           path.join(functionsDir, 'serve.js'),
           `
 globalThis.__WAKU_NOT_FOUND_HTML__ = ${JSON.stringify(notFoundHtml)};
-export { default } from '../../${opts.distDir}/${DIST_SERVE_JS}';
+export { default } from '../../${opts.distDir}/${SERVE_JS}';
 export const config = {
   preferStatic: true,
   path: ['/', '/*'],
