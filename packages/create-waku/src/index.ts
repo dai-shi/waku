@@ -208,11 +208,10 @@ async function init() {
   console.log();
   console.log(`Installing dependencies by running ${commands.install}...`);
 
-  process.chdir(targetDir);
-
   const installProcess = spawn(packageManager, ['install'], {
     stdio: 'inherit',
     shell: process.platform === 'win32',
+    cwd: targetDir,
   });
 
   installProcess.on('close', (code) => {
