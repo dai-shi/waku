@@ -81,7 +81,7 @@ jobs:
           path: packages/waku
       - name: Install Playwright
         id: install-playwright
-        uses: .github/actions/playwright.yml
+        uses: ./.github/actions/playwright.yml
       - run: pnpm exec playwright test --forbid-only --shard=${{ matrix.shared }}/4
         env:
           TEMP_DIR: ${{ runner.temp }}
