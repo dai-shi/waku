@@ -1030,7 +1030,7 @@ DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod dist/serve.js --excl
 npm run build -- --with-aws-lambda
 ```
 
-The handler entrypoint is `dist/serve.js`: see [Hono AWS Lambda Deploy Docs](https://hono.dev/getting-started/aws-lambda#_3-deploy).
+The handler entrypoint is `dist/serve-asw-lambda.js`: see [Hono AWS Lambda Deploy Docs](https://hono.dev/getting-started/aws-lambda#_3-deploy).
 
 ## Community
 

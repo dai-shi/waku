@@ -5,3 +5,4 @@ export { runner } from './lib/hono/runner.js';
 export { Hono } from 'hono';
 export { getRequestListener } from '@hono/node-server';
 export { serveStatic } from '@hono/node-server/serve-static';
+export { handle as handleAwsLambda } from 'hono/aws-lambda';
