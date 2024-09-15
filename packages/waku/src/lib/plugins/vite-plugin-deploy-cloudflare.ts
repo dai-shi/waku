@@ -13,7 +13,7 @@ import { unstable_getPlatformObject } from '../../server.js';
 import { SRC_ENTRIES } from '../constants.js';
 import { DIST_PUBLIC } from '../builder/constants.js';
 
-const SERVE_JS = 'serve-vercel.js';
+const SERVE_JS = 'serve-cloudflare.js';
 
 const getServeJsContent = (srcEntriesFile: string) => `
 import { runner, Hono } from 'waku/unstable_hono';
