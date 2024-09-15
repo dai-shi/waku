@@ -4,7 +4,7 @@ import type { Plugin } from 'vite';
 
 import { unstable_getPlatformObject } from '../../server.js';
 import { SRC_ENTRIES } from '../constants.js';
-import { DIST_SERVE_JS, DIST_PUBLIC } from '../builder/constants.js';
+import { DIST_PUBLIC } from '../builder/constants.js';
 
 const SERVE_JS = 'serve-netlify.js';
 
@@ -16,7 +16,7 @@ const loadEntries = () => import('${srcEntriesFile}');
 const app = new Hono();
 app.use('*', runner({ cmd: 'start', loadEntries, env: process.env }));
 app.notFound((c) => {
-  const notFoundHtml = (globalThis as any).__WAKU_NOT_FOUND_HTML__;
+  const notFoundHtml = globalThis.__WAKU_NOT_FOUND_HTML__;
   if (typeof notFoundHtml === 'string') {
     return c.html(notFoundHtml, 404);
   }
@@ -90,7 +90,7 @@ export function deployNetlifyPlugin(opts: {
           path.join(functionsDir, 'serve.js'),
           `
 globalThis.__WAKU_NOT_FOUND_HTML__ = ${JSON.stringify(notFoundHtml)};
-export { default } from '../../${opts.distDir}/${DIST_SERVE_JS}';
+export { default } from '../../${opts.distDir}/${SERVE_JS}';
 export const config = {
   preferStatic: true,
   path: ['/', '/*'],
