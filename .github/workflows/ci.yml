@@ -79,15 +79,9 @@ jobs:
         with:
           name: waku
           path: packages/waku
-      - name: Cache Playwright
-        uses: actions/cache@v3
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - name: Install Playwright
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm playwright install --with-deps
+        id: install-playwright
+        uses: ./.github/actions/playwright
       - run: pnpm exec playwright test --forbid-only --shard=${{ matrix.shared }}/4
         env:
           TEMP_DIR: ${{ runner.temp }}
