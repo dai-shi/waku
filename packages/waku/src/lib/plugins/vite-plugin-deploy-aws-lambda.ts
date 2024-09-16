@@ -15,7 +15,11 @@ const getServeJsContent = (
 ) => `
 import path from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { runner, Hono, serveStatic, handleAwsLambda } from 'waku/unstable_hono';
+import { runner, importHono, importHonoNodeServerServeStatic, importHonoAwsLambda } from 'waku/unstable_hono';
+
+const { Hono } = await importHono();
+const { serveStatic } = await importHonoNodeServerServeStatic();
+const { handle } = await importHonoAwsLambda();
 
 const distDir = '${distDir}';
 const publicDir = '${distPublic}';
@@ -32,7 +36,7 @@ app.notFound(async (c) => {
   return c.text('404 Not Found', 404);
 });
 
-export const handler = handleAwsLambda(app);
+export const handler = handle(app);
 `;
 
 export function deployAwsLambdaPlugin(opts: {
