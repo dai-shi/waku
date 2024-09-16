@@ -1,9 +1,10 @@
-import type { MiddlewareHandler } from 'hono';
+import type { Context, MiddlewareHandler } from 'hono';
 
+import { unstable_getCustomContext } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import type { HandlerContext, MiddlewareOptions } from '../middleware/types.js';
 
-// Experimental Unstable API
+// Internal context key
 const HONO_CONTEXT = '__hono_context';
 
 const createEmptyReadableStream = () =>
@@ -13,6 +14,7 @@ const createEmptyReadableStream = () =>
     },
   });
 
+// Middleware runner (Is there a better name?)
 export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
   const entriesPromise =
     options.cmd === 'start'
@@ -67,4 +69,12 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
     }
     await next();
   };
+};
+
+export const getHonoContext = <C extends Context = Context>() => {
+  const c = unstable_getCustomContext()[HONO_CONTEXT];
+  if (!c) {
+    throw new Error('Hono context is not available');
+  }
+  return c as C;
 };
