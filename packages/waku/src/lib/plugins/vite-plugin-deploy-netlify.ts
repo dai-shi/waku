@@ -9,7 +9,9 @@ import { DIST_PUBLIC } from '../builder/constants.js';
 const SERVE_JS = 'serve-netlify.js';
 
 const getServeJsContent = (srcEntriesFile: string) => `
-import { runner, Hono } from 'waku/unstable_hono';
+import { runner, importHono } from 'waku/unstable_hono';
+
+const { Hono } = await importHono();
 
 const loadEntries = () => import('${srcEntriesFile}');
 
