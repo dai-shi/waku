@@ -1021,7 +1021,7 @@ npx partykit dev # or deploy
 
 ```
 npm run build -- --with-deno
-DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod dist/serve.js --exclude node_modules
+deployctl deploy --prod dist/serve-deno.js --exclude node_modules
 ```
 
 ### AWS Lambda (experimental)
