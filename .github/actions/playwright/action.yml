@@ -34,7 +34,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/ms-playwright
-        key: playwright-${{ env.PLAYWRIGHT_VERSION }}
+        key: playwright-${{ env.PLAYWRIGHT_VERSION }}-${{ runner.os }}
 
     - name: Install Playwright and its dependencies
       shell: bash
