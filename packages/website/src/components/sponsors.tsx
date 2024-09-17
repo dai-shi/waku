@@ -9,7 +9,7 @@ type SponsorsProps = {
   className?: string;
 };
 
-const INTERVAL = 5_000;
+const INTERVAL = 7_500;
 
 export const Sponsors = ({ className = '' }: SponsorsProps) => {
   const [activeIndex, setActiveIndex] = useState<number>(0);
@@ -74,6 +74,6 @@ const sponsors = [
   {
     title: 'Progress KendoReact',
     logo: 'https://cdn.candycode.com/waku/sponsors/kendo-react.png',
-    url: 'https://www.telerik.com/kendo-react-ui',
+    url: 'https://www.telerik.com/kendo-react-ui?utm_medium=referral&utm_source=waku&utm_campaign=waku-sponsorship',
   },
 ];
