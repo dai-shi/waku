@@ -1,5 +1,6 @@
 import path from 'node:path';
 import {
+  appendFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -11,7 +12,7 @@ import type { Plugin } from 'vite';
 
 import { unstable_getPlatformObject } from '../../server.js';
 import { SRC_ENTRIES } from '../constants.js';
-import { DIST_PUBLIC } from '../builder/constants.js';
+import { DIST_ENTRIES_JS, DIST_PUBLIC } from '../builder/constants.js';
 
 const SERVE_JS = 'serve-cloudflare.js';
 
@@ -208,6 +209,11 @@ export default {
         force: true,
       });
 
+      appendFileSync(
+        path.join(outDir, WORKER_JS_NAME, DIST_ENTRIES_JS),
+        `export const buildData = ${JSON.stringify(platformObject.buildData)};`,
+      );
+
       const wranglerTomlFile = path.join(rootDir, 'wrangler.toml');
       if (!existsSync(wranglerTomlFile)) {
         writeFileSync(
@@ -215,7 +221,7 @@ export default {
           `
 # See https://developers.cloudflare.com/pages/functions/wrangler-configuration/
 name = "waku-project"
-compatibility_date = "2024-04-03"
+compatibility_date = "2024-09-02"
 compatibility_flags = [ "nodejs_als" ]
 pages_build_output_dir = "./dist"
 `,
