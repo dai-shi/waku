@@ -12,6 +12,7 @@ import type { Config } from './config.js';
 import { runner } from './lib/hono/runner.js';
 import { build } from './lib/builder/build.js';
 import { DIST_ENTRIES_JS, DIST_PUBLIC } from './lib/builder/constants.js';
+import type { FetchHandler } from './lib/hono/adapter.js';
 
 const require = createRequire(new URL('.', import.meta.url));
 
@@ -105,7 +106,15 @@ async function runDev() {
     return c.text('404 Not Found', 404);
   });
   const port = parseInt(values.port || '3000', 10);
-  await startServer(app, port);
+  let fetchHandler: FetchHandler | undefined;
+  if (values['with-cloudflare']) {
+    const { cloudflareDevServer } = await import(
+      './lib/hono/cloudflare-dev-server.js'
+    );
+    // @ts-expect-error wrangler dev server type is not included in Config
+    fetchHandler = cloudflareDevServer(app, config.wrangler);
+  }
+  await startServer({ ...app, fetch: fetchHandler || app.fetch } as Hono, port);
 }
 
 async function runBuild() {
