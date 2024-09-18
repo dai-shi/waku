@@ -9,13 +9,15 @@ import { DIST_PUBLIC } from '../builder/constants.js';
 const SERVE_JS = 'serve-netlify.js';
 
 const getServeJsContent = (srcEntriesFile: string) => `
-import { runner, importHono } from 'waku/unstable_hono';
+import { runner, importHono, importHonoContextStorage } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
+const { contextStorage } = await importHonoContextStorage();
 
 const loadEntries = () => import('${srcEntriesFile}');
 
 const app = new Hono();
+app.use(contextStorage());
 app.use('*', runner({ cmd: 'start', loadEntries, env: process.env }));
 app.notFound((c) => {
   const notFoundHtml = globalThis.__WAKU_NOT_FOUND_HTML__;
