@@ -22,7 +22,7 @@ Cloudflare does not run NodeJS on their servers. Instead, they use their custom 
 
 By default, workerd does not support built-in NodeJS APIs, but support can be added by editing the `compatibility_flags` in your `wrangler.toml` file. Cloudflare does not support all APIs, but the list is growing. For more information, see https://developers.cloudflare.com/workers/runtime-apis/nodejs/ and https://developers.cloudflare.com/workers/configuration/compatibility-dates/#setting-compatibility-flags.
 
-Waku attempts to stay minimal and compatible with [WinterGC servers](https://wintercg.org/). The Node stream API is currently used by Waku, so only the `nodejs_als` compatibility flag is added. If you experience errors in server-side dependencies due to missing NodeJS APIs, try changing this flag to `nodejs_compat` and rebuilding your project.
+Waku attempts to stay minimal and compatible with [WinterGC servers](https://wintercg.org/). The Node AsyncLocalStorage API is currently used by Waku, so only the `nodejs_als` compatibility flag is added. If you experience errors in server-side dependencies due to missing NodeJS APIs, try changing this flag to `nodejs_compat` and rebuilding your project.
 
 Note that the latest `nodejs_compat` mocks the Node `fs` module. Cloudflare does not allow file system access from server-side functions. See https://developers.cloudflare.com/workers/reference/security-model/.
 
