@@ -21,6 +21,7 @@ const loadEntries = () => import('${srcEntriesFile}');
 const env = Deno.env.toObject();
 
 const app = new Hono();
+// app.use(contextStorage()); // Hono v4.6 is not available on deno.land
 app.use('*', serveStatic({ root: distDir + '/' + publicDir }));
 app.use('*', runner({ cmd: 'start', loadEntries, env }));
 app.notFound(async (c) => {
