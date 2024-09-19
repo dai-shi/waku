@@ -246,6 +246,7 @@ const buildServerBundle = async (
         conditions: ['react-server'],
         externalConditions: ['react-server'],
       },
+      external: ['hono/context-storage'],
       noExternal: /^(?!node:)/,
     },
     esbuild: {
@@ -776,8 +777,10 @@ export async function build(options: {
   await buildDeploy(rootDir, config);
   delete platformObject.buildOptions.unstable_phase;
 
-  await appendFile(
-    distEntriesFile,
-    `export const buildData = ${JSON.stringify(platformObject.buildData)};`,
-  );
+  if (existsSync(distEntriesFile)) {
+    await appendFile(
+      distEntriesFile,
+      `export const buildData = ${JSON.stringify(platformObject.buildData)};`,
+    );
+  }
 }

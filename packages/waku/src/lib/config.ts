@@ -25,6 +25,7 @@ export async function resolveConfig(config: Config) {
     privateDir: 'private',
     rscPath: 'RSC',
     middleware: DEFAULT_MIDDLEWARE,
+    unstable_honoEnhancer: undefined,
     ...config,
   };
   return resolvedConfig;
