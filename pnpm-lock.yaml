@@ -594,6 +594,9 @@ importers:
       cookie:
         specifier: 0.6.0
         version: 0.6.0
+      hono:
+        specifier: 4.6.1
+        version: 4.6.1
       react:
         specifier: 19.0.0-rc-d6cb4e77-20240911
         version: 19.0.0-rc-d6cb4e77-20240911
