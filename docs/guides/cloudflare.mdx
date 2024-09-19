@@ -69,8 +69,6 @@ const getData = async () => {
 
 Note that this is subject to change. Waku is still experimental and under heavy development.
 
----
-
 ## Static vs. Dynamic Routing and Fetching Assets
 
 Since Waku deploys Cloudflare Pages in advanced worker mode, all requests are routed to the server by default.
@@ -94,8 +92,6 @@ Unless you place a `_routes.json` file in your public directory, Waku automatica
 
 See https://developers.cloudflare.com/pages/functions/routing/#functions-invocation-routes for more information.
 
----
-
 ### Custom Headers
 
 Waku will copy the `_headers` file from your public directory to the dist directory as-is. Note that these headers only apply to static assets. For dynamic pages, you can access the response from the Hono context and set headers there.
@@ -104,7 +100,11 @@ Waku will copy the `_headers` file from your public directory to the dist direct
 - https://developers.cloudflare.com/pages/how-to/add-custom-http-headers/
 - https://hono.dev/docs/api/context#body
 
----
+## Service Bindings and Smart Placement
+
+Cloudflare lets you deploy other Cloudflare Workers functions to your account and connect to them from your Cloudflare Pages function via ["service bindings"](https://developers.cloudflare.com/pages/functions/bindings/#service-bindings).
+
+This can be combined with [smart placement](https://developers.cloudflare.com/workers/configuration/smart-placement/) and React Suspense to process certain operations in a worker gco-located with a D1 database while the main request is handled via in the Pages function running at global edge location. Note that you want to enable smart placement for your Cloudflare Workers function but have it disabled on for your Cloudflare Pages function. You should move interaction with D1 and other co-located resources to the worker and then call it from your server components via the service binding for optimal performance.
 
 ## Setting Up Local Development
 
