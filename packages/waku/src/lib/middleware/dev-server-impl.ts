@@ -244,6 +244,7 @@ const createRscViteServer = (
           conditions: ['react-server'],
           externalConditions: ['react-server'],
         },
+        external: ['hono/context-storage'],
         noExternal: /^(?!node:)/,
         optimizeDeps: {
           include: [
