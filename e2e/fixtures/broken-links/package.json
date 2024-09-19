@@ -1,0 +1,22 @@
+{
+  "name": "broken-links",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "waku dev",
+    "build": "waku build",
+    "start": "waku start"
+  },
+  "dependencies": {
+    "react": "19.0.0-rc-d6cb4e77-20240911",
+    "react-dom": "19.0.0-rc-d6cb4e77-20240911",
+    "react-server-dom-webpack": "19.0.0-rc-d6cb4e77-20240911",
+    "waku": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.6.2"
+  }
+}
