@@ -551,6 +551,14 @@ export function ServerRouter({
   );
 }
 
+function renderError(message: string) {
+  return createElement(
+    'html',
+    null,
+    createElement('body', null, createElement('h1', null, message)),
+  );
+}
+
 class ErrorBoundary extends Component<
   { children: ReactNode },
   { error?: unknown }
@@ -568,9 +576,9 @@ class ErrorBoundary extends Component<
         this.state.error instanceof Error &&
         (this.state.error as any).statusCode === 404
       ) {
-        return createElement('h1', null, 'Not Found');
+        return renderError('Not Found');
       }
-      return createElement('h1', null, String(this.state.error));
+      return renderError(String(this.state.error));
     }
     return this.props.children;
   }
