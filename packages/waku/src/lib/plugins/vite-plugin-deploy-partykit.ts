@@ -9,14 +9,16 @@ import { DIST_PUBLIC } from '../builder/constants.js';
 const SERVE_JS = 'serve-partykit.js';
 
 const getServeJsContent = (srcEntriesFile: string) => `
-import { runner, importHono } from 'waku/unstable_hono';
+import { runner, importHono, importHonoContextStorage } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
+const { contextStorage } = await importHonoContextStorage();
 
 const loadEntries = () => import('${srcEntriesFile}');
 let serveWaku;
 
 const app = new Hono();
+app.use(contextStorage());
 app.use('*', (c, next) => serveWaku(c, next));
 app.notFound(async (c) => {
   const assetsFetcher = c.env.assets;
