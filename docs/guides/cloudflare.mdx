@@ -1,0 +1,118 @@
+---
+slug: guides/cloudflare
+title: Run Waku on Cloudflare Pages
+description: How to integrate Waku with Cloudflare Pages and interact with Cloudflare bindings and other resources.
+---
+
+## Setting Up and Building Waku For Cloudflare Pages
+
+Waku comes "out of the box" with a build flag for [Cloudflare Pages](https://developers.cloudflare.com/pages/).
+
+To build a Waku app for Cloudflare Pages, simply run `waku build --with-cloudflare`. If you used `npx create waku` to create your project, use `npm run build -- --with-cloudflare` to run the build.
+
+The first time you run this, it will create a `wrangler.toml` file with minimal configuration for Cloudflare Pages. See [Cloudflare's documentation](https://developers.cloudflare.com/pages/functions/wrangler-configuration/) for more information on configuring Cloudflare Pages and wrangler.toml.
+
+You should install the latest version of Cloudflare's build tool, `wrangler`, using npm.
+
+After building, you can test your build by running `npx wrangler pages dev dist` or deploy it to Cloudflare using `npx wrangler pages dev deploy`.
+
+## Notes on Cloudflare's workerd Runtime
+
+Cloudflare does not run NodeJS on their servers. Instead, they use their custom JavaScript runtime called [workerd](https://github.com/cloudflare/workerd).
+
+By default, workerd does not support built-in NodeJS APIs, but support can be added by editing the `compatibility_flags` in your `wrangler.toml` file. Cloudflare does not support all APIs, but the list is growing. For more information, see https://developers.cloudflare.com/workers/runtime-apis/nodejs/ and https://developers.cloudflare.com/workers/configuration/compatibility-dates/#setting-compatibility-flags.
+
+Waku attempts to stay minimal and compatible with [WinterGC servers](https://wintercg.org/). The Node AsyncLocalStorage API is currently used by Waku, so only the `nodejs_als` compatibility flag is added. If you experience errors in server-side dependencies due to missing NodeJS APIs, try changing this flag to `nodejs_compat` and rebuilding your project.
+
+Note that the latest `nodejs_compat` mocks the Node `fs` module. Cloudflare does not allow file system access from server-side functions. See https://developers.cloudflare.com/workers/reference/security-model/.
+
+## Setting Up TypeScript
+
+You can run `npx wrangler types --experimental-include-runtime` to generate a `worker-configuration.d.ts` file based on the settings in your `wrangler.toml`. This defines a global `Env` interface with your bindings.
+
+You may also want to add `@cloudflare/workers-types` to your dev dependencies and include `"@cloudflare/workers-types/experimental"` in the `types` array of `tsconfig.json`. Alternatively, you can import from that package as needed in your server-side code. See https://www.npmjs.com/package/@cloudflare/workers-types for more information.
+
+## Accessing Cloudflare Bindings, Execution Context, and Request/Response Objects
+
+Waku currently uses [Hono](https://hono.dev/) in the [advanced mode worker function](https://developers.cloudflare.com/pages/functions/advanced-mode/) it creates for Cloudflare Pages when you build your project.
+
+Waku uses Hono's [context storage middleware](https://hono.dev/docs/middleware/builtin/context-storage) to make the [Hono context](https://hono.dev/docs/api/context) accessible from anywhere. You can access Cloudflare bindings and execution context from the Hono context:
+
+```ts
+import { getContext } from 'hono/context-storage';
+
+const getData = async () => {
+  const c = getContext<{ Bindings: Env }>();
+  if (!c) {
+    return null;
+  }
+  c.executionCtx?.waitUntil(
+    new Promise<void>((resolve) => {
+      console.log('Waiting for 5 seconds');
+      setTimeout(() => {
+        console.log('OK, done waiting');
+        resolve();
+      }, 5000);
+    }),
+  );
+  const userId = c.req.query('userId');
+  if (!userId) {
+    return null;
+  }
+  const { results } = await c.env.DB.prepare('SELECT * FROM user WHERE id = ?')
+    .bind(userId)
+    .all();
+  return results;
+};
+```
+
+Note that this is subject to change. Waku is still experimental and under heavy development.
+
+## Static vs. Dynamic Routing and Fetching Assets
+
+Since Waku deploys Cloudflare Pages in advanced worker mode, all requests are routed to the server by default.
+
+You can access static assets from your server code. For example, if you want to fetch HTML from static assets to render:
+
+```ts
+const get404Html = async () => {
+  const c = getContext<{ Bindings: Env }>();
+  return c.env.ASSETS
+    ? await (await c.env.ASSETS.fetch('https://example.com/404.html')).text()
+    : '';
+};
+```
+
+Note that `ASSETS.fetch` requires a fully qualified URL, but the origin is ignored. You can literally use `https://example.com`, and it will work.
+
+However, each of these requests will consume CPU time from your Cloudflare account. We can inform Cloudflare which routes are dynamic and should be routed through our server function, and which routes are static and can be served directly from their CDN.
+
+Unless you place a `_routes.json` file in your public directory, Waku automatically generates one for you. It will ensure that your static routes are served directly from Cloudflare's CDN for maximum speed, reliability, and low cost.
+
+See https://developers.cloudflare.com/pages/functions/routing/#functions-invocation-routes for more information.
+
+### Custom Headers
+
+Waku will copy the `_headers` file from your public directory to the dist directory as-is. Note that these headers only apply to static assets. For dynamic pages, you can access the response from the Hono context and set headers there.
+
+- https://developers.cloudflare.com/pages/configuration/headers/
+- https://developers.cloudflare.com/pages/how-to/add-custom-http-headers/
+- https://hono.dev/docs/api/context#body
+
+## Service Bindings and Smart Placement
+
+Cloudflare lets you deploy other Cloudflare Workers functions to your account and connect to them from your Cloudflare Pages function via ["service bindings"](https://developers.cloudflare.com/pages/functions/bindings/#service-bindings).
+
+This can be combined with [smart placement](https://developers.cloudflare.com/workers/configuration/smart-placement/) and React Suspense to process certain operations in a worker gco-located with a D1 database while the main request is handled via in the Pages function running at global edge location. Note that you want to enable smart placement for your Cloudflare Workers function but have it disabled on for your Cloudflare Pages function. You should move interaction with D1 and other co-located resources to the worker and then call it from your server components via the service binding for optimal performance.
+
+## Setting Up Local Development
+
+To develop locally and access Cloudflare resources during development, install Cloudflare's local dev server, `miniflare`:
+
+```sh
+npm i --save-dev miniflare
+```
+
+When starting the Waku dev server, you need to first start a `miniflare` server and then inject objects from `miniflare` into Waku's context.
+
+This can be done by creating a custom Waku plugin in your `waku.config.ts` file. Copy the `waku.cloudflare-dev-server.ts` and `waku.config.ts` to your project from [this gist](https://gist.github.com/rmarscher/9bb6ed54dc9535f4b81bed147204c7e9).
