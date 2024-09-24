@@ -20,10 +20,9 @@ const getServeJsContent = (srcEntriesFile: string) => `
 import { runner, importHono } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
-const DO_NOT_BUNDLE = '';
 let contextStorage;
 try {
- ({ contextStorage } = await import(DO_NOT_BUNDLE + 'hono/context-storage'));
+ ({ contextStorage } = await import('hono/context-storage'));
 } catch {}
 
 const loadEntries = () => import('${srcEntriesFile}');
