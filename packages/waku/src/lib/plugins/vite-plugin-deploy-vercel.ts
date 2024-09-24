@@ -21,7 +21,7 @@ const { Hono } = await importHono();
 const { getRequestListener } = await importHonoNodeServer();
 let contextStorage;
 try {
- ({ contextStorage } = await import('hono/context-storage'));
+ ({ contextStorage } = await import(/* @vite-ignore */ 'hono/context-storage'));
 } catch {}
 
 const distDir = '${distDir}';
