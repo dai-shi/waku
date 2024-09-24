@@ -123,6 +123,9 @@ export function deployCloudflarePlugin(opts: {
       if (id === `${opts.srcDir}/${SERVE_JS}`) {
         return getServeJsContent(entriesFile);
       }
+      if (id === 'hono/context-storage') {
+        return '';
+      }
     },
     closeBundle() {
       const { deploy, unstable_phase } = platformObject.buildOptions || {};
