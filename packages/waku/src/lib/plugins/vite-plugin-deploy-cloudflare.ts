@@ -23,7 +23,7 @@ const { Hono } = await importHono();
 let contextStorage;
 try {
  ({ contextStorage } = await import('hono/context-storage'));
-} catch () {}
+} catch {}
 
 const loadEntries = () => import('${srcEntriesFile}');
 let serveWaku;

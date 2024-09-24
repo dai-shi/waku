@@ -22,7 +22,7 @@ const { getRequestListener } = await importHonoNodeServer();
 let contextStorage;
 try {
  ({ contextStorage } = await import('hono/context-storage'));
-} catch () {}
+} catch {}
 
 const distDir = '${distDir}';
 const publicDir = '${distPublic}';
