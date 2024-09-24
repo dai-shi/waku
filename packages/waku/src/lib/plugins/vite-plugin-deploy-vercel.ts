@@ -19,9 +19,10 @@ import { runner, importHono, importHonoNodeServer } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
 const { getRequestListener } = await importHonoNodeServer();
+const DO_NOT_BUNDLE = '';
 let contextStorage;
 try {
- ({ contextStorage } = await import(/* @vite-ignore */ 'hono/context-storage'));
+ ({ contextStorage } = await import(DO_NOT_BUNDLE + 'hono/context-storage'));
 } catch {}
 
 const distDir = '${distDir}';
