@@ -1,0 +1,12 @@
+{
+  "name": "my-module",
+  "private": true,
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "browser": "./dist/index.browser.js",
+      "import": "./dist/index.js"
+    }
+  }
+}
