@@ -11,8 +11,9 @@ const getServeJsContent = (
   distPublic: string,
   srcEntriesFile: string,
 ) => `
-import { Hono } from 'https://deno.land/x/hono/mod.ts';
-import { serveStatic } from 'https://deno.land/x/hono/middleware.ts';
+import { Hono } from 'jsr:@hono/hono';
+import { serveStatic } from 'jsr:@hono/hono/serve-static';
+import { contextStorage } from 'jsr:@hono/hono/context-storage';
 import { runner } from 'waku/unstable_hono';
 
 const distDir = '${distDir}';
@@ -21,7 +22,7 @@ const loadEntries = () => import('${srcEntriesFile}');
 const env = Deno.env.toObject();
 
 const app = new Hono();
-// app.use(contextStorage()); // Hono v4.6 is not available on deno.land
+app.use(contextStorage());
 app.use('*', serveStatic({ root: distDir + '/' + publicDir }));
 app.use('*', runner({ cmd: 'start', loadEntries, env }));
 app.notFound(async (c) => {
