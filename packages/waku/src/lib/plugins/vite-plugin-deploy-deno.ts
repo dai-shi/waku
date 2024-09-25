@@ -11,12 +11,10 @@ const getServeJsContent = (
   distPublic: string,
   srcEntriesFile: string,
 ) => `
+import { Hono } from 'jsr:@hono/hono';
+import { serveStatic } from 'jsr:@hono/hono/serve-static';
+import { contextStorage } from 'jsr:@hono/hono/context-storage';
 import { runner } from 'waku/unstable_hono';
-
-const customImport = (id) => import(id);
-const { Hono } = await customImport('jsr:@hono/hono');
-const { serveStatic } = await customImport('jsr:@hono/hono/serve-static');
-const { contextStorage } = await customImport('jsr:@hono/hono/context-storage');
 
 const distDir = '${distDir}';
 const publicDir = '${distPublic}';
