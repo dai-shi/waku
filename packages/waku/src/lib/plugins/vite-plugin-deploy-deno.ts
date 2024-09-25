@@ -12,7 +12,7 @@ const getServeJsContent = (
   srcEntriesFile: string,
 ) => `
 import { Hono } from 'jsr:@hono/hono';
-import { serveStatic } from 'jsr:@hono/hono/serve-static';
+import { serveStatic } from 'jsr:@hono/hono/deno';
 import { contextStorage } from 'jsr:@hono/hono/context-storage';
 import { runner } from 'waku/unstable_hono';
 
