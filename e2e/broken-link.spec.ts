@@ -72,6 +72,10 @@ test.describe('server side navigation', () => {
     // The page URL is correct
     expect(page.url()).toBe(`http://localhost:${port}/exists`);
 
+    // Go back to the index page
+    await page.getByRole('link', { name: 'Back' }).click();
+    await expect(page.getByRole('heading')).toHaveText('Index');
+
     await terminate(pid!);
   });
 
@@ -84,6 +88,10 @@ test.describe('server side navigation', () => {
     await expect(page.getByRole('heading')).toHaveText('Custom not found');
     // The browsers URL remains the one that was navigated to
     expect(page.url()).toBe(`http://localhost:${port}/broken`);
+
+    // Go back to the index page
+    await page.getByRole('link', { name: 'Back' }).click();
+    await expect(page.getByRole('heading')).toHaveText('Index');
 
     await terminate(pid!);
   });
@@ -98,6 +106,10 @@ test.describe('server side navigation', () => {
     // The browsers URL is the one of the target page
     expect(page.url()).toBe(`http://localhost:${port}/exists`);
 
+    // Go back to the index page
+    await page.getByRole('link', { name: 'Back' }).click();
+    await expect(page.getByRole('heading')).toHaveText('Index');
+
     await terminate(pid!);
   });
 
@@ -110,6 +122,10 @@ test.describe('server side navigation', () => {
     await expect(page.getByRole('heading')).toHaveText('Custom not found');
     // The browsers URL remains the one that was redirected to
     expect(page.url()).toBe(`http://localhost:${port}/broken`);
+
+    // Go back to the index page
+    await page.getByRole('link', { name: 'Back' }).click();
+    await expect(page.getByRole('heading')).toHaveText('Index');
 
     await terminate(pid!);
   });
@@ -127,6 +143,10 @@ test.describe('client side navigation', () => {
     // The browsers URL is the one of the target page
     expect(page.url()).toBe(`http://localhost:${port}/exists`);
 
+    // Go back to the index page
+    await page.getByRole('link', { name: 'Back' }).click();
+    await expect(page.getByRole('heading')).toHaveText('Index');
+
     await terminate(pid!);
   });
 
@@ -142,6 +162,10 @@ test.describe('client side navigation', () => {
     // The browsers URL remains the one that was navigated to
     expect(page.url()).toBe(`http://localhost:${port}/broken`);
 
+    // Go back to the index page
+    await page.getByRole('link', { name: 'Back' }).click();
+    await expect(page.getByRole('heading')).toHaveText('Index');
+
     await terminate(pid!);
   });
 
@@ -151,11 +175,15 @@ test.describe('client side navigation', () => {
     await page.goto(`http://localhost:${port}`);
 
     // Click on a link to a page that redirects to an existing page
-    await page.getByRole('link', { name: 'Redirect' }).click();
+    await page.getByRole('link', { name: 'Correct Redirect' }).click();
     // The page renders the target
     await expect(page.getByRole('heading')).toHaveText('Existing page');
     // The browsers URL is the one of the target page
     expect(page.url()).toBe(`http://localhost:${port}/exists`);
+
+    // Go back to the index page
+    await page.getByRole('link', { name: 'Back' }).click();
+    await expect(page.getByRole('heading')).toHaveText('Index');
 
     await terminate(pid!);
   });
@@ -171,6 +199,10 @@ test.describe('client side navigation', () => {
     await expect(page.getByRole('heading')).toHaveText('Custom not found');
     // The browsers URL remains the one that was navigated to
     expect(page.url()).toBe(`http://localhost:${port}/broken-redirect`);
+
+    // Go back to the index page
+    await page.getByRole('link', { name: 'Back' }).click();
+    await expect(page.getByRole('heading')).toHaveText('Index');
 
     await terminate(pid!);
   });
