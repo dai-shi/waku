@@ -3,5 +3,16 @@ import { stylexPlugin } from 'vite-plugin-stylex-dev';
 
 /** @type {import('vite').UserConfig} */
 export default {
-  plugins: [vanillaExtractPlugin(), stylexPlugin()],
+  plugins: [
+    {
+      name: 'hack-css-plugin-why-do-we-need-this-FIXME',
+      resolveId(id: string) {
+        if (id.endsWith('.css')) {
+          return id;
+        }
+      },
+    },
+    vanillaExtractPlugin(),
+    stylexPlugin(),
+  ],
 };
