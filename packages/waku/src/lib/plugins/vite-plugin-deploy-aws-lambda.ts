@@ -66,6 +66,11 @@ export function deployAwsLambdaPlugin(opts: {
     },
     configResolved(config) {
       entriesFile = `${config.root}/${opts.srcDir}/${SRC_ENTRIES}`;
+      if (Array.isArray(config.ssr.external)) {
+        config.ssr.external = config.ssr.external.filter(
+          (item) => item !== 'hono/context-storage',
+        );
+      }
     },
     resolveId(source) {
       if (source === `${opts.srcDir}/${SERVE_JS}`) {
