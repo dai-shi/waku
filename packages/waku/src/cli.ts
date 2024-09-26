@@ -102,7 +102,7 @@ async function runDev() {
   const honoEnhancer = config.unstable_honoEnhancer || ((app) => app);
   const app = new Hono();
   app.use(contextStorage());
-  if (values['--experimental-compress']) {
+  if (values['experimental-compress']) {
     app.use(compress());
   }
   app.use('*', runner({ cmd: 'dev', config, env: process.env as any }));
@@ -151,7 +151,7 @@ async function runStart() {
     import(pathToFileURL(path.resolve(distDir, DIST_ENTRIES_JS)).toString());
   const app = new Hono();
   app.use(contextStorage());
-  if (values['--experimental-compress']) {
+  if (values['experimental-compress']) {
     app.use(compress());
   }
   app.use('*', serveStatic({ root: path.join(distDir, DIST_PUBLIC) }));
