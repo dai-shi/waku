@@ -50,7 +50,7 @@ export function deployPartykitPlugin(opts: {
           path.resolve(
             viteConfig.root || '.',
             opts.srcDir,
-            SRC_ENTRIES + '.js',
+            SRC_ENTRIES + '.jsx',
           ),
         ),
       );
