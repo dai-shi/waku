@@ -49,7 +49,7 @@ export function deployAwsLambdaPlugin(opts: {
           path.resolve(
             viteConfig.root || '.',
             opts.srcDir,
-            SRC_ENTRIES + '.jsx',
+            SRC_ENTRIES,
           ),
         ),
       );
