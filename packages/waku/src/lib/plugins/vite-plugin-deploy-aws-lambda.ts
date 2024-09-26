@@ -46,11 +46,7 @@ export function deployAwsLambdaPlugin(opts: {
       // FIXME This seems too hacky (The use of viteConfig.root, '.', path.resolve and resolveFileName)
       const entriesFile = normalizePath(
         resolveFileName(
-          path.resolve(
-            viteConfig.root || '.',
-            opts.srcDir,
-            SRC_ENTRIES + '.jsx',
-          ),
+          path.resolve(viteConfig.root || '.', opts.srcDir, SRC_ENTRIES),
         ),
       );
       const { input } = viteConfig.build?.rollupOptions ?? {};
