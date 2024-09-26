@@ -15,7 +15,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       <head></head>
       <body>
         <div className="font-nunito">
-          <meta property="description" content={data.description} />
+          <meta name="description" content={data.description} />
           <link rel="icon" type="image/png" href={data.icon} />
           <Header />
           <main className="flex items-center justify-center lg:min-h-svh">

@@ -574,7 +574,7 @@ export default async function HomePage() {
   return (
     <>
       <title>Waku</title>
-      <meta property="description" content="The minimal React framework" />
+      <meta name="description" content="The minimal React framework" />
       <h1>Waku</h1>
       <div>Hello world!</div>
     </>
@@ -607,7 +607,7 @@ const Head = async () => {
   return (
     <>
       <title>{metadata.title}</title>
-      <meta property="description" content={metadata.description} />
+      <meta name="description" content={metadata.description} />
     </>
   );
 };
