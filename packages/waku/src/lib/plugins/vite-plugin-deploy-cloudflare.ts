@@ -100,6 +100,11 @@ export function deployCloudflarePlugin(opts: {
       rootDir = config.root;
       entriesFile = `${rootDir}/${opts.srcDir}/${SRC_ENTRIES}`;
       const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      if (deploy === 'cloudflare' && Array.isArray(config.ssr.external)) {
+        config.ssr.external = config.ssr.external.filter(
+          (item) => item !== 'hono/context-storage',
+        );
+      }
       if (
         (unstable_phase !== 'buildServerBundle' &&
           unstable_phase !== 'buildSsrBundle') ||
@@ -117,9 +122,6 @@ export function deployCloudflarePlugin(opts: {
     resolveId(source) {
       if (source === `${opts.srcDir}/${SERVE_JS}`) {
         return source;
-      }
-      if (source === 'hono/context-storage') {
-        return { id: source, external: true };
       }
     },
     load(id) {
