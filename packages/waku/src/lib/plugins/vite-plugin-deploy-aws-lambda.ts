@@ -8,6 +8,8 @@ import { DIST_PUBLIC } from '../builder/constants.js';
 
 const SERVE_JS = 'serve-aws-lambda.js';
 
+const lambda_streaming = process.env.DEPLOY_AWS_LAMBDA_STREAMING === 'true';
+
 const getServeJsContent = (
   distDir: string,
   distPublic: string,
@@ -19,7 +21,7 @@ import { runner, importHono, importHonoNodeServerServeStatic, importHonoAwsLambd
 
 const { Hono } = await importHono();
 const { serveStatic } = await importHonoNodeServerServeStatic();
-const { handle } = await importHonoAwsLambda();
+const { ${lambda_streaming ? 'streamHandle as' : ''} handle } = await importHonoAwsLambda();
 let contextStorage;
 try {
  ({ contextStorage } = await import('hono/context-storage'));
