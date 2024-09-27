@@ -77,9 +77,6 @@ export function deployAwsLambdaPlugin(opts: {
       if (source === `${opts.srcDir}/${SERVE_JS}`) {
         return source;
       }
-      if (source === 'hono/context-storage') {
-        return { id: source, external: true };
-      }
     },
     load(id) {
       if (id === `${opts.srcDir}/${SERVE_JS}`) {
