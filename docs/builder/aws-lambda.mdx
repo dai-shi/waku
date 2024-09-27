@@ -7,7 +7,7 @@ description: Deploy a WAKU application to AWS.
 # AWS Lambda Builder
 
 The WAKU builder for AWS Lambda will provide the bundled output in the `dist` folder.
-The entry handler for the Lambda is `dist/serve.handler`.
+The entry handler for the Lambda is `dist/serve-aws-lambda.handler`.
 
 > Folder which require directly access - eg. `fs.readFile("./private/data.json")` needs to be manual added to the deployment configuration.
 
@@ -50,7 +50,7 @@ package:
 
 functions:
   ssr:
-    handler: dist/serve.handler
+    handler: dist/serve-aws-lambda.handler
     events:
       - httpApi: '*'
 
@@ -211,7 +211,7 @@ export class WakuStack extends cdk.Stack {
           },
         },
       }),
-      handler: 'serve.handler',
+      handler: 'serve-aws-lambda.handler',
       architecture: lambda.Architecture.ARM_64,
       runtime: lambda.Runtime.NODEJS_20_X,
     });
