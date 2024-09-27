@@ -94,7 +94,7 @@ Initialize your project with the `cdk` CLI
 
 ```sh
 mkdir cdk &&  cd "$_"
-pnpmx cdk init app -l typescript --generate-only
+pnpx cdk init app -l typescript --generate-only
 cd ..
 cp cdk/cdk.json .
 ```
@@ -251,7 +251,7 @@ This example requires a build with activated streaming.
 
 ### Setup
 
-1. add `pnpd sst@latest init`
+1. add `pnpm sst@latest init`
 
 ### configuration
 
@@ -299,7 +299,7 @@ export default $config({
 ### deploy
 
 ```sh
-ssh deploy
+pnpx sst deploy
 ```
 
 [sst.dev documentation](https://sst.dev/docs)
