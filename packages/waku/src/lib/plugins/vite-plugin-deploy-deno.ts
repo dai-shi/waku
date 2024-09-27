@@ -27,11 +27,13 @@ app.use('*', serveStatic({ root: distDir + '/' + publicDir }));
 app.use('*', runner({ cmd: 'start', loadEntries, env }));
 app.notFound(async (c) => {
   const file = distDir + '/' + publicDir + '/404.html';
-  const info = await Deno.stat(file);
-  if (info.isFile) {
-    c.header('Content-Type', 'text/html; charset=utf-8');
-    return c.body(await Deno.readFile(file), 404);
-  }
+  try {
+    const info = await Deno.stat(file);
+    if (info.isFile) {
+      c.header('Content-Type', 'text/html; charset=utf-8');
+      return c.body(await Deno.readFile(file), 404);
+    }
+  } catch {}
   return c.text('404 Not Found', 404);
 });
 
@@ -72,6 +74,11 @@ export function deployDenoPlugin(opts: {
       config.ssr.resolve.conditions.push('worker');
       config.ssr.resolve.externalConditions ||= [];
       config.ssr.resolve.externalConditions.push('worker');
+      if (Array.isArray(config.ssr.external)) {
+        config.ssr.external = config.ssr.external.filter(
+          (item) => item !== 'hono/context-storage',
+        );
+      }
     },
     resolveId(source) {
       if (source === `${opts.srcDir}/${SERVE_JS}`) {
