@@ -2,21 +2,24 @@ import type { Plugin } from 'vite';
 import { readdir, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { SRC_ENTRIES, SRC_PAGES } from '../constants.js';
+import { SRC_ENTRIES } from '../constants.js';
 import { joinPath } from '../utils/path.js';
+
+const SRC_PAGES = 'pages';
 
 const srcToName = (src: string) => {
   const split = src
     .split('/')
-    .map((part) => (part[0]!.toUpperCase() + part.slice(1)).replace('-', '_'));
+    .map((part) => part[0]!.toUpperCase() + part.slice(1));
 
-  if (src.endsWith('_layout.tsx')) {
+  if (split.at(-1) === '_layout.tsx') {
     return split.slice(0, -1).join('') + '_Layout';
-  } else if (src.endsWith('index.tsx')) {
+  } else if (split.at(-1) === 'index.tsx') {
     return split.slice(0, -1).join('') + 'Index';
   } else if (split.at(-1)?.startsWith('[...')) {
     const fileName = split
       .at(-1)!
+      .replace('-', '_')
       .replace('.tsx', '')
       .replace('[...', '')
       .replace(']', '');
@@ -29,6 +32,7 @@ const srcToName = (src: string) => {
   } else if (split.at(-1)?.startsWith('[')) {
     const fileName = split
       .at(-1)!
+      .replace('-', '_')
       .replace('.tsx', '')
       .replace('[', '')
       .replace(']', '');
@@ -39,7 +43,7 @@ const srcToName = (src: string) => {
       fileName.slice(1)
     );
   } else {
-    const fileName = split.at(-1)!.replace('.tsx', '');
+    const fileName = split.at(-1)!.replace('-', '_').replace('.tsx', '');
     return (
       split.slice(0, -1).join('') +
       fileName[0]!.toUpperCase() +
@@ -49,7 +53,7 @@ const srcToName = (src: string) => {
 };
 
 export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
-  let entriesFile: string | undefined;
+  let entriesFilePossibilities: string[] | undefined;
   let pagesDir: string | undefined;
   let outputFile: string | undefined;
   let formatter = (s: string): Promise<string> => Promise.resolve(s);
@@ -58,7 +62,9 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
     apply: 'serve',
     async configResolved(config) {
       pagesDir = joinPath(config.root, opts.srcDir, SRC_PAGES);
-      entriesFile = joinPath(config.root, opts.srcDir, `${SRC_ENTRIES}.tsx`);
+      entriesFilePossibilities = ['tsx', 'ts', 'js', 'jsx'].map((ext) =>
+        joinPath(config.root, opts.srcDir, `${SRC_ENTRIES}.${ext}`),
+      );
       outputFile = joinPath(config.root, opts.srcDir, `${SRC_ENTRIES}.gen.tsx`);
 
       try {
@@ -73,21 +79,27 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
       }
     },
     configureServer(server) {
-      if (!entriesFile || !pagesDir || !outputFile || existsSync(entriesFile)) {
+      if (
+        !entriesFilePossibilities ||
+        !pagesDir ||
+        !outputFile ||
+        entriesFilePossibilities.some((entriesFile) => existsSync(entriesFile))
+      ) {
         return;
       }
 
       // Recursively collect `.tsx` files in the given directory
       const collectFiles = async (dir: string): Promise<string[]> => {
         if (!pagesDir) return [];
-        let results: string[] = [];
-        const files = await readdir(dir, { withFileTypes: true });
+        const results: string[] = [];
+        const files = await readdir(dir, {
+          withFileTypes: true,
+          recursive: true,
+        });
 
         for (const file of files) {
           const fullPath = path.join(dir, file.name);
-          if (file.isDirectory()) {
-            results = results.concat(await collectFiles(fullPath));
-          } else if (file.isFile() && fullPath.endsWith('.tsx')) {
+          if (fullPath.endsWith('.tsx')) {
             results.push(fullPath.replace(pagesDir, ''));
           }
         }
@@ -111,14 +123,14 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
           const src = filePath.slice(1);
           const hasGetConfig = fileExportsGetConfig(filePath);
 
-          if (filePath.endsWith('_layout.tsx')) {
+          if (filePath === '/_layout.tsx') {
             fileInfo.push({
               type: 'layout',
               path: filePath.replace('_layout.tsx', ''),
               src,
               hasGetConfig,
             });
-          } else if (filePath.endsWith('index.tsx')) {
+          } else if (filePath === '/index.tsx') {
             fileInfo.push({
               type: 'page',
               path: filePath.replace('index.tsx', ''),
@@ -173,18 +185,12 @@ import type { PathsForPages } from 'waku/router';\n\n`;
 
       server.watcher.add(opts.srcDir);
       server.watcher.on('change', async (file) => {
-        if (file === outputFile) return;
+        if (!outputFile || outputFile.endsWith(file)) return;
 
         await updateGeneratedFile();
       });
       server.watcher.on('add', async (file) => {
-        if (file === outputFile) return;
-
-        await updateGeneratedFile();
-      });
-
-      server.watcher.on('', async (file) => {
-        if (file === outputFile) return;
+        if (!outputFile || outputFile.endsWith(file)) return;
 
         await updateGeneratedFile();
       });
