@@ -21,7 +21,7 @@ import { runner, importHono, importHonoNodeServerServeStatic, importHonoAwsLambd
 
 const { Hono } = await importHono();
 const { serveStatic } = await importHonoNodeServerServeStatic();
-const { ${lambda_streaming ? 'streamHandle as' : ''} handle } = await importHonoAwsLambda();
+const { ${lambda_streaming ? 'streamHandle:' : ''}handle } = await importHonoAwsLambda();
 let contextStorage;
 try {
  ({ contextStorage } = await import('hono/context-storage'));
