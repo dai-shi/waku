@@ -1,7 +1,11 @@
-import type { MiddlewareHandler } from 'hono';
+import type { Context, Env, MiddlewareHandler } from 'hono';
 
+import { unstable_getCustomContext } from '../../server.js';
 import { resolveConfig } from '../config.js';
 import type { HandlerContext, MiddlewareOptions } from '../middleware/types.js';
+
+// Internal context key
+const HONO_CONTEXT = '__hono_context';
 
 const createEmptyReadableStream = () =>
   new ReadableStream({
@@ -38,7 +42,9 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
         headers: c.req.header(),
       },
       res: {},
-      context: {},
+      context: {
+        [HONO_CONTEXT]: c,
+      },
     };
     const handlers = await handlersPromise;
     const run = async (index: number) => {
@@ -63,4 +69,12 @@ export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
     }
     await next();
   };
+};
+
+export const getHonoContext = <E extends Env = Env>() => {
+  const c = unstable_getCustomContext()[HONO_CONTEXT];
+  if (!c) {
+    throw new Error('Hono context is not available');
+  }
+  return c as Context<E>;
 };

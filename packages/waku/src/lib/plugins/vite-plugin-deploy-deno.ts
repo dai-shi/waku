@@ -13,7 +13,6 @@ const getServeJsContent = (
 ) => `
 import { Hono } from 'jsr:@hono/hono';
 import { serveStatic } from 'jsr:@hono/hono/deno';
-import { contextStorage } from 'jsr:@hono/hono/context-storage';
 import { runner } from 'waku/unstable_hono';
 
 const distDir = '${distDir}';
@@ -22,16 +21,17 @@ const loadEntries = () => import('${srcEntriesFile}');
 const env = Deno.env.toObject();
 
 const app = new Hono();
-app.use(contextStorage());
 app.use('*', serveStatic({ root: distDir + '/' + publicDir }));
 app.use('*', runner({ cmd: 'start', loadEntries, env }));
 app.notFound(async (c) => {
   const file = distDir + '/' + publicDir + '/404.html';
-  const info = await Deno.stat(file);
-  if (info.isFile) {
-    c.header('Content-Type', 'text/html; charset=utf-8');
-    return c.body(await Deno.readFile(file), 404);
-  }
+  try {
+    const info = await Deno.stat(file);
+    if (info.isFile) {
+      c.header('Content-Type', 'text/html; charset=utf-8');
+      return c.body(await Deno.readFile(file), 404);
+    }
+  } catch {}
   return c.text('404 Not Found', 404);
 });
 

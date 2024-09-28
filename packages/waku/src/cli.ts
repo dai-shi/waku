@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
 import { Hono } from 'hono';
-import { contextStorage } from 'hono/context-storage';
+import { compress } from 'hono/compress';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import * as dotenv from 'dotenv';
@@ -49,6 +49,9 @@ const { values, positionals } = parseArgs({
       type: 'boolean',
     },
     'experimental-partial': {
+      type: 'boolean',
+    },
+    'experimental-compress': {
       type: 'boolean',
     },
     port: {
@@ -97,7 +100,9 @@ async function runDev() {
   const config = await loadConfig();
   const honoEnhancer = config.unstable_honoEnhancer || ((app) => app);
   const app = new Hono();
-  app.use(contextStorage());
+  if (values['experimental-compress']) {
+    app.use(compress());
+  }
   app.use('*', runner({ cmd: 'dev', config, env: process.env as any }));
   app.notFound((c) => {
     // FIXME can we avoid hardcoding the public path?
@@ -143,7 +148,9 @@ async function runStart() {
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, DIST_ENTRIES_JS)).toString());
   const app = new Hono();
-  app.use(contextStorage());
+  if (values['experimental-compress']) {
+    app.use(compress());
+  }
   app.use('*', serveStatic({ root: path.join(distDir, DIST_PUBLIC) }));
   app.use('*', runner({ cmd: 'start', loadEntries, env: process.env as any }));
   app.notFound((c) => {

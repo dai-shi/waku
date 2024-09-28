@@ -8,6 +8,8 @@ import { DIST_PUBLIC } from '../builder/constants.js';
 
 const SERVE_JS = 'serve-aws-lambda.js';
 
+const lambdaStreaming = process.env.DEPLOY_AWS_LAMBDA_STREAMING === 'true';
+
 const getServeJsContent = (
   distDir: string,
   distPublic: string,
@@ -19,20 +21,13 @@ import { runner, importHono, importHonoNodeServerServeStatic, importHonoAwsLambd
 
 const { Hono } = await importHono();
 const { serveStatic } = await importHonoNodeServerServeStatic();
-const { handle } = await importHonoAwsLambda();
-let contextStorage;
-try {
- ({ contextStorage } = await import('hono/context-storage'));
-} catch {}
+const { ${lambdaStreaming ? 'streamHandle:' : ''}handle } = await importHonoAwsLambda();
 
 const distDir = '${distDir}';
 const publicDir = '${distPublic}';
 const loadEntries = () => import('${srcEntriesFile}');
 
 const app = new Hono();
-if (contextStorage) {
-  app.use(contextStorage());
-}
 app.use('*', serveStatic({ root: distDir + '/' + publicDir }));
 app.use('*', runner({ cmd: 'start', loadEntries, env: process.env }));
 app.notFound(async (c) => {
@@ -66,12 +61,6 @@ export function deployAwsLambdaPlugin(opts: {
     },
     configResolved(config) {
       entriesFile = `${config.root}/${opts.srcDir}/${SRC_ENTRIES}`;
-      const { deploy } = platformObject.buildOptions || {};
-      if (deploy === 'aws-lambda' && Array.isArray(config.ssr.external)) {
-        config.ssr.external = config.ssr.external.filter(
-          (item) => item !== 'hono/context-storage',
-        );
-      }
     },
     resolveId(source) {
       if (source === `${opts.srcDir}/${SERVE_JS}`) {
