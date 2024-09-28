@@ -67,11 +67,6 @@ const HomeLayout = ({ children }: { children: ReactNode }) => (
               Nested / Qux
             </Link>
           </li>
-          <li>
-            <Link to="/layout" pending={<Pending isPending />}>
-              A Page named Layout
-            </Link>
-          </li>
         </ul>
         {children}
       </div>

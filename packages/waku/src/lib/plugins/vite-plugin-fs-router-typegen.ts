@@ -1,8 +1,7 @@
 import type { Plugin } from 'vite';
 import { readdir, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
-import path from 'node:path';
-import { SRC_ENTRIES } from '../constants.js';
+import { SRC_ENTRIES, EXTENSIONS } from '../constants.js';
 import { joinPath } from '../utils/path.js';
 
 const SRC_PAGES = 'pages';
@@ -62,7 +61,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
     apply: 'serve',
     async configResolved(config) {
       pagesDir = joinPath(config.root, opts.srcDir, SRC_PAGES);
-      entriesFilePossibilities = ['tsx', 'ts', 'js', 'jsx'].map((ext) =>
+      entriesFilePossibilities = EXTENSIONS.map((ext) =>
         joinPath(config.root, opts.srcDir, `${SRC_ENTRIES}.${ext}`),
       );
       outputFile = joinPath(config.root, opts.srcDir, `${SRC_ENTRIES}.gen.tsx`);
@@ -98,9 +97,8 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
         });
 
         for (const file of files) {
-          const fullPath = path.join(dir, file.name);
-          if (fullPath.endsWith('.tsx')) {
-            results.push(fullPath.replace(pagesDir, ''));
+          if (file.name.endsWith('.tsx')) {
+            results.push('/' + file.name);
           }
         }
         return results;

@@ -78,5 +78,5 @@ export const getConfig = async () => {
   return {
     render: 'static',
     staticPaths: pokemonPaths,
-  };
+  } as const;
 };
