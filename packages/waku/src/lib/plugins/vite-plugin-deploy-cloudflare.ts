@@ -17,16 +17,14 @@ import { DIST_ENTRIES_JS, DIST_PUBLIC } from '../builder/constants.js';
 const SERVE_JS = 'serve-cloudflare.js';
 
 const getServeJsContent = (srcEntriesFile: string) => `
-import { runner, importHono, importHonoContextStorage } from 'waku/unstable_hono';
+import { runner, importHono } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
-const { contextStorage } = await importHonoContextStorage();
 
 const loadEntries = () => import('${srcEntriesFile}');
 let serveWaku;
 
 const app = new Hono();
-app.use(contextStorage());
 app.use('*', (c, next) => serveWaku(c, next));
 app.notFound(async (c) => {
   const assetsFetcher = c.env.ASSETS;
@@ -95,11 +93,6 @@ export function deployCloudflarePlugin(opts: {
       rootDir = config.root;
       entriesFile = `${rootDir}/${opts.srcDir}/${SRC_ENTRIES}`;
       const { deploy, unstable_phase } = platformObject.buildOptions || {};
-      if (deploy === 'cloudflare' && Array.isArray(config.ssr.external)) {
-        config.ssr.external = config.ssr.external.filter(
-          (item) => item !== 'hono/context-storage',
-        );
-      }
       if (
         (unstable_phase !== 'buildServerBundle' &&
           unstable_phase !== 'buildSsrBundle') ||

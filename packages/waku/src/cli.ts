@@ -5,7 +5,6 @@ import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
 import { Hono } from 'hono';
 import { compress } from 'hono/compress';
-import { contextStorage } from 'hono/context-storage';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import * as dotenv from 'dotenv';
@@ -101,7 +100,6 @@ async function runDev() {
   const config = await loadConfig();
   const honoEnhancer = config.unstable_honoEnhancer || ((app) => app);
   const app = new Hono();
-  app.use(contextStorage());
   if (values['experimental-compress']) {
     app.use(compress());
   }
@@ -150,7 +148,6 @@ async function runStart() {
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, DIST_ENTRIES_JS)).toString());
   const app = new Hono();
-  app.use(contextStorage());
   if (values['experimental-compress']) {
     app.use(compress());
   }
