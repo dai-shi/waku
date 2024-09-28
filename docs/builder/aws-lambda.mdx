@@ -259,34 +259,35 @@ This example requires a build with activated streaming.
 use this as an example to run WAKU as Lamda Function:
 
 sst.config.ts
+
 ```ts
 /// <reference path="./.sst/platform/config.d.ts" />
 
 export default $config({
   app(input) {
     return {
-      name: "waku03demo",
-      removal: input?.stage === "production" ? "retain" : "remove",
-      home: "aws",
+      name: 'waku03demo',
+      removal: input?.stage === 'production' ? 'retain' : 'remove',
+      home: 'aws',
     };
   },
   async run() {
-    const WakuDemoApp = new sst.aws.Function("WakuDemoApp", {
+    const WakuDemoApp = new sst.aws.Function('WakuDemoApp', {
       url: true,
       streaming: true,
       //timeout: "15 minutes",
-      handler: "dist/serve-aws-lambda.handler",
-      bundle: "bundle", // disable bundling with esbuild
+      handler: 'dist/serve-aws-lambda.handler',
+      bundle: 'bundle', // disable bundling with esbuild
       copyFiles: [
         {
-          from: "dist"
+          from: 'dist',
         },
         {
-          from: "private"
-        }
+          from: 'private',
+        },
       ],
       environment: {
-        NODE_ENV: "production",
+        NODE_ENV: 'production',
       },
     });
     return {
@@ -294,7 +295,6 @@ export default $config({
     };
   },
 });
-
 ```
 
 ### deploy
