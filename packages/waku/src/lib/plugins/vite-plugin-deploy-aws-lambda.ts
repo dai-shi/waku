@@ -8,7 +8,7 @@ import { DIST_PUBLIC } from '../builder/constants.js';
 
 const SERVE_JS = 'serve-aws-lambda.js';
 
-const lambda_streaming = process.env.DEPLOY_AWS_LAMBDA_STREAMING === 'true';
+const lambdaStreaming = process.env.DEPLOY_AWS_LAMBDA_STREAMING === 'true';
 
 const getServeJsContent = (
   distDir: string,
