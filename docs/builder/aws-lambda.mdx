@@ -11,6 +11,8 @@ The entry handler for the Lambda is `dist/serve-aws-lambda.handler`.
 
 > Folder which require directly access - eg. `fs.readFile("./private/data.json")` needs to be manual added to the deployment configuration.
 
+> **activate Streaming support:** `DEPLOY_AWS_LAMBDA_STREAMING=true pnpm build --with-aws-lambda`
+
 ## [Serverless Framework](https://www.serverless.com)
 
 ### Installation
@@ -67,7 +69,7 @@ This configuration will include all files from the `./private` directory in the 
 ### Deploy
 
 ```sh
-pnpm dlx serverless deploy
+pnpx serverless deploy
 ```
 
 Output:
@@ -92,7 +94,7 @@ Initialize your project with the `cdk` CLI
 
 ```sh
 mkdir cdk &&  cd "$_"
-pnpm dlx cdk init app -l typescript --generate-only
+pnpx cdk init app -l typescript --generate-only
 cd ..
 cp cdk/cdk.json .
 ```
@@ -242,3 +244,63 @@ pnpm cdk deploy WakuStack
 ```
 
 For more configuration options and how to use a custom domain visit the AWS CDK [documentation](https://docs.aws.amazon.com/cdk/v2/guide/home.html)
+
+## sst.dev V3
+
+This example requires a build with activated streaming.
+`DEPLOY_AWS_LAMBDA_STREAMING=true pnpm build --with-aws-lambda`
+
+### Setup
+
+1. add `pnpm sst@latest init`
+
+### configuration
+
+use this as an example to run WAKU as Lamda Function:
+
+sst.config.ts
+
+```ts
+/// <reference path="./.sst/platform/config.d.ts" />
+
+export default $config({
+  app(input) {
+    return {
+      name: 'waku03demo',
+      removal: input?.stage === 'production' ? 'retain' : 'remove',
+      home: 'aws',
+    };
+  },
+  async run() {
+    const WakuDemoApp = new sst.aws.Function('WakuDemoApp', {
+      url: true,
+      streaming: true,
+      //timeout: "15 minutes",
+      handler: 'dist/serve-aws-lambda.handler',
+      bundle: 'bundle', // disable bundling with esbuild
+      copyFiles: [
+        {
+          from: 'dist',
+        },
+        {
+          from: 'private',
+        },
+      ],
+      environment: {
+        NODE_ENV: 'production',
+      },
+    });
+    return {
+      api: WakuDemoApp.url,
+    };
+  },
+});
+```
+
+### deploy
+
+```sh
+pnpx sst deploy
+```
+
+[sst.dev documentation](https://sst.dev/docs)
