@@ -6,7 +6,8 @@
 2. replace the generated `./sst.config.ts` with `sst.config.ts`from this folder
 3. copy the file `waku.ts` to
    `.sst/platform/src/components/aws/waku.ts`
-4. change to include the deployment adapter `"build" : "waku build --with-aws-lambda"`
+4. add `export * from "./waku.js";` to `.sst/platform/src/components/aws/index.ts`
+5. change to include the deployment adapter `"build" : "waku build --with-aws-lambda"`
 
 > **Optional:** activate streaming with `"build" : "DEPLOY_AWS_LAMBDA_STREAMING=true waku build --with-aws-lambda"`
 
