@@ -9,21 +9,16 @@ import { DIST_PUBLIC } from '../builder/constants.js';
 const SERVE_JS = 'serve-partykit.js';
 
 const getServeJsContent = (srcEntriesFile: string) => `
-import { runner, importHono } from 'waku/unstable_hono';
+import { runner, importHono, importHonoContextStorage } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
-let contextStorage;
-try {
- ({ contextStorage } = await import('hono/context-storage'));
-} catch {}
+const { contextStorage } = await importHonoContextStorage();
 
 const loadEntries = () => import('${srcEntriesFile}');
 let serveWaku;
 
 const app = new Hono();
-if (contextStorage) {
-  app.use(contextStorage());
-}
+app.use(contextStorage());
 app.use('*', (c, next) => serveWaku(c, next));
 app.notFound(async (c) => {
   const assetsFetcher = c.env.assets;
@@ -74,6 +69,11 @@ export function deployPartykitPlugin(opts: {
       rootDir = config.root;
       entriesFile = `${rootDir}/${opts.srcDir}/${SRC_ENTRIES}`;
       const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      if (deploy === 'partykit' && Array.isArray(config.ssr.external)) {
+        config.ssr.external = config.ssr.external.filter(
+          (item) => item !== 'hono/context-storage',
+        );
+      }
       if (
         (unstable_phase !== 'buildServerBundle' &&
           unstable_phase !== 'buildSsrBundle') ||
