@@ -61,6 +61,11 @@ export function deployDenoPlugin(opts: {
     configResolved(config) {
       entriesFile = `${config.root}/${opts.srcDir}/${SRC_ENTRIES}`;
       const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      if (deploy === 'deno' && Array.isArray(config.ssr.external)) {
+        config.ssr.external = config.ssr.external.filter(
+          (item) => item !== 'hono/context-storage',
+        );
+      }
       if (
         (unstable_phase !== 'buildServerBundle' &&
           unstable_phase !== 'buildSsrBundle') ||
@@ -74,11 +79,6 @@ export function deployDenoPlugin(opts: {
       config.ssr.resolve.conditions.push('worker');
       config.ssr.resolve.externalConditions ||= [];
       config.ssr.resolve.externalConditions.push('worker');
-      if (Array.isArray(config.ssr.external)) {
-        config.ssr.external = config.ssr.external.filter(
-          (item) => item !== 'hono/context-storage',
-        );
-      }
     },
     resolveId(source) {
       if (source === `${opts.srcDir}/${SERVE_JS}`) {

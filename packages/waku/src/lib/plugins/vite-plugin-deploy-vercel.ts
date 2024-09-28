@@ -15,23 +15,18 @@ const getServeJsContent = (
 ) => `
 import path from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { runner, importHono, importHonoNodeServer } from 'waku/unstable_hono';
+import { runner, importHono, importHonoContextStorage, importHonoNodeServer } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
+const { contextStorage } = await importHonoContextStorage();
 const { getRequestListener } = await importHonoNodeServer();
-let contextStorage;
-try {
- ({ contextStorage } = await import('hono/context-storage'));
-} catch {}
 
 const distDir = '${distDir}';
 const publicDir = '${distPublic}';
 const loadEntries = () => import('${srcEntriesFile}');
 
 const app = new Hono();
-if (contextStorage) {
-  app.use(contextStorage());
-}
+app.use(contextStorage());
 app.use('*', runner({ cmd: 'start', loadEntries, env: process.env }));
 app.notFound((c) => {
   // FIXME better implementation using node stream?
@@ -73,6 +68,15 @@ export function deployVercelPlugin(opts: {
     configResolved(config) {
       rootDir = config.root;
       entriesFile = `${rootDir}/${opts.srcDir}/${SRC_ENTRIES}`;
+      const { deploy } = platformObject.buildOptions || {};
+      if (
+        deploy === 'vercel-serverless' &&
+        Array.isArray(config.ssr.external)
+      ) {
+        config.ssr.external = config.ssr.external.filter(
+          (item) => item !== 'hono/context-storage',
+        );
+      }
     },
     resolveId(source) {
       if (source === `${opts.srcDir}/${SERVE_JS}`) {
