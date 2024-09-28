@@ -13,7 +13,6 @@ const getServeJsContent = (
 ) => `
 import { Hono } from 'jsr:@hono/hono';
 import { serveStatic } from 'jsr:@hono/hono/deno';
-import { contextStorage } from 'jsr:@hono/hono/context-storage';
 import { runner } from 'waku/unstable_hono';
 
 const distDir = '${distDir}';
@@ -22,7 +21,6 @@ const loadEntries = () => import('${srcEntriesFile}');
 const env = Deno.env.toObject();
 
 const app = new Hono();
-app.use(contextStorage());
 app.use('*', serveStatic({ root: distDir + '/' + publicDir }));
 app.use('*', runner({ cmd: 'start', loadEntries, env }));
 app.notFound(async (c) => {
@@ -61,11 +59,6 @@ export function deployDenoPlugin(opts: {
     configResolved(config) {
       entriesFile = `${config.root}/${opts.srcDir}/${SRC_ENTRIES}`;
       const { deploy, unstable_phase } = platformObject.buildOptions || {};
-      if (deploy === 'deno' && Array.isArray(config.ssr.external)) {
-        config.ssr.external = config.ssr.external.filter(
-          (item) => item !== 'hono/context-storage',
-        );
-      }
       if (
         (unstable_phase !== 'buildServerBundle' &&
           unstable_phase !== 'buildSsrBundle') ||
