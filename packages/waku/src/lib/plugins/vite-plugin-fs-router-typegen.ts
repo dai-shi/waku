@@ -62,7 +62,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
     async configResolved(config) {
       pagesDir = joinPath(config.root, opts.srcDir, SRC_PAGES);
       entriesFilePossibilities = EXTENSIONS.map((ext) =>
-        joinPath(config.root, opts.srcDir, `${SRC_ENTRIES}.${ext}`),
+        joinPath(config.root, opts.srcDir, SRC_ENTRIES + ext),
       );
       outputFile = joinPath(config.root, opts.srcDir, `${SRC_ENTRIES}.gen.tsx`);
 
@@ -82,7 +82,10 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
         !entriesFilePossibilities ||
         !pagesDir ||
         !outputFile ||
-        entriesFilePossibilities.some((entriesFile) => existsSync(entriesFile))
+        entriesFilePossibilities.some((entriesFile) =>
+          existsSync(entriesFile),
+        ) ||
+        !existsSync(pagesDir)
       ) {
         return;
       }
