@@ -17,10 +17,9 @@ const getServeJsContent = (
 ) => `
 import path from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { runner, importHono, importHonoContextStorage, importHonoNodeServerServeStatic, importHonoAwsLambda } from 'waku/unstable_hono';
+import { runner, importHono, importHonoNodeServerServeStatic, importHonoAwsLambda } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
-const { contextStorage } = await importHonoContextStorage();
 const { serveStatic } = await importHonoNodeServerServeStatic();
 const { ${lambdaStreaming ? 'streamHandle:' : ''}handle } = await importHonoAwsLambda();
 
@@ -29,7 +28,6 @@ const publicDir = '${distPublic}';
 const loadEntries = () => import('${srcEntriesFile}');
 
 const app = new Hono();
-app.use(contextStorage());
 app.use('*', serveStatic({ root: distDir + '/' + publicDir }));
 app.use('*', runner({ cmd: 'start', loadEntries, env: process.env }));
 app.notFound(async (c) => {
@@ -63,12 +61,6 @@ export function deployAwsLambdaPlugin(opts: {
     },
     configResolved(config) {
       entriesFile = `${config.root}/${opts.srcDir}/${SRC_ENTRIES}`;
-      const { deploy } = platformObject.buildOptions || {};
-      if (deploy === 'aws-lambda' && Array.isArray(config.ssr.external)) {
-        config.ssr.external = config.ssr.external.filter(
-          (item) => item !== 'hono/context-storage',
-        );
-      }
     },
     resolveId(source) {
       if (source === `${opts.srcDir}/${SERVE_JS}`) {

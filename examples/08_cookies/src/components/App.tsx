@@ -1,6 +1,6 @@
 import { Suspense, cache } from 'react';
 import { unstable_getCustomContext as getCustomContext } from 'waku/server';
-import { getContext } from 'hono/context-storage';
+import { getHonoContext } from 'waku/unstable_hono';
 
 import { Counter } from './Counter';
 
@@ -15,7 +15,7 @@ const InternalAsyncComponent = async () => {
   }
   // console.log(getCustomContext()); // fails when it's sent to the browser
   console.log('waku context', Object.keys(getCustomContext()));
-  console.log('hono context', Object.keys(getContext()));
+  console.log('hono context', Object.keys(getHonoContext()));
   return null;
 };
 
