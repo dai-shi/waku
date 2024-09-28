@@ -71,17 +71,26 @@ export ${name === 'default' ? name : `const ${name} =`} createServerReference('$
   }
 };
 
+export const createEmptySpan = (): swc.Span =>
+  ({
+    start: 0,
+    end: 0,
+  }) as swc.Span;
+
 const createIdentifier = (value: string): swc.Identifier => ({
   type: 'Identifier',
   value,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  ctxt: 0,
   optional: false,
-  span: { start: 0, end: 0, ctxt: 0 },
+  span: createEmptySpan(),
 });
 
 const createStringLiteral = (value: string): swc.StringLiteral => ({
   type: 'StringLiteral',
   value,
-  span: { start: 0, end: 0, ctxt: 0 },
+  span: createEmptySpan(),
 });
 
 const createCallExpression = (
@@ -90,8 +99,11 @@ const createCallExpression = (
 ): swc.CallExpression => ({
   type: 'CallExpression',
   callee,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  ctxt: 0,
   arguments: args.map((expression) => ({ expression })),
-  span: { start: 0, end: 0, ctxt: 0 },
+  span: createEmptySpan(),
 });
 
 const serverInitCode = swc.parseSync(`
@@ -137,7 +149,7 @@ const transformExportedServerActions = (
             createStringLiteral(name),
           ],
         ),
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       };
       mod.body.splice(++i, 0, stmt);
     };
@@ -182,7 +194,7 @@ const transformExportedServerActions = (
         const decl: swc.ExportDefaultExpression = {
           type: 'ExportDefaultExpression',
           expression: callExp,
-          span: { start: 0, end: 0, ctxt: 0 },
+          span: createEmptySpan(),
         };
         replaceNode(item, decl);
       }
@@ -227,8 +239,9 @@ const prependArgsToFn = <Fn extends FunctionWithBlockBody>(
       params: [...args.map(createIdentifier), ...fn.params],
       body: {
         type: 'BlockStatement',
+        ctxt: 0,
         stmts: fn.body.stmts.filter((stmt) => !isUseServerDirective(stmt)),
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       },
     };
   }
@@ -238,14 +251,15 @@ const prependArgsToFn = <Fn extends FunctionWithBlockBody>(
       ...args.map((arg) => ({
         type: 'Parameter',
         pat: createIdentifier(arg),
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       })),
       ...fn.params,
     ],
     body: {
       type: 'BlockStatement',
+      ctxt: 0,
       stmts: fn.body.stmts.filter((stmt) => !isUseServerDirective(stmt)),
-      span: { start: 0, end: 0, ctxt: 0 },
+      span: createEmptySpan(),
     },
   };
 };
@@ -290,7 +304,7 @@ const collectLocalNames = (
       {
         type: 'ReturnStatement',
         argument: fn.body,
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       },
     ];
   }
@@ -343,7 +357,7 @@ const transformInlineServerActions = (
         type: 'MemberExpression',
         object: createIdentifier(name),
         property: createIdentifier('bind'),
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       },
       [
         createIdentifier('null'),
@@ -361,16 +375,19 @@ const transformInlineServerActions = (
         type: 'VariableDeclaration',
         kind: 'const',
         declare: false,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        ctxt: 0,
         declarations: [
           {
             type: 'VariableDeclarator',
             id: createIdentifier(decl.identifier.value),
             init: callExp,
             definite: false,
-            span: { start: 0, end: 0, ctxt: 0 },
+            span: createEmptySpan(),
           },
         ],
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       };
       replaceNode(decl, newDecl);
     }
@@ -399,7 +416,7 @@ const transformInlineServerActions = (
           const decl: swc.ExportDefaultExpression = {
             type: 'ExportDefaultExpression',
             expression: callExp,
-            span: { start: 0, end: 0, ctxt: 0 },
+            span: createEmptySpan(),
           };
           replaceNode(item, decl);
           return;
@@ -444,7 +461,7 @@ const transformInlineServerActions = (
         const stmt1: swc.ExportDeclaration = {
           type: 'ExportDeclaration',
           declaration: prependArgsToFn(actionFn, closureVars),
-          span: { start: 0, end: 0, ctxt: 0 },
+          span: createEmptySpan(),
         };
         const stmt2: swc.ExpressionStatement = {
           type: 'ExpressionStatement',
@@ -456,7 +473,7 @@ const transformInlineServerActions = (
               createStringLiteral('__waku_action' + actionIndex),
             ],
           ),
-          span: { start: 0, end: 0, ctxt: 0 },
+          span: createEmptySpan(),
         };
         return [stmt1, stmt2];
       } else {
@@ -466,6 +483,9 @@ const transformInlineServerActions = (
             type: 'VariableDeclaration',
             kind: 'const',
             declare: false,
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            ctxt: 0,
             declarations: [
               {
                 type: 'VariableDeclarator',
@@ -479,12 +499,12 @@ const transformInlineServerActions = (
                   ],
                 ),
                 definite: false,
-                span: { start: 0, end: 0, ctxt: 0 },
+                span: createEmptySpan(),
               },
             ],
-            span: { start: 0, end: 0, ctxt: 0 },
+            span: createEmptySpan(),
           },
-          span: { start: 0, end: 0, ctxt: 0 },
+          span: createEmptySpan(),
         };
         return [stmt];
       }
