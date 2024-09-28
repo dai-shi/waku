@@ -74,7 +74,10 @@ export function deployVercelPlugin(opts: {
       rootDir = config.root;
       entriesFile = `${rootDir}/${opts.srcDir}/${SRC_ENTRIES}`;
       const { deploy } = platformObject.buildOptions || {};
-      if (deploy === 'vercel-serverless' && Array.isArray(config.ssr.external)) {
+      if (
+        deploy === 'vercel-serverless' &&
+        Array.isArray(config.ssr.external)
+      ) {
         config.ssr.external = config.ssr.external.filter(
           (item) => item !== 'hono/context-storage',
         );
