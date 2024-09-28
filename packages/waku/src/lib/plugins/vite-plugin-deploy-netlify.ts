@@ -56,6 +56,15 @@ export function deployNetlifyPlugin(opts: {
     configResolved(config) {
       rootDir = config.root;
       entriesFile = `${rootDir}/${opts.srcDir}/${SRC_ENTRIES}`;
+      const { deploy } = platformObject.buildOptions || {};
+      if (
+        deploy === 'netlify-functions' &&
+        Array.isArray(config.ssr.external)
+      ) {
+        config.ssr.external = config.ssr.external.filter(
+          (item) => item !== 'hono/context-storage',
+        );
+      }
     },
     resolveId(source) {
       if (source === `${opts.srcDir}/${SERVE_JS}`) {
