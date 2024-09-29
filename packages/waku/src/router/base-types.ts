@@ -10,4 +10,5 @@ export interface RouteConfig {
   // routes to be overridden by users
 }
 
+/** Props for pages when using `createPages` */
 export type PageProps<Path extends PagePath<RouteConfig>> = PropsForPages<Path>;
