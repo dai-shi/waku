@@ -141,10 +141,14 @@ export type AnyPage = {
  * type MyPaths = PathsForPages<typeof pages>;
  * // type MyPaths = '/foo' | '/bar';
  */
-export type PathsForPages<PagesResult extends { DO_NOT_USE_pages: AnyPage }> =
-  CollectPaths<PagesResult['DO_NOT_USE_pages']> extends never
+export type PathsForPages<PagesResult extends { DO_NOT_USE_pages: AnyPage }> = {
+  /** All possible paths with string or static paths in place of slug */
+  expanded: CollectPaths<PagesResult['DO_NOT_USE_pages']> extends never
     ? string
     : CollectPaths<PagesResult['DO_NOT_USE_pages']> & {};
+  /** Paths with slugs as string literals */
+  initial: PagesResult['DO_NOT_USE_pages']['path'];
+};
 
 type _GetSlugs<
   Route extends string,
@@ -161,13 +165,11 @@ type _GetSlugs<
 export type GetSlugs<Route extends string> = _GetSlugs<Route>;
 
 export type PagePath<Config> = Config extends {
-  pages: {
-    DO_NOT_USE_pages: {
-      path: infer AllPaths;
-    };
+  paths: {
+    initial: infer AllPages;
   };
 }
-  ? AllPaths
+  ? AllPages
   : never;
 
 type IndividualSlugType<Slug extends string> = Slug extends `...${string}`
@@ -186,5 +188,6 @@ type SlugTypes<Path extends string> =
     : never;
 
 export type PropsForPages<Path extends string> = Prettify<
-  Omit<RouteProps<Path>, 'hash'> & SlugTypes<Path>
+  Omit<RouteProps<ReplaceAll<Path, `[${string}]`, string>>, 'hash'> &
+    SlugTypes<Path>
 >;

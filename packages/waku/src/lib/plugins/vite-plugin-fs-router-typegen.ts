@@ -168,7 +168,6 @@ import type { PathsForPages } from 'waku/router';\n\n`;
   declare module 'waku/router' {
     interface RouteConfig {
       paths: PathsForPages<typeof _pages>;
-      pages: typeof _pages;
     }
   }
 
