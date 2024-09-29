@@ -52,16 +52,8 @@ const normalizeRoutePath = (path: string) => {
   return path;
 };
 
-/**
- * Parse a given route.
- *
- * Falls back to `/404` by default, unless the second argument
- * is set to true, which has to happen when the route is used
- * for navigating to it. Otherwise navigation on the 404 page
- * will always target the 404 page.
- */
-const parseRoute = (url: URL, navigating = false): RouteProps => {
-  if (!navigating && (globalThis as any).__WAKU_ROUTER_404__) {
+const parseRoute = (url: URL): RouteProps => {
+  if ((globalThis as any).__WAKU_ROUTER_404__) {
     return { path: '/404', query: '', hash: '' };
   }
   const { pathname, searchParams, hash } = url;
@@ -105,7 +97,7 @@ export function useRouter_UNSTABLE() {
         '',
         url,
       );
-      changeRoute(parseRoute(url, true));
+      changeRoute(parseRoute(url));
     },
     [changeRoute],
   );
@@ -207,7 +199,7 @@ export function Link({
     event.preventDefault();
     const url = new URL(to, window.location.href);
     if (url.href !== window.location.href) {
-      const route = parseRoute(url, true);
+      const route = parseRoute(url);
       prefetchRoute(route);
       startTransition(() => {
         window.history.pushState(
@@ -431,16 +423,14 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       url.pathname = path;
       url.search = query;
       url.hash = '';
-      if (path !== '/404') {
-        window.history.pushState(
-          {
-            ...window.history.state,
-            waku_new_path: url.pathname !== window.location.pathname,
-          },
-          '',
-          url,
-        );
-      }
+      window.history.pushState(
+        {
+          ...window.history.state,
+          waku_new_path: url.pathname !== window.location.pathname,
+        },
+        '',
+        url,
+      );
       changeRoute(parseRoute(url), { skipRefetch: true });
     };
     const listeners = (routerData[1] ||= new Set());
