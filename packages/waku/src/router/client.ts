@@ -53,9 +53,10 @@ const normalizeRoutePath = (path: string) => {
 };
 
 const parseRoute = (url: URL): RouteProps => {
-  if ((globalThis as any).__WAKU_ROUTER_404__) {
-    return { path: '/404', query: '', hash: '' };
-  }
+  // TODO do we need this?
+  // if ((globalThis as any).__WAKU_ROUTER_404__) {
+  //   return { path: '/404', query: '', hash: '' };
+  // }
   const { pathname, searchParams, hash } = url;
   return {
     path: normalizeRoutePath(pathname),
