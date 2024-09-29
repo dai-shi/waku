@@ -99,6 +99,7 @@ const pages = createPages(async ({ createPage, createLayout }) => [
 declare module 'waku/router' {
   interface RouteConfig {
     paths: PathsForPages<typeof pages>;
+    pages: typeof pages;
   }
 }
 

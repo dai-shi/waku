@@ -1,5 +1,5 @@
-export type RouteProps = {
-  path: string;
+export type RouteProps<Path extends string = string> = {
+  path: Path;
   query: string;
   hash: string;
 };
