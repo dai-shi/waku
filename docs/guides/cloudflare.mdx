@@ -36,13 +36,13 @@ You may also want to add `@cloudflare/workers-types` to your dev dependencies an
 
 Waku currently uses [Hono](https://hono.dev/) in the [advanced mode worker function](https://developers.cloudflare.com/pages/functions/advanced-mode/) it creates for Cloudflare Pages when you build your project.
 
-Waku uses Hono's [context storage middleware](https://hono.dev/docs/middleware/builtin/context-storage) to make the [Hono context](https://hono.dev/docs/api/context) accessible from anywhere. You can access Cloudflare bindings and execution context from the Hono context:
+Waku exposes the [Hono context](https://hono.dev/docs/api/context) with `getHonoContext`. You can access Cloudflare bindings and execution context from the Hono context:
 
 ```ts
-import { getContext } from 'hono/context-storage';
+import { getHonoContext } from 'waku/unstable_hono';
 
 const getData = async () => {
-  const c = getContext<{ Bindings: Env }>();
+  const c = getHonoContext<{ Bindings: Env }>();
   if (!c) {
     return null;
   }
@@ -76,7 +76,7 @@ You can access static assets from your server code. For example, if you want to 
 
 ```ts
 const get404Html = async () => {
-  const c = getContext<{ Bindings: Env }>();
+  const c = getHonoContext<{ Bindings: Env }>();
   return c.env.ASSETS
     ? await (await c.env.ASSETS.fetch('https://example.com/404.html')).text()
     : '';

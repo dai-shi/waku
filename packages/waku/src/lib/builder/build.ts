@@ -246,7 +246,6 @@ const buildServerBundle = async (
         conditions: ['react-server'],
         externalConditions: ['react-server'],
       },
-      external: ['hono/context-storage'],
       noExternal: /^(?!node:)/,
     },
     esbuild: {

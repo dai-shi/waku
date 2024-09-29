@@ -19,20 +19,13 @@ import { runner, importHono, importHonoNodeServer } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
 const { getRequestListener } = await importHonoNodeServer();
-let contextStorage;
-try {
- ({ contextStorage } = await import('hono/context-storage'));
-} catch {}
 
 const distDir = '${distDir}';
 const publicDir = '${distPublic}';
 const loadEntries = () => import('${srcEntriesFile}');
 
 const app = new Hono();
-if (contextStorage) {
-  app.use(contextStorage());
-}
-app.use('*', runner({ cmd: 'start', loadEntries, env: process.env }));
+app.use(runner({ cmd: 'start', loadEntries, env: process.env }));
 app.notFound((c) => {
   // FIXME better implementation using node stream?
   const file = path.join(distDir, publicDir, '404.html');
@@ -82,9 +75,6 @@ export function deployVercelPlugin(opts: {
     load(id) {
       if (id === `${opts.srcDir}/${SERVE_JS}`) {
         return getServeJsContent(opts.distDir, DIST_PUBLIC, entriesFile);
-      }
-      if (id === 'hono/context-storage') {
-        return '';
       }
     },
     closeBundle() {

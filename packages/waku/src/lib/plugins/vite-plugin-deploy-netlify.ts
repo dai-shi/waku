@@ -12,18 +12,11 @@ const getServeJsContent = (srcEntriesFile: string) => `
 import { runner, importHono } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
-let contextStorage;
-try {
- ({ contextStorage } = await import('hono/context-storage'));
-} catch {}
 
 const loadEntries = () => import('${srcEntriesFile}');
 
 const app = new Hono();
-if (contextStorage) {
-  app.use(contextStorage());
-}
-app.use('*', runner({ cmd: 'start', loadEntries, env: process.env }));
+app.use(runner({ cmd: 'start', loadEntries, env: process.env }));
 app.notFound((c) => {
   const notFoundHtml = globalThis.__WAKU_NOT_FOUND_HTML__;
   if (typeof notFoundHtml === 'string') {
@@ -70,9 +63,6 @@ export function deployNetlifyPlugin(opts: {
     load(id) {
       if (id === `${opts.srcDir}/${SERVE_JS}`) {
         return getServeJsContent(entriesFile);
-      }
-      if (id === 'hono/context-storage') {
-        return '';
       }
     },
     closeBundle() {

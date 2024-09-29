@@ -6,7 +6,7 @@ const loadEntries = () => import(import.meta.env.WAKU_ENTRIES_FILE!);
 let serveWaku: ReturnType<typeof runner> | undefined;
 
 const app = new Hono();
-app.use('*', (c, next) => serveWaku!(c, next));
+app.use((c, next) => serveWaku!(c, next));
 app.notFound(async (c) => {
   // @ts-expect-error partykit's types aren't available
   const assetsFetcher = c.env.assets as {

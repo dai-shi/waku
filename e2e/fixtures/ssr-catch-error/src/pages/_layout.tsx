@@ -19,5 +19,5 @@ export default async function RootLayout({
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };

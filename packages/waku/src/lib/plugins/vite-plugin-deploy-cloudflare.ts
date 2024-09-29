@@ -20,19 +20,12 @@ const getServeJsContent = (srcEntriesFile: string) => `
 import { runner, importHono } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
-let contextStorage;
-try {
- ({ contextStorage } = await import('hono/context-storage'));
-} catch {}
 
 const loadEntries = () => import('${srcEntriesFile}');
 let serveWaku;
 
 const app = new Hono();
-if (contextStorage) {
-  app.use(contextStorage());
-}
-app.use('*', (c, next) => serveWaku(c, next));
+app.use((c, next) => serveWaku(c, next));
 app.notFound(async (c) => {
   const assetsFetcher = c.env.ASSETS;
   const url = new URL(c.req.raw.url);
@@ -122,9 +115,6 @@ export function deployCloudflarePlugin(opts: {
     load(id) {
       if (id === `${opts.srcDir}/${SERVE_JS}`) {
         return getServeJsContent(entriesFile);
-      }
-      if (id === 'hono/context-storage') {
-        return '';
       }
     },
     closeBundle() {

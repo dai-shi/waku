@@ -11,8 +11,8 @@ const getServeJsContent = (
   distPublic: string,
   srcEntriesFile: string,
 ) => `
-import { Hono } from 'https://deno.land/x/hono/mod.ts';
-import { serveStatic } from 'https://deno.land/x/hono/middleware.ts';
+import { Hono } from 'jsr:@hono/hono';
+import { serveStatic } from 'jsr:@hono/hono/deno';
 import { runner } from 'waku/unstable_hono';
 
 const distDir = '${distDir}';
@@ -21,16 +21,17 @@ const loadEntries = () => import('${srcEntriesFile}');
 const env = Deno.env.toObject();
 
 const app = new Hono();
-// app.use(contextStorage()); // Hono v4.6 is not available on deno.land
-app.use('*', serveStatic({ root: distDir + '/' + publicDir }));
-app.use('*', runner({ cmd: 'start', loadEntries, env }));
+app.use(serveStatic({ root: distDir + '/' + publicDir }));
+app.use(runner({ cmd: 'start', loadEntries, env }));
 app.notFound(async (c) => {
   const file = distDir + '/' + publicDir + '/404.html';
-  const info = await Deno.stat(file);
-  if (info.isFile) {
-    c.header('Content-Type', 'text/html; charset=utf-8');
-    return c.body(await Deno.readFile(file), 404);
-  }
+  try {
+    const info = await Deno.stat(file);
+    if (info.isFile) {
+      c.header('Content-Type', 'text/html; charset=utf-8');
+      return c.body(await Deno.readFile(file), 404);
+    }
+  } catch {}
   return c.text('404 Not Found', 404);
 });
 
@@ -75,6 +76,9 @@ export function deployDenoPlugin(opts: {
     resolveId(source) {
       if (source === `${opts.srcDir}/${SERVE_JS}`) {
         return source;
+      }
+      if (source.startsWith('jsr:@hono/hono')) {
+        return { id: source, external: true };
       }
     },
     load(id) {
