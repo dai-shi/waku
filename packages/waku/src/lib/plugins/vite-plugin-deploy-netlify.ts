@@ -16,7 +16,7 @@ const { Hono } = await importHono();
 const loadEntries = () => import('${srcEntriesFile}');
 
 const app = new Hono();
-app.use('*', runner({ cmd: 'start', loadEntries, env: process.env }));
+app.use(runner({ cmd: 'start', loadEntries, env: process.env }));
 app.notFound((c) => {
   const notFoundHtml = globalThis.__WAKU_NOT_FOUND_HTML__;
   if (typeof notFoundHtml === 'string') {

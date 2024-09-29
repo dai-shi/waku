@@ -11,3 +11,4 @@ dist
 .cache
 .nvmrc
 .node-version
+entries.gen.tsx

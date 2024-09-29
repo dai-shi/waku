@@ -27,6 +27,7 @@ import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import type { ClonableModuleNode, Middleware } from './types.js';
+import { fsRouterTypegenPlugin } from '../plugins/vite-plugin-fs-router-typegen.js';
 
 // TODO there is huge room for refactoring in this file
 
@@ -109,6 +110,7 @@ const createMainViteServer = (
         rscIndexPlugin(config),
         rscTransformPlugin({ isClient: true, isBuild: false }),
         rscHmrPlugin(),
+        fsRouterTypegenPlugin(config),
       ],
       optimizeDeps: {
         include: ['react-server-dom-webpack/client', 'react-dom'],

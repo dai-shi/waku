@@ -25,7 +25,7 @@ const loadEntries = () => import('${srcEntriesFile}');
 let serveWaku;
 
 const app = new Hono();
-app.use('*', (c, next) => serveWaku(c, next));
+app.use((c, next) => serveWaku(c, next));
 app.notFound(async (c) => {
   const assetsFetcher = c.env.ASSETS;
   const url = new URL(c.req.raw.url);

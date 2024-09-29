@@ -17,7 +17,7 @@ const loadEntries = () => import('${srcEntriesFile}');
 let serveWaku;
 
 const app = new Hono();
-app.use('*', (c, next) => serveWaku(c, next));
+app.use((c, next) => serveWaku(c, next));
 app.notFound(async (c) => {
   const assetsFetcher = c.env.assets;
   // check if there's a 404.html in the static assets

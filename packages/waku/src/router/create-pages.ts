@@ -84,18 +84,18 @@ export type GetSlugs<Route extends string> = _GetSlugs<Route>;
 export type StaticSlugRoutePathsTuple<
   T extends string,
   Slugs extends unknown[] = GetSlugs<T>,
-  Result extends string[] = [],
+  Result extends readonly string[] = [],
 > = Slugs extends []
   ? Result
   : Slugs extends [infer _, ...infer Rest]
-    ? StaticSlugRoutePathsTuple<T, Rest, [...Result, string]>
+    ? StaticSlugRoutePathsTuple<T, Rest, readonly [...Result, string]>
     : never;
 
 type StaticSlugRoutePaths<T extends string> =
   HasWildcardInPath<T> extends true
-    ? string[] | string[][]
-    : StaticSlugRoutePathsTuple<T> extends [string]
-      ? string[]
+    ? readonly string[] | readonly string[][]
+    : StaticSlugRoutePathsTuple<T> extends readonly [string]
+      ? readonly string[]
       : StaticSlugRoutePathsTuple<T>[];
 
 /** Remove Slug from Path */
