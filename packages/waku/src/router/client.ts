@@ -423,14 +423,16 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       url.pathname = path;
       url.search = query;
       url.hash = '';
-      window.history.pushState(
-        {
-          ...window.history.state,
-          waku_new_path: url.pathname !== window.location.pathname,
-        },
-        '',
-        url,
-      );
+      if (path !== '/404') {
+        window.history.pushState(
+          {
+            ...window.history.state,
+            waku_new_path: url.pathname !== window.location.pathname,
+          },
+          '',
+          url,
+        );
+      }
       changeRoute(parseRoute(url), { skipRefetch: true });
     };
     const listeners = (routerData[1] ||= new Set());
