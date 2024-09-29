@@ -13,6 +13,7 @@ import type { PathSpec } from '../lib/utils/path.js';
 import type {
   AnyPage,
   GetSlugs,
+  PropsForPages,
 } from './create-pages-utils/inferred-path-types.js';
 
 const hasPathSpecPrefix = (prefix: PathSpec, path: PathSpec) => {
@@ -118,25 +119,23 @@ export type CreatePage = <
     | {
         render: Extract<Render, 'static'>;
         path: PathWithoutSlug<Path>;
-        component: FunctionComponent<RouteProps>;
+        component: FunctionComponent<PropsForPages<Path>>;
       }
     | {
         render: Extract<Render, 'static'>;
         path: PathWithStaticSlugs<Path>;
         staticPaths: StaticPaths;
-        component: FunctionComponent<RouteProps & Record<SlugKey, string>>;
+        component: FunctionComponent<PropsForPages<Path>>;
       }
     | {
         render: Extract<Render, 'dynamic'>;
         path: PathWithoutSlug<Path>;
-        component: FunctionComponent<RouteProps>;
+        component: FunctionComponent<PropsForPages<Path>>;
       }
     | {
         render: Extract<Render, 'dynamic'>;
         path: PathWithWildcard<Path, SlugKey, WildSlugKey>;
-        component: FunctionComponent<
-          RouteProps & Record<SlugKey, string> & Record<WildSlugKey, string[]>
-        >;
+        component: FunctionComponent<PropsForPages<Path>>;
       }
   ) & { unstable_disableSSR?: boolean },
 ) => Omit<
