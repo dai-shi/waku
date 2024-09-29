@@ -875,7 +875,7 @@ describe('createPages', () => {
         render: 'static',
         path: '/test/[a]/[b]',
         // @ts-expect-error: staticPaths should be an array of strings or [string, string][]
-        staticPaths: [['w']],
+        staticPaths: [['w']] as const,
         component: () => null,
       }),
     ]);

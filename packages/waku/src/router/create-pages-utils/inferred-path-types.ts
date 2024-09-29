@@ -1,10 +1,12 @@
 import type { PathWithoutSlug } from '../create-pages.js';
 import type { Join, ReplaceAll, Split } from '../util-types.js';
 
+type ReadOnlyStringTupleList = readonly (readonly string[])[];
+
 type StaticSlugPage = {
   path: string;
   render: 'static';
-  staticPaths: (string | string[])[];
+  staticPaths: readonly string[] | ReadOnlyStringTupleList;
 };
 
 type DynamicPage = {
@@ -36,8 +38,8 @@ type ReplaceSlugSet<
  * the result will be `/foo/a/b` | `/foo/c/d`.
  */
 type ReplaceHelper<
-  SplitPath extends string[],
-  StaticSlugs extends string[],
+  SplitPath extends readonly string[],
+  StaticSlugs extends readonly string[],
   // SlugCountArr is a counter for the number of slugs added to result so far
   SlugCountArr extends null[] = [],
   Result extends string[] = [],
@@ -64,7 +66,7 @@ type ReplaceHelper<
  */
 type ReplaceTupleStaticPaths<
   Path extends string,
-  StaticPathSet extends string[],
+  StaticPathSet extends readonly string[],
 > = StaticPathSet extends unknown
   ? Join<ReplaceHelper<Split<Path, '/'>, StaticPathSet>, '/'>
   : never;
@@ -73,11 +75,13 @@ type ReplaceTupleStaticPaths<
 type CollectPathsForStaticSlugPage<Page extends StaticSlugPage> = Page extends {
   path: infer Path extends string;
   render: 'static';
-  staticPaths: infer StaticPaths extends string[] | string[][];
+  staticPaths: infer StaticPaths extends
+    | readonly string[]
+    | ReadOnlyStringTupleList;
 }
-  ? StaticPaths extends string[]
+  ? StaticPaths extends readonly string[]
     ? ReplaceSlugSet<Path, StaticPaths[number]>
-    : StaticPaths extends string[][]
+    : StaticPaths extends ReadOnlyStringTupleList
       ? ReplaceTupleStaticPaths<Path, StaticPaths[number]>
       : never
   : never;
@@ -113,7 +117,7 @@ export type CollectPaths<EachPage extends AnyPage> = EachPage extends unknown
 export type AnyPage = {
   path: string;
   render: 'static' | 'dynamic';
-  staticPaths?: string[] | string[][];
+  staticPaths?: readonly string[] | readonly (readonly string[])[];
 };
 
 /**
