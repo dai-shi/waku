@@ -186,5 +186,5 @@ type SlugTypes<Path extends string> =
     : never;
 
 export type PropsForPages<Path extends string> = Prettify<
-  RouteProps<Path> & SlugTypes<Path>
+  Omit<RouteProps<Path>, 'hash'> & SlugTypes<Path>
 >;
