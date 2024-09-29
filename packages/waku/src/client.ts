@@ -14,11 +14,7 @@ import {
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
 
-import {
-  encodeInput,
-  encodeActionId,
-  decodeInput,
-} from './lib/renderers/utils.js';
+import { encodeInput, encodeActionId } from './lib/renderers/utils.js';
 
 const { createFromFetch, encodeReply } = RSDWClient;
 
@@ -121,39 +117,14 @@ export const callServerRSC = async (
 
 const prefetchedParams = new WeakMap<Promise<unknown>, unknown>();
 
-const fetchRSCInternal = async (url: string, params: unknown) => {
-  const requestInit =
-    params === undefined
-      ? undefined
-      : typeof params === 'string'
-        ? { headers: { 'X-Waku-Params': params } }
-        : { method: 'POST', body: await encodeReply(params) };
-
-  const result = await fetch(url, requestInit);
-
-  if (result.status === 404) {
-    // If the RSC file can't be found, attempt to load the real
-    // path and investigate the result.
-    const realPath = decodeInput(url.replace(BASE_PATH, ''));
-    const probe = await fetch(realPath);
-    // If the real path returns a 404 as well, retrieve the 404 page content.
-    if (probe.status === 404) {
-      return await fetch(BASE_PATH + encodeInput('404'));
-    }
-    if (probe.redirected) {
-      // If the real path was redirected, attempt to load the corresponding RSC.
-      const target = new URL(probe.url).pathname.substr(1);
-      const redirected = await fetch(BASE_PATH + encodeInput(target));
-      if (redirected.status === 404) {
-        // If the redirected RSC is a 404 as well, return the 404 content.
-        return await fetch(BASE_PATH + encodeInput('404'));
-      }
-      return redirected;
-    }
-  }
-
-  return result;
-};
+const fetchRSCInternal = (url: string, params: unknown) =>
+  params === undefined
+    ? fetch(url)
+    : typeof params === 'string'
+      ? fetch(url, { headers: { 'X-Waku-Params': params } })
+      : encodeReply(params).then((body) =>
+          fetch(url, { method: 'POST', body }),
+        );
 
 export const fetchRSC = (
   input: string,

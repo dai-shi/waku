@@ -111,9 +111,16 @@ export function unstable_defineRouter(
         : ['NOT_FOUND'];
   };
   const renderEntries: RenderEntries = async (input, { params }) => {
-    const pathname = parseInputString(input);
-    if ((await existsPath(pathname))[0] === 'NOT_FOUND') {
-      return null;
+    let pathname = parseInputString(input);
+    const pathStatus = await existsPath(pathname);
+    if (pathStatus[0] === 'NOT_FOUND') {
+      if (pathStatus[1] === 'HAS_404') {
+        // Should we somehow set `entries._statue = 404`?
+        // For now, we can distinguish with LOCATION_ID.
+        pathname = '/404';
+      } else {
+        return null;
+      }
     }
     const shouldSkipObj: {
       [componentId: ShouldSkip[number][0]]: ShouldSkip[number][1];
