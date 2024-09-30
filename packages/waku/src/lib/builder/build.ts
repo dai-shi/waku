@@ -252,7 +252,7 @@ const buildServerBundle = async (
       jsx: 'automatic',
     },
     resolve: {
-      conditions: ['import', 'module', 'default', 'production'],
+      conditions: ['import', 'module', 'default'],
     },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
@@ -315,7 +315,7 @@ const buildSsrBundle = async (
       jsx: 'automatic',
     },
     resolve: {
-      conditions: ['import', 'module', 'default', 'production'],
+      conditions: ['import', 'module', 'default'],
     },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
@@ -379,9 +379,6 @@ const buildClientBundle = async (
       rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
       ...deployPlugins(config),
     ],
-    resolve: {
-      conditions: ['import', 'module', 'default', 'browser', 'production'],
-    },
     build: {
       emptyOutDir: !partial,
       outDir: joinPath(rootDir, config.distDir, DIST_PUBLIC),

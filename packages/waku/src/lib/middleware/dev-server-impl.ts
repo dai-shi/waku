@@ -113,7 +113,7 @@ const createMainViteServer = (
         fsRouterTypegenPlugin(config),
       ],
       resolve: {
-        conditions: ['import', 'module', 'default', 'production'],
+        conditions: ['import', 'module', 'default'],
       },
       optimizeDeps: {
         include: ['react-server-dom-webpack/client', 'react-dom'],
