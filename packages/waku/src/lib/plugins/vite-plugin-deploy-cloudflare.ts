@@ -17,34 +17,49 @@ import { DIST_ENTRIES_JS, DIST_PUBLIC } from '../builder/constants.js';
 const SERVE_JS = 'serve-cloudflare.js';
 
 const getServeJsContent = (srcEntriesFile: string) => `
-import { serverEngine, importHono } from 'waku/unstable_hono';
+import { serverEngine, importHono } from "waku/unstable_hono";
 
 const { Hono } = await importHono();
 
-const loadEntries = () => import('${srcEntriesFile}');
+const loadEntries = () => import("${srcEntriesFile}");
 let serve;
 
-const app = new Hono();
-app.use((c, next) => serve(c, next));
-app.notFound(async (c) => {
-  const assetsFetcher = c.env.ASSETS;
-  const url = new URL(c.req.raw.url);
-  const errorHtmlUrl = url.origin + '/404.html';
-  const notFoundStaticAssetResponse = await assetsFetcher.fetch(
-    new URL(errorHtmlUrl),
-  );
-  if (notFoundStaticAssetResponse && notFoundStaticAssetResponse.status < 400) {
-    return c.body(notFoundStaticAssetResponse.body, 404);
-  }
-  return c.text('404 Not Found', 404);
-});
+const configPromise = loadEntries().then((entries) => entries.loadConfig());
+
+const createApp = (app) => {
+  app.use((c, next) => serve(c, next));
+  app.notFound(async (c) => {
+    const assetsFetcher = c.env.ASSETS;
+    const url = new URL(c.req.raw.url);
+    const errorHtmlUrl = url.origin + "/404.html";
+    const notFoundStaticAssetResponse = await assetsFetcher.fetch(
+      new URL(errorHtmlUrl)
+    );
+    if (
+      notFoundStaticAssetResponse &&
+      notFoundStaticAssetResponse.status < 400
+    ) {
+      return c.body(notFoundStaticAssetResponse.body, 404);
+    }
+    return c.text("404 Not Found", 404);
+  });
+  return app;
+};
+
+let honoEnhanced;
 
 export default {
   async fetch(request, env, ctx) {
     if (!serve) {
-      serve = serverEngine({ cmd: 'start', loadEntries, env });
+      serve = serverEngine({ cmd: "start", loadEntries, env });
     }
-    return app.fetch(request, env, ctx);
+    if (!honoEnhanced) {
+      const honoEnhancer =
+        (await configPromise).unstable_honoEnhancer ||
+        (async (createApp) => createApp);
+      honoEnhanced = (await honoEnhancer(createApp))(new Hono(), serve);
+    }
+    return honoEnhanced.fetch(request, env, ctx);
   },
 };
 `;
