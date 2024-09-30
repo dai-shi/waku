@@ -3,6 +3,7 @@ import type {
   PropsForPages,
 } from './create-pages-utils/inferred-path-types.js';
 
+// PathsForPages collects the paths from the `createPages` result type
 export type { PathsForPages } from './create-pages-utils/inferred-path-types.js';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
