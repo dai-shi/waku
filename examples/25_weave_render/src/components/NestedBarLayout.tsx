@@ -16,10 +16,7 @@ const Pending = ({ isPending }: { isPending: boolean }) => (
   </span>
 );
 
-const getCurrentTime = () => new Date();
-
 const HomeLayout = ({ children }: { children: ReactNode }) => {
-  const currentTime = getCurrentTime();
   return (
     <html>
       <head>
@@ -27,7 +24,7 @@ const HomeLayout = ({ children }: { children: ReactNode }) => {
       </head>
       <body>
         <div>
-          <p>Last render time: {currentTime.toISOString()}</p>
+          <p>This Layout is expected to be static</p>
           <ul>
             <li>
               <Link
