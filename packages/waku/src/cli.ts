@@ -98,22 +98,25 @@ if (values.version) {
 
 async function runDev() {
   const config = await loadConfig();
-  const honoEnhancer = config.unstable_honoEnhancer || ((app) => app);
-  const app = new Hono();
-  if (values['experimental-compress']) {
-    app.use(compress());
-  }
-  app.use(runner({ cmd: 'dev', config, env: process.env as any }));
-  app.notFound((c) => {
-    // FIXME can we avoid hardcoding the public path?
-    const file = path.join('public', '404.html');
-    if (existsSync(file)) {
-      return c.html(readFileSync(file, 'utf8'), 404);
+  const honoEnhancer =
+    config.unstable_honoEnhancer || ((createApp) => createApp);
+  const createApp = (app: Hono) => {
+    if (values['experimental-compress']) {
+      app.use(compress());
     }
-    return c.text('404 Not Found', 404);
-  });
+    app.use(runner({ cmd: 'dev', config, env: process.env as any }));
+    app.notFound((c) => {
+      // FIXME can we avoid hardcoding the public path?
+      const file = path.join('public', '404.html');
+      if (existsSync(file)) {
+        return c.html(readFileSync(file, 'utf8'), 404);
+      }
+      return c.text('404 Not Found', 404);
+    });
+    return app;
+  };
   const port = parseInt(values.port || '3000', 10);
-  await startServer(honoEnhancer(app), port);
+  await startServer(honoEnhancer(createApp)(new Hono()), port);
 }
 
 async function runBuild() {
@@ -144,25 +147,28 @@ async function runBuild() {
 async function runStart() {
   const config = await loadConfig();
   const { distDir = 'dist' } = config;
-  const honoEnhancer = config.unstable_honoEnhancer || ((app) => app);
+  const honoEnhancer =
+    config.unstable_honoEnhancer || ((createApp) => createApp);
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, DIST_ENTRIES_JS)).toString());
-  const app = new Hono();
-  if (values['experimental-compress']) {
-    app.use(compress());
-  }
-  app.use(serveStatic({ root: path.join(distDir, DIST_PUBLIC) }));
-  app.use(runner({ cmd: 'start', loadEntries, env: process.env as any }));
-  app.notFound((c) => {
-    // FIXME better implementation using node stream?
-    const file = path.join(distDir, DIST_PUBLIC, '404.html');
-    if (existsSync(file)) {
-      return c.html(readFileSync(file, 'utf8'), 404);
+  const createApp = (app: Hono) => {
+    if (values['experimental-compress']) {
+      app.use(compress());
     }
-    return c.text('404 Not Found', 404);
-  });
+    app.use(serveStatic({ root: path.join(distDir, DIST_PUBLIC) }));
+    app.use(runner({ cmd: 'start', loadEntries, env: process.env as any }));
+    app.notFound((c) => {
+      // FIXME better implementation using node stream?
+      const file = path.join(distDir, DIST_PUBLIC, '404.html');
+      if (existsSync(file)) {
+        return c.html(readFileSync(file, 'utf8'), 404);
+      }
+      return c.text('404 Not Found', 404);
+    });
+    return app;
+  };
   const port = parseInt(values.port || '8080', 10);
-  await startServer(honoEnhancer(app), port);
+  await startServer(honoEnhancer(createApp)(new Hono()), port);
 }
 
 function startServer(app: Hono, port: number) {
