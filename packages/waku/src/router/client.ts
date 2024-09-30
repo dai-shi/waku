@@ -23,12 +23,13 @@ import type {
   MouseEvent,
 } from 'react';
 
-import { prefetchRSC, Root, Slot, useRefetch } from '../client.js';
+import { fetchRSC, prefetchRSC, Root, Slot, useRefetch } from '../client.js';
 import {
   getComponentIds,
   getInputString,
   SHOULD_SKIP_ID,
   LOCATION_ID,
+  HAS404_ID,
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
 import type { RouteConfig } from './base-types.js';
@@ -478,6 +479,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
 type RouterData = [
   shouldSkip?: ShouldSkip,
   locationListners?: Set<(path: string, query: string) => void>,
+  has404?: boolean,
 ];
 
 const DEFAULT_ROUTER_DATA: RouterData = [];
@@ -485,41 +487,58 @@ const DEFAULT_ROUTER_DATA: RouterData = [];
 export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
   const route = parseRouteFromLocation();
   const initialInput = getInputString(route.path);
-  const unstable_onFetchData = (data: unknown) => {
-    Promise.resolve(data)
-      .then((data) => {
-        if (data && typeof data === 'object') {
-          // We need to process SHOULD_SKIP_ID before LOCATION_ID
-          if (SHOULD_SKIP_ID in data) {
-            // TODO replacing the whole array is not ideal
-            routerData[0] = data[SHOULD_SKIP_ID] as ShouldSkip;
-          }
-          if (LOCATION_ID in data) {
-            const [pathname, searchParamsString] = data[LOCATION_ID] as [
-              string,
-              string,
-            ];
-            // FIXME this check here seems ad-hoc (less readable code)
-            if (
-              window.location.pathname !== pathname ||
-              window.location.search.replace(/^\?/, '') !== searchParamsString
-            ) {
-              routerData[1]?.forEach((listener) =>
-                listener(pathname, searchParamsString),
-              );
+  const unstable_enhanceCreateData =
+    (
+      createData: (
+        responsePromise: Promise<Response>,
+      ) => Promise<Record<string, ReactNode>>,
+    ) =>
+    async (responsePromise: Promise<Response>) => {
+      const response = await responsePromise;
+      const has404 = routerData[2];
+      if (response.status === 404 && has404) {
+        // HACK this is still an experimental logic. It's very fragile.
+        return fetchRSC(getInputString('/404'));
+      }
+      const data = createData(responsePromise);
+      Promise.resolve(data)
+        .then((data) => {
+          if (data && typeof data === 'object') {
+            // We need to process SHOULD_SKIP_ID before LOCATION_ID
+            if (SHOULD_SKIP_ID in data) {
+              // TODO replacing the whole array is not ideal
+              routerData[0] = data[SHOULD_SKIP_ID] as ShouldSkip;
+            }
+            if (LOCATION_ID in data) {
+              const [pathname, searchParamsString] = data[LOCATION_ID] as [
+                string,
+                string,
+              ];
+              // FIXME this check here seems ad-hoc (less readable code)
+              if (
+                window.location.pathname !== pathname ||
+                window.location.search.replace(/^\?/, '') !== searchParamsString
+              ) {
+                routerData[1]?.forEach((listener) =>
+                  listener(pathname, searchParamsString),
+                );
+              }
+            }
+            if (HAS404_ID in data) {
+              routerData[2] = true;
             }
           }
-        }
-      })
-      .catch(() => {});
-  };
+        })
+        .catch(() => {});
+      return data;
+    };
   const initialParams = JSON.stringify({ query: route.query });
   return createElement(
     ErrorBoundary,
     null,
     createElement(
       Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
-      { initialInput, initialParams, unstable_onFetchData },
+      { initialInput, initialParams, unstable_enhanceCreateData },
       createElement(InnerRouter, { routerData }),
     ),
   );
