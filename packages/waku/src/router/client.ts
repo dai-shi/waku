@@ -53,16 +53,19 @@ const normalizeRoutePath = (path: string) => {
 };
 
 const parseRoute = (url: URL): RouteProps => {
-  // TODO do we need this?
-  // if ((globalThis as any).__WAKU_ROUTER_404__) {
-  //   return { path: '/404', query: '', hash: '' };
-  // }
   const { pathname, searchParams, hash } = url;
   return {
     path: normalizeRoutePath(pathname),
     query: searchParams.toString(),
     hash,
   };
+};
+
+const parseRouteFromLocation = (): RouteProps => {
+  if ((globalThis as any).__WAKU_ROUTER_404__) {
+    return { path: '/404', query: '', hash: '' };
+  }
+  return parseRoute(new URL(window.location.href));
 };
 
 type ChangeRoute = (
@@ -308,7 +311,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
 
   const initialRouteRef = useRef<RouteProps>();
   if (!initialRouteRef.current) {
-    initialRouteRef.current = parseRoute(new URL(window.location.href));
+    initialRouteRef.current = parseRouteFromLocation();
   }
   const [route, setRoute] = useState(() => ({
     // This is the first initialization of the route, and it has
@@ -480,7 +483,7 @@ type RouterData = [
 const DEFAULT_ROUTER_DATA: RouterData = [];
 
 export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
-  const route = parseRoute(new URL(window.location.href));
+  const route = parseRouteFromLocation();
   const initialInput = getInputString(route.path);
   const unstable_onFetchData = (data: unknown) => {
     Promise.resolve(data)
