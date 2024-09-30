@@ -115,7 +115,7 @@ export function unstable_defineRouter(
     const pathStatus = await existsPath(pathname);
     if (pathStatus[0] === 'NOT_FOUND') {
       if (pathStatus[1] === 'HAS_404') {
-        // Should we somehow set `entries._statue = 404`?
+        // Should we somehow set `entries._status = 404`?
         // For now, we can distinguish with LOCATION_ID.
         pathname = '/404';
       } else {
