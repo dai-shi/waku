@@ -6,49 +6,29 @@ import { joinPath } from '../utils/path.js';
 
 const SRC_PAGES = 'pages';
 
+const invalidCharRegex = /[^0-9a-zA-Z_$]/g;
 const srcToName = (src: string) => {
-  const split = src
-    .split('/')
-    .map((part) => part[0]!.toUpperCase() + part.slice(1));
-
-  if (split.at(-1) === '_layout.tsx') {
-    return split.slice(0, -1).join('') + '_Layout';
-  } else if (split.at(-1) === 'index.tsx') {
-    return split.slice(0, -1).join('') + 'Index';
-  } else if (split.at(-1)?.startsWith('[...')) {
-    const fileName = split
-      .at(-1)!
-      .replace('-', '_')
-      .replace('.tsx', '')
-      .replace('[...', '')
-      .replace(']', '');
-    return (
-      split.slice(0, -1).join('') +
-      'Wild' +
-      fileName[0]!.toUpperCase() +
-      fileName.slice(1)
-    );
-  } else if (split.at(-1)?.startsWith('[')) {
-    const fileName = split
-      .at(-1)!
-      .replace('-', '_')
-      .replace('.tsx', '')
-      .replace('[', '')
-      .replace(']', '');
-    return (
-      split.slice(0, -1).join('') +
-      'Slug' +
-      fileName[0]!.toUpperCase() +
-      fileName.slice(1)
-    );
-  } else {
-    const fileName = split.at(-1)!.replace('-', '_').replace('.tsx', '');
-    return (
-      split.slice(0, -1).join('') +
-      fileName[0]!.toUpperCase() +
-      fileName.slice(1)
-    );
-  }
+  const split = src.split('/');
+  const filename = split
+    .at(-1)!
+    .replace(/.tsx$/, '')
+    .replace(invalidCharRegex, '')
+    .replace('_layout', 'Layout');
+  const entryPath =
+    split.length > 1
+      ? split.slice(0, -1).map((part) => {
+          let _part = part;
+          if (_part.startsWith('[...')) {
+            _part = 'Wild_' + _part;
+          }
+          if (_part[0] === '[') {
+            _part = 'Slug_' + _part;
+          }
+          _part = _part.replace(invalidCharRegex, '');
+          return _part[0]!.toUpperCase() + _part.slice(1);
+        })
+      : [];
+  return entryPath.join('') + filename[0]!.toUpperCase() + filename.slice(1);
 };
 
 export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
@@ -91,20 +71,26 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
       }
 
       // Recursively collect `.tsx` files in the given directory
-      const collectFiles = async (dir: string): Promise<string[]> => {
-        if (!pagesDir) return [];
-        const results: string[] = [];
-        const files = await readdir(dir, {
-          withFileTypes: true,
-          recursive: true,
-        });
-
-        for (const file of files) {
-          if (file.name.endsWith('.tsx')) {
-            results.push('/' + file.name);
+      const collectFiles = async (
+        dir: string,
+        cwd: string = '',
+        files: string[] = [],
+      ): Promise<string[]> => {
+        if (!cwd) {
+          cwd = dir;
+        }
+        const entries = await readdir(cwd, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = joinPath(cwd, entry.name);
+          if (entry.isDirectory()) {
+            await collectFiles(dir, fullPath, files);
+          } else {
+            if (entry.name.endsWith('.tsx')) {
+              files.push(fullPath.slice(dir.length));
+            }
           }
         }
-        return results;
+        return files;
       };
 
       const fileExportsGetConfig = (filePath: string) => {
@@ -124,14 +110,14 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
           const src = filePath.slice(1);
           const hasGetConfig = fileExportsGetConfig(filePath);
 
-          if (filePath === '/_layout.tsx') {
+          if (filePath.endsWith('/_layout.tsx')) {
             fileInfo.push({
               type: 'layout',
               path: filePath.replace('_layout.tsx', ''),
               src,
               hasGetConfig,
             });
-          } else if (filePath === '/index.tsx') {
+          } else if (filePath.endsWith('/index.tsx')) {
             fileInfo.push({
               type: 'page',
               path: filePath.replace('index.tsx', ''),
@@ -164,7 +150,7 @@ import type { PathsForPages } from 'waku/router';\n\n`;
         }
 
         result += `]);
-  
+
   declare module 'waku/router' {
     interface RouteConfig {
       paths: PathsForPages<typeof _pages>;
