@@ -44,9 +44,6 @@ test('should create waku with default setup work', async () => {
   expect(files).toContain('src');
   expect(files).toContain('tsconfig.json');
   exec(`rm -rf ${cwd}`);
-  // Why is this function needed?
-  // Can not terminate sub process automatically when tests are finished?
-  // await terminate(childProcess.pid);
 });
 
 test('should create waku with update notify work', async () => {
