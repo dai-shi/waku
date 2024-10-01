@@ -11,5 +11,11 @@ export interface RouteConfig {
   // routes to be overridden by users
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface CreatePagesConfig {
+  // routes to be overridden by users
+}
+
 /** Props for pages when using `createPages` */
-export type PageProps<Path extends PagePath<RouteConfig>> = PropsForPages<Path>;
+export type PageProps<Path extends PagePath<CreatePagesConfig>> =
+  PropsForPages<Path>;

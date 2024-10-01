@@ -169,6 +169,9 @@ import type { PathsForPages } from 'waku/router';\n\n`;
     interface RouteConfig {
       paths: PathsForPages<typeof _pages>;
     }
+    interface CreatePagesConfig {
+      pages: typeof _pages;
+    }
   }
 
   export default _pages;

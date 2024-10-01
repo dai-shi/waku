@@ -141,14 +141,10 @@ export type AnyPage = {
  * type MyPaths = PathsForPages<typeof pages>;
  * // type MyPaths = '/foo' | '/bar';
  */
-export type PathsForPages<PagesResult extends { DO_NOT_USE_pages: AnyPage }> = {
-  /** All possible paths with string or static paths in place of slug */
-  expanded: CollectPaths<PagesResult['DO_NOT_USE_pages']> extends never
+export type PathsForPages<PagesResult extends { DO_NOT_USE_pages: AnyPage }> =
+  CollectPaths<PagesResult['DO_NOT_USE_pages']> extends never
     ? string
-    : CollectPaths<PagesResult['DO_NOT_USE_pages']> & {};
-  /** Paths with slugs as string literals */
-  initial: PagesResult['DO_NOT_USE_pages']['path'];
-};
+    : CollectPaths<PagesResult['DO_NOT_USE_pages']>;
 
 type _GetSlugs<
   Route extends string,
@@ -164,10 +160,9 @@ type _GetSlugs<
 
 export type GetSlugs<Route extends string> = _GetSlugs<Route>;
 
+/** Paths with slugs as string literals */
 export type PagePath<Config> = Config extends {
-  paths: {
-    initial: infer AllPages;
-  };
+  pages: infer AllPages;
 }
   ? AllPages
   : never;
