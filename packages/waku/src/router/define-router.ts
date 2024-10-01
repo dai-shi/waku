@@ -19,6 +19,7 @@ import {
   parseInputString,
   SHOULD_SKIP_ID,
   LOCATION_ID,
+  HAS404_ID,
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
 import { getPathMapping } from '../lib/utils/path.js';
@@ -97,22 +98,31 @@ export function unstable_defineRouter(
   };
   const existsPath = async (
     pathname: string,
-  ): Promise<['FOUND', 'NO_SSR'?] | ['NOT_FOUND', 'HAS_404'?]> => {
+  ): Promise<{
+    found: boolean;
+    has404: boolean;
+    noSsr?: boolean;
+  }> => {
     const pathConfig = await getMyPathConfig();
     const found = pathConfig.find(({ pathname: pathSpec }) =>
       getPathMapping(pathSpec, pathname),
     );
+    const has404 = pathConfig.some(({ specs: { is404 } }) => is404);
     return found
-      ? found.specs.noSsr
-        ? ['FOUND', 'NO_SSR']
-        : ['FOUND']
-      : pathConfig.some(({ specs: { is404 } }) => is404) // FIXMEs should avoid re-computation
-        ? ['NOT_FOUND', 'HAS_404']
-        : ['NOT_FOUND'];
+      ? {
+          found: true,
+          has404,
+          noSsr: !!found.specs.noSsr,
+        }
+      : {
+          found: false,
+          has404,
+        };
   };
   const renderEntries: RenderEntries = async (input, { params }) => {
     const pathname = parseInputString(input);
-    if ((await existsPath(pathname))[0] === 'NOT_FOUND') {
+    const pathStatus = await existsPath(pathname);
+    if (!pathStatus.found) {
       return null;
     }
     const shouldSkipObj: {
@@ -162,6 +172,9 @@ export function unstable_defineRouter(
     ).flat();
     entries.push([SHOULD_SKIP_ID, Object.entries(shouldSkipObj)]);
     entries.push([LOCATION_ID, [pathname, query]]);
+    if (pathStatus.has404) {
+      entries.push([HAS404_ID, true]);
+    }
     return Object.fromEntries(entries);
   };
 
@@ -216,11 +229,11 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
 
   const getSsrConfig: GetSsrConfig = async (pathname, { searchParams }) => {
     const pathStatus = await existsPath(pathname);
-    if (pathStatus[1] === 'NO_SSR') {
+    if (pathStatus.noSsr) {
       return null;
     }
-    if (pathStatus[0] === 'NOT_FOUND') {
-      if (pathStatus[1] === 'HAS_404') {
+    if (!pathStatus.found) {
+      if (pathStatus.has404) {
         pathname = '/404';
       } else {
         return null;
