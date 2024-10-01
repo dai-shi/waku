@@ -19,3 +19,9 @@ export default function Index() {
     </div>
   );
 }
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};

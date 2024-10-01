@@ -17,10 +17,12 @@ const { version } = createRequire(import.meta.url)(
   join(wakuDir, 'package.json'),
 );
 
-async function start() {
+async function start(staticServe: boolean) {
   const port = await getFreePort();
   const cp = exec(
-    `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start --port ${port}`,
+    staticServe
+      ? `node ${join(standaloneDir, './node_modules/serve/build/main.js')} dist/public -p ${port}`
+      : `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start --port ${port}`,
     { cwd: standaloneDir },
   );
   debugChildProcess(cp, fileURLToPath(import.meta.url), [
@@ -63,7 +65,7 @@ test.beforeEach(async () => {
 
 test.describe('server side navigation', () => {
   test('existing page', async ({ page }) => {
-    const [port, pid] = await start();
+    const [port, pid] = await start(false);
 
     // Go to an existing page
     await page.goto(`http://localhost:${port}/exists`);
@@ -80,7 +82,7 @@ test.describe('server side navigation', () => {
   });
 
   test('missing page', async ({ page }) => {
-    const [port, pid] = await start();
+    const [port, pid] = await start(false);
 
     // Navigate to a non-existing page
     await page.goto(`http://localhost:${port}/broken`);
@@ -97,7 +99,7 @@ test.describe('server side navigation', () => {
   });
 
   test('redirect', async ({ page }) => {
-    const [port, pid] = await start();
+    const [port, pid] = await start(false);
 
     // Navigate to a page that redirects to an existing page
     await page.goto(`http://localhost:${port}/redirect`);
@@ -114,7 +116,7 @@ test.describe('server side navigation', () => {
   });
 
   test('broken redirect', async ({ page }) => {
-    const [port, pid] = await start();
+    const [port, pid] = await start(false);
 
     // Navigate to a page that redirects to a non-existing page
     await page.goto(`http://localhost:${port}/broken-redirect`);
@@ -133,7 +135,7 @@ test.describe('server side navigation', () => {
 
 test.describe('client side navigation', () => {
   test('correct link', async ({ page }) => {
-    const [port, pid] = await start();
+    const [port, pid] = await start(true);
 
     await page.goto(`http://localhost:${port}`);
     // Click on a link to an existing page
@@ -151,7 +153,7 @@ test.describe('client side navigation', () => {
   });
 
   test('broken link', async ({ page }) => {
-    const [port, pid] = await start();
+    const [port, pid] = await start(true);
 
     await page.goto(`http://localhost:${port}`);
 

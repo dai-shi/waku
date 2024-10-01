@@ -10,3 +10,9 @@ export default function Exists() {
     </div>
   );
 }
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
