@@ -498,6 +498,7 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
       const has404 = routerData[2];
       if (response.status === 404 && has404) {
         // HACK this is still an experimental logic. It's very fragile.
+        // FIXME we should cache it if 404.txt is static. 
         return fetchRSC(getInputString('/404'));
       }
       const data = createData(responsePromise);
