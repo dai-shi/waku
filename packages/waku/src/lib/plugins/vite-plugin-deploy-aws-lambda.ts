@@ -28,8 +28,8 @@ const publicDir = '${distPublic}';
 const loadEntries = () => import('${srcEntriesFile}');
 
 const app = new Hono();
-app.use('*', serveStatic({ root: distDir + '/' + publicDir }));
-app.use('*', runner({ cmd: 'start', loadEntries, env: process.env }));
+app.use(serveStatic({ root: distDir + '/' + publicDir }));
+app.use(runner({ cmd: 'start', loadEntries, env: process.env }));
 app.notFound(async (c) => {
   const file = path.join(distDir, publicDir, '404.html');
   if (existsSync(file)) {

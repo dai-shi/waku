@@ -25,7 +25,7 @@ const publicDir = '${distPublic}';
 const loadEntries = () => import('${srcEntriesFile}');
 
 const app = new Hono();
-app.use('*', runner({ cmd: 'start', loadEntries, env: process.env }));
+app.use(runner({ cmd: 'start', loadEntries, env: process.env }));
 app.notFound((c) => {
   // FIXME better implementation using node stream?
   const file = path.join(distDir, publicDir, '404.html');

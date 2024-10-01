@@ -1,34 +1,48 @@
 import path from 'node:path';
 import { existsSync, writeFileSync } from 'node:fs';
-import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 
 import { unstable_getPlatformObject } from '../../server.js';
-import { EXTENSIONS, SRC_ENTRIES } from '../constants.js';
-import {
-  decodeFilePathFromAbsolute,
-  extname,
-  fileURLToFilePath,
-  joinPath,
-} from '../utils/path.js';
-import { DIST_SERVE_JS, DIST_PUBLIC } from '../builder/constants.js';
+import { SRC_ENTRIES } from '../constants.js';
+import { DIST_PUBLIC } from '../builder/constants.js';
 
-const resolveFileName = (fname: string) => {
-  for (const ext of EXTENSIONS) {
-    const resolvedName = fname.slice(0, -extname(fname).length) + ext;
-    if (existsSync(resolvedName)) {
-      return resolvedName;
-    }
+const SERVE_JS = 'serve-partykit.js';
+
+const getServeJsContent = (srcEntriesFile: string) => `
+import { runner, importHono } from 'waku/unstable_hono';
+
+const { Hono } = await importHono();
+
+const loadEntries = () => import('${srcEntriesFile}');
+let serveWaku;
+
+const app = new Hono();
+app.use((c, next) => serveWaku(c, next));
+app.notFound(async (c) => {
+  const assetsFetcher = c.env.assets;
+  // check if there's a 404.html in the static assets
+  const notFoundStaticAssetResponse = await assetsFetcher.fetch('/404.html');
+  // if there is, return it
+  if (notFoundStaticAssetResponse) {
+    return new Response(notFoundStaticAssetResponse.body, {
+      status: 404,
+      statusText: 'Not Found',
+      headers: notFoundStaticAssetResponse.headers,
+    });
   }
-  return fname; // returning the default one
-};
+  // otherwise, return a simple 404 response
+  return c.text('404 Not Found', 404);
+});
 
-const srcServeFile = decodeFilePathFromAbsolute(
-  joinPath(
-    fileURLToFilePath(import.meta.url),
-    '../../builder/serve-partykit.js',
-  ),
-);
+export default {
+  onFetch(request, lobby, ctx) {
+    if (!serveWaku) {
+      serveWaku = runner({ cmd: 'start', loadEntries, env: lobby });
+    }
+    return app.fetch(request, lobby, ctx);
+  },
+};
+`;
 
 export function deployPartykitPlugin(opts: {
   srcDir: string;
@@ -36,6 +50,7 @@ export function deployPartykitPlugin(opts: {
 }): Plugin {
   const platformObject = unstable_getPlatformObject();
   let rootDir: string;
+  let entriesFile: string;
   return {
     name: 'deploy-partykit-plugin',
     config(viteConfig) {
@@ -43,29 +58,19 @@ export function deployPartykitPlugin(opts: {
       if (unstable_phase !== 'buildServerBundle' || deploy !== 'partykit') {
         return;
       }
-
-      // FIXME This seems too hacky (The use of viteConfig.root, '.', path.resolve and resolveFileName)
-      const entriesFile = normalizePath(
-        resolveFileName(
-          path.resolve(viteConfig.root || '.', opts.srcDir, SRC_ENTRIES),
-        ),
-      );
       const { input } = viteConfig.build?.rollupOptions ?? {};
       if (input && !(typeof input === 'string') && !(input instanceof Array)) {
-        input[DIST_SERVE_JS.replace(/\.js$/, '')] = srcServeFile;
+        input[SERVE_JS.replace(/\.js$/, '')] = `${opts.srcDir}/${SERVE_JS}`;
       }
-      viteConfig.define = {
-        ...viteConfig.define,
-        'import.meta.env.WAKU_ENTRIES_FILE': JSON.stringify(entriesFile),
-      };
     },
     configResolved(config) {
       rootDir = config.root;
+      entriesFile = `${rootDir}/${opts.srcDir}/${SRC_ENTRIES}`;
       const { deploy, unstable_phase } = platformObject.buildOptions || {};
       if (
         (unstable_phase !== 'buildServerBundle' &&
           unstable_phase !== 'buildSsrBundle') ||
-        deploy !== 'cloudflare'
+        deploy !== 'partykit'
       ) {
         return;
       }
@@ -75,6 +80,16 @@ export function deployPartykitPlugin(opts: {
       config.ssr.resolve.conditions.push('worker');
       config.ssr.resolve.externalConditions ||= [];
       config.ssr.resolve.externalConditions.push('worker');
+    },
+    resolveId(source) {
+      if (source === `${opts.srcDir}/${SERVE_JS}`) {
+        return source;
+      }
+    },
+    load(id) {
+      if (id === `${opts.srcDir}/${SERVE_JS}`) {
+        return getServeJsContent(entriesFile);
+      }
     },
     closeBundle() {
       const { deploy, unstable_phase } = platformObject.buildOptions || {};
@@ -89,7 +104,7 @@ export function deployPartykitPlugin(opts: {
           JSON.stringify(
             {
               name: 'waku-project',
-              main: `${opts.distDir}/${DIST_SERVE_JS}`,
+              main: `${opts.distDir}/${SERVE_JS}`,
               compatibilityDate: '2023-02-16',
               serve: `./${opts.distDir}/${DIST_PUBLIC}`,
             },
