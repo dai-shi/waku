@@ -77,16 +77,20 @@ const mergeElements = (a: Elements, b: Elements): Elements => {
 };
 
 type SetElements = (updater: (prev: Elements) => Elements) => void;
-type OnFetchData = (data: unknown) => void;
+type EnhanceCreateData = (
+  createData: (
+    responsePromise: Promise<Response>,
+  ) => Promise<Record<string, ReactNode>>,
+) => (responsePromise: Promise<Response>) => Promise<Record<string, ReactNode>>;
 
 const ENTRY = 'e';
 const SET_ELEMENTS = 's';
-const ON_FETCH_DATA = 'o';
+const ENHANCE_CREATE_DATA = 'd';
 
 type FetchCache = {
   [ENTRY]?: [input: string, params: unknown, elements: Elements];
   [SET_ELEMENTS]?: SetElements;
-  [ON_FETCH_DATA]?: OnFetchData | undefined;
+  [ENHANCE_CREATE_DATA]?: EnhanceCreateData | undefined;
 };
 
 const defaultFetchCache: FetchCache = {};
@@ -100,16 +104,18 @@ export const callServerRSC = async (
   args?: unknown[],
   fetchCache = defaultFetchCache,
 ) => {
+  const enhanceCreateData = fetchCache[ENHANCE_CREATE_DATA] || ((d) => d);
+  const createData = (responsePromise: Promise<Response>) =>
+    createFromFetch<Awaited<Elements>>(checkStatus(responsePromise), {
+      callServer: (actionId: string, args: unknown[]) =>
+        callServerRSC(actionId, args, fetchCache),
+    });
   const url = BASE_PATH + encodeInput(encodeActionId(actionId));
-  const response =
+  const responsePromise =
     args === undefined
       ? fetch(url)
       : encodeReply(args).then((body) => fetch(url, { method: 'POST', body }));
-  const data = createFromFetch<Awaited<Elements>>(checkStatus(response), {
-    callServer: (actionId: string, args: unknown[]) =>
-      callServerRSC(actionId, args, fetchCache),
-  });
-  fetchCache[ON_FETCH_DATA]?.(data);
+  const data = enhanceCreateData(createData)(responsePromise);
   // FIXME this causes rerenders even if data is empty
   fetchCache[SET_ELEMENTS]?.((prev) => mergeElements(prev, data));
   return (await data)._value;
@@ -135,6 +141,12 @@ export const fetchRSC = (
   if (entry && entry[0] === input && entry[1] === params) {
     return entry[2];
   }
+  const enhanceCreateData = fetchCache[ENHANCE_CREATE_DATA] || ((d) => d);
+  const createData = (responsePromise: Promise<Response>) =>
+    createFromFetch<Awaited<Elements>>(checkStatus(responsePromise), {
+      callServer: (actionId: string, args: unknown[]) =>
+        callServerRSC(actionId, args, fetchCache),
+    });
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
   const url = BASE_PATH + encodeInput(input);
   const hasValidPrefetchedResponse =
@@ -143,15 +155,11 @@ export const fetchRSC = (
     // It's limited and may result in a wrong result. FIXME
     (!prefetchedParams.has(prefetched[url]) ||
       prefetchedParams.get(prefetched[url]) === params);
-  const response = hasValidPrefetchedResponse
+  const responsePromise = hasValidPrefetchedResponse
     ? prefetched[url]
     : fetchRSCInternal(url, params);
   delete prefetched[url];
-  const data = createFromFetch<Awaited<Elements>>(checkStatus(response), {
-    callServer: (actionId: string, args: unknown[]) =>
-      callServerRSC(actionId, args, fetchCache),
-  });
-  fetchCache[ON_FETCH_DATA]?.(data);
+  const data = enhanceCreateData(createData)(responsePromise);
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
   fetchCache[ENTRY] = [input, params, data];
   return data;
@@ -177,16 +185,16 @@ export const Root = ({
   initialInput,
   initialParams,
   fetchCache = defaultFetchCache,
-  unstable_onFetchData,
+  unstable_enhanceCreateData,
   children,
 }: {
   initialInput?: string;
   initialParams?: unknown;
   fetchCache?: FetchCache;
-  unstable_onFetchData?: (data: unknown) => void;
+  unstable_enhanceCreateData?: EnhanceCreateData;
   children: ReactNode;
 }) => {
-  fetchCache[ON_FETCH_DATA] = unstable_onFetchData;
+  fetchCache[ENHANCE_CREATE_DATA] = unstable_enhanceCreateData;
   const [elements, setElements] = useState(() =>
     fetchRSC(initialInput || '', initialParams, fetchCache),
   );

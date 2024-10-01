@@ -16,6 +16,7 @@ import {
   parseExampleOption,
   downloadAndExtract,
 } from './helpers/example-option.js';
+import { spawn } from 'node:child_process';
 
 const userAgent = process.env.npm_config_user_agent || '';
 const packageManager = /pnpm/.test(userAgent)
@@ -202,15 +203,32 @@ async function init() {
     await installTemplate(root, packageName, templateRoot, templateName);
   }
 
-  // TODO automatically installing dependencies
   // 1. check packageManager
   // 2. and then install dependencies
-
-  console.log(`\nDone. Now run:\n`);
-  console.log(`${bold(green(`cd ${targetDir}`))}`);
-  console.log(`${bold(green(commands.install))}`);
-  console.log(`${bold(green(commands.dev))}`);
   console.log();
+  console.log(`Installing dependencies by running ${commands.install}...`);
+
+  const installProcess = spawn(packageManager, ['install'], {
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+    cwd: targetDir,
+  });
+
+  installProcess.on('close', (code) => {
+    // process exit code
+    if (code !== 0) {
+      console.error(`Could not execute ${commands.install}. Please run`);
+      console.log(`${bold(green(`cd ${targetDir}`))}`);
+      console.log(`${bold(green(commands.install))}`);
+      console.log(`${bold(green(commands.dev))}`);
+      console.log();
+    } else {
+      console.log(`\nDone. Now run:\n`);
+      console.log(`${bold(green(`cd ${targetDir}`))}`);
+      console.log(`${bold(green(commands.dev))}`);
+      console.log();
+    }
+  });
 }
 
 init()
