@@ -30,6 +30,6 @@ const allSponsors = [
   {
     title: 'Progress KendoReact',
     logo: 'https://cdn.candycode.com/waku/sponsors/kendo-react.png',
-    url: 'https://www.telerik.com/kendo-react-ui',
+    url: 'https://www.telerik.com/kendo-react-ui?utm_medium=referral&utm_source=waku&utm_campaign=waku-sponsorship',
   },
 ];

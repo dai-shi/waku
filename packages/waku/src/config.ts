@@ -48,6 +48,13 @@ export interface Config {
    * ]
    */
   middleware?: () => Promise<{ default: Middleware }>[];
+  /**
+   * Enhander for Hono
+   * Defaults to `undefined`
+   */
+  unstable_honoEnhancer?:
+    | (<Hono>(createApp: (app: Hono) => Hono) => (app: Hono) => Hono)
+    | undefined;
 }
 
 export function defineConfig(config: Config) {

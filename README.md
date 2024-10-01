@@ -1021,7 +1021,7 @@ npx partykit dev # or deploy
 
 ```
 npm run build -- --with-deno
-DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod dist/serve.js --exclude node_modules
+deployctl deploy --prod dist/serve-deno.js --exclude node_modules
 ```
 
 ### AWS Lambda (experimental)
@@ -1030,7 +1030,8 @@ DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod dist/serve.js --excl
 npm run build -- --with-aws-lambda
 ```
 
-The handler entrypoint is `dist/serve.js`: see [Hono AWS Lambda Deploy Docs](https://hono.dev/getting-started/aws-lambda#_3-deploy).
+The handler entrypoint is `dist/serve-asw-lambda.js`: see [Hono AWS Lambda Deploy Docs](https://hono.dev/getting-started/aws-lambda#_3-deploy).
+Streaming can be activated by setting environment variable `DEPLOY_AWS_LAMBDA_STREAMING=true npm run build -- --with-aws-lambda`
 
 ## Community
 
