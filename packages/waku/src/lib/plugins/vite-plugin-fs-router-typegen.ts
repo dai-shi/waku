@@ -6,6 +6,14 @@ import { joinPath } from '../utils/path.js';
 
 const SRC_PAGES = 'pages';
 
+// from waku/router/common
+export function getInputString(path: string): string {
+  if (!path.startsWith('/')) {
+    throw new Error('Path should start with `/`');
+  }
+  return path.slice(1);
+}
+
 // https://tc39.es/ecma262/multipage/ecmascript-language-lexical-grammar.html#sec-names-and-keywords
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#identifiers
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#reserved_words
@@ -42,7 +50,7 @@ export function getImportModuleNames(filePaths: string[]): {
     if (moduleNameCount[identifier]) {
       identifier = `${identifier}_${moduleNameCount[identifier]}`;
     }
-    moduleNames[filePath] = identifier;
+    moduleNames[getInputString(filePath)] = identifier;
   }
   return moduleNames;
 }
@@ -123,7 +131,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
 
         for (const filePath of filePaths) {
           // where to import the component from
-          const src = filePath.slice(1);
+          const src = getInputString(filePath);
           const hasGetConfig = fileExportsGetConfig(filePath);
 
           if (filePath.endsWith('/_layout.tsx')) {
