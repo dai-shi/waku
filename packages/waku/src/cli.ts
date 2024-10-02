@@ -10,7 +10,7 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import * as dotenv from 'dotenv';
 
 import type { Config } from './config.js';
-import { runner } from './lib/hono/runner.js';
+import { serverEngine } from './lib/hono/engine.js';
 import { build } from './lib/builder/build.js';
 import { DIST_ENTRIES_JS, DIST_PUBLIC } from './lib/builder/constants.js';
 
@@ -104,7 +104,7 @@ async function runDev() {
     if (values['experimental-compress']) {
       app.use(compress());
     }
-    app.use(runner({ cmd: 'dev', config, env: process.env as any }));
+    app.use(serverEngine({ cmd: 'dev', config, env: process.env as any }));
     app.notFound((c) => {
       // FIXME can we avoid hardcoding the public path?
       const file = path.join('public', '404.html');
@@ -156,7 +156,9 @@ async function runStart() {
       app.use(compress());
     }
     app.use(serveStatic({ root: path.join(distDir, DIST_PUBLIC) }));
-    app.use(runner({ cmd: 'start', loadEntries, env: process.env as any }));
+    app.use(
+      serverEngine({ cmd: 'start', loadEntries, env: process.env as any }),
+    );
     app.notFound((c) => {
       // FIXME better implementation using node stream?
       const file = path.join(distDir, DIST_PUBLIC, '404.html');

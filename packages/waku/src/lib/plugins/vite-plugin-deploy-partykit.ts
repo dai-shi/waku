@@ -9,15 +9,15 @@ import { DIST_PUBLIC } from '../builder/constants.js';
 const SERVE_JS = 'serve-partykit.js';
 
 const getServeJsContent = (srcEntriesFile: string) => `
-import { runner, importHono } from 'waku/unstable_hono';
+import { serverEngine, importHono } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
 
 const loadEntries = () => import('${srcEntriesFile}');
-let serveWaku;
+let serve;
 
 const app = new Hono();
-app.use((c, next) => serveWaku(c, next));
+app.use((c, next) => serve(c, next));
 app.notFound(async (c) => {
   const assetsFetcher = c.env.assets;
   // check if there's a 404.html in the static assets
@@ -36,8 +36,8 @@ app.notFound(async (c) => {
 
 export default {
   onFetch(request, lobby, ctx) {
-    if (!serveWaku) {
-      serveWaku = runner({ cmd: 'start', loadEntries, env: lobby });
+    if (!serve) {
+      serve = serverEngine({ cmd: 'start', loadEntries, env: lobby });
     }
     return app.fetch(request, lobby, ctx);
   },
