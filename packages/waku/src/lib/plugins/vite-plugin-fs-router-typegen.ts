@@ -3,7 +3,6 @@ import { readdir, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { SRC_ENTRIES, EXTENSIONS } from '../constants.js';
 import { joinPath } from '../utils/path.js';
-import crypto from 'node:crypto';
 
 const SRC_PAGES = 'pages';
 
@@ -39,11 +38,10 @@ export function getImportModuleNames(filePaths: string[]) {
     let identifier = toIdentifier(filePath);
     if (identifier in _moduleNames) {
       const defaultIdentifier = identifier;
-      const hash = crypto.createHash('md5').update(filePath).digest('hex');
-      let length = 8;
-      while (length < hash.length && identifier in _moduleNames) {
-        identifier = `${defaultIdentifier}_${hash.slice(0, length)}`;
-        length = length + 1;
+      let duplicateSuffix = 1;
+      while (identifier in _moduleNames) {
+        identifier = `${defaultIdentifier}_${duplicateSuffix}`;
+        duplicateSuffix = duplicateSuffix + 1;
       }
     }
     _moduleNames[identifier] = true;

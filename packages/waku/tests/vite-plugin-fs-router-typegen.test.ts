@@ -27,9 +27,9 @@ describe('vite-plugin-fs-router-typegen', () => {
       ]),
     ).toEqual({
       '/one-two-three.tsx': 'OneTwoThree',
-      '/one/two/three.tsx': 'OneTwoThree_6760f883',
-      '/one_two_three.tsx': 'OneTwoThree_b7ec48bc',
-      '/one__two_three.tsx': 'OneTwoThree_fb958a64',
+      '/one/two/three.tsx': 'OneTwoThree_1',
+      '/one_two_three.tsx': 'OneTwoThree_2',
+      '/one__two_three.tsx': 'OneTwoThree_3',
     });
   });
 });
