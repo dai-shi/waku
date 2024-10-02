@@ -27,6 +27,7 @@ const HomeLayout = ({ children }: { children: ReactNode }) => {
       </head>
       <body>
         <div>
+          <h1>Home layout</h1>
           <p>Last render time: {currentTime.toISOString()}</p>
           <ul>
             <li>

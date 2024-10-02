@@ -4,6 +4,7 @@ import type { PathsForPages } from 'waku/router';
 import FooPage from './components/FooPage';
 import BarPage from './components/BarPage';
 import NestedBarLayout from './components/NestedBarLayout';
+import FooLayout from './components/FooLayout';
 
 // The use of `lazy` is optional and you can use import statements too.
 const HomeLayout = lazy(() => import('./components/HomeLayout'));
@@ -23,9 +24,15 @@ const pages = createPages(async ({ createPage, createLayout }) => [
   }),
 
   createPage({
-    render: 'static',
+    render: 'dynamic',
     path: '/foo',
     component: FooPage,
+  }),
+
+  createLayout({
+    render: 'static',
+    path: '/foo',
+    component: FooLayout,
   }),
 
   createPage({
