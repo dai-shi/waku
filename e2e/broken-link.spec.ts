@@ -170,4 +170,44 @@ test.describe('client side navigation', () => {
 
     await terminate(pid!);
   });
+
+  test('redirect', async ({ page }) => {
+    const [port, pid] = await start(true);
+    await page.goto(`http://localhost:${port}`);
+
+    // Click on a link to a redirect
+    await page.getByRole('link', { name: 'Correct redirect' }).click();
+
+    // The page renders the target page
+    await expect(page.getByRole('heading')).toHaveText('Existing page');
+    // The browsers URL is the one of the target page
+    expect(page.url()).toBe(`http://localhost:${port}/exists`);
+
+    // Go back to the index page
+    await page.getByRole('link', { name: 'Back' }).click();
+    await expect(page.getByRole('heading')).toHaveText('Index');
+
+    await terminate(pid!);
+  });
+
+  test('broken redirect', async ({ page }) => {
+    const [port, pid] = await start(true);
+    await page.goto(`http://localhost:${port}`);
+
+    // Click on a link to a broken redirect
+    await page.getByRole('link', { name: 'Broken redirect' }).click();
+
+    // Navigate to a page that redirects to a non-existing page
+    await page.goto(`http://localhost:${port}/broken-redirect`);
+    // The page renders the custom 404.tsx
+    await expect(page.getByRole('heading')).toHaveText('Custom not found');
+    // The browsers URL remains the one that was redirected to
+    expect(page.url()).toBe(`http://localhost:${port}/broken`);
+
+    // Go back to the index page
+    await page.getByRole('link', { name: 'Back' }).click();
+    await expect(page.getByRole('heading')).toHaveText('Index');
+
+    await terminate(pid!);
+  });
 });
