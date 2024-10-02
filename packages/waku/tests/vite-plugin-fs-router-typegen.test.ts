@@ -21,11 +21,13 @@ describe('vite-plugin-fs-router-typegen', () => {
     expect(
       getImportModuleNames([
         '/one-two-three.tsx',
+        '/one/two/three.tsx',
         '/one_two_three.tsx',
         '/one__two_three.tsx',
       ]),
     ).toEqual({
       '/one-two-three.tsx': 'OneTwoThree',
+      '/one/two/three.tsx': 'OneTwoThree_6760f883',
       '/one_two_three.tsx': 'OneTwoThree_b7ec48bc',
       '/one__two_three.tsx': 'OneTwoThree_fb958a64',
     });
