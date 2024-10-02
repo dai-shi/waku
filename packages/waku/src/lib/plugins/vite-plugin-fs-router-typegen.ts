@@ -31,20 +31,17 @@ export function toIdentifier(input: string): string {
     .join('');
 }
 
-export function getImportModuleNames(filePaths: string[]) {
-  const _moduleNames: { [k: string]: true } = {};
+export function getImportModuleNames(filePaths: string[]): {
+  [k: string]: string;
+} {
+  const moduleNameCount: { [k: string]: number } = {};
   const moduleNames: { [k: string]: string } = {};
   for (const filePath of filePaths) {
     let identifier = toIdentifier(filePath);
-    if (identifier in _moduleNames) {
-      const defaultIdentifier = identifier;
-      let duplicateSuffix = 1;
-      while (identifier in _moduleNames) {
-        identifier = `${defaultIdentifier}_${duplicateSuffix}`;
-        duplicateSuffix = duplicateSuffix + 1;
-      }
+    moduleNameCount[identifier] = (moduleNameCount[identifier] ?? -1) + 1;
+    if (moduleNameCount[identifier]) {
+      identifier = `${identifier}_${moduleNameCount[identifier]}`;
     }
-    _moduleNames[identifier] = true;
     moduleNames[filePath] = identifier;
   }
   return moduleNames;
