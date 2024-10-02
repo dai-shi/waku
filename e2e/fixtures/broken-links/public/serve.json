@@ -1,0 +1,6 @@
+{
+  "redirects": [
+    { "source": "/redirect", "destination": "/exists" },
+    { "source": "/broken-redirect", "destination": "/broken" }
+  ]
+}
