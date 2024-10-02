@@ -25,20 +25,28 @@ const { ${lambdaStreaming ? 'streamHandle:' : ''}handle } = await importHonoAwsL
 
 const distDir = '${distDir}';
 const publicDir = '${distPublic}';
-const loadEntries = () => import('${srcEntriesFile}');
+const loadEntries = () => import("${srcEntriesFile}");
 
-const app = new Hono();
-app.use(serveStatic({ root: distDir + '/' + publicDir }));
-app.use(serverEngine({ cmd: 'start', loadEntries, env: process.env }));
-app.notFound(async (c) => {
-  const file = path.join(distDir, publicDir, '404.html');
-  if (existsSync(file)) {
-    return c.html(readFileSync(file, 'utf8'), 404);
-  }
-  return c.text('404 Not Found', 404);
-});
+const configPromise = loadEntries().then((entries) => entries.loadConfig());
 
-export const handler = handle(app);
+const createApp = (app) => {
+  app.use(serveStatic({ root: distDir + '/' + publicDir }));
+  app.use(serverEngine({ cmd: 'start', loadEntries, env: process.env }));
+  app.notFound(async (c) => {
+    const file = path.join(distDir, publicDir, '404.html');
+    if (existsSync(file)) {
+      return c.html(readFileSync(file, 'utf8'), 404);
+    }
+    return c.text('404 Not Found', 404);
+  });
+  return app;
+};
+
+const honoEnhancer =
+  (await configPromise).unstable_honoEnhancer ||
+  (async (createApp) => createApp);
+
+export const handler = handle((await honoEnhancer(createApp))(new Hono()));
 `;
 
 export function deployAwsLambdaPlugin(opts: {

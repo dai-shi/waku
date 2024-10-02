@@ -22,12 +22,12 @@ import { serverEngine, importHono } from "waku/unstable_hono";
 const { Hono } = await importHono();
 
 const loadEntries = () => import("${srcEntriesFile}");
-let serve;
+const serveRef = { current: null };
 
 const configPromise = loadEntries().then((entries) => entries.loadConfig());
 
 const createApp = (app) => {
-  app.use((c, next) => serve(c, next));
+  app.use((c, next) => serveRef.current(c, next));
   app.notFound(async (c) => {
     const assetsFetcher = c.env.ASSETS;
     const url = new URL(c.req.raw.url);
@@ -50,14 +50,14 @@ let honoEnhanced;
 
 export default {
   async fetch(request, env, ctx) {
-    if (!serve) {
-      serve = serverEngine({ cmd: "start", loadEntries, env });
+    if (!serveRef.current) {
+      serveRef.current = serverEngine({ cmd: "start", loadEntries, env });
     }
     if (!honoEnhanced) {
       const honoEnhancer =
         (await configPromise).unstable_honoEnhancer ||
         (async (createApp) => createApp);
-      honoEnhanced = (await honoEnhancer(createApp))(new Hono(), serve);
+      honoEnhanced = (await honoEnhancer(createApp))(new Hono());
     }
     return honoEnhanced.fetch(request, env, ctx);
   },
