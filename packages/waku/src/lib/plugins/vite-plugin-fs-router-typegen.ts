@@ -3,16 +3,9 @@ import { readdir, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { SRC_ENTRIES, EXTENSIONS } from '../constants.js';
 import { joinPath } from '../utils/path.js';
+import { getInputString } from '../../router/common.js';
 
 const SRC_PAGES = 'pages';
-
-// from waku/router/common
-export function getInputString(path: string): string {
-  if (!path.startsWith('/')) {
-    throw new Error('Path should start with `/`');
-  }
-  return path.slice(1);
-}
 
 // https://tc39.es/ecma262/multipage/ecmascript-language-lexical-grammar.html#sec-names-and-keywords
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#identifiers
@@ -50,7 +43,11 @@ export function getImportModuleNames(filePaths: string[]): {
     if (moduleNameCount[identifier]) {
       identifier = `${identifier}_${moduleNameCount[identifier]}`;
     }
-    moduleNames[getInputString(filePath)] = identifier;
+    try {
+      moduleNames[getInputString(filePath)] = identifier;
+    } catch (e) {
+      console.log(e);
+    }
   }
   return moduleNames;
 }
