@@ -4,6 +4,6 @@ export default function Layout() {
 
 export const getConfig = async () => {
   return {
-    render: "static",
+    render: 'static',
   };
 };
