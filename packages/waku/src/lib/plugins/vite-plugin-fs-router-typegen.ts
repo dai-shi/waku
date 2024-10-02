@@ -12,7 +12,9 @@ const SRC_PAGES = 'pages';
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#reserved_words
 export function toIdentifier(input: string): string {
   // Strip the file extension
-  let identifier = input.includes('.') ? input.split('.').slice(0, -1).join('.') : input;
+  let identifier = input.includes('.')
+    ? input.split('.').slice(0, -1).join('.')
+    : input;
   // Replace any characters besides letters, numbers, underscores, and dollar signs with underscores
   identifier = identifier.replace(/[^\p{L}\p{N}_$]/gu, '_');
   // Ensure it starts with a letter
@@ -21,10 +23,13 @@ export function toIdentifier(input: string): string {
   }
   // Turn it into PascalCase
   // Since the first letter is uppercased, it will not be a reserved word
-  return identifier.split('_').map((part) => {
-    if (part[0] === undefined) return '';
-    return part[0].toUpperCase() + part.slice(1);
-  }).join('')
+  return identifier
+    .split('_')
+    .map((part) => {
+      if (part[0] === undefined) return '';
+      return part[0].toUpperCase() + part.slice(1);
+    })
+    .join('');
 }
 
 export function getImportModuleNames(filePaths: string[]) {
@@ -34,7 +39,7 @@ export function getImportModuleNames(filePaths: string[]) {
     let identifier = toIdentifier(filePath);
     if (identifier in _moduleNames) {
       const defaultIdentifier = identifier;
-      const hash = crypto.createHash('md5').update(filePath).digest('hex')
+      const hash = crypto.createHash('md5').update(filePath).digest('hex');
       let length = 8;
       while (length < hash.length && identifier in _moduleNames) {
         identifier = `${defaultIdentifier}_${hash.slice(0, length)}`;
