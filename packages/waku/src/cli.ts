@@ -156,7 +156,9 @@ async function runStart() {
       app.use(compress());
     }
     app.use(serveStatic({ root: path.join(distDir, DIST_PUBLIC) }));
-    app.use(serverEngine({ cmd: 'start', loadEntries, env: process.env as any }));
+    app.use(
+      serverEngine({ cmd: 'start', loadEntries, env: process.env as any }),
+    );
     app.notFound((c) => {
       // FIXME better implementation using node stream?
       const file = path.join(distDir, DIST_PUBLIC, '404.html');
