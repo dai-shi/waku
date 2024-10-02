@@ -96,6 +96,8 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
         dir: string,
         files: string[] = [],
       ): Promise<string[]> => {
+        // TODO revisit recursive option for readdir once more stable
+        // https://nodejs.org/docs/latest-v20.x/api/fs.html#direntparentpath
         const entries = await readdir(dir, { withFileTypes: true });
         for (const entry of entries) {
           const fullPath = joinPath(dir, entry.name);
