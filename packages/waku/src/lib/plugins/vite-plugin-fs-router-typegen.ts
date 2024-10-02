@@ -3,33 +3,49 @@ import { readdir, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { SRC_ENTRIES, EXTENSIONS } from '../constants.js';
 import { joinPath } from '../utils/path.js';
+import crypto from 'node:crypto';
 
 const SRC_PAGES = 'pages';
 
-const invalidCharRegex = /[^0-9a-zA-Z_$]/g;
-const srcToName = (src: string) => {
-  const split = src.split('/');
-  const filename = split
-    .at(-1)!
-    .replace(/.tsx$/, '')
-    .replace(invalidCharRegex, '')
-    .replace('_layout', 'Layout');
-  const entryPath =
-    split.length > 1
-      ? split.slice(0, -1).map((part) => {
-          let _part = part;
-          if (_part.startsWith('[...')) {
-            _part = 'Wild_' + _part;
-          }
-          if (_part[0] === '[') {
-            _part = 'Slug_' + _part;
-          }
-          _part = _part.replace(invalidCharRegex, '');
-          return _part[0]!.toUpperCase() + _part.slice(1);
-        })
-      : [];
-  return entryPath.join('') + filename[0]!.toUpperCase() + filename.slice(1);
-};
+// https://tc39.es/ecma262/multipage/ecmascript-language-lexical-grammar.html#sec-names-and-keywords
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#identifiers
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#reserved_words
+export function toIdentifier(input: string): string {
+  // Strip the file extension
+  let identifier = input.includes('.') ? input.split('.').slice(0, -1).join('.') : input;
+  // Replace any characters besides letters, numbers, underscores, and dollar signs with underscores
+  identifier = identifier.replace(/[^\p{L}\p{N}_$]/gu, '_');
+  // Ensure it starts with a letter
+  if (/^\d/.test(identifier)) {
+    identifier = '_' + identifier;
+  }
+  // Turn it into PascalCase
+  // Since the first letter is uppercased, it will not be a reserved word
+  return identifier.split('_').map((part) => {
+    if (part[0] === undefined) return '';
+    return part[0].toUpperCase() + part.slice(1);
+  }).join('')
+}
+
+export function getImportModuleNames(filePaths: string[]) {
+  const _moduleNames: { [k: string]: true } = {};
+  const moduleNames: { [k: string]: string } = {};
+  for (const filePath of filePaths) {
+    let identifier = toIdentifier(filePath);
+    if (identifier in _moduleNames) {
+      const defaultIdentifier = identifier;
+      const hash = crypto.createHash('md5').update(filePath).digest('hex')
+      let length = 8;
+      while (length < hash.length && identifier in _moduleNames) {
+        identifier = `${defaultIdentifier}_${hash.slice(0, length)}`;
+        length = length + 1;
+      }
+    }
+    _moduleNames[identifier] = true;
+    moduleNames[filePath] = identifier;
+  }
+  return moduleNames;
+}
 
 export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
   let entriesFilePossibilities: string[] | undefined;
@@ -105,6 +121,8 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
 
       const generateFile = (filePaths: string[]): string => {
         const fileInfo = [];
+        const moduleNames = getImportModuleNames(filePaths);
+
         for (const filePath of filePaths) {
           // where to import the component from
           const src = filePath.slice(1);
@@ -138,14 +156,14 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
 import type { PathsForPages } from 'waku/router';\n\n`;
 
         for (const file of fileInfo) {
-          const moduleName = srcToName(file.src);
+          const moduleName = moduleNames[file.src];
           result += `import ${moduleName}${file.hasGetConfig ? `, { getConfig as ${moduleName}_getConfig }` : ''} from './${SRC_PAGES}/${file.src.replace('.tsx', '')}';\n`;
         }
 
         result += `\nconst _pages = createPages(async (pagesFns) => [\n`;
 
         for (const file of fileInfo) {
-          const moduleName = srcToName(file.src);
+          const moduleName = moduleNames[file.src];
           result += `  pagesFns.${file.type === 'layout' ? 'createLayout' : 'createPage'}({ path: '${file.path}', component: ${moduleName}, ${file.hasGetConfig ? `...(await ${moduleName}_getConfig())` : `render: '${file.type === 'layout' ? 'static' : 'dynamic'}'`} }),\n`;
         }
 
