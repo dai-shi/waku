@@ -61,7 +61,7 @@ const pages = createPages(async ({ createPage, createLayout }) => [
     render: 'static',
     path: '/nested/[id]',
     staticPaths: ['foo', 'bar'],
-    component: ({ id }: { id: string }) => (
+    component: ({ id }) => (
       <>
         <h2>Nested</h2>
         <h3>Static: {id}</h3>
@@ -72,7 +72,7 @@ const pages = createPages(async ({ createPage, createLayout }) => [
   createPage({
     render: 'dynamic',
     path: '/nested/[id]',
-    component: ({ id }: { id: string }) => (
+    component: ({ id }) => (
       <>
         <h2>Nested</h2>
         <h3>Dynamic: {id}</h3>
@@ -83,9 +83,7 @@ const pages = createPages(async ({ createPage, createLayout }) => [
   createPage({
     render: 'dynamic',
     path: '/any/[...all]',
-    component: ({ all }: { all: string[] }) => (
-      <h2>Catch-all: {all.join('/')}</h2>
-    ),
+    component: ({ all }) => <h2>Catch-all: {all.join('/')}</h2>,
   }),
 
   // Custom Not Found page
@@ -99,6 +97,9 @@ const pages = createPages(async ({ createPage, createLayout }) => [
 declare module 'waku/router' {
   interface RouteConfig {
     paths: PathsForPages<typeof pages>;
+  }
+  interface CreatePagesConfig {
+    pages: typeof pages;
   }
 }
 

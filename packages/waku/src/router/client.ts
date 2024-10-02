@@ -34,7 +34,9 @@ import {
 import type { RouteProps, ShouldSkip } from './common.js';
 import type { RouteConfig } from './base-types.js';
 
-type InferredPaths = RouteConfig extends { paths: infer UserPaths }
+type InferredPaths = RouteConfig extends {
+  paths: infer UserPaths;
+}
   ? UserPaths
   : string;
 
