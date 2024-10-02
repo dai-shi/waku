@@ -102,7 +102,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
         for (const entry of entries) {
           const fullPath = joinPath(dir, entry.name);
           if (entry.isDirectory()) {
-            await collectFiles(dir, fullPath, files);
+            await collectFiles(dir, files);
           } else {
             if (entry.name.endsWith('.tsx')) {
               files.push(pagesDir ? fullPath.slice(pagesDir.length) : fullPath);
