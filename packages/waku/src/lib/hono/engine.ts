@@ -14,8 +14,8 @@ const createEmptyReadableStream = () =>
     },
   });
 
-// Middleware runner (Is there a better name?)
-export const runner = (options: MiddlewareOptions): MiddlewareHandler => {
+// serverEngine returns hono middleware that runs Waku middleware.
+export const serverEngine = (options: MiddlewareOptions): MiddlewareHandler => {
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()

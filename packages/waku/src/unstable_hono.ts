@@ -1,6 +1,6 @@
 // These exports are for internal use only and subject to change without notice.
 
-export { runner, getHonoContext } from './lib/hono/runner.js';
+export { serverEngine, getHonoContext } from './lib/hono/engine.js';
 
 export const importHono = () => import('hono');
 export const importHonoNodeServer: any = () => import('@hono/node-server');
