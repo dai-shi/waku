@@ -89,20 +89,16 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
       // Recursively collect `.tsx` files in the given directory
       const collectFiles = async (
         dir: string,
-        cwd: string = '',
         files: string[] = [],
       ): Promise<string[]> => {
-        if (!cwd) {
-          cwd = dir;
-        }
-        const entries = await readdir(cwd, { withFileTypes: true });
+        const entries = await readdir(dir, { withFileTypes: true });
         for (const entry of entries) {
-          const fullPath = joinPath(cwd, entry.name);
+          const fullPath = joinPath(dir, entry.name);
           if (entry.isDirectory()) {
             await collectFiles(dir, fullPath, files);
           } else {
             if (entry.name.endsWith('.tsx')) {
-              files.push(fullPath.slice(dir.length));
+              files.push(pagesDir ? fullPath.slice(pagesDir.length) : fullPath);
             }
           }
         }
