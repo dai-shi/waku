@@ -1,5 +1,6 @@
+import type { RouteProps } from '../common.js';
 import type { PathWithoutSlug } from '../create-pages.js';
-import type { Join, ReplaceAll, Split } from '../util-types.js';
+import type { Join, ReplaceAll, Split, Prettify } from '../util-types.js';
 
 type ReadOnlyStringTupleList = readonly (readonly string[])[];
 
@@ -143,4 +144,45 @@ export type AnyPage = {
 export type PathsForPages<PagesResult extends { DO_NOT_USE_pages: AnyPage }> =
   CollectPaths<PagesResult['DO_NOT_USE_pages']> extends never
     ? string
-    : CollectPaths<PagesResult['DO_NOT_USE_pages']> & {};
+    : CollectPaths<PagesResult['DO_NOT_USE_pages']>;
+
+type _GetSlugs<
+  Route extends string,
+  SplitRoute extends string[] = Split<Route, '/'>,
+  Result extends string[] = [],
+> = SplitRoute extends []
+  ? Result
+  : SplitRoute extends [`${infer MaybeSlug}`, ...infer Rest extends string[]]
+    ? MaybeSlug extends `[${infer Slug}]`
+      ? _GetSlugs<Route, Rest, [...Result, Slug]>
+      : _GetSlugs<Route, Rest, Result>
+    : Result;
+
+export type GetSlugs<Route extends string> = _GetSlugs<Route>;
+
+/** Paths with slugs as string literals */
+export type PagePath<Config> = Config extends {
+  pages: infer AllPages;
+}
+  ? AllPages
+  : never;
+
+type IndividualSlugType<Slug extends string> = Slug extends `...${string}`
+  ? string[]
+  : string;
+
+type CleanWildcard<Slug extends string> = Slug extends `...${infer Wildcard}`
+  ? Wildcard
+  : Slug;
+
+type SlugTypes<Path extends string> =
+  GetSlugs<Path> extends string[]
+    ? {
+        [Slug in GetSlugs<Path>[number] as CleanWildcard<Slug>]: IndividualSlugType<Slug>;
+      }
+    : never;
+
+export type PropsForPages<Path extends string> = Prettify<
+  Omit<RouteProps<ReplaceAll<Path, `[${string}]`, string>>, 'hash'> &
+    SlugTypes<Path>
+>;

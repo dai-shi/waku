@@ -17,7 +17,7 @@ const getServeJsContent = (
 ) => `
 import path from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { runner, importHono, importHonoNodeServerServeStatic, importHonoAwsLambda } from 'waku/unstable_hono';
+import { serverEngine, importHono, importHonoNodeServerServeStatic, importHonoAwsLambda } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
 const { serveStatic } = await importHonoNodeServerServeStatic();
@@ -29,7 +29,7 @@ const loadEntries = () => import('${srcEntriesFile}');
 
 const app = new Hono();
 app.use(serveStatic({ root: distDir + '/' + publicDir }));
-app.use(runner({ cmd: 'start', loadEntries, env: process.env }));
+app.use(serverEngine({ cmd: 'start', loadEntries, env: process.env }));
 app.notFound(async (c) => {
   const file = path.join(distDir, publicDir, '404.html');
   if (existsSync(file)) {

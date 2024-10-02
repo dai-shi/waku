@@ -12,6 +12,7 @@
     "react": "19.0.0-rc-d6cb4e77-20240911",
     "react-dom": "19.0.0-rc-d6cb4e77-20240911",
     "react-server-dom-webpack": "19.0.0-rc-d6cb4e77-20240911",
+    "serve": "^14.2.3",
     "waku": "workspace:*"
   },
   "devDependencies": {

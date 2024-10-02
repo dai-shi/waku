@@ -1,5 +1,5 @@
-export type RouteProps = {
-  path: string;
+export type RouteProps<Path extends string = string> = {
+  path: Path;
   query: string;
   hash: string;
 };
@@ -34,6 +34,9 @@ export const SHOULD_SKIP_ID = '/SHOULD_SKIP';
 
 // It starts with "/" to avoid conflicting with normal component ids.
 export const LOCATION_ID = '/LOCATION';
+
+// It starts with "/" to avoid conflicting with normal component ids.
+export const HAS404_ID = '/HAS404';
 
 // TODO revisit shouldSkip API
 export type ShouldSkip = (readonly [

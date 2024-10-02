@@ -13,7 +13,7 @@ const getServeJsContent = (
 ) => `
 import { Hono } from 'jsr:@hono/hono';
 import { serveStatic } from 'jsr:@hono/hono/deno';
-import { runner } from 'waku/unstable_hono';
+import { serverEngine } from 'waku/unstable_hono';
 
 const distDir = '${distDir}';
 const publicDir = '${distPublic}';
@@ -22,7 +22,7 @@ const env = Deno.env.toObject();
 
 const app = new Hono();
 app.use(serveStatic({ root: distDir + '/' + publicDir }));
-app.use(runner({ cmd: 'start', loadEntries, env }));
+app.use(serverEngine({ cmd: 'start', loadEntries, env }));
 app.notFound(async (c) => {
   const file = distDir + '/' + publicDir + '/404.html';
   try {

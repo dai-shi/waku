@@ -17,15 +17,15 @@ import { DIST_ENTRIES_JS, DIST_PUBLIC } from '../builder/constants.js';
 const SERVE_JS = 'serve-cloudflare.js';
 
 const getServeJsContent = (srcEntriesFile: string) => `
-import { runner, importHono } from 'waku/unstable_hono';
+import { serverEngine, importHono } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
 
 const loadEntries = () => import('${srcEntriesFile}');
-let serveWaku;
+let serve;
 
 const app = new Hono();
-app.use((c, next) => serveWaku(c, next));
+app.use((c, next) => serve(c, next));
 app.notFound(async (c) => {
   const assetsFetcher = c.env.ASSETS;
   const url = new URL(c.req.raw.url);
@@ -41,8 +41,8 @@ app.notFound(async (c) => {
 
 export default {
   async fetch(request, env, ctx) {
-    if (!serveWaku) {
-      serveWaku = runner({ cmd: 'start', loadEntries, env });
+    if (!serve) {
+      serve = serverEngine({ cmd: 'start', loadEntries, env });
     }
     return app.fetch(request, env, ctx);
   },
