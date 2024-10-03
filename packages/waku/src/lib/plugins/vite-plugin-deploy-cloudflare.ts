@@ -23,6 +23,7 @@ const { Hono } = await importHono();
 
 const loadEntries = () => import("${srcEntriesFile}");
 let serve;
+let app
 
 const createApp = (app) => {
   app.use((c, next) => serve(c, next));
@@ -43,8 +44,6 @@ const createApp = (app) => {
   });
   return app;
 };
-
-let app;
 
 export default {
   async fetch(request, env, ctx) {
