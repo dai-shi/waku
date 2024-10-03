@@ -424,8 +424,14 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
     };
   }, [changeRoute]);
 
+  const [routeFromServer, setRouteFromServer] = useState<
+    { path: string; query: string } | undefined
+  >();
   useEffect(() => {
-    const callback = (path: string, query: string) => {
+    if (routeFromServer) {
+      // FIXME This feels too late to update the route from the server
+      // Ideally, we should call `changeRoute` without useEffect.
+      const { path, query } = routeFromServer;
       const url = new URL(window.location.href);
       url.pathname = path;
       url.search = query;
@@ -441,6 +447,11 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
         );
       }
       changeRoute(parseRoute(url), { skipRefetch: true });
+    }
+  }, [routeFromServer, changeRoute]);
+  useEffect(() => {
+    const callback = (path: string, query: string) => {
+      setRouteFromServer({ path, query });
     };
     const listeners = (routerData[1] ||= new Set());
     listeners.add(callback);
@@ -522,13 +533,9 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
                 window.location.pathname !== pathname ||
                 window.location.search.replace(/^\?/, '') !== searchParamsString
               ) {
-                setTimeout(() => {
-                  // HACK we need to wait a tick for React to start rendering.
-                  // FIXME It doesn't feel ideal. Hope to find a better solution.
-                  routerData[1]?.forEach((listener) =>
-                    listener(pathname, searchParamsString),
-                  );
-                });
+                routerData[1]?.forEach((listener) =>
+                  listener(pathname, searchParamsString),
+                );
               }
             }
             if (HAS404_ID in data) {
