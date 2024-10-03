@@ -49,7 +49,7 @@ export interface Config {
    */
   middleware?: () => Promise<{ default: Middleware }>[];
   /**
-   * Enhander for Hono
+   * Enhancer for Hono
    * Defaults to `undefined`
    */
   unstable_honoEnhancer?:
