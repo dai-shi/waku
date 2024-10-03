@@ -16,7 +16,7 @@ const Pending = ({ isPending }: { isPending: boolean }) => (
   </span>
 );
 
-const HomeLayout = ({ children }: { children: ReactNode }) => {
+const BarLayout = ({ children }: { children: ReactNode }) => {
   return (
     <html>
       <head>
@@ -61,4 +61,4 @@ const HomeLayout = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export default HomeLayout;
+export default BarLayout;
