@@ -44,10 +44,18 @@ const createApp = (app) => {
   return app;
 };
 
+let app;
+
 export default {
   async fetch(request, env, ctx) {
     if (!serve) {
       serve = serverEngine({ cmd: "start", loadEntries, env });
+    }
+    if (!app) {
+      const entries = await loadEntries();
+      const config = await entries.loadConfig();
+      const honoEnhancer = config.unstable_honoEnhancer || ((createApp) => createApp);
+      app = honoEnhancer(createApp)(new Hono());
     }
     return app.fetch(request, env, ctx);
   },
