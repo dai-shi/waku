@@ -12,6 +12,7 @@ import {
   fileURLToFilePath,
   encodeFilePathToAbsolute,
   decodeFilePathFromAbsolute,
+  filePathToFileURL,
 } from '../utils/path.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
@@ -147,7 +148,7 @@ const createMainViteServer = (
       const fileWithAbsolutePath = file.startsWith('/')
         ? file
         : joinPath(vite.config.root, file);
-      return import(/* @vite-ignore */ fileWithAbsolutePath);
+      return import(/* @vite-ignore */ filePathToFileURL(fileWithAbsolutePath));
     }
     return vite.ssrLoadModule(
       idOrFileURL.startsWith('file://')
