@@ -522,9 +522,13 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
                 window.location.pathname !== pathname ||
                 window.location.search.replace(/^\?/, '') !== searchParamsString
               ) {
-                routerData[1]?.forEach((listener) =>
-                  listener(pathname, searchParamsString),
-                );
+                setTimeout(() => {
+                  // HACK we need to wait a tick for React to start rendering.
+                  // FIXME It doesn't feel ideal. Hope to find a better solution.
+                  routerData[1]?.forEach((listener) =>
+                    listener(pathname, searchParamsString),
+                  );
+                });
               }
             }
             if (HAS404_ID in data) {

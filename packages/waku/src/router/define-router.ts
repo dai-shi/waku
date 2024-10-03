@@ -261,10 +261,10 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   return { renderEntries, getBuildConfig, getSsrConfig };
 }
 
-export function unstable_redirect(
+export function unstable_rerenderRoute(
   pathname: string,
   query?: string,
-  skip?: string[],
+  skip?: string[], // TODO this is too hard to use
 ) {
   const input = getInputString(pathname);
   rerender(input, { query, skip });
