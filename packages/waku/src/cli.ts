@@ -98,20 +98,13 @@ if (values.version) {
 
 async function runDev() {
   const config = await loadConfig();
-  const honoEnhancer = config.unstable_honoEnhancer
-    ? config.unstable_honoEnhancer
-    : (createApp: (app: Hono) => Hono) => createApp;
+  const honoEnhancer =
+    config.unstable_honoEnhancer || ((createApp) => createApp);
   const createApp = (app: Hono) => {
     if (values['experimental-compress']) {
       app.use(compress());
     }
-    app.use(
-      serverEngine({
-        cmd: 'dev',
-        config,
-        env: process.env as any,
-      }),
-    );
+    app.use(serverEngine({ cmd: 'dev', config, env: process.env as any }));
     app.notFound((c) => {
       // FIXME can we avoid hardcoding the public path?
       const file = path.join('public', '404.html');
@@ -154,9 +147,8 @@ async function runBuild() {
 async function runStart() {
   const config = await loadConfig();
   const { distDir = 'dist' } = config;
-  const honoEnhancer = config.unstable_honoEnhancer
-    ? config.unstable_honoEnhancer
-    : (createApp: (app: Hono) => Hono) => (app: Hono) => createApp(app);
+  const honoEnhancer =
+    config.unstable_honoEnhancer || ((createApp) => createApp);
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, DIST_ENTRIES_JS)).toString());
   const createApp = (app: Hono) => {
@@ -165,11 +157,7 @@ async function runStart() {
     }
     app.use(serveStatic({ root: path.join(distDir, DIST_PUBLIC) }));
     app.use(
-      serverEngine({
-        cmd: 'start',
-        loadEntries,
-        env: process.env as any,
-      }),
+      serverEngine({ cmd: 'start', loadEntries, env: process.env as any }),
     );
     app.notFound((c) => {
       // FIXME better implementation using node stream?
