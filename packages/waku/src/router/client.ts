@@ -28,7 +28,7 @@ import {
   getComponentIds,
   getInputString,
   SHOULD_SKIP_ID,
-  LOCATION_ID,
+  ROUTE_ID,
   HAS404_ID,
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
@@ -424,8 +424,14 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
     };
   }, [changeRoute]);
 
+  const [routeFromServer, setRouteFromServer] = useState<
+    { path: string; query: string } | undefined
+  >();
   useEffect(() => {
-    const callback = (path: string, query: string) => {
+    if (routeFromServer) {
+      // FIXME This feels too late to update the route from the server
+      // Ideally, we should call `changeRoute` without useEffect.
+      const { path, query } = routeFromServer;
       const url = new URL(window.location.href);
       url.pathname = path;
       url.search = query;
@@ -441,6 +447,11 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
         );
       }
       changeRoute(parseRoute(url), { skipRefetch: true });
+    }
+  }, [routeFromServer, changeRoute]);
+  useEffect(() => {
+    const callback = (path: string, query: string) => {
+      setRouteFromServer({ path, query });
     };
     const listeners = (routerData[1] ||= new Set());
     listeners.add(callback);
@@ -512,19 +523,14 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
               // TODO replacing the whole array is not ideal
               routerData[0] = data[SHOULD_SKIP_ID] as ShouldSkip;
             }
-            if (LOCATION_ID in data) {
-              const [pathname, searchParamsString] = data[LOCATION_ID] as [
-                string,
-                string,
-              ];
+            if (ROUTE_ID in data) {
+              const [path, query] = data[ROUTE_ID] as [string, string];
               // FIXME this check here seems ad-hoc (less readable code)
               if (
-                window.location.pathname !== pathname ||
-                window.location.search.replace(/^\?/, '') !== searchParamsString
+                window.location.pathname !== path ||
+                window.location.search.replace(/^\?/, '') !== query
               ) {
-                routerData[1]?.forEach((listener) =>
-                  listener(pathname, searchParamsString),
-                );
+                routerData[1]?.forEach((listener) => listener(path, query));
               }
             }
             if (HAS404_ID in data) {
