@@ -17,22 +17,22 @@ import { DIST_ENTRIES_JS, DIST_PUBLIC } from '../builder/constants.js';
 const SERVE_JS = 'serve-cloudflare.js';
 
 const getServeJsContent = (srcEntriesFile: string) => `
-import { serverEngine, importHono } from "waku/unstable_hono";
+import { serverEngine, importHono } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
 
-const loadEntries = () => import("${srcEntriesFile}");
+const loadEntries = () => import('${srcEntriesFile}');
 let serve;
-let app
+let app;
 
 const createApp = (app) => {
   app.use((c, next) => serve(c, next));
   app.notFound(async (c) => {
     const assetsFetcher = c.env.ASSETS;
     const url = new URL(c.req.raw.url);
-    const errorHtmlUrl = url.origin + "/404.html";
+    const errorHtmlUrl = url.origin + '/404.html';
     const notFoundStaticAssetResponse = await assetsFetcher.fetch(
-      new URL(errorHtmlUrl)
+      new URL(errorHtmlUrl),
     );
     if (
       notFoundStaticAssetResponse &&
@@ -40,7 +40,7 @@ const createApp = (app) => {
     ) {
       return c.body(notFoundStaticAssetResponse.body, 404);
     }
-    return c.text("404 Not Found", 404);
+    return c.text('404 Not Found', 404);
   });
   return app;
 };
@@ -48,12 +48,13 @@ const createApp = (app) => {
 export default {
   async fetch(request, env, ctx) {
     if (!serve) {
-      serve = serverEngine({ cmd: "start", loadEntries, env });
+      serve = serverEngine({ cmd: 'start', loadEntries, env });
     }
     if (!app) {
       const entries = await loadEntries();
       const config = await entries.loadConfig();
-      const honoEnhancer = config.unstable_honoEnhancer || ((createApp) => createApp);
+      const honoEnhancer =
+        config.unstable_honoEnhancer || ((createApp) => createApp);
       app = honoEnhancer(createApp)(new Hono());
     }
     return app.fetch(request, env, ctx);

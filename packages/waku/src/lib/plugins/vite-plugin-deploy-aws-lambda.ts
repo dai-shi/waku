@@ -15,34 +15,34 @@ const getServeJsContent = (
   distPublic: string,
   srcEntriesFile: string,
 ) => `
-import path from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import path from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 import {
   serverEngine,
   importHono,
   importHonoNodeServerServeStatic,
   importHonoAwsLambda,
-} from "waku/unstable_hono";
+} from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
 const { serveStatic } = await importHonoNodeServerServeStatic();
 const { ${lambdaStreaming ? 'streamHandle:' : ''}handle } = await importHonoAwsLambda();
 
-const distDir = "${distDir}";
-const publicDir = "${distPublic}";
-const loadEntries = () => import("${srcEntriesFile}");
+const distDir = '${distDir}';
+const publicDir = '${distPublic}';
+const loadEntries = () => import('${srcEntriesFile}');
 
 const configPromise = loadEntries().then((entries) => entries.loadConfig());
 
 const createApp = (app) => {
-  app.use(serveStatic({ root: distDir + "/" + publicDir }));
-  app.use(serverEngine({ cmd: "start", loadEntries, env: process.env }));
+  app.use(serveStatic({ root: distDir + '/' + publicDir }));
+  app.use(serverEngine({ cmd: 'start', loadEntries, env: process.env }));
   app.notFound(async (c) => {
-    const file = path.join(distDir, publicDir, "404.html");
+    const file = path.join(distDir, publicDir, '404.html');
     if (existsSync(file)) {
-      return c.html(readFileSync(file, "utf8"), 404);
+      return c.html(readFileSync(file, 'utf8'), 404);
     }
-    return c.text("404 Not Found", 404);
+    return c.text('404 Not Found', 404);
   });
   return app;
 };
