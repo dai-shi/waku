@@ -1,6 +1,9 @@
 import type { Context, Env, MiddlewareHandler } from 'hono';
 
-import { unstable_getCustomContext } from '../../server.js';
+import {
+  runWithRenderStoreInternal,
+  unstable_getCustomContext,
+} from '../../server.js';
 import { resolveConfig } from '../config.js';
 import type { HandlerContext, MiddlewareOptions } from '../middleware/types.js';
 
@@ -59,7 +62,13 @@ export const serverEngine = (options: MiddlewareOptions): MiddlewareHandler => {
         }
       });
     };
-    await run(0);
+    const renderStore = {
+      context: ctx.context,
+      rerender: () => {
+        throw new Error('Cannot rerender');
+      },
+    };
+    await runWithRenderStoreInternal(renderStore, () => run(0));
     if (ctx.res.body || ctx.res.status) {
       return c.body(
         ctx.res.body || null,
