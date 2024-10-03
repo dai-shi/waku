@@ -197,12 +197,13 @@ test.describe('client side navigation', () => {
     // Click on a link to a broken redirect
     await page.getByRole('link', { name: 'Broken redirect' }).click();
 
-    // Navigate to a page that redirects to a non-existing page
-    await page.goto(`http://localhost:${port}/broken-redirect`);
     // The page renders the custom 404.tsx
     await expect(page.getByRole('heading')).toHaveText('Custom not found');
-    // The browsers URL remains the one that was redirected to
-    expect(page.url()).toBe(`http://localhost:${port}/broken`);
+    // The browsers URL remains the link href
+    // NOTE: This is inconsistent with server side navigation, but
+    //       there is no way to tell where the RSC request was redirected
+    //       to before failing with 404.
+    expect(page.url()).toBe(`http://localhost:${port}/broken-redirect`);
 
     // Go back to the index page
     await page.getByRole('link', { name: 'Back' }).click();
