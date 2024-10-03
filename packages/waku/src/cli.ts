@@ -100,7 +100,7 @@ async function runDev() {
   const config = await loadConfig();
   const honoEnhancer = config.unstable_honoEnhancer
     ? config.unstable_honoEnhancer
-    : async (createApp: (app: Hono) => Hono) => createApp;
+    : (createApp: (app: Hono) => Hono) => createApp;
   const createApp = (app: Hono) => {
     if (values['experimental-compress']) {
       app.use(compress());
@@ -123,7 +123,7 @@ async function runDev() {
     return app;
   };
   const port = parseInt(values.port || '3000', 10);
-  await startServer((await honoEnhancer(createApp))!(new Hono()), port);
+  await startServer(honoEnhancer(createApp)(new Hono()), port);
 }
 
 async function runBuild() {
@@ -156,7 +156,7 @@ async function runStart() {
   const { distDir = 'dist' } = config;
   const honoEnhancer = config.unstable_honoEnhancer
     ? config.unstable_honoEnhancer
-    : async (createApp: (app: Hono) => Hono) => (app: Hono) => createApp(app);
+    : (createApp: (app: Hono) => Hono) => (app: Hono) => createApp(app);
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, DIST_ENTRIES_JS)).toString());
   const createApp = (app: Hono) => {
@@ -182,7 +182,7 @@ async function runStart() {
     return app;
   };
   const port = parseInt(values.port || '8080', 10);
-  await startServer((await honoEnhancer(createApp))!(new Hono()), port);
+  await startServer(honoEnhancer(createApp)(new Hono()), port);
 }
 
 function startServer(app: Hono, port: number) {

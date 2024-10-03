@@ -56,8 +56,8 @@ export default {
     if (!honoEnhanced) {
       const honoEnhancer =
         (await configPromise).unstable_honoEnhancer ||
-        (async (createApp) => createApp);
-      honoEnhanced = (await honoEnhancer(createApp))(new Hono());
+        ((createApp) => createApp);
+      honoEnhanced = honoEnhancer(createApp)(new Hono());
     }
     return honoEnhanced.fetch(request, env, ctx);
   },

@@ -44,9 +44,9 @@ const createApp = (app) => {
 
 const honoEnhancer =
   (await configPromise).unstable_honoEnhancer ||
-  (async (createApp) => createApp);
+  ((createApp) => createApp);
 
-export const handler = handle((await honoEnhancer(createApp))(new Hono()));
+export const handler = handle((honoEnhancer(createApp))(new Hono()));
 `;
 
 export function deployAwsLambdaPlugin(opts: {
