@@ -1,15 +1,12 @@
-import { lazy } from 'react';
 import { createPages } from 'waku';
 import type { PathsForPages } from 'waku/router';
 
 import FooPage from './components/FooPage';
-
-// The use of `lazy` is optional and you can use import statements too.
-const HomeLayout = lazy(() => import('./components/HomeLayout'));
-const HomePage = lazy(() => import('./components/HomePage'));
-const BarPage = lazy(() => import('./components/BarPage'));
-const NestedBazPage = lazy(() => import('./components/NestedBazPage'));
-const NestedQuxPage = lazy(() => import('./components/NestedQuxPage'));
+import HomeLayout from './components/HomeLayout';
+import HomePage from './components/HomePage';
+import BarPage from './components/BarPage';
+import NestedBazPage from './components/NestedBazPage';
+import NestedQuxPage from './components/NestedQuxPage';
 
 const pages = createPages(async ({ createPage, createLayout }) => [
   createLayout({
