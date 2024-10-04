@@ -11,10 +11,8 @@ description: The minimal Waku API for library authors.
 To use React Server Components in Waku, you need to create an `entries.tsx` file in the project root directory with a `renderEntries` function that returns a server component module.
 
 ```tsx
-import { lazy } from 'react';
 import { defineEntries } from 'waku/server';
-
-const App = lazy(() => import('./components/App.js'));
+import App from './components/App.js';
 
 export default defineEntries(
   // renderEntries

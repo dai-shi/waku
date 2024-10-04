@@ -1,14 +1,11 @@
-import { lazy } from 'react';
 import { createPages } from 'waku';
 import type { PathsForPages } from 'waku/router';
 import FooPage from './components/FooPage';
 import BarPage from './components/BarPage';
 import BarLayout from './components/BarLayout';
 import FooLayout from './components/FooLayout';
-
-// The use of `lazy` is optional and you can use import statements too.
-const HomeLayout = lazy(() => import('./components/HomeLayout'));
-const HomePage = lazy(() => import('./components/HomePage'));
+import HomeLayout from './components/HomeLayout';
+import HomePage from './components/HomePage';
 
 const pages = createPages(async ({ createPage, createLayout }) => [
   createLayout({
