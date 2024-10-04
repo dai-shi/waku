@@ -1,0 +1,7 @@
+{
+  "redirects": [
+    { "source": "/redirect", "destination": "/exists" },
+    { "source": "/RSC/redirect.txt", "destination": "/RSC/exists.txt" },
+    { "source": "/broken-redirect", "destination": "/broken" }
+  ]
+}

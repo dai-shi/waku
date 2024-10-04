@@ -170,4 +170,45 @@ test.describe('client side navigation', () => {
 
     await terminate(pid!);
   });
+
+  test('redirect', async ({ page }) => {
+    const [port, pid] = await start(true);
+    await page.goto(`http://localhost:${port}`);
+
+    // Click on a link to a redirect
+    await page.getByRole('link', { name: 'Correct redirect' }).click();
+
+    // The page renders the target page
+    await expect(page.getByRole('heading')).toHaveText('Existing page');
+    // The browsers URL is the one of the target page
+    expect(page.url()).toBe(`http://localhost:${port}/exists`);
+
+    // Go back to the index page
+    await page.getByRole('link', { name: 'Back' }).click();
+    await expect(page.getByRole('heading')).toHaveText('Index');
+
+    await terminate(pid!);
+  });
+
+  test('broken redirect', async ({ page }) => {
+    const [port, pid] = await start(true);
+    await page.goto(`http://localhost:${port}`);
+
+    // Click on a link to a broken redirect
+    await page.getByRole('link', { name: 'Broken redirect' }).click();
+
+    // The page renders the custom 404.tsx
+    await expect(page.getByRole('heading')).toHaveText('Custom not found');
+    // The browsers URL remains the link href
+    // NOTE: This is inconsistent with server side navigation, but
+    //       there is no way to tell where the RSC request was redirected
+    //       to before failing with 404.
+    expect(page.url()).toBe(`http://localhost:${port}/broken-redirect`);
+
+    // Go back to the index page
+    await page.getByRole('link', { name: 'Back' }).click();
+    await expect(page.getByRole('heading')).toHaveText('Index');
+
+    await terminate(pid!);
+  });
 });
