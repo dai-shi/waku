@@ -3,53 +3,54 @@ import { readdir, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { SRC_ENTRIES, EXTENSIONS } from '../constants.js';
 import { joinPath } from '../utils/path.js';
+import { getInputString } from '../../router/common.js';
 
 const SRC_PAGES = 'pages';
 
-const srcToName = (src: string) => {
-  const split = src
-    .split('/')
-    .map((part) => part[0]!.toUpperCase() + part.slice(1));
-
-  if (split.at(-1) === '_layout.tsx') {
-    return split.slice(0, -1).join('') + '_Layout';
-  } else if (split.at(-1) === 'index.tsx') {
-    return split.slice(0, -1).join('') + 'Index';
-  } else if (split.at(-1)?.startsWith('[...')) {
-    const fileName = split
-      .at(-1)!
-      .replace('-', '_')
-      .replace('.tsx', '')
-      .replace('[...', '')
-      .replace(']', '');
-    return (
-      split.slice(0, -1).join('') +
-      'Wild' +
-      fileName[0]!.toUpperCase() +
-      fileName.slice(1)
-    );
-  } else if (split.at(-1)?.startsWith('[')) {
-    const fileName = split
-      .at(-1)!
-      .replace('-', '_')
-      .replace('.tsx', '')
-      .replace('[', '')
-      .replace(']', '');
-    return (
-      split.slice(0, -1).join('') +
-      'Slug' +
-      fileName[0]!.toUpperCase() +
-      fileName.slice(1)
-    );
-  } else {
-    const fileName = split.at(-1)!.replace('-', '_').replace('.tsx', '');
-    return (
-      split.slice(0, -1).join('') +
-      fileName[0]!.toUpperCase() +
-      fileName.slice(1)
-    );
+// https://tc39.es/ecma262/multipage/ecmascript-language-lexical-grammar.html#sec-names-and-keywords
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#identifiers
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#reserved_words
+export function toIdentifier(input: string): string {
+  // Strip the file extension
+  let identifier = input.includes('.')
+    ? input.split('.').slice(0, -1).join('.')
+    : input;
+  // Replace any characters besides letters, numbers, underscores, and dollar signs with underscores
+  identifier = identifier.replace(/[^\p{L}\p{N}_$]/gu, '_');
+  // Ensure it starts with a letter
+  if (/^\d/.test(identifier)) {
+    identifier = '_' + identifier;
   }
-};
+  // Turn it into PascalCase
+  // Since the first letter is uppercased, it will not be a reserved word
+  return identifier
+    .split('_')
+    .map((part) => {
+      if (part[0] === undefined) return '';
+      return part[0].toUpperCase() + part.slice(1);
+    })
+    .join('');
+}
+
+export function getImportModuleNames(filePaths: string[]): {
+  [k: string]: string;
+} {
+  const moduleNameCount: { [k: string]: number } = {};
+  const moduleNames: { [k: string]: string } = {};
+  for (const filePath of filePaths) {
+    let identifier = toIdentifier(filePath);
+    moduleNameCount[identifier] = (moduleNameCount[identifier] ?? -1) + 1;
+    if (moduleNameCount[identifier]) {
+      identifier = `${identifier}_${moduleNameCount[identifier]}`;
+    }
+    try {
+      moduleNames[getInputString(filePath)] = identifier;
+    } catch (e) {
+      console.log(e);
+    }
+  }
+  return moduleNames;
+}
 
 export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
   let entriesFilePossibilities: string[] | undefined;
@@ -91,20 +92,24 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
       }
 
       // Recursively collect `.tsx` files in the given directory
-      const collectFiles = async (dir: string): Promise<string[]> => {
-        if (!pagesDir) return [];
-        const results: string[] = [];
-        const files = await readdir(dir, {
-          withFileTypes: true,
-          recursive: true,
-        });
-
-        for (const file of files) {
-          if (file.name.endsWith('.tsx')) {
-            results.push('/' + file.name);
+      const collectFiles = async (
+        dir: string,
+        files: string[] = [],
+      ): Promise<string[]> => {
+        // TODO revisit recursive option for readdir once more stable
+        // https://nodejs.org/docs/latest-v20.x/api/fs.html#direntparentpath
+        const entries = await readdir(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = joinPath(dir, entry.name);
+          if (entry.isDirectory()) {
+            await collectFiles(fullPath, files);
+          } else {
+            if (entry.name.endsWith('.tsx')) {
+              files.push(pagesDir ? fullPath.slice(pagesDir.length) : fullPath);
+            }
           }
         }
-        return results;
+        return files;
       };
 
       const fileExportsGetConfig = (filePath: string) => {
@@ -119,19 +124,21 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
 
       const generateFile = (filePaths: string[]): string => {
         const fileInfo = [];
+        const moduleNames = getImportModuleNames(filePaths);
+
         for (const filePath of filePaths) {
           // where to import the component from
-          const src = filePath.slice(1);
+          const src = getInputString(filePath);
           const hasGetConfig = fileExportsGetConfig(filePath);
 
-          if (filePath === '/_layout.tsx') {
+          if (filePath.endsWith('/_layout.tsx')) {
             fileInfo.push({
               type: 'layout',
               path: filePath.replace('_layout.tsx', ''),
               src,
               hasGetConfig,
             });
-          } else if (filePath === '/index.tsx') {
+          } else if (filePath.endsWith('/index.tsx')) {
             fileInfo.push({
               type: 'page',
               path: filePath.replace('index.tsx', ''),
@@ -152,19 +159,19 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
 import type { PathsForPages } from 'waku/router';\n\n`;
 
         for (const file of fileInfo) {
-          const moduleName = srcToName(file.src);
+          const moduleName = moduleNames[file.src];
           result += `import ${moduleName}${file.hasGetConfig ? `, { getConfig as ${moduleName}_getConfig }` : ''} from './${SRC_PAGES}/${file.src.replace('.tsx', '')}';\n`;
         }
 
         result += `\nconst _pages = createPages(async (pagesFns) => [\n`;
 
         for (const file of fileInfo) {
-          const moduleName = srcToName(file.src);
+          const moduleName = moduleNames[file.src];
           result += `  pagesFns.${file.type === 'layout' ? 'createLayout' : 'createPage'}({ path: '${file.path}', component: ${moduleName}, ${file.hasGetConfig ? `...(await ${moduleName}_getConfig())` : `render: '${file.type === 'layout' ? 'static' : 'dynamic'}'`} }),\n`;
         }
 
         result += `]);
-  
+
   declare module 'waku/router' {
     interface RouteConfig {
       paths: PathsForPages<typeof _pages>;

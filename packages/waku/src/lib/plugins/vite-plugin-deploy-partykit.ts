@@ -15,29 +15,39 @@ const { Hono } = await importHono();
 
 const loadEntries = () => import('${srcEntriesFile}');
 let serve;
+let app;
 
-const app = new Hono();
-app.use((c, next) => serve(c, next));
-app.notFound(async (c) => {
-  const assetsFetcher = c.env.assets;
-  // check if there's a 404.html in the static assets
-  const notFoundStaticAssetResponse = await assetsFetcher.fetch('/404.html');
-  // if there is, return it
-  if (notFoundStaticAssetResponse) {
-    return new Response(notFoundStaticAssetResponse.body, {
-      status: 404,
-      statusText: 'Not Found',
-      headers: notFoundStaticAssetResponse.headers,
-    });
-  }
-  // otherwise, return a simple 404 response
-  return c.text('404 Not Found', 404);
-});
+const createApp = (app) => {
+  app.use((c, next) => serve(c, next));
+  app.notFound(async (c) => {
+    const assetsFetcher = c.env.ASSETS;
+    const url = new URL(c.req.raw.url);
+    const errorHtmlUrl = url.origin + '/404.html';
+    const notFoundStaticAssetResponse = await assetsFetcher.fetch(
+      new URL(errorHtmlUrl),
+    );
+    if (
+      notFoundStaticAssetResponse &&
+      notFoundStaticAssetResponse.status < 400
+    ) {
+      return c.body(notFoundStaticAssetResponse.body, 404);
+    }
+    return c.text('404 Not Found', 404);
+  });
+  return app;
+};
 
 export default {
-  onFetch(request, lobby, ctx) {
+  async onFetch(request, lobby, ctx) {
     if (!serve) {
       serve = serverEngine({ cmd: 'start', loadEntries, env: lobby });
+    }
+    if (!app) {
+      const entries = await loadEntries();
+      const config = await entries.loadConfig();
+      const honoEnhancer =
+        config.unstable_honoEnhancer || ((createApp) => createApp);
+      app = honoEnhancer(createApp)(new Hono());
     }
     return app.fetch(request, lobby, ctx);
   },

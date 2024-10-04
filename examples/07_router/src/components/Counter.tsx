@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-
 import { Link, useRouter_UNSTABLE as useRouter } from 'waku/router/client';
+
+import { jump } from './funcs';
 
 export const Counter = () => {
   const { path } = useRouter();
@@ -13,7 +14,12 @@ export const Counter = () => {
       <button onClick={() => setCount((c) => c + 1)}>Increment</button>
       <h3>This is a client component.</h3>
       <span>path: {path}</span>
-      <Link to="/">Go to Home</Link>
+      <p>
+        <Link to="/">Go to Home</Link>
+      </p>
+      <p>
+        <button onClick={() => jump()}>Jump to random page</button>
+      </p>
     </div>
   );
 };

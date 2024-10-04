@@ -18,7 +18,7 @@ import {
   getInputString,
   parseInputString,
   SHOULD_SKIP_ID,
-  LOCATION_ID,
+  ROUTE_ID,
   HAS404_ID,
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
@@ -171,7 +171,7 @@ export function unstable_defineRouter(
       )
     ).flat();
     entries.push([SHOULD_SKIP_ID, Object.entries(shouldSkipObj)]);
-    entries.push([LOCATION_ID, [pathname, query]]);
+    entries.push([ROUTE_ID, [pathname, query]]);
     if (pathStatus.has404) {
       entries.push([HAS404_ID, true]);
     }
@@ -261,10 +261,10 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   return { renderEntries, getBuildConfig, getSsrConfig };
 }
 
-export function unstable_redirect(
+export function unstable_rerenderRoute(
   pathname: string,
   query?: string,
-  skip?: string[],
+  skip?: string[], // TODO this is too hard to use
 ) {
   const input = getInputString(pathname);
   rerender(input, { query, skip });
