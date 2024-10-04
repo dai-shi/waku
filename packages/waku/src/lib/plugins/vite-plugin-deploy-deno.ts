@@ -18,6 +18,7 @@ import { serverEngine } from 'waku/unstable_hono';
 const distDir = '${distDir}';
 const publicDir = '${distPublic}';
 const loadEntries = () => import('${srcEntriesFile}');
+const configPromise = loadEntries().then((entries) => entries.loadConfig());
 const env = Deno.env.toObject();
 
 const createApp = (app) => {

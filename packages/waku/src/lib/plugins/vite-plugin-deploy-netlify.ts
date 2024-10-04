@@ -14,6 +14,7 @@ import { serverEngine, importHono } from 'waku/unstable_hono';
 const { Hono } = await importHono();
 
 const loadEntries = () => import('${srcEntriesFile}');
+const configPromise = loadEntries().then((entries) => entries.loadConfig());
 
 const createApp = (app) => {
   app.use(serverEngine({ cmd: 'start', loadEntries, env: process.env }));
