@@ -424,14 +424,8 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
     };
   }, [changeRoute]);
 
-  const [routeFromServer, setRouteFromServer] = useState<
-    { path: string; query: string } | undefined
-  >();
   useEffect(() => {
-    if (routeFromServer) {
-      // FIXME This feels too late to update the route from the server
-      // Ideally, we should call `changeRoute` without useEffect.
-      const { path, query } = routeFromServer;
+    const callback = (path: string, query: string) => {
       const url = new URL(window.location.href);
       url.pathname = path;
       url.search = query;
@@ -447,11 +441,6 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
         );
       }
       changeRoute(parseRoute(url), { skipRefetch: true });
-    }
-  }, [routeFromServer, changeRoute]);
-  useEffect(() => {
-    const callback = (path: string, query: string) => {
-      setRouteFromServer({ path, query });
     };
     const listeners = (routerData[1] ||= new Set());
     listeners.add(callback);
