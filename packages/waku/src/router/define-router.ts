@@ -59,7 +59,8 @@ export function unstable_defineRouter(
     componentId: string, // "**/layout" or "**/page"
     options: {
       // TODO setShouldSkip API is too hard to understand
-      unstable_setShouldSkip: (val?: ShouldSkipValue) => void;
+      unstable_cacheComponent: (val: ShouldSkipValue) => void;
+      unstable_clearComponentCache: () => void;
     },
   ) => Promise<
     | FunctionComponent<RouteProps>
@@ -143,15 +144,15 @@ export function unstable_defineRouter(
           if (skip?.includes(id)) {
             return [];
           }
-          const setShoudSkip = (val?: ShouldSkipValue) => {
-            if (val) {
-              shouldSkipObj[id] = val;
-            } else {
-              delete shouldSkipObj[id];
-            }
+          const setComponentCache = (val: ShouldSkipValue) => {
+            shouldSkipObj[id] = val;
+          };
+          const clearComponentCache = () => {
+            delete shouldSkipObj[id];
           };
           const component = await getComponent(id, {
-            unstable_setShouldSkip: setShoudSkip,
+            unstable_cacheComponent: setComponentCache,
+            unstable_clearComponentCache: clearComponentCache,
           });
           if (!component) {
             return [];

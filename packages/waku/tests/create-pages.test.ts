@@ -450,14 +450,17 @@ describe('createPages', () => {
     ]);
 
     const setShouldSkip = vi.fn();
+    const clearShouldSkip = vi.fn();
 
     expect(
       await getComponent('test/page', {
-        unstable_setShouldSkip: setShouldSkip,
+        unstable_cacheComponent: setShouldSkip,
+        unstable_clearComponentCache: clearShouldSkip,
       }),
     ).toBe(TestPage);
     expect(setShouldSkip).toHaveBeenCalledTimes(1);
     expect(setShouldSkip).toHaveBeenCalledWith([]);
+    expect(clearShouldSkip).toHaveBeenCalledTimes(0);
   });
 
   it('creates a simple dynamic page', async () => {
@@ -484,14 +487,17 @@ describe('createPages', () => {
         pattern: '^/test$',
       },
     ]);
-    const setShouldSkip = vi.fn();
+    const cacheComponent = vi.fn();
+    const clearComponentCache = vi.fn();
     expect(
       await getComponent('test/page', {
-        unstable_setShouldSkip: setShouldSkip,
+        unstable_cacheComponent: cacheComponent,
+        unstable_clearComponentCache: clearComponentCache,
       }),
     ).toBe(TestPage);
-    expect(setShouldSkip).toHaveBeenCalledTimes(1);
-    expect(setShouldSkip).toHaveBeenCalledWith();
+    expect(cacheComponent).toHaveBeenCalledTimes(0);
+    expect(clearComponentCache).toHaveBeenCalledTimes(1);
+    expect(clearComponentCache).toHaveBeenCalledWith();
   });
 
   it('creates a simple static page with a layout', async () => {
@@ -526,14 +532,18 @@ describe('createPages', () => {
       },
     ]);
 
-    const setShouldSkip = vi.fn();
-    expect(
-      await getComponent('test/page', {
-        unstable_setShouldSkip: setShouldSkip,
-      }),
-    ).toBe(TestPage);
-    expect(setShouldSkip).toHaveBeenCalledTimes(1);
-    expect(setShouldSkip).toHaveBeenCalledWith([]);
+      const cacheComponent = vi.fn();
+      const clearComponentCache = vi.fn();
+      expect(
+        await getComponent('test/page', {
+          unstable_cacheComponent: cacheComponent,
+          unstable_clearComponentCache: clearComponentCache,
+        }),
+      ).toBe(TestPage);
+      expect(cacheComponent).toHaveBeenCalledTimes(1);
+      expect(cacheComponent).toHaveBeenCalledWith([]);
+      expect(clearComponentCache).toHaveBeenCalledTimes(0);
+    });
 
     const setShouldSkipLayout = vi.fn();
     expect(
