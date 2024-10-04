@@ -9,17 +9,17 @@
     "start": "waku start"
   },
   "dependencies": {
-    "cookie": "0.6.0",
-    "hono": "4.6.1",
-    "react": "19.0.0-rc-d6cb4e77-20240911",
-    "react-dom": "19.0.0-rc-d6cb4e77-20240911",
-    "react-server-dom-webpack": "19.0.0-rc-d6cb4e77-20240911",
+    "cookie": "0.7.0",
+    "hono": "4.6.3",
+    "react": "19.0.0-rc-2d16326d-20240930",
+    "react-dom": "19.0.0-rc-2d16326d-20240930",
+    "react-server-dom-webpack": "19.0.0-rc-2d16326d-20240930",
     "waku": "0.21.2"
   },
   "devDependencies": {
     "@types/cookie": "0.6.0",
-    "@types/node": "22.5.4",
-    "@types/react": "18.3.5",
+    "@types/node": "22.7.4",
+    "@types/react": "18.3.11",
     "@types/react-dom": "18.3.0",
     "typescript": "5.6.2"
   }

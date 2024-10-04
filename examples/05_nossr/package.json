@@ -9,17 +9,17 @@
     "start": "waku start"
   },
   "dependencies": {
-    "react": "19.0.0-rc-d6cb4e77-20240911",
-    "react-dom": "19.0.0-rc-d6cb4e77-20240911",
-    "react-server-dom-webpack": "19.0.0-rc-d6cb4e77-20240911",
+    "react": "19.0.0-rc-2d16326d-20240930",
+    "react-dom": "19.0.0-rc-2d16326d-20240930",
+    "react-server-dom-webpack": "19.0.0-rc-2d16326d-20240930",
     "waku": "0.21.2"
   },
   "devDependencies": {
-    "@types/react": "18.3.5",
+    "@types/react": "18.3.11",
     "@types/react-dom": "18.3.0",
     "autoprefixer": "10.4.20",
-    "tailwindcss": "3.4.11",
+    "tailwindcss": "3.4.13",
     "typescript": "5.6.2",
-    "vite": "5.4.4"
+    "vite": "5.4.8"
   }
 }
