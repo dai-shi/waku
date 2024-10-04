@@ -11,7 +11,7 @@ export default function Index() {
         <Link to="/broken">Broken link</Link>
       </p>
       <p>
-        <Link to="/redirect">Correct Redirect</Link>
+        <Link to="/redirect">Correct redirect</Link>
       </p>
       <p>
         <Link to="/broken-redirect">Broken redirect</Link>

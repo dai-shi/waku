@@ -1,0 +1,87 @@
+---
+slug: redirects
+title: Redirects
+description: How to add HTTP redirects to your Waku project.
+---
+
+### Redirects
+
+Redirects are not handled by Waku directly. Instead, you can use either a custom middleware or the hosting environment to achieve that. The `<Link />` component does not deal with redirects either and will by default show the **404** page instead. To resolve this, you have to add an additional redirect for each redirected path, that points Waku to the correct `RSC` file. If there is a redirect from `/old` to `/new`, there also has to be one from `/RSC/old.txt`` to `/RSC/new.txt`to make the `<Link />` component`s smooth page transition work.
+
+> The `/RSC/` file naming convention is [subject to change](https://github.com/dai-shi/waku/discussions/929#discussioncomment-10825975) in future versions of Waku.
+
+#### Redirect via middleware
+
+Create a new middleware somewhere in your project and add it to the `waku.config.ts` file.
+
+```typescript
+// ./src/middleware/redirect.ts
+import type { Middleware } from 'waku/config';
+
+const redirectsMiddleware: Middleware = () => async (ctx, next) => {
+  // Define the list of redirects.
+  const redirects = {
+    '/old': '/new',
+    // ... add more redirects here
+  };
+
+  // Create a corresponding /RSC/ entry for each redirect.
+  const withRSC = Object.fromEntries(
+    Object.entries(redirects).flatMap(([from, to]) => [
+      [from, to],
+      [`/RSC${from}.txt`, `/RSC${to}.txt`],
+    ]),
+  );
+
+  if (withRSC[ctx.req.url.pathname]) {
+    ctx.res.status = 301;
+    ctx.res.headers = {
+      Location: redirects[ctx.req.url.pathname],
+    };
+  } else {
+    return await next();
+  }
+};
+
+export default redirectsMiddleware;
+```
+
+```typescript
+// ./waku.config.ts
+import type { Config } from 'waku/config';
+
+export default {
+  middleware: () => [
+    import('./src/middleware/redirects.js'),
+    import('waku/middleware/dev-server'),
+    import('waku/middleware/headers'),
+    import('waku/middleware/rsc'),
+    import('waku/middleware/ssr'),
+  ],
+} satisfies Config;
+```
+
+#### Redirect via hosting environment
+
+This very much depends on the hosting environment you are using. For example, on [Vercel](https://vercel.com/docs/projects/project-configuration#redirects) you can use the `vercel.json` file to define redirects.
+
+```json
+{
+  "redirects": [
+    { "source": "/old", "destination": "/new", "permanent": true },
+    {
+      "source": "/RSC/old.txt",
+      "destination": "/RSC/new.txt",
+      "permanent": true
+    }
+  ]
+}
+```
+
+[Netlify](https://docs.netlify.com/routing/redirects/#syntax-for-the-redirects-file) and [Cloudflare pages](https://developers.cloudflare.com/pages/configuration/redirects/) will respect a `_redirects` file that you can place in the `public` folder:
+bbb
+
+```
+/old /new 301
+/RSC/old.txt /RSC/new.txt 301
+```
