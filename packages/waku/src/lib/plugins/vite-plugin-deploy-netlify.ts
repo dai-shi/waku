@@ -15,15 +15,21 @@ const { Hono } = await importHono();
 
 const loadEntries = () => import('${srcEntriesFile}');
 
-const app = new Hono();
-app.use(serverEngine({ cmd: 'start', loadEntries, env: process.env }));
-app.notFound((c) => {
-  const notFoundHtml = globalThis.__WAKU_NOT_FOUND_HTML__;
-  if (typeof notFoundHtml === 'string') {
-    return c.html(notFoundHtml, 404);
-  }
-  return c.text('404 Not Found', 404);
-});
+const createApp = (app) => {
+  app.use(serverEngine({ cmd: 'start', loadEntries, env: process.env }));
+  app.notFound((c) => {
+    const notFoundHtml = globalThis.__WAKU_NOT_FOUND_HTML__;
+    if (typeof notFoundHtml === 'string') {
+      return c.html(notFoundHtml, 404);
+    }
+    return c.text('404 Not Found', 404);
+  });
+  return app;
+}
+
+const honoEnhancer =
+  (await configPromise).unstable_honoEnhancer || ((createApp) => createApp);
+const app = honoEnhancer(createApp)(new Hono());
 
 export default async (req, context) => app.fetch(req, { context });
 `;
