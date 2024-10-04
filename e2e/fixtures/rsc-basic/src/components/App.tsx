@@ -16,8 +16,11 @@ const App = ({ name }: { name: string }) => {
       <body>
         <ServerBox>
           <p data-testid="app-name">{name}</p>
-          <ClientCounter />
-          <ServerPing />
+          <>
+            {/* FIXME: Why we need this fragment? A React bug? */}
+            <ClientCounter />
+            <ServerPing />
+          </>
           <ServerProvider>
             <ClientActionsConsumer />
           </ServerProvider>
