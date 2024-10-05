@@ -269,3 +269,33 @@ export function unstable_rerenderRoute(
   const rscPath = getRscPath(pathname);
   rerender(rscPath, { query, skip });
 }
+
+// -----------------------------------------------------
+// new_defineRouter
+// Eventually replaces unstable_defineRouter
+// -----------------------------------------------------
+
+export function new_defineRouter(
+  getPathConfig: () => Promise<
+    Iterable<{
+      pattern: string; // TODO let's revisit this later
+      path: PathSpec;
+      components: Record<
+        string, // componentId such as "**/layout" or "**/page" in the case of createPages
+        {
+          isStatic?: boolean;
+        }
+      >;
+      noSsr?: boolean;
+    }>
+  >,
+  renderRoute: (
+    path: string, // "/foo/bar"
+    options: {
+      query?: string;
+      skipIds?: string[];
+    },
+  ) => Promise<Record<string, ReactNode>>,
+): ReturnType<typeof defineEntries> {
+  return ('TODO' + getPathConfig + renderRoute) as never;
+}

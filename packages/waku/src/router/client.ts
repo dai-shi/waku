@@ -606,3 +606,14 @@ class ErrorBoundary extends Component<
     return this.props.children;
   }
 }
+
+// -----------------------------------------------------
+// For new_defineRouter
+// Eventually replaces Router and so on
+// -----------------------------------------------------
+
+export function new_Router({ routerData = DEFAULT_ROUTER_DATA }) {
+  return ('TODO' + routerData) as never;
+}
+
+// TODO: Do we need new_ServerRouter? Hope to avoid it.
