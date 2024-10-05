@@ -127,7 +127,7 @@ const replaceNode = <T extends swc.Node>(origNode: swc.Node, newNode: T): T => {
 
 const transformExportedServerActions = (
   mod: swc.Module,
-  getActionId: () => string,
+  getFuncId: () => string,
 ): boolean => {
   let changed = false;
   for (let i = 0; i < mod.body.length; ++i) {
@@ -145,7 +145,7 @@ const transformExportedServerActions = (
           createIdentifier('__waku_registerServerReference'),
           [
             createIdentifier(name),
-            createStringLiteral(getActionId()),
+            createStringLiteral(getFuncId()),
             createStringLiteral(name),
           ],
         ),
@@ -167,7 +167,7 @@ const transformExportedServerActions = (
         createIdentifier('__waku_registerServerReference'),
         [
           Object.assign({}, fn),
-          createStringLiteral(getActionId()),
+          createStringLiteral(getFuncId()),
           createStringLiteral(name),
         ],
       );
@@ -335,7 +335,7 @@ const collectClosureVars = (
 
 const transformInlineServerActions = (
   mod: swc.Module,
-  getActionId: () => string,
+  getFuncId: () => string,
 ): boolean => {
   let serverActionIndex = 0;
   const serverActions = new Map<
@@ -469,7 +469,7 @@ const transformInlineServerActions = (
             createIdentifier('__waku_registerServerReference'),
             [
               createIdentifier(actionFn.identifier.value),
-              createStringLiteral(getActionId()),
+              createStringLiteral(getFuncId()),
               createStringLiteral('__waku_action' + actionIndex),
             ],
           ),
@@ -494,7 +494,7 @@ const transformInlineServerActions = (
                   createIdentifier('__waku_registerServerReference'),
                   [
                     prependArgsToFn(actionFn, closureVars),
-                    createStringLiteral(getActionId()),
+                    createStringLiteral(getFuncId()),
                     createStringLiteral('__waku_action' + actionIndex),
                   ],
                 ),

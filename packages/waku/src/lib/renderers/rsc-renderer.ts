@@ -11,7 +11,7 @@ import type {
 import type { ResolvedConfig } from '../config.js';
 import { filePathToFileURL } from '../utils/path.js';
 import { streamToArrayBuffer } from '../utils/stream.js';
-import { decodeActionId } from '../renderers/utils.js';
+import { decodeFuncId } from '../renderers/utils.js';
 import { bufferToString, parseFormData } from '../utils/buffer.js';
 
 export const SERVER_MODULE_MAP = {
@@ -209,10 +209,10 @@ export async function renderRsc(
     }
   }
 
-  const actionId = decodeActionId(input);
-  if (actionId) {
+  const funcId = decodeFuncId(input);
+  if (funcId) {
     const args = Array.isArray(decodedBody) ? decodedBody : [];
-    const [fileId, name] = actionId.split('#') as [string, string];
+    const [fileId, name] = funcId.split('#') as [string, string];
     let mod: any;
     if (isDev) {
       mod = await opts.loadServerModuleRsc(filePathToFileURL(fileId));

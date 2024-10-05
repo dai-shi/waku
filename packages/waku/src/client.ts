@@ -14,7 +14,7 @@ import {
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
 
-import { encodeInput, encodeActionId } from './lib/renderers/utils.js';
+import { encodeInput, encodeFuncId } from './lib/renderers/utils.js';
 
 const { createFromFetch, encodeReply } = RSDWClient;
 
@@ -100,17 +100,17 @@ const defaultFetchCache: FetchCache = {};
  * This is not a public API.
  */
 export const callServerRsc = async (
-  actionId: string,
+  funcId: string,
   args?: unknown[],
   fetchCache = defaultFetchCache,
 ) => {
   const enhanceCreateData = fetchCache[ENHANCE_CREATE_DATA] || ((d) => d);
   const createData = (responsePromise: Promise<Response>) =>
     createFromFetch<Awaited<Elements>>(checkStatus(responsePromise), {
-      callServer: (actionId: string, args: unknown[]) =>
-        callServerRsc(actionId, args, fetchCache),
+      callServer: (funcId: string, args: unknown[]) =>
+        callServerRsc(funcId, args, fetchCache),
     });
-  const url = BASE_PATH + encodeInput(encodeActionId(actionId));
+  const url = BASE_PATH + encodeInput(encodeFuncId(funcId));
   const responsePromise =
     args === undefined
       ? fetch(url)
@@ -144,8 +144,8 @@ export const fetchRsc = (
   const enhanceCreateData = fetchCache[ENHANCE_CREATE_DATA] || ((d) => d);
   const createData = (responsePromise: Promise<Response>) =>
     createFromFetch<Awaited<Elements>>(checkStatus(responsePromise), {
-      callServer: (actionId: string, args: unknown[]) =>
-        callServerRsc(actionId, args, fetchCache),
+      callServer: (funcId: string, args: unknown[]) =>
+        callServerRsc(funcId, args, fetchCache),
     });
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
   const url = BASE_PATH + encodeInput(input);

@@ -30,15 +30,15 @@ export const decodeInput = (encodedInput: string) => {
 
 const ACTION_PREFIX = 'ACTION_';
 
-export const encodeActionId = (actionId: string) => {
-  const [file, name] = actionId.split('#') as [string, string];
+export const encodeFuncId = (funcId: string) => {
+  const [file, name] = funcId.split('#') as [string, string];
   if (name.includes('/')) {
-    throw new Error('Unsupported action name');
+    throw new Error('Unsupported function name');
   }
   return ACTION_PREFIX + file + '/' + name;
 };
 
-export const decodeActionId = (encoded: string) => {
+export const decodeFuncId = (encoded: string) => {
   if (!encoded.startsWith(ACTION_PREFIX)) {
     return null;
   }
