@@ -77,14 +77,14 @@ export function rscHmrPlugin(): Plugin {
       if (id.startsWith(wakuClientDist)) {
         // FIXME this is fragile. Can we do it better?
         return code.replace(
-          /\nexport const fetchRSC = \(.*?\)=>\{/,
+          /\nexport const fetchRsc = \(.*?\)=>\{/,
           (m) =>
             m +
             `
 {
   const refetchRsc = () => {
     delete fetchCache[ENTRY];
-    const data = fetchRSC(input, params, fetchCache);
+    const data = fetchRsc(input, params, fetchCache);
     fetchCache[SET_ELEMENTS](() => data);
   };
   globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];

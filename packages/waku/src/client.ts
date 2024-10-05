@@ -99,7 +99,7 @@ const defaultFetchCache: FetchCache = {};
  * callServer callback
  * This is not a public API.
  */
-export const callServerRSC = async (
+export const callServerRsc = async (
   actionId: string,
   args?: unknown[],
   fetchCache = defaultFetchCache,
@@ -108,7 +108,7 @@ export const callServerRSC = async (
   const createData = (responsePromise: Promise<Response>) =>
     createFromFetch<Awaited<Elements>>(checkStatus(responsePromise), {
       callServer: (actionId: string, args: unknown[]) =>
-        callServerRSC(actionId, args, fetchCache),
+        callServerRsc(actionId, args, fetchCache),
     });
   const url = BASE_PATH + encodeInput(encodeActionId(actionId));
   const responsePromise =
@@ -123,7 +123,7 @@ export const callServerRSC = async (
 
 const prefetchedParams = new WeakMap<Promise<unknown>, unknown>();
 
-const fetchRSCInternal = (url: string, params: unknown) =>
+const fetchRscInternal = (url: string, params: unknown) =>
   params === undefined
     ? fetch(url)
     : typeof params === 'string'
@@ -132,7 +132,7 @@ const fetchRSCInternal = (url: string, params: unknown) =>
           fetch(url, { method: 'POST', body }),
         );
 
-export const fetchRSC = (
+export const fetchRsc = (
   input: string,
   params?: unknown,
   fetchCache = defaultFetchCache,
@@ -145,7 +145,7 @@ export const fetchRSC = (
   const createData = (responsePromise: Promise<Response>) =>
     createFromFetch<Awaited<Elements>>(checkStatus(responsePromise), {
       callServer: (actionId: string, args: unknown[]) =>
-        callServerRSC(actionId, args, fetchCache),
+        callServerRsc(actionId, args, fetchCache),
     });
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
   const url = BASE_PATH + encodeInput(input);
@@ -157,7 +157,7 @@ export const fetchRSC = (
       prefetchedParams.get(prefetched[url]) === params);
   const responsePromise = hasValidPrefetchedResponse
     ? prefetched[url]
-    : fetchRSCInternal(url, params);
+    : fetchRscInternal(url, params);
   delete prefetched[url];
   const data = enhanceCreateData(createData)(responsePromise);
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -165,11 +165,11 @@ export const fetchRSC = (
   return data;
 };
 
-export const prefetchRSC = (input: string, params?: unknown): void => {
+export const prefetchRsc = (input: string, params?: unknown): void => {
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
   const url = BASE_PATH + encodeInput(input);
   if (!(url in prefetched)) {
-    prefetched[url] = fetchRSCInternal(url, params);
+    prefetched[url] = fetchRscInternal(url, params);
     prefetchedParams.set(prefetched[url], params);
   }
 };
@@ -196,7 +196,7 @@ export const Root = ({
 }) => {
   fetchCache[ENHANCE_CREATE_DATA] = unstable_enhanceCreateData;
   const [elements, setElements] = useState(() =>
-    fetchRSC(initialInput || '', initialParams, fetchCache),
+    fetchRsc(initialInput || '', initialParams, fetchCache),
   );
   useEffect(() => {
     fetchCache[SET_ELEMENTS] = setElements;
@@ -205,7 +205,7 @@ export const Root = ({
     (input: string, params?: unknown) => {
       // clear cache entry before fetching
       delete fetchCache[ENTRY];
-      const data = fetchRSC(input, params, fetchCache);
+      const data = fetchRsc(input, params, fetchCache);
       setElements((prev) => mergeElements(prev, data));
     },
     [fetchCache],

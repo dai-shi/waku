@@ -23,7 +23,7 @@ import type {
   MouseEvent,
 } from 'react';
 
-import { fetchRSC, prefetchRSC, Root, Slot, useRefetch } from '../client.js';
+import { fetchRsc, prefetchRsc, Root, Slot, useRefetch } from '../client.js';
 import {
   getComponentIds,
   getInputString,
@@ -407,7 +407,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
         return; // everything is cached
       }
       const input = getInputString(route.path);
-      prefetchRSC(input, JSON.stringify({ query: route.query, skip }));
+      prefetchRsc(input, JSON.stringify({ query: route.query, skip }));
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(route.path);
     },
     [routerData],
@@ -501,7 +501,7 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
       if (response.status === 404 && has404) {
         // HACK this is still an experimental logic. It's very fragile.
         // FIXME we should cache it if 404.txt is static.
-        return fetchRSC(getInputString('/404'));
+        return fetchRsc(getInputString('/404'));
       }
       const data = createData(responsePromise);
       Promise.resolve(data)
