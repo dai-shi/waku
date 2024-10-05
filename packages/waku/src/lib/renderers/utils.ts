@@ -1,29 +1,29 @@
 // This file should not include Node specific code.
 
-export const encodeInput = (input: string) => {
-  if (input === '') {
+export const encodeRscPath = (rscPath: string) => {
+  if (rscPath === '') {
     return 'index.txt';
   }
-  if (input === 'index') {
-    throw new Error('Input should not be `index`');
+  if (rscPath === 'index') {
+    throw new Error('rscPath should not be `index`');
   }
-  if (input.startsWith('/')) {
-    throw new Error('Input should not start with `/`');
+  if (rscPath.startsWith('/')) {
+    throw new Error('rscPath should not start with `/`');
   }
-  if (input.endsWith('/')) {
-    throw new Error('Input should not end with `/`');
+  if (rscPath.endsWith('/')) {
+    throw new Error('rscPath should not end with `/`');
   }
-  return input + '.txt';
+  return rscPath + '.txt';
 };
 
-export const decodeInput = (encodedInput: string) => {
-  if (encodedInput === 'index.txt') {
+export const decodeRscPath = (encodedRscPath: string) => {
+  if (encodedRscPath === 'index.txt') {
     return '';
   }
-  if (encodedInput?.endsWith('.txt')) {
-    return encodedInput.slice(0, -'.txt'.length);
+  if (encodedRscPath?.endsWith('.txt')) {
+    return encodedRscPath.slice(0, -'.txt'.length);
   }
-  const err = new Error('Invalid encoded input');
+  const err = new Error('Invalid encoded rscPath');
   (err as any).statusCode = 400;
   throw err;
 };
@@ -53,17 +53,17 @@ export const hasStatusCode = (x: unknown): x is { statusCode: number } =>
 
 export const generatePrefetchCode = (
   basePrefix: string,
-  inputs: Iterable<string>,
+  rscPaths: Iterable<string>,
   moduleIds: Iterable<string>,
 ) => {
-  const inputsArray = Array.from(inputs);
+  const rscPathArray = Array.from(rscPaths);
   let code = '';
-  if (inputsArray.length) {
+  if (rscPathArray.length) {
     code += `
 globalThis.__WAKU_PREFETCHED__ = {
-${inputsArray
-  .map((input) => {
-    const url = basePrefix + encodeInput(input);
+${rscPathArray
+  .map((rscPath) => {
+    const url = basePrefix + encodeRscPath(rscPath);
     return `  '${url}': fetch('${url}'),`;
   })
   .join('\n')}

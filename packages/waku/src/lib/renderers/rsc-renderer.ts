@@ -29,7 +29,7 @@ const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
 export type RenderRscArgs = {
   env: Record<string, string>;
   config: Omit<ResolvedConfig, 'middleware'>;
-  input: string;
+  rscPath: string;
   context: Record<string, unknown> | undefined;
   // TODO we hope to get only decoded one
   decodedBody?: unknown;
@@ -55,7 +55,7 @@ export async function renderRsc(
   const {
     env,
     config,
-    input,
+    rscPath,
     contentType,
     context,
     body,
@@ -126,7 +126,7 @@ export async function renderRsc(
 
   const renderWithContext = async (
     context: Record<string, unknown> | undefined,
-    input: string,
+    rscPath: string,
     rscParams: unknown,
   ) => {
     const renderStore = {
@@ -136,7 +136,7 @@ export async function renderRsc(
       },
     };
     return runWithRenderStoreInternal(renderStore, async () => {
-      const elements = await renderEntries(input, { rscParams });
+      const elements = await renderEntries(rscPath, { rscParams });
       if (elements === null) {
         const err = new Error('No function component found');
         (err as any).statusCode = 404; // HACK our convention for NotFound
@@ -162,13 +162,13 @@ export async function renderRsc(
     let rendered = false;
     const renderStore = {
       context: context || {},
-      rerender: async (input: string, rscParams?: unknown) => {
+      rerender: async (rscPath: string, rscParams?: unknown) => {
         if (rendered) {
           throw new Error('already rendered');
         }
         elementsPromise = Promise.all([
           elementsPromise,
-          renderEntries(input, { rscParams }),
+          renderEntries(rscPath, { rscParams }),
         ]).then(([oldElements, newElements]) => ({
           ...oldElements,
           // FIXME we should actually check if newElements is null and send an error
@@ -209,7 +209,7 @@ export async function renderRsc(
     }
   }
 
-  const funcId = decodeFuncId(input);
+  const funcId = decodeFuncId(rscPath);
   if (funcId) {
     const args = Array.isArray(decodedBody) ? decodedBody : [];
     const [fileId, name] = funcId.split('#') as [string, string];
@@ -226,7 +226,7 @@ export async function renderRsc(
     return renderWithContextWithFunc(context, fn, args);
   }
 
-  return renderWithContext(context, input, decodedBody);
+  return renderWithContext(context, rscPath, decodedBody);
 }
 
 type GetBuildConfigArgs = {
@@ -267,14 +267,14 @@ export async function getBuildConfig(
   setAllEnvInternal(env);
 
   const unstable_collectClientModules = async (
-    input: string,
+    rscPath: string,
   ): Promise<string[]> => {
     const idSet = new Set<string>();
     const readable = await renderRsc(
       {
         env,
         config,
-        input,
+        rscPath,
         context: undefined,
         moduleIdCallback: (id) => idSet.add(id),
       },

@@ -15,8 +15,8 @@ import type {
 import { Children, Slot } from '../client.js';
 import {
   getComponentIds,
-  getInputString,
-  parseInputString,
+  getRscPath,
+  parseRscPath,
   SHOULD_SKIP_ID,
   ROUTE_ID,
   HAS404_ID,
@@ -119,8 +119,8 @@ export function unstable_defineRouter(
           has404,
         };
   };
-  const renderEntries: RenderEntries = async (input, { rscParams }) => {
-    const pathname = parseInputString(input);
+  const renderEntries: RenderEntries = async (rscPath, { rscParams }) => {
+    const pathname = parseRscPath(rscPath);
     const pathStatus = await existsPath(pathname);
     if (!pathStatus.found) {
       return null;
@@ -190,8 +190,8 @@ export function unstable_defineRouter(
           return;
         }
         const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
-        const input = getInputString(pathname);
-        path2moduleIds[pattern] = await unstable_collectClientModules(input);
+        const rscPath = getRscPath(pathname);
+        path2moduleIds[pattern] = await unstable_collectClientModules(rscPath);
       }),
     );
 
@@ -210,8 +210,8 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
       const entries: BuildConfig[number]['entries'] = [];
       if (pathSpec.every(({ type }) => type === 'literal')) {
         const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
-        const input = getInputString(pathname);
-        entries.push({ input, isStatic });
+        const rscPath = getRscPath(pathname);
+        entries.push({ rscPath, isStatic });
       }
       buildConfig.push({
         pathname: pathSpec,
@@ -240,7 +240,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
       }
     }
     const componentIds = getComponentIds(pathname);
-    const input = getInputString(pathname);
+    const rscPath = getRscPath(pathname);
     const html = createElement(
       ServerRouter as FunctionComponent<
         Omit<ComponentProps<typeof ServerRouter>, 'children'>
@@ -252,7 +252,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
       ),
     );
     return {
-      input,
+      rscPath,
       rscParams: JSON.stringify({ query: searchParams.toString() }),
       html,
     };
@@ -266,6 +266,6 @@ export function unstable_rerenderRoute(
   query?: string,
   skip?: string[], // TODO this is too hard to use
 ) {
-  const input = getInputString(pathname);
-  rerender(input, { query, skip });
+  const rscPath = getRscPath(pathname);
+  rerender(rscPath, { query, skip });
 }

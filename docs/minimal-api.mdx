@@ -16,9 +16,9 @@ import App from './components/App.js';
 
 export default defineEntries(
   // renderEntries
-  async (input) => {
+  async (rscPath) => {
     return {
-      App: <App name={input || 'Waku'} />,
+      App: <App name={rscPath || 'Waku'} />,
     };
   },
 );
@@ -47,7 +47,7 @@ const rootElement = (
 createRoot(document.getElementById('root')!).render(rootElement);
 ```
 
-The `initialInput` prop can be passed to the `Root` Component, overriding the default input which is `""`. You can also re-render a React Server Component with new input.
+The `initialRscPath` prop can be passed to the `Root` Component, overriding the default rscPath which is `""`. You can also re-render a React Server Component with new rscPath.
 
 ```tsx
 import { useRefetch } from 'waku/client';
@@ -71,9 +71,9 @@ import { defineEntries } from 'waku/server';
 
 export default defineEntries(
   // renderEntries
-  async (input) => {
+  async (rscPath) => {
     return {
-      App: <App name={input || 'Waku'} />,
+      App: <App name={rscPath || 'Waku'} />,
     };
   },
   // getBuildConfig

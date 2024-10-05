@@ -6,23 +6,23 @@ import App from './components/app';
 
 export default defineEntries(
   // renderEntries
-  async (input) => {
+  async (rscPath) => {
     return {
       App: (
         <Layout>
-          <App name={input || 'Waku'} />
+          <App name={rscPath || 'Waku'} />
         </Layout>
       ),
     };
   },
   // getBuildConfig
-  async () => [{ pathname: '/', entries: [{ input: '' }] }],
+  async () => [{ pathname: '/', entries: [{ rscPath: '' }] }],
   // getSsrConfig
   async (pathname) => {
     switch (pathname) {
       case '/':
         return {
-          input: '',
+          rscPath: '',
           html: <Slot id="App" />,
         };
       default:

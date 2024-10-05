@@ -39,11 +39,11 @@ export const ssr: Middleware = (options) => {
           pathname: ctx.req.url.pathname,
           searchParams: ctx.req.url.searchParams,
           htmlHead,
-          renderRscForHtml: async (input, rscParams) => {
+          renderRscForHtml: async (rscPath, rscParams) => {
             const args: RenderRscArgs = {
               env,
               config,
-              input,
+              rscPath,
               context: ctx.context,
               decodedBody: rscParams,
               contentType: '',

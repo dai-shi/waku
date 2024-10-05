@@ -11,7 +11,7 @@ import App from './components/App';
 
 export default defineEntries(
   // renderEntries
-  async (input) => {
+  async (rscPath) => {
     const context = getCustomContext<{ count: number }>();
     ++context.count;
     const items = JSON.parse(
@@ -24,19 +24,19 @@ export default defineEntries(
       ),
     );
     return {
-      App: <App name={input || 'Waku'} items={items} />,
+      App: <App name={rscPath || 'Waku'} items={items} />,
     };
   },
   // getBuildConfig
   async () => [
-    { pathname: '/', entries: [{ input: '' }], context: { count: 0 } },
+    { pathname: '/', entries: [{ rscPath: '' }], context: { count: 0 } },
   ],
   // getSsrConfig
   async (pathname) => {
     switch (pathname) {
       case '/':
         return {
-          input: '',
+          rscPath: '',
           html: <Slot id="App" />,
         };
       default:

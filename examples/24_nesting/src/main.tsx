@@ -11,7 +11,7 @@ const rootElement = (
         <Slot id="App" />
       </Root>
     ) : pathname === '/no-ssr' ? (
-      <Root initialInput="AppWithoutSsr">
+      <Root initialRscPath="AppWithoutSsr">
         <Slot id="AppWithoutSsr" />
       </Root>
     ) : (
