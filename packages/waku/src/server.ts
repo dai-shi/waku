@@ -11,7 +11,7 @@ export type BuildConfig = {
   pathname: string | PathSpec; // TODO drop support for string?
   isStatic?: boolean | undefined;
   entries?: {
-    input: string;
+    rscPath: string;
     skipPrefetch?: boolean | undefined;
     isStatic?: boolean | undefined;
   }[];
@@ -20,14 +20,14 @@ export type BuildConfig = {
 }[];
 
 export type RenderEntries = (
-  input: string,
+  rscPath: string,
   options: {
-    params: unknown | undefined;
+    rscParams: unknown | undefined;
   },
 ) => Promise<Elements | null>;
 
 export type GetBuildConfig = (
-  unstable_collectClientModules: (input: string) => Promise<string[]>,
+  unstable_collectClientModules: (rscPath: string) => Promise<string[]>,
 ) => Promise<BuildConfig>;
 
 export type GetSsrConfig = (
@@ -36,8 +36,8 @@ export type GetSsrConfig = (
     searchParams: URLSearchParams;
   },
 ) => Promise<{
-  input: string;
-  params?: unknown;
+  rscPath: string;
+  rscParams?: unknown;
   html: ReactNode;
 } | null>;
 
@@ -75,7 +75,7 @@ export function getEnv(key: string): string | undefined {
 }
 
 type RenderStore<> = {
-  rerender: (input: string, params?: unknown) => void;
+  rerender: (rscPath: string, rscParams?: unknown) => void;
   context: Record<string, unknown>;
 };
 
@@ -122,12 +122,12 @@ export const runWithRenderStoreInternal = <T>(
   }
 };
 
-export function rerender(input: string, params?: unknown) {
+export function rerender(rscPath: string, rscParams?: unknown) {
   const renderStore = renderStorage?.getStore() ?? currentRenderStore;
   if (!renderStore) {
     throw new Error('Render store is not available');
   }
-  renderStore.rerender(input, params);
+  renderStore.rerender(rscPath, rscParams);
 }
 
 export function unstable_getCustomContext<

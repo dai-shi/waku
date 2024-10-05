@@ -13,13 +13,13 @@ export default defineEntries(
     };
   },
   // getBuildConfig
-  async () => [{ pathname: '/', entries: [{ input: '' }] }],
+  async () => [{ pathname: '/', entries: [{ rscPath: '' }] }],
   // getSsrConfig
   async (pathname) => {
     switch (pathname) {
       case '/':
         return {
-          input: '',
+          rscPath: '',
           html: <Slot id="App" />,
         };
       default:

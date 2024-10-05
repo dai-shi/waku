@@ -1,5 +1,5 @@
 import { resolveConfig } from '../config.js';
-import { decodeInput, hasStatusCode } from '../renderers/utils.js';
+import { decodeRscPath, hasStatusCode } from '../renderers/utils.js';
 import { renderRsc } from '../renderers/rsc-renderer.js';
 import type { RenderRscArgs } from '../renderers/rsc-renderer.js';
 import type { Middleware } from './types.js';
@@ -23,17 +23,17 @@ export const rsc: Middleware = (options) => {
       configPromise,
       entriesPromise,
     ]);
-    const basePrefix = config.basePath + config.rscPath + '/';
+    const basePrefix = config.basePath + config.rscBase + '/';
     if (ctx.req.url.pathname.startsWith(basePrefix)) {
       const { headers } = ctx.req;
       try {
-        const input = decodeInput(
+        const rscPath = decodeRscPath(
           decodeURI(ctx.req.url.pathname.slice(basePrefix.length)),
         );
         const args: RenderRscArgs = {
           env,
           config,
-          input,
+          rscPath,
           context: ctx.context,
           decodedBody: headers['x-waku-params'],
           body: ctx.req.body,

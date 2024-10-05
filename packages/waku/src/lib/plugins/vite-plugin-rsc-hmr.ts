@@ -77,14 +77,14 @@ export function rscHmrPlugin(): Plugin {
       if (id.startsWith(wakuClientDist)) {
         // FIXME this is fragile. Can we do it better?
         return code.replace(
-          /\nexport const fetchRSC = \(.*?\)=>\{/,
+          /\nexport const fetchRsc = \(.*?\)=>\{/,
           (m) =>
             m +
             `
 {
   const refetchRsc = () => {
     delete fetchCache[ENTRY];
-    const data = fetchRSC(input, params, fetchCache);
+    const data = fetchRsc(rscPath, rscParams, fetchCache);
     fetchCache[SET_ELEMENTS](() => data);
   };
   globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];
@@ -107,8 +107,8 @@ export function rscHmrPlugin(): Plugin {
             `
 {
   const refetchRoute = () => {
-    const input = getInputString(loc.path);
-    refetch(input, loc.searchParams);
+    const rscPath = getInputString(loc.path);
+    refetch(rscPath, loc.searchParams);
   };
   globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];
   const index = globalThis.__WAKU_RSC_RELOAD_LISTENERS__.indexOf(globalThis.__WAKU_REFETCH_ROUTE__);

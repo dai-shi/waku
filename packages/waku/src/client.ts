@@ -14,7 +14,7 @@ import {
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
 
-import { encodeInput, encodeActionId } from './lib/renderers/utils.js';
+import { encodeRscPath, encodeFuncId } from './lib/renderers/utils.js';
 
 const { createFromFetch, encodeReply } = RSDWClient;
 
@@ -25,7 +25,7 @@ declare global {
 }
 
 const BASE_PATH = `${import.meta.env?.WAKU_CONFIG_BASE_PATH}${
-  import.meta.env?.WAKU_CONFIG_RSC_PATH
+  import.meta.env?.WAKU_CONFIG_RSC_BASE
 }/`;
 
 const checkStatus = async (
@@ -88,7 +88,7 @@ const SET_ELEMENTS = 's';
 const ENHANCE_CREATE_DATA = 'd';
 
 type FetchCache = {
-  [ENTRY]?: [input: string, params: unknown, elements: Elements];
+  [ENTRY]?: [rscPath: string, rscParams: unknown, elements: Elements];
   [SET_ELEMENTS]?: SetElements;
   [ENHANCE_CREATE_DATA]?: EnhanceCreateData | undefined;
 };
@@ -99,18 +99,18 @@ const defaultFetchCache: FetchCache = {};
  * callServer callback
  * This is not a public API.
  */
-export const callServerRSC = async (
-  actionId: string,
+export const callServerRsc = async (
+  funcId: string,
   args?: unknown[],
   fetchCache = defaultFetchCache,
 ) => {
   const enhanceCreateData = fetchCache[ENHANCE_CREATE_DATA] || ((d) => d);
   const createData = (responsePromise: Promise<Response>) =>
     createFromFetch<Awaited<Elements>>(checkStatus(responsePromise), {
-      callServer: (actionId: string, args: unknown[]) =>
-        callServerRSC(actionId, args, fetchCache),
+      callServer: (funcId: string, args: unknown[]) =>
+        callServerRsc(funcId, args, fetchCache),
     });
-  const url = BASE_PATH + encodeInput(encodeActionId(actionId));
+  const url = BASE_PATH + encodeRscPath(encodeFuncId(funcId));
   const responsePromise =
     args === undefined
       ? fetch(url)
@@ -123,89 +123,89 @@ export const callServerRSC = async (
 
 const prefetchedParams = new WeakMap<Promise<unknown>, unknown>();
 
-const fetchRSCInternal = (url: string, params: unknown) =>
-  params === undefined
+const fetchRscInternal = (url: string, rscParams: unknown) =>
+  rscParams === undefined
     ? fetch(url)
-    : typeof params === 'string'
-      ? fetch(url, { headers: { 'X-Waku-Params': params } })
-      : encodeReply(params).then((body) =>
+    : typeof rscParams === 'string'
+      ? fetch(url, { headers: { 'X-Waku-Params': rscParams } })
+      : encodeReply(rscParams).then((body) =>
           fetch(url, { method: 'POST', body }),
         );
 
-export const fetchRSC = (
-  input: string,
-  params?: unknown,
+export const fetchRsc = (
+  rscPath: string,
+  rscParams?: unknown,
   fetchCache = defaultFetchCache,
 ): Elements => {
   const entry = fetchCache[ENTRY];
-  if (entry && entry[0] === input && entry[1] === params) {
+  if (entry && entry[0] === rscPath && entry[1] === rscParams) {
     return entry[2];
   }
   const enhanceCreateData = fetchCache[ENHANCE_CREATE_DATA] || ((d) => d);
   const createData = (responsePromise: Promise<Response>) =>
     createFromFetch<Awaited<Elements>>(checkStatus(responsePromise), {
-      callServer: (actionId: string, args: unknown[]) =>
-        callServerRSC(actionId, args, fetchCache),
+      callServer: (funcId: string, args: unknown[]) =>
+        callServerRsc(funcId, args, fetchCache),
     });
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-  const url = BASE_PATH + encodeInput(input);
+  const url = BASE_PATH + encodeRscPath(rscPath);
   const hasValidPrefetchedResponse =
     !!prefetched[url] &&
     // HACK .has() is for the initial hydration
     // It's limited and may result in a wrong result. FIXME
     (!prefetchedParams.has(prefetched[url]) ||
-      prefetchedParams.get(prefetched[url]) === params);
+      prefetchedParams.get(prefetched[url]) === rscParams);
   const responsePromise = hasValidPrefetchedResponse
     ? prefetched[url]
-    : fetchRSCInternal(url, params);
+    : fetchRscInternal(url, rscParams);
   delete prefetched[url];
   const data = enhanceCreateData(createData)(responsePromise);
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  fetchCache[ENTRY] = [input, params, data];
+  fetchCache[ENTRY] = [rscPath, rscParams, data];
   return data;
 };
 
-export const prefetchRSC = (input: string, params?: unknown): void => {
+export const prefetchRsc = (rscPath: string, rscParams?: unknown): void => {
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-  const url = BASE_PATH + encodeInput(input);
+  const url = BASE_PATH + encodeRscPath(rscPath);
   if (!(url in prefetched)) {
-    prefetched[url] = fetchRSCInternal(url, params);
-    prefetchedParams.set(prefetched[url], params);
+    prefetched[url] = fetchRscInternal(url, rscParams);
+    prefetchedParams.set(prefetched[url], rscParams);
   }
 };
 
-const RefetchContext = createContext<(input: string, params?: unknown) => void>(
-  () => {
-    throw new Error('Missing Root component');
-  },
-);
+const RefetchContext = createContext<
+  (rscPath: string, rscParams?: unknown) => void
+>(() => {
+  throw new Error('Missing Root component');
+});
 const ElementsContext = createContext<Elements | null>(null);
 
 export const Root = ({
-  initialInput,
-  initialParams,
+  initialRscPath,
+  initialRscParams,
   fetchCache = defaultFetchCache,
   unstable_enhanceCreateData,
   children,
 }: {
-  initialInput?: string;
-  initialParams?: unknown;
+  initialRscPath?: string;
+  initialRscParams?: unknown;
   fetchCache?: FetchCache;
   unstable_enhanceCreateData?: EnhanceCreateData;
   children: ReactNode;
 }) => {
   fetchCache[ENHANCE_CREATE_DATA] = unstable_enhanceCreateData;
   const [elements, setElements] = useState(() =>
-    fetchRSC(initialInput || '', initialParams, fetchCache),
+    fetchRsc(initialRscPath || '', initialRscParams, fetchCache),
   );
   useEffect(() => {
     fetchCache[SET_ELEMENTS] = setElements;
   }, [fetchCache, setElements]);
   const refetch = useCallback(
-    (input: string, params?: unknown) => {
+    (rscPath: string, rscParams?: unknown) => {
       // clear cache entry before fetching
       delete fetchCache[ENTRY];
-      const data = fetchRSC(input, params, fetchCache);
+      const data = fetchRsc(rscPath, rscParams, fetchCache);
       setElements((prev) => mergeElements(prev, data));
     },
     [fetchCache],

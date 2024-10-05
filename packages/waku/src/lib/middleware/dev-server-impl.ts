@@ -393,9 +393,9 @@ export const devServer: Middleware = (options) => {
     };
 
     if (
-      // HACK depending on `rscPath` is a bad idea
+      // HACK depending on `rscBase` is a bad idea
       // FIXME This hack should be removed as well as `willBeHandled`
-      ctx.req.url.pathname.startsWith(config.basePath + config.rscPath + '/') ||
+      ctx.req.url.pathname.startsWith(config.basePath + config.rscBase + '/') ||
       !(await willBeHandled(ctx.req.url.pathname))
     ) {
       await next();

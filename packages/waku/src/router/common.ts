@@ -15,18 +15,18 @@ export function getComponentIds(path: string): readonly string[] {
   return Array.from(idSet);
 }
 
-export function getInputString(path: string): string {
+export function getRscPath(path: string): string {
   if (!path.startsWith('/')) {
     throw new Error('Path should start with `/`');
   }
   return path.slice(1);
 }
 
-export function parseInputString(input: string): string {
-  if (input.startsWith('/')) {
-    throw new Error('Input should not start with `/`');
+export function parseRscPath(rscPath: string): string {
+  if (rscPath.startsWith('/')) {
+    throw new Error('rscPath should not start with `/`');
   }
-  return '/' + input;
+  return '/' + rscPath;
 }
 
 // It starts with "/" to avoid conflicting with normal component ids.

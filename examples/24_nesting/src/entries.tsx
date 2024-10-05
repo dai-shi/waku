@@ -8,8 +8,8 @@ import AppWithoutSsr from './components/AppWithoutSsr';
 
 export default defineEntries(
   // renderEntries
-  async (input) => {
-    const params = new URLSearchParams(input || 'App=Waku&InnerApp=0');
+  async (rscPath) => {
+    const params = new URLSearchParams(rscPath || 'App=Waku&InnerApp=0');
     const result: Record<string, ReactNode> = {};
     if (params.has('App')) {
       result.App = <App name={params.get('App')!} />;
@@ -27,17 +27,17 @@ export default defineEntries(
     {
       pathname: '/',
       entries: [
-        { input: '' },
-        { input: 'InnerApp=1', skipPrefetch: true },
-        { input: 'InnerApp=2', skipPrefetch: true },
-        { input: 'InnerApp=3', skipPrefetch: true },
-        { input: 'InnerApp=4', skipPrefetch: true },
-        { input: 'InnerApp=5', skipPrefetch: true },
+        { rscPath: '' },
+        { rscPath: 'InnerApp=1', skipPrefetch: true },
+        { rscPath: 'InnerApp=2', skipPrefetch: true },
+        { rscPath: 'InnerApp=3', skipPrefetch: true },
+        { rscPath: 'InnerApp=4', skipPrefetch: true },
+        { rscPath: 'InnerApp=5', skipPrefetch: true },
       ],
     },
     {
       pathname: '/no-ssr',
-      entries: [{ input: 'AppWithoutSsr' }],
+      entries: [{ rscPath: 'AppWithoutSsr' }],
       isStatic: true,
     },
   ],
@@ -46,7 +46,7 @@ export default defineEntries(
     switch (pathname) {
       case '/':
         return {
-          input: '',
+          rscPath: '',
           html: <Slot id="App" />,
         };
       case '/no-ssr':

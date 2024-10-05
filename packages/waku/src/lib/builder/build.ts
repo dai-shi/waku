@@ -31,7 +31,7 @@ import {
   unlink,
   writeFile,
 } from '../utils/node-fs.js';
-import { encodeInput, generatePrefetchCode } from '../renderers/utils.js';
+import { encodeRscPath, generatePrefetchCode } from '../renderers/utils.js';
 import {
   getBuildConfig,
   getSsrConfig,
@@ -411,35 +411,35 @@ const emitRscFiles = async (
   buildConfig: BuildConfig,
 ) => {
   const clientModuleMap = new Map<string, Set<string>>();
-  const addClientModule = (input: string, id: string) => {
-    let idSet = clientModuleMap.get(input);
+  const addClientModule = (rscPath: string, id: string) => {
+    let idSet = clientModuleMap.get(rscPath);
     if (!idSet) {
       idSet = new Set();
-      clientModuleMap.set(input, idSet);
+      clientModuleMap.set(rscPath, idSet);
     }
     idSet.add(id);
   };
-  const getClientModules = (input: string) => {
-    const idSet = clientModuleMap.get(input);
+  const getClientModules = (rscPath: string) => {
+    const idSet = clientModuleMap.get(rscPath);
     return Array.from(idSet || []);
   };
   const staticInputSet = new Set<string>();
   await Promise.all(
     Array.from(buildConfig).map(async ({ entries, context }) => {
-      for (const { input, isStatic } of entries || []) {
+      for (const { rscPath, isStatic } of entries || []) {
         if (!isStatic) {
           continue;
         }
-        if (staticInputSet.has(input)) {
+        if (staticInputSet.has(rscPath)) {
           continue;
         }
-        staticInputSet.add(input);
+        staticInputSet.add(rscPath);
         const destRscFile = joinPath(
           rootDir,
           config.distDir,
           DIST_PUBLIC,
-          config.rscPath,
-          encodeInput(input),
+          config.rscBase,
+          encodeRscPath(rscPath),
         );
         // Skip if the file already exists.
         if (existsSync(destRscFile)) {
@@ -450,9 +450,9 @@ const emitRscFiles = async (
           {
             env,
             config,
-            input,
+            rscPath,
             context,
-            moduleIdCallback: (id) => addClientModule(input, id),
+            moduleIdCallback: (id) => addClientModule(rscPath, id),
           },
           {
             isDev: false,
@@ -516,14 +516,14 @@ const emitHtmlFiles = async (
   distEntriesFile: string,
   distEntries: EntriesPrd,
   buildConfig: BuildConfig,
-  getClientModules: (input: string) => string[],
+  getClientModules: (rscPath: string) => string[],
   clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
 ) => {
   const nonJsAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
   );
   const cssAssets = nonJsAssets.filter((asset) => asset.endsWith('.css'));
-  const basePrefix = config.basePath + config.rscPath + '/';
+  const basePrefix = config.basePath + config.rscBase + '/';
   const publicIndexHtmlFile = joinPath(
     rootDir,
     config.distDir,
@@ -559,12 +559,12 @@ const emitHtmlFiles = async (
           htmlStr = htmlStr.replace(/<\/head>/, cssStr);
           htmlHead += cssStr;
         }
-        const inputsForPrefetch = new Set<string>();
+        const rscPathsForPrefetch = new Set<string>();
         const moduleIdsForPrefetch = new Set<string>();
-        for (const { input, skipPrefetch } of entries || []) {
+        for (const { rscPath, skipPrefetch } of entries || []) {
           if (!skipPrefetch) {
-            inputsForPrefetch.add(input);
-            for (const id of getClientModules(input)) {
+            rscPathsForPrefetch.add(rscPath);
+            for (const id of getClientModules(rscPath)) {
               moduleIdsForPrefetch.add(id);
             }
           }
@@ -572,7 +572,7 @@ const emitHtmlFiles = async (
         const code =
           generatePrefetchCode(
             basePrefix,
-            inputsForPrefetch,
+            rscPathsForPrefetch,
             moduleIdsForPrefetch,
           ) + (customCode || '');
         if (code) {
@@ -607,9 +607,9 @@ const emitHtmlFiles = async (
           pathname,
           searchParams: new URLSearchParams(),
           htmlHead,
-          renderRscForHtml: (input, params) =>
+          renderRscForHtml: (rscPath, rscParams) =>
             renderRsc(
-              { env, config, input, context, decodedBody: params },
+              { env, config, rscPath, context, decodedBody: rscParams },
               { isDev: false, entries: distEntries },
             ),
           getSsrConfigForHtml: (pathname, searchParams) =>

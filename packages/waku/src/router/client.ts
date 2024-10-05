@@ -23,10 +23,10 @@ import type {
   MouseEvent,
 } from 'react';
 
-import { fetchRSC, prefetchRSC, Root, Slot, useRefetch } from '../client.js';
+import { fetchRsc, prefetchRsc, Root, Slot, useRefetch } from '../client.js';
 import {
   getComponentIds,
-  getInputString,
+  getRscPath,
   SHOULD_SKIP_ID,
   ROUTE_ID,
   HAS404_ID,
@@ -375,9 +375,9 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is skipped
       }
-      const input = getInputString(route.path);
+      const rscPath = getRscPath(route.path);
       if (!skipRefetch) {
-        refetch(input, JSON.stringify({ query: route.query, skip }));
+        refetch(rscPath, JSON.stringify({ query: route.query, skip }));
       }
       startTransition(() => {
         setCached((prev) => ({
@@ -406,8 +406,8 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is cached
       }
-      const input = getInputString(route.path);
-      prefetchRSC(input, JSON.stringify({ query: route.query, skip }));
+      const rscPath = getRscPath(route.path);
+      prefetchRsc(rscPath, JSON.stringify({ query: route.query, skip }));
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(route.path);
     },
     [routerData],
@@ -488,7 +488,7 @@ const DEFAULT_ROUTER_DATA: RouterData = [];
 
 export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
   const route = parseRouteFromLocation();
-  const initialInput = getInputString(route.path);
+  const initialRscPath = getRscPath(route.path);
   const unstable_enhanceCreateData =
     (
       createData: (
@@ -501,7 +501,7 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
       if (response.status === 404 && has404) {
         // HACK this is still an experimental logic. It's very fragile.
         // FIXME we should cache it if 404.txt is static.
-        return fetchRSC(getInputString('/404'));
+        return fetchRsc(getRscPath('/404'));
       }
       const data = createData(responsePromise);
       Promise.resolve(data)
@@ -530,13 +530,13 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
         .catch(() => {});
       return data;
     };
-  const initialParams = JSON.stringify({ query: route.query });
+  const initialRscParams = JSON.stringify({ query: route.query });
   return createElement(
     ErrorBoundary,
     null,
     createElement(
       Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
-      { initialInput, initialParams, unstable_enhanceCreateData },
+      { initialRscPath, initialRscParams, unstable_enhanceCreateData },
       createElement(InnerRouter, { routerData }),
     ),
   );

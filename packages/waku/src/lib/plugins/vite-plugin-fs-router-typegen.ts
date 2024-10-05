@@ -3,7 +3,7 @@ import { readdir, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { SRC_ENTRIES, EXTENSIONS } from '../constants.js';
 import { joinPath } from '../utils/path.js';
-import { getInputString } from '../../router/common.js';
+import { getRscPath } from '../../router/common.js';
 
 const SRC_PAGES = 'pages';
 
@@ -44,7 +44,7 @@ export function getImportModuleNames(filePaths: string[]): {
       identifier = `${identifier}_${moduleNameCount[identifier]}`;
     }
     try {
-      moduleNames[getInputString(filePath)] = identifier;
+      moduleNames[getRscPath(filePath)] = identifier;
     } catch (e) {
       console.log(e);
     }
@@ -128,7 +128,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
 
         for (const filePath of filePaths) {
           // where to import the component from
-          const src = getInputString(filePath);
+          const src = getRscPath(filePath);
           const hasGetConfig = fileExportsGetConfig(filePath);
 
           if (filePath.endsWith('/_layout.tsx')) {

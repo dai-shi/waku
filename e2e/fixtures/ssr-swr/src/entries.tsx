@@ -6,19 +6,19 @@ const App = lazy(() => import('./components/App.js'));
 
 export default defineEntries(
   // renderEntries
-  async (input) => {
+  async (rscPath) => {
     return {
-      App: <App name={input || 'Waku'} />,
+      App: <App name={rscPath || 'Waku'} />,
     };
   },
   // getBuildConfig
-  async () => [{ pathname: '/', entries: [{ input: '' }] }],
+  async () => [{ pathname: '/', entries: [{ rscPath: '' }] }],
   // getSsrConfig
   async (pathname) => {
     switch (pathname) {
       case '/':
         return {
-          input: '',
+          rscPath: '',
           html: <Slot id="App" />,
         };
       default:
