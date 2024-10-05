@@ -28,23 +28,23 @@ export const decodeInput = (encodedInput: string) => {
   throw err;
 };
 
-const ACTION_PREFIX = 'ACTION_';
+const FUNC_PREFIX = 'FUNC_';
 
 export const encodeFuncId = (funcId: string) => {
   const [file, name] = funcId.split('#') as [string, string];
   if (name.includes('/')) {
     throw new Error('Unsupported function name');
   }
-  return ACTION_PREFIX + file + '/' + name;
+  return FUNC_PREFIX + file + '/' + name;
 };
 
 export const decodeFuncId = (encoded: string) => {
-  if (!encoded.startsWith(ACTION_PREFIX)) {
+  if (!encoded.startsWith(FUNC_PREFIX)) {
     return null;
   }
   const index = encoded.lastIndexOf('/');
   return (
-    encoded.slice(ACTION_PREFIX.length, index) + '#' + encoded.slice(index + 1)
+    encoded.slice(FUNC_PREFIX.length, index) + '#' + encoded.slice(index + 1)
   );
 };
 

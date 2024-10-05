@@ -151,10 +151,10 @@ export async function renderRsc(
     });
   };
 
-  const renderWithContextWithAction = async (
+  const renderWithContextWithFunc = async (
     context: Record<string, unknown> | undefined,
-    actionFn: (...args: unknown[]) => unknown,
-    actionArgs: unknown[],
+    fn: (...args: unknown[]) => unknown,
+    args: unknown[],
   ) => {
     let elementsPromise: Promise<Record<string, ReactNode>> = Promise.resolve(
       {},
@@ -177,14 +177,14 @@ export async function renderRsc(
       },
     };
     return runWithRenderStoreInternal(renderStore, async () => {
-      const actionValue = await actionFn(...actionArgs);
+      const value = await fn(...args);
       const elements = await elementsPromise;
       rendered = true;
       if (Object.keys(elements).some((key) => key.startsWith('_'))) {
         throw new Error('"_" prefix is reserved');
       }
       return renderToReadableStream(
-        { ...elements, _value: actionValue },
+        { ...elements, _value: value },
         clientBundlerConfig,
         {
           onError,
@@ -223,7 +223,7 @@ export async function renderRsc(
       mod = await loadModule(fileId.slice('@id/'.length));
     }
     const fn = mod[name] || mod;
-    return renderWithContextWithAction(context, fn, args);
+    return renderWithContextWithFunc(context, fn, args);
   }
 
   return renderWithContext(context, input, decodedBody);
