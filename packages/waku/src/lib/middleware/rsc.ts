@@ -23,7 +23,7 @@ export const rsc: Middleware = (options) => {
       configPromise,
       entriesPromise,
     ]);
-    const basePrefix = config.basePath + config.rscPath + '/';
+    const basePrefix = config.basePath + config.rscBase + '/';
     if (ctx.req.url.pathname.startsWith(basePrefix)) {
       const { headers } = ctx.req;
       try {

@@ -33,10 +33,10 @@ export interface Config {
    */
   privateDir?: string;
   /**
-   * Prefix for HTTP requests to indicate RSC requests.
+   * Bse path for HTTP requests to indicate RSC requests.
    * Defaults to "RSC".
    */
-  rscPath?: string;
+  rscBase?: string;
   /**
    * Middleware to use
    * Defaults to:

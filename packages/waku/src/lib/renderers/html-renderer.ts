@@ -309,7 +309,7 @@ export const renderHtml = async (
     .pipeThrough(rectifyHtml())
     .pipeThrough(
       injectHtmlHead(
-        config.basePath + config.rscPath + '/' + encodeInput(ssrConfig.input),
+        config.basePath + config.rscBase + '/' + encodeInput(ssrConfig.input),
         htmlHead,
         isDev ? `${config.basePath}${config.srcDir}/${SRC_MAIN}` : '',
       ),

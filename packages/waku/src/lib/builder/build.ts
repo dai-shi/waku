@@ -438,7 +438,7 @@ const emitRscFiles = async (
           rootDir,
           config.distDir,
           DIST_PUBLIC,
-          config.rscPath,
+          config.rscBase,
           encodeInput(input),
         );
         // Skip if the file already exists.
@@ -523,7 +523,7 @@ const emitHtmlFiles = async (
     type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
   );
   const cssAssets = nonJsAssets.filter((asset) => asset.endsWith('.css'));
-  const basePrefix = config.basePath + config.rscPath + '/';
+  const basePrefix = config.basePath + config.rscBase + '/';
   const publicIndexHtmlFile = joinPath(
     rootDir,
     config.distDir,

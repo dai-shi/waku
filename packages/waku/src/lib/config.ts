@@ -23,7 +23,7 @@ export async function resolveConfig(config: Config) {
     distDir: 'dist',
     preserveModuleDirs: ['pages', 'templates', 'routes', 'components'],
     privateDir: 'private',
-    rscPath: 'RSC',
+    rscBase: 'RSC',
     middleware: DEFAULT_MIDDLEWARE,
     unstable_honoEnhancer: undefined,
     ...config,

@@ -25,7 +25,7 @@ declare global {
 }
 
 const BASE_PATH = `${import.meta.env?.WAKU_CONFIG_BASE_PATH}${
-  import.meta.env?.WAKU_CONFIG_RSC_PATH
+  import.meta.env?.WAKU_CONFIG_RSC_BASE
 }/`;
 
 const checkStatus = async (

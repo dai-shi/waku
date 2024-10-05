@@ -7,8 +7,8 @@ export default {
     import('waku/middleware/fallback'),
   ],
   /**
-   * Prefix for HTTP requests to indicate RSC requests.
+   * Base path for HTTP requests to indicate RSC requests.
    * Defaults to "RSC".
    */
-  rscPath: 'RSC', // Just for clarification in tests
+  rscBase: 'RSC', // Just for clarification in tests
 };

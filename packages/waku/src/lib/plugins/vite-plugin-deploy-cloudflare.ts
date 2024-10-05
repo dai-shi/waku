@@ -84,7 +84,6 @@ type StaticRoutes = { version: number; include: string[]; exclude: string[] };
 export function deployCloudflarePlugin(opts: {
   srcDir: string;
   distDir: string;
-  rscPath: string;
   privateDir: string;
 }): Plugin {
   const platformObject = unstable_getPlatformObject();

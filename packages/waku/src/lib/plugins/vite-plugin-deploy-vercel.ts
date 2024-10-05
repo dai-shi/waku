@@ -42,7 +42,7 @@ export function deployVercelPlugin(opts: {
   srcDir: string;
   distDir: string;
   basePath: string;
-  rscPath: string;
+  rscBase: string;
   privateDir: string;
 }): Plugin {
   const platformObject = unstable_getPlatformObject();
@@ -95,7 +95,7 @@ export function deployVercelPlugin(opts: {
         const serverlessDir = path.join(
           outputDir,
           'functions',
-          opts.rscPath + '.func',
+          opts.rscBase + '.func',
         );
         mkdirSync(path.join(serverlessDir, opts.distDir), {
           recursive: true,
@@ -133,7 +133,7 @@ export function deployVercelPlugin(opts: {
               { handle: 'filesystem' },
               {
                 src: opts.basePath + '(.*)',
-                dest: opts.basePath + opts.rscPath + '/',
+                dest: opts.basePath + opts.rscBase + '/',
               },
             ]
           : undefined;
