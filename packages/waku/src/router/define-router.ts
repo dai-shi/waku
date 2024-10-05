@@ -119,7 +119,7 @@ export function unstable_defineRouter(
           has404,
         };
   };
-  const renderEntries: RenderEntries = async (input, { params }) => {
+  const renderEntries: RenderEntries = async (input, { rscParams }) => {
     const pathname = parseInputString(input);
     const pathStatus = await existsPath(pathname);
     if (!pathStatus.found) {
@@ -129,7 +129,7 @@ export function unstable_defineRouter(
       [componentId: ShouldSkip[number][0]]: ShouldSkip[number][1];
     } = {};
 
-    const parsedParams = safeJsonParse(params);
+    const parsedParams = safeJsonParse(rscParams);
 
     const query =
       typeof parsedParams?.query === 'string' ? parsedParams.query : '';
@@ -253,7 +253,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
     );
     return {
       input,
-      params: JSON.stringify({ query: searchParams.toString() }),
+      rscParams: JSON.stringify({ query: searchParams.toString() }),
       html,
     };
   };

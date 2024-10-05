@@ -127,7 +127,7 @@ export async function renderRsc(
   const renderWithContext = async (
     context: Record<string, unknown> | undefined,
     input: string,
-    params: unknown,
+    rscParams: unknown,
   ) => {
     const renderStore = {
       context: context || {},
@@ -136,7 +136,7 @@ export async function renderRsc(
       },
     };
     return runWithRenderStoreInternal(renderStore, async () => {
-      const elements = await renderEntries(input, { params });
+      const elements = await renderEntries(input, { rscParams });
       if (elements === null) {
         const err = new Error('No function component found');
         (err as any).statusCode = 404; // HACK our convention for NotFound
@@ -162,13 +162,13 @@ export async function renderRsc(
     let rendered = false;
     const renderStore = {
       context: context || {},
-      rerender: async (input: string, params?: unknown) => {
+      rerender: async (input: string, rscParams?: unknown) => {
         if (rendered) {
           throw new Error('already rendered');
         }
         elementsPromise = Promise.all([
           elementsPromise,
-          renderEntries(input, { params }),
+          renderEntries(input, { rscParams }),
         ]).then(([oldElements, newElements]) => ({
           ...oldElements,
           // FIXME we should actually check if newElements is null and send an error

@@ -530,13 +530,13 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
         .catch(() => {});
       return data;
     };
-  const initialParams = JSON.stringify({ query: route.query });
+  const initialRscParams = JSON.stringify({ query: route.query });
   return createElement(
     ErrorBoundary,
     null,
     createElement(
       Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
-      { initialInput, initialParams, unstable_enhanceCreateData },
+      { initialInput, initialRscParams, unstable_enhanceCreateData },
       createElement(InnerRouter, { routerData }),
     ),
   );

@@ -607,9 +607,9 @@ const emitHtmlFiles = async (
           pathname,
           searchParams: new URLSearchParams(),
           htmlHead,
-          renderRscForHtml: (input, params) =>
+          renderRscForHtml: (input, rscParams) =>
             renderRsc(
-              { env, config, input, context, decodedBody: params },
+              { env, config, input, context, decodedBody: rscParams },
               { isDev: false, entries: distEntries },
             ),
           getSsrConfigForHtml: (pathname, searchParams) =>

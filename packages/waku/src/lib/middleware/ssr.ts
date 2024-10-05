@@ -39,13 +39,13 @@ export const ssr: Middleware = (options) => {
           pathname: ctx.req.url.pathname,
           searchParams: ctx.req.url.searchParams,
           htmlHead,
-          renderRscForHtml: async (input, params) => {
+          renderRscForHtml: async (input, rscParams) => {
             const args: RenderRscArgs = {
               env,
               config,
               input,
               context: ctx.context,
-              decodedBody: params,
+              decodedBody: rscParams,
               contentType: '',
             };
             const readable = await (devServer

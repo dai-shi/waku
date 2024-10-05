@@ -88,7 +88,7 @@ const SET_ELEMENTS = 's';
 const ENHANCE_CREATE_DATA = 'd';
 
 type FetchCache = {
-  [ENTRY]?: [input: string, params: unknown, elements: Elements];
+  [ENTRY]?: [input: string, rscParams: unknown, elements: Elements];
   [SET_ELEMENTS]?: SetElements;
   [ENHANCE_CREATE_DATA]?: EnhanceCreateData | undefined;
 };
@@ -123,22 +123,22 @@ export const callServerRsc = async (
 
 const prefetchedParams = new WeakMap<Promise<unknown>, unknown>();
 
-const fetchRscInternal = (url: string, params: unknown) =>
-  params === undefined
+const fetchRscInternal = (url: string, rscParams: unknown) =>
+  rscParams === undefined
     ? fetch(url)
-    : typeof params === 'string'
-      ? fetch(url, { headers: { 'X-Waku-Params': params } })
-      : encodeReply(params).then((body) =>
+    : typeof rscParams === 'string'
+      ? fetch(url, { headers: { 'X-Waku-Params': rscParams } })
+      : encodeReply(rscParams).then((body) =>
           fetch(url, { method: 'POST', body }),
         );
 
 export const fetchRsc = (
   input: string,
-  params?: unknown,
+  rscParams?: unknown,
   fetchCache = defaultFetchCache,
 ): Elements => {
   const entry = fetchCache[ENTRY];
-  if (entry && entry[0] === input && entry[1] === params) {
+  if (entry && entry[0] === input && entry[1] === rscParams) {
     return entry[2];
   }
   const enhanceCreateData = fetchCache[ENHANCE_CREATE_DATA] || ((d) => d);
@@ -154,58 +154,58 @@ export const fetchRsc = (
     // HACK .has() is for the initial hydration
     // It's limited and may result in a wrong result. FIXME
     (!prefetchedParams.has(prefetched[url]) ||
-      prefetchedParams.get(prefetched[url]) === params);
+      prefetchedParams.get(prefetched[url]) === rscParams);
   const responsePromise = hasValidPrefetchedResponse
     ? prefetched[url]
-    : fetchRscInternal(url, params);
+    : fetchRscInternal(url, rscParams);
   delete prefetched[url];
   const data = enhanceCreateData(createData)(responsePromise);
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  fetchCache[ENTRY] = [input, params, data];
+  fetchCache[ENTRY] = [input, rscParams, data];
   return data;
 };
 
-export const prefetchRsc = (input: string, params?: unknown): void => {
+export const prefetchRsc = (input: string, rscParams?: unknown): void => {
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
   const url = BASE_PATH + encodeInput(input);
   if (!(url in prefetched)) {
-    prefetched[url] = fetchRscInternal(url, params);
-    prefetchedParams.set(prefetched[url], params);
+    prefetched[url] = fetchRscInternal(url, rscParams);
+    prefetchedParams.set(prefetched[url], rscParams);
   }
 };
 
-const RefetchContext = createContext<(input: string, params?: unknown) => void>(
-  () => {
-    throw new Error('Missing Root component');
-  },
-);
+const RefetchContext = createContext<
+  (input: string, rscParams?: unknown) => void
+>(() => {
+  throw new Error('Missing Root component');
+});
 const ElementsContext = createContext<Elements | null>(null);
 
 export const Root = ({
   initialInput,
-  initialParams,
+  initialRscParams,
   fetchCache = defaultFetchCache,
   unstable_enhanceCreateData,
   children,
 }: {
   initialInput?: string;
-  initialParams?: unknown;
+  initialRscParams?: unknown;
   fetchCache?: FetchCache;
   unstable_enhanceCreateData?: EnhanceCreateData;
   children: ReactNode;
 }) => {
   fetchCache[ENHANCE_CREATE_DATA] = unstable_enhanceCreateData;
   const [elements, setElements] = useState(() =>
-    fetchRsc(initialInput || '', initialParams, fetchCache),
+    fetchRsc(initialInput || '', initialRscParams, fetchCache),
   );
   useEffect(() => {
     fetchCache[SET_ELEMENTS] = setElements;
   }, [fetchCache, setElements]);
   const refetch = useCallback(
-    (input: string, params?: unknown) => {
+    (input: string, rscParams?: unknown) => {
       // clear cache entry before fetching
       delete fetchCache[ENTRY];
-      const data = fetchRsc(input, params, fetchCache);
+      const data = fetchRsc(input, rscParams, fetchCache);
       setElements((prev) => mergeElements(prev, data));
     },
     [fetchCache],
