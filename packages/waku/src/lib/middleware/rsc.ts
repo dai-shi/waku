@@ -35,7 +35,7 @@ export const rsc: Middleware = (options) => {
           config,
           rscPath,
           context: ctx.context,
-          decodedBody: headers['x-waku-params'],
+          decodedBody: ctx.req.url.searchParams,
           body: ctx.req.body,
           contentType: headers['content-type'] || '',
         };

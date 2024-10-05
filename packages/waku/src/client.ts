@@ -101,7 +101,7 @@ const defaultFetchCache: FetchCache = {};
  */
 export const callServerRsc = async (
   funcId: string,
-  args?: unknown[],
+  args: unknown[],
   fetchCache = defaultFetchCache,
 ) => {
   const enhanceCreateData = fetchCache[ENHANCE_CREATE_DATA] || ((d) => d);
@@ -112,8 +112,8 @@ export const callServerRsc = async (
     });
   const url = BASE_PATH + encodeRscPath(encodeFuncId(funcId));
   const responsePromise =
-    args === undefined
-      ? fetch(url)
+    args.length === 1 && args[0] instanceof URLSearchParams
+      ? fetch(url + '?' + args[0])
       : encodeReply(args).then((body) => fetch(url, { method: 'POST', body }));
   const data = enhanceCreateData(createData)(responsePromise);
   // FIXME this causes rerenders even if data is empty
@@ -126,8 +126,8 @@ const prefetchedParams = new WeakMap<Promise<unknown>, unknown>();
 const fetchRscInternal = (url: string, rscParams: unknown) =>
   rscParams === undefined
     ? fetch(url)
-    : typeof rscParams === 'string'
-      ? fetch(url, { headers: { 'X-Waku-Params': rscParams } })
+    : rscParams instanceof URLSearchParams
+      ? fetch(url + '?' + rscParams)
       : encodeReply(rscParams).then((body) =>
           fetch(url, { method: 'POST', body }),
         );

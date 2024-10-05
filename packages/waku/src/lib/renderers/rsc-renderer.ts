@@ -211,7 +211,11 @@ export async function renderRsc(
 
   const funcId = decodeFuncId(rscPath);
   if (funcId) {
-    const args = Array.isArray(decodedBody) ? decodedBody : [];
+    const args = Array.isArray(decodedBody)
+      ? decodedBody
+      : decodedBody instanceof URLSearchParams
+        ? [decodedBody]
+        : [];
     const [fileId, name] = funcId.split('#') as [string, string];
     let mod: any;
     if (isDev) {
