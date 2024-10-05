@@ -19,7 +19,7 @@ import { renderToString } from 'react-dom/server';
 import { expectType } from 'ts-expect';
 import type { TypeEqual } from 'ts-expect';
 import type { PathsForPages } from '../src/router/base-types.js';
-import { GetSlugs } from '../src/router/create-pages-utils/inferred-path-types.js';
+import type { GetSlugs } from '../src/router/create-pages-utils/inferred-path-types.js';
 
 function Fake() {
   return null;
