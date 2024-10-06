@@ -7,8 +7,14 @@ import HomePage from './components/HomePage';
 import BarPage from './components/BarPage';
 import NestedBazPage from './components/NestedBazPage';
 import NestedQuxPage from './components/NestedQuxPage';
+import Root from './components/Root';
 
-const pages = createPages(async ({ createPage, createLayout }) => [
+const pages = createPages(async ({ createPage, createLayout, createRoot }) => [
+  createRoot({
+    render: 'static',
+    component: Root,
+  }),
+
   createLayout({
     render: 'static',
     path: '/',

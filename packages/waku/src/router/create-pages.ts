@@ -325,7 +325,7 @@ export function createPages<
       throw new Error(`Duplicated root component`);
     }
     if (root.render === 'static' || root.render === 'dynamic') {
-      rootItem = structuredClone(root);
+      rootItem = root;
     } else {
       throw new Error('Invalid root configuration');
     }
