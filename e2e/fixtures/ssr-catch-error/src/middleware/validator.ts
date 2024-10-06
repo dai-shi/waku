@@ -17,7 +17,7 @@ const validateMiddleware: Middleware = () => {
   return async (ctx, next) => {
     if (
       ctx.req.url.pathname === '/invalid' ||
-      ctx.req.url.pathname.startsWith(`/${rscBase}/invalid`)
+      ctx.req.url.pathname.startsWith(`/${rscBase}/R/invalid`)
     ) {
       ctx.res.status = 401;
       ctx.res.body = stringToStream('Unauthorized');
