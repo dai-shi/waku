@@ -12,8 +12,8 @@ const dryRunList = [
   },
   // with entries.tsx
   {
-    cwd: fileURLToPath(new URL('../examples/20_minimal', import.meta.url)),
-    project: '20_minimal',
+    cwd: fileURLToPath(new URL('../examples/31_minimal', import.meta.url)),
+    project: '31_minimal',
   },
 ];
 
