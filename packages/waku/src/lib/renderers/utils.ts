@@ -2,7 +2,10 @@
 
 export const encodeRscPath = (rscPath: string) => {
   if (rscPath.startsWith('_')) {
-    throw new Error('rscPath must not start with `_`');
+    throw new Error('rscPath must not start with `_`: ' + rscPath);
+  }
+  if (rscPath.endsWith('_')) {
+    throw new Error('rscPath must not end with `_`: ' + rscPath);
   }
   if (rscPath === '') {
     rscPath = '_';
@@ -32,12 +35,12 @@ export const decodeRscPath = (rscPath: string) => {
   return rscPath;
 };
 
-const FUNC_PREFIX = 'FUNC_';
+const FUNC_PREFIX = 'F/';
 
 export const encodeFuncId = (funcId: string) => {
   const [file, name] = funcId.split('#') as [string, string];
   if (name.includes('/')) {
-    throw new Error('Unsupported function name');
+    throw new Error('Function name must not include `/`: ' + name);
   }
   return FUNC_PREFIX + file + '/' + name;
 };

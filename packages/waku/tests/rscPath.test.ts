@@ -1,5 +1,10 @@
 import { test, describe, expect } from 'vitest';
-import { encodeRscPath, decodeRscPath } from '../src/lib/renderers/utils.js';
+import {
+  encodeRscPath,
+  decodeRscPath,
+  encodeFuncId,
+  decodeFuncId,
+} from '../src/lib/renderers/utils.js';
 
 describe('encodeRscPath', () => {
   test('encodes rscPath', () => {
@@ -12,6 +17,8 @@ describe('encodeRscPath', () => {
 
   test('throws on invalid rscPath', () => {
     expect(() => encodeRscPath('_foo')).toThrow();
+    expect(() => encodeRscPath('foo_')).toThrow();
+    expect(() => encodeRscPath('_foo_')).toThrow();
   });
 });
 
@@ -26,5 +33,25 @@ describe('decodeRscPath', () => {
 
   test('throws on invalid rscPath', () => {
     expect(() => decodeRscPath('foo')).toThrow();
+  });
+});
+
+describe('encodeFuncId', () => {
+  test('encodes funcId', () => {
+    expect(encodeFuncId('foo#bar')).toBe('F/foo/bar');
+  });
+
+  test('throws on invalid funcId', () => {
+    expect(() => encodeFuncId('foo#bar/baz')).toThrow();
+  });
+});
+
+describe('decodeFuncId', () => {
+  test('decodes funcId', () => {
+    expect(decodeFuncId('F/foo/bar')).toBe('foo#bar');
+  });
+
+  test('returns null on invalid funcId', () => {
+    expect(decodeFuncId('foo/bar')).toBe(null);
   });
 });
