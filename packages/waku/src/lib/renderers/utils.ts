@@ -1,31 +1,35 @@
 // This file should not include Node specific code.
 
 export const encodeRscPath = (rscPath: string) => {
-  if (rscPath === '') {
-    return 'index.txt';
+  if (rscPath.startsWith('_')) {
+    throw new Error('rscPath must not start with `_`');
   }
-  if (rscPath === 'index') {
-    throw new Error('rscPath should not be `index`');
+  if (rscPath === '') {
+    rscPath = '_';
   }
   if (rscPath.startsWith('/')) {
-    throw new Error('rscPath should not start with `/`');
+    rscPath = '_' + rscPath;
   }
   if (rscPath.endsWith('/')) {
-    throw new Error('rscPath should not end with `/`');
+    rscPath += '_';
   }
   return rscPath + '.txt';
 };
 
-export const decodeRscPath = (encodedRscPath: string) => {
-  if (encodedRscPath === 'index.txt') {
-    return '';
+export const decodeRscPath = (rscPath: string) => {
+  if (!rscPath.endsWith('.txt')) {
+    const err = new Error('Invalid encoded rscPath');
+    (err as any).statusCode = 400;
+    throw err;
   }
-  if (encodedRscPath?.endsWith('.txt')) {
-    return encodedRscPath.slice(0, -'.txt'.length);
+  rscPath = rscPath.slice(0, -'.txt'.length);
+  if (rscPath.startsWith('_')) {
+    rscPath = rscPath.slice(1);
   }
-  const err = new Error('Invalid encoded rscPath');
-  (err as any).statusCode = 400;
-  throw err;
+  if (rscPath.endsWith('_')) {
+    rscPath = rscPath.slice(0, -1);
+  }
+  return rscPath;
 };
 
 const FUNC_PREFIX = 'FUNC_';
