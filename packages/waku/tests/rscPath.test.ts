@@ -5,6 +5,7 @@ import {
   encodeFuncId,
   decodeFuncId,
 } from '../src/lib/renderers/utils.js';
+import { encodeRoutePath, decodeRoutePath } from '../src/router/common.js';
 
 describe('encodeRscPath', () => {
   test('encodes rscPath', () => {
@@ -53,5 +54,30 @@ describe('decodeFuncId', () => {
 
   test('returns null on invalid funcId', () => {
     expect(decodeFuncId('foo/bar')).toBe(null);
+  });
+});
+
+describe('encodeRoutePath', () => {
+  test('encodes routePath', () => {
+    expect(encodeRoutePath('/')).toBe('R/_root');
+    expect(encodeRoutePath('/foo')).toBe('R/foo');
+    expect(encodeRoutePath('/foo/bar')).toBe('R/foo/bar');
+  });
+
+  test('throws on invalid routePath', () => {
+    expect(() => encodeRoutePath('foo')).toThrow();
+    expect(() => encodeRoutePath('/foo/')).toThrow();
+  });
+});
+
+describe('decodeRoutePath', () => {
+  test('decodes routePath', () => {
+    expect(decodeRoutePath('R/_root')).toBe('/');
+    expect(decodeRoutePath('R/foo')).toBe('/foo');
+    expect(decodeRoutePath('R/foo/bar')).toBe('/foo/bar');
+  });
+
+  test('throws on invalid routePath', () => {
+    expect(() => decodeRoutePath('foo')).toThrow();
   });
 });

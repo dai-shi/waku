@@ -26,7 +26,7 @@ import type {
 import { fetchRsc, prefetchRsc, Root, Slot, useRefetch } from '../client.js';
 import {
   getComponentIds,
-  getRscPath,
+  encodeRoutePath,
   SHOULD_SKIP_ID,
   ROUTE_ID,
   HAS404_ID,
@@ -375,7 +375,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is skipped
       }
-      const rscPath = getRscPath(route.path);
+      const rscPath = encodeRoutePath(route.path);
       if (!skipRefetch) {
         refetch(rscPath, JSON.stringify({ query: route.query, skip }));
       }
@@ -406,7 +406,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is cached
       }
-      const rscPath = getRscPath(route.path);
+      const rscPath = encodeRoutePath(route.path);
       prefetchRsc(rscPath, JSON.stringify({ query: route.query, skip }));
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(route.path);
     },
@@ -488,7 +488,7 @@ const DEFAULT_ROUTER_DATA: RouterData = [];
 
 export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
   const route = parseRouteFromLocation();
-  const initialRscPath = getRscPath(route.path);
+  const initialRscPath = encodeRoutePath(route.path);
   const unstable_enhanceCreateData =
     (
       createData: (
@@ -501,7 +501,7 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
       if (response.status === 404 && has404) {
         // HACK this is still an experimental logic. It's very fragile.
         // FIXME we should cache it if 404.txt is static.
-        return fetchRsc(getRscPath('/404'));
+        return fetchRsc(encodeRoutePath('/404'));
       }
       const data = createData(responsePromise);
       Promise.resolve(data)
