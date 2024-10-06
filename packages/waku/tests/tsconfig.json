@@ -4,5 +4,10 @@
     "rootDir": "../",
     "noEmit": true
   },
-  "include": ["../src", "."]
+  "include": ["."],
+  "references": [
+    {
+      "path": ".."
+    }
+  ]
 }
