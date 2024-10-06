@@ -151,12 +151,20 @@ export type CreateLayout = <Path extends string>(layout: {
   >;
 }) => void;
 
+type RootItem = {
+  render: 'static' | 'dynamic';
+  component: FunctionComponent<{ children: ReactNode }>;
+};
+
+export type CreateRoot = (root: RootItem) => void;
+
 export function createPages<
   AllPages extends (AnyPage | ReturnType<CreateLayout>)[],
 >(
   fn: (fns: {
     createPage: CreatePage;
     createLayout: CreateLayout;
+    createRoot: CreateRoot;
   }) => Promise<AllPages>,
 ) {
   let configured = false;
@@ -176,6 +184,7 @@ export function createPages<
     [PathSpec, FunctionComponent<any>]
   >();
   const staticComponentMap = new Map<string, FunctionComponent<any>>();
+  let rootItem: RootItem | undefined = undefined;
   const noSsrSet = new WeakSet<PathSpec>();
 
   const registerStaticComponent = (
@@ -193,7 +202,7 @@ export function createPages<
 
   const createPage: CreatePage = (page) => {
     if (configured) {
-      throw new Error('no longer available');
+      throw new Error('createPage no longer available');
     }
     const pathSpec = parsePathWithSlug(page.path);
     if (page.unstable_disableSSR) {
@@ -275,7 +284,7 @@ export function createPages<
 
   const createLayout: CreateLayout = (layout) => {
     if (configured) {
-      throw new Error('no longer available');
+      throw new Error('createLayout no longer available');
     }
     if (layout.render === 'static') {
       const id = joinPath(layout.path, 'layout').replace(/^\//, '');
@@ -291,10 +300,24 @@ export function createPages<
     }
   };
 
+  const createRoot: CreateRoot = (root) => {
+    if (configured) {
+      throw new Error('createRoot no longer available');
+    }
+    if (rootItem) {
+      throw new Error(`Duplicated root component`);
+    }
+    if (root.render === 'static' || root.render === 'dynamic') {
+      rootItem = structuredClone(root);
+    } else {
+      throw new Error('Invalid root configuration');
+    }
+  };
+
   let ready: Promise<AllPages | void> | undefined;
   const configure = async () => {
     if (!configured && !ready) {
-      ready = fn({ createPage, createLayout });
+      ready = fn({ createPage, createLayout, createRoot });
       await ready;
       configured = true;
     }
@@ -396,6 +419,12 @@ export function createPages<
           return Component;
         }
       }
+      // if (rootItem) {
+      //   const Component = rootItem.component;
+      //   if (Component) {
+      //     return Component;
+      //   }
+      // }
       unstable_setShouldSkip([]); // negative cache
       return null; // not found
     },
