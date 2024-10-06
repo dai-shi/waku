@@ -20,10 +20,7 @@ export const SERVER_MODULE_MAP = {
 } as const;
 
 const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
-  if (!id.startsWith('@id/')) {
-    throw new Error('Unexpected client entry in PRD');
-  }
-  return config.basePath + id.slice('@id/'.length);
+  return config.basePath + id + '.js';
 };
 
 export type RenderRscArgs = {
@@ -116,9 +113,7 @@ export async function renderRsc(
     {
       get(_target, encodedId: string) {
         const [fileId, name] = encodedId.split('#') as [string, string];
-        const id = fileId.startsWith('@id/')
-          ? fileId.slice('@id/'.length)
-          : filePathToFileURL(fileId);
+        const id = isDev ? filePathToFileURL(fileId) : fileId + '.js';
         return { id, chunks: [id], name, async: true };
       },
     },
@@ -221,10 +216,7 @@ export async function renderRsc(
     if (isDev) {
       mod = await opts.loadServerModuleRsc(filePathToFileURL(fileId));
     } else {
-      if (!fileId.startsWith('@id/')) {
-        throw new Error('Unexpected server entry in PRD');
-      }
-      mod = await loadModule(fileId.slice('@id/'.length));
+      mod = await loadModule(fileId + '.js');
     }
     const fn = mod[name] || mod;
     return renderWithContextWithFunc(context, fn, args);
