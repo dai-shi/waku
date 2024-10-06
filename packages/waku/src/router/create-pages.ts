@@ -391,7 +391,9 @@ export function createPages<
     async (id, { unstable_setShouldSkip }) => {
       await configure();
       if (id === 'root') {
-        unstable_setShouldSkip();
+        if (rootItem?.render === 'dynamic') {
+          unstable_setShouldSkip();
+        } else unstable_setShouldSkip([]);
         return rootItem?.component ?? DefaultRoot;
       }
       const staticComponent = staticComponentMap.get(id);
