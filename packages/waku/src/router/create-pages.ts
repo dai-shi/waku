@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import type { FunctionComponent, ReactNode } from 'react';
 
-import { DefaultRoot, unstable_defineRouter } from './define-router.js';
+import { unstable_defineRouter } from './define-router.js';
 import type { RouteProps } from './common.js';
 import {
   joinPath,
@@ -157,6 +157,23 @@ type RootItem = {
 };
 
 export type CreateRoot = (root: RootItem) => void;
+
+/**
+ * Root component for all pages
+ * ```tsx
+ *   <html>
+ *     <head></head>
+ *     <body>{children}</body>
+ *   </html>
+ * ```
+ */
+const DefaultRoot = ({ children }: { children: ReactNode }) =>
+  createElement(
+    'html',
+    null,
+    createElement('head', null),
+    createElement('body', null, children),
+  );
 
 export function createPages<
   AllPages extends (AnyPage | ReturnType<CreateLayout>)[],
