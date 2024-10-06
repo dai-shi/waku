@@ -275,7 +275,7 @@ export function unstable_rerenderRoute(
 // Eventually replaces unstable_defineRouter
 // -----------------------------------------------------
 
-export function new_defineRouter(
+export function new_defineRouter(fns: {
   getPathConfig: () => Promise<
     Iterable<{
       pattern: string; // TODO let's revisit this later
@@ -288,14 +288,14 @@ export function new_defineRouter(
       >;
       noSsr?: boolean;
     }>
-  >,
+  >;
   renderRoute: (
     path: string, // "/foo/bar"
     options: {
       query?: string;
       skipIds?: string[];
     },
-  ) => Promise<Record<string, ReactNode>>,
-): ReturnType<typeof defineEntries> {
-  return ('TODO' + getPathConfig + renderRoute) as never;
+  ) => Promise<Record<string, ReactNode>>;
+}): ReturnType<typeof defineEntries> {
+  return ('TODO' + fns) as never;
 }
