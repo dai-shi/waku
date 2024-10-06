@@ -13,7 +13,7 @@ const testMatrix = [{ withSSR: false }, { withSSR: true }] as const;
 
 let standaloneDir: string;
 const exampleDir = fileURLToPath(
-  new URL('../examples/07_router', import.meta.url),
+  new URL('../examples/21_create-pages', import.meta.url),
 );
 const wakuDir = fileURLToPath(new URL('../packages/waku', import.meta.url));
 const { version } = createRequire(import.meta.url)(
@@ -39,7 +39,7 @@ async function testRouterExample(page: Page, port: number) {
   expect(backgroundColor).toBe('rgb(254, 254, 254)');
 }
 
-test.describe('07_router standalone', () => {
+test.describe('21_create-pages standalone', () => {
   test.beforeAll('copy code', async () => {
     // GitHub Action on Windows doesn't support mkdtemp on global temp dir,
     // Which will cause files in `src` folder to be empty.
