@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import type { FunctionComponent, ReactNode } from 'react';
 
-import { unstable_defineRouter } from './define-router.js';
+import { DefaultRoot, unstable_defineRouter } from './define-router.js';
 import type { RouteProps } from './common.js';
 import {
   joinPath,
@@ -373,6 +373,10 @@ export function createPages<
     },
     async (id, { unstable_setShouldSkip }) => {
       await configure();
+      if (id === 'root') {
+        unstable_setShouldSkip();
+        return rootItem?.component ?? DefaultRoot;
+      }
       const staticComponent = staticComponentMap.get(id);
       if (staticComponent) {
         unstable_setShouldSkip([]);
@@ -419,12 +423,6 @@ export function createPages<
           return Component;
         }
       }
-      // if (rootItem) {
-      //   const Component = rootItem.component;
-      //   if (Component) {
-      //     return Component;
-      //   }
-      // }
       unstable_setShouldSkip([]); // negative cache
       return null; // not found
     },

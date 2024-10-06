@@ -46,6 +46,15 @@ const safeJsonParse = (str: unknown) => {
   return undefined;
 };
 
+export function DefaultRoot({ children }: { children: ReactNode }) {
+  return (
+    <html>
+      <head></head>
+      <body>HELLO WORLD{children}</body>
+    </html>
+  );
+}
+
 export function unstable_defineRouter(
   getPathConfig: () => Promise<
     Iterable<{
@@ -171,6 +180,8 @@ export function unstable_defineRouter(
         }),
       )
     ).flat();
+
+    console.log(entries);
     entries.push([SHOULD_SKIP_ID, Object.entries(shouldSkipObj)]);
     entries.push([ROUTE_ID, [pathname, query]]);
     if (pathStatus.has404) {
