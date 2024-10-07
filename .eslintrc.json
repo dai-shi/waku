@@ -19,7 +19,7 @@
     "project": "./tsconfig.eslint.json"
   },
   "plugins": ["@typescript-eslint"],
-  "ignorePatterns": ["dist"],
+  "ignorePatterns": ["dist", "packages/create-waku/template"],
   "rules": {
     "@typescript-eslint/no-floating-promises": "error",
     "@typescript-eslint/no-non-null-assertion": "off",
