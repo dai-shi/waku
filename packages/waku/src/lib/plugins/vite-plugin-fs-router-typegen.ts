@@ -25,7 +25,9 @@ export function toIdentifier(input: string): string {
   return identifier
     .split('_')
     .map((part) => {
-      if (part[0] === undefined) return '';
+      if (part[0] === undefined) {
+        return '';
+      }
       return part[0].toUpperCase() + part.slice(1);
     })
     .join('');
@@ -112,7 +114,9 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
       };
 
       const fileExportsGetConfig = (filePath: string) => {
-        if (!pagesDir) return false;
+        if (!pagesDir) {
+          return false;
+        }
         const file = readFileSync(pagesDir + filePath).toString();
 
         return (
@@ -187,7 +191,9 @@ import type { PathsForPages } from 'waku/router';\n\n`;
       };
 
       const updateGeneratedFile = async () => {
-        if (!pagesDir || !outputFile) return;
+        if (!pagesDir || !outputFile) {
+          return;
+        }
         const files = await collectFiles(pagesDir);
         const formatted = await formatter(generateFile(files));
         await writeFile(outputFile, formatted, 'utf-8');
@@ -195,12 +201,16 @@ import type { PathsForPages } from 'waku/router';\n\n`;
 
       server.watcher.add(opts.srcDir);
       server.watcher.on('change', async (file) => {
-        if (!outputFile || outputFile.endsWith(file)) return;
+        if (!outputFile || outputFile.endsWith(file)) {
+          return;
+        }
 
         await updateGeneratedFile();
       });
       server.watcher.on('add', async (file) => {
-        if (!outputFile || outputFile.endsWith(file)) return;
+        if (!outputFile || outputFile.endsWith(file)) {
+          return;
+        }
 
         await updateGeneratedFile();
       });
