@@ -15,7 +15,7 @@ export const RootLayout = async ({ children }: RootLayoutProps) => {
       <head></head>
       <body>
         <div className="font-['Nunito']">
-          <meta property="description" content={data.description} />
+          <meta name="description" content={data.description} />
           <link rel="icon" type="image/png" href={data.icon} />
           <Header />
           <main className="flex min-h-svh items-center justify-center *:min-h-64 *:min-w-64">

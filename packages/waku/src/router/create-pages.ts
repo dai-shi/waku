@@ -405,7 +405,7 @@ export function createPages<
     /** This for type inference of the router only. We do not actually return anything for this type. */
     DO_NOT_USE_pages: Exclude<
       Exclude<Awaited<Exclude<typeof ready, undefined>>, void>[number],
-      void
+      void // createLayout returns void
     >;
   };
 }

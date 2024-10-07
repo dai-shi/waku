@@ -39,6 +39,10 @@
     // E2E
     {
       "path": "./tsconfig.e2e.json"
+    },
+    // Test
+    {
+      "path": "./packages/waku/tests"
     }
   ]
 }
