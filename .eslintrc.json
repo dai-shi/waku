@@ -33,7 +33,8 @@
         "destructuredArrayIgnorePattern": "^_"
       }
     ],
-    "react/prop-types": "off"
+    "react/prop-types": "off",
+    "curly": ["error", "all"]
   },
   "overrides": [
     {
