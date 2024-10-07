@@ -15,18 +15,29 @@ export function getComponentIds(path: string): readonly string[] {
   return Array.from(idSet);
 }
 
-export function getRscPath(path: string): string {
+const ROUTE_PREFIX = 'R';
+
+export function encodeRoutePath(path: string): string {
   if (!path.startsWith('/')) {
-    throw new Error('Path should start with `/`');
+    throw new Error('Path must start with `/`: ' + path);
   }
-  return path.slice(1);
+  if (path === '/') {
+    return ROUTE_PREFIX + '/_root';
+  }
+  if (path.endsWith('/')) {
+    throw new Error('Path must not end with `/`: ' + path);
+  }
+  return ROUTE_PREFIX + path;
 }
 
-export function parseRscPath(rscPath: string): string {
-  if (rscPath.startsWith('/')) {
+export function decodeRoutePath(rscPath: string): string {
+  if (!rscPath.startsWith(ROUTE_PREFIX)) {
     throw new Error('rscPath should not start with `/`');
   }
-  return '/' + rscPath;
+  if (rscPath === ROUTE_PREFIX + '/_root') {
+    return '/';
+  }
+  return rscPath.slice(ROUTE_PREFIX.length);
 }
 
 // It starts with "/" to avoid conflicting with normal component ids.

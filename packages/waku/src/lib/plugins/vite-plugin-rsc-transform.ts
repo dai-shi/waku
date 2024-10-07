@@ -599,7 +599,7 @@ export function rscTransformPlugin(
     }
     for (const [k, v] of Object.entries(opts.clientEntryFiles)) {
       if (v === id) {
-        return `@id/${k}.js`;
+        return k;
       }
     }
     throw new Error('client id not found: ' + id);
@@ -610,7 +610,7 @@ export function rscTransformPlugin(
     }
     for (const [k, v] of Object.entries(opts.serverEntryFiles)) {
       if (v === id) {
-        return `@id/${k}.js`;
+        return k;
       }
     }
     throw new Error('server id not found: ' + id);

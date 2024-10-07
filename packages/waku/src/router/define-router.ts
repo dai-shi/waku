@@ -15,8 +15,8 @@ import type {
 import { Children, Slot } from '../client.js';
 import {
   getComponentIds,
-  getRscPath,
-  parseRscPath,
+  encodeRoutePath,
+  decodeRoutePath,
   SHOULD_SKIP_ID,
   ROUTE_ID,
   HAS404_ID,
@@ -120,7 +120,7 @@ export function unstable_defineRouter(
         };
   };
   const renderEntries: RenderEntries = async (rscPath, { rscParams }) => {
-    const pathname = parseRscPath(rscPath);
+    const pathname = decodeRoutePath(rscPath);
     const pathStatus = await existsPath(pathname);
     if (!pathStatus.found) {
       return null;
@@ -190,7 +190,7 @@ export function unstable_defineRouter(
           return;
         }
         const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
-        const rscPath = getRscPath(pathname);
+        const rscPath = encodeRoutePath(pathname);
         path2moduleIds[pattern] = await unstable_collectClientModules(rscPath);
       }),
     );
@@ -210,7 +210,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
       const entries: BuildConfig[number]['entries'] = [];
       if (pathSpec.every(({ type }) => type === 'literal')) {
         const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
-        const rscPath = getRscPath(pathname);
+        const rscPath = encodeRoutePath(pathname);
         entries.push({ rscPath, isStatic });
       }
       buildConfig.push({
@@ -240,7 +240,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
       }
     }
     const componentIds = getComponentIds(pathname);
-    const rscPath = getRscPath(pathname);
+    const rscPath = encodeRoutePath(pathname);
     const html = createElement(
       ServerRouter as FunctionComponent<
         Omit<ComponentProps<typeof ServerRouter>, 'children'>
@@ -266,6 +266,6 @@ export function unstable_rerenderRoute(
   query?: string,
   skip?: string[], // TODO this is too hard to use
 ) {
-  const rscPath = getRscPath(pathname);
+  const rscPath = encodeRoutePath(pathname);
   rerender(rscPath, { query, skip });
 }
