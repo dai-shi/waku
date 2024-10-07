@@ -3,7 +3,6 @@
   "compilerOptions": {
     "rootDir": "..",
     "outDir": "./dist",
-    "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "lib": ["esnext"]
   },
   "include": ["."],
