@@ -3,9 +3,7 @@ import { ReactNode } from 'react';
 export default function Root({ children }: { children: ReactNode }) {
   return (
     <html>
-      <head>
-        <title>Waku</title>
-      </head>
+      <head></head>
       <body
         data-dynamic-root={`Random Number ${Math.round(Math.random() * 100)}`}
       >
