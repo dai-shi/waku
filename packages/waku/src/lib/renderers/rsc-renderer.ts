@@ -166,7 +166,7 @@ export async function renderRsc(
           renderEntries(rscPath, { rscParams }),
         ]).then(([oldElements, newElements]) => {
           if (newElements === null) {
-            throw new Error('renderEntries returned null');
+            console.warn('renderEntries returned null');
           }
           return {
             ...oldElements,
