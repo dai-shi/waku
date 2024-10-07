@@ -5,7 +5,8 @@ import {
   toIdentifier,
 } from '../src/lib/plugins/vite-plugin-fs-router-typegen.js';
 import { fileURLToPath } from 'node:url';
-import { FSWatcher, ViteDevServer } from 'vite';
+import type { ViteDevServer } from 'vite';
+import { FSWatcher } from 'vite';
 import { writeFile } from 'node:fs/promises';
 
 const root = fileURLToPath(new URL('./fixtures', import.meta.url));

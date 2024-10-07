@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { bufferToString, parseFormData } from '../src/lib/utils/buffer';
+import { bufferToString, parseFormData } from '../src/lib/utils/buffer.js';
 
 // Minimal valid 1x1 pixel PNG image
 const PNG_HEADER = new Uint8Array([
