@@ -15,24 +15,17 @@ const getServeJsContent = (
 ) => `
 import path from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { runner, importHono, importHonoNodeServer } from 'waku/unstable_hono';
+import { serverEngine, importHono, importHonoNodeServer } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
 const { getRequestListener } = await importHonoNodeServer();
-let contextStorage;
-try {
- ({ contextStorage } = await import('hono/context-storage'));
-} catch {}
 
 const distDir = '${distDir}';
 const publicDir = '${distPublic}';
 const loadEntries = () => import('${srcEntriesFile}');
 
 const app = new Hono();
-if (contextStorage) {
-  app.use(contextStorage());
-}
-app.use('*', runner({ cmd: 'start', loadEntries, env: process.env }));
+app.use(serverEngine({ cmd: 'start', loadEntries, env: process.env }));
 app.notFound((c) => {
   // FIXME better implementation using node stream?
   const file = path.join(distDir, publicDir, '404.html');
@@ -49,7 +42,7 @@ export function deployVercelPlugin(opts: {
   srcDir: string;
   distDir: string;
   basePath: string;
-  rscPath: string;
+  rscBase: string;
   privateDir: string;
 }): Plugin {
   const platformObject = unstable_getPlatformObject();
@@ -78,9 +71,6 @@ export function deployVercelPlugin(opts: {
       if (source === `${opts.srcDir}/${SERVE_JS}`) {
         return source;
       }
-      if (source === 'hono/context-storage') {
-        return { id: source, external: true };
-      }
     },
     load(id) {
       if (id === `${opts.srcDir}/${SERVE_JS}`) {
@@ -105,7 +95,7 @@ export function deployVercelPlugin(opts: {
         const serverlessDir = path.join(
           outputDir,
           'functions',
-          opts.rscPath + '.func',
+          opts.rscBase + '.func',
         );
         mkdirSync(path.join(serverlessDir, opts.distDir), {
           recursive: true,
@@ -143,7 +133,7 @@ export function deployVercelPlugin(opts: {
               { handle: 'filesystem' },
               {
                 src: opts.basePath + '(.*)',
-                dest: opts.basePath + opts.rscPath + '/',
+                dest: opts.basePath + opts.rscBase + '/',
               },
             ]
           : undefined;

@@ -116,12 +116,12 @@ export function ServerProvider({ children }: { children: ReactNode }) {
         "import type { ReactNode } from 'react';
         import { createAI } from 'ai/rsc';
         import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-        export const __waku_action1 = __waku_registerServerReference(async ()=>{
+        export const __waku_func1 = __waku_registerServerReference(async ()=>{
             return 0;
-        }, "/src/App.tsx", "__waku_action1");
+        }, "/src/App.tsx", "__waku_func1");
         const AI = createAI({
             actions: {
-                foo: __waku_action1.bind(null)
+                foo: __waku_func1.bind(null)
             }
         });
         export function ServerProvider({ children }: {
@@ -161,11 +161,11 @@ export default async () => null;
         "import { InternalProvider } from './shared.js';
         import { jsx } from 'react/jsx-runtime';
         import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-        export async function __waku_action1({ action }, ...args) {
+        export async function __waku_func1({ action }, ...args) {
             return await action(...args);
         }
-        __waku_registerServerReference(__waku_action1, "/src/App.tsx", "__waku_action1");
-        const innerAction = __waku_action1.bind(null);
+        __waku_registerServerReference(__waku_func1, "/src/App.tsx", "__waku_func1");
+        const innerAction = __waku_func1.bind(null);
         function wrapAction(action) {
             return innerAction.bind(null, {
                 action
@@ -192,17 +192,17 @@ export default function App({ a }) {
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
-      "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-      export async function __waku_action1(a, mesg) {
-          console.log(mesg, a);
-      }
-      __waku_registerServerReference(__waku_action1, "/src/App.tsx", "__waku_action1");
-      export default function App({ a }) {
-          const log = __waku_action1.bind(null, a);
-          return <Hello log={log}/>;
-      }
-      "
-    `);
+        "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
+        export async function __waku_func1(a, mesg) {
+            console.log(mesg, a);
+        }
+        __waku_registerServerReference(__waku_func1, "/src/App.tsx", "__waku_func1");
+        export default function App({ a }) {
+            const log = __waku_func1.bind(null, a);
+            return <Hello log={log}/>;
+        }
+        "
+      `);
   });
 
   test('inline use server (const function expression)', async () => {
@@ -218,17 +218,17 @@ export default function App() {
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
-      "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-      export const __waku_action1 = __waku_registerServerReference(async function(rand, mesg, rand) {
-          console.log(mesg, rand);
-      }, "/src/App.tsx", "__waku_action1");
-      export default function App() {
-          const rand = Math.random();
-          const log = __waku_action1.bind(null, rand);
-          return <Hello log={log}/>;
-      }
-      "
-    `);
+        "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
+        export const __waku_func1 = __waku_registerServerReference(async function(rand, mesg, rand) {
+            console.log(mesg, rand);
+        }, "/src/App.tsx", "__waku_func1");
+        export default function App() {
+            const rand = Math.random();
+            const log = __waku_func1.bind(null, rand);
+            return <Hello log={log}/>;
+        }
+        "
+      `);
   });
 
   test('inline use server (const arrow function)', async () => {
@@ -244,17 +244,17 @@ export default function App() {
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
-      "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-      export const __waku_action1 = __waku_registerServerReference(async (mesg)=>{
-          console.log(mesg, now);
-      }, "/src/App.tsx", "__waku_action1");
-      const now = Date.now();
-      export default function App() {
-          const log = __waku_action1.bind(null);
-          return <Hello log={log}/>;
-      }
-      "
-    `);
+        "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
+        export const __waku_func1 = __waku_registerServerReference(async (mesg)=>{
+            console.log(mesg, now);
+        }, "/src/App.tsx", "__waku_func1");
+        const now = Date.now();
+        export default function App() {
+            const log = __waku_func1.bind(null);
+            return <Hello log={log}/>;
+        }
+        "
+      `);
   });
 
   test('inline use server (anonymous arrow function)', async () => {
@@ -269,16 +269,16 @@ export default function App() {
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
-      "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-      export const __waku_action1 = __waku_registerServerReference((mesg)=>{
-          console.log(mesg, now);
-      }, "/src/App.tsx", "__waku_action1");
-      const now = Date.now();
-      export default function App() {
-          return <Hello log={__waku_action1.bind(null)}/>;
-      }
-      "
-    `);
+        "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
+        export const __waku_func1 = __waku_registerServerReference((mesg)=>{
+            console.log(mesg, now);
+        }, "/src/App.tsx", "__waku_func1");
+        const now = Date.now();
+        export default function App() {
+            return <Hello log={__waku_func1.bind(null)}/>;
+        }
+        "
+      `);
   });
 
   test('inline use server (various patterns)', async () => {
@@ -317,29 +317,29 @@ export default async function(mesg) {
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-        export const __waku_action1 = __waku_registerServerReference(async (mesg)=>{
+        export const __waku_func1 = __waku_registerServerReference(async (mesg)=>{
             console.log(mesg);
-        }, "/src/App.tsx", "__waku_action1");
-        export async function __waku_action2(mesg) {
+        }, "/src/App.tsx", "__waku_func1");
+        export async function __waku_func2(mesg) {
             console.log(mesg);
         }
-        __waku_registerServerReference(__waku_action2, "/src/App.tsx", "__waku_action2");
-        export const __waku_action3 = __waku_registerServerReference(async function(mesg) {
+        __waku_registerServerReference(__waku_func2, "/src/App.tsx", "__waku_func2");
+        export const __waku_func3 = __waku_registerServerReference(async function(mesg) {
             console.log(mesg);
-        }, "/src/App.tsx", "__waku_action3");
-        export const __waku_action4 = __waku_registerServerReference(async (mesg)=>{
+        }, "/src/App.tsx", "__waku_func3");
+        export const __waku_func4 = __waku_registerServerReference(async (mesg)=>{
             console.log(mesg);
-        }, "/src/App.tsx", "__waku_action4");
-        export const __waku_action5 = __waku_registerServerReference(async function(mesg) {
+        }, "/src/App.tsx", "__waku_func4");
+        export const __waku_func5 = __waku_registerServerReference(async function(mesg) {
             console.log(mesg);
-        }, "/src/App.tsx", "__waku_action5");
+        }, "/src/App.tsx", "__waku_func5");
         const actions = {
-            log: __waku_action1.bind(null)
+            log: __waku_func1.bind(null)
         };
-        const log2 = __waku_action2.bind(null);
-        const log3 = __waku_action3.bind(null);
-        const log4 = __waku_action4.bind(null);
-        export default __waku_action5.bind(null);
+        const log2 = __waku_func2.bind(null);
+        const log3 = __waku_func3.bind(null);
+        const log4 = __waku_func4.bind(null);
+        export default __waku_func5.bind(null);
         "
       `);
   });
@@ -395,15 +395,15 @@ export default async function log4(mesg) {
     expect(await transform(code, '/src/func.ts')).toMatchInlineSnapshot(`
       "
       import { createServerReference } from 'react-server-dom-webpack/client';
-      import { callServerRSC } from 'waku/client';
+      import { callServerRsc } from 'waku/client';
 
-      export const log1 = createServerReference('/src/func.ts#log1', callServerRSC);
+      export const log1 = createServerReference('/src/func.ts#log1', callServerRsc);
 
-      export const log2 = createServerReference('/src/func.ts#log2', callServerRSC);
+      export const log2 = createServerReference('/src/func.ts#log2', callServerRsc);
 
-      export const log3 = createServerReference('/src/func.ts#log3', callServerRSC);
+      export const log3 = createServerReference('/src/func.ts#log3', callServerRsc);
 
-      export default createServerReference('/src/func.ts#default', callServerRSC);
+      export default createServerReference('/src/func.ts#default', callServerRsc);
       "
     `);
   });

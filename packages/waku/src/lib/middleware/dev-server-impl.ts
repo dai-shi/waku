@@ -12,6 +12,7 @@ import {
   fileURLToFilePath,
   encodeFilePathToAbsolute,
   decodeFilePathFromAbsolute,
+  filePathToFileURL,
 } from '../utils/path.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
@@ -27,6 +28,7 @@ import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import type { ClonableModuleNode, Middleware } from './types.js';
+import { fsRouterTypegenPlugin } from '../plugins/vite-plugin-fs-router-typegen.js';
 
 // TODO there is huge room for refactoring in this file
 
@@ -109,6 +111,7 @@ const createMainViteServer = (
         rscIndexPlugin(config),
         rscTransformPlugin({ isClient: true, isBuild: false }),
         rscHmrPlugin(),
+        fsRouterTypegenPlugin(config),
       ],
       optimizeDeps: {
         include: ['react-server-dom-webpack/client', 'react-dom'],
@@ -145,7 +148,7 @@ const createMainViteServer = (
       const fileWithAbsolutePath = file.startsWith('/')
         ? file
         : joinPath(vite.config.root, file);
-      return import(/* @vite-ignore */ fileWithAbsolutePath);
+      return import(/* @vite-ignore */ filePathToFileURL(fileWithAbsolutePath));
     }
     return vite.ssrLoadModule(
       idOrFileURL.startsWith('file://')
@@ -244,7 +247,6 @@ const createRscViteServer = (
           conditions: ['react-server'],
           externalConditions: ['react-server'],
         },
-        external: ['hono/context-storage'],
         noExternal: /^(?!node:)/,
         optimizeDeps: {
           include: [
@@ -391,9 +393,9 @@ export const devServer: Middleware = (options) => {
     };
 
     if (
-      // HACK depending on `rscPath` is a bad idea
+      // HACK depending on `rscBase` is a bad idea
       // FIXME This hack should be removed as well as `willBeHandled`
-      ctx.req.url.pathname.startsWith(config.basePath + config.rscPath + '/') ||
+      ctx.req.url.pathname.startsWith(config.basePath + config.rscBase + '/') ||
       !(await willBeHandled(ctx.req.url.pathname))
     ) {
       await next();

@@ -5,13 +5,13 @@ const App = lazy(() => import('./components/App.js'));
 
 export default defineEntries(
   // renderEntries
-  async (input) => {
+  async (rscPath) => {
     return {
-      App: <App name={input || 'Waku'} />,
+      App: <App name={rscPath || 'Waku'} />,
     };
   },
   // getBuildConfig
-  async () => [{ pathname: '/', entries: [{ input: '' }] }],
+  async () => [{ pathname: '/', entries: [{ rscPath: '' }] }],
   // getSsrConfig
   () => {
     throw new Error('SSR is should not be used in this test.');

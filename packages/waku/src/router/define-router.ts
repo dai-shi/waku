@@ -15,10 +15,11 @@ import type {
 import { Children, Slot } from '../client.js';
 import {
   getComponentIds,
-  getInputString,
-  parseInputString,
+  getRscPath,
+  parseRscPath,
   SHOULD_SKIP_ID,
-  LOCATION_ID,
+  ROUTE_ID,
+  HAS404_ID,
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
 import { getPathMapping } from '../lib/utils/path.js';
@@ -97,29 +98,38 @@ export function unstable_defineRouter(
   };
   const existsPath = async (
     pathname: string,
-  ): Promise<['FOUND', 'NO_SSR'?] | ['NOT_FOUND', 'HAS_404'?]> => {
+  ): Promise<{
+    found: boolean;
+    has404: boolean;
+    noSsr?: boolean;
+  }> => {
     const pathConfig = await getMyPathConfig();
     const found = pathConfig.find(({ pathname: pathSpec }) =>
       getPathMapping(pathSpec, pathname),
     );
+    const has404 = pathConfig.some(({ specs: { is404 } }) => is404);
     return found
-      ? found.specs.noSsr
-        ? ['FOUND', 'NO_SSR']
-        : ['FOUND']
-      : pathConfig.some(({ specs: { is404 } }) => is404) // FIXMEs should avoid re-computation
-        ? ['NOT_FOUND', 'HAS_404']
-        : ['NOT_FOUND'];
+      ? {
+          found: true,
+          has404,
+          noSsr: !!found.specs.noSsr,
+        }
+      : {
+          found: false,
+          has404,
+        };
   };
-  const renderEntries: RenderEntries = async (input, { params }) => {
-    const pathname = parseInputString(input);
-    if ((await existsPath(pathname))[0] === 'NOT_FOUND') {
+  const renderEntries: RenderEntries = async (rscPath, { rscParams }) => {
+    const pathname = parseRscPath(rscPath);
+    const pathStatus = await existsPath(pathname);
+    if (!pathStatus.found) {
       return null;
     }
     const shouldSkipObj: {
       [componentId: ShouldSkip[number][0]]: ShouldSkip[number][1];
     } = {};
 
-    const parsedParams = safeJsonParse(params);
+    const parsedParams = safeJsonParse(rscParams);
 
     const query =
       typeof parsedParams?.query === 'string' ? parsedParams.query : '';
@@ -161,7 +171,10 @@ export function unstable_defineRouter(
       )
     ).flat();
     entries.push([SHOULD_SKIP_ID, Object.entries(shouldSkipObj)]);
-    entries.push([LOCATION_ID, [pathname, query]]);
+    entries.push([ROUTE_ID, [pathname, query]]);
+    if (pathStatus.has404) {
+      entries.push([HAS404_ID, true]);
+    }
     return Object.fromEntries(entries);
   };
 
@@ -177,8 +190,8 @@ export function unstable_defineRouter(
           return;
         }
         const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
-        const input = getInputString(pathname);
-        path2moduleIds[pattern] = await unstable_collectClientModules(input);
+        const rscPath = getRscPath(pathname);
+        path2moduleIds[pattern] = await unstable_collectClientModules(rscPath);
       }),
     );
 
@@ -197,8 +210,8 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
       const entries: BuildConfig[number]['entries'] = [];
       if (pathSpec.every(({ type }) => type === 'literal')) {
         const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
-        const input = getInputString(pathname);
-        entries.push({ input, isStatic });
+        const rscPath = getRscPath(pathname);
+        entries.push({ rscPath, isStatic });
       }
       buildConfig.push({
         pathname: pathSpec,
@@ -216,18 +229,18 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
 
   const getSsrConfig: GetSsrConfig = async (pathname, { searchParams }) => {
     const pathStatus = await existsPath(pathname);
-    if (pathStatus[1] === 'NO_SSR') {
+    if (pathStatus.noSsr) {
       return null;
     }
-    if (pathStatus[0] === 'NOT_FOUND') {
-      if (pathStatus[1] === 'HAS_404') {
+    if (!pathStatus.found) {
+      if (pathStatus.has404) {
         pathname = '/404';
       } else {
         return null;
       }
     }
     const componentIds = getComponentIds(pathname);
-    const input = getInputString(pathname);
+    const rscPath = getRscPath(pathname);
     const html = createElement(
       ServerRouter as FunctionComponent<
         Omit<ComponentProps<typeof ServerRouter>, 'children'>
@@ -239,8 +252,8 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
       ),
     );
     return {
-      input,
-      params: JSON.stringify({ query: searchParams.toString() }),
+      rscPath,
+      rscParams: JSON.stringify({ query: searchParams.toString() }),
       html,
     };
   };
@@ -248,11 +261,11 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   return { renderEntries, getBuildConfig, getSsrConfig };
 }
 
-export function unstable_redirect(
+export function unstable_rerenderRoute(
   pathname: string,
   query?: string,
-  skip?: string[],
+  skip?: string[], // TODO this is too hard to use
 ) {
-  const input = getInputString(pathname);
-  rerender(input, { query, skip });
+  const rscPath = getRscPath(pathname);
+  rerender(rscPath, { query, skip });
 }

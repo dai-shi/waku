@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.21.3] - 2024-10-04
+
+### Changed
+
+- Router typing support
+- Various improvements
+
 ## [0.21.2] - 2024-09-13
 
 ### Changed

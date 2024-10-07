@@ -15,7 +15,7 @@ import {
   fileURLToFilePath,
   encodeFilePathToAbsolute,
 } from '../utils/path.js';
-import { encodeInput, hasStatusCode } from './utils.js';
+import { encodeRscPath, hasStatusCode } from './utils.js';
 
 // HACK depending on these constants is not ideal
 import { DEFAULT_HTML_HEAD } from '../plugins/vite-plugin-rsc-index.js';
@@ -173,15 +173,15 @@ export const renderHtml = async (
     searchParams: URLSearchParams;
     htmlHead: string;
     renderRscForHtml: (
-      input: string,
-      params?: unknown,
+      rscPath: string,
+      rscParams?: unknown,
     ) => Promise<ReadableStream>;
     getSsrConfigForHtml: (
       pathname: string,
       searchParams: URLSearchParams,
     ) => Promise<{
-      input: string;
-      params?: unknown;
+      rscPath: string;
+      rscParams?: unknown;
       html: ReadableStream;
     } | null>;
   } & (
@@ -228,7 +228,7 @@ export const renderHtml = async (
   }
   let stream: ReadableStream;
   try {
-    stream = await renderRscForHtml(ssrConfig.input, ssrConfig.params);
+    stream = await renderRscForHtml(ssrConfig.rscPath, ssrConfig.rscParams);
   } catch (e) {
     if (hasStatusCode(e) && e.statusCode === 404) {
       return null;
@@ -309,7 +309,10 @@ export const renderHtml = async (
     .pipeThrough(rectifyHtml())
     .pipeThrough(
       injectHtmlHead(
-        config.basePath + config.rscPath + '/' + encodeInput(ssrConfig.input),
+        config.basePath +
+          config.rscBase +
+          '/' +
+          encodeRscPath(ssrConfig.rscPath),
         htmlHead,
         isDev ? `${config.basePath}${config.srcDir}/${SRC_MAIN}` : '',
       ),

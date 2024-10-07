@@ -17,39 +17,45 @@ import { DIST_ENTRIES_JS, DIST_PUBLIC } from '../builder/constants.js';
 const SERVE_JS = 'serve-cloudflare.js';
 
 const getServeJsContent = (srcEntriesFile: string) => `
-import { runner, importHono } from 'waku/unstable_hono';
+import { serverEngine, importHono } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
-let contextStorage;
-try {
- ({ contextStorage } = await import('hono/context-storage'));
-} catch {}
 
 const loadEntries = () => import('${srcEntriesFile}');
-let serveWaku;
+let serve;
+let app;
 
-const app = new Hono();
-if (contextStorage) {
-  app.use(contextStorage());
-}
-app.use('*', (c, next) => serveWaku(c, next));
-app.notFound(async (c) => {
-  const assetsFetcher = c.env.ASSETS;
-  const url = new URL(c.req.raw.url);
-  const errorHtmlUrl = url.origin + '/404.html';
-  const notFoundStaticAssetResponse = await assetsFetcher.fetch(
-    new URL(errorHtmlUrl),
-  );
-  if (notFoundStaticAssetResponse && notFoundStaticAssetResponse.status < 400) {
-    return c.body(notFoundStaticAssetResponse.body, 404);
-  }
-  return c.text('404 Not Found', 404);
-});
+const createApp = (app) => {
+  app.use((c, next) => serve(c, next));
+  app.notFound(async (c) => {
+    const assetsFetcher = c.env.ASSETS;
+    const url = new URL(c.req.raw.url);
+    const errorHtmlUrl = url.origin + '/404.html';
+    const notFoundStaticAssetResponse = await assetsFetcher.fetch(
+      new URL(errorHtmlUrl),
+    );
+    if (
+      notFoundStaticAssetResponse &&
+      notFoundStaticAssetResponse.status < 400
+    ) {
+      return c.body(notFoundStaticAssetResponse.body, 404);
+    }
+    return c.text('404 Not Found', 404);
+  });
+  return app;
+};
 
 export default {
   async fetch(request, env, ctx) {
-    if (!serveWaku) {
-      serveWaku = runner({ cmd: 'start', loadEntries, env });
+    if (!serve) {
+      serve = serverEngine({ cmd: 'start', loadEntries, env });
+    }
+    if (!app) {
+      const entries = await loadEntries();
+      const config = await entries.loadConfig();
+      const honoEnhancer =
+        config.unstable_honoEnhancer || ((createApp) => createApp);
+      app = honoEnhancer(createApp)(new Hono());
     }
     return app.fetch(request, env, ctx);
   },
@@ -78,7 +84,6 @@ type StaticRoutes = { version: number; include: string[]; exclude: string[] };
 export function deployCloudflarePlugin(opts: {
   srcDir: string;
   distDir: string;
-  rscPath: string;
   privateDir: string;
 }): Plugin {
   const platformObject = unstable_getPlatformObject();
@@ -117,9 +122,6 @@ export function deployCloudflarePlugin(opts: {
     resolveId(source) {
       if (source === `${opts.srcDir}/${SERVE_JS}`) {
         return source;
-      }
-      if (source === 'hono/context-storage') {
-        return { id: source, external: true };
       }
     },
     load(id) {

@@ -60,28 +60,37 @@ const transformClient = (
     const exportNames = collectExportNames(mod);
     let newCode = `
 import { createServerReference } from 'react-server-dom-webpack/client';
-import { callServerRSC } from 'waku/client';
+import { callServerRsc } from 'waku/client';
 `;
     for (const name of exportNames) {
       newCode += `
-export ${name === 'default' ? name : `const ${name} =`} createServerReference('${getServerId(id)}#${name}', callServerRSC);
+export ${name === 'default' ? name : `const ${name} =`} createServerReference('${getServerId(id)}#${name}', callServerRsc);
 `;
     }
     return newCode;
   }
 };
 
+export const createEmptySpan = (): swc.Span =>
+  ({
+    start: 0,
+    end: 0,
+  }) as swc.Span;
+
 const createIdentifier = (value: string): swc.Identifier => ({
   type: 'Identifier',
   value,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  ctxt: 0,
   optional: false,
-  span: { start: 0, end: 0, ctxt: 0 },
+  span: createEmptySpan(),
 });
 
 const createStringLiteral = (value: string): swc.StringLiteral => ({
   type: 'StringLiteral',
   value,
-  span: { start: 0, end: 0, ctxt: 0 },
+  span: createEmptySpan(),
 });
 
 const createCallExpression = (
@@ -90,8 +99,11 @@ const createCallExpression = (
 ): swc.CallExpression => ({
   type: 'CallExpression',
   callee,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  ctxt: 0,
   arguments: args.map((expression) => ({ expression })),
-  span: { start: 0, end: 0, ctxt: 0 },
+  span: createEmptySpan(),
 });
 
 const serverInitCode = swc.parseSync(`
@@ -113,9 +125,9 @@ const replaceNode = <T extends swc.Node>(origNode: swc.Node, newNode: T): T => {
   return Object.assign(origNode, newNode);
 };
 
-const transformExportedServerActions = (
+const transformExportedServerFunctions = (
   mod: swc.Module,
-  getActionId: () => string,
+  getFuncId: () => string,
 ): boolean => {
   let changed = false;
   for (let i = 0; i < mod.body.length; ++i) {
@@ -133,11 +145,11 @@ const transformExportedServerActions = (
           createIdentifier('__waku_registerServerReference'),
           [
             createIdentifier(name),
-            createStringLiteral(getActionId()),
+            createStringLiteral(getFuncId()),
             createStringLiteral(name),
           ],
         ),
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       };
       mod.body.splice(++i, 0, stmt);
     };
@@ -155,7 +167,7 @@ const transformExportedServerActions = (
         createIdentifier('__waku_registerServerReference'),
         [
           Object.assign({}, fn),
-          createStringLiteral(getActionId()),
+          createStringLiteral(getFuncId()),
           createStringLiteral(name),
         ],
       );
@@ -182,7 +194,7 @@ const transformExportedServerActions = (
         const decl: swc.ExportDefaultExpression = {
           type: 'ExportDefaultExpression',
           expression: callExp,
-          span: { start: 0, end: 0, ctxt: 0 },
+          span: createEmptySpan(),
         };
         replaceNode(item, decl);
       }
@@ -210,7 +222,9 @@ const isUseServerDirective = (node: swc.Node) =>
   ((node as swc.ExpressionStatement).expression as swc.StringLiteral).value ===
     'use server';
 
-const isInlineServerAction = (node: swc.Node): node is FunctionWithBlockBody =>
+const isInlineServerFunction = (
+  node: swc.Node,
+): node is FunctionWithBlockBody =>
   (node.type === 'FunctionDeclaration' ||
     node.type === 'FunctionExpression' ||
     node.type === 'ArrowFunctionExpression') &&
@@ -227,8 +241,9 @@ const prependArgsToFn = <Fn extends FunctionWithBlockBody>(
       params: [...args.map(createIdentifier), ...fn.params],
       body: {
         type: 'BlockStatement',
+        ctxt: 0,
         stmts: fn.body.stmts.filter((stmt) => !isUseServerDirective(stmt)),
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       },
     };
   }
@@ -238,14 +253,15 @@ const prependArgsToFn = <Fn extends FunctionWithBlockBody>(
       ...args.map((arg) => ({
         type: 'Parameter',
         pat: createIdentifier(arg),
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       })),
       ...fn.params,
     ],
     body: {
       type: 'BlockStatement',
+      ctxt: 0,
       stmts: fn.body.stmts.filter((stmt) => !isUseServerDirective(stmt)),
-      span: { start: 0, end: 0, ctxt: 0 },
+      span: createEmptySpan(),
     },
   };
 };
@@ -290,7 +306,7 @@ const collectLocalNames = (
       {
         type: 'ReturnStatement',
         argument: fn.body,
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       },
     ];
   }
@@ -319,22 +335,22 @@ const collectClosureVars = (
   return varNames;
 };
 
-const transformInlineServerActions = (
+const transformInlineServerFunctions = (
   mod: swc.Module,
-  getActionId: () => string,
+  getFuncId: () => string,
 ): boolean => {
-  let serverActionIndex = 0;
-  const serverActions = new Map<
+  let serverFunctionIndex = 0;
+  const serverFunctions = new Map<
     number,
     readonly [FunctionWithBlockBody, string[]]
   >();
-  const registerServerAction = (
+  const registerServerFunction = (
     parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
     fn: FunctionWithBlockBody,
   ): swc.CallExpression => {
     const closureVars = collectClosureVars(parentFn, fn);
-    serverActions.set(++serverActionIndex, [fn, closureVars]);
-    const name = '__waku_action' + serverActionIndex;
+    serverFunctions.set(++serverFunctionIndex, [fn, closureVars]);
+    const name = '__waku_func' + serverFunctionIndex;
     if (fn.type === 'FunctionDeclaration') {
       fn.identifier = createIdentifier(name);
     }
@@ -343,7 +359,7 @@ const transformInlineServerActions = (
         type: 'MemberExpression',
         object: createIdentifier(name),
         property: createIdentifier('bind'),
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       },
       [
         createIdentifier('null'),
@@ -355,22 +371,25 @@ const transformInlineServerActions = (
     parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
     decl: swc.Declaration,
   ) => {
-    if (isInlineServerAction(decl)) {
-      const callExp = registerServerAction(parentFn, Object.assign({}, decl));
+    if (isInlineServerFunction(decl)) {
+      const callExp = registerServerFunction(parentFn, Object.assign({}, decl));
       const newDecl: swc.VariableDeclaration = {
         type: 'VariableDeclaration',
         kind: 'const',
         declare: false,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        ctxt: 0,
         declarations: [
           {
             type: 'VariableDeclarator',
             id: createIdentifier(decl.identifier.value),
             init: callExp,
             definite: false,
-            span: { start: 0, end: 0, ctxt: 0 },
+            span: createEmptySpan(),
           },
         ],
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       };
       replaceNode(decl, newDecl);
     }
@@ -379,8 +398,8 @@ const transformInlineServerActions = (
     parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
     exp: swc.Expression,
   ): swc.CallExpression | undefined => {
-    if (isInlineServerAction(exp)) {
-      const callExp = registerServerAction(parentFn, Object.assign({}, exp));
+    if (isInlineServerFunction(exp)) {
+      const callExp = registerServerFunction(parentFn, Object.assign({}, exp));
       return replaceNode(exp, callExp);
     }
   };
@@ -399,7 +418,7 @@ const transformInlineServerActions = (
           const decl: swc.ExportDefaultExpression = {
             type: 'ExportDefaultExpression',
             expression: callExp,
-            span: { start: 0, end: 0, ctxt: 0 },
+            span: createEmptySpan(),
           };
           replaceNode(item, decl);
           return;
@@ -435,28 +454,28 @@ const transformInlineServerActions = (
     }
   };
   walk(undefined, mod);
-  if (!serverActionIndex) {
+  if (!serverFunctionIndex) {
     return false;
   }
-  const serverActionsCode = Array.from(serverActions).flatMap(
-    ([actionIndex, [actionFn, closureVars]]) => {
-      if (actionFn.type === 'FunctionDeclaration') {
+  const serverFunctionsCode = Array.from(serverFunctions).flatMap(
+    ([funcIndex, [func, closureVars]]) => {
+      if (func.type === 'FunctionDeclaration') {
         const stmt1: swc.ExportDeclaration = {
           type: 'ExportDeclaration',
-          declaration: prependArgsToFn(actionFn, closureVars),
-          span: { start: 0, end: 0, ctxt: 0 },
+          declaration: prependArgsToFn(func, closureVars),
+          span: createEmptySpan(),
         };
         const stmt2: swc.ExpressionStatement = {
           type: 'ExpressionStatement',
           expression: createCallExpression(
             createIdentifier('__waku_registerServerReference'),
             [
-              createIdentifier(actionFn.identifier.value),
-              createStringLiteral(getActionId()),
-              createStringLiteral('__waku_action' + actionIndex),
+              createIdentifier(func.identifier.value),
+              createStringLiteral(getFuncId()),
+              createStringLiteral('__waku_func' + funcIndex),
             ],
           ),
-          span: { start: 0, end: 0, ctxt: 0 },
+          span: createEmptySpan(),
         };
         return [stmt1, stmt2];
       } else {
@@ -466,31 +485,34 @@ const transformInlineServerActions = (
             type: 'VariableDeclaration',
             kind: 'const',
             declare: false,
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            ctxt: 0,
             declarations: [
               {
                 type: 'VariableDeclarator',
-                id: createIdentifier('__waku_action' + actionIndex),
+                id: createIdentifier('__waku_func' + funcIndex),
                 init: createCallExpression(
                   createIdentifier('__waku_registerServerReference'),
                   [
-                    prependArgsToFn(actionFn, closureVars),
-                    createStringLiteral(getActionId()),
-                    createStringLiteral('__waku_action' + actionIndex),
+                    prependArgsToFn(func, closureVars),
+                    createStringLiteral(getFuncId()),
+                    createStringLiteral('__waku_func' + funcIndex),
                   ],
                 ),
                 definite: false,
-                span: { start: 0, end: 0, ctxt: 0 },
+                span: createEmptySpan(),
               },
             ],
-            span: { start: 0, end: 0, ctxt: 0 },
+            span: createEmptySpan(),
           },
-          span: { start: 0, end: 0, ctxt: 0 },
+          span: createEmptySpan(),
         };
         return [stmt];
       }
     },
   );
-  mod.body.splice(findLastImportIndex(mod), 0, ...serverActionsCode);
+  mod.body.splice(findLastImportIndex(mod), 0, ...serverFunctionsCode);
   return true;
 };
 
@@ -538,9 +560,10 @@ export ${name === 'default' ? name : `const ${name} =`} registerClientReference(
     return newCode;
   }
   let transformed =
-    hasUseServer && transformExportedServerActions(mod, () => getServerId(id));
+    hasUseServer &&
+    transformExportedServerFunctions(mod, () => getServerId(id));
   transformed =
-    transformInlineServerActions(mod, () => getServerId(id)) || transformed;
+    transformInlineServerFunctions(mod, () => getServerId(id)) || transformed;
   if (transformed) {
     mod.body.splice(findLastImportIndex(mod), 0, ...serverInitCode);
     const newCode = swc.printSync(mod).code;

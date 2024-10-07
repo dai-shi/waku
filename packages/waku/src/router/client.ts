@@ -23,17 +23,20 @@ import type {
   MouseEvent,
 } from 'react';
 
-import { prefetchRSC, Root, Slot, useRefetch } from '../client.js';
+import { fetchRsc, prefetchRsc, Root, Slot, useRefetch } from '../client.js';
 import {
   getComponentIds,
-  getInputString,
+  getRscPath,
   SHOULD_SKIP_ID,
-  LOCATION_ID,
+  ROUTE_ID,
+  HAS404_ID,
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
 import type { RouteConfig } from './base-types.js';
 
-type InferredPaths = RouteConfig extends { paths: infer UserPaths }
+type InferredPaths = RouteConfig extends {
+  paths: infer UserPaths;
+}
   ? UserPaths
   : string;
 
@@ -53,15 +56,19 @@ const normalizeRoutePath = (path: string) => {
 };
 
 const parseRoute = (url: URL): RouteProps => {
-  if ((globalThis as any).__WAKU_ROUTER_404__) {
-    return { path: '/404', query: '', hash: '' };
-  }
   const { pathname, searchParams, hash } = url;
   return {
     path: normalizeRoutePath(pathname),
     query: searchParams.toString(),
     hash,
   };
+};
+
+const parseRouteFromLocation = (): RouteProps => {
+  if ((globalThis as any).__WAKU_ROUTER_404__) {
+    return { path: '/404', query: '', hash: '' };
+  }
+  return parseRoute(new URL(window.location.href));
 };
 
 type ChangeRoute = (
@@ -307,7 +314,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
 
   const initialRouteRef = useRef<RouteProps>();
   if (!initialRouteRef.current) {
-    initialRouteRef.current = parseRoute(new URL(window.location.href));
+    initialRouteRef.current = parseRouteFromLocation();
   }
   const [route, setRoute] = useState(() => ({
     // This is the first initialization of the route, and it has
@@ -368,9 +375,9 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is skipped
       }
-      const input = getInputString(route.path);
+      const rscPath = getRscPath(route.path);
       if (!skipRefetch) {
-        refetch(input, JSON.stringify({ query: route.query, skip }));
+        refetch(rscPath, JSON.stringify({ query: route.query, skip }));
       }
       startTransition(() => {
         setCached((prev) => ({
@@ -399,8 +406,8 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is cached
       }
-      const input = getInputString(route.path);
-      prefetchRSC(input, JSON.stringify({ query: route.query, skip }));
+      const rscPath = getRscPath(route.path);
+      prefetchRsc(rscPath, JSON.stringify({ query: route.query, skip }));
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(route.path);
     },
     [routerData],
@@ -423,14 +430,16 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       url.pathname = path;
       url.search = query;
       url.hash = '';
-      window.history.pushState(
-        {
-          ...window.history.state,
-          waku_new_path: url.pathname !== window.location.pathname,
-        },
-        '',
-        url,
-      );
+      if (path !== '/404') {
+        window.history.pushState(
+          {
+            ...window.history.state,
+            waku_new_path: url.pathname !== window.location.pathname,
+          },
+          '',
+          url,
+        );
+      }
       changeRoute(parseRoute(url), { skipRefetch: true });
     };
     const listeners = (routerData[1] ||= new Set());
@@ -472,48 +481,62 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
 type RouterData = [
   shouldSkip?: ShouldSkip,
   locationListners?: Set<(path: string, query: string) => void>,
+  has404?: boolean,
 ];
 
 const DEFAULT_ROUTER_DATA: RouterData = [];
 
 export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
-  const route = parseRoute(new URL(window.location.href));
-  const initialInput = getInputString(route.path);
-  const unstable_onFetchData = (data: unknown) => {
-    Promise.resolve(data)
-      .then((data) => {
-        if (data && typeof data === 'object') {
-          // We need to process SHOULD_SKIP_ID before LOCATION_ID
-          if (SHOULD_SKIP_ID in data) {
-            // TODO replacing the whole array is not ideal
-            routerData[0] = data[SHOULD_SKIP_ID] as ShouldSkip;
-          }
-          if (LOCATION_ID in data) {
-            const [pathname, searchParamsString] = data[LOCATION_ID] as [
-              string,
-              string,
-            ];
-            // FIXME this check here seems ad-hoc (less readable code)
-            if (
-              window.location.pathname !== pathname ||
-              window.location.search.replace(/^\?/, '') !== searchParamsString
-            ) {
-              routerData[1]?.forEach((listener) =>
-                listener(pathname, searchParamsString),
-              );
+  const route = parseRouteFromLocation();
+  const initialRscPath = getRscPath(route.path);
+  const unstable_enhanceCreateData =
+    (
+      createData: (
+        responsePromise: Promise<Response>,
+      ) => Promise<Record<string, ReactNode>>,
+    ) =>
+    async (responsePromise: Promise<Response>) => {
+      const response = await responsePromise;
+      const has404 = routerData[2];
+      if (response.status === 404 && has404) {
+        // HACK this is still an experimental logic. It's very fragile.
+        // FIXME we should cache it if 404.txt is static.
+        return fetchRsc(getRscPath('/404'));
+      }
+      const data = createData(responsePromise);
+      Promise.resolve(data)
+        .then((data) => {
+          if (data && typeof data === 'object') {
+            // We need to process SHOULD_SKIP_ID before LOCATION_ID
+            if (SHOULD_SKIP_ID in data) {
+              // TODO replacing the whole array is not ideal
+              routerData[0] = data[SHOULD_SKIP_ID] as ShouldSkip;
+            }
+            if (ROUTE_ID in data) {
+              const [path, query] = data[ROUTE_ID] as [string, string];
+              // FIXME this check here seems ad-hoc (less readable code)
+              if (
+                window.location.pathname !== path ||
+                window.location.search.replace(/^\?/, '') !== query
+              ) {
+                routerData[1]?.forEach((listener) => listener(path, query));
+              }
+            }
+            if (HAS404_ID in data) {
+              routerData[2] = true;
             }
           }
-        }
-      })
-      .catch(() => {});
-  };
-  const initialParams = JSON.stringify({ query: route.query });
+        })
+        .catch(() => {});
+      return data;
+    };
+  const initialRscParams = JSON.stringify({ query: route.query });
   return createElement(
     ErrorBoundary,
     null,
     createElement(
       Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
-      { initialInput, initialParams, unstable_onFetchData },
+      { initialRscPath, initialRscParams, unstable_enhanceCreateData },
       createElement(InnerRouter, { routerData }),
     ),
   );

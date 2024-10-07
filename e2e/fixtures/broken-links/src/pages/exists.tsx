@@ -1,18 +1,18 @@
 import { Link } from 'waku';
 
-const Page = () => (
-  <div>
-    <h1>Existing page</h1>
-    <p>
-      <Link to="/">Back</Link>
-    </p>
-  </div>
-);
+export default function Exists() {
+  return (
+    <div>
+      <h1>Existing page</h1>
+      <p>
+        <Link to="/">Back</Link>
+      </p>
+    </div>
+  );
+}
 
 export const getConfig = async () => {
   return {
-    render: 'dynamic',
+    render: 'static',
   };
 };
-
-export default Page;

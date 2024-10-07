@@ -33,10 +33,10 @@ export interface Config {
    */
   privateDir?: string;
   /**
-   * Prefix for HTTP requests to indicate RSC requests.
+   * Bse path for HTTP requests to indicate RSC requests.
    * Defaults to "RSC".
    */
-  rscPath?: string;
+  rscBase?: string;
   /**
    * Middleware to use
    * Defaults to:
@@ -49,10 +49,12 @@ export interface Config {
    */
   middleware?: () => Promise<{ default: Middleware }>[];
   /**
-   * Enhander for Hono
+   * Enhancer for Hono
    * Defaults to `undefined`
    */
-  unstable_honoEnhancer?: (<Hono>(app: Hono) => Hono) | undefined;
+  unstable_honoEnhancer?:
+    | (<Hono>(createApp: (app: Hono) => Hono) => (app: Hono) => Hono)
+    | undefined;
 }
 
 export function defineConfig(config: Config) {

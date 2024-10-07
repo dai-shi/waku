@@ -1,5 +1,5 @@
-export type RouteProps = {
-  path: string;
+export type RouteProps<Path extends string = string> = {
+  path: Path;
   query: string;
   hash: string;
 };
@@ -15,25 +15,28 @@ export function getComponentIds(path: string): readonly string[] {
   return Array.from(idSet);
 }
 
-export function getInputString(path: string): string {
+export function getRscPath(path: string): string {
   if (!path.startsWith('/')) {
     throw new Error('Path should start with `/`');
   }
   return path.slice(1);
 }
 
-export function parseInputString(input: string): string {
-  if (input.startsWith('/')) {
-    throw new Error('Input should not start with `/`');
+export function parseRscPath(rscPath: string): string {
+  if (rscPath.startsWith('/')) {
+    throw new Error('rscPath should not start with `/`');
   }
-  return '/' + input;
+  return '/' + rscPath;
 }
 
 // It starts with "/" to avoid conflicting with normal component ids.
 export const SHOULD_SKIP_ID = '/SHOULD_SKIP';
 
 // It starts with "/" to avoid conflicting with normal component ids.
-export const LOCATION_ID = '/LOCATION';
+export const ROUTE_ID = '/ROUTE';
+
+// It starts with "/" to avoid conflicting with normal component ids.
+export const HAS404_ID = '/HAS404';
 
 // TODO revisit shouldSkip API
 export type ShouldSkip = (readonly [

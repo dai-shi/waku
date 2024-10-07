@@ -60,7 +60,17 @@ jobs:
       matrix:
         shared: [1, 2, 3, 4]
         os: [ubuntu-latest, windows-latest, macos-latest]
-        version: [18.17.0, 20.8.0]
+        version: [18.17.0, 20.8.0, 22.7.0]
+        exclude:
+          - os: macos-latest
+            version: 18.17.0
+          - os: macos-latest
+            version: 20.8.0
+          - os: windows-latest
+            version: 18.17.0
+          - os: windows-latest
+            version: 20.8.0
+
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

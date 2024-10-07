@@ -10,8 +10,11 @@ import {
   path2regexp,
 } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
-import type { Split } from './util-types.js';
-import type { AnyPage } from './create-pages-utils/inferred-path-types.js';
+import type {
+  AnyPage,
+  GetSlugs,
+  PropsForPages,
+} from './create-pages-utils/inferred-path-types.js';
 
 const hasPathSpecPrefix = (prefix: PathSpec, path: PathSpec) => {
   for (let i = 0; i < prefix.length; i++) {
@@ -67,35 +70,21 @@ export type PathWithSlug<T, K extends string> =
       : never
     : never;
 
-type _GetSlugs<
-  Route extends string,
-  SplitRoute extends string[] = Split<Route, '/'>,
-  Result extends string[] = [],
-> = SplitRoute extends []
-  ? Result
-  : SplitRoute extends [`${infer MaybeSlug}`, ...infer Rest extends string[]]
-    ? MaybeSlug extends `[${infer Slug}]`
-      ? _GetSlugs<Route, Rest, [...Result, Slug]>
-      : _GetSlugs<Route, Rest, Result>
-    : Result;
-
-export type GetSlugs<Route extends string> = _GetSlugs<Route>;
-
 export type StaticSlugRoutePathsTuple<
   T extends string,
   Slugs extends unknown[] = GetSlugs<T>,
-  Result extends string[] = [],
+  Result extends readonly string[] = [],
 > = Slugs extends []
   ? Result
   : Slugs extends [infer _, ...infer Rest]
-    ? StaticSlugRoutePathsTuple<T, Rest, [...Result, string]>
+    ? StaticSlugRoutePathsTuple<T, Rest, readonly [...Result, string]>
     : never;
 
 type StaticSlugRoutePaths<T extends string> =
   HasWildcardInPath<T> extends true
-    ? string[] | string[][]
-    : StaticSlugRoutePathsTuple<T> extends [string]
-      ? string[]
+    ? readonly string[] | readonly string[][]
+    : StaticSlugRoutePathsTuple<T> extends readonly [string]
+      ? readonly string[]
       : StaticSlugRoutePathsTuple<T>[];
 
 /** Remove Slug from Path */
@@ -130,25 +119,23 @@ export type CreatePage = <
     | {
         render: Extract<Render, 'static'>;
         path: PathWithoutSlug<Path>;
-        component: FunctionComponent<RouteProps>;
+        component: FunctionComponent<PropsForPages<Path>>;
       }
     | {
         render: Extract<Render, 'static'>;
         path: PathWithStaticSlugs<Path>;
         staticPaths: StaticPaths;
-        component: FunctionComponent<RouteProps & Record<SlugKey, string>>;
+        component: FunctionComponent<PropsForPages<Path>>;
       }
     | {
         render: Extract<Render, 'dynamic'>;
         path: PathWithoutSlug<Path>;
-        component: FunctionComponent<RouteProps>;
+        component: FunctionComponent<PropsForPages<Path>>;
       }
     | {
         render: Extract<Render, 'dynamic'>;
         path: PathWithWildcard<Path, SlugKey, WildSlugKey>;
-        component: FunctionComponent<
-          RouteProps & Record<SlugKey, string> & Record<WildSlugKey, string[]>
-        >;
+        component: FunctionComponent<PropsForPages<Path>>;
       }
   ) & { unstable_disableSSR?: boolean },
 ) => Omit<
