@@ -1,5 +1,5 @@
 export const Credits = () => {
-  if (import.meta.env.WAKU_PUBLIC_SHOW_CREDITS !== 'YES') return null;
+  if (import.meta.env.WAKU_PUBLIC_SHOW_CREDITS !== 'YES') {return null;}
 
   return (
     <>
