@@ -297,7 +297,7 @@ export function new_defineRouter(fns: {
     path: string,
     options: {
       query?: string;
-      skipIds?: string[];
+      skip?: string[];
     },
   ) => Promise<Record<ComponentId, ReactNode>>;
 }): ReturnType<typeof defineEntries> {
@@ -381,7 +381,7 @@ export function new_defineRouter(fns: {
         : [];
     const entries = await fns.renderRoute(
       pathname,
-      pathStatus.isStatic ? {} : { query, skipIds: skip },
+      pathStatus.isStatic ? {} : { query, skip },
     );
     entries[ROUTE_ID] = [pathname, query];
     entries[IS_STATIC_ID] = pathStatus.isStatic;
@@ -453,7 +453,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
       }
     }
     const rscPath = encodeRoutePath(pathname);
-    const rootElement = createElement(Slot, { id: '_root' });
+    const rootElement = createElement(Slot, { id: 'root' });
     return {
       rscPath,
       rscParams: JSON.stringify({ query: searchParams.toString() }),

@@ -642,6 +642,31 @@ importers:
         specifier: 5.6.2
         version: 5.6.2
 
+  examples/22_define-router:
+    dependencies:
+      react:
+        specifier: 19.0.0-rc-2d16326d-20240930
+        version: 19.0.0-rc-2d16326d-20240930
+      react-dom:
+        specifier: 19.0.0-rc-2d16326d-20240930
+        version: 19.0.0-rc-2d16326d-20240930(react@19.0.0-rc-2d16326d-20240930)
+      react-server-dom-webpack:
+        specifier: 19.0.0-rc-2d16326d-20240930
+        version: 19.0.0-rc-2d16326d-20240930(react-dom@19.0.0-rc-2d16326d-20240930(react@19.0.0-rc-2d16326d-20240930))(react@19.0.0-rc-2d16326d-20240930)(webpack@5.95.0)
+      waku:
+        specifier: 0.21.3
+        version: link:../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 18.3.11
+        version: 18.3.11
+      '@types/react-dom':
+        specifier: 18.3.0
+        version: 18.3.0
+      typescript:
+        specifier: 5.6.2
+        version: 5.6.2
+
   examples/31_minimal:
     dependencies:
       react:

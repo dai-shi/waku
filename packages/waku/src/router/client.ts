@@ -735,7 +735,7 @@ const NewInnerRouter = ({
     });
   });
 
-  const rootElement = createElement(Slot, { id: '_root' });
+  const rootElement = createElement(Slot, { id: 'root' });
 
   return createElement(
     RouterContext.Provider,
