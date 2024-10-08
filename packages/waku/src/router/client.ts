@@ -29,6 +29,7 @@ import {
   encodeRoutePath,
   SHOULD_SKIP_ID,
   ROUTE_ID,
+  IS_STATIC_ID,
   HAS404_ID,
 } from './common.js';
 import type { RouteProps, ShouldSkip } from './common.js';
@@ -612,8 +613,202 @@ class ErrorBoundary extends Component<
 // Eventually replaces Router and so on
 // -----------------------------------------------------
 
-export function new_Router({ routerData = DEFAULT_ROUTER_DATA }) {
-  return ('TODO' + routerData) as never;
-}
+type NewChangeRoute = (
+  route: RouteProps,
+  options?: {
+    skipRefetch?: boolean;
+  },
+) => void;
 
-// TODO: Do we need new_ServerRouter? Hope to avoid it.
+const NewInnerRouter = ({
+  routerData,
+  cachedIdSetRef,
+  staticPathSetRef,
+}: {
+  routerData: RouterData;
+  cachedIdSetRef: MutableRefObject<Set<string>>;
+  staticPathSetRef: MutableRefObject<Set<string>>;
+}) => {
+  const refetch = useRefetch();
+  const initialRouteRef = useRef<RouteProps>();
+  if (!initialRouteRef.current) {
+    initialRouteRef.current = parseRouteFromLocation();
+  }
+  const [route, setRoute] = useState(() => ({
+    // This is the first initialization of the route, and it has
+    // to ignore the hash, because on server side there is none.
+    // Otherwise there will be a hydration error.
+    // The client side route, including the hash, will be updated in the effect below.
+    ...initialRouteRef.current!,
+    hash: '',
+  }));
+  // Update the route post-load to include the current hash.
+  useEffect(() => {
+    const initialRoute = initialRouteRef.current!;
+    setRoute((prev) => {
+      if (
+        prev.path === initialRoute.path &&
+        prev.query === initialRoute.query &&
+        prev.hash === initialRoute.hash
+      ) {
+        return prev;
+      }
+      return initialRoute;
+    });
+  }, []);
+
+  const changeRoute: NewChangeRoute = useCallback(
+    (route, options) => {
+      const { skipRefetch } = options || {};
+      startTransition(() => {
+        setRoute(route);
+      });
+      if (staticPathSetRef.current.has(route.path)) {
+        return;
+      }
+      const skip = Array.from(cachedIdSetRef.current);
+      const rscPath = encodeRoutePath(route.path);
+      if (!skipRefetch) {
+        refetch(rscPath, JSON.stringify({ query: route.query, skip }));
+      }
+    },
+    [refetch, cachedIdSetRef, staticPathSetRef],
+  );
+
+  const prefetchRoute: PrefetchRoute = useCallback(
+    (route) => {
+      if (staticPathSetRef.current.has(route.path)) {
+        return;
+      }
+      const skip = Array.from(cachedIdSetRef.current);
+      const rscPath = encodeRoutePath(route.path);
+      prefetchRsc(rscPath, JSON.stringify({ query: route.query, skip }));
+      (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(route.path);
+    },
+    [cachedIdSetRef, staticPathSetRef],
+  );
+
+  useEffect(() => {
+    const callback = () => {
+      const route = parseRoute(new URL(window.location.href));
+      changeRoute(route);
+    };
+    window.addEventListener('popstate', callback);
+    return () => {
+      window.removeEventListener('popstate', callback);
+    };
+  }, [changeRoute]);
+
+  useEffect(() => {
+    const callback = (path: string, query: string) => {
+      const url = new URL(window.location.href);
+      url.pathname = path;
+      url.search = query;
+      url.hash = '';
+      if (path !== '/404') {
+        window.history.pushState(
+          {
+            ...window.history.state,
+            waku_new_path: url.pathname !== window.location.pathname,
+          },
+          '',
+          url,
+        );
+      }
+      changeRoute(parseRoute(url), { skipRefetch: true });
+    };
+    const listeners = (routerData[1] ||= new Set());
+    listeners.add(callback);
+    return () => {
+      listeners.delete(callback);
+    };
+  }, [changeRoute, routerData]);
+
+  useEffect(() => {
+    const { hash } = window.location;
+    const { state } = window.history;
+    const element = hash && document.getElementById(hash.slice(1));
+    window.scrollTo({
+      left: 0,
+      top: element ? element.getBoundingClientRect().top + window.scrollY : 0,
+      behavior: state?.waku_new_path ? 'instant' : 'auto',
+    });
+  });
+
+  const rootElement = createElement(Slot, { id: '_root' });
+
+  return createElement(
+    RouterContext.Provider,
+    { value: { route, changeRoute, prefetchRoute } },
+    rootElement,
+  );
+};
+
+export function NewRouter({ routerData = DEFAULT_ROUTER_DATA }) {
+  const route = parseRouteFromLocation();
+  const initialRscPath = encodeRoutePath(route.path);
+  const cachedIdSetRef = useRef(new Set<string>());
+  const staticPathSetRef = useRef(new Set<string>());
+  const unstable_enhanceCreateData =
+    (
+      createData: (
+        responsePromise: Promise<Response>,
+      ) => Promise<Record<string, ReactNode>>,
+    ) =>
+    async (responsePromise: Promise<Response>) => {
+      const response = await responsePromise;
+      const has404 = routerData[2];
+      if (response.status === 404 && has404) {
+        // HACK this is still an experimental logic. It's very fragile.
+        // FIXME we should cache it if 404.txt is static.
+        return fetchRsc(encodeRoutePath('/404'));
+      }
+      const data = createData(responsePromise);
+      Promise.resolve(data)
+        .then((data) => {
+          if (data && typeof data === 'object') {
+            const {
+              [ROUTE_ID]: routeData,
+              [IS_STATIC_ID]: isStatic,
+              [HAS404_ID]: has404,
+              ...rest
+            } = data;
+            if (routeData) {
+              const [path, query] = routeData as [string, string];
+              // FIXME this check here seems ad-hoc (less readable code)
+              if (
+                window.location.pathname !== path ||
+                window.location.search.replace(/^\?/, '') !== query
+              ) {
+                routerData[1]?.forEach((listener) => listener(path, query));
+              }
+              if (isStatic) {
+                staticPathSetRef.current.add(path);
+              }
+            }
+            if (has404) {
+              routerData[2] = true;
+            }
+            Object.keys(rest).forEach((id) => {
+              cachedIdSetRef.current.add(id);
+            });
+          }
+        })
+        .catch(() => {});
+      return data;
+    };
+  const initialRscParams = JSON.stringify({ query: route.query });
+  return createElement(
+    ErrorBoundary,
+    null,
+    createElement(
+      Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
+      { initialRscPath, initialRscParams, unstable_enhanceCreateData },
+      createElement(NewInnerRouter, {
+        routerData,
+        cachedIdSetRef,
+        staticPathSetRef,
+      }),
+    ),
+  );
+}
