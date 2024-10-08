@@ -75,6 +75,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+      - run: echo "node-linker = hoisted" >> .npmrc
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.version }}
