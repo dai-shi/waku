@@ -812,3 +812,26 @@ export function NewRouter({ routerData = DEFAULT_ROUTER_DATA }) {
     ),
   );
 }
+
+/**
+ * ServerRouter for SSR
+ * This is not a public API.
+ */
+export function NewServerRouter({ route }: { route: RouteProps }) {
+  const rootElement = createElement(Slot, { id: 'root' });
+  return createElement(
+    Fragment,
+    null,
+    createElement(
+      RouterContext.Provider,
+      {
+        value: {
+          route,
+          changeRoute: notAvailableInServer('changeRoute'),
+          prefetchRoute: notAvailableInServer('prefetchRoute'),
+        },
+      },
+      rootElement,
+    ),
+  );
+}
