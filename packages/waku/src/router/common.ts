@@ -12,7 +12,7 @@ export function getComponentIds(path: string): readonly string[] {
     idSet.add(id);
   }
   idSet.add([...pathItems, 'page'].join('/'));
-  return Array.from(idSet);
+  return ['root', ...Array.from(idSet)];
 }
 
 const ROUTE_PREFIX = 'R';

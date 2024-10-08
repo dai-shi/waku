@@ -17,56 +17,49 @@ const Pending = ({ isPending }: { isPending: boolean }) => (
 );
 
 const HomeLayout = ({ children }: { children: ReactNode }) => (
-  <html>
-    <head>
-      <title>Waku</title>
-    </head>
-    <body>
-      <div>
-        <ul>
-          <li>
-            <Link
-              to="/"
-              pending={<Pending isPending />}
-              notPending={<Pending isPending={false} />}
-            >
-              Home
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/foo"
-              pending={<Pending isPending />}
-              notPending={<Pending isPending={false} />}
-            >
-              Foo
-            </Link>
-          </li>
-          <li>
-            <Link to="/bar" unstable_prefetchOnEnter>
-              Bar
-            </Link>
-          </li>
-          <li>
-            <Link to="/baz">Baz</Link>
-          </li>
-          <li>
-            <Link to="/nested/foo">Nested / Foo</Link>
-          </li>
-          <li>
-            <Link to="/nested/bar">Nested / Bar</Link>
-          </li>
-          <li>
-            <Link to="/nested/baz">Nested / Baz</Link>
-          </li>
-          <li>
-            <Link to="/nested/qux">Nested / Qux</Link>
-          </li>
-        </ul>
-        {children}
-      </div>
-    </body>
-  </html>
+  <div>
+    <ul>
+      <li>
+        <Link
+          to="/"
+          pending={<Pending isPending />}
+          notPending={<Pending isPending={false} />}
+        >
+          Home
+        </Link>
+      </li>
+      <li>
+        <Link
+          to="/foo"
+          pending={<Pending isPending />}
+          notPending={<Pending isPending={false} />}
+        >
+          Foo
+        </Link>
+      </li>
+      <li>
+        <Link to="/bar" unstable_prefetchOnEnter>
+          Bar
+        </Link>
+      </li>
+      <li>
+        <Link to="/baz">Baz</Link>
+      </li>
+      <li>
+        <Link to="/nested/foo">Nested / Foo</Link>
+      </li>
+      <li>
+        <Link to="/nested/bar">Nested / Bar</Link>
+      </li>
+      <li>
+        <Link to="/nested/baz">Nested / Baz</Link>
+      </li>
+      <li>
+        <Link to="/nested/qux">Nested / Qux</Link>
+      </li>
+    </ul>
+    {children}
+  </div>
 );
 
 export default HomeLayout;

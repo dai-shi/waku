@@ -18,46 +18,39 @@ const Pending = ({ isPending }: { isPending: boolean }) => (
 
 const BarLayout = ({ children }: { children: ReactNode }) => {
   return (
-    <html>
-      <head>
-        <title>Waku</title>
-      </head>
-      <body>
-        <div>
-          <p>This Layout is expected to be static</p>
-          <ul>
-            <li>
-              <Link
-                to="/"
-                pending={<Pending isPending />}
-                notPending={<Pending isPending={false} />}
-              >
-                Home
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/foo"
-                pending={<Pending isPending />}
-                notPending={<Pending isPending={false} />}
-              >
-                Foo
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/nested/bar"
-                pending={<Pending isPending />}
-                notPending={<Pending isPending={false} />}
-              >
-                Nested / Bar
-              </Link>
-            </li>
-          </ul>
-          {children}
-        </div>
-      </body>
-    </html>
+    <div>
+      <p>This Layout is expected to be static</p>
+      <ul>
+        <li>
+          <Link
+            to="/"
+            pending={<Pending isPending />}
+            notPending={<Pending isPending={false} />}
+          >
+            Home
+          </Link>
+        </li>
+        <li>
+          <Link
+            to="/foo"
+            pending={<Pending isPending />}
+            notPending={<Pending isPending={false} />}
+          >
+            Foo
+          </Link>
+        </li>
+        <li>
+          <Link
+            to="/nested/bar"
+            pending={<Pending isPending />}
+            notPending={<Pending isPending={false} />}
+          >
+            Nested / Bar
+          </Link>
+        </li>
+      </ul>
+      {children}
+    </div>
   );
 };
 

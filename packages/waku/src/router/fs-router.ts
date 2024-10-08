@@ -11,7 +11,7 @@ export function fsRouter(
   pages = 'pages',
 ) {
   const platformObject = unstable_getPlatformObject();
-  return createPages(async ({ createPage, createLayout }) => {
+  return createPages(async ({ createPage, createLayout, createRoot }) => {
     let files: string[] | undefined = platformObject.buildData
       ?.fsRouterFiles as string[] | undefined;
     if (!files) {
@@ -60,13 +60,19 @@ export function fsRouter(
         .filter(Boolean);
       const path =
         '/' +
-        (['_layout', 'index'].includes(pathItems.at(-1)!)
+        (['_layout', 'index', '_root'].includes(pathItems.at(-1)!)
           ? pathItems.slice(0, -1)
           : pathItems
         ).join('/');
       if (pathItems.at(-1) === '_layout') {
         createLayout({
           path,
+          component: mod.default,
+          render: 'static',
+          ...config,
+        });
+      } else if (pathItems.at(-1) === '_root') {
+        createRoot({
           component: mod.default,
           render: 'static',
           ...config,

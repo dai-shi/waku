@@ -56,7 +56,7 @@ export function unstable_defineRouter(
     }>
   >,
   getComponent: (
-    componentId: string, // "**/layout" or "**/page"
+    componentId: string, // "**/layout" or "**/page" or "root"
     options: {
       // TODO setShouldSkip API is too hard to understand
       unstable_setShouldSkip: (val?: ShouldSkipValue) => void;
@@ -64,6 +64,7 @@ export function unstable_defineRouter(
   ) => Promise<
     | FunctionComponent<RouteProps>
     | FunctionComponent<RoutePropsForLayout>
+    | FunctionComponent<{ children: ReactNode }>
     | null
   >,
 ): ReturnType<typeof defineEntries> {
@@ -143,7 +144,7 @@ export function unstable_defineRouter(
           if (skip?.includes(id)) {
             return [];
           }
-          const setShoudSkip = (val?: ShouldSkipValue) => {
+          const setShouldSkip = (val?: ShouldSkipValue) => {
             if (val) {
               shouldSkipObj[id] = val;
             } else {
@@ -151,7 +152,7 @@ export function unstable_defineRouter(
             }
           };
           const component = await getComponent(id, {
-            unstable_setShouldSkip: setShoudSkip,
+            unstable_setShouldSkip: setShouldSkip,
           });
           if (!component) {
             return [];
