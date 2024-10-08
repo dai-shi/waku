@@ -142,9 +142,10 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
               hasGetConfig,
             });
           } else if (filePath.endsWith('/index.tsx')) {
+            const path = filePath.replace('index.tsx', '');
             fileInfo.push({
               type: 'page',
-              path: filePath.replace('index.tsx', ''),
+              path: path.length === 1 ? '/' : path.slice(0, -1), // remove trailing slash
               src,
               hasGetConfig,
             });
