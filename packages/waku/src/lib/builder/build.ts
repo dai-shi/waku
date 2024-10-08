@@ -251,6 +251,9 @@ const buildServerBundle = async (
     esbuild: {
       jsx: 'automatic',
     },
+    resolve: {
+      conditions: ['import', 'module', 'default'],
+    },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
     },
@@ -310,6 +313,9 @@ const buildSsrBundle = async (
     },
     esbuild: {
       jsx: 'automatic',
+    },
+    resolve: {
+      conditions: ['import', 'module', 'default'],
     },
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),

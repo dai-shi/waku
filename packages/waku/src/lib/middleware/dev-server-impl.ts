@@ -113,6 +113,9 @@ const createMainViteServer = (
         rscHmrPlugin(),
         fsRouterTypegenPlugin(config),
       ],
+      resolve: {
+        conditions: ['import', 'module', 'default'],
+      },
       optimizeDeps: {
         include: ['react-server-dom-webpack/client', 'react-dom'],
         exclude: ['waku', 'rsc-html-stream/server'],
