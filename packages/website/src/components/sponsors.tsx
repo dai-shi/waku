@@ -18,7 +18,9 @@ export const Sponsors = ({ className = '' }: SponsorsProps) => {
     setActiveIndex((prevIndex) => (prevIndex + 1) % sponsors.length);
   }, INTERVAL);
 
-  if (import.meta.env.WAKU_PUBLIC_SHOW_SPONSORS !== 'YES') return null;
+  if (import.meta.env.WAKU_PUBLIC_SHOW_SPONSORS !== 'YES') {
+    return null;
+  }
 
   return (
     <div className={cx('pointer-events-none relative w-full', className)}>

@@ -39,13 +39,13 @@ test.describe(`partial builds`, () => {
 
   test('does not change pages that already exist', async () => {
     const htmlBefore = statSync(`${cwd}/dist/public/page/a/index.html`);
-    const rscBefore = statSync(`${cwd}/dist/public/RSC/page/a.txt`);
+    const rscBefore = statSync(`${cwd}/dist/public/RSC/R/page/a.txt`);
     execSync(`node ${waku} build --experimental-partial`, {
       cwd,
       env: { ...process.env, PAGES: 'a,b' },
     });
     const htmlAfter = statSync(`${cwd}/dist/public/page/a/index.html`);
-    const rscAfter = statSync(`${cwd}/dist/public/RSC/page/a.txt`);
+    const rscAfter = statSync(`${cwd}/dist/public/RSC/R/page/a.txt`);
     expect(htmlBefore.mtimeMs).toBe(htmlAfter.mtimeMs);
     expect(rscBefore.mtimeMs).toBe(rscAfter.mtimeMs);
   });

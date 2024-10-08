@@ -5,7 +5,8 @@ import {
   toIdentifier,
 } from '../src/lib/plugins/vite-plugin-fs-router-typegen.js';
 import { fileURLToPath } from 'node:url';
-import { FSWatcher, ViteDevServer } from 'vite';
+import type { ViteDevServer } from 'vite';
+import { FSWatcher } from 'vite';
 import { writeFile } from 'node:fs/promises';
 
 const root = fileURLToPath(new URL('./fixtures', import.meta.url));
@@ -57,6 +58,7 @@ async function runTest(
 describe('vite-plugin-fs-router-typegen', () => {
   test('generates valid module names for fs entries', async () => {
     expect(toIdentifier('/_layout.tsx')).toBe('Layout');
+    expect(toIdentifier('/_root.tsx')).toBe('Root');
     expect(toIdentifier('/[category]/[...tags]/index.tsx')).toBe(
       'CategoryTagsIndex',
     );
@@ -88,6 +90,7 @@ describe('vite-plugin-fs-router-typegen', () => {
       `import CategoryTagsIndex, { getConfig as CategoryTagsIndex_getConfig } from './pages/[category]/[...tags]/index';
 import CategoryLayout, { getConfig as CategoryLayout_getConfig } from './pages/[category]/_layout';
 import Layout, { getConfig as Layout_getConfig } from './pages/_layout';
+import Root, { getConfig as Root_getConfig } from './pages/_root';
 import Index, { getConfig as Index_getConfig } from './pages/index';
 import OneTwoThree, { getConfig as OneTwoThree_getConfig } from './pages/one-two-three';
 import OneTwoThree_1, { getConfig as OneTwoThree_1_getConfig } from './pages/one__two_three';

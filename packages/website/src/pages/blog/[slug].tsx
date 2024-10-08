@@ -14,7 +14,9 @@ type BlogArticlePageProps = {
 export default async function BlogArticlePage({ slug }: BlogArticlePageProps) {
   const fileName = await getFileName(slug);
 
-  if (!fileName) return null;
+  if (!fileName) {
+    return null;
+  }
 
   const path = `./private/contents/${fileName}`;
   const source = readFileSync(path, 'utf8');

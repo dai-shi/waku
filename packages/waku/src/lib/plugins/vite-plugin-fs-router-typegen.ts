@@ -3,7 +3,6 @@ import { readdir, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { SRC_ENTRIES, EXTENSIONS } from '../constants.js';
 import { joinPath } from '../utils/path.js';
-import { getRscPath } from '../../router/common.js';
 
 const SRC_PAGES = 'pages';
 
@@ -26,7 +25,9 @@ export function toIdentifier(input: string): string {
   return identifier
     .split('_')
     .map((part) => {
-      if (part[0] === undefined) return '';
+      if (part[0] === undefined) {
+        return '';
+      }
       return part[0].toUpperCase() + part.slice(1);
     })
     .join('');
@@ -44,7 +45,7 @@ export function getImportModuleNames(filePaths: string[]): {
       identifier = `${identifier}_${moduleNameCount[identifier]}`;
     }
     try {
-      moduleNames[getRscPath(filePath)] = identifier;
+      moduleNames[filePath.replace(/^\//, '')] = identifier;
     } catch (e) {
       console.log(e);
     }
@@ -113,7 +114,9 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
       };
 
       const fileExportsGetConfig = (filePath: string) => {
-        if (!pagesDir) return false;
+        if (!pagesDir) {
+          return false;
+        }
         const file = readFileSync(pagesDir + filePath).toString();
 
         return (
@@ -128,7 +131,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
 
         for (const filePath of filePaths) {
           // where to import the component from
-          const src = getRscPath(filePath);
+          const src = filePath.replace(/^\//, '');
           const hasGetConfig = fileExportsGetConfig(filePath);
 
           if (filePath.endsWith('/_layout.tsx')) {
@@ -188,7 +191,9 @@ import type { PathsForPages } from 'waku/router';\n\n`;
       };
 
       const updateGeneratedFile = async () => {
-        if (!pagesDir || !outputFile) return;
+        if (!pagesDir || !outputFile) {
+          return;
+        }
         const files = await collectFiles(pagesDir);
         const formatted = await formatter(generateFile(files));
         await writeFile(outputFile, formatted, 'utf-8');
@@ -196,12 +201,16 @@ import type { PathsForPages } from 'waku/router';\n\n`;
 
       server.watcher.add(opts.srcDir);
       server.watcher.on('change', async (file) => {
-        if (!outputFile || outputFile.endsWith(file)) return;
+        if (!outputFile || outputFile.endsWith(file)) {
+          return;
+        }
 
         await updateGeneratedFile();
       });
       server.watcher.on('add', async (file) => {
-        if (!outputFile || outputFile.endsWith(file)) return;
+        if (!outputFile || outputFile.endsWith(file)) {
+          return;
+        }
 
         await updateGeneratedFile();
       });

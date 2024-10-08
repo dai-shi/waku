@@ -345,15 +345,21 @@ export const devServer: Middleware = (options) => {
       const processedModules = new Set<string>();
 
       const processModule = async (modulePath: string) => {
-        if (processedModules.has(modulePath)) return;
+        if (processedModules.has(modulePath)) {
+          return;
+        }
         processedModules.add(modulePath);
 
         await vite.transformRequest(modulePath);
         const resolved = await vite.pluginContainer.resolveId(modulePath);
-        if (!resolved) return;
+        if (!resolved) {
+          return;
+        }
 
         const module = vite.moduleGraph.idToModuleMap.get(resolved.id);
-        if (!module) return;
+        if (!module) {
+          return;
+        }
 
         await Promise.all(
           Array.from(module.importedModules).map(async (importedModule) => {

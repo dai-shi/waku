@@ -8,7 +8,9 @@ type PokemonPageProps = { slug: string };
 export default async function PokemonPage({ slug }: PokemonPageProps) {
   const pokemon = await getPokemon(slug);
 
-  if (!pokemon) return null;
+  if (!pokemon) {
+    return null;
+  }
 
   const stats = Object.entries(pokemon.base);
 
