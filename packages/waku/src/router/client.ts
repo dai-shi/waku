@@ -309,24 +309,25 @@ const RouterSlot = ({
   );
 };
 
-const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
+const InnerRouter = ({
+  routerData,
+  initialRoute,
+}: {
+  routerData: RouterData;
+  initialRoute: RouteProps;
+}) => {
   const refetch = useRefetch();
 
-  const initialRouteRef = useRef<RouteProps>();
-  if (!initialRouteRef.current) {
-    initialRouteRef.current = parseRouteFromLocation();
-  }
   const [route, setRoute] = useState(() => ({
     // This is the first initialization of the route, and it has
     // to ignore the hash, because on server side there is none.
     // Otherwise there will be a hydration error.
     // The client side route, including the hash, will be updated in the effect below.
-    ...initialRouteRef.current!,
+    ...initialRoute,
     hash: '',
   }));
   // Update the route post-load to include the current hash.
   useEffect(() => {
-    const initialRoute = initialRouteRef.current!;
     setRoute((prev) => {
       if (
         prev.path === initialRoute.path &&
@@ -337,7 +338,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       }
       return initialRoute;
     });
-  }, []);
+  }, [initialRoute]);
 
   const componentIds = getComponentIds(route.path);
 
@@ -486,9 +487,11 @@ type RouterData = [
 
 const DEFAULT_ROUTER_DATA: RouterData = [];
 
-export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
-  const route = parseRouteFromLocation();
-  const initialRscPath = encodeRoutePath(route.path);
+export function Router({
+  routerData = DEFAULT_ROUTER_DATA,
+  initialRoute = parseRouteFromLocation(),
+}) {
+  const initialRscPath = encodeRoutePath(initialRoute.path);
   const unstable_enhanceCreateData =
     (
       createData: (
@@ -530,46 +533,14 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
         .catch(() => {});
       return data;
     };
-  const initialRscParams = JSON.stringify({ query: route.query });
+  const initialRscParams = JSON.stringify({ query: initialRoute.query });
   return createElement(
     ErrorBoundary,
     null,
     createElement(
       Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
       { initialRscPath, initialRscParams, unstable_enhanceCreateData },
-      createElement(InnerRouter, { routerData }),
-    ),
-  );
-}
-
-const notAvailableInServer = (name: string) => () => {
-  throw new Error(`${name} is not in the server`);
-};
-
-/**
- * ServerRouter for SSR
- * This is not a public API.
- */
-export function ServerRouter({
-  children,
-  route,
-}: {
-  children: ReactNode;
-  route: RouteProps;
-}) {
-  return createElement(
-    Fragment,
-    null,
-    createElement(
-      RouterContext.Provider,
-      {
-        value: {
-          route,
-          changeRoute: notAvailableInServer('changeRoute'),
-          prefetchRoute: notAvailableInServer('prefetchRoute'),
-        },
-      },
-      children,
+      createElement(InnerRouter, { routerData, initialRoute }),
     ),
   );
 }

@@ -1,5 +1,5 @@
 import { createElement } from 'react';
-import type { ComponentProps, FunctionComponent, ReactNode } from 'react';
+import type { FunctionComponent, ReactNode } from 'react';
 
 import {
   defineEntries,
@@ -12,7 +12,7 @@ import type {
   GetBuildConfig,
   GetSsrConfig,
 } from '../server.js';
-import { Children, Slot } from '../client.js';
+import { Children } from '../client.js';
 import {
   getComponentIds,
   encodeRoutePath,
@@ -24,7 +24,7 @@ import {
 import type { RouteProps, ShouldSkip } from './common.js';
 import { getPathMapping } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
-import { ServerRouter } from './client.js';
+import { Router } from './client.js';
 
 type RoutePropsForLayout = Omit<RouteProps, 'query'> & {
   children: ReactNode;
@@ -240,18 +240,15 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         return null;
       }
     }
-    const componentIds = getComponentIds(pathname);
     const rscPath = encodeRoutePath(pathname);
-    const html = createElement(
-      ServerRouter as FunctionComponent<
-        Omit<ComponentProps<typeof ServerRouter>, 'children'>
-      >,
-      { route: { path: pathname, query: searchParams.toString(), hash: '' } },
-      componentIds.reduceRight(
-        (acc: ReactNode, id) => createElement(Slot, { id, fallback: acc }, acc),
-        null,
-      ),
-    );
+    const html = createElement(Router, {
+      routerData: [],
+      initialRoute: {
+        path: pathname,
+        query: searchParams.toString(),
+        hash: '',
+      },
+    });
     return {
       rscPath,
       rscParams: JSON.stringify({ query: searchParams.toString() }),
