@@ -59,6 +59,7 @@ jobs:
       fail-fast: false
       matrix:
         shared: [1, 2, 3, 4]
+        shardTotal: [4]
         os: [ubuntu-latest, windows-latest, macos-latest]
         version: [18.17.0, 20.8.0, 22.7.0]
         exclude:
@@ -92,7 +93,7 @@ jobs:
       - name: Install Playwright
         id: install-playwright
         uses: ./.github/actions/playwright
-      - run: pnpm exec playwright test --forbid-only --shard=${{ matrix.shared }}/4
+      - run: pnpm exec playwright test --shard=${{ matrix.shared }}/${{ matrix.shardTotal }}
         env:
           TEMP_DIR: ${{ runner.temp }}
       - uses: actions/upload-artifact@v3
