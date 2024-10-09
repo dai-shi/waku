@@ -620,6 +620,18 @@ type NewChangeRoute = (
   },
 ) => void;
 
+const getRouteSlotId = (path: string) => {
+  if (!path.startsWith('/')) {
+    throw new Error('Invalid path');
+  }
+  if (path === '/') {
+    path = '';
+  } else if (path.endsWith('/')) {
+    throw new Error('Invalid path');
+  }
+  return 'route' + path;
+};
+
 const NewInnerRouter = ({
   routerData,
   cachedIdSetRef,
@@ -735,18 +747,19 @@ const NewInnerRouter = ({
     });
   });
 
-  const rootElement = createElement(Slot, { id: 'root' });
+  const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
 
   return createElement(
     RouterContext.Provider,
     { value: { route, changeRoute, prefetchRoute } },
-    rootElement,
+    routeElement,
   );
 };
 
 export function NewRouter({ routerData = DEFAULT_ROUTER_DATA }) {
   const route = parseRouteFromLocation();
   const initialRscPath = encodeRoutePath(route.path);
+  // FIXME cachedIdSetRef and staticPathSetRef should be initialized from the initial RSC payload
   const cachedIdSetRef = useRef(new Set<string>());
   const staticPathSetRef = useRef(new Set<string>());
   const unstable_enhanceCreateData =
@@ -818,7 +831,7 @@ export function NewRouter({ routerData = DEFAULT_ROUTER_DATA }) {
  * This is not a public API.
  */
 export function NewServerRouter({ route }: { route: RouteProps }) {
-  const rootElement = createElement(Slot, { id: 'root' });
+  const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
   return createElement(
     Fragment,
     null,
@@ -831,7 +844,7 @@ export function NewServerRouter({ route }: { route: RouteProps }) {
           prefetchRoute: notAvailableInServer('prefetchRoute'),
         },
       },
-      rootElement,
+      routeElement,
     ),
   );
 }
