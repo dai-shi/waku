@@ -145,7 +145,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
             const path = filePath.slice(0, -'/index.tsx'.length);
             fileInfo.push({
               type: 'page',
-              path: path.length || '/',
+              path: path || '/',
               src,
               hasGetConfig,
             });
