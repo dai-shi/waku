@@ -164,11 +164,15 @@ export async function renderRsc(
         elementsPromise = Promise.all([
           elementsPromise,
           renderEntries(rscPath, { rscParams }),
-        ]).then(([oldElements, newElements]) => ({
-          ...oldElements,
-          // FIXME we should actually check if newElements is null and send an error
-          ...newElements,
-        }));
+        ]).then(([oldElements, newElements]) => {
+          if (newElements === null) {
+            console.warn('renderEntries returned null');
+          }
+          return {
+            ...oldElements,
+            ...newElements,
+          };
+        });
       },
     };
     return runWithRenderStoreInternal(renderStore, async () => {
