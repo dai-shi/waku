@@ -634,29 +634,26 @@ const getRouteSlotId = (path: string) => {
 
 const NewInnerRouter = ({
   routerData,
+  initialRoute,
   cachedIdSetRef,
   staticPathSetRef,
 }: {
   routerData: RouterData;
+  initialRoute: RouteProps;
   cachedIdSetRef: MutableRefObject<Set<string>>;
   staticPathSetRef: MutableRefObject<Set<string>>;
 }) => {
   const refetch = useRefetch();
-  const initialRouteRef = useRef<RouteProps>();
-  if (!initialRouteRef.current) {
-    initialRouteRef.current = parseRouteFromLocation();
-  }
   const [route, setRoute] = useState(() => ({
     // This is the first initialization of the route, and it has
     // to ignore the hash, because on server side there is none.
     // Otherwise there will be a hydration error.
     // The client side route, including the hash, will be updated in the effect below.
-    ...initialRouteRef.current!,
+    ...initialRoute,
     hash: '',
   }));
   // Update the route post-load to include the current hash.
   useEffect(() => {
-    const initialRoute = initialRouteRef.current!;
     setRoute((prev) => {
       if (
         prev.path === initialRoute.path &&
@@ -667,7 +664,7 @@ const NewInnerRouter = ({
       }
       return initialRoute;
     });
-  }, []);
+  }, [initialRoute]);
 
   const changeRoute: NewChangeRoute = useCallback(
     (route, options) => {
@@ -756,9 +753,11 @@ const NewInnerRouter = ({
   );
 };
 
-export function NewRouter({ routerData = DEFAULT_ROUTER_DATA }) {
-  const route = parseRouteFromLocation();
-  const initialRscPath = encodeRoutePath(route.path);
+export function NewRouter({
+  routerData = DEFAULT_ROUTER_DATA,
+  initialRoute = parseRouteFromLocation(),
+}) {
+  const initialRscPath = encodeRoutePath(initialRoute.path);
   // FIXME cachedIdSetRef and staticPathSetRef should be initialized from the initial RSC payload
   const cachedIdSetRef = useRef(new Set<string>());
   const staticPathSetRef = useRef(new Set<string>());
@@ -810,7 +809,7 @@ export function NewRouter({ routerData = DEFAULT_ROUTER_DATA }) {
         .catch(() => {});
       return data;
     };
-  const initialRscParams = JSON.stringify({ query: route.query });
+  const initialRscParams = JSON.stringify({ query: initialRoute.query });
   return createElement(
     ErrorBoundary,
     null,
@@ -819,6 +818,7 @@ export function NewRouter({ routerData = DEFAULT_ROUTER_DATA }) {
       { initialRscPath, initialRscParams, unstable_enhanceCreateData },
       createElement(NewInnerRouter, {
         routerData,
+        initialRoute,
         cachedIdSetRef,
         staticPathSetRef,
       }),
