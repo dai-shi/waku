@@ -132,7 +132,7 @@ export const getConfig = async () => {
   return {
     render: 'static',
     staticPaths: blogPaths,
-  };
+  } as const;
 };
 
 const getBlogPaths = async () => {
