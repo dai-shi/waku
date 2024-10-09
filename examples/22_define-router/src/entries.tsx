@@ -15,30 +15,30 @@ export default new_defineRouter({
         pattern: '/',
         path: [],
         components: {
-          route: { isStatic: true },
+          'route:/': { isStatic: true },
           root: { isStatic: true },
-          layout: { isStatic: true },
-          page: { isStatic: true },
+          'layout:/': { isStatic: true },
+          'page:/': { isStatic: true },
         },
       },
       {
         pattern: '/foo',
         path: [{ type: 'literal', name: 'foo' }],
         components: {
-          'route/foo': { isStatic: true },
+          'route:/foo': { isStatic: true },
           root: { isStatic: true },
-          layout: { isStatic: true },
-          'page/foo': { isStatic: true },
+          'layout:/': { isStatic: true },
+          'page:/foo': { isStatic: true },
         },
       },
       {
         pattern: '/bar',
         path: [{ type: 'literal', name: 'bar' }],
         components: {
-          'route/bar': { isStatic: true },
+          'route:/bar': { isStatic: true },
           root: { isStatic: true },
-          layout: { isStatic: true },
-          'page/bar': { isStatic: true },
+          'layout:/': { isStatic: true },
+          'page:/bar': { isStatic: true },
         },
       },
       {
@@ -48,10 +48,10 @@ export default new_defineRouter({
           { type: 'literal', name: 'baz' },
         ],
         components: {
-          'route/nested/baz': { isStatic: true },
+          'route:/nested/baz': { isStatic: true },
           root: { isStatic: true },
-          layout: { isStatic: true },
-          'page/nested/baz': { isStatic: true },
+          'layout:/': { isStatic: true },
+          'page:/nested/baz': { isStatic: true },
         },
       },
     ];
@@ -65,10 +65,10 @@ export default new_defineRouter({
       );
     if (path === '/') {
       return processSkip({
-        route: (
+        'route:/': (
           <Slot id="root">
-            <Slot id="layout">
-              <Slot id="page" />
+            <Slot id="layout:/">
+              <Slot id="page:/" />
             </Slot>
           </Slot>
         ),
@@ -77,20 +77,20 @@ export default new_defineRouter({
             <Children />
           </Root>
         ),
-        layout: (
+        'layout:/': (
           <HomeLayout>
             <Children />
           </HomeLayout>
         ),
-        page: <HomePage />,
+        'page:/': <HomePage />,
       });
     }
     if (path === '/foo') {
       return processSkip({
-        'route/foo': (
+        'route:/foo': (
           <Slot id="root">
-            <Slot id="layout">
-              <Slot id="page/foo" />
+            <Slot id="layout:/">
+              <Slot id="page:/foo" />
             </Slot>
           </Slot>
         ),
@@ -99,20 +99,20 @@ export default new_defineRouter({
             <Children />
           </Root>
         ),
-        layout: (
+        'layout:/': (
           <HomeLayout>
             <Children />
           </HomeLayout>
         ),
-        'page/foo': <FooPage />,
+        'page:/foo': <FooPage />,
       });
     }
     if (path === '/bar') {
       return processSkip({
-        'route/bar': (
+        'route:/bar': (
           <Slot id="root">
-            <Slot id="layout">
-              <Slot id="page/bar" />
+            <Slot id="layout:/">
+              <Slot id="page:/bar" />
             </Slot>
           </Slot>
         ),
@@ -121,20 +121,20 @@ export default new_defineRouter({
             <Children />
           </Root>
         ),
-        layout: (
+        'layout:/': (
           <HomeLayout>
             <Children />
           </HomeLayout>
         ),
-        'page/bar': <BarPage />,
+        'page:/bar': <BarPage />,
       });
     }
     if (path === '/nested/baz') {
       return processSkip({
-        'route/nested/baz': (
+        'route:/nested/baz': (
           <Slot id="root">
-            <Slot id="layout">
-              <Slot id="page/nested/baz" />
+            <Slot id="layout:/">
+              <Slot id="page:/nested/baz" />
             </Slot>
           </Slot>
         ),
@@ -143,12 +143,12 @@ export default new_defineRouter({
             <Children />
           </Root>
         ),
-        layout: (
+        'layout:/': (
           <HomeLayout>
             <Children />
           </HomeLayout>
         ),
-        'page/nested/baz': <NestedBazPage />,
+        'page:/nested/baz': <NestedBazPage />,
       });
     }
     throw new Error('renderRoute: No such path:' + path);

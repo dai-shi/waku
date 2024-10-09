@@ -620,17 +620,7 @@ type NewChangeRoute = (
   },
 ) => void;
 
-const getRouteSlotId = (path: string) => {
-  if (!path.startsWith('/')) {
-    throw new Error('Invalid path');
-  }
-  if (path === '/') {
-    path = '';
-  } else if (path.endsWith('/')) {
-    throw new Error('Invalid path');
-  }
-  return 'route' + path;
-};
+const getRouteSlotId = (path: string) => 'route:' + path;
 
 const NewInnerRouter = ({
   routerData,
