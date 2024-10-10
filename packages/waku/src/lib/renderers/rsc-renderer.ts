@@ -30,7 +30,7 @@ export type RenderRscArgs = {
   context: Record<string, unknown> | undefined;
   // TODO we hope to get only decoded one
   decodedBody?: unknown;
-  body?: ReadableStream | undefined;
+  body?: ReadableStream | null;
   contentType?: string | undefined;
   moduleIdCallback?: ((id: string) => void) | undefined;
   onError?: (err: unknown) => void;
