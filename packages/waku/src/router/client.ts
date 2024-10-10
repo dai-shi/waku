@@ -394,9 +394,9 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is skipped
       }
-      const rscPath = encodeRoutePath(route.path);
-      const rscParams = createRscParams(route.query, skip);
       if (!skipRefetch) {
+        const rscPath = encodeRoutePath(route.path);
+        const rscParams = createRscParams(route.query, skip);
         refetch(rscPath, rscParams);
       }
       startTransition(() => {
