@@ -4,7 +4,7 @@ import type { EntriesDev, EntriesPrd } from '../../server.js';
 export type ClonableModuleNode = { url: string; file: string };
 
 export type HandlerReq = {
-  body: ReadableStream;
+  body: ReadableStream | null;
   url: URL;
   method: string;
   headers: Record<string, string>;
@@ -19,7 +19,9 @@ export type HandlerRes = {
 export type HandlerContext = {
   readonly req: HandlerReq;
   readonly res: HandlerRes;
+  /** @deprecated use `data` */
   readonly context: Record<string, unknown>;
+  readonly data: Record<string, unknown>;
   unstable_devServer?: {
     rootDir: string;
     resolveClientEntry: (id: string) => string;

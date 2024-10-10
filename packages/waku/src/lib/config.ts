@@ -9,8 +9,8 @@ type DeepRequired<T> = T extends (...args: any[]) => any
 export type ResolvedConfig = DeepRequired<Config>;
 
 const DEFAULT_MIDDLEWARE = () => [
+  import('waku/middleware/context'),
   import('waku/middleware/dev-server'),
-  import('waku/middleware/headers'),
   import('waku/middleware/rsc'),
   import('waku/middleware/ssr'),
 ];

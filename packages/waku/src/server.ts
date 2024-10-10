@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 
 import type { Config } from './config.js';
 import type { PathSpec } from './lib/utils/path.js';
-import { REQUEST_HEADERS } from './lib/middleware/headers.js';
+import { getContext } from './lib/middleware/context.js';
 
 type Elements = Record<string, ReactNode>;
 
@@ -141,10 +141,7 @@ export function unstable_getCustomContext<
 }
 
 export function unstable_getHeaders(): Record<string, string> {
-  return (unstable_getCustomContext()[REQUEST_HEADERS] || {}) as Record<
-    string,
-    string
-  >;
+  return getContext().req.headers;
 }
 
 type PlatformObject = {
@@ -174,4 +171,28 @@ type PlatformObject = {
 // TODO tentative name
 export function unstable_getPlatformObject(): PlatformObject {
   return (globalThis as any).__WAKU_PLATFORM_OBJECT__;
+}
+
+// -----------------------------------------------------
+// new_defineEntries
+// Eventually replaces defineEntries
+// -----------------------------------------------------
+
+type HandleRequest = (req: {
+  body: ReadableStream | null;
+  pathname: string;
+  searchParams: URLSearchParams;
+  method: string;
+  headers: Record<string, string>;
+}) => Promise<{
+  body: ReadableStream | null;
+  status: number;
+  headers: Record<string, string>;
+} | null>;
+
+export function new_defineEntries(fns: {
+  handleRequest: HandleRequest;
+  getBuildConfig: GetBuildConfig;
+}) {
+  return fns;
 }

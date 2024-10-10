@@ -411,7 +411,9 @@ export const devServer: Middleware = (options) => {
     }
 
     const viteUrl = ctx.req.url.toString().slice(ctx.req.url.origin.length);
-    const viteReq: any = Readable.fromWeb(ctx.req.body as any);
+    const viteReq: any = ctx.req.body
+      ? Readable.fromWeb(ctx.req.body as never)
+      : Readable.from([]);
     viteReq.method = ctx.req.method;
     viteReq.url = viteUrl;
     viteReq.headers = ctx.req.headers;
