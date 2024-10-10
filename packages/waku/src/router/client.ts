@@ -72,6 +72,24 @@ const parseRouteFromLocation = (): RouteProps => {
   return parseRoute(new URL(window.location.href));
 };
 
+let savedRscParams:
+  | [query: string, skipStr: string, rscParams: URLSearchParams]
+  | undefined;
+
+const createRscParams = (query: string, skip: string[]): URLSearchParams => {
+  const skipStr = JSON.stringify(skip);
+  if (
+    savedRscParams &&
+    savedRscParams[0] === query &&
+    savedRscParams[1] === skipStr
+  ) {
+    return savedRscParams[2];
+  }
+  const rscParams = new URLSearchParams({ query, skip: skipStr });
+  savedRscParams = [query, skipStr, rscParams];
+  return rscParams;
+};
+
 type ChangeRoute = (
   route: RouteProps,
   options?: {
@@ -376,9 +394,10 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
       if (componentIds.every((id) => skip.includes(id))) {
         return; // everything is skipped
       }
-      const rscPath = encodeRoutePath(route.path);
       if (!skipRefetch) {
-        refetch(rscPath, JSON.stringify({ query: route.query, skip }));
+        const rscPath = encodeRoutePath(route.path);
+        const rscParams = createRscParams(route.query, skip);
+        refetch(rscPath, rscParams);
       }
       startTransition(() => {
         setCached((prev) => ({
@@ -408,7 +427,8 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
         return; // everything is cached
       }
       const rscPath = encodeRoutePath(route.path);
-      prefetchRsc(rscPath, JSON.stringify({ query: route.query, skip }));
+      const rscParams = createRscParams(route.query, skip);
+      prefetchRsc(rscPath, rscParams);
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(route.path);
     },
     [routerData],
@@ -531,7 +551,7 @@ export function Router({ routerData = DEFAULT_ROUTER_DATA }) {
         .catch(() => {});
       return data;
     };
-  const initialRscParams = JSON.stringify({ query: route.query });
+  const initialRscParams = createRscParams(route.query, []);
   return createElement(
     ErrorBoundary,
     null,
@@ -665,10 +685,11 @@ const NewInnerRouter = ({
       if (staticPathSetRef.current.has(route.path)) {
         return;
       }
-      const skip = Array.from(cachedIdSetRef.current);
-      const rscPath = encodeRoutePath(route.path);
       if (!skipRefetch) {
-        refetch(rscPath, JSON.stringify({ query: route.query, skip }));
+        const skip = Array.from(cachedIdSetRef.current);
+        const rscPath = encodeRoutePath(route.path);
+        const rscParams = createRscParams(route.query, skip);
+        refetch(rscPath, rscParams);
       }
     },
     [refetch, cachedIdSetRef, staticPathSetRef],
@@ -681,7 +702,8 @@ const NewInnerRouter = ({
       }
       const skip = Array.from(cachedIdSetRef.current);
       const rscPath = encodeRoutePath(route.path);
-      prefetchRsc(rscPath, JSON.stringify({ query: route.query, skip }));
+      const rscParams = createRscParams(route.query, skip);
+      prefetchRsc(rscPath, rscParams);
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(route.path);
     },
     [cachedIdSetRef, staticPathSetRef],
@@ -799,7 +821,7 @@ export function NewRouter({
         .catch(() => {});
       return data;
     };
-  const initialRscParams = JSON.stringify({ query: initialRoute.query });
+  const initialRscParams = createRscParams(initialRoute.query, []);
   return createElement(
     ErrorBoundary,
     null,
