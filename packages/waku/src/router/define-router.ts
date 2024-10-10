@@ -33,18 +33,27 @@ type RoutePropsForLayout = Omit<RouteProps, 'query'> & {
 
 type ShouldSkipValue = ShouldSkip[number][1];
 
-const safeJsonParse = (str: unknown) => {
-  if (typeof str === 'string') {
-    try {
-      const obj = JSON.parse(str);
-      if (typeof obj === 'object') {
-        return obj as Record<string, unknown>;
-      }
-    } catch {
-      // ignore
-    }
+const isStringArray = (x: unknown): x is string[] =>
+  Array.isArray(x) && x.every((y) => typeof y === 'string');
+
+const parseRscParams = (
+  rscParams: unknown,
+): {
+  query: string;
+  skip: string[];
+} => {
+  if (!(rscParams instanceof URLSearchParams)) {
+    return { query: '', skip: [] };
   }
-  return undefined;
+  const query = rscParams.get('query') || '';
+  let skipParam: unknown;
+  try {
+    skipParam = JSON.parse(rscParams.get('skip')!);
+  } catch {
+    // ignore
+  }
+  const skip = isStringArray(skipParam) ? skipParam : [];
+  return { query, skip };
 };
 
 export function unstable_defineRouter(
@@ -131,13 +140,7 @@ export function unstable_defineRouter(
       [componentId: ShouldSkip[number][0]]: ShouldSkip[number][1];
     } = {};
 
-    const parsedParams = safeJsonParse(rscParams);
-
-    const query =
-      typeof parsedParams?.query === 'string' ? parsedParams.query : '';
-    const skip = Array.isArray(parsedParams?.skip)
-      ? (parsedParams.skip as unknown[])
-      : [];
+    const { query, skip } = parseRscParams(rscParams);
     const componentIds = getComponentIds(pathname);
     const entries: (readonly [string, ReactNode])[] = (
       await Promise.all(
@@ -371,14 +374,7 @@ export function new_defineRouter(fns: {
     if (!pathStatus.found) {
       return null;
     }
-    const parsedParams = safeJsonParse(rscParams);
-    const query =
-      typeof parsedParams?.query === 'string' ? parsedParams.query : '';
-    const skip =
-      Array.isArray(parsedParams?.skip) &&
-      parsedParams.skip.every((x) => typeof x === 'string')
-        ? (parsedParams.skip as string[])
-        : [];
+    const { query, skip } = parseRscParams(rscParams);
     const entries = await fns.renderRoute(
       pathname,
       pathStatus.isStatic ? {} : { query, skip },
