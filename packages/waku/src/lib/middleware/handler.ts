@@ -54,7 +54,15 @@ export const handler: Middleware = (options) => {
       if (res instanceof ReadableStream) {
         ctx.res.body = res;
       } else if (res) {
-        Object.assign(ctx.res, res);
+        if (res.body) {
+          ctx.res.body = res.body;
+        }
+        if (res.status) {
+          ctx.res.status = res.status;
+        }
+        if (res.headers) {
+          Object.assign((ctx.res.headers ||= {}), res.headers);
+        }
       }
       if (ctx.res.body || ctx.res.status) {
         return;
