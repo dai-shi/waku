@@ -4,11 +4,14 @@ import type { ReactNode } from 'react';
 import type { Config } from './config.js';
 import type { PureConfig } from './lib/config.js';
 import type { PathSpec } from './lib/utils/path.js';
-import { getContext } from './lib/middleware/context.js';
 // TODO move types somewhere
 import type { HandlerContext } from './lib/middleware/types.js';
 
+// This can't be relative import
+import { getContext } from 'waku/middleware/context';
+
 export { renderRsc as unstable_renderRsc } from './lib/renderers/rsc.js';
+export { decodeRscPath as unstable_decodeRscPath } from './lib/renderers/utils.js';
 
 type Elements = Record<string, ReactNode>;
 

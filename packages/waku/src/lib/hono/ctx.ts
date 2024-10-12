@@ -1,6 +1,7 @@
 import type { Context, Env } from 'hono';
 
-import { getContext } from '../middleware/context.js';
+// This can't be relative import
+import { getContext } from 'waku/middleware/context';
 
 // Internal context key
 const HONO_CONTEXT = '__hono_context';
