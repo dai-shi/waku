@@ -2,7 +2,7 @@ import {
   new_defineEntries,
   unstable_renderRsc as renderRsc,
   unstable_decodeRscPath as decodeRscPath,
-} from 'waku/server';
+} from 'waku/minimal/server';
 
 import App from './components/App';
 

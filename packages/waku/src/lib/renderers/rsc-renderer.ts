@@ -3,11 +3,10 @@ import type { default as RSDWServerType } from 'react-server-dom-webpack/server.
 
 import { unstable_getPlatformObject } from '../../server.js';
 import type {
-  EntriesDev,
-  EntriesPrd,
   setAllEnvInternal as setAllEnvInternalType,
   runWithRenderStoreInternal as runWithRenderStoreInternalType,
 } from '../../server.js';
+import type { EntriesDev, EntriesPrd } from '../../minimal/server.js';
 import type { PureConfig } from '../config.js';
 import { filePathToFileURL } from '../utils/path.js';
 import { streamToArrayBuffer } from '../utils/stream.js';

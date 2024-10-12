@@ -1,5 +1,7 @@
 import type { Config } from '../../config.js';
-import type { EntriesDev, EntriesPrd } from '../../server.js';
+
+// TODO should we move this to somewhere else?
+import type { EntriesDev, EntriesPrd } from '../../minimal/server.js';
 
 export type ClonableModuleNode = { url: string; file: string };
 

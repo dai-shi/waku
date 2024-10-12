@@ -23,7 +23,13 @@ import type {
   MouseEvent,
 } from 'react';
 
-import { fetchRsc, prefetchRsc, Root, Slot, useRefetch } from '../client.js';
+import {
+  fetchRsc,
+  prefetchRsc,
+  Root,
+  Slot,
+  useRefetch,
+} from '../minimal/client.js';
 import {
   getComponentIds,
   encodeRoutePath,

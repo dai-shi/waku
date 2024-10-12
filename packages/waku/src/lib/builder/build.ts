@@ -7,7 +7,7 @@ import type { LoggingFunction, RollupLog } from 'rollup';
 
 import type { Config } from '../../config.js';
 import { unstable_getPlatformObject } from '../../server.js';
-import type { BuildConfig, EntriesPrd } from '../../server.js';
+import type { BuildConfig, EntriesPrd } from '../../minimal/server.js';
 import type { ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import { EXTENSIONS } from '../constants.js';

@@ -5,7 +5,7 @@ import type { default as RSDWClientType } from 'react-server-dom-webpack/client.
 import { injectRSCPayload } from 'rsc-html-stream/server';
 
 import type * as WakuClientType from '../../client.js';
-import type { EntriesPrd } from '../../server.js';
+import type { EntriesPrd } from '../../minimal/server.js';
 import { SRC_MAIN } from '../constants.js';
 import type { PureConfig } from '../config.js';
 import { concatUint8Arrays } from '../utils/stream.js';
