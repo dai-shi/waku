@@ -4,10 +4,10 @@ import type { EntriesDev, EntriesPrd } from '../../server.js';
 export type ClonableModuleNode = { url: string; file: string };
 
 export type HandlerReq = {
-  body: ReadableStream | null;
-  url: URL;
-  method: string;
-  headers: Record<string, string>;
+  readonly body: ReadableStream | null;
+  readonly url: URL;
+  readonly method: string;
+  readonly headers: Readonly<Record<string, string>>;
 };
 
 export type HandlerRes = {

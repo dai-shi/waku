@@ -133,6 +133,7 @@ export function rerender(rscPath: string, rscParams?: unknown) {
   renderStore.rerender(rscPath, rscParams);
 }
 
+/** @deprecated use getContext from context middleware */
 export function unstable_getCustomContext<
   CustomContext extends Record<string, unknown> = Record<string, unknown>,
 >(): CustomContext {
@@ -143,7 +144,7 @@ export function unstable_getCustomContext<
   return renderStore.context as CustomContext;
 }
 
-export function unstable_getHeaders(): Record<string, string> {
+export function unstable_getHeaders(): Readonly<Record<string, string>> {
   return getContext().req.headers;
 }
 

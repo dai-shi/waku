@@ -1,10 +1,9 @@
 import type { AsyncLocalStorage as AsyncLocalStorageType } from 'node:async_hooks';
 
-import type { HandlerReq, HandlerRes, Middleware } from './types.js';
+import type { HandlerReq, Middleware } from './types.js';
 
 type Context = {
   readonly req: HandlerReq;
-  readonly res: HandlerRes;
   readonly data: Record<string, unknown>;
 };
 
@@ -14,9 +13,7 @@ try {
   const { AsyncLocalStorage } = await import('node:async_hooks');
   contextStorage = new AsyncLocalStorage();
 } catch {
-  console.warn(
-    'AsyncLocalStorage is not available, rerender and getCustomContext are only available in sync.',
-  );
+  console.warn('AsyncLocalStorage is not available');
 }
 
 let previousContext: Context | undefined;
@@ -39,7 +36,6 @@ export const context: Middleware = () => {
   return async (ctx, next) => {
     const context: Context = {
       req: ctx.req,
-      res: ctx.res,
       data: ctx.data,
     };
     return runWithContext(context, next);
