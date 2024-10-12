@@ -2,8 +2,13 @@ import type { AsyncLocalStorage as AsyncLocalStorageType } from 'node:async_hook
 import type { ReactNode } from 'react';
 
 import type { Config } from './config.js';
+import type { PureConfig } from './lib/config.js';
 import type { PathSpec } from './lib/utils/path.js';
 import { getContext } from './lib/middleware/context.js';
+// TODO move types somewhere
+import type { HandlerContext } from './lib/middleware/types.js';
+
+export { renderRsc as unstable_renderRsc } from './lib/renderers/rsc.js';
 
 type Elements = Record<string, ReactNode>;
 
@@ -61,17 +66,15 @@ export type EntriesPrd = EntriesDev & {
   buildData?: Record<string, unknown>; // must be JSON serializable
 };
 
-let serverEnv: Readonly<Record<string, string>> = {};
-
 /**
  * This is an internal function and not for public use.
  */
-export function setAllEnvInternal(newEnv: typeof serverEnv) {
-  serverEnv = newEnv;
+export function setAllEnvInternal(newEnv: Readonly<Record<string, string>>) {
+  (globalThis as any).__WAKU_SERVER_ENV__ = newEnv;
 }
 
 export function getEnv(key: string): string | undefined {
-  return serverEnv[key];
+  return (globalThis as any).__WAKU_SERVER_ENV__?.[key];
 }
 
 type RenderStore<> = {
@@ -178,21 +181,11 @@ export function unstable_getPlatformObject(): PlatformObject {
 // Eventually replaces defineEntries
 // -----------------------------------------------------
 
-type HandleRequest = (req: {
-  body: ReadableStream | null;
-  pathname: string;
-  searchParams: URLSearchParams;
-  method: string;
-  headers: Record<string, string>;
-}) => Promise<{
-  body: ReadableStream | null;
-  status: number;
-  headers: Record<string, string>;
-} | null>;
+type HandleRequest = (config: PureConfig, ctx: HandlerContext) => Promise<void>;
 
 export function new_defineEntries(fns: {
-  handleRequest: HandleRequest;
-  getBuildConfig: GetBuildConfig;
+  unstable_handleRequest: HandleRequest;
+  unstable_getBuildConfig: GetBuildConfig;
 }) {
   return fns;
 }

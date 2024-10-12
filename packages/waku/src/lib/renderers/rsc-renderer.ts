@@ -8,7 +8,7 @@ import type {
   setAllEnvInternal as setAllEnvInternalType,
   runWithRenderStoreInternal as runWithRenderStoreInternalType,
 } from '../../server.js';
-import type { ResolvedConfig } from '../config.js';
+import type { PureConfig } from '../config.js';
 import { filePathToFileURL } from '../utils/path.js';
 import { streamToArrayBuffer } from '../utils/stream.js';
 import { decodeFuncId } from '../renderers/utils.js';
@@ -25,7 +25,7 @@ const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
 
 export type RenderRscArgs = {
   env: Record<string, string>;
-  config: Omit<ResolvedConfig, 'middleware'>;
+  config: PureConfig;
   rscPath: string;
   context: Record<string, unknown> | undefined;
   // TODO we hope to get only decoded one
@@ -231,7 +231,7 @@ export async function renderRsc(
 
 type GetBuildConfigArgs = {
   env: Record<string, string>;
-  config: Omit<ResolvedConfig, 'middleware'>;
+  config: PureConfig;
 };
 
 type GetBuildConfigOpts = { entries: EntriesPrd };
@@ -300,7 +300,7 @@ export async function getBuildConfig(
 
 export type GetSsrConfigArgs = {
   env: Record<string, string>;
-  config: Omit<ResolvedConfig, 'middleware'>;
+  config: PureConfig;
   pathname: string;
   searchParams: URLSearchParams;
 };

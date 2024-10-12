@@ -336,10 +336,10 @@ export const devServer: Middleware = (options) => {
   let initialModules: ClonableModuleNode[];
 
   return async (ctx, next) => {
-    const [{ middleware: _removed, ...config }, vite] = await Promise.all([
-      configPromise,
-      vitePromise,
-    ]);
+    const [
+      { middleware: _removed1, unstable_honoEnhancer: _removed2, ...config },
+      vite,
+    ] = await Promise.all([configPromise, vitePromise]);
 
     if (!initialModules) {
       const processedModules = new Set<string>();

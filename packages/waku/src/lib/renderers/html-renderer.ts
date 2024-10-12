@@ -7,7 +7,7 @@ import { injectRSCPayload } from 'rsc-html-stream/server';
 import type * as WakuClientType from '../../client.js';
 import type { EntriesPrd } from '../../server.js';
 import { SRC_MAIN } from '../constants.js';
-import type { ResolvedConfig } from '../config.js';
+import type { PureConfig } from '../config.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import {
   joinPath,
@@ -168,7 +168,7 @@ const rectifyHtml = () => {
 
 export const renderHtml = async (
   opts: {
-    config: Omit<ResolvedConfig, 'middleware'>;
+    config: PureConfig;
     pathname: string;
     searchParams: URLSearchParams;
     htmlHead: string;

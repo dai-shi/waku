@@ -49,7 +49,9 @@ export const context: Middleware = () => {
 export function getContext() {
   const context = contextStorage?.getStore() ?? currentContext;
   if (!context) {
-    throw new Error('Context is not available');
+    throw new Error(
+      'Context is not available. Make sure to use the context middleware.',
+    );
   }
   return context;
 }

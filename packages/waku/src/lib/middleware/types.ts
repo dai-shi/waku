@@ -32,6 +32,9 @@ export type HandlerContext = {
       pathname: string,
     ) => Promise<TransformStream<any, any>>;
   };
+  unstable_modules?: {
+    rsdwServer: unknown;
+  };
 };
 
 export type Handler = (

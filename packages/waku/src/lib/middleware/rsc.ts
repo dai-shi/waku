@@ -19,10 +19,10 @@ export const rsc: Middleware = (options) => {
       : resolveConfig(options.config);
 
   return async (ctx, next) => {
-    const [{ middleware: _removed, ...config }, entries] = await Promise.all([
-      configPromise,
-      entriesPromise,
-    ]);
+    const [
+      { middleware: _removed1, unstable_honoEnhancer: _removed2, ...config },
+      entries,
+    ] = await Promise.all([configPromise, entriesPromise]);
     const basePrefix = config.basePath + config.rscBase + '/';
     if (ctx.req.url.pathname.startsWith(basePrefix)) {
       const { headers } = ctx.req;
