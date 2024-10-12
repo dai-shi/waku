@@ -7,7 +7,7 @@ import {
 import App from './components/App';
 
 export default new_defineEntries({
-  unstable_handleRequest: async (config, ctx, next) => {
+  unstable_handleRequest: async (config, ctx) => {
     const basePrefix = config.basePath + config.rscBase + '/';
     if (ctx.req.url.pathname.startsWith(basePrefix)) {
       const rscPath = decodeRscPath(
@@ -16,9 +16,7 @@ export default new_defineEntries({
       ctx.res.body = renderRsc(config, ctx, {
         App: <App name={rscPath || 'Waku'} />,
       });
-      return;
     }
-    await next();
   },
   unstable_getBuildConfig: async () => [
     { pathname: '/', entries: [{ rscPath: '' }] },

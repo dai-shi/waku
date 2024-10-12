@@ -4,11 +4,7 @@ import { setAllEnvInternal } from '../../server.js';
 import type { Middleware, HandlerContext } from './types.js';
 
 // TODO avoid copy-pasting
-type HandleRequest = (
-  config: PureConfig,
-  ctx: HandlerContext,
-  next: () => Promise<void>,
-) => Promise<void>;
+type HandleRequest = (config: PureConfig, ctx: HandlerContext) => Promise<void>;
 
 // TODO avoid copy-pasting
 const SERVER_MODULE_MAP = {
@@ -45,11 +41,11 @@ export const handler: Middleware = (options) => {
       await (entries.default.unstable_handleRequest as HandleRequest)(
         config,
         ctx,
-        next,
       );
       if (ctx.res.body || ctx.res.status) {
         return;
       }
     }
+    await next();
   };
 };
