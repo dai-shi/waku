@@ -70,7 +70,11 @@ export type EntriesPrd = EntriesDev & {
 // Eventually replaces defineEntries
 // -----------------------------------------------------
 
-type HandleRequest = (config: PureConfig, ctx: HandlerContext) => Promise<void>;
+type HandleRequest = (
+  config: PureConfig,
+  ctx: HandlerContext,
+  next: () => Promise<void>,
+) => Promise<void>;
 
 export function new_defineEntries(fns: {
   unstable_handleRequest: HandleRequest;
