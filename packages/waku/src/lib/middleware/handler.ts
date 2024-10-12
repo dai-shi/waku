@@ -1,10 +1,15 @@
-import { resolveConfig } from '../config.js';
-import type { PureConfig } from '../config.js';
-import { setAllEnvInternal } from '../../server.js';
-import type { Middleware, HandlerContext } from './types.js';
+import type { ReactNode } from 'react';
 
-// TODO avoid copy-pasting
-type HandleRequest = (config: PureConfig, ctx: HandlerContext) => Promise<void>;
+import { resolveConfig } from '../config.js';
+import { setAllEnvInternal } from '../../server.js';
+import type { Middleware } from './types.js';
+import type { new_defineEntries } from '../../minimal/server.js';
+import { renderRsc } from '../renderers/rsc.js';
+import { decodeRscPath } from '../renderers/utils.js';
+
+type HandleRequest = Parameters<
+  typeof new_defineEntries
+>[0]['unstable_handleRequest'];
 
 // TODO avoid copy-pasting
 const SERVER_MODULE_MAP = {
@@ -37,11 +42,20 @@ export const handler: Middleware = (options) => {
       ? await devServer.loadServerModuleRsc(SERVER_MODULE_MAP['rsdw-server'])
       : await entriesPrd.loadModule('rsdw-server');
     ctx.unstable_modules = { rsdwServer };
+    const utils = {
+      renderRsc: (elements: Record<string, ReactNode>) =>
+        renderRsc(config, ctx, elements),
+      decodeRscPath,
+    };
     if ('unstable_handleRequest' in entries.default) {
-      await (entries.default.unstable_handleRequest as HandleRequest)(
-        config,
-        ctx,
-      );
+      const res = await (
+        entries.default.unstable_handleRequest as HandleRequest
+      )(config, ctx.req, utils);
+      if (res instanceof ReadableStream) {
+        ctx.res.body = res;
+      } else if (res) {
+        Object.assign(ctx.res, res);
+      }
       if (ctx.res.body || ctx.res.status) {
         return;
       }

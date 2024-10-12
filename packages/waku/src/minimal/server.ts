@@ -4,10 +4,7 @@ import type { Config } from '../config.js';
 import type { PureConfig } from '../lib/config.js';
 import type { PathSpec } from '../lib/utils/path.js';
 // TODO move types somewhere
-import type { HandlerContext } from '../lib/middleware/types.js';
-
-export { renderRsc as unstable_renderRsc } from '../lib/renderers/rsc.js';
-export { decodeRscPath as unstable_decodeRscPath } from '../lib/renderers/utils.js';
+import type { HandlerReq, HandlerRes } from '../lib/middleware/types.js';
 
 type Elements = Record<string, ReactNode>;
 
@@ -70,7 +67,14 @@ export type EntriesPrd = EntriesDev & {
 // Eventually replaces defineEntries
 // -----------------------------------------------------
 
-type HandleRequest = (config: PureConfig, ctx: HandlerContext) => Promise<void>;
+type HandleRequest = (
+  config: PureConfig,
+  req: HandlerReq,
+  utils: {
+    renderRsc: (elements: Elements) => ReadableStream;
+    decodeRscPath: (rscPath: string) => string;
+  },
+) => Promise<ReadableStream | HandlerRes | null | undefined>;
 
 export function new_defineEntries(fns: {
   unstable_handleRequest: HandleRequest;

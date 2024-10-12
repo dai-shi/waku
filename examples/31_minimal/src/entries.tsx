@@ -1,21 +1,15 @@
-import {
-  new_defineEntries,
-  unstable_renderRsc as renderRsc,
-  unstable_decodeRscPath as decodeRscPath,
-} from 'waku/minimal/server';
+import { new_defineEntries } from 'waku/minimal/server';
 
 import App from './components/App';
 
 export default new_defineEntries({
-  unstable_handleRequest: async (config, ctx) => {
+  unstable_handleRequest: async (config, req, { renderRsc, decodeRscPath }) => {
     const basePrefix = config.basePath + config.rscBase + '/';
-    if (ctx.req.url.pathname.startsWith(basePrefix)) {
+    if (req.url.pathname.startsWith(basePrefix)) {
       const rscPath = decodeRscPath(
-        decodeURI(ctx.req.url.pathname.slice(basePrefix.length)),
+        decodeURI(req.url.pathname.slice(basePrefix.length)),
       );
-      ctx.res.body = renderRsc(config, ctx, {
-        App: <App name={rscPath || 'Waku'} />,
-      });
+      return renderRsc({ App: <App name={rscPath || 'Waku'} /> });
     }
   },
   unstable_getBuildConfig: async () => [
