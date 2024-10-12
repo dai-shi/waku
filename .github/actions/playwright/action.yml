@@ -33,7 +33,7 @@ runs:
       id: cache
       uses: actions/cache@v4
       with:
-        path: ~/.cache/ms-playwright
+        path: ${{ runner.os == 'Windows' && format('{0}{1}', env.HOME, '\AppData\Local\ms-playwright') || runner.os == 'Linux' && '~/.cache/ms-playwright' || '~/Library/Caches/ms-playwright' }}
         key: playwright-${{ env.PLAYWRIGHT_VERSION }}-${{ runner.os }}
 
     - name: Install Playwright and its dependencies
