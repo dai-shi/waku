@@ -97,7 +97,13 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   const wakuClientDist = decodeFilePathFromAbsolute(
     joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
   );
-  const clientFileSet = new Set<string>([wakuClientDist]);
+  const wakuMinimalClientDist = decodeFilePathFromAbsolute(
+    joinPath(fileURLToFilePath(import.meta.url), '../../../minimal/client.js'),
+  );
+  const clientFileSet = new Set<string>([
+    wakuClientDist,
+    wakuMinimalClientDist,
+  ]);
   const serverFileSet = new Set<string>();
   const fileHashMap = new Map<string, string>();
   const moduleFileMap = new Map<string, string>(); // module id -> full path
@@ -148,7 +154,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   });
   const clientEntryFiles = Object.fromEntries(
     Array.from(clientFileSet).map((fname, i) => [
-      `${DIST_ASSETS}/rsc${i}-${fileHashMap.get(fname)}`,
+      `${DIST_ASSETS}/rsc${i}-${fileHashMap.get(fname) || 'lib'}`, // FIXME 'lib' is a workaround to avoid `undefined`
       fname,
     ]),
   );
