@@ -28,12 +28,17 @@ runs:
         echo "Version: $VERSION"
         echo "PLAYWRIGHT_VERSION=$VERSION" >> $GITHUB_ENV
         echo "version=$VERSION" >> $GITHUB_OUTPUT
+    
+    - name: Put $HOME in env
+      if: runner.os == 'windows'
+      shell: pwsh
+      run: echo "HOME=$HOME" | Out-File -FilePath $env:GITHUB_ENV -Append
 
     - name: Cache Playwright
       id: cache
       uses: actions/cache@v4
       with:
-        path: ~/.cache/ms-playwright
+        path: ${{ runner.os == 'Windows' && format('{0}{1}', env.HOME, '\AppData\Local\ms-playwright') || runner.os == 'Linux' && '~/.cache/ms-playwright' || '~/Library/Caches/ms-playwright' }}
         key: playwright-${{ env.PLAYWRIGHT_VERSION }}-${{ runner.os }}
 
     - name: Install Playwright and its dependencies
