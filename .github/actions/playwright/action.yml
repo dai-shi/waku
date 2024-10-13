@@ -28,6 +28,10 @@ runs:
         echo "Version: $VERSION"
         echo "PLAYWRIGHT_VERSION=$VERSION" >> $GITHUB_ENV
         echo "version=$VERSION" >> $GITHUB_OUTPUT
+    
+    - name: Put $HOME in env
+      if: runner.os == 'windows'
+      run: echo "HOME=$HOME" | Out-File -FilePath $env:GITHUB_ENV -Append
 
     - name: Cache Playwright
       id: cache
