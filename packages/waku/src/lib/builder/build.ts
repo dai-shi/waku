@@ -646,6 +646,28 @@ export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
   await appendFile(distEntriesFile, code);
 };
 
+const emitStaticFiles = async (
+  rootDir: string,
+  env: Record<string, string>,
+  config: ResolvedConfig,
+  distEntriesFile: string,
+  distEntries: EntriesPrd,
+  buildConfig: BuildConfig,
+  cssAssets: string[],
+) => {
+  console.log(
+    'TODO',
+    rootDir,
+    env,
+    config,
+    distEntriesFile,
+    distEntries,
+    buildConfig,
+    cssAssets,
+  );
+  // TODO
+};
+
 // For Deploy
 // FIXME Is this a good approach? I wonder if there's something missing.
 const buildDeploy = async (rootDir: string, config: ResolvedConfig) => {
@@ -760,23 +782,38 @@ export async function build(options: {
     { env, config },
     { entries: distEntries },
   );
-  const { getClientModules } = await emitRscFiles(
-    rootDir,
-    env,
-    config,
-    distEntries,
-    buildConfig,
-  );
-  await emitHtmlFiles(
-    rootDir,
-    env,
-    config,
-    distEntriesFile,
-    distEntries,
-    buildConfig,
-    getClientModules,
-    clientBuildOutput,
-  );
+  if ('unstable_handleRequest' in distEntries) {
+    const cssAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
+      type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
+    );
+    await emitStaticFiles(
+      rootDir,
+      env,
+      config,
+      distEntriesFile,
+      distEntries,
+      buildConfig,
+      cssAssets,
+    );
+  } else {
+    const { getClientModules } = await emitRscFiles(
+      rootDir,
+      env,
+      config,
+      distEntries,
+      buildConfig,
+    );
+    await emitHtmlFiles(
+      rootDir,
+      env,
+      config,
+      distEntriesFile,
+      distEntries,
+      buildConfig,
+      getClientModules,
+      clientBuildOutput,
+    );
+  }
 
   platformObject.buildOptions.unstable_phase = 'buildDeploy';
   await buildDeploy(rootDir, config);
