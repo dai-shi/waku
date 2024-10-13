@@ -22,6 +22,7 @@ const CLIENT_MODULE_MAP = {
   'rsdw-client': 'react-server-dom-webpack/client.edge',
   'waku-minimal-client': 'waku/minimal/client',
 } as const;
+const CLIENT_PREFIX = 'client/';
 
 export const handler: Middleware = (options) => {
   const env = options.env || {};
@@ -50,15 +51,15 @@ export const handler: Middleware = (options) => {
       : await entriesPrd.loadModule('rsdw-server');
     const rdServer = devServer
       ? await devServer.loadServerModuleMain(CLIENT_MODULE_MAP['rd-server'])
-      : await entriesPrd.loadModule('rd-server');
+      : await entriesPrd.loadModule(CLIENT_PREFIX + 'rd-server');
     const rsdwClient = devServer
       ? await devServer.loadServerModuleMain(CLIENT_MODULE_MAP['rsdw-client'])
-      : await entriesPrd.loadModule('rsdw-client');
+      : await entriesPrd.loadModule(CLIENT_PREFIX + 'rsdw-client');
     const wakuMinimalClient = devServer
       ? await devServer.loadServerModuleMain(
           CLIENT_MODULE_MAP['waku-minimal-client'],
         )
-      : await entriesPrd.loadModule('waku-minimal-client');
+      : await entriesPrd.loadModule(CLIENT_PREFIX + 'waku-minimal-client');
     ctx.unstable_modules = {
       rsdwServer,
       rdServer,
