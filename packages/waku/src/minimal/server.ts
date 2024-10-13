@@ -73,6 +73,14 @@ type HandleRequest = (
   utils: {
     renderRsc: (elements: Elements) => ReadableStream;
     decodeRscPath: (rscPath: string) => string;
+    renderHtml: (
+      elements: Elements,
+      html: ReactNode,
+      rscPath: string,
+    ) => {
+      body: ReadableStream;
+      headers: Record<'content-type', string>;
+    };
   },
 ) => Promise<ReadableStream | HandlerRes | null | undefined>;
 

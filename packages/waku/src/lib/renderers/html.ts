@@ -15,7 +15,7 @@ import {
   encodeFilePathToAbsolute,
 } from '../utils/path.js';
 import { encodeRscPath } from './utils.js';
-import { renderRsc } from './rsc.js';
+import { renderRsc, renderRscElement } from './rsc.js';
 // TODO move types somewhere
 import type { HandlerContext } from '../middleware/types.js';
 
@@ -166,9 +166,9 @@ const rectifyHtml = () => {
 export function renderHtml(
   config: PureConfig,
   ctx: HandlerContext,
-  html: ReactNode,
   htmlHead: string,
   elements: Elements,
+  html: ReactNode,
   rscPath: string,
 ): ReadableStream {
   const modules = ctx.unstable_modules;
@@ -177,7 +177,7 @@ export function renderHtml(
   }
   const {
     default: { renderToReadableStream },
-  } = modules.rsdwServer as { default: typeof RDServerType };
+  } = modules.rdServer as { default: typeof RDServerType };
   const {
     default: { createFromReadableStream },
   } = modules.rsdwClient as { default: typeof RSDWClientType };
@@ -185,7 +185,7 @@ export function renderHtml(
     modules.wakuMinimalClient as typeof WakuMinimalClientType;
 
   const stream = renderRsc(config, ctx, elements);
-  const htmlStream = renderRsc(config, ctx, html as never);
+  const htmlStream = renderRscElement(config, ctx, html);
   const isDev = !!ctx.unstable_devServer;
   const rootDir = ctx.unstable_devServer?.rootDir || '';
   const moduleMap = new Proxy(

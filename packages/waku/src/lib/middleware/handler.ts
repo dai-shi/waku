@@ -5,7 +5,9 @@ import { setAllEnvInternal } from '../../server.js';
 import type { Middleware } from './types.js';
 import type { new_defineEntries } from '../../minimal/server.js';
 import { renderRsc } from '../renderers/rsc.js';
+import { renderHtml } from '../renderers/html.js';
 import { decodeRscPath } from '../renderers/utils.js';
+import { getPathMapping } from '../utils/path.js';
 
 type HandleRequest = Parameters<
   typeof new_defineEntries
@@ -47,13 +49,13 @@ export const handler: Middleware = (options) => {
       ? await devServer.loadServerModuleRsc(SERVER_MODULE_MAP['rsdw-server'])
       : await entriesPrd.loadModule('rsdw-server');
     const rdServer = devServer
-      ? await devServer.loadServerModuleRsc(CLIENT_MODULE_MAP['rd-server'])
+      ? await devServer.loadServerModuleMain(CLIENT_MODULE_MAP['rd-server'])
       : await entriesPrd.loadModule('rd-server');
     const rsdwClient = devServer
-      ? await devServer.loadServerModuleRsc(CLIENT_MODULE_MAP['rsdw-client'])
+      ? await devServer.loadServerModuleMain(CLIENT_MODULE_MAP['rsdw-client'])
       : await entriesPrd.loadModule('rsdw-client');
     const wakuMinimalClient = devServer
-      ? await devServer.loadServerModuleRsc(
+      ? await devServer.loadServerModuleMain(
           CLIENT_MODULE_MAP['waku-minimal-client'],
         )
       : await entriesPrd.loadModule('waku-minimal-client');
@@ -63,10 +65,38 @@ export const handler: Middleware = (options) => {
       rsdwClient,
       wakuMinimalClient,
     };
+    const htmlHead = devServer
+      ? ''
+      : entriesPrd.dynamicHtmlPaths.find(([pathSpec]) =>
+          getPathMapping(pathSpec, ctx.req.url.pathname),
+        )?.[1] || '';
+    const transformIndexHtml =
+      devServer && (await devServer.transformIndexHtml(ctx.req.url.pathname));
     const utils = {
       renderRsc: (elements: Record<string, ReactNode>) =>
         renderRsc(config, ctx, elements),
       decodeRscPath,
+      renderHtml: (
+        elements: Record<string, ReactNode>,
+        html: ReactNode,
+        rscPath: string,
+      ) => {
+        const readable = renderHtml(
+          config,
+          ctx,
+          htmlHead,
+          elements,
+          html,
+          rscPath,
+        );
+        const headers = { 'content-type': 'text/html; charset=utf-8' };
+        return {
+          body: transformIndexHtml
+            ? readable.pipeThrough(transformIndexHtml)
+            : readable,
+          headers,
+        };
+      },
     };
     if ('unstable_handleRequest' in entries.default) {
       const res = await (

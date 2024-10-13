@@ -44,3 +44,34 @@ export function renderRsc(
   );
   return renderToReadableStream(elements, clientBundlerConfig);
 }
+
+export function renderRscElement(
+  config: PureConfig,
+  ctx: HandlerContext,
+  element: ReactNode,
+): ReadableStream {
+  const modules = ctx.unstable_modules;
+  if (!modules) {
+    throw new Error('handler middleware required (missing modules)');
+  }
+  const {
+    default: {
+      renderToReadableStream,
+      // decodeReply,
+    },
+  } = modules.rsdwServer as { default: typeof RSDWServerType };
+  const resolveClientEntry = ctx.unstable_devServer
+    ? ctx.unstable_devServer.resolveClientEntry
+    : resolveClientEntryForPrd;
+  const clientBundlerConfig = new Proxy(
+    {},
+    {
+      get(_target, encodedId: string) {
+        const [file, name] = encodedId.split('#') as [string, string];
+        const id = resolveClientEntry(file, config);
+        return { id, chunks: [id], name, async: true };
+      },
+    },
+  );
+  return renderToReadableStream(element, clientBundlerConfig);
+}
