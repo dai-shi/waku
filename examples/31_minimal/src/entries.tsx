@@ -17,7 +17,7 @@ export default new_defineEntries({
       return renderRsc({ App: <App name={rscPath || 'Waku'} /> });
     }
     if (req.url.pathname === '/') {
-      return renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, '/');
+      return renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, '');
     }
   },
   unstable_getBuildConfig: async () => [
