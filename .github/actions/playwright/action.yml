@@ -31,7 +31,7 @@ runs:
     
     - name: Put $HOME in env
       if: runner.os == 'windows'
-      shell: bash
+      shell: pwsh
       run: echo "HOME=$HOME" | Out-File -FilePath $env:GITHUB_ENV -Append
 
     - name: Cache Playwright
