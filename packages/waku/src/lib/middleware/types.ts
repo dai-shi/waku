@@ -36,6 +36,9 @@ export type HandlerContext = {
   };
   unstable_modules?: {
     rsdwServer: unknown;
+    rdServer: unknown;
+    rsdwClient: unknown;
+    wakuMinimalClient: unknown;
   };
 };
 

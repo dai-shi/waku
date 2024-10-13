@@ -15,6 +15,11 @@ type HandleRequest = Parameters<
 const SERVER_MODULE_MAP = {
   'rsdw-server': 'react-server-dom-webpack/server.edge',
 } as const;
+const CLIENT_MODULE_MAP = {
+  'rd-server': 'react-dom/server.edge',
+  'rsdw-client': 'react-server-dom-webpack/client.edge',
+  'waku-minimal-client': 'waku/minimal/client',
+} as const;
 
 export const handler: Middleware = (options) => {
   const env = options.env || {};
@@ -41,7 +46,23 @@ export const handler: Middleware = (options) => {
     const rsdwServer = devServer
       ? await devServer.loadServerModuleRsc(SERVER_MODULE_MAP['rsdw-server'])
       : await entriesPrd.loadModule('rsdw-server');
-    ctx.unstable_modules = { rsdwServer };
+    const rdServer = devServer
+      ? await devServer.loadServerModuleRsc(CLIENT_MODULE_MAP['rd-server'])
+      : await entriesPrd.loadModule('rd-server');
+    const rsdwClient = devServer
+      ? await devServer.loadServerModuleRsc(CLIENT_MODULE_MAP['rsdw-client'])
+      : await entriesPrd.loadModule('rsdw-client');
+    const wakuMinimalClient = devServer
+      ? await devServer.loadServerModuleRsc(
+          CLIENT_MODULE_MAP['waku-minimal-client'],
+        )
+      : await entriesPrd.loadModule('waku-minimal-client');
+    ctx.unstable_modules = {
+      rsdwServer,
+      rdServer,
+      rsdwClient,
+      wakuMinimalClient,
+    };
     const utils = {
       renderRsc: (elements: Record<string, ReactNode>) =>
         renderRsc(config, ctx, elements),
