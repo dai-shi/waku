@@ -84,9 +84,13 @@ type HandleRequest = (
   },
 ) => Promise<ReadableStream | HandlerRes | null | undefined>;
 
+type new_GetBuildConfig = (utils: {
+  unstable_collectClientModules: (elements: Elements) => Promise<string[]>;
+}) => Promise<BuildConfig>;
+
 export function new_defineEntries(fns: {
   unstable_handleRequest: HandleRequest;
-  unstable_getBuildConfig: GetBuildConfig;
+  unstable_getBuildConfig: new_GetBuildConfig;
 }) {
   return fns;
 }

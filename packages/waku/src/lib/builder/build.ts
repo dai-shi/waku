@@ -32,6 +32,7 @@ import {
   writeFile,
 } from '../utils/node-fs.js';
 import { encodeRscPath, generatePrefetchCode } from '../renderers/utils.js';
+import { collectClientModules } from '../renderers/rsc.js';
 import {
   getBuildConfig,
   getSsrConfig,
@@ -778,11 +779,15 @@ export async function build(options: {
   const distEntries = await import(filePathToFileURL(distEntriesFile));
 
   // TODO: Add progress indication for static builds.
-  const buildConfig = await getBuildConfig(
-    { env, config },
-    { entries: distEntries },
-  );
   if ('unstable_handleRequest' in distEntries) {
+    const buildConfig = await distEntries.unstable_getBuildConfig({
+      unstable_collectClientModules: (elements: never) =>
+        collectClientModules(
+          config,
+          distEntries.loadModule('rsdw-server'), // FIXME hard-coded id
+          elements,
+        ),
+    });
     const cssAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
       type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
     );
@@ -796,6 +801,10 @@ export async function build(options: {
       cssAssets,
     );
   } else {
+    const buildConfig = await getBuildConfig(
+      { env, config },
+      { entries: distEntries },
+    );
     const { getClientModules } = await emitRscFiles(
       rootDir,
       env,
