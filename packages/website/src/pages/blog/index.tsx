@@ -6,6 +6,7 @@ import { Page } from '../../components/page';
 import { Meta } from '../../components/meta';
 import { getAuthor } from '../../lib/get-author';
 import type { BlogFrontmatter } from '../../types';
+import type { GetConfigResult } from 'waku/router';
 
 export default async function BlogIndexPage() {
   const articles = await getArticles();
@@ -99,5 +100,5 @@ const getArticles = async () => {
 export const getConfig = async () => {
   return {
     render: 'static',
-  } as const;
+  } satisfies GetConfigResult;
 };

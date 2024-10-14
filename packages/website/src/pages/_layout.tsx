@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 
 import { Providers } from '../components/providers';
 import { Analytics } from '../components/analytics';
-import type { GetConfig } from 'waku/router';
+import type { GetConfigResult } from 'waku/router';
 
 type RootLayoutProps = { children: ReactNode };
 
@@ -46,8 +46,8 @@ const Meta = () => {
   );
 };
 
-export const getConfig: GetConfig = async () => {
+export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } satisfies GetConfigResult;
 };
