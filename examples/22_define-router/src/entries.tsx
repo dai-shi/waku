@@ -57,12 +57,14 @@ export default new_defineRouter({
     ];
   },
   renderRoute: async (path, options) => {
-    const processSkip = <T,>(elements: Record<string, T>) =>
-      Object.fromEntries(
-        Object.entries(elements).filter(
-          ([k]) => !options.skip || !options.skip.includes(k),
-        ),
+    const processSkip = <T,>(elements: Record<string, T>) => {
+      if (!options.skip) {
+        return elements;
+      }
+      return Object.fromEntries(
+        Object.entries(elements).filter(([k]) => !options.skip!.includes(k)),
       );
+    };
     if (path === '/') {
       return processSkip({
         'route:/': (

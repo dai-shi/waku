@@ -15,6 +15,7 @@ import type {
   GetSlugs,
   PropsForPages,
 } from './create-pages-utils/inferred-path-types.js';
+import { Children, Slot } from '../minimal/client.js';
 
 const hasPathSpecPrefix = (prefix: PathSpec, path: PathSpec) => {
   for (let i = 0; i < prefix.length; i++) {
@@ -469,8 +470,10 @@ export const new_createPages = <
 ) => {
   let configured = false;
 
+  const routeMap = new Map<string, Record<string, ReactNode>>();
+
   // TODO I think there's room for improvement to refactor these structures
-  const staticPathSet = new Set<[string, PathSpec]>();
+  const fixedPathSet = new Set<[string, PathSpec]>();
   const dynamicPagePathMap = new Map<
     string,
     [PathSpec, FunctionComponent<any>]
@@ -504,6 +507,28 @@ export const new_createPages = <
     if (configured) {
       throw new Error('createPage no longer available');
     }
+
+    routeMap.set(page.path, {
+      [`route:${page.path}`]: (
+        // layout adding is different at each level
+        // TODO loop over the path spec to add layout slots
+        <Slot id="root">
+          <Slot id={`layout:${page.path}`}>
+            <Slot id={`page:${page.path}`} />
+          </Slot>
+        </Slot>
+      ),
+      [`page:${page.path}`]: page.component,
+      root: rootItem ? (
+        rootItem.component({ children: <Children /> })
+      ) : (
+        <DefaultRoot>
+          <Children />
+        </DefaultRoot>
+      ),
+      // TODO add layout for path
+    });
+
     const pathSpec = parsePathWithSlug(page.path);
     if (page.unstable_disableSSR) {
       noSsrSet.add(pathSpec);
@@ -522,7 +547,7 @@ export const new_createPages = <
       return { numSlugs, numWildcards };
     })();
     if (page.render === 'static' && numSlugs === 0) {
-      staticPathSet.add([page.path, pathSpec]);
+      fixedPathSet.add([page.path, pathSpec]);
       const id = joinPath(page.path, 'page').replace(/^\//, '');
       registerStaticComponent(id, page.component);
     } else if (
@@ -557,7 +582,7 @@ export const new_createPages = <
               break;
           }
         });
-        staticPathSet.add([
+        fixedPathSet.add([
           page.path,
           pathItems.map((name) => ({ type: 'literal', name })),
         ]);
@@ -633,7 +658,7 @@ export const new_createPages = <
         components: Record<string, { isStatic: boolean }>;
         noSsr: boolean;
       }[] = [];
-      for (const [path, pathSpec] of staticPathSet) {
+      for (const [path, pathSpec] of fixedPathSet) {
         const noSsr = noSsrSet.has(pathSpec);
         const isStatic = (() => {
           for (const [_, [layoutPathSpec]] of dynamicLayoutPathMap) {
@@ -671,70 +696,82 @@ export const new_createPages = <
       }
       return paths;
     },
-    renderRoute: async (id, options) => {
-      const processSkip = <T>(elements: Record<string, T>) =>
-        Object.fromEntries(
-          Object.entries(elements).filter(
-            ([k]) => !options.skip || !options.skip.includes(k),
-          ),
-        );
+    renderRoute: async (path, _options) => {
       await configure();
-      if (id === 'root') {
-        if (rootItem?.render === 'dynamic') {
-          unstable_setShouldSkip();
-        } else {
-          unstable_setShouldSkip([]);
-        }
-        return rootItem?.component ?? DefaultRoot;
-      }
-      const staticComponent = staticComponentMap.get(id);
-      if (staticComponent) {
-        unstable_setShouldSkip([]);
-        return staticComponent;
-      }
-      for (const [_, [pathSpec, Component]] of dynamicPagePathMap) {
-        const mapping = getPathMapping(
-          [...pathSpec, { type: 'literal', name: 'page' }],
-          id,
-        );
-        if (mapping) {
-          if (Object.keys(mapping).length === 0) {
-            unstable_setShouldSkip();
-            return Component;
-          }
-          const WrappedComponent = (props: Record<string, unknown>) =>
-            createElement(Component, { ...props, ...mapping });
-          unstable_setShouldSkip();
-          return WrappedComponent;
-        }
-      }
-      for (const [_, [pathSpec, Component]] of wildcardPagePathMap) {
-        const mapping = getPathMapping(
-          [...pathSpec, { type: 'literal', name: 'page' }],
-          id,
-        );
-        if (mapping) {
-          const WrappedComponent = (props: Record<string, unknown>) =>
-            createElement(Component, { ...props, ...mapping });
-          unstable_setShouldSkip();
-          return WrappedComponent;
-        }
-      }
-      for (const [_, [pathSpec, Component]] of dynamicLayoutPathMap) {
-        const mapping = getPathMapping(
-          [...pathSpec, { type: 'literal', name: 'layout' }],
-          id,
-        );
-        if (mapping) {
-          if (Object.keys(mapping).length) {
-            throw new Error('[Bug] layout should not have slugs');
-          }
-          unstable_setShouldSkip();
-          return Component;
-        }
-      }
-      unstable_setShouldSkip([]); // negative cache
-      return null; // not found
+      // TODO handle skip
+      return routeMap.get(path) ?? null;
+      // return processSkip({
+      //   'route:/bar': (
+      //     <Slot id="root">
+      //       <Slot id="layout:/">
+      //         <Slot id="page:/bar" />
+      //       </Slot>
+      //     </Slot>
+      //   ),
+      //   root: (
+      //     <Root>
+      //       <Children />
+      //     </Root>
+      //   ),
+      //   'layout:/': (
+      //     <HomeLayout>
+      //       <Children />
+      //     </HomeLayout>
+      //   ),
+      //   'page:/bar': <BarPage />,
+      // });
+
+      // if (id === 'root') {
+      //   if (options.skip?.includes('root')) {
+      //     return null;
+      //   }
+      //   return rootItem?.component ?? DefaultRoot;
+      // }
+      // const staticComponent = staticComponentMap.get(id);
+      // if (staticComponent && !options.skip?.includes(id)) {
+      //   return staticComponent;
+      // }
+      // for (const [_, [pathSpec, Component]] of dynamicPagePathMap) {
+      //   const mapping = getPathMapping(
+      //     [...pathSpec, { type: 'literal', name: 'page' }],
+      //     id,
+      //   );
+
+      //   if (mapping) {
+      //     if (Object.keys(mapping).length === 0) {
+      //       return Component;
+      //     }
+      //     const WrappedComponent = (props: Record<string, unknown>) =>
+      //       createElement(Component, { ...props, ...mapping });
+      //     // unstable_setShouldSkip();
+      //     return WrappedComponent;
+      //   }
+      // }
+      // for (const [_, [pathSpec, Component]] of wildcardPagePathMap) {
+      //   const mapping = getPathMapping(
+      //     [...pathSpec, { type: 'literal', name: 'page' }],
+      //     id,
+      //   );
+      //   if (mapping) {
+      //     const WrappedComponent = (props: Record<string, unknown>) =>
+      //       createElement(Component, { ...props, ...mapping });
+      //     // unstable_setShouldSkip();
+      //     return WrappedComponent;
+      //   }
+      // }
+      // for (const [_, [pathSpec, Component]] of dynamicLayoutPathMap) {
+      //   const mapping = getPathMapping(
+      //     [...pathSpec, { type: 'literal', name: 'layout' }],
+      //     id,
+      //   );
+      //   if (mapping) {
+      //     if (Object.keys(mapping).length) {
+      //       throw new Error('[Bug] layout should not have slugs');
+      //     }
+      //     // unstable_setShouldSkip();
+      //     return Component;
+      //   }
+      // }
     },
   });
 
