@@ -19,3 +19,25 @@ export interface CreatePagesConfig {
 /** Props for pages when using `createPages` */
 export type PageProps<Path extends PagePath<CreatePagesConfig>> =
   PropsForPages<Path>;
+
+type StaticConfig = {
+  readonly render: 'static';
+  readonly staticPaths?: never;
+};
+
+type StaticWithSlugConfig = {
+  readonly render: 'static';
+  readonly staticPaths: readonly string[];
+};
+
+type DynamicConfig = {
+  readonly render: 'dynamic';
+};
+
+export type GetConfig =
+  | (() => Promise<StaticConfig>)
+  | (() => Promise<StaticWithSlugConfig>)
+  | (() => Promise<DynamicConfig>)
+  | (() => StaticWithSlugConfig)
+  | (() => StaticConfig)
+  | (() => DynamicConfig);

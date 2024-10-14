@@ -6,6 +6,7 @@ import { Meta } from '../../components/meta';
 import { components } from '../../components/mdx';
 import { getAuthor } from '../../lib/get-author';
 import type { BlogFrontmatter } from '../../types';
+import type { GetConfig } from 'waku/router';
 
 type BlogArticlePageProps = {
   slug: string;
@@ -126,13 +127,13 @@ const getFileName = async (slug: string) => {
   return fileName;
 };
 
-export const getConfig = async () => {
+export const getConfig: GetConfig = async () => {
   const blogPaths = await getBlogPaths();
 
   return {
     render: 'static',
     staticPaths: blogPaths,
-  } as const;
+  };
 };
 
 const getBlogPaths = async () => {
