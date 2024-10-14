@@ -7,7 +7,7 @@ import { Start } from '../components/start';
 import { AllSponsors } from '../components/all-sponsors';
 import { Destination } from '../components/destination';
 import { loadReadme } from '../lib/load-readme';
-import type { GetConfigResult } from 'waku/router';
+import { config } from 'waku/router';
 
 export default async function HomePage() {
   const file = loadReadme();
@@ -55,7 +55,7 @@ export default async function HomePage() {
 }
 
 export const getConfig = async () => {
-  return {
+  return config({
     render: 'static',
-  } satisfies GetConfigResult;
+  });
 };

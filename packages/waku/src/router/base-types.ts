@@ -20,7 +20,11 @@ export interface CreatePagesConfig {
 export type PageProps<Path extends PagePath<CreatePagesConfig>> =
   PropsForPages<Path>;
 
-export type GetConfigResult = {
-  readonly render: 'static' | 'dynamic';
-  readonly staticPaths?: readonly string[];
-};
+export const config = <
+  SP extends string,
+  Fig extends
+    | { render: 'static'; staticPaths?: SP[] | [SP, ...SP[]][] }
+    | { render: 'dynamic' },
+>(
+  c: Fig,
+) => c;
