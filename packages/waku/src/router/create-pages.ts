@@ -671,25 +671,38 @@ export const new_createPages = <
       }
       return paths;
     },
-    renderRoute: async (id, options) => {
-      const processSkip = <T>(elements: Record<string, T>) =>
-        Object.fromEntries(
-          Object.entries(elements).filter(
-            ([k]) => !options.skip || !options.skip.includes(k),
-          ),
-        );
+    renderRoute: async (path, options) => {
       await configure();
+
+      // return processSkip({
+      //   'route:/bar': (
+      //     <Slot id="root">
+      //       <Slot id="layout:/">
+      //         <Slot id="page:/bar" />
+      //       </Slot>
+      //     </Slot>
+      //   ),
+      //   root: (
+      //     <Root>
+      //       <Children />
+      //     </Root>
+      //   ),
+      //   'layout:/': (
+      //     <HomeLayout>
+      //       <Children />
+      //     </HomeLayout>
+      //   ),
+      //   'page:/bar': <BarPage />,
+      // });
+
       if (id === 'root') {
-        if (rootItem?.render === 'dynamic') {
-          unstable_setShouldSkip();
-        } else {
-          unstable_setShouldSkip([]);
+        if (options.skip?.includes('root')) {
+          return null;
         }
         return rootItem?.component ?? DefaultRoot;
       }
       const staticComponent = staticComponentMap.get(id);
-      if (staticComponent) {
-        unstable_setShouldSkip([]);
+      if (staticComponent && !options.skip?.includes(id)) {
         return staticComponent;
       }
       for (const [_, [pathSpec, Component]] of dynamicPagePathMap) {
@@ -697,14 +710,14 @@ export const new_createPages = <
           [...pathSpec, { type: 'literal', name: 'page' }],
           id,
         );
+
         if (mapping) {
           if (Object.keys(mapping).length === 0) {
-            unstable_setShouldSkip();
             return Component;
           }
           const WrappedComponent = (props: Record<string, unknown>) =>
             createElement(Component, { ...props, ...mapping });
-          unstable_setShouldSkip();
+          // unstable_setShouldSkip();
           return WrappedComponent;
         }
       }
@@ -716,7 +729,7 @@ export const new_createPages = <
         if (mapping) {
           const WrappedComponent = (props: Record<string, unknown>) =>
             createElement(Component, { ...props, ...mapping });
-          unstable_setShouldSkip();
+          // unstable_setShouldSkip();
           return WrappedComponent;
         }
       }
@@ -729,11 +742,10 @@ export const new_createPages = <
           if (Object.keys(mapping).length) {
             throw new Error('[Bug] layout should not have slugs');
           }
-          unstable_setShouldSkip();
+          // unstable_setShouldSkip();
           return Component;
         }
       }
-      unstable_setShouldSkip([]); // negative cache
       return null; // not found
     },
   });
