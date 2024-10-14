@@ -267,6 +267,20 @@ const InnerSlot = ({
   return renderSlot(elements);
 };
 
+/**
+ * Slot component
+ * This is used under the Root component.
+ * Slot id is the key of elements returned by the server.
+ *
+ * If the server returns this
+ * ```
+ *   { 'foo': <div>foo</div>, 'bar': <div>bar</div> }
+ * ```
+ * then you can use this component like this
+ * ```
+ *   <Root><Slot id="foo" /><Slot id="bar" /></Root>
+ * ```
+ */
 export const Slot = ({
   id,
   children,
