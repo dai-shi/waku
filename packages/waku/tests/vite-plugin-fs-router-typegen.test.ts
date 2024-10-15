@@ -88,8 +88,6 @@ describe('vite-plugin-fs-router-typegen', () => {
     await runTest(
       root,
       `import type { getConfig as CategoryTagsIndex_getConfig } from './pages/[category]/[...tags]/index';
-import type { getConfig as CategoryLayout_getConfig } from './pages/[category]/_layout';
-import type { getConfig as Layout_getConfig } from './pages/_layout';
 import type { getConfig as Root_getConfig } from './pages/_root';
 import type { getConfig as Index_getConfig } from './pages/index';
 import type { getConfig as OneTwoThree_getConfig } from './pages/one-two-three';

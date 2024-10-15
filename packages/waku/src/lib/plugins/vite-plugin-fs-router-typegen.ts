@@ -135,12 +135,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
           const hasGetConfig = fileExportsGetConfig(filePath);
 
           if (filePath.endsWith('/_layout.tsx')) {
-            fileInfo.push({
-              type: 'layout',
-              path: filePath.replace('_layout.tsx', ''),
-              src,
-              hasGetConfig,
-            });
+            continue;
           } else if (filePath.endsWith('/index.tsx')) {
             const path = filePath.slice(0, -'/index.tsx'.length);
             fileInfo.push({
