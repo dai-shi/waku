@@ -159,33 +159,37 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
           }
         }
 
-        let result = `import { createPages } from 'waku';
-import type { PathsForPages } from 'waku/router';\n\n`;
+        let result = `import type { PathsForPages, GetConfigResponse } from 'waku/router';\n\n`;
 
         for (const file of fileInfo) {
           const moduleName = moduleNames[file.src];
-          result += `import ${moduleName}${file.hasGetConfig ? `, { getConfig as ${moduleName}_getConfig }` : ''} from './${SRC_PAGES}/${file.src.replace('.tsx', '')}';\n`;
+          if (file.hasGetConfig) {
+            result += `import type { getConfig as ${moduleName}_getConfig } from './${SRC_PAGES}/${file.src.replace('.tsx', '')}';\n`;
+          }
         }
 
-        result += `\nconst _pages = createPages(async (pagesFns) => [\n`;
+        result += `\ntype Page = {
+  DO_NOT_USE_pages:`;
 
         for (const file of fileInfo) {
           const moduleName = moduleNames[file.src];
-          result += `  pagesFns.${file.type === 'layout' ? 'createLayout' : 'createPage'}({ path: '${file.path}', component: ${moduleName}, ${file.hasGetConfig ? `...(await ${moduleName}_getConfig())` : `render: '${file.type === 'layout' ? 'static' : 'dynamic'}'`} }),\n`;
+          if (file.hasGetConfig) {
+            result += `| ({path: '${file.path}'} & GetConfigResponse<typeof ${moduleName}_getConfig>)\n`;
+          } else {
+            result += `| {path: '${file.path}'; render: 'dynamic'}\n`;
+          }
         }
 
-        result += `]);
+        result += `};
 
   declare module 'waku/router' {
     interface RouteConfig {
-      paths: PathsForPages<typeof _pages>;
+      paths: PathsForPages<Page>;
     }
     interface CreatePagesConfig {
-      pages: typeof _pages;
+      pages: Page;
     }
   }
-
-  export default _pages;
   `;
 
         return result;

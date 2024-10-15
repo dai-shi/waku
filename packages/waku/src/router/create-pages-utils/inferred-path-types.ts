@@ -186,3 +186,29 @@ export type PropsForPages<Path extends string> = Prettify<
   Omit<RouteProps<ReplaceAll<Path, `[${string}]`, string>>, 'hash'> &
     SlugTypes<Path>
 >;
+
+type AnyConfigResponse = {
+  render: string;
+  staticPaths: readonly string[] | readonly (readonly string[])[];
+};
+
+type GetResponseType<Response extends AnyConfigResponse> = Response extends {
+  render: 'static' | 'dynamic';
+}
+  ? Response
+  : { render: 'dynamic' };
+
+type GetAsyncFnReturn<Fn extends () => Promise<AnyConfigResponse>> =
+  GetResponseType<Awaited<ReturnType<Fn>>>;
+
+/**
+ * Helper used for generation of types with fs-router for
+ * collecting the type of the getConfig function response and
+ * falling back to {render: 'dynamic'} if inference fails.
+ */
+export type GetConfigResponse<Fn extends () => unknown> =
+  Fn extends () => Promise<AnyConfigResponse>
+    ? GetAsyncFnReturn<Fn>
+    : ReturnType<Fn> extends AnyConfigResponse
+      ? ReturnType<Fn>
+      : { render: 'dynamic' };
