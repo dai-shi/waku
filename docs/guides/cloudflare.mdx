@@ -93,7 +93,7 @@ See https://developers.cloudflare.com/pages/functions/routing/#functions-invocat
 
 ### Custom Headers
 
-Waku will copy the `_headers` file from your public directory to the dist directory as-is. Note that these headers only apply to static assets. For dynamic pages, you can access the response from the Hono context and set headers there.
+Waku will copy the `_headers` file from your public directory to the dist directory as-is. Note that these headers only apply to static assets. For dynamic pages, you can access the response from the Hono context and set headers there. Since Cloudflare supports response body streaming, server components might not be able to set headers if they were already sent in the response stream. Headers can be set from custom Waku middleware.
 
 - https://developers.cloudflare.com/pages/configuration/headers/
 - https://developers.cloudflare.com/pages/how-to/add-custom-http-headers/
@@ -105,14 +105,24 @@ Cloudflare lets you deploy other Cloudflare Workers functions to your account an
 
 This can be combined with [smart placement](https://developers.cloudflare.com/workers/configuration/smart-placement/) and React Suspense to process certain operations in a worker gco-located with a D1 database while the main request is handled via in the Pages function running at global edge location. Note that you want to enable smart placement for your Cloudflare Workers function but have it disabled on for your Cloudflare Pages function. You should move interaction with D1 and other co-located resources to the worker and then call it from your server components via the service binding for optimal performance.
 
+## Extending Hono
+
+While Waku uses Hono as a HTTP server adapter, Waku also has its own middleware system and custom middleware can easily be added to your waku.config.ts file.
+
+See the cookies and api examples of custom Waku middleware. You can access the request url, body and headers as well, read/write to the Waku custom context, and set body, status code or headers for the response object.
+
+While it is preferred to work with Waku middleware, for certain use cases, it might be required to extend the Hono app with Hono middleware or routes.
+
+There is a `unstable_honoEnhancer` config option that can be used to modify or replace the Hono app that Waku creates. We will use that during development to access local bindings provided by `wrangler`.
+
 ## Setting Up Local Development
 
-To develop locally and access Cloudflare resources during development, install Cloudflare's local dev server, `miniflare`:
+To develop locally and access Cloudflare resources during development, we need to run Cloudflare's local dev server `miniflare`. It is automatically installed when you install Cloudflare's dev cli tool called `wrangler`:
 
 ```sh
-npm i --save-dev miniflare
+npm i --save-dev wrangler
 ```
 
-When starting the Waku dev server, you need to first start a `miniflare` server and then inject objects from `miniflare` into Waku's context.
+When starting the Waku dev server, we need to first start a wrangler/miniflare server and then pass them into the Hono app fetch.
 
-This can be done by creating a custom Waku plugin in your `waku.config.ts` file. Copy the `waku.cloudflare-dev-server.ts` and `waku.config.ts` to your project from [this gist](https://gist.github.com/rmarscher/9bb6ed54dc9535f4b81bed147204c7e9).
+This can be done by creating a custom Waku plugin in your `waku.config.ts` file. Copy the `waku.cloudflare-dev-server.ts` and `waku.config.ts` to your project from https://github.com/dai-shi/waku/tree/main/examples/26_cloudflare. Now when you run `waku dev`, you will be able to access Cloudflare env bindings and execution context on the Hono context.
