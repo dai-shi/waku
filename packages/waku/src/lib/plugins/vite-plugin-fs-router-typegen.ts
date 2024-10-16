@@ -66,7 +66,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
       entriesFilePossibilities = EXTENSIONS.map((ext) =>
         joinPath(config.root, opts.srcDir, SRC_ENTRIES + ext),
       );
-      outputFile = joinPath(config.root, opts.srcDir, `${SRC_ENTRIES}.gen.tsx`);
+      outputFile = joinPath(config.root, opts.srcDir, 'pages.gen.ts');
 
       try {
         const prettier = await import('prettier');
@@ -120,13 +120,14 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
         const file = readFileSync(pagesDir + filePath).toString();
 
         return (
-          file.includes('const getConfig') ||
-          file.includes('function getConfig')
+          file.includes('const getConfig =') ||
+          file.includes('function getConfig(')
         );
       };
 
       const generateFile = (filePaths: string[]): string => {
-        const fileInfo = [];
+        const fileInfo: { path: string; src: string; hasGetConfig: boolean }[] =
+          [];
         const moduleNames = getImportModuleNames(filePaths);
 
         for (const filePath of filePaths) {
@@ -139,14 +140,12 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
           } else if (filePath.endsWith('/index.tsx')) {
             const path = filePath.slice(0, -'/index.tsx'.length);
             fileInfo.push({
-              type: 'page',
               path: path || '/',
               src,
               hasGetConfig,
             });
           } else {
             fileInfo.push({
-              type: 'page',
               path: filePath.replace('.tsx', ''),
               src,
               hasGetConfig,
