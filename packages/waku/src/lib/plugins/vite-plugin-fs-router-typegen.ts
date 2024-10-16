@@ -195,6 +195,9 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
           return;
         }
         const files = await collectFiles(pagesDir);
+        if (!files.length) {
+          return;
+        }
         const formatted = await formatter(generateFile(files));
         await writeFile(outputFile, formatted, 'utf-8');
       };
