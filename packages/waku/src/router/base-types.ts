@@ -4,7 +4,11 @@ import type {
 } from './create-pages-utils/inferred-path-types.js';
 
 // PathsForPages collects the paths from the `createPages` result type
-export type { PathsForPages } from './create-pages-utils/inferred-path-types.js';
+// GetConfigResponse is a helper for generating types with fs-router
+export type {
+  PathsForPages,
+  GetConfigResponse,
+} from './create-pages-utils/inferred-path-types.js';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface RouteConfig {

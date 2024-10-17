@@ -186,3 +186,18 @@ export type PropsForPages<Path extends string> = Prettify<
   Omit<RouteProps<ReplaceAll<Path, `[${string}]`, string>>, 'hash'> &
     SlugTypes<Path>
 >;
+
+type GetResponseType<Response extends { render: string }> =
+  string extends Response['render'] ? { render: 'dynamic' } : Response;
+
+/**
+ * Helper used for generation of types with fs-router for
+ * collecting the type of the getConfig function response and
+ * falling back to {render: 'dynamic'} if inference fails.
+ */
+export type GetConfigResponse<
+  Fn extends () => Promise<{ render: string }> | { render: string },
+> =
+  ReturnType<Fn> extends { render: string }
+    ? GetResponseType<ReturnType<Fn>>
+    : GetResponseType<Awaited<ReturnType<Fn>>>;

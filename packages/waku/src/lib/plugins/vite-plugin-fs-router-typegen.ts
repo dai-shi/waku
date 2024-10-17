@@ -1,8 +1,9 @@
 import type { Plugin } from 'vite';
 import { readdir, writeFile } from 'node:fs/promises';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { SRC_ENTRIES, EXTENSIONS } from '../constants.js';
 import { joinPath } from '../utils/path.js';
+import { parseFileSync } from '@swc/core';
 
 const SRC_PAGES = 'pages';
 
@@ -66,7 +67,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
       entriesFilePossibilities = EXTENSIONS.map((ext) =>
         joinPath(config.root, opts.srcDir, SRC_ENTRIES + ext),
       );
-      outputFile = joinPath(config.root, opts.srcDir, `${SRC_ENTRIES}.gen.tsx`);
+      outputFile = joinPath(config.root, opts.srcDir, 'pages.gen.ts');
 
       try {
         const prettier = await import('prettier');
@@ -117,16 +118,40 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
         if (!pagesDir) {
           return false;
         }
-        const file = readFileSync(pagesDir + filePath).toString();
+        const file = parseFileSync(pagesDir + filePath, {
+          syntax: 'typescript',
+          tsx: true,
+        });
 
-        return (
-          file.includes('const getConfig') ||
-          file.includes('function getConfig')
-        );
+        return file.body.some((node) => {
+          if (node.type === 'ExportNamedDeclaration') {
+            return node.specifiers.some(
+              (specifier) =>
+                specifier.type === 'ExportSpecifier' &&
+                !specifier.isTypeOnly &&
+                ((!specifier.exported &&
+                  specifier.orig.value === 'getConfig') ||
+                  specifier.exported?.value === 'getConfig'),
+            );
+          }
+
+          return (
+            node.type === 'ExportDeclaration' &&
+            ((node.declaration.type === 'VariableDeclaration' &&
+              node.declaration.declarations.some(
+                (decl) =>
+                  decl.id.type === 'Identifier' &&
+                  decl.id.value === 'getConfig',
+              )) ||
+              (node.declaration.type === 'FunctionDeclaration' &&
+                node.declaration.identifier.value === 'getConfig'))
+          );
+        });
       };
 
       const generateFile = (filePaths: string[]): string => {
-        const fileInfo = [];
+        const fileInfo: { path: string; src: string; hasGetConfig: boolean }[] =
+          [];
         const moduleNames = getImportModuleNames(filePaths);
 
         for (const filePath of filePaths) {
@@ -135,23 +160,16 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
           const hasGetConfig = fileExportsGetConfig(filePath);
 
           if (filePath.endsWith('/_layout.tsx')) {
-            fileInfo.push({
-              type: 'layout',
-              path: filePath.replace('_layout.tsx', ''),
-              src,
-              hasGetConfig,
-            });
+            continue;
           } else if (filePath.endsWith('/index.tsx')) {
             const path = filePath.slice(0, -'/index.tsx'.length);
             fileInfo.push({
-              type: 'page',
               path: path || '/',
               src,
               hasGetConfig,
             });
           } else {
             fileInfo.push({
-              type: 'page',
               path: filePath.replace('.tsx', ''),
               src,
               hasGetConfig,
@@ -159,33 +177,37 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
           }
         }
 
-        let result = `import { createPages } from 'waku';
-import type { PathsForPages } from 'waku/router';\n\n`;
+        let result = `import type { PathsForPages, GetConfigResponse } from 'waku/router';\n\n`;
 
         for (const file of fileInfo) {
           const moduleName = moduleNames[file.src];
-          result += `import ${moduleName}${file.hasGetConfig ? `, { getConfig as ${moduleName}_getConfig }` : ''} from './${SRC_PAGES}/${file.src.replace('.tsx', '')}';\n`;
+          if (file.hasGetConfig) {
+            result += `import type { getConfig as ${moduleName}_getConfig } from './${SRC_PAGES}/${file.src.replace('.tsx', '')}';\n`;
+          }
         }
 
-        result += `\nconst _pages = createPages(async (pagesFns) => [\n`;
+        result += `\ntype Page = {
+  DO_NOT_USE_pages:`;
 
         for (const file of fileInfo) {
           const moduleName = moduleNames[file.src];
-          result += `  pagesFns.${file.type === 'layout' ? 'createLayout' : 'createPage'}({ path: '${file.path}', component: ${moduleName}, ${file.hasGetConfig ? `...(await ${moduleName}_getConfig())` : `render: '${file.type === 'layout' ? 'static' : 'dynamic'}'`} }),\n`;
+          if (file.hasGetConfig) {
+            result += `| ({path: '${file.path}'} & GetConfigResponse<typeof ${moduleName}_getConfig>)\n`;
+          } else {
+            result += `| {path: '${file.path}'; render: 'dynamic'}\n`;
+          }
         }
 
-        result += `]);
+        result += `};
 
   declare module 'waku/router' {
     interface RouteConfig {
-      paths: PathsForPages<typeof _pages>;
+      paths: PathsForPages<Page>;
     }
     interface CreatePagesConfig {
-      pages: typeof _pages;
+      pages: Page;
     }
   }
-
-  export default _pages;
   `;
 
         return result;
@@ -196,6 +218,9 @@ import type { PathsForPages } from 'waku/router';\n\n`;
           return;
         }
         const files = await collectFiles(pagesDir);
+        if (!files.length) {
+          return;
+        }
         const formatted = await formatter(generateFile(files));
         await writeFile(outputFile, formatted, 'utf-8');
       };

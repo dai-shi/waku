@@ -87,15 +87,13 @@ describe('vite-plugin-fs-router-typegen', () => {
   test('creates the expected imports the generated entries file', async () => {
     await runTest(
       root,
-      `import CategoryTagsIndex, { getConfig as CategoryTagsIndex_getConfig } from './pages/[category]/[...tags]/index';
-import CategoryLayout, { getConfig as CategoryLayout_getConfig } from './pages/[category]/_layout';
-import Layout, { getConfig as Layout_getConfig } from './pages/_layout';
-import Root, { getConfig as Root_getConfig } from './pages/_root';
-import Index, { getConfig as Index_getConfig } from './pages/index';
-import OneTwoThree, { getConfig as OneTwoThree_getConfig } from './pages/one-two-three';
-import OneTwoThree_1, { getConfig as OneTwoThree_1_getConfig } from './pages/one__two_three';
-import OneTwoThree_2, { getConfig as OneTwoThree_2_getConfig } from './pages/one_two_three';
-import ØnéTwoThree, { getConfig as ØnéTwoThree_getConfig } from './pages/øné_two_three';`,
+      `import type { getConfig as CategoryTagsIndex_getConfig } from './pages/[category]/[...tags]/index';
+import type { getConfig as Root_getConfig } from './pages/_root';
+import type { getConfig as Index_getConfig } from './pages/index';
+import type { getConfig as OneTwoThree_getConfig } from './pages/one-two-three';
+import type { getConfig as OneTwoThree_1_getConfig } from './pages/one__two_three';
+import type { getConfig as OneTwoThree_2_getConfig } from './pages/one_two_three';
+import type { getConfig as ØnéTwoThree_getConfig } from './pages/øné_two_three';`,
     );
   });
 });
