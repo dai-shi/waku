@@ -1,8 +1,9 @@
 import type { Plugin } from 'vite';
 import { readdir, writeFile } from 'node:fs/promises';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { SRC_ENTRIES, EXTENSIONS } from '../constants.js';
 import { joinPath } from '../utils/path.js';
+import { parseFileSync } from '@swc/core';
 
 const SRC_PAGES = 'pages';
 
@@ -117,12 +118,35 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
         if (!pagesDir) {
           return false;
         }
-        const file = readFileSync(pagesDir + filePath).toString();
+        const file = parseFileSync(pagesDir + filePath, {
+          syntax: 'typescript',
+          tsx: true,
+        });
 
-        return (
-          file.includes('const getConfig =') ||
-          file.includes('function getConfig(')
-        );
+        return file.body.some((node) => {
+          if (node.type === 'ExportNamedDeclaration') {
+            return node.specifiers.some(
+              (specifier) =>
+                specifier.type === 'ExportSpecifier' &&
+                !specifier.isTypeOnly &&
+                ((!specifier.exported &&
+                  specifier.orig.value === 'getConfig') ||
+                  specifier.exported?.value === 'getConfig'),
+            );
+          }
+
+          return (
+            node.type === 'ExportDeclaration' &&
+            ((node.declaration.type === 'VariableDeclaration' &&
+              node.declaration.declarations.some(
+                (decl) =>
+                  decl.id.type === 'Identifier' &&
+                  decl.id.value === 'getConfig',
+              )) ||
+              (node.declaration.type === 'FunctionDeclaration' &&
+                node.declaration.identifier.value === 'getConfig'))
+          );
+        });
       };
 
       const generateFile = (filePaths: string[]): string => {
