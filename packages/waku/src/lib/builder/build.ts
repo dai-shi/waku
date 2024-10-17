@@ -665,8 +665,9 @@ export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
 // FIXME this is too hacky
 const willEmitPublicIndexHtmlNew = async (
   config: ResolvedConfig,
-  distEntries: Omit<EntriesPrd, keyof EntriesDev> &
-    ReturnType<typeof new_defineEntries>,
+  distEntries: Omit<EntriesPrd, keyof EntriesDev> & {
+    default: ReturnType<typeof new_defineEntries>;
+  },
   buildConfig: BuildConfig,
 ) => {
   const hasConfig = buildConfig.some(({ pathname }) => {
@@ -696,7 +697,11 @@ const willEmitPublicIndexHtmlNew = async (
     method: 'GET',
     headers: {},
   };
-  const res = await distEntries.unstable_handleRequest(config, req, utils);
+  const res = await distEntries.default.unstable_handleRequest(
+    config,
+    req,
+    utils,
+  );
   return !!res;
 };
 
@@ -705,16 +710,19 @@ const emitStaticFiles = async (
   rootDir: string,
   config: ResolvedConfig,
   distEntriesFile: string,
-  distEntries: Omit<EntriesPrd, keyof EntriesDev> &
-    ReturnType<typeof new_defineEntries>,
+  distEntries: Omit<EntriesPrd, keyof EntriesDev> & {
+    default: ReturnType<typeof new_defineEntries>;
+  },
   buildConfig: BuildConfig,
   cssAssets: string[],
 ) => {
   const unstable_modules = {
     rsdwServer: await distEntries.loadModule('rsdw-server'),
-    rdServer: await distEntries.loadModule('rd-server'),
-    rsdwClient: await distEntries.loadModule('rsdw-client'),
-    wakuMinimalClient: await distEntries.loadModule('waku-minimal-client'),
+    rdServer: await distEntries.loadModule(CLIENT_PREFIX + 'rd-server'),
+    rsdwClient: await distEntries.loadModule(CLIENT_PREFIX + 'rsdw-client'),
+    wakuMinimalClient: await distEntries.loadModule(
+      CLIENT_PREFIX + 'waku-minimal-client',
+    ),
   };
   const basePrefix = config.basePath + config.rscBase + '/';
   const publicIndexHtmlFile = joinPath(
@@ -775,7 +783,7 @@ const emitStaticFiles = async (
             method: 'GET',
             headers: {},
           };
-          const res = await distEntries.unstable_handleRequest(
+          const res = await distEntries.default.unstable_handleRequest(
             config,
             req,
             utils,
@@ -871,7 +879,7 @@ const emitStaticFiles = async (
           method: 'GET',
           headers: {},
         };
-        const res = await distEntries.unstable_handleRequest(
+        const res = await distEntries.default.unstable_handleRequest(
           config,
           req,
           utils,
@@ -1007,8 +1015,8 @@ export async function build(options: {
   const distEntries = await import(filePathToFileURL(distEntriesFile));
 
   // TODO: Add progress indication for static builds.
-  if ('unstable_handleRequest' in distEntries) {
-    const buildConfig = await distEntries.unstable_getBuildConfig({
+  if ('unstable_handleRequest' in distEntries.default) {
+    const buildConfig = await distEntries.default.unstable_getBuildConfig({
       unstable_collectClientModules: (elements: never) =>
         collectClientModules(
           config,
