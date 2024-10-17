@@ -187,18 +187,10 @@ export type PropsForPages<Path extends string> = Prettify<
     SlugTypes<Path>
 >;
 
-type AnyConfigResponse = {
-  render: string;
-  staticPaths: readonly string[] | readonly (readonly string[])[];
-};
+type GetResponseType<Response extends { render: string }> =
+  string extends Response['render'] ? { render: 'dynamic' } : Response;
 
-type GetResponseType<Response extends AnyConfigResponse> = Response extends {
-  render: 'static' | 'dynamic';
-}
-  ? Response
-  : { render: 'dynamic' };
-
-type GetAsyncFnReturn<Fn extends () => Promise<AnyConfigResponse>> =
+type GetAsyncFnReturn<Fn extends () => Promise<{ render: string }>> =
   GetResponseType<Awaited<ReturnType<Fn>>>;
 
 /**
@@ -206,9 +198,10 @@ type GetAsyncFnReturn<Fn extends () => Promise<AnyConfigResponse>> =
  * collecting the type of the getConfig function response and
  * falling back to {render: 'dynamic'} if inference fails.
  */
-export type GetConfigResponse<Fn extends () => unknown> =
-  Fn extends () => Promise<AnyConfigResponse>
-    ? GetAsyncFnReturn<Fn>
-    : ReturnType<Fn> extends AnyConfigResponse
-      ? ReturnType<Fn>
-      : { render: 'dynamic' };
+export type GetConfigResponse<
+  Fn extends () => Promise<{ render: string }> | { render: string },
+> = Fn extends () => Promise<{ render: string }>
+  ? GetAsyncFnReturn<Fn>
+  : ReturnType<Fn> extends { render: string }
+    ? GetResponseType<ReturnType<Fn>>
+    : never;
