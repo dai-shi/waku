@@ -1,13 +1,15 @@
 import type { Config } from '../../config.js';
-import type { EntriesDev, EntriesPrd } from '../../server.js';
+
+// TODO should we move this to somewhere else?
+import type { EntriesDev, EntriesPrd } from '../../minimal/server.js';
 
 export type ClonableModuleNode = { url: string; file: string };
 
 export type HandlerReq = {
-  body: ReadableStream;
-  url: URL;
-  method: string;
-  headers: Record<string, string>;
+  readonly body: ReadableStream | null;
+  readonly url: URL;
+  readonly method: string;
+  readonly headers: Readonly<Record<string, string>>;
 };
 
 export type HandlerRes = {
@@ -19,7 +21,9 @@ export type HandlerRes = {
 export type HandlerContext = {
   readonly req: HandlerReq;
   readonly res: HandlerRes;
+  /** @deprecated use `data` */
   readonly context: Record<string, unknown>;
+  readonly data: Record<string, unknown>;
   unstable_devServer?: {
     rootDir: string;
     resolveClientEntry: (id: string) => string;
@@ -29,6 +33,12 @@ export type HandlerContext = {
     transformIndexHtml: (
       pathname: string,
     ) => Promise<TransformStream<any, any>>;
+  };
+  unstable_modules?: {
+    rsdwServer: unknown;
+    rdServer: unknown;
+    rsdwClient: unknown;
+    wakuMinimalClient: unknown;
   };
 };
 

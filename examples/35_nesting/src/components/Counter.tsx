@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Slot, useRefetch } from 'waku/client';
+import { Slot, useRefetch } from 'waku/minimal/client';
 
 export const Counter = ({ enableInnerApp }: { enableInnerApp?: boolean }) => {
   const [count, setCount] = useState(0);

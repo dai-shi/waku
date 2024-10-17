@@ -11,8 +11,8 @@ import type {
   RenderEntries,
   GetBuildConfig,
   GetSsrConfig,
-} from '../server.js';
-import { Children, Slot } from '../client.js';
+} from '../minimal/server.js';
+import { Children, Slot } from '../minimal/client.js';
 import {
   getComponentIds,
   encodeRoutePath,

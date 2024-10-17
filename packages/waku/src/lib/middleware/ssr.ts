@@ -22,10 +22,10 @@ export const ssr: Middleware = (options) => {
 
   return async (ctx, next) => {
     const { unstable_devServer: devServer } = ctx;
-    const [{ middleware: _removed, ...config }, entries] = await Promise.all([
-      configPromise,
-      entriesPromise,
-    ]);
+    const [
+      { middleware: _removed1, unstable_honoEnhancer: _removed2, ...config },
+      entries,
+    ] = await Promise.all([configPromise, entriesPromise]);
     const entriesDev = devServer && (await devServer.loadEntriesDev(config));
     try {
       const htmlHead = devServer

@@ -2,9 +2,8 @@
 export default {
   middleware: () => [
     import('waku/middleware/context'),
-    import('./src/middleware/cookie.js'),
     import('waku/middleware/dev-server'),
-    import('waku/middleware/rsc'),
-    import('waku/middleware/ssr'),
+    import('waku/middleware/handler'),
+    import('waku/middleware/fallback'),
   ],
 };

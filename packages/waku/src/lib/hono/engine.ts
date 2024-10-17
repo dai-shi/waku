@@ -6,13 +6,6 @@ import type { HandlerContext, MiddlewareOptions } from '../middleware/types.js';
 // Internal context key
 const HONO_CONTEXT = '__hono_context';
 
-const createEmptyReadableStream = () =>
-  new ReadableStream({
-    start(controller) {
-      controller.close();
-    },
-  });
-
 // serverEngine returns hono middleware that runs Waku middleware.
 export const serverEngine = (options: MiddlewareOptions): MiddlewareHandler => {
   const entriesPromise =
@@ -35,13 +28,16 @@ export const serverEngine = (options: MiddlewareOptions): MiddlewareHandler => {
   return async (c, next) => {
     const ctx: HandlerContext = {
       req: {
-        body: c.req.raw.body || createEmptyReadableStream(),
+        body: c.req.raw.body,
         url: new URL(c.req.url),
         method: c.req.method,
         headers: c.req.header(),
       },
       res: {},
       context: {
+        [HONO_CONTEXT]: c,
+      },
+      data: {
         [HONO_CONTEXT]: c,
       },
     };
