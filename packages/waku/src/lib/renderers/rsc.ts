@@ -13,8 +13,9 @@ const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
 
 export function renderRsc(
   config: PureConfig,
-  ctx: HandlerContext,
+  ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
   elements: Elements,
+  moduleIdCallback?: (id: string) => void,
 ): ReadableStream {
   if (Object.keys(elements).some((key) => key.startsWith('_'))) {
     throw new Error('"_" prefix is reserved');
@@ -38,6 +39,7 @@ export function renderRsc(
       get(_target, encodedId: string) {
         const [file, name] = encodedId.split('#') as [string, string];
         const id = resolveClientEntry(file, config);
+        moduleIdCallback?.(id);
         return { id, chunks: [id], name, async: true };
       },
     },
@@ -47,7 +49,7 @@ export function renderRsc(
 
 export function renderRscElement(
   config: PureConfig,
-  ctx: HandlerContext,
+  ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
   element: ReactNode,
 ): ReadableStream {
   const modules = ctx.unstable_modules;

@@ -4,13 +4,20 @@ import { pipeline } from 'node:stream/promises';
 import { build as buildVite, resolveConfig as resolveViteConfig } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { LoggingFunction, RollupLog } from 'rollup';
+import type { ReactNode } from 'react';
 
 import type { Config } from '../../config.js';
 import { unstable_getPlatformObject } from '../../server.js';
-import type { BuildConfig, EntriesPrd } from '../../minimal/server.js';
+import type {
+  BuildConfig,
+  EntriesPrd,
+  EntriesDev,
+  new_defineEntries,
+} from '../../minimal/server.js';
 import type { ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import { EXTENSIONS } from '../constants.js';
+import { stringToStream } from '../utils/stream.js';
 import type { PathSpec } from '../utils/path.js';
 import {
   decodeFilePathFromAbsolute,
@@ -31,8 +38,16 @@ import {
   unlink,
   writeFile,
 } from '../utils/node-fs.js';
-import { encodeRscPath, generatePrefetchCode } from '../renderers/utils.js';
-import { collectClientModules } from '../renderers/rsc.js';
+import {
+  decodeRscPath,
+  encodeRscPath,
+  generatePrefetchCode,
+} from '../renderers/utils.js';
+import {
+  collectClientModules,
+  renderRsc as renderRscNew,
+} from '../renderers/rsc.js';
+import { renderHtml as renderHtmlNew } from '../renderers/html.js';
 import {
   getBuildConfig,
   getSsrConfig,
@@ -647,26 +662,239 @@ export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
   await appendFile(distEntriesFile, code);
 };
 
+// FIXME this is too hacky
+const willEmitPublicIndexHtmlNew = async (
+  config: ResolvedConfig,
+  distEntries: Omit<EntriesPrd, keyof EntriesDev> &
+    ReturnType<typeof new_defineEntries>,
+  buildConfig: BuildConfig,
+) => {
+  const hasConfig = buildConfig.some(({ pathname }) => {
+    const pathSpec =
+      typeof pathname === 'string' ? pathname2pathSpec(pathname) : pathname;
+    return !!getPathMapping(pathSpec, '/');
+  });
+  if (!hasConfig) {
+    return false;
+  }
+  const utils = {
+    renderRsc: () => {
+      throw new Error('Cannot render RSC in HTML build');
+    },
+    decodeRscPath,
+    renderHtml: () => {
+      const headers = { 'content-type': 'text/html; charset=utf-8' };
+      return {
+        body: stringToStream('DUMMY'), // HACK this might not work in an edge case
+        headers,
+      };
+    },
+  };
+  const req = {
+    body: null,
+    url: new URL('http://localhost/'),
+    method: 'GET',
+    headers: {},
+  };
+  const res = await distEntries.unstable_handleRequest(config, req, utils);
+  return !!res;
+};
+
+// TODO too long...
 const emitStaticFiles = async (
   rootDir: string,
-  env: Record<string, string>,
   config: ResolvedConfig,
   distEntriesFile: string,
-  distEntries: EntriesPrd,
+  distEntries: Omit<EntriesPrd, keyof EntriesDev> &
+    ReturnType<typeof new_defineEntries>,
   buildConfig: BuildConfig,
   cssAssets: string[],
 ) => {
-  console.log(
-    'TODO',
+  const unstable_modules = {
+    rsdwServer: await distEntries.loadModule('rsdw-server'),
+    rdServer: await distEntries.loadModule('rd-server'),
+    rsdwClient: await distEntries.loadModule('rsdw-client'),
+    wakuMinimalClient: await distEntries.loadModule('waku-minimal-client'),
+  };
+  const basePrefix = config.basePath + config.rscBase + '/';
+  const publicIndexHtmlFile = joinPath(
     rootDir,
-    env,
-    config,
-    distEntriesFile,
-    distEntries,
-    buildConfig,
-    cssAssets,
+    config.distDir,
+    DIST_PUBLIC,
+    'index.html',
   );
-  // TODO
+  const publicIndexHtml = await readFile(publicIndexHtmlFile, {
+    encoding: 'utf8',
+  });
+  if (await willEmitPublicIndexHtmlNew(config, distEntries, buildConfig)) {
+    await unlink(publicIndexHtmlFile);
+  }
+  const publicIndexHtmlHead = publicIndexHtml.replace(
+    /.*?<head>(.*?)<\/head>.*/s,
+    '$1',
+  );
+  const dynamicHtmlPathMap = new Map<PathSpec, string>();
+  await Promise.all(
+    Array.from(buildConfig).map(
+      async ({ pathname, isStatic, entries, customCode }) => {
+        const moduleIdsForPrefetch = new Set<string>();
+        for (const { rscPath, isStatic } of entries || []) {
+          if (!isStatic) {
+            continue;
+          }
+          const destRscFile = joinPath(
+            rootDir,
+            config.distDir,
+            DIST_PUBLIC,
+            config.rscBase,
+            encodeRscPath(rscPath),
+          );
+          // Skip if the file already exists.
+          if (existsSync(destRscFile)) {
+            continue;
+          }
+          await mkdir(joinPath(destRscFile, '..'), { recursive: true });
+          const utils = {
+            renderRsc: (elements: Record<string, ReactNode>) =>
+              renderRscNew(config, { unstable_modules }, elements, (id) =>
+                moduleIdsForPrefetch.add(id),
+              ),
+            decodeRscPath,
+            renderHtml: () => {
+              throw new Error('Cannot render HTML in RSC build');
+            },
+          };
+          const req = {
+            body: null,
+            url: new URL(
+              'http://localhost/' +
+                config.rscBase +
+                '/' +
+                encodeRscPath(rscPath),
+            ),
+            method: 'GET',
+            headers: {},
+          };
+          const res = await distEntries.unstable_handleRequest(
+            config,
+            req,
+            utils,
+          );
+          const rscReadable = res instanceof ReadableStream ? res : res?.body;
+          await pipeline(
+            Readable.fromWeb(rscReadable as never),
+            createWriteStream(destRscFile),
+          );
+        }
+        //----------------
+        const pathSpec =
+          typeof pathname === 'string' ? pathname2pathSpec(pathname) : pathname;
+        let htmlStr = publicIndexHtml;
+        let htmlHead = publicIndexHtmlHead;
+        if (cssAssets.length) {
+          const cssStr = cssAssets
+            .map(
+              (asset) =>
+                `<link rel="stylesheet" href="${config.basePath}${asset}">`,
+            )
+            .join('\n');
+          // HACK is this too naive to inject style code?
+          htmlStr = htmlStr.replace(/<\/head>/, cssStr);
+          htmlHead += cssStr;
+        }
+        const rscPathsForPrefetch = new Set<string>();
+        for (const { rscPath, skipPrefetch } of entries || []) {
+          if (!skipPrefetch) {
+            rscPathsForPrefetch.add(rscPath);
+          }
+        }
+        const code =
+          generatePrefetchCode(
+            basePrefix,
+            rscPathsForPrefetch,
+            moduleIdsForPrefetch,
+          ) + (customCode || '');
+        if (code) {
+          // HACK is this too naive to inject script code?
+          htmlStr = htmlStr.replace(
+            /<\/head>/,
+            `<script type="module" async>${code}</script></head>`,
+          );
+          htmlHead += `<script type="module" async>${code}</script>`;
+        }
+        if (!isStatic) {
+          dynamicHtmlPathMap.set(pathSpec, htmlHead);
+          return;
+        }
+        pathname = pathSpec2pathname(pathSpec);
+        const destHtmlFile = joinPath(
+          rootDir,
+          config.distDir,
+          DIST_PUBLIC,
+          extname(pathname)
+            ? pathname
+            : pathname === '/404'
+              ? '404.html' // HACK special treatment for 404, better way?
+              : pathname + '/index.html',
+        );
+        // In partial mode, skip if the file already exists.
+        if (existsSync(destHtmlFile)) {
+          return;
+        }
+        const utils = {
+          renderRsc: (elements: Record<string, ReactNode>) =>
+            renderRscNew(config, { unstable_modules }, elements),
+          decodeRscPath,
+          renderHtml: (
+            elements: Record<string, ReactNode>,
+            html: ReactNode,
+            rscPath: string,
+          ) => {
+            const readable = renderHtmlNew(
+              config,
+              { unstable_modules },
+              htmlHead,
+              elements,
+              html,
+              rscPath,
+            );
+            const headers = { 'content-type': 'text/html; charset=utf-8' };
+            return {
+              body: readable,
+              headers,
+            };
+          },
+        };
+        const req = {
+          body: null,
+          url: new URL('http://localhost' + pathname),
+          method: 'GET',
+          headers: {},
+        };
+        const res = await distEntries.unstable_handleRequest(
+          config,
+          req,
+          utils,
+        );
+        const htmlReadable = res instanceof ReadableStream ? res : res?.body;
+        await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
+        if (htmlReadable) {
+          await pipeline(
+            Readable.fromWeb(htmlReadable as never),
+            createWriteStream(destHtmlFile),
+          );
+        } else {
+          await writeFile(destHtmlFile, htmlStr);
+        }
+      },
+    ),
+  );
+  const dynamicHtmlPaths = Array.from(dynamicHtmlPathMap);
+  const code = `
+export const dynamicHtmlPaths = ${JSON.stringify(dynamicHtmlPaths)};
+export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
+`;
+  await appendFile(distEntriesFile, code);
 };
 
 // For Deploy
@@ -793,7 +1021,6 @@ export async function build(options: {
     );
     await emitStaticFiles(
       rootDir,
-      env,
       config,
       distEntriesFile,
       distEntries,

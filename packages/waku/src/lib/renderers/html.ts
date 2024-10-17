@@ -165,7 +165,7 @@ const rectifyHtml = () => {
 
 export function renderHtml(
   config: PureConfig,
-  ctx: HandlerContext,
+  ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
   htmlHead: string,
   elements: Elements,
   html: ReactNode,

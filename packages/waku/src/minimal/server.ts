@@ -16,7 +16,7 @@ export type BuildConfig = {
     skipPrefetch?: boolean | undefined;
     isStatic?: boolean | undefined;
   }[];
-  context?: Record<string, unknown>;
+  context?: Record<string, unknown>; // TODO remove with new_defineEntries?
   customCode?: string; // optional code to inject TODO hope to remove this
 }[];
 
