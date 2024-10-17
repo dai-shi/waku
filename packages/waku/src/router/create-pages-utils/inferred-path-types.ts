@@ -190,9 +190,6 @@ export type PropsForPages<Path extends string> = Prettify<
 type GetResponseType<Response extends { render: string }> =
   string extends Response['render'] ? { render: 'dynamic' } : Response;
 
-type GetAsyncFnReturn<Fn extends () => Promise<{ render: string }>> =
-  GetResponseType<Awaited<ReturnType<Fn>>>;
-
 /**
  * Helper used for generation of types with fs-router for
  * collecting the type of the getConfig function response and
@@ -200,8 +197,7 @@ type GetAsyncFnReturn<Fn extends () => Promise<{ render: string }>> =
  */
 export type GetConfigResponse<
   Fn extends () => Promise<{ render: string }> | { render: string },
-> = Fn extends () => Promise<{ render: string }>
-  ? GetAsyncFnReturn<Fn>
-  : ReturnType<Fn> extends { render: string }
+> =
+  ReturnType<Fn> extends { render: string }
     ? GetResponseType<ReturnType<Fn>>
-    : never;
+    : GetResponseType<Awaited<ReturnType<Fn>>>;
