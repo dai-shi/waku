@@ -23,7 +23,7 @@
     "dev": "pnpm build --watch",
     "compile": "rm -rf template dist *.tsbuildinfo && pnpm run template && pnpm run build",
     "template": "cp -r ../../examples template && rm -rf template/*/dist && rm -rf template/*/node_modules && (for d in template/*; do mv $d/.gitignore $d/gitignore || true; done)",
-    "build": "tsup ./src/index.ts --minify --format esm"
+    "build": "tsup"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
