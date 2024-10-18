@@ -326,7 +326,7 @@ export const Children = () => use(ChildrenContext);
  * ServerRoot for SSR
  * This is not a public API.
  */
-export const ServerRoot = ({
+export const ServerRootInternal = ({
   elements,
   children,
 }: {

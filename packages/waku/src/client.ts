@@ -2,7 +2,7 @@ import {
   Children as ChildrenOrig,
   Slot as SlotOrig,
   Root as RootOrig,
-  ServerRoot as ServerRootOrig,
+  ServerRootInternal as ServerRootOrig,
 } from './minimal/client.js';
 /** @deprecated */
 export const Children = ChildrenOrig;

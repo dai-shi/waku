@@ -699,7 +699,7 @@ const willEmitPublicIndexHtmlNew = async (
   return !!res;
 };
 
-// TODO too long...
+// TODO too long... we need to refactor and organize this function
 const emitStaticFiles = async (
   rootDir: string,
   config: ResolvedConfig,
@@ -791,7 +791,6 @@ const emitStaticFiles = async (
             createWriteStream(destRscFile),
           );
         }
-        //----------------
         const pathSpec =
           typeof pathname === 'string' ? pathname2pathSpec(pathname) : pathname;
         let htmlStr = publicIndexHtml;

@@ -181,7 +181,7 @@ export function renderHtml(
   const {
     default: { createFromReadableStream },
   } = modules.rsdwClient as { default: typeof RSDWClientType };
-  const { ServerRoot } =
+  const { ServerRootInternal: ServerRoot } =
     modules.wakuMinimalClient as typeof WakuMinimalClientType;
 
   const stream = renderRsc(config, ctx, elements);
