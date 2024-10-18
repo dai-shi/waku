@@ -12,6 +12,6 @@
     "react": "19.0.0-rc-bf7e210c-20241017",
     "react-dom": "19.0.0-rc-bf7e210c-20241017",
     "react-server-dom-webpack": "19.0.0-rc-bf7e210c-20241017",
-    "waku": "0.21.3"
+    "waku": "0.21.4"
   }
 }

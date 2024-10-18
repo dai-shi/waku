@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.21.4] - 2024-11-18
+
+### Changed
+
+- Router improvements
+
 ## [0.21.3] - 2024-10-04
 
 ### Changed
