@@ -61,7 +61,7 @@ export function debugChildProcess(
 }
 
 export const test = basicTest.extend({
-  page: async ({ page }, use) => {
+  page: async ({ page }, pageUse) => {
     const callback = (msg: ConsoleMessage) => {
       if (unexpectedErrors.some((re) => re.test(msg.text()))) {
         throw new Error(msg.text());
@@ -69,7 +69,7 @@ export const test = basicTest.extend({
       console.log(`${msg.type()}: ${msg.text()}`);
     };
     page.on('console', callback);
-    await use(page);
+    await pageUse(page);
     page.off('console', callback);
   },
 });
