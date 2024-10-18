@@ -4,6 +4,9 @@ import type { default as RSDWServerType } from 'react-server-dom-webpack/server.
 import type { PureConfig } from '../config.js';
 // TODO move types somewhere
 import type { HandlerContext } from '../middleware/types.js';
+import { filePathToFileURL } from '../utils/path.js';
+import { streamToArrayBuffer } from '../utils/stream.js';
+import { bufferToString, parseFormData } from '../utils/buffer.js';
 
 type Elements = Record<string, ReactNode>;
 
@@ -111,4 +114,44 @@ export async function collectClientModules(
     readable.pipeTo(writable).catch(reject);
   });
   return Array.from(idSet);
+}
+
+export async function decodeBody(
+  ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer' | 'req'>,
+): Promise<unknown> {
+  const isDev = !!ctx.unstable_devServer;
+  const modules = ctx.unstable_modules;
+  if (!modules) {
+    throw new Error('handler middleware required (missing modules)');
+  }
+  const {
+    default: { decodeReply },
+  } = modules.rsdwServer as { default: typeof RSDWServerType };
+  const serverBundlerConfig = new Proxy(
+    {},
+    {
+      get(_target, encodedId: string) {
+        const [fileId, name] = encodedId.split('#') as [string, string];
+        const id = isDev ? filePathToFileURL(fileId) : fileId + '.js';
+        return { id, chunks: [id], name, async: true };
+      },
+    },
+  );
+  let decodedBody: unknown = ctx.req.url.searchParams;
+  if (ctx.req.body) {
+    const bodyBuf = await streamToArrayBuffer(ctx.req.body);
+    const contentType = ctx.req.headers['content-type'];
+    if (
+      typeof contentType === 'string' &&
+      contentType.startsWith('multipart/form-data')
+    ) {
+      // XXX This doesn't support streaming unlike busboy
+      const formData = await parseFormData(bodyBuf, contentType);
+      decodedBody = await decodeReply(formData, serverBundlerConfig);
+    } else if (bodyBuf.byteLength > 0) {
+      const bodyStr = bufferToString(bodyBuf);
+      decodedBody = await decodeReply(bodyStr, serverBundlerConfig);
+    }
+  }
+  return decodedBody;
 }

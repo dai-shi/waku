@@ -3,12 +3,12 @@ import type { ReactNode } from 'react';
 import { resolveConfig } from '../config.js';
 import type { PureConfig } from '../config.js';
 import { setAllEnvInternal } from '../../server.js';
-import type { Middleware, HandlerReq } from './types.js';
+import type { Middleware, HandlerContext } from './types.js';
 import type { new_defineEntries } from '../../minimal/server.js';
-import { renderRsc } from '../renderers/rsc.js';
+import { renderRsc, decodeBody } from '../renderers/rsc.js';
 import { renderHtml } from '../renderers/html.js';
-import { decodeRscPath } from '../renderers/utils.js';
-import { getPathMapping } from '../utils/path.js';
+import { decodeRscPath, decodeFuncId } from '../renderers/utils.js';
+import { filePathToFileURL, getPathMapping } from '../utils/path.js';
 
 type HandleRequest = Parameters<
   typeof new_defineEntries
@@ -25,25 +25,37 @@ const CLIENT_MODULE_MAP = {
 } as const;
 const CLIENT_PREFIX = 'client/';
 
-const getInput = (
+const getInput = async (
   config: PureConfig,
-  req: HandlerReq,
-): Parameters<HandleRequest>[0] | null => {
-  if (!req.url.pathname.startsWith(config.basePath)) {
+  ctx: HandlerContext,
+  loadServerModule: (fileId: string) => Promise<unknown>,
+): Promise<Parameters<HandleRequest>[0] | null> => {
+  if (!ctx.req.url.pathname.startsWith(config.basePath)) {
     return null;
   }
   const basePrefix = config.basePath + config.rscBase + '/';
-  if (req.url.pathname.startsWith(basePrefix)) {
+  if (ctx.req.url.pathname.startsWith(basePrefix)) {
     const rscPath = decodeRscPath(
-      decodeURI(req.url.pathname.slice(basePrefix.length)),
+      decodeURI(ctx.req.url.pathname.slice(basePrefix.length)),
     );
-    return { type: 'component', rscPath, req };
+    const decodedBody = await decodeBody(ctx);
+    const funcId = decodeFuncId(rscPath);
+    if (funcId) {
+      const args = Array.isArray(decodedBody)
+        ? decodedBody
+        : decodedBody instanceof URLSearchParams
+          ? [decodedBody]
+          : [];
+      const [fileId, name] = funcId.split('#') as [string, string];
+      const mod: any = await loadServerModule(fileId);
+      return { type: 'function', fn: mod[name], args, req: ctx.req };
+    }
+    return { type: 'component', rscPath, rscParams: decodedBody, req: ctx.req };
   }
-  // TODO type: function
   return {
     type: 'custom',
-    pathname: '/' + req.url.pathname.slice(config.basePath.length),
-    req,
+    pathname: '/' + ctx.req.url.pathname.slice(config.basePath.length),
+    req: ctx.req,
   };
 };
 
@@ -89,6 +101,13 @@ export const handler: Middleware = (options) => {
       rsdwClient,
       wakuMinimalClient,
     };
+    const loadServerModule = (fileId: string) => {
+      if (devServer) {
+        return devServer.loadServerModuleRsc(filePathToFileURL(fileId));
+      } else {
+        return entriesPrd.loadModule(fileId + '.js');
+      }
+    };
     const htmlHead =
       (!devServer &&
         entriesPrd.dynamicHtmlPaths.find(([pathSpec]) =>
@@ -123,7 +142,7 @@ export const handler: Middleware = (options) => {
       },
     };
     if ('unstable_handleRequest' in entries.default) {
-      const input = getInput(config, ctx.req);
+      const input = await getInput(config, ctx, loadServerModule);
       if (input) {
         const res = await (
           entries.default.unstable_handleRequest as HandleRequest

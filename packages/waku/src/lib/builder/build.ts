@@ -768,6 +768,7 @@ const emitStaticFiles = async (
           const input = {
             type: 'component',
             rscPath,
+            rscParams: undefined,
             req: {
               body: null,
               url: new URL(

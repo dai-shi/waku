@@ -68,8 +68,12 @@ export type EntriesPrd = EntriesDev & {
 
 type HandleRequest = (
   input: (
-    | { type: 'component'; rscPath: string }
-    | { type: 'function'; fn: unknown }
+    | { type: 'component'; rscPath: string; rscParams: unknown }
+    | {
+        type: 'function';
+        fn: (args: unknown[]) => Promise<unknown>;
+        args: unknown[];
+      }
     | { type: 'custom'; pathname: string }
   ) & {
     req: HandlerReq;
