@@ -9,10 +9,10 @@
     "start": "waku start"
   },
   "dependencies": {
-    "react": "19.0.0-rc-2d16326d-20240930",
-    "react-dom": "19.0.0-rc-2d16326d-20240930",
+    "react": "19.0.0-rc-bf7e210c-20241017",
+    "react-dom": "19.0.0-rc-bf7e210c-20241017",
     "react-error-boundary": "^4.0.13",
-    "react-server-dom-webpack": "19.0.0-rc-2d16326d-20240930",
+    "react-server-dom-webpack": "19.0.0-rc-bf7e210c-20241017",
     "waku": "workspace:*"
   },
   "devDependencies": {
