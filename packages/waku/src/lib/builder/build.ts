@@ -757,7 +757,7 @@ const emitStaticFiles = async (
           }
           await mkdir(joinPath(destRscFile, '..'), { recursive: true });
           const utils = {
-            renderRsc: (elements: Record<string, ReactNode>) =>
+            renderRsc: (elements: Record<string, unknown>) =>
               renderRscNew(config, { unstable_modules }, elements, (id) =>
                 moduleIdsForPrefetch.add(id),
               ),
@@ -846,7 +846,7 @@ const emitStaticFiles = async (
           return;
         }
         const utils = {
-          renderRsc: (elements: Record<string, ReactNode>) =>
+          renderRsc: (elements: Record<string, unknown>) =>
             renderRscNew(config, { unstable_modules }, elements),
           renderHtml: (
             elements: Record<string, ReactNode>,

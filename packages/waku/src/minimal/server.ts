@@ -71,7 +71,7 @@ type HandleRequest = (
     | { type: 'component'; rscPath: string; rscParams: unknown }
     | {
         type: 'function';
-        fn: (args: unknown[]) => Promise<unknown>;
+        fn: (...args: unknown[]) => Promise<unknown>;
         args: unknown[];
       }
     | { type: 'custom'; pathname: string }
@@ -79,7 +79,7 @@ type HandleRequest = (
     req: HandlerReq;
   },
   utils: {
-    renderRsc: (elements: Elements) => ReadableStream;
+    renderRsc: (elements: Record<string, unknown>) => ReadableStream;
     renderHtml: (
       elements: Elements,
       html: ReactNode,

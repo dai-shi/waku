@@ -8,8 +8,6 @@ import { filePathToFileURL } from '../utils/path.js';
 import { streamToArrayBuffer } from '../utils/stream.js';
 import { bufferToString, parseFormData } from '../utils/buffer.js';
 
-type Elements = Record<string, ReactNode>;
-
 const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
   return config.basePath + id + '.js';
 };
@@ -17,12 +15,9 @@ const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
 export function renderRsc(
   config: PureConfig,
   ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
-  elements: Elements,
+  elements: Record<string, unknown>,
   moduleIdCallback?: (id: string) => void,
 ): ReadableStream {
-  if (Object.keys(elements).some((key) => key.startsWith('_'))) {
-    throw new Error('"_" prefix is reserved');
-  }
   const modules = ctx.unstable_modules;
   if (!modules) {
     throw new Error('handler middleware required (missing modules)');
@@ -84,7 +79,7 @@ export function renderRscElement(
 export async function collectClientModules(
   config: PureConfig,
   rsdwServer: { default: typeof RSDWServerType },
-  elements: Elements,
+  elements: Record<string, unknown>,
 ): Promise<string[]> {
   const {
     default: { renderToReadableStream },

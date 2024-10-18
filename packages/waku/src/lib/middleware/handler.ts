@@ -117,7 +117,7 @@ export const handler: Middleware = (options) => {
     const transformIndexHtml =
       devServer && (await devServer.transformIndexHtml(ctx.req.url.pathname));
     const utils = {
-      renderRsc: (elements: Record<string, ReactNode>) =>
+      renderRsc: (elements: Record<string, unknown>) =>
         renderRsc(config, ctx, elements),
       renderHtml: (
         elements: Record<string, ReactNode>,
