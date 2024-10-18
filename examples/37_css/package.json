@@ -20,7 +20,7 @@
   "devDependencies": {
     "@types/react": "18.3.11",
     "@types/react-dom": "18.3.1",
-    "@vanilla-extract/vite-plugin": "4.0.16",
+    "@vanilla-extract/vite-plugin": "4.0.10",
     "typescript": "5.6.3",
     "vite": "5.4.9",
     "vite-plugin-stylex-dev": "0.7.5"
