@@ -12,8 +12,8 @@
   "dependencies": {
     "@sindresorhus/slugify": "^2.2.1",
     "classnames": "2.3.2",
-    "framer-motion": "^11.11.0",
-    "jotai": "^2.10.0",
+    "framer-motion": "^11.11.9",
+    "jotai": "^2.10.1",
     "next-mdx-remote": "^5.0.0",
     "react": "19.0.0-rc-bf7e210c-20241017",
     "react-dom": "19.0.0-rc-bf7e210c-20241017",
@@ -22,13 +22,13 @@
   },
   "devDependencies": {
     "@types/react": "^18.3.11",
-    "@types/react-dom": "^18.3.0",
+    "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",
     "prettier": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.8",
-    "shiki": "^1.21.0",
-    "tailwindcss": "^3.4.13",
-    "typescript": "^5.6.2",
-    "vite": "5.4.8"
+    "shiki": "^1.22.0",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.3",
+    "vite": "5.4.9"
   }
 }

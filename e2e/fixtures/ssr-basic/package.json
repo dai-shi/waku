@@ -9,7 +9,7 @@
     "start": "waku start"
   },
   "dependencies": {
-    "ai": "^3.4.8",
+    "ai": "^3.4.14",
     "react": "19.0.0-rc-bf7e210c-20241017",
     "react-dom": "19.0.0-rc-bf7e210c-20241017",
     "react-server-dom-webpack": "19.0.0-rc-bf7e210c-20241017",
@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@types/react": "^18.3.11",
-    "@types/react-dom": "^18.3.0",
-    "typescript": "^5.6.2"
+    "@types/react-dom": "^18.3.1",
+    "typescript": "^5.6.3"
   }
 }

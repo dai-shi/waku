@@ -9,8 +9,8 @@
     "start": "waku start"
   },
   "dependencies": {
-    "cookie": "0.7.0",
-    "hono": "4.6.3",
+    "cookie": "1.0.1",
+    "hono": "4.6.5",
     "react": "19.0.0-rc-bf7e210c-20241017",
     "react-dom": "19.0.0-rc-bf7e210c-20241017",
     "react-server-dom-webpack": "19.0.0-rc-bf7e210c-20241017",
@@ -18,9 +18,9 @@
   },
   "devDependencies": {
     "@types/cookie": "0.6.0",
-    "@types/node": "22.7.4",
+    "@types/node": "22.7.6",
     "@types/react": "18.3.11",
-    "@types/react-dom": "18.3.0",
-    "typescript": "5.6.2"
+    "@types/react-dom": "18.3.1",
+    "typescript": "5.6.3"
   }
 }
