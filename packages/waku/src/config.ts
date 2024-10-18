@@ -41,8 +41,8 @@ export interface Config {
    * Middleware to use
    * Defaults to:
    * () => [
+   *   import('waku/middleware/context'),
    *   import('waku/middleware/dev-server'),
-   *   import('waku/middleware/headers'),
    *   import('waku/middleware/rsc'),
    *   import('waku/middleware/ssr'),
    * ]

@@ -4,29 +4,25 @@ import type * as RDServerType from 'react-dom/server.edge';
 import type { default as RSDWClientType } from 'react-server-dom-webpack/client.edge';
 import { injectRSCPayload } from 'rsc-html-stream/server';
 
-import type * as WakuClientType from '../../client.js';
-import type { EntriesPrd } from '../../minimal/server.js';
-import { SRC_MAIN } from '../constants.js';
+import type * as WakuMinimalClientType from '../../minimal/client.js';
 import type { PureConfig } from '../config.js';
-import { concatUint8Arrays } from '../utils/stream.js';
+import { SRC_MAIN } from '../constants.js';
+import { concatUint8Arrays, streamFromPromise } from '../utils/stream.js';
 import {
   joinPath,
   filePathToFileURL,
   fileURLToFilePath,
   encodeFilePathToAbsolute,
 } from '../utils/path.js';
-import { encodeRscPath, hasStatusCode } from './utils.js';
+import { encodeRscPath } from './utils.js';
+import { renderRsc, renderRscElement } from './rsc.js';
+// TODO move types somewhere
+import type { HandlerContext } from '../middleware/types.js';
 
 // HACK depending on these constants is not ideal
 import { DEFAULT_HTML_HEAD } from '../plugins/vite-plugin-rsc-index.js';
 
-export const CLIENT_MODULE_MAP = {
-  'rd-server': 'react-dom/server.edge',
-  'rsdw-client': 'react-server-dom-webpack/client.edge',
-  'waku-client': 'waku/client',
-  'waku-minimal-client': 'waku/minimal/client',
-} as const;
-export const CLIENT_PREFIX = 'client/';
+type Elements = Record<string, ReactNode>;
 
 const fakeFetchCode = `
 Promise.resolve(new Response(new ReadableStream({
@@ -167,75 +163,31 @@ const rectifyHtml = () => {
   });
 };
 
-export const renderHtml = async (
-  opts: {
-    config: PureConfig;
-    pathname: string;
-    searchParams: URLSearchParams;
-    htmlHead: string;
-    renderRscForHtml: (
-      rscPath: string,
-      rscParams?: unknown,
-    ) => Promise<ReadableStream>;
-    getSsrConfigForHtml: (
-      pathname: string,
-      searchParams: URLSearchParams,
-    ) => Promise<{
-      rscPath: string;
-      rscParams?: unknown;
-      html: ReadableStream;
-    } | null>;
-  } & (
-    | { isDev: false; loadModule: EntriesPrd['loadModule'] }
-    | {
-        isDev: true;
-        rootDir: string;
-        loadServerModuleMain: (idOrFileURL: string) => Promise<unknown>;
-      }
-  ),
-): Promise<ReadableStream | null> => {
+export function renderHtml(
+  config: PureConfig,
+  ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
+  htmlHead: string,
+  elements: Elements,
+  html: ReactNode,
+  rscPath: string,
+): ReadableStream {
+  const modules = ctx.unstable_modules;
+  if (!modules) {
+    throw new Error('handler middleware required (missing modules)');
+  }
   const {
-    config,
-    pathname,
-    searchParams,
-    htmlHead,
-    renderRscForHtml,
-    getSsrConfigForHtml,
-    isDev,
-  } = opts;
+    default: { renderToReadableStream },
+  } = modules.rdServer as { default: typeof RDServerType };
+  const {
+    default: { createFromReadableStream },
+  } = modules.rsdwClient as { default: typeof RSDWClientType };
+  const { ServerRootInternal: ServerRoot } =
+    modules.wakuMinimalClient as typeof WakuMinimalClientType;
 
-  const loadClientModule = <T>(key: keyof typeof CLIENT_MODULE_MAP) =>
-    (isDev
-      ? opts.loadServerModuleMain(CLIENT_MODULE_MAP[key])
-      : opts.loadModule(CLIENT_PREFIX + key)) as Promise<T>;
-
-  const [
-    {
-      default: { renderToReadableStream },
-    },
-    {
-      default: { createFromReadableStream },
-    },
-    { ServerRoot },
-  ] = await Promise.all([
-    loadClientModule<{ default: typeof RDServerType }>('rd-server'),
-    loadClientModule<{ default: typeof RSDWClientType }>('rsdw-client'),
-    loadClientModule<typeof WakuClientType>('waku-client'),
-  ]);
-
-  const ssrConfig = await getSsrConfigForHtml(pathname, searchParams);
-  if (!ssrConfig) {
-    return null;
-  }
-  let stream: ReadableStream;
-  try {
-    stream = await renderRscForHtml(ssrConfig.rscPath, ssrConfig.rscParams);
-  } catch (e) {
-    if (hasStatusCode(e) && e.statusCode === 404) {
-      return null;
-    }
-    throw e;
-  }
+  const stream = renderRsc(config, ctx, elements);
+  const htmlStream = renderRscElement(config, ctx, html);
+  const isDev = !!ctx.unstable_devServer;
+  const rootDir = ctx.unstable_devServer?.rootDir || '';
   const moduleMap = new Proxy(
     {} as Record<string, Record<string, ImportManifestEntry>>,
     {
@@ -253,7 +205,7 @@ export const renderHtml = async (
                 file = isFsPath ? file.slice('@fs'.length) : file;
                 const fileWithAbsolutePath = isFsPath
                   ? file
-                  : encodeFilePathToAbsolute(joinPath(opts.rootDir, file));
+                  : encodeFilePathToAbsolute(joinPath(rootDir, file));
                 const wakuDist = joinPath(
                   fileURLToFilePath(import.meta.url),
                   '../../..',
@@ -282,42 +234,36 @@ export const renderHtml = async (
     },
   );
   const [stream1, stream2] = stream.tee();
-  const elements: Promise<Record<string, ReactNode>> = createFromReadableStream(
-    stream1,
-    {
-      ssrManifest: { moduleMap, moduleLoading: null },
-    },
-  );
-  const html: Promise<ReactNode> = createFromReadableStream(ssrConfig.html, {
+  const elementsPromise: Promise<Elements> = createFromReadableStream(stream1, {
     ssrManifest: { moduleMap, moduleLoading: null },
   });
-  const readable = (
-    await renderToReadableStream(
+  const htmlNode: Promise<ReactNode> = createFromReadableStream(htmlStream, {
+    ssrManifest: { moduleMap, moduleLoading: null },
+  });
+  const readable = streamFromPromise(
+    renderToReadableStream(
       createElement(
         ServerRoot as FunctionComponent<
           Omit<ComponentProps<typeof ServerRoot>, 'children'>
         >,
-        { elements },
-        html as any,
+        { elements: elementsPromise },
+        htmlNode as any,
       ),
       {
         onError(err: unknown) {
           console.error(err);
         },
       },
-    )
+    ),
   )
     .pipeThrough(rectifyHtml())
     .pipeThrough(
       injectHtmlHead(
-        config.basePath +
-          config.rscBase +
-          '/' +
-          encodeRscPath(ssrConfig.rscPath),
+        config.basePath + config.rscBase + '/' + encodeRscPath(rscPath),
         htmlHead,
         isDev ? `${config.basePath}${config.srcDir}/${SRC_MAIN}` : '',
       ),
     )
     .pipeThrough(injectRSCPayload(stream2));
   return readable;
-};
+}

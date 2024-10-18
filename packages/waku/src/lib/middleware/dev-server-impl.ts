@@ -4,7 +4,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
-import type { EntriesDev } from '../../server.js';
+import type { EntriesDev } from '../../minimal/server.js';
 import { resolveConfig } from '../config.js';
 import { SRC_MAIN, SRC_ENTRIES } from '../constants.js';
 import {
@@ -247,6 +247,7 @@ const createRscViteServer = (
           conditions: ['react-server'],
           externalConditions: ['react-server'],
         },
+        external: ['waku/middleware/context'],
         noExternal: /^(?!node:)/,
         optimizeDeps: {
           include: [
@@ -336,10 +337,10 @@ export const devServer: Middleware = (options) => {
   let initialModules: ClonableModuleNode[];
 
   return async (ctx, next) => {
-    const [{ middleware: _removed, ...config }, vite] = await Promise.all([
-      configPromise,
-      vitePromise,
-    ]);
+    const [
+      { middleware: _removed1, unstable_honoEnhancer: _removed2, ...config },
+      vite,
+    ] = await Promise.all([configPromise, vitePromise]);
 
     if (!initialModules) {
       const processedModules = new Set<string>();
@@ -411,7 +412,9 @@ export const devServer: Middleware = (options) => {
     }
 
     const viteUrl = ctx.req.url.toString().slice(ctx.req.url.origin.length);
-    const viteReq: any = Readable.fromWeb(ctx.req.body as any);
+    const viteReq: any = ctx.req.body
+      ? Readable.fromWeb(ctx.req.body as never)
+      : Readable.from([]);
     viteReq.method = ctx.req.method;
     viteReq.url = viteUrl;
     viteReq.headers = ctx.req.headers;
