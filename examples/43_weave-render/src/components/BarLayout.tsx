@@ -41,7 +41,7 @@ const BarLayout = ({ children }: { children: ReactNode }) => {
         </li>
         <li>
           <Link
-            to="/nested/bar"
+            to={'/nested/bar' as never}
             pending={<Pending isPending />}
             notPending={<Pending isPending={false} />}
           >
