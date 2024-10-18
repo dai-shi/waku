@@ -850,8 +850,8 @@ importers:
         specifier: 5.4.9
         version: 5.4.9(@types/node@22.7.6)(terser@5.36.0)
       vite-plugin-stylex-dev:
-        specifier: 0.8.0
-        version: 0.8.0(rollup@4.24.0)
+        specifier: 0.7.5
+        version: 0.7.5(rollup@4.24.0)
 
   examples/38_cookies:
     dependencies:
@@ -1961,20 +1961,20 @@ packages:
     resolution: {integrity: sha512-doH1gimEu3A46VX6aVxpHTeHrytJAG6HgdxntYnCFiIFHEM/ZGpG8KiZGBChchjQmG0XFIBL552kBTjVcMZXwQ==}
     engines: {node: '>=12'}
 
-  '@stylex-extend/babel-plugin@0.3.3':
-    resolution: {integrity: sha512-QoKK/1VwCvEtuFmmrZp9UKJ1/hFq0aMFRe4L4IsULNUmDWjLMBsQe3UXs/JhHjCo1EZ/rc88eCXjAAU0KWf1ZA==}
+  '@stylex-extend/babel-plugin@0.3.1':
+    resolution: {integrity: sha512-gQJe6vCntSvPYp4JC+6MrQJwt4xWbU/kx29iLk489aUrD0BKHDVH4aPJVscpFLflLKMDE0SNdfPcMW9j+F8XkQ==}
 
-  '@stylexjs/babel-plugin@0.7.5':
-    resolution: {integrity: sha512-KirLQIaOVHpuSZT37qV19Pw8x4te5x6hZ90+2VsrJ4NzwyYFpovlMNsTeT+eE9mcdp84VksIi7QnrNpMvqBJMQ==}
+  '@stylexjs/babel-plugin@0.6.1':
+    resolution: {integrity: sha512-LIYXvaaq2ZCs80G53SxdpbZ3sY0dJcTClEcSWN33QL8y8UL64OKiK17iIoYVnUIhBN/5P6QIDm+UwwB3D9EiVw==}
 
   '@stylexjs/shared@0.5.1':
     resolution: {integrity: sha512-3kuvLfPr1P5lbLjvtEjXmJxyBOygudhH93DA8OtNnb0H3bQjDZJQqaR/Pde67tlsdbqU5pFuaeueKkZhnuurzA==}
 
-  '@stylexjs/shared@0.7.5':
-    resolution: {integrity: sha512-B357xldr9Dh3tP646P0JKNnarxy5ei4mkZh1qQmuhgGewbaVcrD8jiEWH3WjEzRrBKfmJtcTxBC3xp507u7O4A==}
+  '@stylexjs/shared@0.6.1':
+    resolution: {integrity: sha512-9rK9Sni9Nk9zRMHDEolhDszGID3tCYi3rh14+t4lmKehL87LqOgnoDQMjEMLAY4/SFLWLPaHFSKavF8wXtRYsg==}
 
-  '@stylexjs/stylex@0.7.5':
-    resolution: {integrity: sha512-e4bryU2AoKBeAlloea7sJZrYrjiqJYViw8AWL6eanTVdk7qJ0CduNoiRQxtCP1dOhqGAPG74kaWT7slLzZnqKg==}
+  '@stylexjs/stylex@0.6.1':
+    resolution: {integrity: sha512-1dKZG4VA8qxNf8LqiDWM0JL2YIFpLlblRivv0fabpc+PY02FqwOMdKRWscNCZy2dHGrUOGjjUvkPIU/doAqGzg==}
 
   '@stylexjs/stylex@0.8.0':
     resolution: {integrity: sha512-b9W6tFkX7RRo08UeY25cE5zhRREbg/8tj7oQNJPTvZaYZOWIj1ij3VTwNwI7bYG1RdNJO6bi2mjar9wsEV/Szw==}
@@ -4973,8 +4973,8 @@ packages:
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
 
-  vite-plugin-stylex-dev@0.8.0:
-    resolution: {integrity: sha512-Zcx3Yd85ZQeUHeUEX0GqO+/0mfDiK8VAmZjCFWbqiEa03/HToBZxGElCMSu7kV8Yz9+Vdjhzk55XFBGV8LL2Ew==}
+  vite-plugin-stylex-dev@0.7.5:
+    resolution: {integrity: sha512-MY4kuBDP6zVvcqepCZ/yG8njjXCXgxkceD7Ma4+CqSd+yBrIU5CF5dAdITbb69cG4oq9gmsV+zIXl+/5V9HN/w==}
 
   vite-tsconfig-paths@5.0.1:
     resolution: {integrity: sha512-yqwv+LstU7NwPeNqajZzLEBVpUFU6Dugtb2P84FXuvaoYA+/70l9MHE+GYfYAycVyPSDYZ7mjOFuYBRqlEpTig==}
@@ -5834,7 +5834,7 @@ snapshots:
     dependencies:
       escape-string-regexp: 5.0.0
 
-  '@stylex-extend/babel-plugin@0.3.3':
+  '@stylex-extend/babel-plugin@0.3.1':
     dependencies:
       '@babel/core': 7.25.8
       '@stylexjs/shared': 0.5.1
@@ -5842,14 +5842,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@stylexjs/babel-plugin@0.7.5':
+  '@stylexjs/babel-plugin@0.6.1':
     dependencies:
       '@babel/core': 7.25.8
       '@babel/helper-module-imports': 7.25.7
       '@babel/traverse': 7.25.7
       '@babel/types': 7.25.8
-      '@stylexjs/shared': 0.7.5
-      '@stylexjs/stylex': 0.7.5
+      '@stylexjs/shared': 0.6.1
+      '@stylexjs/stylex': 0.6.1
     transitivePeerDependencies:
       - supports-color
 
@@ -5857,11 +5857,11 @@ snapshots:
     dependencies:
       postcss-value-parser: 4.2.0
 
-  '@stylexjs/shared@0.7.5':
+  '@stylexjs/shared@0.6.1':
     dependencies:
       postcss-value-parser: 4.2.0
 
-  '@stylexjs/stylex@0.7.5':
+  '@stylexjs/stylex@0.6.1':
     dependencies:
       css-mediaquery: 0.1.2
       invariant: 2.2.4
@@ -9455,12 +9455,12 @@ snapshots:
       - supports-color
       - terser
 
-  vite-plugin-stylex-dev@0.8.0(rollup@4.24.0):
+  vite-plugin-stylex-dev@0.7.5(rollup@4.24.0):
     dependencies:
       '@babel/core': 7.25.8
       '@rollup/pluginutils': 5.1.2(rollup@4.24.0)
-      '@stylex-extend/babel-plugin': 0.3.3
-      '@stylexjs/babel-plugin': 0.7.5
+      '@stylex-extend/babel-plugin': 0.3.1
+      '@stylexjs/babel-plugin': 0.6.1
     transitivePeerDependencies:
       - rollup
       - supports-color
