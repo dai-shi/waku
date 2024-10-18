@@ -102,8 +102,8 @@
     "vitest": "^2.1.2"
   },
   "peerDependencies": {
-    "react": "19.0.0-rc-2d16326d-20240930",
-    "react-dom": "19.0.0-rc-2d16326d-20240930",
-    "react-server-dom-webpack": "19.0.0-rc-2d16326d-20240930"
+    "react": "19.0.0-rc-bf7e210c-20241017",
+    "react-dom": "19.0.0-rc-bf7e210c-20241017",
+    "react-server-dom-webpack": "19.0.0-rc-bf7e210c-20241017"
   }
 }
