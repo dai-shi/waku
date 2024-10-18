@@ -29,7 +29,7 @@
     "@types/fs-extra": "^11.0.4",
     "@types/prompts": "^2.4.9",
     "@types/tar": "^6.1.13",
-    "@vercel/ncc": "0.38.2",
+    "@vercel/ncc": "0.38.1",
     "fs-extra": "^11.2.0",
     "kolorist": "^1.8.0",
     "prompts": "^2.4.2",
