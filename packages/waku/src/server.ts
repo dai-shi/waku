@@ -91,7 +91,7 @@ export const runWithRenderStoreInternal = <T>(
   }
 };
 
-// TODO replace renderStore (move to minimal/client.ts)
+/** @deprecated use new_defineEntries */
 export function rerender(rscPath: string, rscParams?: unknown) {
   const renderStore = renderStorage?.getStore() ?? currentRenderStore;
   if (!renderStore) {

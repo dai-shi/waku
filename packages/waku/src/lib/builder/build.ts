@@ -38,11 +38,7 @@ import {
   unlink,
   writeFile,
 } from '../utils/node-fs.js';
-import {
-  decodeRscPath,
-  encodeRscPath,
-  generatePrefetchCode,
-} from '../renderers/utils.js';
+import { encodeRscPath, generatePrefetchCode } from '../renderers/utils.js';
 import {
   collectClientModules,
   renderRsc as renderRscNew,
@@ -664,7 +660,6 @@ export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
 
 // FIXME this is too hacky
 const willEmitPublicIndexHtmlNew = async (
-  config: ResolvedConfig,
   distEntries: Omit<EntriesPrd, keyof EntriesDev> & {
     default: ReturnType<typeof new_defineEntries>;
   },
@@ -682,7 +677,6 @@ const willEmitPublicIndexHtmlNew = async (
     renderRsc: () => {
       throw new Error('Cannot render RSC in HTML build');
     },
-    decodeRscPath,
     renderHtml: () => {
       const headers = { 'content-type': 'text/html; charset=utf-8' };
       return {
@@ -691,17 +685,17 @@ const willEmitPublicIndexHtmlNew = async (
       };
     },
   };
-  const req = {
-    body: null,
-    url: new URL('http://localhost/'),
-    method: 'GET',
-    headers: {},
-  };
-  const res = await distEntries.default.unstable_handleRequest(
-    config,
-    req,
-    utils,
-  );
+  const input = {
+    type: 'custom',
+    pathname: '/',
+    req: {
+      body: null,
+      url: new URL('http://localhost/'),
+      method: 'GET',
+      headers: {},
+    },
+  } as const;
+  const res = await distEntries.default.unstable_handleRequest(input, utils);
   return !!res;
 };
 
@@ -734,7 +728,7 @@ const emitStaticFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  if (await willEmitPublicIndexHtmlNew(config, distEntries, buildConfig)) {
+  if (await willEmitPublicIndexHtmlNew(distEntries, buildConfig)) {
     await unlink(publicIndexHtmlFile);
   }
   const publicIndexHtmlHead = publicIndexHtml.replace(
@@ -767,25 +761,27 @@ const emitStaticFiles = async (
               renderRscNew(config, { unstable_modules }, elements, (id) =>
                 moduleIdsForPrefetch.add(id),
               ),
-            decodeRscPath,
             renderHtml: () => {
               throw new Error('Cannot render HTML in RSC build');
             },
           };
-          const req = {
-            body: null,
-            url: new URL(
-              'http://localhost/' +
-                config.rscBase +
-                '/' +
-                encodeRscPath(rscPath),
-            ),
-            method: 'GET',
-            headers: {},
-          };
+          const input = {
+            type: 'component',
+            rscPath,
+            req: {
+              body: null,
+              url: new URL(
+                'http://localhost/' +
+                  config.rscBase +
+                  '/' +
+                  encodeRscPath(rscPath),
+              ),
+              method: 'GET',
+              headers: {},
+            },
+          } as const;
           const res = await distEntries.default.unstable_handleRequest(
-            config,
-            req,
+            input,
             utils,
           );
           const rscReadable = res instanceof ReadableStream ? res : res?.body;
@@ -852,7 +848,6 @@ const emitStaticFiles = async (
         const utils = {
           renderRsc: (elements: Record<string, ReactNode>) =>
             renderRscNew(config, { unstable_modules }, elements),
-          decodeRscPath,
           renderHtml: (
             elements: Record<string, ReactNode>,
             html: ReactNode,
@@ -873,15 +868,18 @@ const emitStaticFiles = async (
             };
           },
         };
-        const req = {
-          body: null,
-          url: new URL('http://localhost' + pathname),
-          method: 'GET',
-          headers: {},
-        };
+        const input = {
+          type: 'custom',
+          pathname,
+          req: {
+            body: null,
+            url: new URL('http://localhost' + pathname),
+            method: 'GET',
+            headers: {},
+          },
+        } as const;
         const res = await distEntries.default.unstable_handleRequest(
-          config,
-          req,
+          input,
           utils,
         );
         const htmlReadable = res instanceof ReadableStream ? res : res?.body;

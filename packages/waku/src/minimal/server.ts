@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 
 import type { Config } from '../config.js';
-import type { PureConfig } from '../lib/config.js';
 import type { PathSpec } from '../lib/utils/path.js';
 // TODO move types somewhere
 import type { HandlerReq, HandlerRes } from '../lib/middleware/types.js';
@@ -68,11 +67,15 @@ export type EntriesPrd = EntriesDev & {
 // -----------------------------------------------------
 
 type HandleRequest = (
-  config: PureConfig,
-  req: HandlerReq,
+  input: (
+    | { type: 'component'; rscPath: string }
+    | { type: 'function'; fn: unknown }
+    | { type: 'custom'; pathname: string }
+  ) & {
+    req: HandlerReq;
+  },
   utils: {
     renderRsc: (elements: Elements) => ReadableStream;
-    decodeRscPath: (rscPath: string) => string;
     renderHtml: (
       elements: Elements,
       html: ReactNode,

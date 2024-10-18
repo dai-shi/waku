@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 
 import { resolveConfig } from '../config.js';
+import type { PureConfig } from '../config.js';
 import { setAllEnvInternal } from '../../server.js';
-import type { Middleware } from './types.js';
+import type { Middleware, HandlerReq } from './types.js';
 import type { new_defineEntries } from '../../minimal/server.js';
 import { renderRsc } from '../renderers/rsc.js';
 import { renderHtml } from '../renderers/html.js';
@@ -23,6 +24,28 @@ const CLIENT_MODULE_MAP = {
   'waku-minimal-client': 'waku/minimal/client',
 } as const;
 const CLIENT_PREFIX = 'client/';
+
+const getInput = (
+  config: PureConfig,
+  req: HandlerReq,
+): Parameters<HandleRequest>[0] | null => {
+  if (!req.url.pathname.startsWith(config.basePath)) {
+    return null;
+  }
+  const basePrefix = config.basePath + config.rscBase + '/';
+  if (req.url.pathname.startsWith(basePrefix)) {
+    const rscPath = decodeRscPath(
+      decodeURI(req.url.pathname.slice(basePrefix.length)),
+    );
+    return { type: 'component', rscPath, req };
+  }
+  // TODO type: function
+  return {
+    type: 'custom',
+    pathname: '/' + req.url.pathname.slice(config.basePath.length),
+    req,
+  };
+};
 
 export const handler: Middleware = (options) => {
   const env = options.env || {};
@@ -77,7 +100,6 @@ export const handler: Middleware = (options) => {
     const utils = {
       renderRsc: (elements: Record<string, ReactNode>) =>
         renderRsc(config, ctx, elements),
-      decodeRscPath,
       renderHtml: (
         elements: Record<string, ReactNode>,
         html: ReactNode,
@@ -101,24 +123,27 @@ export const handler: Middleware = (options) => {
       },
     };
     if ('unstable_handleRequest' in entries.default) {
-      const res = await (
-        entries.default.unstable_handleRequest as HandleRequest
-      )(config, ctx.req, utils);
-      if (res instanceof ReadableStream) {
-        ctx.res.body = res;
-      } else if (res) {
-        if (res.body) {
-          ctx.res.body = res.body;
+      const input = getInput(config, ctx.req);
+      if (input) {
+        const res = await (
+          entries.default.unstable_handleRequest as HandleRequest
+        )(input, utils);
+        if (res instanceof ReadableStream) {
+          ctx.res.body = res;
+        } else if (res) {
+          if (res.body) {
+            ctx.res.body = res.body;
+          }
+          if (res.status) {
+            ctx.res.status = res.status;
+          }
+          if (res.headers) {
+            Object.assign((ctx.res.headers ||= {}), res.headers);
+          }
         }
-        if (res.status) {
-          ctx.res.status = res.status;
+        if (ctx.res.body || ctx.res.status) {
+          return;
         }
-        if (res.headers) {
-          Object.assign((ctx.res.headers ||= {}), res.headers);
-        }
-      }
-      if (ctx.res.body || ctx.res.status) {
-        return;
       }
     }
     await next();
