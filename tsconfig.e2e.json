@@ -6,47 +6,19 @@
   },
   "include": ["playwright.config.base.ts", "playwright.config.ts", "./e2e"],
   "references": [
-    {
-      "path": "./e2e/fixtures/rsc-basic/tsconfig.json"
-    },
-    {
-      "path": "./e2e/fixtures/rsc-css-modules/tsconfig.json"
-    },
-    {
-      "path": "./e2e/fixtures/ssr-basic/tsconfig.json"
-    },
-    {
-      "path": "./e2e/fixtures/rsc-router/tsconfig.json"
-    },
-    {
-      "path": "./e2e/fixtures/ssr-target-bundle/tsconfig.json"
-    },
-    {
-      "path": "./e2e/fixtures/ssr-swr/tsconfig.json"
-    },
-    {
-      "path": "./e2e/fixtures/ssr-context-provider/tsconfig.json"
-    },
-    {
-      "path": "./e2e/fixtures/render-type/tsconfig.json"
-    },
-    {
-      "path": "./e2e/fixtures/ssg-performance/tsconfig.json"
-    },
-    {
-      "path": "./e2e/fixtures/ssg-wildcard/tsconfig.json"
-    },
-    {
-      "path": "./e2e/fixtures/partial-build/tsconfig.json"
-    },
-    {
-      "path": "./e2e/fixtures/ssr-catch-error/tsconfig.json"
-    },
-    {
-      "path": "./e2e/fixtures/use-router/tsconfig.json"
-    },
-    {
-      "path": "./e2e/fixtures/broken-links/tsconfig.json"
-    }
+    { "path": "./e2e/fixtures/rsc-basic/tsconfig.json" },
+    { "path": "./e2e/fixtures/rsc-css-modules/tsconfig.json" },
+    { "path": "./e2e/fixtures/ssr-basic/tsconfig.json" },
+    { "path": "./e2e/fixtures/rsc-router/tsconfig.json" },
+    { "path": "./e2e/fixtures/ssr-target-bundle/tsconfig.json" },
+    { "path": "./e2e/fixtures/ssr-swr/tsconfig.json" },
+    { "path": "./e2e/fixtures/ssr-context-provider/tsconfig.json" },
+    { "path": "./e2e/fixtures/render-type/tsconfig.json" },
+    { "path": "./e2e/fixtures/ssg-performance/tsconfig.json" },
+    { "path": "./e2e/fixtures/ssg-wildcard/tsconfig.json" },
+    { "path": "./e2e/fixtures/partial-build/tsconfig.json" },
+    { "path": "./e2e/fixtures/ssr-catch-error/tsconfig.json" },
+    { "path": "./e2e/fixtures/use-router/tsconfig.json" },
+    { "path": "./e2e/fixtures/broken-links/tsconfig.json" }
   ]
 }

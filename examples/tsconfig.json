@@ -1,0 +1,23 @@
+{
+  "extends": "../tsconfig.json",
+  "references": [
+    { "path": "01_template" },
+    { "path": "03_demo" },
+    { "path": "04_cssmodules" },
+    { "path": "11_fs-router" },
+    { "path": "12_nossr" },
+    { "path": "21_create-pages" },
+    { "path": "22_define-router" },
+    { "path": "31_minimal" },
+    { "path": "33_promise" },
+    { "path": "34_functions" },
+    { "path": "35_nesting" },
+    { "path": "36_form" },
+    { "path": "37_css" },
+    { "path": "38_cookies" },
+    { "path": "39_api" },
+    { "path": "41_path-alias" },
+    { "path": "42_react-tweet" },
+    { "path": "43_weave-render" }
+  ]
+}
