@@ -353,6 +353,10 @@ export const Root = ({ children }) => {
 
 Add this with `createRoot` function inside `createPages`.
 
+#### Note About `<head>`
+
+If you only need to customize `<head>`, you can rely on React's [Support for Document Metadata](https://react.dev/blog/2024/04/25/react-19#support-for-metadata-tags) and do not need to use `createRoot`.
+
 ### Client entry point
 
 The file `./src/entries.tsx` is the entry point for the server.
