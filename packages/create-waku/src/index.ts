@@ -7,7 +7,6 @@ import { default as prompts } from 'prompts';
 import { red, green, bold } from 'kolorist';
 import fse from 'fs-extra/esm';
 import checkForUpdate from 'update-check';
-import { createRequire } from 'node:module';
 import {
   getTemplateNames,
   installTemplate,
@@ -162,9 +161,7 @@ Options:
 }
 
 async function notifyUpdate() {
-  // keep original require to avoid
-  //  bundling the whole package.json by `@vercel/ncc`
-  const packageJson = createRequire(import.meta.url)('../package.json');
+  const packageJson = await import('../package.json');
   const result = await checkForUpdate(packageJson).catch(() => {});
   if (result?.latest) {
     console.log(`A new version of 'create-waku' is available!`);
