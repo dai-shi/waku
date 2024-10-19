@@ -8,7 +8,7 @@ description: The low-level routing API.
 
 The entry point for programmatic routing in Waku projects is `./src/entries.tsx`. Export the `createPages` function to create your layouts and pages.
 
-Both `createLayout` and `createPage` accept a configuration object to specify the route path, React component, and render method. Waku currently supports two options: `'static'` for static prerendering (SSG) or `'dynamic'` for server-side rendering (SSR).
+`createLayout`, `createPage`, and `createRoot` accept a configuration object to specify the route path, React component, and render method. Waku currently supports two options: `'static'` for static prerendering (SSG) or `'dynamic'` for server-side rendering (SSR).
 
 For example, you can statically prerender a global header and footer in the root layout at build time, but dynamically render the rest of a home page at request time for personalized user experiences.
 
@@ -18,8 +18,16 @@ import { createPages } from 'waku';
 
 import { RootLayout } from './templates/root-layout';
 import { HomePage } from './templates/home-page';
+import { Root } from './components/root';
 
-const pages = createPages(async ({ createPage, createLayout }) => [
+const pages = createPages(async ({ createPage, createLayout, createRoot }) => [
+  // Create root component
+  // not required, but supported for customizing `<html>`, `<head>`, and `<body>` tags
+  createRoot({
+    render: 'static',
+    component: Root,
+  }),
+
   // Create root layout
   createLayout({
     render: 'static',
@@ -325,6 +333,29 @@ export const BlogLayout = async ({ children }) => {
   );
 };
 ```
+
+### Root component
+
+Root component is a special component that is rendered at the root of html document. It is useful for customizing `<html>`, `<head>`, and `<body>` tags.
+
+```tsx
+// ./src/components/root.tsx
+
+export const Root = ({ children }) => {
+  return (
+    <html lang="en">
+      <head></head>
+      <body>{children}</body>
+    </html>
+  );
+};
+```
+
+Add this with `createRoot` function inside `createPages`.
+
+#### Note About `<head>`
+
+If you only need to customize `<head>`, you can rely on React's [Support for Document Metadata](https://react.dev/blog/2024/04/25/react-19#support-for-metadata-tags) and do not need to use `createRoot`.
 
 ### Client entry point
 
