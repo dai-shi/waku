@@ -161,7 +161,9 @@ Options:
 }
 
 async function notifyUpdate() {
-  const packageJson = JSON.parse(readFileSync('../package.json'));
+  const packageJson = JSON.parse(readFileSync('../package.json', {
+    encoding: 'utf8',
+  }));
   const result = await checkForUpdate(packageJson).catch(() => {});
   if (result?.latest) {
     console.log(`A new version of 'create-waku' is available!`);
