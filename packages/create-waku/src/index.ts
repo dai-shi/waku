@@ -161,7 +161,8 @@ Options:
 }
 
 async function notifyUpdate() {
-  const packageJson = await import('../package.json');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const packageJson = require('../package.json');
   const result = await checkForUpdate(packageJson).catch(() => {});
   if (result?.latest) {
     console.log(`A new version of 'create-waku' is available!`);
