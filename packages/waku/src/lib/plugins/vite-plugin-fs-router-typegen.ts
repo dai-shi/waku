@@ -3,7 +3,7 @@ import { readdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { SRC_ENTRIES, EXTENSIONS } from '../constants.js';
 import { joinPath } from '../utils/path.js';
-import { parseFileSync } from '@swc/core';
+import * as swc from '@swc/core';
 
 const SRC_PAGES = 'pages';
 
@@ -118,7 +118,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
         if (!pagesDir) {
           return false;
         }
-        const file = parseFileSync(pagesDir + filePath, {
+        const file = swc.parseFileSync(pagesDir + filePath, {
           syntax: 'typescript',
           tsx: true,
         });
