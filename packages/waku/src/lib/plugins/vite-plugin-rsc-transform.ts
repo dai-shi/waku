@@ -71,6 +71,39 @@ export ${name === 'default' ? name : `const ${name} =`} createServerReference('$
   }
 };
 
+const transformClientForSSR = (code: string, id: string) => {
+  if (!code.includes('use server')) {
+    return;
+  }
+  const ext = extname(id);
+  const mod = swc.parseSync(code, parseOpts(ext));
+  let hasUseServer = false;
+  for (const item of mod.body) {
+    if (item.type === 'ExpressionStatement') {
+      if (
+        item.expression.type === 'StringLiteral' &&
+        item.expression.value === 'use server'
+      ) {
+        hasUseServer = true;
+      }
+    } else {
+      break;
+    }
+  }
+  if (hasUseServer) {
+    const exportNames = collectExportNames(mod);
+    let newCode = '';
+    for (const name of exportNames) {
+      newCode += `
+export ${name === 'default' ? name : `const ${name} =`} () => {
+  throw new Error('You cannot call server functions during SSR');
+};
+`;
+    }
+    return newCode;
+  }
+};
+
 export const createEmptySpan = (): swc.Span =>
   ({
     start: 0,
@@ -627,7 +660,7 @@ export function rscTransformPlugin(
       }
       if (opts.isClient) {
         if (options?.ssr) {
-          return;
+          return transformClientForSSR(code, id);
         }
         return transformClient(
           code,

@@ -61,7 +61,7 @@ export default function App() {
     const code = `
 'use server';
 
-const privateFunction = () => "Secret";
+const privateFunction = () => 'Secret';
 
 export const log = async (mesg) => {
   console.log(mesg);
@@ -78,7 +78,7 @@ export default async function() {
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
-        const privateFunction = ()=>"Secret";
+        const privateFunction = ()=>'Secret';
         export const log = __waku_registerServerReference(async (mesg)=>{
             console.log(mesg);
         }, "/src/App.tsx", "log");
@@ -370,7 +370,7 @@ export const log = (mesg) => {
     const code = `
 'use server';
 
-const privateFunction = () => "Secret";
+const privateFunction = () => 'Secret';
 
 // const function expression
 export const log1 = async function(mesg) {
@@ -404,6 +404,28 @@ export default async function log4(mesg) {
       export const log3 = createServerReference('/src/func.ts#log3', callServerRsc);
 
       export default createServerReference('/src/func.ts#default', callServerRsc);
+      "
+    `);
+  });
+
+  test('top-level use server for SSR', async () => {
+    const code = `
+'use server';
+
+import { getEnv } from 'waku';
+
+const privateFunction = () => getEnv('SECRET');
+
+export async function log(mesg) {
+  console.log(mesg);
+}
+`;
+    expect(await transform(code, '/src/func.ts', { ssr: true }))
+      .toMatchInlineSnapshot(`
+      "
+      export const log = () => {
+        throw new Error('You cannot call server functions during SSR');
+      };
       "
     `);
   });
