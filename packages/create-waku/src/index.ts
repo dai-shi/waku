@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -161,8 +161,7 @@ Options:
 }
 
 async function notifyUpdate() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const packageJson = require('../package.json');
+  const packageJson = JSON.parse(readFileSync('../package.json'));
   const result = await checkForUpdate(packageJson).catch(() => {});
   if (result?.latest) {
     console.log(`A new version of 'create-waku' is available!`);
