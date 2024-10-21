@@ -458,7 +458,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -489,7 +489,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       autoprefixer:
@@ -511,7 +511,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -542,7 +542,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -567,7 +567,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -592,7 +592,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -626,7 +626,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -654,7 +654,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -679,7 +679,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -704,7 +704,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
 
   examples/33_promise:
@@ -719,7 +719,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -747,7 +747,7 @@ importers:
         specifier: 1.1.0
         version: 1.1.0(react@19.0.0-rc-bf7e210c-20241017)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -772,7 +772,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -797,7 +797,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -831,7 +831,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -871,7 +871,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/cookie':
@@ -902,7 +902,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -927,7 +927,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -961,7 +961,7 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -992,7 +992,7 @@ importers:
         specifier: 19.0.0-rc-bf7e210c-20241017
         version: 19.0.0-rc-bf7e210c-20241017(react-dom@19.0.0-rc-bf7e210c-20241017(react@19.0.0-rc-bf7e210c-20241017))(react@19.0.0-rc-bf7e210c-20241017)(webpack@5.95.0)
       waku:
-        specifier: 0.21.4
+        specifier: 0.21.5
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -1033,7 +1033,7 @@ importers:
         version: 7.4.3
       tsup:
         specifier: ^8.3.0
-        version: 8.3.0(@swc/core@1.7.36(@swc/helpers@0.5.13))(jiti@1.21.6)(postcss@8.4.47)(typescript@5.6.3)(yaml@2.6.0)
+        version: 8.3.0(@swc/core@1.7.36)(jiti@1.21.6)(postcss@8.4.47)(typescript@5.6.3)(yaml@2.6.0)
       update-check:
         specifier: ^1.5.4
         version: 1.5.4
@@ -9383,7 +9383,7 @@ snapshots:
 
   tslib@2.8.0: {}
 
-  tsup@8.3.0(@swc/core@1.7.36(@swc/helpers@0.5.13))(jiti@1.21.6)(postcss@8.4.47)(typescript@5.6.3)(yaml@2.6.0):
+  tsup@8.3.0(@swc/core@1.7.36)(jiti@1.21.6)(postcss@8.4.47)(typescript@5.6.3)(yaml@2.6.0):
     dependencies:
       bundle-require: 5.0.0(esbuild@0.23.1)
       cac: 6.7.14
