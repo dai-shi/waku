@@ -161,7 +161,7 @@ Options:
 
 async function notifyUpdate() {
   const packageJson = JSON.parse(
-    readFileSync(path.resolve(import.meta.dirname, '../package.json'), 'utf8'),
+    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
   );
   const result = await checkForUpdate(packageJson).catch(() => {});
   if (result?.latest) {
