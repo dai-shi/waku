@@ -94,13 +94,12 @@ async function doPrompts() {
           type: 'text',
           message: 'Project Name',
           initial: defaultProjectName,
-          onState: (state: any) =>
-            (targetDir = String(state.value).trim() || defaultProjectName),
+          onState: (state: any) => (targetDir = String(state.value).trim()),
         },
         {
           name: 'shouldOverwrite',
           type: () => (canSafelyOverwrite(targetDir) ? null : 'confirm'),
-          message: `${targetDir} is not empty. Remove existing files and continue?`,
+          message: `${targetDir || defaultProjectName} is not empty. Remove existing files and continue?`,
         },
         {
           name: 'overwriteChecker',
@@ -161,7 +160,9 @@ Options:
 }
 
 async function notifyUpdate() {
-  const packageJson = JSON.parse(readFileSync('../package.json', 'utf8'));
+  const packageJson = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+  );
   const result = await checkForUpdate(packageJson).catch(() => {});
   if (result?.latest) {
     console.log(`A new version of 'create-waku' is available!`);
