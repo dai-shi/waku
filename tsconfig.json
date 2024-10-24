@@ -27,22 +27,12 @@
   "include": [],
   "references": [
     // Packages
-    {
-      "path": "./packages/waku"
-    },
-    {
-      "path": "./packages/create-waku"
-    },
-    {
-      "path": "./packages/website"
-    },
+    { "path": "./packages/waku" },
+    { "path": "./packages/create-waku" },
+    { "path": "./packages/website" },
     // E2E
-    {
-      "path": "./tsconfig.e2e.json"
-    },
+    { "path": "./tsconfig.e2e.json" },
     // Test
-    {
-      "path": "./packages/waku/tests"
-    }
+    { "path": "./packages/waku/tests" }
   ]
 }
