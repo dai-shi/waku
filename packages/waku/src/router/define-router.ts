@@ -302,7 +302,7 @@ export function new_defineRouter(fns: {
       query?: string;
       skip?: string[];
     },
-  ) => Promise<Record<ComponentId, ReactNode> | null>;
+  ) => Promise<Record<ComponentId, ReactNode>>;
 }): ReturnType<typeof defineEntries> {
   const platformObject = unstable_getPlatformObject();
   type MyPathConfig = {
@@ -379,9 +379,6 @@ export function new_defineRouter(fns: {
       pathname,
       pathStatus.isStatic ? {} : { query, skip },
     );
-    if (entries === null) {
-      return null;
-    }
     entries[ROUTE_ID] = [pathname, query];
     entries[IS_STATIC_ID] = pathStatus.isStatic;
     if (pathStatus.has404) {

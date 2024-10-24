@@ -470,8 +470,6 @@ export const new_createPages = <
 ) => {
   let configured = false;
 
-  const routeMap = new Map<string, Record<string, ReactNode>>();
-
   // TODO I think there's room for improvement to refactor these structures
   const fixedPathSet = new Set<[string, PathSpec]>();
   const dynamicPagePathMap = new Map<
@@ -507,27 +505,6 @@ export const new_createPages = <
     if (configured) {
       throw new Error('createPage no longer available');
     }
-
-    routeMap.set(page.path, {
-      [`route:${page.path}`]: (
-        // layout adding is different at each level
-        // TODO loop over the path spec to add layout slots
-        <Slot id="root">
-          <Slot id={`layout:${page.path}`}>
-            <Slot id={`page:${page.path}`} />
-          </Slot>
-        </Slot>
-      ),
-      [`page:${page.path}`]: page.component,
-      root: rootItem ? (
-        rootItem.component({ children: <Children /> })
-      ) : (
-        <DefaultRoot>
-          <Children />
-        </DefaultRoot>
-      ),
-      // TODO add layout for path
-    });
 
     const pathSpec = parsePathWithSlug(page.path);
     if (page.unstable_disableSSR) {
@@ -696,82 +673,51 @@ export const new_createPages = <
       }
       return paths;
     },
-    renderRoute: async (path, _options) => {
+    renderRoute: async (path, options) => {
       await configure();
-      // TODO handle skip
-      return routeMap.get(path) ?? null;
-      // return processSkip({
-      //   'route:/bar': (
-      //     <Slot id="root">
-      //       <Slot id="layout:/">
-      //         <Slot id="page:/bar" />
-      //       </Slot>
-      //     </Slot>
-      //   ),
-      //   root: (
-      //     <Root>
-      //       <Children />
-      //     </Root>
-      //   ),
-      //   'layout:/': (
-      //     <HomeLayout>
-      //       <Children />
-      //     </HomeLayout>
-      //   ),
-      //   'page:/bar': <BarPage />,
-      // });
 
-      // if (id === 'root') {
-      //   if (options.skip?.includes('root')) {
-      //     return null;
-      //   }
-      //   return rootItem?.component ?? DefaultRoot;
-      // }
-      // const staticComponent = staticComponentMap.get(id);
-      // if (staticComponent && !options.skip?.includes(id)) {
-      //   return staticComponent;
-      // }
-      // for (const [_, [pathSpec, Component]] of dynamicPagePathMap) {
-      //   const mapping = getPathMapping(
-      //     [...pathSpec, { type: 'literal', name: 'page' }],
-      //     id,
-      //   );
+      const processSkip = <T>(elements: Record<string, T>) => {
+        if (!options.skip) {
+          return elements;
+        }
+        return Object.fromEntries(
+          Object.entries(elements).filter(([k]) => !options.skip!.includes(k)),
+        );
+      };
 
-      //   if (mapping) {
-      //     if (Object.keys(mapping).length === 0) {
-      //       return Component;
-      //     }
-      //     const WrappedComponent = (props: Record<string, unknown>) =>
-      //       createElement(Component, { ...props, ...mapping });
-      //     // unstable_setShouldSkip();
-      //     return WrappedComponent;
-      //   }
-      // }
-      // for (const [_, [pathSpec, Component]] of wildcardPagePathMap) {
-      //   const mapping = getPathMapping(
-      //     [...pathSpec, { type: 'literal', name: 'page' }],
-      //     id,
-      //   );
-      //   if (mapping) {
-      //     const WrappedComponent = (props: Record<string, unknown>) =>
-      //       createElement(Component, { ...props, ...mapping });
-      //     // unstable_setShouldSkip();
-      //     return WrappedComponent;
-      //   }
-      // }
-      // for (const [_, [pathSpec, Component]] of dynamicLayoutPathMap) {
-      //   const mapping = getPathMapping(
-      //     [...pathSpec, { type: 'literal', name: 'layout' }],
-      //     id,
-      //   );
-      //   if (mapping) {
-      //     if (Object.keys(mapping).length) {
-      //       throw new Error('[Bug] layout should not have slugs');
-      //     }
-      //     // unstable_setShouldSkip();
-      //     return Component;
-      //   }
-      // }
+      // TODO it would be good if routeMap can exist as a lookup for all routes in createPages
+
+      const result: Record<string, ReactNode> = {
+        root: rootItem
+          ? rootItem.component({ children: Children() }) // Is this right?
+          : DefaultRoot({ children: Children() }),
+      };
+
+      // TODO use pathSpec to trace through routes for nested layouts
+      // const pathSpec = parsePathWithSlug(path);
+
+      const layout =
+        dynamicLayoutPathMap.get('/')?.[1] ??
+        staticComponentMap.get(joinPath('/', 'layout'));
+      if (layout) {
+        result['layout:/'] = layout({ children: Children() });
+      }
+      if (path === '/') {
+        const pageComponent = (staticComponentMap.get('/') ??
+          dynamicPagePathMap.get('/')?.[1])!;
+        result['page:/'] = pageComponent({ children: Children() });
+        const routeChildren = [
+          (layout ? createElement(Slot, { id: 'layout:/' }, []) : null)!,
+          createElement(Slot, { id: 'page:/' }, []),
+        ].filter(Boolean);
+        result['route:/'] = createElement(
+          Slot,
+          { id: 'root' },
+          ...routeChildren,
+        );
+      }
+
+      return processSkip(result);
     },
   });
 
