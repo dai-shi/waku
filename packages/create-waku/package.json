@@ -16,7 +16,8 @@
   },
   "files": [
     "dist",
-    "template"
+    "template",
+    "package.json"
   ],
   "scripts": {
     "start": "node ./dist/index.js",
