@@ -12,13 +12,18 @@ concurrency:
 
 jobs:
   test:
+    name: Test on (Node ${{ matrix.version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [18.17.0, 20.8.0, 22.7.0]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: ${{ matrix.version }}
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
