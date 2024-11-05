@@ -13,7 +13,7 @@ const root = fileURLToPath(new URL('./fixtures', import.meta.url));
 try {
   globalThis.crypto = crypto as any;
 } catch {
-  // If globalThis is mocked, we can't set crypto. Just ignore the error.
+  // If globalThis.crypto is a getter, we can't set it. Just ignore the error.
 }
 
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
