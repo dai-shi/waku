@@ -21,6 +21,7 @@ import type {
   AnchorHTMLAttributes,
   ReactElement,
   MouseEvent,
+  Context,
 } from 'react';
 
 import {
@@ -96,24 +97,30 @@ const createRscParams = (query: string, skip: string[]): URLSearchParams => {
   return rscParams;
 };
 
-type ChangeRoute = (
-  route: RouteProps,
+type ChangeRoute<T extends string> = (
+  route: RouteProps<T>,
   options?: {
     checkCache?: boolean;
     skipRefetch?: boolean;
   },
 ) => void;
 
-type PrefetchRoute = (route: RouteProps) => void;
+type PrefetchRoute<T extends string> = (route: RouteProps<T>) => void;
 
 const RouterContext = createContext<{
   route: RouteProps;
-  changeRoute: ChangeRoute;
-  prefetchRoute: PrefetchRoute;
+  changeRoute: ChangeRoute<string>;
+  prefetchRoute: PrefetchRoute<string>;
 } | null>(null);
 
-export function useRouter_UNSTABLE() {
-  const router = useContext(RouterContext);
+export function useRouter_UNSTABLE<T extends InferredPaths>() {
+  const router = useContext(
+    RouterContext as Context<{
+      route: RouteProps<T>;
+      changeRoute: ChangeRoute<T>;
+      prefetchRoute: PrefetchRoute<T>;
+    } | null>,
+  );
   if (!router) {
     throw new Error('Missing Router');
   }
@@ -129,7 +136,7 @@ export function useRouter_UNSTABLE() {
         '',
         url,
       );
-      changeRoute(parseRoute(url));
+      changeRoute(parseRoute(url) as RouteProps<T>);
     },
     [changeRoute],
   );
@@ -137,13 +144,13 @@ export function useRouter_UNSTABLE() {
     (to: InferredPaths) => {
       const url = new URL(to, window.location.href);
       window.history.replaceState(window.history.state, '', url);
-      changeRoute(parseRoute(url));
+      changeRoute(parseRoute(url) as RouteProps<T>);
     },
     [changeRoute],
   );
   const reload = useCallback(() => {
     const url = new URL(window.location.href);
-    changeRoute(parseRoute(url));
+    changeRoute(parseRoute(url) as RouteProps<T>);
   }, [changeRoute]);
   const back = useCallback(() => {
     // FIXME is this correct?
@@ -156,7 +163,7 @@ export function useRouter_UNSTABLE() {
   const prefetch = useCallback(
     (to: string) => {
       const url = new URL(to, window.location.href);
-      prefetchRoute(parseRoute(url));
+      prefetchRoute(parseRoute(url) as RouteProps<T>);
     },
     [prefetchRoute],
   );
@@ -374,7 +381,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
     cachedRef.current = cached;
   }, [cached]);
 
-  const changeRoute: ChangeRoute = useCallback(
+  const changeRoute: ChangeRoute<string> = useCallback(
     (route, options) => {
       const { checkCache, skipRefetch } = options || {};
       startTransition(() => {
@@ -419,7 +426,7 @@ const InnerRouter = ({ routerData }: { routerData: RouterData }) => {
     [refetch, routerData],
   );
 
-  const prefetchRoute: PrefetchRoute = useCallback(
+  const prefetchRoute: PrefetchRoute<string> = useCallback(
     (route) => {
       const componentIds = getComponentIds(route.path);
       const shouldSkip = routerData[0];
@@ -701,7 +708,7 @@ const NewInnerRouter = ({
     [refetch, cachedIdSetRef, staticPathSetRef],
   );
 
-  const prefetchRoute: PrefetchRoute = useCallback(
+  const prefetchRoute: PrefetchRoute<string> = useCallback(
     (route) => {
       if (staticPathSetRef.current.has(route.path)) {
         return;

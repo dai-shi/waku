@@ -1,0 +1,96 @@
+---
+slug: use-router
+title: useRouter (experimental)
+description: API for using the router.
+draft: true # Where does the frontmatter get read?
+---
+
+## useRouter (experimental)
+
+### Ideas for type safety
+
+The current changes really just type out `path` which isn't really helpful, but this specifier of the path would allow us to infer the type of the query params if those are provided.
+
+```ts
+const router = useRouter<'/'>(); // we now know that the path is '/' and can get the corresponding query params
+```
+
+It is also useful because you could say that a path is a union of multiple possible paths. This is helpful for if you have a component that can be rendered on multiple paths.
+
+```ts
+const router = useRouter<'/' | '/foo'>();
+```
+
+### For typing the query params
+
+A few questions:
+
+#### How do we type the query params?
+
+1. We could have these defined only as types in the current interfaces. For example:
+
+```ts
+declare module 'waku/router' {
+  interface RouteConfig {
+    paths: PathsForPages<typeof pages>;
+    query: QueryForPages<
+      PathsForPages<typeof pages>,
+      {
+        '/': {
+          foo: string;
+        };
+        '/foo': {
+          bar: string;
+        };
+      }
+    >;
+  }
+  interface CreatePagesConfig {
+    pages: typeof pages;
+  }
+}
+```
+
+2. We could define the possibile query param values in `createPage` from `createPages`. Defining them as runtime values could be useful for helping us be able to parse each param as it's desired type.
+
+```ts
+export default createPages(async ({ createPage }) => [
+  createPage({
+    render: 'static',
+    path: '/',
+    component: HomePage,
+    query: {
+      foo: 'string',
+      bar: 'number',
+    },
+  });
+]);
+
+declare module 'waku/router' {
+  interface RouteConfig {
+    paths: PathsForPages<typeof pages>;
+    query: QueryForPages<typeof pages>;
+  }
+  interface CreatePagesConfig {
+    pages: typeof pages;
+  }
+}
+```
+
+#### This leads to: How much support should query params have?
+
+Currently it just returns the full string of the query.
+
+1. We could run the query string through `new URLSearchParams(query)` and return the parsed values all as strings. This would cary the benefit of having typed keys, but all values stay strings.
+
+2. We could parse the values... e.g. number, boolean, Date, etc.. This would be helpful for DX and type safety of the query params being used.
+
+3. We can doing parsing and add support for custom parsers similar to [nuqs](https://nuqs.47ng.com/)
+
+4. We can leave the current implementation as is and defer to using a library like nuqs instead.
+
+fwiw I think giving out of the box parsing and type safety is helpful and worth it, but I can also respect the reduction of bundle size argument here.
+
+### Summary
+
+This is just a record of my ideas for the query params. I'd really appreciate feedback and some ideas for where to go with the query params.

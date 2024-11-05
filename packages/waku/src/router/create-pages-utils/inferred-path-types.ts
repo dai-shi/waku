@@ -146,6 +146,25 @@ export type PathsForPages<PagesResult extends { DO_NOT_USE_pages: AnyPage }> =
     ? string
     : CollectPaths<PagesResult['DO_NOT_USE_pages']>;
 
+// JUST AS EXAMPLE FOR NOW
+// Example 1 in use-router.mdx
+type QueryForPages<
+  T extends string,
+  Q extends Record<string, Record<string, unknown>>,
+> = Q extends Record<T, Record<string, unknown>> ? Q : never;
+
+type _Test = QueryForPages<
+  '/' | '/foo',
+  {
+    '/': {
+      foo: string;
+    };
+    '/foo': {
+      bar: string;
+    };
+  }
+>;
+
 type _GetSlugs<
   Route extends string,
   SplitRoute extends string[] = Split<Route, '/'>,
