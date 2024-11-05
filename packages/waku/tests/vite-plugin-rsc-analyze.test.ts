@@ -10,11 +10,7 @@ import { rscAnalyzePlugin } from '../src/lib/plugins/vite-plugin-rsc-analyze.js'
 const root = fileURLToPath(new URL('./fixtures', import.meta.url));
 
 // FIXME vitest node@18 environment does not have crypto - this is resolved in node@20
-try {
-  globalThis.crypto = crypto as any;
-} catch {
-  // If globalThis is mocked, we can't set crypto. Just ignore the error.
-}
+globalThis.crypto = crypto as any;
 
 const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   if (
