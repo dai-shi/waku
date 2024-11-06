@@ -43,6 +43,9 @@
     // Test
     {
       "path": "./packages/waku/tests"
+    },
+    {
+      "path": "./examples/21_create-pages"
     }
   ]
 }
