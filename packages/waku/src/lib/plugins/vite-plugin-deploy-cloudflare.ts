@@ -5,7 +5,6 @@ import {
   mkdirSync,
   readdirSync,
   rmSync,
-  renameSync,
   writeFileSync,
   copyFileSync,
 } from 'node:fs';
@@ -107,26 +106,32 @@ function separateBuiltAssetsFromFunctions({
     os.tmpdir(),
     `dist_${randomBytes(16).toString('hex')}`,
   );
+  const tempPublicDir = path.join(tempDist, DIST_PUBLIC);
+  const workerPublicDir = path.join(functionDir, DIST_PUBLIC);
 
-  // Create tempDist and copy outDir to tempDist
+  // Create a temp dir to prepare the separated files
+  rmSync(tempDist, { recursive: true, force: true });
   mkdirSync(tempDist, { recursive: true });
-  copyDirectory(outDir, tempDist);
 
-  // Remove outDir
+  // Move the current dist dir to the temp dir
+  // Folders are copied instead of moved to avoid issues on Windows
+  copyDirectory(outDir, tempDist);
   rmSync(outDir, { recursive: true, force: true });
 
-  // Create empty directories
+  // Create empty directories at the desired deploy locations
+  // for the function and the assets
   mkdirSync(functionDir, { recursive: true });
   mkdirSync(assetsDir, { recursive: true });
 
   // Move tempDist/public to assetsDir
-  renameSync(path.join(tempDist, DIST_PUBLIC), assetsDir);
+  copyDirectory(tempPublicDir, assetsDir);
+  rmSync(tempPublicDir, { recursive: true, force: true });
 
   // Move tempDist to functionDir
-  renameSync(tempDist, functionDir);
+  copyDirectory(tempDist, functionDir);
+  rmSync(tempDist, { recursive: true, force: true });
 
   // Traverse assetsDir and copy specific files to functionDir/public
-  const workerPublicDir = path.join(functionDir, DIST_PUBLIC);
   mkdirSync(workerPublicDir, { recursive: true });
   copyFiles(assetsDir, workerPublicDir, [
     '.txt',
