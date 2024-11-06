@@ -42,7 +42,7 @@ const pages = createPages(async ({ createPage, createLayout, createRoot }) => [
   }),
 
   createPage({
-    render: 'dynamic',
+    render: 'dynamic_badVal',
     path: '/baz',
     // Inline component is also possible.
     component: () => <h2>Dynamic: Baz</h2>,
