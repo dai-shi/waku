@@ -93,7 +93,7 @@ function copyDirectory(srcDir: string, destDir: string) {
   }
 }
 
-function separateBuiltAssetsFromFunctions({
+function separatePublicAssetsFromFunctions({
   outDir,
   functionDir,
   assetsDir,
@@ -200,9 +200,8 @@ export function deployCloudflarePlugin(opts: {
       const assetsDistDir = path.join(outDir, 'assets');
       const workerDistDir = path.join(outDir, 'worker');
 
-      // Move around the built assets so the static files are in assets
-      // and the function files are in worker.
-      separateBuiltAssetsFromFunctions({
+      // Move the public static assets to a separate folder from the server files
+      separatePublicAssetsFromFunctions({
         outDir,
         assetsDir: assetsDistDir,
         functionDir: workerDistDir,
