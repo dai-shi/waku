@@ -4,10 +4,14 @@ import {
   existsSync,
   mkdirSync,
   readdirSync,
+  rmSync,
   renameSync,
   writeFileSync,
   copyFileSync,
 } from 'node:fs';
+import os from 'node:os';
+import { randomBytes } from 'node:crypto';
+
 import type { Plugin } from 'vite';
 
 import { unstable_getPlatformObject } from '../../server.js';
@@ -62,7 +66,7 @@ export default {
 };
 `;
 
-const copyFiles = (srcDir: string, destDir: string, extensions: string[]) => {
+function copyFiles(srcDir: string, destDir: string, extensions: string[]) {
   const files = readdirSync(srcDir, { withFileTypes: true });
   for (const file of files) {
     const srcPath = path.join(srcDir, file.name);
@@ -74,7 +78,64 @@ const copyFiles = (srcDir: string, destDir: string, extensions: string[]) => {
       copyFileSync(srcPath, destPath);
     }
   }
-};
+}
+
+function copyDirectory(srcDir: string, destDir: string) {
+  const files = readdirSync(srcDir, { withFileTypes: true });
+  for (const file of files) {
+    const srcPath = path.join(srcDir, file.name);
+    const destPath = path.join(destDir, file.name);
+    if (file.isDirectory()) {
+      mkdirSync(destPath, { recursive: true });
+      copyDirectory(srcPath, destPath);
+    } else {
+      copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+function separateBuiltAssetsFromFunctions({
+  outDir,
+  functionDir,
+  assetsDir,
+}: {
+  outDir: string;
+  functionDir: string;
+  assetsDir: string;
+}) {
+  const tempDist = path.join(
+    os.tmpdir(),
+    `dist_${randomBytes(16).toString('hex')}`,
+  );
+
+  // Create tempDist and copy outDir to tempDist
+  mkdirSync(tempDist, { recursive: true });
+  copyDirectory(outDir, tempDist);
+
+  // Remove outDir
+  rmSync(outDir, { recursive: true, force: true });
+
+  // Create empty directories
+  mkdirSync(functionDir, { recursive: true });
+  mkdirSync(assetsDir, { recursive: true });
+
+  // Move tempDist/public to assetsDir
+  renameSync(path.join(tempDist, DIST_PUBLIC), assetsDir);
+
+  // Move tempDist to functionDir
+  renameSync(tempDist, functionDir);
+
+  // Traverse assetsDir and copy specific files to functionDir/public
+  const workerPublicDir = path.join(functionDir, DIST_PUBLIC);
+  mkdirSync(workerPublicDir, { recursive: true });
+  copyFiles(assetsDir, workerPublicDir, [
+    '.txt',
+    '.html',
+    '.json',
+    '.js',
+    '.css',
+  ]);
+}
 
 export function deployCloudflarePlugin(opts: {
   srcDir: string;
@@ -133,31 +194,14 @@ export function deployCloudflarePlugin(opts: {
       const outDir = path.join(rootDir, opts.distDir);
       const assetsDistDir = path.join(outDir, 'assets');
       const workerDistDir = path.join(outDir, 'worker');
-      const tempDist = path.join(rootDir, '_dist');
 
-      // Move outDir to tempDist
-      renameSync(outDir, tempDist);
-
-      // Create empty directories
-      mkdirSync(workerDistDir, { recursive: true });
-      mkdirSync(assetsDistDir, { recursive: true });
-
-      // Move tempDist/public to assetsDistDir
-      renameSync(path.join(tempDist, DIST_PUBLIC), assetsDistDir);
-
-      // Move tempDist to workerDistDir
-      renameSync(tempDist, workerDistDir);
-
-      // Traverse assetsDistDir and copy specific files to workerDistDir/public
-      const workerPublicDir = path.join(workerDistDir, DIST_PUBLIC);
-      mkdirSync(workerPublicDir, { recursive: true });
-      copyFiles(assetsDistDir, workerPublicDir, [
-        '.txt',
-        '.html',
-        '.json',
-        '.js',
-        '.css',
-      ]);
+      // Move around the built assets so the static files are in assets
+      // and the function files are in worker.
+      separateBuiltAssetsFromFunctions({
+        outDir,
+        assetsDir: assetsDistDir,
+        functionDir: workerDistDir,
+      });
 
       appendFileSync(
         path.join(workerDistDir, DIST_ENTRIES_JS),
