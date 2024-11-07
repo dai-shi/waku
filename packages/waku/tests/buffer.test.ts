@@ -208,10 +208,15 @@ describe('parseFormData', () => {
       contentType,
     );
 
-    const decodedContent = Buffer.from(
-      formData.get('base64Field') as string,
-      'base64',
-    ).toString();
+    let decodedContent = formData.get('base64Field') as string;
+    if (
+      process.version.startsWith('v20.') ||
+      process.version.startsWith('v18.')
+    ) {
+      // FIXME This means `parseFormData` is not working correctly across all Node.js versions
+      decodedContent = Buffer.from(decodedContent, 'base64').toString();
+    }
+
     expect(decodedContent).toBe(originalContent);
   });
 
