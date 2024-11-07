@@ -91,9 +91,20 @@ type HandleRequest = (
   },
 ) => Promise<ReadableStream | HandlerRes | null | undefined>;
 
+export type new_BuildConfig = {
+  pathSpec: PathSpec;
+  isStatic?: boolean | undefined;
+  entries?: {
+    rscPath: string;
+    skipPrefetch?: boolean | undefined;
+    isStatic?: boolean | undefined;
+  }[];
+  customCode?: string; // optional code to inject TODO hope to remove this
+}[];
+
 type new_GetBuildConfig = (utils: {
   unstable_collectClientModules: (elements: Elements) => Promise<string[]>;
-}) => Promise<BuildConfig>;
+}) => Promise<new_BuildConfig>;
 
 export function new_defineEntries(fns: {
   unstable_handleRequest: HandleRequest;
