@@ -13,6 +13,7 @@ import type {
   EntriesPrd,
   EntriesDev,
   new_defineEntries,
+  new_BuildConfig,
 } from '../../minimal/server.js';
 import type { ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
@@ -663,11 +664,9 @@ const willEmitPublicIndexHtmlNew = async (
   distEntries: Omit<EntriesPrd, keyof EntriesDev> & {
     default: ReturnType<typeof new_defineEntries>;
   },
-  buildConfig: BuildConfig,
+  buildConfig: new_BuildConfig,
 ) => {
-  const hasConfig = buildConfig.some(({ pathname }) => {
-    const pathSpec =
-      typeof pathname === 'string' ? pathname2pathSpec(pathname) : pathname;
+  const hasConfig = buildConfig.some(({ pathSpec }) => {
     return !!getPathMapping(pathSpec, '/');
   });
   if (!hasConfig) {
@@ -707,7 +706,7 @@ const emitStaticFiles = async (
   distEntries: Omit<EntriesPrd, keyof EntriesDev> & {
     default: ReturnType<typeof new_defineEntries>;
   },
-  buildConfig: BuildConfig,
+  buildConfig: new_BuildConfig,
   cssAssets: string[],
 ) => {
   const unstable_modules = {
@@ -738,7 +737,7 @@ const emitStaticFiles = async (
   const dynamicHtmlPathMap = new Map<PathSpec, string>();
   await Promise.all(
     Array.from(buildConfig).map(
-      async ({ pathname, isStatic, entries, customCode }) => {
+      async ({ pathSpec, isStatic, entries, customCode }) => {
         const moduleIdsForPrefetch = new Set<string>();
         for (const { rscPath, isStatic } of entries || []) {
           if (!isStatic) {
@@ -791,8 +790,6 @@ const emitStaticFiles = async (
             createWriteStream(destRscFile),
           );
         }
-        const pathSpec =
-          typeof pathname === 'string' ? pathname2pathSpec(pathname) : pathname;
         let htmlStr = publicIndexHtml;
         let htmlHead = publicIndexHtmlHead;
         if (cssAssets.length) {
@@ -826,12 +823,8 @@ const emitStaticFiles = async (
           );
           htmlHead += `<script type="module" async>${code}</script>`;
         }
-        if (!isStatic) {
-          dynamicHtmlPathMap.set(pathSpec, htmlHead);
-          return;
-        }
-        pathname = pathSpec2pathname(pathSpec);
-        const destHtmlFile = joinPath(
+        const pathname = pathSpec2pathname(pathSpec);
+        const destFile = joinPath(
           rootDir,
           config.distDir,
           DIST_PUBLIC,
@@ -841,8 +834,15 @@ const emitStaticFiles = async (
               ? '404.html' // HACK special treatment for 404, better way?
               : pathname + '/index.html',
         );
+        if (!isStatic) {
+          if (destFile.endsWith('.html')) {
+            // HACK doesn't feel ideal
+            dynamicHtmlPathMap.set(pathSpec, htmlHead);
+          }
+          return;
+        }
         // In partial mode, skip if the file already exists.
-        if (existsSync(destHtmlFile)) {
+        if (existsSync(destFile)) {
           return;
         }
         const utils = {
@@ -882,15 +882,15 @@ const emitStaticFiles = async (
           input,
           utils,
         );
-        const htmlReadable = res instanceof ReadableStream ? res : res?.body;
-        await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
-        if (htmlReadable) {
+        const readable = res instanceof ReadableStream ? res : res?.body;
+        await mkdir(joinPath(destFile, '..'), { recursive: true });
+        if (readable) {
           await pipeline(
-            Readable.fromWeb(htmlReadable as never),
-            createWriteStream(destHtmlFile),
+            Readable.fromWeb(readable as never),
+            createWriteStream(destFile),
           );
-        } else {
-          await writeFile(destHtmlFile, htmlStr);
+        } else if (destFile.endsWith('.html')) {
+          await writeFile(destFile, htmlStr);
         }
       },
     ),
