@@ -289,13 +289,8 @@ export function new_defineRouter(fns: {
     Iterable<{
       pattern: string; // TODO let's revisit this later
       path: PathSpec;
-      isStaticRouteElement?: boolean;
-      elements: Record<
-        SlotId,
-        {
-          isStatic?: boolean;
-        }
-      >;
+      routeElement: { isStatic?: boolean };
+      elements: Record<SlotId, { isStatic?: boolean }>;
       noSsr?: boolean;
     }>
   >;
@@ -333,12 +328,12 @@ export function new_defineRouter(fns: {
         return {
           pattern: item.pattern,
           pathname: item.path,
-          isStaticRouteElement: !!item.isStaticRouteElement,
+          isStaticRouteElement: !!item.routeElement.isStatic,
           staticElementIds: Object.entries(item.elements).flatMap(
             ([id, { isStatic }]) => (isStatic ? [id] : []),
           ),
           isStatic:
-            !!item.isStaticRouteElement &&
+            !!item.routeElement.isStatic &&
             Object.values(item.elements).every((x) => x.isStatic),
           specs: { is404, noSsr: !!item.noSsr },
         };

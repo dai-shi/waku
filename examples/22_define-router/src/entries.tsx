@@ -14,7 +14,7 @@ export default new_defineRouter({
       {
         pattern: '/',
         path: [],
-        isStaticRouteElement: true,
+        routeElement: { isStatic: true },
         elements: {
           root: { isStatic: true },
           'layout:/': { isStatic: true },
@@ -24,7 +24,7 @@ export default new_defineRouter({
       {
         pattern: '/foo',
         path: [{ type: 'literal', name: 'foo' }],
-        isStaticRouteElement: true,
+        routeElement: { isStatic: true },
         elements: {
           root: { isStatic: true },
           'layout:/': { isStatic: true },
@@ -34,7 +34,7 @@ export default new_defineRouter({
       {
         pattern: '/bar',
         path: [{ type: 'literal', name: 'bar' }],
-        isStaticRouteElement: true,
+        routeElement: { isStatic: true },
         elements: {
           root: { isStatic: true },
           'layout:/': { isStatic: true },
@@ -47,7 +47,7 @@ export default new_defineRouter({
           { type: 'literal', name: 'nested' },
           { type: 'literal', name: 'baz' },
         ],
-        isStaticRouteElement: true,
+        routeElement: { isStatic: true },
         elements: {
           root: { isStatic: true },
           'layout:/': { isStatic: true },
