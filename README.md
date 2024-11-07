@@ -1007,7 +1007,7 @@ Note: When rendering in static mode, please be sure to return `render: 'static'`
 
 ```
 npm run build -- --with-cloudflare
-npx wrangler pages dev # or deploy
+npx wrangler dev # or deploy
 ```
 
 ### PartyKit (experimental)
