@@ -24,6 +24,6 @@ export default new_defineEntries({
     }
   },
   unstable_getBuildConfig: async () => [
-    { pathname: '/', entries: [{ rscPath: '' }] },
+    { pathSpec: [], entries: [{ rscPath: '' }] },
   ],
 });
