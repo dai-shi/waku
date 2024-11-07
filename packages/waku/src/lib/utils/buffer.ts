@@ -11,6 +11,6 @@ export const parseFormData = async (
 };
 
 export const bufferToString = (buffer: ArrayBuffer): string => {
-  const enc = new TextDecoder();
-  return enc.decode(buffer);
+  const decoder = new TextDecoder();
+  return decoder.decode(buffer);
 };
