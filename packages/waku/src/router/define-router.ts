@@ -280,15 +280,18 @@ export function unstable_rerenderRoute(
 // Eventually replaces unstable_defineRouter
 // -----------------------------------------------------
 
-type ComponentId = string;
+type SlotId = string;
+
+const ROUTE_SLOT_ID_PREFIX = 'route:';
 
 export function new_defineRouter(fns: {
   getPathConfig: () => Promise<
     Iterable<{
       pattern: string; // TODO let's revisit this later
       path: PathSpec;
-      components: Record<
-        ComponentId,
+      isStaticRouteElement?: boolean;
+      elements: Record<
+        SlotId,
         {
           isStatic?: boolean;
         }
@@ -300,15 +303,18 @@ export function new_defineRouter(fns: {
     path: string,
     options: {
       query?: string;
-      skip?: string[];
     },
-  ) => Promise<Record<ComponentId, ReactNode>>;
+  ) => Promise<{
+    routeElement: ReactNode;
+    elements: Record<SlotId, ReactNode>;
+  }>;
 }): ReturnType<typeof defineEntries> {
   const platformObject = unstable_getPlatformObject();
   type MyPathConfig = {
     pattern: string;
     pathname: PathSpec;
-    componentIds: ComponentId[];
+    isStaticRouteElement: boolean;
+    staticElementIds: SlotId[];
     isStatic?: boolean | undefined;
     specs: { noSsr?: boolean; is404: boolean };
   }[];
@@ -327,8 +333,13 @@ export function new_defineRouter(fns: {
         return {
           pattern: item.pattern,
           pathname: item.path,
-          componentIds: Object.keys(item.components),
-          isStatic: Object.values(item.components).every((x) => x.isStatic),
+          isStaticRouteElement: !!item.isStaticRouteElement,
+          staticElementIds: Object.entries(item.elements).flatMap(
+            ([id, { isStatic }]) => (isStatic ? [id] : []),
+          ),
+          isStatic:
+            !!item.isStaticRouteElement &&
+            Object.values(item.elements).every((x) => x.isStatic),
           specs: { is404, noSsr: !!item.noSsr },
         };
       });
@@ -368,6 +379,16 @@ export function new_defineRouter(fns: {
           has404,
         };
   };
+  const canSkip = async (
+    pathname: string,
+    slotId: SlotId,
+  ): Promise<boolean> => {
+    const pathConfig = await getMyPathConfig();
+    const found = pathConfig.find(({ pathname: pathSpec }) =>
+      getPathMapping(pathSpec, pathname),
+    );
+    return !!found && found.staticElementIds.includes(slotId);
+  };
   const renderEntries: RenderEntries = async (rscPath, { rscParams }) => {
     const pathname = decodeRoutePath(rscPath);
     const pathStatus = await existsPath(pathname);
@@ -375,10 +396,24 @@ export function new_defineRouter(fns: {
       return null;
     }
     const { query, skip } = parseRscParams(rscParams);
-    const entries = await fns.renderRoute(
+    const { routeElement, elements } = await fns.renderRoute(
       pathname,
-      pathStatus.isStatic ? {} : { query, skip },
+      pathStatus.isStatic ? {} : { query },
     );
+    if (
+      Object.keys(elements).some((id) => id.startsWith(ROUTE_SLOT_ID_PREFIX))
+    ) {
+      throw new Error('Element ID cannot start with "route:"');
+    }
+    const entries = {
+      ...elements,
+      [ROUTE_SLOT_ID_PREFIX + pathname]: routeElement,
+    };
+    for (const skipId of skip) {
+      if (await canSkip(pathname, skipId)) {
+        delete entries[skipId];
+      }
+    }
     entries[ROUTE_ID] = [pathname, query];
     entries[IS_STATIC_ID] = pathStatus.isStatic;
     if (pathStatus.has404) {
