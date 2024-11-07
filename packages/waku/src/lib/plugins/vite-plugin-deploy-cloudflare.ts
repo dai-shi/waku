@@ -4,10 +4,13 @@ import {
   existsSync,
   mkdirSync,
   readdirSync,
-  renameSync,
   rmSync,
   writeFileSync,
+  copyFileSync,
 } from 'node:fs';
+import os from 'node:os';
+import { randomBytes } from 'node:crypto';
+
 import type { Plugin } from 'vite';
 
 import { unstable_getPlatformObject } from '../../server.js';
@@ -62,24 +65,82 @@ export default {
 };
 `;
 
-const getFiles = (dir: string, files: string[] = []): string[] => {
-  const entries = readdirSync(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      getFiles(fullPath, files);
-    } else {
-      files.push(fullPath);
+function copyFiles(srcDir: string, destDir: string, extensions: string[]) {
+  const files = readdirSync(srcDir, { withFileTypes: true });
+  for (const file of files) {
+    const srcPath = path.join(srcDir, file.name);
+    const destPath = path.join(destDir, file.name);
+    if (file.isDirectory()) {
+      mkdirSync(destPath, { recursive: true });
+      copyFiles(srcPath, destPath, extensions);
+    } else if (extensions.some((ext) => file.name.endsWith(ext))) {
+      copyFileSync(srcPath, destPath);
     }
   }
-  return files;
-};
+}
 
-const WORKER_JS_NAME = '_worker.js';
-const ROUTES_JSON_NAME = '_routes.json';
-const HEADERS_NAME = '_headers';
+function copyDirectory(srcDir: string, destDir: string) {
+  const files = readdirSync(srcDir, { withFileTypes: true });
+  for (const file of files) {
+    const srcPath = path.join(srcDir, file.name);
+    const destPath = path.join(destDir, file.name);
+    if (file.isDirectory()) {
+      mkdirSync(destPath, { recursive: true });
+      copyDirectory(srcPath, destPath);
+    } else {
+      copyFileSync(srcPath, destPath);
+    }
+  }
+}
 
-type StaticRoutes = { version: number; include: string[]; exclude: string[] };
+function separatePublicAssetsFromFunctions({
+  outDir,
+  functionDir,
+  assetsDir,
+}: {
+  outDir: string;
+  functionDir: string;
+  assetsDir: string;
+}) {
+  const tempDist = path.join(
+    os.tmpdir(),
+    `dist_${randomBytes(16).toString('hex')}`,
+  );
+  const tempPublicDir = path.join(tempDist, DIST_PUBLIC);
+  const workerPublicDir = path.join(functionDir, DIST_PUBLIC);
+
+  // Create a temp dir to prepare the separated files
+  rmSync(tempDist, { recursive: true, force: true });
+  mkdirSync(tempDist, { recursive: true });
+
+  // Move the current dist dir to the temp dir
+  // Folders are copied instead of moved to avoid issues on Windows
+  copyDirectory(outDir, tempDist);
+  rmSync(outDir, { recursive: true, force: true });
+
+  // Create empty directories at the desired deploy locations
+  // for the function and the assets
+  mkdirSync(functionDir, { recursive: true });
+  mkdirSync(assetsDir, { recursive: true });
+
+  // Move tempDist/public to assetsDir
+  copyDirectory(tempPublicDir, assetsDir);
+  rmSync(tempPublicDir, { recursive: true, force: true });
+
+  // Move tempDist to functionDir
+  copyDirectory(tempDist, functionDir);
+  rmSync(tempDist, { recursive: true, force: true });
+
+  // Traverse assetsDir and copy specific files to functionDir/public
+  mkdirSync(workerPublicDir, { recursive: true });
+  copyFiles(assetsDir, workerPublicDir, [
+    '.txt',
+    '.html',
+    '.json',
+    '.js',
+    '.css',
+  ]);
+}
 
 export function deployCloudflarePlugin(opts: {
   srcDir: string;
@@ -136,93 +197,18 @@ export function deployCloudflarePlugin(opts: {
       }
 
       const outDir = path.join(rootDir, opts.distDir);
+      const assetsDistDir = path.join(outDir, 'assets');
+      const workerDistDir = path.join(outDir, 'worker');
 
-      // Advanced-mode Cloudflare Pages imports _worker.js
-      // and can be configured with _routes.json to serve other static root files
-      mkdirSync(path.join(outDir, WORKER_JS_NAME));
-      const outPaths = readdirSync(outDir);
-      for (const p of outPaths) {
-        if (p === WORKER_JS_NAME) {
-          continue;
-        }
-        renameSync(path.join(outDir, p), path.join(outDir, WORKER_JS_NAME, p));
-      }
-
-      const workerEntrypoint = path.join(outDir, WORKER_JS_NAME, 'index.js');
-      if (!existsSync(workerEntrypoint)) {
-        writeFileSync(
-          workerEntrypoint,
-          `
-import server from './${SERVE_JS}'
-
-export default {
-  ...server
-}
-`,
-        );
-      }
-
-      // Create _routes.json if one doesn't already exist in the public dir
-      // https://developers.cloudflare.com/pages/functions/routing/#functions-invocation-routes
-      const routesFile = path.join(outDir, ROUTES_JSON_NAME);
-      const publicDir = path.join(outDir, WORKER_JS_NAME, DIST_PUBLIC);
-      if (!existsSync(path.join(publicDir, ROUTES_JSON_NAME))) {
-        // exclude strategy
-        const staticPaths: string[] = ['/assets/*'];
-        const paths = getFiles(publicDir);
-        for (const p of paths) {
-          const basePath = path.dirname(p.replace(publicDir, '')) || '/';
-          const name = path.basename(p);
-          const entry =
-            name === 'index.html'
-              ? basePath + (basePath !== '/' ? '/' : '')
-              : path.join(basePath, name.replace(/\.html$/, ''));
-          if (
-            entry.startsWith('/assets/') ||
-            entry.startsWith('/' + WORKER_JS_NAME + '/') ||
-            entry === '/' + WORKER_JS_NAME ||
-            entry === '/' + ROUTES_JSON_NAME ||
-            entry === '/' + HEADERS_NAME
-          ) {
-            continue;
-          }
-          if (!staticPaths.includes(entry)) {
-            staticPaths.push(entry);
-          }
-        }
-        const MAX_CLOUDFLARE_RULES = 100;
-        if (staticPaths.length + 1 > MAX_CLOUDFLARE_RULES) {
-          throw new Error(
-            `The number of static paths exceeds the limit of ${MAX_CLOUDFLARE_RULES}. ` +
-              `You need to create a custom ${ROUTES_JSON_NAME} file in the public folder. ` +
-              `See https://developers.cloudflare.com/pages/functions/routing/#functions-invocation-routes`,
-          );
-        }
-        const staticRoutes: StaticRoutes = {
-          version: 1,
-          include: ['/*'],
-          exclude: staticPaths,
-        };
-        writeFileSync(routesFile, JSON.stringify(staticRoutes));
-      }
-
-      // Move the public files to the root of the dist folder
-      const publicPaths = readdirSync(
-        path.join(outDir, WORKER_JS_NAME, DIST_PUBLIC),
-      );
-      for (const p of publicPaths) {
-        renameSync(
-          path.join(outDir, WORKER_JS_NAME, DIST_PUBLIC, p),
-          path.join(outDir, p),
-        );
-      }
-      rmSync(path.join(outDir, WORKER_JS_NAME, DIST_PUBLIC), {
-        recursive: true,
-        force: true,
+      // Move the public static assets to a separate folder from the server files
+      separatePublicAssetsFromFunctions({
+        outDir,
+        assetsDir: assetsDistDir,
+        functionDir: workerDistDir,
       });
 
       appendFileSync(
-        path.join(outDir, WORKER_JS_NAME, DIST_ENTRIES_JS),
+        path.join(workerDistDir, DIST_ENTRIES_JS),
         `export const buildData = ${JSON.stringify(platformObject.buildData)};`,
       );
 
@@ -233,9 +219,18 @@ export default {
           `
 # See https://developers.cloudflare.com/pages/functions/wrangler-configuration/
 name = "waku-project"
-compatibility_date = "2024-09-02"
+compatibility_date = "2024-09-23"
 compatibility_flags = [ "nodejs_als" ]
 pages_build_output_dir = "./dist"
+main = "./dist/worker/serve-cloudflare.js"
+
+assets = {
+  directory = "./dist/assets",
+  binding = "ASSETS",
+  html_handling = "drop-trailing-slash",
+  # "single-page-application" | "404-page" | "none"
+  not_found_handling = "404-page"
+}
 `,
         );
       }
