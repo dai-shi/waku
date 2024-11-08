@@ -3,14 +3,14 @@ import { fileURLToPath } from 'node:url';
 import fsPromises from 'node:fs/promises';
 import { new_defineEntries } from 'waku/minimal/server';
 import { Slot } from 'waku/minimal/client';
-import { getContext } from 'waku/middleware/context';
+import { getContextData } from 'waku/middleware/context';
 
 import App from './components/App';
 
 export default new_defineEntries({
   unstable_handleRequest: async (input, { renderRsc, renderHtml }) => {
-    const data = getContext().data as { count: number };
-    ++data.count;
+    const data = getContextData() as { count?: number };
+    data.count = (data.count || 0) + 1;
     const items = JSON.parse(
       await fsPromises.readFile(
         path.join(
