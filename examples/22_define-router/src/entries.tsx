@@ -1,5 +1,5 @@
 import { new_defineRouter } from 'waku/router/server';
-import { Slot, Children } from 'waku/client';
+import { Slot, Children } from 'waku/minimal/client';
 
 import Root from './components/Root';
 import HomeLayout from './components/HomeLayout';
@@ -14,8 +14,8 @@ export default new_defineRouter({
       {
         pattern: '/',
         path: [],
-        components: {
-          'route:/': { isStatic: true },
+        routeElement: { isStatic: true },
+        elements: {
           root: { isStatic: true },
           'layout:/': { isStatic: true },
           'page:/': { isStatic: true },
@@ -24,8 +24,8 @@ export default new_defineRouter({
       {
         pattern: '/foo',
         path: [{ type: 'literal', name: 'foo' }],
-        components: {
-          'route:/foo': { isStatic: true },
+        routeElement: { isStatic: true },
+        elements: {
           root: { isStatic: true },
           'layout:/': { isStatic: true },
           'page:/foo': { isStatic: true },
@@ -34,8 +34,8 @@ export default new_defineRouter({
       {
         pattern: '/bar',
         path: [{ type: 'literal', name: 'bar' }],
-        components: {
-          'route:/bar': { isStatic: true },
+        routeElement: { isStatic: true },
+        elements: {
           root: { isStatic: true },
           'layout:/': { isStatic: true },
           'page:/bar': { isStatic: true },
@@ -47,8 +47,8 @@ export default new_defineRouter({
           { type: 'literal', name: 'nested' },
           { type: 'literal', name: 'baz' },
         ],
-        components: {
-          'route:/nested/baz': { isStatic: true },
+        routeElement: { isStatic: true },
+        elements: {
           root: { isStatic: true },
           'layout:/': { isStatic: true },
           'page:/nested/baz': { isStatic: true },
@@ -56,100 +56,102 @@ export default new_defineRouter({
       },
     ];
   },
-  renderRoute: async (path, options) => {
-    const processSkip = <T,>(elements: Record<string, T>) =>
-      Object.fromEntries(
-        Object.entries(elements).filter(
-          ([k]) => !options.skip || !options.skip.includes(k),
-        ),
-      );
+  renderRoute: async (path) => {
     if (path === '/') {
-      return processSkip({
-        'route:/': (
+      return {
+        routeElement: (
           <Slot id="root">
             <Slot id="layout:/">
               <Slot id="page:/" />
             </Slot>
           </Slot>
         ),
-        root: (
-          <Root>
-            <Children />
-          </Root>
-        ),
-        'layout:/': (
-          <HomeLayout>
-            <Children />
-          </HomeLayout>
-        ),
-        'page:/': <HomePage />,
-      });
+        elements: {
+          root: (
+            <Root>
+              <Children />
+            </Root>
+          ),
+          'layout:/': (
+            <HomeLayout>
+              <Children />
+            </HomeLayout>
+          ),
+          'page:/': <HomePage />,
+        },
+      };
     }
     if (path === '/foo') {
-      return processSkip({
-        'route:/foo': (
+      return {
+        routeElement: (
           <Slot id="root">
             <Slot id="layout:/">
               <Slot id="page:/foo" />
             </Slot>
           </Slot>
         ),
-        root: (
-          <Root>
-            <Children />
-          </Root>
-        ),
-        'layout:/': (
-          <HomeLayout>
-            <Children />
-          </HomeLayout>
-        ),
-        'page:/foo': <FooPage />,
-      });
+        elements: {
+          root: (
+            <Root>
+              <Children />
+            </Root>
+          ),
+          'layout:/': (
+            <HomeLayout>
+              <Children />
+            </HomeLayout>
+          ),
+          'page:/foo': <FooPage />,
+        },
+      };
     }
     if (path === '/bar') {
-      return processSkip({
-        'route:/bar': (
+      return {
+        routeElement: (
           <Slot id="root">
             <Slot id="layout:/">
               <Slot id="page:/bar" />
             </Slot>
           </Slot>
         ),
-        root: (
-          <Root>
-            <Children />
-          </Root>
-        ),
-        'layout:/': (
-          <HomeLayout>
-            <Children />
-          </HomeLayout>
-        ),
-        'page:/bar': <BarPage />,
-      });
+        elements: {
+          root: (
+            <Root>
+              <Children />
+            </Root>
+          ),
+          'layout:/': (
+            <HomeLayout>
+              <Children />
+            </HomeLayout>
+          ),
+          'page:/bar': <BarPage />,
+        },
+      };
     }
     if (path === '/nested/baz') {
-      return processSkip({
-        'route:/nested/baz': (
+      return {
+        routeElement: (
           <Slot id="root">
             <Slot id="layout:/">
               <Slot id="page:/nested/baz" />
             </Slot>
           </Slot>
         ),
-        root: (
-          <Root>
-            <Children />
-          </Root>
-        ),
-        'layout:/': (
-          <HomeLayout>
-            <Children />
-          </HomeLayout>
-        ),
-        'page:/nested/baz': <NestedBazPage />,
-      });
+        elements: {
+          root: (
+            <Root>
+              <Children />
+            </Root>
+          ),
+          'layout:/': (
+            <HomeLayout>
+              <Children />
+            </HomeLayout>
+          ),
+          'page:/nested/baz': <NestedBazPage />,
+        },
+      };
     }
     throw new Error('renderRoute: No such path:' + path);
   },
