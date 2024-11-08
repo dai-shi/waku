@@ -22,7 +22,7 @@
     "start": "node ./dist/index.js",
     "dev": "pnpm build --watch",
     "compile": "rm -rf template dist *.tsbuildinfo && pnpm run template && pnpm run build",
-    "template": "cp -r ../../examples template && rm -rf template/*/dist && rm -rf template/*/node_modules && (for d in template/*; do mv -f $d/.gitignore $d/gitignore || true; done)",
+    "template": "cp -r ../../examples template && rm -rf template/*/dist && rm -rf template/*/node_modules && (for d in template/*; do mv $d/.gitignore $d/gitignore || true; done)",
     "build": "tsup"
   },
   "devDependencies": {
