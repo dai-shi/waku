@@ -374,15 +374,17 @@ export function new_defineRouter(fns: {
           has404,
         };
   };
-  const canSkip = async (
+  const filterEffectiveSkip = async (
     pathname: string,
-    slotId: SlotId,
-  ): Promise<boolean> => {
+    skip: string[],
+  ): Promise<string[]> => {
     const pathConfig = await getMyPathConfig();
-    const found = pathConfig.find(({ pathname: pathSpec }) =>
-      getPathMapping(pathSpec, pathname),
-    );
-    return !!found && found.staticElementIds.includes(slotId);
+    return skip.filter((slotId) => {
+      const found = pathConfig.find(({ pathname: pathSpec }) =>
+        getPathMapping(pathSpec, pathname),
+      );
+      return !!found && found.staticElementIds.includes(slotId);
+    });
   };
   const renderEntries: RenderEntries = async (rscPath, { rscParams }) => {
     const pathname = decodeRoutePath(rscPath);
@@ -404,10 +406,8 @@ export function new_defineRouter(fns: {
       ...elements,
       [ROUTE_SLOT_ID_PREFIX + pathname]: routeElement,
     };
-    for (const skipId of skip) {
-      if (await canSkip(pathname, skipId)) {
-        delete entries[skipId];
-      }
+    for (const skipId of await filterEffectiveSkip(pathname, skip)) {
+      delete entries[skipId];
     }
     entries[ROUTE_ID] = [pathname, query];
     entries[IS_STATIC_ID] = pathStatus.isStatic;
