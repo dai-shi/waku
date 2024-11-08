@@ -1,4 +1,5 @@
 import type {
+  HMRBroadcaster,
   HtmlTagDescriptor,
   Plugin,
   TransformResult,
@@ -148,7 +149,7 @@ export function rscHmrPlugin(): Plugin {
 
 const pendingMap = new WeakMap<ReturnType<typeof viteHot>, Set<string>>();
 
-export function viteHot(viteServer: ViteDevServer) {
+export function viteHot(viteServer: ViteDevServer): HMRBroadcaster {
   return viteServer.hot ?? viteServer.ws;
 }
 
