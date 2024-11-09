@@ -46,8 +46,16 @@ export function getContext() {
   const context = contextStorage?.getStore() ?? currentContext;
   if (!context) {
     throw new Error(
-      'Context is not available. Make sure to use the context middleware.',
+      'Context is not available. Make sure to use the context middleware. For now, Context is not available during the build time.',
     );
   }
   return context;
+}
+
+export function getContextData(): Record<string, unknown> {
+  const context = contextStorage?.getStore() ?? currentContext;
+  if (!context) {
+    return {};
+  }
+  return context.data;
 }

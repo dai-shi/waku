@@ -1,5 +1,5 @@
 import { Suspense, cache } from 'react';
-import { unstable_getCustomContext as getCustomContext } from 'waku/server';
+import { getContextData } from 'waku/middleware/context';
 import { getHonoContext } from 'waku/unstable_hono';
 
 import { Counter } from './Counter';
@@ -13,14 +13,13 @@ const InternalAsyncComponent = async () => {
   if (val1 !== val2) {
     throw new Error('Cache not working');
   }
-  // console.log(getCustomContext()); // fails when it's sent to the browser
-  console.log('waku context', Object.keys(getCustomContext()));
+  console.log('waku context', Object.keys(getContextData()));
   console.log('hono context', Object.keys(getHonoContext()));
   return null;
 };
 
 const App = ({ name, items }: { name: string; items: unknown[] }) => {
-  const context = getCustomContext<{ count: number }>();
+  const data = getContextData() as { count?: number };
   return (
     <html>
       <head>
@@ -32,7 +31,7 @@ const App = ({ name, items }: { name: string; items: unknown[] }) => {
         >
           <h1>Hello {name}!!</h1>
           <h3>This is a server component.</h3>
-          <p>Cookie count: {context.count}</p>
+          <p>Cookie count: {data.count || 0}</p>
           <Counter />
           <p>Item count: {items.length}</p>
           <Suspense>

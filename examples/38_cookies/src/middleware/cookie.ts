@@ -8,7 +8,7 @@ const COOKIE_OPTS = {};
 const cookieMiddleware: Middleware = () => {
   return async (ctx, next) => {
     const cookies = cookie.parse(ctx.req.headers.cookie || '');
-    ctx.context.count = Number(cookies.count) || 0;
+    ctx.data.count = Number(cookies.count) || 0;
     await next();
     ctx.res.headers ||= {};
     let origSetCookie = ctx.res.headers['set-cookie'] || ([] as string[]);
@@ -17,7 +17,7 @@ const cookieMiddleware: Middleware = () => {
     }
     ctx.res.headers['set-cookie'] = [
       ...origSetCookie,
-      cookie.serialize('count', String(ctx.context.count), COOKIE_OPTS),
+      cookie.serialize('count', String(ctx.data.count), COOKIE_OPTS),
     ];
   };
 };

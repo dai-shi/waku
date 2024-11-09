@@ -1,10 +1,11 @@
-/** @type {import('waku/config').Config} */
-export default {
+// This is a temporary file while experimenting new_defineEntries
+
+import { defineConfig } from 'waku/config';
+
+export default defineConfig({
   middleware: () => [
     import('waku/middleware/context'),
-    import('./src/middleware/api.js'),
     import('waku/middleware/dev-server'),
-    import('waku/middleware/rsc'),
-    import('waku/middleware/ssr'),
+    import('waku/middleware/handler'),
   ],
-};
+});

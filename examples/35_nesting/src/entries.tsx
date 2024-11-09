@@ -1,31 +1,40 @@
 import type { ReactNode } from 'react';
-import { defineEntries } from 'waku/server';
-import { Slot } from 'waku/client';
+import { new_defineEntries } from 'waku/minimal/server';
+import { Slot } from 'waku/minimal/client';
 
 import App from './components/App';
 import InnerApp from './components/InnerApp';
 import AppWithoutSsr from './components/AppWithoutSsr';
 
-export default defineEntries(
-  // renderEntries
-  async (rscPath) => {
-    const params = new URLSearchParams(rscPath || 'App=Waku&InnerApp=0');
-    const result: Record<string, ReactNode> = {};
-    if (params.has('App')) {
-      result.App = <App name={params.get('App')!} />;
+export default new_defineEntries({
+  unstable_handleRequest: async (input, { renderRsc, renderHtml }) => {
+    if (input.type === 'component') {
+      const params = new URLSearchParams(
+        input.rscPath || 'App=Waku&InnerApp=0',
+      );
+      const result: Record<string, ReactNode> = {};
+      if (params.has('App')) {
+        result.App = <App name={params.get('App')!} />;
+      }
+      if (params.has('InnerApp')) {
+        result.InnerApp = <InnerApp count={Number(params.get('InnerApp'))} />;
+      }
+      if (params.has('AppWithoutSsr')) {
+        result.AppWithoutSsr = <AppWithoutSsr />;
+      }
+      return renderRsc(result);
     }
-    if (params.has('InnerApp')) {
-      result.InnerApp = <InnerApp count={Number(params.get('InnerApp'))} />;
+    if (input.type === 'custom' && input.pathname === '/') {
+      return renderHtml(
+        { App: <App name="Waku" />, InnerApp: <InnerApp count={0} /> },
+        <Slot id="App" />,
+        '',
+      );
     }
-    if (params.has('AppWithoutSsr')) {
-      result.AppWithoutSsr = <AppWithoutSsr />;
-    }
-    return result;
   },
-  // getBuildConfig
-  async () => [
+  unstable_getBuildConfig: async () => [
     {
-      pathname: '/',
+      pathSpec: [],
       entries: [
         { rscPath: '' },
         { rscPath: 'InnerApp=1', skipPrefetch: true },
@@ -36,23 +45,9 @@ export default defineEntries(
       ],
     },
     {
-      pathname: '/no-ssr',
+      pathSpec: [{ type: 'literal', name: '/no-ssr' }],
       entries: [{ rscPath: 'AppWithoutSsr' }],
       isStatic: true,
     },
   ],
-  // getSsrConfig
-  async (pathname) => {
-    switch (pathname) {
-      case '/':
-        return {
-          rscPath: '',
-          html: <Slot id="App" />,
-        };
-      case '/no-ssr':
-        return null;
-      default:
-        return null;
-    }
-  },
-);
+});

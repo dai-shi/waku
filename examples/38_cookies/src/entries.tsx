@@ -1,19 +1,16 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fsPromises from 'node:fs/promises';
-import {
-  defineEntries,
-  unstable_getCustomContext as getCustomContext,
-} from 'waku/server';
-import { Slot } from 'waku/client';
+import { new_defineEntries } from 'waku/minimal/server';
+import { Slot } from 'waku/minimal/client';
+import { getContextData } from 'waku/middleware/context';
 
 import App from './components/App';
 
-export default defineEntries(
-  // renderEntries
-  async (rscPath) => {
-    const context = getCustomContext<{ count: number }>();
-    ++context.count;
+export default new_defineEntries({
+  unstable_handleRequest: async (input, { renderRsc, renderHtml }) => {
+    const data = getContextData() as { count?: number };
+    data.count = (data.count || 0) + 1;
     const items = JSON.parse(
       await fsPromises.readFile(
         path.join(
@@ -23,24 +20,20 @@ export default defineEntries(
         'utf8',
       ),
     );
-    return {
-      App: <App name={rscPath || 'Waku'} items={items} />,
-    };
-  },
-  // getBuildConfig
-  async () => [
-    { pathname: '/', entries: [{ rscPath: '' }], context: { count: 0 } },
-  ],
-  // getSsrConfig
-  async (pathname) => {
-    switch (pathname) {
-      case '/':
-        return {
-          rscPath: '',
-          html: <Slot id="App" />,
-        };
-      default:
-        return null;
+    if (input.type === 'component') {
+      return renderRsc({
+        App: <App name={input.rscPath || 'Waku'} items={items} />,
+      });
+    }
+    if (input.type === 'custom' && input.pathname === '/') {
+      return renderHtml(
+        { App: <App name={'Waku'} items={items} /> },
+        <Slot id="App" />,
+        '',
+      );
     }
   },
-);
+  unstable_getBuildConfig: async () => [
+    { pathSpec: [], entries: [{ rscPath: '' }] },
+  ],
+});
