@@ -783,7 +783,7 @@ export const new_createPages = <
         }
       }
 
-      // loop over all layouts for route:${path}
+      // loop over all layouts for path
       const routeChildren = [
         ...layoutPaths.map((lPath) => ({
           component: Slot,
