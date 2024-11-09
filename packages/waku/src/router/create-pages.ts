@@ -664,7 +664,8 @@ export const new_createPages = <
       const paths: {
         pattern: string;
         path: PathSpec;
-        components: Record<string, { isStatic: boolean }>;
+        routeElement: { isStatic?: boolean };
+        elements: Record<string, { isStatic?: boolean }>;
         noSsr: boolean;
       }[] = [];
       const rootIsStatic = !rootItem || rootItem.render === 'static';
@@ -684,23 +685,27 @@ export const new_createPages = <
 
         const layoutPaths = getLayouts(pattern);
 
+        const elements = {
+          ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
+            (acc, lPath) => {
+              acc[`layout:${lPath}`] = {
+                isStatic: !dynamicLayoutPathMap.has(lPath),
+              };
+              return acc;
+            },
+            {},
+          ),
+          root: { isStatic: rootIsStatic },
+          [`page:${path}`]: { isStatic },
+        };
+
         paths.push({
           pattern,
           path: pathSpec,
-          components: {
-            ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
-              (acc, lPath) => {
-                acc[`layout:${lPath}`] = {
-                  isStatic: !dynamicLayoutPathMap.has(lPath),
-                };
-                return acc;
-              },
-              {},
-            ),
-            root: { isStatic: rootIsStatic },
-            [`route:${path}`]: { isStatic },
-            [`page:${path}`]: { isStatic },
+          routeElement: {
+            isStatic: Object.values(elements).every((x) => x.isStatic),
           },
+          elements,
           noSsr,
         });
       }
@@ -708,23 +713,24 @@ export const new_createPages = <
         const noSsr = noSsrSet.has(pathSpec);
         const pattern = path2regexp(parsePathWithSlug(path));
         const layoutPaths = getLayouts(pattern);
+        const elements = {
+          ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
+            (acc, lPath) => {
+              acc[`layout:${lPath}`] = {
+                isStatic: !dynamicLayoutPathMap.has(lPath),
+              };
+              return acc;
+            },
+            {},
+          ),
+          root: { isStatic: rootIsStatic },
+          [`page:${path}`]: { isStatic: false },
+        };
         paths.push({
           pattern,
           path: pathSpec,
-          components: {
-            ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
-              (acc, lPath) => {
-                acc[`layout:${lPath}`] = {
-                  isStatic: !dynamicLayoutPathMap.has(lPath),
-                };
-                return acc;
-              },
-              {},
-            ),
-            root: { isStatic: rootIsStatic },
-            [`route:${path}`]: { isStatic: false },
-            [`page:${path}`]: { isStatic: false },
-          },
+          routeElement: { isStatic: false },
+          elements,
           noSsr,
         });
       }
@@ -732,42 +738,31 @@ export const new_createPages = <
         const noSsr = noSsrSet.has(pathSpec);
         const pattern = path2regexp(parsePathWithSlug(path));
         const layoutPaths = getLayouts(pattern);
+        const elements = {
+          ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
+            (acc, lPath) => {
+              acc[`layout:${lPath}`] = {
+                isStatic: !dynamicLayoutPathMap.has(lPath),
+              };
+              return acc;
+            },
+            {},
+          ),
+          root: { isStatic: rootIsStatic },
+          [`page:${path}`]: { isStatic: false },
+        };
         paths.push({
           pattern: path2regexp(parsePathWithSlug(path)),
           path: pathSpec,
-          components: {
-            ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
-              (acc, lPath) => {
-                acc[`layout:${lPath}`] = {
-                  isStatic: !dynamicLayoutPathMap.has(lPath),
-                };
-                return acc;
-              },
-              {},
-            ),
-            root: { isStatic: rootIsStatic },
-            [`route:${path}`]: { isStatic: false },
-            [`page:${path}`]: { isStatic: false },
-          },
+          routeElement: { isStatic: false },
+          elements,
           noSsr,
         });
       }
       return paths;
     },
-    renderRoute: async (path, options) => {
+    renderRoute: async (path) => {
       await configure();
-
-      // Should skip be a Set<string>? https://github.com/dai-shi/waku/blob/main/examples/22_define-router/src/entries.tsx#L63
-      const processSkip = <T>(elements: Record<string, T>) => {
-        const elementsCopy = { ...elements };
-        if (!options.skip) {
-          return elementsCopy;
-        }
-        for (const key of options.skip) {
-          delete elementsCopy[key];
-        }
-        return elementsCopy;
-      };
 
       const pageComponent = (staticComponentMap.get(
         joinPath(path, 'page').slice(1), // feels like a hack
@@ -807,13 +802,15 @@ export const new_createPages = <
         })),
         { component: Slot, props: { id: `page:${path}` } },
       ].filter(Boolean);
-      result['route:' + path] = createElement(
-        Slot,
-        { id: 'root' },
-        createNestedElements(routeChildren),
-      );
 
-      return processSkip(result);
+      return {
+        elements: result,
+        routeElement: createElement(
+          Slot,
+          { id: 'root' },
+          createNestedElements(routeChildren),
+        ),
+      };
     },
   });
 
