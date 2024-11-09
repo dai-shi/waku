@@ -483,7 +483,7 @@ export const new_createPages = <
 ) => {
   let configured = false;
 
-  const staticPathSet = new Set<string>();
+  const staticPathMap = new Map<string, PathSpec>();
   const dynamicPagePathMap = new Map<
     string,
     [PathSpec, FunctionComponent<any>]
@@ -536,7 +536,7 @@ export const new_createPages = <
       return { numSlugs, numWildcards };
     })();
     if (page.render === 'static' && numSlugs === 0) {
-      staticPathSet.add(page.path);
+      staticPathMap.set(page.path, pathSpec);
       const id = joinPath(page.path, 'page').replace(/^\//, '');
       registerStaticComponent(id, page.component);
     } else if (
@@ -571,7 +571,10 @@ export const new_createPages = <
               break;
           }
         });
-        staticPathSet.add(page.path);
+        staticPathMap.set(
+          page.path,
+          pathItems.map((name) => ({ type: 'literal', name })),
+        );
         const id = joinPath(...pathItems, 'page');
         const WrappedComponent = (props: Record<string, unknown>) =>
           createElement(page.component as any, { ...props, ...mapping });
@@ -666,8 +669,7 @@ export const new_createPages = <
       }[] = [];
       const rootIsStatic = !rootItem || rootItem.render === 'static';
 
-      for (const path of staticPathSet) {
-        const pathSpec = parsePathWithSlug(path);
+      for (const [path, pathSpec] of staticPathMap) {
         const noSsr = noSsrSet.has(pathSpec);
 
         const pattern = path2regexp(parsePathWithSlug(path));
@@ -685,7 +687,7 @@ export const new_createPages = <
             {},
           ),
           root: { isStatic: rootIsStatic },
-          [`page:${path}`]: { isStatic: staticPathSet.has(path) },
+          [`page:${path}`]: { isStatic: staticPathMap.has(path) },
         };
 
         paths.push({
