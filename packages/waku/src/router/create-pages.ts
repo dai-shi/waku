@@ -483,8 +483,7 @@ export const new_createPages = <
 ) => {
   let configured = false;
 
-  // TODO I think there's room for improvement to refactor these structures
-  const fixedPathSet = new Set<[string, PathSpec]>();
+  const staticPathSet = new Set<string>();
   const dynamicPagePathMap = new Map<
     string,
     [PathSpec, FunctionComponent<any>]
@@ -537,7 +536,7 @@ export const new_createPages = <
       return { numSlugs, numWildcards };
     })();
     if (page.render === 'static' && numSlugs === 0) {
-      fixedPathSet.add([page.path, pathSpec]);
+      staticPathSet.add(page.path);
       const id = joinPath(page.path, 'page').replace(/^\//, '');
       registerStaticComponent(id, page.component);
     } else if (
@@ -572,10 +571,7 @@ export const new_createPages = <
               break;
           }
         });
-        fixedPathSet.add([
-          page.path,
-          pathItems.map((name) => ({ type: 'literal', name })),
-        ]);
+        staticPathSet.add(page.path);
         const id = joinPath(...pathItems, 'page');
         const WrappedComponent = (props: Record<string, unknown>) =>
           createElement(page.component as any, { ...props, ...mapping });
@@ -670,16 +666,9 @@ export const new_createPages = <
       }[] = [];
       const rootIsStatic = !rootItem || rootItem.render === 'static';
 
-      for (const [path, pathSpec] of fixedPathSet) {
+      for (const path of staticPathSet) {
+        const pathSpec = parsePathWithSlug(path);
         const noSsr = noSsrSet.has(pathSpec);
-        const isStatic = (() => {
-          for (const [_, [layoutPathSpec]] of dynamicLayoutPathMap) {
-            if (hasPathSpecPrefix(layoutPathSpec, pathSpec)) {
-              return false;
-            }
-          }
-          return true;
-        })();
 
         const pattern = path2regexp(parsePathWithSlug(path));
 
@@ -696,14 +685,14 @@ export const new_createPages = <
             {},
           ),
           root: { isStatic: rootIsStatic },
-          [`page:${path}`]: { isStatic },
+          [`page:${path}`]: { isStatic: staticPathSet.has(path) },
         };
 
         paths.push({
           pattern,
           path: pathSpec,
           routeElement: {
-            isStatic: Object.values(elements).every((x) => x.isStatic),
+            isStatic: true,
           },
           elements,
           noSsr,
@@ -729,7 +718,7 @@ export const new_createPages = <
         paths.push({
           pattern,
           path: pathSpec,
-          routeElement: { isStatic: false },
+          routeElement: { isStatic: true },
           elements,
           noSsr,
         });
@@ -754,7 +743,7 @@ export const new_createPages = <
         paths.push({
           pattern: path2regexp(parsePathWithSlug(path)),
           path: pathSpec,
-          routeElement: { isStatic: false },
+          routeElement: { isStatic: true },
           elements,
           noSsr,
         });
