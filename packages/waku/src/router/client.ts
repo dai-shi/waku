@@ -819,9 +819,11 @@ export function NewRouter({
             if (has404) {
               routerData[2] = true;
             }
-            Object.keys(rest).forEach((id) => {
-              cachedIdSetRef.current.add(id);
-            });
+            if (isStatic) {
+              Object.keys(rest).forEach((id) => {
+                cachedIdSetRef.current.add(id);
+              });
+            }
           }
         })
         .catch(() => {});
