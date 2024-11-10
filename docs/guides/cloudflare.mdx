@@ -30,9 +30,7 @@ Note that the latest `nodejs_compat` mocks the Node `fs` module. Cloudflare does
 
 ## Setting Up TypeScript
 
-You can run `npx wrangler types --experimental-include-runtime` to generate a `worker-configuration.d.ts` file based on the settings in your `wrangler.toml`. This defines a global `Env` interface with your bindings.
-
-You may also want to add `@cloudflare/workers-types` to your dev dependencies and include `"@cloudflare/workers-types/experimental"` in the `types` array of `tsconfig.json`. Alternatively, you can import from that package as needed in your server-side code. See [the npm package](https://www.npmjs.com/package/@cloudflare/workers-types) for more information.
+You can run `npx wrangler types --experimental-include-runtime` to generate a `worker-configuration.d.ts` file based on the settings in your `wrangler.toml`. This defines a global `Env` interface with your bindings. In the [Cloudflare example in the Waku GitHub repository](https://github.com/dai-shi/waku/tree/main/examples/44_cloudflare), a package.json script is included to run this command and update the types: `pnpm run build-cf-types`. To ensure that your types are always up-to-date, make sure to run it after any changes to your `wrangler.toml` config file.
 
 ## Accessing Cloudflare Bindings, Execution Context, and Request/Response Objects
 

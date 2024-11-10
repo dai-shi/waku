@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build-cf-types": "wrangler types",
+    "build-cf-types": "wrangler types --experimental-include-runtime",
     "dev": "waku dev",
     "build": "waku build --with-cloudflare",
     "start": "waku start"
@@ -18,6 +18,7 @@
     "wrangler": "3.86.0"
   },
   "devDependencies": {
+    "@types/node": "20.8.3",
     "@types/react": "npm:types-react@rc",
     "@types/react-dom": "npm:types-react-dom@rc",
     "miniflare": "3.20241106.0",
