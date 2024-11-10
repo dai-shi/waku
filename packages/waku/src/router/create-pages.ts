@@ -792,7 +792,7 @@ export const new_createPages = <
           props: { id: `layout:${lPath}` },
         })),
         { component: Slot, props: { id: `page:${path}` } },
-      ].filter(Boolean);
+      ];
 
       return {
         elements: result,
