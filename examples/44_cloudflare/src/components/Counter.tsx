@@ -7,7 +7,9 @@ export const Counter = ({ max }: { max: number }) => {
   return (
     <div style={{ border: '3px blue dashed', margin: '1em', padding: '1em' }}>
       <p>Count: {count}</p>
-      <button onClick={() => setCount((c) => c < max ? c + 1 : max)}>Increment</button>
+      <button onClick={() => setCount((c) => (c < max ? c + 1 : max))}>
+        Increment
+      </button>
       <h3>This is a client component.</h3>
     </div>
   );
