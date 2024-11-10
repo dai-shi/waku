@@ -8,16 +8,20 @@ const App = ({ name }: { name: string }) => {
   console.log(
     'Going to run something that can happen after the request is sent...',
   );
-  c.executionCtx.waitUntil(
-    new Promise<void>((resolve) => {
-      setTimeout(() => {
-        console.log(
-          'Waited 5 seconds. The http response should have already been sent',
-        );
-        resolve();
-      }, 5000);
-    }),
-  );
+  try {
+    c.executionCtx?.waitUntil(
+      new Promise<void>((resolve) => {
+        setTimeout(() => {
+          console.log(
+            'Waited 5 seconds. The http response should have already been sent',
+          );
+          resolve();
+        }, 5000);
+      }),
+    );
+  } catch (e) {
+    console.warn('Unable to invoke the Cloudflare execution context', e);
+  }
   return (
     <html>
       <head>
