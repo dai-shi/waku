@@ -235,10 +235,10 @@ export function renderHtml(
   );
   const [stream1, stream2] = stream.tee();
   const elementsPromise: Promise<Elements> = createFromReadableStream(stream1, {
-    ssrManifest: { moduleMap, moduleLoading: null },
+    serverConsumerManifest: { moduleMap, moduleLoading: null },
   });
   const htmlNode: Promise<ReactNode> = createFromReadableStream(htmlStream, {
-    ssrManifest: { moduleMap, moduleLoading: null },
+    serverConsumerManifest: { moduleMap, moduleLoading: null },
   });
   const readable = streamFromPromise(
     renderToReadableStream(

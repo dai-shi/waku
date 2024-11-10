@@ -14,15 +14,16 @@ type ModuleLoading = null | {
   crossOrigin?: 'use-credentials' | '';
 };
 
-type SSRModuleMap = null | {
+type ServerConsumerModuleMap = null | {
   [clientId: string]: {
     [clientExportName: string]: ImportManifestEntry;
   };
 };
 
-type SSRManifest = {
-  moduleMap: SSRModuleMap;
+type ServerConsumerManifest = {
+  moduleMap: ServerConsumerModuleMap;
   moduleLoading: ModuleLoading;
+  serverModuleMap: null | ServerManifest;
 };
 
 type ServerManifest = {
@@ -77,7 +78,7 @@ declare module 'react-server-dom-webpack/client' {
 
 declare module 'react-server-dom-webpack/client.edge' {
   export type Options = {
-    ssrManifest: SSRManifest;
+    serverConsumerManifest: ServerConsumerManifest;
     nonce?: string;
   };
   export function createFromReadableStream<T>(

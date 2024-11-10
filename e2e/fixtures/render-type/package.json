@@ -10,14 +10,14 @@
     "start:static": "serve dist/public"
   },
   "dependencies": {
-    "react": "19.0.0-rc-bf7e210c-20241017",
-    "react-dom": "19.0.0-rc-bf7e210c-20241017",
-    "react-server-dom-webpack": "19.0.0-rc-bf7e210c-20241017",
+    "react": "19.0.0-rc-5c56b873-20241107",
+    "react-dom": "19.0.0-rc-5c56b873-20241107",
+    "react-server-dom-webpack": "19.0.0-rc-5c56b873-20241107",
     "serve": "^14.2.4",
     "waku": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "^18.3.11",
+    "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "typescript": "^5.6.3"
   }

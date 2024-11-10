@@ -285,11 +285,11 @@ export const renderHtml = async (
   const elements: Promise<Record<string, ReactNode>> = createFromReadableStream(
     stream1,
     {
-      ssrManifest: { moduleMap, moduleLoading: null },
+      serverConsumerManifest: { moduleMap, moduleLoading: null },
     },
   );
   const html: Promise<ReactNode> = createFromReadableStream(ssrConfig.html, {
-    ssrManifest: { moduleMap, moduleLoading: null },
+    serverConsumerManifest: { moduleMap, moduleLoading: null },
   });
   const readable = (
     await renderToReadableStream(
