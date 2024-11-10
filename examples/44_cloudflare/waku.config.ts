@@ -1,8 +1,13 @@
 import type { Hono } from 'hono';
 import { type Config, defineConfig } from 'waku/config';
 
+// Note: this is a workaround for Waku's CI/CD pipeline to not load the Cloudflare dev server
+const skipCloudflareDevServer = Boolean(
+  process.env.CI && process.env.CI !== '0',
+);
+
 export default defineConfig({
-  ...(import.meta.env && !import.meta.env.PROD
+  ...(import.meta.env && !import.meta.env.PROD && !skipCloudflareDevServer
     ? {
         unstable_honoEnhancer: ((createApp: (app: Hono) => Hono) => {
           const handlerPromise = import('./waku.cloudflare-dev-server').then(
