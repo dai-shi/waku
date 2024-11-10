@@ -2,13 +2,19 @@
 
 ## [Unreleased]
 
-## [0.21.5] - 2024-11-21
+## [0.21.6] - 2024-11-10
+
+### Changed
+
+- Switch from Cloudflare Pages to Workers
+
+## [0.21.5] - 2024-10-21
 
 ### Changed
 
 - Bug fixes
 
-## [0.21.4] - 2024-11-18
+## [0.21.4] - 2024-10-18
 
 ### Changed
 

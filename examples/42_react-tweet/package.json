@@ -13,7 +13,7 @@
     "react-dom": "19.0.0-rc-5c56b873-20241107",
     "react-server-dom-webpack": "19.0.0-rc-5c56b873-20241107",
     "react-tweet": "^3.2.0",
-    "waku": "0.21.5"
+    "waku": "0.21.6"
   },
   "devDependencies": {
     "@types/react": "18.3.12",
