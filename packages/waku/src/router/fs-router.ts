@@ -1,5 +1,5 @@
 import { unstable_getPlatformObject } from '../server.js';
-import { new_createPages as createPages } from './create-pages.js';
+import { createPages } from './create-pages.js';
 
 import { EXTENSIONS } from '../lib/constants.js';
 
