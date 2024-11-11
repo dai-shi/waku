@@ -41,11 +41,11 @@ const BarLayout = ({ children }: { children: ReactNode }) => {
         </li>
         <li>
           <Link
-            to={'/nested/bar' as never}
+            to={'/bar'}
             pending={<Pending isPending />}
             notPending={<Pending isPending={false} />}
           >
-            Nested / Bar
+            Bar
           </Link>
         </li>
       </ul>
