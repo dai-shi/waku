@@ -33,7 +33,11 @@ const collectExportNames = (mod: swc.Module) => {
   return exportNames;
 };
 
-const transformClient = (code: string, ext: string, serverId: string) => {
+const transformClient = (
+  code: string,
+  ext: string,
+  getServerId: () => string,
+) => {
   if (!code.includes('use server')) {
     return;
   }
@@ -59,7 +63,7 @@ import { callServerRsc } from 'waku/minimal/client';
 `;
     for (const name of exportNames) {
       newCode += `
-export ${name === 'default' ? name : `const ${name} =`} createServerReference('${serverId}#${name}', callServerRsc);
+export ${name === 'default' ? name : `const ${name} =`} createServerReference('${getServerId()}#${name}', callServerRsc);
 `;
     }
     return newCode;
@@ -154,7 +158,7 @@ const replaceNode = <T extends swc.Node>(origNode: swc.Node, newNode: T): T => {
 
 const transformExportedServerFunctions = (
   mod: swc.Module,
-  funcId: string,
+  getFuncId: () => string,
 ): boolean => {
   let changed = false;
   for (let i = 0; i < mod.body.length; ++i) {
@@ -172,7 +176,7 @@ const transformExportedServerFunctions = (
           createIdentifier('__waku_registerServerReference'),
           [
             createIdentifier(name),
-            createStringLiteral(funcId),
+            createStringLiteral(getFuncId()),
             createStringLiteral(name),
           ],
         ),
@@ -194,7 +198,7 @@ const transformExportedServerFunctions = (
         createIdentifier('__waku_registerServerReference'),
         [
           Object.assign({}, fn),
-          createStringLiteral(funcId),
+          createStringLiteral(getFuncId()),
           createStringLiteral(name),
         ],
       );
@@ -364,7 +368,7 @@ const collectClosureVars = (
 
 const transformInlineServerFunctions = (
   mod: swc.Module,
-  funcId: string,
+  getFuncId: () => string,
 ): boolean => {
   let serverFunctionIndex = 0;
   const serverFunctions = new Map<
@@ -498,7 +502,7 @@ const transformInlineServerFunctions = (
             createIdentifier('__waku_registerServerReference'),
             [
               createIdentifier(func.identifier.value),
-              createStringLiteral(funcId),
+              createStringLiteral(getFuncId()),
               createStringLiteral('__waku_func' + funcIndex),
             ],
           ),
@@ -523,7 +527,7 @@ const transformInlineServerFunctions = (
                   createIdentifier('__waku_registerServerReference'),
                   [
                     prependArgsToFn(func, closureVars),
-                    createStringLiteral(funcId),
+                    createStringLiteral(getFuncId()),
                     createStringLiteral('__waku_func' + funcIndex),
                   ],
                 ),
@@ -546,8 +550,8 @@ const transformInlineServerFunctions = (
 const transformServer = (
   code: string,
   ext: string,
-  clientId: string,
-  serverId: string,
+  getClientId: () => string,
+  getServerId: () => string,
 ) => {
   if (!code.includes('use client') && !code.includes('use server')) {
     return;
@@ -580,14 +584,14 @@ import { registerClientReference } from 'react-server-dom-webpack/server.edge';
 `;
     for (const name of exportNames) {
       newCode += `
-export ${name === 'default' ? name : `const ${name} =`} registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${clientId}#${name}'); }, '${clientId}', '${name}');
+export ${name === 'default' ? name : `const ${name} =`} registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getClientId()}#${name}'); }, '${getClientId()}', '${name}');
 `;
     }
     return newCode;
   }
   let transformed =
-    hasUseServer && transformExportedServerFunctions(mod, serverId);
-  transformed = transformInlineServerFunctions(mod, serverId) || transformed;
+    hasUseServer && transformExportedServerFunctions(mod, getServerId);
+  transformed = transformInlineServerFunctions(mod, getServerId) || transformed;
   if (transformed) {
     mod.body.splice(findLastImportIndex(mod), 0, ...serverInitCode);
     const newCode = swc.printSync(mod).code;
@@ -684,7 +688,9 @@ export function rscTransformPlugin(
         if (options?.ssr) {
           return transformClientForSSR(code, ext);
         }
-        return transformClient(code, ext, getServerId(id, !!options?.ssr));
+        return transformClient(code, ext, () =>
+          getServerId(id, !!options?.ssr),
+        );
       }
       // isClient === false
       if (!options?.ssr) {
@@ -693,8 +699,8 @@ export function rscTransformPlugin(
       return transformServer(
         code,
         ext,
-        getClientId(id, !!options.ssr),
-        getServerId(id, !!options.ssr),
+        () => getClientId(id, !!options.ssr),
+        () => getServerId(id, !!options.ssr),
       );
     },
   };
