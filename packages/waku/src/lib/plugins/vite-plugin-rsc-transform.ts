@@ -2,7 +2,7 @@ import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 
 import { EXTENSIONS } from '../constants.js';
-import { extname } from '../utils/path.js';
+import { extname, joinPath, fileURLToFilePath } from '../utils/path.js';
 import { parseOpts } from '../utils/swc.js';
 
 const collectExportNames = (mod: swc.Module) => {
@@ -33,15 +33,10 @@ const collectExportNames = (mod: swc.Module) => {
   return exportNames;
 };
 
-const transformClient = (
-  code: string,
-  id: string,
-  getServerId: (id: string) => string,
-) => {
+const transformClient = (code: string, ext: string, serverId: string) => {
   if (!code.includes('use server')) {
     return;
   }
-  const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseServer = false;
   for (const item of mod.body) {
@@ -64,18 +59,17 @@ import { callServerRsc } from 'waku/minimal/client';
 `;
     for (const name of exportNames) {
       newCode += `
-export ${name === 'default' ? name : `const ${name} =`} createServerReference('${getServerId(id)}#${name}', callServerRsc);
+export ${name === 'default' ? name : `const ${name} =`} createServerReference('${serverId}#${name}', callServerRsc);
 `;
     }
     return newCode;
   }
 };
 
-const transformClientForSSR = (code: string, id: string) => {
+const transformClientForSSR = (code: string, ext: string) => {
   if (!code.includes('use server')) {
     return;
   }
-  const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseServer = false;
   for (const item of mod.body) {
@@ -160,7 +154,7 @@ const replaceNode = <T extends swc.Node>(origNode: swc.Node, newNode: T): T => {
 
 const transformExportedServerFunctions = (
   mod: swc.Module,
-  getFuncId: () => string,
+  funcId: string,
 ): boolean => {
   let changed = false;
   for (let i = 0; i < mod.body.length; ++i) {
@@ -178,7 +172,7 @@ const transformExportedServerFunctions = (
           createIdentifier('__waku_registerServerReference'),
           [
             createIdentifier(name),
-            createStringLiteral(getFuncId()),
+            createStringLiteral(funcId),
             createStringLiteral(name),
           ],
         ),
@@ -200,7 +194,7 @@ const transformExportedServerFunctions = (
         createIdentifier('__waku_registerServerReference'),
         [
           Object.assign({}, fn),
-          createStringLiteral(getFuncId()),
+          createStringLiteral(funcId),
           createStringLiteral(name),
         ],
       );
@@ -370,7 +364,7 @@ const collectClosureVars = (
 
 const transformInlineServerFunctions = (
   mod: swc.Module,
-  getFuncId: () => string,
+  funcId: string,
 ): boolean => {
   let serverFunctionIndex = 0;
   const serverFunctions = new Map<
@@ -504,7 +498,7 @@ const transformInlineServerFunctions = (
             createIdentifier('__waku_registerServerReference'),
             [
               createIdentifier(func.identifier.value),
-              createStringLiteral(getFuncId()),
+              createStringLiteral(funcId),
               createStringLiteral('__waku_func' + funcIndex),
             ],
           ),
@@ -529,7 +523,7 @@ const transformInlineServerFunctions = (
                   createIdentifier('__waku_registerServerReference'),
                   [
                     prependArgsToFn(func, closureVars),
-                    createStringLiteral(getFuncId()),
+                    createStringLiteral(funcId),
                     createStringLiteral('__waku_func' + funcIndex),
                   ],
                 ),
@@ -551,14 +545,13 @@ const transformInlineServerFunctions = (
 
 const transformServer = (
   code: string,
-  id: string,
-  getClientId: (id: string) => string,
-  getServerId: (id: string) => string,
+  ext: string,
+  clientId: string,
+  serverId: string,
 ) => {
   if (!code.includes('use client') && !code.includes('use server')) {
     return;
   }
-  const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseClient = false;
   let hasUseServer = false;
@@ -587,16 +580,14 @@ import { registerClientReference } from 'react-server-dom-webpack/server.edge';
 `;
     for (const name of exportNames) {
       newCode += `
-export ${name === 'default' ? name : `const ${name} =`} registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getClientId(id)}#${name}'); }, '${getClientId(id)}', '${name}');
+export ${name === 'default' ? name : `const ${name} =`} registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${clientId}#${name}'); }, '${clientId}', '${name}');
 `;
     }
     return newCode;
   }
   let transformed =
-    hasUseServer &&
-    transformExportedServerFunctions(mod, () => getServerId(id));
-  transformed =
-    transformInlineServerFunctions(mod, () => getServerId(id)) || transformed;
+    hasUseServer && transformExportedServerFunctions(mod, serverId);
+  transformed = transformInlineServerFunctions(mod, serverId) || transformed;
   if (transformed) {
     mod.body.splice(findLastImportIndex(mod), 0, ...serverInitCode);
     const newCode = swc.printSync(mod).code;
@@ -626,9 +617,18 @@ export function rscTransformPlugin(
         serverEntryFiles: Record<string, string>;
       },
 ): Plugin {
-  const getClientId = (id: string) => {
-    if (opts.isClient || !opts.isBuild) {
-      throw new Error('not buiding for server');
+  const resolvedMap = new Map<string, string>();
+  const resolvedMapSsr = new Map<string, string>();
+  const getClientId = (id: string, ssr: boolean): string => {
+    if (opts.isClient) {
+      throw new Error('getClientId is only for server');
+    }
+    if (!opts.isBuild) {
+      const origId = (ssr ? resolvedMapSsr : resolvedMap).get(id);
+      if (origId) {
+        return getClientId(origId, ssr);
+      }
+      return id;
     }
     for (const [k, v] of Object.entries(opts.clientEntryFiles)) {
       if (v === id) {
@@ -637,9 +637,13 @@ export function rscTransformPlugin(
     }
     throw new Error('client id not found: ' + id);
   };
-  const getServerId = (id: string) => {
+  const getServerId = (id: string, ssr: boolean): string => {
     if (!opts.isBuild) {
-      throw new Error('not buiding');
+      const origId = (ssr ? resolvedMapSsr : resolvedMap).get(id);
+      if (origId) {
+        return getServerId(origId, ssr);
+      }
+      return id;
     }
     for (const [k, v] of Object.entries(opts.serverEntryFiles)) {
       if (v === id) {
@@ -648,25 +652,39 @@ export function rscTransformPlugin(
     }
     throw new Error('server id not found: ' + id);
   };
+  const wakuDist = joinPath(fileURLToFilePath(import.meta.url), '../../..');
   return {
     name: 'rsc-transform-plugin',
-    async transform(code, id, options) {
-      if (!opts.isBuild) {
-        // id can contain query string with vite deps optimization
-        id = id.split('?')[0] as string;
+    enforce: 'pre', // required for `resolveId`
+    async resolveId(id, importer, options) {
+      const resolved = await this.resolve(id, importer, options);
+      let srcId =
+        importer && (id.startsWith('./') || id.startsWith('../'))
+          ? joinPath(importer.split('?')[0]!, '..', id)
+          : id;
+      if (srcId.startsWith(wakuDist)) {
+        srcId = 'waku' + srcId.slice(wakuDist.length).replace(/\.\w+$/, '');
       }
-      if (!EXTENSIONS.includes(extname(id))) {
+      if (resolved && resolved.id !== srcId) {
+        const map = options?.ssr ? resolvedMapSsr : resolvedMap;
+        if (!map.has(resolved.id)) {
+          map.set(resolved.id, srcId);
+        }
+      }
+    },
+    async transform(code, id, options) {
+      const ext = opts.isBuild
+        ? extname(id)
+        : // id can contain query string with vite deps optimization
+          extname(id.split('?')[0]!);
+      if (!EXTENSIONS.includes(ext)) {
         return;
       }
       if (opts.isClient) {
         if (options?.ssr) {
-          return transformClientForSSR(code, id);
+          return transformClientForSSR(code, ext);
         }
-        return transformClient(
-          code,
-          id,
-          opts.isBuild ? getServerId : (id) => id,
-        );
+        return transformClient(code, ext, getServerId(id, !!options?.ssr));
       }
       // isClient === false
       if (!options?.ssr) {
@@ -674,9 +692,9 @@ export function rscTransformPlugin(
       }
       return transformServer(
         code,
-        id,
-        opts.isBuild ? getClientId : (id) => id,
-        opts.isBuild ? getServerId : (id) => id,
+        ext,
+        getClientId(id, !!options.ssr),
+        getServerId(id, !!options.ssr),
       );
     },
   };

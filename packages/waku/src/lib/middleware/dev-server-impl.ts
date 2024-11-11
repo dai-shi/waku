@@ -10,7 +10,6 @@ import { SRC_MAIN, SRC_ENTRIES } from '../constants.js';
 import {
   joinPath,
   fileURLToFilePath,
-  encodeFilePathToAbsolute,
   decodeFilePathFromAbsolute,
   filePathToFileURL,
 } from '../utils/path.js';
@@ -139,16 +138,20 @@ const createMainViteServer = (
       // HACK `external: ['waku']` doesn't do the same
       return import(/* @vite-ignore */ idOrFileURL);
     }
-    if (
-      idOrFileURL.startsWith('file://') &&
-      idOrFileURL.includes('/node_modules/')
-    ) {
-      // HACK node_modules should be externalized
-      const file = fileURLToFilePath(idOrFileURL);
-      const fileWithAbsolutePath = file.startsWith('/')
-        ? file
-        : joinPath(vite.config.root, file);
-      return import(/* @vite-ignore */ filePathToFileURL(fileWithAbsolutePath));
+    if ('TODO: WE MAY NOT NEED THIS HACK'.length === 0) {
+      if (
+        idOrFileURL.startsWith('file://') &&
+        idOrFileURL.includes('/node_modules/')
+      ) {
+        // HACK node_modules should be externalized
+        const file = fileURLToFilePath(idOrFileURL);
+        const fileWithAbsolutePath = file.startsWith('/')
+          ? file
+          : joinPath(vite.config.root, file);
+        return import(
+          /* @vite-ignore */ filePathToFileURL(fileWithAbsolutePath)
+        );
+      }
     }
     return vite.ssrLoadModule(
       idOrFileURL.startsWith('file://')
@@ -289,15 +292,19 @@ const createRscViteServer = (
     let file = id.startsWith('file://')
       ? decodeFilePathFromAbsolute(fileURLToFilePath(id))
       : id;
-    for (const moduleNode of initialModules) {
-      if (moduleNode.file === file) {
-        return moduleNode.url;
+    if ('TODO: WE MAY NOT NEED INITIAL MODULES'.length === 0) {
+      for (const moduleNode of initialModules) {
+        if (moduleNode.file === file) {
+          return moduleNode.url;
+        }
       }
     }
     if (file.startsWith(config.rootDir)) {
       file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
+    } else if (file.startsWith('/')) {
+      file = '@fs' + file;
     } else {
-      file = '@fs' + encodeFilePathToAbsolute(file);
+      file = '@id/' + file;
     }
     return config.basePath + file;
   };
