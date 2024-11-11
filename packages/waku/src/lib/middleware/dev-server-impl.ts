@@ -10,6 +10,7 @@ import { SRC_MAIN, SRC_ENTRIES } from '../constants.js';
 import {
   joinPath,
   fileURLToFilePath,
+  encodeFilePathToAbsolute,
   decodeFilePathFromAbsolute,
   filePathToFileURL,
 } from '../utils/path.js';
@@ -289,7 +290,8 @@ const createRscViteServer = (
     config: { rootDir: string; basePath: string },
     initialModules: ClonableModuleNode[],
   ) => {
-    let file = id.startsWith('file://')
+    const isFileURL = id.startsWith('file://');
+    let file = isFileURL
       ? decodeFilePathFromAbsolute(fileURLToFilePath(id))
       : id;
     if ('TODO: WE MAY NOT NEED INITIAL MODULES'.length === 0) {
@@ -301,8 +303,10 @@ const createRscViteServer = (
     }
     if (file.startsWith(config.rootDir)) {
       file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
+    } else if (isFileURL) {
+      file = '@fs' + encodeFilePathToAbsolute(file);
     } else if (file.startsWith('/')) {
-      file = '@fs' + file;
+      file = file.slice(1);
     } else {
       file = '@id/' + file;
     }
