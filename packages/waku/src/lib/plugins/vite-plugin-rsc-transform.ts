@@ -669,7 +669,7 @@ export function rscTransformPlugin(
       if (srcId.startsWith(wakuDist)) {
         srcId = 'waku' + srcId.slice(wakuDist.length).replace(/\.\w+$/, '');
       }
-      if (resolved && resolved.id !== srcId) {
+      if (resolved && resolved.id !== srcId && !srcId.startsWith('/')) {
         const map = options?.ssr ? resolvedMapSsr : resolvedMap;
         if (!map.has(resolved.id)) {
           map.set(resolved.id, srcId);
