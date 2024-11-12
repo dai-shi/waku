@@ -95,7 +95,7 @@ The above snippet will also provide types for the `PageProps` type. This will gi
 
 ```tsx
 // ./src/pages/about.tsx
-import { PageProps } from 'waku/router/client';
+import type { PageProps } from 'waku/router';
 
 // PageProps<'/about/[foo]'> => { path: `/about/${string}`; foo: string; query: string; }
 export default function AboutPage({ path }: PageProps<'/about/[foo]'>) {
