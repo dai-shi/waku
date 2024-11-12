@@ -1,7 +1,6 @@
 import { Suspense } from 'react';
-
-import { Counter } from './Counter';
 import { getHonoContext } from 'waku/unstable_hono';
+import { Counter } from './Counter';
 
 const App = ({ name }: { name: string }) => {
   const c = getHonoContext<{ Bindings: Env }>();

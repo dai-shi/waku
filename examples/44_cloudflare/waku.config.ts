@@ -31,8 +31,7 @@ export default defineConfig({
     return [
       import('waku/middleware/context'),
       import('waku/middleware/dev-server'),
-      import('waku/middleware/ssr'),
-      import('waku/middleware/rsc'),
+      import('waku/middleware/handler'),
     ];
   },
 });
