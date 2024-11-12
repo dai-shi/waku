@@ -2,10 +2,9 @@ import { Link } from 'waku';
 
 import { getPokemonPaths } from '../lib';
 import { pokemon } from '../lib/pokemon';
+import { PageProps } from 'waku/router';
 
-type PokemonPageProps = { slug: string };
-
-export default async function PokemonPage({ slug }: PokemonPageProps) {
+export default async function PokemonPage({ slug }: PageProps<'/[slug]'>) {
   const pokemon = await getPokemon(slug);
 
   if (!pokemon) {
