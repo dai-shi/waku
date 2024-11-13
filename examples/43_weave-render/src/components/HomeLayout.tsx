@@ -21,47 +21,44 @@ const getCurrentTime = () => new Date();
 const HomeLayout = ({ children }: { children: ReactNode }) => {
   const currentTime = getCurrentTime();
   return (
-    <html>
-      <head>
-        <title>Waku</title>
-      </head>
-      <body>
-        <div>
-          <h1>Home layout</h1>
-          <p>Last render time: {currentTime.toISOString()}</p>
-          <ul>
-            <li>
-              <Link
-                to="/"
-                pending={<Pending isPending />}
-                notPending={<Pending isPending={false} />}
-              >
-                Home
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/foo"
-                pending={<Pending isPending />}
-                notPending={<Pending isPending={false} />}
-              >
-                Foo
-              </Link>
-            </li>
-            <li>
-              <Link
-                to={'/nested/bar' as never}
-                pending={<Pending isPending />}
-                notPending={<Pending isPending={false} />}
-              >
-                Nested / Bar
-              </Link>
-            </li>
-          </ul>
-          {children}
-        </div>
-      </body>
-    </html>
+    <>
+      <title>Waku</title>
+
+      <div>
+        <h1>Home layout</h1>
+        <p>Last render time: {currentTime.toISOString()}</p>
+        <ul>
+          <li>
+            <Link
+              to="/"
+              pending={<Pending isPending />}
+              notPending={<Pending isPending={false} />}
+            >
+              Home
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/foo"
+              pending={<Pending isPending />}
+              notPending={<Pending isPending={false} />}
+            >
+              Foo
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/bar"
+              pending={<Pending isPending />}
+              notPending={<Pending isPending={false} />}
+            >
+              Bar
+            </Link>
+          </li>
+        </ul>
+        {children}
+      </div>
+    </>
   );
 };
 

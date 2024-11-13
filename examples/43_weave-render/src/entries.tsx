@@ -1,4 +1,4 @@
-import { createPages } from 'waku';
+import { new_createPages as createPages } from 'waku/router/server';
 import type { PathsForPages } from 'waku/router';
 import FooPage from './components/FooPage';
 import BarPage from './components/BarPage';

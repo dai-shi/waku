@@ -45,7 +45,7 @@ const BarLayout = ({ children }: { children: ReactNode }) => {
             pending={<Pending isPending />}
             notPending={<Pending isPending={false} />}
           >
-            Nested / Bar
+            Link to 404
           </Link>
         </li>
       </ul>
