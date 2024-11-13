@@ -135,9 +135,11 @@ const createMainViteServer = (
 
   const loadServerModuleMain = async (idOrFileURL: string) => {
     const vite = await vitePromise;
-    if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
-      // HACK `external: ['waku']` doesn't do the same
-      return import(/* @vite-ignore */ idOrFileURL);
+    if ('TODO: WE MAY NOT NEED THIS HACK'.length === 0) {
+      if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
+        // HACK `external: ['waku']` doesn't do the same
+        return import(/* @vite-ignore */ idOrFileURL);
+      }
     }
     if ('TODO: WE MAY NOT NEED THIS HACK'.length === 0) {
       if (
@@ -291,6 +293,9 @@ const createRscViteServer = (
     initialModules: ClonableModuleNode[],
   ) => {
     const isFileURL = id.startsWith('file://');
+    if (isFileURL) {
+      throw new Error('Unsupported file URL in resolveClientEntry');
+    }
     let file = isFileURL
       ? decodeFilePathFromAbsolute(fileURLToFilePath(id))
       : id;
@@ -301,12 +306,15 @@ const createRscViteServer = (
         }
       }
     }
+    if (file.startsWith('/@fs/')) {
+      file = file.slice('/@fs'.length);
+    }
     if (file.startsWith(config.rootDir)) {
       file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
     } else if (isFileURL) {
       file = '@fs' + encodeFilePathToAbsolute(file);
     } else if (file.startsWith('/')) {
-      file = file.slice(1);
+      file = '@fs' + file;
     } else {
       file = '@id/' + file;
     }

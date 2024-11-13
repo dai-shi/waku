@@ -1,4 +1,4 @@
-import type { Plugin } from 'vite';
+import type { Plugin, ViteDevServer } from 'vite';
 import * as swc from '@swc/core';
 
 import { EXTENSIONS } from '../constants.js';
@@ -630,6 +630,9 @@ export function rscTransformPlugin(
     if (!opts.isBuild) {
       const origId = (ssr ? resolvedMapSsr : resolvedMap).get(id);
       if (origId) {
+        if (origId.startsWith('/@fs/') && !origId.includes('?')) {
+          return origId;
+        }
         return getClientId(origId, ssr);
       }
       return id;
@@ -645,6 +648,9 @@ export function rscTransformPlugin(
     if (!opts.isBuild) {
       const origId = (ssr ? resolvedMapSsr : resolvedMap).get(id);
       if (origId) {
+        if (origId.startsWith('/@fs/') && !origId.includes('?')) {
+          return origId;
+        }
         return getServerId(origId, ssr);
       }
       return id;
@@ -657,18 +663,22 @@ export function rscTransformPlugin(
     throw new Error('server id not found: ' + id);
   };
   const wakuDist = joinPath(fileURLToFilePath(import.meta.url), '../../..');
+  let viteServer: ViteDevServer;
   return {
     name: 'rsc-transform-plugin',
     enforce: 'pre', // required for `resolveId`
+    configureServer(server) {
+      viteServer = server;
+      if ('TODO: remove this'.length === 0) {
+        console.log(wakuDist, viteServer);
+      }
+    },
     async resolveId(id, importer, options) {
       const resolved = await this.resolve(id, importer, options);
-      let srcId =
+      const srcId =
         importer && (id.startsWith('./') || id.startsWith('../'))
           ? joinPath(importer.split('?')[0]!, '..', id)
           : id;
-      if (srcId.startsWith(wakuDist)) {
-        srcId = 'waku' + srcId.slice(wakuDist.length).replace(/\.\w+$/, '');
-      }
       if (resolved && resolved.id !== srcId) {
         const map = options?.ssr ? resolvedMapSsr : resolvedMap;
         if (!map.has(resolved.id)) {
