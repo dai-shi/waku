@@ -89,6 +89,20 @@ Once this is done, any `<Link />` component or hook from `waku/router` that uses
 
 Note: The file-based router paths will be supported in the future with some form of code-generation to get the types from your local page files.
 
+#### PageProps
+
+The above snippet will also provide types for the `PageProps` type. This will give type safety for the slugs in your pages.
+
+```tsx
+// ./src/pages/about.tsx
+import type { PageProps } from 'waku/router';
+
+// PageProps<'/about/[foo]'> => { path: `/about/${string}`; foo: string; query: string; }
+export default function AboutPage({ path }: PageProps<'/about/[foo]'>) {
+  return <>{/* ...*/}</>;
+}
+```
+
 ### Pages
 
 #### Single routes

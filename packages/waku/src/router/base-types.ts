@@ -21,5 +21,6 @@ export interface CreatePagesConfig {
 }
 
 /** Props for pages when using `createPages` */
-export type PageProps<Path extends PagePath<CreatePagesConfig>> =
-  PropsForPages<Path>;
+export type PageProps<
+  Path extends PagePath<CreatePagesConfig> | (string & {}),
+> = PropsForPages<Path>;
