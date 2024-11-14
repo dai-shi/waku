@@ -666,6 +666,13 @@ export function rscTransformPlugin(
     name: 'rsc-transform-plugin',
     enforce: 'pre', // required for `resolveId`
     async resolveId(id, importer, options) {
+      if (opts.isBuild) {
+        return;
+      }
+      if (id.startsWith('/@id/')) {
+        return (await this.resolve(id.slice('/@id/'.length), importer, options))
+          ?.id;
+      }
       const resolved = await this.resolve(id, importer, options);
       const srcId =
         importer && (id.startsWith('./') || id.startsWith('../'))
