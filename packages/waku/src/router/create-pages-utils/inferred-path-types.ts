@@ -162,9 +162,9 @@ export type GetSlugs<Route extends string> = _GetSlugs<Route>;
 
 /** Paths with slugs as string literals */
 export type PagePath<Config> = Config extends {
-  pages: infer AllPages;
+  pages: { DO_NOT_USE_pages: { path: infer Path } };
 }
-  ? AllPages
+  ? Path
   : never;
 
 type IndividualSlugType<Slug extends string> = Slug extends `...${string}`

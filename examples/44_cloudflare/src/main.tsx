@@ -1,10 +1,12 @@
 import { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
-import { NewRouter as Router } from 'waku/router/client';
+import { Root, Slot } from 'waku/minimal/client';
 
 const rootElement = (
   <StrictMode>
-    <Router />
+    <Root>
+      <Slot id="App" />
+    </Root>
   </StrictMode>
 );
 
