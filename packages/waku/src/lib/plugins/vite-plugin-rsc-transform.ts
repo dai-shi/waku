@@ -2,7 +2,7 @@ import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 
 import { EXTENSIONS } from '../constants.js';
-import { extname, joinPath } from '../utils/path.js';
+import { extname, joinPath, fileURLToFilePath } from '../utils/path.js';
 import { parseOpts } from '../utils/swc.js';
 
 const collectExportNames = (mod: swc.Module) => {
@@ -662,6 +662,7 @@ export function rscTransformPlugin(
     }
     throw new Error('server id not found: ' + id);
   };
+  const wakuDist = joinPath(fileURLToFilePath(import.meta.url), '../../..');
   return {
     name: 'rsc-transform-plugin',
     enforce: 'pre', // required for `resolveId`
@@ -674,10 +675,13 @@ export function rscTransformPlugin(
           ?.id;
       }
       const resolved = await this.resolve(id, importer, options);
-      const srcId =
+      let srcId =
         importer && (id.startsWith('./') || id.startsWith('../'))
           ? joinPath(importer.split('?')[0]!, '..', id)
           : id;
+      if (srcId.startsWith('waku/')) {
+        srcId = wakuDist + srcId.slice('waku'.length) + '.js';
+      }
       if (resolved && resolved.id !== srcId) {
         const map = options?.ssr ? resolvedMapSsr : resolvedMap;
         if (!map.has(resolved.id)) {
