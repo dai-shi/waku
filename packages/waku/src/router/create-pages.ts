@@ -785,6 +785,9 @@ export const new_createPages = <
         joinPath(routePath, 'page').slice(1), // feels like a hack
       ) ?? dynamicPagePathMap.get(routePath)?.[1])!;
 
+      const pathSpec = parsePathWithSlug(routePath);
+      const mapping = getPathMapping(pathSpec, routePath);
+
       const result: Record<string, ReactNode> = {
         root: createElement(
           rootItem ? rootItem.component : DefaultRoot,
@@ -793,7 +796,7 @@ export const new_createPages = <
         ),
         [`page:${routePath}`]: createElement(
           pageComponent,
-          null,
+          mapping,
           createElement(Children),
         ),
       };
@@ -809,7 +812,7 @@ export const new_createPages = <
         // always true
         if (layout) {
           const id = 'layout:' + segment;
-          result[id] = createElement(layout, null, createElement(Children));
+          result[id] = createElement(layout, createElement(Children));
         }
       }
 
