@@ -312,15 +312,18 @@ const createRscViteServer = (
         }
       }
     }
-    if (file.startsWith('/@fs/')) {
+    const isAtFsFile = file.startsWith('/@fs/');
+    if (isAtFsFile) {
       file = file.slice('/@fs'.length);
     }
     if (file.startsWith(config.rootDir)) {
       file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
     } else if (isFileURL) {
       file = '@fs' + encodeFilePathToAbsolute(file);
-    } else if (file.startsWith('/')) {
+    } else if (isAtFsFile) {
       file = '@fs' + file;
+    } else if (file.startsWith('/')) {
+      file = file.slice(1);
     } else {
       file = '@id/' + file;
     }
