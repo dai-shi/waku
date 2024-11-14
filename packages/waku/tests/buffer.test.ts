@@ -209,10 +209,12 @@ describe('parseFormData', () => {
     );
 
     let decodedContent = formData.get('base64Field') as string;
-    if (
-      process.version.startsWith('v20.') ||
-      process.version.startsWith('v18.')
-    ) {
+    const [major, minor] = process.version.slice(1).split('.').map(Number) as [
+      number,
+      number,
+      number,
+    ];
+    if (major < 20 || (major === 20 && minor < 16)) {
       // FIXME This means `parseFormData` is not working correctly across all Node.js versions
       decodedContent = Buffer.from(decodedContent, 'base64').toString();
     }
