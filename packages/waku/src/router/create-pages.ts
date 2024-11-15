@@ -654,12 +654,9 @@ export const new_createPages = <
     await ready;
   };
 
-  const getLayouts = (path: string): string[] => {
-    const pathSegments = path.split('/').reduce<string[]>(
+  const getLayouts = (spec: PathSpec): string[] => {
+    const pathSegments = spec.reduce<string[]>(
       (acc, segment, index) => {
-        if (segment === '') {
-          return acc;
-        }
         if (acc[index - 1] === '/') {
           acc.push('/' + segment);
         } else {
@@ -694,7 +691,7 @@ export const new_createPages = <
 
         const pattern = path2regexp(parsePathWithSlug(path));
 
-        const layoutPaths = getLayouts(pattern);
+        const layoutPaths = getLayouts(pathSpec);
 
         const elements = {
           ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
@@ -723,7 +720,7 @@ export const new_createPages = <
       for (const [path, [pathSpec]] of dynamicPagePathMap) {
         const noSsr = noSsrSet.has(pathSpec);
         const pattern = path2regexp(parsePathWithSlug(path));
-        const layoutPaths = getLayouts(pattern);
+        const layoutPaths = getLayouts(pathSpec);
         const elements = {
           ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
             (acc, lPath) => {
@@ -747,8 +744,7 @@ export const new_createPages = <
       }
       for (const [path, [pathSpec]] of wildcardPagePathMap) {
         const noSsr = noSsrSet.has(pathSpec);
-        const pattern = path2regexp(parsePathWithSlug(path));
-        const layoutPaths = getLayouts(pattern);
+        const layoutPaths = getLayouts(pathSpec);
         const elements = {
           ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
             (acc, lPath) => {
@@ -802,7 +798,7 @@ export const new_createPages = <
       };
 
       // this is wrong because getLayouts assumes normal path and routePath is a regex
-      const layoutPaths = getLayouts(routePath);
+      const layoutPaths = getLayouts(pathSpec);
 
       for (const segment of layoutPaths) {
         const layout =
@@ -812,7 +808,7 @@ export const new_createPages = <
         // always true
         if (layout) {
           const id = 'layout:' + segment;
-          result[id] = createElement(layout, createElement(Children));
+          result[id] = createElement(layout, null, createElement(Children));
         }
       }
 
