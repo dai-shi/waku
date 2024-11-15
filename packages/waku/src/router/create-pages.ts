@@ -797,7 +797,6 @@ export const new_createPages = <
         ),
       };
 
-      // this is wrong because getLayouts assumes normal path and routePath is a regex
       const layoutPaths = getLayouts(pathSpec);
 
       for (const segment of layoutPaths) {
