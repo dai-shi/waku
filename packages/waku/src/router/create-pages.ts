@@ -786,7 +786,7 @@ export const new_createPages = <
       ) ?? dynamicPagePathMap.get(routePath)?.[1])!;
 
       const pathSpec = parsePathWithSlug(routePath);
-      const mapping = getPathMapping(pathSpec, routePath);
+      const mapping = getPathMapping(pathSpec, path);
 
       const result: Record<string, ReactNode> = {
         root: createElement(
@@ -808,7 +808,7 @@ export const new_createPages = <
         const layout =
           dynamicLayoutPathMap.get(segment)?.[1] ??
           staticComponentMap.get(joinPath(segment, 'layout').slice(1)); // feels like a hack
-        // console.log({ layout });
+
         // always true
         if (layout) {
           const id = 'layout:' + segment;

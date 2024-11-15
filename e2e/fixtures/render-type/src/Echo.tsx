@@ -1,9 +1,8 @@
-export function Echo(props: any) {
-  console.log('Echo', props); // FIXME echo is undefined
+export function Echo({ echo, timestamp }: { echo: string; timestamp: number }) {
   return (
     <div>
-      <p data-testid="echo">{props.echo}</p>
-      <p data-testid="timestamp">{props.timestamp}</p>
+      <p data-testid="echo">{echo}</p>
+      <p data-testid="timestamp">{timestamp}</p>
     </div>
   );
 }
