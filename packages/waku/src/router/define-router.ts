@@ -484,7 +484,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
     });
     return {
       rscPath,
-      rscParams: JSON.stringify({ query: searchParams.toString() }),
+      rscParams: new URLSearchParams({ query: searchParams.toString() }),
       html,
     };
   };
