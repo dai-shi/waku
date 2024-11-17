@@ -9,6 +9,7 @@
     "compile": "pnpm -r --filter='./packages/*' run compile",
     "csb-install-FIXME": "pnpm install --no-frozen-lockfile",
     "test": "prettier -c . && eslint . && tsc -b && tsc -b --noEmit `find examples -mindepth 1 -maxdepth 1 -type d ! -name '*_js'` && pnpm run --filter waku test",
+    "test-vite-ecosystem-ci": "pnpm run --filter waku test && playwright test --project=chromium",
     "e2e": "playwright test",
     "examples:dev": "(cd ./examples/${NAME} && pnpm run dev)",
     "examples:build": "(cd ./examples/${NAME} && pnpm run build)",
