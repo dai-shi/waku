@@ -147,20 +147,16 @@ const createMainViteServer = (
       return import(/* @vite-ignore */ idOrFileURL);
     }
     const vite = await vitePromise;
-    if ('TODO: WE MAY NOT NEED THIS HACK'.length === 0) {
-      if (
-        idOrFileURL.startsWith('file://') &&
-        idOrFileURL.includes('/node_modules/')
-      ) {
-        // HACK node_modules should be externalized
-        const file = fileURLToFilePath(idOrFileURL);
-        const fileWithAbsolutePath = file.startsWith('/')
-          ? file
-          : joinPath(vite.config.root, file);
-        return import(
-          /* @vite-ignore */ filePathToFileURL(fileWithAbsolutePath)
-        );
-      }
+    if (
+      idOrFileURL.startsWith('file://') &&
+      idOrFileURL.includes('/node_modules/')
+    ) {
+      // HACK node_modules should be externalized
+      const filePath = fileURLToFilePath(idOrFileURL.split('?')[0]!);
+      const fileWithAbsolutePath = filePath.startsWith('/')
+        ? filePath
+        : joinPath(vite.config.root, filePath);
+      return import(/* @vite-ignore */ filePathToFileURL(fileWithAbsolutePath));
     }
     return vite.ssrLoadModule(
       idOrFileURL.startsWith('file://')
@@ -305,16 +301,14 @@ const createRscViteServer = (
     let file = isFileURL
       ? decodeFilePathFromAbsolute(fileURLToFilePath(id))
       : id;
-    if ('TODO: WE MAY NOT NEED INITIAL MODULES'.length === 0) {
-      for (const moduleNode of initialModules) {
-        if (moduleNode.file === file) {
-          return moduleNode.url;
-        }
-      }
-    }
     const isAtFsFile = file.startsWith('/@fs/');
     if (isAtFsFile) {
       file = file.slice('/@fs'.length);
+    }
+    for (const moduleNode of initialModules) {
+      if (moduleNode.file === file) {
+        return moduleNode.url;
+      }
     }
     if (file.startsWith(config.rootDir)) {
       file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
