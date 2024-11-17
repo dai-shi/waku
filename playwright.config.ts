@@ -49,8 +49,8 @@ export const config: PlaywrightTestConfig = {
     },
   ],
   forbidOnly: !!process.env.CI,
-  // no parallelization, otherwise the `waku` command will have race conditions -> still holds true?
-  workers: 4,
+  // no parallelization, otherwise the `waku` command will have race conditions
+  workers: 1,
   retries: 0,
   // 'github' for GitHub Actions CI to generate annotations, plus a concise 'dot'
   // default 'list' when running locally
