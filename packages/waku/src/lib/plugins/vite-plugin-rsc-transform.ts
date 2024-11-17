@@ -622,18 +622,17 @@ export function rscTransformPlugin(
       },
 ): Plugin {
   const resolvedMap = new Map<string, string>();
-  const resolvedMapSsr = new Map<string, string>();
-  const getClientId = (id: string, ssr: boolean): string => {
+  const getClientId = (id: string): string => {
     if (opts.isClient) {
       throw new Error('getClientId is only for server');
     }
     if (!opts.isBuild) {
-      const origId = (ssr ? resolvedMapSsr : resolvedMap).get(id);
+      const origId = resolvedMap.get(id);
       if (origId) {
         if (origId.startsWith('/@fs/') && !origId.includes('?')) {
           return origId;
         }
-        return getClientId(origId, ssr);
+        return getClientId(origId);
       }
       return id;
     }
@@ -644,14 +643,14 @@ export function rscTransformPlugin(
     }
     throw new Error('client id not found: ' + id);
   };
-  const getServerId = (id: string, ssr: boolean): string => {
+  const getServerId = (id: string): string => {
     if (!opts.isBuild) {
-      const origId = (ssr ? resolvedMapSsr : resolvedMap).get(id);
+      const origId = resolvedMap.get(id);
       if (origId) {
         if (origId.startsWith('/@fs/') && !origId.includes('?')) {
           return origId;
         }
-        return getServerId(origId, ssr);
+        return getServerId(origId);
       }
       return id;
     }
@@ -683,9 +682,8 @@ export function rscTransformPlugin(
         srcId = wakuDist + srcId.slice('waku'.length) + '.js';
       }
       if (resolved && resolved.id !== srcId) {
-        const map = options?.ssr ? resolvedMapSsr : resolvedMap;
-        if (!map.has(resolved.id)) {
-          map.set(resolved.id, srcId);
+        if (!resolvedMap.has(resolved.id)) {
+          resolvedMap.set(resolved.id, srcId);
         }
       }
     },
@@ -701,9 +699,7 @@ export function rscTransformPlugin(
         if (options?.ssr) {
           return transformClientForSSR(code, ext);
         }
-        return transformClient(code, ext, () =>
-          getServerId(id, !!options?.ssr),
-        );
+        return transformClient(code, ext, () => getServerId(id));
       }
       // isClient === false
       if (!options?.ssr) {
@@ -712,8 +708,8 @@ export function rscTransformPlugin(
       return transformServer(
         code,
         ext,
-        () => getClientId(id, !!options.ssr),
-        () => getServerId(id, !!options.ssr),
+        () => getClientId(id),
+        () => getServerId(id),
       );
     },
   };
