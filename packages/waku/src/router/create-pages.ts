@@ -500,6 +500,22 @@ export const new_createPages = <
   let rootItem: RootItem | undefined = undefined;
   const noSsrSet = new WeakSet<PathSpec>();
 
+  /** helper to find dynamic path when slugs are used */
+  const getRoutePath: (path: string) => string | undefined = (path) => {
+    if (staticComponentMap.has(joinPath(path, 'page').slice(1))) {
+      return path;
+    }
+    const allPaths = [
+      ...dynamicPagePathMap.keys(),
+      ...wildcardPagePathMap.keys(),
+    ];
+    for (const p of allPaths) {
+      if (new RegExp(path2regexp(parsePathWithSlug(p))).test(path)) {
+        return p;
+      }
+    }
+  };
+
   const registerStaticComponent = (
     id: string,
     component: FunctionComponent<any>,
@@ -638,13 +654,14 @@ export const new_createPages = <
     await ready;
   };
 
-  const getLayouts = (path: string): string[] => {
-    const pathSegments = path.split('/').reduce<string[]>(
+  const getLayouts = (spec: PathSpec): string[] => {
+    const pathSegments = spec.reduce<string[]>(
       (acc, segment, index) => {
-        if (segment === '') {
-          return acc;
+        if (acc[index - 1] === '/') {
+          acc.push('/' + segment);
+        } else {
+          acc.push(acc[index - 1] + '/' + segment);
         }
-        acc.push(acc[index - 1] + '/' + segment);
         return acc;
       },
       ['/'],
@@ -674,7 +691,7 @@ export const new_createPages = <
 
         const pattern = path2regexp(parsePathWithSlug(path));
 
-        const layoutPaths = getLayouts(pattern);
+        const layoutPaths = getLayouts(pathSpec);
 
         const elements = {
           ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
@@ -703,7 +720,7 @@ export const new_createPages = <
       for (const [path, [pathSpec]] of dynamicPagePathMap) {
         const noSsr = noSsrSet.has(pathSpec);
         const pattern = path2regexp(parsePathWithSlug(path));
-        const layoutPaths = getLayouts(pattern);
+        const layoutPaths = getLayouts(pathSpec);
         const elements = {
           ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
             (acc, lPath) => {
@@ -727,8 +744,7 @@ export const new_createPages = <
       }
       for (const [path, [pathSpec]] of wildcardPagePathMap) {
         const noSsr = noSsrSet.has(pathSpec);
-        const pattern = path2regexp(parsePathWithSlug(path));
-        const layoutPaths = getLayouts(pattern);
+        const layoutPaths = getLayouts(pathSpec);
         const elements = {
           ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
             (acc, lPath) => {
@@ -755,9 +771,18 @@ export const new_createPages = <
     renderRoute: async (path) => {
       await configure();
 
+      // path without slugs
+      const routePath = getRoutePath(path);
+      if (!routePath) {
+        throw new Error('Route not found: ' + path);
+      }
+
       const pageComponent = (staticComponentMap.get(
-        joinPath(path, 'page').slice(1), // feels like a hack
-      ) ?? dynamicPagePathMap.get(path)?.[1])!;
+        joinPath(routePath, 'page').slice(1), // feels like a hack
+      ) ?? dynamicPagePathMap.get(routePath)?.[1])!;
+
+      const pathSpec = parsePathWithSlug(routePath);
+      const mapping = getPathMapping(pathSpec, path);
 
       const result: Record<string, ReactNode> = {
         root: createElement(
@@ -765,19 +790,20 @@ export const new_createPages = <
           null,
           createElement(Children),
         ),
-        [`page:${path}`]: createElement(
+        [`page:${routePath}`]: createElement(
           pageComponent,
-          null,
+          mapping,
           createElement(Children),
         ),
       };
 
-      const layoutPaths = getLayouts(path);
+      const layoutPaths = getLayouts(pathSpec);
 
       for (const segment of layoutPaths) {
         const layout =
           dynamicLayoutPathMap.get(segment)?.[1] ??
           staticComponentMap.get(joinPath(segment, 'layout').slice(1)); // feels like a hack
+
         // always true
         if (layout) {
           const id = 'layout:' + segment;
@@ -791,7 +817,7 @@ export const new_createPages = <
           component: Slot,
           props: { id: `layout:${lPath}` },
         })),
-        { component: Slot, props: { id: `page:${path}` } },
+        { component: Slot, props: { id: `page:${routePath}` } },
       ];
 
       return {
