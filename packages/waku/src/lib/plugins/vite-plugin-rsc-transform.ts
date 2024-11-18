@@ -621,12 +621,16 @@ export function rscTransformPlugin(
         serverEntryFiles: Record<string, string>;
       },
 ): Plugin {
+  let rootDir: string;
   const resolvedMap = new Map<string, string>();
   const getClientId = (id: string): string => {
     if (opts.isClient) {
       throw new Error('getClientId is only for server');
     }
     if (!opts.isBuild) {
+      if (id.startsWith(rootDir)) {
+        return id;
+      }
       const origId = resolvedMap.get(id);
       if (origId) {
         if (origId.startsWith('/@fs/') && !origId.includes('?')) {
@@ -645,6 +649,9 @@ export function rscTransformPlugin(
   };
   const getServerId = (id: string): string => {
     if (!opts.isBuild) {
+      if (id.startsWith(rootDir)) {
+        return id;
+      }
       const origId = resolvedMap.get(id);
       if (origId) {
         if (origId.startsWith('/@fs/') && !origId.includes('?')) {
@@ -665,6 +672,9 @@ export function rscTransformPlugin(
   return {
     name: 'rsc-transform-plugin',
     enforce: 'pre', // required for `resolveId`
+    configResolved(config) {
+      rootDir = config.root;
+    },
     async resolveId(id, importer, options) {
       if (opts.isBuild) {
         return;
