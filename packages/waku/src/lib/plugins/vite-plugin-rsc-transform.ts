@@ -628,7 +628,8 @@ export function rscTransformPlugin(
       throw new Error('getClientId is only for server');
     }
     if (!opts.isBuild) {
-      if (id.startsWith(rootDir)) {
+      // HACK this logic is too heuristic
+      if (id.startsWith(rootDir) && !id.includes('?')) {
         return id;
       }
       const origId = resolvedMap.get(id);
@@ -649,7 +650,8 @@ export function rscTransformPlugin(
   };
   const getServerId = (id: string): string => {
     if (!opts.isBuild) {
-      if (id.startsWith(rootDir)) {
+      // HACK this logic is too heuristic
+      if (id.startsWith(rootDir) && !id.includes('?')) {
         return id;
       }
       const origId = resolvedMap.get(id);
