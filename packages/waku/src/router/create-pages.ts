@@ -768,7 +768,7 @@ export const new_createPages = <
       }
       return paths;
     },
-    renderRoute: async (path) => {
+    renderRoute: async (path, { query }) => {
       await configure();
 
       // path without slugs
@@ -783,7 +783,6 @@ export const new_createPages = <
 
       const pathSpec = parsePathWithSlug(routePath);
       const mapping = getPathMapping(pathSpec, path);
-
       const result: Record<string, ReactNode> = {
         root: createElement(
           rootItem ? rootItem.component : DefaultRoot,
@@ -792,7 +791,7 @@ export const new_createPages = <
         ),
         [`page:${routePath}`]: createElement(
           pageComponent,
-          mapping,
+          { ...mapping, ...(query ? { query } : {}) },
           createElement(Children),
         ),
       };
