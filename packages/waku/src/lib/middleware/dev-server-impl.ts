@@ -133,10 +133,7 @@ const createMainViteServer = (
     return vite;
   });
 
-  const wakuDist = joinPath(
-    decodeFilePathFromAbsolute(fileURLToFilePath(import.meta.url)),
-    '../../..',
-  );
+  const wakuDist = joinPath(fileURLToFilePath(import.meta.url), '../../..');
 
   const loadServerModuleMain = async (idOrFileURL: string) => {
     let file = idOrFileURL.startsWith('file://')
