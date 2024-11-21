@@ -10,8 +10,6 @@ import { SRC_MAIN, SRC_ENTRIES } from '../constants.js';
 import {
   joinPath,
   fileURLToFilePath,
-  encodeFilePathToAbsolute,
-  decodeFilePathFromAbsolute,
   filePathToFileURL,
 } from '../utils/path.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
@@ -294,13 +292,7 @@ const createRscViteServer = (
     config: { rootDir: string; basePath: string },
     initialModules: ClonableModuleNode[],
   ) => {
-    const isFileURL = id.startsWith('file://');
-    if (isFileURL) {
-      throw new Error('Unsupported file URL in resolveClientEntry');
-    }
-    let file = isFileURL
-      ? decodeFilePathFromAbsolute(fileURLToFilePath(id))
-      : id;
+    let file = id;
     const isAtFsFile = file.startsWith('/@fs/');
     if (isAtFsFile) {
       file = file.slice('/@fs'.length);
@@ -312,8 +304,6 @@ const createRscViteServer = (
     }
     if (file.startsWith(config.rootDir)) {
       file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
-    } else if (isFileURL) {
-      file = '@fs' + encodeFilePathToAbsolute(file);
     } else if (isAtFsFile) {
       file = '@fs' + file;
     } else if (file.startsWith('/')) {
