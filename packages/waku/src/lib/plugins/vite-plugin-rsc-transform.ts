@@ -6,7 +6,7 @@ import {
   extname,
   joinPath,
   fileURLToFilePath,
-  decodeFilePathFromAbsolute,
+  decodeFilePathFromAbsolute
 } from '../utils/path.js';
 import { parseOpts } from '../utils/swc.js';
 
@@ -675,10 +675,7 @@ export function rscTransformPlugin(
     }
     throw new Error('server id not found: ' + id);
   };
-  const wakuDist = joinPath(
-    decodeFilePathFromAbsolute(fileURLToFilePath(import.meta.url)),
-    '../../..',
-  );
+  const wakuDist = joinPath(decodeFilePathFromAbsolute(fileURLToFilePath(import.meta.url)), '../../..');
   return {
     name: 'rsc-transform-plugin',
     enforce: 'pre', // required for `resolveId`
