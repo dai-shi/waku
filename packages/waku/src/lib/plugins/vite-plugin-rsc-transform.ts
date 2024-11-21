@@ -688,7 +688,7 @@ export function rscTransformPlugin(
       const resolved = await this.resolve(id, importer, options);
       let srcId =
         importer && (id.startsWith('./') || id.startsWith('../'))
-          ? joinPath('/@fs', importer.split('?')[0]!, '..', id)
+          ? joinPath(importer.split('?')[0]!, '..', id)
           : id;
       if (srcId.startsWith('waku/')) {
         srcId = wakuDist + srcId.slice('waku'.length) + '.js';
