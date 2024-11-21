@@ -1,3 +1,4 @@
+import { ErrorBoundary } from 'react-error-boundary';
 import { Link } from 'waku';
 
 export default async function HomePage() {
@@ -5,6 +6,9 @@ export default async function HomePage() {
     <div>
       <p>Home Page</p>
       <Link to="/invalid">Invalid page</Link>
+      <ErrorBoundary fallback={<div>Something went wrong</div>}>
+        Empty children
+      </ErrorBoundary>
     </div>
   );
 }
