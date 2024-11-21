@@ -14,7 +14,7 @@ const InternalAsyncComponent = async () => {
     throw new Error('Cache not working');
   }
   console.log('waku context', Object.keys(getContextData()));
-  console.log('hono context', Object.keys(getHonoContext()));
+  console.log('hono context', getHonoContext());
   return null;
 };
 
