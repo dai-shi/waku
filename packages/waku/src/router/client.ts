@@ -808,7 +808,8 @@ export function NewRouter({
               // FIXME this check here seems ad-hoc (less readable code)
               if (
                 window.location.pathname !== path ||
-                window.location.search.replace(/^\?/, '') !== query
+                (!isStatic &&
+                  window.location.search.replace(/^\?/, '') !== query)
               ) {
                 routerData[1]?.forEach((listener) => listener(path, query));
               }
