@@ -322,7 +322,7 @@ const RouterSlot = ({
   fallback?: ReactNode;
   children?: ReactNode;
 }) => {
-  const unstable_shouldRenderPrev = (_err: unknown) => {
+  const unstable_shouldRenderPrev = () => {
     const shouldSkip = routerData[0];
     const skip = getSkipList(shouldSkip, [id], route, cachedRef.current);
     return skip.length > 0;
@@ -647,6 +647,7 @@ type NewChangeRoute = (
 ) => void;
 
 const getRouteSlotId = (path: string) => 'route:' + path;
+const fallbackSlotId = 'fallback:';
 
 const NewInnerRouter = ({
   routerData,
@@ -758,7 +759,12 @@ const NewInnerRouter = ({
     });
   });
 
-  const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
+  const routeElement = createElement(Slot, {
+    id: getRouteSlotId(route.path),
+    unstable_shouldRenderPrev: (_err, prevElements) =>
+      fallbackSlotId in prevElements,
+    fallback: createElement(Slot, { id: fallbackSlotId }),
+  });
 
   return createElement(
     RouterContext.Provider,

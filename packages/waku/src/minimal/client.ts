@@ -224,7 +224,9 @@ const ChildrenContextProvider = memo(ChildrenContext.Provider);
 
 type OuterSlotProps = {
   elementsPromise: Elements;
-  shouldRenderPrev: ((err: unknown) => boolean) | undefined;
+  unstable_shouldRenderPrev:
+    | ((err: unknown, prevElements: Record<string, ReactNode>) => boolean)
+    | undefined;
   renderSlot: (elements: Record<string, ReactNode>) => ReactNode;
   children?: ReactNode;
 };
@@ -245,9 +247,12 @@ class OuterSlot extends Component<OuterSlotProps, { error?: unknown }> {
         // probably caused by history api fallback
         (e as any).statusCode = 404;
       }
-      if (this.props.shouldRenderPrev?.(e) && this.props.elementsPromise.prev) {
-        const elements = this.props.elementsPromise.prev;
-        return this.props.renderSlot(elements);
+      const prevElements = this.props.elementsPromise.prev;
+      if (
+        prevElements &&
+        this.props.unstable_shouldRenderPrev?.(e, prevElements)
+      ) {
+        return this.props.renderSlot(prevElements);
       } else {
         throw e;
       }
@@ -290,7 +295,10 @@ export const Slot = ({
   id: string;
   children?: ReactNode;
   fallback?: ReactNode;
-  unstable_shouldRenderPrev?: (err: unknown) => boolean;
+  unstable_shouldRenderPrev?: (
+    err: unknown,
+    prevElements: Record<string, ReactNode>,
+  ) => boolean;
 }) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
@@ -313,7 +321,7 @@ export const Slot = ({
     OuterSlot,
     {
       elementsPromise,
-      shouldRenderPrev: unstable_shouldRenderPrev,
+      unstable_shouldRenderPrev,
       renderSlot,
     },
     createElement(InnerSlot, { elementsPromise, renderSlot }),
