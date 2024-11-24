@@ -647,7 +647,6 @@ type NewChangeRoute = (
 ) => void;
 
 const getRouteSlotId = (path: string) => 'route:' + path;
-const fallbackSlotId = 'fallback:';
 
 const NewInnerRouter = ({
   routerData,
@@ -761,9 +760,14 @@ const NewInnerRouter = ({
 
   const routeElement = createElement(Slot, {
     id: getRouteSlotId(route.path),
-    unstable_shouldRenderPrev: (_err, prevElements) =>
-      fallbackSlotId in prevElements,
-    fallback: createElement(Slot, { id: fallbackSlotId }),
+    unstable_shouldRenderPrev: (_err, prevElements) => {
+      console.log(_err, 'prevElements1', prevElements);
+      return 'fallback' in prevElements;
+    },
+    fallback: createElement(Slot, {
+      id: 'fallback',
+      unstable_renderPrev: true,
+    }),
   });
 
   return createElement(

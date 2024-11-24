@@ -291,6 +291,7 @@ export const Slot = ({
   children,
   fallback,
   unstable_shouldRenderPrev,
+  unstable_renderPrev,
 }: {
   id: string;
   children?: ReactNode;
@@ -299,6 +300,7 @@ export const Slot = ({
     err: unknown,
     prevElements: Record<string, ReactNode>,
   ) => boolean;
+  unstable_renderPrev?: boolean;
 }) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
@@ -317,6 +319,10 @@ export const Slot = ({
       elements[id],
     );
   };
+  if (unstable_renderPrev && elementsPromise.prev) {
+    const elements = elementsPromise.prev;
+    return renderSlot(elements);
+  }
   return createElement(
     OuterSlot,
     {

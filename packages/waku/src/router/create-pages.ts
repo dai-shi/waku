@@ -826,6 +826,12 @@ export const new_createPages = <
           { id: 'root' },
           createNestedElements(routeChildren),
         ),
+        // TEMP experimenting with fallbackElement
+        fallbackElement: createElement(
+          Slot,
+          { id: 'root', unstable_renderPrev: true },
+          createElement('h1', null, 'fallback element'),
+        ),
       };
     },
   });

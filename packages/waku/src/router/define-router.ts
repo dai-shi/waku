@@ -283,7 +283,6 @@ export function unstable_rerenderRoute(
 type SlotId = string;
 
 const ROUTE_SLOT_ID_PREFIX = 'route:';
-const FALLBACK_SLOT_ID = 'fallback:';
 
 export function new_defineRouter(fns: {
   getPathConfig: () => Promise<
@@ -408,9 +407,10 @@ export function new_defineRouter(fns: {
     const entries = {
       ...elements,
       [ROUTE_SLOT_ID_PREFIX + pathname]: routeElement,
-      ...((fallbackElement
-        ? { [FALLBACK_SLOT_ID]: fallbackElement }
-        : {}) as Record<string, ReactNode>),
+      ...((fallbackElement ? { fallback: fallbackElement } : {}) as Record<
+        string,
+        ReactNode
+      >),
     };
     for (const skipId of await filterEffectiveSkip(pathname, skip)) {
       delete entries[skipId];
