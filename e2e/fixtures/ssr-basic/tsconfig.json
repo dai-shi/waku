@@ -13,5 +13,5 @@
     "jsx": "react-jsx",
     "outDir": "./dist"
   },
-  "include": ["./src", "./vite.config.ts"]
+  "include": ["./src", "./waku.config.ts", "./vite.config.ts"]
 }
