@@ -10,8 +10,6 @@ import { SRC_MAIN, SRC_ENTRIES } from '../constants.js';
 import {
   joinPath,
   fileURLToFilePath,
-  encodeFilePathToAbsolute,
-  decodeFilePathFromAbsolute,
   filePathToFileURL,
 } from '../utils/path.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
@@ -133,21 +131,29 @@ const createMainViteServer = (
     return vite;
   });
 
+  const wakuDist = joinPath(fileURLToFilePath(import.meta.url), '../../..');
+
   const loadServerModuleMain = async (idOrFileURL: string) => {
-    const vite = await vitePromise;
-    if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
+    let file = idOrFileURL.startsWith('file://')
+      ? fileURLToFilePath(idOrFileURL)
+      : idOrFileURL;
+    if (file.startsWith(wakuDist)) {
+      file = 'waku' + file.slice(wakuDist.length).replace(/\.\w+$/, '');
+    }
+    if (file === 'waku' || file.startsWith('waku/')) {
       // HACK `external: ['waku']` doesn't do the same
       return import(/* @vite-ignore */ idOrFileURL);
     }
+    const vite = await vitePromise;
     if (
       idOrFileURL.startsWith('file://') &&
       idOrFileURL.includes('/node_modules/')
     ) {
       // HACK node_modules should be externalized
-      const file = fileURLToFilePath(idOrFileURL);
-      const fileWithAbsolutePath = file.startsWith('/')
-        ? file
-        : joinPath(vite.config.root, file);
+      const filePath = fileURLToFilePath(idOrFileURL.split('?')[0]!);
+      const fileWithAbsolutePath = filePath.startsWith('/')
+        ? filePath
+        : joinPath(vite.config.root, filePath);
       return import(/* @vite-ignore */ filePathToFileURL(fileWithAbsolutePath));
     }
     return vite.ssrLoadModule(
@@ -286,9 +292,11 @@ const createRscViteServer = (
     config: { rootDir: string; basePath: string },
     initialModules: ClonableModuleNode[],
   ) => {
-    let file = id.startsWith('file://')
-      ? decodeFilePathFromAbsolute(fileURLToFilePath(id))
-      : id;
+    let file = id;
+    const isAtFsFile = file.startsWith('/@fs/');
+    if (isAtFsFile) {
+      file = file.slice('/@fs'.length);
+    }
     for (const moduleNode of initialModules) {
       if (moduleNode.file === file) {
         return moduleNode.url;
@@ -296,8 +304,12 @@ const createRscViteServer = (
     }
     if (file.startsWith(config.rootDir)) {
       file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
+    } else if (isAtFsFile) {
+      file = '@fs' + file;
+    } else if (file.startsWith('/')) {
+      file = file.slice(1);
     } else {
-      file = '@fs' + encodeFilePathToAbsolute(file);
+      file = '@id/' + file;
     }
     return config.basePath + file;
   };

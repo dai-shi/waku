@@ -8,12 +8,7 @@ import type * as WakuMinimalClientType from '../../minimal/client.js';
 import type { PureConfig } from '../config.js';
 import { SRC_MAIN } from '../constants.js';
 import { concatUint8Arrays, streamFromPromise } from '../utils/stream.js';
-import {
-  joinPath,
-  filePathToFileURL,
-  fileURLToFilePath,
-  encodeFilePathToAbsolute,
-} from '../utils/path.js';
+import { filePathToFileURL } from '../utils/path.js';
 import { encodeRscPath } from './utils.js';
 import { renderRsc, renderRscElement } from './rsc.js';
 // TODO move types somewhere
@@ -187,7 +182,6 @@ export function renderHtml(
   const stream = renderRsc(config, ctx, elements);
   const htmlStream = renderRscElement(config, ctx, html);
   const isDev = !!ctx.unstable_devServer;
-  const rootDir = ctx.unstable_devServer?.rootDir || '';
   const moduleMap = new Proxy(
     {} as Record<string, Record<string, ImportManifestEntry>>,
     {
@@ -197,29 +191,14 @@ export function renderHtml(
           {
             get(_target, name: string) {
               if (isDev) {
-                // TODO too long, we need to refactor this logic
-                let file = filePath
-                  .slice(config.basePath.length)
-                  .split('?')[0]!;
-                const isFsPath = file.startsWith('@fs/');
-                file = isFsPath ? file.slice('@fs'.length) : file;
-                const fileWithAbsolutePath = isFsPath
-                  ? file
-                  : encodeFilePathToAbsolute(joinPath(rootDir, file));
-                const wakuDist = joinPath(
-                  fileURLToFilePath(import.meta.url),
-                  '../../..',
-                );
-                if (fileWithAbsolutePath.startsWith(wakuDist)) {
-                  const id =
-                    'waku' +
-                    fileWithAbsolutePath
-                      .slice(wakuDist.length)
-                      .replace(/\.\w+$/, '');
-                  (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(id);
-                  return { id, chunks: [id], name };
+                let id = filePath.slice(config.basePath.length);
+                if (id.startsWith('@id/')) {
+                  id = id.slice('@id/'.length);
+                } else if (id.startsWith('@fs/')) {
+                  id = filePathToFileURL(id.slice('@fs'.length));
+                } else {
+                  id = filePathToFileURL(id);
                 }
-                const id = filePathToFileURL(file);
                 (globalThis as any).__WAKU_CLIENT_CHUNK_LOAD__(id);
                 return { id, chunks: [id], name };
               }

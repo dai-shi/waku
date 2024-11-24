@@ -1,32 +1,35 @@
-import { defineEntries } from 'waku/server';
-import { Slot } from 'waku/client';
+import { new_defineEntries } from 'waku/minimal/server';
+import { Slot } from 'waku/minimal/client';
 
 import Layout from './components/layout';
 import App from './components/app';
 
-export default defineEntries(
-  // renderEntries
-  async (rscPath) => {
-    return {
-      App: (
-        <Layout>
-          <App name={rscPath || 'Waku'} />
-        </Layout>
-      ),
-    };
-  },
-  // getBuildConfig
-  async () => [{ pathname: '/', entries: [{ rscPath: '' }] }],
-  // getSsrConfig
-  async (pathname) => {
-    switch (pathname) {
-      case '/':
-        return {
-          rscPath: '',
-          html: <Slot id="App" />,
-        };
-      default:
-        return null;
+export default new_defineEntries({
+  unstable_handleRequest: async (input, { renderRsc, renderHtml }) => {
+    if (input.type === 'component') {
+      return renderRsc({
+        App: (
+          <Layout>
+            <App name={input.rscPath || 'Waku'} />
+          </Layout>
+        ),
+      });
+    }
+    if (input.type === 'custom' && input.pathname === '/') {
+      return renderHtml(
+        {
+          App: (
+            <Layout>
+              <App name={'Waku'} />
+            </Layout>
+          ),
+        },
+        <Slot id="App" />,
+        '',
+      );
     }
   },
-);
+  unstable_getBuildConfig: async () => [
+    { pathSpec: [], entries: [{ rscPath: '' }] },
+  ],
+});
