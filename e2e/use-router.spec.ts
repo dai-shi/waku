@@ -28,7 +28,7 @@ async function start() {
   ]);
 
   await waitPort({ port });
-  return [port, cp.pid];
+  return [port, cp.pid] as const;
 }
 
 test.describe('useRouter', async () => {

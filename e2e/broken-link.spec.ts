@@ -30,7 +30,7 @@ async function start(staticServe: boolean) {
   ]);
 
   await waitPort({ port });
-  return [port, cp.pid];
+  return [port, cp.pid] as const;
 }
 
 test.beforeEach(async () => {
