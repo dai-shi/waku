@@ -15,7 +15,7 @@ import type {
   GetSlugs,
   PropsForPages,
 } from './create-pages-utils/inferred-path-types.js';
-import { Children, Slot } from '../minimal/client.js';
+import { Children, Slot, ThrowError_UNSTABLE } from '../minimal/client.js';
 
 const hasPathSpecPrefix = (prefix: PathSpec, path: PathSpec) => {
   for (let i = 0; i < prefix.length; i++) {
@@ -832,8 +832,12 @@ export const new_createPages = <
           Slot,
           { id: 'root', unstable_renderPrev: true },
           layoutPaths.includes('/')
-            ? createElement(Slot, { id: 'layout:/', unstable_renderPrev: true })
-            : null,
+            ? createElement(
+                Slot,
+                { id: 'layout:/', unstable_renderPrev: true },
+                createElement(ThrowError_UNSTABLE),
+              )
+            : createElement(ThrowError_UNSTABLE),
         ),
       };
     },
