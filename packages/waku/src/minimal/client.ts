@@ -319,9 +319,11 @@ export const Slot = ({
       elements[id],
     );
   };
-  if (unstable_renderPrev && elementsPromise.prev) {
-    const elements = elementsPromise.prev;
-    return renderSlot(elements);
+  if (unstable_renderPrev) {
+    if (!elementsPromise.prev) {
+      throw new Error('Missing prev elements');
+    }
+    return renderSlot(elementsPromise.prev);
   }
   return createElement(
     OuterSlot,

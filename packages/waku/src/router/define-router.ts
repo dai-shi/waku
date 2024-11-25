@@ -309,8 +309,6 @@ export function new_defineRouter(fns: {
   type MyPathConfig = {
     pattern: string;
     pathname: PathSpec;
-    // FIXME Do we need this isStaticRouteElement?
-    isStaticRouteElement: boolean;
     staticElementIds: SlotId[];
     isStatic?: boolean | undefined;
     specs: { noSsr?: boolean; is404: boolean };
@@ -330,7 +328,6 @@ export function new_defineRouter(fns: {
         return {
           pattern: item.pattern,
           pathname: item.path,
-          isStaticRouteElement: !!item.routeElement.isStatic,
           staticElementIds: Object.entries(item.elements).flatMap(
             ([id, { isStatic }]) => (isStatic ? [id] : []),
           ),

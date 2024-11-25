@@ -760,10 +760,9 @@ const NewInnerRouter = ({
 
   const routeElement = createElement(Slot, {
     id: getRouteSlotId(route.path),
-    unstable_shouldRenderPrev: (_err, prevElements) => {
-      console.log(_err, 'prevElements1', prevElements);
-      return 'fallback' in prevElements;
-    },
+    unstable_shouldRenderPrev: (_err, prevElements) =>
+      // HACK this might not work in some cases
+      'fallback' in prevElements,
     fallback: createElement(Slot, {
       id: 'fallback',
       unstable_renderPrev: true,
