@@ -497,7 +497,10 @@ export const new_createPages = <
     [PathSpec, FunctionComponent<any>]
   >();
   const staticComponentMap = new Map<string, FunctionComponent<any>>();
-  let rootItem: RootItem | undefined = undefined;
+  let rootItem: RootItem = {
+    render: 'static',
+    component: DefaultRoot,
+  };
   const noSsrSet = new WeakSet<PathSpec>();
 
   /** helper to find dynamic path when slugs are used */
