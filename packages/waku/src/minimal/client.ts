@@ -227,7 +227,7 @@ type OuterSlotProps = {
   unstable_shouldRenderPrev:
     | ((err: unknown, prevElements: Record<string, ReactNode>) => boolean)
     | undefined;
-  renderSlot: (elements: Record<string, ReactNode>) => ReactNode;
+  renderSlot: (elements: Record<string, ReactNode>, err?: unknown) => ReactNode;
   children?: ReactNode;
 };
 
@@ -252,7 +252,7 @@ class OuterSlot extends Component<OuterSlotProps, { error?: unknown }> {
         prevElements &&
         this.props.unstable_shouldRenderPrev?.(e, prevElements)
       ) {
-        return this.props.renderSlot(prevElements);
+        return this.props.renderSlot(prevElements, e);
       } else {
         throw e;
       }
@@ -266,10 +266,14 @@ const InnerSlot = ({
   renderSlot,
 }: {
   elementsPromise: Elements;
-  renderSlot: (elements: Record<string, ReactNode>) => ReactNode;
+  renderSlot: (elements: Record<string, ReactNode>, err?: unknown) => ReactNode;
 }) => {
   const elements = use(elementsPromise);
   return renderSlot(elements);
+};
+
+const InnerErr = ({ err }: { err: unknown }) => {
+  throw err;
 };
 
 /**
@@ -306,9 +310,17 @@ export const Slot = ({
   if (!elementsPromise) {
     throw new Error('Missing Root component');
   }
-  const renderSlot = (elements: Record<string, ReactNode>) => {
+  const renderSlot = (elements: Record<string, ReactNode>, err?: unknown) => {
     if (!(id in elements)) {
       if (fallback) {
+        if (err) {
+          // HACK I'm not sure if this is the right way
+          return createElement(
+            ChildrenContextProvider,
+            { value: createElement(InnerErr, { err }) },
+            fallback,
+          );
+        }
         return fallback;
       }
       throw new Error('Not found: ' + id);
