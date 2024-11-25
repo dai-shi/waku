@@ -826,6 +826,15 @@ export const new_createPages = <
           { id: 'root' },
           createNestedElements(routeChildren),
         ),
+        // HACK this is hard-coded convention
+        // FIXME we should revisit the error boundary use case design
+        fallbackElement: createElement(
+          Slot,
+          { id: 'root', unstable_renderPrev: true },
+          layoutPaths.includes('/')
+            ? createElement(Slot, { id: 'layout:/', unstable_renderPrev: true })
+            : null,
+        ),
       };
     },
   });
