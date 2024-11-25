@@ -1,6 +1,9 @@
 import { Textarea } from './Textarea.js';
+// @ts-expect-error no types
 import SampleImage from './image-not-inlined.jpg'; // build.assetsInlineLimit - default 4096 Bytes
+// @ts-expect-error no types
 import SampleJsonPrivate from './json-private-not-inlined.json'; // build.assetsInlineLimit - default 4096 Bytes
+// @ts-expect-error no types
 import SampleJsonPublic from './json-public-linked-not-inlined.json?url'; // build.assetsInlineLimit - default 4096 Bytes
 
 const App = async ({ name }: { name: string }) => {
