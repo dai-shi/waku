@@ -33,7 +33,7 @@ async function run(isDev: boolean) {
     /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
   ]);
   await waitPort({ port });
-  return [port, cp.pid];
+  return [port, cp.pid] as const;
 }
 
 for (const isDev of [true, false]) {

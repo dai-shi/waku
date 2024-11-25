@@ -224,8 +224,10 @@ const ChildrenContextProvider = memo(ChildrenContext.Provider);
 
 type OuterSlotProps = {
   elementsPromise: Elements;
-  shouldRenderPrev: ((err: unknown) => boolean) | undefined;
-  renderSlot: (elements: Record<string, ReactNode>) => ReactNode;
+  unstable_shouldRenderPrev:
+    | ((err: unknown, prevElements: Record<string, ReactNode>) => boolean)
+    | undefined;
+  renderSlot: (elements: Record<string, ReactNode>, err?: unknown) => ReactNode;
   children?: ReactNode;
 };
 
@@ -245,9 +247,12 @@ class OuterSlot extends Component<OuterSlotProps, { error?: unknown }> {
         // probably caused by history api fallback
         (e as any).statusCode = 404;
       }
-      if (this.props.shouldRenderPrev?.(e) && this.props.elementsPromise.prev) {
-        const elements = this.props.elementsPromise.prev;
-        return this.props.renderSlot(elements);
+      const prevElements = this.props.elementsPromise.prev;
+      if (
+        prevElements &&
+        this.props.unstable_shouldRenderPrev?.(e, prevElements)
+      ) {
+        return this.props.renderSlot(prevElements, e);
       } else {
         throw e;
       }
@@ -261,10 +266,14 @@ const InnerSlot = ({
   renderSlot,
 }: {
   elementsPromise: Elements;
-  renderSlot: (elements: Record<string, ReactNode>) => ReactNode;
+  renderSlot: (elements: Record<string, ReactNode>, err?: unknown) => ReactNode;
 }) => {
   const elements = use(elementsPromise);
   return renderSlot(elements);
+};
+
+const InnerErr = ({ err }: { err: unknown }) => {
+  throw err;
 };
 
 /**
@@ -286,19 +295,32 @@ export const Slot = ({
   children,
   fallback,
   unstable_shouldRenderPrev,
+  unstable_renderPrev,
 }: {
   id: string;
   children?: ReactNode;
   fallback?: ReactNode;
-  unstable_shouldRenderPrev?: (err: unknown) => boolean;
+  unstable_shouldRenderPrev?: (
+    err: unknown,
+    prevElements: Record<string, ReactNode>,
+  ) => boolean;
+  unstable_renderPrev?: boolean;
 }) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
     throw new Error('Missing Root component');
   }
-  const renderSlot = (elements: Record<string, ReactNode>) => {
+  const renderSlot = (elements: Record<string, ReactNode>, err?: unknown) => {
     if (!(id in elements)) {
       if (fallback) {
+        if (err) {
+          // HACK I'm not sure if this is the right way
+          return createElement(
+            ChildrenContextProvider,
+            { value: createElement(InnerErr, { err }) },
+            fallback,
+          );
+        }
         return fallback;
       }
       throw new Error('Not found: ' + id);
@@ -309,11 +331,17 @@ export const Slot = ({
       elements[id],
     );
   };
+  if (unstable_renderPrev) {
+    if (!elementsPromise.prev) {
+      throw new Error('Missing prev elements');
+    }
+    return renderSlot(elementsPromise.prev);
+  }
   return createElement(
     OuterSlot,
     {
       elementsPromise,
-      shouldRenderPrev: unstable_shouldRenderPrev,
+      unstable_shouldRenderPrev,
       renderSlot,
     },
     createElement(InnerSlot, { elementsPromise, renderSlot }),

@@ -302,13 +302,13 @@ export function new_defineRouter(fns: {
   ) => Promise<{
     routeElement: ReactNode;
     elements: Record<SlotId, ReactNode>;
+    fallbackElement?: ReactNode;
   }>;
 }): ReturnType<typeof defineEntries> {
   const platformObject = unstable_getPlatformObject();
   type MyPathConfig = {
     pattern: string;
     pathname: PathSpec;
-    isStaticRouteElement: boolean;
     staticElementIds: SlotId[];
     isStatic?: boolean | undefined;
     specs: { noSsr?: boolean; is404: boolean };
@@ -328,7 +328,6 @@ export function new_defineRouter(fns: {
         return {
           pattern: item.pattern,
           pathname: item.path,
-          isStaticRouteElement: !!item.routeElement.isStatic,
           staticElementIds: Object.entries(item.elements).flatMap(
             ([id, { isStatic }]) => (isStatic ? [id] : []),
           ),
@@ -393,7 +392,7 @@ export function new_defineRouter(fns: {
       return null;
     }
     const { query, skip } = parseRscParams(rscParams);
-    const { routeElement, elements } = await fns.renderRoute(
+    const { routeElement, elements, fallbackElement } = await fns.renderRoute(
       pathname,
       pathStatus.isStatic ? {} : { query },
     );
@@ -405,6 +404,10 @@ export function new_defineRouter(fns: {
     const entries = {
       ...elements,
       [ROUTE_SLOT_ID_PREFIX + pathname]: routeElement,
+      ...((fallbackElement ? { fallback: fallbackElement } : {}) as Record<
+        string,
+        ReactNode
+      >),
     };
     for (const skipId of await filterEffectiveSkip(pathname, skip)) {
       delete entries[skipId];
