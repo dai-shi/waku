@@ -272,7 +272,9 @@ const InnerSlot = ({
   return renderSlot(elements);
 };
 
-const InnerErr = ({ err }: { err: unknown }) => {
+const ErrorContext = createContext<unknown>(undefined);
+export const ThrowError_UNSTABLE = () => {
+  const err = use(ErrorContext);
   throw err;
 };
 
@@ -315,11 +317,7 @@ export const Slot = ({
       if (fallback) {
         if (err) {
           // HACK I'm not sure if this is the right way
-          return createElement(
-            ChildrenContextProvider,
-            { value: createElement(InnerErr, { err }) },
-            fallback,
-          );
+          return createElement(ErrorContext.Provider, { value: err }, fallback);
         }
         return fallback;
       }
