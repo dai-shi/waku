@@ -826,11 +826,14 @@ export const new_createPages = <
           { id: 'root' },
           createNestedElements(routeChildren),
         ),
-        // TEMP experimenting with fallbackElement
+        // HACK this is hard-coded convention
+        // FIXME we should revisit the error boundary use case design
         fallbackElement: createElement(
           Slot,
           { id: 'root', unstable_renderPrev: true },
-          createElement('h1', null, 'fallback element'),
+          layoutPaths.includes('/')
+            ? createElement(Slot, { id: 'layout:/', unstable_renderPrev: true })
+            : null,
         ),
       };
     },
