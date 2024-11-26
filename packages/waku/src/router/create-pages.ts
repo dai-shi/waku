@@ -588,7 +588,7 @@ export const new_createPages = <
           }
         });
         staticPathMap.set(
-          page.path,
+          '/' + pathItems.join('/'),
           pathItems.map((name) => ({ type: 'literal', name })),
         );
         const id = joinPath(...pathItems, 'page');
