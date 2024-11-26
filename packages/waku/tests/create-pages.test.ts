@@ -829,6 +829,56 @@ describe('createPages', () => {
     expect(TestPage).toHaveBeenCalledWith({ path: ['a', 'b'] }, undefined);
   });
 
+  it('creates multiple static pages with wildcards', async () => {
+    const TestPage = vi.fn();
+    createPages(async ({ createPage }) => [
+      createPage({
+        render: 'static',
+        path: '/test/[...path]',
+        staticPaths: [[], ['hi'], ['a', 'b']],
+        component: TestPage,
+      }),
+    ]);
+    const { getPathConfig, getComponent } = injectedFunctions();
+    expect(await getPathConfig()).toEqual([
+      {
+        pattern: '^/test/(.*)$',
+        path: [{ type: 'literal', name: 'test' }],
+        isStatic: true,
+        noSsr: false,
+      },
+      {
+        pattern: '^/test/(.*)$',
+        path: [
+          { type: 'literal', name: 'test' },
+          { type: 'literal', name: 'hi' },
+        ],
+        isStatic: true,
+        noSsr: false,
+      },
+      {
+        pattern: '^/test/(.*)$',
+        path: [
+          { type: 'literal', name: 'test' },
+          { type: 'literal', name: 'a' },
+          { type: 'literal', name: 'b' },
+        ],
+        isStatic: true,
+        noSsr: false,
+      },
+    ]);
+    const setShouldSkip = vi.fn();
+    const WrappedComponent = await getComponent('test/a/b/page', {
+      unstable_setShouldSkip: setShouldSkip,
+    });
+    assert(WrappedComponent);
+    expect(setShouldSkip).toHaveBeenCalledTimes(1);
+    expect(setShouldSkip).toHaveBeenCalledWith([]);
+    renderToString(createElement(WrappedComponent as any));
+    expect(TestPage).toHaveBeenCalledTimes(1);
+    expect(TestPage).toHaveBeenCalledWith({ path: ['a', 'b'] }, undefined);
+  });
+
   it('creates a dynamic page with wildcards', async () => {
     const TestPage = vi.fn();
     createPages(async ({ createPage }) => [
