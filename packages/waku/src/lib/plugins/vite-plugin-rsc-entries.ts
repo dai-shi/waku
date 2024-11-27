@@ -41,9 +41,7 @@ globalThis.__WAKU_CLIENT_IMPORT__ = (id) => loadModule('${opts.ssrDir}/' + id);
     configResolved(config) {
       entriesFile = joinPath(config.root, opts.srcDir, SRC_ENTRIES);
       if (existsSync(CONFIG_FILE)) {
-        const file = normalizePath(
-          path.relative(path.dirname(entriesFile), path.resolve(CONFIG_FILE)),
-        );
+        const file = normalizePath(path.resolve(CONFIG_FILE));
         codeToAppend += `
 export const loadConfig = async () => (await import('${file}')).default;
 `;
@@ -60,7 +58,7 @@ export const loadConfig = async () => ({});
       ) {
         return codeToPrepend + code;
       }
-      if (stripExt(id) === entriesFile) {
+      if (stripExt(id).endsWith(entriesFile)) {
         return code + codeToAppend;
       }
     },
