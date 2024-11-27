@@ -455,6 +455,7 @@ describe('createPages', () => {
     });
     expect(route).toBeDefined();
     expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test']);
   });
 
   it('creates a simple dynamic page', async () => {
@@ -489,6 +490,7 @@ describe('createPages', () => {
     });
     expect(route).toBeDefined();
     expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test']);
   });
 
   it('creates a simple static page with a layout', async () => {
@@ -531,6 +533,11 @@ describe('createPages', () => {
     });
     expect(route).toBeDefined();
     expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual([
+      'root',
+      'page:/test',
+      'layout:/',
+    ]);
   });
 
   it('creates a simple dynamic page with a layout', async () => {
@@ -574,6 +581,11 @@ describe('createPages', () => {
     });
     expect(route).toBeDefined();
     expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual([
+      'root',
+      'page:/test',
+      'layout:/',
+    ]);
   });
 
   it('creates a nested static page', async () => {
@@ -612,6 +624,7 @@ describe('createPages', () => {
     });
     expect(route).toBeDefined();
     expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/nested']);
   });
 
   it('creates a nested dynamic page', async () => {
@@ -651,6 +664,7 @@ describe('createPages', () => {
     });
     expect(route).toBeDefined();
     expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/nested']);
   });
 
   it('creates a static page with slugs', async () => {
@@ -720,6 +734,7 @@ describe('createPages', () => {
     });
     expect(route).toBeDefined();
     expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/y/z']);
   });
 
   it('creates a dynamic page with slugs', async () => {
@@ -762,6 +777,7 @@ describe('createPages', () => {
     });
     expect(route).toBeDefined();
     expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/[a]/[b]']);
   });
 
   it('creates a static page with wildcards', async () => {
@@ -805,6 +821,7 @@ describe('createPages', () => {
     });
     expect(route).toBeDefined();
     expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/a/b']);
   });
 
   it('creates a dynamic page with wildcards', async () => {
@@ -843,6 +860,10 @@ describe('createPages', () => {
     });
     expect(route).toBeDefined();
     expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual([
+      'root',
+      'page:/test/[...path]',
+    ]);
   });
 
   it('fails if static paths do not match the slug pattern', async () => {
@@ -1303,5 +1324,9 @@ describe('createPages', () => {
     });
     assert(route);
     expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual([
+      'root',
+      'page:/server/two/[echo]/[echo2]',
+    ]);
   });
 });
