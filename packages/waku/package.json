@@ -92,7 +92,7 @@
     "dotenv": "16.4.5",
     "hono": "4.6.9",
     "rsc-html-stream": "0.0.3",
-    "vite": "6.0.0-beta.10"
+    "vite": "6.0.0"
   },
   "devDependencies": {
     "@netlify/functions": "^2.8.2",
