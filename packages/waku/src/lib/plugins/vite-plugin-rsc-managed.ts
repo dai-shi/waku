@@ -1,21 +1,21 @@
 import type { Plugin } from 'vite';
 
 import { EXTENSIONS, SRC_MAIN, SRC_ENTRIES } from '../constants.js';
-import { extname, joinPath } from '../utils/path.js';
+import { extname, joinPath, filePathToFileURL } from '../utils/path.js';
 
 const stripExt = (fname: string) => {
   const ext = extname(fname);
   return ext ? fname.slice(0, -ext.length) : fname;
 };
 
-const getManagedEntries = () => `
+const getManagedEntries = (filePath: string, srcDir: string) => `
 import { fsRouter } from 'waku/router/server';
 
 export default fsRouter(
-  import.meta.url,
-  (file) => import.meta.glob('./pages/**/*.{${EXTENSIONS.map((ext) =>
+  '${filePathToFileURL(filePath)}',
+  (file) => import.meta.glob('/${srcDir}/pages/**/*.{${EXTENSIONS.map((ext) =>
     ext.replace(/^\./, ''),
-  ).join(',')}}')[\`./pages/\${file}\`]?.(),
+  ).join(',')}}')[\`/${srcDir}/pages/\${file}\`]?.(),
 );
 `;
 
@@ -81,7 +81,7 @@ export function rscManagedPlugin(opts: {
     },
     load(id) {
       if (id === '\0' + entriesFile + '.js') {
-        return getManagedEntries();
+        return getManagedEntries(entriesFile + '.js', opts.srcDir);
       }
       if (id === '\0' + mainFile + '.js' || id === '\0' + mainPath + '.js') {
         return getManagedMain();
