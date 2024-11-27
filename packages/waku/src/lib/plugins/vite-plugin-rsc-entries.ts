@@ -60,7 +60,7 @@ export const loadConfig = async () => ({});
       ) {
         return codeToPrepend + code;
       }
-      if (stripExt(id) === entriesFile) {
+      if (stripExt(id).endsWith(entriesFile)) {
         return code + codeToAppend;
       }
     },
