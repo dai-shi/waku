@@ -20,15 +20,11 @@ export default fsRouter(
 `;
 
 const getManagedMain = () => `
-import { StrictMode } from 'react';
+import { StrictMode, createElement } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { Router } from 'waku/router/client';
 
-const rootElement = (
-  <StrictMode>
-    <Router />
-  </StrictMode>
-);
+const rootElement = createElement(StrictMode, null, createElement(Router));
 
 if (globalThis.__WAKU_HYDRATE__) {
   hydrateRoot(document, rootElement);
@@ -73,21 +69,21 @@ export function rscManagedPlugin(opts: {
       const resolved = await this.resolve(id, importer, options);
       if (!resolved || resolved.id === id) {
         if (id === entriesFile) {
-          return '\0' + entriesFile + '.jsx';
+          return '\0' + entriesFile + '.js';
         }
         if (id === mainFile) {
-          return '\0' + mainFile + '.jsx';
+          return '\0' + mainFile + '.js';
         }
         if (stripExt(id) === mainPath) {
-          return '\0' + mainPath + '.jsx';
+          return '\0' + mainPath + '.js';
         }
       }
     },
     load(id) {
-      if (id === '\0' + entriesFile + '.jsx') {
+      if (id === '\0' + entriesFile + '.js') {
         return getManagedEntries();
       }
-      if (id === '\0' + mainFile + '.jsx' || id === '\0' + mainPath + '.jsx') {
+      if (id === '\0' + mainFile + '.js' || id === '\0' + mainPath + '.js') {
         return getManagedMain();
       }
     },
