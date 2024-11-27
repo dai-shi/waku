@@ -20,7 +20,7 @@ export default fsRouter(
 `;
 
 const getManagedMain = () => `
-import { Component, StrictMode } from 'react';
+import { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { Router } from 'waku/router/client';
 

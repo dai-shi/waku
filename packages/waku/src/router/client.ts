@@ -322,7 +322,7 @@ const RouterSlot = ({
   fallback?: ReactNode;
   children?: ReactNode;
 }) => {
-  const unstable_shouldRenderPrev = (_err: unknown) => {
+  const unstable_shouldRenderPrev = () => {
     const shouldSkip = routerData[0];
     const skip = getSkipList(shouldSkip, [id], route, cachedRef.current);
     return skip.length > 0;
@@ -651,14 +651,11 @@ const getRouteSlotId = (path: string) => 'route:' + path;
 const NewInnerRouter = ({
   routerData,
   initialRoute,
-  cachedIdSetRef,
-  staticPathSetRef,
 }: {
-  routerData: RouterData;
+  routerData: Required<NewRouterData>;
   initialRoute: RouteProps;
-  cachedIdSetRef: MutableRefObject<Set<string>>;
-  staticPathSetRef: MutableRefObject<Set<string>>;
 }) => {
+  const [cachedIdSet, staticPathSet, locationListeners] = routerData;
   const refetch = useRefetch();
   const [route, setRoute] = useState(() => ({
     // This is the first initialization of the route, and it has
@@ -688,31 +685,31 @@ const NewInnerRouter = ({
       startTransition(() => {
         setRoute(route);
       });
-      if (staticPathSetRef.current.has(route.path)) {
+      if (staticPathSet.has(route.path)) {
         return;
       }
       if (!skipRefetch) {
-        const skip = Array.from(cachedIdSetRef.current);
+        const skip = Array.from(cachedIdSet);
         const rscPath = encodeRoutePath(route.path);
         const rscParams = createRscParams(route.query, skip);
         refetch(rscPath, rscParams);
       }
     },
-    [refetch, cachedIdSetRef, staticPathSetRef],
+    [refetch, cachedIdSet, staticPathSet],
   );
 
   const prefetchRoute: PrefetchRoute = useCallback(
     (route) => {
-      if (staticPathSetRef.current.has(route.path)) {
+      if (staticPathSet.has(route.path)) {
         return;
       }
-      const skip = Array.from(cachedIdSetRef.current);
+      const skip = Array.from(cachedIdSet);
       const rscPath = encodeRoutePath(route.path);
       const rscParams = createRscParams(route.query, skip);
       prefetchRsc(rscPath, rscParams);
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(route.path);
     },
-    [cachedIdSetRef, staticPathSetRef],
+    [cachedIdSet, staticPathSet],
   );
 
   useEffect(() => {
@@ -744,12 +741,11 @@ const NewInnerRouter = ({
       }
       changeRoute(parseRoute(url), { skipRefetch: true });
     };
-    const listeners = (routerData[1] ||= new Set());
-    listeners.add(callback);
+    locationListeners.add(callback);
     return () => {
-      listeners.delete(callback);
+      locationListeners.delete(callback);
     };
-  }, [changeRoute, routerData]);
+  }, [changeRoute, locationListeners]);
 
   useEffect(() => {
     const { hash } = window.location;
@@ -762,7 +758,16 @@ const NewInnerRouter = ({
     });
   });
 
-  const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
+  const routeElement = createElement(Slot, {
+    id: getRouteSlotId(route.path),
+    unstable_shouldRenderPrev: (_err, prevElements) =>
+      // HACK this might not work in some cases
+      'fallback' in prevElements,
+    fallback: createElement(Slot, {
+      id: 'fallback',
+      unstable_renderPrev: true,
+    }),
+  });
 
   return createElement(
     RouterContext.Provider,
@@ -771,14 +776,25 @@ const NewInnerRouter = ({
   );
 };
 
+// Note: The router data must be a stable mutable object (array).
+type NewRouterData = [
+  cachedIdSet?: Set<string>,
+  staticPathSet?: Set<string>,
+  locationListeners?: Set<(path: string, query: string) => void>,
+  has404?: boolean,
+];
+
+const DEFAULT_NEW_ROUTER_DATA: NewRouterData = [];
+
 export function NewRouter({
-  routerData = DEFAULT_ROUTER_DATA,
+  routerData = DEFAULT_NEW_ROUTER_DATA,
   initialRoute = parseRouteFromLocation(),
 }) {
   const initialRscPath = encodeRoutePath(initialRoute.path);
-  // FIXME cachedIdSetRef and staticPathSetRef should be initialized from the initial RSC payload
-  const cachedIdSetRef = useRef(new Set<string>());
-  const staticPathSetRef = useRef(new Set<string>());
+  const cachedIdSet = (routerData[0] ||= new Set());
+  const staticPathSet = (routerData[1] ||= new Set());
+  const locationListeners = (routerData[2] ||= new Set());
+  const has404 = (routerData[3] ||= false);
   const unstable_enhanceCreateData =
     (
       createData: (
@@ -787,7 +803,6 @@ export function NewRouter({
     ) =>
     async (responsePromise: Promise<Response>) => {
       const response = await responsePromise;
-      const has404 = routerData[2];
       if (response.status === 404 && has404) {
         // HACK this is still an experimental logic. It's very fragile.
         // FIXME we should cache it if 404.txt is static.
@@ -808,19 +823,20 @@ export function NewRouter({
               // FIXME this check here seems ad-hoc (less readable code)
               if (
                 window.location.pathname !== path ||
-                window.location.search.replace(/^\?/, '') !== query
+                (!isStatic &&
+                  window.location.search.replace(/^\?/, '') !== query)
               ) {
-                routerData[1]?.forEach((listener) => listener(path, query));
+                locationListeners.forEach((listener) => listener(path, query));
               }
               if (isStatic) {
-                staticPathSetRef.current.add(path);
+                staticPathSet.add(path);
               }
             }
             if (has404) {
-              routerData[2] = true;
+              routerData[3] = true;
             }
             Object.keys(rest).forEach((id) => {
-              cachedIdSetRef.current.add(id);
+              cachedIdSet.add(id);
             });
           }
         })
@@ -835,10 +851,8 @@ export function NewRouter({
       Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
       { initialRscPath, initialRscParams, unstable_enhanceCreateData },
       createElement(NewInnerRouter, {
-        routerData,
+        routerData: routerData as Required<NewRouterData>,
         initialRoute,
-        cachedIdSetRef,
-        staticPathSetRef,
       }),
     ),
   );

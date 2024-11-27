@@ -13,7 +13,7 @@ export const ContextConsumer = () => {
   return (
     <>
       {mounted && <div data-testid="mounted">true</div>}
-      <div data-testid="value">{value}</div>;
+      <div data-testid="value">{value}</div>
     </>
   );
 };
