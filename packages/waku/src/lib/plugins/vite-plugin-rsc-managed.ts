@@ -46,8 +46,6 @@ export function rscManagedPlugin(opts: {
   let entriesFile: string | undefined;
   let mainFile: string | undefined;
   const mainPath = `${opts.basePath}${opts.srcDir}/${SRC_MAIN}`;
-  let managedEntries = false;
-  let managedMain = false;
   return {
     name: 'rsc-managed-plugin',
     enforce: 'pre',
@@ -73,28 +71,23 @@ export function rscManagedPlugin(opts: {
     },
     async resolveId(id, importer, options) {
       const resolved = await this.resolve(id, importer, options);
-      if ((!resolved || resolved.id === id) && id === entriesFile) {
-        managedEntries = true;
-        return entriesFile + '.jsx';
+      if (!resolved || resolved.id === id) {
+        if (id === entriesFile) {
+          return '\0' + entriesFile + '.jsx';
+        }
+        if (id === mainFile) {
+          return '\0' + mainFile + '.jsx';
+        }
+        if (stripExt(id) === mainPath) {
+          return '\0' + mainPath + '.jsx';
+        }
       }
-      if ((!resolved || resolved.id === id) && id === mainFile) {
-        managedMain = true;
-        return mainFile + '.jsx';
-      }
-      if ((!resolved || resolved.id === id) && stripExt(id) === mainPath) {
-        managedMain = true;
-        return mainPath + '.jsx';
-      }
-      return resolved;
     },
     load(id) {
-      if (managedEntries && id === entriesFile + '.jsx') {
+      if (id === '\0' + entriesFile + '.jsx') {
         return getManagedEntries();
       }
-      if (
-        managedMain &&
-        (id === mainFile + '.jsx' || id === mainPath + '.jsx')
-      ) {
+      if (id === '\0' + mainFile + '.jsx' || id === '\0' + mainPath + '.jsx') {
         return getManagedMain();
       }
     },
