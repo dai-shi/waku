@@ -386,6 +386,7 @@ export function new_defineRouter(fns: {
     });
   };
   const renderEntries: RenderEntries = async (rscPath, { rscParams }) => {
+    const startHeap = process.memoryUsage();
     const pathname = decodeRoutePath(rscPath);
     const pathStatus = await existsPath(pathname);
     if (!pathStatus.found) {
@@ -417,6 +418,13 @@ export function new_defineRouter(fns: {
     if (pathStatus.has404) {
       entries[HAS404_ID] = true;
     }
+    const endHeap = process.memoryUsage();
+    console.log(`Path: ${rscPath}`);
+    console.log(
+      `Heap change: ${(endHeap.heapUsed - startHeap.heapUsed) / 1024 / 1024} MB`,
+    );
+    console.log(`Total heap: ${endHeap.heapUsed / 1024 / 1024} MB`);
+    console.log('---');
     return entries;
   };
 
