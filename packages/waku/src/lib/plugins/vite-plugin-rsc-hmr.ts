@@ -126,6 +126,10 @@ export function rscHmrPlugin(): Plugin {
       }
     },
     handleHotUpdate({ file }) {
+      if (file.endsWith('/pages.gen.ts')) {
+        // auto generated file by fsRouterTypegenPlugin
+        return [];
+      }
       const moduleLoading = (globalThis as any).__WAKU_CLIENT_MODULE_LOADING__;
       const moduleCache = (globalThis as any).__WAKU_CLIENT_MODULE_CACHE__;
       if (!moduleLoading || !moduleCache) {

@@ -77,6 +77,10 @@ export function rscDelegatePlugin(
     },
     async handleHotUpdate(ctx) {
       if (mode === 'development') {
+        if (ctx.file.endsWith('/pages.gen.ts')) {
+          // auto generated file by fsRouterTypegenPlugin
+          return [];
+        }
         await updateAllStyles(); // FIXME is this too aggressive?
         if (moduleImports.has(ctx.file)) {
           // re-inject
