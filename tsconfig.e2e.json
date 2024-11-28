@@ -47,6 +47,9 @@
     },
     {
       "path": "./e2e/fixtures/broken-links/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/hot-reload/tsconfig.json"
     }
   ]
 }
