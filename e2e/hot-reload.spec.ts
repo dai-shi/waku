@@ -69,12 +69,14 @@ test.describe('hot reload', () => {
     await expect(page.getByTestId('count')).toHaveText('1');
     await modifyFile('src/pages/index.tsx', 'Home Page', 'Modified Page');
     await page.waitForTimeout(100);
+    await expect(page.getByText('Home Page')).toBeHidden();
     await expect(page.getByText('Modified Page')).toBeVisible();
     await expect(page.getByTestId('count')).toHaveText('1');
     await page.getByTestId('increment').click();
     await expect(page.getByTestId('count')).toHaveText('2');
     await modifyFile('src/components/counter.tsx', 'Increment', 'Plus One');
     await page.waitForTimeout(100);
+    await expect(page.getByText('Increment')).toBeHidden();
     await expect(page.getByText('Plus One')).toBeVisible();
     await expect(page.getByTestId('count')).toHaveText('2');
     await page.getByTestId('increment').click();
