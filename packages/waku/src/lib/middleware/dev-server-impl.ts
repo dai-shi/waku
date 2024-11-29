@@ -109,9 +109,7 @@ const createMainViteServer = (
         rscIndexPlugin(config),
         rscTransformPlugin({ isClient: true, isBuild: false }),
         rscHmrPlugin(),
-        ...('FIXME disabled for now'.length
-          ? []
-          : [fsRouterTypegenPlugin(config)]),
+        fsRouterTypegenPlugin(config),
       ],
       optimizeDeps: {
         include: ['react-server-dom-webpack/client', 'react-dom'],
