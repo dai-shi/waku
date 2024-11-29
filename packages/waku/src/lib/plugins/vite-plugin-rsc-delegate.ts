@@ -81,9 +81,6 @@ export function rscDelegatePlugin(
           // auto generated file by fsRouterTypegenPlugin
           return [];
         }
-        if (ctx.file.includes('pages.gen')) {
-          throw new Error('Unexpected ctx.file: ' + ctx.file);
-        }
         await updateAllStyles(); // FIXME is this too aggressive?
         if (moduleImports.has(ctx.file)) {
           // re-inject
