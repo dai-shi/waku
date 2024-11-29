@@ -150,9 +150,7 @@ export async function renderRsc(
     fn: (...args: unknown[]) => unknown,
     args: unknown[],
   ) => {
-    let elementsPromise: Promise<Record<string, ReactNode>> = Promise.resolve(
-      {},
-    );
+    const elements: Record<string, ReactNode> = {};
     let rendered = false;
     const renderStore = {
       context: context || {},
@@ -160,23 +158,15 @@ export async function renderRsc(
         if (rendered) {
           throw new Error('already rendered');
         }
-        elementsPromise = Promise.all([
-          elementsPromise,
-          renderEntries(rscPath, { rscParams }),
-        ]).then(([oldElements, newElements]) => {
-          if (newElements === null) {
-            console.warn('renderEntries returned null');
-          }
-          return {
-            ...oldElements,
-            ...newElements,
-          };
-        });
+        const newElements = await renderEntries(rscPath, { rscParams });
+        if (newElements === null) {
+          console.warn('renderEntries returned null');
+        }
+        Object.assign(elements, newElements);
       },
     };
     return runWithRenderStoreInternal(renderStore, async () => {
       const value = await fn(...args);
-      const elements = await elementsPromise;
       rendered = true;
       if (Object.keys(elements).some((key) => key.startsWith('_'))) {
         throw new Error('"_" prefix is reserved');

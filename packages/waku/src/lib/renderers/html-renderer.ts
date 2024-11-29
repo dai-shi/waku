@@ -189,6 +189,7 @@ export const renderHtml = async (
       }
   ),
 ): Promise<ReadableStream | null> => {
+  // console.log('renderHTML', process.memoryUsage().heapTotal / 1024 / 1024);
   const {
     config,
     pathname,

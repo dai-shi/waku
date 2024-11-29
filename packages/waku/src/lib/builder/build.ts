@@ -77,6 +77,7 @@ import { deployCloudflarePlugin } from '../plugins/vite-plugin-deploy-cloudflare
 import { deployDenoPlugin } from '../plugins/vite-plugin-deploy-deno.js';
 import { deployPartykitPlugin } from '../plugins/vite-plugin-deploy-partykit.js';
 import { deployAwsLambdaPlugin } from '../plugins/vite-plugin-deploy-aws-lambda.js';
+import { writeFileSync } from 'node:fs';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -528,6 +529,9 @@ const willEmitPublicIndexHtml = async (
   }
 };
 
+// we write a max of 2500 pages at a time to avoid OOM
+const PAGE_SLICE_SIZE = 2500;
+
 const emitHtmlFiles = async (
   rootDir: string,
   env: Record<string, string>,
@@ -559,104 +563,112 @@ const emitHtmlFiles = async (
     /.*?<head>(.*?)<\/head>.*/s,
     '$1',
   );
+  const handlePage = async ({
+    pathname,
+    isStatic,
+    entries,
+    customCode,
+    context,
+  }: BuildConfig[number]) => {
+    const pathSpec =
+      typeof pathname === 'string' ? pathname2pathSpec(pathname) : pathname;
+    let htmlStr = publicIndexHtml;
+    let htmlHead = publicIndexHtmlHead;
+    if (cssAssets.length) {
+      const cssStr = cssAssets
+        .map(
+          (asset) =>
+            `<link rel="stylesheet" href="${config.basePath}${asset}">`,
+        )
+        .join('\n');
+      // HACK is this too naive to inject style code?
+      htmlStr = htmlStr.replace(/<\/head>/, cssStr);
+      htmlHead += cssStr;
+    }
+    const rscPathsForPrefetch = new Set<string>();
+    const moduleIdsForPrefetch = new Set<string>();
+    for (const { rscPath, skipPrefetch } of entries || []) {
+      if (!skipPrefetch) {
+        rscPathsForPrefetch.add(rscPath);
+        for (const id of getClientModules(rscPath)) {
+          moduleIdsForPrefetch.add(id);
+        }
+      }
+    }
+    const code =
+      generatePrefetchCode(
+        basePrefix,
+        rscPathsForPrefetch,
+        moduleIdsForPrefetch,
+      ) + (customCode || '');
+    if (code) {
+      // HACK is this too naive to inject script code?
+      htmlStr = htmlStr.replace(
+        /<\/head>/,
+        `<script type="module" async>${code}</script></head>`,
+      );
+      htmlHead += `<script type="module" async>${code}</script>`;
+    }
+    if (!isStatic) {
+      dynamicHtmlPathMap.set(pathSpec, htmlHead);
+      return;
+    }
+    const pathFromSpec = pathSpec2pathname(pathSpec);
+    const destHtmlFile = joinPath(
+      rootDir,
+      config.distDir,
+      DIST_PUBLIC,
+      extname(pathFromSpec)
+        ? pathFromSpec
+        : pathFromSpec === '/404'
+          ? '404.html' // HACK special treatment for 404, better way?
+          : pathFromSpec + '/index.html',
+    );
+    // In partial mode, skip if the file already exists.
+    if (existsSync(destHtmlFile)) {
+      return;
+    }
+    const htmlReadable = await renderHtml({
+      config,
+      pathname: pathFromSpec,
+      searchParams: new URLSearchParams(),
+      htmlHead,
+      renderRscForHtml: (rscPath, rscParams) =>
+        renderRsc(
+          { env, config, rscPath, context, decodedBody: rscParams },
+          { isDev: false, entries: distEntries },
+        ),
+      getSsrConfigForHtml: (pathname, searchParams) =>
+        getSsrConfig(
+          { env, config, pathname, searchParams },
+          { isDev: false, entries: distEntries },
+        ),
+      isDev: false,
+      loadModule: distEntries.loadModule,
+    });
+    await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
+    if (htmlReadable) {
+      await pipeline(
+        Readable.fromWeb(htmlReadable as any),
+        createWriteStream(destHtmlFile),
+      );
+    } else {
+      writeFileSync(destHtmlFile, htmlStr);
+    }
+  };
+
   const dynamicHtmlPathMap = new Map<PathSpec, string>();
-  await Promise.all(
-    Array.from(buildConfig).map(
-      async ({ pathname, isStatic, entries, customCode, context }) => {
-        const pathSpec =
-          typeof pathname === 'string' ? pathname2pathSpec(pathname) : pathname;
-        let htmlStr = publicIndexHtml;
-        let htmlHead = publicIndexHtmlHead;
-        if (cssAssets.length) {
-          const cssStr = cssAssets
-            .map(
-              (asset) =>
-                `<link rel="stylesheet" href="${config.basePath}${asset}">`,
-            )
-            .join('\n');
-          // HACK is this too naive to inject style code?
-          htmlStr = htmlStr.replace(/<\/head>/, cssStr);
-          htmlHead += cssStr;
-        }
-        const rscPathsForPrefetch = new Set<string>();
-        const moduleIdsForPrefetch = new Set<string>();
-        for (const { rscPath, skipPrefetch } of entries || []) {
-          if (!skipPrefetch) {
-            rscPathsForPrefetch.add(rscPath);
-            for (const id of getClientModules(rscPath)) {
-              moduleIdsForPrefetch.add(id);
-            }
-          }
-        }
-        const code =
-          generatePrefetchCode(
-            basePrefix,
-            rscPathsForPrefetch,
-            moduleIdsForPrefetch,
-          ) + (customCode || '');
-        if (code) {
-          // HACK is this too naive to inject script code?
-          htmlStr = htmlStr.replace(
-            /<\/head>/,
-            `<script type="module" async>${code}</script></head>`,
-          );
-          htmlHead += `<script type="module" async>${code}</script>`;
-        }
-        if (!isStatic) {
-          dynamicHtmlPathMap.set(pathSpec, htmlHead);
-          return;
-        }
-        pathname = pathSpec2pathname(pathSpec);
-        const destHtmlFile = joinPath(
-          rootDir,
-          config.distDir,
-          DIST_PUBLIC,
-          extname(pathname)
-            ? pathname
-            : pathname === '/404'
-              ? '404.html' // HACK special treatment for 404, better way?
-              : pathname + '/index.html',
-        );
-        // In partial mode, skip if the file already exists.
-        if (existsSync(destHtmlFile)) {
-          return;
-        }
-        const htmlReadable = await renderHtml({
-          config,
-          pathname,
-          searchParams: new URLSearchParams(),
-          htmlHead,
-          renderRscForHtml: (rscPath, rscParams) =>
-            renderRsc(
-              { env, config, rscPath, context, decodedBody: rscParams },
-              { isDev: false, entries: distEntries },
-            ),
-          getSsrConfigForHtml: (pathname, searchParams) =>
-            getSsrConfig(
-              { env, config, pathname, searchParams },
-              { isDev: false, entries: distEntries },
-            ),
-          isDev: false,
-          loadModule: distEntries.loadModule,
-        });
-        await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
-        if (htmlReadable) {
-          await pipeline(
-            Readable.fromWeb(htmlReadable as any),
-            createWriteStream(destHtmlFile),
-          );
-        } else {
-          await writeFile(destHtmlFile, htmlStr);
-        }
-      },
-    ),
-  );
+  for (let start = 0; start * PAGE_SLICE_SIZE < buildConfig.length; start++) {
+    const end = start * PAGE_SLICE_SIZE + PAGE_SLICE_SIZE;
+    await Promise.all(buildConfig.slice(start, end).map(handlePage));
+  }
+
   const dynamicHtmlPaths = Array.from(dynamicHtmlPathMap);
-  const code = `
+  const endCode = `
 export const dynamicHtmlPaths = ${JSON.stringify(dynamicHtmlPaths)};
 export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
 `;
-  await appendFile(distEntriesFile, code);
+  await appendFile(distEntriesFile, endCode);
 };
 
 // FIXME this is too hacky
