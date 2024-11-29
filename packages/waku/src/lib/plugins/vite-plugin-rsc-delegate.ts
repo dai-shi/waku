@@ -77,10 +77,6 @@ export function rscDelegatePlugin(
     },
     async handleHotUpdate(ctx) {
       if (mode === 'development') {
-        if (ctx.file.endsWith('/pages.gen.ts')) {
-          // auto generated file by fsRouterTypegenPlugin
-          return [];
-        }
         await updateAllStyles(); // FIXME is this too aggressive?
         if (moduleImports.has(ctx.file)) {
           // re-inject
@@ -100,6 +96,7 @@ export function rscDelegatePlugin(
           callback({ type: 'custom', event: 'rsc-reload' });
         }
       }
+      return [];
     },
     async transform(code, id) {
       // id can contain query string with vite deps optimization
