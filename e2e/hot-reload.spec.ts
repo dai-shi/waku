@@ -28,15 +28,25 @@ async function run() {
   const HMR_PORT = 24678;
   if (!(await isPortAvailable(HMR_PORT))) {
     if (process.platform === 'win32') {
-      const output = execSync(`netstat -ano | findstr :${HMR_PORT}`, {
+      const output = execSync(
+        `for /f "tokens=5" %A in ('netstat -ano ^| findstr :${HMR_PORT} ^| findstr LISTENING') do @echo %A`,
+        {
+          encoding: 'utf8',
+        },
+      );
+      console.info('Win32 output:', output);
+      if (output) {
+        await terminate(parseInt(output));
+      }
+    } else {
+      const output = execSync(`lsof -i:${HMR_PORT} | awk 'NR==2 {print $2}'`, {
         encoding: 'utf8',
       });
-      console.info('Win32: netstat -an output:', output);
-    } else {
-      const output = execSync(`lsof -i:${HMR_PORT}`, { encoding: 'utf8' });
-      console.info('lsof output:', output);
+      console.info('Ubuntu output:', output);
+      if (output) {
+        await terminate(parseInt(output));
+      }
     }
-    throw new Error('HMR port is not available');
   }
   const port = await getFreePort();
   const cp = exec(
