@@ -7,7 +7,13 @@ import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import waitPort from 'wait-port';
 
-import { debugChildProcess, getFreePort, terminate, test } from './utils.js';
+import {
+  debugChildProcess,
+  getFreePort,
+  isPortAvailable,
+  terminate,
+  test,
+} from './utils.js';
 
 let standaloneDir: string;
 const fixtureDir = fileURLToPath(
@@ -19,6 +25,9 @@ const { version } = createRequire(import.meta.url)(
 );
 
 async function run() {
+  if (!(await isPortAvailable(24678))) {
+    throw new Error('HMR port is not available');
+  }
   const port = await getFreePort();
   const cp = exec(
     `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} dev --port ${port}`,
@@ -68,17 +77,24 @@ test.describe('hot reload', () => {
     await page.getByTestId('increment').click();
     await expect(page.getByTestId('count')).toHaveText('1');
     await modifyFile('src/pages/index.tsx', 'Home Page', 'Modified Page');
-    await page.waitForTimeout(100);
     await expect(page.getByText('Modified Page')).toBeVisible();
+    await page.waitForTimeout(500); // need to wait not to full reload
     await expect(page.getByTestId('count')).toHaveText('1');
     await page.getByTestId('increment').click();
     await expect(page.getByTestId('count')).toHaveText('2');
     await modifyFile('src/components/counter.tsx', 'Increment', 'Plus One');
-    await page.waitForTimeout(100);
     await expect(page.getByText('Plus One')).toBeVisible();
+    await page.waitForTimeout(500); // need to wait not to full reload
     await expect(page.getByTestId('count')).toHaveText('2');
     await page.getByTestId('increment').click();
     await expect(page.getByTestId('count')).toHaveText('3');
+    await modifyFile('src/pages/index.tsx', 'Modified Page', 'Edited Page');
+    await expect(page.getByText('Edited Page')).toBeVisible();
+    await page.waitForTimeout(500); // need to wait not to full reload
+    // FIXME the following should pass but not for now.
+    // await expect(page.getByTestId('count')).toHaveText('3');
+    // await page.getByTestId('increment').click();
+    // await expect(page.getByTestId('count')).toHaveText('4');
     await terminate(pid!);
   });
 });
