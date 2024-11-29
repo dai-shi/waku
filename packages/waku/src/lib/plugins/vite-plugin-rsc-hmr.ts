@@ -154,7 +154,7 @@ export function rscHmrPlugin(): Plugin {
 
 const pendingMap = new WeakMap<ReturnType<typeof viteHot>, Set<string>>();
 
-export function viteHot(viteServer: ViteDevServer): HMRBroadcaster {
+function viteHot(viteServer: ViteDevServer): HMRBroadcaster {
   return viteServer.hot ?? viteServer.ws;
 }
 
