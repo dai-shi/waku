@@ -25,9 +25,17 @@ const { version } = createRequire(import.meta.url)(
 );
 
 async function run() {
-  if (!(await isPortAvailable(24678))) {
-    const output = execSync('netstat -an', { encoding: 'utf8' });
-    console.info('netstat -an output:', output);
+  const HMR_PORT = 24678;
+  if (!(await isPortAvailable(HMR_PORT))) {
+    if (process.platform === 'win32') {
+      const output = execSync(`netstat -ano | findstr :${HMR_PORT}`, {
+        encoding: 'utf8',
+      });
+      console.info('Win32: netstat -an output:', output);
+    } else {
+      const output = execSync(`lsof -i:${HMR_PORT}`, { encoding: 'utf8' });
+      console.info('lsof output:', output);
+    }
     throw new Error('HMR port is not available');
   }
   const port = await getFreePort();
