@@ -834,44 +834,52 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, getComponent } = injectedFunctions();
+    const { getPathConfig, renderRoute } = injectedFunctions();
     expect(await getPathConfig()).toEqual([
       {
-        pattern: '^/test/(.*)$',
+        pattern: '^/test$',
         path: [{ type: 'literal', name: 'test' }],
-        isStatic: true,
+        routeElement: { isStatic: true },
+        elements: {
+          root: { isStatic: true },
+          'page:/test': { isStatic: true },
+        },
         noSsr: false,
       },
       {
-        pattern: '^/test/(.*)$',
+        pattern: '^/test/hi$',
         path: [
           { type: 'literal', name: 'test' },
           { type: 'literal', name: 'hi' },
         ],
-        isStatic: true,
+        routeElement: { isStatic: true },
+        elements: {
+          root: { isStatic: true },
+          'page:/test/hi': { isStatic: true },
+        },
         noSsr: false,
       },
       {
-        pattern: '^/test/(.*)$',
+        pattern: '^/test/a/b$',
         path: [
           { type: 'literal', name: 'test' },
           { type: 'literal', name: 'a' },
           { type: 'literal', name: 'b' },
         ],
-        isStatic: true,
+        routeElement: { isStatic: true },
+        elements: {
+          root: { isStatic: true },
+          'page:/test/a/b': { isStatic: true },
+        },
         noSsr: false,
       },
     ]);
-    const setShouldSkip = vi.fn();
-    const WrappedComponent = await getComponent('test/a/b/page', {
-      unstable_setShouldSkip: setShouldSkip,
+    const route = await renderRoute('/test/a/b', {
+      query: '?skip=[]',
     });
-    assert(WrappedComponent);
-    expect(setShouldSkip).toHaveBeenCalledTimes(1);
-    expect(setShouldSkip).toHaveBeenCalledWith([]);
-    renderToString(createElement(WrappedComponent as any));
-    expect(TestPage).toHaveBeenCalledTimes(1);
-    expect(TestPage).toHaveBeenCalledWith({ path: ['a', 'b'] }, undefined);
+    expect(route).toBeDefined();
+    expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/a/b']);
   });
 
   it('creates a dynamic page with wildcards', async () => {
