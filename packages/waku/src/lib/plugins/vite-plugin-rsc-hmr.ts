@@ -135,8 +135,8 @@ export function rscHmrPlugin(): Plugin {
       if (!moduleLoading || !moduleCache) {
         return;
       }
-      if (file.startsWith(viteServer.config.root)) {
-        file = file.slice(viteServer.config.root.length);
+      if (file.startsWith(viteServer.config.root + '/')) {
+        file = file.slice(viteServer.config.root.length + 1);
       }
       const id = filePathToFileURL(file);
       if (moduleLoading.has(id)) {
