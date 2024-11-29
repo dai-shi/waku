@@ -26,6 +26,8 @@ const { version } = createRequire(import.meta.url)(
 
 async function run() {
   if (!(await isPortAvailable(24678))) {
+    const output = execSync('netstat -an', { encoding: 'utf8' });
+    console.info('netstat -an output:', output);
     throw new Error('HMR port is not available');
   }
   const port = await getFreePort();
