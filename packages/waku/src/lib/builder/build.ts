@@ -77,7 +77,6 @@ import { deployCloudflarePlugin } from '../plugins/vite-plugin-deploy-cloudflare
 import { deployDenoPlugin } from '../plugins/vite-plugin-deploy-deno.js';
 import { deployPartykitPlugin } from '../plugins/vite-plugin-deploy-partykit.js';
 import { deployAwsLambdaPlugin } from '../plugins/vite-plugin-deploy-aws-lambda.js';
-import { writeFileSync } from 'node:fs';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -653,7 +652,7 @@ const emitHtmlFiles = async (
         createWriteStream(destHtmlFile),
       );
     } else {
-      writeFileSync(destHtmlFile, htmlStr);
+      await writeFile(destHtmlFile, htmlStr);
     }
   };
 
