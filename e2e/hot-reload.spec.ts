@@ -34,7 +34,6 @@ async function run() {
           encoding: 'utf8',
         },
       );
-      console.info('Win32 output:', output);
       if (output) {
         await terminate(parseInt(output));
       }
@@ -42,7 +41,6 @@ async function run() {
       const output = execSync(`lsof -i:${HMR_PORT} | awk 'NR==2 {print $2}'`, {
         encoding: 'utf8',
       });
-      console.info('Ubuntu output:', output);
       if (output) {
         await terminate(parseInt(output));
       }
