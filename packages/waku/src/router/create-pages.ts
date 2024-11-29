@@ -538,6 +538,9 @@ export const new_createPages = <
     const { numSlugs, numWildcards } = countSlugsAndWildcards(pathSpec);
 
     if (page.render === 'static' && numSlugs === 0) {
+      if (pathMap.has(page.path)) {
+        throw new Error('Duplicated static path: ' + page.path);
+      }
       pathMap.set(page.path, {
         type: 'static',
         pathSpec,
@@ -549,6 +552,9 @@ export const new_createPages = <
       numSlugs > 0 &&
       'staticPaths' in page
     ) {
+      if (pathMap.has(page.path)) {
+        throw new Error('Duplicated static path: ' + page.path);
+      }
       const staticPaths = page.staticPaths.map((item) =>
         (Array.isArray(item) ? item : [item]).map(sanitizeSlug),
       );
