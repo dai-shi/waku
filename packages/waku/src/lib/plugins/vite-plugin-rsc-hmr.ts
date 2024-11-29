@@ -130,6 +130,9 @@ export function rscHmrPlugin(): Plugin {
         // auto generated file by fsRouterTypegenPlugin
         return [];
       }
+      if (file.includes('pages.gen')) {
+        throw new Error('Unexpected file: ' + file);
+      }
       const moduleLoading = (globalThis as any).__WAKU_CLIENT_MODULE_LOADING__;
       const moduleCache = (globalThis as any).__WAKU_CLIENT_MODULE_CACHE__;
       if (!moduleLoading || !moduleCache) {
