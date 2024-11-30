@@ -765,6 +765,8 @@ export const new_createPages = <
           { id: 'root' },
           createNestedElements(routeChildren),
         ),
+        // HACK this is hard-coded convention
+        // FIXME we should revisit the error boundary use case design
         fallbackElement: createElement(
           Slot,
           { id: 'root', unstable_renderPrev: true },
@@ -781,6 +783,7 @@ export const new_createPages = <
   });
 
   return definedRouter as typeof definedRouter & {
+    /** This for type inference of the router only. We do not actually return anything for this type. */
     DO_NOT_USE_pages: Exclude<
       Exclude<Awaited<Exclude<typeof ready, undefined>>, void>[number],
       void
