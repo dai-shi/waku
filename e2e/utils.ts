@@ -21,12 +21,30 @@ const unexpectedErrors: RegExp[] = [
 ];
 
 export async function getFreePort(): Promise<number> {
-  return new Promise<number>((res) => {
+  return new Promise<number>((resolve) => {
     const srv = net.createServer();
     srv.listen(0, () => {
       const port = (srv.address() as net.AddressInfo).port;
-      srv.close(() => res(port));
+      srv.close(() => resolve(port));
     });
+  });
+}
+
+export async function isPortAvailable(port: number): Promise<boolean> {
+  return new Promise<boolean>((resolve, reject) => {
+    const srv = net.createServer();
+    srv.once('error', (err) => {
+      if ((err as any).code === 'EADDRINUSE') {
+        resolve(false);
+      } else {
+        reject(err);
+      }
+    });
+    srv.once('listening', () => {
+      srv.close();
+      resolve(true);
+    });
+    srv.listen(port);
   });
 }
 
