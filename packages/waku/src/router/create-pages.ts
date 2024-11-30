@@ -493,6 +493,17 @@ export const new_createPages = <
       noSsr?: boolean;
     }
   >();
+  /**
+   * lookup from staticPath member to path in pathMap
+   *
+   * For /test/[a]/[b] and staticPaths of [['a', 'b'], ['c', 'd']]
+   * staticPathMap will be:
+   * {
+   *   '/test/a/b': '/test/[a]/[b]',
+   *   '/test/c/d': '/test/[a]/[b]',
+   * }
+   */
+  const staticPathMap = new Map<string, string>();
   const StaticPageWrapper: FunctionComponent<{
     component: FunctionComponent<any>;
     mapping: Record<string, string | string[]>;
@@ -513,8 +524,13 @@ export const new_createPages = <
   const getRoutePath = (path: string): string | undefined => {
     // check static paths first
     for (const [storedPath, config] of pathMap) {
-      if (config.type === 'static' && storedPath === path) {
+      if (config.type !== 'static') {
+        continue;
+      }
+      if (storedPath === path) {
         return storedPath;
+      } else if (staticPathMap.has(path)) {
+        return staticPathMap.get(path)!;
       }
     }
 
@@ -559,23 +575,31 @@ export const new_createPages = <
         (Array.isArray(item) ? item : [item]).map(sanitizeSlug),
       );
 
-      for (const staticPath of staticPaths) {
-        if (staticPath.length !== numSlugs && numWildcards === 0) {
-          throw new Error('staticPaths does not match with slug pattern');
-        }
+      if (staticPaths.some((staticPath) => !staticPath.length)) {
+        throw new Error('staticPaths must not be empty: [] is invalid');
+      }
 
-        const { mapping, path, literalPathSpec } = generateStaticPathMapping(
-          pathSpec,
-          staticPath,
+      const mismatchedStaticPaths = staticPaths.filter(
+        (staticPath) => staticPath.length !== numSlugs && numWildcards === 0,
+      );
+      if (mismatchedStaticPaths.length) {
+        throw new Error(
+          'staticPaths does not match with slug pattern: ' +
+            JSON.stringify(mismatchedStaticPaths),
         );
+      }
 
-        pathMap.set(path, {
-          type: 'static',
-          pathSpec: literalPathSpec,
-          component: page.component,
-          mapping,
-          noSsr: !!page.unstable_disableSSR,
-        });
+      pathMap.set(page.path, {
+        type: 'static',
+        pathSpec,
+        component: page.component,
+
+        noSsr: !!page.unstable_disableSSR,
+      });
+
+      for (const staticPath of staticPaths) {
+        const { path } = generateStaticPathMapping(pathSpec, staticPath);
+        staticPathMap.set(path, page.path);
       }
     } else if (page.render === 'dynamic') {
       const type = numWildcards === 0 ? 'dynamic' : 'wildcard';
@@ -700,7 +724,9 @@ export const new_createPages = <
         ),
       };
 
-      result[`page:${routePath}`] = pageConfig.mapping
+      const pagePath = pageConfig.type === 'static' ? routePath : path;
+
+      result[`page:${pagePath}`] = pageConfig.mapping
         ? createElement(StaticPageWrapper, {
             component: pageConfig.component,
             mapping,
@@ -729,7 +755,7 @@ export const new_createPages = <
           component: Slot,
           props: { id: `layout:${lPath}` },
         })),
-        { component: Slot, props: { id: `page:${routePath}` } },
+        { component: Slot, props: { id: `page:${pagePath}` } },
       ];
 
       return {
