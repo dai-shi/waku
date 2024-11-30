@@ -685,7 +685,7 @@ describe('createPages', () => {
       {
         elements: {
           root: { isStatic: true },
-          'page:/test/w/x': { isStatic: true },
+          'page:/test/[a]/[b]': { isStatic: true },
         },
         routeElement: { isStatic: true },
         noSsr: false,
@@ -695,38 +695,15 @@ describe('createPages', () => {
             type: 'literal',
           },
           {
-            name: 'w',
-            type: 'literal',
+            name: 'a',
+            type: 'group',
           },
           {
-            name: 'x',
-            type: 'literal',
+            name: 'b',
+            type: 'group',
           },
         ],
-        pattern: '^/test/w/x$',
-      },
-      {
-        elements: {
-          root: { isStatic: true },
-          'page:/test/y/z': { isStatic: true },
-        },
-        routeElement: { isStatic: true },
-        noSsr: false,
-        path: [
-          {
-            name: 'test',
-            type: 'literal',
-          },
-          {
-            name: 'y',
-            type: 'literal',
-          },
-          {
-            name: 'z',
-            type: 'literal',
-          },
-        ],
-        pattern: '^/test/y/z$',
+        pattern: '^/test/([^/]+)/([^/]+)$',
       },
     ]);
     const route = await renderRoute('/test/y/z', {
@@ -735,6 +712,64 @@ describe('createPages', () => {
     expect(route).toBeDefined();
     expect(route.routeElement).toBeDefined();
     expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/y/z']);
+  });
+
+  it('creates multiple static pages with wildcards', async () => {
+    const TestPage = vi.fn();
+    createPages(async ({ createPage }) => [
+      createPage({
+        render: 'static',
+        path: '/test/[...path]',
+        staticPaths: [[], ['hi'], ['a', 'b']],
+        component: TestPage,
+      }),
+    ]);
+    const { getPathConfig, renderRoute } = injectedFunctions();
+    expect(await getPathConfig()).toEqual([
+      {
+        pattern: '^/test$',
+        path: [{ type: 'literal', name: 'test' }],
+        routeElement: { isStatic: true },
+        elements: {
+          root: { isStatic: true },
+          'page:/test': { isStatic: true },
+        },
+        noSsr: false,
+      },
+      {
+        pattern: '^/test/hi$',
+        path: [
+          { type: 'literal', name: 'test' },
+          { type: 'literal', name: 'hi' },
+        ],
+        routeElement: { isStatic: true },
+        elements: {
+          root: { isStatic: true },
+          'page:/test/hi': { isStatic: true },
+        },
+        noSsr: false,
+      },
+      {
+        pattern: '^/test/a/b$',
+        path: [
+          { type: 'literal', name: 'test' },
+          { type: 'literal', name: 'a' },
+          { type: 'literal', name: 'b' },
+        ],
+        routeElement: { isStatic: true },
+        elements: {
+          root: { isStatic: true },
+          'page:/test/a/b': { isStatic: true },
+        },
+        noSsr: false,
+      },
+    ]);
+    const route = await renderRoute('/test/a/b', {
+      query: '?skip=[]',
+    });
+    expect(route).toBeDefined();
+    expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/a/b']);
   });
 
   it('creates a dynamic page with slugs', async () => {
