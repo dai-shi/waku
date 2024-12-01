@@ -724,9 +724,7 @@ export const new_createPages = <
         ),
       };
 
-      const pagePath = pageConfig.type === 'static' ? routePath : path;
-
-      result[`page:${pagePath}`] = pageConfig.mapping
+      result[`page:${routePath}`] = pageConfig.mapping
         ? createElement(StaticPageWrapper, {
             component: pageConfig.component,
             mapping,
@@ -755,7 +753,7 @@ export const new_createPages = <
           component: Slot,
           props: { id: `layout:${lPath}` },
         })),
-        { component: Slot, props: { id: `page:${pagePath}` } },
+        { component: Slot, props: { id: `page:${routePath}` } },
       ];
 
       return {
