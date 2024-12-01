@@ -226,7 +226,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
       };
 
       server.watcher.add(pagesDir);
-
+      
       server.watcher.on('change', async (file) => {
         if (!outputFile || outputFile.endsWith(file)) {
           return;
