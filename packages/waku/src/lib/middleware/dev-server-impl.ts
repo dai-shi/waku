@@ -267,7 +267,7 @@ const createRscViteServer = (
       },
       appType: 'custom' as const,
       server: { middlewareMode: true, hmr: { server: dummyServer } },
-    }
+    };
     const vite = await createViteServer(mergedViteConfig);
     return vite;
   });
