@@ -1,5 +1,5 @@
 {
-  "name": "ssr-swr",
+  "name": "hot-reload",
   "version": "0.1.0",
   "type": "module",
   "private": true,
@@ -12,7 +12,6 @@
     "react": "19.0.0-rc-7670501b-20241124",
     "react-dom": "19.0.0-rc-7670501b-20241124",
     "react-server-dom-webpack": "19.0.0-rc-7670501b-20241124",
-    "swr": "^2.2.5",
     "waku": "workspace:*"
   },
   "devDependencies": {

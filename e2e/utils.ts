@@ -1,6 +1,6 @@
 import net from 'node:net';
 import { expect, test as basicTest } from '@playwright/test';
-import type { ConsoleMessage } from '@playwright/test';
+import type { ConsoleMessage, Page } from '@playwright/test';
 import type { ChildProcess } from 'node:child_process';
 import { error, info } from '@actions/core';
 import { createRequire } from 'node:module';
@@ -21,12 +21,30 @@ const unexpectedErrors: RegExp[] = [
 ];
 
 export async function getFreePort(): Promise<number> {
-  return new Promise<number>((res) => {
+  return new Promise<number>((resolve) => {
     const srv = net.createServer();
     srv.listen(0, () => {
       const port = (srv.address() as net.AddressInfo).port;
-      srv.close(() => res(port));
+      srv.close(() => resolve(port));
     });
+  });
+}
+
+export async function isPortAvailable(port: number): Promise<boolean> {
+  return new Promise<boolean>((resolve, reject) => {
+    const srv = net.createServer();
+    srv.once('error', (err) => {
+      if ((err as any).code === 'EADDRINUSE') {
+        resolve(false);
+      } else {
+        reject(err);
+      }
+    });
+    srv.once('listening', () => {
+      srv.close();
+      resolve(true);
+    });
+    srv.listen(port);
   });
 }
 
@@ -60,7 +78,7 @@ export function debugChildProcess(
   });
 }
 
-export const test = basicTest.extend({
+export const test = basicTest.extend<{ page: Page }>({
   page: async ({ page }, pageUse) => {
     const callback = (msg: ConsoleMessage) => {
       if (unexpectedErrors.some((re) => re.test(msg.text()))) {

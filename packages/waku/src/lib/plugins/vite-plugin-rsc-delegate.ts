@@ -96,6 +96,7 @@ export function rscDelegatePlugin(
           callback({ type: 'custom', event: 'rsc-reload' });
         }
       }
+      return [];
     },
     async transform(code, id) {
       // id can contain query string with vite deps optimization

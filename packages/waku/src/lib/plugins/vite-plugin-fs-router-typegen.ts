@@ -225,7 +225,6 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
         await writeFile(outputFile, formatted, 'utf-8');
       };
 
-      server.watcher.add(opts.srcDir);
       server.watcher.on('change', async (file) => {
         if (!outputFile || outputFile.endsWith(file)) {
           return;
