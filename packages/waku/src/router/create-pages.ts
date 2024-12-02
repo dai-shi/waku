@@ -568,9 +568,6 @@ export const new_createPages = <
       numSlugs > 0 &&
       'staticPaths' in page
     ) {
-      if (pathMap.has(page.path)) {
-        throw new Error('Duplicated static path: ' + page.path);
-      }
       const staticPaths = page.staticPaths.map((item) =>
         (Array.isArray(item) ? item : [item]).map(sanitizeSlug),
       );
@@ -589,21 +586,27 @@ export const new_createPages = <
         );
       }
 
+      for (const staticPath of staticPaths) {
+        const { path } = generateStaticPathMapping(pathSpec, staticPath);
+        if (staticPathMap.has(path)) {
+          throw new Error('Duplicated static path: ' + page.path);
+        }
+        staticPathMap.set(path, page.path);
+      }
+
       pathMap.set(page.path, {
         type: 'static',
         pathSpec,
         component: page.component,
-
         noSsr: !!page.unstable_disableSSR,
       });
-
-      for (const staticPath of staticPaths) {
-        const { path } = generateStaticPathMapping(pathSpec, staticPath);
-        staticPathMap.set(path, page.path);
-      }
     } else if (page.render === 'dynamic') {
       const type = numWildcards === 0 ? 'dynamic' : 'wildcard';
-      if (pathMap.has(page.path)) {
+      const maybeExistingPath = pathMap.get(page.path);
+      if (
+        staticPathMap.has(page.path) || // fixed static path exists
+        (maybeExistingPath && maybeExistingPath.type !== 'static') // dynamic slug repeat
+      ) {
         throw new Error(`Duplicated ${type} path: ${page.path}`);
       }
 
