@@ -68,6 +68,8 @@ export function rscRsdwPlugin(): Plugin {
         ].some((suffix) => file!.endsWith(suffix))
       ) {
         return patchRsdw(code, 'SERVER');
+      } else if (code.includes('function requireAsyncModule(id)')) {
+        throw new Error('rscRsdwPlugin: Unexpected file: ' + file);
       }
       if (
         [
@@ -75,10 +77,11 @@ export function rscRsdwPlugin(): Plugin {
           '/react-server-dom-webpack-client.edge.development.js',
           '/react-server-dom-webpack-client.browser.production.js',
           '/react-server-dom-webpack-client.browser.development.js',
-          // '/react-server-dom-webpack_client.js',
         ].some((suffix) => file!.endsWith(suffix))
       ) {
         return patchRsdw(code, 'CLIENT');
+      } else if (code.includes('function requireAsyncModule(id)')) {
+        throw new Error('rscRsdwPlugin: Unexpected file: ' + file);
       }
     },
   };
