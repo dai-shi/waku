@@ -287,7 +287,7 @@ const ROUTE_SLOT_ID_PREFIX = 'route:';
 export function new_defineRouter(fns: {
   getPathConfig: () => Promise<
     Iterable<{
-      pattern: string; // TODO let's revisit this later
+      pattern: string; // TODO we should probably remove this and use path2regexp internally
       path: PathSpec;
       routeElement: { isStatic?: boolean };
       elements: Record<SlotId, { isStatic?: boolean }>;
