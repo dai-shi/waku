@@ -225,7 +225,7 @@ const createRscViteServer = (
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
 
   const vitePromise = configPromise.then(async (config) => {
-    const mergedViteConfig = await mergeUserViteConfig({
+    const mergedViteConfig = {
       // Since we have multiple instances of vite, different ones might overwrite the others' cache.
       cacheDir: 'node_modules/.vite/waku-dev-server-rsc',
       plugins: [
@@ -265,9 +265,9 @@ const createRscViteServer = (
           exclude: ['waku'],
         },
       },
-      appType: 'custom',
+      appType: 'custom' as const,
       server: { middlewareMode: true, hmr: { server: dummyServer } },
-    });
+    }
     const vite = await createViteServer(mergedViteConfig);
     return vite;
   });
