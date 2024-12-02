@@ -486,18 +486,16 @@ export const new_createPages = <
   const staticPathMap = new Map<
     string,
     {
-      // type: 'static' | 'dynamic' | 'wildcard';
       pathSpec: PathSpec;
       component: FunctionComponent<any>;
       mapping?: Record<string, string | string[]>;
-      staticPaths?: readonly string[][];
+      staticPaths?: readonly string[];
       noSsr?: boolean;
     }
   >();
   const dynamicPathMap = new Map<
     string,
     {
-      // type: 'static' | 'dynamic' | 'wildcard';
       pathSpec: PathSpec;
       component: FunctionComponent<any>;
       mapping?: Record<string, string | string[]>;
@@ -596,11 +594,14 @@ export const new_createPages = <
         );
       }
 
+      // save mapped static paths
+      const staticPathList: string[] = [];
       for (const staticPath of staticPaths) {
         const { path } = generateStaticPathMapping(pathSpec, staticPath);
         if (staticPathLookup.has(path)) {
           throw new Error('Duplicated static path: ' + page.path);
         }
+        staticPathList.push(path);
         staticPathLookup.set(path, page.path);
       }
 
@@ -608,6 +609,7 @@ export const new_createPages = <
         pathSpec,
         component: page.component,
         noSsr: !!page.unstable_disableSSR,
+        staticPaths: staticPathList,
       });
     } else if (page.render === 'dynamic') {
       if (staticPathLookup.has(page.path) || !!dynamicPathMap.has(page.path)) {
@@ -688,33 +690,68 @@ export const new_createPages = <
         noSsr: boolean;
       }[] = [];
 
+      const addSinglePath = ({
+        config,
+        path,
+        pattern,
+        isStatic,
+      }: {
+        path: string;
+        pattern: string;
+        config: {
+          pathSpec: PathSpec;
+          noSsr?: boolean;
+        };
+        isStatic: boolean;
+      }) => {
+        const layoutPaths = getLayouts(config.pathSpec);
+        const elements = {
+          root: { isStatic: !rootItem || rootItem.render === 'static' },
+          [`page:${path}`]: { isStatic },
+          ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
+            (acc, lPath) => {
+              acc[`layout:${lPath}`] = {
+                isStatic: layoutMap.get(lPath)?.type === 'static',
+              };
+              return acc;
+            },
+            {},
+          ),
+        };
+        paths.push({
+          pattern,
+          path: isStatic
+            ? path.split('/').map((p) => ({ type: 'literal', name: p }))
+            : config.pathSpec,
+          routeElement: { isStatic: true },
+          elements,
+          noSsr: config.noSsr || false,
+        });
+      };
+
       const addPaths = (
         map: typeof staticPathMap | typeof dynamicPathMap,
         isStatic: boolean,
       ) => {
         for (const [path, config] of map) {
-          const layoutPaths = getLayouts(config.pathSpec);
-          const elements = {
-            root: { isStatic: !rootItem || rootItem.render === 'static' },
-            [`page:${path}`]: { isStatic },
-            ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
-              (acc, lPath) => {
-                acc[`layout:${lPath}`] = {
-                  isStatic: layoutMap.get(lPath)?.type === 'static',
-                };
-                return acc;
-              },
-              {},
-            ),
-          };
-
-          paths.push({
-            pattern: path2regexp(parsePathWithSlug(path)),
-            path: config.pathSpec,
-            routeElement: { isStatic: true },
-            elements,
-            noSsr: config.noSsr || false,
-          });
+          // handle slugged static paths
+          if (isStatic && 'staticPaths' in config) {
+            for (const p of config.staticPaths) {
+              addSinglePath({
+                path: p,
+                pattern: path2regexp(parsePathWithSlug(path)),
+                config,
+                isStatic,
+              });
+            }
+          } else {
+            addSinglePath({
+              path,
+              pattern: path2regexp(parsePathWithSlug(path)),
+              config,
+              isStatic,
+            });
+          }
         }
       };
 
