@@ -483,7 +483,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -514,7 +514,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       autoprefixer:
@@ -536,7 +536,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -567,7 +567,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -592,7 +592,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -617,7 +617,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -651,7 +651,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -679,7 +679,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -704,7 +704,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -729,7 +729,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
 
   examples/33_promise:
@@ -744,7 +744,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -772,7 +772,7 @@ importers:
         specifier: 1.1.0
         version: 1.1.0(react@19.0.0-rc-7670501b-20241124)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -797,7 +797,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -822,7 +822,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -856,7 +856,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -896,7 +896,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/cookie':
@@ -927,7 +927,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -952,7 +952,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -986,7 +986,7 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -1017,7 +1017,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1)
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -1048,7 +1048,7 @@ importers:
         specifier: 19.0.0-rc-7670501b-20241124
         version: 19.0.0-rc-7670501b-20241124(react-dom@19.0.0-rc-7670501b-20241124(react@19.0.0-rc-7670501b-20241124))(react@19.0.0-rc-7670501b-20241124)(webpack@5.96.1(esbuild@0.17.19))
       waku:
-        specifier: 0.21.6
+        specifier: 0.21.7
         version: link:../../packages/waku
       wrangler:
         specifier: 3.91.0

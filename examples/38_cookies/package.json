@@ -14,7 +14,7 @@
     "react": "19.0.0-rc-7670501b-20241124",
     "react-dom": "19.0.0-rc-7670501b-20241124",
     "react-server-dom-webpack": "19.0.0-rc-7670501b-20241124",
-    "waku": "0.21.6"
+    "waku": "0.21.7"
   },
   "devDependencies": {
     "@types/cookie": "1.0.0",
