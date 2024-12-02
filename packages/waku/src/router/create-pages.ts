@@ -483,10 +483,21 @@ export const new_createPages = <
 ) => {
   let configured = false;
 
-  const pathMap = new Map<
+  const staticPathMap = new Map<
     string,
     {
-      type: 'static' | 'dynamic' | 'wildcard';
+      // type: 'static' | 'dynamic' | 'wildcard';
+      pathSpec: PathSpec;
+      component: FunctionComponent<any>;
+      mapping?: Record<string, string | string[]>;
+      staticPaths?: readonly string[][];
+      noSsr?: boolean;
+    }
+  >();
+  const dynamicPathMap = new Map<
+    string,
+    {
+      // type: 'static' | 'dynamic' | 'wildcard';
       pathSpec: PathSpec;
       component: FunctionComponent<any>;
       mapping?: Record<string, string | string[]>;
@@ -494,7 +505,7 @@ export const new_createPages = <
     }
   >();
   /**
-   * lookup from staticPath member to path in pathMap
+   * lookup from staticPath member to path in staticPathMap
    *
    * For /test/[a]/[b] and staticPaths of [['a', 'b'], ['c', 'd']]
    * staticPathMap will be:
@@ -503,7 +514,7 @@ export const new_createPages = <
    *   '/test/c/d': '/test/[a]/[b]',
    * }
    */
-  const staticPathMap = new Map<string, string>();
+  const staticPathLookup = new Map<string, string>();
   const StaticPageWrapper: FunctionComponent<{
     component: FunctionComponent<any>;
     mapping: Record<string, string | string[]>;
@@ -521,26 +532,22 @@ export const new_createPages = <
   >();
   let rootItem: RootItem | undefined = undefined;
 
-  const getRoutePath = (path: string): string | undefined => {
+  const getRoutePath = (
+    path: string,
+  ): { route: string; isStatic: boolean } | undefined => {
     // check static paths first
-    for (const [storedPath, config] of pathMap) {
-      if (config.type !== 'static') {
-        continue;
-      }
+    for (const [storedPath] of staticPathMap) {
       if (storedPath === path) {
-        return storedPath;
-      } else if (staticPathMap.has(path)) {
-        return staticPathMap.get(path)!;
+        return { route: storedPath, isStatic: true };
+      } else if (staticPathLookup.has(path)) {
+        return { route: staticPathLookup.get(path)!, isStatic: true };
       }
     }
 
     // check dynamic and wildcard paths
-    for (const [storedPath, config] of pathMap) {
-      if (
-        config.type !== 'static' &&
-        new RegExp(path2regexp(parsePathWithSlug(storedPath))).test(path)
-      ) {
-        return storedPath;
+    for (const [storedPath] of dynamicPathMap) {
+      if (new RegExp(path2regexp(parsePathWithSlug(storedPath))).test(path)) {
+        return { route: storedPath, isStatic: false };
       }
     }
   };
@@ -554,11 +561,14 @@ export const new_createPages = <
     const { numSlugs, numWildcards } = countSlugsAndWildcards(pathSpec);
 
     if (page.render === 'static' && numSlugs === 0) {
-      if (pathMap.has(page.path)) {
+      if (
+        staticPathLookup.has(page.path) ||
+        staticPathMap.has(page.path) ||
+        dynamicPathMap.has(page.path)
+      ) {
         throw new Error('Duplicated static path: ' + page.path);
       }
-      pathMap.set(page.path, {
-        type: 'static',
+      staticPathMap.set(page.path, {
         pathSpec,
         component: page.component,
         noSsr: !!page.unstable_disableSSR,
@@ -588,30 +598,23 @@ export const new_createPages = <
 
       for (const staticPath of staticPaths) {
         const { path } = generateStaticPathMapping(pathSpec, staticPath);
-        if (staticPathMap.has(path)) {
+        if (staticPathLookup.has(path)) {
           throw new Error('Duplicated static path: ' + page.path);
         }
-        staticPathMap.set(path, page.path);
+        staticPathLookup.set(path, page.path);
       }
 
-      pathMap.set(page.path, {
-        type: 'static',
+      staticPathMap.set(page.path, {
         pathSpec,
         component: page.component,
         noSsr: !!page.unstable_disableSSR,
       });
     } else if (page.render === 'dynamic') {
-      const type = numWildcards === 0 ? 'dynamic' : 'wildcard';
-      const maybeExistingPath = pathMap.get(page.path);
-      if (
-        staticPathMap.has(page.path) || // fixed static path exists
-        (maybeExistingPath && maybeExistingPath.type !== 'static') // dynamic slug repeat
-      ) {
-        throw new Error(`Duplicated ${type} path: ${page.path}`);
+      if (staticPathLookup.has(page.path) || !!dynamicPathMap.has(page.path)) {
+        throw new Error(`Duplicated dynamic path: ${page.path}`);
       }
 
-      pathMap.set(page.path, {
-        type,
+      dynamicPathMap.set(page.path, {
         pathSpec,
         component: page.component,
         noSsr: !!page.unstable_disableSSR,
@@ -677,32 +680,46 @@ export const new_createPages = <
   const definedRouter = new_defineRouter({
     getPathConfig: async () => {
       await configure();
-      const paths = [];
+      const paths: {
+        pattern: string;
+        path: PathSpec;
+        routeElement: { isStatic: boolean };
+        elements: Record<string, { isStatic: boolean }>;
+        noSsr: boolean;
+      }[] = [];
 
-      for (const [path, config] of pathMap) {
-        const layoutPaths = getLayouts(config.pathSpec);
-        const elements = {
-          root: { isStatic: !rootItem || rootItem.render === 'static' },
-          [`page:${path}`]: { isStatic: config.type === 'static' },
-          ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
-            (acc, lPath) => {
-              acc[`layout:${lPath}`] = {
-                isStatic: layoutMap.get(lPath)?.type === 'static',
-              };
-              return acc;
-            },
-            {},
-          ),
-        };
+      const addPaths = (
+        map: typeof staticPathMap | typeof dynamicPathMap,
+        isStatic: boolean,
+      ) => {
+        for (const [path, config] of map) {
+          const layoutPaths = getLayouts(config.pathSpec);
+          const elements = {
+            root: { isStatic: !rootItem || rootItem.render === 'static' },
+            [`page:${path}`]: { isStatic },
+            ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
+              (acc, lPath) => {
+                acc[`layout:${lPath}`] = {
+                  isStatic: layoutMap.get(lPath)?.type === 'static',
+                };
+                return acc;
+              },
+              {},
+            ),
+          };
 
-        paths.push({
-          pattern: path2regexp(parsePathWithSlug(path)),
-          path: config.pathSpec,
-          routeElement: { isStatic: true },
-          elements,
-          noSsr: config.noSsr || false,
-        });
-      }
+          paths.push({
+            pattern: path2regexp(parsePathWithSlug(path)),
+            path: config.pathSpec,
+            routeElement: { isStatic: true },
+            elements,
+            noSsr: config.noSsr || false,
+          });
+        }
+      };
+
+      addPaths(staticPathMap, true);
+      addPaths(dynamicPathMap, false);
 
       return paths;
     },
@@ -710,12 +727,14 @@ export const new_createPages = <
     renderRoute: async (path, { query }) => {
       await configure();
 
-      const routePath = getRoutePath(path);
-      if (!routePath) {
+      const routePathResult = getRoutePath(path);
+      if (!routePathResult) {
         throw new Error('Route not found: ' + path);
       }
 
-      const pageConfig = pathMap.get(routePath)!;
+      const pageConfig = routePathResult.isStatic
+        ? staticPathMap.get(routePathResult.route)!
+        : dynamicPathMap.get(routePathResult.route)!;
       const mapping =
         pageConfig.mapping || getPathMapping(pageConfig.pathSpec, path)!;
 
@@ -727,7 +746,8 @@ export const new_createPages = <
         ),
       };
 
-      result[`page:${routePath}`] = pageConfig.mapping
+      const pagePath = routePathResult.isStatic ? path : routePathResult.route;
+      result[`page:${pagePath}`] = pageConfig.mapping
         ? createElement(StaticPageWrapper, {
             component: pageConfig.component,
             mapping,
@@ -756,7 +776,7 @@ export const new_createPages = <
           component: Slot,
           props: { id: `layout:${lPath}` },
         })),
-        { component: Slot, props: { id: `page:${routePath}` } },
+        { component: Slot, props: { id: `page:${pagePath}` } },
       ];
 
       return {
