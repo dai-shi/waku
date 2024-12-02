@@ -18,7 +18,7 @@ describe('parseFormData', () => {
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
     const formData = await parseFormData(
-      new TextEncoder().encode(body),
+      new TextEncoder().encode(body).buffer as ArrayBuffer,
       contentType,
     );
 
@@ -31,7 +31,7 @@ describe('parseFormData', () => {
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
     const formData = await parseFormData(
-      new TextEncoder().encode(body),
+      new TextEncoder().encode(body).buffer as ArrayBuffer,
       contentType,
     );
 
@@ -45,7 +45,7 @@ describe('parseFormData', () => {
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
     const formData = await parseFormData(
-      new TextEncoder().encode(body),
+      new TextEncoder().encode(body).buffer as ArrayBuffer,
       contentType,
     );
 
@@ -62,7 +62,7 @@ describe('parseFormData', () => {
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
     const formData = await parseFormData(
-      new TextEncoder().encode(body),
+      new TextEncoder().encode(body).buffer as ArrayBuffer,
       contentType,
     );
 
@@ -80,7 +80,7 @@ describe('parseFormData', () => {
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
     const formData = await parseFormData(
-      new TextEncoder().encode(body),
+      new TextEncoder().encode(body).buffer as ArrayBuffer,
       contentType,
     );
 
@@ -93,7 +93,7 @@ describe('parseFormData', () => {
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
     const formData = await parseFormData(
-      new TextEncoder().encode(body),
+      new TextEncoder().encode(body).buffer as ArrayBuffer,
       contentType,
     );
 
@@ -106,7 +106,7 @@ describe('parseFormData', () => {
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
     const formData = await parseFormData(
-      new TextEncoder().encode(body),
+      new TextEncoder().encode(body).buffer as ArrayBuffer,
       contentType,
     );
 
@@ -136,7 +136,7 @@ describe('parseFormData', () => {
     const body = new Uint8Array(arrayBuffer);
 
     // Now use your parseFormData function
-    const parsedFormData = await parseFormData(body, contentType!);
+    const parsedFormData = await parseFormData(body.buffer, contentType!);
 
     const file = parsedFormData.get('pngFile') as File;
     expect(file.name).toBe('test.png');
@@ -177,7 +177,7 @@ describe('parseFormData', () => {
     const body = new Uint8Array(arrayBuffer);
 
     // Now use your parseFormData function
-    const parsedFormData = await parseFormData(body, contentType!);
+    const parsedFormData = await parseFormData(body.buffer, contentType!);
 
     expect(parsedFormData.get('textField')).toBe('Hello, World!');
 
@@ -204,7 +204,7 @@ describe('parseFormData', () => {
     const contentType = `multipart/form-data; boundary=${boundary}`;
 
     const formData = await parseFormData(
-      new TextEncoder().encode(body),
+      new TextEncoder().encode(body).buffer as ArrayBuffer,
       contentType,
     );
 
@@ -245,7 +245,7 @@ describe('parseFormData', () => {
     const body = new Uint8Array(arrayBuffer);
 
     // Now use your parseFormData function
-    const parsedFormData = await parseFormData(body, contentType!);
+    const parsedFormData = await parseFormData(body.buffer, contentType!);
 
     const file = parsedFormData.get('binaryField') as File;
     expect(file.name).toBe('test.bin');
@@ -286,7 +286,7 @@ describe('parseFormData', () => {
     const body = new Uint8Array(arrayBuffer);
 
     // Now use your parseFormData function
-    const parsedFormData = await parseFormData(body, contentType!);
+    const parsedFormData = await parseFormData(body.buffer, contentType!);
 
     expect(parsedFormData.get('plainField')).toBe(plainContent);
     expect(
@@ -316,30 +316,30 @@ describe('bufferToString', () => {
   it('should convert a simple ASCII string', () => {
     const text = 'Hello, World!';
     const buffer = new TextEncoder().encode(text).buffer;
-    expect(bufferToString(buffer)).toBe(text);
+    expect(bufferToString(buffer as ArrayBuffer)).toBe(text);
   });
 
   it('should handle Unicode characters', () => {
     const text = '你好，世界！😊';
     const buffer = new TextEncoder().encode(text).buffer;
-    expect(bufferToString(buffer)).toBe(text);
+    expect(bufferToString(buffer as ArrayBuffer)).toBe(text);
   });
 
   it('should handle a mix of ASCII and Unicode characters', () => {
     const text = 'Hello, 世界! 🌍';
     const buffer = new TextEncoder().encode(text).buffer;
-    expect(bufferToString(buffer)).toBe(text);
+    expect(bufferToString(buffer as ArrayBuffer)).toBe(text);
   });
 
   it('should handle a large string', () => {
     const text = 'a'.repeat(1000000); // 1 million 'a' characters
     const buffer = new TextEncoder().encode(text).buffer;
-    expect(bufferToString(buffer)).toBe(text);
+    expect(bufferToString(buffer as ArrayBuffer)).toBe(text);
   });
 
   it('should handle null characters', () => {
     const text = 'Hello\0World';
     const buffer = new TextEncoder().encode(text).buffer;
-    expect(bufferToString(buffer)).toBe(text);
+    expect(bufferToString(buffer as ArrayBuffer)).toBe(text);
   });
 });
