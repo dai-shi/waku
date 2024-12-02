@@ -1,6 +1,6 @@
 import net from 'node:net';
 import { expect, test as basicTest } from '@playwright/test';
-import type { ConsoleMessage } from '@playwright/test';
+import type { ConsoleMessage, Page } from '@playwright/test';
 import type { ChildProcess } from 'node:child_process';
 import { error, info } from '@actions/core';
 import { createRequire } from 'node:module';
@@ -78,7 +78,7 @@ export function debugChildProcess(
   });
 }
 
-export const test = basicTest.extend({
+export const test = basicTest.extend<{ page: Page }>({
   page: async ({ page }, pageUse) => {
     const callback = (msg: ConsoleMessage) => {
       if (unexpectedErrors.some((re) => re.test(msg.text()))) {

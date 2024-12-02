@@ -9,13 +9,13 @@
     "start": "waku start"
   },
   "dependencies": {
-    "react": "19.0.0-rc-5c56b873-20241107",
-    "react-dom": "19.0.0-rc-5c56b873-20241107",
-    "react-server-dom-webpack": "19.0.0-rc-5c56b873-20241107",
+    "react": "19.0.0-rc-7670501b-20241124",
+    "react-dom": "19.0.0-rc-7670501b-20241124",
+    "react-server-dom-webpack": "19.0.0-rc-7670501b-20241124",
     "waku": "0.21.6"
   },
   "devDependencies": {
     "autoprefixer": "10.4.20",
-    "tailwindcss": "3.4.14"
+    "tailwindcss": "3.4.15"
   }
 }
