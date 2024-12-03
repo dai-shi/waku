@@ -20,14 +20,7 @@ pnpm run compile
 ## Start with example
 
 ```shell
-pnpm run examples:dev:01_template
-```
-
-or if you want to run a specific example:
-
-```shell
-cd examples/01_template
-pnpm run dev
+pnpm -F 01_template dev # to run examples/01_template in dev mode
 ```
 
 More examples can be found in the `examples` directory.
