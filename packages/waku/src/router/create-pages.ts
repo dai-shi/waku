@@ -483,7 +483,10 @@ export const new_createPages = <
 ) => {
   let configured = false;
 
-  const staticPathMap = new Map<string, PathSpec>();
+  const staticPathMap = new Map<
+    string,
+    { literalSpec: PathSpec; originalSpec?: PathSpec }
+  >();
   const dynamicPagePathMap = new Map<
     string,
     [PathSpec, FunctionComponent<any>]
@@ -552,7 +555,7 @@ export const new_createPages = <
       return { numSlugs, numWildcards };
     })();
     if (page.render === 'static' && numSlugs === 0) {
-      staticPathMap.set(page.path, pathSpec);
+      staticPathMap.set(page.path, { literalSpec: pathSpec });
       const id = joinPath(page.path, 'page').replace(/^\//, '');
       registerStaticComponent(id, page.component);
     } else if (
@@ -587,10 +590,10 @@ export const new_createPages = <
               break;
           }
         });
-        staticPathMap.set(
-          '/' + pathItems.join('/'),
-          pathItems.map((name) => ({ type: 'literal', name })),
-        );
+        staticPathMap.set('/' + pathItems.join('/'), {
+          literalSpec: pathItems.map((name) => ({ type: 'literal', name })),
+          originalSpec: pathSpec,
+        });
         const id = joinPath(...pathItems, 'page');
         const WrappedComponent = (props: Record<string, unknown>) =>
           createElement(page.component as any, { ...props, ...mapping });
@@ -686,12 +689,14 @@ export const new_createPages = <
       }[] = [];
       const rootIsStatic = !rootItem || rootItem.render === 'static';
 
-      for (const [path, pathSpec] of staticPathMap) {
-        const noSsr = noSsrSet.has(pathSpec);
+      for (const [path, { literalSpec, originalSpec }] of staticPathMap) {
+        const noSsr = noSsrSet.has(literalSpec);
 
-        const pattern = path2regexp(parsePathWithSlug(path));
+        const pattern = originalSpec
+          ? path2regexp(originalSpec)
+          : path2regexp(literalSpec);
 
-        const layoutPaths = getLayouts(pathSpec);
+        const layoutPaths = getLayouts(literalSpec);
 
         const elements = {
           ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
@@ -709,7 +714,7 @@ export const new_createPages = <
 
         paths.push({
           pattern,
-          path: pathSpec,
+          path: literalSpec,
           routeElement: {
             isStatic: true,
           },
