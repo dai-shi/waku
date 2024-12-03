@@ -77,12 +77,17 @@ export function rscDelegatePlugin(
     },
     async handleHotUpdate(ctx) {
       if (mode === 'development') {
+        if (ctx.file.endsWith('/pages.gen.ts')) {
+          // auto generated file by fsRouterTypegenPlugin
+          return [];
+        }
         await updateAllStyles(); // FIXME is this too aggressive?
         if (moduleImports.has(ctx.file)) {
           // re-inject
           const transformedResult = await server.transformRequest(ctx.file);
           if (transformedResult) {
             const { default: source } = await server.ssrLoadModule(ctx.file);
+            console.log('[rsc] module import', ctx.file);
             callback({
               type: 'custom',
               event: 'module-import',
@@ -93,6 +98,7 @@ export function rscDelegatePlugin(
           ctx.modules.length &&
           !isClientEntry(ctx.file, await ctx.read())
         ) {
+          console.log('[rsc] hot reload', ctx.file);
           callback({ type: 'custom', event: 'rsc-reload' });
         }
       }

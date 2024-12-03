@@ -112,11 +112,9 @@ test.describe('hot reload', () => {
     await modifyFile('src/pages/index.tsx', 'Modified Page', 'Edited Page');
     await expect(page.getByText('Edited Page')).toBeVisible();
     await page.waitForTimeout(500); // need to wait not to full reload
-    // FIXME The following should pass but not for now.
-    //       It's probably because Vite adds `?t=...` timestamp with HMR.
-    // await expect(page.getByTestId('count')).toHaveText('3');
-    // await page.getByTestId('increment').click();
-    // await expect(page.getByTestId('count')).toHaveText('4');
+    await expect(page.getByTestId('count')).toHaveText('3');
+    await page.getByTestId('increment').click();
+    await expect(page.getByTestId('count')).toHaveText('4');
     await terminate(pid!);
   });
 });
