@@ -23,6 +23,13 @@ pnpm run compile
 pnpm -F 01_template dev # to run examples/01_template in dev mode
 ```
 
+`build` and `start` can be run with the same pattern:
+
+```shell
+pnpm -F 01_template build
+pnpm -F 01_template start
+```
+
 More examples can be found in the `examples` directory.
 
 ## Testing
