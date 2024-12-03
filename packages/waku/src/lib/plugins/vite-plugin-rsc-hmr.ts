@@ -26,6 +26,22 @@ import.meta.hot = __vite__createHotContext(import.meta.url);
 
 if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
   globalThis.__WAKU_HMR_CONFIGURED__ = true;
+  import.meta.hot.on('vite:afterUpdate', (data) => {
+    if (data.type === 'update') {
+      for (const update of data.updates) {
+        if (
+          update.type === 'js-update' &&
+          globalThis.__WAKU_CLIENT_MODULE_LOADING__.has(update.path)
+        ) {
+          globalThis.__WAKU_CLIENT_MODULE_LOADING__.set(update.path,
+            globalThis.__WAKU_CLIENT_IMPORT__(update.path + '?t=' + update.timestamp).then((m) => {
+              globalThis.__WAKU_CLIENT_MODULE_CACHE__.set(update.path, m);
+            })
+          );
+        }
+      }
+    }
+  });
   import.meta.hot.on('rsc-reload', () => {
     globalThis.__WAKU_RSC_RELOAD_LISTENERS__?.forEach((l) => l());
   });
