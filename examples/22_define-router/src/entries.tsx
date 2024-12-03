@@ -54,6 +54,20 @@ export default new_defineRouter({
           'page:/nested/baz': { isStatic: true },
         },
       },
+      {
+        pattern: '/dynamic/([^/]+)',
+        path: [
+          { type: 'literal', name: 'dynamic' },
+          { type: 'group', name: 'slug' },
+        ],
+        routeElement: { isStatic: true },
+        elements: {
+          root: { isStatic: true },
+          'layout:/': { isStatic: true },
+          // using `[slug]` syntax is just an example and it technically conflicts with others. So, it's better to use a different prefix like `dynamic-page:`.
+          'page:/dynamic/[slug]': {},
+        },
+      },
     ];
   },
   renderRoute: async (path) => {
@@ -150,6 +164,30 @@ export default new_defineRouter({
             </HomeLayout>
           ),
           'page:/nested/baz': <NestedBazPage />,
+        },
+      };
+    }
+    if (path.startsWith('/dynamic/')) {
+      return {
+        routeElement: (
+          <Slot id="root">
+            <Slot id="layout:/">
+              <Slot id="page:/dynamic/[slug]" />
+            </Slot>
+          </Slot>
+        ),
+        elements: {
+          root: (
+            <Root>
+              <Children />
+            </Root>
+          ),
+          'layout:/': (
+            <HomeLayout>
+              <Children />
+            </HomeLayout>
+          ),
+          'page:/dynamic/[slug]': <h3>{path}</h3>,
         },
       };
     }

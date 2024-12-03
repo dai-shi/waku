@@ -26,6 +26,22 @@ import.meta.hot = __vite__createHotContext(import.meta.url);
 
 if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
   globalThis.__WAKU_HMR_CONFIGURED__ = true;
+  import.meta.hot.on('vite:afterUpdate', (data) => {
+    if (data.type === 'update') {
+      for (const update of data.updates) {
+        if (
+          update.type === 'js-update' &&
+          globalThis.__WAKU_CLIENT_MODULE_LOADING__.has(update.path)
+        ) {
+          globalThis.__WAKU_CLIENT_MODULE_LOADING__.set(update.path,
+            globalThis.__WAKU_CLIENT_IMPORT__(update.path + '?t=' + update.timestamp).then((m) => {
+              globalThis.__WAKU_CLIENT_MODULE_CACHE__.set(update.path, m);
+            })
+          );
+        }
+      }
+    }
+  });
   import.meta.hot.on('rsc-reload', () => {
     globalThis.__WAKU_RSC_RELOAD_LISTENERS__?.forEach((l) => l());
   });
@@ -50,8 +66,8 @@ if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
 `;
 
 export function rscHmrPlugin(): Plugin {
-  const wakuClientDist = decodeFilePathFromAbsolute(
-    joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
+  const wakuMinimalClientDist = decodeFilePathFromAbsolute(
+    joinPath(fileURLToFilePath(import.meta.url), '../../../minimal/client.js'),
   );
   const wakuRouterClientDist = decodeFilePathFromAbsolute(
     joinPath(fileURLToFilePath(import.meta.url), '../../../router/client.js'),
@@ -75,7 +91,7 @@ export function rscHmrPlugin(): Plugin {
       ];
     },
     async transform(code, id) {
-      if (id.startsWith(wakuClientDist)) {
+      if (id.startsWith(wakuMinimalClientDist)) {
         // FIXME this is fragile. Can we do it better?
         return code.replace(
           /\nexport const fetchRsc = \(.*?\)=>\{/,
@@ -101,15 +117,16 @@ export function rscHmrPlugin(): Plugin {
         );
       } else if (id.startsWith(wakuRouterClientDist)) {
         // FIXME this is fragile. Can we do it better?
-        const INNER_ROUTER_LINE = 'function InnerRouter() {';
         return code.replace(
-          INNER_ROUTER_LINE,
-          INNER_ROUTER_LINE +
+          /\nconst InnerRouter = \(.*?\)=>\{/,
+          (m) =>
+            m +
             `
 {
   const refetchRoute = () => {
-    const rscPath = getInputString(loc.path);
-    refetch(rscPath, loc.searchParams);
+    const rscPath = encodeRoutePath(route.path);
+    const rscParams = createRscParams(route.query, []);
+    refetch(rscPath, rscParams);
   };
   globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];
   const index = globalThis.__WAKU_RSC_RELOAD_LISTENERS__.indexOf(globalThis.__WAKU_REFETCH_ROUTE__);
@@ -125,13 +142,17 @@ export function rscHmrPlugin(): Plugin {
       }
     },
     handleHotUpdate({ file }) {
+      if (file.endsWith('/pages.gen.ts')) {
+        // auto generated file by fsRouterTypegenPlugin
+        return [];
+      }
       const moduleLoading = (globalThis as any).__WAKU_CLIENT_MODULE_LOADING__;
       const moduleCache = (globalThis as any).__WAKU_CLIENT_MODULE_CACHE__;
       if (!moduleLoading || !moduleCache) {
         return;
       }
-      if (file.startsWith(viteServer.config.root)) {
-        file = file.slice(viteServer.config.root.length);
+      if (file.startsWith(viteServer.config.root + '/')) {
+        file = file.slice(viteServer.config.root.length + 1);
       }
       const id = filePathToFileURL(file);
       if (moduleLoading.has(id)) {
@@ -149,7 +170,7 @@ export function rscHmrPlugin(): Plugin {
 
 const pendingMap = new WeakMap<ReturnType<typeof viteHot>, Set<string>>();
 
-export function viteHot(viteServer: ViteDevServer): HMRBroadcaster {
+function viteHot(viteServer: ViteDevServer): HMRBroadcaster {
   return viteServer.hot ?? viteServer.ws;
 }
 
