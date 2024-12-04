@@ -1,10 +1,5 @@
 import type { PropsWithChildren } from 'react';
-import { setPath } from '../context.js';
 
-export default function Layout({
-  children,
-  path,
-}: PropsWithChildren<{ path: string }>) {
-  setPath(path);
-  return children;
+export default function Layout({ children }: PropsWithChildren) {
+  return <div>{children}</div>;
 }
