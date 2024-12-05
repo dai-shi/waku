@@ -1,0 +1,76 @@
+---
+slug: root-element-api
+title: Root element API
+description: Customize your Waku project’s root elements.
+author: sophia
+date: 2024/12/03
+---
+
+As we continue our work on a major rearchitecture for v0.22, we’ve been releasing new features in patch versions. So as the year draws to a close, let’s take a look back over some of these features, starting with the new root element API.
+
+## Root elements
+
+There are many cases where you may want to customize the attributes of the root `<html>`, `<head>`, or `<body>` elements. You can now do so using the optional root element API. It can be used in both Waku’s file-based “pages router” and the config-based API.
+
+### File-based router
+
+The root elements can be rendered via an optional `_root.tsx` file placed in the root of `./src/pages`. It must accept a `children` prop of type `ReactNode`.
+
+```tsx
+// ./src/pages/_root.tsx
+
+// Create root element
+export default async function RootElement({ children }) {
+  return (
+    <html lang="en">
+      <head></head>
+      <body data-version="1.0">{children}</body>
+    </html>
+  );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
+```
+
+### Config-based router
+
+There is a new `createRoot` function exposed from `createPages`.
+
+```tsx
+// ./src/entries.tsx
+import { createPages } from 'waku';
+
+import { RootElement } from './templates/root-element';
+import { RootLayout } from './templates/root-layout';
+import { HomePage } from './templates/home-page';
+
+export default createPages(async ({ createPage, createLayout, createRoot }) => {
+  // Create root element
+  createRoot({
+    render: 'static',
+    component: RootElement,
+  });
+
+  // Create root layout
+  createLayout({
+    render: 'static',
+    path: '/',
+    component: RootLayout,
+  });
+
+  // Create home page
+  createPage({
+    render: 'dynamic',
+    path: '/',
+    component: HomePage,
+  });
+});
+```
+
+## Stay cozy...
+
+Over the next few weeks, we’ll share more updates about other recently released features in past Waku 0.21.x versions. Happy holidays!

@@ -9,16 +9,11 @@ type RootLayoutProps = { children: ReactNode };
 
 export default async function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html>
-      <head></head>
-      <body>
-        <Providers>
-          <Meta />
-          <div id="__waku">{children}</div>
-          <Analytics />
-        </Providers>
-      </body>
-    </html>
+    <Providers>
+      <Meta />
+      <div id="__waku">{children}</div>
+      <Analytics />
+    </Providers>
   );
 }
 
