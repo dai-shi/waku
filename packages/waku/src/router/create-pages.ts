@@ -148,7 +148,7 @@ export type CreateLayout = <Path extends string>(layout: {
   render: 'static' | 'dynamic';
   path: PathWithoutSlug<Path>;
   component: FunctionComponent<
-    Omit<RouteProps, 'query'> & { children: ReactNode }
+    Pick<RouteProps, 'path'> & { children: ReactNode }
   >;
 }) => void;
 
