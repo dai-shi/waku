@@ -1,8 +1,9 @@
+import { PageProps } from 'waku/router';
 import { Path } from '../Path.js';
 
-export default async function Test({ path }: { path: string }) {
+export default async function Test({ path }: PageProps<'/[slug]'>) {
   await new Promise((resolve) => setTimeout(resolve, 1000));
-  return <Path path={`/${path}`} />;
+  return <Path path={path} />;
 }
 
 export async function getConfig() {

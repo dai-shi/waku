@@ -796,7 +796,7 @@ export const new_createPages = <
         ),
         [`page:${routePath}`]: createElement(
           pageComponent,
-          { ...mapping, ...(query ? { query } : {}) },
+          { ...mapping, ...(query ? { query } : {}), path },
           createElement(Children),
         ),
       };
