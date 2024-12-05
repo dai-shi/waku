@@ -811,7 +811,7 @@ export const new_createPages = <
         // always true
         if (layout) {
           const id = 'layout:' + segment;
-          result[id] = createElement(layout, null, createElement(Children));
+          result[id] = createElement(layout, { path }, createElement(Children));
         }
       }
 
