@@ -9,9 +9,11 @@ date: 2024/12/03
 As we continue our work on a major rearchitecture for v0.22, we’ve been releasing new features in patch versions. So as the year draws to a close, let’s take a look back over some of these features, starting with the new root element API.
 
 ## Root elements
-There are many cases where you may want to customize the attributes of the root `<html>`, `<head>`, or `<body>` elements. You can now do so using the optional root element API. It can be used in both Waku’s file-based “pages router” and the underlying low-level API for programmatic routing.
+
+There are many cases where you may want to customize the attributes of the root `<html>`, `<head>`, or `<body>` elements. You can now do so using the optional root element API. It can be used in both Waku’s file-based “pages router” and the config-based API.
 
 ### File-based router
+
 The root elements can be rendered via an optional `_root.tsx` file placed in the root of `./src/pages`. It must accept a `children` prop of type `ReactNode`.
 
 ```tsx
@@ -34,9 +36,8 @@ export const getConfig = async () => {
 };
 ```
 
+### Config-based router
 
-
-### Low-level API
 There is a new `createRoot` function exposed from `createPages`.
 
 ```tsx
@@ -71,4 +72,5 @@ export default createPages(async ({ createPage, createLayout, createRoot }) => {
 ```
 
 ## Stay cozy...
+
 Over the next few weeks, we’ll share more updates about other recently released features in past Waku 0.21.x versions. Happy holidays!
