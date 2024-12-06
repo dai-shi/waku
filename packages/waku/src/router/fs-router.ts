@@ -1,5 +1,5 @@
 import { unstable_getPlatformObject } from '../server.js';
-import { createPages } from './create-pages.js';
+import { new_createPages as createPages } from './create-pages.js';
 
 import { EXTENSIONS } from '../lib/constants.js';
 
@@ -64,7 +64,11 @@ export function fsRouter(
           ? pathItems.slice(0, -1)
           : pathItems
         ).join('/');
-      if (pathItems.at(-1) === '_layout') {
+      if (pathItems.at(-1) === '[path]') {
+        throw new Error(
+          'Page file cannot be named [path]. This will conflict with the path prop of the page component.',
+        );
+      } else if (pathItems.at(-1) === '_layout') {
         createLayout({
           path,
           component: mod.default,

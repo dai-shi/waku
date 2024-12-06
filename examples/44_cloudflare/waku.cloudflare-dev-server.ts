@@ -9,10 +9,7 @@ export const cloudflareDevServer = (cfOptions: any) => {
     Object.assign(globalThis, { WebSocketPair });
   });
   return async (req: Request, app: Hono<BlankEnv, BlankSchema>) => {
-    const [proxy, _] = await Promise.all([
-      await wranglerPromise,
-      await miniflarePromise,
-    ]);
+    const [proxy, _] = await Promise.all([wranglerPromise, miniflarePromise]);
     Object.assign(req, { cf: proxy.cf });
     Object.assign(globalThis, {
       caches: proxy.caches,
