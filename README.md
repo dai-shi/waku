@@ -467,6 +467,30 @@ export const getConfig = async () => {
 };
 ```
 
+### Root elements
+
+The attributes of `<html>`, `<head>`, or `<body>` elements can be customized with the root element API. Create a special `_root.tsx` file in the `./src/pages` directory that accepts a `children` prop of type `ReactNode`.
+
+```tsx
+// ./src/pages/_root.tsx
+
+// Create root element
+export default async function RootElement({ children }) {
+  return (
+    <html lang="en">
+      <head></head>
+      <body data-version="1.0">{children}</body>
+    </html>
+  );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
+```
+
 ## Navigation
 
 ### Link

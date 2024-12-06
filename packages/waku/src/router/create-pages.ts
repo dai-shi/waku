@@ -144,13 +144,21 @@ export type CreatePage = <
   'unstable_disableSSR'
 >;
 
-export type CreateLayout = <Path extends string>(layout: {
-  render: 'static' | 'dynamic';
-  path: PathWithoutSlug<Path>;
-  component: FunctionComponent<
-    Pick<RouteProps, 'path'> & { children: ReactNode }
-  >;
-}) => void;
+export type CreateLayout = <Path extends string>(
+  layout:
+    | {
+        render: 'dynamic';
+        path: PathWithoutSlug<Path>;
+        component: FunctionComponent<
+          Pick<RouteProps, 'path'> & { children: ReactNode }
+        >;
+      }
+    | {
+        render: 'static';
+        path: PathWithoutSlug<Path>;
+        component: FunctionComponent<{ children: ReactNode }>;
+      },
+) => void;
 
 type RootItem = {
   render: 'static' | 'dynamic';
@@ -808,10 +816,16 @@ export const new_createPages = <
           dynamicLayoutPathMap.get(segment)?.[1] ??
           staticComponentMap.get(joinPath(segment, 'layout').slice(1)); // feels like a hack
 
+        const isDynamic = !dynamicLayoutPathMap.has(segment);
+
         // always true
         if (layout) {
           const id = 'layout:' + segment;
-          result[id] = createElement(layout, { path }, createElement(Children));
+          result[id] = createElement(
+            layout,
+            isDynamic ? { path } : null,
+            createElement(Children),
+          );
         }
       }
 
