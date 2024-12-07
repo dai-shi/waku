@@ -1,6 +1,6 @@
 import { expect, vi, describe, it, beforeEach, assert } from 'vitest';
 import type { MockedFunction } from 'vitest';
-import { new_createPages as createPages } from '../src/router/create-pages.js';
+import { createPages } from '../src/router/create-pages.js';
 import type {
   CreateLayout,
   CreatePage,
