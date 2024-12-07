@@ -635,7 +635,7 @@ class ErrorBoundary extends Component<
 }
 
 // -----------------------------------------------------
-// For new_defineRouter
+// For unstable_defineRouter
 // Eventually replaces Router and so on
 // -----------------------------------------------------
 
