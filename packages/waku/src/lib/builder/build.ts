@@ -7,7 +7,7 @@ import type { LoggingFunction, RollupLog } from 'rollup';
 import type { ReactNode } from 'react';
 
 import type { Config } from '../../config.js';
-import { unstable_getPlatformObject } from '../../server.js';
+import { setAllEnvInternal, unstable_getPlatformObject } from '../../server.js';
 import type {
   BuildConfig,
   EntriesPrd,
@@ -1030,6 +1030,7 @@ export async function build(options: {
   // TODO: Add progress indication for static builds.
   if ('unstable_handleRequest' in distEntries.default) {
     const rsdwServer = await distEntries.loadModule('rsdw-server'); // FIXME hard-coded id
+    setAllEnvInternal(env);
     const buildConfig = await distEntries.default.unstable_getBuildConfig({
       unstable_collectClientModules: (elements: never) =>
         collectClientModules(config, rsdwServer, elements),
