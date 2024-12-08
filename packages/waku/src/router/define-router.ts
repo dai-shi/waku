@@ -21,7 +21,7 @@ import {
 } from './common.js';
 import { getPathMapping } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
-import { NewServerRouter } from './client.js';
+import { ServerRouter } from './client.js';
 
 const isStringArray = (x: unknown): x is string[] =>
   Array.isArray(x) && x.every((y) => typeof y === 'string');
@@ -257,7 +257,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
       }
     }
     const rscPath = encodeRoutePath(pathname);
-    const html = createElement(NewServerRouter, {
+    const html = createElement(ServerRouter, {
       route: { path: pathname, query: searchParams.toString(), hash: '' },
     });
     return {
