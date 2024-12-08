@@ -70,7 +70,7 @@ const ROUTE_SLOT_ID_PREFIX = 'route:';
 export function unstable_defineRouter(fns: {
   getPathConfig: () => Promise<
     Iterable<{
-      pattern: string; // HACK we need this along with `path` for ssg-performance
+      pattern: string; // TODO we should probably remove this and use path2regexp internally
       path: PathSpec;
       routeElement: { isStatic?: boolean };
       elements: Record<SlotId, { isStatic?: boolean }>;
