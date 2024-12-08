@@ -1,7 +1,7 @@
 import { Readable, Writable } from 'node:stream';
 import { Server } from 'node:http';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { createServer as createViteServer } from 'vite';
+import { createServer as createViteServer, type InlineConfig } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../../minimal/server.js';
@@ -84,7 +84,7 @@ const createMainViteServer = (
   configPromise: ReturnType<typeof resolveConfig>,
 ) => {
   const vitePromise = configPromise.then(async (config) => {
-    const mergedViteConfig = await mergeUserViteConfig({
+    const mergedViteConfig: InlineConfig = {
       // Since we have multiple instances of vite, different ones might overwrite the others' cache.
       cacheDir: 'node_modules/.vite/waku-dev-server-main',
       base: config.basePath,
@@ -125,7 +125,7 @@ const createMainViteServer = (
       },
       appType: 'mpa',
       server: { middlewareMode: true },
-    });
+    };
     const vite = await createViteServer(mergedViteConfig);
     registerHotUpdateCallback((payload) => hotUpdate(vite, payload));
     return vite;
