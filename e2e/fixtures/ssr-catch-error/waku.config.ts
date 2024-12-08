@@ -4,8 +4,7 @@ export default {
     import('waku/middleware/context'),
     import('waku/middleware/dev-server'),
     import('./src/middleware/validator.js'),
-    import('waku/middleware/rsc'),
-    import('waku/middleware/ssr'),
+    import('waku/middleware/handler'),
   ],
   /**
    * Base path for HTTP requests to indicate RSC requests.
