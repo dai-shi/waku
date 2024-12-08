@@ -834,6 +834,16 @@ const emitStaticFiles = async (
       );
       htmlHead += `<script type="module" async>${code}</script>`;
     }
+    if (!isStatic) {
+      const lastPathSpecItem = pathSpec.at(-1);
+      const ext =
+        lastPathSpecItem?.type === 'literal' && extname(lastPathSpecItem.name);
+      if (!ext || ext === '.html') {
+        // HACK doesn't feel ideal
+        dynamicHtmlPathMap.set(pathSpec, htmlHead);
+      }
+      return;
+    }
     const pathname = pathSpec2pathname(pathSpec);
     const destFile = joinPath(
       rootDir,
@@ -845,13 +855,6 @@ const emitStaticFiles = async (
           ? '404.html' // HACK special treatment for 404, better way?
           : pathname + '/index.html',
     );
-    if (!isStatic) {
-      if (destFile.endsWith('.html')) {
-        // HACK doesn't feel ideal
-        dynamicHtmlPathMap.set(pathSpec, htmlHead);
-      }
-      return;
-    }
     // In partial mode, skip if the file already exists.
     if (existsSync(destFile)) {
       return;
