@@ -12,7 +12,7 @@ const PATH_PAGE: Record<string, ReactNode> = {
   '/foo': <FooPage />,
 };
 
-export default unstable_defineRouter({
+const entries: ReturnType<typeof unstable_defineRouter> = unstable_defineRouter({
   getPathConfig: async () =>
     STATIC_PATHS.map((path) => ({
       pattern: `^${path}$`,
@@ -60,3 +60,5 @@ export default unstable_defineRouter({
     };
   },
 });
+
+export default entries;
