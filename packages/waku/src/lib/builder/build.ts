@@ -1026,13 +1026,10 @@ export async function build(options: {
 
   // TODO: Add progress indication for static builds.
   if ('unstable_handleRequest' in distEntries.default) {
+    const rsdwServer = await distEntries.loadModule('rsdw-server'); // FIXME hard-coded id
     const buildConfig = await distEntries.default.unstable_getBuildConfig({
       unstable_collectClientModules: (elements: never) =>
-        collectClientModules(
-          config,
-          distEntries.loadModule('rsdw-server'), // FIXME hard-coded id
-          elements,
-        ),
+        collectClientModules(config, rsdwServer, elements),
     });
     const cssAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
       type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
