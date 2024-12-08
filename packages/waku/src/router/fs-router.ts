@@ -26,7 +26,11 @@ export function fsRouter(
       recursive: true,
     });
 
-    if (!files || checkFiles.length !== files.length) {
+    if (
+      !files ||
+      (checkFiles.length !== files.length &&
+        files.every((f) => checkFiles.includes(f)))
+    ) {
       files = checkFiles;
       // dev and build only
       files = files!.flatMap((file) => {
