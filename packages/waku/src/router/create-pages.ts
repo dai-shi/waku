@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import type { FunctionComponent, ReactNode } from 'react';
 
-import { new_defineRouter } from './define-router.js';
+import { unstable_defineRouter } from './define-router.js';
 import type { RouteProps } from './common.js';
 import {
   joinPath,
@@ -389,7 +389,7 @@ export const createPages = <
     );
   };
 
-  const definedRouter = new_defineRouter({
+  const definedRouter = unstable_defineRouter({
     getPathConfig: async () => {
       await configure();
       const paths: {

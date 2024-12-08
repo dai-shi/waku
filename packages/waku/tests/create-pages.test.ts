@@ -12,7 +12,7 @@ import type {
   PathWithWildcard,
   StaticSlugRoutePathsTuple,
 } from '../src/router/create-pages.js';
-import { new_defineRouter } from '../src/router/define-router.js';
+import { unstable_defineRouter } from '../src/router/define-router.js';
 import type { PropsWithChildren } from 'react';
 import { expectType } from 'ts-expect';
 import type { TypeEqual } from 'ts-expect';
@@ -398,12 +398,12 @@ describe('type tests', () => {
   });
 });
 
-const defineRouterMock = new_defineRouter as MockedFunction<
-  typeof new_defineRouter
+const defineRouterMock = unstable_defineRouter as MockedFunction<
+  typeof unstable_defineRouter
 >;
 
 vi.mock('../src/router/define-router.js', () => ({
-  new_defineRouter: vi.fn(),
+  unstable_defineRouter: vi.fn(),
 }));
 
 beforeEach(() => {

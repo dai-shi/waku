@@ -22,7 +22,7 @@ export default fsRouter(
 const getManagedMain = () => `
 import { StrictMode, createElement } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
-import { NewRouter as Router } from 'waku/router/client';
+import { Router } from 'waku/router/client';
 
 const rootElement = createElement(StrictMode, null, createElement(Router));
 

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { new_defineRouter } from 'waku/router/server';
+import { unstable_defineRouter } from 'waku/router/server';
 import { Slot, Children } from 'waku/minimal/client';
 
 import Layout from './routes/layout.js';
@@ -12,7 +12,7 @@ const PATH_PAGE: Record<string, ReactNode> = {
   '/foo': <FooPage />,
 };
 
-export default new_defineRouter({
+export default unstable_defineRouter({
   getPathConfig: async () =>
     STATIC_PATHS.map((path) => ({
       pattern: `^${path}$`,
