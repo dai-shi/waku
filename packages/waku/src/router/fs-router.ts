@@ -14,19 +14,21 @@ export function fsRouter(
   return createPages(async ({ createPage, createLayout, createRoot }) => {
     let files: string[] | undefined = platformObject.buildData
       ?.fsRouterFiles as string[] | undefined;
-    if (!files) {
+    const [{ readdir }, { join, dirname, extname, sep }, { fileURLToPath }] =
+      await Promise.all([
+        import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:fs/promises'),
+        import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:path'),
+        import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:url'),
+      ]);
+    const pagesDir = join(dirname(fileURLToPath(importMetaUrl)), pages);
+    const checkFiles = await readdir(pagesDir, {
+      encoding: 'utf8',
+      recursive: true,
+    });
+
+    if (!files || checkFiles.length !== files.length) {
+      files = checkFiles;
       // dev and build only
-      const [{ readdir }, { join, dirname, extname, sep }, { fileURLToPath }] =
-        await Promise.all([
-          import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:fs/promises'),
-          import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:path'),
-          import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:url'),
-        ]);
-      const pagesDir = join(dirname(fileURLToPath(importMetaUrl)), pages);
-      files = await readdir(pagesDir, {
-        encoding: 'utf8',
-        recursive: true,
-      });
       files = files!.flatMap((file) => {
         const myExt = extname(file);
         const myExtIndex = EXTENSIONS.indexOf(myExt);
