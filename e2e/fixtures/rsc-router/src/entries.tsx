@@ -12,53 +12,55 @@ const PATH_PAGE: Record<string, ReactNode> = {
   '/foo': <FooPage />,
 };
 
-const entries: ReturnType<typeof unstable_defineRouter> = unstable_defineRouter({
-  getPathConfig: async () =>
-    STATIC_PATHS.map((path) => ({
-      pattern: `^${path}$`,
-      path: path
-        .split('/')
-        .filter(Boolean)
-        .map((name) => ({ type: 'literal', name })),
-      routeElement: { isStatic: true },
-      elements: {
-        root: { isStatic: true },
-        'layout:/': { isStatic: true },
-        [`page:${path}`]: { isStatic: true },
-      },
-    })),
-  renderRoute: async (path) => {
-    if (!STATIC_PATHS.includes(path)) {
-      throw new Error('renderRoute: No such path:' + path);
-    }
-    return {
-      routeElement: (
-        <Slot id="root">
-          <Slot id="layout:/">
-            <Slot id={`page:${path}`} />
+const entries: ReturnType<typeof unstable_defineRouter> = unstable_defineRouter(
+  {
+    getPathConfig: async () =>
+      STATIC_PATHS.map((path) => ({
+        pattern: `^${path}$`,
+        path: path
+          .split('/')
+          .filter(Boolean)
+          .map((name) => ({ type: 'literal', name })),
+        routeElement: { isStatic: true },
+        elements: {
+          root: { isStatic: true },
+          'layout:/': { isStatic: true },
+          [`page:${path}`]: { isStatic: true },
+        },
+      })),
+    renderRoute: async (path) => {
+      if (!STATIC_PATHS.includes(path)) {
+        throw new Error('renderRoute: No such path:' + path);
+      }
+      return {
+        routeElement: (
+          <Slot id="root">
+            <Slot id="layout:/">
+              <Slot id={`page:${path}`} />
+            </Slot>
           </Slot>
-        </Slot>
-      ),
-      elements: {
-        root: (
-          <html>
-            <head>
-              <title>Waku example</title>
-            </head>
-            <body>
+        ),
+        elements: {
+          root: (
+            <html>
+              <head>
+                <title>Waku example</title>
+              </head>
+              <body>
+                <Children />
+              </body>
+            </html>
+          ),
+          'layout:/': (
+            <Layout>
               <Children />
-            </body>
-          </html>
-        ),
-        'layout:/': (
-          <Layout>
-            <Children />
-          </Layout>
-        ),
-        [`page:${path}`]: PATH_PAGE[path],
-      },
-    };
+            </Layout>
+          ),
+          [`page:${path}`]: PATH_PAGE[path],
+        },
+      };
+    },
   },
-});
+);
 
 export default entries;
