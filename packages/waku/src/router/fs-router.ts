@@ -15,6 +15,7 @@ export function fsRouter(
     let files: string[] | undefined = platformObject.buildData
       ?.fsRouterFiles as string[] | undefined;
     if (!files) {
+      // dev and build only
       const [{ readdir }, { join, dirname, extname, sep }, { fileURLToPath }] =
         await Promise.all([
           import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:fs/promises'),
@@ -26,7 +27,6 @@ export function fsRouter(
         encoding: 'utf8',
         recursive: true,
       });
-      // dev and build only
       files = files!.flatMap((file) => {
         const myExt = extname(file);
         const myExtIndex = EXTENSIONS.indexOf(myExt);
