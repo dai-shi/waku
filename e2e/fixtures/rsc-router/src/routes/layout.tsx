@@ -15,36 +15,29 @@ const Pending = ({ isPending }: { isPending: boolean }) => (
 );
 
 const HomeLayout = ({ children }: { children: ReactNode }) => (
-  <html>
-    <head>
-      <title>Waku example</title>
-    </head>
-    <body>
-      <div>
-        <ul>
-          <li>
-            <Link
-              to="/"
-              pending={<Pending isPending />}
-              notPending={<Pending isPending={false} />}
-            >
-              Home
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/foo"
-              pending={<Pending isPending />}
-              notPending={<Pending isPending={false} />}
-            >
-              Foo
-            </Link>
-          </li>
-        </ul>
-        {children}
-      </div>
-    </body>
-  </html>
+  <div>
+    <ul>
+      <li>
+        <Link
+          to="/"
+          pending={<Pending isPending />}
+          notPending={<Pending isPending={false} />}
+        >
+          Home
+        </Link>
+      </li>
+      <li>
+        <Link
+          to="/foo"
+          pending={<Pending isPending />}
+          notPending={<Pending isPending={false} />}
+        >
+          Foo
+        </Link>
+      </li>
+    </ul>
+    {children}
+  </div>
 );
 
 export default HomeLayout;

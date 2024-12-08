@@ -1,6 +1,6 @@
 import { expect, vi, describe, it, beforeEach, assert } from 'vitest';
 import type { MockedFunction } from 'vitest';
-import { new_createPages as createPages } from '../src/router/create-pages.js';
+import { createPages } from '../src/router/create-pages.js';
 import type {
   CreateLayout,
   CreatePage,
@@ -12,7 +12,7 @@ import type {
   PathWithWildcard,
   StaticSlugRoutePathsTuple,
 } from '../src/router/create-pages.js';
-import { new_defineRouter } from '../src/router/define-router.js';
+import { unstable_defineRouter } from '../src/router/define-router.js';
 import type { PropsWithChildren } from 'react';
 import { expectType } from 'ts-expect';
 import type { TypeEqual } from 'ts-expect';
@@ -398,12 +398,12 @@ describe('type tests', () => {
   });
 });
 
-const defineRouterMock = new_defineRouter as MockedFunction<
-  typeof new_defineRouter
+const defineRouterMock = unstable_defineRouter as MockedFunction<
+  typeof unstable_defineRouter
 >;
 
 vi.mock('../src/router/define-router.js', () => ({
-  new_defineRouter: vi.fn(),
+  unstable_defineRouter: vi.fn(),
 }));
 
 beforeEach(() => {
@@ -703,7 +703,7 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
-        pattern: '^/test/w/x$',
+        pattern: '^/test/([^/]+)/([^/]+)$',
       },
       {
         elements: {
@@ -726,7 +726,7 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
-        pattern: '^/test/y/z$',
+        pattern: '^/test/([^/]+)/([^/]+)$',
       },
     ]);
     const route = await renderRoute('/test/y/z', {
@@ -813,7 +813,7 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
-        pattern: '^/test/a/b$',
+        pattern: '^/test/(.*)$',
       },
     ]);
     const route = await renderRoute('/test/a/b', {
@@ -1024,7 +1024,7 @@ describe('createPages', () => {
           'page:/server/static/static-echo': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/static/static-echo$',
+        pattern: '^/server/static/([^/]+)$',
         path: [
           {
             type: 'literal',
@@ -1047,7 +1047,7 @@ describe('createPages', () => {
           'page:/server/static/static-echo-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/static/static-echo-2$',
+        pattern: '^/server/static/([^/]+)$',
         path: [
           {
             type: 'literal',
@@ -1070,7 +1070,7 @@ describe('createPages', () => {
           'page:/server/static/static-echo/static-echo-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/static/static-echo/static-echo-2$',
+        pattern: '^/server/static/([^/]+)/([^/]+)$',
         path: [
           {
             type: 'literal',
@@ -1097,7 +1097,7 @@ describe('createPages', () => {
           'page:/server/static/hello/hello-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/static/hello/hello-2$',
+        pattern: '^/server/static/([^/]+)/([^/]+)$',
         path: [
           {
             type: 'literal',
@@ -1124,7 +1124,7 @@ describe('createPages', () => {
           'page:/static/wild/bar': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/static/wild/bar$',
+        pattern: '^/static/wild/(.*)$',
         path: [
           {
             type: 'literal',
@@ -1147,7 +1147,7 @@ describe('createPages', () => {
           'page:/static/wild/hello/hello-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/static/wild/hello/hello-2$',
+        pattern: '^/static/wild/(.*)$',
         path: [
           {
             type: 'literal',
@@ -1174,7 +1174,7 @@ describe('createPages', () => {
           'page:/static/wild/foo/foo-2/foo-3': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/static/wild/foo/foo-2/foo-3$',
+        pattern: '^/static/wild/(.*)$',
         path: [
           {
             type: 'literal',

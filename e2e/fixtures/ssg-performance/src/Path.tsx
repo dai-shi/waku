@@ -1,5 +1,3 @@
-import { getPath } from './context.js';
-
-export function Path() {
-  return <h1>{getPath()}</h1>;
+export function Path({ path }: { path: string }) {
+  return <h1>{path}</h1>;
 }
