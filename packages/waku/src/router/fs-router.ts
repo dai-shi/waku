@@ -14,24 +14,18 @@ export function fsRouter(
   return createPages(async ({ createPage, createLayout, createRoot }) => {
     let files: string[] | undefined = platformObject.buildData
       ?.fsRouterFiles as string[] | undefined;
-    const [{ readdir }, { join, dirname, extname, sep }, { fileURLToPath }] =
-      await Promise.all([
-        import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:fs/promises'),
-        import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:path'),
-        import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:url'),
-      ]);
-    const pagesDir = join(dirname(fileURLToPath(importMetaUrl)), pages);
-    const checkFiles = await readdir(pagesDir, {
-      encoding: 'utf8',
-      recursive: true,
-    });
-
-    if (
-      !files ||
-      (checkFiles.length !== files.length &&
-        files.every((f) => checkFiles.includes(f)))
-    ) {
-      files = checkFiles;
+    if (!files) {
+      const [{ readdir }, { join, dirname, extname, sep }, { fileURLToPath }] =
+        await Promise.all([
+          import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:fs/promises'),
+          import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:path'),
+          import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:url'),
+        ]);
+      const pagesDir = join(dirname(fileURLToPath(importMetaUrl)), pages);
+      files = await readdir(pagesDir, {
+        encoding: 'utf8',
+        recursive: true,
+      });
       // dev and build only
       files = files!.flatMap((file) => {
         const myExt = extname(file);
@@ -55,8 +49,11 @@ export function fsRouter(
         throw new Error('Failed to resolve ' + file);
       });
     }
-    platformObject.buildData ||= {};
-    platformObject.buildData.fsRouterFiles = files;
+    // build only - skip in dev
+    if (platformObject.buildOptions?.unstable_phase) {
+      platformObject.buildData ||= {};
+      platformObject.buildData.fsRouterFiles = files;
+    }
     for (const file of files) {
       const mod = await loadPage(file);
       const config = await mod.getConfig?.();
