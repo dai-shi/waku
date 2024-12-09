@@ -25,7 +25,7 @@ jobs:
           cache-dependency-path: '**/pnpm-lock.yaml'
       - name: Install dependencies
         run: |
-          ${{ inputs.use_canary && 'pnpm -r update react@canary' || '' }}
+          ${{ inputs.use_canary && 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' || '' }}
           pnpm install --frozen-lockfile
       - run: pnpm test
 
@@ -41,7 +41,7 @@ jobs:
           cache-dependency-path: '**/pnpm-lock.yaml'
       - name: Install dependencies
         run: |
-          ${{ inputs.use_canary && 'pnpm -r update react@canary' || '' }}
+          ${{ inputs.use_canary && 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' || '' }}
           pnpm install --frozen-lockfile
       - run: pnpm run compile
       - uses: actions/upload-artifact@v4
@@ -90,7 +90,7 @@ jobs:
           cache-dependency-path: '**/pnpm-lock.yaml'
       - name: Install dependencies
         run: |
-          ${{ inputs.use_canary && 'pnpm -r update react@canary' || '' }}
+          ${{ inputs.use_canary && 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' || '' }}
           pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v4
         with:
