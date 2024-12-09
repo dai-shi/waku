@@ -68,8 +68,6 @@ export function rscRsdwPlugin(): Plugin {
         ].some((suffix) => file!.endsWith(suffix))
       ) {
         return patchRsdw(code, 'SERVER');
-      } else if (code.includes('function requireAsyncModule(id)')) {
-        throw new Error('rscRsdwPlugin: Unexpected file: ' + file);
       }
       if (
         [
@@ -80,8 +78,6 @@ export function rscRsdwPlugin(): Plugin {
         ].some((suffix) => file!.endsWith(suffix))
       ) {
         return patchRsdw(code, 'CLIENT');
-      } else if (code.includes('function requireAsyncModule(id)')) {
-        throw new Error('rscRsdwPlugin: Unexpected file: ' + file);
       }
       if (code.includes('function requireAsyncModule(id)')) {
         throw new Error('rscRsdwPlugin: Untransformed file: ' + file);
