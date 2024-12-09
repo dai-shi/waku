@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Link, useRouter_UNSTABLE as useRouter } from 'waku/router/client';
 
 import { jump } from './funcs';
@@ -8,6 +8,7 @@ import { jump } from './funcs';
 export const Counter = () => {
   const { path } = useRouter();
   const [count, setCount] = useState(0);
+  const [isPending, startTransition] = useTransition();
   return (
     <div style={{ border: '3px blue dashed', margin: '1em', padding: '1em' }}>
       <p>Count: {count}</p>
@@ -18,7 +19,9 @@ export const Counter = () => {
         <Link to="/">Go to Home</Link>
       </p>
       <p>
-        <button onClick={() => jump()}>Jump to random page</button>
+        <button onClick={() => startTransition(jump)}>
+          Jump to random page{isPending && '...'}
+        </button>
       </p>
     </div>
   );

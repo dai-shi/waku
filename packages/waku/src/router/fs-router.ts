@@ -49,8 +49,11 @@ export function fsRouter(
         throw new Error('Failed to resolve ' + file);
       });
     }
-    platformObject.buildData ||= {};
-    platformObject.buildData.fsRouterFiles = files;
+    // build only - skip in dev
+    if (platformObject.buildOptions?.unstable_phase) {
+      platformObject.buildData ||= {};
+      platformObject.buildData.fsRouterFiles = files;
+    }
     for (const file of files) {
       const mod = await loadPage(file);
       const config = await mod.getConfig?.();

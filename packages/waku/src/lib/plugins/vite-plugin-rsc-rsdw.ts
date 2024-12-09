@@ -83,6 +83,9 @@ export function rscRsdwPlugin(): Plugin {
       } else if (code.includes('function requireAsyncModule(id)')) {
         throw new Error('rscRsdwPlugin: Unexpected file: ' + file);
       }
+      if (code.includes('function requireAsyncModule(id)')) {
+        throw new Error('rscRsdwPlugin: Untransformed file: ' + file);
+      }
     },
   };
 }

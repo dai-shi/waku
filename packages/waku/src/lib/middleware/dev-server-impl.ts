@@ -142,7 +142,7 @@ const createMainViteServer = (
     }
     if (file === 'waku' || file.startsWith('waku/')) {
       // HACK `external: ['waku']` doesn't do the same
-      return import(/* @vite-ignore */ idOrFileURL);
+      return import(/* @vite-ignore */ file);
     }
     const vite = await vitePromise;
     if (
@@ -293,9 +293,8 @@ const createRscViteServer = (
     initialModules: ClonableModuleNode[],
   ) => {
     let file = id;
-    const isAtFsFile = file.startsWith('/@fs/');
-    if (isAtFsFile) {
-      file = file.slice('/@fs'.length);
+    if (file.startsWith('/@fs/')) {
+      file = file.slice('/@fs'.length); // keep '/' at the beginning
     }
     for (const moduleNode of initialModules) {
       if (moduleNode.file === file) {
@@ -304,10 +303,8 @@ const createRscViteServer = (
     }
     if (file.startsWith(config.rootDir)) {
       file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
-    } else if (isAtFsFile) {
-      file = '@fs' + file;
     } else if (file.startsWith('/')) {
-      file = file.slice(1);
+      file = '@fs' + file;
     } else {
       file = '@id/' + file;
     }
