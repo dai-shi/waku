@@ -26,6 +26,7 @@ jobs:
           node-version: ${{ matrix.version }}
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
+      - run: pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
 
@@ -39,6 +40,7 @@ jobs:
           node-version: 18
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
+      - run: pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
       - run: pnpm install --frozen-lockfile
       - run: pnpm run compile
       - uses: actions/upload-artifact@v4
@@ -86,6 +88,7 @@ jobs:
           node-version: ${{ matrix.version }}
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
+      - run: pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
       - run: pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v4
         with:
