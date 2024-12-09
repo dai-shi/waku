@@ -5,9 +5,9 @@ import { stylexPlugin } from 'vite-plugin-stylex-dev';
 export default {
   plugins: [
     {
-      name: 'hack-css-plugin-why-do-we-need-this-FIXME',
+      name: 'hack-css-plugin-needed-for-stylex-dev-FIXME',
       resolveId(id: string) {
-        if (id.endsWith('.css')) {
+        if (id.endsWith('.css') && !id.endsWith('.vanilla.css')) {
           return id;
         }
       },
