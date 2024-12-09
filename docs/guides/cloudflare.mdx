@@ -34,8 +34,6 @@ You can run `npx wrangler types --experimental-include-runtime` to generate a `w
 
 ## Accessing Cloudflare Bindings, Execution Context, and Request/Response Objects
 
-Waku currently uses [Hono](https://hono.dev/) in the [advanced mode worker function](https://developers.cloudflare.com/pages/functions/advanced-mode/) it creates for Cloudflare Pages when you build your project.
-
 Waku exposes the [Hono context](https://hono.dev/docs/api/context) with `getHonoContext`. You can access Cloudflare bindings and execution context from the Hono context:
 
 ```ts
@@ -97,7 +95,7 @@ Cloudflare released static assets for Workers in the fall of 2024. Cloudflare Wo
 
 Cloudflare lets you deploy other Cloudflare Workers functions to your account and connect to them from the Waku worker via ["service bindings"](https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/).
 
-This can be combined with [smart placement](https://developers.cloudflare.com/workers/configuration/smart-placement/) and React Suspense to process certain operations in a worker co-located with a D1 database while the main request is handled via in the Pages function running at global edge location. Note that you want to enable smart placement for your Cloudflare Workers function but have it disabled on for your Cloudflare Pages function. You should move interaction with D1 and other co-located resources to the worker and then call it from your server components via the service binding for optimal performance.
+This can be combined with [smart placement](https://developers.cloudflare.com/workers/configuration/smart-placement/) and React Suspense to process certain operations in a worker co-located with a D1 database while the main request is handled via in the Workers function running at global edge location. Note that you want to enable smart placement enabled for your Cloudflare Workers function with the D1 binding but have it disabled for your Workers function that is handling requests. You can move interaction with D1 and other co-located resources to the worker and then call it from your server components via the service binding for optimal performance.
 
 ## Extending Hono
 
