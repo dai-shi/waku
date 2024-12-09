@@ -27,6 +27,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
+        if: github.ref == 'refs/heads/main'
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
 
@@ -41,6 +42,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
+        if: github.ref == 'refs/heads/main'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run compile
       - uses: actions/upload-artifact@v4
@@ -89,6 +91,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
+        if: github.ref == 'refs/heads/main'
       - run: pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v4
         with:
