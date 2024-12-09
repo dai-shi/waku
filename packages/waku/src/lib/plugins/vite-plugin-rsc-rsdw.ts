@@ -80,6 +80,9 @@ export function rscRsdwPlugin(): Plugin {
       ) {
         return patchRsdw(code, 'CLIENT');
       }
+      if (code.includes('function requireAsyncModule(id)')) {
+        throw new Error('rscRsdwPlugin: Untransformed file: ' + file);
+      }
     },
   };
 }
