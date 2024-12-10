@@ -1,4 +1,4 @@
-name: CI
+name: CI-WIP
 
 on:
   pull_request:
@@ -63,7 +63,7 @@ jobs:
   e2e-wip:
     name: E2E on ${{ matrix.os }} (Node ${{ matrix.version }}) - (${{ matrix.shared }}/4)
     needs:
-      - build
+      - build-wip
     strategy:
       fail-fast: false
       matrix:
