@@ -1,0 +1,12 @@
+name: Canary CI
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  main:
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/canary-ci run') }}
+    uses: ./.github/workflows/base-ci.yml
+    with:
+      use_canary: true
