@@ -198,7 +198,7 @@ export function Link({
         throw new Error('Missing Router');
       };
   const [isPending, startTransition] = useTransition();
-  const ref = useRef<HTMLAnchorElement>();
+  const ref = useRef<HTMLAnchorElement>(undefined);
 
   useEffect(() => {
     if (unstable_prefetchOnView && ref.current) {
