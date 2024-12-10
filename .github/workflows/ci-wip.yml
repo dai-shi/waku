@@ -1,20 +1,15 @@
-name: CI
+name: CI-WIP
 
 on:
-  push:
-    branches: [main]
-  workflow_call:
-    inputs:
-      use_canary:
-        required: true
-        type: boolean
+  pull_request:
+    types: [opened, synchronize]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test:
+  test-wip:
     name: Test on (Node ${{ matrix.version }})
     strategy:
       fail-fast: false
@@ -27,15 +22,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.version }}
-          cache: ${{ inputs.use_canary ? '' : 'pnpm' }}
+          cache: ${{ '' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - name: Install dependencies
         run: |
-          ${{ inputs.use_canary ? 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' : '' }}
+          ${{ 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' }}
           pnpm install --frozen-lockfile
       - run: pnpm test
 
-  build:
+  build-wip:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,11 +38,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: ${{ inputs.use_canary ? '' : 'pnpm' }}
+          cache: ${{ '' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - name: Install dependencies
         run: |
-          ${{ inputs.use_canary ? 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' : '' }}
+          ${{ 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' }}
           pnpm install --frozen-lockfile
       - run: pnpm run compile
       - uses: actions/upload-artifact@v4
@@ -65,10 +60,10 @@ jobs:
             !packages/waku/node_modules
           if-no-files-found: error
 
-  e2e:
+  e2e-wip:
     name: E2E on ${{ matrix.os }} (Node ${{ matrix.version }}) - (${{ matrix.shared }}/4)
     needs:
-      - build
+      - build-wip
     strategy:
       fail-fast: false
       matrix:
@@ -92,11 +87,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.version }}
-          cache: ${{ inputs.use_canary ? '' : 'pnpm' }}
+          cache: ${{ '' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - name: Install dependencies
         run: |
-          ${{ inputs.use_canary ? 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' : '' }}
+          ${{ 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' }}
           pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v4
         with:
