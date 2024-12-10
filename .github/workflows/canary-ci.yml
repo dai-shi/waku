@@ -7,6 +7,6 @@ on:
 jobs:
   canary-ci:
     if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/canary-ci run') }}
-    uses: dai-shi/waku/.github/workflows/ci.yml@canary-ci-2
+    uses: ./.github/workflows/ci.yml
     with:
       use_canary: true
