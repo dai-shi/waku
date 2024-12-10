@@ -15,7 +15,7 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-server-dom-webpack": "19.0.0",
-    "waku": "0.21.7"
+    "waku": "0.21.8"
   },
   "devDependencies": {
     "@types/react": "19.0.1",
