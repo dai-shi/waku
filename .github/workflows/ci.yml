@@ -29,11 +29,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.version }}
-          cache: ${{ inputs.use_canary && '' || 'pnpm' }}
+          cache: ${{ inputs.use_canary ? '' : 'pnpm' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - name: Install dependencies
         run: |
-          ${{ inputs.use_canary && 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' || '' }}
+          ${{ inputs.use_canary ? 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' : '' }}
           pnpm install --frozen-lockfile
       - run: pnpm test
 
@@ -45,11 +45,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: ${{ inputs.use_canary && '' || 'pnpm' }}
+          cache: ${{ inputs.use_canary ? '' : 'pnpm' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - name: Install dependencies
         run: |
-          ${{ inputs.use_canary && 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' || '' }}
+          ${{ inputs.use_canary ? 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' : '' }}
           pnpm install --frozen-lockfile
       - run: pnpm run compile
       - uses: actions/upload-artifact@v4
@@ -94,11 +94,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.version }}
-          cache: ${{ inputs.use_canary && '' || 'pnpm' }}
+          cache: ${{ inputs.use_canary ? '' : 'pnpm' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - name: Install dependencies
         run: |
-          ${{ inputs.use_canary && 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' || '' }}
+          ${{ inputs.use_canary ? 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' : '' }}
           pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v4
         with:
@@ -113,7 +113,7 @@ jobs:
         uses: ./.github/actions/playwright
       - name: Install dependencies again
         run: |
-          ${{ inputs.use_canary && 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' || '' }}
+          ${{ inputs.use_canary ? 'pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary' : '' }}
           pnpm install --frozen-lockfile
       - run: pnpm exec playwright test --shard=${{ matrix.shared }}/${{ matrix.shardTotal }}
         env:
