@@ -141,10 +141,17 @@ export type AnyPage = {
  * type MyPaths = PathsForPages<typeof pages>;
  * // type MyPaths = '/foo' | '/bar';
  */
-export type PathsForPages<PagesResult extends { DO_NOT_USE_pages: AnyPage }> =
-  CollectPaths<PagesResult['DO_NOT_USE_pages']> extends never
+export type PathsForPages<
+  PagesResult extends { DO_NOT_USE_pages: AnyPage } | AnyPage,
+> = PagesResult extends { DO_NOT_USE_pages: AnyPage }
+  ? CollectPaths<PagesResult['DO_NOT_USE_pages']> extends never
     ? string
-    : CollectPaths<PagesResult['DO_NOT_USE_pages']>;
+    : CollectPaths<PagesResult['DO_NOT_USE_pages']>
+  : PagesResult extends AnyPage
+    ? CollectPaths<PagesResult> extends never
+      ? string
+      : CollectPaths<PagesResult>
+    : never;
 
 type _GetSlugs<
   Route extends string,

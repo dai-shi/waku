@@ -186,8 +186,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
           }
         }
 
-        result += `\ntype Page = {
-  DO_NOT_USE_pages:`;
+        result += `\ntype Page =\n`;
 
         for (const file of fileInfo) {
           const moduleName = moduleNames[file.src];
@@ -198,7 +197,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
           }
         }
 
-        result += `};
+        result += `;
 
   declare module 'waku/router' {
     interface RouteConfig {
