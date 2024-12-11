@@ -20,7 +20,7 @@ export function rscEntriesPlugin(opts: {
 }): Plugin {
   const codeToPrepend = `
 try {
-  globalThis.AsyncLocalStorage = (await import('node:async_hooks')).AsyncLocalStorage;
+  globalThis.AsyncLocalStorage = require('node:async_hooks').AsyncLocalStorage;
 } catch (e) {}
 `;
   let codeToAppend = `
