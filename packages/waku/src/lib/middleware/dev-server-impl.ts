@@ -228,7 +228,7 @@ const createRscViteServer = (
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
 
   const vitePromise = configPromise.then(async (config) => {
-    const mergedViteConfig = {
+    const mergedViteConfig = await mergeUserViteConfig({
       // Since we have multiple instances of vite, different ones might overwrite the others' cache.
       cacheDir: 'node_modules/.vite/waku-dev-server-rsc',
       plugins: [
@@ -268,9 +268,12 @@ const createRscViteServer = (
           exclude: ['waku'],
         },
       },
-      appType: 'custom' as const,
+      appType: 'custom',
       server: { middlewareMode: true, hmr: { server: dummyServer } },
-    };
+    });
+    // HACK as resovleConfig changes ssr.conditions and ssr.externalConditions.
+    mergedViteConfig.ssr.resolve.conditions = ['react-server'];
+    mergedViteConfig.ssr.resolve.externalConditions = ['react-server'];
     const vite = await createViteServer(mergedViteConfig);
     return vite;
   });
