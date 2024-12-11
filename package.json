@@ -50,7 +50,7 @@
   },
   "pnpm": {
     "overrides": {
-      "vite": "6.0.3"
+      "vite": "https://pkg.pr.new/vitejs/vite/vite@b1a17229bed31323403f748c9b367a0f8b5adcc3"
     }
   }
 }
