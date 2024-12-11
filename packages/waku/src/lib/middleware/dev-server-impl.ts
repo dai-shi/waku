@@ -126,6 +126,9 @@ const createMainViteServer = (
       appType: 'mpa',
       server: { middlewareMode: true },
     });
+    // HACK as resovleConfig adds `'node'` in conditions and externalConditions.
+    mergedViteConfig.resolve.conditions = [];
+    mergedViteConfig.resolve.externalConditions = [];
     const vite = await createViteServer(mergedViteConfig);
     registerHotUpdateCallback((payload) => hotUpdate(vite, payload));
     return vite;
