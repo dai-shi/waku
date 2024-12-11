@@ -126,6 +126,9 @@ const createMainViteServer = (
       appType: 'mpa',
       server: { middlewareMode: true },
     });
+    // HACK as resovleConfig adds `'node'` in conditions and externalConditions.
+    mergedViteConfig.resolve.conditions = [];
+    mergedViteConfig.resolve.externalConditions = [];
     const vite = await createViteServer(mergedViteConfig);
     registerHotUpdateCallback((payload) => hotUpdate(vite, payload));
     return vite;
@@ -268,6 +271,9 @@ const createRscViteServer = (
       appType: 'custom',
       server: { middlewareMode: true, hmr: { server: dummyServer } },
     });
+    // HACK as resovleConfig changes ssr.conditions and ssr.externalConditions.
+    mergedViteConfig.ssr.resolve.conditions = ['react-server'];
+    mergedViteConfig.ssr.resolve.externalConditions = ['react-server'];
     const vite = await createViteServer(mergedViteConfig);
     return vite;
   });
