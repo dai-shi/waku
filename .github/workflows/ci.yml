@@ -29,10 +29,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.version }}
-          cache: ${{ inputs.use_canary == false ? '' : 'pnpm' }}
+          cache: ${{ !inputs.use_canary ? '' : 'pnpm' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
-      - if: ${{ inputs.use_canary == false }}
+      - if: ${{ !inputs.use_canary }}
         run: |
           pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
       - run: pnpm test
@@ -45,10 +45,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: ${{ inputs.use_canary == false ? '' : 'pnpm' }}
+          cache: ${{ !inputs.use_canary ? '' : 'pnpm' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
-      - if: ${{ inputs.use_canary == false }}
+      - if: ${{ !inputs.use_canary }}
         run: |
           sed -i~ '/"peerDependencies"/,${s/"\^19\.0\.0"/"*"/}' packages/waku/package.json
           pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
@@ -95,10 +95,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.version }}
-          cache: ${{ inputs.use_canary == false ? '' : 'pnpm' }}
+          cache: ${{ !inputs.use_canary ? '' : 'pnpm' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
-      - if: ${{ inputs.use_canary == false }}
+      - if: ${{ !inputs.use_canary }}
         run: |
           pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
       - uses: actions/download-artifact@v4
