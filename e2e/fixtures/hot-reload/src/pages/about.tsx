@@ -4,7 +4,9 @@ export default async function AboutPage() {
   return (
     <div>
       <p>About Page</p>
-      <Link to="/">Return home</Link>
+      <Link to="/" data-testid="home">
+        Return home
+      </Link>
     </div>
   );
 }

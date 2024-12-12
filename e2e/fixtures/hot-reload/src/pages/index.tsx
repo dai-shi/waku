@@ -7,7 +7,9 @@ export default async function HomePage() {
     <div>
       <p>Home Page</p>
       <Counter />
-      <Link to="/about">About</Link>
+      <Link to="/about" data-testid="about">
+        About
+      </Link>
     </div>
   );
 }
