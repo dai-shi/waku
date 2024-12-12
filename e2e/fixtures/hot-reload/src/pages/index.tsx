@@ -1,3 +1,5 @@
+import { Link } from 'waku';
+
 import { Counter } from '../components/counter.js';
 
 export default async function HomePage() {
@@ -5,6 +7,7 @@ export default async function HomePage() {
     <div>
       <p>Home Page</p>
       <Counter />
+      <Link to="/about">About</Link>
     </div>
   );
 }
