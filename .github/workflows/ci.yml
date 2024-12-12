@@ -112,7 +112,6 @@ jobs:
       - name: Install Playwright
         id: install-playwright
         uses: ./.github/actions/playwright
-      - run: find . -name pnpm-lock.yaml
       - run: pnpm exec playwright test --shard=${{ matrix.shared }}/${{ matrix.shardTotal }}
         env:
           TEMP_DIR: ${{ runner.temp }}
