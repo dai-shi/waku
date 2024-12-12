@@ -25,7 +25,7 @@ const packageManager = /pnpm/.test(userAgent)
     : 'npm';
 const commands = {
   pnpm: {
-    install: 'pnpm install',
+    install: 'pnpm install --no-frozen-lockfile',
     dev: 'pnpm dev',
     create: 'pnpm create waku',
   },
@@ -201,36 +201,32 @@ async function init() {
     await installTemplate(root, packageName, templateRoot, templateName);
   }
 
-  if ('TMP'.length) {
-    console.log(`\nDone.\n`);
-  } else {
-    // 1. check packageManager
-    // 2. and then install dependencies
-    console.log();
-    console.log(`Installing dependencies by running ${commands.install}...`);
+  // 1. check packageManager
+  // 2. and then install dependencies
+  console.log();
+  console.log(`Installing dependencies by running ${commands.install}...`);
 
-    const installProcess = spawn(packageManager, ['install'], {
-      stdio: 'inherit',
-      shell: process.platform === 'win32',
-      cwd: targetDir,
-    });
+  const installProcess = spawn(packageManager, ['install'], {
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+    cwd: targetDir,
+  });
 
-    installProcess.on('close', (code) => {
-      // process exit code
-      if (code !== 0) {
-        console.error(`Could not execute ${commands.install}. Please run`);
-        console.log(`${bold(green(`cd ${targetDir}`))}`);
-        console.log(`${bold(green(commands.install))}`);
-        console.log(`${bold(green(commands.dev))}`);
-        console.log();
-      } else {
-        console.log(`\nDone. Now run:\n`);
-        console.log(`${bold(green(`cd ${targetDir}`))}`);
-        console.log(`${bold(green(commands.dev))}`);
-        console.log();
-      }
-    });
-  }
+  installProcess.on('close', (code) => {
+    // process exit code
+    if (code !== 0) {
+      console.error(`Could not execute ${commands.install}. Please run`);
+      console.log(`${bold(green(`cd ${targetDir}`))}`);
+      console.log(`${bold(green(commands.install))}`);
+      console.log(`${bold(green(commands.dev))}`);
+      console.log();
+    } else {
+      console.log(`\nDone. Now run:\n`);
+      console.log(`${bold(green(`cd ${targetDir}`))}`);
+      console.log(`${bold(green(commands.dev))}`);
+      console.log();
+    }
+  });
 }
 
 init()
