@@ -101,7 +101,7 @@ jobs:
       - if: ${{ !inputs.use_canary }}
         run: |
           pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
-          rm pnpm-lock.yaml
+          pnpm install --lockfile-only
       - uses: actions/download-artifact@v4
         with:
           name: create-waku
