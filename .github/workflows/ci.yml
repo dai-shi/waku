@@ -29,7 +29,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.version }}
-          cache: ${{ !inputs.use_canary ? '' : 'pnpm' }}
+          cache: ${{ '' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
       - if: ${{ !inputs.use_canary }}
