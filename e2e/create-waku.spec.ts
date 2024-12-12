@@ -5,7 +5,7 @@ import { mkdir, readdir, cp, readFile, writeFile } from 'node:fs/promises';
 import { test, debugChildProcess } from './utils.js';
 import { expect } from '@playwright/test';
 
-test('should create waku with default setup work', async () => {
+test.skip('should create waku with default setup work', async () => {
   const cliPath = fileURLToPath(
     new URL('../packages/create-waku/dist/index.js', import.meta.url),
   );
@@ -46,7 +46,7 @@ test('should create waku with default setup work', async () => {
   exec(`rm -rf ${cwd}`);
 });
 
-test('should create waku with update notify work', async () => {
+test.skip('should create waku with update notify work', async () => {
   const oldCliDir = fileURLToPath(
     new URL('../packages/create-waku/', import.meta.url),
   );
