@@ -101,18 +101,10 @@ jobs:
       - if: ${{ !inputs.use_canary }}
         run: |
           pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
-      - uses: actions/download-artifact@v4
-        with:
-          name: create-waku
-          path: packages/create-waku
-      - uses: actions/download-artifact@v4
-        with:
-          name: waku
-          path: packages/waku
+      - run: pnpm run compile
       - name: Install Playwright
         id: install-playwright
         uses: ./.github/actions/playwright
-      - run: find . -name pnpm-lock.yaml
       - run: pnpm exec playwright test --shard=${{ matrix.shared }}/${{ matrix.shardTotal }}
         env:
           TEMP_DIR: ${{ runner.temp }}
