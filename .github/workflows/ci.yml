@@ -97,11 +97,11 @@ jobs:
           node-version: ${{ matrix.version }}
           cache: ${{ inputs.use_canary && 'pnpm' || '' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
-      - if: ${{ inputs.use_canary }}
-        run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - if: ${{ !inputs.use_canary }}
         run: |
           pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
+          rm pnpm-lock.yaml
       - uses: actions/download-artifact@v4
         with:
           name: create-waku
