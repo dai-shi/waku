@@ -201,7 +201,9 @@ async function init() {
     await installTemplate(root, packageName, templateRoot, templateName);
   }
 
-  if ('TMP'.length === 0) {
+  if ('TMP'.length) {
+    console.log(`\nDone.\n`);
+  } else {
     // 1. check packageManager
     // 2. and then install dependencies
     console.log();
