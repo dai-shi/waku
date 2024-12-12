@@ -25,7 +25,7 @@ const packageManager = /pnpm/.test(userAgent)
     : 'npm';
 const commands = {
   pnpm: {
-    install: 'pnpm install --no-frozen-lockfile',
+    install: 'pnpm install',
     dev: 'pnpm dev',
     create: 'pnpm create waku',
   },
