@@ -11,7 +11,7 @@
     "test": "prettier -c . && eslint . && tsc -b && tsc -b --noEmit `find examples -mindepth 1 -maxdepth 1 -type d ! -name '*_js'` && pnpm run --filter waku test",
     "test-vite-ecosystem-ci": "pnpm run --filter waku test && playwright test --project=chromium",
     "e2e": "playwright test",
-    "website:dev": "(cd packages/website && pnpm run dev)",
+    "website:dev": "cd packages/website && pnpm run dev",
     "website:build": "cd packages/website && pnpm run build",
     "website:vercel": "pnpm run compile && pnpm run website:build --with-vercel-static && mv packages/website/.vercel/output .vercel/",
     "website:prd": "pnpm run website:build && (cd packages/website && pnpm start)"
