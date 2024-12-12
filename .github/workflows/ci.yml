@@ -50,8 +50,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - if: ${{ !inputs.use_canary }}
         run: |
-          sed -i~ '/"peerDependencies"/,${s/"\^19\.0\.0"/"*"/}' packages/waku/package.json
           pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
+          sed -i~ '/"peerDependencies"/,${s/"\^19\.0\.0"/"*"/}' packages/waku/package.json
+          pnpm install
       - run: pnpm run compile
       - uses: actions/upload-artifact@v4
         with:
