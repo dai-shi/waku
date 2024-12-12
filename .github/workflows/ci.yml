@@ -29,7 +29,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.version }}
-          cache: ${{ '' }}
+          cache: ${{ inputs.use_canary ? 'pnpm' : '' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
       - if: ${{ !inputs.use_canary }}
@@ -45,7 +45,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: ${{ !inputs.use_canary ? '' : 'pnpm' }}
+          cache: ${{ inputs.use_canary ? 'pnpm' : '' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
       - if: ${{ !inputs.use_canary }}
@@ -95,7 +95,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.version }}
-          cache: ${{ !inputs.use_canary ? '' : 'pnpm' }}
+          cache: ${{ inputs.use_canary ? 'pnpm' : '' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
       - if: ${{ !inputs.use_canary }}
