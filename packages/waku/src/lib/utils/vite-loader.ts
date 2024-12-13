@@ -1,16 +1,18 @@
 import { createServer as createViteServer } from 'vite';
-import type { ViteDevServer } from 'vite';
 import { fileURLToFilePath } from '../utils/path.js';
 
-let vite: ViteDevServer | undefined;
-
 export const loadServerFile = async (fileURL: string) => {
-  if (!vite) {
-    vite = await createViteServer({
-      ssr: {
-        external: ['waku'],
-      },
-    });
+  const vite = await createViteServer({
+    ssr: {
+      external: ['waku'],
+    },
+  });
+  try {
+    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
+  } finally {
+    // FIXME this is really a bad hack
+    setTimeout(() => {
+      vite.close().catch(() => {});
+    }, 1000);
   }
-  return vite.ssrLoadModule(fileURLToFilePath(fileURL));
 };
