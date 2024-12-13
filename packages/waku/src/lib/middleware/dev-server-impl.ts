@@ -138,7 +138,7 @@ const createMainViteServer = (
 
   const loadServerModuleMain = async (idOrFileURL: string) => {
     let file = idOrFileURL.startsWith('file://')
-      ? fileURLToFilePath(idOrFileURL)
+      ? fileURLToFilePath(idOrFileURL.split('?')[0]!)
       : idOrFileURL;
     if (file.startsWith(wakuDist)) {
       file = 'waku' + file.slice(wakuDist.length).replace(/\.\w+$/, '');
