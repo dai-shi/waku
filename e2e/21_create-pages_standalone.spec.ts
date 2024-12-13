@@ -33,6 +33,11 @@ async function testRouterExample(page: Page, port: number) {
   await page.goto(`http://localhost:${port}/foo`);
   await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
 
+  await page.goto(`http://localhost:${port}/nested/baz`);
+  await expect(
+    page.getByRole('heading', { name: 'Nested Layout' }),
+  ).toBeVisible();
+
   const backgroundColor = await page.evaluate(() =>
     window.getComputedStyle(document.body).getPropertyValue('background-color'),
   );
