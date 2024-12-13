@@ -112,7 +112,7 @@ const createMainViteServer = (
         fsRouterTypegenPlugin(config),
       ],
       optimizeDeps: {
-        include: ['react-server-dom-webpack/client', 'react-dom'],
+        include: ['react-server-dom-webpack/client', 'react-dom/client'],
         exclude: ['waku', 'rsc-html-stream/server'],
         entries: [
           `${config.srcDir}/${SRC_ENTRIES}.*`,
@@ -234,7 +234,7 @@ const createRscViteServer = (
         rscDelegatePlugin(hotUpdateCallback),
       ],
       optimizeDeps: {
-        include: ['react-server-dom-webpack/client', 'react-dom'],
+        include: ['react-server-dom-webpack/client', 'react-dom/client'],
         exclude: ['waku'],
         entries: [
           `${config.srcDir}/${SRC_ENTRIES}.*`,
