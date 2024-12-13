@@ -112,7 +112,7 @@ const createMainViteServer = (
         fsRouterTypegenPlugin(config),
       ],
       optimizeDeps: {
-        include: ['react-server-dom-webpack/client', 'react-dom'],
+        include: ['react-server-dom-webpack/client', 'react-dom/client'],
         exclude: ['waku', 'rsc-html-stream/server'],
         entries: [
           `${config.srcDir}/${SRC_ENTRIES}.*`,
@@ -134,33 +134,27 @@ const createMainViteServer = (
   const wakuDist = joinPath(fileURLToFilePath(import.meta.url), '../../..');
 
   const loadServerModuleMain = async (idOrFileURL: string) => {
-    let file = idOrFileURL.startsWith('file://')
-      ? fileURLToFilePath(idOrFileURL.split('?')[0]!)
-      : idOrFileURL;
-    if (file.startsWith(wakuDist)) {
-      file = 'waku' + file.slice(wakuDist.length).replace(/\.\w+$/, '');
-    }
-    if (file === 'waku' || file.startsWith('waku/')) {
-      // HACK `external: ['waku']` doesn't do the same
-      return import(/* @vite-ignore */ file);
-    }
     const vite = await vitePromise;
-    if (
-      idOrFileURL.startsWith('file://') &&
-      idOrFileURL.includes('/node_modules/')
-    ) {
-      // HACK node_modules should be externalized
-      const filePath = fileURLToFilePath(idOrFileURL.split('?')[0]!);
-      const fileWithAbsolutePath = filePath.startsWith('/')
-        ? filePath
-        : joinPath(vite.config.root, filePath);
-      return import(/* @vite-ignore */ filePathToFileURL(fileWithAbsolutePath));
+    if (!idOrFileURL.startsWith('file://')) {
+      if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
+        // HACK `external: ['waku']` doesn't do the same
+        return import(/* @vite-ignore */ idOrFileURL);
+      }
+      return vite.ssrLoadModule(idOrFileURL);
     }
-    return vite.ssrLoadModule(
-      idOrFileURL.startsWith('file://')
-        ? fileURLToFilePath(idOrFileURL)
-        : idOrFileURL,
-    );
+    const filePath = fileURLToFilePath(idOrFileURL.split('?')[0]!);
+    const file = filePath.startsWith('/')
+      ? filePath
+      : joinPath(vite.config.root, filePath);
+    if (file.startsWith(wakuDist)) {
+      // HACK `external: ['waku']` doesn't do the same
+      return import(/* @vite-ignore */ filePathToFileURL(file));
+    }
+    if (file.includes('/node_modules/')) {
+      // HACK node_modules should be externalized
+      return import(/* @vite-ignore */ filePathToFileURL(file));
+    }
+    return vite.ssrLoadModule(fileURLToFilePath(idOrFileURL));
   };
 
   const transformIndexHtml = async (pathname: string) => {
@@ -240,7 +234,7 @@ const createRscViteServer = (
         rscDelegatePlugin(hotUpdateCallback),
       ],
       optimizeDeps: {
-        include: ['react-server-dom-webpack/client', 'react-dom'],
+        include: ['react-server-dom-webpack/client', 'react-dom/client'],
         exclude: ['waku'],
         entries: [
           `${config.srcDir}/${SRC_ENTRIES}.*`,
