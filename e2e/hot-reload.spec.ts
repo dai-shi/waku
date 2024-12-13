@@ -87,7 +87,7 @@ test.describe('hot reload', () => {
     });
   });
 
-  test('simple case', async ({ page }) => {
+  test('server and client', async ({ page }) => {
     const [port, pid] = await run();
     await page.goto(`http://localhost:${port}/`);
     await expect(page.getByText('Home Page')).toBeVisible();
@@ -115,6 +115,13 @@ test.describe('hot reload', () => {
     await expect(page.getByTestId('count')).toHaveText('3');
     await page.getByTestId('increment').click();
     await expect(page.getByTestId('count')).toHaveText('4');
+    // Jump to another page and back
+    await page.getByTestId('about').click();
+    await expect(page.getByText('About Page')).toBeVisible();
+    await modifyFile('src/pages/about.tsx', 'About Page', 'About2 Page');
+    await expect(page.getByText('About2 Page')).toBeVisible();
+    await page.getByTestId('home').click();
+    await expect(page.getByText('Edited Page')).toBeVisible();
     await terminate(pid!);
   });
 });
