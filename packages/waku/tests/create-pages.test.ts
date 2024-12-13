@@ -627,6 +627,50 @@ describe('createPages', () => {
     expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/nested']);
   });
 
+  it('creates a nested static page with nested layout', async () => {
+    const TestPage = () => null;
+    createPages(async ({ createPage, createLayout }) => [
+      createPage({
+        render: 'static',
+        path: '/test/nested',
+        component: TestPage,
+      }),
+      createLayout({
+        render: 'static',
+        path: '/test/nested',
+        component: () => null,
+      }),
+    ]);
+    const { getPathConfig, renderRoute } = injectedFunctions();
+    expect(await getPathConfig()).toEqual([
+      {
+        elements: {
+          root: { isStatic: true },
+          'page:/test/nested': { isStatic: true },
+        },
+        routeElement: { isStatic: true },
+        noSsr: false,
+        path: [
+          {
+            name: 'test',
+            type: 'literal',
+          },
+          {
+            name: 'nested',
+            type: 'literal',
+          },
+        ],
+        pattern: '^/test/nested$',
+      },
+    ]);
+    const route = await renderRoute('/test/nested', {
+      query: '?skip=[]',
+    });
+    expect(route).toBeDefined();
+    expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/nested']);
+  });
+
   it('creates a nested dynamic page', async () => {
     const TestPage = () => null;
     createPages(async ({ createPage }) => [

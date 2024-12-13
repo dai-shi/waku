@@ -372,10 +372,10 @@ export const createPages = <
   const getLayouts = (spec: PathSpec): string[] => {
     const pathSegments = spec.reduce<string[]>(
       (acc, segment, index) => {
-        if (acc[index - 1] === '/') {
-          acc.push('/' + segment);
+        if (index === 0) {
+          acc.push('/' + segment.name);
         } else {
-          acc.push(acc[index - 1] + '/' + segment);
+          acc.push(acc[index - 1] + '/' + segment.name);
         }
         return acc;
       },
