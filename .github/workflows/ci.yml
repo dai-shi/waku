@@ -7,9 +7,9 @@ on:
     types: [opened, synchronize]
   workflow_call:
     inputs:
-      use_canary:
+      react_version:
         required: true
-        type: boolean
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -29,12 +29,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.version }}
-          cache: ${{ inputs.use_canary && 'pnpm' || '' }}
+          cache: ${{ !inputs.react_version && 'pnpm' || '' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
-      - if: ${{ !inputs.use_canary }}
+      - if: ${{ inputs.react_version }}
         run: |
-          pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
+          pnpm -r update react@${{ inputs.react_version }} react-dom@${{ inputs.react_version }} react-server-dom-webpack@${{ inputs.react_version }}
       - run: pnpm test
 
   build:
@@ -45,13 +45,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: ${{ inputs.use_canary && 'pnpm' || '' }}
+          cache: ${{ !inputs.react_version && 'pnpm' || '' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
-      - if: ${{ !inputs.use_canary }}
+      - if: ${{ inputs.react_version }}
         run: |
-          sed -i~ '/"peerDependencies"/,${s/"\^19\.0\.0"/"*"/}' packages/waku/package.json
-          pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
+          sed -i~ '/"peerDependencies"/,${s/ :".*"/: "*"/}' packages/waku/package.json
+          pnpm -r update react@${{ inputs.react_version }} react-dom@${{ inputs.react_version }} react-server-dom-webpack@${{ inputs.react_version }}
       - run: pnpm run compile
       - uses: actions/upload-artifact@v4
         with:
@@ -95,7 +95,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.version }}
-          cache: ${{ inputs.use_canary && 'pnpm' || '' }}
+          cache: ${{ !inputs.react_version && 'pnpm' || '' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
       - run: pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v4
@@ -109,11 +109,10 @@ jobs:
       - name: Install Playwright
         id: install-playwright
         uses: ./.github/actions/playwright
-      - if: ${{ !inputs.use_canary }}
+      - if: ${{ inputs.react_version }}
         run: |
-          pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
+          pnpm -r update react@${{ inputs.react_version }} react-dom@${{ inputs.react_version }} react-server-dom-webpack@${{ inputs.react_version }}
           pnpm install --lockfile-only
-          pnpm install --frozen-lockfile
       - run: pnpm exec playwright test --shard=${{ matrix.shared }}/${{ matrix.shardTotal }}
         env:
           TEMP_DIR: ${{ runner.temp }}

@@ -10,4 +10,4 @@ jobs:
     steps:
       - uses: ./.github/workflows/ci.yml
         with:
-          use_canary: true
+          react_version: 'canary'
