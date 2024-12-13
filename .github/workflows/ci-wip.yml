@@ -100,8 +100,7 @@ jobs:
       - name: Install Playwright
         id: install-playwright
         uses: ./.github/actions/playwright
-      - if: ${{ inputs.react_version }}
-        run: |
+      - run: |
           pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
           pnpm install --lockfile-only
       - run: pnpm exec playwright test --shard=${{ matrix.shared }}/${{ matrix.shardTotal }}
