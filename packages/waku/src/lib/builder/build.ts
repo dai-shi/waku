@@ -8,12 +8,8 @@ import type { ReactNode } from 'react';
 
 import type { Config } from '../../config.js';
 import { setAllEnvInternal, unstable_getPlatformObject } from '../../server.js';
-import type {
-  EntriesPrd,
-  EntriesDev,
-  new_defineEntries,
-  new_BuildConfig,
-} from '../../minimal/server.js';
+import type { EntriesPrd } from '../types.js';
+import type { new_defineEntries } from '../../minimal/server.js';
 import type { ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import { EXTENSIONS } from '../constants.js';
@@ -39,11 +35,8 @@ import {
   writeFile,
 } from '../utils/node-fs.js';
 import { encodeRscPath, generatePrefetchCode } from '../renderers/utils.js';
-import {
-  collectClientModules,
-  renderRsc as renderRscNew,
-} from '../renderers/rsc.js';
-import { renderHtml as renderHtmlNew } from '../renderers/html.js';
+import { collectClientModules, renderRsc } from '../renderers/rsc.js';
+import { renderHtml } from '../renderers/html.js';
 import {
   SERVER_MODULE_MAP,
   CLIENT_MODULE_MAP,
@@ -427,12 +420,15 @@ const pathSpec2pathname = (pathSpec: PathSpec): string => {
 // we write a max of 2500 pages at a time to avoid OOM
 const PATH_SLICE_SIZE = 2500;
 
+type GetBuildConfig = Parameters<
+  typeof new_defineEntries
+>[0]['unstable_getBuildConfig'];
+type BuildConfig = Awaited<ReturnType<GetBuildConfig>>;
+
 // FIXME this is too hacky
-const willEmitPublicIndexHtmlNew = async (
-  distEntries: Omit<EntriesPrd, keyof EntriesDev> & {
-    default: ReturnType<typeof new_defineEntries>;
-  },
-  buildConfig: new_BuildConfig,
+const willEmitPublicIndexHtml = async (
+  distEntries: EntriesPrd,
+  buildConfig: BuildConfig,
 ) => {
   const hasConfig = buildConfig.some(({ pathSpec }) => {
     return !!getPathMapping(pathSpec, '/');
@@ -471,10 +467,8 @@ const emitStaticFiles = async (
   rootDir: string,
   config: ResolvedConfig,
   distEntriesFile: string,
-  distEntries: Omit<EntriesPrd, keyof EntriesDev> & {
-    default: ReturnType<typeof new_defineEntries>;
-  },
-  buildConfig: new_BuildConfig,
+  distEntries: EntriesPrd,
+  buildConfig: BuildConfig,
   cssAssets: string[],
 ) => {
   const unstable_modules = {
@@ -495,7 +489,7 @@ const emitStaticFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  if (await willEmitPublicIndexHtmlNew(distEntries, buildConfig)) {
+  if (await willEmitPublicIndexHtml(distEntries, buildConfig)) {
     await unlink(publicIndexHtmlFile);
   }
   const publicIndexHtmlHead = publicIndexHtml.replace(
@@ -508,7 +502,7 @@ const emitStaticFiles = async (
     isStatic,
     entries,
     customCode,
-  }: new_BuildConfig[number]) => {
+  }: BuildConfig[number]) => {
     const moduleIdsForPrefetch = new Set<string>();
     for (const { rscPath, isStatic } of entries || []) {
       if (!isStatic) {
@@ -528,7 +522,7 @@ const emitStaticFiles = async (
       await mkdir(joinPath(destRscFile, '..'), { recursive: true });
       const utils = {
         renderRsc: (elements: Record<string, unknown>) =>
-          renderRscNew(config, { unstable_modules }, elements, (id) =>
+          renderRsc(config, { unstable_modules }, elements, (id) =>
             moduleIdsForPrefetch.add(id),
           ),
         renderHtml: () => {
@@ -618,13 +612,13 @@ const emitStaticFiles = async (
     }
     const utils = {
       renderRsc: (elements: Record<string, unknown>) =>
-        renderRscNew(config, { unstable_modules }, elements),
+        renderRsc(config, { unstable_modules }, elements),
       renderHtml: (
         elements: Record<string, ReactNode>,
         html: ReactNode,
         rscPath: string,
       ) => {
-        const readable = renderHtmlNew(
+        const readable = renderHtml(
           config,
           { unstable_modules },
           htmlHead,
@@ -785,27 +779,23 @@ export async function build(options: {
   const distEntries = await import(filePathToFileURL(distEntriesFile));
 
   // TODO: Add progress indication for static builds.
-  if ('unstable_handleRequest' in distEntries.default) {
-    const rsdwServer = await distEntries.loadModule('rsdw-server'); // FIXME hard-coded id
-    setAllEnvInternal(env);
-    const buildConfig = await distEntries.default.unstable_getBuildConfig({
-      unstable_collectClientModules: (elements: never) =>
-        collectClientModules(config, rsdwServer, elements),
-    });
-    const cssAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
-      type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
-    );
-    await emitStaticFiles(
-      rootDir,
-      config,
-      distEntriesFile,
-      distEntries,
-      buildConfig,
-      cssAssets,
-    );
-  } else {
-    throw new Error('old defineEntries is not supported');
-  }
+  const rsdwServer = await distEntries.loadModule('rsdw-server'); // FIXME hard-coded id
+  setAllEnvInternal(env);
+  const buildConfig = await distEntries.default.unstable_getBuildConfig({
+    unstable_collectClientModules: (elements: never) =>
+      collectClientModules(config, rsdwServer, elements),
+  });
+  const cssAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
+    type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
+  );
+  await emitStaticFiles(
+    rootDir,
+    config,
+    distEntriesFile,
+    distEntries,
+    buildConfig,
+    cssAssets,
+  );
 
   platformObject.buildOptions.unstable_phase = 'buildDeploy';
   await buildDeploy(rootDir, config);
