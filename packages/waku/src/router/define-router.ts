@@ -297,7 +297,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         rendered = true;
         return renderRsc({ ...(await elementsPromise), _value: value });
       }
-      if (input.type === 'custom') {
+      if (input.type === 'action' || input.type === 'custom') {
         let pathname = input.pathname;
         const query = input.req.url.searchParams.toString();
         const pathStatus = await existsPath(pathname);
@@ -320,7 +320,9 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         const html = createElement(ServerRouter, {
           route: { path: pathname, query, hash: '' },
         });
-        return renderHtml(entries, html, rscPath);
+        const actionResult =
+          input.type === 'action' ? await input.fn() : undefined;
+        return renderHtml(entries, html, rscPath, actionResult);
       }
     },
     getBuildConfig,

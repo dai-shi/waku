@@ -5,7 +5,7 @@ import type { PureConfig } from '../config.js';
 import { setAllEnvInternal } from '../../server.js';
 import type { HandleRequest } from '../types.js';
 import type { Middleware, HandlerContext } from './types.js';
-import { renderRsc, decodeBody } from '../renderers/rsc.js';
+import { renderRsc, decodeBody, decodePostAction } from '../renderers/rsc.js';
 import { renderHtml } from '../renderers/html.js';
 import { decodeRscPath, decodeFuncId } from '../renderers/utils.js';
 import { filePathToFileURL, getPathMapping } from '../utils/path.js';
@@ -46,6 +46,17 @@ const getInput = async (
       return { type: 'function', fn: mod[name], args, req: ctx.req };
     }
     return { type: 'component', rscPath, rscParams: decodedBody, req: ctx.req };
+  }
+  if (ctx.req.method === 'POST') {
+    const postAction = await decodePostAction(ctx);
+    if (postAction) {
+      return {
+        type: 'action',
+        fn: postAction,
+        pathname: '/' + ctx.req.url.pathname.slice(config.basePath.length),
+        req: ctx.req,
+      };
+    }
   }
   return {
     type: 'custom',
@@ -118,6 +129,7 @@ export const handler: Middleware = (options) => {
         elements: Record<string, ReactNode>,
         html: ReactNode,
         rscPath: string,
+        actionResult?: unknown,
       ) => {
         const readable = renderHtml(
           config,
@@ -126,6 +138,7 @@ export const handler: Middleware = (options) => {
           elements,
           html,
           rscPath,
+          actionResult,
         );
         const headers = { 'content-type': 'text/html; charset=utf-8' };
         return {
