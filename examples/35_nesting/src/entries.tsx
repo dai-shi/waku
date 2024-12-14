@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
-import { new_defineEntries } from 'waku/minimal/server';
+import { unstable_defineEntries as defineEntries } from 'waku/minimal/server';
 import { Slot } from 'waku/minimal/client';
 
 import App from './components/App';
 import InnerApp from './components/InnerApp';
 import AppWithoutSsr from './components/AppWithoutSsr';
 
-export default new_defineEntries({
-  unstable_handleRequest: async (input, { renderRsc, renderHtml }) => {
+export default defineEntries({
+  handleRequest: async (input, { renderRsc, renderHtml }) => {
     if (input.type === 'component') {
       const params = new URLSearchParams(
         input.rscPath || 'App=Waku&InnerApp=0',
@@ -32,7 +32,7 @@ export default new_defineEntries({
       );
     }
   },
-  unstable_getBuildConfig: async () => [
+  getBuildConfig: async () => [
     {
       pathSpec: [],
       entries: [

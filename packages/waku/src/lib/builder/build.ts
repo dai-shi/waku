@@ -8,8 +8,7 @@ import type { ReactNode } from 'react';
 
 import type { Config } from '../../config.js';
 import { setAllEnvInternal, unstable_getPlatformObject } from '../../server.js';
-import type { EntriesPrd } from '../types.js';
-import type { new_defineEntries } from '../../minimal/server.js';
+import type { BuildConfig, EntriesPrd } from '../types.js';
 import type { ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import { EXTENSIONS } from '../constants.js';
@@ -420,11 +419,6 @@ const pathSpec2pathname = (pathSpec: PathSpec): string => {
 // we write a max of 2500 pages at a time to avoid OOM
 const PATH_SLICE_SIZE = 2500;
 
-type GetBuildConfig = Parameters<
-  typeof new_defineEntries
->[0]['unstable_getBuildConfig'];
-type BuildConfig = Awaited<ReturnType<GetBuildConfig>>;
-
 // FIXME this is too hacky
 const willEmitPublicIndexHtml = async (
   distEntries: EntriesPrd,
@@ -458,7 +452,7 @@ const willEmitPublicIndexHtml = async (
       headers: {},
     },
   } as const;
-  const res = await distEntries.default.unstable_handleRequest(input, utils);
+  const res = await distEntries.default.handleRequest(input, utils);
   return !!res;
 };
 
@@ -542,10 +536,7 @@ const emitStaticFiles = async (
           headers: {},
         },
       } as const;
-      const res = await distEntries.default.unstable_handleRequest(
-        input,
-        utils,
-      );
+      const res = await distEntries.default.handleRequest(input, utils);
       const rscReadable = res instanceof ReadableStream ? res : res?.body;
       await pipeline(
         Readable.fromWeb(rscReadable as never),
@@ -643,7 +634,7 @@ const emitStaticFiles = async (
         headers: {},
       },
     } as const;
-    const res = await distEntries.default.unstable_handleRequest(input, utils);
+    const res = await distEntries.default.handleRequest(input, utils);
     const readable = res instanceof ReadableStream ? res : res?.body;
     await mkdir(joinPath(destFile, '..'), { recursive: true });
     if (readable) {
@@ -776,14 +767,16 @@ export async function build(options: {
   );
   delete platformObject.buildOptions.unstable_phase;
 
-  const distEntries = await import(filePathToFileURL(distEntriesFile));
+  const distEntries: EntriesPrd = await import(
+    filePathToFileURL(distEntriesFile)
+  );
 
   // TODO: Add progress indication for static builds.
   const rsdwServer = await distEntries.loadModule('rsdw-server'); // FIXME hard-coded id
   setAllEnvInternal(env);
-  const buildConfig = await distEntries.default.unstable_getBuildConfig({
-    unstable_collectClientModules: (elements: never) =>
-      collectClientModules(config, rsdwServer, elements),
+  const buildConfig = await distEntries.default.getBuildConfig({
+    unstable_collectClientModules: (elements: Record<string, unknown>) =>
+      collectClientModules(config, rsdwServer as never, elements),
   });
   const cssAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],

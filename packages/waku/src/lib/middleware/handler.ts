@@ -3,16 +3,12 @@ import type { ReactNode } from 'react';
 import { resolveConfig } from '../config.js';
 import type { PureConfig } from '../config.js';
 import { setAllEnvInternal } from '../../server.js';
+import type { HandleRequest } from '../types.js';
 import type { Middleware, HandlerContext } from './types.js';
-import type { new_defineEntries } from '../../minimal/server.js';
 import { renderRsc, decodeBody } from '../renderers/rsc.js';
 import { renderHtml } from '../renderers/html.js';
 import { decodeRscPath, decodeFuncId } from '../renderers/utils.js';
 import { filePathToFileURL, getPathMapping } from '../utils/path.js';
-
-type HandleRequest = Parameters<
-  typeof new_defineEntries
->[0]['unstable_handleRequest'];
 
 export const SERVER_MODULE_MAP = {
   'rsdw-server': 'react-server-dom-webpack/server.edge',
@@ -142,7 +138,7 @@ export const handler: Middleware = (options) => {
     };
     const input = await getInput(config, ctx, loadServerModule);
     if (input) {
-      const res = await entries.default.unstable_handleRequest(input, utils);
+      const res = await entries.default.handleRequest(input, utils);
       if (res instanceof ReadableStream) {
         ctx.res.body = res;
       } else if (res) {

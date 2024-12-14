@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import type { ReactNode } from 'react';
 
 import { unstable_getPlatformObject } from '../server.js';
-import { new_defineEntries } from '../minimal/server.js';
+import { unstable_defineEntries as defineEntries } from '../minimal/server.js';
 import {
   encodeRoutePath,
   decodeRoutePath,
@@ -206,10 +206,9 @@ export function unstable_defineRouter(fns: {
     return entries;
   };
 
-  type GetBuildConfig = Parameters<
-    typeof new_defineEntries
-  >[0]['unstable_getBuildConfig'];
-  const unstable_getBuildConfig: GetBuildConfig = async ({
+  type GetBuildConfig = Parameters<typeof defineEntries>[0]['getBuildConfig'];
+
+  const getBuildConfig: GetBuildConfig = async ({
     unstable_collectClientModules,
   }) => {
     const pathConfig = await getMyPathConfig();
@@ -263,8 +262,8 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
     return buildConfig;
   };
 
-  return new_defineEntries({
-    unstable_handleRequest: async (input, { renderRsc, renderHtml }) => {
+  return defineEntries({
+    handleRequest: async (input, { renderRsc, renderHtml }) => {
       if (input.type === 'component') {
         const entries = await getEntries(input.rscPath, input.rscParams);
         if (!entries) {
@@ -324,6 +323,6 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         return renderHtml(entries, html, rscPath);
       }
     },
-    unstable_getBuildConfig,
+    getBuildConfig,
   });
 }
