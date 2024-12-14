@@ -41,9 +41,6 @@ export function decodeRoutePath(rscPath: string): string {
 }
 
 // It starts with "/" to avoid conflicting with normal component ids.
-export const SHOULD_SKIP_ID = '/SHOULD_SKIP';
-
-// It starts with "/" to avoid conflicting with normal component ids.
 export const ROUTE_ID = '/ROUTE';
 
 // It starts with "/" to avoid conflicting with normal component ids.
@@ -51,12 +48,3 @@ export const IS_STATIC_ID = '/IS_STATIC';
 
 // It starts with "/" to avoid conflicting with normal component ids.
 export const HAS404_ID = '/HAS404';
-
-// TODO revisit shouldSkip API
-export type ShouldSkip = (readonly [
-  componentId: string,
-  readonly [
-    path?: boolean, // if we compare path
-    query?: boolean, // if we compare query
-  ],
-])[];

@@ -221,16 +221,14 @@ export function deployCloudflarePlugin(opts: {
 name = "waku-project"
 compatibility_date = "2024-09-23"
 compatibility_flags = [ "nodejs_als" ]
-pages_build_output_dir = "./dist"
 main = "./dist/worker/serve-cloudflare.js"
 
-assets = {
-  directory = "./dist/assets",
-  binding = "ASSETS",
-  html_handling = "drop-trailing-slash",
-  # "single-page-application" | "404-page" | "none"
-  not_found_handling = "404-page"
-}
+[assets]
+directory = "./dist/assets"
+binding = "ASSETS"
+html_handling = "drop-trailing-slash"
+# "single-page-application" | "404-page" | "none"
+not_found_handling = "404-page"
 `,
         );
       }

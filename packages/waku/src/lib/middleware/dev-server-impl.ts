@@ -4,7 +4,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
-import type { EntriesDev } from '../../minimal/server.js';
+import type { EntriesDev } from '../types.js';
 import { resolveConfig } from '../config.js';
 import { SRC_MAIN, SRC_ENTRIES } from '../constants.js';
 import {
@@ -24,7 +24,6 @@ import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
-import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import type { ClonableModuleNode, Middleware } from './types.js';
 import { fsRouterTypegenPlugin } from '../plugins/vite-plugin-fs-router-typegen.js';
 
@@ -84,7 +83,7 @@ const createMainViteServer = (
   configPromise: ReturnType<typeof resolveConfig>,
 ) => {
   const vitePromise = configPromise.then(async (config) => {
-    const mergedViteConfig = await mergeUserViteConfig({
+    const vite = await createViteServer({
       // Since we have multiple instances of vite, different ones might overwrite the others' cache.
       cacheDir: 'node_modules/.vite/waku-dev-server-main',
       base: config.basePath,
@@ -112,7 +111,7 @@ const createMainViteServer = (
         fsRouterTypegenPlugin(config),
       ],
       optimizeDeps: {
-        include: ['react-server-dom-webpack/client', 'react-dom'],
+        include: ['react-server-dom-webpack/client', 'react-dom/client'],
         exclude: ['waku', 'rsc-html-stream/server'],
         entries: [
           `${config.srcDir}/${SRC_ENTRIES}.*`,
@@ -126,7 +125,6 @@ const createMainViteServer = (
       appType: 'mpa',
       server: { middlewareMode: true },
     });
-    const vite = await createViteServer(mergedViteConfig);
     registerHotUpdateCallback((payload) => hotUpdate(vite, payload));
     return vite;
   });
@@ -134,33 +132,27 @@ const createMainViteServer = (
   const wakuDist = joinPath(fileURLToFilePath(import.meta.url), '../../..');
 
   const loadServerModuleMain = async (idOrFileURL: string) => {
-    let file = idOrFileURL.startsWith('file://')
-      ? fileURLToFilePath(idOrFileURL)
-      : idOrFileURL;
-    if (file.startsWith(wakuDist)) {
-      file = 'waku' + file.slice(wakuDist.length).replace(/\.\w+$/, '');
-    }
-    if (file === 'waku' || file.startsWith('waku/')) {
-      // HACK `external: ['waku']` doesn't do the same
-      return import(/* @vite-ignore */ file);
-    }
     const vite = await vitePromise;
-    if (
-      idOrFileURL.startsWith('file://') &&
-      idOrFileURL.includes('/node_modules/')
-    ) {
-      // HACK node_modules should be externalized
-      const filePath = fileURLToFilePath(idOrFileURL.split('?')[0]!);
-      const fileWithAbsolutePath = filePath.startsWith('/')
-        ? filePath
-        : joinPath(vite.config.root, filePath);
-      return import(/* @vite-ignore */ filePathToFileURL(fileWithAbsolutePath));
+    if (!idOrFileURL.startsWith('file://')) {
+      if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
+        // HACK `external: ['waku']` doesn't do the same
+        return import(/* @vite-ignore */ idOrFileURL);
+      }
+      return vite.ssrLoadModule(idOrFileURL);
     }
-    return vite.ssrLoadModule(
-      idOrFileURL.startsWith('file://')
-        ? fileURLToFilePath(idOrFileURL)
-        : idOrFileURL,
-    );
+    const filePath = fileURLToFilePath(idOrFileURL.split('?')[0]!);
+    const file = filePath.startsWith('/')
+      ? filePath
+      : joinPath(vite.config.root, filePath);
+    if (file.startsWith(wakuDist)) {
+      // HACK `external: ['waku']` doesn't do the same
+      return import(/* @vite-ignore */ filePathToFileURL(file));
+    }
+    if (file.includes('/node_modules/')) {
+      // HACK node_modules should be externalized
+      return import(/* @vite-ignore */ filePathToFileURL(file));
+    }
+    return vite.ssrLoadModule(fileURLToFilePath(idOrFileURL));
   };
 
   const transformIndexHtml = async (pathname: string) => {
@@ -225,7 +217,7 @@ const createRscViteServer = (
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
 
   const vitePromise = configPromise.then(async (config) => {
-    const mergedViteConfig = await mergeUserViteConfig({
+    const vite = await createViteServer({
       // Since we have multiple instances of vite, different ones might overwrite the others' cache.
       cacheDir: 'node_modules/.vite/waku-dev-server-rsc',
       plugins: [
@@ -240,7 +232,7 @@ const createRscViteServer = (
         rscDelegatePlugin(hotUpdateCallback),
       ],
       optimizeDeps: {
-        include: ['react-server-dom-webpack/client', 'react-dom'],
+        include: ['react-server-dom-webpack/client', 'react-dom/client'],
         exclude: ['waku'],
         entries: [
           `${config.srcDir}/${SRC_ENTRIES}.*`,
@@ -268,7 +260,6 @@ const createRscViteServer = (
       appType: 'custom',
       server: { middlewareMode: true, hmr: { server: dummyServer } },
     });
-    const vite = await createViteServer(mergedViteConfig);
     return vite;
   });
 

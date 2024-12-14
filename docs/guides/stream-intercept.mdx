@@ -65,10 +65,10 @@ import streamInterceptor from './src/middleware/stream-interceptor';
 export default {
   // ...
   middleware: () => [
+    import('waku/middleware/context'),
     import('./src/middleware/themePreload.js'), // + this is the one we just added
     import('waku/middleware/dev-server'),
-    import('waku/middleware/rsc'),
-    import('waku/middleware/ssr'),
+    import('waku/middleware/handler'),
   ],
 };
 ```

@@ -1,11 +1,11 @@
-import { new_defineEntries } from 'waku/minimal/server';
+import { unstable_defineEntries as defineEntries } from 'waku/minimal/server';
 import { Slot } from 'waku/minimal/client';
 
 import App from './components2/App';
 import { runWithRerender } from './als';
 
-export default new_defineEntries({
-  unstable_handleRequest: async (input, { renderRsc, renderHtml }) => {
+export default defineEntries({
+  handleRequest: async (input, { renderRsc, renderHtml }) => {
     if (input.type === 'component') {
       return renderRsc({ App: <App name={input.rscPath || 'Waku'} /> });
     }
@@ -23,7 +23,5 @@ export default new_defineEntries({
       return renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, '');
     }
   },
-  unstable_getBuildConfig: async () => [
-    { pathSpec: [], entries: [{ rscPath: '' }] },
-  ],
+  getBuildConfig: async () => [{ pathSpec: [], entries: [{ rscPath: '' }] }],
 });
