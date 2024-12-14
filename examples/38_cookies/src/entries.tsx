@@ -1,14 +1,14 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fsPromises from 'node:fs/promises';
-import { new_defineEntries } from 'waku/minimal/server';
+import { unstable_defineEntries as defineEntries } from 'waku/minimal/server';
 import { Slot } from 'waku/minimal/client';
 import { getContextData } from 'waku/middleware/context';
 
 import App from './components/App';
 
-export default new_defineEntries({
-  unstable_handleRequest: async (input, { renderRsc, renderHtml }) => {
+export default defineEntries({
+  handleRequest: async (input, { renderRsc, renderHtml }) => {
     const data = getContextData() as { count?: number };
     data.count = (data.count || 0) + 1;
     const items = JSON.parse(
@@ -33,7 +33,5 @@ export default new_defineEntries({
       );
     }
   },
-  unstable_getBuildConfig: async () => [
-    { pathSpec: [], entries: [{ rscPath: '' }] },
-  ],
+  getBuildConfig: async () => [{ pathSpec: [], entries: [{ rscPath: '' }] }],
 });

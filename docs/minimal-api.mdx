@@ -8,23 +8,29 @@ description: The minimal Waku API for library authors.
 
 ### Server API
 
-To use React Server Components in Waku, you need to create an `entries.tsx` file in the project root directory with a `renderEntries` function that returns a server component module.
+To use React Server Components in Waku, you need to create an `entries.tsx` file in the project root directory and `defineEntries` to handle server requests.
 
 ```tsx
-import { defineEntries } from 'waku/server';
+import { unstable_defineEntries as defineEntries } from 'waku/minimal/server';
 import App from './components/App.js';
 
-export default defineEntries(
-  // renderEntries
-  async (rscPath) => {
-    return {
-      App: <App name={rscPath || 'Waku'} />,
-    };
+export default defineEntries({
+  handleRequest: async (input, { renderRsc, renderHtml }) => {
+    if (input.type === 'component') {
+      return renderRsc({ App: <App name={input.rscPath || 'Waku'} /> });
+    }
+    if (input.type === 'custom' && input.pathname === '/') {
+      return renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, '');
+    }
   },
-);
+  getBuildConfig: async () => [{ pathSpec: [], entries: [{ rscPath: '' }] }],
+});
 ```
 
-The `id` parameter is the ID of the React Server Component that you want to load on the server. You specify the RSC ID from the client.
+Tips for experimenting:
+
+- `input.type === 'custom'` condition can be omitted if you don't need SSR.
+- `getBuildConfig` can return `[]` if you don't need to build anything.
 
 ### Client API
 
@@ -34,7 +40,7 @@ This file should be `./src/main.tsx`.
 
 ```tsx
 import { createRoot } from 'react-dom/client';
-import { Root, Slot } from 'waku/client';
+import { Root, Slot } from 'waku/minimal/client';
 
 const rootElement = (
   <StrictMode>
@@ -61,30 +67,8 @@ const Component = () => {
 };
 ```
 
-### Additional Server API
+### Examples
 
-In addition to the `renderEntries` function, you can also optionally specify `getBuildConfig` function in
-`entries.tsx`.
-
-```tsx
-import { defineEntries } from 'waku/server';
-
-export default defineEntries(
-  // renderEntries
-  async (rscPath) => {
-    return {
-      App: <App name={rscPath || 'Waku'} />,
-    };
-  },
-  // getBuildConfig
-  async () => {
-    return {
-      '/': {
-        entries: [['']],
-      },
-    };
-  },
-);
-```
-
-The `getBuildConfig` function is used for build-time optimization. It renders React Server Components during the build process to produce the output that will be sent to the client. Note that rendering here means to produce RSC payload not HTML content.
+- [../examples/31_minimal](Minimal example)
+- [../examples/34_functions](With server functions)
+- [../examples/39_api](With custom API endpoints)

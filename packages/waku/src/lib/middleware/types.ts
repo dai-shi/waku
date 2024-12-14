@@ -1,22 +1,13 @@
 import type { Config } from '../../config.js';
 
-// TODO should we move this to somewhere else?
-import type { EntriesDev, EntriesPrd } from '../../minimal/server.js';
+import type {
+  EntriesDev,
+  EntriesPrd,
+  HandlerReq,
+  HandlerRes,
+} from '../types.js';
 
 export type ClonableModuleNode = { url: string; file: string };
-
-export type HandlerReq = {
-  readonly body: ReadableStream | null;
-  readonly url: URL;
-  readonly method: string;
-  readonly headers: Readonly<Record<string, string>>;
-};
-
-export type HandlerRes = {
-  body?: ReadableStream;
-  headers?: Record<string, string | string[]>;
-  status?: number;
-};
 
 export type HandlerContext = {
   readonly req: HandlerReq;
