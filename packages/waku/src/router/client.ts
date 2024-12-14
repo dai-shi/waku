@@ -354,17 +354,14 @@ const InnerRouter = ({
     (route, options) => {
       const { skipRefetch } = options || {};
       startTransition(() => {
+        if (!staticPathSet.has(route.path) && !skipRefetch) {
+          const skip = Array.from(cachedIdSet);
+          const rscPath = encodeRoutePath(route.path);
+          const rscParams = createRscParams(route.query, skip);
+          refetch(rscPath, rscParams);
+        }
         setRoute(route);
       });
-      if (staticPathSet.has(route.path)) {
-        return;
-      }
-      if (!skipRefetch) {
-        const skip = Array.from(cachedIdSet);
-        const rscPath = encodeRoutePath(route.path);
-        const rscParams = createRscParams(route.query, skip);
-        refetch(rscPath, rscParams);
-      }
     },
     [refetch, cachedIdSet, staticPathSet],
   );

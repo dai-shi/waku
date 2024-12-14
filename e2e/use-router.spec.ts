@@ -107,7 +107,7 @@ test.describe('useRouter', async () => {
       await page.goto(`http://localhost:${port}/dynamic`);
       await page.click('text=Static router.push button');
       await expect(page.getByRole('heading', { name: 'Static' })).toBeVisible();
-      await expect(page.getByTestId('path')).toHaveText('Path: /dynamic');
+      await expect(page.getByTestId('path')).toHaveText('Path: /static');
       await terminate(pid!);
     });
   });
