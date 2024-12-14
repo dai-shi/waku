@@ -41,21 +41,24 @@ const parseRscParams = (
 };
 
 const RERENDER_SYMBOL = Symbol('RERENDER');
+type Rerender = (rscPath: string, rscParams?: unknown) => void;
 
-const setRerender = (
-  rerender: (rscPath: string, rscParams?: unknown) => void,
-) => {
+const setRerender = (rerender: Rerender) => {
   try {
     const context = getContext();
-    (context as any)[RERENDER_SYMBOL] = rerender;
+    (context as unknown as Record<typeof RERENDER_SYMBOL, Rerender>)[
+      RERENDER_SYMBOL
+    ] = rerender;
   } catch {
     // ignore
   }
 };
 
-const getRerender = (): ((rscPath: string, rscParams?: unknown) => void) => {
+const getRerender = (): Rerender => {
   const context = getContext();
-  return (context as any)[RERENDER_SYMBOL];
+  return (context as unknown as Record<typeof RERENDER_SYMBOL, Rerender>)[
+    RERENDER_SYMBOL
+  ];
 };
 
 export function unstable_rerenderRoute(pathname: string, query?: string) {
