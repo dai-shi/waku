@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { unstable_defineRouter } from 'waku/router/server';
 import { Slot, Children } from 'waku/minimal/client';
+import { new_defineEntries } from 'waku/minimal/server';
 
 import Layout from './routes/layout.js';
 import Page from './routes/page.js';
@@ -12,7 +13,7 @@ const PATH_PAGE: Record<string, ReactNode> = {
   '/foo': <FooPage />,
 };
 
-export default unstable_defineRouter({
+const router: ReturnType<typeof unstable_defineRouter> = unstable_defineRouter({
   getPathConfig: async () =>
     STATIC_PATHS.map((path) => ({
       pattern: `^${path}$`,
@@ -60,3 +61,17 @@ export default unstable_defineRouter({
     };
   },
 });
+
+const entries: ReturnType<typeof new_defineEntries> = new_defineEntries({
+  unstable_handleRequest: async (input, utils) => {
+    if (input.type === 'custom') {
+      return null; // no ssr
+    }
+    return router.unstable_handleRequest(input, utils);
+  },
+  unstable_getBuildConfig: (utils) => {
+    return router.unstable_getBuildConfig(utils);
+  },
+});
+
+export default entries;

@@ -16,8 +16,7 @@ export type PureConfig = Omit<
 const DEFAULT_MIDDLEWARE = () => [
   import('waku/middleware/context'),
   import('waku/middleware/dev-server'),
-  import('waku/middleware/rsc'),
-  import('waku/middleware/ssr'),
+  import('waku/middleware/handler'),
 ];
 
 // Keep async function for future extension

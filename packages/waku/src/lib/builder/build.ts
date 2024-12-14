@@ -7,7 +7,7 @@ import type { LoggingFunction, RollupLog } from 'rollup';
 import type { ReactNode } from 'react';
 
 import type { Config } from '../../config.js';
-import { unstable_getPlatformObject } from '../../server.js';
+import { setAllEnvInternal, unstable_getPlatformObject } from '../../server.js';
 import type {
   BuildConfig,
   EntriesPrd,
@@ -834,6 +834,16 @@ const emitStaticFiles = async (
       );
       htmlHead += `<script type="module" async>${code}</script>`;
     }
+    if (!isStatic) {
+      const lastPathSpecItem = pathSpec.at(-1);
+      const ext =
+        lastPathSpecItem?.type === 'literal' && extname(lastPathSpecItem.name);
+      if (!ext || ext === '.html') {
+        // HACK doesn't feel ideal
+        dynamicHtmlPathMap.set(pathSpec, htmlHead);
+      }
+      return;
+    }
     const pathname = pathSpec2pathname(pathSpec);
     const destFile = joinPath(
       rootDir,
@@ -845,13 +855,6 @@ const emitStaticFiles = async (
           ? '404.html' // HACK special treatment for 404, better way?
           : pathname + '/index.html',
     );
-    if (!isStatic) {
-      if (destFile.endsWith('.html')) {
-        // HACK doesn't feel ideal
-        dynamicHtmlPathMap.set(pathSpec, htmlHead);
-      }
-      return;
-    }
     // In partial mode, skip if the file already exists.
     if (existsSync(destFile)) {
       return;
@@ -1026,13 +1029,11 @@ export async function build(options: {
 
   // TODO: Add progress indication for static builds.
   if ('unstable_handleRequest' in distEntries.default) {
+    const rsdwServer = await distEntries.loadModule('rsdw-server'); // FIXME hard-coded id
+    setAllEnvInternal(env);
     const buildConfig = await distEntries.default.unstable_getBuildConfig({
       unstable_collectClientModules: (elements: never) =>
-        collectClientModules(
-          config,
-          distEntries.loadModule('rsdw-server'), // FIXME hard-coded id
-          elements,
-        ),
+        collectClientModules(config, rsdwServer, elements),
     });
     const cssAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
       type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],

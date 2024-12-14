@@ -1,17 +1,8 @@
 import { createElement } from 'react';
 import type { ReactNode } from 'react';
 
-import {
-  defineEntries,
-  rerender,
-  unstable_getPlatformObject,
-} from '../server.js';
-import type {
-  BuildConfig,
-  RenderEntries,
-  GetBuildConfig,
-  GetSsrConfig,
-} from '../minimal/server.js';
+import { unstable_getPlatformObject } from '../server.js';
+import { new_defineEntries } from '../minimal/server.js';
 import {
   encodeRoutePath,
   decodeRoutePath,
@@ -22,6 +13,9 @@ import {
 import { getPathMapping } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
 import { ServerRouter } from './client.js';
+
+// This can't be relative import
+import { getContext } from 'waku/middleware/context';
 
 const isStringArray = (x: unknown): x is string[] =>
   Array.isArray(x) && x.every((y) => typeof y === 'string');
@@ -46,13 +40,30 @@ const parseRscParams = (
   return { query, skip };
 };
 
-export function unstable_rerenderRoute(
-  pathname: string,
-  query?: string,
-  skip?: string[], // TODO this is too hard to use
-) {
+const RERENDER_SYMBOL = Symbol('RERENDER');
+type Rerender = (rscPath: string, rscParams?: unknown) => void;
+
+const setRerender = (rerender: Rerender) => {
+  try {
+    const context = getContext();
+    (context as unknown as Record<typeof RERENDER_SYMBOL, Rerender>)[
+      RERENDER_SYMBOL
+    ] = rerender;
+  } catch {
+    // ignore
+  }
+};
+
+const getRerender = (): Rerender => {
+  const context = getContext();
+  return (context as unknown as Record<typeof RERENDER_SYMBOL, Rerender>)[
+    RERENDER_SYMBOL
+  ];
+};
+
+export function unstable_rerenderRoute(pathname: string, query?: string) {
   const rscPath = encodeRoutePath(pathname);
-  rerender(rscPath, { query, skip });
+  getRerender()(rscPath, query && new URLSearchParams({ query }));
 }
 
 type SlotId = string;
@@ -79,7 +90,7 @@ export function unstable_defineRouter(fns: {
     elements: Record<SlotId, ReactNode>;
     fallbackElement?: ReactNode;
   }>;
-}): ReturnType<typeof defineEntries> {
+}) {
   const platformObject = unstable_getPlatformObject();
   type MyPathConfig = {
     pattern: string;
@@ -160,7 +171,7 @@ export function unstable_defineRouter(fns: {
       return !!found && found.staticElementIds.includes(slotId);
     });
   };
-  const renderEntries: RenderEntries = async (rscPath, { rscParams }) => {
+  const getEntries = async (rscPath: string, rscParams: unknown) => {
     const pathname = decodeRoutePath(rscPath);
     const pathStatus = await existsPath(pathname);
     if (!pathStatus.found) {
@@ -195,9 +206,12 @@ export function unstable_defineRouter(fns: {
     return entries;
   };
 
-  const getBuildConfig: GetBuildConfig = async (
+  type GetBuildConfig = Parameters<
+    typeof new_defineEntries
+  >[0]['unstable_getBuildConfig'];
+  const unstable_getBuildConfig: GetBuildConfig = async ({
     unstable_collectClientModules,
-  ) => {
+  }) => {
     const pathConfig = await getMyPathConfig();
     const path2moduleIds: Record<string, string[]> = {};
 
@@ -208,7 +222,11 @@ export function unstable_defineRouter(fns: {
         }
         const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
         const rscPath = encodeRoutePath(pathname);
-        path2moduleIds[pattern] = await unstable_collectClientModules(rscPath);
+        const entries = await getEntries(rscPath, undefined);
+        if (entries) {
+          path2moduleIds[pattern] =
+            await unstable_collectClientModules(entries);
+        }
       }),
     );
 
@@ -222,6 +240,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
     }
   }
 };`;
+    type BuildConfig = Awaited<ReturnType<GetBuildConfig>>;
     const buildConfig: BuildConfig = [];
     for (const { pathname: pathSpec, isStatic, specs } of pathConfig) {
       const entries: BuildConfig[number]['entries'] = [];
@@ -231,7 +250,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         entries.push({ rscPath, isStatic });
       }
       buildConfig.push({
-        pathname: pathSpec,
+        pathSpec: pathSpec,
         isStatic,
         entries,
         customCode:
@@ -244,28 +263,67 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
     return buildConfig;
   };
 
-  const getSsrConfig: GetSsrConfig = async (pathname, { searchParams }) => {
-    const pathStatus = await existsPath(pathname);
-    if (pathStatus.found && pathStatus.noSsr) {
-      return null;
-    }
-    if (!pathStatus.found) {
-      if (pathStatus.has404) {
-        pathname = '/404';
-      } else {
-        return null;
+  return new_defineEntries({
+    unstable_handleRequest: async (input, { renderRsc, renderHtml }) => {
+      if (input.type === 'component') {
+        const entries = await getEntries(input.rscPath, input.rscParams);
+        if (!entries) {
+          return null;
+        }
+        return renderRsc(entries);
       }
-    }
-    const rscPath = encodeRoutePath(pathname);
-    const html = createElement(ServerRouter, {
-      route: { path: pathname, query: searchParams.toString(), hash: '' },
-    });
-    return {
-      rscPath,
-      rscParams: new URLSearchParams({ query: searchParams.toString() }),
-      html,
-    };
-  };
-
-  return { renderEntries, getBuildConfig, getSsrConfig };
+      if (input.type === 'function') {
+        let elementsPromise: Promise<Record<string, ReactNode>> =
+          Promise.resolve({});
+        let rendered = false;
+        const rerender = async (rscPath: string, rscParams?: unknown) => {
+          if (rendered) {
+            throw new Error('already rendered');
+          }
+          elementsPromise = Promise.all([
+            elementsPromise,
+            getEntries(rscPath, rscParams),
+          ]).then(([oldElements, newElements]) => {
+            if (newElements === null) {
+              console.warn('getEntries returned null');
+            }
+            return {
+              ...oldElements,
+              ...newElements,
+            };
+          });
+        };
+        setRerender(rerender);
+        const value = await input.fn(...input.args);
+        rendered = true;
+        return renderRsc({ ...(await elementsPromise), _value: value });
+      }
+      if (input.type === 'custom') {
+        let pathname = input.pathname;
+        const query = input.req.url.searchParams.toString();
+        const pathStatus = await existsPath(pathname);
+        if (pathStatus.found && pathStatus.noSsr) {
+          return null;
+        }
+        if (!pathStatus.found) {
+          if (pathStatus.has404) {
+            pathname = '/404';
+          } else {
+            return null;
+          }
+        }
+        const rscPath = encodeRoutePath(pathname);
+        const rscParams = new URLSearchParams({ query });
+        const entries = await getEntries(rscPath, rscParams);
+        if (!entries) {
+          return null;
+        }
+        const html = createElement(ServerRouter, {
+          route: { path: pathname, query, hash: '' },
+        });
+        return renderHtml(entries, html, rscPath);
+      }
+    },
+    unstable_getBuildConfig,
+  });
 }
