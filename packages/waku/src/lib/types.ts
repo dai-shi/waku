@@ -5,6 +5,7 @@ import type { PathSpec } from '../lib/utils/path.js';
 
 type Elements = Record<string, ReactNode>;
 
+// This API is still unstable
 export type HandleRequest = (
   input: (
     | { type: 'component'; rscPath: string; rscParams: unknown }
@@ -12,6 +13,11 @@ export type HandleRequest = (
         type: 'function';
         fn: (...args: unknown[]) => Promise<unknown>;
         args: unknown[];
+      }
+    | {
+        type: 'action';
+        fn: () => Promise<unknown>;
+        pathname: string;
       }
     | { type: 'custom'; pathname: string }
   ) & {
@@ -23,6 +29,7 @@ export type HandleRequest = (
       elements: Elements,
       html: ReactNode,
       rscPath: string,
+      actionResult?: unknown,
     ) => {
       body: ReadableStream;
       headers: Record<'content-type', string>;
@@ -30,6 +37,7 @@ export type HandleRequest = (
   },
 ) => Promise<ReadableStream | HandlerRes | null | undefined>;
 
+// This API is still unstable
 export type BuildConfig = {
   pathSpec: PathSpec;
   isStatic?: boolean | undefined;

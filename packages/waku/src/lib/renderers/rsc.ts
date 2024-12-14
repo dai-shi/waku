@@ -23,10 +23,7 @@ export function renderRsc(
     throw new Error('handler middleware required (missing modules)');
   }
   const {
-    default: {
-      renderToReadableStream,
-      // decodeReply,
-    },
+    default: { renderToReadableStream },
   } = modules.rsdwServer as { default: typeof RSDWServerType };
   const resolveClientEntry = ctx.unstable_devServer
     ? ctx.unstable_devServer.resolveClientEntry
@@ -55,10 +52,7 @@ export function renderRscElement(
     throw new Error('handler middleware required (missing modules)');
   }
   const {
-    default: {
-      renderToReadableStream,
-      // decodeReply,
-    },
+    default: { renderToReadableStream },
   } = modules.rsdwServer as { default: typeof RSDWServerType };
   const resolveClientEntry = ctx.unstable_devServer
     ? ctx.unstable_devServer.resolveClientEntry
@@ -149,4 +143,71 @@ export async function decodeBody(
     }
   }
   return decodedBody;
+}
+
+const EXTRACT_FORM_STATE = Symbol('EXTRACT_FORM_STATE');
+type ExtractFormState = (
+  actionResult: unknown,
+) => ReturnType<(typeof RSDWServerType)['decodeFormState']>;
+
+const setExtractFormState = (
+  ctx: object,
+  extractFormState: ExtractFormState,
+) => {
+  (ctx as unknown as Record<typeof EXTRACT_FORM_STATE, ExtractFormState>)[
+    EXTRACT_FORM_STATE
+  ] = extractFormState;
+};
+
+export const getExtractFormState = (ctx: object): ExtractFormState => {
+  const extractFormState = (
+    ctx as unknown as Record<
+      typeof EXTRACT_FORM_STATE,
+      ExtractFormState | undefined
+    >
+  )[EXTRACT_FORM_STATE];
+  if (!extractFormState) {
+    throw new Error('extractFormState not set');
+  }
+
+  return extractFormState;
+};
+
+export async function decodePostAction(
+  ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer' | 'req'>,
+): Promise<(() => Promise<unknown>) | null> {
+  const isDev = !!ctx.unstable_devServer;
+  const modules = ctx.unstable_modules;
+  if (!modules) {
+    throw new Error('handler middleware required (missing modules)');
+  }
+  const {
+    default: { decodeAction, decodeFormState },
+  } = modules.rsdwServer as { default: typeof RSDWServerType };
+  if (ctx.req.body) {
+    const contentType = ctx.req.headers['content-type'];
+    if (
+      typeof contentType === 'string' &&
+      contentType.startsWith('multipart/form-data')
+    ) {
+      const bodyBuf = await streamToArrayBuffer(ctx.req.body);
+      // XXX This doesn't support streaming unlike busboy
+      const formData = await parseFormData(bodyBuf, contentType);
+      const serverBundlerConfig = new Proxy(
+        {},
+        {
+          get(_target, encodedId: string) {
+            const [fileId, name] = encodedId.split('#') as [string, string];
+            const id = isDev ? filePathToFileURL(fileId) : fileId + '.js';
+            return { id, chunks: [id], name, async: true };
+          },
+        },
+      );
+      setExtractFormState(ctx, (actionResult) =>
+        decodeFormState(actionResult, formData, serverBundlerConfig),
+      );
+      return decodeAction(formData, serverBundlerConfig);
+    }
+  }
+  return null;
 }
