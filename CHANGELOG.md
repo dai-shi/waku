@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.21.8] - 2024-12-10
+
+### Changed
+
+- Bug fixes
+- React 19
+
 ## [0.21.7] - 2024-12-02
 
 ### Changed

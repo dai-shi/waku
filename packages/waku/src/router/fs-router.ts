@@ -49,8 +49,11 @@ export function fsRouter(
         throw new Error('Failed to resolve ' + file);
       });
     }
-    platformObject.buildData ||= {};
-    platformObject.buildData.fsRouterFiles = files;
+    // build only - skip in dev
+    if (platformObject.buildOptions?.unstable_phase) {
+      platformObject.buildData ||= {};
+      platformObject.buildData.fsRouterFiles = files;
+    }
     for (const file of files) {
       const mod = await loadPage(file);
       const config = await mod.getConfig?.();
@@ -64,7 +67,11 @@ export function fsRouter(
           ? pathItems.slice(0, -1)
           : pathItems
         ).join('/');
-      if (pathItems.at(-1) === '_layout') {
+      if (pathItems.at(-1) === '[path]') {
+        throw new Error(
+          'Page file cannot be named [path]. This will conflict with the path prop of the page component.',
+        );
+      } else if (pathItems.at(-1) === '_layout') {
         createLayout({
           path,
           component: mod.default,
