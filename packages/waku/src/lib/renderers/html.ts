@@ -10,7 +10,7 @@ import { SRC_MAIN } from '../constants.js';
 import { concatUint8Arrays, streamFromPromise } from '../utils/stream.js';
 import { filePathToFileURL } from '../utils/path.js';
 import { encodeRscPath } from './utils.js';
-import { renderRsc, renderRscElement } from './rsc.js';
+import { renderRsc, renderRscElement, getExtractFormState } from './rsc.js';
 // TODO move types somewhere
 import type { HandlerContext } from '../middleware/types.js';
 
@@ -165,6 +165,7 @@ export function renderHtml(
   elements: Elements,
   html: ReactNode,
   rscPath: string,
+  actionResult?: unknown,
 ): ReadableStream {
   const modules = ctx.unstable_modules;
   if (!modules) {
@@ -220,19 +221,25 @@ export function renderHtml(
     serverConsumerManifest: { moduleMap, moduleLoading: null },
   });
   const readable = streamFromPromise(
-    renderToReadableStream(
-      createElement(
-        ServerRoot as FunctionComponent<
-          Omit<ComponentProps<typeof ServerRoot>, 'children'>
-        >,
-        { elements: elementsPromise },
-        htmlNode as any,
-      ),
-      {
-        onError(err: unknown) {
-          console.error(err);
+    (actionResult === undefined
+      ? Promise.resolve(null)
+      : getExtractFormState(ctx)(actionResult)
+    ).then((formState) =>
+      renderToReadableStream(
+        createElement(
+          ServerRoot as FunctionComponent<
+            Omit<ComponentProps<typeof ServerRoot>, 'children'>
+          >,
+          { elements: elementsPromise },
+          htmlNode as any,
+        ),
+        {
+          formState,
+          onError(err: unknown) {
+            console.error(err);
+          },
         },
-      },
+      ),
     ),
   )
     .pipeThrough(rectifyHtml())

@@ -1118,13 +1118,13 @@ importers:
         specifier: 4.6.13
         version: 4.6.13
       react:
-        specifier: ^19.0.0
+        specifier: ~19.0.0
         version: 19.0.0
       react-dom:
-        specifier: ^19.0.0
+        specifier: ~19.0.0
         version: 19.0.0(react@19.0.0)
       react-server-dom-webpack:
-        specifier: ^19.0.0
+        specifier: ~19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.97.1(@swc/core@1.10.0(@swc/helpers@0.5.15)))
       rsc-html-stream:
         specifier: 0.0.4

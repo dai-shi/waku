@@ -6,7 +6,7 @@ export default function TestRouter() {
   const router = useRouter_UNSTABLE();
   const params = new URLSearchParams(router.query);
   const queryCount = parseInt(params.get('count') || '0');
-  const hashCount = parseInt(router.hash?.substr(1) || '0');
+  const hashCount = parseInt(router.hash?.slice(1) || '0');
   return (
     <>
       <p data-testid="path">Path: {router.path}</p>
