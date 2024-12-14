@@ -42,17 +42,17 @@
       "types": "./dist/client.d.ts",
       "default": "./dist/client.js"
     },
-    "./minimal/server": {
-      "types": "./dist/minimal/server.d.ts",
-      "default": "./dist/minimal/server.js"
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
     },
     "./minimal/client": {
       "types": "./dist/minimal/client.d.ts",
       "default": "./dist/minimal/client.js"
     },
-    "./server": {
-      "types": "./dist/server.d.ts",
-      "default": "./dist/server.js"
+    "./minimal/server": {
+      "types": "./dist/minimal/server.d.ts",
+      "default": "./dist/minimal/server.js"
     },
     "./router": {
       "types": "./dist/router/base-types.d.ts",

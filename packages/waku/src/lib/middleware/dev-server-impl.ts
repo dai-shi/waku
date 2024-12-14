@@ -4,7 +4,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
-import type { EntriesDev } from '../../minimal/server.js';
+import type { EntriesDev } from '../types.js';
 import { resolveConfig } from '../config.js';
 import { SRC_MAIN, SRC_ENTRIES } from '../constants.js';
 import {
@@ -24,7 +24,6 @@ import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
-import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import type { ClonableModuleNode, Middleware } from './types.js';
 import { fsRouterTypegenPlugin } from '../plugins/vite-plugin-fs-router-typegen.js';
 
@@ -84,7 +83,7 @@ const createMainViteServer = (
   configPromise: ReturnType<typeof resolveConfig>,
 ) => {
   const vitePromise = configPromise.then(async (config) => {
-    const mergedViteConfig = await mergeUserViteConfig({
+    const vite = await createViteServer({
       // Since we have multiple instances of vite, different ones might overwrite the others' cache.
       cacheDir: 'node_modules/.vite/waku-dev-server-main',
       base: config.basePath,
@@ -126,10 +125,6 @@ const createMainViteServer = (
       appType: 'mpa',
       server: { middlewareMode: true },
     });
-    // HACK as resovleConfig adds `'node'` in conditions and externalConditions.
-    mergedViteConfig.resolve.conditions = [];
-    mergedViteConfig.resolve.externalConditions = [];
-    const vite = await createViteServer(mergedViteConfig);
     registerHotUpdateCallback((payload) => hotUpdate(vite, payload));
     return vite;
   });
@@ -222,7 +217,7 @@ const createRscViteServer = (
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
 
   const vitePromise = configPromise.then(async (config) => {
-    const mergedViteConfig = await mergeUserViteConfig({
+    const vite = await createViteServer({
       // Since we have multiple instances of vite, different ones might overwrite the others' cache.
       cacheDir: 'node_modules/.vite/waku-dev-server-rsc',
       plugins: [
@@ -265,10 +260,6 @@ const createRscViteServer = (
       appType: 'custom',
       server: { middlewareMode: true, hmr: { server: dummyServer } },
     });
-    // HACK as resovleConfig changes ssr.conditions and ssr.externalConditions.
-    mergedViteConfig.ssr.resolve.conditions = ['react-server'];
-    mergedViteConfig.ssr.resolve.externalConditions = ['react-server'];
-    const vite = await createViteServer(mergedViteConfig);
     return vite;
   });
 

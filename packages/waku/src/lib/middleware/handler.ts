@@ -3,27 +3,22 @@ import type { ReactNode } from 'react';
 import { resolveConfig } from '../config.js';
 import type { PureConfig } from '../config.js';
 import { setAllEnvInternal } from '../../server.js';
+import type { HandleRequest } from '../types.js';
 import type { Middleware, HandlerContext } from './types.js';
-import type { new_defineEntries } from '../../minimal/server.js';
 import { renderRsc, decodeBody } from '../renderers/rsc.js';
 import { renderHtml } from '../renderers/html.js';
 import { decodeRscPath, decodeFuncId } from '../renderers/utils.js';
 import { filePathToFileURL, getPathMapping } from '../utils/path.js';
 
-type HandleRequest = Parameters<
-  typeof new_defineEntries
->[0]['unstable_handleRequest'];
-
-// TODO avoid copy-pasting
-const SERVER_MODULE_MAP = {
+export const SERVER_MODULE_MAP = {
   'rsdw-server': 'react-server-dom-webpack/server.edge',
 } as const;
-const CLIENT_MODULE_MAP = {
+export const CLIENT_MODULE_MAP = {
   'rd-server': 'react-dom/server.edge',
   'rsdw-client': 'react-server-dom-webpack/client.edge',
   'waku-minimal-client': 'waku/minimal/client',
 } as const;
-const CLIENT_PREFIX = 'client/';
+export const CLIENT_PREFIX = 'client/';
 
 const getInput = async (
   config: PureConfig,
@@ -80,7 +75,7 @@ export const handler: Middleware = (options) => {
       entriesPrd,
     ] = await Promise.all([configPromise, entriesPromise]);
     const entriesDev = devServer && (await devServer.loadEntriesDev(config));
-    const entries: { default: object } = devServer ? entriesDev! : entriesPrd;
+    const entries = devServer ? entriesDev! : entriesPrd;
     const rsdwServer = devServer
       ? await devServer.loadServerModuleRsc(SERVER_MODULE_MAP['rsdw-server'])
       : await entriesPrd.loadModule('rsdw-server');
@@ -141,30 +136,27 @@ export const handler: Middleware = (options) => {
         };
       },
     };
-    if ('unstable_handleRequest' in entries.default) {
-      const input = await getInput(config, ctx, loadServerModule);
-      if (input) {
-        const res = await (
-          entries.default.unstable_handleRequest as HandleRequest
-        )(input, utils);
-        if (res instanceof ReadableStream) {
-          ctx.res.body = res;
-        } else if (res) {
-          if (res.body) {
-            ctx.res.body = res.body;
-          }
-          if (res.status) {
-            ctx.res.status = res.status;
-          }
-          if (res.headers) {
-            Object.assign((ctx.res.headers ||= {}), res.headers);
-          }
+    const input = await getInput(config, ctx, loadServerModule);
+    if (input) {
+      const res = await entries.default.handleRequest(input, utils);
+      if (res instanceof ReadableStream) {
+        ctx.res.body = res;
+      } else if (res) {
+        if (res.body) {
+          ctx.res.body = res.body;
         }
-        if (ctx.res.body || ctx.res.status) {
-          return;
+        if (res.status) {
+          ctx.res.status = res.status;
+        }
+        if (res.headers) {
+          Object.assign((ctx.res.headers ||= {}), res.headers);
         }
       }
+      if (ctx.res.body || ctx.res.status) {
+        return;
+      }
     }
+
     await next();
   };
 };
