@@ -145,7 +145,7 @@ export async function decodeBody(
   return decodedBody;
 }
 
-const EXTRACT_FORM_STATE = Symbol('EXTRACT_FORM_STATE');
+const EXTRACT_FORM_STATE_SYMBOL = Symbol('EXTRACT_FORM_STATE');
 type ExtractFormState = (
   actionResult: unknown,
 ) => ReturnType<(typeof RSDWServerType)['decodeFormState']>;
@@ -154,22 +154,21 @@ const setExtractFormState = (
   ctx: object,
   extractFormState: ExtractFormState,
 ) => {
-  (ctx as unknown as Record<typeof EXTRACT_FORM_STATE, ExtractFormState>)[
-    EXTRACT_FORM_STATE
-  ] = extractFormState;
+  (
+    ctx as unknown as Record<typeof EXTRACT_FORM_STATE_SYMBOL, ExtractFormState>
+  )[EXTRACT_FORM_STATE_SYMBOL] = extractFormState;
 };
 
 export const getExtractFormState = (ctx: object): ExtractFormState => {
   const extractFormState = (
     ctx as unknown as Record<
-      typeof EXTRACT_FORM_STATE,
+      typeof EXTRACT_FORM_STATE_SYMBOL,
       ExtractFormState | undefined
     >
-  )[EXTRACT_FORM_STATE];
+  )[EXTRACT_FORM_STATE_SYMBOL];
   if (!extractFormState) {
     throw new Error('extractFormState not set');
   }
-
   return extractFormState;
 };
 
