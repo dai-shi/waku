@@ -866,8 +866,8 @@ importers:
         specifier: 19.0.1
         version: 19.0.1
       '@vanilla-extract/vite-plugin':
-        specifier: 4.0.10
-        version: 4.0.10(@types/node@22.10.1)(terser@5.37.0)(vite@5.4.10(@types/node@22.10.1)(terser@5.37.0))
+        specifier: 4.0.18
+        version: 4.0.18(@types/node@22.10.1)(terser@5.37.0)(vite@5.4.10(@types/node@22.10.1)(terser@5.37.0))
       typescript:
         specifier: 5.7.2
         version: 5.7.2
@@ -1322,10 +1322,6 @@ packages:
     engines: {node: '>=6.9.0'}
     peerDependencies:
       '@babel/core': ^7.0.0
-
-  '@babel/helper-plugin-utils@7.25.7':
-    resolution: {integrity: sha512-eaPZai0PiqCi09pPs3pAFfl/zYgGaE6IdXtYvmf0qlcDTd3WCtO7JWCcRd64e0EQrcYgiHibEZnOGsSY4QSgaw==}
-    engines: {node: '>=6.9.0'}
 
   '@babel/helper-plugin-utils@7.25.9':
     resolution: {integrity: sha512-kSMlyUVdWe25rEsRGviIgOWnoT/nfABVWlqt9N19/dIPWViAOW2s9wznP5tURbs/IDuNk4gPy3YdYRgH3uxhBw==}
@@ -2776,14 +2772,14 @@ packages:
   '@vanilla-extract/css@1.16.1':
     resolution: {integrity: sha512-3jKxH5ty/ZjmGoLAx8liY7e87FRCIJfnuufX/K9fQklu0YHP3ClrNisU++LkZuD+GZleqMSAQMF0r8Otln+OPQ==}
 
-  '@vanilla-extract/integration@7.1.10':
-    resolution: {integrity: sha512-EXe8l0u51ta2H78kksf7gJENkdYnvDW9c+18FUvKfxtjHmpc4KthXnUTuALt5k9wbAjfFakIR4IsqzvOP43cDQ==}
+  '@vanilla-extract/integration@7.1.11':
+    resolution: {integrity: sha512-IGRaLrpkjyVHTHDZQBQvFBl399yRfSMJoVI2KaocEZB33aP+H4Qup83od2hc6R5IxGWdvbiiCOJCYsnmFiy85Q==}
 
   '@vanilla-extract/private@1.0.6':
     resolution: {integrity: sha512-ytsG/JLweEjw7DBuZ/0JCN4WAQgM9erfSTdS1NQY778hFQSZ6cfCDEZZ0sgVm4k54uNz6ImKB33AYvSR//fjxw==}
 
-  '@vanilla-extract/vite-plugin@4.0.10':
-    resolution: {integrity: sha512-bjX5ioQeBTKuV/MOweeSCrGU5m7z4a76yf8J/r4gC5MGJrEvYu0YHaQIiiL7o2wlFSc929JUEUO1ahnVXUET6A==}
+  '@vanilla-extract/vite-plugin@4.0.18':
+    resolution: {integrity: sha512-j5vJVbvW33THGXG3ZI+nfgeYCknlBEWTJVphZWSAGmLO4XO4690m/iQQg+3gUtla3wvU8eyA2qmJNa05Wa7mVA==}
     peerDependencies:
       vite: 5.4.10
 
@@ -6123,8 +6119,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@babel/helper-plugin-utils@7.25.7': {}
-
   '@babel/helper-plugin-utils@7.25.9': {}
 
   '@babel/helper-simple-access@7.25.7':
@@ -6171,10 +6165,10 @@ snapshots:
     dependencies:
       '@babel/types': 7.26.3
 
-  '@babel/plugin-syntax-typescript@7.25.7(@babel/core@7.25.8)':
+  '@babel/plugin-syntax-typescript@7.25.7(@babel/core@7.26.0)':
     dependencies:
-      '@babel/core': 7.25.8
-      '@babel/helper-plugin-utils': 7.25.7
+      '@babel/core': 7.26.0
+      '@babel/helper-plugin-utils': 7.25.9
 
   '@babel/plugin-transform-react-jsx-self@7.25.9(@babel/core@7.26.0)':
     dependencies:
@@ -7256,7 +7250,7 @@ snapshots:
 
   '@vanilla-extract/babel-plugin-debug-ids@1.1.0':
     dependencies:
-      '@babel/core': 7.25.8
+      '@babel/core': 7.26.0
     transitivePeerDependencies:
       - supports-color
 
@@ -7277,10 +7271,10 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
 
-  '@vanilla-extract/integration@7.1.10(@types/node@22.10.1)(terser@5.37.0)':
+  '@vanilla-extract/integration@7.1.11(@types/node@22.10.1)(terser@5.37.0)':
     dependencies:
-      '@babel/core': 7.25.8
-      '@babel/plugin-syntax-typescript': 7.25.7(@babel/core@7.25.8)
+      '@babel/core': 7.26.0
+      '@babel/plugin-syntax-typescript': 7.25.7(@babel/core@7.26.0)
       '@vanilla-extract/babel-plugin-debug-ids': 1.1.0
       '@vanilla-extract/css': 1.16.1
       dedent: 1.5.3
@@ -7305,9 +7299,9 @@ snapshots:
 
   '@vanilla-extract/private@1.0.6': {}
 
-  '@vanilla-extract/vite-plugin@4.0.10(@types/node@22.10.1)(terser@5.37.0)(vite@5.4.10(@types/node@22.10.1)(terser@5.37.0))':
+  '@vanilla-extract/vite-plugin@4.0.18(@types/node@22.10.1)(terser@5.37.0)(vite@5.4.10(@types/node@22.10.1)(terser@5.37.0))':
     dependencies:
-      '@vanilla-extract/integration': 7.1.10(@types/node@22.10.1)(terser@5.37.0)
+      '@vanilla-extract/integration': 7.1.11(@types/node@22.10.1)(terser@5.37.0)
       vite: 5.4.10(@types/node@22.10.1)(terser@5.37.0)
     transitivePeerDependencies:
       - '@types/node'
@@ -10857,7 +10851,7 @@ snapshots:
   vite-node@1.6.0(@types/node@22.10.1)(terser@5.37.0):
     dependencies:
       cac: 6.7.14
-      debug: 4.3.7
+      debug: 4.4.0
       pathe: 1.1.2
       picocolors: 1.1.1
       vite: 5.4.10(@types/node@22.10.1)(terser@5.37.0)

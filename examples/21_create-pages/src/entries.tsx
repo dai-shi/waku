@@ -8,6 +8,7 @@ import BarPage from './components/BarPage';
 import NestedBazPage from './components/NestedBazPage';
 import NestedQuxPage from './components/NestedQuxPage';
 import Root from './components/Root';
+import NestedLayout from './components/NestedLayout';
 
 const pages = createPages(async ({ createPage, createLayout, createRoot }) => [
   createRoot({
@@ -56,6 +57,12 @@ const pages = createPages(async ({ createPage, createLayout, createRoot }) => [
     render: 'static',
     path: '/nested/qux',
     component: NestedQuxPage,
+  }),
+
+  createLayout({
+    render: 'static',
+    path: '/nested',
+    component: NestedLayout,
   }),
 
   createPage({
