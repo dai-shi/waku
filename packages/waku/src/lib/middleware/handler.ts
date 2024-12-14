@@ -14,16 +14,15 @@ type HandleRequest = Parameters<
   typeof new_defineEntries
 >[0]['unstable_handleRequest'];
 
-// TODO avoid copy-pasting
-const SERVER_MODULE_MAP = {
+export const SERVER_MODULE_MAP = {
   'rsdw-server': 'react-server-dom-webpack/server.edge',
 } as const;
-const CLIENT_MODULE_MAP = {
+export const CLIENT_MODULE_MAP = {
   'rd-server': 'react-dom/server.edge',
   'rsdw-client': 'react-server-dom-webpack/client.edge',
   'waku-minimal-client': 'waku/minimal/client',
 } as const;
-const CLIENT_PREFIX = 'client/';
+export const CLIENT_PREFIX = 'client/';
 
 const getInput = async (
   config: PureConfig,
