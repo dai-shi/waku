@@ -102,6 +102,14 @@ test.describe('useRouter', async () => {
       await expect(page.getByTestId('path')).toHaveText('Path: /dynamic');
       await terminate(pid!);
     });
+    test('router.push changes the page', async ({ page }) => {
+      const [port, pid] = await start();
+      await page.goto(`http://localhost:${port}/dynamic`);
+      await page.click('text=Static router.push button');
+      await expect(page.getByRole('heading', { name: 'Static' })).toBeVisible();
+      await expect(page.getByTestId('path')).toHaveText('Path: /static');
+      await terminate(pid!);
+    });
   });
 
   test.describe('retrieves query variables', () => {

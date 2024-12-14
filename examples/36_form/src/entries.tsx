@@ -19,8 +19,18 @@ export default defineEntries({
       );
       return renderRsc({ ...elements, _value: value });
     }
-    if (input.type === 'custom' && input.pathname === '/') {
-      return renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, '');
+    if (
+      (input.type === 'action' || input.type === 'custom') &&
+      input.pathname === '/'
+    ) {
+      const actionResult =
+        input.type === 'action' ? await input.fn() : undefined;
+      return renderHtml(
+        { App: <App name="Waku" /> },
+        <Slot id="App" />,
+        '',
+        actionResult,
+      );
     }
   },
   getBuildConfig: async () => [{ pathSpec: [], entries: [{ rscPath: '' }] }],

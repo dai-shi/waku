@@ -102,8 +102,8 @@
     "vitest": "^2.1.8"
   },
   "peerDependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-server-dom-webpack": "^19.0.0"
+    "react": "~19.0.0",
+    "react-dom": "~19.0.0",
+    "react-server-dom-webpack": "~19.0.0"
   }
 }
