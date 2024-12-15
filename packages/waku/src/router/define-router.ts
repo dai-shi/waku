@@ -9,6 +9,7 @@ import {
   ROUTE_ID,
   IS_STATIC_ID,
   HAS404_ID,
+  SKIP_HEADER,
 } from './common.js';
 import { getPathMapping } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
@@ -24,20 +25,12 @@ const parseRscParams = (
   rscParams: unknown,
 ): {
   query: string;
-  skip: string[];
 } => {
   if (!(rscParams instanceof URLSearchParams)) {
-    return { query: '', skip: [] };
+    return { query: '' };
   }
   const query = rscParams.get('query') || '';
-  let skipParam: unknown;
-  try {
-    skipParam = JSON.parse(rscParams.get('skip')!);
-  } catch {
-    // ignore
-  }
-  const skip = isStringArray(skipParam) ? skipParam : [];
-  return { query, skip };
+  return { query };
 };
 
 const RERENDER_SYMBOL = Symbol('RERENDER');
@@ -171,13 +164,24 @@ export function unstable_defineRouter(fns: {
       return !!found && found.staticElementIds.includes(slotId);
     });
   };
-  const getEntries = async (rscPath: string, rscParams: unknown) => {
+  const getEntries = async (
+    rscPath: string,
+    rscParams: unknown,
+    headers: Readonly<Record<string, string>>,
+  ) => {
     const pathname = decodeRoutePath(rscPath);
     const pathStatus = await existsPath(pathname);
     if (!pathStatus.found) {
       return null;
     }
-    const { query, skip } = parseRscParams(rscParams);
+    let skipParam: unknown;
+    try {
+      skipParam = JSON.parse(headers[SKIP_HEADER.toLowerCase()] || '');
+    } catch {
+      // ignore
+    }
+    const skip = isStringArray(skipParam) ? skipParam : [];
+    const { query } = parseRscParams(rscParams);
     const { routeElement, elements, fallbackElement } = await fns.renderRoute(
       pathname,
       pathStatus.isStatic ? {} : { query },
@@ -221,7 +225,7 @@ export function unstable_defineRouter(fns: {
         }
         const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
         const rscPath = encodeRoutePath(pathname);
-        const entries = await getEntries(rscPath, undefined);
+        const entries = await getEntries(rscPath, undefined, {});
         if (entries) {
           path2moduleIds[pattern] =
             await unstable_collectClientModules(entries);
@@ -265,7 +269,11 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   return defineEntries({
     handleRequest: async (input, { renderRsc, renderHtml }) => {
       if (input.type === 'component') {
-        const entries = await getEntries(input.rscPath, input.rscParams);
+        const entries = await getEntries(
+          input.rscPath,
+          input.rscParams,
+          input.req.headers,
+        );
         if (!entries) {
           return null;
         }
@@ -281,7 +289,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
           }
           elementsPromise = Promise.all([
             elementsPromise,
-            getEntries(rscPath, rscParams),
+            getEntries(rscPath, rscParams, input.req.headers),
           ]).then(([oldElements, newElements]) => {
             if (newElements === null) {
               console.warn('getEntries returned null');
@@ -313,7 +321,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         }
         const rscPath = encodeRoutePath(pathname);
         const rscParams = new URLSearchParams({ query });
-        const entries = await getEntries(rscPath, rscParams);
+        const entries = await getEntries(rscPath, rscParams, input.req.headers);
         if (!entries) {
           return null;
         }
