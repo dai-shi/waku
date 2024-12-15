@@ -9,7 +9,7 @@ import {
   ROUTE_ID,
   IS_STATIC_ID,
   HAS404_ID,
-  HEADER_SKIP,
+  SKIP_HEADER,
 } from './common.js';
 import { getPathMapping } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
@@ -176,7 +176,7 @@ export function unstable_defineRouter(fns: {
     }
     let skipParam: unknown;
     try {
-      skipParam = JSON.parse(headers[HEADER_SKIP.toLowerCase()] || '');
+      skipParam = JSON.parse(headers[SKIP_HEADER.toLowerCase()] || '');
     } catch {
       // ignore
     }
