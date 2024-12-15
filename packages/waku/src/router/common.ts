@@ -48,3 +48,6 @@ export const IS_STATIC_ID = '/IS_STATIC';
 
 // It starts with "/" to avoid conflicting with normal component ids.
 export const HAS404_ID = '/HAS404';
+
+// For HTTP header
+export const HEADER_SKIP = 'X-Waku-Router-Skip';
