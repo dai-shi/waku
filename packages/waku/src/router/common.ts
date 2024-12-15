@@ -40,14 +40,9 @@ export function decodeRoutePath(rscPath: string): string {
   return rscPath.slice(ROUTE_PREFIX.length);
 }
 
-// It starts with "/" to avoid conflicting with normal component ids.
-export const ROUTE_ID = '/ROUTE';
-
-// It starts with "/" to avoid conflicting with normal component ids.
-export const IS_STATIC_ID = '/IS_STATIC';
-
-// It starts with "/" to avoid conflicting with normal component ids.
-export const HAS404_ID = '/HAS404';
+export const ROUTE_ID = 'ROUTE';
+export const IS_STATIC_ID = 'IS_STATIC';
+export const HAS404_ID = 'HAS404';
 
 // For HTTP header
-export const HEADER_SKIP = 'X-Waku-Router-Skip';
+export const SKIP_HEADER = 'X-Waku-Router-Skip';

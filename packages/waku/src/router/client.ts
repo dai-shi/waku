@@ -34,7 +34,7 @@ import {
   ROUTE_ID,
   IS_STATIC_ID,
   HAS404_ID,
-  HEADER_SKIP,
+  SKIP_HEADER,
 } from './common.js';
 import type { RouteProps } from './common.js';
 import type { RouteConfig } from './base-types.js';
@@ -461,9 +461,9 @@ export function Router({
       const skipStr = JSON.stringify(Array.from(cachedIdSet));
       const headers = (init.headers ||= {});
       if (Array.isArray(headers)) {
-        headers.push([HEADER_SKIP, skipStr]);
+        headers.push([SKIP_HEADER, skipStr]);
       } else {
-        (headers as Record<string, string>)[HEADER_SKIP] = skipStr;
+        (headers as Record<string, string>)[SKIP_HEADER] = skipStr;
       }
       return fetchFn(input, init);
     };
