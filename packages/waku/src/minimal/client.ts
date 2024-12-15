@@ -77,6 +77,7 @@ const mergeElements = (a: Elements, b: Elements): Elements => {
 };
 
 type SetElements = (updater: (prev: Elements) => Elements) => void;
+type EnhanceFetch = (fetchFn: typeof fetch) => typeof fetch;
 type EnhanceCreateData = (
   createData: (
     responsePromise: Promise<Response>,
@@ -85,11 +86,13 @@ type EnhanceCreateData = (
 
 const ENTRY = 'e';
 const SET_ELEMENTS = 's';
+const ENHANCE_FETCH = 'f';
 const ENHANCE_CREATE_DATA = 'd';
 
 type FetchCache = {
   [ENTRY]?: [rscPath: string, rscParams: unknown, elements: Elements];
   [SET_ELEMENTS]?: SetElements;
+  [ENHANCE_FETCH]?: EnhanceFetch | undefined;
   [ENHANCE_CREATE_DATA]?: EnhanceCreateData | undefined;
 };
 
@@ -104,6 +107,7 @@ export const callServerRsc = async (
   args: unknown[],
   fetchCache = defaultFetchCache,
 ) => {
+  const enhanceFetch = fetchCache[ENHANCE_FETCH] || ((f) => f);
   const enhanceCreateData = fetchCache[ENHANCE_CREATE_DATA] || ((d) => d);
   const createData = (responsePromise: Promise<Response>) =>
     createFromFetch<Awaited<Elements>>(checkStatus(responsePromise), {
@@ -113,8 +117,10 @@ export const callServerRsc = async (
   const url = BASE_PATH + encodeRscPath(encodeFuncId(funcId));
   const responsePromise =
     args.length === 1 && args[0] instanceof URLSearchParams
-      ? fetch(url + '?' + args[0])
-      : encodeReply(args).then((body) => fetch(url, { method: 'POST', body }));
+      ? enhanceFetch(fetch)(url + '?' + args[0])
+      : encodeReply(args).then((body) =>
+          enhanceFetch(fetch)(url, { method: 'POST', body }),
+        );
   const data = enhanceCreateData(createData)(responsePromise);
   // FIXME this causes rerenders even if data is empty
   fetchCache[SET_ELEMENTS]?.((prev) => mergeElements(prev, data));
@@ -123,14 +129,20 @@ export const callServerRsc = async (
 
 const prefetchedParams = new WeakMap<Promise<unknown>, unknown>();
 
-const fetchRscInternal = (url: string, rscParams: unknown) =>
-  rscParams === undefined
-    ? fetch(url)
+const fetchRscInternal = (
+  url: string,
+  rscParams: unknown,
+  fetchCache: FetchCache,
+) => {
+  const enhanceFetch = fetchCache[ENHANCE_FETCH] || ((f) => f);
+  return rscParams === undefined
+    ? enhanceFetch(fetch)(url)
     : rscParams instanceof URLSearchParams
-      ? fetch(url + '?' + rscParams)
+      ? enhanceFetch(fetch)(url + '?' + rscParams)
       : encodeReply(rscParams).then((body) =>
-          fetch(url, { method: 'POST', body }),
+          enhanceFetch(fetch)(url, { method: 'POST', body }),
         );
+};
 
 export const fetchRsc = (
   rscPath: string,
@@ -157,7 +169,7 @@ export const fetchRsc = (
       prefetchedParams.get(prefetched[url]) === rscParams);
   const responsePromise = hasValidPrefetchedResponse
     ? prefetched[url]
-    : fetchRscInternal(url, rscParams);
+    : fetchRscInternal(url, rscParams, fetchCache);
   delete prefetched[url];
   const data = enhanceCreateData(createData)(responsePromise);
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -165,11 +177,15 @@ export const fetchRsc = (
   return data;
 };
 
-export const prefetchRsc = (rscPath: string, rscParams?: unknown): void => {
+export const prefetchRsc = (
+  rscPath: string,
+  rscParams?: unknown,
+  fetchCache = defaultFetchCache,
+): void => {
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
   const url = BASE_PATH + encodeRscPath(rscPath);
   if (!(url in prefetched)) {
-    prefetched[url] = fetchRscInternal(url, rscParams);
+    prefetched[url] = fetchRscInternal(url, rscParams, fetchCache);
     prefetchedParams.set(prefetched[url], rscParams);
   }
 };
@@ -185,15 +201,18 @@ export const Root = ({
   initialRscPath,
   initialRscParams,
   fetchCache = defaultFetchCache,
+  unstable_enhanceFetch,
   unstable_enhanceCreateData,
   children,
 }: {
   initialRscPath?: string;
   initialRscParams?: unknown;
   fetchCache?: FetchCache;
+  unstable_enhanceFetch?: EnhanceFetch;
   unstable_enhanceCreateData?: EnhanceCreateData;
   children: ReactNode;
 }) => {
+  fetchCache[ENHANCE_FETCH] = unstable_enhanceFetch;
   fetchCache[ENHANCE_CREATE_DATA] = unstable_enhanceCreateData;
   const [elements, setElements] = useState(() =>
     fetchRsc(initialRscPath || '', initialRscParams, fetchCache),
