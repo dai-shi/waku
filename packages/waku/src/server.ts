@@ -1,5 +1,4 @@
-// This can't be relative import
-import { getContext } from 'waku/middleware/context';
+import { getContext } from './middleware/context.js';
 
 /**
  * This is an internal function and not for public use.

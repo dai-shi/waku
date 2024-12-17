@@ -14,9 +14,7 @@ import {
 import { getPathMapping } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
 import { ServerRouter } from './client.js';
-
-// This can't be relative import
-import { getContext } from 'waku/middleware/context';
+import { getContext } from '../middleware/context.js';
 
 const isStringArray = (x: unknown): x is string[] =>
   Array.isArray(x) && x.every((y) => typeof y === 'string');
