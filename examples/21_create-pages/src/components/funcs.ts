@@ -3,7 +3,6 @@
 import { unstable_rerenderRoute } from 'waku/router/server';
 
 const PAGES = [
-  '/foo',
   '/bar',
   '/baz',
   '/nested/qux',
