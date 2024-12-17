@@ -194,6 +194,10 @@ export type PropsForPages<Path extends string> = Prettify<
     SlugTypes<Path>
 >;
 
+export interface PropsForPagesComponent<Path extends string> {
+  props: PropsForPages<Path>;
+}
+
 type GetResponseType<Response extends { render: string }> =
   string extends Response['render'] ? { render: 'dynamic' } : Response;
 

@@ -1,6 +1,6 @@
 import type {
   PagePath,
-  PropsForPages,
+  PropsForPagesComponent,
 } from './create-pages-utils/inferred-path-types.js';
 
 // PathsForPages collects the paths from the `createPages` result type
@@ -23,4 +23,4 @@ export interface CreatePagesConfig {
 /** Props for pages when using `createPages` */
 export type PageProps<
   Path extends PagePath<CreatePagesConfig> | (string & {}),
-> = PropsForPages<Path>;
+> = PropsForPagesComponent<Path>;
