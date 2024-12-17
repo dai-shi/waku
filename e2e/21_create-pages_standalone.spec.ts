@@ -44,7 +44,7 @@ async function testRouterExample(page: Page, port: number) {
 
   await page.click("a[href='/foo']");
   await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
-  await page.click("text=Jump to random page");
+  await page.click('text=Jump to random page');
   await page.waitForTimeout(500); // need to wait not to error
   await expect(page.getByRole('heading', { level: 2 })).toBeVisible();
 }
