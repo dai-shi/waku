@@ -124,8 +124,8 @@ export function rscHmrPlugin(): Plugin {
             `
 {
   const refetchRoute = () => {
-    cachedIdSet.clear();
     staticPathSet.clear();
+    routerData[2].clear(); // cacheIdSet
     const rscPath = encodeRoutePath(route.path);
     const rscParams = createRscParams(route.query, []);
     refetch(rscPath, rscParams);

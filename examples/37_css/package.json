@@ -15,11 +15,11 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-server-dom-webpack": "19.0.0",
-    "waku": "0.21.8"
+    "waku": "0.21.9"
   },
   "devDependencies": {
     "@types/react": "19.0.1",
-    "@types/react-dom": "19.0.1",
+    "@types/react-dom": "19.0.2",
     "@vanilla-extract/vite-plugin": "4.0.18",
     "typescript": "5.7.2",
     "vite": "https://pkg.pr.new/vitejs/vite/vite@b1a17229bed31323403f748c9b367a0f8b5adcc3",
