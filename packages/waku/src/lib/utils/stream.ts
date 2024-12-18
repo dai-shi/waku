@@ -86,3 +86,16 @@ export const streamFromPromise = (promise: Promise<ReadableStream>) =>
       }
     },
   });
+
+export const waitForFirstByte = (
+  stream: ReadableStream,
+): Promise<ReadableStream> => {
+  const [stream1, stream2] = stream.tee();
+  const reader = stream1.getReader();
+  return new Promise<ReadableStream>((resolve, reject) =>
+    reader.read().then(
+      () => resolve(stream2),
+      (error) => reject(error),
+    ),
+  );
+};
