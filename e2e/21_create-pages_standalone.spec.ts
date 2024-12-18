@@ -27,7 +27,6 @@ async function testRouterExample(page: Page, port: number) {
   await expect(page.getByRole('heading', { name: 'Home' })).toBeVisible();
 
   await page.click("a[href='/foo']");
-
   await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
 
   await page.goto(`http://localhost:${port}/foo`);
@@ -42,6 +41,12 @@ async function testRouterExample(page: Page, port: number) {
     window.getComputedStyle(document.body).getPropertyValue('background-color'),
   );
   expect(backgroundColor).toBe('rgb(254, 254, 254)');
+
+  await page.click("a[href='/foo']");
+  await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
+  await page.click('text=Jump to random page');
+  await page.waitForTimeout(500); // need to wait not to error
+  await expect(page.getByRole('heading', { level: 2 })).toBeVisible();
 }
 
 test.describe('21_create-pages standalone', () => {
