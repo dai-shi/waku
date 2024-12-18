@@ -218,11 +218,8 @@ export const createPages = <
 
   /** helper to find dynamic path when slugs are used */
   const getRoutePath: (path: string) => string | undefined = (path) => {
-    const staticPathSpec = staticPathMap.get(path);
-    if (staticPathSpec) {
-      return pathSpecAsString(
-        staticPathSpec.originalSpec ?? staticPathSpec.literalSpec,
-      );
+    if (staticComponentMap.has(joinPath(path, 'page').slice(1))) {
+      return path;
     }
     const allPaths = [
       ...dynamicPagePathMap.keys(),
