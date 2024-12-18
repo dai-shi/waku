@@ -232,6 +232,14 @@ export const createPages = <
     }
   };
 
+  /** helper to get original static slug path */
+  const getOriginalStaticPathSpec = (path: string) => {
+    const staticPathSpec = staticPathMap.get(path);
+    if (staticPathSpec) {
+      return staticPathSpec.originalSpec ?? staticPathSpec.literalSpec;
+    }
+  };
+
   const registerStaticComponent = (
     id: string,
     component: FunctionComponent<any>,
@@ -510,7 +518,9 @@ export const createPages = <
         ),
       };
 
-      const layoutPaths = getLayouts(pathSpec);
+      const layoutPaths = getLayouts(
+        getOriginalStaticPathSpec(path) ?? pathSpec,
+      );
 
       for (const segment of layoutPaths) {
         const layout =
