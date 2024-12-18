@@ -32,6 +32,12 @@ async function testRouterExample(page: Page, port: number) {
   await page.goto(`http://localhost:${port}/foo`);
   await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
 
+  // /nested/foo is defined as a staticPath of /nested/[id] which matches this layout
+  await page.goto(`http://localhost:${port}/nested/foo`);
+  await expect(
+    page.getByRole('heading', { name: 'Deeply Nested Layout' }),
+  ).toBeVisible();
+
   await page.goto(`http://localhost:${port}/nested/baz`);
   await expect(
     page.getByRole('heading', { name: 'Nested Layout' }),

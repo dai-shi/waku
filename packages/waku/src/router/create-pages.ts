@@ -8,6 +8,7 @@ import {
   parsePathWithSlug,
   getPathMapping,
   path2regexp,
+  pathSpecAsString,
 } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
 import type {
@@ -135,14 +136,14 @@ export type CreateLayout = <Path extends string>(
   layout:
     | {
         render: 'dynamic';
-        path: PathWithoutSlug<Path>;
+        path: Path;
         component: FunctionComponent<
           Pick<RouteProps, 'path'> & { children: ReactNode }
         >;
       }
     | {
         render: 'static';
-        path: PathWithoutSlug<Path>;
+        path: Path;
         component: FunctionComponent<{ children: ReactNode }>;
       },
 ) => void;
@@ -228,6 +229,14 @@ export const createPages = <
       if (new RegExp(path2regexp(parsePathWithSlug(p))).test(path)) {
         return p;
       }
+    }
+  };
+
+  /** helper to get original static slug path */
+  const getOriginalStaticPathSpec = (path: string) => {
+    const staticPathSpec = staticPathMap.get(path);
+    if (staticPathSpec) {
+      return staticPathSpec.originalSpec ?? staticPathSpec.literalSpec;
     }
   };
 
@@ -371,12 +380,8 @@ export const createPages = <
 
   const getLayouts = (spec: PathSpec): string[] => {
     const pathSegments = spec.reduce<string[]>(
-      (acc, segment, index) => {
-        if (index === 0) {
-          acc.push('/' + segment.name);
-        } else {
-          acc.push(acc[index - 1] + '/' + segment.name);
-        }
+      (acc, _segment, index) => {
+        acc.push(pathSpecAsString(spec.slice(0, index + 1)));
         return acc;
       },
       ['/'],
@@ -408,7 +413,7 @@ export const createPages = <
           ? path2regexp(originalSpec)
           : path2regexp(literalSpec);
 
-        const layoutPaths = getLayouts(literalSpec);
+        const layoutPaths = getLayouts(originalSpec ?? literalSpec);
 
         const elements = {
           ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
@@ -513,7 +518,9 @@ export const createPages = <
         ),
       };
 
-      const layoutPaths = getLayouts(pathSpec);
+      const layoutPaths = getLayouts(
+        getOriginalStaticPathSpec(path) ?? pathSpec,
+      );
 
       for (const segment of layoutPaths) {
         const layout =
