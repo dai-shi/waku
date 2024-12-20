@@ -499,9 +499,14 @@ export const createPages = <
         throw new Error('Route not found: ' + path);
       }
 
-      const pageComponent = (staticComponentMap.get(
-        joinPath(routePath, 'page').slice(1), // feels like a hack
-      ) ?? dynamicPagePathMap.get(routePath)?.[1])!;
+      const pageComponent =
+        staticComponentMap.get(joinPath(routePath, 'page').slice(1)) ??
+        dynamicPagePathMap.get(routePath)?.[1] ??
+        wildcardPagePathMap.get(routePath)?.[1];
+
+      if (!pageComponent) {
+        throw new Error('Page not found: ' + path);
+      }
 
       const pathSpec = parsePathWithSlug(routePath);
       const mapping = getPathMapping(pathSpec, path);
