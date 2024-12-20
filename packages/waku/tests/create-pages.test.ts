@@ -647,6 +647,7 @@ describe('createPages', () => {
         elements: {
           root: { isStatic: true },
           'page:/test/nested': { isStatic: true },
+          'layout:/test/nested': { isStatic: true },
         },
         routeElement: { isStatic: true },
         noSsr: false,
@@ -668,7 +669,11 @@ describe('createPages', () => {
     });
     expect(route).toBeDefined();
     expect(route.routeElement).toBeDefined();
-    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/nested']);
+    expect(Object.keys(route.elements)).toEqual([
+      'root',
+      'page:/test/nested',
+      'layout:/test/nested',
+    ]);
   });
 
   it('creates a nested dynamic page', async () => {
