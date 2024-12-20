@@ -10,6 +10,9 @@ export const loadServerFile = async (fileURL: string) => {
   try {
     return vite.ssrLoadModule(fileURLToFilePath(fileURL));
   } finally {
-    await vite.close();
+    // FIXME this is really a bad hack
+    setTimeout(() => {
+      vite.close().catch(() => {});
+    }, 1000);
   }
 };
