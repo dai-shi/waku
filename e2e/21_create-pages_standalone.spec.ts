@@ -38,6 +38,11 @@ async function testRouterExample(page: Page, port: number) {
     page.getByRole('heading', { name: 'Deeply Nested Layout' }),
   ).toBeVisible();
 
+  await page.goto(`http://localhost:${port}/wild/hello/world`);
+  await expect(
+    page.getByRole('heading', { name: 'Slug: hello/world' }),
+  ).toBeVisible();
+
   await page.goto(`http://localhost:${port}/nested/baz`);
   await expect(
     page.getByRole('heading', { name: 'Nested Layout' }),

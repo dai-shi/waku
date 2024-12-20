@@ -78,6 +78,17 @@ const pages = createPages(async ({ createPage, createLayout, createRoot }) => [
     ),
   }),
 
+  createPage({
+    render: 'dynamic',
+    path: '/wild/[...id]',
+    component: ({ id }) => (
+      <>
+        <h2>Wildcard</h2>
+        <h3>Slug: {id.join('/')}</h3>
+      </>
+    ),
+  }),
+
   createLayout({
     render: 'static',
     path: '/nested/[id]',
