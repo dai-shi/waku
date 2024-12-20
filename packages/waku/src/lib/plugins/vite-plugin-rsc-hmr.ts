@@ -225,28 +225,17 @@ async function generateInitialScripts(
   const scripts: HtmlTagDescriptor[] = [];
 
   for (const result of sources.values()) {
-    if (result.id.endsWith('.module.css')) {
-      // CSS modules do not support result.source (empty) since ssr-transforming them gives the css keys and client-transforming them gives the script tag for injecting them.
-      // Since we use the client-transformed script tag, we need to avoid FOUC by blocking render
-      scripts.push({
-        tag: 'script',
-        attrs: {
-          type: 'module',
-          async: true,
-          blocking: 'render',
-          'waku-module-id': result.id,
-        },
-        children: result.code,
-        injectTo: 'head',
-      });
-    } else {
-      scripts.push({
-        tag: 'style',
-        attrs: { type: 'text/css', 'waku-module-id': result.id },
-        children: result.source,
-        injectTo: 'head',
-      });
-    }
+    scripts.push({
+      tag: 'script',
+      attrs: {
+        type: 'module',
+        async: true,
+        blocking: 'render',
+        'waku-module-id': result.id,
+      },
+      children: result.code,
+      injectTo: 'head',
+    });
   }
   return scripts;
 }
