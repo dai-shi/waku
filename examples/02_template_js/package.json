@@ -12,7 +12,7 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-server-dom-webpack": "19.0.0",
-    "waku": "0.21.9"
+    "waku": "0.21.10"
   },
   "devDependencies": {
     "autoprefixer": "10.4.20",
