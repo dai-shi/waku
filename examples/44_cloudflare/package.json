@@ -15,13 +15,13 @@
     "react-dom": "19.0.0",
     "react-server-dom-webpack": "19.0.0",
     "waku": "0.21.9",
-    "wrangler": "3.95.0"
+    "wrangler": "3.99.0"
   },
   "devDependencies": {
     "@types/node": "22.10.2",
-    "@types/react": "19.0.1",
+    "@types/react": "19.0.2",
     "@types/react-dom": "19.0.2",
-    "miniflare": "3.20241205.0",
+    "miniflare": "3.20241218.0",
     "typescript": "5.7.2"
   }
 }
