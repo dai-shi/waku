@@ -618,6 +618,7 @@ const emitStaticFiles = async (
           html,
           rscPath,
         );
+        await body.allReady; // always wait for all contents for static files
         const headers = { 'content-type': 'text/html; charset=utf-8' };
         return { body, headers };
       },
