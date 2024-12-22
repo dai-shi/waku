@@ -9,7 +9,6 @@ import { renderRsc, decodeBody, decodePostAction } from '../renderers/rsc.js';
 import { renderHtml } from '../renderers/html.js';
 import { decodeRscPath, decodeFuncId } from '../renderers/utils.js';
 import { filePathToFileURL, getPathMapping } from '../utils/path.js';
-import { waitForFirstChunk } from '../utils/stream.js';
 
 export const SERVER_MODULE_MAP = {
   'rsdw-server': 'react-server-dom-webpack/server.edge',
@@ -154,10 +153,10 @@ export const handler: Middleware = (options) => {
     if (input) {
       const res = await entries.default.handleRequest(input, utils);
       if (res instanceof ReadableStream) {
-        ctx.res.body = await waitForFirstChunk(res);
+        ctx.res.body = res;
       } else if (res) {
         if (res.body) {
-          ctx.res.body = await waitForFirstChunk(res.body);
+          ctx.res.body = res.body;
         }
         if (res.status) {
           ctx.res.status = res.status;

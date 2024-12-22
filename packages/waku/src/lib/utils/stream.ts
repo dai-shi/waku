@@ -66,12 +66,3 @@ export const stringToStream = (str: string): ReadableStream => {
     },
   });
 };
-
-export const waitForFirstChunk = async (
-  stream: ReadableStream,
-): Promise<ReadableStream> => {
-  const [stream1, stream2] = stream.tee();
-  const reader = stream1.getReader();
-  await reader.read();
-  return stream2;
-};
