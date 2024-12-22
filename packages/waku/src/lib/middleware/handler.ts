@@ -9,7 +9,6 @@ import { renderRsc, decodeBody, decodePostAction } from '../renderers/rsc.js';
 import { renderHtml } from '../renderers/html.js';
 import { decodeRscPath, decodeFuncId } from '../renderers/utils.js';
 import { filePathToFileURL, getPathMapping } from '../utils/path.js';
-import { waitForFirstChunk } from '../utils/stream.js';
 
 export const SERVER_MODULE_MAP = {
   'rsdw-server': 'react-server-dom-webpack/server.edge',
@@ -126,13 +125,13 @@ export const handler: Middleware = (options) => {
     const utils = {
       renderRsc: (elements: Record<string, unknown>) =>
         renderRsc(config, ctx, elements),
-      renderHtml: (
+      renderHtml: async (
         elements: Record<string, ReactNode>,
         html: ReactNode,
         rscPath: string,
         actionResult?: unknown,
       ) => {
-        const readable = renderHtml(
+        const readable = await renderHtml(
           config,
           ctx,
           htmlHead,
@@ -142,22 +141,22 @@ export const handler: Middleware = (options) => {
           actionResult,
         );
         const headers = { 'content-type': 'text/html; charset=utf-8' };
-        return {
-          body: transformIndexHtml
-            ? readable.pipeThrough(transformIndexHtml)
-            : readable,
-          headers,
-        };
+        let body = readable;
+        if (transformIndexHtml) {
+          body = readable.pipeThrough(transformIndexHtml) as never;
+          body.allReady = readable.allReady;
+        }
+        return { body, headers };
       },
     };
     const input = await getInput(config, ctx, loadServerModule);
     if (input) {
       const res = await entries.default.handleRequest(input, utils);
       if (res instanceof ReadableStream) {
-        ctx.res.body = await waitForFirstChunk(res);
+        ctx.res.body = res;
       } else if (res) {
         if (res.body) {
-          ctx.res.body = await waitForFirstChunk(res.body);
+          ctx.res.body = res.body;
         }
         if (res.status) {
           ctx.res.status = res.status;

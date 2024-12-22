@@ -431,15 +431,16 @@ const willEmitPublicIndexHtml = async (
     return false;
   }
   const utils = {
-    renderRsc: () => {
+    renderRsc: async () => {
       throw new Error('Cannot render RSC in HTML build');
     },
-    renderHtml: () => {
+    renderHtml: async () => {
+      const body: ReadableStream & { allReady: Promise<void> } =
+        // HACK this might not work in an edge case
+        stringToStream('DUMMY') as never;
+      body.allReady = Promise.resolve();
       const headers = { 'content-type': 'text/html; charset=utf-8' };
-      return {
-        body: stringToStream('DUMMY'), // HACK this might not work in an edge case
-        headers,
-      };
+      return { body, headers };
     },
   };
   const input = {
@@ -604,12 +605,12 @@ const emitStaticFiles = async (
     const utils = {
       renderRsc: (elements: Record<string, unknown>) =>
         renderRsc(config, { unstable_modules }, elements),
-      renderHtml: (
+      renderHtml: async (
         elements: Record<string, ReactNode>,
         html: ReactNode,
         rscPath: string,
       ) => {
-        const readable = renderHtml(
+        const body = await renderHtml(
           config,
           { unstable_modules },
           htmlHead,
@@ -617,11 +618,9 @@ const emitStaticFiles = async (
           html,
           rscPath,
         );
+        await body.allReady; // always wait for all contents for static files
         const headers = { 'content-type': 'text/html; charset=utf-8' };
-        return {
-          body: readable,
-          headers,
-        };
+        return { body, headers };
       },
     };
     const input = {
