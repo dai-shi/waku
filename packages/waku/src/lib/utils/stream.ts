@@ -66,32 +66,3 @@ export const stringToStream = (str: string): ReadableStream => {
     },
   });
 };
-
-export const streamFromPromise = (promise: Promise<ReadableStream>) =>
-  new ReadableStream({
-    async start(controller) {
-      try {
-        const stream = await promise;
-        const reader = stream.getReader();
-        let result: ReadableStreamReadResult<unknown>;
-        do {
-          result = await reader.read();
-          if (result.value) {
-            controller.enqueue(result.value);
-          }
-        } while (!result.done);
-        controller.close();
-      } catch (err) {
-        controller.error(err);
-      }
-    },
-  });
-
-export const waitForFirstChunk = async (
-  stream: ReadableStream,
-): Promise<ReadableStream> => {
-  const [stream1, stream2] = stream.tee();
-  const reader = stream1.getReader();
-  await reader.read();
-  return stream2;
-};
