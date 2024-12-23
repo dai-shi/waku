@@ -27,7 +27,7 @@ for (const { build, command } of commands) {
     let port: number;
 
     test.beforeAll(async () => {
-      await rm(`${cwd}/dist`, { recursive: true, force: true, });
+      await rm(`${cwd}/dist`, { recursive: true, force: true });
       if (build) {
         execSync(`node ${waku} ${build}`, { cwd });
       }
