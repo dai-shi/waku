@@ -1,4 +1,5 @@
 import { createPages } from 'waku';
+import type { PathsForPages } from 'waku/router';
 
 import FooPage from './components/FooPage.js';
 import HomeLayout from './components/HomeLayout.js';
@@ -99,5 +100,14 @@ const pages: ReturnType<typeof createPages> = createPages(
     }),
   ],
 );
+
+declare module 'waku/router' {
+  interface RouteConfig {
+    paths: PathsForPages<typeof pages>;
+  }
+  interface CreatePagesConfig {
+    pages: typeof pages;
+  }
+}
 
 export default pages;

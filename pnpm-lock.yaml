@@ -122,7 +122,7 @@ importers:
         specifier: ^19.0.2
         version: 19.0.2(@types/react@19.0.2)
       server-only:
-        specifier: ^0.0.1
+        specifier: 0.0.1
         version: 0.0.1
       typescript:
         specifier: ^5.7.2
