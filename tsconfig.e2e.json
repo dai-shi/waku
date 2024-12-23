@@ -50,6 +50,9 @@
     },
     {
       "path": "./e2e/fixtures/hot-reload/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/create-pages/tsconfig.json"
     }
   ]
 }

@@ -25,14 +25,9 @@ for (const { build, command } of commands) {
   test.describe(`rsc-router: ${command}`, () => {
     let cp: ChildProcess;
     let port: number;
-    test.beforeAll('remove cache', async () => {
-      await rm(`${cwd}/dist`, {
-        recursive: true,
-        force: true,
-      });
-    });
 
     test.beforeAll(async () => {
+      await rm(`${cwd}/dist`, { recursive: true, force: true, });
       if (build) {
         execSync(`node ${waku} ${build}`, { cwd });
       }

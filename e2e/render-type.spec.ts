@@ -21,10 +21,7 @@ test.describe(`render type`, () => {
   let port: number;
 
   test.beforeAll('remove cache', async () => {
-    await rm(`${cwd}/dist`, {
-      recursive: true,
-      force: true,
-    });
+    await rm(`${cwd}/dist`, { recursive: true, force: true });
     execSync(`node ${waku} build`, { cwd });
   });
 
@@ -98,6 +95,7 @@ test.describe(`render type`, () => {
         timestamp,
       );
     });
+
     test('hydrates client components', async ({ page }) => {
       await page.goto(`http://localhost:${port}/client/dynamic/dynamic-echo`);
       expect(await page.getByTestId('echo').innerText()).toEqual(
@@ -116,6 +114,7 @@ test.describe(`render type`, () => {
         timestamp,
       );
     });
+
     // TODO: Add test case for cached RSC payload that should not re-render.
   });
 
