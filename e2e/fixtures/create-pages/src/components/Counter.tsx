@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Link, useRouter_UNSTABLE as useRouter } from 'waku/router/client';
 
-import { jump } from './funcs';
+import { jump } from './funcs.js';
 
 export const Counter = () => {
   const { path } = useRouter();
