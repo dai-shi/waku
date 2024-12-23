@@ -86,7 +86,7 @@ for (const { build, command } of commands) {
     });
 
     test('jump', async ({ page }) => {
-      // TODO move this to new standalone test
+      // TODO we should do similar tests in standalone setup
       await page.goto(`http://localhost:${port}`);
       await page.click("a[href='/foo']");
       await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
