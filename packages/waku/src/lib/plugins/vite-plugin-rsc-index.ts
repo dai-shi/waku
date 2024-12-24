@@ -2,7 +2,8 @@ import type { Plugin } from 'vite';
 
 import { SRC_MAIN } from '../constants.js';
 
-export const DEFAULT_HTML_HEAD = `
+// This should be consistent with the one in renderers/html.ts
+const DEFAULT_HTML_HEAD = `
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="generator" content="Waku" />

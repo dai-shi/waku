@@ -2,8 +2,9 @@ import { exec, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import { mkdir, readdir, cp, readFile, writeFile } from 'node:fs/promises';
-import { test, debugChildProcess } from './utils.js';
 import { expect } from '@playwright/test';
+
+import { test, debugChildProcess } from './utils.js';
 
 test('should create waku with default setup work', async () => {
   const cliPath = fileURLToPath(

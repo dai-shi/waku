@@ -20,12 +20,8 @@ test.describe(`partial builds`, () => {
 
   let cp: ChildProcess;
   let port: number;
-
   test.beforeEach(async ({ page }) => {
-    await rm(`${cwd}/dist`, {
-      recursive: true,
-      force: true,
-    });
+    await rm(`${cwd}/dist`, { recursive: true, force: true });
     execSync(`node ${waku} build`, {
       cwd,
       env: { ...process.env, PAGES: 'a' },
@@ -35,6 +31,9 @@ test.describe(`partial builds`, () => {
     await waitPort({ port });
     await page.goto(`http://localhost:${port}/page/a`);
     expect(await page.getByTestId('title').textContent()).toBe('a');
+  });
+  test.afterEach(async () => {
+    await terminate(cp.pid!);
   });
 
   test('does not change pages that already exist', async () => {
@@ -68,9 +67,5 @@ test.describe(`partial builds`, () => {
     expect(await page.getByTestId('title').textContent()).toBe('a');
     await page.goto(`http://localhost:${port}/page/c`);
     expect(await page.getByTestId('title').textContent()).toBe('c');
-  });
-
-  test.afterEach(async () => {
-    await terminate(cp.pid!);
   });
 });
