@@ -14,8 +14,15 @@ import { renderRsc, renderRscElement, getExtractFormState } from './rsc.js';
 // TODO move types somewhere
 import type { HandlerContext } from '../middleware/types.js';
 
-// HACK depending on these constants is not ideal
-import { DEFAULT_HTML_HEAD } from '../plugins/vite-plugin-rsc-index.js';
+// This should be consistent with the one in vite-plugin-rsc-index.ts
+const DEFAULT_HTML_HEAD = [
+  createElement('meta', { charSet: 'utf-8' }),
+  createElement('meta', {
+    name: 'viewport',
+    content: 'width=device-width, initial-scale=1',
+  }),
+  createElement('meta', { name: 'generator', content: 'Waku' }),
+];
 
 type Elements = Record<string, ReactNode>;
 
@@ -56,11 +63,7 @@ const injectHtmlHead = (
             data.slice(0, closingHeadIndex + CLOSING_HEAD.length),
             data.slice(closingHeadIndex + CLOSING_HEAD.length),
           ];
-    head =
-      head.slice(0, -CLOSING_HEAD.length) +
-      DEFAULT_HTML_HEAD +
-      htmlHead +
-      CLOSING_HEAD;
+    head = head.slice(0, -CLOSING_HEAD.length) + htmlHead + CLOSING_HEAD;
     const matchPrefetched = head.match(
       // HACK This is very brittle
       /(.*<script[^>]*>\nglobalThis\.__WAKU_PREFETCHED__ = {\n)(.*?)(\n};.*)/s,
@@ -226,6 +229,7 @@ export async function renderHtml(
         Omit<ComponentProps<typeof ServerRoot>, 'children'>
       >,
       { elements: elementsPromise },
+      ...DEFAULT_HTML_HEAD,
       htmlNode as any,
     ),
     {
