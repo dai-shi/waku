@@ -1,19 +1,20 @@
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { test } from './utils.js';
 import { rm } from 'node:fs/promises';
 import { expect } from '@playwright/test';
+
+import { test } from './utils.js';
 
 const dryRunList = [
   // without entries.tsx
   {
-    cwd: fileURLToPath(new URL('../examples/01_template', import.meta.url)),
-    project: '01_template',
+    cwd: fileURLToPath(new URL('./fixtures/partial-build', import.meta.url)),
+    project: 'partial-build',
   },
   // with entries.tsx
   {
-    cwd: fileURLToPath(new URL('../examples/31_minimal', import.meta.url)),
-    project: '31_minimal',
+    cwd: fileURLToPath(new URL('./fixtures/ssr-basic', import.meta.url)),
+    project: 'ssr-basic',
   },
 ];
 
