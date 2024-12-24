@@ -1,9 +1,15 @@
 import net from 'node:net';
+import { execSync, exec } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import { cpSync, rmSync, mkdtempSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import type { ChildProcess } from 'node:child_process';
 import { expect, test as basicTest } from '@playwright/test';
 import type { ConsoleMessage, Page } from '@playwright/test';
-import type { ChildProcess } from 'node:child_process';
 import { error, info } from '@actions/core';
-import { createRequire } from 'node:module';
+import waitPort from 'wait-port';
 
 // Upstream doesn't support ES module
 //  Related: https://github.com/dwyl/terminate/pull/85
@@ -91,3 +97,89 @@ export const test = basicTest.extend<{ page: Page }>({
     page.off('console', callback);
   },
 });
+
+export const prepareNormalSetup = async (fixtureName: string) => {
+  const waku = fileURLToPath(
+    new URL('../packages/waku/dist/cli.js', import.meta.url),
+  );
+  const fixtureDir = fileURLToPath(
+    new URL('./fixtures/' + fixtureName, import.meta.url),
+  );
+  let built = false;
+  const startApp = async (isDev: boolean) => {
+    if (!isDev && !built) {
+      rmSync(`${fixtureDir}/dist`, { recursive: true, force: true });
+      execSync(`node ${waku} build`, { cwd: fixtureDir });
+      built = true;
+    }
+    const port = await getFreePort();
+    const cp = exec(`node ${waku} ${isDev ? 'dev' : 'start'} --port ${port}`, {
+      cwd: fixtureDir,
+    });
+    debugChildProcess(cp, fileURLToPath(import.meta.url), [
+      /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
+    ]);
+    await waitPort({ port });
+    const stopApp = async () => {
+      await terminate(cp.pid!);
+    };
+    return { port, stopApp };
+  };
+  return startApp;
+};
+
+export const prepareStandaloneSetup = async (fixtureName: string) => {
+  const wakuDir = fileURLToPath(new URL('../packages/waku', import.meta.url));
+  const { version } = createRequire(import.meta.url)(
+    join(wakuDir, 'package.json'),
+  );
+  const fixtureDir = fileURLToPath(
+    new URL('./fixtures/' + fixtureName, import.meta.url),
+  );
+  // GitHub Action on Windows doesn't support mkdtemp on global temp dir,
+  // Which will cause files in `src` folder to be empty. I don't know why
+  const tmpDir = process.env.TEMP_DIR || tmpdir();
+  let standaloneDir: string | undefined;
+  let built = false;
+  const startApp = async (isDev: boolean) => {
+    if (!standaloneDir) {
+      standaloneDir = mkdtempSync(join(tmpDir, fixtureName));
+      cpSync(fixtureDir, standaloneDir, {
+        filter: (src) => {
+          return !src.includes('node_modules') && !src.includes('dist');
+        },
+        recursive: true,
+      });
+      execSync(`pnpm pack --pack-destination ${standaloneDir}`, {
+        cwd: wakuDir,
+        stdio: 'inherit',
+      });
+      execSync(
+        `npm install --force ${join(standaloneDir, `waku-${version}.tgz`)}`,
+        { cwd: standaloneDir, stdio: 'inherit' },
+      );
+    }
+    if (!isDev && !built) {
+      rmSync(`${standaloneDir}/dist`, { recursive: true, force: true });
+      execSync(
+        `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} build`,
+        { cwd: standaloneDir },
+      );
+      built = true;
+    }
+    const port = await getFreePort();
+    const cp = exec(
+      `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} ${isDev ? 'dev' : 'start'} --port ${port}`,
+      { cwd: standaloneDir },
+    );
+    debugChildProcess(cp, fileURLToPath(import.meta.url), [
+      /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
+    ]);
+    await waitPort({ port });
+    const stopApp = async () => {
+      await terminate(cp.pid!);
+    };
+    return { port, stopApp, standaloneDir };
+  };
+  return startApp;
+};
