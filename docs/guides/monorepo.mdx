@@ -1,0 +1,33 @@
+---
+slug: guides/monorepo
+title: Waku in a Monorepo Setup
+description: Tips for Using Waku in a Monorepo Setup
+---
+
+## Issues with Two Instances of React
+
+Example error:
+
+```
+TypeError: Cannot read properties of null (reading 'use')
+```
+
+This issue can sometimes occur in `pnpm` workspaces. In such cases, configuring Vite may resolve the problem.
+
+`vite.config.ts`:
+
+```ts
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+  },
+});
+```
+
+Ref: https://github.com/dai-shi/waku/issues/676
+
+---
+
+If you encounter other issues while using Waku in a monorepo setup, please report them.

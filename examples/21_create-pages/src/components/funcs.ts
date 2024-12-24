@@ -2,14 +2,7 @@
 
 import { unstable_rerenderRoute } from 'waku/router/server';
 
-const PAGES = [
-  '/foo',
-  '/bar',
-  '/baz',
-  '/nested/qux',
-  '/nested/aaa',
-  '/nested/bbb',
-];
+const PAGES = ['/bar', '/baz', '/nested/qux', '/nested/aaa', '/nested/bbb'];
 
 export const jump = async () => {
   const page = PAGES[Math.floor(Math.random() * PAGES.length)] as string;

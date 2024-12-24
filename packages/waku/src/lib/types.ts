@@ -24,16 +24,16 @@ export type HandleRequest = (
     req: HandlerReq;
   },
   utils: {
-    renderRsc: (elements: Record<string, unknown>) => ReadableStream;
+    renderRsc: (elements: Record<string, unknown>) => Promise<ReadableStream>;
     renderHtml: (
       elements: Elements,
       html: ReactNode,
       rscPath: string,
       actionResult?: unknown,
-    ) => {
-      body: ReadableStream;
+    ) => Promise<{
+      body: ReadableStream & { allReady: Promise<void> };
       headers: Record<'content-type', string>;
-    };
+    }>;
   },
 ) => Promise<ReadableStream | HandlerRes | null | undefined>;
 

@@ -245,7 +245,6 @@ const createRscViteServer = (
           conditions: ['react-server'],
           externalConditions: ['react-server'],
         },
-        external: ['waku/middleware/context'],
         noExternal: /^(?!node:)/,
         optimizeDeps: {
           include: [

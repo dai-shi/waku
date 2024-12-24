@@ -12,12 +12,12 @@ const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
   return config.basePath + id + '.js';
 };
 
-export function renderRsc(
+export async function renderRsc(
   config: PureConfig,
   ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
   elements: Record<string, unknown>,
   moduleIdCallback?: (id: string) => void,
-): ReadableStream {
+): Promise<ReadableStream> {
   const modules = ctx.unstable_modules;
   if (!modules) {
     throw new Error('handler middleware required (missing modules)');

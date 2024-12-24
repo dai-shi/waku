@@ -125,13 +125,13 @@ export const handler: Middleware = (options) => {
     const utils = {
       renderRsc: (elements: Record<string, unknown>) =>
         renderRsc(config, ctx, elements),
-      renderHtml: (
+      renderHtml: async (
         elements: Record<string, ReactNode>,
         html: ReactNode,
         rscPath: string,
         actionResult?: unknown,
       ) => {
-        const readable = renderHtml(
+        const readable = await renderHtml(
           config,
           ctx,
           htmlHead,
@@ -141,12 +141,12 @@ export const handler: Middleware = (options) => {
           actionResult,
         );
         const headers = { 'content-type': 'text/html; charset=utf-8' };
-        return {
-          body: transformIndexHtml
-            ? readable.pipeThrough(transformIndexHtml)
-            : readable,
-          headers,
-        };
+        let body = readable;
+        if (transformIndexHtml) {
+          body = readable.pipeThrough(transformIndexHtml) as never;
+          body.allReady = readable.allReady;
+        }
+        return { body, headers };
       },
     };
     const input = await getInput(config, ctx, loadServerModule);

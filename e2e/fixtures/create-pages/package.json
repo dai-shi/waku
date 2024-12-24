@@ -1,0 +1,23 @@
+{
+  "name": "create-pages",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "waku dev",
+    "build": "waku build",
+    "start": "waku start"
+  },
+  "dependencies": {
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-server-dom-webpack": "19.0.0",
+    "waku": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "server-only": "^0.0.1",
+    "typescript": "^5.7.2"
+  }
+}

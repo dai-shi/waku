@@ -1,59 +1,26 @@
 import { expect } from '@playwright/test';
-import { execSync, exec, ChildProcess } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import waitPort from 'wait-port';
-import { debugChildProcess, getFreePort, terminate, test } from './utils.js';
-import { readdir, rm } from 'node:fs/promises';
+import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 
-const waku = fileURLToPath(
-  new URL('../packages/waku/dist/cli.js', import.meta.url),
-);
+import { test, prepareNormalSetup } from './utils.js';
 
-const commands = [
-  {
-    command: 'dev',
-  },
-  {
-    build: 'build',
-    command: 'start',
-  },
-];
+const startApp = prepareNormalSetup('ssr-target-bundle');
 
-const cwd = fileURLToPath(
-  new URL('./fixtures/ssr-target-bundle', import.meta.url),
-);
-
-for (const { build, command } of commands) {
-  test.describe(`ssr-target-bundle: ${command}`, () => {
-    let cp: ChildProcess;
+for (const mode of ['DEV', 'PRD'] as const) {
+  test.describe(`ssr-target-bundle: ${mode}`, () => {
     let port: number;
-    test.beforeAll('remove cache', async () => {
-      await rm(`${cwd}/dist`, {
-        recursive: true,
-        force: true,
-      });
-    });
-
+    let stopApp: () => Promise<void>;
+    let fixtureDir: string;
     test.beforeAll(async () => {
-      if (build) {
-        execSync(`node ${waku} ${build}`, { cwd });
-      }
-      port = await getFreePort();
-      cp = exec(`node ${waku} ${command} --port ${port}`, { cwd });
-      debugChildProcess(cp, fileURLToPath(import.meta.url), [
-        /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
-      ]);
-      await waitPort({ port });
+      ({ port, stopApp, fixtureDir } = await startApp(mode));
     });
-
     test.afterAll(async () => {
-      await terminate(cp.pid!);
+      await stopApp();
     });
 
     test('image exists in folder public/assets', async () => {
-      test.skip(command.startsWith('dev'));
-      const imagePath = path.join(cwd, 'dist', 'public', 'assets');
+      test.skip(mode === 'DEV');
+      const imagePath = path.join(fixtureDir, 'dist', 'public', 'assets');
       const files = await readdir(imagePath);
       const imageExists = files.some((file) =>
         file.startsWith('image-not-inlined-'),
@@ -62,8 +29,8 @@ for (const { build, command } of commands) {
     });
 
     test('json public linked exists in folder public/assets', async () => {
-      test.skip(command.startsWith('dev'));
-      const imagePath = path.join(cwd, 'dist', 'public', 'assets');
+      test.skip(mode === 'DEV');
+      const imagePath = path.join(fixtureDir, 'dist', 'public', 'assets');
       const files = await readdir(imagePath);
       const imageExists = files.some((file) =>
         file.startsWith('json-public-linked-'),
@@ -72,8 +39,8 @@ for (const { build, command } of commands) {
     });
 
     test('json private NOT exists in folder public/assets', async () => {
-      test.skip(command.startsWith('dev'));
-      const imagePath = path.join(cwd, 'dist', 'public', 'assets');
+      test.skip(mode === 'DEV');
+      const imagePath = path.join(fixtureDir, 'dist', 'public', 'assets');
       const files = await readdir(imagePath);
       const imageExists = files.some((file) =>
         file.startsWith('json-private-'),
