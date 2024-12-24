@@ -133,7 +133,7 @@ export const prepareNormalSetup = (fixtureName: string) => {
     const stopApp = async () => {
       await terminate(cp.pid!);
     };
-    return { port, stopApp };
+    return { port, stopApp, fixtureDir };
   };
   return startApp;
 };
