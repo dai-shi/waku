@@ -128,6 +128,31 @@ importers:
         specifier: ^5.7.2
         version: 5.7.2
 
+  e2e/fixtures/define-router:
+    dependencies:
+      react:
+        specifier: 19.0.0
+        version: 19.0.0
+      react-dom:
+        specifier: 19.0.0
+        version: 19.0.0(react@19.0.0)
+      react-server-dom-webpack:
+        specifier: 19.0.0
+        version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.97.1)
+      waku:
+        specifier: workspace:*
+        version: link:../../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.2
+        version: 19.0.2
+      '@types/react-dom':
+        specifier: ^19.0.2
+        version: 19.0.2(@types/react@19.0.2)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.7.2
+
   e2e/fixtures/hot-reload:
     dependencies:
       react:
@@ -238,31 +263,6 @@ importers:
         version: 5.7.2
 
   e2e/fixtures/rsc-css-modules:
-    dependencies:
-      react:
-        specifier: 19.0.0
-        version: 19.0.0
-      react-dom:
-        specifier: 19.0.0
-        version: 19.0.0(react@19.0.0)
-      react-server-dom-webpack:
-        specifier: 19.0.0
-        version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.97.1)
-      waku:
-        specifier: workspace:*
-        version: link:../../../packages/waku
-    devDependencies:
-      '@types/react':
-        specifier: ^19.0.2
-        version: 19.0.2
-      '@types/react-dom':
-        specifier: ^19.0.2
-        version: 19.0.2(@types/react@19.0.2)
-      typescript:
-        specifier: ^5.7.2
-        version: 5.7.2
-
-  e2e/fixtures/rsc-router:
     dependencies:
       react:
         specifier: 19.0.0
