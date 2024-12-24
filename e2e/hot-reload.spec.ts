@@ -63,10 +63,8 @@ async function modifyFile(file: string, search: string, replace: string) {
   await writeFile(join(standaloneDir, file), content.replace(search, replace));
 }
 
-console.log('================0', new Date());
 test.describe('hot reload', () => {
   test.beforeEach(async () => {
-    console.log('================1', new Date());
     // GitHub Action on Windows doesn't support mkdtemp on global temp dir,
     // Which will cause files in `src` folder to be empty.
     // I don't know why
@@ -87,13 +85,10 @@ test.describe('hot reload', () => {
       cwd: standaloneDir,
       stdio: 'inherit',
     });
-    console.log('================2', new Date());
   });
 
   test('server and client', async ({ page }) => {
-    console.log('================3', new Date());
     const [port, pid] = await run();
-    console.log('================4', new Date());
     await page.goto(`http://localhost:${port}/`);
     await expect(page.getByText('Home Page')).toBeVisible();
     await expect(page.getByTestId('count')).toHaveText('0');
@@ -127,8 +122,6 @@ test.describe('hot reload', () => {
     await expect(page.getByText('About2 Page')).toBeVisible();
     await page.getByTestId('home').click();
     await expect(page.getByText('Edited Page')).toBeVisible();
-    console.log('================5', new Date());
     await terminate(pid!);
-    console.log('================6', new Date());
   });
 });
