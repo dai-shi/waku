@@ -4,12 +4,12 @@ import { test, prepareStandaloneSetup } from './utils.js';
 
 const startApp = prepareStandaloneSetup('create-pages');
 
-for (const isDev of [true, false]) {
-  test.describe(`create-pages: ${isDev ? 'DEV' : 'PRD'}`, () => {
+for (const mode of ['DEV', 'PRD'] as const) {
+  test.describe(`create-pages: ${mode}`, () => {
     let port: number;
     let stopApp: () => Promise<void>;
     test.beforeAll(async () => {
-      ({ port, stopApp } = await startApp(isDev));
+      ({ port, stopApp } = await startApp(mode));
     });
     test.afterAll(async () => {
       await stopApp();

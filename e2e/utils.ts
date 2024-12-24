@@ -106,16 +106,26 @@ export const prepareNormalSetup = (fixtureName: string) => {
     new URL('./fixtures/' + fixtureName, import.meta.url),
   );
   let built = false;
-  const startApp = async (isDev: boolean) => {
-    if (!isDev && !built) {
+  const startApp = async (mode: 'DEV' | 'PRD' | 'STATIC') => {
+    if (mode !== 'DEV' && !built) {
       rmSync(`${fixtureDir}/dist`, { recursive: true, force: true });
       execSync(`node ${waku} build`, { cwd: fixtureDir });
       built = true;
     }
     const port = await getFreePort();
-    const cp = exec(`node ${waku} ${isDev ? 'dev' : 'start'} --port ${port}`, {
-      cwd: fixtureDir,
-    });
+    let cmd: string;
+    switch (mode) {
+      case 'DEV':
+        cmd = `node ${waku} dev --port ${port}`;
+        break;
+      case 'PRD':
+        cmd = `node ${waku} start --port ${port}`;
+        break;
+      case 'STATIC':
+        cmd = `pnpm serve -l ${port} dist/public`;
+        break;
+    }
+    const cp = exec(cmd, { cwd: fixtureDir });
     debugChildProcess(cp, fileURLToPath(import.meta.url), [
       /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
     ]);
@@ -141,7 +151,7 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
   const tmpDir = process.env.TEMP_DIR || tmpdir();
   let standaloneDir: string | undefined;
   let built = false;
-  const startApp = async (isDev: boolean, useStaticServe = false) => {
+  const startApp = async (mode: 'DEV' | 'PRD' | 'STATIC') => {
     if (!standaloneDir) {
       standaloneDir = mkdtempSync(join(tmpDir, fixtureName));
       cpSync(fixtureDir, standaloneDir, {
@@ -159,7 +169,7 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
         { cwd: standaloneDir, stdio: 'inherit' },
       );
     }
-    if (!isDev && !built) {
+    if (mode !== 'DEV' && !built) {
       rmSync(`${standaloneDir}/dist`, { recursive: true, force: true });
       execSync(
         `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} build`,
@@ -168,12 +178,19 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
       built = true;
     }
     const port = await getFreePort();
-    const cp = exec(
-      useStaticServe
-        ? `node ${join(standaloneDir, './node_modules/serve/build/main.js')} dist/public -p ${port}`
-        : `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} ${isDev ? 'dev' : 'start'} --port ${port}`,
-      { cwd: standaloneDir },
-    );
+    let cmd: string;
+    switch (mode) {
+      case 'DEV':
+        cmd = `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} dev --port ${port}`;
+        break;
+      case 'PRD':
+        cmd = `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start --port ${port}`;
+        break;
+      case 'STATIC':
+        cmd = `node ${join(standaloneDir, './node_modules/serve/build/main.js')} dist/public -p ${port}`;
+        break;
+    }
+    const cp = exec(cmd, { cwd: standaloneDir });
     debugChildProcess(cp, fileURLToPath(import.meta.url), [
       /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
     ]);

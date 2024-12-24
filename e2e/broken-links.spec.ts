@@ -8,7 +8,7 @@ test.describe('broken-links: normal server', async () => {
   let port: number;
   let stopApp: () => Promise<void>;
   test.beforeAll(async () => {
-    ({ port, stopApp } = await startApp(false, false));
+    ({ port, stopApp } = await startApp('PRD'));
   });
   test.afterAll(async () => {
     await stopApp();
@@ -69,7 +69,7 @@ test.describe('broken-links: static server', () => {
   let port: number;
   let stopApp: () => Promise<void>;
   test.beforeAll(async () => {
-    ({ port, stopApp } = await startApp(false, true));
+    ({ port, stopApp } = await startApp('STATIC'));
   });
   test.afterAll(async () => {
     await stopApp();

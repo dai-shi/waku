@@ -34,7 +34,7 @@ async function startAppDev() {
       }
     }
   }
-  return startApp(true);
+  return startApp('DEV');
 }
 
 async function modifyFile(

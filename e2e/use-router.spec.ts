@@ -4,12 +4,12 @@ import { test, prepareStandaloneSetup } from './utils.js';
 
 const startApp = prepareStandaloneSetup('use-router');
 
-for (const isDev of [true, false]) {
-  test.describe(`useRouter: ${isDev ? 'DEV' : 'PRD'}`, async () => {
+for (const mode of ['DEV', 'PRD'] as const) {
+  test.describe(`useRouter: ${mode}`, async () => {
     let port: number;
     let stopApp: () => Promise<void>;
     test.beforeAll(async () => {
-      ({ port, stopApp } = await startApp(isDev));
+      ({ port, stopApp } = await startApp(mode));
     });
     test.afterAll(async () => {
       await stopApp();

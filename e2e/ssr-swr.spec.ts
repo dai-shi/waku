@@ -4,12 +4,12 @@ import { test, prepareNormalSetup } from './utils.js';
 
 const startApp = prepareNormalSetup('ssr-swr');
 
-for (const isDev of [true, false]) {
-  test.describe(`ssr-swr: ${isDev ? 'DEV' : 'PRD'}`, () => {
+for (const mode of ['DEV', 'PRD'] as const) {
+  test.describe(`ssr-swr: ${mode}`, () => {
     let port: number;
     let stopApp: () => Promise<void>;
     test.beforeAll(async () => {
-      ({ port, stopApp } = await startApp(isDev));
+      ({ port, stopApp } = await startApp(mode));
     });
     test.afterAll(async () => {
       await stopApp();
