@@ -16,7 +16,7 @@
       "path": "./e2e/fixtures/ssr-basic/tsconfig.json"
     },
     {
-      "path": "./e2e/fixtures/rsc-router/tsconfig.json"
+      "path": "./e2e/fixtures/define-router/tsconfig.json"
     },
     {
       "path": "./e2e/fixtures/ssr-target-bundle/tsconfig.json"
@@ -50,6 +50,9 @@
     },
     {
       "path": "./e2e/fixtures/hot-reload/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/create-pages/tsconfig.json"
     }
   ]
 }
