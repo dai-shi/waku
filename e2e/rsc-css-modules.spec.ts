@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 
 import { test, prepareNormalSetup } from './utils.js';
 
-const startApp = prepareNormalSetup('./fixtures/rsc-css-modules');
+const startApp = prepareNormalSetup('rsc-css-modules');
 
 for (const mode of ['DEV', 'PRD'] as const) {
   test.describe(`rsc-css-modules: ${mode}`, () => {

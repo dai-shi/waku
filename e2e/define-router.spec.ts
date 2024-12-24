@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 
 import { test, prepareNormalSetup } from './utils.js';
 
-const startApp = prepareNormalSetup('./fixtures/define-router');
+const startApp = prepareNormalSetup('define-router');
 
 for (const mode of ['DEV', 'PRD'] as const) {
   test.describe(`define-router: ${mode}`, () => {
