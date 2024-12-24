@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test';
+
 import { test, prepareStandaloneSetup } from './utils.js';
 
 const startApp = prepareStandaloneSetup('create-pages');
