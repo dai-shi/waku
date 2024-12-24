@@ -141,7 +141,7 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
   const tmpDir = process.env.TEMP_DIR || tmpdir();
   let standaloneDir: string | undefined;
   let built = false;
-  const startApp = async (isDev: boolean) => {
+  const startApp = async (isDev: boolean, useStaticServe = false) => {
     if (!standaloneDir) {
       standaloneDir = mkdtempSync(join(tmpDir, fixtureName));
       cpSync(fixtureDir, standaloneDir, {
@@ -169,7 +169,9 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
     }
     const port = await getFreePort();
     const cp = exec(
-      `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} ${isDev ? 'dev' : 'start'} --port ${port}`,
+      useStaticServe
+        ? `node ${join(standaloneDir, './node_modules/serve/build/main.js')} dist/public -p ${port}`
+        : `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} ${isDev ? 'dev' : 'start'} --port ${port}`,
       { cwd: standaloneDir },
     );
     debugChildProcess(cp, fileURLToPath(import.meta.url), [
