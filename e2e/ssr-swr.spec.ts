@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 
 import { test, prepareNormalSetup } from './utils.js';
 
-const startApp = await prepareNormalSetup('ssr-swr');
+const startApp = prepareNormalSetup('ssr-swr');
 
 for (const isDev of [true, false]) {
   test.describe(`ssr-swr: ${isDev ? 'DEV' : 'PRD'}`, () => {

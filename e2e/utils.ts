@@ -98,7 +98,7 @@ export const test = basicTest.extend<{ page: Page }>({
   },
 });
 
-export const prepareNormalSetup = async (fixtureName: string) => {
+export const prepareNormalSetup = (fixtureName: string) => {
   const waku = fileURLToPath(
     new URL('../packages/waku/dist/cli.js', import.meta.url),
   );
@@ -128,7 +128,7 @@ export const prepareNormalSetup = async (fixtureName: string) => {
   return startApp;
 };
 
-export const prepareStandaloneSetup = async (fixtureName: string) => {
+export const prepareStandaloneSetup = (fixtureName: string) => {
   const wakuDir = fileURLToPath(new URL('../packages/waku', import.meta.url));
   const { version } = createRequire(import.meta.url)(
     join(wakuDir, 'package.json'),

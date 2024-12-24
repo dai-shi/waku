@@ -10,7 +10,7 @@ import {
   prepareStandaloneSetup,
 } from './utils.js';
 
-const startApp = await prepareStandaloneSetup('hot-reload');
+const startApp = prepareStandaloneSetup('hot-reload');
 
 async function startAppDev() {
   const HMR_PORT = 24678;
