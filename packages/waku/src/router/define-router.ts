@@ -11,7 +11,7 @@ import {
   HAS404_ID,
   SKIP_HEADER,
 } from './common.js';
-import { getPathMapping } from '../lib/utils/path.js';
+import { getPathMapping, path2regexp } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
 import { ServerRouter } from './client.js';
 import { getContext } from '../middleware/context.js';
@@ -64,8 +64,8 @@ const ROUTE_SLOT_ID_PREFIX = 'route:';
 export function unstable_defineRouter(fns: {
   getPathConfig: () => Promise<
     Iterable<{
-      pattern: string; // TODO we should probably remove this and use path2regexp internally
       path: PathSpec;
+      pathPattern?: PathSpec;
       routeElement: { isStatic?: boolean };
       elements: Record<SlotId, { isStatic?: boolean }>;
       noSsr?: boolean;
@@ -84,8 +84,8 @@ export function unstable_defineRouter(fns: {
 }) {
   const platformObject = unstable_getPlatformObject();
   type MyPathConfig = {
+    pathSpec: PathSpec;
     pattern: string;
-    pathname: PathSpec;
     staticElementIds: SlotId[];
     isStatic?: boolean | undefined;
     specs: { noSsr?: boolean; is404: boolean };
@@ -103,8 +103,8 @@ export function unstable_defineRouter(fns: {
           item.path[0]!.type === 'literal' &&
           item.path[0]!.name === '404';
         return {
-          pattern: item.pattern,
-          pathname: item.path,
+          pathSpec: item.path,
+          pattern: path2regexp(item.pathPattern || item.path),
           staticElementIds: Object.entries(item.elements).flatMap(
             ([id, { isStatic }]) => (isStatic ? [id] : []),
           ),
@@ -134,7 +134,7 @@ export function unstable_defineRouter(fns: {
     }
   > => {
     const pathConfig = await getMyPathConfig();
-    const found = pathConfig.find(({ pathname: pathSpec }) =>
+    const found = pathConfig.find(({ pathSpec }) =>
       getPathMapping(pathSpec, pathname),
     );
     const has404 = pathConfig.some(({ specs: { is404 } }) => is404);
@@ -156,7 +156,7 @@ export function unstable_defineRouter(fns: {
   ): Promise<string[]> => {
     const pathConfig = await getMyPathConfig();
     return skip.filter((slotId) => {
-      const found = pathConfig.find(({ pathname: pathSpec }) =>
+      const found = pathConfig.find(({ pathSpec }) =>
         getPathMapping(pathSpec, pathname),
       );
       return !!found && found.staticElementIds.includes(slotId);
@@ -217,7 +217,7 @@ export function unstable_defineRouter(fns: {
     const path2moduleIds: Record<string, string[]> = {};
 
     await Promise.all(
-      pathConfig.map(async ({ pathname: pathSpec, pattern }) => {
+      pathConfig.map(async ({ pathSpec, pattern }) => {
         if (pathSpec.some(({ type }) => type !== 'literal')) {
           return;
         }
@@ -243,7 +243,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
 };`;
     type BuildConfig = Awaited<ReturnType<GetBuildConfig>>;
     const buildConfig: BuildConfig = [];
-    for (const { pathname: pathSpec, isStatic, specs } of pathConfig) {
+    for (const { pathSpec, isStatic, specs } of pathConfig) {
       const entries: BuildConfig[number]['entries'] = [];
       if (pathSpec.every(({ type }) => type === 'literal')) {
         const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
@@ -251,7 +251,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         entries.push({ rscPath, isStatic });
       }
       buildConfig.push({
-        pathSpec: pathSpec,
+        pathSpec,
         isStatic,
         entries,
         customCode:
