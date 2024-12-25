@@ -84,7 +84,7 @@ export function unstable_defineRouter(fns: {
   const platformObject = unstable_getPlatformObject();
   type MyPathConfig = {
     pattern: string;
-    pathname: PathSpec;
+    pathSpec: PathSpec;
     staticElementIds: SlotId[];
     isStatic?: boolean | undefined;
     specs: { noSsr?: boolean; is404: boolean };
@@ -103,7 +103,7 @@ export function unstable_defineRouter(fns: {
           item.path[0]!.name === '404';
         return {
           pattern: path2regexp(item.path),
-          pathname: item.path,
+          pathSpec: item.path,
           staticElementIds: Object.entries(item.elements).flatMap(
             ([id, { isStatic }]) => (isStatic ? [id] : []),
           ),
@@ -133,7 +133,7 @@ export function unstable_defineRouter(fns: {
     }
   > => {
     const pathConfig = await getMyPathConfig();
-    const found = pathConfig.find(({ pathname: pathSpec }) =>
+    const found = pathConfig.find(({ pathSpec }) =>
       getPathMapping(pathSpec, pathname),
     );
     const has404 = pathConfig.some(({ specs: { is404 } }) => is404);
@@ -155,7 +155,7 @@ export function unstable_defineRouter(fns: {
   ): Promise<string[]> => {
     const pathConfig = await getMyPathConfig();
     return skip.filter((slotId) => {
-      const found = pathConfig.find(({ pathname: pathSpec }) =>
+      const found = pathConfig.find(({ pathSpec }) =>
         getPathMapping(pathSpec, pathname),
       );
       return !!found && found.staticElementIds.includes(slotId);
@@ -216,7 +216,7 @@ export function unstable_defineRouter(fns: {
     const path2moduleIds: Record<string, string[]> = {};
 
     await Promise.all(
-      pathConfig.map(async ({ pathname: pathSpec, pattern }) => {
+      pathConfig.map(async ({ pathSpec, pattern }) => {
         if (pathSpec.some(({ type }) => type !== 'literal')) {
           return;
         }
@@ -242,7 +242,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
 };`;
     type BuildConfig = Awaited<ReturnType<GetBuildConfig>>;
     const buildConfig: BuildConfig = [];
-    for (const { pathname: pathSpec, isStatic, specs } of pathConfig) {
+    for (const { pathSpec, isStatic, specs } of pathConfig) {
       const entries: BuildConfig[number]['entries'] = [];
       if (pathSpec.every(({ type }) => type === 'literal')) {
         const pathname = '/' + pathSpec.map(({ name }) => name).join('/');
