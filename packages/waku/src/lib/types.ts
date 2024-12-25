@@ -69,10 +69,10 @@ export type EntriesPrd = EntriesDev & {
 };
 
 export type HandlerReq = {
-  readonly body: ReadableStream | null;
-  readonly url: URL;
-  readonly method: string;
-  readonly headers: Readonly<Record<string, string>>;
+  body: ReadableStream | null;
+  url: URL;
+  method: string;
+  headers: Readonly<Record<string, string>>;
 };
 
 export type HandlerRes = {
