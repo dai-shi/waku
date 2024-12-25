@@ -328,7 +328,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         });
         const actionResult =
           input.type === 'action' ? await input.fn() : undefined;
-        return renderHtml(entries, html, rscPath, actionResult);
+        return renderHtml(entries, html, { rscPath, actionResult });
       }
     },
     getBuildConfig,

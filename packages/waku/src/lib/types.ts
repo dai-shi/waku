@@ -6,7 +6,7 @@ import type { PathSpec } from '../lib/utils/path.js';
 type Elements = Record<string, ReactNode>;
 
 type RenderRsc = (elements: Record<string, unknown>) => Promise<ReadableStream>;
-type RenderHtml<Opts = never> = (
+type RenderHtml<Opts = unknown> = (
   elements: Elements,
   html: ReactNode,
   options: { rscPath: string; actionResult?: unknown } & Opts,

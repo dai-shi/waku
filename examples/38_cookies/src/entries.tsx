@@ -29,7 +29,7 @@ export default defineEntries({
       return renderHtml(
         { App: <App name={'Waku'} items={items} /> },
         <Slot id="App" />,
-        '',
+        { rscPath: '' },
       );
     }
   },
