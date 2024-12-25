@@ -61,7 +61,7 @@ export type EntriesDev = {
 };
 
 export type EntriesPrd = EntriesDev & {
-  loadConfig: () => Promise<Config>;
+  loadConfig: () => Promise<{ config: Config; cleanup: () => Promise<void> }>;
   loadModule: (id: string) => Promise<unknown>;
   dynamicHtmlPaths: [pathSpec: PathSpec, htmlHead: string][];
   publicIndexHtml: string;

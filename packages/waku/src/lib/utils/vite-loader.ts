@@ -7,12 +7,9 @@ export const loadServerFile = async (fileURL: string) => {
       external: ['waku'],
     },
   });
-  try {
-    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
-  } finally {
-    // FIXME this is really a bad hack
-    setTimeout(() => {
-      vite.close().catch(() => {});
-    }, 1000);
-  }
+  const mod = await vite.ssrLoadModule(fileURLToFilePath(fileURL));
+  return {
+    config: mod.default,
+    cleanup: vite.close,
+  };
 };

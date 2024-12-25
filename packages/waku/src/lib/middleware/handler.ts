@@ -72,10 +72,14 @@ export const handler: Middleware = (options) => {
     options.cmd === 'start'
       ? options.loadEntries()
       : ('Error: loadEntries are not available' as never);
+  // let cleanup: () => Promise<void>;
   const configPromise =
     options.cmd === 'start'
       ? entriesPromise.then((entries) =>
-          entries.loadConfig().then((config) => resolveConfig(config)),
+          entries.loadConfig().then((config) => {
+            // cleanup = config.cleanup;
+            return resolveConfig(config.config);
+          }),
         )
       : resolveConfig(options.config);
 
@@ -171,5 +175,6 @@ export const handler: Middleware = (options) => {
     }
 
     await next();
+    // await cleanup();
   };
 };

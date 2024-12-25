@@ -97,7 +97,7 @@ if (values.version) {
 }
 
 async function runDev() {
-  const config = await loadConfig();
+  const { config, cleanup } = await loadConfig();
   const honoEnhancer =
     config.unstable_honoEnhancer || ((createApp) => createApp);
   const createApp = (app: Hono) => {
@@ -117,10 +117,11 @@ async function runDev() {
   };
   const port = parseInt(values.port || '3000', 10);
   await startServer(honoEnhancer(createApp)(new Hono()), port);
+  await cleanup();
 }
 
 async function runBuild() {
-  const config = await loadConfig();
+  const { config, cleanup } = await loadConfig();
   process.env.NODE_ENV = 'production';
   await build({
     config,
@@ -142,10 +143,11 @@ async function runBuild() {
       (values['with-deno'] ? 'deno' : undefined) ||
       (values['with-aws-lambda'] ? 'aws-lambda' : undefined),
   });
+  await cleanup();
 }
 
 async function runStart() {
-  const config = await loadConfig();
+  const { config, cleanup } = await loadConfig();
   const { distDir = 'dist' } = config;
   const honoEnhancer =
     config.unstable_honoEnhancer || ((createApp) => createApp);
@@ -171,6 +173,7 @@ async function runStart() {
   };
   const port = parseInt(values.port || '8080', 10);
   await startServer(honoEnhancer(createApp)(new Hono()), port);
+  await cleanup();
 }
 
 function startServer(app: Hono, port: number) {
@@ -216,12 +219,16 @@ Options:
 `);
 }
 
-async function loadConfig(): Promise<Config> {
+async function loadConfig(): Promise<{
+  config: Config;
+  cleanup: () => Promise<void>;
+}> {
   if (!existsSync(CONFIG_FILE)) {
-    return {};
+    return { config: {}, cleanup: () => Promise.resolve() };
   }
   // FIXME can we avoid using vite to load the config?
   const { loadServerFile } = await import('./lib/utils/vite-loader.js');
   const file = pathToFileURL(path.resolve(CONFIG_FILE)).toString();
-  return (await loadServerFile(file)).default;
+
+  return loadServerFile(file);
 }
