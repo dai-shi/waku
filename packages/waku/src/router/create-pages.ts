@@ -398,7 +398,7 @@ export const createPages = <
       await configure();
       const paths: {
         path: PathSpec;
-        pathPattern?: PathSpec | undefined;
+        pathPattern?: PathSpec;
         routeElement: { isStatic?: boolean };
         elements: Record<string, { isStatic?: boolean }>;
         noSsr: boolean;
@@ -426,7 +426,7 @@ export const createPages = <
 
         paths.push({
           path: literalSpec,
-          pathPattern: originalSpec,
+          ...(originalSpec && { pathPattern: originalSpec }),
           routeElement: {
             isStatic: true,
           },

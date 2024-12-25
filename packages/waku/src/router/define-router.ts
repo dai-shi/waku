@@ -65,7 +65,7 @@ export function unstable_defineRouter(fns: {
   getPathConfig: () => Promise<
     Iterable<{
       path: PathSpec;
-      pathPattern?: PathSpec | undefined;
+      pathPattern?: PathSpec;
       routeElement: { isStatic?: boolean };
       elements: Record<SlotId, { isStatic?: boolean }>;
       noSsr?: boolean;

@@ -439,8 +439,8 @@ describe('createPages', () => {
           'page:/test': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        path: [{ name: 'test', type: 'literal' }],
         noSsr: false,
+        path: [{ name: 'test', type: 'literal' }],
       },
     ]);
 
@@ -469,8 +469,8 @@ describe('createPages', () => {
           'page:/test': { isStatic: false },
         },
         routeElement: { isStatic: true },
-        path: [{ name: 'test', type: 'literal' }],
         noSsr: false,
+        path: [{ name: 'test', type: 'literal' }],
       },
     ]);
     const route = await renderRoute('/test', {
@@ -506,8 +506,8 @@ describe('createPages', () => {
           'page:/test': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        path: [{ name: 'test', type: 'literal' }],
         noSsr: false,
+        path: [{ name: 'test', type: 'literal' }],
       },
     ]);
     const route = await renderRoute('/test', {
@@ -547,8 +547,8 @@ describe('createPages', () => {
           'page:/test': { isStatic: false },
         },
         routeElement: { isStatic: true },
-        path: [{ name: 'test', type: 'literal' }],
         noSsr: false,
+        path: [{ name: 'test', type: 'literal' }],
       },
     ]);
 
@@ -581,11 +581,11 @@ describe('createPages', () => {
           'page:/test/nested': { isStatic: true },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'test', type: 'literal' },
           { name: 'nested', type: 'literal' },
         ],
-        noSsr: false,
       },
     ]);
     const route = await renderRoute('/test/nested', {
@@ -619,11 +619,11 @@ describe('createPages', () => {
           'layout:/test/nested': { isStatic: true },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'test', type: 'literal' },
           { name: 'nested', type: 'literal' },
         ],
-        noSsr: false,
       },
     ]);
     const route = await renderRoute('/test/nested', {
@@ -655,11 +655,11 @@ describe('createPages', () => {
           'page:/test/nested': { isStatic: false },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'test', type: 'literal' },
           { name: 'nested', type: 'literal' },
         ],
-        noSsr: false,
       },
     ]);
 
@@ -692,6 +692,7 @@ describe('createPages', () => {
           'page:/test/w/x': { isStatic: true },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'test', type: 'literal' },
           { name: 'w', type: 'literal' },
@@ -702,7 +703,6 @@ describe('createPages', () => {
           { name: 'a', type: 'group' },
           { name: 'b', type: 'group' },
         ],
-        noSsr: false,
       },
       {
         elements: {
@@ -710,6 +710,7 @@ describe('createPages', () => {
           'page:/test/y/z': { isStatic: true },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'test', type: 'literal' },
           { name: 'y', type: 'literal' },
@@ -720,7 +721,6 @@ describe('createPages', () => {
           { name: 'a', type: 'group' },
           { name: 'b', type: 'group' },
         ],
-        noSsr: false,
       },
     ]);
     const route = await renderRoute('/test/y/z', {
@@ -748,12 +748,12 @@ describe('createPages', () => {
           'page:/test/[a]/[b]': { isStatic: false },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'test', type: 'literal' },
           { name: 'a', type: 'group' },
           { name: 'b', type: 'group' },
         ],
-        noSsr: false,
       },
     ]);
     const route = await renderRoute('/test/w/x', {
@@ -782,6 +782,7 @@ describe('createPages', () => {
           'page:/test/a/b': { isStatic: true },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'test', type: 'literal' },
           { name: 'a', type: 'literal' },
@@ -791,7 +792,6 @@ describe('createPages', () => {
           { name: 'test', type: 'literal' },
           { name: 'path', type: 'wildcard' },
         ],
-        noSsr: false,
       },
     ]);
     const route = await renderRoute('/test/a/b', {
@@ -814,16 +814,16 @@ describe('createPages', () => {
     const { getPathConfig, renderRoute } = injectedFunctions();
     expect(await getPathConfig()).toEqual([
       {
-        routeElement: { isStatic: true },
         elements: {
           root: { isStatic: true },
           'page:/test/[...path]': { isStatic: false },
         },
+        routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'test', type: 'literal' },
           { name: 'path', type: 'wildcard' },
         ],
-        noSsr: false,
       },
     ]);
     const route = await renderRoute('/test/a/b', {
@@ -871,22 +871,22 @@ describe('createPages', () => {
     const { getPathConfig } = injectedFunctions();
     expect(await getPathConfig()).toEqual([
       {
-        routeElement: { isStatic: true },
         elements: {
           root: { isStatic: true },
           'page:/static': { isStatic: true },
         },
-        path: [{ name: 'static', type: 'literal' }],
+        routeElement: { isStatic: true },
         noSsr: true,
+        path: [{ name: 'static', type: 'literal' }],
       },
       {
-        routeElement: { isStatic: true },
         elements: {
           root: { isStatic: true },
           'page:/dynamic': { isStatic: false },
         },
-        path: [{ name: 'dynamic', type: 'literal' }],
+        routeElement: { isStatic: true },
         noSsr: true,
+        path: [{ name: 'dynamic', type: 'literal' }],
       },
     ]);
   });
@@ -964,12 +964,11 @@ describe('createPages', () => {
           'page:/client/static': { isStatic: true },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'client', type: 'literal' },
           { name: 'static', type: 'literal' },
         ],
-        pathPattern: undefined,
-        noSsr: false,
       },
       {
         elements: {
@@ -977,26 +976,17 @@ describe('createPages', () => {
           'page:/server/static/static-echo': { isStatic: true },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'server', type: 'literal' },
           { name: 'static', type: 'literal' },
           { name: 'static-echo', type: 'literal' },
         ],
         pathPattern: [
-          {
-            name: 'server',
-            type: 'literal',
-          },
-          {
-            name: 'static',
-            type: 'literal',
-          },
-          {
-            name: 'echo',
-            type: 'group',
-          },
+          { name: 'server', type: 'literal' },
+          { name: 'static', type: 'literal' },
+          { name: 'echo', type: 'group' },
         ],
-        noSsr: false,
       },
       {
         elements: {
@@ -1004,6 +994,7 @@ describe('createPages', () => {
           'page:/server/static/static-echo-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'server', type: 'literal' },
           { name: 'static', type: 'literal' },
@@ -1014,7 +1005,6 @@ describe('createPages', () => {
           { name: 'static', type: 'literal' },
           { name: 'echo', type: 'group' },
         ],
-        noSsr: false,
       },
       {
         elements: {
@@ -1022,6 +1012,7 @@ describe('createPages', () => {
           'page:/server/static/static-echo/static-echo-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'server', type: 'literal' },
           { name: 'static', type: 'literal' },
@@ -1034,7 +1025,6 @@ describe('createPages', () => {
           { name: 'echo', type: 'group' },
           { name: 'echo2', type: 'group' },
         ],
-        noSsr: false,
       },
       {
         elements: {
@@ -1042,6 +1032,7 @@ describe('createPages', () => {
           'page:/server/static/hello/hello-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'server', type: 'literal' },
           { name: 'static', type: 'literal' },
@@ -1054,7 +1045,6 @@ describe('createPages', () => {
           { name: 'echo', type: 'group' },
           { name: 'echo2', type: 'group' },
         ],
-        noSsr: false,
       },
       {
         elements: {
@@ -1062,6 +1052,7 @@ describe('createPages', () => {
           'page:/static/wild/bar': { isStatic: true },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'static', type: 'literal' },
           { name: 'wild', type: 'literal' },
@@ -1072,7 +1063,6 @@ describe('createPages', () => {
           { name: 'wild', type: 'literal' },
           { name: 'wild', type: 'wildcard' },
         ],
-        noSsr: false,
       },
       {
         elements: {
@@ -1080,6 +1070,7 @@ describe('createPages', () => {
           'page:/static/wild/hello/hello-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'static', type: 'literal' },
           { name: 'wild', type: 'literal' },
@@ -1091,7 +1082,6 @@ describe('createPages', () => {
           { name: 'wild', type: 'literal' },
           { name: 'wild', type: 'wildcard' },
         ],
-        noSsr: false,
       },
       {
         elements: {
@@ -1099,6 +1089,7 @@ describe('createPages', () => {
           'page:/static/wild/foo/foo-2/foo-3': { isStatic: true },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'static', type: 'literal' },
           { name: 'wild', type: 'literal' },
@@ -1111,7 +1102,6 @@ describe('createPages', () => {
           { name: 'wild', type: 'literal' },
           { name: 'wild', type: 'wildcard' },
         ],
-        noSsr: false,
       },
       {
         elements: {
@@ -1119,11 +1109,11 @@ describe('createPages', () => {
           'page:/client/dynamic': { isStatic: false },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'client', type: 'literal' },
           { name: 'dynamic', type: 'literal' },
         ],
-        noSsr: false,
       },
       {
         elements: {
@@ -1131,12 +1121,12 @@ describe('createPages', () => {
           'page:/server/one/[echo]': { isStatic: false },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'server', type: 'literal' },
           { name: 'one', type: 'literal' },
           { name: 'echo', type: 'group' },
         ],
-        noSsr: false,
       },
       {
         elements: {
@@ -1144,13 +1134,13 @@ describe('createPages', () => {
           'page:/server/two/[echo]/[echo2]': { isStatic: false },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'server', type: 'literal' },
           { name: 'two', type: 'literal' },
           { name: 'echo', type: 'group' },
           { name: 'echo2', type: 'group' },
         ],
-        noSsr: false,
       },
       {
         elements: {
@@ -1158,12 +1148,12 @@ describe('createPages', () => {
           'page:/server/wild/[...wild]': { isStatic: false },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'server', type: 'literal' },
           { name: 'wild', type: 'literal' },
           { name: 'wild', type: 'wildcard' },
         ],
-        noSsr: false,
       },
       {
         elements: {
@@ -1171,13 +1161,13 @@ describe('createPages', () => {
           'page:/server/oneAndWild/[slug]/[...wild]': { isStatic: false },
         },
         routeElement: { isStatic: true },
+        noSsr: false,
         path: [
           { name: 'server', type: 'literal' },
           { name: 'oneAndWild', type: 'literal' },
           { name: 'slug', type: 'group' },
           { name: 'wild', type: 'wildcard' },
         ],
-        noSsr: false,
       },
     ]);
     const route = await renderRoute('/server/two/a/b', {
