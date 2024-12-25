@@ -25,7 +25,7 @@ export default defineEntries({
           ),
         },
         <Slot id="App" />,
-        '',
+        { rscPath: '' },
       );
     }
   },

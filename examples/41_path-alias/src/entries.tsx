@@ -9,7 +9,9 @@ export default defineEntries({
       return renderRsc({ App: <App name={input.rscPath || 'Waku'} /> });
     }
     if (input.type === 'custom' && input.pathname === '/') {
-      return renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, '');
+      return renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, {
+        rscPath: '',
+      });
     }
   },
   getBuildConfig: async () => [{ pathSpec: [], entries: [{ rscPath: '' }] }],
