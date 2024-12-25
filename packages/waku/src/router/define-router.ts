@@ -250,7 +250,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         entries.push({ rscPath, isStatic });
       }
       buildConfig.push({
-        pathSpec: pathSpec,
+        pathSpec,
         isStatic,
         entries,
         customCode:
