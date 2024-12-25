@@ -65,6 +65,7 @@ export function unstable_defineRouter(fns: {
   getPathConfig: () => Promise<
     Iterable<{
       path: PathSpec;
+      pathPattern?: PathSpec | undefined;
       routeElement: { isStatic?: boolean };
       elements: Record<SlotId, { isStatic?: boolean }>;
       noSsr?: boolean;
@@ -83,8 +84,8 @@ export function unstable_defineRouter(fns: {
 }) {
   const platformObject = unstable_getPlatformObject();
   type MyPathConfig = {
-    pattern: string;
     pathSpec: PathSpec;
+    pattern: string;
     staticElementIds: SlotId[];
     isStatic?: boolean | undefined;
     specs: { noSsr?: boolean; is404: boolean };
@@ -102,8 +103,8 @@ export function unstable_defineRouter(fns: {
           item.path[0]!.type === 'literal' &&
           item.path[0]!.name === '404';
         return {
-          pattern: path2regexp(item.path),
           pathSpec: item.path,
+          pattern: path2regexp(item.pathPattern || item.path),
           staticElementIds: Object.entries(item.elements).flatMap(
             ([id, { isStatic }]) => (isStatic ? [id] : []),
           ),
