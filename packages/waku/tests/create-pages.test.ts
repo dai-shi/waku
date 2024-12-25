@@ -446,7 +446,6 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
-        pattern: '^/test$',
       },
     ]);
 
@@ -482,7 +481,6 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
-        pattern: '^/test$',
       },
     ]);
     const route = await renderRoute('/test', {
@@ -525,7 +523,6 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
-        pattern: '^/test$',
       },
     ]);
     const route = await renderRoute('/test', {
@@ -572,7 +569,6 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
-        pattern: '^/test$',
       },
     ]);
 
@@ -616,7 +612,6 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
-        pattern: '^/test/nested$',
       },
     ]);
     const route = await renderRoute('/test/nested', {
@@ -661,7 +656,6 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
-        pattern: '^/test/nested$',
       },
     ]);
     const route = await renderRoute('/test/nested', {
@@ -704,7 +698,6 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
-        pattern: '^/test/nested$',
       },
     ]);
 
@@ -752,7 +745,6 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
-        pattern: '^/test/([^/]+)/([^/]+)$',
       },
       {
         elements: {
@@ -775,7 +767,6 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
-        pattern: '^/test/([^/]+)/([^/]+)$',
       },
     ]);
     const route = await renderRoute('/test/y/z', {
@@ -818,7 +809,6 @@ describe('createPages', () => {
             type: 'group',
           },
         ],
-        pattern: '^/test/([^/]+)/([^/]+)$',
       },
     ]);
     const route = await renderRoute('/test/w/x', {
@@ -862,7 +852,6 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
-        pattern: '^/test/(.*)$',
       },
     ]);
     const route = await renderRoute('/test/a/b', {
@@ -901,7 +890,6 @@ describe('createPages', () => {
             type: 'wildcard',
           },
         ],
-        pattern: '^/test/(.*)$',
       },
     ]);
     const route = await renderRoute('/test/a/b', {
@@ -961,7 +949,6 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
-        pattern: '^/static$',
       },
       {
         routeElement: { isStatic: true },
@@ -976,7 +963,6 @@ describe('createPages', () => {
             type: 'literal',
           },
         ],
-        pattern: '^/dynamic$',
       },
     ]);
   });
@@ -1054,7 +1040,6 @@ describe('createPages', () => {
           'page:/client/static': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/client/static$',
         path: [
           {
             type: 'literal',
@@ -1073,7 +1058,6 @@ describe('createPages', () => {
           'page:/server/static/static-echo': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/static/([^/]+)$',
         path: [
           {
             type: 'literal',
@@ -1096,7 +1080,6 @@ describe('createPages', () => {
           'page:/server/static/static-echo-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/static/([^/]+)$',
         path: [
           {
             type: 'literal',
@@ -1119,7 +1102,6 @@ describe('createPages', () => {
           'page:/server/static/static-echo/static-echo-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/static/([^/]+)/([^/]+)$',
         path: [
           {
             type: 'literal',
@@ -1146,7 +1128,6 @@ describe('createPages', () => {
           'page:/server/static/hello/hello-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/static/([^/]+)/([^/]+)$',
         path: [
           {
             type: 'literal',
@@ -1173,7 +1154,6 @@ describe('createPages', () => {
           'page:/static/wild/bar': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/static/wild/(.*)$',
         path: [
           {
             type: 'literal',
@@ -1196,7 +1176,6 @@ describe('createPages', () => {
           'page:/static/wild/hello/hello-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/static/wild/(.*)$',
         path: [
           {
             type: 'literal',
@@ -1223,7 +1202,6 @@ describe('createPages', () => {
           'page:/static/wild/foo/foo-2/foo-3': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/static/wild/(.*)$',
         path: [
           {
             type: 'literal',
@@ -1254,7 +1232,6 @@ describe('createPages', () => {
           'page:/client/dynamic': { isStatic: false },
         },
         routeElement: { isStatic: true },
-        pattern: '^/client/dynamic$',
         path: [
           {
             type: 'literal',
@@ -1273,7 +1250,6 @@ describe('createPages', () => {
           'page:/server/one/[echo]': { isStatic: false },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/one/([^/]+)$',
         path: [
           {
             type: 'literal',
@@ -1296,7 +1272,6 @@ describe('createPages', () => {
           'page:/server/two/[echo]/[echo2]': { isStatic: false },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/two/([^/]+)/([^/]+)$',
         path: [
           {
             type: 'literal',
@@ -1323,7 +1298,6 @@ describe('createPages', () => {
           'page:/server/wild/[...wild]': { isStatic: false },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/wild/(.*)$',
         path: [
           {
             type: 'literal',
@@ -1346,7 +1320,6 @@ describe('createPages', () => {
           'page:/server/oneAndWild/[slug]/[...wild]': { isStatic: false },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/oneAndWild/([^/]+)/(.*)$',
         path: [
           {
             type: 'literal',

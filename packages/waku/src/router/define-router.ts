@@ -11,7 +11,7 @@ import {
   HAS404_ID,
   SKIP_HEADER,
 } from './common.js';
-import { getPathMapping } from '../lib/utils/path.js';
+import { getPathMapping, path2regexp } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
 import { ServerRouter } from './client.js';
 import { getContext } from '../middleware/context.js';
@@ -64,7 +64,6 @@ const ROUTE_SLOT_ID_PREFIX = 'route:';
 export function unstable_defineRouter(fns: {
   getPathConfig: () => Promise<
     Iterable<{
-      pattern: string; // TODO we should probably remove this and use path2regexp internally
       path: PathSpec;
       routeElement: { isStatic?: boolean };
       elements: Record<SlotId, { isStatic?: boolean }>;
@@ -103,7 +102,7 @@ export function unstable_defineRouter(fns: {
           item.path[0]!.type === 'literal' &&
           item.path[0]!.name === '404';
         return {
-          pattern: item.pattern,
+          pattern: path2regexp(item.path),
           pathname: item.path,
           staticElementIds: Object.entries(item.elements).flatMap(
             ([id, { isStatic }]) => (isStatic ? [id] : []),
