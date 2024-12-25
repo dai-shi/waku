@@ -19,7 +19,9 @@ export default defineEntries({
       return renderRsc({ App: <App name={input.rscPath || 'Waku'} /> });
     }
     if (input.type === 'custom' && input.pathname === '/') {
-      return renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, '');
+      return renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, {
+        rscPath: '',
+      });
     }
     if (input.type === 'custom' && input.pathname === '/api/hello') {
       return stringToStream('world');

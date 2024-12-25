@@ -128,8 +128,7 @@ export const handler: Middleware = (options) => {
       renderHtml: async (
         elements: Record<string, ReactNode>,
         html: ReactNode,
-        rscPath: string,
-        actionResult?: unknown,
+        options: { rscPath: string; actionResult?: unknown },
       ) => {
         const readable = await renderHtml(
           config,
@@ -137,8 +136,8 @@ export const handler: Middleware = (options) => {
           htmlHead,
           elements,
           html,
-          rscPath,
-          actionResult,
+          options.rscPath,
+          options.actionResult,
         );
         const headers = { 'content-type': 'text/html; charset=utf-8' };
         let body = readable;

@@ -26,7 +26,7 @@ export default defineEntries({
         <Slot id="App">
           <h3>A client element</h3>
         </Slot>,
-        '',
+        { rscPath: '' },
       );
     }
   },
