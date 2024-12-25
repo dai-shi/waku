@@ -5,6 +5,16 @@ import type { PathSpec } from '../lib/utils/path.js';
 
 type Elements = Record<string, ReactNode>;
 
+type RenderRsc = (elements: Record<string, unknown>) => Promise<ReadableStream>;
+type RenderHtml<Opts = never> = (
+  elements: Elements,
+  html: ReactNode,
+  options: { rscPath: string; actionResult?: unknown } & Opts,
+) => Promise<{
+  body: ReadableStream & { allReady: Promise<void> };
+  headers: Record<'content-type', string>;
+}>;
+
 // This API is still unstable
 export type HandleRequest = (
   input: (
@@ -24,39 +34,38 @@ export type HandleRequest = (
     req: HandlerReq;
   },
   utils: {
-    renderRsc: (elements: Record<string, unknown>) => Promise<ReadableStream>;
-    renderHtml: (
-      elements: Elements,
-      html: ReactNode,
-      rscPath: string,
-      actionResult?: unknown,
-    ) => Promise<{
-      body: ReadableStream & { allReady: Promise<void> };
-      headers: Record<'content-type', string>;
-    }>;
+    renderRsc: RenderRsc;
+    renderHtml: RenderHtml;
   },
 ) => Promise<ReadableStream | HandlerRes | null | undefined>;
 
 // This API is still unstable
-export type BuildConfig = {
-  pathSpec: PathSpec;
-  isStatic?: boolean | undefined;
-  entries?: {
-    rscPath: string;
-    skipPrefetch?: boolean | undefined;
-    isStatic?: boolean | undefined;
-  }[];
-  customCode?: string; // optional code to inject TODO hope to remove this
-}[];
-
-type GetBuildConfig = (utils: {
+export type HandleBuild = (utils: {
+  renderRsc: RenderRsc;
+  renderHtml: RenderHtml<{ htmlHead: string }>;
   unstable_collectClientModules: (elements: Elements) => Promise<string[]>;
-}) => Promise<BuildConfig>;
+}) => AsyncIterator<
+  | {
+      type: 'file';
+      pathname: string;
+      body: ReadableStream;
+    }
+  | {
+      type: 'htmlHead';
+      pathSpec: PathSpec;
+      head: string;
+    }
+  | {
+      type: 'indexHtml';
+    },
+  void,
+  never
+>;
 
 export type EntriesDev = {
   default: {
     handleRequest: HandleRequest;
-    getBuildConfig: GetBuildConfig;
+    handleBuild: HandleBuild;
   };
 };
 
