@@ -14,5 +14,39 @@ export default defineEntries({
       });
     }
   },
-  getBuildConfig: async () => [{ pathSpec: [], entries: [{ rscPath: '' }] }],
+  handleBuild: ({ renderRsc, renderHtml, rscPath2pathname }) => ({
+    [Symbol.asyncIterator]: () => {
+      const tasks = [
+        async () => ({
+          type: 'file' as const,
+          pathname: rscPath2pathname(''),
+          body: await renderRsc({ App: <App name="Waku" /> }),
+        }),
+        async () => ({
+          type: 'file' as const,
+          pathname: '/',
+          body: await renderHtml(
+            { App: <App name="Waku" /> },
+            <Slot id="App" />,
+            { rscPath: '' },
+          ).then(({ body }) => body),
+        }),
+      ];
+      // const tasks = [
+      //   async () => ({
+      //     type: 'htmlHead' as const,
+      //     pathSpec: [],
+      //   }),
+      // ];
+      return {
+        next: async () => {
+          const task = tasks.shift();
+          if (task) {
+            return { value: await task() };
+          }
+          return { done: true, value: undefined };
+        },
+      };
+    },
+  }),
 });

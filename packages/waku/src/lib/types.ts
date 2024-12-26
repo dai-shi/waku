@@ -46,7 +46,8 @@ export type HandleRequest = (
 // This API is still unstable
 export type HandleBuild = (utils: {
   renderRsc: RenderRsc<{ moduleIdCallback?: () => string }>;
-  renderHtml: RenderHtml<{ htmlHead: string }>;
+  renderHtml: RenderHtml<{ htmlHead?: string }>;
+  rscPath2pathname: (rscPath: string) => string;
   unstable_collectClientModules: (elements: Elements) => Promise<string[]>;
 }) => AsyncIterable<
   | {
@@ -57,7 +58,7 @@ export type HandleBuild = (utils: {
   | {
       type: 'htmlHead';
       pathSpec: PathSpec;
-      head: string;
+      head?: string;
     }
   | {
       type: 'indexHtml';

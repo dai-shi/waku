@@ -436,6 +436,7 @@ const emitStaticFile = async (
         ? '404.html' // HACK special treatment for 404, better way?
         : pathname + '/index.html',
   );
+  await mkdir(joinPath(destFile, '..'), { recursive: true });
   await pipeline(Readable.fromWeb(body as never), createWriteStream(destFile));
 };
 
@@ -506,6 +507,8 @@ const emitStaticFiles = async (
       const headers = { 'content-type': 'text/html; charset=utf-8' };
       return { body, headers };
     },
+    rscPath2pathname: (rscPath: string) =>
+      joinPath(config.rscBase, encodeRscPath(rscPath)),
     unstable_collectClientModules: (elements: Record<string, unknown>) =>
       collectClientModules(
         config,
@@ -526,7 +529,10 @@ const emitStaticFiles = async (
         );
         break;
       case 'htmlHead':
-        dynamicHtmlPathMap.set(buildConfig.pathSpec, buildConfig.head);
+        dynamicHtmlPathMap.set(
+          buildConfig.pathSpec,
+          defaultHtmlHead + (buildConfig.head || ''),
+        );
         break;
       case 'indexHtml':
         await writeFile(publicIndexHtmlFile, publicIndexHtml);
