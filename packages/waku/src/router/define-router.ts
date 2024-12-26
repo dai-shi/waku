@@ -306,12 +306,14 @@ export function unstable_defineRouter(fns: {
         const tasks: Tasks = [];
         const pathConfig = await getMyPathConfig();
         const path2moduleIds: Record<string, string[]> = {};
-        const moduleIdsForPrefetch = new Set<string>();
+        const moduleIdsForPrefetch = new WeakMap<PathSpec, Set<string>>();
         // FIXME this approach keeps all entries in memory during the loop
         const entriesCache = new Map<string, Record<string, ReactNode>>();
 
         await Promise.all(
-          pathConfig.map(async ({ pathname, pattern, isStatic }) => {
+          pathConfig.map(async ({ pathSpec, pathname, pattern, isStatic }) => {
+            const moduleIds = new Set<string>();
+            moduleIdsForPrefetch.set(pathSpec, moduleIds);
             if (!pathname) {
               return;
             }
@@ -326,7 +328,7 @@ export function unstable_defineRouter(fns: {
                   type: 'file',
                   pathname: rscPath2pathname(rscPath),
                   body: await renderRsc(entries, {
-                    moduleIdCallback: (id) => moduleIdsForPrefetch.add(id),
+                    moduleIdCallback: (id) => moduleIds.add(id),
                   }),
                 }));
               }
@@ -347,10 +349,11 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
 
         for (const { pathSpec, pathname, isStatic, specs } of pathConfig) {
           tasks.push(async () => {
+            const moduleIds = moduleIdsForPrefetch.get(pathSpec)!;
             if (pathname) {
               const rscPath = encodeRoutePath(pathname);
               const code =
-                unstable_generatePrefetchCode([rscPath], moduleIdsForPrefetch) +
+                unstable_generatePrefetchCode([rscPath], moduleIds) +
                 getRouterPrefetchCode() +
                 (specs.is404 ? 'globalThis.__WAKU_ROUTER_404__ = true;' : '');
               const entries = entriesCache.get(pathname);
@@ -371,7 +374,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
               }
             }
             const code =
-              unstable_generatePrefetchCode([], moduleIdsForPrefetch) +
+              unstable_generatePrefetchCode([], moduleIds) +
               getRouterPrefetchCode() +
               (specs.is404 ? 'globalThis.__WAKU_ROUTER_404__ = true;' : '');
             return {
