@@ -5,7 +5,11 @@ import type { PathSpec } from '../lib/utils/path.js';
 
 type Elements = Record<string, ReactNode>;
 
-type RenderRsc = (elements: Record<string, unknown>) => Promise<ReadableStream>;
+type RenderRsc<Opts = unknown> = (
+  elements: Record<string, unknown>,
+  options?: Opts,
+) => Promise<ReadableStream>;
+
 type RenderHtml<Opts = unknown> = (
   elements: Elements,
   html: ReactNode,
@@ -41,10 +45,10 @@ export type HandleRequest = (
 
 // This API is still unstable
 export type HandleBuild = (utils: {
-  renderRsc: RenderRsc;
+  renderRsc: RenderRsc<{ moduleIdCallback?: () => string }>;
   renderHtml: RenderHtml<{ htmlHead: string }>;
   unstable_collectClientModules: (elements: Elements) => Promise<string[]>;
-}) => AsyncIterator<
+}) => AsyncIterable<
   | {
       type: 'file';
       pathname: string;
@@ -59,7 +63,7 @@ export type HandleBuild = (utils: {
       type: 'indexHtml';
     },
   void,
-  never
+  undefined
 >;
 
 export type EntriesDev = {
