@@ -24,8 +24,7 @@ jobs:
           node-version: ${{ matrix.version }}
           cache: ''
           cache-dependency-path: '**/pnpm-lock.yaml'
-      - run: |
-          pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
+      - run: pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
 
@@ -39,10 +38,10 @@ jobs:
           node-version: 18
           cache: ''
           cache-dependency-path: '**/pnpm-lock.yaml'
-      - run: pnpm install --frozen-lockfile
       - run: |
           sed -i~ '/"peerDependencies"/,${s/ :".*"/: "*"/}' packages/waku/package.json
           pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
+      - run: pnpm install --frozen-lockfile
       - run: pnpm run compile
       - uses: actions/upload-artifact@v4
         with:
