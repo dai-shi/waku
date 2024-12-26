@@ -13,7 +13,7 @@ const entries: ReturnType<typeof defineEntries> = defineEntries({
       return renderRsc({ _value: value });
     }
     if (input.type === 'custom' && input.pathname === '/') {
-      return renderHtml({ App: <App /> }, <Slot id="App" />, '');
+      return renderHtml({ App: <App /> }, <Slot id="App" />, { rscPath: '' });
     }
   },
   getBuildConfig: async () => [{ pathSpec: [], entries: [{ rscPath: '' }] }],

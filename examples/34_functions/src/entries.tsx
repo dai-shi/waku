@@ -20,7 +20,9 @@ export default defineEntries({
       return renderRsc({ ...elements, _value: value });
     }
     if (input.type === 'custom' && input.pathname === '/') {
-      return renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, '');
+      return renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, {
+        rscPath: '',
+      });
     }
   },
   getBuildConfig: async () => [{ pathSpec: [], entries: [{ rscPath: '' }] }],

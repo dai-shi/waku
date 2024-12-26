@@ -7,7 +7,6 @@ import {
   joinPath,
   parsePathWithSlug,
   getPathMapping,
-  path2regexp,
   pathSpecAsString,
 } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
@@ -226,7 +225,7 @@ export const createPages = <
       ...wildcardPagePathMap.keys(),
     ];
     for (const p of allPaths) {
-      if (new RegExp(path2regexp(parsePathWithSlug(p))).test(path)) {
+      if (getPathMapping(parsePathWithSlug(p), path)) {
         return p;
       }
     }
@@ -398,8 +397,8 @@ export const createPages = <
     getPathConfig: async () => {
       await configure();
       const paths: {
-        pattern: string;
         path: PathSpec;
+        pathPattern?: PathSpec;
         routeElement: { isStatic?: boolean };
         elements: Record<string, { isStatic?: boolean }>;
         noSsr: boolean;
@@ -408,10 +407,6 @@ export const createPages = <
 
       for (const [path, { literalSpec, originalSpec }] of staticPathMap) {
         const noSsr = noSsrSet.has(literalSpec);
-
-        const pattern = originalSpec
-          ? path2regexp(originalSpec)
-          : path2regexp(literalSpec);
 
         const layoutPaths = getLayouts(originalSpec ?? literalSpec);
 
@@ -430,8 +425,8 @@ export const createPages = <
         };
 
         paths.push({
-          pattern,
           path: literalSpec,
+          ...(originalSpec && { pathPattern: originalSpec }),
           routeElement: {
             isStatic: true,
           },
@@ -441,7 +436,6 @@ export const createPages = <
       }
       for (const [path, [pathSpec]] of dynamicPagePathMap) {
         const noSsr = noSsrSet.has(pathSpec);
-        const pattern = path2regexp(parsePathWithSlug(path));
         const layoutPaths = getLayouts(pathSpec);
         const elements = {
           ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
@@ -457,7 +451,6 @@ export const createPages = <
           [`page:${path}`]: { isStatic: false },
         };
         paths.push({
-          pattern,
           path: pathSpec,
           routeElement: { isStatic: true },
           elements,
@@ -481,7 +474,6 @@ export const createPages = <
           [`page:${path}`]: { isStatic: false },
         };
         paths.push({
-          pattern: path2regexp(parsePathWithSlug(path)),
           path: pathSpec,
           routeElement: { isStatic: true },
           elements,

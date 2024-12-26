@@ -608,7 +608,7 @@ const emitStaticFiles = async (
       renderHtml: async (
         elements: Record<string, ReactNode>,
         html: ReactNode,
-        rscPath: string,
+        options: { rscPath: string },
       ) => {
         const body = await renderHtml(
           config,
@@ -616,7 +616,7 @@ const emitStaticFiles = async (
           htmlHead,
           elements,
           html,
-          rscPath,
+          options.rscPath,
         );
         await body.allReady; // always wait for all contents for static files
         const headers = { 'content-type': 'text/html; charset=utf-8' };

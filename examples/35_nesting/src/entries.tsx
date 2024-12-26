@@ -28,7 +28,7 @@ export default defineEntries({
       return renderHtml(
         { App: <App name="Waku" />, InnerApp: <InnerApp count={0} /> },
         <Slot id="App" />,
-        '',
+        { rscPath: '' },
       );
     }
   },
