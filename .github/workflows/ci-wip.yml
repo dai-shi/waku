@@ -88,7 +88,6 @@ jobs:
           node-version: ${{ matrix.version }}
           cache: ''
           cache-dependency-path: '**/pnpm-lock.yaml'
-      - run: pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v4
         with:
           name: create-waku
