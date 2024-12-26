@@ -24,9 +24,9 @@ jobs:
           node-version: ${{ matrix.version }}
           cache: ''
           cache-dependency-path: '**/pnpm-lock.yaml'
-      - run: pnpm install --frozen-lockfile
       - run: |
           pnpm -r update react@canary react-dom@canary react-server-dom-webpack@canary
+      - run: pnpm install --frozen-lockfile
       - run: pnpm test
 
   build-wip:
