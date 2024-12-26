@@ -31,10 +31,10 @@ jobs:
           node-version: ${{ matrix.version }}
           cache: ${{ !inputs.react_version && 'pnpm' || '' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
-      - run: pnpm install --frozen-lockfile
       - if: ${{ inputs.react_version }}
         run: |
           pnpm -r update react@${{ inputs.react_version }} react-dom@${{ inputs.react_version }} react-server-dom-webpack@${{ inputs.react_version }}
+      - run: pnpm install --frozen-lockfile
       - run: pnpm test
 
   build:
@@ -47,11 +47,11 @@ jobs:
           node-version: 18
           cache: ${{ !inputs.react_version && 'pnpm' || '' }}
           cache-dependency-path: '**/pnpm-lock.yaml'
-      - run: pnpm install --frozen-lockfile
       - if: ${{ inputs.react_version }}
         run: |
           sed -i~ '/"peerDependencies"/,${s/ :".*"/: "*"/}' packages/waku/package.json
           pnpm -r update react@${{ inputs.react_version }} react-dom@${{ inputs.react_version }} react-server-dom-webpack@${{ inputs.react_version }}
+      - run: pnpm install --frozen-lockfile
       - run: pnpm run compile
       - uses: actions/upload-artifact@v4
         with:
