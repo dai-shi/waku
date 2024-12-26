@@ -25,12 +25,10 @@ export default defineEntries({
     ) {
       const actionResult =
         input.type === 'action' ? await input.fn() : undefined;
-      return renderHtml(
-        { App: <App name="Waku" /> },
-        <Slot id="App" />,
-        '',
+      return renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, {
+        rscPath: '',
         actionResult,
-      );
+      });
     }
   },
   getBuildConfig: async () => [{ pathSpec: [], entries: [{ rscPath: '' }] }],

@@ -5,6 +5,16 @@ import type { PathSpec } from '../lib/utils/path.js';
 
 type Elements = Record<string, ReactNode>;
 
+type RenderRsc = (elements: Record<string, unknown>) => Promise<ReadableStream>;
+type RenderHtml<Opts = unknown> = (
+  elements: Elements,
+  html: ReactNode,
+  options: { rscPath: string; actionResult?: unknown } & Opts,
+) => Promise<{
+  body: ReadableStream & { allReady: Promise<void> };
+  headers: Record<'content-type', string>;
+}>;
+
 // This API is still unstable
 export type HandleRequest = (
   input: (
@@ -24,16 +34,8 @@ export type HandleRequest = (
     req: HandlerReq;
   },
   utils: {
-    renderRsc: (elements: Record<string, unknown>) => Promise<ReadableStream>;
-    renderHtml: (
-      elements: Elements,
-      html: ReactNode,
-      rscPath: string,
-      actionResult?: unknown,
-    ) => Promise<{
-      body: ReadableStream & { allReady: Promise<void> };
-      headers: Record<'content-type', string>;
-    }>;
+    renderRsc: RenderRsc;
+    renderHtml: RenderHtml;
   },
 ) => Promise<ReadableStream | HandlerRes | null | undefined>;
 
@@ -69,10 +71,10 @@ export type EntriesPrd = EntriesDev & {
 };
 
 export type HandlerReq = {
-  readonly body: ReadableStream | null;
-  readonly url: URL;
-  readonly method: string;
-  readonly headers: Readonly<Record<string, string>>;
+  body: ReadableStream | null;
+  url: URL;
+  method: string;
+  headers: Readonly<Record<string, string>>;
 };
 
 export type HandlerRes = {
