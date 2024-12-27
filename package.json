@@ -14,7 +14,7 @@
     "website:dev": "pnpm -F waku-website dev",
     "website:build": "pnpm -F waku-website build",
     "website:vercel": "pnpm run compile && pnpm run website:build --with-vercel-static && mv packages/website/.vercel/output .vercel/",
-    "website:prd": "pnpm run website:build && (pnpm -F waku-website start)"
+    "website:prd": "pnpm run website:build && pnpm -F waku-website start"
   },
   "prettier": {
     "singleQuote": true,
