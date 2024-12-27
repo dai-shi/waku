@@ -405,13 +405,45 @@ const buildClientBundle = async (
   return clientBuildOutput;
 };
 
-// TODO implement slicing for emitting static files
-// we write a max of 2500 pages at a time to avoid OOM
-//const PATH_SLICE_SIZE = 2500;
-
 // TODO: Add progress indication for static builds.
 
-const emitStaticFile = async (
+const createTaskRunner = (limit: number) => {
+  let running = 0;
+  const waiting: (() => void)[] = [];
+  const errors: unknown[] = [];
+  const scheduleTask = async (task: () => Promise<void>) => {
+    if (running >= limit) {
+      await new Promise<void>((resolve) => waiting.push(resolve));
+    }
+    running++;
+    try {
+      await task();
+    } catch (err) {
+      errors.push(err);
+    } finally {
+      running--;
+      waiting.shift()?.();
+    }
+  };
+  const runTask = (task: () => Promise<void>) => {
+    scheduleTask(task).catch(() => {});
+  };
+  const waitForTasks = async () => {
+    if (running > 0) {
+      await new Promise<void>((resolve) => waiting.push(resolve));
+      await waitForTasks();
+    }
+    if (errors.length > 0) {
+      console.error('Errors occurred during running tasks:', errors);
+      throw errors[0];
+    }
+  };
+  return { runTask, waitForTasks };
+};
+const WRITE_FILE_BATCH_SIZE = 2500;
+const { runTask, waitForTasks } = createTaskRunner(WRITE_FILE_BATCH_SIZE);
+
+const emitStaticFile = (
   rootDir: string,
   config: ResolvedConfig,
   pathname: string,
@@ -431,15 +463,17 @@ const emitStaticFile = async (
   if (existsSync(destFile)) {
     return;
   }
-  await mkdir(joinPath(destFile, '..'), { recursive: true });
-  if (typeof body === 'string') {
-    await writeFile(destFile, body);
-  } else {
-    await pipeline(
-      Readable.fromWeb(body as never),
-      createWriteStream(destFile),
-    );
-  }
+  runTask(async () => {
+    await mkdir(joinPath(destFile, '..'), { recursive: true });
+    if (typeof body === 'string') {
+      await writeFile(destFile, body);
+    } else {
+      await pipeline(
+        Readable.fromWeb(body as never),
+        createWriteStream(destFile),
+      );
+    }
+  });
 };
 
 const emitStaticFiles = async (
@@ -527,12 +561,7 @@ const emitStaticFiles = async (
   for await (const buildConfig of buildConfigs) {
     switch (buildConfig.type) {
       case 'file':
-        await emitStaticFile(
-          rootDir,
-          config,
-          buildConfig.pathname,
-          buildConfig.body,
-        );
+        emitStaticFile(rootDir, config, buildConfig.pathname, buildConfig.body);
         break;
       case 'htmlHead':
         dynamicHtmlPathMap.set(
@@ -541,7 +570,7 @@ const emitStaticFiles = async (
         );
         break;
       case 'defaultHtml':
-        await emitStaticFile(
+        emitStaticFile(
           rootDir,
           config,
           buildConfig.pathname,
@@ -554,6 +583,7 @@ const emitStaticFiles = async (
         break;
     }
   }
+  await waitForTasks();
   const dynamicHtmlPaths = Array.from(dynamicHtmlPathMap);
   const code = `
 export const dynamicHtmlPaths = ${JSON.stringify(dynamicHtmlPaths)};
