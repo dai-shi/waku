@@ -16,7 +16,25 @@ const entries: ReturnType<typeof defineEntries> = defineEntries({
       return renderHtml({ App: <App /> }, <Slot id="App" />, { rscPath: '' });
     }
   },
-  handleBuild: () => null,
+  handleBuild: () => ({
+    [Symbol.asyncIterator]: () => {
+      const tasks = [
+        async () => ({
+          type: 'htmlHead' as const,
+          pathSpec: [],
+        }),
+      ];
+      return {
+        next: async () => {
+          const task = tasks.shift();
+          if (task) {
+            return { value: await task() };
+          }
+          return { done: true, value: undefined };
+        },
+      };
+    },
+  }),
 });
 
 export default entries;
