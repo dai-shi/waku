@@ -15,27 +15,31 @@ export default defineEntries({
     }
   },
   handleBuild: ({
-    renderRsc,
+    // renderRsc,
     // renderHtml,
-    rscPath2pathname,
+    // rscPath2pathname,
+    unstable_generatePrefetchCode,
   }) => ({
     [Symbol.asyncIterator]: () => {
+      const code = unstable_generatePrefetchCode([''], []);
       const tasks = [
-        async () => ({
-          type: 'file' as const,
-          pathname: rscPath2pathname(''),
-          body: await renderRsc({ App: <App name="Waku" /> }),
-        }),
         async () => ({
           type: 'htmlHead' as const,
           pathSpec: [],
+          head: `<script type="module" async>${code}</script>`,
         }),
+        // async () => ({
+        //   type: 'file' as const,
+        //   pathname: rscPath2pathname(''),
+        //   body: await renderRsc({ App: <App name="Waku" /> }),
+        // }),
         // async () => ({
         //   type: 'file' as const,
         //   pathname: '/',
         //   body: (
         //     await renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, {
         //       rscPath: '',
+        //       htmlHead: `<script type="module" async>${code}</script>`,
         //     })
         //   ).body,
         // }),
