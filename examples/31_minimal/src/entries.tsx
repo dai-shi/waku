@@ -14,7 +14,11 @@ export default defineEntries({
       });
     }
   },
-  handleBuild: ({ renderRsc, renderHtml, rscPath2pathname }) => ({
+  handleBuild: ({
+    renderRsc,
+    // renderHtml,
+    rscPath2pathname,
+  }) => ({
     [Symbol.asyncIterator]: () => {
       const tasks = [
         async () => ({
@@ -23,21 +27,19 @@ export default defineEntries({
           body: await renderRsc({ App: <App name="Waku" /> }),
         }),
         async () => ({
-          type: 'file' as const,
-          pathname: '/',
-          body: await renderHtml(
-            { App: <App name="Waku" /> },
-            <Slot id="App" />,
-            { rscPath: '' },
-          ).then(({ body }) => body),
+          type: 'htmlHead' as const,
+          pathSpec: [],
         }),
+        // async () => ({
+        //   type: 'file' as const,
+        //   pathname: '/',
+        //   body: (
+        //     await renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, {
+        //       rscPath: '',
+        //     })
+        //   ).body,
+        // }),
       ];
-      // const tasks = [
-      //   async () => ({
-      //     type: 'htmlHead' as const,
-      //     pathSpec: [],
-      //   }),
-      // ];
       return {
         next: async () => {
           const task = tasks.shift();
