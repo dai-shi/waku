@@ -47,31 +47,27 @@ export default defineEntries({
         )}</script>`;
       const tasks = [
         async () => ({
-          type: 'htmlHead' as const,
-          pathSpec: [],
-          head: generateHtmlHead(),
-        }),
-        async () => ({
           type: 'file' as const,
-          pathname: rscPath2pathname('AppWithoutSsr'),
+          pathname: rscPath2pathname(''),
           body: await renderRsc(
-            { App: <App name="AppWithoutSsr" /> },
+            { App: <App name="Waku" />, InnerApp: <InnerApp count={0} /> },
             { moduleIdCallback: (id) => moduleIds.add(id) },
           ),
         }),
-        async () => ({
+        ...[1, 2, 3, 4, 5].map((count) => async () => ({
           type: 'file' as const,
+          pathname: rscPath2pathname(`InnerApp=${count}`),
+          body: await renderRsc({ App: <App name="Waku" /> }),
+        })),
+        async () => ({
+          type: 'defaultHtml' as const,
+          pathname: '/',
+          htemlHead: generateHtmlHead(),
+        }),
+        async () => ({
+          type: 'defaultHtml' as const,
           pathname: '/no-ssr',
-          body: (
-            await renderHtml(
-              { App: <App name="AppWithSsr" /> },
-              <Slot id="App" />,
-              {
-                rscPath: 'AppWithoutSsr',
-                htmlHead: generateHtmlHead(),
-              },
-            )
-          ).body,
+          htemlHead: generateHtmlHead(),
         }),
       ];
       return {
