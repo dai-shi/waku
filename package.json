@@ -47,10 +47,5 @@
     "typescript": "^5.7.2",
     "wait-port": "^1.1.0",
     "waku": "workspace:*"
-  },
-  "pnpm": {
-    "overrides": {
-      "vite": "5.4.10"
-    }
   }
 }
