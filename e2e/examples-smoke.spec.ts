@@ -33,6 +33,8 @@ const examples = [
   ...(await readdir(examplesDir)).map((example) =>
     fileURLToPath(new URL(`../examples/${example}`, import.meta.url)),
   ),
+  // website isn't part of the examples but it is one of good examples to test here
+  fileURLToPath(new URL(`../packages/website`, import.meta.url)),
 ];
 
 for (const cwd of examples) {

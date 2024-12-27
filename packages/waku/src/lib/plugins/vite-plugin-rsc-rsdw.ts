@@ -76,6 +76,7 @@ export function rscRsdwPlugin(): Plugin {
           '/react-server-dom-webpack-client.browser.production.js',
           '/react-server-dom-webpack-client.browser.development.js',
           '/react-server-dom-webpack_client.js',
+          '/react-server-dom-webpack_client__edge.js',
         ].some((suffix) => file!.endsWith(suffix))
       ) {
         return patchRsdw(code, 'CLIENT');

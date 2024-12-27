@@ -121,6 +121,9 @@ const createMainViteServer = (
       },
       ssr: {
         external: ['waku'],
+        optimizeDeps: {
+          include: ['react-server-dom-webpack/client.edge'],
+        },
       },
       appType: 'mpa',
       server: { middlewareMode: true },
