@@ -1,5 +1,6 @@
 import { unstable_defineEntries as defineEntries } from 'waku/minimal/server';
 import { Slot } from 'waku/minimal/client';
+import { unstable_createAsyncIterable as createAsyncIterable } from 'waku/server';
 
 import App from './components/App.js';
 
@@ -18,25 +19,16 @@ const entries: ReturnType<typeof defineEntries> = defineEntries({
       });
     }
   },
-  handleBuild: () => ({
-    [Symbol.asyncIterator]: () => {
+  handleBuild: () =>
+    createAsyncIterable(async () => {
       const tasks = [
         async () => ({
           type: 'htmlHead' as const,
           pathSpec: [],
         }),
       ];
-      return {
-        next: async () => {
-          const task = tasks.shift();
-          if (task) {
-            return { value: await task() };
-          }
-          return { done: true, value: undefined };
-        },
-      };
-    },
-  }),
+      return tasks;
+    }),
 });
 
 export default entries;

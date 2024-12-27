@@ -44,12 +44,16 @@ export function unstable_getPlatformObject(): PlatformObject {
   return (globalThis as any).__WAKU_PLATFORM_OBJECT__;
 }
 
-export function createAsyncIterable<T>(
-  create: () => Promise<Iterable<() => Promise<T>>>,
-): AsyncIterable<T> {
+export function unstable_createAsyncIterable<T extends () => unknown>(
+  create: () => Promise<Iterable<T>>,
+): AsyncIterable<Awaited<ReturnType<T>>>;
+
+export function unstable_createAsyncIterable<T extends () => unknown>(
+  create: () => Promise<Iterable<T>>,
+) {
   return {
     [Symbol.asyncIterator]: () => {
-      let tasks: Array<() => Promise<T>> | undefined;
+      let tasks: T[] | undefined;
       return {
         next: async () => {
           if (!tasks) {

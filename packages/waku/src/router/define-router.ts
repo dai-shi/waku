@@ -1,7 +1,10 @@
 import { createElement } from 'react';
 import type { ReactNode } from 'react';
 
-import { unstable_getPlatformObject, createAsyncIterable } from '../server.js';
+import {
+  unstable_getPlatformObject,
+  unstable_createAsyncIterable as createAsyncIterable,
+} from '../server.js';
 import { unstable_defineEntries as defineEntries } from '../minimal/server.js';
 import {
   encodeRoutePath,

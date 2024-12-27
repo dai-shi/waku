@@ -1,5 +1,6 @@
 import { unstable_defineEntries as defineEntries } from 'waku/minimal/server';
 import { Slot } from 'waku/minimal/client';
+import { unstable_createAsyncIterable as createAsyncIterable } from 'waku/server';
 
 import App from './components2/App';
 import { runWithRerender } from './als';
@@ -30,8 +31,8 @@ export default defineEntries({
     // renderHtml,
     // rscPath2pathname,
     unstable_generatePrefetchCode,
-  }) => ({
-    [Symbol.asyncIterator]: () => {
+  }) =>
+    createAsyncIterable(async () => {
       const moduleIds = new Set<string>();
       const generateHtmlHead = () =>
         `<script type="module" async>${unstable_generatePrefetchCode(
@@ -61,15 +62,6 @@ export default defineEntries({
         //   }).then(({ body }) => body),
         // }),
       ];
-      return {
-        next: async () => {
-          const task = tasks.shift();
-          if (task) {
-            return { value: await task() };
-          }
-          return { done: true, value: undefined };
-        },
-      };
-    },
-  }),
+      return tasks;
+    }),
 });
