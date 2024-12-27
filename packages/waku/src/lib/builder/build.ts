@@ -447,7 +447,7 @@ const emitStaticFile = (
   rootDir: string,
   config: ResolvedConfig,
   pathname: string,
-  body: ReadableStream | string,
+  body: Promise<ReadableStream> | string,
 ) => {
   const destFile = joinPath(
     rootDir,
@@ -469,7 +469,7 @@ const emitStaticFile = (
       await writeFile(destFile, body);
     } else {
       await pipeline(
-        Readable.fromWeb(body as never),
+        Readable.fromWeb((await body) as never),
         createWriteStream(destFile),
       );
     }

@@ -36,7 +36,7 @@ export default defineEntries({
         // async () => ({
         //   type: 'file' as const,
         //   pathname: rscPath2pathname(''),
-        //   body: await renderRsc(
+        //   body: renderRsc(
         //     { App: <App name="Waku" /> },
         //     { moduleIdCallback: (id) => moduleIds.add(id) },
         //   ),
@@ -44,12 +44,10 @@ export default defineEntries({
         // async () => ({
         //   type: 'file' as const,
         //   pathname: '/',
-        //   body: (
-        //     await renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, {
-        //       rscPath: '',
-        //       htmlHead: generateHtmlHead(),
-        //     })
-        //   ).body,
+        //   body: renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, {
+        //     rscPath: '',
+        //     htmlHead: generateHtmlHead(),
+        //   }).then(({ body }) => body),
         // }),
       ];
       return {

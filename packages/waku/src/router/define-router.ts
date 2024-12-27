@@ -329,7 +329,7 @@ export function unstable_defineRouter(fns: {
                 tasks.push(async () => ({
                   type: 'file',
                   pathname: rscPath2pathname(rscPath),
-                  body: await renderRsc(entries, {
+                  body: renderRsc(entries, {
                     moduleIdCallback: (id) => moduleIds.add(id),
                   }),
                 }));
@@ -366,12 +366,10 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
                 return {
                   type: 'file',
                   pathname,
-                  body: (
-                    await renderHtml(entries, html, {
-                      rscPath,
-                      htmlHead: `<script type="module" async>${code}</script>`,
-                    })
-                  ).body,
+                  body: renderHtml(entries, html, {
+                    rscPath,
+                    htmlHead: `<script type="module" async>${code}</script>`,
+                  }).then(({ body }) => body),
                 };
               }
             }

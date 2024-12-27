@@ -34,7 +34,6 @@ export default defineEntries({
   },
   handleBuild: ({
     renderRsc,
-    renderHtml,
     rscPath2pathname,
     unstable_generatePrefetchCode,
   }) => ({
@@ -49,7 +48,7 @@ export default defineEntries({
         async () => ({
           type: 'file' as const,
           pathname: rscPath2pathname(''),
-          body: await renderRsc(
+          body: renderRsc(
             { App: <App name="Waku" />, InnerApp: <InnerApp count={0} /> },
             { moduleIdCallback: (id) => moduleIds.add(id) },
           ),
@@ -57,7 +56,7 @@ export default defineEntries({
         ...[1, 2, 3, 4, 5].map((count) => async () => ({
           type: 'file' as const,
           pathname: rscPath2pathname(`InnerApp=${count}`),
-          body: await renderRsc({ App: <App name="Waku" /> }),
+          body: renderRsc({ App: <App name="Waku" /> }),
         })),
         async () => ({
           type: 'defaultHtml' as const,

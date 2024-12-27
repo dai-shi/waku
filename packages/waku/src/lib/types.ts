@@ -48,7 +48,7 @@ type BuildConfig =
   | {
       type: 'file';
       pathname: string;
-      body: ReadableStream;
+      body: Promise<ReadableStream>;
     }
   | {
       type: 'htmlHead';
