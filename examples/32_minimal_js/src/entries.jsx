@@ -29,12 +29,12 @@ export default defineEntries({
         )}</script>`;
       const tasks = [
         async () => ({
-          type: 'htmlHead' as const,
+          type: 'htmlHead',
           pathSpec: [],
           head: generateHtmlHead(),
         }),
         // async () => ({
-        //   type: 'file' as const,
+        //   type: 'file',
         //   pathname: rscPath2pathname(''),
         //   body: await renderRsc(
         //     { App: <App name="Waku" /> },
@@ -42,7 +42,7 @@ export default defineEntries({
         //   ),
         // }),
         // async () => ({
-        //   type: 'file' as const,
+        //   type: 'file',
         //   pathname: '/',
         //   body: renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, {
         //     rscPath: '',

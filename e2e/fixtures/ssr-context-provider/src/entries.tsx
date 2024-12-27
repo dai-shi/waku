@@ -16,7 +16,7 @@ const entries: ReturnType<typeof defineEntries> = defineEntries({
       return renderHtml({ App: <App /> }, <Slot id="App" />, { rscPath: '' });
     }
   },
-  getBuildConfig: async () => [{ pathSpec: [], entries: [{ rscPath: '' }] }],
+  handleBuild: () => null,
 });
 
 export default entries;

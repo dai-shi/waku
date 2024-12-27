@@ -18,7 +18,7 @@ const entries: ReturnType<typeof defineEntries> = defineEntries({
       });
     }
   },
-  getBuildConfig: async () => [{ pathSpec: [], entries: [{ rscPath: '' }] }],
+  handleBuild: () => null,
 });
 
 export default entries;

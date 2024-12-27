@@ -71,7 +71,7 @@ export type HandleBuild = (utils: {
     moduleIds: Iterable<string>,
   ) => string;
   unstable_collectClientModules: (elements: Elements) => Promise<string[]>;
-}) => AsyncIterable<BuildConfig> | null
+}) => AsyncIterable<BuildConfig> | null;
 
 export type EntriesDev = {
   default: {

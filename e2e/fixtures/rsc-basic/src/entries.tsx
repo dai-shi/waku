@@ -12,7 +12,7 @@ const entries: ReturnType<typeof defineEntries> = defineEntries({
       return renderRsc({ _value: value });
     }
   },
-  getBuildConfig: async () => [{ pathSpec: [], entries: [{ rscPath: '' }] }],
+  handleBuild: () => null,
 });
 
 export default entries;
