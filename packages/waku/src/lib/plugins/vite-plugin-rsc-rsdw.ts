@@ -55,9 +55,6 @@ export function rscRsdwPlugin(): Plugin {
     },
     transform(code, id) {
       const [file, opt] = id.split('?');
-      if (file?.includes('/cjs')) {
-        console.log('cjs', file);
-      }
       if (
         ['commonjs-exports', 'commonjs-proxy', 'commonjs-entry'].includes(opt!)
       ) {
