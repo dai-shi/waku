@@ -29,6 +29,6 @@
     "shiki": "^1.24.4",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2",
-    "vite": "6.0.6"
+    "vite": "https://pkg.pr.new/vitejs/vite/vite@b1a17229bed31323403f748c9b367a0f8b5adcc3"
   }
 }

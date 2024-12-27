@@ -18,7 +18,7 @@
     "@types/react": "19.0.2",
     "@types/react-dom": "19.0.2",
     "typescript": "5.7.2",
-    "vite": "6.0.6",
+    "vite": "https://pkg.pr.new/vitejs/vite/vite@b1a17229bed31323403f748c9b367a0f8b5adcc3",
     "vite-tsconfig-paths": "5.1.4"
   }
 }
