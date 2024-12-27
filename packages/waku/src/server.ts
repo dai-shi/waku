@@ -43,3 +43,25 @@ type PlatformObject = {
 export function unstable_getPlatformObject(): PlatformObject {
   return (globalThis as any).__WAKU_PLATFORM_OBJECT__;
 }
+
+export function createAsyncIterable<T>(
+  create: () => Promise<Iterable<() => Promise<T>>>,
+): AsyncIterable<T> {
+  return {
+    [Symbol.asyncIterator]: () => {
+      let tasks: Array<() => Promise<T>> | undefined;
+      return {
+        next: async () => {
+          if (!tasks) {
+            tasks = Array.from(await create());
+          }
+          const task = tasks.shift();
+          if (task) {
+            return { value: await task() };
+          }
+          return { done: true, value: undefined };
+        },
+      };
+    },
+  };
+}

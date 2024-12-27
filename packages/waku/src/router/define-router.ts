@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import type { ReactNode } from 'react';
 
-import { unstable_getPlatformObject } from '../server.js';
+import { unstable_getPlatformObject, createAsyncIterable } from '../server.js';
 import { unstable_defineEntries as defineEntries } from '../minimal/server.js';
 import {
   encodeRoutePath,
@@ -295,50 +295,49 @@ export function unstable_defineRouter(fns: {
     }
   };
 
+  type Tasks = Array<() => Promise<BuildConfig>>;
   const handleBuild: HandleBuild = ({
     renderRsc,
     renderHtml,
     rscPath2pathname,
     unstable_generatePrefetchCode,
     unstable_collectClientModules,
-  }) => ({
-    [Symbol.asyncIterator]: () => {
-      type Tasks = Array<() => Promise<BuildConfig>>;
-      const createTasks = async (): Promise<Tasks> => {
-        const tasks: Tasks = [];
-        const pathConfig = await getMyPathConfig();
-        const path2moduleIds: Record<string, string[]> = {};
-        const moduleIdsForPrefetch = new WeakMap<PathSpec, Set<string>>();
-        // FIXME this approach keeps all entries in memory during the loop
-        const entriesCache = new Map<string, Record<string, ReactNode>>();
+  }) =>
+    createAsyncIterable(async (): Promise<Tasks> => {
+      const tasks: Tasks = [];
+      const pathConfig = await getMyPathConfig();
+      const path2moduleIds: Record<string, string[]> = {};
+      const moduleIdsForPrefetch = new WeakMap<PathSpec, Set<string>>();
+      // FIXME this approach keeps all entries in memory during the loop
+      const entriesCache = new Map<string, Record<string, ReactNode>>();
 
-        await Promise.all(
-          pathConfig.map(async ({ pathSpec, pathname, pattern, isStatic }) => {
-            const moduleIds = new Set<string>();
-            moduleIdsForPrefetch.set(pathSpec, moduleIds);
-            if (!pathname) {
-              return;
+      await Promise.all(
+        pathConfig.map(async ({ pathSpec, pathname, pattern, isStatic }) => {
+          const moduleIds = new Set<string>();
+          moduleIdsForPrefetch.set(pathSpec, moduleIds);
+          if (!pathname) {
+            return;
+          }
+          const rscPath = encodeRoutePath(pathname);
+          const entries = await getEntries(rscPath, undefined, {});
+          if (entries) {
+            entriesCache.set(pathname, entries);
+            path2moduleIds[pattern] =
+              await unstable_collectClientModules(entries);
+            if (isStatic) {
+              tasks.push(async () => ({
+                type: 'file',
+                pathname: rscPath2pathname(rscPath),
+                body: renderRsc(entries, {
+                  moduleIdCallback: (id) => moduleIds.add(id),
+                }),
+              }));
             }
-            const rscPath = encodeRoutePath(pathname);
-            const entries = await getEntries(rscPath, undefined, {});
-            if (entries) {
-              entriesCache.set(pathname, entries);
-              path2moduleIds[pattern] =
-                await unstable_collectClientModules(entries);
-              if (isStatic) {
-                tasks.push(async () => ({
-                  type: 'file',
-                  pathname: rscPath2pathname(rscPath),
-                  body: renderRsc(entries, {
-                    moduleIdCallback: (id) => moduleIds.add(id),
-                  }),
-                }));
-              }
-            }
-          }),
-        );
+          }
+        }),
+      );
 
-        const getRouterPrefetchCode = () => `
+      const getRouterPrefetchCode = () => `
 globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   const path2ids = ${JSON.stringify(path2moduleIds)};
   const pattern = Object.keys(path2ids).find((key) => new RegExp(key).test(path));
@@ -349,61 +348,46 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
   }
 };`;
 
-        for (const { pathSpec, pathname, isStatic, specs } of pathConfig) {
-          tasks.push(async () => {
-            const moduleIds = moduleIdsForPrefetch.get(pathSpec)!;
-            if (pathname) {
-              const rscPath = encodeRoutePath(pathname);
-              const code =
-                unstable_generatePrefetchCode([rscPath], moduleIds) +
-                getRouterPrefetchCode() +
-                (specs.is404 ? 'globalThis.__WAKU_ROUTER_404__ = true;' : '');
-              const entries = entriesCache.get(pathname);
-              if (isStatic && entries) {
-                const html = createElement(ServerRouter, {
-                  route: { path: pathname, query: '', hash: '' },
-                });
-                return {
-                  type: 'file',
-                  pathname,
-                  body: renderHtml(entries, html, {
-                    rscPath,
-                    htmlHead: `<script type="module" async>${code}</script>`,
-                  }).then(({ body }) => body),
-                };
-              }
-            }
+      for (const { pathSpec, pathname, isStatic, specs } of pathConfig) {
+        tasks.push(async () => {
+          const moduleIds = moduleIdsForPrefetch.get(pathSpec)!;
+          if (pathname) {
+            const rscPath = encodeRoutePath(pathname);
             const code =
-              unstable_generatePrefetchCode([], moduleIds) +
+              unstable_generatePrefetchCode([rscPath], moduleIds) +
               getRouterPrefetchCode() +
               (specs.is404 ? 'globalThis.__WAKU_ROUTER_404__ = true;' : '');
-            return {
-              type: 'htmlHead',
-              pathSpec,
-              head: `<script type="module" async>${code}</script>`,
-            };
-          });
-        }
+            const entries = entriesCache.get(pathname);
+            if (isStatic && entries) {
+              const html = createElement(ServerRouter, {
+                route: { path: pathname, query: '', hash: '' },
+              });
+              return {
+                type: 'file',
+                pathname,
+                body: renderHtml(entries, html, {
+                  rscPath,
+                  htmlHead: `<script type="module" async>${code}</script>`,
+                }).then(({ body }) => body),
+              };
+            }
+          }
+          const code =
+            unstable_generatePrefetchCode([], moduleIds) +
+            getRouterPrefetchCode() +
+            (specs.is404 ? 'globalThis.__WAKU_ROUTER_404__ = true;' : '');
+          return {
+            type: 'htmlHead',
+            pathSpec,
+            head: `<script type="module" async>${code}</script>`,
+          };
+        });
+      }
 
-        platformObject.buildData ||= {};
-        platformObject.buildData.defineRouterPathConfigs = pathConfig;
-        return tasks;
-      };
-      let tasks: Tasks | undefined;
-      return {
-        next: async () => {
-          if (!tasks) {
-            tasks = await createTasks();
-          }
-          const task = tasks.shift();
-          if (task) {
-            return { value: await task() };
-          }
-          return { done: true, value: undefined };
-        },
-      };
-    },
-  });
+      platformObject.buildData ||= {};
+      platformObject.buildData.defineRouterPathConfigs = pathConfig;
+      return tasks;
+    });
 
   return defineEntries({ handleRequest, handleBuild });
 }
