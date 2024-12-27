@@ -33,5 +33,53 @@ export default defineEntries({
       );
     }
   },
-  getBuildConfig: async () => [{ pathSpec: [], entries: [{ rscPath: '' }] }],
+  handleBuild: ({
+    // renderRsc,
+    // renderHtml,
+    // rscPath2pathname,
+    unstable_generatePrefetchCode,
+  }) => ({
+    [Symbol.asyncIterator]: () => {
+      const moduleIds = new Set<string>();
+      const generateHtmlHead = () =>
+        `<script type="module" async>${unstable_generatePrefetchCode(
+          [''],
+          moduleIds,
+        )}</script>`;
+      const tasks = [
+        async () => ({
+          type: 'htmlHead' as const,
+          pathSpec: [],
+          head: generateHtmlHead(),
+        }),
+        // async () => ({
+        //   type: 'file' as const,
+        //   pathname: rscPath2pathname(''),
+        //   body: await renderRsc(
+        //     { App: <App name="Waku" /> },
+        //     { moduleIdCallback: (id) => moduleIds.add(id) },
+        //   ),
+        // }),
+        // async () => ({
+        //   type: 'file' as const,
+        //   pathname: '/',
+        //   body: (
+        //     await renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, {
+        //       rscPath: '',
+        //       htmlHead: generateHtmlHead(),
+        //     })
+        //   ).body,
+        // }),
+      ];
+      return {
+        next: async () => {
+          const task = tasks.shift();
+          if (task) {
+            return { value: await task() };
+          }
+          return { done: true, value: undefined };
+        },
+      };
+    },
+  }),
 });

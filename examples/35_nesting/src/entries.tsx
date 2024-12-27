@@ -32,22 +32,57 @@ export default defineEntries({
       );
     }
   },
-  getBuildConfig: async () => [
-    {
-      pathSpec: [],
-      entries: [
-        { rscPath: '' },
-        { rscPath: 'InnerApp=1', skipPrefetch: true },
-        { rscPath: 'InnerApp=2', skipPrefetch: true },
-        { rscPath: 'InnerApp=3', skipPrefetch: true },
-        { rscPath: 'InnerApp=4', skipPrefetch: true },
-        { rscPath: 'InnerApp=5', skipPrefetch: true },
-      ],
+  handleBuild: ({
+    renderRsc,
+    renderHtml,
+    rscPath2pathname,
+    unstable_generatePrefetchCode,
+  }) => ({
+    [Symbol.asyncIterator]: () => {
+      const moduleIds = new Set<string>();
+      const generateHtmlHead = () =>
+        `<script type="module" async>${unstable_generatePrefetchCode(
+          [''],
+          moduleIds,
+        )}</script>`;
+      const tasks = [
+        async () => ({
+          type: 'htmlHead' as const,
+          pathSpec: [],
+          head: generateHtmlHead(),
+        }),
+        async () => ({
+          type: 'file' as const,
+          pathname: rscPath2pathname('AppWithoutSsr'),
+          body: await renderRsc(
+            { App: <App name="AppWithoutSsr" /> },
+            { moduleIdCallback: (id) => moduleIds.add(id) },
+          ),
+        }),
+        async () => ({
+          type: 'file' as const,
+          pathname: '/no-ssr',
+          body: (
+            await renderHtml(
+              { App: <App name="AppWithSsr" /> },
+              <Slot id="App" />,
+              {
+                rscPath: 'AppWithoutSsr',
+                htmlHead: generateHtmlHead(),
+              },
+            )
+          ).body,
+        }),
+      ];
+      return {
+        next: async () => {
+          const task = tasks.shift();
+          if (task) {
+            return { value: await task() };
+          }
+          return { done: true, value: undefined };
+        },
+      };
     },
-    {
-      pathSpec: [{ type: 'literal', name: '/no-ssr' }],
-      entries: [{ rscPath: 'AppWithoutSsr' }],
-      isStatic: true,
-    },
-  ],
+  }),
 });

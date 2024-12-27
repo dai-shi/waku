@@ -43,6 +43,7 @@ export type HandleRequest = (
   },
 ) => Promise<ReadableStream | HandlerRes | null | undefined>;
 
+// needs better name (it's not just config)
 type BuildConfig =
   | {
       type: 'file';
