@@ -500,7 +500,6 @@ const emitStaticFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  await unlink(publicIndexHtmlFile);
   const publicIndexHtmlHead = publicIndexHtml.replace(
     /.*?<head>(.*?)<\/head>.*/s,
     '$1',
@@ -557,6 +556,9 @@ const emitStaticFiles = async (
   };
   const dynamicHtmlPathMap = new Map<PathSpec, string>();
   const buildConfigs = distEntries.default.handleBuild(utils);
+  if (buildConfigs) {
+    await unlink(publicIndexHtmlFile);
+  }
   for await (const buildConfig of buildConfigs || []) {
     switch (buildConfig.type) {
       case 'file':
