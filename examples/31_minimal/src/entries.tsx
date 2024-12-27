@@ -21,17 +21,25 @@ export default defineEntries({
     unstable_generatePrefetchCode,
   }) => ({
     [Symbol.asyncIterator]: () => {
-      const code = unstable_generatePrefetchCode([''], []);
+      const moduleIds = new Set<string>();
+      const generateHtmlHead = () =>
+        `<script type="module" async>${unstable_generatePrefetchCode(
+          [''],
+          moduleIds,
+        )}</script>`;
       const tasks = [
         async () => ({
           type: 'htmlHead' as const,
           pathSpec: [],
-          head: `<script type="module" async>${code}</script>`,
+          head: generateHtmlHead(),
         }),
         // async () => ({
         //   type: 'file' as const,
         //   pathname: rscPath2pathname(''),
-        //   body: await renderRsc({ App: <App name="Waku" /> }),
+        //   body: await renderRsc(
+        //     { App: <App name="Waku" /> },
+        //     { moduleIdCallback: (id) => moduleIds.add(id) },
+        //   ),
         // }),
         // async () => ({
         //   type: 'file' as const,
@@ -39,7 +47,7 @@ export default defineEntries({
         //   body: (
         //     await renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, {
         //       rscPath: '',
-        //       htmlHead: `<script type="module" async>${code}</script>`,
+        //       htmlHead: generateHtmlHead(),
         //     })
         //   ).body,
         // }),

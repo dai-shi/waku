@@ -557,7 +557,7 @@ const emitStaticFiles = async (
   };
   const dynamicHtmlPathMap = new Map<PathSpec, string>();
   const buildConfigs = distEntries.default.handleBuild(utils);
-  for await (const buildConfig of buildConfigs) {
+  for await (const buildConfig of buildConfigs || []) {
     switch (buildConfig.type) {
       case 'file':
         emitStaticFile(rootDir, config, buildConfig.pathname, buildConfig.body);

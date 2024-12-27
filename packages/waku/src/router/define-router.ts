@@ -220,7 +220,9 @@ export function unstable_defineRouter(fns: {
   type HandleRequest = Parameters<typeof defineEntries>[0]['handleRequest'];
   type HandleBuild = Parameters<typeof defineEntries>[0]['handleBuild'];
   type BuildConfig =
-    ReturnType<HandleBuild> extends AsyncIterable<infer T> ? T : never;
+    NonNullable<ReturnType<HandleBuild>> extends AsyncIterable<infer T>
+      ? T
+      : never;
 
   const handleRequest: HandleRequest = async (
     input,

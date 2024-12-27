@@ -43,17 +43,7 @@ export type HandleRequest = (
   },
 ) => Promise<ReadableStream | HandlerRes | null | undefined>;
 
-// This API is still unstable
-export type HandleBuild = (utils: {
-  renderRsc: RenderRsc<{ moduleIdCallback?: (id: string) => void }>;
-  renderHtml: RenderHtml<{ htmlHead?: string }>;
-  rscPath2pathname: (rscPath: string) => string;
-  unstable_generatePrefetchCode: (
-    rscPaths: Iterable<string>,
-    moduleIds: Iterable<string>,
-  ) => string;
-  unstable_collectClientModules: (elements: Elements) => Promise<string[]>;
-}) => AsyncIterable<
+type BuildConfig =
   | {
       type: 'file';
       pathname: string;
@@ -68,10 +58,19 @@ export type HandleBuild = (utils: {
       type: 'defaultHtml';
       pathname: string;
       head?: string;
-    },
-  void,
-  undefined
->;
+    };
+
+// This API is still unstable
+export type HandleBuild = (utils: {
+  renderRsc: RenderRsc<{ moduleIdCallback?: (id: string) => void }>;
+  renderHtml: RenderHtml<{ htmlHead?: string }>;
+  rscPath2pathname: (rscPath: string) => string;
+  unstable_generatePrefetchCode: (
+    rscPaths: Iterable<string>,
+    moduleIds: Iterable<string>,
+  ) => string;
+  unstable_collectClientModules: (elements: Elements) => Promise<string[]>;
+}) => AsyncIterable<BuildConfig> | null
 
 export type EntriesDev = {
   default: {
