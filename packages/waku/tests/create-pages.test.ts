@@ -412,11 +412,11 @@ beforeEach(() => {
 
 function injectedFunctions() {
   expect(defineRouterMock).toHaveBeenCalledTimes(1);
-  assert(defineRouterMock.mock.calls[0]?.[0].getPathConfig);
-  assert(defineRouterMock.mock.calls[0]?.[0].renderRoute);
+  assert(defineRouterMock.mock.calls[0]?.[0].getRouteConfig);
+  assert(defineRouterMock.mock.calls[0]?.[0].handleRoute);
   return {
-    getPathConfig: defineRouterMock.mock.calls[0][0].getPathConfig,
-    renderRoute: defineRouterMock.mock.calls[0][0].renderRoute,
+    getRouteConfig: defineRouterMock.mock.calls[0][0].getRouteConfig,
+    handleRoute: defineRouterMock.mock.calls[0][0].handleRoute,
   };
 }
 
@@ -430,9 +430,9 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
+    const { getRouteConfig, handleRoute } = injectedFunctions();
 
-    expect(await getPathConfig()).toEqual([
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -444,7 +444,7 @@ describe('createPages', () => {
       },
     ]);
 
-    const route = await renderRoute('/test', {
+    const route = await handleRoute('/test', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -461,8 +461,8 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -473,7 +473,7 @@ describe('createPages', () => {
         path: [{ name: 'test', type: 'literal' }],
       },
     ]);
-    const route = await renderRoute('/test', {
+    const route = await handleRoute('/test', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -497,8 +497,8 @@ describe('createPages', () => {
       }),
     ]);
 
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           'layout:/': { isStatic: true },
@@ -510,7 +510,7 @@ describe('createPages', () => {
         path: [{ name: 'test', type: 'literal' }],
       },
     ]);
-    const route = await renderRoute('/test', {
+    const route = await handleRoute('/test', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -538,8 +538,8 @@ describe('createPages', () => {
       }),
     ]);
 
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           'layout:/': { isStatic: false },
@@ -552,7 +552,7 @@ describe('createPages', () => {
       },
     ]);
 
-    const route = await renderRoute('/test', {
+    const route = await handleRoute('/test', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -573,8 +573,8 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -588,7 +588,7 @@ describe('createPages', () => {
         ],
       },
     ]);
-    const route = await renderRoute('/test/nested', {
+    const route = await handleRoute('/test/nested', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -610,8 +610,8 @@ describe('createPages', () => {
         component: () => null,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -626,7 +626,7 @@ describe('createPages', () => {
         ],
       },
     ]);
-    const route = await renderRoute('/test/nested', {
+    const route = await handleRoute('/test/nested', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -647,8 +647,8 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -663,7 +663,7 @@ describe('createPages', () => {
       },
     ]);
 
-    const route = await renderRoute('/test/nested', {
+    const route = await handleRoute('/test/nested', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -684,8 +684,8 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -723,7 +723,7 @@ describe('createPages', () => {
         ],
       },
     ]);
-    const route = await renderRoute('/test/y/z', {
+    const route = await handleRoute('/test/y/z', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -740,8 +740,8 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -756,7 +756,7 @@ describe('createPages', () => {
         ],
       },
     ]);
-    const route = await renderRoute('/test/w/x', {
+    const route = await handleRoute('/test/w/x', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -774,8 +774,8 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -794,7 +794,7 @@ describe('createPages', () => {
         ],
       },
     ]);
-    const route = await renderRoute('/test/a/b', {
+    const route = await handleRoute('/test/a/b', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -811,8 +811,8 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -826,7 +826,7 @@ describe('createPages', () => {
         ],
       },
     ]);
-    const route = await renderRoute('/test/a/b', {
+    const route = await handleRoute('/test/a/b', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -847,8 +847,8 @@ describe('createPages', () => {
         component: () => null,
       }),
     ]);
-    const { getPathConfig } = injectedFunctions();
-    await expect(getPathConfig).rejects.toThrowError(
+    const { getRouteConfig } = injectedFunctions();
+    await expect(getRouteConfig).rejects.toThrowError(
       'staticPaths does not match with slug pattern',
     );
   });
@@ -868,8 +868,8 @@ describe('createPages', () => {
         unstable_disableSSR: true,
       }),
     ]);
-    const { getPathConfig } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -904,8 +904,8 @@ describe('createPages', () => {
         component: () => null,
       }),
     ]);
-    const { getPathConfig } = injectedFunctions();
-    await expect(getPathConfig).rejects.toThrowError(
+    const { getRouteConfig } = injectedFunctions();
+    await expect(getRouteConfig).rejects.toThrowError(
       'Duplicated dynamic path: /test',
     );
   });
@@ -923,8 +923,8 @@ describe('createPages', () => {
         component: () => null,
       }),
     ]);
-    const { getPathConfig } = injectedFunctions();
-    await expect(getPathConfig).rejects.toThrowError(
+    const { getRouteConfig } = injectedFunctions();
+    await expect(getRouteConfig).rejects.toThrowError(
       'Duplicated component for: test/page',
     );
   });
@@ -944,8 +944,8 @@ describe('createPages', () => {
           component: () => null,
         }),
       ]);
-      const { getPathConfig } = injectedFunctions();
-      await expect(getPathConfig).rejects.toThrowError(
+      const { getRouteConfig } = injectedFunctions();
+      await expect(getRouteConfig).rejects.toThrowError(
         'Duplicated component for: test/page',
       );
     },
@@ -955,9 +955,9 @@ describe('createPages', () => {
     const TestPage = vi.fn();
     complexTestRouter(createPages, TestPage);
 
-    const { getPathConfig, renderRoute } = injectedFunctions();
+    const { getRouteConfig, handleRoute } = injectedFunctions();
 
-    expect(await getPathConfig()).toEqual([
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -1170,7 +1170,7 @@ describe('createPages', () => {
         ],
       },
     ]);
-    const route = await renderRoute('/server/two/a/b', {
+    const route = await handleRoute('/server/two/a/b', {
       query: '?skip=[]',
     });
     assert(route);

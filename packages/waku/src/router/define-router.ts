@@ -72,7 +72,7 @@ type SlotId = string;
 const ROUTE_SLOT_ID_PREFIX = 'route:';
 
 export function unstable_defineRouter(fns: {
-  getPathConfig: () => Promise<
+  getRouteConfig: () => Promise<
     Iterable<{
       path: PathSpec;
       pathPattern?: PathSpec;
@@ -81,7 +81,7 @@ export function unstable_defineRouter(fns: {
       noSsr?: boolean;
     }>
   >;
-  renderRoute: (
+  handleRoute: (
     path: string,
     options: {
       query?: string;
@@ -108,7 +108,7 @@ export function unstable_defineRouter(fns: {
       return pathConfig as MyPathConfig;
     }
     if (!cachedPathConfig) {
-      cachedPathConfig = Array.from(await fns.getPathConfig()).map((item) => {
+      cachedPathConfig = Array.from(await fns.getRouteConfig()).map((item) => {
         const is404 =
           item.path.length === 1 &&
           item.path[0]!.type === 'literal' &&
@@ -192,7 +192,7 @@ export function unstable_defineRouter(fns: {
     }
     const skip = isStringArray(skipParam) ? skipParam : [];
     const { query } = parseRscParams(rscParams);
-    const { routeElement, elements, fallbackElement } = await fns.renderRoute(
+    const { routeElement, elements, fallbackElement } = await fns.handleRoute(
       pathname,
       pathStatus.isStatic ? {} : { query },
     );
