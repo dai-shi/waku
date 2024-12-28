@@ -13,16 +13,10 @@ export default function TestRouter() {
       <p data-testid="query">Query: {queryCount}</p>
       <p data-testid="hash">Hash: {hashCount}</p>
       <p>
-        <Link to={`?count=${queryCount + 1}`} preserveScroll={false}>
-          Increment query
-        </Link>
+        <Link to={`?count=${queryCount + 1}`}>Increment query</Link>
       </p>
       <p>
-        <button
-          onClick={() =>
-            router.push(`?count=${queryCount + 1}`, { preserveScroll: false })
-          }
-        >
+        <button onClick={() => router.push(`?count=${queryCount + 1}`)}>
           Increment query (push)
         </button>
       </p>
@@ -30,11 +24,7 @@ export default function TestRouter() {
         <Link to={`#${hashCount + 1}`}>Increment hash</Link>
       </p>
       <p>
-        <button
-          onClick={() =>
-            router.push(`#${hashCount + 1}`, { preserveScroll: false })
-          }
-        >
+        <button onClick={() => router.push(`#${hashCount + 1}`)}>
           Increment hash (push)
         </button>
       </p>

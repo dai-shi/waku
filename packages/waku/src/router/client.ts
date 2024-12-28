@@ -87,20 +87,12 @@ const createRscParams = (query: string): URLSearchParams => {
   return rscParams;
 };
 
-type RouteChangeOptions = {
-  /**
-   * Preserve scroll position when navigating
-   * @default true
-   */
-  preserveScroll?: boolean;
-};
-
 type ChangeRoute = (
   route: RouteProps,
   options?: {
-    checkCache?: boolean;
+    shouldScroll?: boolean;
     skipRefetch?: boolean;
-  } & RouteChangeOptions,
+  },
 ) => void;
 
 type PrefetchRoute = (route: RouteProps) => void;
@@ -118,7 +110,7 @@ export function useRouter_UNSTABLE() {
   }
   const { route, changeRoute, prefetchRoute } = router;
   const push = useCallback(
-    (to: InferredPaths, options?: RouteChangeOptions) => {
+    (to: InferredPaths) => {
       const url = new URL(to, window.location.href);
       window.history.pushState(
         {
@@ -128,25 +120,22 @@ export function useRouter_UNSTABLE() {
         '',
         url,
       );
-      changeRoute(parseRoute(url), options);
+      changeRoute(parseRoute(url), { shouldScroll: false });
     },
     [changeRoute],
   );
   const replace = useCallback(
-    (to: InferredPaths, options?: RouteChangeOptions) => {
+    (to: InferredPaths) => {
       const url = new URL(to, window.location.href);
       window.history.replaceState(window.history.state, '', url);
-      changeRoute(parseRoute(url), options);
+      changeRoute(parseRoute(url), { shouldScroll: false });
     },
     [changeRoute],
   );
-  const reload = useCallback(
-    (options?: RouteChangeOptions) => {
-      const url = new URL(window.location.href);
-      changeRoute(parseRoute(url), options);
-    },
-    [changeRoute],
-  );
+  const reload = useCallback(() => {
+    const url = new URL(window.location.href);
+    changeRoute(parseRoute(url), { shouldScroll: true });
+  }, [changeRoute]);
   const back = useCallback(() => {
     // FIXME is this correct?
     window.history.back();
@@ -180,8 +169,7 @@ export type LinkProps = {
   children: ReactNode;
   unstable_prefetchOnEnter?: boolean;
   unstable_prefetchOnView?: boolean;
-} & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> &
-  RouteChangeOptions;
+} & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>;
 
 export function Link({
   to,
@@ -190,7 +178,6 @@ export function Link({
   notPending,
   unstable_prefetchOnEnter,
   unstable_prefetchOnView,
-  preserveScroll = true,
   ...props
 }: LinkProps): ReactElement {
   const router = useContext(RouterContext);
@@ -246,7 +233,7 @@ export function Link({
           '',
           url,
         );
-        changeRoute(route, { preserveScroll });
+        changeRoute(route, { shouldScroll: !!route.hash });
       });
     }
     props.onClick?.(event);
@@ -312,13 +299,6 @@ class ErrorBoundary extends Component<
   }
 }
 
-type NewChangeRoute = (
-  route: RouteProps,
-  options?: {
-    skipRefetch?: boolean;
-  } & RouteChangeOptions,
-) => void;
-
 const getRouteSlotId = (path: string) => 'route:' + path;
 
 const InnerRouter = ({
@@ -366,7 +346,7 @@ const InnerRouter = ({
     });
   }, []);
 
-  const changeRoute: NewChangeRoute = useCallback(
+  const changeRoute: ChangeRoute = useCallback(
     (route, options) => {
       const { skipRefetch } = options || {};
       startTransition(() => {
@@ -375,7 +355,7 @@ const InnerRouter = ({
           const rscParams = createRscParams(route.query);
           refetch(rscPath, rscParams);
         }
-        handleScroll(options?.preserveScroll);
+        handleScroll(options?.shouldScroll);
         setRoute(route);
       });
     },
@@ -422,7 +402,7 @@ const InnerRouter = ({
           url,
         );
       }
-      changeRoute(parseRoute(url), { skipRefetch: true });
+      changeRoute(parseRoute(url), { skipRefetch: true, shouldScroll: false });
     };
     locationListeners.add(callback);
     return () => {
