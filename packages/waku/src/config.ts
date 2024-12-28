@@ -20,12 +20,10 @@ export interface Config {
    */
   distDir?: string;
   /**
-  /**
-   * The list of directries to preserve server module structure.
-   * Relative to srcDir.
-   * Defaults to ["pages", "templates", "routes", "components"].
+   * The pages directory relative to srcDir.
+   * Defaults to "pages".
    */
-  preserveModuleDirs?: string[];
+  pagesDir?: string;
   /**
    * The private directory relative to root.
    * This folder will contain files that should be read only on the server.

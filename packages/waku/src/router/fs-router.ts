@@ -8,7 +8,7 @@ const DO_NOT_BUNDLE = '';
 export function fsRouter(
   importMetaUrl: string,
   loadPage: (file: string) => Promise<any> | undefined,
-  pages = 'pages',
+  pages: string,
 ) {
   const platformObject = unstable_getPlatformObject();
   return createPages(async ({ createPage, createLayout, createRoot }) => {

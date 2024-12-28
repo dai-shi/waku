@@ -230,7 +230,7 @@ const createRscViteServer = (
         rscRsdwPlugin(),
         rscEnvPlugin({ isDev: true, env }),
         rscPrivatePlugin({ privateDir: config.privateDir, hotUpdateCallback }),
-        rscManagedPlugin({ basePath: config.basePath, srcDir: config.srcDir }),
+        rscManagedPlugin(config),
         rscTransformPlugin({ isClient: false, isBuild: false }),
         rscDelegatePlugin(hotUpdateCallback),
       ],

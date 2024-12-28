@@ -25,7 +25,7 @@ export async function resolveConfig(config: Config) {
     basePath: '/',
     srcDir: 'src',
     distDir: 'dist',
-    preserveModuleDirs: ['pages', 'templates', 'routes', 'components'],
+    pagesDir: 'pages',
     privateDir: 'private',
     rscBase: 'RSC',
     middleware: DEFAULT_MIDDLEWARE,

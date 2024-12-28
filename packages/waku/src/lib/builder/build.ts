@@ -103,18 +103,18 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   const serverFileSet = new Set<string>();
   const fileHashMap = new Map<string, string>();
   const moduleFileMap = new Map<string, string>(); // module id -> full path
-  for (const preserveModuleDir of config.preserveModuleDirs) {
-    const dir = joinPath(rootDir, config.srcDir, preserveModuleDir);
-    if (!existsSync(dir)) {
-      continue;
-    }
-    const files = await readdir(dir, { encoding: 'utf8', recursive: true });
+  const pagesDirPath = joinPath(rootDir, config.srcDir, config.pagesDir);
+  if (existsSync(pagesDirPath)) {
+    const files = await readdir(pagesDirPath, {
+      encoding: 'utf8',
+      recursive: true,
+    });
     for (const file of files) {
       const ext = extname(file);
       if (EXTENSIONS.includes(ext)) {
         moduleFileMap.set(
-          joinPath(preserveModuleDir, file.slice(0, -ext.length)),
-          joinPath(dir, file),
+          joinPath(config.pagesDir, file.slice(0, -ext.length)),
+          joinPath(pagesDirPath, file),
         );
       }
     }
