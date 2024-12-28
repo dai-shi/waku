@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { resolveConfig } from '../config.js';
+import { resolveConfig, extractPureConfig } from '../config.js';
 import type { PureConfig } from '../config.js';
 import { setAllEnvInternal } from '../../server.js';
 import type { HandleRequest } from '../types.js';
@@ -81,10 +81,10 @@ export const handler: Middleware = (options) => {
 
   return async (ctx, next) => {
     const { unstable_devServer: devServer } = ctx;
-    const [
-      { middleware: _removed1, unstable_honoEnhancer: _removed2, ...config },
-      entriesPrd,
-    ] = await Promise.all([configPromise, entriesPromise]);
+    const [config, entriesPrd] = await Promise.all([
+      configPromise.then(extractPureConfig),
+      entriesPromise,
+    ]);
     const entriesDev = devServer && (await devServer.loadEntriesDev(config));
     const entries = devServer ? entriesDev! : entriesPrd;
     const rsdwServer = devServer

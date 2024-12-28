@@ -1,3 +1,4 @@
+import type { UserConfig } from 'vite';
 import type { Middleware } from './lib/middleware/types.js';
 
 export type { Middleware };
@@ -51,6 +52,20 @@ export interface Config {
    */
   unstable_honoEnhancer?:
     | (<Hono>(createApp: (app: Hono) => Hono) => (app: Hono) => Hono)
+    | undefined;
+  /**
+   * Vite configs
+   * Defaults to `undefined`
+   */
+  unstable_viteConfigs?:
+    | {
+        'dev-main'?: UserConfig;
+        'dev-rsc'?: UserConfig;
+        'build-analyze'?: UserConfig;
+        'build-server'?: UserConfig;
+        'build-ssr'?: UserConfig;
+        'build-client'?: UserConfig;
+      }
     | undefined;
 }
 
