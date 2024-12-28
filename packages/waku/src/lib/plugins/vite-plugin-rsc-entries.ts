@@ -34,14 +34,22 @@ globalThis.__WAKU_SERVER_IMPORT__ = loadModule;
 globalThis.__WAKU_CLIENT_IMPORT__ = (id) => loadModule('${opts.ssrDir}/' + id);
 `;
   let entriesFile = '';
+  let configFile = '';
   return {
     name: 'rsc-entries-plugin',
     configResolved(config) {
+      config.build.rollupOptions.treeshake = {
+        ...(typeof config.build.rollupOptions.treeshake === 'object'
+          ? config.build.rollupOptions.treeshake
+          : {}),
+        // FIXME naive way to remove imports with unstable_viteConfigs.
+        moduleSideEffects: 'no-external',
+      };
       entriesFile = joinPath(config.root, opts.srcDir, SRC_ENTRIES);
       if (existsSync(CONFIG_FILE)) {
-        const file = normalizePath(path.resolve(CONFIG_FILE));
+        configFile = normalizePath(path.resolve(CONFIG_FILE));
         codeToAppend += `
-export const loadConfig = async () => (await import('${file}')).default;
+export const loadConfig = async () => (await import('${configFile}')).default;
 `;
       } else {
         codeToAppend += `
@@ -58,6 +66,13 @@ export const loadConfig = async () => ({});
       }
       if (stripExt(id).endsWith(entriesFile)) {
         return code + codeToAppend;
+      }
+      if (id === configFile) {
+        // FIXME we should parse code and process the AST properly
+        return code.replace(
+          /unstable_viteConfigs: {[^}]+}/,
+          'unstable_viteConfigs: {}',
+        );
       }
     },
   };

@@ -59,12 +59,12 @@ export interface Config {
    */
   unstable_viteConfigs?:
     | {
-        'dev-main'?: () => Promise<UserConfig>;
-        'dev-rsc'?: () => Promise<UserConfig>;
-        'build-analyze'?: () => Promise<UserConfig>;
-        'build-server'?: () => Promise<UserConfig>;
-        'build-ssr'?: () => Promise<UserConfig>;
-        'build-client'?: () => Promise<UserConfig>;
+        'dev-main'?: () => UserConfig;
+        'dev-rsc'?: () => UserConfig;
+        'build-analyze'?: () => UserConfig;
+        'build-server'?: () => UserConfig;
+        'build-ssr'?: () => UserConfig;
+        'build-client'?: () => UserConfig;
       }
     | undefined;
 }
