@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.21.11] - 2024-12-28
+
+### Changed
+
+- Vite 6 migration
+- Bug fixes
+
 ## [0.21.10] - 2024-12-22
 
 ### Changed
