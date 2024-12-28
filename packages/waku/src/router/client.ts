@@ -352,6 +352,20 @@ const InnerRouter = ({
     });
   }, [initialRoute]);
 
+  const handleScroll = useCallback((shouldScroll = true) => {
+    if (!shouldScroll) {
+      return;
+    }
+    const { hash } = window.location;
+    const { state } = window.history;
+    const element = hash && document.getElementById(hash.slice(1));
+    window.scrollTo({
+      left: 0,
+      top: element ? element.getBoundingClientRect().top + window.scrollY : 0,
+      behavior: state?.waku_new_path ? 'instant' : 'auto',
+    });
+  }, []);
+
   const changeRoute: NewChangeRoute = useCallback(
     (route, options) => {
       const { skipRefetch } = options || {};
@@ -365,7 +379,7 @@ const InnerRouter = ({
         setRoute(route);
       });
     },
-    [refetch, staticPathSet],
+    [refetch, staticPathSet, handleScroll],
   );
 
   const prefetchRoute: PrefetchRoute = useCallback(
@@ -380,18 +394,6 @@ const InnerRouter = ({
     },
     [staticPathSet],
   );
-
-  const handleScroll = useCallback((shouldScroll = true) => {
-    if (!shouldScroll) return;
-    const { hash } = window.location;
-    const { state } = window.history;
-    const element = hash && document.getElementById(hash.slice(1));
-    window.scrollTo({
-      left: 0,
-      top: element ? element.getBoundingClientRect().top + window.scrollY : 0,
-      behavior: state?.waku_new_path ? 'instant' : 'auto',
-    });
-  }, []);
 
   useEffect(() => {
     const callback = () => {
