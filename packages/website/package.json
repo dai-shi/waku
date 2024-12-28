@@ -13,7 +13,7 @@
     "@sindresorhus/slugify": "^2.2.1",
     "classnames": "2.3.2",
     "framer-motion": "^11.15.0",
-    "jotai": "^2.10.4",
+    "jotai": "^2.11.0",
     "next-mdx-remote": "^5.0.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
