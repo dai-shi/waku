@@ -27,6 +27,7 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-empty-object-type': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
@@ -36,7 +37,11 @@ export default tseslint.config(
     },
   },
   {
-    files: ['examples/41_path-alias/**/*.tsx'],
+    files: [
+      'packages/waku/cli.js',
+      'packages/create-waku/cli.js',
+      'examples/41_path-alias/**/*.tsx',
+    ],
     rules: {
       'import/no-unresolved': 'off',
     },

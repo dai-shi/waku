@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface Reference {}
 
 type TemporaryReferenceSet = Map<string, Reference | symbol>;
