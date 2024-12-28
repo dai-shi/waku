@@ -14,7 +14,7 @@ const PATH_PAGE: Record<string, ReactNode> = {
 };
 
 const router: ReturnType<typeof defineRouter> = defineRouter({
-  getPathConfig: async () =>
+  getRouteConfig: async () =>
     STATIC_PATHS.map((path) => ({
       pattern: `^${path}$`,
       path: path
@@ -28,7 +28,7 @@ const router: ReturnType<typeof defineRouter> = defineRouter({
         [`page:${path}`]: { isStatic: true },
       },
     })),
-  renderRoute: async (path) => {
+  handleRoute: async (path) => {
     if (!STATIC_PATHS.includes(path)) {
       throw new Error('renderRoute: No such path:' + path);
     }

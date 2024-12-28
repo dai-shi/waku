@@ -9,7 +9,7 @@ import BarPage from './components/BarPage';
 import NestedBazPage from './components/NestedBazPage';
 
 export default defineRouter({
-  getPathConfig: async () => {
+  getRouteConfig: async () => {
     return [
       {
         pattern: '/',
@@ -70,7 +70,7 @@ export default defineRouter({
       },
     ];
   },
-  renderRoute: async (path) => {
+  handleRoute: async (path) => {
     if (path === '/') {
       return {
         routeElement: (

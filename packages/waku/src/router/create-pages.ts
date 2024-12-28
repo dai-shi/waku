@@ -394,7 +394,7 @@ export const createPages = <
   };
 
   const definedRouter = unstable_defineRouter({
-    getPathConfig: async () => {
+    getRouteConfig: async () => {
       await configure();
       const paths: {
         path: PathSpec;
@@ -482,7 +482,7 @@ export const createPages = <
       }
       return paths;
     },
-    renderRoute: async (path, { query }) => {
+    handleRoute: async (path, { query }) => {
       await configure();
 
       // path without slugs
