@@ -200,10 +200,33 @@ importers:
         specifier: ^5.7.2
         version: 5.7.2
 
-  e2e/fixtures/pnpm-monorepo: {}
+  e2e/fixtures/pnpm-monorepo:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.7.2
+
+  e2e/fixtures/pnpm-monorepo/packages/component:
+    dependencies:
+      react:
+        specifier: 19.0.0
+        version: 19.0.0
+      react-dom:
+        specifier: 19.0.0
+        version: 19.0.0(react@19.0.0)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.2
+        version: 19.0.2
+      '@types/react-dom':
+        specifier: ^19.0.2
+        version: 19.0.2(@types/react@19.0.2)
 
   e2e/fixtures/pnpm-monorepo/packages/web:
     dependencies:
+      component:
+        specifier: workspace:*
+        version: link:../component
       react:
         specifier: 19.0.0
         version: 19.0.0
@@ -226,9 +249,6 @@ importers:
       '@types/react-dom':
         specifier: ^19.0.2
         version: 19.0.2(@types/react@19.0.2)
-      typescript:
-        specifier: ^5.7.2
-        version: 5.7.2
 
   e2e/fixtures/render-type:
     dependencies:
