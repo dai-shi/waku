@@ -897,7 +897,7 @@ importers:
         specifier: 6.0.6
         version: 6.0.6(@types/node@22.10.2)(jiti@2.4.2)(terser@5.37.0)(yaml@2.6.1)
       vite-plugin-stylex:
-        specifier: ^0.13.0
+        specifier: 0.13.0
         version: 0.13.0(@stylexjs/stylex@0.9.3)(vite@6.0.6(@types/node@22.10.2)(jiti@2.4.2)(terser@5.37.0)(yaml@2.6.1))
 
   examples/38_cookies:
