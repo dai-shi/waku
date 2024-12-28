@@ -172,7 +172,6 @@ export const fetchRsc = (
     : fetchRscInternal(url, rscParams, fetchCache);
   delete prefetched[url];
   const data = enhanceCreateData(createData)(responsePromise);
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises
   fetchCache[ENTRY] = [rscPath, rscParams, data];
   return data;
 };
