@@ -233,7 +233,7 @@ export function Link({
           '',
           url,
         );
-        changeRoute(route, { shouldScroll: !!route.hash });
+        changeRoute(route, { shouldScroll: true });
       });
     }
     props.onClick?.(event);
