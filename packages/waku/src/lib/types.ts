@@ -5,7 +5,11 @@ import type { PathSpec } from '../lib/utils/path.js';
 
 type Elements = Record<string, ReactNode>;
 
-type RenderRsc = (elements: Record<string, unknown>) => Promise<ReadableStream>;
+type RenderRsc<Opts = unknown> = (
+  elements: Record<string, unknown>,
+  options?: Opts,
+) => Promise<ReadableStream>;
+
 type RenderHtml<Opts = unknown> = (
   elements: Elements,
   html: ReactNode,
@@ -39,26 +43,40 @@ export type HandleRequest = (
   },
 ) => Promise<ReadableStream | HandlerRes | null | undefined>;
 
-// This API is still unstable
-export type BuildConfig = {
-  pathSpec: PathSpec;
-  isStatic?: boolean | undefined;
-  entries?: {
-    rscPath: string;
-    skipPrefetch?: boolean | undefined;
-    isStatic?: boolean | undefined;
-  }[];
-  customCode?: string; // optional code to inject TODO hope to remove this
-}[];
+// needs better name (it's not just config)
+type BuildConfig =
+  | {
+      type: 'file';
+      pathname: string;
+      body: Promise<ReadableStream>;
+    }
+  | {
+      type: 'htmlHead';
+      pathSpec: PathSpec;
+      head?: string;
+    }
+  | {
+      type: 'defaultHtml';
+      pathname: string;
+      head?: string;
+    };
 
-type GetBuildConfig = (utils: {
+// This API is still unstable
+export type HandleBuild = (utils: {
+  renderRsc: RenderRsc<{ moduleIdCallback?: (id: string) => void }>;
+  renderHtml: RenderHtml<{ htmlHead?: string }>;
+  rscPath2pathname: (rscPath: string) => string;
+  unstable_generatePrefetchCode: (
+    rscPaths: Iterable<string>,
+    moduleIds: Iterable<string>,
+  ) => string;
   unstable_collectClientModules: (elements: Elements) => Promise<string[]>;
-}) => Promise<BuildConfig>;
+}) => AsyncIterable<BuildConfig> | null;
 
 export type EntriesDev = {
   default: {
     handleRequest: HandleRequest;
-    getBuildConfig: GetBuildConfig;
+    handleBuild: HandleBuild;
   };
 };
 

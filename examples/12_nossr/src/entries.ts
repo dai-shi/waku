@@ -14,7 +14,7 @@ export default defineEntries({
     }
     return router.handleRequest(input, utils);
   },
-  getBuildConfig: (utils) => {
-    return router.getBuildConfig(utils);
+  handleBuild: (utils) => {
+    return router.handleBuild(utils);
   },
 });

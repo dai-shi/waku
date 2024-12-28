@@ -8,18 +8,16 @@ import type { ReactNode } from 'react';
 
 import type { Config } from '../../config.js';
 import { setAllEnvInternal, unstable_getPlatformObject } from '../../server.js';
-import type { BuildConfig, EntriesPrd } from '../types.js';
+import type { EntriesPrd } from '../types.js';
 import type { ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
 import { EXTENSIONS } from '../constants.js';
-import { stringToStream } from '../utils/stream.js';
 import type { PathSpec } from '../utils/path.js';
 import {
   decodeFilePathFromAbsolute,
   extname,
   filePathToFileURL,
   fileURLToFilePath,
-  getPathMapping,
   joinPath,
 } from '../utils/path.js';
 import {
@@ -407,63 +405,82 @@ const buildClientBundle = async (
   return clientBuildOutput;
 };
 
-const pathSpec2pathname = (pathSpec: PathSpec): string => {
-  if (pathSpec.some(({ type }) => type !== 'literal')) {
-    throw new Error(
-      'Cannot convert pathSpec to pathname: ' + JSON.stringify(pathSpec),
-    );
-  }
-  return '/' + pathSpec.map(({ name }) => name!).join('/');
-};
+// TODO: Add progress indication for static builds.
 
-// we write a max of 2500 pages at a time to avoid OOM
-const PATH_SLICE_SIZE = 2500;
-
-// FIXME this is too hacky
-const willEmitPublicIndexHtml = async (
-  distEntries: EntriesPrd,
-  buildConfig: BuildConfig,
-) => {
-  const hasConfig = buildConfig.some(({ pathSpec }) => {
-    return !!getPathMapping(pathSpec, '/');
-  });
-  if (!hasConfig) {
-    return false;
-  }
-  const utils = {
-    renderRsc: async () => {
-      throw new Error('Cannot render RSC in HTML build');
-    },
-    renderHtml: async () => {
-      const body: ReadableStream & { allReady: Promise<void> } =
-        // HACK this might not work in an edge case
-        stringToStream('DUMMY') as never;
-      body.allReady = Promise.resolve();
-      const headers = { 'content-type': 'text/html; charset=utf-8' };
-      return { body, headers };
-    },
+const createTaskRunner = (limit: number) => {
+  let running = 0;
+  const waiting: (() => void)[] = [];
+  const errors: unknown[] = [];
+  const scheduleTask = async (task: () => Promise<void>) => {
+    if (running >= limit) {
+      await new Promise<void>((resolve) => waiting.push(resolve));
+    }
+    running++;
+    try {
+      await task();
+    } catch (err) {
+      errors.push(err);
+    } finally {
+      running--;
+      waiting.shift()?.();
+    }
   };
-  const input = {
-    type: 'custom',
-    pathname: '/',
-    req: {
-      body: null,
-      url: new URL('http://localhost/'),
-      method: 'GET',
-      headers: {},
-    },
-  } as const;
-  const res = await distEntries.default.handleRequest(input, utils);
-  return !!res;
+  const runTask = (task: () => Promise<void>) => {
+    scheduleTask(task).catch(() => {});
+  };
+  const waitForTasks = async () => {
+    if (running > 0) {
+      await new Promise<void>((resolve) => waiting.push(resolve));
+      await waitForTasks();
+    }
+    if (errors.length > 0) {
+      console.error('Errors occurred during running tasks:', errors);
+      throw errors[0];
+    }
+  };
+  return { runTask, waitForTasks };
+};
+const WRITE_FILE_BATCH_SIZE = 2500;
+const { runTask, waitForTasks } = createTaskRunner(WRITE_FILE_BATCH_SIZE);
+
+const emitStaticFile = (
+  rootDir: string,
+  config: ResolvedConfig,
+  pathname: string,
+  body: Promise<ReadableStream> | string,
+) => {
+  const destFile = joinPath(
+    rootDir,
+    config.distDir,
+    DIST_PUBLIC,
+    extname(pathname)
+      ? pathname
+      : pathname === '/404'
+        ? '404.html' // HACK special treatment for 404, better way?
+        : pathname + '/index.html',
+  );
+  // In partial mode, skip if the file already exists.
+  if (existsSync(destFile)) {
+    return;
+  }
+  runTask(async () => {
+    await mkdir(joinPath(destFile, '..'), { recursive: true });
+    if (typeof body === 'string') {
+      await writeFile(destFile, body);
+    } else {
+      await pipeline(
+        Readable.fromWeb((await body) as never),
+        createWriteStream(destFile),
+      );
+    }
+  });
 };
 
-// TODO too long... we need to refactor and organize this function
 const emitStaticFiles = async (
   rootDir: string,
   config: ResolvedConfig,
   distEntriesFile: string,
   distEntries: EntriesPrd,
-  buildConfig: BuildConfig,
   cssAssets: string[],
 ) => {
   const unstable_modules = {
@@ -474,7 +491,6 @@ const emitStaticFiles = async (
       CLIENT_PREFIX + 'waku-minimal-client',
     ),
   };
-  const basePrefix = config.basePath + config.rscBase + '/';
   const publicIndexHtmlFile = joinPath(
     rootDir,
     config.distDir,
@@ -484,173 +500,91 @@ const emitStaticFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  if (await willEmitPublicIndexHtml(distEntries, buildConfig)) {
-    await unlink(publicIndexHtmlFile);
-  }
   const publicIndexHtmlHead = publicIndexHtml.replace(
     /.*?<head>(.*?)<\/head>.*/s,
     '$1',
   );
-  const dynamicHtmlPathMap = new Map<PathSpec, string>();
-  const handlePath = async ({
-    pathSpec,
-    isStatic,
-    entries,
-    customCode,
-  }: BuildConfig[number]) => {
-    const moduleIdsForPrefetch = new Set<string>();
-    for (const { rscPath, isStatic } of entries || []) {
-      if (!isStatic) {
-        continue;
-      }
-      const destRscFile = joinPath(
-        rootDir,
-        config.distDir,
-        DIST_PUBLIC,
-        config.rscBase,
-        encodeRscPath(rscPath),
-      );
-      // Skip if the file already exists.
-      if (existsSync(destRscFile)) {
-        continue;
-      }
-      await mkdir(joinPath(destRscFile, '..'), { recursive: true });
-      const utils = {
-        renderRsc: (elements: Record<string, unknown>) =>
-          renderRsc(config, { unstable_modules }, elements, (id) =>
-            moduleIdsForPrefetch.add(id),
-          ),
-        renderHtml: () => {
-          throw new Error('Cannot render HTML in RSC build');
-        },
-      };
-      const input = {
-        type: 'component',
-        rscPath,
-        rscParams: undefined,
-        req: {
-          body: null,
-          url: new URL(
-            'http://localhost/' + config.rscBase + '/' + encodeRscPath(rscPath),
-          ),
-          method: 'GET',
-          headers: {},
-        },
-      } as const;
-      const res = await distEntries.default.handleRequest(input, utils);
-      const rscReadable = res instanceof ReadableStream ? res : res?.body;
-      await pipeline(
-        Readable.fromWeb(rscReadable as never),
-        createWriteStream(destRscFile),
-      );
-    }
-    let htmlStr = publicIndexHtml;
-    let htmlHead = publicIndexHtmlHead;
-    if (cssAssets.length) {
-      const cssStr = cssAssets
-        .map(
-          (asset) =>
-            `<link rel="stylesheet" href="${config.basePath}${asset}">`,
-        )
-        .join('\n');
-      // HACK is this too naive to inject style code?
-      htmlStr = htmlStr.replace(/<\/head>/, cssStr);
-      htmlHead += cssStr;
-    }
-    const rscPathsForPrefetch = new Set<string>();
-    for (const { rscPath, skipPrefetch } of entries || []) {
-      if (!skipPrefetch) {
-        rscPathsForPrefetch.add(rscPath);
-      }
-    }
-    const code =
-      generatePrefetchCode(
-        basePrefix,
-        rscPathsForPrefetch,
-        moduleIdsForPrefetch,
-      ) + (customCode || '');
-    if (code) {
-      // HACK is this too naive to inject script code?
-      htmlStr = htmlStr.replace(
-        /<\/head>/,
-        `<script type="module" async>${code}</script></head>`,
-      );
-      htmlHead += `<script type="module" async>${code}</script>`;
-    }
-    if (!isStatic) {
-      const lastPathSpecItem = pathSpec.at(-1);
-      const ext =
-        lastPathSpecItem?.type === 'literal' && extname(lastPathSpecItem.name);
-      if (!ext || ext === '.html') {
-        // HACK doesn't feel ideal
-        dynamicHtmlPathMap.set(pathSpec, htmlHead);
-      }
-      return;
-    }
-    const pathname = pathSpec2pathname(pathSpec);
-    const destFile = joinPath(
-      rootDir,
-      config.distDir,
-      DIST_PUBLIC,
-      extname(pathname)
-        ? pathname
-        : pathname === '/404'
-          ? '404.html' // HACK special treatment for 404, better way?
-          : pathname + '/index.html',
-    );
-    // In partial mode, skip if the file already exists.
-    if (existsSync(destFile)) {
-      return;
-    }
-    const utils = {
-      renderRsc: (elements: Record<string, unknown>) =>
-        renderRsc(config, { unstable_modules }, elements),
-      renderHtml: async (
-        elements: Record<string, ReactNode>,
-        html: ReactNode,
-        options: { rscPath: string },
-      ) => {
-        const body = await renderHtml(
-          config,
-          { unstable_modules },
-          htmlHead,
-          elements,
-          html,
-          options.rscPath,
-        );
-        await body.allReady; // always wait for all contents for static files
-        const headers = { 'content-type': 'text/html; charset=utf-8' };
-        return { body, headers };
+  const cssStr = cssAssets
+    .map((asset) => `<link rel="stylesheet" href="${config.basePath}${asset}">`)
+    .join('\n');
+  const defaultHtmlStr = publicIndexHtml
+    // HACK is this too naive to inject style code?
+    .replace(/<\/head>/, cssStr + '</head>');
+  const defaultHtmlHead = publicIndexHtmlHead + cssStr;
+  const baseRscPrefix = config.basePath + config.rscBase + '/';
+  const utils = {
+    renderRsc: (
+      elements: Record<string, unknown>,
+      options?: {
+        moduleIdCallback?: (id: string) => void;
       },
-    };
-    const input = {
-      type: 'custom',
-      pathname,
-      req: {
-        body: null,
-        url: new URL('http://localhost' + pathname),
-        method: 'GET',
-        headers: {},
-      },
-    } as const;
-    const res = await distEntries.default.handleRequest(input, utils);
-    const readable = res instanceof ReadableStream ? res : res?.body;
-    await mkdir(joinPath(destFile, '..'), { recursive: true });
-    if (readable) {
-      await pipeline(
-        Readable.fromWeb(readable as never),
-        createWriteStream(destFile),
+    ) =>
+      renderRsc(
+        config,
+        { unstable_modules },
+        elements,
+        options?.moduleIdCallback,
+      ),
+    renderHtml: async (
+      elements: Record<string, ReactNode>,
+      html: ReactNode,
+      options: { rscPath: string; htmlHead?: string },
+    ) => {
+      const body = await renderHtml(
+        config,
+        { unstable_modules },
+        defaultHtmlHead + (options.htmlHead || ''),
+        elements,
+        html,
+        options.rscPath,
       );
-    } else if (destFile.endsWith('.html')) {
-      await writeFile(destFile, htmlStr);
-    }
+      const headers = { 'content-type': 'text/html; charset=utf-8' };
+      return { body, headers };
+    },
+    rscPath2pathname: (rscPath: string) =>
+      joinPath(config.rscBase, encodeRscPath(rscPath)),
+    unstable_generatePrefetchCode: (
+      rscPaths: Iterable<string>,
+      moduleIds: Iterable<string>,
+    ) => generatePrefetchCode(baseRscPrefix, rscPaths, moduleIds),
+    unstable_collectClientModules: (elements: Record<string, unknown>) =>
+      collectClientModules(
+        config,
+        unstable_modules.rsdwServer as never,
+        elements,
+      ),
   };
-
-  for (let start = 0; start * PATH_SLICE_SIZE < buildConfig.length; start++) {
-    const end = start * PATH_SLICE_SIZE + PATH_SLICE_SIZE;
-    await Promise.all(buildConfig.slice(start, end).map(handlePath));
+  const dynamicHtmlPathMap = new Map<PathSpec, string>();
+  const buildConfigs = distEntries.default.handleBuild(utils);
+  if (buildConfigs) {
+    await unlink(publicIndexHtmlFile);
   }
-
+  for await (const buildConfig of buildConfigs || []) {
+    switch (buildConfig.type) {
+      case 'file':
+        emitStaticFile(rootDir, config, buildConfig.pathname, buildConfig.body);
+        break;
+      case 'htmlHead':
+        dynamicHtmlPathMap.set(
+          buildConfig.pathSpec,
+          defaultHtmlHead + (buildConfig.head || ''),
+        );
+        break;
+      case 'defaultHtml':
+        emitStaticFile(
+          rootDir,
+          config,
+          buildConfig.pathname,
+          // HACK is this too naive to inject script code?
+          defaultHtmlStr.replace(
+            /<\/head>/,
+            (buildConfig.head || '') + '</head>',
+          ),
+        );
+        break;
+    }
+  }
+  await waitForTasks();
   const dynamicHtmlPaths = Array.from(dynamicHtmlPathMap);
   const code = `
 export const dynamicHtmlPaths = ${JSON.stringify(dynamicHtmlPaths)};
@@ -770,13 +704,7 @@ export async function build(options: {
     filePathToFileURL(distEntriesFile)
   );
 
-  // TODO: Add progress indication for static builds.
-  const rsdwServer = await distEntries.loadModule('rsdw-server'); // FIXME hard-coded id
   setAllEnvInternal(env);
-  const buildConfig = await distEntries.default.getBuildConfig({
-    unstable_collectClientModules: (elements: Record<string, unknown>) =>
-      collectClientModules(config, rsdwServer as never, elements),
-  });
   const cssAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
@@ -785,7 +713,6 @@ export async function build(options: {
     config,
     distEntriesFile,
     distEntries,
-    buildConfig,
     cssAssets,
   );
 
