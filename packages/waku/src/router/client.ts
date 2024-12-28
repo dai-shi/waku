@@ -89,8 +89,8 @@ const createRscParams = (query: string): URLSearchParams => {
 
 type ChangeRoute = (
   route: RouteProps,
-  options?: {
-    shouldScroll?: boolean;
+  options: {
+    shouldScroll: boolean;
     skipRefetch?: boolean;
   },
 ) => void;
@@ -332,10 +332,7 @@ const InnerRouter = ({
     });
   }, [initialRoute]);
 
-  const handleScroll = useCallback((shouldScroll = true) => {
-    if (!shouldScroll) {
-      return;
-    }
+  const handleScroll = useCallback(() => {
     const { hash } = window.location;
     const { state } = window.history;
     const element = hash && document.getElementById(hash.slice(1));
@@ -355,7 +352,9 @@ const InnerRouter = ({
           const rscParams = createRscParams(route.query);
           refetch(rscPath, rscParams);
         }
-        handleScroll(options?.shouldScroll);
+        if (options.shouldScroll) {
+          handleScroll();
+        }
         setRoute(route);
       });
     },
@@ -378,7 +377,7 @@ const InnerRouter = ({
   useEffect(() => {
     const callback = () => {
       const route = parseRoute(new URL(window.location.href));
-      changeRoute(route);
+      changeRoute(route, { shouldScroll: true });
     };
     window.addEventListener('popstate', callback);
     return () => {
