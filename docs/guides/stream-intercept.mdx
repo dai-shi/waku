@@ -60,9 +60,9 @@ In your `waku.config.ts` file, import the middleware and add it to the `middlewa
 
 ```ts
 import streamInterceptor from './src/middleware/stream-interceptor';
+import { defineConfig } from 'waku/config';
 
-/** @type {import('waku/config').Config} */
-export default {
+export default defineConfig({
   // ...
   middleware: () => [
     import('waku/middleware/context'),
@@ -70,7 +70,7 @@ export default {
     import('waku/middleware/dev-server'),
     import('waku/middleware/handler'),
   ],
-};
+});
 ```
 
 ### Step 3: Restart the server
