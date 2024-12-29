@@ -5,6 +5,7 @@ import type { Plugin } from 'vite';
 
 import { SRC_ENTRIES } from '../constants.js';
 import { extname, joinPath } from '../utils/path.js';
+import { treeshake } from '../utils/treeshake.js';
 
 const stripExt = (fname: string) => {
   const ext = extname(fname);
@@ -38,13 +39,6 @@ globalThis.__WAKU_CLIENT_IMPORT__ = (id) => loadModule('${opts.ssrDir}/' + id);
   return {
     name: 'rsc-entries-plugin',
     configResolved(config) {
-      config.build.rollupOptions.treeshake = {
-        ...(typeof config.build.rollupOptions.treeshake === 'object'
-          ? config.build.rollupOptions.treeshake
-          : {}),
-        // FIXME naive way to remove imports with unstable_viteConfigs.
-        moduleSideEffects: 'no-external',
-      };
       entriesFile = joinPath(config.root, opts.srcDir, SRC_ENTRIES);
       if (existsSync(CONFIG_FILE)) {
         configFile = normalizePath(path.resolve(CONFIG_FILE));
@@ -68,10 +62,12 @@ export const loadConfig = async () => ({});
         return code + codeToAppend;
       }
       if (id === configFile) {
-        // FIXME we should parse code and process the AST properly
-        return code.replace(
-          /unstable_viteConfigs: {[^}]+}/,
-          'unstable_viteConfigs: {}',
+        return treeshake(
+          // FIXME we should parse code and process the AST properly
+          code.replace(
+            /unstable_viteConfigs: {[^}]+}/,
+            'unstable_viteConfigs: {}',
+          ),
         );
       }
     },

@@ -14,7 +14,7 @@ export function foo() {
       "import { fileURLToPath } from 'node:url';
 
       function foo() {
-        console.log(fileURLToPath(new URL('.', import.meta.url)));
+          console.log(fileURLToPath(new URL('.', import.meta.url)));
       }
 
       export { foo };
@@ -34,7 +34,7 @@ export function foo() {
       "import { bar } from 'something-unknown';
 
       function foo() {
-        bar();
+          bar();
       }
 
       export { foo };
@@ -52,7 +52,27 @@ export function foo() {
 `;
     expect(await treeshake(code)).toMatchInlineSnapshot(`
       "function foo() {
-        // bar();
+      // bar();
+      }
+
+      export { foo };
+      "
+    `);
+  });
+
+  it('should work with types', async () => {
+    const code = `
+import { bar } from 'something';
+
+export function foo(str: string) {
+  bar(str);
+}
+`;
+    expect(await treeshake(code)).toMatchInlineSnapshot(`
+      "import { bar } from 'something';
+
+      function foo(str) {
+          bar(str);
       }
 
       export { foo };
