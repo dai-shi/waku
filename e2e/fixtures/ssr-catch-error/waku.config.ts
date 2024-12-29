@@ -12,7 +12,7 @@ export default {
    */
   rscBase: 'RSC', // Just for clarification in tests
   unstable_viteConfigs: {
-    'common': () => ({
+    common: () => ({
       ssr: {
         resolve: {
           // FIXME Ideally, we shouldn't need this.
