@@ -334,7 +334,7 @@ const buildSsrBundle = async (
         base: config.basePath,
         plugins: [
           rscRsdwPlugin(),
-          rscIndexPlugin({ ...config, cssAssets, }),
+          rscIndexPlugin({ ...config, cssAssets }),
           rscEnvPlugin({ isDev: false, env, config }),
           rscPrivatePlugin(config),
           rscManagedPlugin({ ...config, addMainToInput: true }),
