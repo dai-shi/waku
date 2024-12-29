@@ -5,7 +5,7 @@ import type { Plugin } from 'vite';
 
 import { SRC_ENTRIES } from '../constants.js';
 import { extname, joinPath } from '../utils/path.js';
-import { treeshake } from '../utils/treeshake.js';
+import { treeshake, removeObjectProperty } from '../utils/treeshake.js';
 
 const stripExt = (fname: string) => {
   const ext = extname(fname);
@@ -62,13 +62,8 @@ export const loadConfig = async () => ({});
         return code + codeToAppend;
       }
       if (id === configFile) {
-        return treeshake(
-          // FIXME we should parse code and process the AST properly
-          code.replace(
-            /unstable_viteConfigs: {[^}]+}/,
-            'unstable_viteConfigs: {}',
-          ),
-        );
+        // FIXME this naively removes code with object key name
+        return treeshake(code, removeObjectProperty('unstable_viteConfigs'));
       }
     },
   };

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { treeshake } from '../src/lib/utils/treeshake.js';
+import { treeshake, removeObjectProperty } from '../src/lib/utils/treeshake.js';
 
 describe('treeshake', () => {
   it('should emit the original code', async () => {
@@ -51,9 +51,7 @@ export function foo() {
 }
 `;
     expect(await treeshake(code)).toMatchInlineSnapshot(`
-      "function foo() {
-      // bar();
-      }
+      "function foo() {}
 
       export { foo };
       "
@@ -73,6 +71,30 @@ export function foo(str: string) {
 
       function foo(str) {
           bar(str);
+      }
+
+      export { foo };
+      "
+    `);
+  });
+});
+
+describe('treeshake with modification', () => {
+  it('should remove a property', async () => {
+    const code = `
+export function foo() {
+  return {
+    foo: 1,
+    toRemove: 2,
+  }
+}
+`;
+    expect(await treeshake(code, removeObjectProperty('toRemove')))
+      .toMatchInlineSnapshot(`
+      "function foo() {
+          return {
+              foo: 1
+          };
       }
 
       export { foo };

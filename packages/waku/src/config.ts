@@ -54,12 +54,13 @@ export interface Config {
     | (<Hono>(createApp: (app: Hono) => Hono) => (app: Hono) => Hono)
     | undefined;
   /**
-   * Vite configs
-   * Defaults to `undefined`
+   * Vite configuration options.
+   * `common` can contains shared configs that are shallowly merged with other configs.
+   * Defaults to `undefined` if not provided.
    */
   unstable_viteConfigs?:
     | {
-        'common'?: () => UserConfig;
+        common?: () => UserConfig;
         'dev-main'?: () => UserConfig;
         'dev-rsc'?: () => UserConfig;
         'build-analyze'?: () => UserConfig;
