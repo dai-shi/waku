@@ -59,6 +59,7 @@ export interface Config {
    */
   unstable_viteConfigs?:
     | {
+        'common'?: () => UserConfig;
         'dev-main'?: () => UserConfig;
         'dev-rsc'?: () => UserConfig;
         'build-analyze'?: () => UserConfig;

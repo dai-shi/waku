@@ -133,7 +133,10 @@ const createMainViteServer = (
           appType: 'mpa',
           server: { middlewareMode: true },
         },
-        config.unstable_viteConfigs?.['dev-main']?.() || {},
+        {
+          ...config.unstable_viteConfigs?.['common']?.(),
+          ...config.unstable_viteConfigs?.['dev-main']?.(),
+        },
       ),
     );
     registerHotUpdateCallback((payload) => hotUpdate(vite, payload));
@@ -275,7 +278,10 @@ const createRscViteServer = (
           appType: 'custom',
           server: { middlewareMode: true, hmr: { server: dummyServer } },
         },
-        config.unstable_viteConfigs?.['dev-rsc']?.() || {},
+        {
+          ...config.unstable_viteConfigs?.['common']?.(),
+          ...config.unstable_viteConfigs?.['dev-rsc']?.(),
+        },
       ),
     );
     return vite;

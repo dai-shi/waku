@@ -154,7 +154,10 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
           },
         },
       },
-      config.unstable_viteConfigs?.['build-analyze']?.() || {},
+      {
+        ...config.unstable_viteConfigs?.['common']?.(),
+        ...config.unstable_viteConfigs?.['build-analyze']?.(),
+      },
     ),
   );
   const clientEntryFiles = Object.fromEntries(
@@ -185,7 +188,10 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
           },
         },
       },
-      config.unstable_viteConfigs?.['build-analyze']?.() || {},
+      {
+        ...config.unstable_viteConfigs?.['common']?.(),
+        ...config.unstable_viteConfigs?.['build-analyze']?.(),
+      },
     ),
   );
   const serverEntryFiles = Object.fromEntries(
@@ -293,7 +299,10 @@ const buildServerBundle = async (
           },
         },
       },
-      config.unstable_viteConfigs?.['build-server']?.() || {},
+      {
+        ...config.unstable_viteConfigs?.['common']?.(),
+        ...config.unstable_viteConfigs?.['build-server']?.(),
+      },
     ),
   );
   if (!('output' in serverBuildOutput)) {
@@ -372,7 +381,10 @@ const buildSsrBundle = async (
           },
         },
       },
-      config.unstable_viteConfigs?.['build-ssr']?.() || {},
+      {
+        ...config.unstable_viteConfigs?.['common']?.(),
+        ...config.unstable_viteConfigs?.['build-ssr']?.(),
+      },
     ),
   );
 };
@@ -431,7 +443,10 @@ const buildClientBundle = async (
           },
         },
       },
-      config.unstable_viteConfigs?.['build-client']?.() || {},
+      {
+        ...config.unstable_viteConfigs?.['common']?.(),
+        ...config.unstable_viteConfigs?.['build-client']?.(),
+      },
     ),
   );
   if (!('output' in clientBuildOutput)) {
