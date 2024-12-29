@@ -20,9 +20,9 @@
   "devDependencies": {
     "@types/react": "19.0.2",
     "@types/react-dom": "19.0.2",
-    "@vanilla-extract/vite-plugin": "4.0.18",
+    "@vanilla-extract/vite-plugin": "4.0.19",
     "typescript": "5.7.2",
     "vite": "6.0.6",
-    "vite-plugin-stylex": "0.13.0"
+    "vite-plugin-stylex-dev": "0.7.5"
   }
 }

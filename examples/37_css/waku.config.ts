@@ -1,13 +1,13 @@
 import { defineConfig } from 'waku/config';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
-import stylexPlugin from 'vite-plugin-stylex';
+import { stylex } from 'vite-plugin-stylex-dev';
 
 export default defineConfig({
   unstable_viteConfigs: {
     common: () => ({
       plugins: [
         {
-          name: 'hack-css-plugin-needed-for-stylex-FIXME',
+          name: 'hack-css-plugin-needed-for-stylex-dev-FIXME',
           resolveId(id: string) {
             if (id.endsWith('.css') && !id.endsWith('.vanilla.css')) {
               return id;
@@ -15,7 +15,7 @@ export default defineConfig({
           },
         },
         vanillaExtractPlugin(),
-        stylexPlugin() as any, // FIXME no-any
+        stylex(),
       ],
     }),
   },
