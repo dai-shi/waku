@@ -22,7 +22,7 @@ export function rscEntriesPlugin(opts: {
   const codeToPrepend = `
 globalThis.AsyncLocalStorage = require('node:async_hooks').AsyncLocalStorage;
 `;
-  let codeToAppend = `
+  const codeToAppend = `
 export function loadModule(id) {
   switch (id) {
     ${Object.entries(opts.moduleMap)
@@ -42,13 +42,6 @@ globalThis.__WAKU_CLIENT_IMPORT__ = (id) => loadModule('${opts.ssrDir}/' + id);
       entriesFile = joinPath(config.root, opts.srcDir, SRC_ENTRIES);
       if (existsSync(CONFIG_FILE)) {
         configFile = normalizePath(path.resolve(CONFIG_FILE));
-        codeToAppend += `
-export const loadConfig = async () => (await import('${configFile}')).default;
-`;
-      } else {
-        codeToAppend += `
-export const loadConfig = async () => ({});
-`;
       }
     },
     transform(code, id) {
@@ -59,7 +52,17 @@ export const loadConfig = async () => ({});
         return codeToPrepend + code;
       }
       if (stripExt(id).endsWith(entriesFile)) {
-        return code + codeToAppend;
+        return (
+          code +
+          codeToAppend +
+          (configFile
+            ? `
+export const loadConfig = async () => (await import('${configFile}')).default;
+`
+            : `
+export const loadConfig = async () => ({});
+`)
+        );
       }
       if (id === configFile) {
         // FIXME this naively removes code with object key name
