@@ -112,23 +112,25 @@ export function useRouter_UNSTABLE() {
   const push = useCallback(
     (to: InferredPaths) => {
       const url = new URL(to, window.location.href);
+      const newPath = url.pathname !== window.location.pathname;
       window.history.pushState(
         {
           ...window.history.state,
-          waku_new_path: url.pathname !== window.location.pathname,
+          waku_new_path: newPath,
         },
         '',
         url,
       );
-      changeRoute(parseRoute(url), { shouldScroll: false });
+      changeRoute(parseRoute(url), { shouldScroll: newPath });
     },
     [changeRoute],
   );
   const replace = useCallback(
     (to: InferredPaths) => {
       const url = new URL(to, window.location.href);
+      const newPath = url.pathname !== window.location.pathname;
       window.history.replaceState(window.history.state, '', url);
-      changeRoute(parseRoute(url), { shouldScroll: false });
+      changeRoute(parseRoute(url), { shouldScroll: newPath });
     },
     [changeRoute],
   );
