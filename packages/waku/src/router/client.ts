@@ -89,8 +89,8 @@ const createRscParams = (query: string): URLSearchParams => {
 
 type ChangeRoute = (
   route: RouteProps,
-  options?: {
-    checkCache?: boolean;
+  options: {
+    shouldScroll: boolean;
     skipRefetch?: boolean;
   },
 ) => void;
@@ -112,29 +112,31 @@ export function useRouter_UNSTABLE() {
   const push = useCallback(
     (to: InferredPaths) => {
       const url = new URL(to, window.location.href);
+      const newPath = url.pathname !== window.location.pathname;
       window.history.pushState(
         {
           ...window.history.state,
-          waku_new_path: url.pathname !== window.location.pathname,
+          waku_new_path: newPath,
         },
         '',
         url,
       );
-      changeRoute(parseRoute(url));
+      changeRoute(parseRoute(url), { shouldScroll: newPath });
     },
     [changeRoute],
   );
   const replace = useCallback(
     (to: InferredPaths) => {
       const url = new URL(to, window.location.href);
+      const newPath = url.pathname !== window.location.pathname;
       window.history.replaceState(window.history.state, '', url);
-      changeRoute(parseRoute(url));
+      changeRoute(parseRoute(url), { shouldScroll: newPath });
     },
     [changeRoute],
   );
   const reload = useCallback(() => {
     const url = new URL(window.location.href);
-    changeRoute(parseRoute(url));
+    changeRoute(parseRoute(url), { shouldScroll: true });
   }, [changeRoute]);
   const back = useCallback(() => {
     // FIXME is this correct?
@@ -233,7 +235,7 @@ export function Link({
           '',
           url,
         );
-        changeRoute(route);
+        changeRoute(route, { shouldScroll: true });
       });
     }
     props.onClick?.(event);
@@ -299,19 +301,18 @@ class ErrorBoundary extends Component<
   }
 }
 
-// -----------------------------------------------------
-// For unstable_defineRouter
-// Eventually replaces Router and so on
-// -----------------------------------------------------
-
-type NewChangeRoute = (
-  route: RouteProps,
-  options?: {
-    skipRefetch?: boolean;
-  },
-) => void;
-
 const getRouteSlotId = (path: string) => 'route:' + path;
+
+const handleScroll = () => {
+  const { hash } = window.location;
+  const { state } = window.history;
+  const element = hash && document.getElementById(hash.slice(1));
+  window.scrollTo({
+    left: 0,
+    top: element ? element.getBoundingClientRect().top + window.scrollY : 0,
+    behavior: state?.waku_new_path ? 'instant' : 'auto',
+  });
+};
 
 const InnerRouter = ({
   routerData,
@@ -344,7 +345,7 @@ const InnerRouter = ({
     });
   }, [initialRoute]);
 
-  const changeRoute: NewChangeRoute = useCallback(
+  const changeRoute: ChangeRoute = useCallback(
     (route, options) => {
       const { skipRefetch } = options || {};
       startTransition(() => {
@@ -352,6 +353,9 @@ const InnerRouter = ({
           const rscPath = encodeRoutePath(route.path);
           const rscParams = createRscParams(route.query);
           refetch(rscPath, rscParams);
+        }
+        if (options.shouldScroll) {
+          handleScroll();
         }
         setRoute(route);
       });
@@ -375,7 +379,7 @@ const InnerRouter = ({
   useEffect(() => {
     const callback = () => {
       const route = parseRoute(new URL(window.location.href));
-      changeRoute(route);
+      changeRoute(route, { shouldScroll: true });
     };
     window.addEventListener('popstate', callback);
     return () => {
@@ -399,24 +403,13 @@ const InnerRouter = ({
           url,
         );
       }
-      changeRoute(parseRoute(url), { skipRefetch: true });
+      changeRoute(parseRoute(url), { skipRefetch: true, shouldScroll: false });
     };
     locationListeners.add(callback);
     return () => {
       locationListeners.delete(callback);
     };
   }, [changeRoute, locationListeners]);
-
-  useEffect(() => {
-    const { hash } = window.location;
-    const { state } = window.history;
-    const element = hash && document.getElementById(hash.slice(1));
-    window.scrollTo({
-      left: 0,
-      top: element ? element.getBoundingClientRect().top + window.scrollY : 0,
-      behavior: state?.waku_new_path ? 'instant' : 'auto',
-    });
-  });
 
   const routeElement = createElement(Slot, {
     id: getRouteSlotId(route.path),
