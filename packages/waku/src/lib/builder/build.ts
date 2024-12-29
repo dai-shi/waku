@@ -126,6 +126,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   await buildVite(
     mergeViteConfig(
       {
+        mode: 'production',
         plugins: [
           rscAnalyzePlugin({
             isClient: false,
@@ -169,6 +170,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   await buildVite(
     mergeViteConfig(
       {
+        mode: 'production',
         plugins: [
           rscAnalyzePlugin({ isClient: true, serverFileSet }),
           rscManagedPlugin(config),
@@ -221,6 +223,7 @@ const buildServerBundle = async (
   const serverBuildOutput = await buildVite(
     mergeViteConfig(
       {
+        mode: 'production',
         plugins: [
           nonjsResolvePlugin(),
           rscTransformPlugin({
@@ -327,13 +330,11 @@ const buildSsrBundle = async (
   await buildVite(
     mergeViteConfig(
       {
+        mode: 'production',
         base: config.basePath,
         plugins: [
           rscRsdwPlugin(),
-          rscIndexPlugin({
-            ...config,
-            cssAssets,
-          }),
+          rscIndexPlugin({ ...config, cssAssets, }),
           rscEnvPlugin({ isDev: false, env, config }),
           rscPrivatePlugin(config),
           rscManagedPlugin({ ...config, addMainToInput: true }),
@@ -406,14 +407,12 @@ const buildClientBundle = async (
   const clientBuildOutput = await buildVite(
     mergeViteConfig(
       {
+        mode: 'production',
         base: config.basePath,
         plugins: [
           viteReact(),
           rscRsdwPlugin(),
-          rscIndexPlugin({
-            ...config,
-            cssAssets,
-          }),
+          rscIndexPlugin({ ...config, cssAssets }),
           rscEnvPlugin({ isDev: false, env, config }),
           rscPrivatePlugin(config),
           rscManagedPlugin({ ...config, addMainToInput: true }),
