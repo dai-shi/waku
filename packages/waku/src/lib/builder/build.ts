@@ -1,11 +1,7 @@
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
-import {
-  build as buildVite,
-  resolveConfig as resolveViteConfig,
-  mergeConfig as mergeViteConfig,
-} from 'vite';
+import { build as buildVite, resolveConfig as resolveViteConfig } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { LoggingFunction, RollupLog } from 'rollup';
 import type { ReactNode } from 'react';
@@ -24,6 +20,7 @@ import {
   fileURLToFilePath,
   joinPath,
 } from '../utils/path.js';
+import { extendViteConfig } from '../utils/vite-config.js';
 import {
   appendFile,
   createWriteStream,
@@ -124,7 +121,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
     }
   }
   await buildVite(
-    mergeViteConfig(
+    extendViteConfig(
       {
         mode: 'production',
         plugins: [
@@ -155,10 +152,8 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
           },
         },
       },
-      {
-        ...config.unstable_viteConfigs?.['common']?.(),
-        ...config.unstable_viteConfigs?.['build-analyze']?.(),
-      },
+      config,
+      'build-analyze',
     ),
   );
   const clientEntryFiles = Object.fromEntries(
@@ -168,7 +163,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
     ]),
   );
   await buildVite(
-    mergeViteConfig(
+    extendViteConfig(
       {
         mode: 'production',
         plugins: [
@@ -190,10 +185,8 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
           },
         },
       },
-      {
-        ...config.unstable_viteConfigs?.['common']?.(),
-        ...config.unstable_viteConfigs?.['build-analyze']?.(),
-      },
+      config,
+      'build-analyze',
     ),
   );
   const serverEntryFiles = Object.fromEntries(
@@ -221,7 +214,7 @@ const buildServerBundle = async (
   partial: boolean,
 ) => {
   const serverBuildOutput = await buildVite(
-    mergeViteConfig(
+    extendViteConfig(
       {
         mode: 'production',
         plugins: [
@@ -302,10 +295,8 @@ const buildServerBundle = async (
           },
         },
       },
-      {
-        ...config.unstable_viteConfigs?.['common']?.(),
-        ...config.unstable_viteConfigs?.['build-server']?.(),
-      },
+      config,
+      'build-server',
     ),
   );
   if (!('output' in serverBuildOutput)) {
@@ -328,7 +319,7 @@ const buildSsrBundle = async (
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
   await buildVite(
-    mergeViteConfig(
+    extendViteConfig(
       {
         mode: 'production',
         base: config.basePath,
@@ -382,10 +373,8 @@ const buildSsrBundle = async (
           },
         },
       },
-      {
-        ...config.unstable_viteConfigs?.['common']?.(),
-        ...config.unstable_viteConfigs?.['build-ssr']?.(),
-      },
+      config,
+      'build-ssr',
     ),
   );
 };
@@ -405,7 +394,7 @@ const buildClientBundle = async (
   );
   const cssAssets = nonJsAssets.filter((asset) => asset.endsWith('.css'));
   const clientBuildOutput = await buildVite(
-    mergeViteConfig(
+    extendViteConfig(
       {
         mode: 'production',
         base: config.basePath,
@@ -442,10 +431,8 @@ const buildClientBundle = async (
           },
         },
       },
-      {
-        ...config.unstable_viteConfigs?.['common']?.(),
-        ...config.unstable_viteConfigs?.['build-client']?.(),
-      },
+      config,
+      'build-client',
     ),
   );
   if (!('output' in clientBuildOutput)) {

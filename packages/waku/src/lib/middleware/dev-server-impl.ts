@@ -1,10 +1,7 @@
 import { Readable, Writable } from 'node:stream';
 import { Server } from 'node:http';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import {
-  createServer as createViteServer,
-  mergeConfig as mergeViteConfig,
-} from 'vite';
+import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../types.js';
@@ -15,6 +12,7 @@ import {
   fileURLToFilePath,
   filePathToFileURL,
 } from '../utils/path.js';
+import { extendViteConfig } from '../utils/vite-config.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { devCommonJsPlugin } from '../plugins/vite-plugin-dev-commonjs.js';
@@ -87,7 +85,7 @@ const createMainViteServer = (
 ) => {
   const vitePromise = configPromise.then(async (config) => {
     const vite = await createViteServer(
-      mergeViteConfig(
+      extendViteConfig(
         {
           // Since we have multiple instances of vite, different ones might overwrite the others' cache.
           cacheDir: 'node_modules/.vite/waku-dev-server-main',
@@ -133,10 +131,8 @@ const createMainViteServer = (
           appType: 'mpa',
           server: { middlewareMode: true },
         },
-        {
-          ...config.unstable_viteConfigs?.['common']?.(),
-          ...config.unstable_viteConfigs?.['dev-main']?.(),
-        },
+        config,
+        'dev-main',
       ),
     );
     registerHotUpdateCallback((payload) => hotUpdate(vite, payload));
@@ -232,7 +228,7 @@ const createRscViteServer = (
 
   const vitePromise = configPromise.then(async (config) => {
     const vite = await createViteServer(
-      mergeViteConfig(
+      extendViteConfig(
         {
           // Since we have multiple instances of vite, different ones might overwrite the others' cache.
           cacheDir: 'node_modules/.vite/waku-dev-server-rsc',
@@ -278,10 +274,8 @@ const createRscViteServer = (
           appType: 'custom',
           server: { middlewareMode: true, hmr: { server: dummyServer } },
         },
-        {
-          ...config.unstable_viteConfigs?.['common']?.(),
-          ...config.unstable_viteConfigs?.['dev-rsc']?.(),
-        },
+        config,
+        'dev-rsc',
       ),
     );
     return vite;
