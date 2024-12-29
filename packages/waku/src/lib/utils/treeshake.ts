@@ -14,7 +14,7 @@ export const treeshake = async (
   }).code;
 
   const bundle = await rollup({
-    input: 'code.js',
+    input: '\0code',
     external: () => true,
     onwarn: (warning, defaultHandler) => {
       if (warning.code === 'UNUSED_EXTERNAL_IMPORT') {
@@ -29,13 +29,18 @@ export const treeshake = async (
       {
         name: 'treeshake',
         resolveId(id) {
-          if (id === 'code.js') {
-            return '\0code';
+          if (id === '\0code') {
+            return id;
           }
         },
         load(id) {
           if (id === '\0code') {
             return code;
+          }
+        },
+        resolveDynamicImport(id) {
+          if (typeof id === 'string') {
+            return { id, external: true };
           }
         },
       },
