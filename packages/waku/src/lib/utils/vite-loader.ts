@@ -4,6 +4,7 @@ import { fileURLToFilePath } from '../utils/path.js';
 
 export const loadServerFile = async (fileURL: string) => {
   const vite = await createViteServer({
+    configFile: false,
     ssr: {
       external: ['waku'],
     },

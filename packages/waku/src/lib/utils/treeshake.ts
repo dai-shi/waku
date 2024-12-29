@@ -42,6 +42,7 @@ export const treeshake = async (
     ],
   });
   const { output } = await bundle.generate({});
+  await bundle.close();
   return output[0].code;
 };
 

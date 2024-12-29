@@ -14,9 +14,8 @@ export default defineConfig({
             }
           },
         },
-        // FIXME why do we need "as any" here?
-        vanillaExtractPlugin() as any,
-        stylexPlugin(),
+        vanillaExtractPlugin(),
+        stylexPlugin() as any, // FIXME no-any
       ],
     }),
   },
