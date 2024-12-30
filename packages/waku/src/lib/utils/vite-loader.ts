@@ -1,17 +1,26 @@
 import { createServer as createViteServer } from 'vite';
+import type { RunnableDevEnvironment } from 'vite';
 
 import { fileURLToFilePath } from '../utils/path.js';
 
 export const loadServerFile = async (fileURL: string) => {
   const vite = await createViteServer({
-    ssr: {
-      external: ['waku'],
-    },
     server: { middlewareMode: true, watch: null },
+    appType: 'custom',
+    environments: {
+      config: {
+        resolve: { external: ['waku'] },
+      },
+    },
   });
-  try {
-    return vite.ssrLoadModule(fileURLToFilePath(fileURL));
-  } finally {
-    await vite.ws.close();
-  }
+  await vite.ws.close();
+  await Promise.all(
+    Object.values(vite.environments).map(
+      (env) => env.name === 'config' || env.close(),
+    ),
+  );
+  const mod = await (
+    vite.environments.config as RunnableDevEnvironment
+  ).runner.import(fileURLToFilePath(fileURL));
+  return mod;
 };

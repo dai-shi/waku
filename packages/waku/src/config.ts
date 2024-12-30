@@ -1,3 +1,4 @@
+import type { UserConfig } from 'vite';
 import type { Middleware } from './lib/middleware/types.js';
 
 export type { Middleware };
@@ -20,12 +21,10 @@ export interface Config {
    */
   distDir?: string;
   /**
-  /**
-   * The list of directries to preserve server module structure.
-   * Relative to srcDir.
-   * Defaults to ["pages", "templates", "routes", "components"].
+   * The pages directory relative to srcDir.
+   * Defaults to "pages".
    */
-  preserveModuleDirs?: string[];
+  pagesDir?: string;
   /**
    * The private directory relative to root.
    * This folder will contain files that should be read only on the server.
@@ -53,6 +52,22 @@ export interface Config {
    */
   unstable_honoEnhancer?:
     | (<Hono>(createApp: (app: Hono) => Hono) => (app: Hono) => Hono)
+    | undefined;
+  /**
+   * Vite configuration options.
+   * `common` can contains shared configs that are shallowly merged with other configs.
+   * Defaults to `undefined` if not provided.
+   */
+  unstable_viteConfigs?:
+    | {
+        common?: () => UserConfig;
+        'dev-main'?: () => UserConfig;
+        'dev-rsc'?: () => UserConfig;
+        'build-analyze'?: () => UserConfig;
+        'build-server'?: () => UserConfig;
+        'build-ssr'?: () => UserConfig;
+        'build-client'?: () => UserConfig;
+      }
     | undefined;
 }
 

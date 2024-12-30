@@ -20,6 +20,7 @@ import {
   fileURLToFilePath,
   joinPath,
 } from '../utils/path.js';
+import { extendViteConfig } from '../utils/vite-config.js';
 import {
   appendFile,
   createWriteStream,
@@ -103,77 +104,91 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   const serverFileSet = new Set<string>();
   const fileHashMap = new Map<string, string>();
   const moduleFileMap = new Map<string, string>(); // module id -> full path
-  for (const preserveModuleDir of config.preserveModuleDirs) {
-    const dir = joinPath(rootDir, config.srcDir, preserveModuleDir);
-    if (!existsSync(dir)) {
-      continue;
-    }
-    const files = await readdir(dir, { encoding: 'utf8', recursive: true });
+  const pagesDirPath = joinPath(rootDir, config.srcDir, config.pagesDir);
+  if (existsSync(pagesDirPath)) {
+    const files = await readdir(pagesDirPath, {
+      encoding: 'utf8',
+      recursive: true,
+    });
     for (const file of files) {
       const ext = extname(file);
       if (EXTENSIONS.includes(ext)) {
         moduleFileMap.set(
-          joinPath(preserveModuleDir, file.slice(0, -ext.length)),
-          joinPath(dir, file),
+          joinPath(config.pagesDir, file.slice(0, -ext.length)),
+          joinPath(pagesDirPath, file),
         );
       }
     }
   }
-  await buildVite({
-    plugins: [
-      rscAnalyzePlugin({
-        isClient: false,
-        clientFileSet,
-        serverFileSet,
-        fileHashMap,
-      }),
-      rscManagedPlugin({ ...config, addEntriesToInput: true }),
-      ...deployPlugins(config),
-    ],
-    ssr: {
-      target: 'webworker',
-      resolve: {
-        conditions: ['react-server'],
-        externalConditions: ['react-server'],
+  await buildVite(
+    extendViteConfig(
+      {
+        mode: 'production',
+        plugins: [
+          rscAnalyzePlugin({
+            isClient: false,
+            clientFileSet,
+            serverFileSet,
+            fileHashMap,
+          }),
+          rscManagedPlugin({ ...config, addEntriesToInput: true }),
+          ...deployPlugins(config),
+        ],
+        ssr: {
+          target: 'webworker',
+          resolve: {
+            conditions: ['react-server'],
+            externalConditions: ['react-server'],
+          },
+          noExternal: /^(?!node:)/,
+        },
+        build: {
+          write: false,
+          ssr: true,
+          target: 'node18',
+          rollupOptions: {
+            onwarn,
+            input: Object.fromEntries(moduleFileMap),
+          },
+        },
       },
-      noExternal: /^(?!node:)/,
-    },
-    build: {
-      write: false,
-      ssr: true,
-      target: 'node18',
-      rollupOptions: {
-        onwarn,
-        input: Object.fromEntries(moduleFileMap),
-      },
-    },
-  });
+      config,
+      'build-analyze',
+    ),
+  );
   const clientEntryFiles = Object.fromEntries(
     Array.from(clientFileSet).map((fname, i) => [
       `${DIST_ASSETS}/rsc${i}-${fileHashMap.get(fname) || 'lib'}`, // FIXME 'lib' is a workaround to avoid `undefined`
       fname,
     ]),
   );
-  await buildVite({
-    plugins: [
-      rscAnalyzePlugin({ isClient: true, serverFileSet }),
-      rscManagedPlugin(config),
-      ...deployPlugins(config),
-    ],
-    ssr: {
-      target: 'webworker',
-      noExternal: /^(?!node:)/,
-    },
-    build: {
-      write: false,
-      ssr: true,
-      target: 'node18',
-      rollupOptions: {
-        onwarn,
-        input: clientEntryFiles,
+  await buildVite(
+    extendViteConfig(
+      {
+        mode: 'production',
+        plugins: [
+          rscAnalyzePlugin({ isClient: true, serverFileSet }),
+          rscManagedPlugin(config),
+          ...deployPlugins(config),
+        ],
+        ssr: {
+          target: 'webworker',
+          noExternal: /^(?!node:)/,
+        },
+        build: {
+          write: false,
+          ssr: true,
+          target: 'node18',
+          rollupOptions: {
+            onwarn,
+            input: clientEntryFiles,
+          },
+        },
       },
-    },
-  });
+      config,
+      'build-analyze',
+    ),
+  );
   const serverEntryFiles = Object.fromEntries(
     Array.from(serverFileSet).map((fname, i) => [
       `${DIST_ASSETS}/rsf${i}`,
@@ -198,82 +213,92 @@ const buildServerBundle = async (
   serverModuleFiles: Record<string, string>,
   partial: boolean,
 ) => {
-  const serverBuildOutput = await buildVite({
-    plugins: [
-      nonjsResolvePlugin(),
-      rscTransformPlugin({
-        isClient: false,
-        isBuild: true,
-        clientEntryFiles,
-        serverEntryFiles,
-      }),
-      rscRsdwPlugin(),
-      rscEnvPlugin({ isDev: false, env, config }),
-      rscPrivatePlugin(config),
-      rscManagedPlugin({
-        ...config,
-        addEntriesToInput: true,
-      }),
-      rscEntriesPlugin({
-        srcDir: config.srcDir,
-        ssrDir: DIST_SSR,
-        moduleMap: {
-          ...Object.fromEntries(
-            Object.keys(SERVER_MODULE_MAP).map((key) => [key, `./${key}.js`]),
-          ),
-          ...Object.fromEntries(
-            Object.keys(CLIENT_MODULE_MAP).map((key) => [
-              `${CLIENT_PREFIX}${key}`,
-              `./${DIST_SSR}/${key}.js`,
-            ]),
-          ),
-          ...Object.fromEntries(
-            Object.keys(clientEntryFiles || {}).map((key) => [
-              `${DIST_SSR}/${key}.js`,
-              `./${DIST_SSR}/${key}.js`,
-            ]),
-          ),
-          ...Object.fromEntries(
-            Object.keys(serverEntryFiles || {}).map((key) => [
-              `${key}.js`,
-              `./${key}.js`,
-            ]),
-          ),
+  const serverBuildOutput = await buildVite(
+    extendViteConfig(
+      {
+        mode: 'production',
+        plugins: [
+          nonjsResolvePlugin(),
+          rscTransformPlugin({
+            isClient: false,
+            isBuild: true,
+            clientEntryFiles,
+            serverEntryFiles,
+          }),
+          rscRsdwPlugin(),
+          rscEnvPlugin({ isDev: false, env, config }),
+          rscPrivatePlugin(config),
+          rscManagedPlugin({
+            ...config,
+            addEntriesToInput: true,
+          }),
+          rscEntriesPlugin({
+            srcDir: config.srcDir,
+            ssrDir: DIST_SSR,
+            moduleMap: {
+              ...Object.fromEntries(
+                Object.keys(SERVER_MODULE_MAP).map((key) => [
+                  key,
+                  `./${key}.js`,
+                ]),
+              ),
+              ...Object.fromEntries(
+                Object.keys(CLIENT_MODULE_MAP).map((key) => [
+                  `${CLIENT_PREFIX}${key}`,
+                  `./${DIST_SSR}/${key}.js`,
+                ]),
+              ),
+              ...Object.fromEntries(
+                Object.keys(clientEntryFiles || {}).map((key) => [
+                  `${DIST_SSR}/${key}.js`,
+                  `./${DIST_SSR}/${key}.js`,
+                ]),
+              ),
+              ...Object.fromEntries(
+                Object.keys(serverEntryFiles || {}).map((key) => [
+                  `${key}.js`,
+                  `./${key}.js`,
+                ]),
+              ),
+            },
+          }),
+          ...deployPlugins(config),
+        ],
+        ssr: {
+          resolve: {
+            conditions: ['react-server'],
+            externalConditions: ['react-server'],
+          },
+          noExternal: /^(?!node:)/,
         },
-      }),
-      ...deployPlugins(config),
-    ],
-    ssr: {
-      resolve: {
-        conditions: ['react-server'],
-        externalConditions: ['react-server'],
-      },
-      noExternal: /^(?!node:)/,
-    },
-    esbuild: {
-      jsx: 'automatic',
-    },
-    define: {
-      'process.env.NODE_ENV': JSON.stringify('production'),
-    },
-    publicDir: false,
-    build: {
-      emptyOutDir: !partial,
-      ssr: true,
-      ssrEmitAssets: true,
-      target: 'node18',
-      outDir: joinPath(rootDir, config.distDir),
-      rollupOptions: {
-        onwarn,
-        input: {
-          ...SERVER_MODULE_MAP,
-          ...serverModuleFiles,
-          ...clientEntryFiles,
-          ...serverEntryFiles,
+        esbuild: {
+          jsx: 'automatic',
+        },
+        define: {
+          'process.env.NODE_ENV': JSON.stringify('production'),
+        },
+        publicDir: false,
+        build: {
+          emptyOutDir: !partial,
+          ssr: true,
+          ssrEmitAssets: true,
+          target: 'node18',
+          outDir: joinPath(rootDir, config.distDir),
+          rollupOptions: {
+            onwarn,
+            input: {
+              ...SERVER_MODULE_MAP,
+              ...serverModuleFiles,
+              ...clientEntryFiles,
+              ...serverEntryFiles,
+            },
+          },
         },
       },
-    },
-  });
+      config,
+      'build-server',
+    ),
+  );
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
@@ -293,57 +318,65 @@ const buildSsrBundle = async (
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
-  await buildVite({
-    base: config.basePath,
-    plugins: [
-      rscRsdwPlugin(),
-      rscIndexPlugin({
-        ...config,
-        cssAssets,
-      }),
-      rscEnvPlugin({ isDev: false, env, config }),
-      rscPrivatePlugin(config),
-      rscManagedPlugin({ ...config, addMainToInput: true }),
-      rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
-      ...deployPlugins(config),
-    ],
-    ssr: {
-      noExternal: /^(?!node:)/,
-    },
-    esbuild: {
-      jsx: 'automatic',
-    },
-    define: {
-      'process.env.NODE_ENV': JSON.stringify('production'),
-    },
-    publicDir: false,
-    build: {
-      emptyOutDir: !partial,
-      ssr: true,
-      target: 'node18',
-      outDir: joinPath(rootDir, config.distDir, DIST_SSR),
-      rollupOptions: {
-        onwarn,
-        input: {
-          ...clientEntryFiles,
-          ...CLIENT_MODULE_MAP,
+  await buildVite(
+    extendViteConfig(
+      {
+        mode: 'production',
+        base: config.basePath,
+        plugins: [
+          rscRsdwPlugin(),
+          rscIndexPlugin({ ...config, cssAssets }),
+          rscEnvPlugin({ isDev: false, env, config }),
+          rscPrivatePlugin(config),
+          rscManagedPlugin({ ...config, addMainToInput: true }),
+          rscTransformPlugin({
+            isClient: true,
+            isBuild: true,
+            serverEntryFiles,
+          }),
+          ...deployPlugins(config),
+        ],
+        ssr: {
+          noExternal: /^(?!node:)/,
         },
-        output: {
-          entryFileNames: (chunkInfo) => {
-            if (
-              CLIENT_MODULE_MAP[
-                chunkInfo.name as keyof typeof CLIENT_MODULE_MAP
-              ] ||
-              clientEntryFiles[chunkInfo.name]
-            ) {
-              return '[name].js';
-            }
-            return DIST_ASSETS + '/[name]-[hash].js';
+        esbuild: {
+          jsx: 'automatic',
+        },
+        define: {
+          'process.env.NODE_ENV': JSON.stringify('production'),
+        },
+        publicDir: false,
+        build: {
+          emptyOutDir: !partial,
+          ssr: true,
+          target: 'node18',
+          outDir: joinPath(rootDir, config.distDir, DIST_SSR),
+          rollupOptions: {
+            onwarn,
+            input: {
+              ...clientEntryFiles,
+              ...CLIENT_MODULE_MAP,
+            },
+            output: {
+              entryFileNames: (chunkInfo: { name: string }) => {
+                if (
+                  CLIENT_MODULE_MAP[
+                    chunkInfo.name as keyof typeof CLIENT_MODULE_MAP
+                  ] ||
+                  clientEntryFiles[chunkInfo.name]
+                ) {
+                  return '[name].js';
+                }
+                return DIST_ASSETS + '/[name]-[hash].js';
+              },
+            },
           },
         },
       },
-    },
-  });
+      config,
+      'build-ssr',
+    ),
+  );
 };
 
 // For Browsers
@@ -360,40 +393,48 @@ const buildClientBundle = async (
     type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
   );
   const cssAssets = nonJsAssets.filter((asset) => asset.endsWith('.css'));
-  const clientBuildOutput = await buildVite({
-    base: config.basePath,
-    plugins: [
-      viteReact(),
-      rscRsdwPlugin(),
-      rscIndexPlugin({
-        ...config,
-        cssAssets,
-      }),
-      rscEnvPlugin({ isDev: false, env, config }),
-      rscPrivatePlugin(config),
-      rscManagedPlugin({ ...config, addMainToInput: true }),
-      rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
-      ...deployPlugins(config),
-    ],
-    build: {
-      emptyOutDir: !partial,
-      outDir: joinPath(rootDir, config.distDir, DIST_PUBLIC),
-      rollupOptions: {
-        onwarn,
-        // rollup will ouput the style files related to clientEntryFiles, but since it does not find any link to them in the index.html file, it will not inject them. They are only mentioned by the standalone `clientEntryFiles`
-        input: clientEntryFiles,
-        preserveEntrySignatures: 'exports-only',
-        output: {
-          entryFileNames: (chunkInfo) => {
-            if (clientEntryFiles[chunkInfo.name]) {
-              return '[name].js';
-            }
-            return DIST_ASSETS + '/[name]-[hash].js';
+  const clientBuildOutput = await buildVite(
+    extendViteConfig(
+      {
+        mode: 'production',
+        base: config.basePath,
+        plugins: [
+          viteReact(),
+          rscRsdwPlugin(),
+          rscIndexPlugin({ ...config, cssAssets }),
+          rscEnvPlugin({ isDev: false, env, config }),
+          rscPrivatePlugin(config),
+          rscManagedPlugin({ ...config, addMainToInput: true }),
+          rscTransformPlugin({
+            isClient: true,
+            isBuild: true,
+            serverEntryFiles,
+          }),
+          ...deployPlugins(config),
+        ],
+        build: {
+          emptyOutDir: !partial,
+          outDir: joinPath(rootDir, config.distDir, DIST_PUBLIC),
+          rollupOptions: {
+            onwarn,
+            // rollup will ouput the style files related to clientEntryFiles, but since it does not find any link to them in the index.html file, it will not inject them. They are only mentioned by the standalone `clientEntryFiles`
+            input: clientEntryFiles,
+            preserveEntrySignatures: 'exports-only',
+            output: {
+              entryFileNames: (chunkInfo: { name: string }) => {
+                if (clientEntryFiles[chunkInfo.name]) {
+                  return '[name].js';
+                }
+                return DIST_ASSETS + '/[name]-[hash].js';
+              },
+            },
           },
         },
       },
-    },
-  });
+      config,
+      'build-client',
+    ),
+  );
   if (!('output' in clientBuildOutput)) {
     throw new Error('Unexpected vite client build output');
   }

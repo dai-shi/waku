@@ -220,7 +220,6 @@ async function loadConfig(): Promise<Config> {
   if (!existsSync(CONFIG_FILE)) {
     return {};
   }
-  // FIXME can we avoid using vite to load the config?
   const { loadServerFile } = await import('./lib/utils/vite-loader.js');
   const file = pathToFileURL(path.resolve(CONFIG_FILE)).toString();
   return (await loadServerFile(file)).default;
