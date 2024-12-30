@@ -147,6 +147,18 @@ export type CreateLayout = <Path extends string>(
       },
 ) => void;
 
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
+
+export type CreateApi = <Path extends string>(params: {
+  path: Path;
+  render: 'static' | 'dynamic';
+  method: Method;
+  handler: (params: {
+    body: ReadableStream | null;
+    headers: Readonly<Record<string, string>>;
+  }) => Promise<unknown>;
+}) => void;
+
 type RootItem = {
   render: 'static' | 'dynamic';
   component: FunctionComponent<{ children: ReactNode }>;
@@ -191,6 +203,7 @@ export const createPages = <
     createPage: CreatePage;
     createLayout: CreateLayout;
     createRoot: CreateRoot;
+    createApi: CreateApi;
   }) => Promise<AllPages>,
 ) => {
   let configured = false;
@@ -211,6 +224,15 @@ export const createPages = <
     string,
     [PathSpec, FunctionComponent<any>]
   >();
+  const apiPathMap = new Map<
+    string,
+    {
+      render: 'static' | 'dynamic';
+      pathSpec: PathSpec;
+      method: Method;
+      handler: Parameters<CreateApi>[0]['handler'];
+    }
+  >();
   const staticComponentMap = new Map<string, FunctionComponent<any>>();
   let rootItem: RootItem | undefined = undefined;
   const noSsrSet = new WeakSet<PathSpec>();
@@ -223,12 +245,22 @@ export const createPages = <
     const allPaths = [
       ...dynamicPagePathMap.keys(),
       ...wildcardPagePathMap.keys(),
+      ...apiPathMap.keys(),
     ];
     for (const p of allPaths) {
       if (getPathMapping(parsePathWithSlug(p), path)) {
         return p;
       }
     }
+  };
+
+  const pathExists = (path: string) => {
+    return (
+      staticPathMap.has(path) ||
+      dynamicPagePathMap.has(path) ||
+      wildcardPagePathMap.has(path) ||
+      apiPathMap.has(path)
+    );
   };
 
   /** helper to get original static slug path */
@@ -255,6 +287,9 @@ export const createPages = <
   const createPage: CreatePage = (page) => {
     if (configured) {
       throw new Error('createPage no longer available');
+    }
+    if (pathExists(page.path)) {
+      throw new Error(`Duplicated path: ${page.path}`);
     }
 
     const pathSpec = parsePathWithSlug(page.path);
@@ -320,14 +355,8 @@ export const createPages = <
         registerStaticComponent(id, WrappedComponent);
       }
     } else if (page.render === 'dynamic' && numWildcards === 0) {
-      if (dynamicPagePathMap.has(page.path)) {
-        throw new Error(`Duplicated dynamic path: ${page.path}`);
-      }
       dynamicPagePathMap.set(page.path, [pathSpec, page.component]);
     } else if (page.render === 'dynamic' && numWildcards === 1) {
-      if (wildcardPagePathMap.has(page.path)) {
-        throw new Error(`Duplicated dynamic path: ${page.path}`);
-      }
       wildcardPagePathMap.set(page.path, [pathSpec, page.component]);
     } else {
       throw new Error('Invalid page configuration');
@@ -353,6 +382,18 @@ export const createPages = <
     }
   };
 
+  const createApi: CreateApi = ({ path, render, method, handler }) => {
+    if (configured) {
+      throw new Error('createApi no longer available');
+    }
+    if (apiPathMap.has(path)) {
+      throw new Error(`Duplicated api path: ${path}`);
+    }
+
+    const pathSpec = parsePathWithSlug(path);
+    apiPathMap.set(path, { render, pathSpec, method, handler });
+  };
+
   const createRoot: CreateRoot = (root) => {
     if (configured) {
       throw new Error('createRoot no longer available');
@@ -370,7 +411,7 @@ export const createPages = <
   let ready: Promise<AllPages | void> | undefined;
   const configure = async () => {
     if (!configured && !ready) {
-      ready = fn({ createPage, createLayout, createRoot });
+      ready = fn({ createPage, createLayout, createRoot, createApi });
       await ready;
       configured = true;
     }
@@ -567,6 +608,26 @@ export const createPages = <
             : createElement(ThrowError_UNSTABLE),
         ),
       };
+    },
+    getApiConfig: async () => {
+      await configure();
+
+      return Array.from(apiPathMap.values()).map(({ pathSpec, render }) => {
+        return {
+          path: pathSpec,
+          isStatic: render === 'static',
+        };
+      });
+    },
+    handleApi: async (path, { body, headers }) => {
+      await configure();
+      const routePath = getRoutePath(path);
+      if (!routePath) {
+        throw new Error('Route not found: ' + path);
+      }
+      const { handler } = apiPathMap.get(routePath)!;
+
+      return handler({ body, headers });
     },
   });
 
