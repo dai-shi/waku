@@ -1,39 +1,23 @@
-import { execSync, exec, ChildProcess } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import waitPort from 'wait-port';
-import { debugChildProcess, getFreePort, terminate, test } from './utils.js';
-import { rm } from 'node:fs/promises';
 import { expect } from '@playwright/test';
 
-const waku = fileURLToPath(
-  new URL('../packages/waku/dist/cli.js', import.meta.url),
-);
+import { test, prepareNormalSetup } from './utils.js';
 
-const cwd = fileURLToPath(new URL('./fixtures/render-type', import.meta.url));
+const startApp = prepareNormalSetup('render-type');
 
-test.describe(`render type`, () => {
+test.describe('render type', () => {
   test.skip(
     ({ browserName }) => browserName !== 'chromium',
     'Browsers are not relevant for this test. One is enough.',
   );
 
-  let cp: ChildProcess;
-  let port: number;
-
-  test.beforeAll('remove cache', async () => {
-    await rm(`${cwd}/dist`, {
-      recursive: true,
-      force: true,
-    });
-    execSync(`node ${waku} build`, { cwd });
-  });
-
   test.describe('static', () => {
-    test.beforeEach(async () => {
-      port = await getFreePort();
-      // Use a static http server to make sure its not accidentally SSR.
-      cp = exec(`pnpm serve -l ${port} dist/public`, { cwd });
-      await waitPort({ port });
+    let port: number;
+    let stopApp: () => Promise<void>;
+    test.beforeAll(async () => {
+      ({ port, stopApp } = await startApp('STATIC'));
+    });
+    test.afterAll(async () => {
+      await stopApp();
     });
 
     test('renders static content', async ({ page }) => {
@@ -72,13 +56,13 @@ test.describe(`render type`, () => {
   });
 
   test.describe('dynamic', () => {
-    test.beforeEach(async () => {
-      port = await getFreePort();
-      cp = exec(`node ${waku} start --port ${port}`, { cwd });
-      debugChildProcess(cp, fileURLToPath(import.meta.url), [
-        /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
-      ]);
-      await waitPort({ port });
+    let port: number;
+    let stopApp: () => Promise<void>;
+    test.beforeAll(async () => {
+      ({ port, stopApp } = await startApp('PRD'));
+    });
+    test.afterAll(async () => {
+      await stopApp();
     });
 
     test('renders dynamic content', async ({ page }) => {
@@ -98,6 +82,7 @@ test.describe(`render type`, () => {
         timestamp,
       );
     });
+
     test('hydrates client components', async ({ page }) => {
       await page.goto(`http://localhost:${port}/client/dynamic/dynamic-echo`);
       expect(await page.getByTestId('echo').innerText()).toEqual(
@@ -116,10 +101,7 @@ test.describe(`render type`, () => {
         timestamp,
       );
     });
-    // TODO: Add test case for cached RSC payload that should not re-render.
-  });
 
-  test.afterEach(async () => {
-    await terminate(cp.pid!);
+    // TODO: Add test case for cached RSC payload that should not re-render.
   });
 });

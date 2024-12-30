@@ -11,18 +11,13 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   const data = await getData();
 
   return (
-    <html>
-      <head></head>
-      <body>
-        <div className={styles.div}>
-          <meta property="description" content={data.description} />
-          <link rel="icon" type="image/png" href={data.icon} />
-          <Header />
-          <main className={styles.main}>{children}</main>
-          <Footer />
-        </div>
-      </body>
-    </html>
+    <div className={styles.div}>
+      <meta name="description" content={data.description} />
+      <link rel="icon" type="image/png" href={data.icon} />
+      <Header />
+      <main className={styles.main}>{children}</main>
+      <Footer />
+    </div>
   );
 }
 
@@ -38,5 +33,5 @@ const getData = async () => {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };

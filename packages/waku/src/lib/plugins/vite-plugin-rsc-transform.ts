@@ -1,8 +1,13 @@
 import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 
-import { EXTENSIONS } from '../config.js';
-import { extname } from '../utils/path.js';
+import { EXTENSIONS } from '../constants.js';
+import {
+  extname,
+  joinPath,
+  fileURLToFilePath,
+  decodeFilePathFromAbsolute,
+} from '../utils/path.js';
 import { parseOpts } from '../utils/swc.js';
 
 const collectExportNames = (mod: swc.Module) => {
@@ -35,13 +40,12 @@ const collectExportNames = (mod: swc.Module) => {
 
 const transformClient = (
   code: string,
-  id: string,
-  getServerId: (id: string) => string,
+  ext: string,
+  getServerId: () => string,
 ) => {
   if (!code.includes('use server')) {
     return;
   }
-  const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseServer = false;
   for (const item of mod.body) {
@@ -60,28 +64,69 @@ const transformClient = (
     const exportNames = collectExportNames(mod);
     let newCode = `
 import { createServerReference } from 'react-server-dom-webpack/client';
-import { callServerRSC } from 'waku/client';
+import { callServerRsc } from 'waku/minimal/client';
 `;
     for (const name of exportNames) {
       newCode += `
-export ${name === 'default' ? name : `const ${name} =`} createServerReference('${getServerId(id)}#${name}', callServerRSC);
+export ${name === 'default' ? name : `const ${name} =`} createServerReference('${getServerId()}#${name}', callServerRsc);
 `;
     }
     return newCode;
   }
 };
 
+const transformClientForSSR = (code: string, ext: string) => {
+  if (!code.includes('use server')) {
+    return;
+  }
+  const mod = swc.parseSync(code, parseOpts(ext));
+  let hasUseServer = false;
+  for (const item of mod.body) {
+    if (item.type === 'ExpressionStatement') {
+      if (
+        item.expression.type === 'StringLiteral' &&
+        item.expression.value === 'use server'
+      ) {
+        hasUseServer = true;
+      }
+    } else {
+      break;
+    }
+  }
+  if (hasUseServer) {
+    const exportNames = collectExportNames(mod);
+    let newCode = '';
+    for (const name of exportNames) {
+      newCode += `
+export ${name === 'default' ? name : `const ${name} =`} () => {
+  throw new Error('You cannot call server functions during SSR');
+};
+`;
+    }
+    return newCode;
+  }
+};
+
+export const createEmptySpan = (): swc.Span =>
+  ({
+    start: 0,
+    end: 0,
+  }) as swc.Span;
+
 const createIdentifier = (value: string): swc.Identifier => ({
   type: 'Identifier',
   value,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  ctxt: 0,
   optional: false,
-  span: { start: 0, end: 0, ctxt: 0 },
+  span: createEmptySpan(),
 });
 
 const createStringLiteral = (value: string): swc.StringLiteral => ({
   type: 'StringLiteral',
   value,
-  span: { start: 0, end: 0, ctxt: 0 },
+  span: createEmptySpan(),
 });
 
 const createCallExpression = (
@@ -90,8 +135,11 @@ const createCallExpression = (
 ): swc.CallExpression => ({
   type: 'CallExpression',
   callee,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  ctxt: 0,
   arguments: args.map((expression) => ({ expression })),
-  span: { start: 0, end: 0, ctxt: 0 },
+  span: createEmptySpan(),
 });
 
 const serverInitCode = swc.parseSync(`
@@ -113,9 +161,9 @@ const replaceNode = <T extends swc.Node>(origNode: swc.Node, newNode: T): T => {
   return Object.assign(origNode, newNode);
 };
 
-const transformExportedServerActions = (
+const transformExportedServerFunctions = (
   mod: swc.Module,
-  getActionId: () => string,
+  getFuncId: () => string,
 ): boolean => {
   let changed = false;
   for (let i = 0; i < mod.body.length; ++i) {
@@ -133,11 +181,11 @@ const transformExportedServerActions = (
           createIdentifier('__waku_registerServerReference'),
           [
             createIdentifier(name),
-            createStringLiteral(getActionId()),
+            createStringLiteral(getFuncId()),
             createStringLiteral(name),
           ],
         ),
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       };
       mod.body.splice(++i, 0, stmt);
     };
@@ -155,7 +203,7 @@ const transformExportedServerActions = (
         createIdentifier('__waku_registerServerReference'),
         [
           Object.assign({}, fn),
-          createStringLiteral(getActionId()),
+          createStringLiteral(getFuncId()),
           createStringLiteral(name),
         ],
       );
@@ -182,7 +230,7 @@ const transformExportedServerActions = (
         const decl: swc.ExportDefaultExpression = {
           type: 'ExportDefaultExpression',
           expression: callExp,
-          span: { start: 0, end: 0, ctxt: 0 },
+          span: createEmptySpan(),
         };
         replaceNode(item, decl);
       }
@@ -210,7 +258,9 @@ const isUseServerDirective = (node: swc.Node) =>
   ((node as swc.ExpressionStatement).expression as swc.StringLiteral).value ===
     'use server';
 
-const isInlineServerAction = (node: swc.Node): node is FunctionWithBlockBody =>
+const isInlineServerFunction = (
+  node: swc.Node,
+): node is FunctionWithBlockBody =>
   (node.type === 'FunctionDeclaration' ||
     node.type === 'FunctionExpression' ||
     node.type === 'ArrowFunctionExpression') &&
@@ -227,8 +277,9 @@ const prependArgsToFn = <Fn extends FunctionWithBlockBody>(
       params: [...args.map(createIdentifier), ...fn.params],
       body: {
         type: 'BlockStatement',
+        ctxt: 0,
         stmts: fn.body.stmts.filter((stmt) => !isUseServerDirective(stmt)),
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       },
     };
   }
@@ -238,14 +289,15 @@ const prependArgsToFn = <Fn extends FunctionWithBlockBody>(
       ...args.map((arg) => ({
         type: 'Parameter',
         pat: createIdentifier(arg),
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       })),
       ...fn.params,
     ],
     body: {
       type: 'BlockStatement',
+      ctxt: 0,
       stmts: fn.body.stmts.filter((stmt) => !isUseServerDirective(stmt)),
-      span: { start: 0, end: 0, ctxt: 0 },
+      span: createEmptySpan(),
     },
   };
 };
@@ -290,7 +342,7 @@ const collectLocalNames = (
       {
         type: 'ReturnStatement',
         argument: fn.body,
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       },
     ];
   }
@@ -319,22 +371,22 @@ const collectClosureVars = (
   return varNames;
 };
 
-const transformInlineServerActions = (
+const transformInlineServerFunctions = (
   mod: swc.Module,
-  getActionId: () => string,
+  getFuncId: () => string,
 ): boolean => {
-  let serverActionIndex = 0;
-  const serverActions = new Map<
+  let serverFunctionIndex = 0;
+  const serverFunctions = new Map<
     number,
     readonly [FunctionWithBlockBody, string[]]
   >();
-  const registerServerAction = (
+  const registerServerFunction = (
     parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
     fn: FunctionWithBlockBody,
   ): swc.CallExpression => {
     const closureVars = collectClosureVars(parentFn, fn);
-    serverActions.set(++serverActionIndex, [fn, closureVars]);
-    const name = '__waku_action' + serverActionIndex;
+    serverFunctions.set(++serverFunctionIndex, [fn, closureVars]);
+    const name = '__waku_func' + serverFunctionIndex;
     if (fn.type === 'FunctionDeclaration') {
       fn.identifier = createIdentifier(name);
     }
@@ -343,7 +395,7 @@ const transformInlineServerActions = (
         type: 'MemberExpression',
         object: createIdentifier(name),
         property: createIdentifier('bind'),
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       },
       [
         createIdentifier('null'),
@@ -355,22 +407,25 @@ const transformInlineServerActions = (
     parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
     decl: swc.Declaration,
   ) => {
-    if (isInlineServerAction(decl)) {
-      const callExp = registerServerAction(parentFn, Object.assign({}, decl));
+    if (isInlineServerFunction(decl)) {
+      const callExp = registerServerFunction(parentFn, Object.assign({}, decl));
       const newDecl: swc.VariableDeclaration = {
         type: 'VariableDeclaration',
         kind: 'const',
         declare: false,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        ctxt: 0,
         declarations: [
           {
             type: 'VariableDeclarator',
             id: createIdentifier(decl.identifier.value),
             init: callExp,
             definite: false,
-            span: { start: 0, end: 0, ctxt: 0 },
+            span: createEmptySpan(),
           },
         ],
-        span: { start: 0, end: 0, ctxt: 0 },
+        span: createEmptySpan(),
       };
       replaceNode(decl, newDecl);
     }
@@ -379,8 +434,8 @@ const transformInlineServerActions = (
     parentFn: swc.Fn | swc.ArrowFunctionExpression | undefined,
     exp: swc.Expression,
   ): swc.CallExpression | undefined => {
-    if (isInlineServerAction(exp)) {
-      const callExp = registerServerAction(parentFn, Object.assign({}, exp));
+    if (isInlineServerFunction(exp)) {
+      const callExp = registerServerFunction(parentFn, Object.assign({}, exp));
       return replaceNode(exp, callExp);
     }
   };
@@ -399,7 +454,7 @@ const transformInlineServerActions = (
           const decl: swc.ExportDefaultExpression = {
             type: 'ExportDefaultExpression',
             expression: callExp,
-            span: { start: 0, end: 0, ctxt: 0 },
+            span: createEmptySpan(),
           };
           replaceNode(item, decl);
           return;
@@ -435,28 +490,28 @@ const transformInlineServerActions = (
     }
   };
   walk(undefined, mod);
-  if (!serverActionIndex) {
+  if (!serverFunctionIndex) {
     return false;
   }
-  const serverActionsCode = Array.from(serverActions).flatMap(
-    ([actionIndex, [actionFn, closureVars]]) => {
-      if (actionFn.type === 'FunctionDeclaration') {
+  const serverFunctionsCode = Array.from(serverFunctions).flatMap(
+    ([funcIndex, [func, closureVars]]) => {
+      if (func.type === 'FunctionDeclaration') {
         const stmt1: swc.ExportDeclaration = {
           type: 'ExportDeclaration',
-          declaration: prependArgsToFn(actionFn, closureVars),
-          span: { start: 0, end: 0, ctxt: 0 },
+          declaration: prependArgsToFn(func, closureVars),
+          span: createEmptySpan(),
         };
         const stmt2: swc.ExpressionStatement = {
           type: 'ExpressionStatement',
           expression: createCallExpression(
             createIdentifier('__waku_registerServerReference'),
             [
-              createIdentifier(actionFn.identifier.value),
-              createStringLiteral(getActionId()),
-              createStringLiteral('__waku_action' + actionIndex),
+              createIdentifier(func.identifier.value),
+              createStringLiteral(getFuncId()),
+              createStringLiteral('__waku_func' + funcIndex),
             ],
           ),
-          span: { start: 0, end: 0, ctxt: 0 },
+          span: createEmptySpan(),
         };
         return [stmt1, stmt2];
       } else {
@@ -466,44 +521,46 @@ const transformInlineServerActions = (
             type: 'VariableDeclaration',
             kind: 'const',
             declare: false,
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            ctxt: 0,
             declarations: [
               {
                 type: 'VariableDeclarator',
-                id: createIdentifier('__waku_action' + actionIndex),
+                id: createIdentifier('__waku_func' + funcIndex),
                 init: createCallExpression(
                   createIdentifier('__waku_registerServerReference'),
                   [
-                    prependArgsToFn(actionFn, closureVars),
-                    createStringLiteral(getActionId()),
-                    createStringLiteral('__waku_action' + actionIndex),
+                    prependArgsToFn(func, closureVars),
+                    createStringLiteral(getFuncId()),
+                    createStringLiteral('__waku_func' + funcIndex),
                   ],
                 ),
                 definite: false,
-                span: { start: 0, end: 0, ctxt: 0 },
+                span: createEmptySpan(),
               },
             ],
-            span: { start: 0, end: 0, ctxt: 0 },
+            span: createEmptySpan(),
           },
-          span: { start: 0, end: 0, ctxt: 0 },
+          span: createEmptySpan(),
         };
         return [stmt];
       }
     },
   );
-  mod.body.splice(findLastImportIndex(mod), 0, ...serverActionsCode);
+  mod.body.splice(findLastImportIndex(mod), 0, ...serverFunctionsCode);
   return true;
 };
 
 const transformServer = (
   code: string,
-  id: string,
-  getClientId: (id: string) => string,
-  getServerId: (id: string) => string,
+  ext: string,
+  getClientId: () => string,
+  getServerId: () => string,
 ) => {
   if (!code.includes('use client') && !code.includes('use server')) {
     return;
   }
-  const ext = extname(id);
   const mod = swc.parseSync(code, parseOpts(ext));
   let hasUseClient = false;
   let hasUseServer = false;
@@ -532,15 +589,14 @@ import { registerClientReference } from 'react-server-dom-webpack/server.edge';
 `;
     for (const name of exportNames) {
       newCode += `
-export ${name === 'default' ? name : `const ${name} =`} registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getClientId(id)}#${name}'); }, '${getClientId(id)}', '${name}');
+export ${name === 'default' ? name : `const ${name} =`} registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getClientId()}#${name}'); }, '${getClientId()}', '${name}');
 `;
     }
     return newCode;
   }
   let transformed =
-    hasUseServer && transformExportedServerActions(mod, () => getServerId(id));
-  transformed =
-    transformInlineServerActions(mod, () => getServerId(id)) || transformed;
+    hasUseServer && transformExportedServerFunctions(mod, getServerId);
+  transformed = transformInlineServerFunctions(mod, getServerId) || transformed;
   if (transformed) {
     mod.body.splice(findLastImportIndex(mod), 0, ...serverInitCode);
     const newCode = swc.printSync(mod).code;
@@ -570,47 +626,100 @@ export function rscTransformPlugin(
         serverEntryFiles: Record<string, string>;
       },
 ): Plugin {
-  const getClientId = (id: string) => {
-    if (opts.isClient || !opts.isBuild) {
-      throw new Error('not buiding for server');
+  let rootDir: string;
+  const resolvedMap = new Map<string, string>();
+  const getClientId = (id: string): string => {
+    if (opts.isClient) {
+      throw new Error('getClientId is only for server');
+    }
+    if (!opts.isBuild) {
+      // HACK this logic is too heuristic
+      if (id.startsWith(rootDir) && !id.includes('?')) {
+        return id;
+      }
+      const origId = resolvedMap.get(id);
+      if (origId) {
+        if (origId.startsWith('/@fs/') && !origId.includes('?')) {
+          return origId;
+        }
+        return getClientId(origId);
+      }
+      return id;
     }
     for (const [k, v] of Object.entries(opts.clientEntryFiles)) {
       if (v === id) {
-        return `@id/${k}.js`;
+        return k;
       }
     }
     throw new Error('client id not found: ' + id);
   };
-  const getServerId = (id: string) => {
+  const getServerId = (id: string): string => {
     if (!opts.isBuild) {
-      throw new Error('not buiding');
+      // HACK this logic is too heuristic
+      if (id.startsWith(rootDir) && !id.includes('?')) {
+        return id;
+      }
+      const origId = resolvedMap.get(id);
+      if (origId) {
+        if (origId.startsWith('/@fs/') && !origId.includes('?')) {
+          return origId;
+        }
+        return getServerId(origId);
+      }
+      return id;
     }
     for (const [k, v] of Object.entries(opts.serverEntryFiles)) {
       if (v === id) {
-        return `@id/${k}.js`;
+        return k;
       }
     }
     throw new Error('server id not found: ' + id);
   };
+  const wakuDist = joinPath(
+    decodeFilePathFromAbsolute(fileURLToFilePath(import.meta.url)),
+    '../../..',
+  );
   return {
     name: 'rsc-transform-plugin',
-    async transform(code, id, options) {
-      if (!opts.isBuild) {
-        // id can contain query string with vite deps optimization
-        id = id.split('?')[0] as string;
+    enforce: 'pre', // required for `resolveId`
+    configResolved(config) {
+      rootDir = config.root;
+    },
+    async resolveId(id, importer, options) {
+      if (opts.isBuild) {
+        return;
       }
-      if (!EXTENSIONS.includes(extname(id))) {
+      if (id.startsWith('/@id/')) {
+        return (await this.resolve(id.slice('/@id/'.length), importer, options))
+          ?.id;
+      }
+      const resolved = await this.resolve(id, importer, options);
+      let srcId =
+        importer && (id.startsWith('./') || id.startsWith('../'))
+          ? joinPath(importer.split('?')[0]!, '..', id)
+          : id;
+      if (srcId.startsWith('waku/')) {
+        srcId = wakuDist + srcId.slice('waku'.length) + '.js';
+      }
+      if (resolved && resolved.id !== srcId) {
+        if (!resolvedMap.has(resolved.id)) {
+          resolvedMap.set(resolved.id, srcId);
+        }
+      }
+    },
+    async transform(code, id, options) {
+      const ext = opts.isBuild
+        ? extname(id)
+        : // id can contain query string with vite deps optimization
+          extname(id.split('?')[0]!);
+      if (!EXTENSIONS.includes(ext)) {
         return;
       }
       if (opts.isClient) {
         if (options?.ssr) {
-          return;
+          return transformClientForSSR(code, ext);
         }
-        return transformClient(
-          code,
-          id,
-          opts.isBuild ? getServerId : (id) => id,
-        );
+        return transformClient(code, ext, () => getServerId(id));
       }
       // isClient === false
       if (!options?.ssr) {
@@ -618,9 +727,9 @@ export function rscTransformPlugin(
       }
       return transformServer(
         code,
-        id,
-        opts.isBuild ? getClientId : (id) => id,
-        opts.isBuild ? getServerId : (id) => id,
+        ext,
+        () => getClientId(id),
+        () => getServerId(id),
       );
     },
   };

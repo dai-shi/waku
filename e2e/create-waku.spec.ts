@@ -1,9 +1,10 @@
-import { spawn } from 'node:child_process';
+import { exec, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import { mkdir, readdir, cp, readFile, writeFile } from 'node:fs/promises';
-import { test, debugChildProcess, terminate } from './utils.js';
 import { expect } from '@playwright/test';
+
+import { test, debugChildProcess } from './utils.js';
 
 test('should create waku with default setup work', async () => {
   const cliPath = fileURLToPath(
@@ -43,7 +44,7 @@ test('should create waku with default setup work', async () => {
   expect(files).toContain('package.json');
   expect(files).toContain('src');
   expect(files).toContain('tsconfig.json');
-  await terminate(childProcess.pid!);
+  exec(`rm -rf ${cwd}`);
 });
 
 test('should create waku with update notify work', async () => {
@@ -87,5 +88,6 @@ test('should create waku with update notify work', async () => {
       break;
     }
   }
+  exec(`rm -rf ${cwd}`);
   // no need to kill the process, it will exit by itself
 });

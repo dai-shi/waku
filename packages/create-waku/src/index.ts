@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,7 +7,6 @@ import { default as prompts } from 'prompts';
 import { red, green, bold } from 'kolorist';
 import fse from 'fs-extra/esm';
 import checkForUpdate from 'update-check';
-import { createRequire } from 'node:module';
 import {
   getTemplateNames,
   installTemplate,
@@ -16,6 +15,7 @@ import {
   parseExampleOption,
   downloadAndExtract,
 } from './helpers/example-option.js';
+import { spawn } from 'node:child_process';
 
 const userAgent = process.env.npm_config_user_agent || '';
 const packageManager = /pnpm/.test(userAgent)
@@ -94,13 +94,12 @@ async function doPrompts() {
           type: 'text',
           message: 'Project Name',
           initial: defaultProjectName,
-          onState: (state: any) =>
-            (targetDir = String(state.value).trim() || defaultProjectName),
+          onState: (state: any) => (targetDir = String(state.value).trim()),
         },
         {
           name: 'shouldOverwrite',
           type: () => (canSafelyOverwrite(targetDir) ? null : 'confirm'),
-          message: `${targetDir} is not empty. Remove existing files and continue?`,
+          message: `${targetDir || defaultProjectName} is not empty. Remove existing files and continue?`,
         },
         {
           name: 'overwriteChecker',
@@ -161,9 +160,9 @@ Options:
 }
 
 async function notifyUpdate() {
-  // keep original require to avoid
-  //  bundling the whole package.json by `@vercel/ncc`
-  const packageJson = createRequire(import.meta.url)('../package.json');
+  const packageJson = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+  );
   const result = await checkForUpdate(packageJson).catch(() => {});
   if (result?.latest) {
     console.log(`A new version of 'create-waku' is available!`);
@@ -202,15 +201,32 @@ async function init() {
     await installTemplate(root, packageName, templateRoot, templateName);
   }
 
-  // TODO automatically installing dependencies
   // 1. check packageManager
   // 2. and then install dependencies
-
-  console.log(`\nDone. Now run:\n`);
-  console.log(`${bold(green(`cd ${targetDir}`))}`);
-  console.log(`${bold(green(commands.install))}`);
-  console.log(`${bold(green(commands.dev))}`);
   console.log();
+  console.log(`Installing dependencies by running ${commands.install}...`);
+
+  const installProcess = spawn(packageManager, ['install'], {
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+    cwd: targetDir,
+  });
+
+  installProcess.on('close', (code) => {
+    // process exit code
+    if (code !== 0) {
+      console.error(`Could not execute ${commands.install}. Please run`);
+      console.log(`${bold(green(`cd ${targetDir}`))}`);
+      console.log(`${bold(green(commands.install))}`);
+      console.log(`${bold(green(commands.dev))}`);
+      console.log();
+    } else {
+      console.log(`\nDone. Now run:\n`);
+      console.log(`${bold(green(`cd ${targetDir}`))}`);
+      console.log(`${bold(green(commands.dev))}`);
+      console.log();
+    }
+  });
 }
 
 init()

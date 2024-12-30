@@ -4,14 +4,15 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
-import type { EntriesDev } from '../../server.js';
-import { resolveConfig } from '../config.js';
+import type { EntriesDev } from '../types.js';
+import { resolveConfig, extractPureConfig } from '../config.js';
+import { SRC_MAIN, SRC_ENTRIES } from '../constants.js';
 import {
   joinPath,
   fileURLToFilePath,
-  encodeFilePathToAbsolute,
-  decodeFilePathFromAbsolute,
+  filePathToFileURL,
 } from '../utils/path.js';
+import { extendViteConfig } from '../utils/vite-config.js';
 import { patchReactRefresh } from '../plugins/patch-react-refresh.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { devCommonJsPlugin } from '../plugins/vite-plugin-dev-commonjs.js';
@@ -22,15 +23,10 @@ import { rscHmrPlugin, hotUpdate } from '../plugins/vite-plugin-rsc-hmr.js';
 import type { HotUpdatePayload } from '../plugins/vite-plugin-rsc-hmr.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
-import {
-  // HACK depending on these constants is not ideal
-  SRC_ENTRIES,
-  SRC_MAIN,
-  rscManagedPlugin,
-} from '../plugins/vite-plugin-rsc-managed.js';
+import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
-import { mergeUserViteConfig } from '../utils/merge-vite-config.js';
 import type { ClonableModuleNode, Middleware } from './types.js';
+import { fsRouterTypegenPlugin } from '../plugins/vite-plugin-fs-router-typegen.js';
 
 // TODO there is huge room for refactoring in this file
 
@@ -88,70 +84,85 @@ const createMainViteServer = (
   configPromise: ReturnType<typeof resolveConfig>,
 ) => {
   const vitePromise = configPromise.then(async (config) => {
-    const mergedViteConfig = await mergeUserViteConfig({
-      // Since we have multiple instances of vite, different ones might overwrite the others' cache.
-      cacheDir: 'node_modules/.vite/waku-dev-server-main',
-      base: config.basePath,
-      plugins: [
-        patchReactRefresh(viteReact()),
-        nonjsResolvePlugin(),
-        devCommonJsPlugin({
-          filter: (id) => {
-            if (
-              id.includes('/node_modules/react-server-dom-webpack/') ||
-              id.includes('/node_modules/react-dom/') ||
-              id.includes('/node_modules/react/')
-            ) {
-              return true;
-            }
+    const vite = await createViteServer(
+      extendViteConfig(
+        {
+          // Since we have multiple instances of vite, different ones might overwrite the others' cache.
+          cacheDir: 'node_modules/.vite/waku-dev-server-main',
+          base: config.basePath,
+          plugins: [
+            patchReactRefresh(viteReact()),
+            nonjsResolvePlugin(),
+            devCommonJsPlugin({
+              filter: (id) => {
+                if (
+                  id.includes('/node_modules/react-server-dom-webpack/') ||
+                  id.includes('/node_modules/react-dom/') ||
+                  id.includes('/node_modules/react/')
+                ) {
+                  return true;
+                }
+              },
+            }),
+            rscRsdwPlugin(),
+            rscEnvPlugin({ isDev: true, env, config }),
+            rscPrivatePlugin(config),
+            rscManagedPlugin(config),
+            rscIndexPlugin(config),
+            rscTransformPlugin({ isClient: true, isBuild: false }),
+            rscHmrPlugin(),
+            fsRouterTypegenPlugin(config),
+          ],
+          optimizeDeps: {
+            include: ['react-server-dom-webpack/client', 'react-dom/client'],
+            exclude: ['waku', 'rsc-html-stream/server'],
+            entries: [
+              `${config.srcDir}/${SRC_ENTRIES}.*`,
+              // HACK hard-coded "pages"
+              `${config.srcDir}/pages/**/*.*`,
+            ],
           },
-        }),
-        rscRsdwPlugin(),
-        rscEnvPlugin({ isDev: true, env, config }),
-        rscPrivatePlugin(config),
-        rscManagedPlugin(config),
-        rscIndexPlugin(config),
-        rscTransformPlugin({ isClient: true, isBuild: false }),
-        rscHmrPlugin(),
-      ],
-      optimizeDeps: {
-        include: ['react-server-dom-webpack/client', 'react-dom'],
-        exclude: ['waku', 'rsc-html-stream/server'],
-        entries: [
-          `${config.srcDir}/${SRC_ENTRIES}.*`,
-          // HACK hard-coded "pages"
-          `${config.srcDir}/pages/**/*.*`,
-        ],
-      },
-      ssr: {
-        external: ['waku'],
-      },
-      appType: 'mpa',
-      server: { middlewareMode: true },
-    });
-    const vite = await createViteServer(mergedViteConfig);
+          ssr: {
+            external: ['waku'],
+            optimizeDeps: {
+              include: ['react-server-dom-webpack/client.edge'],
+            },
+          },
+          appType: 'mpa',
+          server: { middlewareMode: true },
+        },
+        config,
+        'dev-main',
+      ),
+    );
     registerHotUpdateCallback((payload) => hotUpdate(vite, payload));
     return vite;
   });
 
+  const wakuDist = joinPath(fileURLToFilePath(import.meta.url), '../../..');
+
   const loadServerModuleMain = async (idOrFileURL: string) => {
-    if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
-      // HACK `external: ['waku']` doesn't do the same
-      return import(/* @vite-ignore */ idOrFileURL);
-    }
-    if (
-      idOrFileURL.startsWith('file://') &&
-      idOrFileURL.includes('/node_modules/')
-    ) {
-      // HACK node_modules should be externalized
-      return import(/* @vite-ignore */ fileURLToFilePath(idOrFileURL));
-    }
     const vite = await vitePromise;
-    return vite.ssrLoadModule(
-      idOrFileURL.startsWith('file://')
-        ? fileURLToFilePath(idOrFileURL)
-        : idOrFileURL,
-    );
+    if (!idOrFileURL.startsWith('file://')) {
+      if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
+        // HACK `external: ['waku']` doesn't do the same
+        return import(/* @vite-ignore */ idOrFileURL);
+      }
+      return vite.ssrLoadModule(idOrFileURL);
+    }
+    const filePath = fileURLToFilePath(idOrFileURL.split('?')[0]!);
+    const file = filePath.startsWith('/')
+      ? filePath
+      : joinPath(vite.config.root, filePath);
+    if (file.startsWith(wakuDist)) {
+      // HACK `external: ['waku']` doesn't do the same
+      return import(/* @vite-ignore */ filePathToFileURL(file));
+    }
+    if (file.includes('/node_modules/')) {
+      // HACK node_modules should be externalized
+      return import(/* @vite-ignore */ filePathToFileURL(file));
+    }
+    return vite.ssrLoadModule(fileURLToFilePath(idOrFileURL));
   };
 
   const transformIndexHtml = async (pathname: string) => {
@@ -216,49 +227,57 @@ const createRscViteServer = (
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
 
   const vitePromise = configPromise.then(async (config) => {
-    const mergedViteConfig = await mergeUserViteConfig({
-      // Since we have multiple instances of vite, different ones might overwrite the others' cache.
-      cacheDir: 'node_modules/.vite/waku-dev-server-rsc',
-      plugins: [
-        viteReact(),
-        nonjsResolvePlugin(),
-        devCommonJsPlugin({}),
-        rscRsdwPlugin(),
-        rscEnvPlugin({ isDev: true, env }),
-        rscPrivatePlugin({ privateDir: config.privateDir, hotUpdateCallback }),
-        rscManagedPlugin({ basePath: config.basePath, srcDir: config.srcDir }),
-        rscTransformPlugin({ isClient: false, isBuild: false }),
-        rscDelegatePlugin(hotUpdateCallback),
-      ],
-      optimizeDeps: {
-        include: ['react-server-dom-webpack/client', 'react-dom'],
-        exclude: ['waku'],
-        entries: [
-          `${config.srcDir}/${SRC_ENTRIES}.*`,
-          // HACK hard-coded "pages"
-          `${config.srcDir}/pages/**/*.*`,
-        ],
-      },
-      ssr: {
-        resolve: {
-          conditions: ['react-server'],
-          externalConditions: ['react-server'],
-        },
-        noExternal: /^(?!node:)/,
-        optimizeDeps: {
-          include: [
-            'react-server-dom-webpack/server.edge',
-            'react',
-            'react/jsx-runtime',
-            'react/jsx-dev-runtime',
+    const vite = await createViteServer(
+      extendViteConfig(
+        {
+          // Since we have multiple instances of vite, different ones might overwrite the others' cache.
+          cacheDir: 'node_modules/.vite/waku-dev-server-rsc',
+          plugins: [
+            viteReact(),
+            nonjsResolvePlugin(),
+            devCommonJsPlugin({}),
+            rscRsdwPlugin(),
+            rscEnvPlugin({ isDev: true, env }),
+            rscPrivatePlugin({
+              privateDir: config.privateDir,
+              hotUpdateCallback,
+            }),
+            rscManagedPlugin(config),
+            rscTransformPlugin({ isClient: false, isBuild: false }),
+            rscDelegatePlugin(hotUpdateCallback),
           ],
-          exclude: ['waku'],
+          optimizeDeps: {
+            include: ['react-server-dom-webpack/client', 'react-dom/client'],
+            exclude: ['waku'],
+            entries: [
+              `${config.srcDir}/${SRC_ENTRIES}.*`,
+              // HACK hard-coded "pages"
+              `${config.srcDir}/pages/**/*.*`,
+            ],
+          },
+          ssr: {
+            resolve: {
+              conditions: ['react-server'],
+              externalConditions: ['react-server'],
+            },
+            noExternal: /^(?!node:)/,
+            optimizeDeps: {
+              include: [
+                'react-server-dom-webpack/server.edge',
+                'react',
+                'react/jsx-runtime',
+                'react/jsx-dev-runtime',
+              ],
+              exclude: ['waku'],
+            },
+          },
+          appType: 'custom',
+          server: { middlewareMode: true, hmr: { server: dummyServer } },
         },
-      },
-      appType: 'custom',
-      server: { middlewareMode: true, hmr: { server: dummyServer } },
-    });
-    const vite = await createViteServer(mergedViteConfig);
+        config,
+        'dev-rsc',
+      ),
+    );
     return vite;
   });
 
@@ -282,9 +301,10 @@ const createRscViteServer = (
     config: { rootDir: string; basePath: string },
     initialModules: ClonableModuleNode[],
   ) => {
-    let file = id.startsWith('file://')
-      ? decodeFilePathFromAbsolute(fileURLToFilePath(id))
-      : id;
+    let file = id;
+    if (file.startsWith('/@fs/')) {
+      file = file.slice('/@fs'.length); // keep '/' at the beginning
+    }
     for (const moduleNode of initialModules) {
       if (moduleNode.file === file) {
         return moduleNode.url;
@@ -292,8 +312,10 @@ const createRscViteServer = (
     }
     if (file.startsWith(config.rootDir)) {
       file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
+    } else if (file.startsWith('/')) {
+      file = '@fs' + file;
     } else {
-      file = '@fs' + encodeFilePathToAbsolute(file);
+      file = '@id/' + file;
     }
     return config.basePath + file;
   };
@@ -333,8 +355,8 @@ export const devServer: Middleware = (options) => {
   let initialModules: ClonableModuleNode[];
 
   return async (ctx, next) => {
-    const [{ middleware: _removed, ...config }, vite] = await Promise.all([
-      configPromise,
+    const [config, vite] = await Promise.all([
+      configPromise.then(extractPureConfig),
       vitePromise,
     ]);
 
@@ -342,15 +364,21 @@ export const devServer: Middleware = (options) => {
       const processedModules = new Set<string>();
 
       const processModule = async (modulePath: string) => {
-        if (processedModules.has(modulePath)) return;
+        if (processedModules.has(modulePath)) {
+          return;
+        }
         processedModules.add(modulePath);
 
         await vite.transformRequest(modulePath);
         const resolved = await vite.pluginContainer.resolveId(modulePath);
-        if (!resolved) return;
+        if (!resolved) {
+          return;
+        }
 
         const module = vite.moduleGraph.idToModuleMap.get(resolved.id);
-        if (!module) return;
+        if (!module) {
+          return;
+        }
 
         await Promise.all(
           Array.from(module.importedModules).map(async (importedModule) => {
@@ -390,9 +418,9 @@ export const devServer: Middleware = (options) => {
     };
 
     if (
-      // HACK depending on `rscPath` is a bad idea
+      // HACK depending on `rscBase` is a bad idea
       // FIXME This hack should be removed as well as `willBeHandled`
-      ctx.req.url.pathname.startsWith(config.basePath + config.rscPath + '/') ||
+      ctx.req.url.pathname.startsWith(config.basePath + config.rscBase + '/') ||
       !(await willBeHandled(ctx.req.url.pathname))
     ) {
       await next();
@@ -402,7 +430,9 @@ export const devServer: Middleware = (options) => {
     }
 
     const viteUrl = ctx.req.url.toString().slice(ctx.req.url.origin.length);
-    const viteReq: any = Readable.fromWeb(ctx.req.body as any);
+    const viteReq: any = ctx.req.body
+      ? Readable.fromWeb(ctx.req.body as never)
+      : Readable.from([]);
     viteReq.method = ctx.req.method;
     viteReq.url = viteUrl;
     viteReq.headers = ctx.req.headers;

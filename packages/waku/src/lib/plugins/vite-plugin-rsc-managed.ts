@@ -1,37 +1,35 @@
 import type { Plugin } from 'vite';
 
-import { EXTENSIONS } from '../config.js';
-import { extname, joinPath } from '../utils/path.js';
-
-export const SRC_MAIN = 'main';
-export const SRC_ENTRIES = 'entries';
+import { EXTENSIONS, SRC_MAIN, SRC_ENTRIES } from '../constants.js';
+import { extname, joinPath, filePathToFileURL } from '../utils/path.js';
 
 const stripExt = (fname: string) => {
   const ext = extname(fname);
   return ext ? fname.slice(0, -ext.length) : fname;
 };
 
-const getManagedEntries = () => `
+const getManagedEntries = (
+  filePath: string,
+  srcDir: string,
+  pagesDir: string,
+) => `
 import { fsRouter } from 'waku/router/server';
 
 export default fsRouter(
-  import.meta.url,
-  (file) => import.meta.glob('./pages/**/*.{${EXTENSIONS.map((ext) =>
+  '${filePathToFileURL(filePath)}',
+  (file) => import.meta.glob('/${srcDir}/pages/**/*.{${EXTENSIONS.map((ext) =>
     ext.replace(/^\./, ''),
-  ).join(',')}}')[\`./pages/\${file}\`]?.(),
+  ).join(',')}}')[\`/${srcDir}/pages/\${file}\`]?.(),
+  '${pagesDir}',
 );
 `;
 
 const getManagedMain = () => `
-import { Component, StrictMode } from 'react';
+import { StrictMode, createElement } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { Router } from 'waku/router/client';
 
-const rootElement = (
-  <StrictMode>
-    <Router />
-  </StrictMode>
-);
+const rootElement = createElement(StrictMode, null, createElement(Router));
 
 if (globalThis.__WAKU_HYDRATE__) {
   hydrateRoot(document, rootElement);
@@ -43,14 +41,13 @@ if (globalThis.__WAKU_HYDRATE__) {
 export function rscManagedPlugin(opts: {
   basePath: string;
   srcDir: string;
+  pagesDir: string;
   addEntriesToInput?: boolean;
   addMainToInput?: boolean;
 }): Plugin {
   let entriesFile: string | undefined;
   let mainFile: string | undefined;
   const mainPath = `${opts.basePath}${opts.srcDir}/${SRC_MAIN}`;
-  let managedEntries = false;
-  let managedMain = false;
   return {
     name: 'rsc-managed-plugin',
     enforce: 'pre',
@@ -76,28 +73,27 @@ export function rscManagedPlugin(opts: {
     },
     async resolveId(id, importer, options) {
       const resolved = await this.resolve(id, importer, options);
-      if ((!resolved || resolved.id === id) && id === entriesFile) {
-        managedEntries = true;
-        return entriesFile + '.jsx';
+      if (!resolved || resolved.id === id) {
+        if (id === entriesFile) {
+          return '\0' + entriesFile + '.js';
+        }
+        if (id === mainFile) {
+          return '\0' + mainFile + '.js';
+        }
+        if (stripExt(id) === mainPath) {
+          return '\0' + mainPath + '.js';
+        }
       }
-      if ((!resolved || resolved.id === id) && id === mainFile) {
-        managedMain = true;
-        return mainFile + '.jsx';
-      }
-      if ((!resolved || resolved.id === id) && stripExt(id) === mainPath) {
-        managedMain = true;
-        return mainPath + '.jsx';
-      }
-      return resolved;
     },
     load(id) {
-      if (managedEntries && id === entriesFile + '.jsx') {
-        return getManagedEntries();
+      if (id === '\0' + entriesFile + '.js') {
+        return getManagedEntries(
+          entriesFile + '.js',
+          opts.srcDir,
+          opts.pagesDir,
+        );
       }
-      if (
-        managedMain &&
-        (id === mainFile + '.jsx' || id === mainPath + '.jsx')
-      ) {
+      if (id === '\0' + mainFile + '.js' || id === '\0' + mainPath + '.js') {
         return getManagedMain();
       }
     },

@@ -3,11 +3,9 @@ import path from 'node:path';
 import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 
-// HACK Depending on a different plugin isn't ideal.
-// Maybe we could put in vite config object?
-import { SRC_ENTRIES } from './vite-plugin-rsc-managed.js';
-
+import { SRC_ENTRIES } from '../constants.js';
 import { extname, joinPath } from '../utils/path.js';
+import { treeshake, removeObjectProperty } from '../utils/treeshake.js';
 
 const stripExt = (fname: string) => {
   const ext = extname(fname);
@@ -22,11 +20,9 @@ export function rscEntriesPlugin(opts: {
   moduleMap: Record<string, string>;
 }): Plugin {
   const codeToPrepend = `
-try {
-  globalThis.AsyncLocalStorage = (await import('node:async_hooks')).AsyncLocalStorage;
-} catch (e) {}
+globalThis.AsyncLocalStorage = require('node:async_hooks').AsyncLocalStorage;
 `;
-  let codeToAppend = `
+  const codeToAppend = `
 export function loadModule(id) {
   switch (id) {
     ${Object.entries(opts.moduleMap)
@@ -39,21 +35,13 @@ globalThis.__WAKU_SERVER_IMPORT__ = loadModule;
 globalThis.__WAKU_CLIENT_IMPORT__ = (id) => loadModule('${opts.ssrDir}/' + id);
 `;
   let entriesFile = '';
+  let configFile = '';
   return {
     name: 'rsc-entries-plugin',
     configResolved(config) {
       entriesFile = joinPath(config.root, opts.srcDir, SRC_ENTRIES);
       if (existsSync(CONFIG_FILE)) {
-        const file = normalizePath(
-          path.relative(path.dirname(entriesFile), path.resolve(CONFIG_FILE)),
-        );
-        codeToAppend += `
-export const loadConfig = async () => (await import('${file}')).default;
-`;
-      } else {
-        codeToAppend += `
-export const loadConfig = async () => ({});
-`;
+        configFile = normalizePath(path.resolve(CONFIG_FILE));
       }
     },
     transform(code, id) {
@@ -63,8 +51,22 @@ export const loadConfig = async () => ({});
       ) {
         return codeToPrepend + code;
       }
-      if (stripExt(id) === entriesFile) {
-        return code + codeToAppend;
+      if (stripExt(id).endsWith(entriesFile)) {
+        return (
+          code +
+          codeToAppend +
+          (configFile
+            ? `
+export const loadConfig = async () => (await import('${configFile}')).default;
+`
+            : `
+export const loadConfig = async () => ({});
+`)
+        );
+      }
+      if (id === configFile) {
+        // FIXME this naively removes code with object key name
+        return treeshake(code, removeObjectProperty('unstable_viteConfigs'));
       }
     },
   };

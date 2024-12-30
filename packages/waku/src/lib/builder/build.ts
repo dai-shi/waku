@@ -4,11 +4,14 @@ import { pipeline } from 'node:stream/promises';
 import { build as buildVite, resolveConfig as resolveViteConfig } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 import type { LoggingFunction, RollupLog } from 'rollup';
+import type { ReactNode } from 'react';
 
 import type { Config } from '../../config.js';
-import type { BuildConfig, EntriesPrd } from '../../server.js';
+import { setAllEnvInternal, unstable_getPlatformObject } from '../../server.js';
+import type { EntriesPrd } from '../types.js';
 import type { ResolvedConfig } from '../config.js';
-import { resolveConfig, EXTENSIONS } from '../config.js';
+import { resolveConfig } from '../config.js';
+import { EXTENSIONS } from '../constants.js';
 import type { PathSpec } from '../utils/path.js';
 import {
   decodeFilePathFromAbsolute,
@@ -17,6 +20,7 @@ import {
   fileURLToFilePath,
   joinPath,
 } from '../utils/path.js';
+import { extendViteConfig } from '../utils/vite-config.js';
 import {
   appendFile,
   createWriteStream,
@@ -28,40 +32,35 @@ import {
   unlink,
   writeFile,
 } from '../utils/node-fs.js';
-import { encodeInput, generatePrefetchCode } from '../renderers/utils.js';
+import { encodeRscPath, generatePrefetchCode } from '../renderers/utils.js';
+import { collectClientModules, renderRsc } from '../renderers/rsc.js';
+import { renderHtml } from '../renderers/html.js';
 import {
-  getBuildConfig,
-  getSsrConfig,
-  renderRsc,
   SERVER_MODULE_MAP,
-} from '../renderers/rsc-renderer.js';
-import {
   CLIENT_MODULE_MAP,
   CLIENT_PREFIX,
-  renderHtml,
-} from '../renderers/html-renderer.js';
+} from '../middleware/handler.js';
 import { rscRsdwPlugin } from '../plugins/vite-plugin-rsc-rsdw.js';
 import { rscIndexPlugin } from '../plugins/vite-plugin-rsc-index.js';
 import { rscAnalyzePlugin } from '../plugins/vite-plugin-rsc-analyze.js';
 import { nonjsResolvePlugin } from '../plugins/vite-plugin-nonjs-resolve.js';
 import { rscTransformPlugin } from '../plugins/vite-plugin-rsc-transform.js';
 import { rscEntriesPlugin } from '../plugins/vite-plugin-rsc-entries.js';
-import { rscServePlugin } from '../plugins/vite-plugin-rsc-serve.js';
 import { rscEnvPlugin } from '../plugins/vite-plugin-rsc-env.js';
 import { rscPrivatePlugin } from '../plugins/vite-plugin-rsc-private.js';
 import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
-import { emitVercelOutput } from './output-vercel.js';
-import { emitNetlifyOutput } from './output-netlify.js';
-import { emitCloudflareOutput } from './output-cloudflare.js';
-import { emitPartyKitOutput } from './output-partykit.js';
-import { emitAwsLambdaOutput } from './output-aws-lambda.js';
 import {
   DIST_ENTRIES_JS,
-  DIST_SERVE_JS,
   DIST_PUBLIC,
   DIST_ASSETS,
   DIST_SSR,
 } from './constants.js';
+import { deployVercelPlugin } from '../plugins/vite-plugin-deploy-vercel.js';
+import { deployNetlifyPlugin } from '../plugins/vite-plugin-deploy-netlify.js';
+import { deployCloudflarePlugin } from '../plugins/vite-plugin-deploy-cloudflare.js';
+import { deployDenoPlugin } from '../plugins/vite-plugin-deploy-deno.js';
+import { deployPartykitPlugin } from '../plugins/vite-plugin-deploy-partykit.js';
+import { deployAwsLambdaPlugin } from '../plugins/vite-plugin-deploy-aws-lambda.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -82,83 +81,114 @@ const onwarn = (warning: RollupLog, defaultHandler: LoggingFunction) => {
   defaultHandler(warning);
 };
 
+const deployPlugins = (config: ResolvedConfig) => [
+  deployVercelPlugin(config),
+  deployNetlifyPlugin(config),
+  deployCloudflarePlugin(config),
+  deployDenoPlugin(config),
+  deployPartykitPlugin(config),
+  deployAwsLambdaPlugin(config),
+];
+
 const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   const wakuClientDist = decodeFilePathFromAbsolute(
     joinPath(fileURLToFilePath(import.meta.url), '../../../client.js'),
   );
-  const clientFileSet = new Set<string>([wakuClientDist]);
+  const wakuMinimalClientDist = decodeFilePathFromAbsolute(
+    joinPath(fileURLToFilePath(import.meta.url), '../../../minimal/client.js'),
+  );
+  const clientFileSet = new Set<string>([
+    wakuClientDist,
+    wakuMinimalClientDist,
+  ]);
   const serverFileSet = new Set<string>();
   const fileHashMap = new Map<string, string>();
   const moduleFileMap = new Map<string, string>(); // module id -> full path
-  for (const preserveModuleDir of config.preserveModuleDirs) {
-    const dir = joinPath(rootDir, config.srcDir, preserveModuleDir);
-    if (!existsSync(dir)) {
-      continue;
-    }
-    const files = await readdir(dir, { encoding: 'utf8', recursive: true });
+  const pagesDirPath = joinPath(rootDir, config.srcDir, config.pagesDir);
+  if (existsSync(pagesDirPath)) {
+    const files = await readdir(pagesDirPath, {
+      encoding: 'utf8',
+      recursive: true,
+    });
     for (const file of files) {
       const ext = extname(file);
       if (EXTENSIONS.includes(ext)) {
         moduleFileMap.set(
-          joinPath(preserveModuleDir, file.slice(0, -ext.length)),
-          joinPath(dir, file),
+          joinPath(config.pagesDir, file.slice(0, -ext.length)),
+          joinPath(pagesDirPath, file),
         );
       }
     }
   }
-  await buildVite({
-    plugins: [
-      rscAnalyzePlugin({
-        isClient: false,
-        clientFileSet,
-        serverFileSet,
-        fileHashMap,
-      }),
-      rscManagedPlugin({ ...config, addEntriesToInput: true }),
-    ],
-    ssr: {
-      target: 'webworker',
-      resolve: {
-        conditions: ['react-server'],
-        externalConditions: ['react-server'],
+  await buildVite(
+    extendViteConfig(
+      {
+        mode: 'production',
+        plugins: [
+          rscAnalyzePlugin({
+            isClient: false,
+            clientFileSet,
+            serverFileSet,
+            fileHashMap,
+          }),
+          rscManagedPlugin({ ...config, addEntriesToInput: true }),
+          ...deployPlugins(config),
+        ],
+        ssr: {
+          target: 'webworker',
+          resolve: {
+            conditions: ['react-server'],
+            externalConditions: ['react-server'],
+          },
+          noExternal: /^(?!node:)/,
+        },
+        build: {
+          write: false,
+          ssr: true,
+          target: 'node18',
+          rollupOptions: {
+            onwarn,
+            input: Object.fromEntries(moduleFileMap),
+          },
+        },
       },
-      noExternal: /^(?!node:)/,
-    },
-    build: {
-      write: false,
-      ssr: true,
-      target: 'node18',
-      rollupOptions: {
-        onwarn,
-        input: Object.fromEntries(moduleFileMap),
-      },
-    },
-  });
+      config,
+      'build-analyze',
+    ),
+  );
   const clientEntryFiles = Object.fromEntries(
     Array.from(clientFileSet).map((fname, i) => [
-      `${DIST_ASSETS}/rsc${i}-${fileHashMap.get(fname)}`,
+      `${DIST_ASSETS}/rsc${i}-${fileHashMap.get(fname) || 'lib'}`, // FIXME 'lib' is a workaround to avoid `undefined`
       fname,
     ]),
   );
-  await buildVite({
-    plugins: [
-      rscAnalyzePlugin({ isClient: true, serverFileSet }),
-      rscManagedPlugin(config),
-    ],
-    ssr: {
-      target: 'webworker',
-      noExternal: /^(?!node:)/,
-    },
-    build: {
-      write: false,
-      ssr: true,
-      target: 'node18',
-      rollupOptions: {
-        onwarn,
-        input: clientEntryFiles,
+  await buildVite(
+    extendViteConfig(
+      {
+        mode: 'production',
+        plugins: [
+          rscAnalyzePlugin({ isClient: true, serverFileSet }),
+          rscManagedPlugin(config),
+          ...deployPlugins(config),
+        ],
+        ssr: {
+          target: 'webworker',
+          noExternal: /^(?!node:)/,
+        },
+        build: {
+          write: false,
+          ssr: true,
+          target: 'node18',
+          rollupOptions: {
+            onwarn,
+            input: clientEntryFiles,
+          },
+        },
       },
-    },
-  });
+      config,
+      'build-analyze',
+    ),
+  );
   const serverEntryFiles = Object.fromEntries(
     Array.from(serverFileSet).map((fname, i) => [
       `${DIST_ASSETS}/rsf${i}`,
@@ -181,117 +211,94 @@ const buildServerBundle = async (
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
   serverModuleFiles: Record<string, string>,
-  serve:
-    | 'vercel'
-    | 'netlify'
-    | 'cloudflare'
-    | 'partykit'
-    | 'deno'
-    | 'aws-lambda'
-    | false,
-  isNodeCompatible: boolean,
   partial: boolean,
 ) => {
-  const serverBuildOutput = await buildVite({
-    plugins: [
-      nonjsResolvePlugin(),
-      rscTransformPlugin({
-        isClient: false,
-        isBuild: true,
-        clientEntryFiles,
-        serverEntryFiles,
-      }),
-      rscRsdwPlugin(),
-      rscEnvPlugin({ isDev: false, env, config }),
-      rscPrivatePlugin(config),
-      rscManagedPlugin({
-        ...config,
-        addEntriesToInput: true,
-      }),
-      rscEntriesPlugin({
-        srcDir: config.srcDir,
-        ssrDir: DIST_SSR,
-        moduleMap: {
-          ...Object.fromEntries(
-            Object.keys(SERVER_MODULE_MAP).map((key) => [key, `./${key}.js`]),
-          ),
-          ...Object.fromEntries(
-            Object.keys(CLIENT_MODULE_MAP).map((key) => [
-              `${CLIENT_PREFIX}${key}`,
-              `./${DIST_SSR}/${key}.js`,
-            ]),
-          ),
-          ...Object.fromEntries(
-            Object.keys(clientEntryFiles || {}).map((key) => [
-              `${DIST_SSR}/${key}.js`,
-              `./${DIST_SSR}/${key}.js`,
-            ]),
-          ),
-          ...Object.fromEntries(
-            Object.keys(serverEntryFiles || {}).map((key) => [
-              `${key}.js`,
-              `./${key}.js`,
-            ]),
-          ),
-        },
-      }),
-      ...(serve
-        ? [
-            rscServePlugin({
-              ...config,
-              distServeJs: DIST_SERVE_JS,
-              distPublic: DIST_PUBLIC,
-              srcServeFile: decodeFilePathFromAbsolute(
-                joinPath(
-                  fileURLToFilePath(import.meta.url),
-                  `../serve-${serve}.js`,
-                ),
+  const serverBuildOutput = await buildVite(
+    extendViteConfig(
+      {
+        mode: 'production',
+        plugins: [
+          nonjsResolvePlugin(),
+          rscTransformPlugin({
+            isClient: false,
+            isBuild: true,
+            clientEntryFiles,
+            serverEntryFiles,
+          }),
+          rscRsdwPlugin(),
+          rscEnvPlugin({ isDev: false, env, config }),
+          rscPrivatePlugin(config),
+          rscManagedPlugin({
+            ...config,
+            addEntriesToInput: true,
+          }),
+          rscEntriesPlugin({
+            srcDir: config.srcDir,
+            ssrDir: DIST_SSR,
+            moduleMap: {
+              ...Object.fromEntries(
+                Object.keys(SERVER_MODULE_MAP).map((key) => [
+                  key,
+                  `./${key}.js`,
+                ]),
               ),
-              serve,
-            }),
-          ]
-        : []),
-    ],
-    ssr: isNodeCompatible
-      ? {
+              ...Object.fromEntries(
+                Object.keys(CLIENT_MODULE_MAP).map((key) => [
+                  `${CLIENT_PREFIX}${key}`,
+                  `./${DIST_SSR}/${key}.js`,
+                ]),
+              ),
+              ...Object.fromEntries(
+                Object.keys(clientEntryFiles || {}).map((key) => [
+                  `${DIST_SSR}/${key}.js`,
+                  `./${DIST_SSR}/${key}.js`,
+                ]),
+              ),
+              ...Object.fromEntries(
+                Object.keys(serverEntryFiles || {}).map((key) => [
+                  `${key}.js`,
+                  `./${key}.js`,
+                ]),
+              ),
+            },
+          }),
+          ...deployPlugins(config),
+        ],
+        ssr: {
           resolve: {
             conditions: ['react-server'],
             externalConditions: ['react-server'],
           },
           noExternal: /^(?!node:)/,
-        }
-      : {
-          target: 'webworker',
-          resolve: {
-            conditions: ['react-server', 'worker'],
-            externalConditions: ['react-server', 'worker'],
-          },
-          noExternal: /^(?!node:)/,
         },
-    esbuild: {
-      jsx: 'automatic',
-    },
-    define: {
-      'process.env.NODE_ENV': JSON.stringify('production'),
-    },
-    publicDir: false,
-    build: {
-      emptyOutDir: !partial,
-      ssr: true,
-      ssrEmitAssets: true,
-      target: 'node18',
-      outDir: joinPath(rootDir, config.distDir),
-      rollupOptions: {
-        onwarn,
-        input: {
-          ...SERVER_MODULE_MAP,
-          ...serverModuleFiles,
-          ...clientEntryFiles,
-          ...serverEntryFiles,
+        esbuild: {
+          jsx: 'automatic',
+        },
+        define: {
+          'process.env.NODE_ENV': JSON.stringify('production'),
+        },
+        publicDir: false,
+        build: {
+          emptyOutDir: !partial,
+          ssr: true,
+          ssrEmitAssets: true,
+          target: 'node18',
+          outDir: joinPath(rootDir, config.distDir),
+          rollupOptions: {
+            onwarn,
+            input: {
+              ...SERVER_MODULE_MAP,
+              ...serverModuleFiles,
+              ...clientEntryFiles,
+              ...serverEntryFiles,
+            },
+          },
         },
       },
-    },
-  });
+      config,
+      'build-server',
+    ),
+  );
   if (!('output' in serverBuildOutput)) {
     throw new Error('Unexpected vite server build output');
   }
@@ -306,71 +313,70 @@ const buildSsrBundle = async (
   clientEntryFiles: Record<string, string>,
   serverEntryFiles: Record<string, string>,
   serverBuildOutput: Awaited<ReturnType<typeof buildServerBundle>>,
-  isNodeCompatible: boolean,
   partial: boolean,
 ) => {
   const cssAssets = serverBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
-  await buildVite({
-    base: config.basePath,
-    plugins: [
-      rscRsdwPlugin(),
-      rscIndexPlugin({
-        ...config,
-        cssAssets,
-      }),
-      rscEnvPlugin({ isDev: false, env, config }),
-      rscPrivatePlugin(config),
-      rscManagedPlugin({ ...config, addMainToInput: true }),
-      rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
-    ],
-    ssr: isNodeCompatible
-      ? {
-          noExternal: /^(?!node:)/,
-        }
-      : {
-          target: 'webworker',
-          resolve: {
-            conditions: ['worker'],
-            externalConditions: ['worker'],
-          },
+  await buildVite(
+    extendViteConfig(
+      {
+        mode: 'production',
+        base: config.basePath,
+        plugins: [
+          rscRsdwPlugin(),
+          rscIndexPlugin({ ...config, cssAssets }),
+          rscEnvPlugin({ isDev: false, env, config }),
+          rscPrivatePlugin(config),
+          rscManagedPlugin({ ...config, addMainToInput: true }),
+          rscTransformPlugin({
+            isClient: true,
+            isBuild: true,
+            serverEntryFiles,
+          }),
+          ...deployPlugins(config),
+        ],
+        ssr: {
           noExternal: /^(?!node:)/,
         },
-    esbuild: {
-      jsx: 'automatic',
-    },
-    define: {
-      'process.env.NODE_ENV': JSON.stringify('production'),
-    },
-    publicDir: false,
-    build: {
-      emptyOutDir: !partial,
-      ssr: true,
-      target: 'node18',
-      outDir: joinPath(rootDir, config.distDir, DIST_SSR),
-      rollupOptions: {
-        onwarn,
-        input: {
-          ...clientEntryFiles,
-          ...CLIENT_MODULE_MAP,
+        esbuild: {
+          jsx: 'automatic',
         },
-        output: {
-          entryFileNames: (chunkInfo) => {
-            if (
-              CLIENT_MODULE_MAP[
-                chunkInfo.name as keyof typeof CLIENT_MODULE_MAP
-              ] ||
-              clientEntryFiles[chunkInfo.name]
-            ) {
-              return '[name].js';
-            }
-            return DIST_ASSETS + '/[name]-[hash].js';
+        define: {
+          'process.env.NODE_ENV': JSON.stringify('production'),
+        },
+        publicDir: false,
+        build: {
+          emptyOutDir: !partial,
+          ssr: true,
+          target: 'node18',
+          outDir: joinPath(rootDir, config.distDir, DIST_SSR),
+          rollupOptions: {
+            onwarn,
+            input: {
+              ...clientEntryFiles,
+              ...CLIENT_MODULE_MAP,
+            },
+            output: {
+              entryFileNames: (chunkInfo: { name: string }) => {
+                if (
+                  CLIENT_MODULE_MAP[
+                    chunkInfo.name as keyof typeof CLIENT_MODULE_MAP
+                  ] ||
+                  clientEntryFiles[chunkInfo.name]
+                ) {
+                  return '[name].js';
+                }
+                return DIST_ASSETS + '/[name]-[hash].js';
+              },
+            },
           },
         },
       },
-    },
-  });
+      config,
+      'build-ssr',
+    ),
+  );
 };
 
 // For Browsers
@@ -387,39 +393,48 @@ const buildClientBundle = async (
     type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
   );
   const cssAssets = nonJsAssets.filter((asset) => asset.endsWith('.css'));
-  const clientBuildOutput = await buildVite({
-    base: config.basePath,
-    plugins: [
-      viteReact(),
-      rscRsdwPlugin(),
-      rscIndexPlugin({
-        ...config,
-        cssAssets,
-      }),
-      rscEnvPlugin({ isDev: false, env, config }),
-      rscPrivatePlugin(config),
-      rscManagedPlugin({ ...config, addMainToInput: true }),
-      rscTransformPlugin({ isClient: true, isBuild: true, serverEntryFiles }),
-    ],
-    build: {
-      emptyOutDir: !partial,
-      outDir: joinPath(rootDir, config.distDir, DIST_PUBLIC),
-      rollupOptions: {
-        onwarn,
-        // rollup will ouput the style files related to clientEntryFiles, but since it does not find any link to them in the index.html file, it will not inject them. They are only mentioned by the standalone `clientEntryFiles`
-        input: clientEntryFiles,
-        preserveEntrySignatures: 'exports-only',
-        output: {
-          entryFileNames: (chunkInfo) => {
-            if (clientEntryFiles[chunkInfo.name]) {
-              return '[name].js';
-            }
-            return DIST_ASSETS + '/[name]-[hash].js';
+  const clientBuildOutput = await buildVite(
+    extendViteConfig(
+      {
+        mode: 'production',
+        base: config.basePath,
+        plugins: [
+          viteReact(),
+          rscRsdwPlugin(),
+          rscIndexPlugin({ ...config, cssAssets }),
+          rscEnvPlugin({ isDev: false, env, config }),
+          rscPrivatePlugin(config),
+          rscManagedPlugin({ ...config, addMainToInput: true }),
+          rscTransformPlugin({
+            isClient: true,
+            isBuild: true,
+            serverEntryFiles,
+          }),
+          ...deployPlugins(config),
+        ],
+        build: {
+          emptyOutDir: !partial,
+          outDir: joinPath(rootDir, config.distDir, DIST_PUBLIC),
+          rollupOptions: {
+            onwarn,
+            // rollup will ouput the style files related to clientEntryFiles, but since it does not find any link to them in the index.html file, it will not inject them. They are only mentioned by the standalone `clientEntryFiles`
+            input: clientEntryFiles,
+            preserveEntrySignatures: 'exports-only',
+            output: {
+              entryFileNames: (chunkInfo: { name: string }) => {
+                if (clientEntryFiles[chunkInfo.name]) {
+                  return '[name].js';
+                }
+                return DIST_ASSETS + '/[name]-[hash].js';
+              },
+            },
           },
         },
       },
-    },
-  });
+      config,
+      'build-client',
+    ),
+  );
   if (!('output' in clientBuildOutput)) {
     throw new Error('Unexpected vite client build output');
   }
@@ -431,102 +446,92 @@ const buildClientBundle = async (
   return clientBuildOutput;
 };
 
-const emitRscFiles = async (
-  rootDir: string,
-  env: Record<string, string>,
-  config: ResolvedConfig,
-  distEntries: EntriesPrd,
-  buildConfig: BuildConfig,
-) => {
-  const clientModuleMap = new Map<string, Set<string>>();
-  const addClientModule = (input: string, id: string) => {
-    let idSet = clientModuleMap.get(input);
-    if (!idSet) {
-      idSet = new Set();
-      clientModuleMap.set(input, idSet);
+// TODO: Add progress indication for static builds.
+
+const createTaskRunner = (limit: number) => {
+  let running = 0;
+  const waiting: (() => void)[] = [];
+  const errors: unknown[] = [];
+  const scheduleTask = async (task: () => Promise<void>) => {
+    if (running >= limit) {
+      await new Promise<void>((resolve) => waiting.push(resolve));
     }
-    idSet.add(id);
+    running++;
+    try {
+      await task();
+    } catch (err) {
+      errors.push(err);
+    } finally {
+      running--;
+      waiting.shift()?.();
+    }
   };
-  const getClientModules = (input: string) => {
-    const idSet = clientModuleMap.get(input);
-    return Array.from(idSet || []);
+  const runTask = (task: () => Promise<void>) => {
+    scheduleTask(task).catch(() => {});
   };
-  const staticInputSet = new Set<string>();
-  await Promise.all(
-    Array.from(buildConfig).map(async ({ entries, context }) => {
-      for (const { input, isStatic } of entries || []) {
-        if (!isStatic) {
-          continue;
-        }
-        if (staticInputSet.has(input)) {
-          continue;
-        }
-        staticInputSet.add(input);
-        const destRscFile = joinPath(
-          rootDir,
-          config.distDir,
-          DIST_PUBLIC,
-          config.rscPath,
-          encodeInput(input),
-        );
-        // Skip if the file already exists.
-        if (existsSync(destRscFile)) {
-          continue;
-        }
-        await mkdir(joinPath(destRscFile, '..'), { recursive: true });
-        const readable = await renderRsc(
-          {
-            env,
-            config,
-            input,
-            context,
-            moduleIdCallback: (id) => addClientModule(input, id),
-          },
-          {
-            isDev: false,
-            entries: distEntries,
-          },
-        );
-        await pipeline(
-          Readable.fromWeb(readable as any),
-          createWriteStream(destRscFile),
-        );
-      }
-    }),
-  );
-  return { getClientModules };
+  const waitForTasks = async () => {
+    if (running > 0) {
+      await new Promise<void>((resolve) => waiting.push(resolve));
+      await waitForTasks();
+    }
+    if (errors.length > 0) {
+      console.error('Errors occurred during running tasks:', errors);
+      throw errors[0];
+    }
+  };
+  return { runTask, waitForTasks };
 };
+const WRITE_FILE_BATCH_SIZE = 2500;
+const { runTask, waitForTasks } = createTaskRunner(WRITE_FILE_BATCH_SIZE);
 
-const pathname2pathSpec = (pathname: string): PathSpec =>
-  pathname
-    .split('/')
-    .filter(Boolean)
-    .map((name) => ({ type: 'literal', name }));
-
-const pathSpec2pathname = (pathSpec: PathSpec): string => {
-  if (pathSpec.some(({ type }) => type !== 'literal')) {
-    throw new Error(
-      'Cannot convert pathSpec to pathname: ' + JSON.stringify(pathSpec),
-    );
-  }
-  return '/' + pathSpec.map(({ name }) => name!).join('/');
-};
-
-const emitHtmlFiles = async (
+const emitStaticFile = (
   rootDir: string,
-  env: Record<string, string>,
+  config: ResolvedConfig,
+  pathname: string,
+  body: Promise<ReadableStream> | string,
+) => {
+  const destFile = joinPath(
+    rootDir,
+    config.distDir,
+    DIST_PUBLIC,
+    extname(pathname)
+      ? pathname
+      : pathname === '/404'
+        ? '404.html' // HACK special treatment for 404, better way?
+        : pathname + '/index.html',
+  );
+  // In partial mode, skip if the file already exists.
+  if (existsSync(destFile)) {
+    return;
+  }
+  runTask(async () => {
+    await mkdir(joinPath(destFile, '..'), { recursive: true });
+    if (typeof body === 'string') {
+      await writeFile(destFile, body);
+    } else {
+      await pipeline(
+        Readable.fromWeb((await body) as never),
+        createWriteStream(destFile),
+      );
+    }
+  });
+};
+
+const emitStaticFiles = async (
+  rootDir: string,
   config: ResolvedConfig,
   distEntriesFile: string,
   distEntries: EntriesPrd,
-  buildConfig: BuildConfig,
-  getClientModules: (input: string) => string[],
-  clientBuildOutput: Awaited<ReturnType<typeof buildClientBundle>>,
+  cssAssets: string[],
 ) => {
-  const nonJsAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
-    type === 'asset' && !fileName.endsWith('.js') ? [fileName] : [],
-  );
-  const cssAssets = nonJsAssets.filter((asset) => asset.endsWith('.css'));
-  const basePrefix = config.basePath + config.rscPath + '/';
+  const unstable_modules = {
+    rsdwServer: await distEntries.loadModule('rsdw-server'),
+    rdServer: await distEntries.loadModule(CLIENT_PREFIX + 'rd-server'),
+    rsdwClient: await distEntries.loadModule(CLIENT_PREFIX + 'rsdw-client'),
+    wakuMinimalClient: await distEntries.loadModule(
+      CLIENT_PREFIX + 'waku-minimal-client',
+    ),
+  };
   const publicIndexHtmlFile = joinPath(
     rootDir,
     config.distDir,
@@ -536,112 +541,143 @@ const emitHtmlFiles = async (
   const publicIndexHtml = await readFile(publicIndexHtmlFile, {
     encoding: 'utf8',
   });
-  if (buildConfig.length) {
-    // Delete the default index.html file unless buildConfig is empty.
-    await unlink(publicIndexHtmlFile);
-  }
   const publicIndexHtmlHead = publicIndexHtml.replace(
     /.*?<head>(.*?)<\/head>.*/s,
     '$1',
   );
-  const dynamicHtmlPathMap = new Map<PathSpec, string>();
-  await Promise.all(
-    Array.from(buildConfig).map(
-      async ({ pathname, isStatic, entries, customCode, context }) => {
-        const pathSpec =
-          typeof pathname === 'string' ? pathname2pathSpec(pathname) : pathname;
-        let htmlStr = publicIndexHtml;
-        let htmlHead = publicIndexHtmlHead;
-        if (cssAssets.length) {
-          const cssStr = cssAssets
-            .map(
-              (asset) =>
-                `<link rel="stylesheet" href="${config.basePath}${asset}">`,
-            )
-            .join('\n');
-          // HACK is this too naive to inject style code?
-          htmlStr = htmlStr.replace(/<\/head>/, cssStr);
-          htmlHead += cssStr;
-        }
-        const inputsForPrefetch = new Set<string>();
-        const moduleIdsForPrefetch = new Set<string>();
-        for (const { input, skipPrefetch } of entries || []) {
-          if (!skipPrefetch) {
-            inputsForPrefetch.add(input);
-            for (const id of getClientModules(input)) {
-              moduleIdsForPrefetch.add(id);
-            }
-          }
-        }
-        const code =
-          generatePrefetchCode(
-            basePrefix,
-            inputsForPrefetch,
-            moduleIdsForPrefetch,
-          ) + (customCode || '');
-        if (code) {
-          // HACK is this too naive to inject script code?
-          htmlStr = htmlStr.replace(
-            /<\/head>/,
-            `<script type="module" async>${code}</script></head>`,
-          );
-          htmlHead += `<script type="module" async>${code}</script>`;
-        }
-        if (!isStatic) {
-          dynamicHtmlPathMap.set(pathSpec, htmlHead);
-          return;
-        }
-        pathname = pathSpec2pathname(pathSpec);
-        const destHtmlFile = joinPath(
-          rootDir,
-          config.distDir,
-          DIST_PUBLIC,
-          extname(pathname)
-            ? pathname
-            : pathname === '/404'
-              ? '404.html' // HACK special treatment for 404, better way?
-              : pathname + '/index.html',
-        );
-        // In partial mode, skip if the file already exists.
-        if (existsSync(destHtmlFile)) {
-          return;
-        }
-        const htmlReadable = await renderHtml({
-          config,
-          pathname,
-          searchParams: new URLSearchParams(),
-          htmlHead,
-          renderRscForHtml: (input, params) =>
-            renderRsc(
-              { env, config, input, context, decodedBody: params },
-              { isDev: false, entries: distEntries },
-            ),
-          getSsrConfigForHtml: (pathname, searchParams) =>
-            getSsrConfig(
-              { env, config, pathname, searchParams },
-              { isDev: false, entries: distEntries },
-            ),
-          isDev: false,
-          loadModule: distEntries.loadModule,
-        });
-        await mkdir(joinPath(destHtmlFile, '..'), { recursive: true });
-        if (htmlReadable) {
-          await pipeline(
-            Readable.fromWeb(htmlReadable as any),
-            createWriteStream(destHtmlFile),
-          );
-        } else {
-          await writeFile(destHtmlFile, htmlStr);
-        }
+  const cssStr = cssAssets
+    .map((asset) => `<link rel="stylesheet" href="${config.basePath}${asset}">`)
+    .join('\n');
+  const defaultHtmlStr = publicIndexHtml
+    // HACK is this too naive to inject style code?
+    .replace(/<\/head>/, cssStr + '</head>');
+  const defaultHtmlHead = publicIndexHtmlHead + cssStr;
+  const baseRscPrefix = config.basePath + config.rscBase + '/';
+  const utils = {
+    renderRsc: (
+      elements: Record<string, unknown>,
+      options?: {
+        moduleIdCallback?: (id: string) => void;
       },
-    ),
-  );
+    ) =>
+      renderRsc(
+        config,
+        { unstable_modules },
+        elements,
+        options?.moduleIdCallback,
+      ),
+    renderHtml: async (
+      elements: Record<string, ReactNode>,
+      html: ReactNode,
+      options: { rscPath: string; htmlHead?: string },
+    ) => {
+      const body = await renderHtml(
+        config,
+        { unstable_modules },
+        defaultHtmlHead + (options.htmlHead || ''),
+        elements,
+        html,
+        options.rscPath,
+      );
+      const headers = { 'content-type': 'text/html; charset=utf-8' };
+      return { body, headers };
+    },
+    rscPath2pathname: (rscPath: string) =>
+      joinPath(config.rscBase, encodeRscPath(rscPath)),
+    unstable_generatePrefetchCode: (
+      rscPaths: Iterable<string>,
+      moduleIds: Iterable<string>,
+    ) => generatePrefetchCode(baseRscPrefix, rscPaths, moduleIds),
+    unstable_collectClientModules: (elements: Record<string, unknown>) =>
+      collectClientModules(
+        config,
+        unstable_modules.rsdwServer as never,
+        elements,
+      ),
+  };
+  const dynamicHtmlPathMap = new Map<PathSpec, string>();
+  const buildConfigs = distEntries.default.handleBuild(utils);
+  if (buildConfigs) {
+    await unlink(publicIndexHtmlFile);
+  }
+  for await (const buildConfig of buildConfigs || []) {
+    switch (buildConfig.type) {
+      case 'file':
+        emitStaticFile(rootDir, config, buildConfig.pathname, buildConfig.body);
+        break;
+      case 'htmlHead':
+        dynamicHtmlPathMap.set(
+          buildConfig.pathSpec,
+          defaultHtmlHead + (buildConfig.head || ''),
+        );
+        break;
+      case 'defaultHtml':
+        emitStaticFile(
+          rootDir,
+          config,
+          buildConfig.pathname,
+          // HACK is this too naive to inject script code?
+          defaultHtmlStr.replace(
+            /<\/head>/,
+            (buildConfig.head || '') + '</head>',
+          ),
+        );
+        break;
+    }
+  }
+  await waitForTasks();
   const dynamicHtmlPaths = Array.from(dynamicHtmlPathMap);
   const code = `
 export const dynamicHtmlPaths = ${JSON.stringify(dynamicHtmlPaths)};
 export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
 `;
   await appendFile(distEntriesFile, code);
+};
+
+// For Deploy
+// FIXME Is this a good approach? I wonder if there's something missing.
+const buildDeploy = async (rootDir: string, config: ResolvedConfig) => {
+  const DUMMY = 'dummy-entry';
+  await buildVite({
+    plugins: [
+      {
+        // FIXME This is too hacky. There must be a better way.
+        name: 'dummy-entry-plugin',
+        resolveId(source) {
+          if (source === DUMMY) {
+            return source;
+          }
+        },
+        load(id) {
+          if (id === DUMMY) {
+            return '';
+          }
+        },
+        generateBundle(_options, bundle) {
+          Object.entries(bundle).forEach(([key, value]) => {
+            if (value.name === DUMMY) {
+              delete bundle[key];
+            }
+          });
+        },
+      },
+      ...deployPlugins(config),
+    ],
+    publicDir: false,
+    build: {
+      emptyOutDir: false,
+      ssr: true,
+      rollupOptions: {
+        onwarn: (warning, warn) => {
+          if (!warning.message.startsWith('Generated an empty chunk:')) {
+            warn(warning);
+          }
+        },
+        input: { [DUMMY]: DUMMY },
+      },
+      outDir: joinPath(rootDir, config.distDir),
+    },
+  });
 };
 
 export async function build(options: {
@@ -665,13 +701,15 @@ export async function build(options: {
     await resolveViteConfig({}, 'build', 'production', 'production')
   ).root;
   const distEntriesFile = joinPath(rootDir, config.distDir, DIST_ENTRIES_JS);
-  const isNodeCompatible =
-    options.deploy !== 'cloudflare' &&
-    options.deploy !== 'partykit' &&
-    options.deploy !== 'deno';
 
+  const platformObject = unstable_getPlatformObject();
+  platformObject.buildOptions ||= {};
+  platformObject.buildOptions.deploy = options.deploy;
+
+  platformObject.buildOptions.unstable_phase = 'analyzeEntries';
   const { clientEntryFiles, serverEntryFiles, serverModuleFiles } =
     await analyzeEntries(rootDir, config);
+  platformObject.buildOptions.unstable_phase = 'buildServerBundle';
   const serverBuildOutput = await buildServerBundle(
     rootDir,
     env,
@@ -679,15 +717,9 @@ export async function build(options: {
     clientEntryFiles,
     serverEntryFiles,
     serverModuleFiles,
-    (options.deploy === 'vercel-serverless' ? 'vercel' : false) ||
-      (options.deploy === 'netlify-functions' ? 'netlify' : false) ||
-      (options.deploy === 'cloudflare' ? 'cloudflare' : false) ||
-      (options.deploy === 'partykit' ? 'partykit' : false) ||
-      (options.deploy === 'deno' ? 'deno' : false) ||
-      (options.deploy === 'aws-lambda' ? 'aws-lambda' : false),
-    isNodeCompatible,
     !!options.partial,
   );
+  platformObject.buildOptions.unstable_phase = 'buildSsrBundle';
   await buildSsrBundle(
     rootDir,
     env,
@@ -695,9 +727,9 @@ export async function build(options: {
     clientEntryFiles,
     serverEntryFiles,
     serverBuildOutput,
-    isNodeCompatible,
     !!options.partial,
   );
+  platformObject.buildOptions.unstable_phase = 'buildClientBundle';
   const clientBuildOutput = await buildClientBundle(
     rootDir,
     env,
@@ -707,55 +739,32 @@ export async function build(options: {
     serverBuildOutput,
     !!options.partial,
   );
+  delete platformObject.buildOptions.unstable_phase;
 
-  const distEntries = await import(filePathToFileURL(distEntriesFile));
+  const distEntries: EntriesPrd = await import(
+    filePathToFileURL(distEntriesFile)
+  );
 
-  // TODO: Add progress indication for static builds.
-  const buildConfig = await getBuildConfig(
-    { env, config },
-    { entries: distEntries },
+  setAllEnvInternal(env);
+  const cssAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
+    type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
-  await appendFile(
-    distEntriesFile,
-    `export const buildConfig = ${JSON.stringify(buildConfig)};`,
-  );
-  const { getClientModules } = await emitRscFiles(
+  await emitStaticFiles(
     rootDir,
-    env,
-    config,
-    distEntries,
-    buildConfig,
-  );
-  await emitHtmlFiles(
-    rootDir,
-    env,
     config,
     distEntriesFile,
     distEntries,
-    buildConfig,
-    getClientModules,
-    clientBuildOutput,
+    cssAssets,
   );
 
-  if (options.deploy?.startsWith('vercel-')) {
-    await emitVercelOutput(
-      rootDir,
-      config,
-      DIST_SERVE_JS,
-      options.deploy.slice('vercel-'.length) as 'static' | 'serverless',
+  platformObject.buildOptions.unstable_phase = 'buildDeploy';
+  await buildDeploy(rootDir, config);
+  delete platformObject.buildOptions.unstable_phase;
+
+  if (existsSync(distEntriesFile)) {
+    await appendFile(
+      distEntriesFile,
+      `export const buildData = ${JSON.stringify(platformObject.buildData)};`,
     );
-  } else if (options.deploy?.startsWith('netlify-')) {
-    await emitNetlifyOutput(
-      rootDir,
-      config,
-      DIST_SERVE_JS,
-      options.deploy.slice('netlify-'.length) as 'static' | 'functions',
-    );
-  } else if (options.deploy === 'cloudflare') {
-    await emitCloudflareOutput(rootDir, config, DIST_SERVE_JS);
-  } else if (options.deploy === 'partykit') {
-    await emitPartyKitOutput(rootDir, config, DIST_SERVE_JS);
-  } else if (options.deploy === 'aws-lambda') {
-    await emitAwsLambdaOutput(config);
   }
 }

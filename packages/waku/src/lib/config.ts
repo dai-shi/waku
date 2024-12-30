@@ -1,18 +1,11 @@
 import type { Config } from '../config.js';
 
-type DeepRequired<T> = T extends (...args: any[]) => any
-  ? T
-  : T extends object
-    ? { [P in keyof T]-?: DeepRequired<T[P]> }
-    : T;
-
-export type ResolvedConfig = DeepRequired<Config>;
+export type ResolvedConfig = Required<Config>;
 
 const DEFAULT_MIDDLEWARE = () => [
+  import('waku/middleware/context'),
   import('waku/middleware/dev-server'),
-  import('waku/middleware/headers'),
-  import('waku/middleware/rsc'),
-  import('waku/middleware/ssr'),
+  import('waku/middleware/handler'),
 ];
 
 // Keep async function for future extension
@@ -21,13 +14,28 @@ export async function resolveConfig(config: Config) {
     basePath: '/',
     srcDir: 'src',
     distDir: 'dist',
-    preserveModuleDirs: ['pages', 'templates', 'routes', 'components'],
+    pagesDir: 'pages',
     privateDir: 'private',
-    rscPath: 'RSC',
+    rscBase: 'RSC',
     middleware: DEFAULT_MIDDLEWARE,
+    unstable_honoEnhancer: undefined,
+    unstable_viteConfigs: undefined,
     ...config,
   };
   return resolvedConfig;
 }
 
-export const EXTENSIONS = ['.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs'];
+export type PureConfig = Omit<
+  Required<Config>,
+  'middleware' | 'unstable_honoEnhancer' | 'unstable_viteConfigs'
+>;
+
+export function extractPureConfig(config: ResolvedConfig): PureConfig {
+  const {
+    middleware: _removed1,
+    unstable_honoEnhancer: _removed2,
+    unstable_viteConfigs: _removed3,
+    ...pureConfig
+  } = config;
+  return pureConfig;
+}

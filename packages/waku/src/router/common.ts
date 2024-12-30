@@ -1,5 +1,5 @@
-export type RouteProps = {
-  path: string;
+export type RouteProps<Path extends string = string> = {
+  path: Path;
   query: string;
   hash: string;
 };
@@ -12,34 +12,37 @@ export function getComponentIds(path: string): readonly string[] {
     idSet.add(id);
   }
   idSet.add([...pathItems, 'page'].join('/'));
-  return Array.from(idSet);
+  return ['root', ...Array.from(idSet)];
 }
 
-export function getInputString(path: string): string {
+const ROUTE_PREFIX = 'R';
+
+export function encodeRoutePath(path: string): string {
   if (!path.startsWith('/')) {
-    throw new Error('Path should start with `/`');
+    throw new Error('Path must start with `/`: ' + path);
   }
-  return path.slice(1);
+  if (path === '/') {
+    return ROUTE_PREFIX + '/_root';
+  }
+  if (path.endsWith('/')) {
+    throw new Error('Path must not end with `/`: ' + path);
+  }
+  return ROUTE_PREFIX + path;
 }
 
-export function parseInputString(input: string): string {
-  if (input.startsWith('/')) {
-    throw new Error('Input should not start with `/`');
+export function decodeRoutePath(rscPath: string): string {
+  if (!rscPath.startsWith(ROUTE_PREFIX)) {
+    throw new Error('rscPath should not start with `/`');
   }
-  return '/' + input;
+  if (rscPath === ROUTE_PREFIX + '/_root') {
+    return '/';
+  }
+  return rscPath.slice(ROUTE_PREFIX.length);
 }
 
-// It starts with "/" to avoid conflicting with normal component ids.
-export const SHOULD_SKIP_ID = '/SHOULD_SKIP';
+export const ROUTE_ID = 'ROUTE';
+export const IS_STATIC_ID = 'IS_STATIC';
+export const HAS404_ID = 'HAS404';
 
-// It starts with "/" to avoid conflicting with normal component ids.
-export const LOCATION_ID = '/LOCATION';
-
-// TODO revisit shouldSkip API
-export type ShouldSkip = (readonly [
-  componentId: string,
-  readonly [
-    path?: boolean, // if we compare path
-    query?: boolean, // if we compare query
-  ],
-])[];
+// For HTTP header
+export const SKIP_HEADER = 'X-Waku-Router-Skip';

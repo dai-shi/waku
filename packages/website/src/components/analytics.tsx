@@ -3,7 +3,9 @@ import { getEnv } from 'waku/server';
 export const Analytics = () => {
   const trackingId = getEnv('TRACKING_ID');
 
-  if (!trackingId) return null;
+  if (!trackingId) {
+    return null;
+  }
 
   return (
     <>

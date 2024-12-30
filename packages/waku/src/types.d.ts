@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface Reference {}
 
 type TemporaryReferenceSet = Map<string, Reference | symbol>;
@@ -14,15 +13,16 @@ type ModuleLoading = null | {
   crossOrigin?: 'use-credentials' | '';
 };
 
-type SSRModuleMap = null | {
+type ServerConsumerModuleMap = null | {
   [clientId: string]: {
     [clientExportName: string]: ImportManifestEntry;
   };
 };
 
-type SSRManifest = {
-  moduleMap: SSRModuleMap;
+type ServerConsumerManifest = {
+  moduleMap: ServerConsumerModuleMap;
   moduleLoading: ModuleLoading;
+  serverModuleMap: null | ServerManifest;
 };
 
 type ServerManifest = {
@@ -32,6 +32,13 @@ type ServerManifest = {
 type ClientManifest = {
   [id: string]: ImportManifestEntry;
 };
+
+type ReactFormState<S, ReferenceId> = [
+  S /* actual state value */,
+  string /* key path */,
+  ReferenceId /* Server Reference ID */,
+  number /* number of bound arguments */,
+];
 
 declare module 'react-server-dom-webpack/server.edge' {
   type Options = {
@@ -52,6 +59,15 @@ declare module 'react-server-dom-webpack/server.edge' {
     body: string | FormData,
     webpackMap?: ServerManifest,
   ): Promise<T>;
+  export function decodeAction<T>(
+    body: FormData,
+    serverManifest: ServerManifest,
+  ): Promise<() => T> | null;
+  export function decodeFormState<S>(
+    actionResult: S,
+    body: FormData,
+    serverManifest: ServerManifest,
+  ): Promise<ReactFormState<S, ServerReferenceId> | null>;
 }
 
 declare module 'react-server-dom-webpack/client' {
@@ -77,7 +93,7 @@ declare module 'react-server-dom-webpack/client' {
 
 declare module 'react-server-dom-webpack/client.edge' {
   export type Options = {
-    ssrManifest: SSRManifest;
+    serverConsumerManifest: ServerConsumerManifest;
     nonce?: string;
   };
   export function createFromReadableStream<T>(
@@ -87,6 +103,24 @@ declare module 'react-server-dom-webpack/client.edge' {
 }
 
 declare module 'react-dom/server.edge' {
+  type Options = {
+    identifierPrefix?: string;
+    namespaceURI?: string;
+    nonce?: string;
+    bootstrapScriptContent?: string;
+    bootstrapScripts?: Array<string | BootstrapScriptDescriptor>;
+    bootstrapModules?: Array<string | BootstrapScriptDescriptor>;
+    progressiveChunkSize?: number;
+    signal?: AbortSignal;
+    onError?: (error: mixed, errorInfo: ErrorInfo) => string | void;
+    onPostpone?: (reason: string, postponeInfo: PostponeInfo) => void;
+    unstable_externalRuntimeSrc?: string | BootstrapScriptDescriptor;
+    importMap?: ImportMap;
+    formState?: ReactFormState<any, any> | null;
+    onHeaders?: (headers: Headers) => void;
+    maxHeadersLength?: number;
+  };
+
   export interface ReactDOMServerReadableStream extends ReadableStream {
     allReady: Promise<void>;
   }

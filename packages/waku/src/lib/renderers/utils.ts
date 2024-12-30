@@ -1,50 +1,57 @@
 // This file should not include Node specific code.
 
-export const encodeInput = (input: string) => {
-  if (input === '') {
-    return 'index.txt';
+export const encodeRscPath = (rscPath: string) => {
+  if (rscPath.startsWith('_')) {
+    throw new Error('rscPath must not start with `_`: ' + rscPath);
   }
-  if (input === 'index') {
-    throw new Error('Input should not be `index`');
+  if (rscPath.endsWith('_')) {
+    throw new Error('rscPath must not end with `_`: ' + rscPath);
   }
-  if (input.startsWith('/')) {
-    throw new Error('Input should not start with `/`');
+  if (rscPath === '') {
+    rscPath = '_';
   }
-  if (input.endsWith('/')) {
-    throw new Error('Input should not end with `/`');
+  if (rscPath.startsWith('/')) {
+    rscPath = '_' + rscPath;
   }
-  return input + '.txt';
+  if (rscPath.endsWith('/')) {
+    rscPath += '_';
+  }
+  return rscPath + '.txt';
 };
 
-export const decodeInput = (encodedInput: string) => {
-  if (encodedInput === 'index.txt') {
-    return '';
+export const decodeRscPath = (rscPath: string) => {
+  if (!rscPath.endsWith('.txt')) {
+    const err = new Error('Invalid encoded rscPath');
+    (err as any).statusCode = 400;
+    throw err;
   }
-  if (encodedInput?.endsWith('.txt')) {
-    return encodedInput.slice(0, -'.txt'.length);
+  rscPath = rscPath.slice(0, -'.txt'.length);
+  if (rscPath.startsWith('_')) {
+    rscPath = rscPath.slice(1);
   }
-  const err = new Error('Invalid encoded input');
-  (err as any).statusCode = 400;
-  throw err;
+  if (rscPath.endsWith('_')) {
+    rscPath = rscPath.slice(0, -1);
+  }
+  return rscPath;
 };
 
-const ACTION_PREFIX = 'ACTION_';
+const FUNC_PREFIX = 'F/';
 
-export const encodeActionId = (actionId: string) => {
-  const [file, name] = actionId.split('#') as [string, string];
+export const encodeFuncId = (funcId: string) => {
+  const [file, name] = funcId.split('#') as [string, string];
   if (name.includes('/')) {
-    throw new Error('Unsupported action name');
+    throw new Error('Function name must not include `/`: ' + name);
   }
-  return ACTION_PREFIX + file + '/' + name;
+  return FUNC_PREFIX + file + '/' + name;
 };
 
-export const decodeActionId = (encoded: string) => {
-  if (!encoded.startsWith(ACTION_PREFIX)) {
+export const decodeFuncId = (encoded: string) => {
+  if (!encoded.startsWith(FUNC_PREFIX)) {
     return null;
   }
   const index = encoded.lastIndexOf('/');
   return (
-    encoded.slice(ACTION_PREFIX.length, index) + '#' + encoded.slice(index + 1)
+    encoded.slice(FUNC_PREFIX.length, index) + '#' + encoded.slice(index + 1)
   );
 };
 
@@ -53,17 +60,17 @@ export const hasStatusCode = (x: unknown): x is { statusCode: number } =>
 
 export const generatePrefetchCode = (
   basePrefix: string,
-  inputs: Iterable<string>,
+  rscPaths: Iterable<string>,
   moduleIds: Iterable<string>,
 ) => {
-  const inputsArray = Array.from(inputs);
+  const rscPathArray = Array.from(rscPaths);
   let code = '';
-  if (inputsArray.length) {
+  if (rscPathArray.length) {
     code += `
 globalThis.__WAKU_PREFETCHED__ = {
-${inputsArray
-  .map((input) => {
-    const url = basePrefix + encodeInput(input);
+${rscPathArray
+  .map((rscPath) => {
+    const url = basePrefix + encodeRscPath(rscPath);
     return `  '${url}': fetch('${url}'),`;
   })
   .join('\n')}

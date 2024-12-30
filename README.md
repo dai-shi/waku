@@ -467,6 +467,30 @@ export const getConfig = async () => {
 };
 ```
 
+### Root elements
+
+The attributes of `<html>`, `<head>`, or `<body>` elements can be customized with the root element API. Create a special `_root.tsx` file in the `./src/pages` directory that accepts a `children` prop of type `ReactNode`.
+
+```tsx
+// ./src/pages/_root.tsx
+
+// Create root element
+export default async function RootElement({ children }) {
+  return (
+    <html lang="en">
+      <head></head>
+      <body data-version="1.0">{children}</body>
+    </html>
+  );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  };
+};
+```
+
 ## Navigation
 
 ### Link
@@ -574,7 +598,7 @@ export default async function HomePage() {
   return (
     <>
       <title>Waku</title>
-      <meta property="description" content="The minimal React framework" />
+      <meta name="description" content="The minimal React framework" />
       <h1>Waku</h1>
       <div>Hello world!</div>
     </>
@@ -607,7 +631,7 @@ const Head = async () => {
   return (
     <>
       <title>{metadata.title}</title>
-      <meta property="description" content={metadata.description} />
+      <meta name="description" content={metadata.description} />
     </>
   );
 };
@@ -1021,7 +1045,7 @@ npx partykit dev # or deploy
 
 ```
 npm run build -- --with-deno
-DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod dist/serve.js --exclude node_modules
+deployctl deploy --prod dist/serve-deno.js --exclude node_modules
 ```
 
 ### AWS Lambda (experimental)
@@ -1030,7 +1054,8 @@ DENO_DEPLOY_TOKEN=... deployctl deploy --project=... --prod dist/serve.js --excl
 npm run build -- --with-aws-lambda
 ```
 
-The handler entrypoint is `dist/serve.js`: see [Hono AWS Lambda Deploy Docs](https://hono.dev/getting-started/aws-lambda#_3-deploy).
+The handler entrypoint is `dist/serve-asw-lambda.js`: see [Hono AWS Lambda Deploy Docs](https://hono.dev/getting-started/aws-lambda#_3-deploy).
+Streaming can be activated by setting environment variable `DEPLOY_AWS_LAMBDA_STREAMING=true npm run build -- --with-aws-lambda`
 
 ## Community
 

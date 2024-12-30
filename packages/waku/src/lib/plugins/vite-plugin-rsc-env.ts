@@ -10,7 +10,7 @@ export function rscEnvPlugin({
   env: Record<string, string>;
   config?: {
     basePath: string;
-    rscPath: string;
+    rscBase: string;
   };
 }): Plugin {
   return {
@@ -34,8 +34,8 @@ export function rscEnvPlugin({
                   JSON.stringify(config.basePath),
                 ],
                 [
-                  'import.meta.env.WAKU_CONFIG_RSC_PATH',
-                  JSON.stringify(config.rscPath),
+                  'import.meta.env.WAKU_CONFIG_RSC_BASE',
+                  JSON.stringify(config.rscBase),
                 ],
               ]
             : []),

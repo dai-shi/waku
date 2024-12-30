@@ -1,7 +1,7 @@
 import type { Plugin, ViteDevServer } from 'vite';
 import * as swc from '@swc/core';
 
-import { EXTENSIONS } from '../config.js';
+import { EXTENSIONS } from '../constants.js';
 import { extname } from '../utils/path.js';
 import { parseOpts } from '../utils/swc.js';
 import type { HotUpdatePayload } from './vite-plugin-rsc-hmr.js';
@@ -77,12 +77,17 @@ export function rscDelegatePlugin(
     },
     async handleHotUpdate(ctx) {
       if (mode === 'development') {
+        if (ctx.file.endsWith('/pages.gen.ts')) {
+          // auto generated file by fsRouterTypegenPlugin
+          return [];
+        }
         await updateAllStyles(); // FIXME is this too aggressive?
         if (moduleImports.has(ctx.file)) {
           // re-inject
           const transformedResult = await server.transformRequest(ctx.file);
           if (transformedResult) {
             const { default: source } = await server.ssrLoadModule(ctx.file);
+            console.log('[rsc] module import', ctx.file);
             callback({
               type: 'custom',
               event: 'module-import',
@@ -93,9 +98,11 @@ export function rscDelegatePlugin(
           ctx.modules.length &&
           !isClientEntry(ctx.file, await ctx.read())
         ) {
+          console.log('[rsc] hot reload', ctx.file);
           callback({ type: 'custom', event: 'rsc-reload' });
         }
       }
+      return [];
     },
     async transform(code, id) {
       // id can contain query string with vite deps optimization

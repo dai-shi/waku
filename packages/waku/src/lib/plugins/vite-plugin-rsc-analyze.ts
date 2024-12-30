@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 
-import { EXTENSIONS } from '../config.js';
+import { EXTENSIONS } from '../constants.js';
 import { extname } from '../utils/path.js';
 import { parseOpts } from '../utils/swc.js';
 // HACK: Is it common to depend on another plugin like this?
@@ -18,7 +18,7 @@ const hash = async (code: string): Promise<string> => {
     .slice(0, 9);
 };
 
-const isServerAction = (
+const isServerFunction = (
   node:
     | swc.FunctionDeclaration
     | swc.FunctionExpression
@@ -32,7 +32,7 @@ const isServerAction = (
       s.expression.value === 'use server',
   );
 
-const containsServerAction = (mod: swc.Module): boolean => {
+const containsServerFunction = (mod: swc.Module): boolean => {
   const walk = (node: swc.Node): boolean => {
     if (
       node.type === 'FunctionDeclaration' ||
@@ -40,7 +40,7 @@ const containsServerAction = (mod: swc.Module): boolean => {
       node.type === 'ArrowFunctionExpression'
     ) {
       if (
-        isServerAction(
+        isServerFunction(
           node as
             | swc.FunctionDeclaration
             | swc.FunctionExpression
@@ -107,7 +107,7 @@ export function rscAnalyzePlugin(
           !opts.clientFileSet.has(id) &&
           !opts.serverFileSet.has(id) &&
           code.includes('use server') &&
-          containsServerAction(mod)
+          containsServerFunction(mod)
         ) {
           opts.serverFileSet.add(id);
         }

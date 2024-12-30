@@ -11,3 +11,5 @@ dist
 .cache
 .nvmrc
 .node-version
+pages.gen.ts
+test-results

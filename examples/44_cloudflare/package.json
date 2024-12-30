@@ -1,0 +1,27 @@
+{
+  "name": "44_cloudflare",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build-cf-types": "wrangler types --experimental-include-runtime",
+    "dev": "waku dev",
+    "build": "waku build --with-cloudflare",
+    "start": "waku start"
+  },
+  "dependencies": {
+    "hono": "4.6.14",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-server-dom-webpack": "19.0.0",
+    "waku": "0.21.11",
+    "wrangler": "3.99.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "@types/react": "19.0.2",
+    "@types/react-dom": "19.0.2",
+    "miniflare": "3.20241218.0",
+    "typescript": "5.7.2"
+  }
+}

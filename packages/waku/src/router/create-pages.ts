@@ -7,53 +7,23 @@ import {
   joinPath,
   parsePathWithSlug,
   getPathMapping,
-  path2regexp,
+  pathSpecAsString,
 } from '../lib/utils/path.js';
-import type { BuildConfig } from '../server.js';
 import type { PathSpec } from '../lib/utils/path.js';
-
-const hasPathSpecPrefix = (prefix: PathSpec, path: PathSpec) => {
-  for (let i = 0; i < prefix.length; i++) {
-    if (
-      i >= path.length ||
-      prefix[i]!.type !== path[i]!.type ||
-      prefix[i]!.name !== path[i]!.name
-    ) {
-      return false;
-    }
-  }
-  return true;
-};
+import type {
+  AnyPage,
+  GetSlugs,
+  PropsForPages,
+} from './create-pages-utils/inferred-path-types.js';
+import { Children, Slot, ThrowError_UNSTABLE } from '../minimal/client.js';
 
 const sanitizeSlug = (slug: string) =>
   slug.replace(/\./g, '').replace(/ /g, '-');
 
 // createPages API (a wrapper around unstable_defineRouter)
 
-/**
- * Type version of `String.prototype.split()`. Splits the first string argument by the second string argument
- * @example
- * ```ts
- * // ['a', 'b', 'c']
- * type Case1 = Split<'abc', ''>
- * // ['a', 'b', 'c']
- * type Case2 = Split<'a,b,c', ','>
- * ```
- */
-type Split<Str extends string, Del extends string | number> = string extends Str
-  ? string[]
-  : '' extends Str
-    ? []
-    : Str extends `${infer T}${Del}${infer U}`
-      ? [T, ...Split<U, Del>]
-      : [Str];
-
 /** Assumes that the path is a part of a slug path. */
-type IsValidPathItem<T> = T extends `/${infer _}`
-  ? false
-  : T extends '[]' | ''
-    ? false
-    : true;
+type IsValidPathItem<T> = T extends `/${string}` | '[]' | '' ? false : true;
 /**
  * This is a helper type to check if a path is valid in a slug path.
  */
@@ -88,39 +58,24 @@ export type PathWithSlug<T, K extends string> =
       : never
     : never;
 
-type _GetSlugs<
-  Route extends string,
-  SplitRoute extends string[] = Split<Route, '/'>,
-  Result extends string[] = [],
-> = SplitRoute extends []
-  ? Result
-  : SplitRoute extends [`${infer MaybeSlug}`, ...infer Rest]
-    ? Rest extends string[]
-      ? MaybeSlug extends `[${infer Slug}]`
-        ? _GetSlugs<Route, Rest, [...Result, Slug]>
-        : _GetSlugs<Route, Rest, Result>
-      : never
-    : Result;
-
-export type GetSlugs<Route extends string> = _GetSlugs<Route>;
-
 export type StaticSlugRoutePathsTuple<
   T extends string,
   Slugs extends unknown[] = GetSlugs<T>,
-  Result extends string[] = [],
+  Result extends readonly string[] = [],
 > = Slugs extends []
   ? Result
   : Slugs extends [infer _, ...infer Rest]
-    ? StaticSlugRoutePathsTuple<T, Rest, [...Result, string]>
+    ? StaticSlugRoutePathsTuple<T, Rest, readonly [...Result, string]>
     : never;
 
 type StaticSlugRoutePaths<T extends string> =
   HasWildcardInPath<T> extends true
-    ? string[] | string[][]
-    : StaticSlugRoutePathsTuple<T> extends [string]
-      ? string[]
+    ? readonly string[] | readonly string[][]
+    : StaticSlugRoutePathsTuple<T> extends readonly [string]
+      ? readonly string[]
       : StaticSlugRoutePathsTuple<T>[];
 
+/** Remove Slug from Path */
 export type PathWithoutSlug<T> = T extends '/'
   ? T
   : IsValidPathInSlugPath<T> extends true
@@ -145,58 +100,105 @@ export type CreatePage = <
   Path extends string,
   SlugKey extends string,
   WildSlugKey extends string,
+  Render extends 'static' | 'dynamic',
+  StaticPaths extends StaticSlugRoutePaths<Path>,
 >(
   page: (
     | {
-        render: 'static';
+        render: Extract<Render, 'static'>;
         path: PathWithoutSlug<Path>;
-        component: FunctionComponent<RouteProps>;
+        component: FunctionComponent<PropsForPages<Path>>;
       }
     | {
-        render: 'static';
+        render: Extract<Render, 'static'>;
         path: PathWithStaticSlugs<Path>;
-        staticPaths: StaticSlugRoutePaths<Path>;
-        component: FunctionComponent<RouteProps & Record<SlugKey, string>>;
+        staticPaths: StaticPaths;
+        component: FunctionComponent<PropsForPages<Path>>;
       }
     | {
-        render: 'dynamic';
+        render: Extract<Render, 'dynamic'>;
         path: PathWithoutSlug<Path>;
-        component: FunctionComponent<RouteProps>;
+        component: FunctionComponent<PropsForPages<Path>>;
       }
     | {
-        render: 'dynamic';
+        render: Extract<Render, 'dynamic'>;
         path: PathWithWildcard<Path, SlugKey, WildSlugKey>;
-        component: FunctionComponent<
-          RouteProps & Record<SlugKey, string> & Record<WildSlugKey, string[]>
-        >;
+        component: FunctionComponent<PropsForPages<Path>>;
       }
   ) & { unstable_disableSSR?: boolean },
+) => Omit<
+  Exclude<typeof page, { path: never } | { render: never }>,
+  'unstable_disableSSR'
+>;
+
+export type CreateLayout = <Path extends string>(
+  layout:
+    | {
+        render: 'dynamic';
+        path: Path;
+        component: FunctionComponent<
+          Pick<RouteProps, 'path'> & { children: ReactNode }
+        >;
+      }
+    | {
+        render: 'static';
+        path: Path;
+        component: FunctionComponent<{ children: ReactNode }>;
+      },
 ) => void;
 
-export type CreateLayout = <T extends string>(layout: {
+type RootItem = {
   render: 'static' | 'dynamic';
-  path: PathWithoutSlug<T>;
-  component: FunctionComponent<
-    Omit<RouteProps, 'searchParams'> & { children: ReactNode }
-  >;
-}) => void;
+  component: FunctionComponent<{ children: ReactNode }>;
+};
 
-export function createPages(
-  fn: (
-    fns: {
-      createPage: CreatePage;
-      createLayout: CreateLayout;
-      unstable_setBuildData: (path: string, data: unknown) => void;
-    },
-    opts: {
-      unstable_buildConfig: BuildConfig | undefined;
-    },
-  ) => Promise<void>,
-) {
+export type CreateRoot = (root: RootItem) => void;
+
+/**
+ * Root component for all pages
+ * ```tsx
+ *   <html>
+ *     <head></head>
+ *     <body>{children}</body>
+ *   </html>
+ * ```
+ */
+const DefaultRoot = ({ children }: { children: ReactNode }) =>
+  createElement(
+    'html',
+    null,
+    createElement('head', null),
+    createElement('body', null, children),
+  );
+
+const createNestedElements = (
+  elements: {
+    component: FunctionComponent<any>;
+    props?: Record<string, unknown>;
+  }[],
+) => {
+  return elements.reduceRight<ReactNode>(
+    (result, element) =>
+      createElement(element.component, element.props, result),
+    null,
+  );
+};
+
+export const createPages = <
+  AllPages extends (AnyPage | ReturnType<CreateLayout>)[],
+>(
+  fn: (fns: {
+    createPage: CreatePage;
+    createLayout: CreateLayout;
+    createRoot: CreateRoot;
+  }) => Promise<AllPages>,
+) => {
   let configured = false;
 
-  // TODO I think there's room for improvement to refactor these structures
-  const staticPathSet = new Set<[string, PathSpec]>();
+  const staticPathMap = new Map<
+    string,
+    { literalSpec: PathSpec; originalSpec?: PathSpec }
+  >();
   const dynamicPagePathMap = new Map<
     string,
     [PathSpec, FunctionComponent<any>]
@@ -210,8 +212,32 @@ export function createPages(
     [PathSpec, FunctionComponent<any>]
   >();
   const staticComponentMap = new Map<string, FunctionComponent<any>>();
+  let rootItem: RootItem | undefined = undefined;
   const noSsrSet = new WeakSet<PathSpec>();
-  const buildDataMap = new Map<string, unknown>();
+
+  /** helper to find dynamic path when slugs are used */
+  const getRoutePath: (path: string) => string | undefined = (path) => {
+    if (staticComponentMap.has(joinPath(path, 'page').slice(1))) {
+      return path;
+    }
+    const allPaths = [
+      ...dynamicPagePathMap.keys(),
+      ...wildcardPagePathMap.keys(),
+    ];
+    for (const p of allPaths) {
+      if (getPathMapping(parsePathWithSlug(p), path)) {
+        return p;
+      }
+    }
+  };
+
+  /** helper to get original static slug path */
+  const getOriginalStaticPathSpec = (path: string) => {
+    const staticPathSpec = staticPathMap.get(path);
+    if (staticPathSpec) {
+      return staticPathSpec.originalSpec ?? staticPathSpec.literalSpec;
+    }
+  };
 
   const registerStaticComponent = (
     id: string,
@@ -228,8 +254,9 @@ export function createPages(
 
   const createPage: CreatePage = (page) => {
     if (configured) {
-      throw new Error('no longer available');
+      throw new Error('createPage no longer available');
     }
+
     const pathSpec = parsePathWithSlug(page.path);
     if (page.unstable_disableSSR) {
       noSsrSet.add(pathSpec);
@@ -248,7 +275,7 @@ export function createPages(
       return { numSlugs, numWildcards };
     })();
     if (page.render === 'static' && numSlugs === 0) {
-      staticPathSet.add([page.path, pathSpec]);
+      staticPathMap.set(page.path, { literalSpec: pathSpec });
       const id = joinPath(page.path, 'page').replace(/^\//, '');
       registerStaticComponent(id, page.component);
     } else if (
@@ -283,10 +310,10 @@ export function createPages(
               break;
           }
         });
-        staticPathSet.add([
-          page.path,
-          pathItems.map((name) => ({ type: 'literal', name })),
-        ]);
+        staticPathMap.set('/' + pathItems.join('/'), {
+          literalSpec: pathItems.map((name) => ({ type: 'literal', name })),
+          originalSpec: pathSpec,
+        });
         const id = joinPath(...pathItems, 'page');
         const WrappedComponent = (props: Record<string, unknown>) =>
           createElement(page.component as any, { ...props, ...mapping });
@@ -305,11 +332,12 @@ export function createPages(
     } else {
       throw new Error('Invalid page configuration');
     }
+    return page as Exclude<typeof page, { path: never } | { render: never }>;
   };
 
   const createLayout: CreateLayout = (layout) => {
     if (configured) {
-      throw new Error('no longer available');
+      throw new Error('createLayout no longer available');
     }
     if (layout.render === 'static') {
       const id = joinPath(layout.path, 'layout').replace(/^\//, '');
@@ -325,124 +353,228 @@ export function createPages(
     }
   };
 
-  const unstable_setBuildData = (path: string, data: unknown) => {
-    buildDataMap.set(path, data);
+  const createRoot: CreateRoot = (root) => {
+    if (configured) {
+      throw new Error('createRoot no longer available');
+    }
+    if (rootItem) {
+      throw new Error(`Duplicated root component`);
+    }
+    if (root.render === 'static' || root.render === 'dynamic') {
+      rootItem = root;
+    } else {
+      throw new Error('Invalid root configuration');
+    }
   };
 
-  let ready: Promise<void> | undefined;
-  const configure = async (buildConfig?: BuildConfig) => {
+  let ready: Promise<AllPages | void> | undefined;
+  const configure = async () => {
     if (!configured && !ready) {
-      ready = fn(
-        { createPage, createLayout, unstable_setBuildData },
-        { unstable_buildConfig: buildConfig },
-      );
+      ready = fn({ createPage, createLayout, createRoot });
       await ready;
       configured = true;
     }
     await ready;
   };
 
-  return unstable_defineRouter(
-    async () => {
+  const getLayouts = (spec: PathSpec): string[] => {
+    const pathSegments = spec.reduce<string[]>(
+      (acc, _segment, index) => {
+        acc.push(pathSpecAsString(spec.slice(0, index + 1)));
+        return acc;
+      },
+      ['/'],
+    );
+
+    return pathSegments.filter(
+      (segment) =>
+        dynamicLayoutPathMap.has(segment) ||
+        staticComponentMap.has(joinPath(segment, 'layout').slice(1)), // feels like a hack
+    );
+  };
+
+  const definedRouter = unstable_defineRouter({
+    getRouteConfig: async () => {
       await configure();
       const paths: {
-        pattern: string;
         path: PathSpec;
-        isStatic: boolean;
+        pathPattern?: PathSpec;
+        routeElement: { isStatic?: boolean };
+        elements: Record<string, { isStatic?: boolean }>;
         noSsr: boolean;
-        data: unknown;
       }[] = [];
-      for (const [path, pathSpec] of staticPathSet) {
-        const noSsr = noSsrSet.has(pathSpec);
-        const isStatic = (() => {
-          for (const [_, [layoutPathSpec]] of dynamicLayoutPathMap) {
-            if (hasPathSpecPrefix(layoutPathSpec, pathSpec)) {
-              return false;
-            }
-          }
-          return true;
-        })();
+      const rootIsStatic = !rootItem || rootItem.render === 'static';
+
+      for (const [path, { literalSpec, originalSpec }] of staticPathMap) {
+        const noSsr = noSsrSet.has(literalSpec);
+
+        const layoutPaths = getLayouts(originalSpec ?? literalSpec);
+
+        const elements = {
+          ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
+            (acc, lPath) => {
+              acc[`layout:${lPath}`] = {
+                isStatic: !dynamicLayoutPathMap.has(lPath),
+              };
+              return acc;
+            },
+            {},
+          ),
+          root: { isStatic: rootIsStatic },
+          [`page:${path}`]: { isStatic: staticPathMap.has(path) },
+        };
 
         paths.push({
-          pattern: path2regexp(parsePathWithSlug(path)),
-          path: pathSpec,
-          isStatic,
+          path: literalSpec,
+          ...(originalSpec && { pathPattern: originalSpec }),
+          routeElement: {
+            isStatic: true,
+          },
+          elements,
           noSsr,
-          data: buildDataMap.get(path),
         });
       }
       for (const [path, [pathSpec]] of dynamicPagePathMap) {
         const noSsr = noSsrSet.has(pathSpec);
+        const layoutPaths = getLayouts(pathSpec);
+        const elements = {
+          ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
+            (acc, lPath) => {
+              acc[`layout:${lPath}`] = {
+                isStatic: !dynamicLayoutPathMap.has(lPath),
+              };
+              return acc;
+            },
+            {},
+          ),
+          root: { isStatic: rootIsStatic },
+          [`page:${path}`]: { isStatic: false },
+        };
         paths.push({
-          pattern: path2regexp(parsePathWithSlug(path)),
           path: pathSpec,
-          isStatic: false,
+          routeElement: { isStatic: true },
+          elements,
           noSsr,
-          data: buildDataMap.get(path),
         });
       }
       for (const [path, [pathSpec]] of wildcardPagePathMap) {
         const noSsr = noSsrSet.has(pathSpec);
+        const layoutPaths = getLayouts(pathSpec);
+        const elements = {
+          ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
+            (acc, lPath) => {
+              acc[`layout:${lPath}`] = {
+                isStatic: !dynamicLayoutPathMap.has(lPath),
+              };
+              return acc;
+            },
+            {},
+          ),
+          root: { isStatic: rootIsStatic },
+          [`page:${path}`]: { isStatic: false },
+        };
         paths.push({
-          pattern: path2regexp(parsePathWithSlug(path)),
           path: pathSpec,
-          isStatic: false,
+          routeElement: { isStatic: true },
+          elements,
           noSsr,
-          data: buildDataMap.get(path),
         });
       }
       return paths;
     },
-    async (id, { unstable_setShouldSkip, unstable_buildConfig }) => {
-      await configure(unstable_buildConfig);
-      const staticComponent = staticComponentMap.get(id);
-      if (staticComponent) {
-        unstable_setShouldSkip([]);
-        return staticComponent;
+    handleRoute: async (path, { query }) => {
+      await configure();
+
+      // path without slugs
+      const routePath = getRoutePath(path);
+      if (!routePath) {
+        throw new Error('Route not found: ' + path);
       }
-      for (const [_, [pathSpec, Component]] of dynamicPagePathMap) {
-        const mapping = getPathMapping(
-          [...pathSpec, { type: 'literal', name: 'page' }],
-          id,
-        );
-        if (mapping) {
-          if (Object.keys(mapping).length === 0) {
-            unstable_setShouldSkip();
-            return Component;
-          }
-          const WrappedComponent = (props: Record<string, unknown>) =>
-            createElement(Component, { ...props, ...mapping });
-          unstable_setShouldSkip();
-          return WrappedComponent;
+
+      const pageComponent =
+        staticComponentMap.get(joinPath(routePath, 'page').slice(1)) ??
+        dynamicPagePathMap.get(routePath)?.[1] ??
+        wildcardPagePathMap.get(routePath)?.[1];
+
+      if (!pageComponent) {
+        throw new Error('Page not found: ' + path);
+      }
+
+      const pathSpec = parsePathWithSlug(routePath);
+      const mapping = getPathMapping(pathSpec, path);
+      const result: Record<string, ReactNode> = {
+        root: createElement(
+          rootItem ? rootItem.component : DefaultRoot,
+          null,
+          createElement(Children),
+        ),
+        [`page:${routePath}`]: createElement(
+          pageComponent,
+          { ...mapping, ...(query ? { query } : {}), path },
+          createElement(Children),
+        ),
+      };
+
+      const layoutPaths = getLayouts(
+        getOriginalStaticPathSpec(path) ?? pathSpec,
+      );
+
+      for (const segment of layoutPaths) {
+        const layout =
+          dynamicLayoutPathMap.get(segment)?.[1] ??
+          staticComponentMap.get(joinPath(segment, 'layout').slice(1)); // feels like a hack
+
+        const isDynamic = !dynamicLayoutPathMap.has(segment);
+
+        // always true
+        if (layout) {
+          const id = 'layout:' + segment;
+          result[id] = createElement(
+            layout,
+            isDynamic ? { path } : null,
+            createElement(Children),
+          );
         }
       }
-      for (const [_, [pathSpec, Component]] of wildcardPagePathMap) {
-        const mapping = getPathMapping(
-          [...pathSpec, { type: 'literal', name: 'page' }],
-          id,
-        );
-        if (mapping) {
-          const WrappedComponent = (props: Record<string, unknown>) =>
-            createElement(Component, { ...props, ...mapping });
-          unstable_setShouldSkip();
-          return WrappedComponent;
-        }
-      }
-      for (const [_, [pathSpec, Component]] of dynamicLayoutPathMap) {
-        const mapping = getPathMapping(
-          [...pathSpec, { type: 'literal', name: 'layout' }],
-          id,
-        );
-        if (mapping) {
-          if (Object.keys(mapping).length) {
-            throw new Error('[Bug] layout should not have slugs');
-          }
-          unstable_setShouldSkip();
-          return Component;
-        }
-      }
-      unstable_setShouldSkip([]); // negative cache
-      return null; // not found
+
+      // loop over all layouts for path
+      const routeChildren = [
+        ...layoutPaths.map((lPath) => ({
+          component: Slot,
+          props: { id: `layout:${lPath}` },
+        })),
+        { component: Slot, props: { id: `page:${routePath}` } },
+      ];
+
+      return {
+        elements: result,
+        routeElement: createElement(
+          Slot,
+          { id: 'root' },
+          createNestedElements(routeChildren),
+        ),
+        // HACK this is hard-coded convention
+        // FIXME we should revisit the error boundary use case design
+        fallbackElement: createElement(
+          Slot,
+          { id: 'root', unstable_renderPrev: true },
+          layoutPaths.includes('/')
+            ? createElement(
+                Slot,
+                { id: 'layout:/', unstable_renderPrev: true },
+                createElement(ThrowError_UNSTABLE),
+              )
+            : createElement(ThrowError_UNSTABLE),
+        ),
+      };
     },
-  );
-}
+  });
+
+  return definedRouter as typeof definedRouter & {
+    /** This for type inference of the router only. We do not actually return anything for this type. */
+    DO_NOT_USE_pages: Exclude<
+      Exclude<Awaited<Exclude<typeof ready, undefined>>, void>[number],
+      void // createLayout returns void
+    >;
+  };
+};

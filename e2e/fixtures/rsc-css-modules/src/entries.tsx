@@ -1,19 +1,18 @@
-import { lazy } from 'react';
-import { defineEntries } from 'waku/server';
+import { unstable_defineEntries as defineEntries } from 'waku/minimal/server';
 
-const App = lazy(() => import('./components/App.js'));
+import App from './components/App.js';
 
-export default defineEntries(
-  // renderEntries
-  async (input) => {
-    return {
-      App: <App name={input || 'Waku'} />,
-    };
+const entries: ReturnType<typeof defineEntries> = defineEntries({
+  handleRequest: async (input, { renderRsc }) => {
+    if (input.type === 'component') {
+      return renderRsc({ App: <App name={input.rscPath || 'Waku'} /> });
+    }
+    if (input.type === 'function') {
+      const value = await input.fn(...input.args);
+      return renderRsc({ _value: value });
+    }
   },
-  // getBuildConfig
-  async () => [{ pathname: '/', entries: [{ input: '' }] }],
-  // getSsrConfig
-  () => {
-    throw new Error('SSR should not be used in this test.');
-  },
-);
+  handleBuild: () => null,
+});
+
+export default entries;

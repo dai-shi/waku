@@ -11,6 +11,32 @@ export const concatUint8Arrays = (arrs: Uint8Array[]): Uint8Array => {
   return array;
 };
 
+// FIXME remove the two loops if possible, if it is more efficient
+export const streamToArrayBuffer = async (stream: ReadableStream) => {
+  const reader = stream.getReader();
+  const chunks = [];
+  let totalSize = 0;
+  let done = false;
+  let value: Uint8Array | undefined;
+
+  do {
+    ({ done, value } = await reader.read());
+    if (!done && value) {
+      chunks.push(value);
+      totalSize += value.length;
+    }
+  } while (!done);
+
+  const result = new Uint8Array(totalSize);
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return result.buffer;
+};
+
 export const streamToString = async (
   stream: ReadableStream,
 ): Promise<string> => {

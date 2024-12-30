@@ -8,7 +8,8 @@ export const fallback: Middleware = (options) => {
     return async (ctx, next) => {
       if (!ctx.res.body) {
         const config = await configPromise;
-        ctx.req.url = new URL(config.basePath, ctx.req.url);
+        const newUrl = new URL(config.basePath, ctx.req.url);
+        ctx.req.url.pathname = newUrl.pathname;
       }
       return next();
     };

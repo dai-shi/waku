@@ -1,29 +1,32 @@
-/// <reference types="react/experimental" />
-
-import { defineEntries } from 'waku/server';
-import { Slot } from 'waku/client';
+import { unstable_defineEntries as defineEntries } from 'waku/minimal/server';
+import { Slot } from 'waku/minimal/client';
+import { unstable_createAsyncIterable as createAsyncIterable } from 'waku/server';
 
 import App from './components/app.js';
 
-export default defineEntries(
-  // renderEntries
-  async () => {
-    return {
-      App: <App />,
-    };
-  },
-  // getBuildConfig
-  async () => [{ pathname: '/', entries: [{ input: '' }] }],
-  // getSsrConfig
-  async (pathname) => {
-    switch (pathname) {
-      case '/':
-        return {
-          input: '',
-          html: <Slot id="App" />,
-        };
-      default:
-        return null;
+const entries: ReturnType<typeof defineEntries> = defineEntries({
+  handleRequest: async (input, { renderRsc, renderHtml }) => {
+    if (input.type === 'component') {
+      return renderRsc({ App: <App /> });
+    }
+    if (input.type === 'function') {
+      const value = await input.fn(...input.args);
+      return renderRsc({ _value: value });
+    }
+    if (input.type === 'custom' && input.pathname === '/') {
+      return renderHtml({ App: <App /> }, <Slot id="App" />, { rscPath: '' });
     }
   },
-);
+  handleBuild: () =>
+    createAsyncIterable(async () => {
+      const tasks = [
+        async () => ({
+          type: 'htmlHead' as const,
+          pathSpec: [],
+        }),
+      ];
+      return tasks;
+    }),
+});
+
+export default entries;

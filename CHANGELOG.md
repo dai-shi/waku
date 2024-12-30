@@ -2,6 +2,77 @@
 
 ## [Unreleased]
 
+## [0.21.11] - 2024-12-28
+
+### Changed
+
+- Vite 6 migration
+- Bug fixes
+
+## [0.21.10] - 2024-12-22
+
+### Changed
+
+- Bug fixes
+
+## [0.21.9] - 2024-12-15
+
+### Changed
+
+- Support for progressive enhancement
+- Various bug fixes
+
+## [0.21.8] - 2024-12-10
+
+### Changed
+
+- Bug fixes
+- React 19
+
+## [0.21.7] - 2024-12-02
+
+### Changed
+
+- Bug fixes
+- Small improvements
+
+## [0.21.6] - 2024-11-10
+
+### Changed
+
+- Switch from Cloudflare Pages to Workers
+
+## [0.21.5] - 2024-10-21
+
+### Changed
+
+- Bug fixes
+
+## [0.21.4] - 2024-10-18
+
+### Changed
+
+- Router improvements
+
+## [0.21.3] - 2024-10-04
+
+### Changed
+
+- Router typing support
+- Various improvements
+
+## [0.21.2] - 2024-09-13
+
+### Changed
+
+- Bug fixes
+
+## [0.21.1] - 2024-08-29
+
+### Changed
+
+- Minor improvements
+
 ## [0.21.0] - 2024-08-20
 
 ### Added

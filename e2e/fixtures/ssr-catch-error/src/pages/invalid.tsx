@@ -9,5 +9,5 @@ export default async function InvalidPage() {
 export const getConfig = async () => {
   return {
     render: 'dynamic',
-  };
+  } as const;
 };

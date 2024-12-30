@@ -1,9 +1,15 @@
 import net from 'node:net';
-import { expect, test as basicTest } from '@playwright/test';
-import type { ConsoleMessage } from '@playwright/test';
-import type { ChildProcess } from 'node:child_process';
-import { error, info } from '@actions/core';
+import { execSync, exec } from 'node:child_process';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import { cpSync, rmSync, mkdtempSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import type { ChildProcess } from 'node:child_process';
+import { expect, test as basicTest } from '@playwright/test';
+import type { ConsoleMessage, Page } from '@playwright/test';
+import { error, info } from '@actions/core';
+import waitPort from 'wait-port';
 
 // Upstream doesn't support ES module
 //  Related: https://github.com/dwyl/terminate/pull/85
@@ -21,12 +27,30 @@ const unexpectedErrors: RegExp[] = [
 ];
 
 export async function getFreePort(): Promise<number> {
-  return new Promise<number>((res) => {
+  return new Promise<number>((resolve) => {
     const srv = net.createServer();
     srv.listen(0, () => {
       const port = (srv.address() as net.AddressInfo).port;
-      srv.close(() => res(port));
+      srv.close(() => resolve(port));
     });
+  });
+}
+
+export async function isPortAvailable(port: number): Promise<boolean> {
+  return new Promise<boolean>((resolve, reject) => {
+    const srv = net.createServer();
+    srv.once('error', (err) => {
+      if ((err as any).code === 'EADDRINUSE') {
+        resolve(false);
+      } else {
+        reject(err);
+      }
+    });
+    srv.once('listening', () => {
+      srv.close();
+      resolve(true);
+    });
+    srv.listen(port);
   });
 }
 
@@ -60,8 +84,8 @@ export function debugChildProcess(
   });
 }
 
-export const test = basicTest.extend({
-  page: async ({ page }, use) => {
+export const test = basicTest.extend<{ page: Page }>({
+  page: async ({ page }, pageUse) => {
     const callback = (msg: ConsoleMessage) => {
       if (unexpectedErrors.some((re) => re.test(msg.text()))) {
         throw new Error(msg.text());
@@ -69,7 +93,112 @@ export const test = basicTest.extend({
       console.log(`${msg.type()}: ${msg.text()}`);
     };
     page.on('console', callback);
-    await use(page);
+    await pageUse(page);
     page.off('console', callback);
   },
 });
+
+export const prepareNormalSetup = (fixtureName: string) => {
+  const waku = fileURLToPath(
+    new URL('../packages/waku/dist/cli.js', import.meta.url),
+  );
+  const fixtureDir = fileURLToPath(
+    new URL('./fixtures/' + fixtureName, import.meta.url),
+  );
+  let built = false;
+  const startApp = async (mode: 'DEV' | 'PRD' | 'STATIC') => {
+    if (mode !== 'DEV' && !built) {
+      rmSync(`${fixtureDir}/dist`, { recursive: true, force: true });
+      execSync(`node ${waku} build`, { cwd: fixtureDir });
+      built = true;
+    }
+    const port = await getFreePort();
+    let cmd: string;
+    switch (mode) {
+      case 'DEV':
+        cmd = `node ${waku} dev --port ${port}`;
+        break;
+      case 'PRD':
+        cmd = `node ${waku} start --port ${port}`;
+        break;
+      case 'STATIC':
+        cmd = `pnpm serve -l ${port} dist/public`;
+        break;
+    }
+    const cp = exec(cmd, { cwd: fixtureDir });
+    debugChildProcess(cp, fileURLToPath(import.meta.url), [
+      /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
+    ]);
+    await waitPort({ port });
+    const stopApp = async () => {
+      await terminate(cp.pid!);
+    };
+    return { port, stopApp, fixtureDir };
+  };
+  return startApp;
+};
+
+export const prepareStandaloneSetup = (fixtureName: string) => {
+  const wakuDir = fileURLToPath(new URL('../packages/waku', import.meta.url));
+  const { version } = createRequire(import.meta.url)(
+    join(wakuDir, 'package.json'),
+  );
+  const fixtureDir = fileURLToPath(
+    new URL('./fixtures/' + fixtureName, import.meta.url),
+  );
+  // GitHub Action on Windows doesn't support mkdtemp on global temp dir,
+  // Which will cause files in `src` folder to be empty. I don't know why
+  const tmpDir = process.env.TEMP_DIR || tmpdir();
+  let standaloneDir: string | undefined;
+  let built = false;
+  const startApp = async (mode: 'DEV' | 'PRD' | 'STATIC') => {
+    if (!standaloneDir) {
+      standaloneDir = mkdtempSync(join(tmpDir, fixtureName));
+      cpSync(fixtureDir, standaloneDir, {
+        filter: (src) => {
+          return !src.includes('node_modules') && !src.includes('dist');
+        },
+        recursive: true,
+      });
+      execSync(`pnpm pack --pack-destination ${standaloneDir}`, {
+        cwd: wakuDir,
+        stdio: 'inherit',
+      });
+      execSync(
+        `npm install --force ${join(standaloneDir, `waku-${version}.tgz`)}`,
+        { cwd: standaloneDir, stdio: 'inherit' },
+      );
+    }
+    if (mode !== 'DEV' && !built) {
+      rmSync(`${standaloneDir}/dist`, { recursive: true, force: true });
+      execSync(
+        `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} build`,
+        { cwd: standaloneDir },
+      );
+      built = true;
+    }
+    const port = await getFreePort();
+    let cmd: string;
+    switch (mode) {
+      case 'DEV':
+        cmd = `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} dev --port ${port}`;
+        break;
+      case 'PRD':
+        cmd = `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start --port ${port}`;
+        break;
+      case 'STATIC':
+        cmd = `node ${join(standaloneDir, './node_modules/serve/build/main.js')} dist/public -p ${port}`;
+        break;
+    }
+    const cp = exec(cmd, { cwd: standaloneDir });
+    debugChildProcess(cp, fileURLToPath(import.meta.url), [
+      /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
+    ]);
+    await waitPort({ port });
+    const stopApp = async () => {
+      await terminate(cp.pid!);
+    };
+    return { port, stopApp, standaloneDir };
+  };
+  return startApp;
+};

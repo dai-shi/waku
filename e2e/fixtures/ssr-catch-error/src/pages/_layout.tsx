@@ -6,18 +6,11 @@ export default async function RootLayout({
 }: {
   children: ReactNode;
 }) {
-  return (
-    <html>
-      <head></head>
-      <body>
-        <ClientLayout>{children}</ClientLayout>
-      </body>
-    </html>
-  );
+  return <ClientLayout>{children}</ClientLayout>;
 }
 
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
