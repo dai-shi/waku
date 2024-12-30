@@ -101,7 +101,7 @@ jobs:
       - run: pnpm exec playwright test --shard=${{ matrix.shared }}/${{ matrix.shardTotal }}
         env:
           TEMP_DIR: ${{ runner.temp }}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report-${{ matrix.os }}-${{ matrix.version }}-${{ matrix.shared }}
