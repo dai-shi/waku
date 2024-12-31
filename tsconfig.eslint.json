@@ -5,10 +5,11 @@
     "allowJs": true
   },
   "include": [
-    "./eslint.config.js",
-    "packages/**/*",
-    "examples/**/*",
-    "e2e/**/*",
-    "./playwright.config.ts"
+    "eslint.config.js",
+    "packages/",
+    "examples/",
+    "examples/44_cloudflare/.wrangler/**/*",
+    "e2e/",
+    "playwright.config.ts"
   ]
 }
