@@ -58,5 +58,17 @@ for (const mode of ['DEV', 'PRD'] as const) {
       await page.close();
       await context.close();
     });
+
+    test('check hydration error', async ({ page }) => {
+      test.skip(mode !== 'DEV');
+      const messages: string[] = [];
+      page.on('console', (msg) => messages.push(msg.text()));
+      await page.goto(`http://localhost:${port}/`);
+      await expect(page.getByTestId('app-name')).toHaveText('Waku');
+      await expect(page.getByTestId('count')).toHaveText('0');
+      await page.getByTestId('increment').click();
+      await expect(page.getByTestId('count')).toHaveText('1');
+      expect(messages.join('\n')).not.toContain('hydration-mismatch');
+    });
   });
 }

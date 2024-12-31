@@ -24,6 +24,15 @@ declare global {
   }
 }
 
+const DEFAULT_HTML_HEAD = [
+  createElement('meta', { charSet: 'utf-8' }),
+  createElement('meta', {
+    name: 'viewport',
+    content: 'width=device-width, initial-scale=1',
+  }),
+  createElement('meta', { name: 'generator', content: 'Waku' }),
+];
+
 const BASE_PATH = `${import.meta.env?.WAKU_CONFIG_BASE_PATH}${
   import.meta.env?.WAKU_CONFIG_RSC_BASE
 }/`;
@@ -231,7 +240,12 @@ export const Root = ({
   return createElement(
     RefetchContext.Provider,
     { value: refetch },
-    createElement(ElementsContext.Provider, { value: elements }, children),
+    createElement(
+      ElementsContext.Provider,
+      { value: elements },
+      ...DEFAULT_HTML_HEAD,
+      children,
+    ),
   );
 };
 
@@ -376,4 +390,10 @@ export const ServerRootInternal = ({
 }: {
   elements: Elements;
   children: ReactNode;
-}) => createElement(ElementsContext.Provider, { value: elements }, children);
+}) =>
+  createElement(
+    ElementsContext.Provider,
+    { value: elements },
+    ...DEFAULT_HTML_HEAD,
+    children,
+  );
