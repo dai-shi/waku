@@ -16,7 +16,6 @@ import type {
   PropsForPages,
 } from './create-pages-utils/inferred-path-types.js';
 import { Children, Slot, ThrowError_UNSTABLE } from '../minimal/client.js';
-import { unstable_getHeaders } from 'waku/server';
 
 const sanitizeSlug = (slug: string) =>
   slug.replace(/\./g, '').replace(/ /g, '-');
