@@ -18,6 +18,13 @@ for (const mode of ['DEV', 'PRD'] as const) {
     test('access top page', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByText('Home Page')).toBeVisible();
+      await expect(page.getByText('Something went wrong')).toBeVisible();
+    });
+
+    test('access dynamic server page', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/dynamic`);
+      await expect(page.getByText('Home Page')).toBeVisible();
+      await expect(page.getByText('Something went wrong')).toBeVisible();
     });
 
     test('access invalid page through client router', async ({ page }) => {
@@ -29,6 +36,15 @@ for (const mode of ['DEV', 'PRD'] as const) {
     test('access invalid page directly', async ({ page }) => {
       await page.goto(`http://localhost:${port}/invalid`);
       await expect(page.getByText('Unauthorized')).toBeVisible();
+    });
+    test('navigate back after invalid page through client router', async ({
+      page,
+    }) => {
+      await page.goto(`http://localhost:${port}/`);
+      await page.getByText('Invalid page').click();
+      await expect(page.getByText('401')).toBeVisible();
+      await page.goBack();
+      await expect(page.getByText('Home Page')).toBeVisible();
     });
   });
 }
