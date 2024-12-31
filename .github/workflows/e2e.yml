@@ -28,10 +28,9 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: 'pnpm'
-          cache-dependency-path: '**/pnpm-lock.yaml'
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install
       - run: pnpm run compile
       - uses: actions/upload-artifact@v4
         with:
@@ -77,8 +76,7 @@ jobs:
         with:
           node-version: ${{ matrix.version }}
           cache: 'pnpm'
-          cache-dependency-path: '**/pnpm-lock.yaml'
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install
       - uses: actions/download-artifact@v4
         with:
           name: create-waku
