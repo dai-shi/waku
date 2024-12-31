@@ -905,9 +905,7 @@ describe('createPages', () => {
       }),
     ]);
     const { getRouteConfig } = injectedFunctions();
-    await expect(getRouteConfig).rejects.toThrowError(
-      'Duplicated dynamic path: /test',
-    );
+    await expect(getRouteConfig).rejects.toThrowError('Duplicated path: /test');
   });
 
   it('fails if duplicated static paths are registered', async () => {
@@ -924,9 +922,7 @@ describe('createPages', () => {
       }),
     ]);
     const { getRouteConfig } = injectedFunctions();
-    await expect(getRouteConfig).rejects.toThrowError(
-      'Duplicated component for: test/page',
-    );
+    await expect(getRouteConfig).rejects.toThrowError('Duplicated path: /test');
   });
 
   it.fails(
