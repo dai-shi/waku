@@ -3,12 +3,12 @@
 import { useState } from 'react';
 
 export type CounterProps = {
-  throws: () => Promise<string>;
+  throws: (input: string) => Promise<string>;
 };
 
 export function Counter({ throws }: CounterProps) {
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('init');
+  const [success, setSuccess] = useState('init');
   return (
     <div>
       <p data-testid="throws-error">{error}</p>
@@ -16,7 +16,7 @@ export function Counter({ throws }: CounterProps) {
       <button
         data-testid="throws"
         onClick={() => {
-          throws()
+          throws('')
             .then((value) => {
               setSuccess(value);
             })
@@ -24,6 +24,30 @@ export function Counter({ throws }: CounterProps) {
         }}
       >
         throw
+      </button>
+      <button
+        data-testid="success"
+        onClick={() => {
+          throws('It worked')
+            .then((value) => {
+              setSuccess(value);
+            })
+            .catch((e) => {
+              console.error(e);
+              setError(e);
+            });
+        }}
+      >
+        success
+      </button>
+      <button
+        data-testid="reset"
+        onClick={() => {
+          setSuccess("init");
+          setError("init");
+        }}
+      >
+        reset
       </button>
     </div>
   );

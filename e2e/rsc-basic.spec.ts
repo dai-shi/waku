@@ -70,5 +70,27 @@ for (const mode of ['DEV', 'PRD'] as const) {
         page.getByTestId('server-throws').getByTestId('throws-error'),
       ).toHaveText('Something unexpected happened');
     });
+
+    test('server handle network errors', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/`);
+      await expect(page.getByTestId('app-name')).toHaveText('Waku');
+      await page.getByTestId('server-throws').getByTestId('success').click();
+      await expect(
+        page.getByTestId('server-throws').getByTestId('throws-success'),
+      ).toHaveText('It worked');
+      await page.getByTestId('server-throws').getByTestId('reset').click();
+      await expect(
+        page.getByTestId('server-throws').getByTestId('throws-success'),
+      ).toHaveText('init');
+      // This is intended to simulate the network or server being down
+      await page.route('http://localhost:${port}/**', (route) => {
+        return route.abort();
+      });
+      await page.getByTestId('server-throws').getByTestId('success').click();
+      // Not sure what we should expect...
+      await expect(
+        page.getByTestId('server-throws').getByTestId('throws-success'),
+      ).toHaveText('init');
+    });
   });
 }

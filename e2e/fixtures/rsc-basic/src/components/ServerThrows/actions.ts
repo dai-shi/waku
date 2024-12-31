@@ -1,5 +1,8 @@
 'use server';
 
-export const throws = async (): Promise<string> => {
-  throw new Error('Something unexpected happened');
+export const throws = async (input: string): Promise<string> => {
+  if (!input) {
+    throw new Error('Something unexpected happened');
+  }
+  return input;
 };
