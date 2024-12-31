@@ -62,12 +62,12 @@ export default defineEntries({
         async () => ({
           type: 'defaultHtml' as const,
           pathname: '/',
-          htemlHead: generateHtmlHead(),
+          htmlHead: generateHtmlHead(),
         }),
         async () => ({
           type: 'defaultHtml' as const,
           pathname: '/no-ssr',
-          htemlHead: generateHtmlHead(),
+          htmlHead: generateHtmlHead(),
         }),
       ];
       return tasks;

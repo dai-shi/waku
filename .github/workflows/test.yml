@@ -25,6 +25,5 @@ jobs:
         with:
           node-version: ${{ matrix.version }}
           cache: 'pnpm'
-          cache-dependency-path: '**/pnpm-lock.yaml'
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install
       - run: pnpm test
