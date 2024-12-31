@@ -9,8 +9,9 @@ const patchRsdw = (code: string, type: 'SERVER' | 'CLIENT') => {
   if (index === -1) {
     throw new Error('rscRsdwPlugin: Unexpected code structure');
   }
-  code =
-    code.slice(0, index) +
+
+  return code.replaceAll(
+    'function requireAsyncModule(id)',
     `
 globalThis.__WAKU_${type}_MODULE_LOADING__ ||= new Map();
 globalThis.__WAKU_${type}_MODULE_CACHE__ ||= new Map();
@@ -26,9 +27,9 @@ globalThis.__WAKU_${type}_CHUNK_LOAD__ ||= (id) => {
   return globalThis.__WAKU_${type}_MODULE_LOADING__.get(id);
 };
 globalThis.__WAKU_${type}_REQUIRE__ ||= (id) => globalThis.__WAKU_${type}_MODULE_CACHE__.get(id);
-` +
-    code.slice(index);
-  return code;
+function requireAsyncModule(id)
+`,
+  );
 };
 
 export function rscRsdwPlugin(): Plugin {
@@ -76,6 +77,7 @@ export function rscRsdwPlugin(): Plugin {
           '/react-server-dom-webpack-client.browser.production.js',
           '/react-server-dom-webpack-client.browser.development.js',
           '/react-server-dom-webpack_client.js',
+          '/react-server-dom-webpack_client__edge.js',
         ].some((suffix) => file!.endsWith(suffix))
       ) {
         return patchRsdw(code, 'CLIENT');

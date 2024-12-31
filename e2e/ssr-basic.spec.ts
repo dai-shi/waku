@@ -1,51 +1,18 @@
 import { expect } from '@playwright/test';
-import { execSync, exec, ChildProcess } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import waitPort from 'wait-port';
-import { debugChildProcess, getFreePort, terminate, test } from './utils.js';
-import { rm } from 'node:fs/promises';
 
-const waku = fileURLToPath(
-  new URL('../packages/waku/dist/cli.js', import.meta.url),
-);
+import { test, prepareNormalSetup } from './utils.js';
 
-const commands = [
-  {
-    command: 'dev',
-  },
-  {
-    build: 'build',
-    command: 'start',
-  },
-];
+const startApp = prepareNormalSetup('ssr-basic');
 
-const cwd = fileURLToPath(new URL('./fixtures/ssr-basic', import.meta.url));
-
-for (const { build, command } of commands) {
-  test.describe(`ssr-basic: ${command}`, () => {
-    let cp: ChildProcess;
+for (const mode of ['DEV', 'PRD'] as const) {
+  test.describe(`ssr-basic: ${mode}`, () => {
     let port: number;
-    test.beforeAll('remove cache', async () => {
-      await rm(`${cwd}/dist`, {
-        recursive: true,
-        force: true,
-      });
-    });
-
+    let stopApp: () => Promise<void>;
     test.beforeAll(async () => {
-      if (build) {
-        execSync(`node ${waku} ${build}`, { cwd });
-      }
-      port = await getFreePort();
-      cp = exec(`node ${waku} ${command} --port ${port}`, { cwd });
-      debugChildProcess(cp, fileURLToPath(import.meta.url), [
-        /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
-      ]);
-      await waitPort({ port });
+      ({ port, stopApp } = await startApp(mode));
     });
-
     test.afterAll(async () => {
-      await terminate(cp.pid!);
+      await stopApp();
     });
 
     test('increase counter', async ({ page }) => {
@@ -90,6 +57,18 @@ for (const { build, command } of commands) {
       await expect(aiLocator.getByTestId('ui-state-count')).toHaveText('0');
       await page.close();
       await context.close();
+    });
+
+    test('check hydration error', async ({ page }) => {
+      test.skip(mode !== 'DEV');
+      const messages: string[] = [];
+      page.on('console', (msg) => messages.push(msg.text()));
+      await page.goto(`http://localhost:${port}/`);
+      await expect(page.getByTestId('app-name')).toHaveText('Waku');
+      await expect(page.getByTestId('count')).toHaveText('0');
+      await page.getByTestId('increment').click();
+      await expect(page.getByTestId('count')).toHaveText('1');
+      expect(messages.join('\n')).not.toContain('hydration-mismatch');
     });
   });
 }

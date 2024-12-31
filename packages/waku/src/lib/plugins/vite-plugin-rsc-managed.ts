@@ -8,7 +8,11 @@ const stripExt = (fname: string) => {
   return ext ? fname.slice(0, -ext.length) : fname;
 };
 
-const getManagedEntries = (filePath: string, srcDir: string) => `
+const getManagedEntries = (
+  filePath: string,
+  srcDir: string,
+  pagesDir: string,
+) => `
 import { fsRouter } from 'waku/router/server';
 
 export default fsRouter(
@@ -16,6 +20,7 @@ export default fsRouter(
   (file) => import.meta.glob('/${srcDir}/pages/**/*.{${EXTENSIONS.map((ext) =>
     ext.replace(/^\./, ''),
   ).join(',')}}')[\`/${srcDir}/pages/\${file}\`]?.(),
+  '${pagesDir}',
 );
 `;
 
@@ -36,6 +41,7 @@ if (globalThis.__WAKU_HYDRATE__) {
 export function rscManagedPlugin(opts: {
   basePath: string;
   srcDir: string;
+  pagesDir: string;
   addEntriesToInput?: boolean;
   addMainToInput?: boolean;
 }): Plugin {
@@ -81,7 +87,11 @@ export function rscManagedPlugin(opts: {
     },
     load(id) {
       if (id === '\0' + entriesFile + '.js') {
-        return getManagedEntries(entriesFile + '.js', opts.srcDir);
+        return getManagedEntries(
+          entriesFile + '.js',
+          opts.srcDir,
+          opts.pagesDir,
+        );
       }
       if (id === '\0' + mainFile + '.js' || id === '\0' + mainPath + '.js') {
         return getManagedMain();

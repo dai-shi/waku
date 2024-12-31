@@ -40,23 +40,9 @@ export function decodeRoutePath(rscPath: string): string {
   return rscPath.slice(ROUTE_PREFIX.length);
 }
 
-// It starts with "/" to avoid conflicting with normal component ids.
-export const SHOULD_SKIP_ID = '/SHOULD_SKIP';
+export const ROUTE_ID = 'ROUTE';
+export const IS_STATIC_ID = 'IS_STATIC';
+export const HAS404_ID = 'HAS404';
 
-// It starts with "/" to avoid conflicting with normal component ids.
-export const ROUTE_ID = '/ROUTE';
-
-// It starts with "/" to avoid conflicting with normal component ids.
-export const IS_STATIC_ID = '/IS_STATIC';
-
-// It starts with "/" to avoid conflicting with normal component ids.
-export const HAS404_ID = '/HAS404';
-
-// TODO revisit shouldSkip API
-export type ShouldSkip = (readonly [
-  componentId: string,
-  readonly [
-    path?: boolean, // if we compare path
-    query?: boolean, // if we compare query
-  ],
-])[];
+// For HTTP header
+export const SKIP_HEADER = 'X-Waku-Router-Skip';

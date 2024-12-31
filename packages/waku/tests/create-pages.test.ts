@@ -412,11 +412,11 @@ beforeEach(() => {
 
 function injectedFunctions() {
   expect(defineRouterMock).toHaveBeenCalledTimes(1);
-  assert(defineRouterMock.mock.calls[0]?.[0].getPathConfig);
-  assert(defineRouterMock.mock.calls[0]?.[0].renderRoute);
+  assert(defineRouterMock.mock.calls[0]?.[0].getRouteConfig);
+  assert(defineRouterMock.mock.calls[0]?.[0].handleRoute);
   return {
-    getPathConfig: defineRouterMock.mock.calls[0][0].getPathConfig,
-    renderRoute: defineRouterMock.mock.calls[0][0].renderRoute,
+    getRouteConfig: defineRouterMock.mock.calls[0][0].getRouteConfig,
+    handleRoute: defineRouterMock.mock.calls[0][0].handleRoute,
   };
 }
 
@@ -430,9 +430,9 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
+    const { getRouteConfig, handleRoute } = injectedFunctions();
 
-    expect(await getPathConfig()).toEqual([
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -440,17 +440,11 @@ describe('createPages', () => {
         },
         routeElement: { isStatic: true },
         noSsr: false,
-        path: [
-          {
-            name: 'test',
-            type: 'literal',
-          },
-        ],
-        pattern: '^/test$',
+        path: [{ name: 'test', type: 'literal' }],
       },
     ]);
 
-    const route = await renderRoute('/test', {
+    const route = await handleRoute('/test', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -467,8 +461,8 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -476,16 +470,10 @@ describe('createPages', () => {
         },
         routeElement: { isStatic: true },
         noSsr: false,
-        path: [
-          {
-            name: 'test',
-            type: 'literal',
-          },
-        ],
-        pattern: '^/test$',
+        path: [{ name: 'test', type: 'literal' }],
       },
     ]);
-    const route = await renderRoute('/test', {
+    const route = await handleRoute('/test', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -509,8 +497,8 @@ describe('createPages', () => {
       }),
     ]);
 
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           'layout:/': { isStatic: true },
@@ -519,16 +507,10 @@ describe('createPages', () => {
         },
         routeElement: { isStatic: true },
         noSsr: false,
-        path: [
-          {
-            name: 'test',
-            type: 'literal',
-          },
-        ],
-        pattern: '^/test$',
+        path: [{ name: 'test', type: 'literal' }],
       },
     ]);
-    const route = await renderRoute('/test', {
+    const route = await handleRoute('/test', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -556,8 +538,8 @@ describe('createPages', () => {
       }),
     ]);
 
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           'layout:/': { isStatic: false },
@@ -566,17 +548,11 @@ describe('createPages', () => {
         },
         routeElement: { isStatic: true },
         noSsr: false,
-        path: [
-          {
-            name: 'test',
-            type: 'literal',
-          },
-        ],
-        pattern: '^/test$',
+        path: [{ name: 'test', type: 'literal' }],
       },
     ]);
 
-    const route = await renderRoute('/test', {
+    const route = await handleRoute('/test', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -597,8 +573,8 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -607,24 +583,59 @@ describe('createPages', () => {
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
-          {
-            name: 'test',
-            type: 'literal',
-          },
-          {
-            name: 'nested',
-            type: 'literal',
-          },
+          { name: 'test', type: 'literal' },
+          { name: 'nested', type: 'literal' },
         ],
-        pattern: '^/test/nested$',
       },
     ]);
-    const route = await renderRoute('/test/nested', {
+    const route = await handleRoute('/test/nested', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
     expect(route.routeElement).toBeDefined();
     expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/nested']);
+  });
+
+  it('creates a nested static page with nested layout', async () => {
+    const TestPage = () => null;
+    createPages(async ({ createPage, createLayout }) => [
+      createPage({
+        render: 'static',
+        path: '/test/nested',
+        component: TestPage,
+      }),
+      createLayout({
+        render: 'static',
+        path: '/test/nested',
+        component: () => null,
+      }),
+    ]);
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
+      {
+        elements: {
+          root: { isStatic: true },
+          'page:/test/nested': { isStatic: true },
+          'layout:/test/nested': { isStatic: true },
+        },
+        routeElement: { isStatic: true },
+        noSsr: false,
+        path: [
+          { name: 'test', type: 'literal' },
+          { name: 'nested', type: 'literal' },
+        ],
+      },
+    ]);
+    const route = await handleRoute('/test/nested', {
+      query: '?skip=[]',
+    });
+    expect(route).toBeDefined();
+    expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual([
+      'root',
+      'page:/test/nested',
+      'layout:/test/nested',
+    ]);
   });
 
   it('creates a nested dynamic page', async () => {
@@ -636,8 +647,8 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -646,20 +657,13 @@ describe('createPages', () => {
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
-          {
-            name: 'test',
-            type: 'literal',
-          },
-          {
-            name: 'nested',
-            type: 'literal',
-          },
+          { name: 'test', type: 'literal' },
+          { name: 'nested', type: 'literal' },
         ],
-        pattern: '^/test/nested$',
       },
     ]);
 
-    const route = await renderRoute('/test/nested', {
+    const route = await handleRoute('/test/nested', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -680,8 +684,8 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -690,20 +694,15 @@ describe('createPages', () => {
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
-          {
-            name: 'test',
-            type: 'literal',
-          },
-          {
-            name: 'w',
-            type: 'literal',
-          },
-          {
-            name: 'x',
-            type: 'literal',
-          },
+          { name: 'test', type: 'literal' },
+          { name: 'w', type: 'literal' },
+          { name: 'x', type: 'literal' },
         ],
-        pattern: '^/test/([^/]+)/([^/]+)$',
+        pathPattern: [
+          { name: 'test', type: 'literal' },
+          { name: 'a', type: 'group' },
+          { name: 'b', type: 'group' },
+        ],
       },
       {
         elements: {
@@ -713,23 +712,18 @@ describe('createPages', () => {
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
-          {
-            name: 'test',
-            type: 'literal',
-          },
-          {
-            name: 'y',
-            type: 'literal',
-          },
-          {
-            name: 'z',
-            type: 'literal',
-          },
+          { name: 'test', type: 'literal' },
+          { name: 'y', type: 'literal' },
+          { name: 'z', type: 'literal' },
         ],
-        pattern: '^/test/([^/]+)/([^/]+)$',
+        pathPattern: [
+          { name: 'test', type: 'literal' },
+          { name: 'a', type: 'group' },
+          { name: 'b', type: 'group' },
+        ],
       },
     ]);
-    const route = await renderRoute('/test/y/z', {
+    const route = await handleRoute('/test/y/z', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -746,8 +740,8 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -756,23 +750,13 @@ describe('createPages', () => {
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
-          {
-            name: 'test',
-            type: 'literal',
-          },
-          {
-            name: 'a',
-            type: 'group',
-          },
-          {
-            name: 'b',
-            type: 'group',
-          },
+          { name: 'test', type: 'literal' },
+          { name: 'a', type: 'group' },
+          { name: 'b', type: 'group' },
         ],
-        pattern: '^/test/([^/]+)/([^/]+)$',
       },
     ]);
-    const route = await renderRoute('/test/w/x', {
+    const route = await handleRoute('/test/w/x', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -790,8 +774,8 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
@@ -800,23 +784,17 @@ describe('createPages', () => {
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
-          {
-            name: 'test',
-            type: 'literal',
-          },
-          {
-            name: 'a',
-            type: 'literal',
-          },
-          {
-            name: 'b',
-            type: 'literal',
-          },
+          { name: 'test', type: 'literal' },
+          { name: 'a', type: 'literal' },
+          { name: 'b', type: 'literal' },
         ],
-        pattern: '^/test/(.*)$',
+        pathPattern: [
+          { name: 'test', type: 'literal' },
+          { name: 'path', type: 'wildcard' },
+        ],
       },
     ]);
-    const route = await renderRoute('/test/a/b', {
+    const route = await handleRoute('/test/a/b', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -833,29 +811,22 @@ describe('createPages', () => {
         component: TestPage,
       }),
     ]);
-    const { getPathConfig, renderRoute } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
-        routeElement: { isStatic: true },
         elements: {
           root: { isStatic: true },
           'page:/test/[...path]': { isStatic: false },
         },
+        routeElement: { isStatic: true },
         noSsr: false,
         path: [
-          {
-            name: 'test',
-            type: 'literal',
-          },
-          {
-            name: 'path',
-            type: 'wildcard',
-          },
+          { name: 'test', type: 'literal' },
+          { name: 'path', type: 'wildcard' },
         ],
-        pattern: '^/test/(.*)$',
       },
     ]);
-    const route = await renderRoute('/test/a/b', {
+    const route = await handleRoute('/test/a/b', {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
@@ -876,8 +847,8 @@ describe('createPages', () => {
         component: () => null,
       }),
     ]);
-    const { getPathConfig } = injectedFunctions();
-    await expect(getPathConfig).rejects.toThrowError(
+    const { getRouteConfig } = injectedFunctions();
+    await expect(getRouteConfig).rejects.toThrowError(
       'staticPaths does not match with slug pattern',
     );
   });
@@ -897,37 +868,25 @@ describe('createPages', () => {
         unstable_disableSSR: true,
       }),
     ]);
-    const { getPathConfig } = injectedFunctions();
-    expect(await getPathConfig()).toEqual([
+    const { getRouteConfig } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
       {
-        routeElement: { isStatic: true },
         elements: {
           root: { isStatic: true },
           'page:/static': { isStatic: true },
         },
+        routeElement: { isStatic: true },
         noSsr: true,
-        path: [
-          {
-            name: 'static',
-            type: 'literal',
-          },
-        ],
-        pattern: '^/static$',
+        path: [{ name: 'static', type: 'literal' }],
       },
       {
-        routeElement: { isStatic: true },
         elements: {
           root: { isStatic: true },
           'page:/dynamic': { isStatic: false },
         },
+        routeElement: { isStatic: true },
         noSsr: true,
-        path: [
-          {
-            name: 'dynamic',
-            type: 'literal',
-          },
-        ],
-        pattern: '^/dynamic$',
+        path: [{ name: 'dynamic', type: 'literal' }],
       },
     ]);
   });
@@ -945,8 +904,8 @@ describe('createPages', () => {
         component: () => null,
       }),
     ]);
-    const { getPathConfig } = injectedFunctions();
-    await expect(getPathConfig).rejects.toThrowError(
+    const { getRouteConfig } = injectedFunctions();
+    await expect(getRouteConfig).rejects.toThrowError(
       'Duplicated dynamic path: /test',
     );
   });
@@ -964,8 +923,8 @@ describe('createPages', () => {
         component: () => null,
       }),
     ]);
-    const { getPathConfig } = injectedFunctions();
-    await expect(getPathConfig).rejects.toThrowError(
+    const { getRouteConfig } = injectedFunctions();
+    await expect(getRouteConfig).rejects.toThrowError(
       'Duplicated component for: test/page',
     );
   });
@@ -985,8 +944,8 @@ describe('createPages', () => {
           component: () => null,
         }),
       ]);
-      const { getPathConfig } = injectedFunctions();
-      await expect(getPathConfig).rejects.toThrowError(
+      const { getRouteConfig } = injectedFunctions();
+      await expect(getRouteConfig).rejects.toThrowError(
         'Duplicated component for: test/page',
       );
     },
@@ -996,27 +955,20 @@ describe('createPages', () => {
     const TestPage = vi.fn();
     complexTestRouter(createPages, TestPage);
 
-    const { getPathConfig, renderRoute } = injectedFunctions();
+    const { getRouteConfig, handleRoute } = injectedFunctions();
 
-    expect(await getPathConfig()).toEqual([
+    expect(await getRouteConfig()).toEqual([
       {
         elements: {
           root: { isStatic: true },
           'page:/client/static': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/client/static$',
-        path: [
-          {
-            type: 'literal',
-            name: 'client',
-          },
-          {
-            type: 'literal',
-            name: 'static',
-          },
-        ],
         noSsr: false,
+        path: [
+          { name: 'client', type: 'literal' },
+          { name: 'static', type: 'literal' },
+        ],
       },
       {
         elements: {
@@ -1024,22 +976,17 @@ describe('createPages', () => {
           'page:/server/static/static-echo': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/static/([^/]+)$',
-        path: [
-          {
-            type: 'literal',
-            name: 'server',
-          },
-          {
-            type: 'literal',
-            name: 'static',
-          },
-          {
-            type: 'literal',
-            name: 'static-echo',
-          },
-        ],
         noSsr: false,
+        path: [
+          { name: 'server', type: 'literal' },
+          { name: 'static', type: 'literal' },
+          { name: 'static-echo', type: 'literal' },
+        ],
+        pathPattern: [
+          { name: 'server', type: 'literal' },
+          { name: 'static', type: 'literal' },
+          { name: 'echo', type: 'group' },
+        ],
       },
       {
         elements: {
@@ -1047,22 +994,17 @@ describe('createPages', () => {
           'page:/server/static/static-echo-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/static/([^/]+)$',
-        path: [
-          {
-            type: 'literal',
-            name: 'server',
-          },
-          {
-            type: 'literal',
-            name: 'static',
-          },
-          {
-            type: 'literal',
-            name: 'static-echo-2',
-          },
-        ],
         noSsr: false,
+        path: [
+          { name: 'server', type: 'literal' },
+          { name: 'static', type: 'literal' },
+          { name: 'static-echo-2', type: 'literal' },
+        ],
+        pathPattern: [
+          { name: 'server', type: 'literal' },
+          { name: 'static', type: 'literal' },
+          { name: 'echo', type: 'group' },
+        ],
       },
       {
         elements: {
@@ -1070,26 +1012,19 @@ describe('createPages', () => {
           'page:/server/static/static-echo/static-echo-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/static/([^/]+)/([^/]+)$',
-        path: [
-          {
-            type: 'literal',
-            name: 'server',
-          },
-          {
-            type: 'literal',
-            name: 'static',
-          },
-          {
-            type: 'literal',
-            name: 'static-echo',
-          },
-          {
-            type: 'literal',
-            name: 'static-echo-2',
-          },
-        ],
         noSsr: false,
+        path: [
+          { name: 'server', type: 'literal' },
+          { name: 'static', type: 'literal' },
+          { name: 'static-echo', type: 'literal' },
+          { name: 'static-echo-2', type: 'literal' },
+        ],
+        pathPattern: [
+          { name: 'server', type: 'literal' },
+          { name: 'static', type: 'literal' },
+          { name: 'echo', type: 'group' },
+          { name: 'echo2', type: 'group' },
+        ],
       },
       {
         elements: {
@@ -1097,26 +1032,19 @@ describe('createPages', () => {
           'page:/server/static/hello/hello-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/static/([^/]+)/([^/]+)$',
-        path: [
-          {
-            type: 'literal',
-            name: 'server',
-          },
-          {
-            type: 'literal',
-            name: 'static',
-          },
-          {
-            type: 'literal',
-            name: 'hello',
-          },
-          {
-            type: 'literal',
-            name: 'hello-2',
-          },
-        ],
         noSsr: false,
+        path: [
+          { name: 'server', type: 'literal' },
+          { name: 'static', type: 'literal' },
+          { name: 'hello', type: 'literal' },
+          { name: 'hello-2', type: 'literal' },
+        ],
+        pathPattern: [
+          { name: 'server', type: 'literal' },
+          { name: 'static', type: 'literal' },
+          { name: 'echo', type: 'group' },
+          { name: 'echo2', type: 'group' },
+        ],
       },
       {
         elements: {
@@ -1124,22 +1052,17 @@ describe('createPages', () => {
           'page:/static/wild/bar': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/static/wild/(.*)$',
-        path: [
-          {
-            type: 'literal',
-            name: 'static',
-          },
-          {
-            type: 'literal',
-            name: 'wild',
-          },
-          {
-            type: 'literal',
-            name: 'bar',
-          },
-        ],
         noSsr: false,
+        path: [
+          { name: 'static', type: 'literal' },
+          { name: 'wild', type: 'literal' },
+          { name: 'bar', type: 'literal' },
+        ],
+        pathPattern: [
+          { name: 'static', type: 'literal' },
+          { name: 'wild', type: 'literal' },
+          { name: 'wild', type: 'wildcard' },
+        ],
       },
       {
         elements: {
@@ -1147,26 +1070,18 @@ describe('createPages', () => {
           'page:/static/wild/hello/hello-2': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/static/wild/(.*)$',
-        path: [
-          {
-            type: 'literal',
-            name: 'static',
-          },
-          {
-            type: 'literal',
-            name: 'wild',
-          },
-          {
-            type: 'literal',
-            name: 'hello',
-          },
-          {
-            type: 'literal',
-            name: 'hello-2',
-          },
-        ],
         noSsr: false,
+        path: [
+          { name: 'static', type: 'literal' },
+          { name: 'wild', type: 'literal' },
+          { name: 'hello', type: 'literal' },
+          { name: 'hello-2', type: 'literal' },
+        ],
+        pathPattern: [
+          { name: 'static', type: 'literal' },
+          { name: 'wild', type: 'literal' },
+          { name: 'wild', type: 'wildcard' },
+        ],
       },
       {
         elements: {
@@ -1174,30 +1089,19 @@ describe('createPages', () => {
           'page:/static/wild/foo/foo-2/foo-3': { isStatic: true },
         },
         routeElement: { isStatic: true },
-        pattern: '^/static/wild/(.*)$',
-        path: [
-          {
-            type: 'literal',
-            name: 'static',
-          },
-          {
-            type: 'literal',
-            name: 'wild',
-          },
-          {
-            type: 'literal',
-            name: 'foo',
-          },
-          {
-            type: 'literal',
-            name: 'foo-2',
-          },
-          {
-            type: 'literal',
-            name: 'foo-3',
-          },
-        ],
         noSsr: false,
+        path: [
+          { name: 'static', type: 'literal' },
+          { name: 'wild', type: 'literal' },
+          { name: 'foo', type: 'literal' },
+          { name: 'foo-2', type: 'literal' },
+          { name: 'foo-3', type: 'literal' },
+        ],
+        pathPattern: [
+          { name: 'static', type: 'literal' },
+          { name: 'wild', type: 'literal' },
+          { name: 'wild', type: 'wildcard' },
+        ],
       },
       {
         elements: {
@@ -1205,18 +1109,11 @@ describe('createPages', () => {
           'page:/client/dynamic': { isStatic: false },
         },
         routeElement: { isStatic: true },
-        pattern: '^/client/dynamic$',
-        path: [
-          {
-            type: 'literal',
-            name: 'client',
-          },
-          {
-            type: 'literal',
-            name: 'dynamic',
-          },
-        ],
         noSsr: false,
+        path: [
+          { name: 'client', type: 'literal' },
+          { name: 'dynamic', type: 'literal' },
+        ],
       },
       {
         elements: {
@@ -1224,22 +1121,12 @@ describe('createPages', () => {
           'page:/server/one/[echo]': { isStatic: false },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/one/([^/]+)$',
-        path: [
-          {
-            type: 'literal',
-            name: 'server',
-          },
-          {
-            type: 'literal',
-            name: 'one',
-          },
-          {
-            type: 'group',
-            name: 'echo',
-          },
-        ],
         noSsr: false,
+        path: [
+          { name: 'server', type: 'literal' },
+          { name: 'one', type: 'literal' },
+          { name: 'echo', type: 'group' },
+        ],
       },
       {
         elements: {
@@ -1247,26 +1134,13 @@ describe('createPages', () => {
           'page:/server/two/[echo]/[echo2]': { isStatic: false },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/two/([^/]+)/([^/]+)$',
-        path: [
-          {
-            type: 'literal',
-            name: 'server',
-          },
-          {
-            type: 'literal',
-            name: 'two',
-          },
-          {
-            type: 'group',
-            name: 'echo',
-          },
-          {
-            type: 'group',
-            name: 'echo2',
-          },
-        ],
         noSsr: false,
+        path: [
+          { name: 'server', type: 'literal' },
+          { name: 'two', type: 'literal' },
+          { name: 'echo', type: 'group' },
+          { name: 'echo2', type: 'group' },
+        ],
       },
       {
         elements: {
@@ -1274,22 +1148,12 @@ describe('createPages', () => {
           'page:/server/wild/[...wild]': { isStatic: false },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/wild/(.*)$',
-        path: [
-          {
-            type: 'literal',
-            name: 'server',
-          },
-          {
-            type: 'literal',
-            name: 'wild',
-          },
-          {
-            type: 'wildcard',
-            name: 'wild',
-          },
-        ],
         noSsr: false,
+        path: [
+          { name: 'server', type: 'literal' },
+          { name: 'wild', type: 'literal' },
+          { name: 'wild', type: 'wildcard' },
+        ],
       },
       {
         elements: {
@@ -1297,29 +1161,16 @@ describe('createPages', () => {
           'page:/server/oneAndWild/[slug]/[...wild]': { isStatic: false },
         },
         routeElement: { isStatic: true },
-        pattern: '^/server/oneAndWild/([^/]+)/(.*)$',
-        path: [
-          {
-            type: 'literal',
-            name: 'server',
-          },
-          {
-            type: 'literal',
-            name: 'oneAndWild',
-          },
-          {
-            type: 'group',
-            name: 'slug',
-          },
-          {
-            type: 'wildcard',
-            name: 'wild',
-          },
-        ],
         noSsr: false,
+        path: [
+          { name: 'server', type: 'literal' },
+          { name: 'oneAndWild', type: 'literal' },
+          { name: 'slug', type: 'group' },
+          { name: 'wild', type: 'wildcard' },
+        ],
       },
     ]);
-    const route = await renderRoute('/server/two/a/b', {
+    const route = await handleRoute('/server/two/a/b', {
       query: '?skip=[]',
     });
     assert(route);

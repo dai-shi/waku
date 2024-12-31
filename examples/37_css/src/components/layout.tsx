@@ -3,6 +3,9 @@ import type { ReactNode } from 'react';
 
 import './layout.styles.css';
 
+// eslint-disable-next-line import/no-unresolved
+import '@stylex-dev.css';
+
 const Layout = ({ children }: { children: ReactNode }) => {
   return (
     <html>

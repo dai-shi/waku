@@ -1,4 +1,4 @@
-import { unstable_defineRouter } from 'waku/router/server';
+import { unstable_defineRouter as defineRouter } from 'waku/router/server';
 import { Slot, Children } from 'waku/minimal/client';
 
 import Root from './components/Root';
@@ -8,8 +8,8 @@ import FooPage from './components/FooPage';
 import BarPage from './components/BarPage';
 import NestedBazPage from './components/NestedBazPage';
 
-export default unstable_defineRouter({
-  getPathConfig: async () => {
+export default defineRouter({
+  getRouteConfig: async () => {
     return [
       {
         pattern: '/',
@@ -70,7 +70,7 @@ export default unstable_defineRouter({
       },
     ];
   },
-  renderRoute: async (path) => {
+  handleRoute: async (path) => {
     if (path === '/') {
       return {
         routeElement: (

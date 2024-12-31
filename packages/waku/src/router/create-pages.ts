@@ -7,7 +7,7 @@ import {
   joinPath,
   parsePathWithSlug,
   getPathMapping,
-  path2regexp,
+  pathSpecAsString,
 } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
 import type {
@@ -135,14 +135,14 @@ export type CreateLayout = <Path extends string>(
   layout:
     | {
         render: 'dynamic';
-        path: PathWithoutSlug<Path>;
+        path: Path;
         component: FunctionComponent<
           Pick<RouteProps, 'path'> & { children: ReactNode }
         >;
       }
     | {
         render: 'static';
-        path: PathWithoutSlug<Path>;
+        path: Path;
         component: FunctionComponent<{ children: ReactNode }>;
       },
 ) => void;
@@ -225,9 +225,17 @@ export const createPages = <
       ...wildcardPagePathMap.keys(),
     ];
     for (const p of allPaths) {
-      if (new RegExp(path2regexp(parsePathWithSlug(p))).test(path)) {
+      if (getPathMapping(parsePathWithSlug(p), path)) {
         return p;
       }
+    }
+  };
+
+  /** helper to get original static slug path */
+  const getOriginalStaticPathSpec = (path: string) => {
+    const staticPathSpec = staticPathMap.get(path);
+    if (staticPathSpec) {
+      return staticPathSpec.originalSpec ?? staticPathSpec.literalSpec;
     }
   };
 
@@ -371,12 +379,8 @@ export const createPages = <
 
   const getLayouts = (spec: PathSpec): string[] => {
     const pathSegments = spec.reduce<string[]>(
-      (acc, segment, index) => {
-        if (acc[index - 1] === '/') {
-          acc.push('/' + segment);
-        } else {
-          acc.push(acc[index - 1] + '/' + segment);
-        }
+      (acc, _segment, index) => {
+        acc.push(pathSpecAsString(spec.slice(0, index + 1)));
         return acc;
       },
       ['/'],
@@ -390,11 +394,11 @@ export const createPages = <
   };
 
   const definedRouter = unstable_defineRouter({
-    getPathConfig: async () => {
+    getRouteConfig: async () => {
       await configure();
       const paths: {
-        pattern: string;
         path: PathSpec;
+        pathPattern?: PathSpec;
         routeElement: { isStatic?: boolean };
         elements: Record<string, { isStatic?: boolean }>;
         noSsr: boolean;
@@ -404,11 +408,7 @@ export const createPages = <
       for (const [path, { literalSpec, originalSpec }] of staticPathMap) {
         const noSsr = noSsrSet.has(literalSpec);
 
-        const pattern = originalSpec
-          ? path2regexp(originalSpec)
-          : path2regexp(literalSpec);
-
-        const layoutPaths = getLayouts(literalSpec);
+        const layoutPaths = getLayouts(originalSpec ?? literalSpec);
 
         const elements = {
           ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
@@ -425,8 +425,8 @@ export const createPages = <
         };
 
         paths.push({
-          pattern,
           path: literalSpec,
+          ...(originalSpec && { pathPattern: originalSpec }),
           routeElement: {
             isStatic: true,
           },
@@ -436,7 +436,6 @@ export const createPages = <
       }
       for (const [path, [pathSpec]] of dynamicPagePathMap) {
         const noSsr = noSsrSet.has(pathSpec);
-        const pattern = path2regexp(parsePathWithSlug(path));
         const layoutPaths = getLayouts(pathSpec);
         const elements = {
           ...layoutPaths.reduce<Record<string, { isStatic: boolean }>>(
@@ -452,7 +451,6 @@ export const createPages = <
           [`page:${path}`]: { isStatic: false },
         };
         paths.push({
-          pattern,
           path: pathSpec,
           routeElement: { isStatic: true },
           elements,
@@ -476,7 +474,6 @@ export const createPages = <
           [`page:${path}`]: { isStatic: false },
         };
         paths.push({
-          pattern: path2regexp(parsePathWithSlug(path)),
           path: pathSpec,
           routeElement: { isStatic: true },
           elements,
@@ -485,7 +482,7 @@ export const createPages = <
       }
       return paths;
     },
-    renderRoute: async (path, { query }) => {
+    handleRoute: async (path, { query }) => {
       await configure();
 
       // path without slugs
@@ -494,9 +491,14 @@ export const createPages = <
         throw new Error('Route not found: ' + path);
       }
 
-      const pageComponent = (staticComponentMap.get(
-        joinPath(routePath, 'page').slice(1), // feels like a hack
-      ) ?? dynamicPagePathMap.get(routePath)?.[1])!;
+      const pageComponent =
+        staticComponentMap.get(joinPath(routePath, 'page').slice(1)) ??
+        dynamicPagePathMap.get(routePath)?.[1] ??
+        wildcardPagePathMap.get(routePath)?.[1];
+
+      if (!pageComponent) {
+        throw new Error('Page not found: ' + path);
+      }
 
       const pathSpec = parsePathWithSlug(routePath);
       const mapping = getPathMapping(pathSpec, path);
@@ -513,7 +515,9 @@ export const createPages = <
         ),
       };
 
-      const layoutPaths = getLayouts(pathSpec);
+      const layoutPaths = getLayouts(
+        getOriginalStaticPathSpec(path) ?? pathSpec,
+      );
 
       for (const segment of layoutPaths) {
         const layout =

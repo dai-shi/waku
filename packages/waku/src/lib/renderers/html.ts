@@ -7,15 +7,12 @@ import { injectRSCPayload } from 'rsc-html-stream/server';
 import type * as WakuMinimalClientType from '../../minimal/client.js';
 import type { PureConfig } from '../config.js';
 import { SRC_MAIN } from '../constants.js';
-import { concatUint8Arrays, streamFromPromise } from '../utils/stream.js';
+import { concatUint8Arrays } from '../utils/stream.js';
 import { filePathToFileURL } from '../utils/path.js';
 import { encodeRscPath } from './utils.js';
-import { renderRsc, renderRscElement } from './rsc.js';
+import { renderRsc, renderRscElement, getExtractFormState } from './rsc.js';
 // TODO move types somewhere
 import type { HandlerContext } from '../middleware/types.js';
-
-// HACK depending on these constants is not ideal
-import { DEFAULT_HTML_HEAD } from '../plugins/vite-plugin-rsc-index.js';
 
 type Elements = Record<string, ReactNode>;
 
@@ -56,11 +53,7 @@ const injectHtmlHead = (
             data.slice(0, closingHeadIndex + CLOSING_HEAD.length),
             data.slice(closingHeadIndex + CLOSING_HEAD.length),
           ];
-    head =
-      head.slice(0, -CLOSING_HEAD.length) +
-      DEFAULT_HTML_HEAD +
-      htmlHead +
-      CLOSING_HEAD;
+    head = head.slice(0, -CLOSING_HEAD.length) + htmlHead + CLOSING_HEAD;
     const matchPrefetched = head.match(
       // HACK This is very brittle
       /(.*<script[^>]*>\nglobalThis\.__WAKU_PREFETCHED__ = {\n)(.*?)(\n};.*)/s,
@@ -158,14 +151,15 @@ const rectifyHtml = () => {
   });
 };
 
-export function renderHtml(
+export async function renderHtml(
   config: PureConfig,
   ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
   htmlHead: string,
   elements: Elements,
   html: ReactNode,
   rscPath: string,
-): ReadableStream {
+  actionResult?: unknown,
+): Promise<ReadableStream & { allReady: Promise<void> }> {
   const modules = ctx.unstable_modules;
   if (!modules) {
     throw new Error('handler middleware required (missing modules)');
@@ -179,7 +173,7 @@ export function renderHtml(
   const { ServerRootInternal: ServerRoot } =
     modules.wakuMinimalClient as typeof WakuMinimalClientType;
 
-  const stream = renderRsc(config, ctx, elements);
+  const stream = await renderRsc(config, ctx, elements);
   const htmlStream = renderRscElement(config, ctx, html);
   const isDev = !!ctx.unstable_devServer;
   const moduleMap = new Proxy(
@@ -219,22 +213,25 @@ export function renderHtml(
   const htmlNode: Promise<ReactNode> = createFromReadableStream(htmlStream, {
     serverConsumerManifest: { moduleMap, moduleLoading: null },
   });
-  const readable = streamFromPromise(
-    renderToReadableStream(
-      createElement(
-        ServerRoot as FunctionComponent<
-          Omit<ComponentProps<typeof ServerRoot>, 'children'>
-        >,
-        { elements: elementsPromise },
-        htmlNode as any,
-      ),
-      {
-        onError(err: unknown) {
-          console.error(err);
-        },
-      },
+  const readable = await renderToReadableStream(
+    createElement(
+      ServerRoot as FunctionComponent<
+        Omit<ComponentProps<typeof ServerRoot>, 'children'>
+      >,
+      { elements: elementsPromise },
+      htmlNode as any,
     ),
-  )
+    {
+      formState:
+        actionResult === undefined
+          ? null
+          : await getExtractFormState(ctx)(actionResult),
+      onError(err: unknown) {
+        console.error(err);
+      },
+    },
+  );
+  const injected: ReadableStream & { allReady?: Promise<void> } = readable
     .pipeThrough(rectifyHtml())
     .pipeThrough(
       injectHtmlHead(
@@ -244,5 +241,6 @@ export function renderHtml(
       ),
     )
     .pipeThrough(injectRSCPayload(stream2));
-  return readable;
+  injected.allReady = readable.allReady;
+  return injected as never;
 }

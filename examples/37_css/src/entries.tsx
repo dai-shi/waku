@@ -1,11 +1,12 @@
-import { new_defineEntries } from 'waku/minimal/server';
+import { unstable_defineEntries as defineEntries } from 'waku/minimal/server';
 import { Slot } from 'waku/minimal/client';
+import { unstable_createAsyncIterable as createAsyncIterable } from 'waku/server';
 
 import Layout from './components/layout';
 import App from './components/app';
 
-export default new_defineEntries({
-  unstable_handleRequest: async (input, { renderRsc, renderHtml }) => {
+export default defineEntries({
+  handleRequest: async (input, { renderRsc, renderHtml }) => {
     if (input.type === 'component') {
       return renderRsc({
         App: (
@@ -25,11 +26,46 @@ export default new_defineEntries({
           ),
         },
         <Slot id="App" />,
-        '',
+        { rscPath: '' },
       );
     }
   },
-  unstable_getBuildConfig: async () => [
-    { pathSpec: [], entries: [{ rscPath: '' }] },
-  ],
+  handleBuild: ({
+    // renderRsc,
+    // renderHtml,
+    // rscPath2pathname,
+    unstable_generatePrefetchCode,
+  }) =>
+    createAsyncIterable(async () => {
+      const moduleIds = new Set<string>();
+      const generateHtmlHead = () =>
+        `<script type="module" async>${unstable_generatePrefetchCode(
+          [''],
+          moduleIds,
+        )}</script>`;
+      const tasks = [
+        async () => ({
+          type: 'htmlHead' as const,
+          pathSpec: [],
+          head: generateHtmlHead(),
+        }),
+        // async () => ({
+        //   type: 'file' as const,
+        //   pathname: rscPath2pathname(''),
+        //   body: await renderRsc(
+        //     { App: <App name="Waku" /> },
+        //     { moduleIdCallback: (id) => moduleIds.add(id) },
+        //   ),
+        // }),
+        // async () => ({
+        //   type: 'file' as const,
+        //   pathname: '/',
+        //   body: renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, {
+        //     rscPath: '',
+        //     htmlHead: generateHtmlHead(),
+        //   }).then(({ body }) => body),
+        // }),
+      ];
+      return tasks;
+    }),
 });

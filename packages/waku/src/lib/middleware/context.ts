@@ -1,17 +1,24 @@
 import type { AsyncLocalStorage as AsyncLocalStorageType } from 'node:async_hooks';
 
-import type { HandlerReq, Middleware } from './types.js';
+import type { HandlerReq } from '../types.js';
+import type { Middleware } from './types.js';
 
 type Context = {
   readonly req: HandlerReq;
   readonly data: Record<string, unknown>;
 };
 
-let contextStorage: AsyncLocalStorageType<Context> | undefined;
+const setContextStorage = (storage: AsyncLocalStorageType<Context>) => {
+  (globalThis as any).__WAKU_MIDDLEWARE_CONTEXT_STORAGE__ ||= storage;
+};
+
+const getContextStorage = (): AsyncLocalStorageType<Context> => {
+  return (globalThis as any).__WAKU_MIDDLEWARE_CONTEXT_STORAGE__;
+};
 
 try {
   const { AsyncLocalStorage } = await import('node:async_hooks');
-  contextStorage = new AsyncLocalStorage();
+  setContextStorage(new AsyncLocalStorage());
 } catch {
   console.warn('AsyncLocalStorage is not available');
 }
@@ -20,6 +27,7 @@ let previousContext: Context | undefined;
 let currentContext: Context | undefined;
 
 const runWithContext = <T>(context: Context, fn: () => T): T => {
+  const contextStorage = getContextStorage();
   if (contextStorage) {
     return contextStorage.run(context, fn);
   }
@@ -43,6 +51,7 @@ export const context: Middleware = () => {
 };
 
 export function getContext() {
+  const contextStorage = getContextStorage();
   const context = contextStorage?.getStore() ?? currentContext;
   if (!context) {
     throw new Error(
@@ -53,6 +62,7 @@ export function getContext() {
 }
 
 export function getContextData(): Record<string, unknown> {
+  const contextStorage = getContextStorage();
   const context = contextStorage?.getStore() ?? currentContext;
   if (!context) {
     return {};

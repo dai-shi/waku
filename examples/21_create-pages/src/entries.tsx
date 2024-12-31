@@ -8,6 +8,8 @@ import BarPage from './components/BarPage';
 import NestedBazPage from './components/NestedBazPage';
 import NestedQuxPage from './components/NestedQuxPage';
 import Root from './components/Root';
+import NestedLayout from './components/NestedLayout';
+import { DeeplyNestedLayout } from './components/DeeplyNestedLayout';
 
 const pages = createPages(async ({ createPage, createLayout, createRoot }) => [
   createRoot({
@@ -58,6 +60,12 @@ const pages = createPages(async ({ createPage, createLayout, createRoot }) => [
     component: NestedQuxPage,
   }),
 
+  createLayout({
+    render: 'static',
+    path: '/nested',
+    component: NestedLayout,
+  }),
+
   createPage({
     render: 'static',
     path: '/nested/[id]',
@@ -68,6 +76,23 @@ const pages = createPages(async ({ createPage, createLayout, createRoot }) => [
         <h3>Static: {id}</h3>
       </>
     ),
+  }),
+
+  createPage({
+    render: 'dynamic',
+    path: '/wild/[...id]',
+    component: ({ id }) => (
+      <>
+        <h2>Wildcard</h2>
+        <h3>Slug: {id.join('/')}</h3>
+      </>
+    ),
+  }),
+
+  createLayout({
+    render: 'static',
+    path: '/nested/[id]',
+    component: DeeplyNestedLayout,
   }),
 
   createPage({

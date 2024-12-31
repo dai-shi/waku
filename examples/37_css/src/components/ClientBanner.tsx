@@ -1,15 +1,12 @@
-'use strict';
 'use client';
 
 import { useEffect } from 'react';
 import { create, props } from '@stylexjs/stylex';
-// eslint-disable-next-line import/no-unresolved
-import '@stylex-dev.css';
 
 const styles = create({
   root: {
     backgroundColor: '#444',
-    color: '#fff',
+    color: '#000',
     padding: '10px',
     textAlign: 'center',
   },

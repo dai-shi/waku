@@ -34,6 +34,7 @@ import {
   ROUTE_ID,
   IS_STATIC_ID,
   HAS404_ID,
+  SKIP_HEADER,
 } from './common.js';
 import type { RouteProps } from './common.js';
 import type { RouteConfig } from './base-types.js';
@@ -75,28 +76,21 @@ const parseRouteFromLocation = (): RouteProps => {
   return parseRoute(new URL(window.location.href));
 };
 
-let savedRscParams:
-  | [query: string, skipStr: string, rscParams: URLSearchParams]
-  | undefined;
+let savedRscParams: [query: string, rscParams: URLSearchParams] | undefined;
 
-const createRscParams = (query: string, skip: string[]): URLSearchParams => {
-  const skipStr = JSON.stringify(skip);
-  if (
-    savedRscParams &&
-    savedRscParams[0] === query &&
-    savedRscParams[1] === skipStr
-  ) {
-    return savedRscParams[2];
+const createRscParams = (query: string): URLSearchParams => {
+  if (savedRscParams && savedRscParams[0] === query) {
+    return savedRscParams[1];
   }
-  const rscParams = new URLSearchParams({ query, skip: skipStr });
-  savedRscParams = [query, skipStr, rscParams];
+  const rscParams = new URLSearchParams({ query });
+  savedRscParams = [query, rscParams];
   return rscParams;
 };
 
 type ChangeRoute = (
   route: RouteProps,
-  options?: {
-    checkCache?: boolean;
+  options: {
+    shouldScroll: boolean;
     skipRefetch?: boolean;
   },
 ) => void;
@@ -118,29 +112,31 @@ export function useRouter_UNSTABLE() {
   const push = useCallback(
     (to: InferredPaths) => {
       const url = new URL(to, window.location.href);
+      const newPath = url.pathname !== window.location.pathname;
       window.history.pushState(
         {
           ...window.history.state,
-          waku_new_path: url.pathname !== window.location.pathname,
+          waku_new_path: newPath,
         },
         '',
         url,
       );
-      changeRoute(parseRoute(url));
+      changeRoute(parseRoute(url), { shouldScroll: newPath });
     },
     [changeRoute],
   );
   const replace = useCallback(
     (to: InferredPaths) => {
       const url = new URL(to, window.location.href);
+      const newPath = url.pathname !== window.location.pathname;
       window.history.replaceState(window.history.state, '', url);
-      changeRoute(parseRoute(url));
+      changeRoute(parseRoute(url), { shouldScroll: newPath });
     },
     [changeRoute],
   );
   const reload = useCallback(() => {
     const url = new URL(window.location.href);
-    changeRoute(parseRoute(url));
+    changeRoute(parseRoute(url), { shouldScroll: true });
   }, [changeRoute]);
   const back = useCallback(() => {
     // FIXME is this correct?
@@ -239,7 +235,7 @@ export function Link({
           '',
           url,
         );
-        changeRoute(route);
+        changeRoute(route, { shouldScroll: true });
       });
     }
     props.onClick?.(event);
@@ -305,19 +301,18 @@ class ErrorBoundary extends Component<
   }
 }
 
-// -----------------------------------------------------
-// For unstable_defineRouter
-// Eventually replaces Router and so on
-// -----------------------------------------------------
-
-type NewChangeRoute = (
-  route: RouteProps,
-  options?: {
-    skipRefetch?: boolean;
-  },
-) => void;
-
 const getRouteSlotId = (path: string) => 'route:' + path;
+
+const handleScroll = () => {
+  const { hash } = window.location;
+  const { state } = window.history;
+  const element = hash && document.getElementById(hash.slice(1));
+  window.scrollTo({
+    left: 0,
+    top: element ? element.getBoundingClientRect().top + window.scrollY : 0,
+    behavior: state?.waku_new_path ? 'instant' : 'auto',
+  });
+};
 
 const InnerRouter = ({
   routerData,
@@ -326,7 +321,7 @@ const InnerRouter = ({
   routerData: Required<RouterData>;
   initialRoute: RouteProps;
 }) => {
-  const [cachedIdSet, staticPathSet, locationListeners] = routerData;
+  const [locationListeners, staticPathSet] = routerData;
   const refetch = useRefetch();
   const [route, setRoute] = useState(() => ({
     // This is the first initialization of the route, and it has
@@ -350,23 +345,22 @@ const InnerRouter = ({
     });
   }, [initialRoute]);
 
-  const changeRoute: NewChangeRoute = useCallback(
+  const changeRoute: ChangeRoute = useCallback(
     (route, options) => {
       const { skipRefetch } = options || {};
       startTransition(() => {
+        if (!staticPathSet.has(route.path) && !skipRefetch) {
+          const rscPath = encodeRoutePath(route.path);
+          const rscParams = createRscParams(route.query);
+          refetch(rscPath, rscParams);
+        }
+        if (options.shouldScroll) {
+          handleScroll();
+        }
         setRoute(route);
       });
-      if (staticPathSet.has(route.path)) {
-        return;
-      }
-      if (!skipRefetch) {
-        const skip = Array.from(cachedIdSet);
-        const rscPath = encodeRoutePath(route.path);
-        const rscParams = createRscParams(route.query, skip);
-        refetch(rscPath, rscParams);
-      }
     },
-    [refetch, cachedIdSet, staticPathSet],
+    [refetch, staticPathSet],
   );
 
   const prefetchRoute: PrefetchRoute = useCallback(
@@ -374,19 +368,18 @@ const InnerRouter = ({
       if (staticPathSet.has(route.path)) {
         return;
       }
-      const skip = Array.from(cachedIdSet);
       const rscPath = encodeRoutePath(route.path);
-      const rscParams = createRscParams(route.query, skip);
+      const rscParams = createRscParams(route.query);
       prefetchRsc(rscPath, rscParams);
       (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(route.path);
     },
-    [cachedIdSet, staticPathSet],
+    [staticPathSet],
   );
 
   useEffect(() => {
     const callback = () => {
       const route = parseRoute(new URL(window.location.href));
-      changeRoute(route);
+      changeRoute(route, { shouldScroll: true });
     };
     window.addEventListener('popstate', callback);
     return () => {
@@ -410,24 +403,13 @@ const InnerRouter = ({
           url,
         );
       }
-      changeRoute(parseRoute(url), { skipRefetch: true });
+      changeRoute(parseRoute(url), { skipRefetch: true, shouldScroll: false });
     };
     locationListeners.add(callback);
     return () => {
       locationListeners.delete(callback);
     };
   }, [changeRoute, locationListeners]);
-
-  useEffect(() => {
-    const { hash } = window.location;
-    const { state } = window.history;
-    const element = hash && document.getElementById(hash.slice(1));
-    window.scrollTo({
-      left: 0,
-      top: element ? element.getBoundingClientRect().top + window.scrollY : 0,
-      behavior: state?.waku_new_path ? 'instant' : 'auto',
-    });
-  });
 
   const routeElement = createElement(Slot, {
     id: getRouteSlotId(route.path),
@@ -449,9 +431,9 @@ const InnerRouter = ({
 
 // Note: The router data must be a stable mutable object (array).
 type RouterData = [
-  cachedIdSet?: Set<string>,
-  staticPathSet?: Set<string>,
   locationListeners?: Set<(path: string, query: string) => void>,
+  staticPathSet?: Set<string>,
+  cachedIdSet?: Set<string>,
   has404?: boolean,
 ];
 
@@ -462,10 +444,22 @@ export function Router({
   initialRoute = parseRouteFromLocation(),
 }) {
   const initialRscPath = encodeRoutePath(initialRoute.path);
-  const cachedIdSet = (routerData[0] ||= new Set());
+  const locationListeners = (routerData[0] ||= new Set());
   const staticPathSet = (routerData[1] ||= new Set());
-  const locationListeners = (routerData[2] ||= new Set());
+  const cachedIdSet = (routerData[2] ||= new Set());
   const has404 = (routerData[3] ||= false);
+  const unstable_enhanceFetch =
+    (fetchFn: typeof fetch) =>
+    (input: RequestInfo | URL, init: RequestInit = {}) => {
+      const skipStr = JSON.stringify(Array.from(cachedIdSet));
+      const headers = (init.headers ||= {});
+      if (Array.isArray(headers)) {
+        headers.push([SKIP_HEADER, skipStr]);
+      } else {
+        (headers as Record<string, string>)[SKIP_HEADER] = skipStr;
+      }
+      return fetchFn(input, init);
+    };
   const unstable_enhanceCreateData =
     (
       createData: (
@@ -514,13 +508,18 @@ export function Router({
         .catch(() => {});
       return data;
     };
-  const initialRscParams = createRscParams(initialRoute.query, []);
+  const initialRscParams = createRscParams(initialRoute.query);
   return createElement(
     ErrorBoundary,
     null,
     createElement(
       Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
-      { initialRscPath, initialRscParams, unstable_enhanceCreateData },
+      {
+        initialRscPath,
+        initialRscParams,
+        unstable_enhanceFetch,
+        unstable_enhanceCreateData,
+      },
       createElement(InnerRouter, {
         routerData: routerData as Required<RouterData>,
         initialRoute,

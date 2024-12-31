@@ -11,10 +11,10 @@
     "test": "prettier -c . && eslint . && tsc -b && tsc -b --noEmit `find examples -mindepth 1 -maxdepth 1 -type d ! -name '*_js'` && pnpm run --filter waku test",
     "test-vite-ecosystem-ci": "pnpm run --filter waku test && playwright test --project=chromium",
     "e2e": "playwright test",
-    "website:dev": "cd packages/website && pnpm run dev",
-    "website:build": "cd packages/website && pnpm run build",
+    "website:dev": "pnpm -F waku-website dev",
+    "website:build": "pnpm -F waku-website build",
     "website:vercel": "pnpm run compile && pnpm run website:build --with-vercel-static && mv packages/website/.vercel/output .vercel/",
-    "website:prd": "pnpm run website:build && (cd packages/website && pnpm start)"
+    "website:prd": "pnpm run website:build && pnpm -F waku-website start"
   },
   "prettier": {
     "singleQuote": true,
@@ -28,29 +28,23 @@
   },
   "devDependencies": {
     "@actions/core": "^1.11.1",
-    "@playwright/test": "^1.49.0",
+    "@eslint/js": "^9.17.0",
+    "@playwright/test": "^1.49.1",
     "@types/babel__core": "^7.20.5",
-    "@types/node": "^22.10.1",
-    "@types/react": "^19.0.1",
-    "@types/react-dom": "^19.0.1",
-    "@typescript-eslint/eslint-plugin": "^8.17.0",
-    "@typescript-eslint/parser": "^8.17.0",
-    "eslint": "8.57.0",
-    "eslint-config-prettier": "^9.1.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "eslint": "^9.17.0",
     "eslint-import-resolver-typescript": "^3.7.0",
     "eslint-plugin-import": "^2.31.0",
-    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react": "^7.37.3",
     "eslint-plugin-react-hooks": "^5.1.0",
     "prettier": "^3.4.2",
     "prettier-plugin-tailwindcss": "^0.6.9",
     "terminate": "^2.8.0",
     "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.2",
     "wait-port": "^1.1.0",
     "waku": "workspace:*"
-  },
-  "pnpm": {
-    "overrides": {
-      "vite": "5.4.10"
-    }
   }
 }
