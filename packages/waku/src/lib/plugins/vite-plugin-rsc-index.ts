@@ -2,13 +2,6 @@ import type { Plugin } from 'vite';
 
 import { SRC_MAIN } from '../constants.js';
 
-// This should be consistent with the one in renderers/html.ts
-const DEFAULT_HTML_HEAD = `
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="generator" content="Waku" />
-`.trim();
-
 export function rscIndexPlugin(opts: {
   basePath: string;
   srcDir: string;
@@ -19,7 +12,6 @@ export function rscIndexPlugin(opts: {
 <!doctype html>
 <html>
   <head>
-${DEFAULT_HTML_HEAD}
   </head>
   <body>
     <script src="${opts.basePath}${opts.srcDir}/${SRC_MAIN}" async type="module"></script>

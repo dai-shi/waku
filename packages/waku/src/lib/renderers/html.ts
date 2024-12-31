@@ -14,16 +14,6 @@ import { renderRsc, renderRscElement, getExtractFormState } from './rsc.js';
 // TODO move types somewhere
 import type { HandlerContext } from '../middleware/types.js';
 
-// This should be consistent with the one in vite-plugin-rsc-index.ts
-const DEFAULT_HTML_HEAD = [
-  createElement('meta', { charSet: 'utf-8' }),
-  createElement('meta', {
-    name: 'viewport',
-    content: 'width=device-width, initial-scale=1',
-  }),
-  createElement('meta', { name: 'generator', content: 'Waku' }),
-];
-
 type Elements = Record<string, ReactNode>;
 
 const fakeFetchCode = `
@@ -229,7 +219,6 @@ export async function renderHtml(
         Omit<ComponentProps<typeof ServerRoot>, 'children'>
       >,
       { elements: elementsPromise },
-      ...DEFAULT_HTML_HEAD,
       htmlNode as any,
     ),
     {
