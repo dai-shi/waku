@@ -153,11 +153,7 @@ export type CreateApi = <Path extends string>(params: {
   path: Path;
   mode: 'static' | 'dynamic';
   method: Method;
-  handler: (req: {
-    body: ReadableStream | null;
-    headers: Readonly<Record<string, string>>;
-    method: string;
-  }) => Promise<Response>;
+  handler: (req: Request) => Promise<Response>;
 }) => void;
 
 type RootItem = {
@@ -195,20 +191,6 @@ const createNestedElements = (
       createElement(element.component, element.props, result),
     null,
   );
-};
-
-const convertResponse = (
-  res: Response,
-): {
-  body?: ReadableStream;
-  headers?: Record<string, string | string[]>;
-  status?: number;
-} => {
-  return {
-    ...(res.body ? { body: res.body } : {}),
-    headers: Object.fromEntries(res.headers.entries()),
-    status: res.status,
-  };
 };
 
 export const createPages = <
@@ -642,7 +624,14 @@ export const createPages = <
       }
       const { handler } = apiPathMap.get(routePath)!;
 
-      return convertResponse(await handler(request));
+      const req = new Request(path, request);
+      const res = await handler(req);
+
+      return {
+        ...(res.body ? { body: res.body } : {}),
+        headers: Object.fromEntries(res.headers.entries()),
+        status: res.status,
+      };
     },
   });
 
