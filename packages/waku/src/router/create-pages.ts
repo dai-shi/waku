@@ -151,12 +151,13 @@ type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
 export type CreateApi = <Path extends string>(params: {
   path: Path;
-  render: 'static' | 'dynamic';
+  mode: 'static' | 'dynamic';
   method: Method;
-  handler: (params: {
+  handler: (req: {
     body: ReadableStream | null;
     headers: Readonly<Record<string, string>>;
-  }) => Promise<unknown>;
+    method: string;
+  }) => Promise<Response>;
 }) => void;
 
 type RootItem = {
@@ -196,6 +197,20 @@ const createNestedElements = (
   );
 };
 
+const convertResponse = (
+  res: Response,
+): {
+  body?: ReadableStream;
+  headers?: Record<string, string | string[]>;
+  status?: number;
+} => {
+  return {
+    ...(res.body ? { body: res.body } : {}),
+    headers: Object.fromEntries(res.headers.entries()),
+    status: res.status,
+  };
+};
+
 export const createPages = <
   AllPages extends (AnyPage | ReturnType<CreateLayout>)[],
 >(
@@ -227,7 +242,7 @@ export const createPages = <
   const apiPathMap = new Map<
     string,
     {
-      render: 'static' | 'dynamic';
+      mode: 'static' | 'dynamic';
       pathSpec: PathSpec;
       method: Method;
       handler: Parameters<CreateApi>[0]['handler'];
@@ -382,7 +397,7 @@ export const createPages = <
     }
   };
 
-  const createApi: CreateApi = ({ path, render, method, handler }) => {
+  const createApi: CreateApi = ({ path, mode, method, handler }) => {
     if (configured) {
       throw new Error('createApi no longer available');
     }
@@ -391,7 +406,7 @@ export const createPages = <
     }
 
     const pathSpec = parsePathWithSlug(path);
-    apiPathMap.set(path, { render, pathSpec, method, handler });
+    apiPathMap.set(path, { mode, pathSpec, method, handler });
   };
 
   const createRoot: CreateRoot = (root) => {
@@ -612,14 +627,14 @@ export const createPages = <
     getApiConfig: async () => {
       await configure();
 
-      return Array.from(apiPathMap.values()).map(({ pathSpec, render }) => {
+      return Array.from(apiPathMap.values()).map(({ pathSpec, mode }) => {
         return {
           path: pathSpec,
-          isStatic: render === 'static',
+          isStatic: mode === 'static',
         };
       });
     },
-    handleApi: async (path, { body, headers }) => {
+    handleApi: async (path, request) => {
       await configure();
       const routePath = getRoutePath(path);
       if (!routePath) {
@@ -627,7 +642,7 @@ export const createPages = <
       }
       const { handler } = apiPathMap.get(routePath)!;
 
-      return handler({ body, headers });
+      return convertResponse(await handler(request));
     },
   });
 
