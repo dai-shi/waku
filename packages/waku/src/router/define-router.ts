@@ -101,7 +101,7 @@ export function unstable_defineRouter(fns: {
   handleApi?: (
     path: string,
     options: {
-      body: ReadableStream | null;
+      body?: ReadableStream | null;
       headers: Readonly<Record<string, string>>;
       method: string;
     },

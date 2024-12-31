@@ -624,7 +624,15 @@ export const createPages = <
       }
       const { handler } = apiPathMap.get(routePath)!;
 
-      const req = new Request(path, request);
+      const req = new Request(
+        new URL(
+          path,
+          typeof window !== 'undefined'
+            ? window.location.href
+            : 'http://localhost', // FIXME what should this be?
+        ),
+        request,
+      );
       const res = await handler(req);
 
       return {
