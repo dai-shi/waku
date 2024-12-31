@@ -61,5 +61,14 @@ for (const mode of ['DEV', 'PRD'] as const) {
       });
       expect(result).toBe(0);
     });
+
+    test('server throws', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/`);
+      await expect(page.getByTestId('app-name')).toHaveText('Waku');
+      await page.getByTestId('server-throws').getByTestId('throws').click();
+      await expect(
+        page.getByTestId('server-throws').getByTestId('throws-error'),
+      ).toHaveText('Something unexpected happened');
+    });
   });
 }
