@@ -16,6 +16,7 @@ import type {
   PropsForPages,
 } from './create-pages-utils/inferred-path-types.js';
 import { Children, Slot, ThrowError_UNSTABLE } from '../minimal/client.js';
+import { unstable_getHeaders } from 'waku/server';
 
 const sanitizeSlug = (slug: string) =>
   slug.replace(/\./g, '').replace(/ /g, '-');
@@ -616,7 +617,7 @@ export const createPages = <
         };
       });
     },
-    handleApi: async (path, request) => {
+    handleApi: async (path, options) => {
       await configure();
       const routePath = getRoutePath(path);
       if (!routePath) {
@@ -631,7 +632,7 @@ export const createPages = <
             ? window.location.href
             : 'http://localhost', // FIXME what should this be?
         ),
-        request,
+        options,
       );
       const res = await handler(req);
 
