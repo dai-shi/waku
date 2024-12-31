@@ -627,9 +627,8 @@ export const createPages = <
       const req = new Request(
         new URL(
           path,
-          options.headers['host']
-            ? `https://${options.headers['host']}`
-            : 'http://localhost',
+          // TODO consider if we should apply `Forwarded` header here
+          'http://localhost',
         ),
         options,
       );
