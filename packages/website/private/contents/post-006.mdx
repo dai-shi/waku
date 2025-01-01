@@ -6,7 +6,7 @@ author: sophia
 date: 2024/12/31
 ---
 
-Continuing our winter retrospective of Waku’s recent features, today we’re excited to highlight type-safe routing. This addition brings compile-time safety to your routing and navigation logic while staying true to Waku’s minimalist principles.
+Continuing our winter retrospective of Waku’s recently added features, today we’re excited to highlight type-safe routing contributed by [Tyler Lawson](https://tylur.dev/). This addition brings compile-time safety to your routing and navigation logic while staying true to Waku’s minimalist principles.
 
 ## Type-safe routing
 
@@ -55,7 +55,9 @@ You can also use the new `PageProps` export to type the props of each route:
 
 import type { PageProps } from 'waku';
 
-export default async function BlogArticlePage(props: PageProps<'/blog/[slug]'>) { ... }
+export default async function BlogArticlePage(
+  props: PageProps<'/blog/[slug]'>,
+) { ... }
 
 export const getConfig = async () => {
   return {
