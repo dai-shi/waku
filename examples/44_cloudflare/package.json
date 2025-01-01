@@ -10,7 +10,7 @@
     "start": "waku start"
   },
   "dependencies": {
-    "hono": "4.6.14",
+    "hono": "4.6.15",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-server-dom-webpack": "19.0.0",
@@ -18,7 +18,7 @@
     "wrangler": "3.99.0"
   },
   "devDependencies": {
-    "@types/node": "22.10.2",
+    "@types/node": "22.10.3",
     "@types/react": "19.0.2",
     "@types/react-dom": "19.0.2",
     "miniflare": "3.20241218.0",
