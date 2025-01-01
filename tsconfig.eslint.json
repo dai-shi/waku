@@ -8,7 +8,6 @@
     "eslint.config.js",
     "packages/",
     "examples/",
-    "examples/44_cloudflare/.wrangler/**/*",
     "e2e/",
     "playwright.config.ts"
   ]
