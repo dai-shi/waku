@@ -56,11 +56,12 @@ export const serverEngine = (options: MiddlewareOptions): MiddlewareHandler => {
     };
     await run(0);
     if (ctx.res.body || ctx.res.status) {
-      return c.body(
-        ctx.res.body || null,
-        (ctx.res.status as any) || 200,
-        ctx.res.headers || {},
-      );
+      const status = ctx.res.status || 200;
+      const headers = ctx.res.headers || {};
+      if (ctx.res.body) {
+        return c.body(ctx.res.body, status as never, headers);
+      }
+      return c.body(null, status as never, headers);
     }
     await next();
   };
