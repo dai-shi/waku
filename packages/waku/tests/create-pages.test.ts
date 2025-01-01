@@ -560,6 +560,7 @@ describe('createPages', () => {
     const res = await handleApi('/test', {
       method: 'GET',
       headers: {},
+      body: null,
     });
     expect(res.headers).toEqual({
       'content-type': 'text/plain;charset=UTF-8',
@@ -594,6 +595,7 @@ describe('createPages', () => {
     const res = await handleApi('/test/foo', {
       method: 'GET',
       headers: {},
+      body: null,
     });
     expect(res.headers).toEqual({
       'content-type': 'text/plain;charset=UTF-8',
