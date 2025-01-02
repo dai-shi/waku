@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.21.12] - 2025-01-01
+
+### Changed
+
+- Granular vite configs
+
 ## [0.21.11] - 2024-12-28
 
 ### Changed

@@ -1,0 +1,76 @@
+---
+slug: type-safe-routing
+title: Type-safe routing
+description: Enjoy type safety for routing and navigation APIs in Waku projects.
+author: sophia
+date: 2024/12/31
+---
+
+Continuing our winter retrospective of Waku’s recently added features, today we’re excited to highlight type-safe routing contributed by [Tyler Lawson](https://tylur.dev/). This addition brings compile-time safety to your routing and navigation logic while staying true to Waku’s minimalist principles.
+
+## Type-safe routing
+
+### Configuration
+
+While support for loose typing comes out of the box, you can opt into further type inference in TypeScript projects by adding `as const` assertions to the return of `getConfig` for each of your project’s routes.
+
+```tsx
+// ./src/pages/blog/[slug].tsx
+
+export default async function BlogArticlePage() { ... }
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+    staticPaths: ['foo', 'bar'],
+  } as const; // NEW!
+};
+```
+
+### Developer experience
+
+Afterwards enjoy type checks and IDE autocompletion for the `<Link>` component’s `to` prop as well as parameters of `useRouter()` methods like `router.push()`.
+
+```tsx
+'use client';
+
+import { Link, useRouter } from 'waku';
+
+const Component = () => {
+  const router = useRouter();
+
+  return (
+    <>
+      <Link to="/invalid/link">Wrong link</Link>
+      <button onClick={() => router.push('/invalid/path')}>Wrong path</button>
+    </>
+  );
+};
+```
+
+You can also use the new `PageProps` export to type the props of each route:
+
+```tsx
+// ./src/pages/blog/[slug].tsx
+
+import type { PageProps } from 'waku';
+
+export default async function BlogArticlePage(
+  props: PageProps<'/blog/[slug]'>,
+) { ... }
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+    staticPaths: ['foo', 'bar'],
+  } as const; // NEW!
+};
+```
+
+### Type generation
+
+Note that a new `pages.gen.ts` file is present in your project. Check this file into your code repository for compile-time type checking in your CI/CD pipeline.
+
+## Bundle up for more...
+
+There’s still more to explore in our series of recent Waku improvements. Stay tuned for another exciting development. Warm wishes!

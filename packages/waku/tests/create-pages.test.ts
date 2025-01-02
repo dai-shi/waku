@@ -2,6 +2,7 @@ import { expect, vi, describe, it, beforeEach, assert } from 'vitest';
 import type { MockedFunction } from 'vitest';
 import { createPages } from '../src/router/create-pages.js';
 import type {
+  CreateApi,
   CreateLayout,
   CreatePage,
   HasSlugInPath,
@@ -264,6 +265,59 @@ describe('type tests', () => {
     });
   });
 
+  describe('createApi', () => {
+    it('static', () => {
+      const createApi: CreateApi = vi.fn();
+      // @ts-expect-error: mode is not valid
+      createApi({ path: '/', mode: 'foo', method: 'GET', handler: () => null });
+      createApi({
+        path: '/',
+        mode: 'static',
+        // @ts-expect-error: method is not valid
+        method: 'foo',
+        // @ts-expect-error: null is not valid
+        handler: () => null,
+      });
+      // @ts-expect-error: handler is not valid
+      createApi({ path: '/', mode: 'static', method: 'GET', handler: 123 });
+
+      // good
+      createApi({
+        path: '/',
+        mode: 'static',
+        method: 'GET',
+        handler: async () => {
+          return new Response('Hello World');
+        },
+      });
+    });
+    it('dynamic', () => {
+      const createApi: CreateApi = vi.fn();
+      // @ts-expect-error: mode & handler are not valid
+      createApi({ path: '/', mode: 'foo', method: 'GET', handler: () => null });
+      createApi({
+        path: '/foo',
+        mode: 'dynamic',
+        // @ts-expect-error: method is not valid
+        method: 'foo',
+        // @ts-expect-error: null is not valid
+        handler: () => null,
+      });
+      // @ts-expect-error: handler is not valid
+      createApi({ path: '/', mode: 'dynamic', method: 'GET', handler: 123 });
+
+      // good
+      createApi({
+        path: '/foo/[slug]',
+        mode: 'dynamic',
+        method: 'GET',
+        handler: async () => {
+          return new Response('Hello World');
+        },
+      });
+    });
+  });
+
   describe('createPages', () => {
     it('empty', () => {
       const mockedCreatePages: typeof createPages = vi.fn();
@@ -414,9 +468,13 @@ function injectedFunctions() {
   expect(defineRouterMock).toHaveBeenCalledTimes(1);
   assert(defineRouterMock.mock.calls[0]?.[0].getRouteConfig);
   assert(defineRouterMock.mock.calls[0]?.[0].handleRoute);
+  assert(defineRouterMock.mock.calls[0]?.[0].getApiConfig);
+  assert(defineRouterMock.mock.calls[0]?.[0].handleApi);
   return {
     getRouteConfig: defineRouterMock.mock.calls[0][0].getRouteConfig,
     handleRoute: defineRouterMock.mock.calls[0][0].handleRoute,
+    getApiConfig: defineRouterMock.mock.calls[0][0].getApiConfig,
+    handleApi: defineRouterMock.mock.calls[0][0].handleApi,
   };
 }
 
@@ -479,6 +537,73 @@ describe('createPages', () => {
     expect(route).toBeDefined();
     expect(route.routeElement).toBeDefined();
     expect(Object.keys(route.elements)).toEqual(['root', 'page:/test']);
+  });
+
+  it('creates a simple static api', async () => {
+    createPages(async ({ createApi }) => [
+      createApi({
+        path: '/test',
+        mode: 'static',
+        method: 'GET',
+        handler: async () => {
+          return new Response('Hello World');
+        },
+      }),
+    ]);
+    const { getApiConfig, handleApi } = injectedFunctions();
+    expect(await getApiConfig()).toEqual([
+      {
+        path: [{ type: 'literal', name: 'test' }],
+        isStatic: true,
+      },
+    ]);
+    const res = await handleApi('/test', {
+      method: 'GET',
+      headers: {},
+      body: null,
+    });
+    expect(res.headers).toEqual({
+      'content-type': 'text/plain;charset=UTF-8',
+    });
+    const respParsed = new Response(res.body);
+    const text = await respParsed.text();
+    expect(text).toEqual('Hello World');
+    expect(res.status).toEqual(200);
+  });
+
+  it('creates a simple dynamic api', async () => {
+    createPages(async ({ createApi }) => [
+      createApi({
+        path: '/test/[slug]',
+        mode: 'dynamic',
+        method: 'GET',
+        handler: async () => {
+          return new Response('Hello World');
+        },
+      }),
+    ]);
+    const { getApiConfig, handleApi } = injectedFunctions();
+    expect(await getApiConfig()).toEqual([
+      {
+        path: [
+          { type: 'literal', name: 'test' },
+          { type: 'group', name: 'slug' },
+        ],
+        isStatic: false,
+      },
+    ]);
+    const res = await handleApi('/test/foo', {
+      method: 'GET',
+      headers: {},
+      body: null,
+    });
+    expect(res.headers).toEqual({
+      'content-type': 'text/plain;charset=UTF-8',
+    });
+    const respParsed = new Response(res.body);
+    const text = await respParsed.text();
+    expect(text).toEqual('Hello World');
+    expect(res.status).toEqual(200);
   });
 
   it('creates a simple static page with a layout', async () => {
@@ -905,9 +1030,7 @@ describe('createPages', () => {
       }),
     ]);
     const { getRouteConfig } = injectedFunctions();
-    await expect(getRouteConfig).rejects.toThrowError(
-      'Duplicated dynamic path: /test',
-    );
+    await expect(getRouteConfig).rejects.toThrowError('Duplicated path: /test');
   });
 
   it('fails if duplicated static paths are registered', async () => {
@@ -924,9 +1047,7 @@ describe('createPages', () => {
       }),
     ]);
     const { getRouteConfig } = injectedFunctions();
-    await expect(getRouteConfig).rejects.toThrowError(
-      'Duplicated component for: test/page',
-    );
+    await expect(getRouteConfig).rejects.toThrowError('Duplicated path: /test');
   });
 
   it.fails(
