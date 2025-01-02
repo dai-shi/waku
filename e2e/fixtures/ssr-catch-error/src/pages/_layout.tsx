@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { ClientLayout } from '../components/client-layout.js';
 
@@ -6,7 +7,11 @@ export default async function RootLayout({
 }: {
   children: ReactNode;
 }) {
-  return <ClientLayout>{children}</ClientLayout>;
+  return (
+    <ClientLayout>
+      <Suspense fallback="Loading...">{children}</Suspense>
+    </ClientLayout>
+  );
 }
 
 export const getConfig = async () => {

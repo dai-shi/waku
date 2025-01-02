@@ -37,6 +37,7 @@ for (const mode of ['DEV', 'PRD'] as const) {
       await page.goto(`http://localhost:${port}/invalid`);
       await expect(page.getByText('Unauthorized')).toBeVisible();
     });
+
     test('navigate back after invalid page through client router', async ({
       page,
     }) => {
