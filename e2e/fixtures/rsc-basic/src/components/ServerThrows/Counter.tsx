@@ -20,7 +20,7 @@ export function Counter({ throws }: CounterProps) {
             .then((value) => {
               setSuccess(value);
             })
-            .catch(setError);
+            .catch((e) => setError(e.message));
         }}
       >
         throw
@@ -43,8 +43,8 @@ export function Counter({ throws }: CounterProps) {
       <button
         data-testid="reset"
         onClick={() => {
-          setSuccess("init");
-          setError("init");
+          setSuccess('init');
+          setError('init');
         }}
       >
         reset
