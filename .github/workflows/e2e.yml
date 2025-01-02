@@ -16,10 +16,10 @@ on:
       - 'e2e/**'
       - '.github/workflows/e2e.yml'
   workflow_call:
-  inputs:
-    react_version:
-      required: false
-      type: string
+    inputs:
+      react_version:
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
