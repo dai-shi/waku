@@ -56,7 +56,7 @@ jobs:
           if-no-files-found: error
 
   e2e:
-    name: E2E on ${{ matrix.os }} (Node ${{ matrix.version }}) - (${{ matrix.shared }}/4)
+    name: E2E on ${{ matrix.os }} (Node ${{ matrix.version }}) - (${{ matrix.shared }}/4)${{ inputs.react_version && format(' with react@{0}', inputs.react_version) || '' }}
     needs:
       - build
     strategy:
