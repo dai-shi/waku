@@ -78,9 +78,10 @@ export function fsRouter(
         } else if (pathItems.at(0) === 'api') {
           createApi({
             path: pathItems.slice(1).join('/'),
-            mode: config.mode ?? 'dynamic',
-            method: config.method ?? 'GET',
+            mode: 'dynamic',
+            method: 'GET',
             handler: mod.default,
+            ...config,
           });
         } else if (pathItems.at(-1) === '_layout') {
           createLayout({
