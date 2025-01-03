@@ -8,6 +8,7 @@ jobs:
   canary-ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/workflows/e2e.yml@main
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/e2e.yml
         with:
           react_version: 'canary'
