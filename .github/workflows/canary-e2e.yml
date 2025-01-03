@@ -6,9 +6,7 @@ on:
 
 jobs:
   canary-ci:
-    runs-on: ubuntu-latest
     if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/canary-ci run') }}
-    steps:
-      - uses: ./.github/workflows/e2e.yml
-        with:
-          react_version: 'canary'
+    uses: dai-shi/waku/.github/workflows/e2e.yml@main
+    with:
+      react_version: 'canary'
