@@ -9,7 +9,7 @@ on:
       - 'e2e/**'
       - '.github/workflows/e2e.yml'
   pull_request:
-    types: [opened, synchronize]
+    types: [opened] # todo add synchronize
     paths:
       - 'packages/**'
       - 'examples/**'
