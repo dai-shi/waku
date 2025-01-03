@@ -9,6 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/canary-ci run') }}
     steps:
-      - uses: ./.github/workflows/ci.yml
+      - uses: .github/workflows/e2e.yml
         with:
           react_version: 'canary'
