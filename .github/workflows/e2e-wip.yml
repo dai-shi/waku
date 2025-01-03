@@ -7,7 +7,6 @@ on:
 jobs:
   canary-ci:
     runs-on: ubuntu-latest
-    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/canary-ci run') }}
     steps:
       - uses: ./.github/workflows/ci.yml
         with:
