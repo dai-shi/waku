@@ -77,15 +77,11 @@ for (const mode of ['DEV', 'PRD'] as const) {
       );
       await page.getByTestId('server-throws').getByTestId('throws').click();
       await expect(
-        page.getByRole('heading', { name: 'Error: Internal Server Error' }),
+        page.getByRole('heading', { name: 'Error Page' }),
       ).toBeVisible();
-      // I think below is the expected behavior
-      // await expect(
-      //   page.getByRole('heading', { name: 'Error Page' }),
-      // ).toBeVisible();
-      // await expect(
-      //   page.getByTestId('server-throws').getByTestId('throws-error'),
-      // ).toHaveText('Something unexpected happened');
+      await expect(
+        page.getByTestId('server-throws').getByTestId('throws-error'),
+      ).toHaveText('Something unexpected happened');
     });
 
     test('server function unreachable', async ({ page }) => {
