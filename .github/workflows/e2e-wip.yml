@@ -8,6 +8,6 @@ jobs:
   canary-ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/workflows/e2e.yml
+      - uses: ./.github/workflows/e2e.yml@tylersayshi:canary-ci-again
         with:
           react_version: 'canary'
