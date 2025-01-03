@@ -1,0 +1,14 @@
+name: E2E WIP - Test Canary
+
+on:
+  pull_request:
+    types: [synchronize]
+
+jobs:
+  canary-ci:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/canary-ci run') }}
+    steps:
+      - uses: ./.github/workflows/ci.yml
+        with:
+          react_version: 'canary'
