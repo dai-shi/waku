@@ -82,15 +82,13 @@ for (const mode of ['DEV', 'PRD'] as const) {
       await expect(
         page.getByTestId('server-throws').getByTestId('throws-success'),
       ).toHaveText('init');
-      // This is intended to simulate the network or server being down
-      await page.route('http://localhost:${port}/**', (route) => {
-        return route.abort();
-      });
+      await stopApp();
       await page.getByTestId('server-throws').getByTestId('success').click();
       // Not sure what we should expect...
       await expect(
-        page.getByTestId('server-throws').getByTestId('throws-success'),
-      ).toHaveText('init');
+        page.getByTestId('server-throws').getByTestId('throws-error'),
+      ).toHaveText('Internal Server Error');
+      ({ port, stopApp } = await startApp(mode));
     });
   });
 }
