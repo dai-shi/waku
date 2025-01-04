@@ -8,6 +8,7 @@ import NestedBazPage from './components/NestedBazPage.js';
 import Root from './components/Root.js';
 import NestedLayout from './components/NestedLayout.js';
 import { DeeplyNestedLayout } from './components/DeeplyNestedLayout.js';
+import ErrorPage from './components/ErrorPage.js';
 
 const pages: ReturnType<typeof createPages> = createPages(
   async ({ createPage, createLayout, createRoot }) => [
@@ -84,6 +85,12 @@ const pages: ReturnType<typeof createPages> = createPages(
           <h3>Dynamic: {id}</h3>
         </>
       ),
+    }),
+
+    createPage({
+      render: 'dynamic',
+      path: '/error',
+      component: ErrorPage,
     }),
 
     createPage({
