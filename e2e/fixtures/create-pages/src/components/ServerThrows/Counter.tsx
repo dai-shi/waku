@@ -34,7 +34,7 @@ export function Counter({ throws }: CounterProps) {
             })
             .catch((e) => {
               console.error(e);
-              setError(e);
+              setError(e.message);
             });
         }}
       >

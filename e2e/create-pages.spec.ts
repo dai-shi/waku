@@ -100,10 +100,9 @@ for (const mode of ['DEV', 'PRD'] as const) {
       ).toHaveText('init');
       await stopApp();
       await page.getByTestId('server-throws').getByTestId('success').click();
-      // Default router client error boundary is reached
       await expect(
-        page.getByRole('heading', { name: 'Not Found' }),
-      ).toBeVisible();
+        page.getByTestId('server-throws').getByTestId('throws-error'),
+      ).toHaveText('Failed to fetch');
       ({ port, stopApp } = await startApp(mode));
     });
 
