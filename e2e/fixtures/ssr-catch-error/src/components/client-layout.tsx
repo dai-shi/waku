@@ -9,7 +9,7 @@ const FallbackComponent = ({ error, resetErrorBoundary }: FallbackProps) => {
   useEffect(() => {
     window.addEventListener('popstate', resetErrorBoundary);
     return () => window.removeEventListener('popstate', resetErrorBoundary);
-  },[resetErrorBoundary])
+  }, [resetErrorBoundary]);
   return (
     <div role="alert">
       <p>Unexpected error in client fallback</p>
