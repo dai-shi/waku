@@ -321,6 +321,7 @@ const InnerRouter = ({
   routerData: Required<RouterData>;
   initialRoute: RouteProps;
 }) => {
+  const cachedIdSet = (routerData[2] ||= new Set());
   const [locationListeners, staticPathSet] = routerData;
   const refetch = useRefetch();
   const [route, setRoute] = useState(() => ({
@@ -413,7 +414,9 @@ const InnerRouter = ({
 
   const routeElement = createElement(Slot, {
     id: getRouteSlotId(route.path),
-    fallback: createElement(Slot, { id: 'fallback' }),
+    ...(cachedIdSet.has('fallback')
+      ? { fallback: createElement(Slot, { id: 'fallback' }) }
+      : {}),
   });
 
   return createElement(

@@ -243,7 +243,7 @@ const ChildrenContextProvider = memo(ChildrenContext.Provider);
 
 type OuterSlotProps = {
   elementsPromise: Elements;
-  renderSlot: (elements: Record<string, ReactNode>, err?: unknown) => ReactNode;
+  renderSlot: (elements: Record<string, ReactNode>) => ReactNode;
   children?: ReactNode;
 };
 
@@ -274,16 +274,10 @@ const InnerSlot = ({
   renderSlot,
 }: {
   elementsPromise: Elements;
-  renderSlot: (elements: Record<string, ReactNode>, err?: unknown) => ReactNode;
+  renderSlot: (elements: Record<string, ReactNode>) => ReactNode;
 }) => {
   const elements = use(elementsPromise);
   return renderSlot(elements);
-};
-
-const ErrorContext = createContext<unknown>(undefined);
-export const ThrowError_UNSTABLE = () => {
-  const err = use(ErrorContext);
-  throw err;
 };
 
 /**
@@ -313,13 +307,9 @@ export const Slot = ({
   if (!elementsPromise) {
     throw new Error('Missing Root component');
   }
-  const renderSlot = (elements: Record<string, ReactNode>, err?: unknown) => {
+  const renderSlot = (elements: Record<string, ReactNode>) => {
     if (!(id in elements)) {
       if (fallback) {
-        if (err) {
-          // HACK I'm not sure if this is the right way
-          return createElement(ErrorContext.Provider, { value: err }, fallback);
-        }
         return fallback;
       }
       throw new Error('Not found: ' + id);
