@@ -2,7 +2,6 @@
 'use client';
 
 import {
-  Component,
   createContext,
   createElement,
   memo,
@@ -241,43 +240,24 @@ export const useRefetch = () => use(RefetchContext);
 const ChildrenContext = createContext<ReactNode>(undefined);
 const ChildrenContextProvider = memo(ChildrenContext.Provider);
 
-type OuterSlotProps = {
-  elementsPromise: Elements;
-  renderSlot: (elements: Record<string, ReactNode>) => ReactNode;
-  children?: ReactNode;
-};
-
-class OuterSlot extends Component<OuterSlotProps, { error?: unknown }> {
-  constructor(props: OuterSlotProps) {
-    super(props);
-    this.state = {};
-  }
-  static getDerivedStateFromError(error: unknown) {
-    return { error };
-  }
-  render() {
-    if ('error' in this.state) {
-      const e = this.state.error;
-      if (e instanceof Error && !('statusCode' in e)) {
-        // HACK we assume any error as Not Found,
-        // probably caused by history api fallback
-        (e as any).statusCode = 404;
-      }
-      throw e;
-    }
-    return this.props.children;
-  }
-}
-
 const InnerSlot = ({
+  id,
   elementsPromise,
-  renderSlot,
+  children,
 }: {
+  id: string;
   elementsPromise: Elements;
-  renderSlot: (elements: Record<string, ReactNode>) => ReactNode;
+  children?: ReactNode;
 }) => {
   const elements = use(elementsPromise);
-  return renderSlot(elements);
+  if (!(id in elements)) {
+    throw new Error('No such element: ' + id);
+  }
+  return createElement(
+    ChildrenContextProvider,
+    { value: children },
+    elements[id],
+  );
 };
 
 /**
@@ -305,21 +285,7 @@ export const Slot = ({
   if (!elementsPromise) {
     throw new Error('Missing Root component');
   }
-  const renderSlot = (elements: Record<string, ReactNode>) => {
-    if (!(id in elements)) {
-      throw new Error('No such element: ' + id);
-    }
-    return createElement(
-      ChildrenContextProvider,
-      { value: children },
-      elements[id],
-    );
-  };
-  return createElement(
-    OuterSlot,
-    { elementsPromise, renderSlot },
-    createElement(InnerSlot, { elementsPromise, renderSlot }),
-  );
+  return createElement(InnerSlot, { id, elementsPromise }, children);
 };
 
 export const Children = () => use(ChildrenContext);
