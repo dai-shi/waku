@@ -112,6 +112,7 @@ for (const mode of ['DEV', 'PRD'] as const) {
       await page.click("a[href='/error']");
       // Default router client error boundary is reached
       await expect(
+        // TODO "Not Found" isn't appropriate for "unreachable error"
         page.getByRole('heading', { name: 'Not Found' }),
       ).toBeVisible();
       ({ port, stopApp } = await startApp(mode));
