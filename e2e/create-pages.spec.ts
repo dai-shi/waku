@@ -65,5 +65,57 @@ for (const mode of ['DEV', 'PRD'] as const) {
       await page.waitForTimeout(500); // need to wait not to error
       await expect(page.getByRole('heading', { level: 2 })).toBeVisible();
     });
+
+    test('errors', async ({ page }) => {
+      await page.goto(`http://localhost:${port}`);
+      await page.click("a[href='/error']");
+      await expect(
+        page.getByRole('heading', { name: 'Error Page' }),
+      ).toBeVisible();
+      await expect(page.getByTestId('fallback-render')).toHaveText(
+        'Handling RSC render error',
+      );
+      await page.getByTestId('server-throws').getByTestId('throws').click();
+      await expect(
+        page.getByRole('heading', { name: 'Error Page' }),
+      ).toBeVisible();
+      await expect(
+        page.getByTestId('server-throws').getByTestId('throws-error'),
+      ).toHaveText('Something unexpected happened');
+    });
+
+    test('server function unreachable', async ({ page }) => {
+      await page.goto(`http://localhost:${port}`);
+      await page.click("a[href='/error']");
+      await expect(
+        page.getByRole('heading', { name: 'Error Page' }),
+      ).toBeVisible();
+      await page.getByTestId('server-throws').getByTestId('success').click();
+      await expect(
+        page.getByTestId('server-throws').getByTestId('throws-success'),
+      ).toHaveText('It worked');
+      await page.getByTestId('server-throws').getByTestId('reset').click();
+      await expect(
+        page.getByTestId('server-throws').getByTestId('throws-success'),
+      ).toHaveText('init');
+      await stopApp();
+      await page.getByTestId('server-throws').getByTestId('success').click();
+      await expect(
+        page.getByTestId('server-throws').getByTestId('throws-error'),
+      ).toHaveText('Failed to fetch');
+      ({ port, stopApp } = await startApp(mode));
+    });
+
+    test('server page unreachable', async ({ page }) => {
+      await page.goto(`http://localhost:${port}`);
+      await stopApp();
+      await page.click("a[href='/error']");
+      // Default router client error boundary is reached
+      await expect(
+        // TODO "Not Found" isn't appropriate for "unreachable error"
+        page.getByRole('heading', { name: 'Not Found' }),
+      ).toBeVisible();
+      ({ port, stopApp } = await startApp(mode));
+    });
   });
 }

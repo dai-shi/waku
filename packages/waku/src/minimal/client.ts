@@ -42,7 +42,7 @@ const checkStatus = async (
 ): Promise<Response> => {
   const response = await responsePromise;
   if (!response.ok) {
-    const err = new Error(response.statusText);
+    const err = new Error((await response.text()) || response.statusText);
     (err as any).statusCode = response.status;
     throw err;
   }
@@ -131,9 +131,10 @@ export const callServerRsc = async (
           enhanceFetch(fetch)(url, { method: 'POST', body }),
         );
   const data = enhanceCreateData(createData)(responsePromise);
+  const value = (await data)._value;
   // FIXME this causes rerenders even if data is empty
   fetchCache[SET_ELEMENTS]?.((prev) => mergeElements(prev, data));
-  return (await data)._value;
+  return value;
 };
 
 const prefetchedParams = new WeakMap<Promise<unknown>, unknown>();

@@ -3,12 +3,13 @@ import type { ReactNode } from 'react';
 import { resolveConfig, extractPureConfig } from '../config.js';
 import type { PureConfig } from '../config.js';
 import { setAllEnvInternal } from '../../server.js';
-import type { HandleRequest } from '../types.js';
+import type { HandleRequest, HandlerRes } from '../types.js';
 import type { Middleware, HandlerContext } from './types.js';
 import { renderRsc, decodeBody, decodePostAction } from '../renderers/rsc.js';
 import { renderHtml } from '../renderers/html.js';
 import { decodeRscPath, decodeFuncId } from '../renderers/utils.js';
 import { filePathToFileURL, getPathMapping } from '../utils/path.js';
+import { stringToStream } from '../utils/stream.js';
 
 export const SERVER_MODULE_MAP = {
   'rsdw-server': 'react-server-dom-webpack/server.edge',
@@ -150,7 +151,15 @@ export const handler: Middleware = (options) => {
     };
     const input = await getInput(config, ctx, loadServerModule);
     if (input) {
-      const res = await entries.default.handleRequest(input, utils);
+      let res: ReadableStream | HandlerRes | null | undefined;
+      try {
+        res = await entries.default.handleRequest(input, utils);
+      } catch (e) {
+        ctx.res.status = 500;
+        ctx.res.body = stringToStream(
+          (e as { message?: string } | undefined)?.message || String(e),
+        );
+      }
       if (res instanceof ReadableStream) {
         ctx.res.body = res;
       } else if (res) {
