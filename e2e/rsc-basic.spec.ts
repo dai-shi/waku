@@ -84,10 +84,9 @@ for (const mode of ['DEV', 'PRD'] as const) {
       ).toHaveText('init');
       await stopApp();
       await page.getByTestId('server-throws').getByTestId('success').click();
-      // Not sure what we should expect...
       await expect(
         page.getByTestId('server-throws').getByTestId('throws-error'),
-      ).toHaveText('Internal Server Error');
+      ).toHaveText('Failed to fetch');
       ({ port, stopApp } = await startApp(mode));
     });
   });
