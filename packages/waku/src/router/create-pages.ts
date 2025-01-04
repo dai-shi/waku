@@ -595,11 +595,11 @@ export const createPages = <
         // FIXME we should revisit the error boundary use case design
         fallbackElement: createElement(
           Slot,
-          { id: 'root', unstable_renderPrev: true },
+          { id: 'root' },
           layoutPaths.includes('/')
             ? createElement(
                 Slot,
-                { id: 'layout:/', unstable_renderPrev: true },
+                { id: 'layout:/' },
                 createElement(ThrowError_UNSTABLE),
               )
             : createElement(ThrowError_UNSTABLE),

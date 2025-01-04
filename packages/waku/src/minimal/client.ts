@@ -49,9 +49,7 @@ const checkStatus = async (
   return response;
 };
 
-type Elements = Promise<Record<string, ReactNode>> & {
-  prev?: Record<string, ReactNode> | undefined;
-};
+type Elements = Promise<Record<string, ReactNode>>;
 
 const getCached = <T>(c: () => T, m: WeakMap<object, T>, k: object): T =>
   (m.has(k) ? m : m.set(k, c())).get(k) as T;
@@ -63,21 +61,9 @@ const mergeElements = (a: Elements, b: Elements): Elements => {
         .then(([a, b]) => {
           const nextElements = { ...a, ...b };
           delete nextElements._value;
-          promise.prev = a;
           resolve(nextElements);
         })
-        .catch((e) => {
-          a.then(
-            (a) => {
-              promise.prev = a;
-              reject(e);
-            },
-            () => {
-              promise.prev = a.prev;
-              reject(e);
-            },
-          );
-        });
+        .catch((e) => reject(e));
     });
     return promise;
   };
@@ -257,9 +243,6 @@ const ChildrenContextProvider = memo(ChildrenContext.Provider);
 
 type OuterSlotProps = {
   elementsPromise: Elements;
-  unstable_shouldRenderPrev:
-    | ((err: unknown, prevElements: Record<string, ReactNode>) => boolean)
-    | undefined;
   renderSlot: (elements: Record<string, ReactNode>, err?: unknown) => ReactNode;
   children?: ReactNode;
 };
@@ -280,15 +263,7 @@ class OuterSlot extends Component<OuterSlotProps, { error?: unknown }> {
         // probably caused by history api fallback
         (e as any).statusCode = 404;
       }
-      const prevElements = this.props.elementsPromise.prev;
-      if (
-        prevElements &&
-        this.props.unstable_shouldRenderPrev?.(e, prevElements)
-      ) {
-        return this.props.renderSlot(prevElements, e);
-      } else {
-        throw e;
-      }
+      throw e;
     }
     return this.props.children;
   }
@@ -329,17 +304,10 @@ export const Slot = ({
   id,
   children,
   fallback,
-  unstable_shouldRenderPrev,
-  unstable_renderPrev,
 }: {
   id: string;
   children?: ReactNode;
   fallback?: ReactNode;
-  unstable_shouldRenderPrev?: (
-    err: unknown,
-    prevElements: Record<string, ReactNode>,
-  ) => boolean;
-  unstable_renderPrev?: boolean;
 }) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
@@ -362,19 +330,9 @@ export const Slot = ({
       elements[id],
     );
   };
-  if (unstable_renderPrev) {
-    if (!elementsPromise.prev) {
-      throw new Error('Missing prev elements');
-    }
-    return renderSlot(elementsPromise.prev);
-  }
   return createElement(
     OuterSlot,
-    {
-      elementsPromise,
-      unstable_shouldRenderPrev,
-      renderSlot,
-    },
+    { elementsPromise, renderSlot },
     createElement(InnerSlot, { elementsPromise, renderSlot }),
   );
 };
