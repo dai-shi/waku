@@ -297,11 +297,9 @@ const InnerSlot = ({
 export const Slot = ({
   id,
   children,
-  fallback,
 }: {
   id: string;
   children?: ReactNode;
-  fallback?: ReactNode;
 }) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
@@ -309,10 +307,7 @@ export const Slot = ({
   }
   const renderSlot = (elements: Record<string, ReactNode>) => {
     if (!(id in elements)) {
-      if (fallback) {
-        return fallback;
-      }
-      throw new Error('Not found: ' + id);
+      throw new Error('No such element: ' + id);
     }
     return createElement(
       ChildrenContextProvider,

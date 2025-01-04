@@ -90,7 +90,6 @@ export function unstable_defineRouter(fns: {
   ) => Promise<{
     routeElement: ReactNode;
     elements: Record<SlotId, ReactNode>;
-    fallbackElement?: ReactNode;
   }>;
   getApiConfig?: () => Promise<
     Iterable<{
@@ -210,7 +209,7 @@ export function unstable_defineRouter(fns: {
     }
     const skip = isStringArray(skipParam) ? skipParam : [];
     const { query } = parseRscParams(rscParams);
-    const { routeElement, elements, fallbackElement } = await fns.handleRoute(
+    const { routeElement, elements } = await fns.handleRoute(
       pathname,
       pathConfigItem.specs.isStatic ? {} : { query },
     );
@@ -222,10 +221,6 @@ export function unstable_defineRouter(fns: {
     const entries = {
       ...elements,
       [ROUTE_SLOT_ID_PREFIX + pathname]: routeElement,
-      ...((fallbackElement ? { fallback: fallbackElement } : {}) as Record<
-        string,
-        ReactNode
-      >),
     };
     for (const skipId of await filterEffectiveSkip(pathname, skip)) {
       delete entries[skipId];
