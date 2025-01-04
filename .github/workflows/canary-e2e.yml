@@ -1,0 +1,12 @@
+name: Canary CI
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  canary-ci:
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/canary-ci run') }}
+    uses: dai-shi/waku/.github/workflows/e2e.yml@main
+    with:
+      react_version: 'canary'
