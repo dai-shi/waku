@@ -6,7 +6,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 const FallbackComponent = ({ error }: { error: any }) => {
   return (
     <div role="alert">
-      <p>Something went wrong:</p>
+      <p>Unexpected error in client fallback</p>
       <pre style={{ color: 'red' }}>{error.message}</pre>
       {error.statusCode && (
         <pre style={{ color: 'red' }}>{error.statusCode}</pre>

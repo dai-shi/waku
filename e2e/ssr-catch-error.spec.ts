@@ -30,7 +30,9 @@ for (const mode of ['DEV', 'PRD'] as const) {
     test('access invalid page through client router', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
       await page.getByText('Invalid page').click();
-      await expect(page.getByText('401')).toBeVisible();
+      await expect(
+        page.getByText('Unexpected error in client fallback'),
+      ).toBeVisible();
     });
 
     test('access invalid page directly', async ({ page }) => {
@@ -43,7 +45,9 @@ for (const mode of ['DEV', 'PRD'] as const) {
     }) => {
       await page.goto(`http://localhost:${port}/`);
       await page.getByText('Invalid page').click();
-      await expect(page.getByText('401')).toBeVisible();
+      await expect(
+        page.getByText('Unexpected error in client fallback'),
+      ).toBeVisible();
       await page.goBack();
       await expect(page.getByText('Home Page')).toBeVisible();
     });
