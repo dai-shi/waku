@@ -170,7 +170,10 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
       );
     }
     if (mode !== 'DEV' && !built) {
-      rmSync(`${standaloneDir}${packageDir}/dist`, { recursive: true, force: true });
+      rmSync(`${standaloneDir}${packageDir}/dist`, {
+        recursive: true,
+        force: true,
+      });
       execSync(
         `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} build`,
         { cwd: join(standaloneDir, packageDir) },

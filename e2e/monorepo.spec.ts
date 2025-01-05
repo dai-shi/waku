@@ -9,7 +9,7 @@ for (const mode of ['DEV', 'PRD'] as const) {
     let port: number;
     let stopApp: () => Promise<void>;
     test.beforeAll(async () => {
-      ({ port, stopApp } = await startApp(mode, "packages/waku-project"));
+      ({ port, stopApp } = await startApp(mode, 'packages/waku-project'));
     });
     test.afterAll(async () => {
       await stopApp();
