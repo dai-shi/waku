@@ -289,11 +289,8 @@ class ErrorBoundary extends Component<
   }
   render() {
     if ('error' in this.state) {
-      if (
-        this.state.error instanceof Error &&
-        (this.state.error as any).statusCode === 404
-      ) {
-        return renderError('Not Found');
+      if (this.state.error instanceof Error) {
+        return renderError(this.state.error.message);
       }
       return renderError(String(this.state.error));
     }
@@ -413,13 +410,6 @@ const InnerRouter = ({
 
   const routeElement = createElement(Slot, {
     id: getRouteSlotId(route.path),
-    unstable_shouldRenderPrev: (_err, prevElements) =>
-      // HACK this might not work in some cases
-      'fallback' in prevElements,
-    fallback: createElement(Slot, {
-      id: 'fallback',
-      unstable_renderPrev: true,
-    }),
   });
 
   return createElement(
