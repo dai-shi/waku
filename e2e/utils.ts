@@ -157,7 +157,11 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
   const tmpDir = process.env.TEMP_DIR || tmpdir();
   let standaloneDir: string | undefined;
   let built = false;
-  const startApp = async (mode: 'DEV' | 'PRD' | 'STATIC', packageManager: 'npm' | 'pnpm' | 'yarn' = 'npm', packageDir = '') => {
+  const startApp = async (
+    mode: 'DEV' | 'PRD' | 'STATIC',
+    packageManager: 'npm' | 'pnpm' | 'yarn' = 'npm',
+    packageDir = '',
+  ) => {
     if (!standaloneDir) {
       standaloneDir = mkdtempSync(join(tmpDir, fixtureName));
       cpSync(fixtureDir, standaloneDir, {
