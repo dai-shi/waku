@@ -6,7 +6,7 @@ const startApp = prepareStandaloneSetup('monorepo');
 
 for (const mode of ['DEV', 'PRD'] as const) {
   for (const packageManager of ['npm', 'pnpm', 'yarn'] as const) {
-    test.describe(`monorepo: ${mode}`, () => {
+    test.describe(`${packageManager} monorepo: ${mode}`, () => {
       let port: number;
       let stopApp: () => Promise<void>;
       test.beforeAll(async () => {
