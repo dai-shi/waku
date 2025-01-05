@@ -9,3 +9,7 @@ jobs:
     uses: ./.github/workflows/e2e.yml
     with:
       react_version: 'canary'
+  canary-ci-test:
+    uses: ./.github/workflows/test.yml
+    with:
+      react_version: 'canary'
