@@ -1,6 +1,9 @@
 import { transformWithEsbuild } from 'vite';
 import type { Plugin } from 'vite';
 
+import { EXTENSIONS } from '../constants.js';
+import { extname } from '../utils/path.js';
+
 // https://github.com/vite-plugin/vite-plugin-commonjs/blob/5e3294e78fabb037e12aab75433908fbee17192a/src/utils.ts#L9-L15
 const isCommonjs = (code: string) =>
   /\b(?:require|module|exports)\b/.test(
@@ -18,6 +21,10 @@ export function devCommonJsPlugin(opts: {
           return;
         }
       } else {
+        const ext = extname(id.split('?')[0]!);
+        if (!EXTENSIONS.includes(ext)) {
+          return;
+        }
         if (code.startsWith("import { createRequire } from 'module';")) {
           return;
         }
