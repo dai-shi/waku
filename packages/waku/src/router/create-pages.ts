@@ -15,7 +15,7 @@ import type {
   GetSlugs,
   PropsForPages,
 } from './create-pages-utils/inferred-path-types.js';
-import { Children, Slot, ThrowError_UNSTABLE } from '../minimal/client.js';
+import { Children, Slot } from '../minimal/client.js';
 
 const sanitizeSlug = (slug: string) =>
   slug.replace(/\./g, '').replace(/ /g, '-');
@@ -590,19 +590,6 @@ export const createPages = <
           Slot,
           { id: 'root' },
           createNestedElements(routeChildren),
-        ),
-        // HACK this is hard-coded convention
-        // FIXME we should revisit the error boundary use case design
-        fallbackElement: createElement(
-          Slot,
-          { id: 'root', unstable_renderPrev: true },
-          layoutPaths.includes('/')
-            ? createElement(
-                Slot,
-                { id: 'layout:/', unstable_renderPrev: true },
-                createElement(ThrowError_UNSTABLE),
-              )
-            : createElement(ThrowError_UNSTABLE),
         ),
       };
     },

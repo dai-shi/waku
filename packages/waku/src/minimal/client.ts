@@ -2,7 +2,6 @@
 'use client';
 
 import {
-  Component,
   createContext,
   createElement,
   memo,
@@ -49,9 +48,7 @@ const checkStatus = async (
   return response;
 };
 
-type Elements = Promise<Record<string, ReactNode>> & {
-  prev?: Record<string, ReactNode> | undefined;
-};
+type Elements = Promise<Record<string, ReactNode>>;
 
 const getCached = <T>(c: () => T, m: WeakMap<object, T>, k: object): T =>
   (m.has(k) ? m : m.set(k, c())).get(k) as T;
@@ -63,21 +60,9 @@ const mergeElements = (a: Elements, b: Elements): Elements => {
         .then(([a, b]) => {
           const nextElements = { ...a, ...b };
           delete nextElements._value;
-          promise.prev = a;
           resolve(nextElements);
         })
-        .catch((e) => {
-          a.then(
-            (a) => {
-              promise.prev = a;
-              reject(e);
-            },
-            () => {
-              promise.prev = a.prev;
-              reject(e);
-            },
-          );
-        });
+        .catch((e) => reject(e));
     });
     return promise;
   };
@@ -255,60 +240,24 @@ export const useRefetch = () => use(RefetchContext);
 const ChildrenContext = createContext<ReactNode>(undefined);
 const ChildrenContextProvider = memo(ChildrenContext.Provider);
 
-type OuterSlotProps = {
-  elementsPromise: Elements;
-  unstable_shouldRenderPrev:
-    | ((err: unknown, prevElements: Record<string, ReactNode>) => boolean)
-    | undefined;
-  renderSlot: (elements: Record<string, ReactNode>, err?: unknown) => ReactNode;
-  children?: ReactNode;
-};
-
-class OuterSlot extends Component<OuterSlotProps, { error?: unknown }> {
-  constructor(props: OuterSlotProps) {
-    super(props);
-    this.state = {};
-  }
-  static getDerivedStateFromError(error: unknown) {
-    return { error };
-  }
-  render() {
-    if ('error' in this.state) {
-      const e = this.state.error;
-      if (e instanceof Error && !('statusCode' in e)) {
-        // HACK we assume any error as Not Found,
-        // probably caused by history api fallback
-        (e as any).statusCode = 404;
-      }
-      const prevElements = this.props.elementsPromise.prev;
-      if (
-        prevElements &&
-        this.props.unstable_shouldRenderPrev?.(e, prevElements)
-      ) {
-        return this.props.renderSlot(prevElements, e);
-      } else {
-        throw e;
-      }
-    }
-    return this.props.children;
-  }
-}
-
 const InnerSlot = ({
+  id,
   elementsPromise,
-  renderSlot,
+  children,
 }: {
+  id: string;
   elementsPromise: Elements;
-  renderSlot: (elements: Record<string, ReactNode>, err?: unknown) => ReactNode;
+  children?: ReactNode;
 }) => {
   const elements = use(elementsPromise);
-  return renderSlot(elements);
-};
-
-const ErrorContext = createContext<unknown>(undefined);
-export const ThrowError_UNSTABLE = () => {
-  const err = use(ErrorContext);
-  throw err;
+  if (!(id in elements)) {
+    throw new Error('No such element: ' + id);
+  }
+  return createElement(
+    ChildrenContextProvider,
+    { value: children },
+    elements[id],
+  );
 };
 
 /**
@@ -328,55 +277,15 @@ export const ThrowError_UNSTABLE = () => {
 export const Slot = ({
   id,
   children,
-  fallback,
-  unstable_shouldRenderPrev,
-  unstable_renderPrev,
 }: {
   id: string;
   children?: ReactNode;
-  fallback?: ReactNode;
-  unstable_shouldRenderPrev?: (
-    err: unknown,
-    prevElements: Record<string, ReactNode>,
-  ) => boolean;
-  unstable_renderPrev?: boolean;
 }) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
     throw new Error('Missing Root component');
   }
-  const renderSlot = (elements: Record<string, ReactNode>, err?: unknown) => {
-    if (!(id in elements)) {
-      if (fallback) {
-        if (err) {
-          // HACK I'm not sure if this is the right way
-          return createElement(ErrorContext.Provider, { value: err }, fallback);
-        }
-        return fallback;
-      }
-      throw new Error('Not found: ' + id);
-    }
-    return createElement(
-      ChildrenContextProvider,
-      { value: children },
-      elements[id],
-    );
-  };
-  if (unstable_renderPrev) {
-    if (!elementsPromise.prev) {
-      throw new Error('Missing prev elements');
-    }
-    return renderSlot(elementsPromise.prev);
-  }
-  return createElement(
-    OuterSlot,
-    {
-      elementsPromise,
-      unstable_shouldRenderPrev,
-      renderSlot,
-    },
-    createElement(InnerSlot, { elementsPromise, renderSlot }),
-  );
+  return createElement(InnerSlot, { id, elementsPromise }, children);
 };
 
 export const Children = () => use(ChildrenContext);
