@@ -201,13 +201,9 @@ export default defineRouter({
       ],
       mode: 'static',
       method: 'GET',
-      handler: async () => {
-        return new Response('Hello World');
-      },
     },
   ],
-  handleApi: async (path) => {
-    console.log('api called', path);
+  handleApi: async () => {
     return {
       headers: {},
       status: 200,
