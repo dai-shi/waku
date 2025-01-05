@@ -151,7 +151,7 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
   const tmpDir = process.env.TEMP_DIR || tmpdir();
   let standaloneDir: string | undefined;
   let built = false;
-  const startApp = async (mode: 'DEV' | 'PRD' | 'STATIC') => {
+  const startApp = async (mode: 'DEV' | 'PRD' | 'STATIC', packageDir = '') => {
     if (!standaloneDir) {
       standaloneDir = mkdtempSync(join(tmpDir, fixtureName));
       cpSync(fixtureDir, standaloneDir, {
@@ -170,10 +170,10 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
       );
     }
     if (mode !== 'DEV' && !built) {
-      rmSync(`${standaloneDir}/dist`, { recursive: true, force: true });
+      rmSync(`${standaloneDir}${packageDir}/dist`, { recursive: true, force: true });
       execSync(
         `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} build`,
-        { cwd: standaloneDir },
+        { cwd: join(standaloneDir, packageDir) },
       );
       built = true;
     }
@@ -190,7 +190,7 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
         cmd = `node ${join(standaloneDir, './node_modules/serve/build/main.js')} dist/public -p ${port}`;
         break;
     }
-    const cp = exec(cmd, { cwd: standaloneDir });
+    const cp = exec(cmd, { cwd: join(standaloneDir, packageDir) });
     debugChildProcess(cp, fileURLToPath(import.meta.url), [
       /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
     ]);
