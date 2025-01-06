@@ -183,7 +183,7 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
       );
     }
     if (mode !== 'DEV' && !built) {
-      rmSync(`${standaloneDir}${packageDir}/dist`, {
+      rmSync(`${join(standaloneDir, packageDir, 'dist')}`, {
         recursive: true,
         force: true,
       });
