@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "cookie": "1.0.2",
-    "hono": "4.6.15",
+    "hono": "4.6.16",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-server-dom-webpack": "19.0.0",
@@ -18,8 +18,8 @@
   },
   "devDependencies": {
     "@types/cookie": "1.0.0",
-    "@types/node": "22.10.3",
-    "@types/react": "19.0.2",
+    "@types/node": "22.10.5",
+    "@types/react": "19.0.3",
     "@types/react-dom": "19.0.2",
     "typescript": "5.7.2"
   }
