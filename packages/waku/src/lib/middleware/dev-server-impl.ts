@@ -128,7 +128,7 @@ const createMainViteServer = (
               include: ['react-server-dom-webpack/client.edge'],
             },
           },
-          appType: 'mpa',
+          appType: 'custom',
           server: { middlewareMode: true },
         },
         config,
@@ -201,11 +201,14 @@ const createMainViteServer = (
     });
   };
 
-  // FIXME This function doesn't work very well as expected
+  // FIXME This function feels like a hack
   const willBeHandled = async (pathname: string) => {
     const vite = await vitePromise;
     try {
       const result = await vite.transformRequest(pathname);
+      if (result?.code === `export default "/@fs${pathname}"`) {
+        return false;
+      }
       return !!result;
     } catch {
       return false;
@@ -417,13 +420,7 @@ export const devServer: Middleware = (options) => {
       transformIndexHtml,
     };
 
-    if (
-      // HACK depending on `rscBase` is a bad idea
-      ctx.req.url.pathname.startsWith(config.basePath + config.rscBase + '/') ||
-      // HACK depending on hard-coded `api` is limited and may fail
-      ctx.req.url.pathname.startsWith(config.basePath + 'api/') ||
-      !(await willBeHandled(ctx.req.url.pathname))
-    ) {
+    if (!(await willBeHandled(ctx.req.url.pathname))) {
       await next();
       if (ctx.res.body || ctx.res.status) {
         return;
