@@ -201,15 +201,12 @@ const createMainViteServer = (
     });
   };
 
-  // TODO We might be able to elminate this function
+  // FIXME This function doesn't work very well as expected
   const willBeHandled = async (pathname: string) => {
-    if (pathname.startsWith('/@')) {
-      return true;
-    }
     const vite = await vitePromise;
     try {
       const result = await vite.transformRequest(pathname);
-      return !!result?.map;
+      return !!result;
     } catch {
       return false;
     }
@@ -422,8 +419,9 @@ export const devServer: Middleware = (options) => {
 
     if (
       // HACK depending on `rscBase` is a bad idea
-      // FIXME This hack should be removed as well as `willBeHandled`
       ctx.req.url.pathname.startsWith(config.basePath + config.rscBase + '/') ||
+      // HACK depending on hard-coded `api` is limited and may fail
+      ctx.req.url.pathname.startsWith(config.basePath + 'api/') ||
       !(await willBeHandled(ctx.req.url.pathname))
     ) {
       await next();

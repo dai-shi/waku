@@ -197,8 +197,15 @@ export default defineRouter({
     {
       path: [
         { type: 'literal', name: 'api' },
+        { type: 'literal', name: 'hi' },
+      ],
+    },
+    {
+      path: [
+        { type: 'literal', name: 'api' },
         { type: 'literal', name: 'hi.txt' },
       ],
+      isStatic: true,
     },
   ],
   handleApi: async () => {
