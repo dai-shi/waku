@@ -197,7 +197,7 @@ export default defineRouter({
     {
       path: [
         { type: 'literal', name: 'api' },
-        { type: 'literal', name: 'hi' },
+        { type: 'literal', name: 'hi.txt' },
       ],
     },
   ],

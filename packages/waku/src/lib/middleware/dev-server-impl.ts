@@ -203,10 +203,13 @@ const createMainViteServer = (
 
   // TODO We might be able to elminate this function
   const willBeHandled = async (pathname: string) => {
+    if (pathname.startsWith('/@')) {
+      return true;
+    }
     const vite = await vitePromise;
     try {
       const result = await vite.transformRequest(pathname);
-      return !!result;
+      return !!result?.map;
     } catch {
       return false;
     }
@@ -424,7 +427,7 @@ export const devServer: Middleware = (options) => {
       !(await willBeHandled(ctx.req.url.pathname))
     ) {
       await next();
-      if (ctx.res.body) {
+      if (ctx.res.body || ctx.res.status) {
         return;
       }
     }
