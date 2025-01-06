@@ -163,8 +163,9 @@ export const handler: Middleware = (options) => {
       if (res instanceof ReadableStream) {
         ctx.res.body = res;
       } else if (res) {
-        ctx.res.body = res.body ?? stringToStream('no body');
-
+        if (res.body) {
+          ctx.res.body = res.body;
+        }
         if (res.status) {
           ctx.res.status = res.status;
         }
