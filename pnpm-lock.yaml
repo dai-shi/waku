@@ -102,6 +102,9 @@ importers:
       react-dom:
         specifier: 19.0.0
         version: 19.0.0(react@19.0.0)
+      react-error-boundary:
+        specifier: ^5.0.0
+        version: 5.0.0(react@19.0.0)
       react-server-dom-webpack:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.97.1)

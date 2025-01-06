@@ -4,7 +4,7 @@
 
 visit [waku.gg](https://waku.gg) or `npm create waku@latest`
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/dai-shi/waku/ci.yml?branch=main&style=flat&colorA=000000&colorB=000000)](https://github.com/pmndrs/jotai/actions?query=workflow%3ALint)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/dai-shi/waku/test.yml?branch=main&style=flat&colorA=000000&colorB=000000)](https://github.com/dai-shi/waku/actions?query=workflow%3ATest)
 [![Version](https://img.shields.io/npm/v/waku?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/waku)
 [![Downloads](https://img.shields.io/npm/dt/waku.svg?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/waku)
 [![Discord Shield](https://img.shields.io/discord/627656437971288081?style=flat&colorA=000000&colorB=000000&label=discord&logo=discord&logoColor=ffffff)](https://discord.gg/MrQdmzd)

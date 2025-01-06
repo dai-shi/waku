@@ -6,6 +6,7 @@ import { ServerPing } from './ServerPing/index.js';
 import { ServerBox } from './Box.js';
 import { ServerProvider } from './ServerAction/Server.js';
 import { ClientActionsConsumer } from './ServerAction/Client.js';
+import { ServerThrows } from './ServerThrows/index.js';
 
 const App = ({ name }: { name: string }) => {
   return (
@@ -21,6 +22,7 @@ const App = ({ name }: { name: string }) => {
           <ServerProvider>
             <ClientActionsConsumer />
           </ServerProvider>
+          <ServerThrows />
         </ServerBox>
       </body>
     </html>
