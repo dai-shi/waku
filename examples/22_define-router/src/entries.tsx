@@ -199,13 +199,10 @@ export default defineRouter({
         { type: 'literal', name: 'api' },
         { type: 'literal', name: 'hi' },
       ],
-      mode: 'static',
-      method: 'GET',
     },
   ],
   handleApi: async () => {
     return {
-      headers: {},
       status: 200,
     };
   },
