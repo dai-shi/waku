@@ -138,6 +138,12 @@ export const prepareNormalSetup = (fixtureName: string) => {
   return startApp;
 };
 
+const PACKAGE_INSTALL = {
+  npm: (path: string) => `npm add ${path}`,
+  pnpm: (path: string) => `pnpm add ${path}`,
+  yarn: (path: string) => `yarn add ${path}`,
+} as const;
+
 export const prepareStandaloneSetup = (fixtureName: string) => {
   const wakuDir = fileURLToPath(new URL('../packages/waku', import.meta.url));
   const { version } = createRequire(import.meta.url)(
@@ -151,7 +157,11 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
   const tmpDir = process.env.TEMP_DIR || tmpdir();
   let standaloneDir: string | undefined;
   let built = false;
-  const startApp = async (mode: 'DEV' | 'PRD' | 'STATIC') => {
+  const startApp = async (
+    mode: 'DEV' | 'PRD' | 'STATIC',
+    packageManager: 'npm' | 'pnpm' | 'yarn' = 'npm',
+    packageDir = '',
+  ) => {
     if (!standaloneDir) {
       standaloneDir = mkdtempSync(join(tmpDir, fixtureName));
       cpSync(fixtureDir, standaloneDir, {
@@ -164,16 +174,22 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
         cwd: wakuDir,
         stdio: 'inherit',
       });
+      const wakuPackageTgz = join(standaloneDir, `waku-${version}.tgz`);
+      const installScript = PACKAGE_INSTALL[packageManager](wakuPackageTgz);
+      execSync(installScript, { cwd: standaloneDir, stdio: 'inherit' });
       execSync(
         `npm install --force ${join(standaloneDir, `waku-${version}.tgz`)}`,
         { cwd: standaloneDir, stdio: 'inherit' },
       );
     }
     if (mode !== 'DEV' && !built) {
-      rmSync(`${standaloneDir}/dist`, { recursive: true, force: true });
+      rmSync(`${join(standaloneDir, packageDir, 'dist')}`, {
+        recursive: true,
+        force: true,
+      });
       execSync(
         `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} build`,
-        { cwd: standaloneDir },
+        { cwd: join(standaloneDir, packageDir) },
       );
       built = true;
     }
@@ -190,7 +206,7 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
         cmd = `node ${join(standaloneDir, './node_modules/serve/build/main.js')} dist/public -p ${port}`;
         break;
     }
-    const cp = exec(cmd, { cwd: standaloneDir });
+    const cp = exec(cmd, { cwd: join(standaloneDir, packageDir) });
     debugChildProcess(cp, fileURLToPath(import.meta.url), [
       /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
     ]);
