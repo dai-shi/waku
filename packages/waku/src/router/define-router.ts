@@ -351,6 +351,9 @@ export function unstable_defineRouter(fns: {
       const entriesCache = new Map<string, Record<string, ReactNode>>();
       await Promise.all(
         pathConfig.map(async ({ pathSpec, pathname, pattern, specs }) => {
+          if (specs.isApi) {
+            return;
+          }
           const moduleIds = new Set<string>();
           moduleIdsForPrefetch.set(pathSpec, moduleIds);
           if (!pathname) {
@@ -387,6 +390,9 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
 };`;
 
       for (const { pathSpec, pathname, specs } of pathConfig) {
+        if (specs.isApi) {
+          continue;
+        }
         tasks.push(async () => {
           const moduleIds = moduleIdsForPrefetch.get(pathSpec)!;
           if (pathname) {

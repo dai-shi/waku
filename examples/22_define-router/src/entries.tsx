@@ -193,4 +193,24 @@ export default defineRouter({
     }
     throw new Error('renderRoute: No such path:' + path);
   },
+  getApiConfig: async () => [
+    {
+      path: [
+        { type: 'literal', name: 'api' },
+        { type: 'literal', name: 'hi' },
+      ],
+    },
+    {
+      path: [
+        { type: 'literal', name: 'api' },
+        { type: 'literal', name: 'hi.txt' },
+      ],
+      isStatic: true,
+    },
+  ],
+  handleApi: async () => {
+    return {
+      status: 200,
+    };
+  },
 });
