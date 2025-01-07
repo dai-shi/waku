@@ -168,7 +168,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
         mode: 'production',
         plugins: [
           rscAnalyzePlugin({ isClient: true, serverFileSet }),
-          rscManagedPlugin(config),
+          rscManagedPlugin({ ...config, addMainToInput: true }),
           ...deployPlugins(config),
         ],
         ssr: {
@@ -629,7 +629,7 @@ const emitStaticFiles = async (
   const dynamicHtmlPaths = Array.from(dynamicHtmlPathMap);
   const code = `
 export const dynamicHtmlPaths = ${JSON.stringify(dynamicHtmlPaths)};
-export const publicIndexHtml = ${JSON.stringify(publicIndexHtml)};
+export const publicIndexHtml = ${JSON.stringify(defaultHtmlStr)};
 `;
   await appendFile(distEntriesFile, code);
 };
