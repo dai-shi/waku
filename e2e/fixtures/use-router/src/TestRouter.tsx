@@ -1,9 +1,9 @@
 'use client';
 
-import { Link, useRouter_UNSTABLE } from 'waku';
+import { Link, useRouter } from 'waku';
 
 export default function TestRouter() {
-  const router = useRouter_UNSTABLE();
+  const router = useRouter();
   const params = new URLSearchParams(router.query);
   const queryCount = parseInt(params.get('count') || '0');
   const hashCount = parseInt(router.hash?.slice(1) || '0');
