@@ -276,7 +276,7 @@ function renderError(message: string) {
   );
 }
 
-class ErrorBoundary extends Component<
+class DefaultErrorBoundary extends Component<
   { children: ReactNode },
   { error?: unknown }
 > {
@@ -432,6 +432,7 @@ const DEFAULT_ROUTER_DATA: RouterData = [];
 export function Router({
   routerData = DEFAULT_ROUTER_DATA,
   initialRoute = parseRouteFromLocation(),
+  ErrorBoundary = DefaultErrorBoundary,
 }) {
   const initialRscPath = encodeRoutePath(initialRoute.path);
   const locationListeners = (routerData[0] ||= new Set());
