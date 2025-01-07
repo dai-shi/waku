@@ -159,6 +159,17 @@ const pages = createPages(
         );
       },
     }),
+
+    createApi({
+      path: '/api/empty',
+      mode: 'static',
+      method: 'GET',
+      handler: async () => {
+        return new Response(null, {
+          status: 200,
+        });
+      },
+    }),
   ],
 );
 

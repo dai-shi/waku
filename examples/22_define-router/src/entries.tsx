@@ -208,6 +208,12 @@ export default defineRouter({
       ],
       isStatic: true,
     },
+    {
+      path: [
+        { type: 'literal', name: 'api' },
+        { type: 'literal', name: 'empty' },
+      ],
+    },
   ],
   handleApi: async (path) => {
     if (path === '/api/hi.txt') {
@@ -231,6 +237,10 @@ export default defineRouter({
             controller.close();
           },
         }),
+      };
+    } else if (path === '/api/empty') {
+      return {
+        status: 200,
       };
     } else {
       return {
