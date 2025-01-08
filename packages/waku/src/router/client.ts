@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  Component,
   createContext,
   createElement,
   startTransition,
@@ -268,36 +267,6 @@ const notAvailableInServer = (name: string) => () => {
   throw new Error(`${name} is not in the server`);
 };
 
-function renderError(message: string) {
-  return createElement(
-    'html',
-    null,
-    createElement('body', null, createElement('h1', null, message)),
-  );
-}
-
-class DefaultErrorBoundary extends Component<
-  { children: ReactNode },
-  { error?: unknown }
-> {
-  constructor(props: { children: ReactNode }) {
-    super(props);
-    this.state = {};
-  }
-  static getDerivedStateFromError(error: unknown) {
-    return { error };
-  }
-  render() {
-    if ('error' in this.state) {
-      if (this.state.error instanceof Error) {
-        return renderError(this.state.error.message);
-      }
-      return renderError(String(this.state.error));
-    }
-    return this.props.children;
-  }
-}
-
 const getRouteSlotId = (path: string) => 'route:' + path;
 
 const handleScroll = () => {
@@ -432,7 +401,6 @@ const DEFAULT_ROUTER_DATA: RouterData = [];
 export function Router({
   routerData = DEFAULT_ROUTER_DATA,
   initialRoute = parseRouteFromLocation(),
-  ErrorBoundary = DefaultErrorBoundary,
 }) {
   const initialRscPath = encodeRoutePath(initialRoute.path);
   const locationListeners = (routerData[0] ||= new Set());
@@ -501,21 +469,17 @@ export function Router({
     };
   const initialRscParams = createRscParams(initialRoute.query);
   return createElement(
-    ErrorBoundary,
-    null,
-    createElement(
-      Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
-      {
-        initialRscPath,
-        initialRscParams,
-        unstable_enhanceFetch,
-        unstable_enhanceCreateData,
-      },
-      createElement(InnerRouter, {
-        routerData: routerData as Required<RouterData>,
-        initialRoute,
-      }),
-    ),
+    Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
+    {
+      initialRscPath,
+      initialRscParams,
+      unstable_enhanceFetch,
+      unstable_enhanceCreateData,
+    },
+    createElement(InnerRouter, {
+      routerData: routerData as Required<RouterData>,
+      initialRoute,
+    }),
   );
 }
 
