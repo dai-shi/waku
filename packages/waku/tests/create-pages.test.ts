@@ -478,7 +478,7 @@ function injectedFunctions() {
   };
 }
 
-describe('createPages', () => {
+describe('createPages pages and layouts', () => {
   it('creates a simple static page', async () => {
     const TestPage = () => null;
     createPages(async ({ createPage }) => [
@@ -1300,5 +1300,74 @@ describe('createPages', () => {
       'root',
       'page:/server/two/[echo]/[echo2]',
     ]);
+  });
+});
+
+describe('createPages api', () => {
+  it('creates a simple static api', async () => {
+    createPages(async ({ createApi }) => [
+      createApi({
+        path: '/test',
+        mode: 'static',
+        method: 'GET',
+        handler: async () => {
+          return new Response('Hello World');
+        },
+      }),
+    ]);
+    const { getApiConfig, handleApi } = injectedFunctions();
+    expect(await getApiConfig()).toEqual([
+      {
+        path: [{ type: 'literal', name: 'test' }],
+        isStatic: true,
+      },
+    ]);
+    const res = await handleApi('/test', {
+      method: 'GET',
+      headers: {},
+      body: null,
+    });
+    expect(res.headers).toEqual({
+      'content-type': 'text/plain;charset=UTF-8',
+    });
+    const respParsed = new Response(res.body);
+    const text = await respParsed.text();
+    expect(text).toEqual('Hello World');
+    expect(res.status).toEqual(200);
+  });
+
+  it('creates a simple dynamic api', async () => {
+    createPages(async ({ createApi }) => [
+      createApi({
+        path: '/test/[slug]',
+        mode: 'dynamic',
+        method: 'GET',
+        handler: async (req) => {
+          return new Response('Hello World ' + req.url.split('/').at(-1)!);
+        },
+      }),
+    ]);
+    const { getApiConfig, handleApi } = injectedFunctions();
+    expect(await getApiConfig()).toEqual([
+      {
+        path: [
+          { type: 'literal', name: 'test' },
+          { type: 'group', name: 'slug' },
+        ],
+        isStatic: false,
+      },
+    ]);
+    const res = await handleApi('/test/foo', {
+      method: 'GET',
+      headers: {},
+      body: null,
+    });
+    expect(res.headers).toEqual({
+      'content-type': 'text/plain;charset=UTF-8',
+    });
+    const respParsed = new Response(res.body);
+    const text = await respParsed.text();
+    expect(text).toEqual('Hello World foo');
+    expect(res.status).toEqual(200);
   });
 });

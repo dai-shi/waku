@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { unstable_defineRouter as defineRouter } from 'waku/router/server';
 import { Slot, Children } from 'waku/minimal/client';
-import { unstable_defineEntries as defineEntries } from 'waku/minimal/server';
 
 import Layout from './routes/layout.js';
 import Page from './routes/page.js';
@@ -62,16 +61,4 @@ const router: ReturnType<typeof defineRouter> = defineRouter({
   },
 });
 
-const entries: ReturnType<typeof defineEntries> = defineEntries({
-  handleRequest: async (input, utils) => {
-    if (input.type === 'custom') {
-      return null; // no ssr
-    }
-    return router.handleRequest(input, utils);
-  },
-  handleBuild: (utils) => {
-    return router.handleBuild(utils);
-  },
-});
-
-export default entries;
+export default router;

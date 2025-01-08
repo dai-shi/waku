@@ -1134,6 +1134,31 @@ importers:
         specifier: 5.7.2
         version: 5.7.2
 
+  examples/51_spa:
+    dependencies:
+      react:
+        specifier: 19.0.0
+        version: 19.0.0
+      react-dom:
+        specifier: 19.0.0
+        version: 19.0.0(react@19.0.0)
+      react-server-dom-webpack:
+        specifier: 19.0.0
+        version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.97.1)
+      waku:
+        specifier: 0.21.13
+        version: link:../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 19.0.3
+        version: 19.0.3
+      '@types/react-dom':
+        specifier: 19.0.2
+        version: 19.0.2(@types/react@19.0.3)
+      typescript:
+        specifier: 5.7.2
+        version: 5.7.2
+
   packages/create-waku:
     devDependencies:
       '@types/fs-extra':
