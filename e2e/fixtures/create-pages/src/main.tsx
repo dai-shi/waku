@@ -1,10 +1,21 @@
 import { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { Router } from 'waku/router/client';
+import ErrorBoundary from './components/ErrorBoundary.js';
+
+function fallbackRender({ error }: { error: unknown }) {
+  return (
+    <html>
+      <h1>{String(error)}</h1>
+    </html>
+  );
+}
 
 const rootElement = (
   <StrictMode>
-    <Router />
+    <ErrorBoundary fallbackRender={fallbackRender}>
+      <Router />
+    </ErrorBoundary>
   </StrictMode>
 );
 
