@@ -39,10 +39,14 @@ import {
 import type { RouteProps } from './common.js';
 import type { RouteConfig } from './base-types.js';
 
+type AllowPathDecorators<Path extends string> = Path extends unknown
+  ? Path | `${Path}?${string}` | `${Path}#${string}`
+  : never;
+
 type InferredPaths = RouteConfig extends {
-  paths: infer UserPaths;
+  paths: infer UserPaths extends string;
 }
-  ? UserPaths
+  ? AllowPathDecorators<UserPaths>
   : string;
 
 declare global {
