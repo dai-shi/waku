@@ -217,7 +217,7 @@ export default defineRouter({
   ],
   handleApi: async (path) => {
     if (path === '/api/hi.txt') {
-      const hiTxt = await readFile('./public/hi.txt');
+      const hiTxt = await readFile('./private/hi.txt');
 
       return {
         status: 200,

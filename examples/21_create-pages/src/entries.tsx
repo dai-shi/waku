@@ -126,7 +126,7 @@ const pages = createPages(
       mode: 'static',
       method: 'GET',
       handler: async () => {
-        const hiTxt = await readFile('./public/hi.txt');
+        const hiTxt = await readFile('./private/hi.txt');
         return new Response(
           new ReadableStream({
             start(controller) {
