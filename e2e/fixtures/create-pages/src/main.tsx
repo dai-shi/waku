@@ -6,7 +6,9 @@ import ErrorBoundary from './components/ErrorBoundary.js';
 function fallbackRender({ error }: { error: unknown }) {
   return (
     <html>
-      <h1>{String(error)}</h1>
+      <body>
+        <h1>{String(error)}</h1>
+      </body>
     </html>
   );
 }
