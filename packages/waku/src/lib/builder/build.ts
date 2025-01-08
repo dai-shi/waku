@@ -746,6 +746,7 @@ export async function build(options: {
   );
 
   setAllEnvInternal(env);
+  platformObject.buildOptions.unstable_phase = 'emitStaticFiles';
   const cssAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
