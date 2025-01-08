@@ -25,6 +25,11 @@ for (const mode of ['DEV', 'PRD'] as const) {
       await expect(page.getByTestId('count')).toHaveText('3');
     });
 
+    test('not found', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/does-not-exist.txt`);
+      await expect(page.getByText('Not Found')).toBeVisible();
+    });
+
     test('vercel ai', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
       const aiLocator = page.getByTestId('vercel-ai');
