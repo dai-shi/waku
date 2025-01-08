@@ -128,7 +128,7 @@ const createMainViteServer = (
               include: ['react-server-dom-webpack/client.edge'],
             },
           },
-          appType: 'custom',
+          appType: 'mpa',
           server: { middlewareMode: true },
         },
         config,
@@ -460,6 +460,8 @@ export const devServer: Middleware = (options) => {
     const body = await readablePromise;
     if (body) {
       ctx.res.body = body;
+    } else if (ctx.res.status === 404) {
+      delete ctx.res.status;
     }
   };
 };
