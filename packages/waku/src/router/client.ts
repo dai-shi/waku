@@ -11,6 +11,7 @@ import {
   useState,
   useTransition,
   Fragment,
+  Component,
 } from 'react';
 import type {
   ComponentProps,
@@ -266,6 +267,36 @@ export function Link({
 const notAvailableInServer = (name: string) => () => {
   throw new Error(`${name} is not in the server`);
 };
+
+function renderError(message: string) {
+  return createElement(
+    'html',
+    null,
+    createElement('body', null, createElement('h1', null, message)),
+  );
+}
+
+export class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { error?: unknown }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = {};
+  }
+  static getDerivedStateFromError(error: unknown) {
+    return { error };
+  }
+  render() {
+    if ('error' in this.state) {
+      if (this.state.error instanceof Error) {
+        return renderError(this.state.error.message);
+      }
+      return renderError(String(this.state.error));
+    }
+    return this.props.children;
+  }
+}
 
 const getRouteSlotId = (path: string) => 'route:' + path;
 
