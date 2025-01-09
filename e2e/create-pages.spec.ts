@@ -116,5 +116,20 @@ for (const mode of ['DEV', 'PRD'] as const) {
       ).toBeVisible();
       ({ port, stopApp } = await startApp(mode));
     });
+
+    test('api hi.txt', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/api/hi.txt`);
+      await expect(page.getByText('hello from a text file!')).toBeVisible();
+    });
+
+    test('api hi', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/api/hi`);
+      await expect(page.getByText('hello world!')).toBeVisible();
+    });
+
+    test('api empty', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/api/empty`);
+      await expect(await page.innerHTML('body')).toBe('');
+    });
   });
 }

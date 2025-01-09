@@ -9,9 +9,10 @@ import Root from './components/Root.js';
 import NestedLayout from './components/NestedLayout.js';
 import { DeeplyNestedLayout } from './components/DeeplyNestedLayout.js';
 import ErrorPage from './components/ErrorPage.js';
+import { readFile } from 'node:fs/promises';
 
 const pages: ReturnType<typeof createPages> = createPages(
-  async ({ createPage, createLayout, createRoot }) => [
+  async ({ createPage, createLayout, createRoot, createApi }) => [
     createRoot({
       render: 'static',
       component: Root,
@@ -104,6 +105,34 @@ const pages: ReturnType<typeof createPages> = createPages(
       render: 'static',
       path: '/404',
       component: () => <h2>Not Found</h2>,
+    }),
+
+    createApi({
+      path: '/api/hi.txt',
+      mode: 'static',
+      method: 'GET',
+      handler: async () => {
+        const hiTxt = await readFile('./private/hi.txt');
+        return new Response(hiTxt);
+      },
+    }),
+
+    createApi({
+      path: '/api/hi',
+      mode: 'static',
+      method: 'GET',
+      handler: async () => {
+        return new Response('hello world!');
+      },
+    }),
+
+    createApi({
+      path: '/api/empty',
+      mode: 'static',
+      method: 'GET',
+      handler: async () => {
+        return new Response(null);
+      },
     }),
   ],
 );
