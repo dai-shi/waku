@@ -29,6 +29,8 @@ export default function App() {
     const code = `
 'use client';
 
+import { Component } from 'react';
+
 export const Empty = () => null;
 
 function Private() {
@@ -37,6 +39,12 @@ function Private() {
 
 export function Greet({ name }: { name: string }) {
   return <>Hello {name}</>;
+}
+
+export class MyComponent extends Component {
+  render() {
+    return <p>Class Component</p>;
+  }
 }
 
 export default function App() {
@@ -51,6 +59,8 @@ export default function App() {
         export const Empty = registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Empty'); }, '/src/App.tsx', 'Empty');
 
         export const Greet = registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Greet'); }, '/src/App.tsx', 'Greet');
+
+        export const MyComponent = registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#MyComponent'); }, '/src/App.tsx', 'MyComponent');
 
         export default registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#default'); }, '/src/App.tsx', 'default');
         "
