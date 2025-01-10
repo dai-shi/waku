@@ -127,17 +127,7 @@ const pages = createPages(
       method: 'GET',
       handler: async () => {
         const hiTxt = await readFile('./private/hi.txt');
-        return new Response(
-          new ReadableStream({
-            start(controller) {
-              controller.enqueue(hiTxt);
-              controller.close();
-            },
-          }),
-          {
-            status: 200,
-          },
-        );
+        return new Response(hiTxt);
       },
     }),
 
@@ -146,17 +136,7 @@ const pages = createPages(
       mode: 'static',
       method: 'GET',
       handler: async () => {
-        return new Response(
-          new ReadableStream({
-            start(controller) {
-              controller.enqueue(new TextEncoder().encode('hello world!'));
-              controller.close();
-            },
-          }),
-          {
-            status: 200,
-          },
-        );
+        return new Response('hello world!');
       },
     }),
 

@@ -33,7 +33,8 @@ type PlatformObject = {
       | 'buildServerBundle'
       | 'buildSsrBundle'
       | 'buildClientBundle'
-      | 'buildDeploy';
+      | 'buildDeploy'
+      | 'emitStaticFiles';
   };
 } & Record<string, unknown>;
 
