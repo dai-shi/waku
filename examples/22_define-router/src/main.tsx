@@ -1,13 +1,11 @@
-import { StrictMode, Suspense } from 'react';
+import { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { Router, ErrorBoundary } from 'waku/router/client';
 
 const rootElement = (
   <StrictMode>
     <ErrorBoundary>
-      <Suspense>
-        <Router />
-      </Suspense>
+      <Router />
     </ErrorBoundary>
   </StrictMode>
 );

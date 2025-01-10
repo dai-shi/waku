@@ -16,6 +16,7 @@ import type {
   PropsForPages,
 } from './create-pages-utils/inferred-path-types.js';
 import { Children, Slot } from '../minimal/client.js';
+import { ErrorBoundary } from '../router/client.js';
 
 const sanitizeSlug = (slug: string) =>
   slug.replace(/\./g, '').replace(/ /g, '-');
@@ -174,10 +175,14 @@ export type CreateRoot = (root: RootItem) => void;
  */
 const DefaultRoot = ({ children }: { children: ReactNode }) =>
   createElement(
-    'html',
+    ErrorBoundary,
     null,
-    createElement('head', null),
-    createElement('body', null, children),
+    createElement(
+      'html',
+      null,
+      createElement('head', null),
+      createElement('body', null, children),
+    ),
   );
 
 const createNestedElements = (

@@ -25,17 +25,11 @@ export default fsRouter(
 `;
 
 const getManagedMain = () => `
-import { StrictMode, Suspense, createElement } from 'react';
+import { StrictMode, createElement } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
-import { Router, ErrorBoundary } from 'waku/router/client';
+import { Router } from 'waku/router/client';
 
-const rootElement = createElement(StrictMode, null,
-  createElement(ErrorBoundary, null,
-    createElement(Suspense, null,
-        createElement(Router),
-      ),
-    ),
-  );
+const rootElement = createElement(StrictMode, null, createElement(Router));
 
 if (globalThis.__WAKU_HYDRATE__) {
   hydrateRoot(document, rootElement);

@@ -379,17 +379,13 @@ For the client, the entry point file is `./src/main.tsx`.
 The default client entry file content is the following.
 
 ```tsx
-import { Component, StrictMode, Suspense } from 'react';
+import { Component, StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
-import { Router, ErrorBoundary } from 'waku/router/client';
+import { Router } from 'waku/router/client';
 
 const rootElement = (
   <StrictMode>
-    <ErrorBoundary>
-      <Suspense>
-        <Router />
-      </Suspense>
-    </ErrorBoundary>
+    <Router />
   </StrictMode>
 );
 
