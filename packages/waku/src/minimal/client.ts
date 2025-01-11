@@ -102,7 +102,13 @@ export const callServerRsc = async (
   args: unknown[],
   fetchCache = defaultFetchCache,
 ) => {
-  const enhanceFetch = fetchCache[ENHANCE_FETCH] || ((f) => f);
+  const enhanceFetch =
+    fetchCache[ENHANCE_FETCH] ||
+    ((f) =>
+      (...args) => {
+        console.log('--------fetching1', args[0]);
+        return f(...args);
+      });
   const enhanceCreateData = fetchCache[ENHANCE_CREATE_DATA] || ((d) => d);
   const createData = (responsePromise: Promise<Response>) =>
     createFromFetch<Awaited<Elements>>(checkStatus(responsePromise), {
@@ -130,7 +136,13 @@ const fetchRscInternal = (
   rscParams: unknown,
   fetchCache: FetchCache,
 ) => {
-  const enhanceFetch = fetchCache[ENHANCE_FETCH] || ((f) => f);
+  const enhanceFetch =
+    fetchCache[ENHANCE_FETCH] ||
+    ((f) =>
+      (...args) => {
+        console.log('--------fetching2', args[0]);
+        return f(...args);
+      });
   return rscParams === undefined
     ? enhanceFetch(fetch)(url)
     : rscParams instanceof URLSearchParams
