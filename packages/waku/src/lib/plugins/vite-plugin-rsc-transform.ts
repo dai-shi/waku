@@ -691,7 +691,6 @@ export function rscTransformPlugin(
       if (opts.isBuild) {
         return;
       }
-      console.log('-------------resoveId', id);
       if (id.startsWith('/@w_id/')) {
         return (
           await this.resolve(id.slice('/@w_id/'.length), importer, options)
