@@ -222,11 +222,10 @@ export const createPages = <
     [PathSpec, FunctionComponent<any>]
   >();
   const apiPathMap = new Map<
-    string,
+    string, // `${method} ${path}`
     {
       mode: 'static' | 'dynamic';
       pathSpec: PathSpec;
-      method: Method;
       handler: Parameters<CreateApi>[0]['handler'];
     }
   >();
@@ -235,14 +234,13 @@ export const createPages = <
   const noSsrSet = new WeakSet<PathSpec>();
 
   /** helper to find dynamic path when slugs are used */
-  const getRoutePath: (path: string) => string | undefined = (path) => {
+  const getPageRoutePath: (path: string) => string | undefined = (path) => {
     if (staticComponentMap.has(joinPath(path, 'page').slice(1))) {
       return path;
     }
     const allPaths = [
       ...dynamicPagePathMap.keys(),
       ...wildcardPagePathMap.keys(),
-      ...apiPathMap.keys(),
     ];
     for (const p of allPaths) {
       if (getPathMapping(parsePathWithSlug(p), path)) {
@@ -251,12 +249,26 @@ export const createPages = <
     }
   };
 
-  const pathExists = (path: string) => {
+  const getApiRoutePath: (
+    path: string,
+    method: string,
+  ) => string | undefined = (path, method) => {
+    const allPaths = apiPathMap.keys();
+    for (const pathKey of allPaths) {
+      const [m, p] = pathKey.split(' ');
+      if (m === method && getPathMapping(parsePathWithSlug(p!), path)) {
+        return p;
+      }
+    }
+  };
+
+  const pagePathExists = (path: string) => {
+    const apiRoutes = new Set(apiPathMap.keys().map(([path]) => path));
     return (
       staticPathMap.has(path) ||
       dynamicPagePathMap.has(path) ||
       wildcardPagePathMap.has(path) ||
-      apiPathMap.has(path)
+      apiRoutes.has(path)
     );
   };
 
@@ -285,7 +297,7 @@ export const createPages = <
     if (configured) {
       throw new Error('createPage no longer available');
     }
-    if (pathExists(page.path)) {
+    if (pagePathExists(page.path)) {
       throw new Error(`Duplicated path: ${page.path}`);
     }
 
@@ -383,12 +395,12 @@ export const createPages = <
     if (configured) {
       throw new Error('createApi no longer available');
     }
-    if (apiPathMap.has(path)) {
-      throw new Error(`Duplicated api path: ${path}`);
+    if (apiPathMap.has(`${method} ${path}`)) {
+      throw new Error(`Duplicated api path+method: ${path} ${method}`);
     }
 
     const pathSpec = parsePathWithSlug(path);
-    apiPathMap.set(path, { mode, pathSpec, method, handler });
+    apiPathMap.set(`${method} ${path}`, { mode, pathSpec, handler });
   };
 
   const createRoot: CreateRoot = (root) => {
@@ -524,7 +536,7 @@ export const createPages = <
       await configure();
 
       // path without slugs
-      const routePath = getRoutePath(path);
+      const routePath = getPageRoutePath(path);
       if (!routePath) {
         throw new Error('Route not found: ' + path);
       }
@@ -605,11 +617,11 @@ export const createPages = <
     },
     handleApi: async (path, options) => {
       await configure();
-      const routePath = getRoutePath(path);
+      const routePath = getApiRoutePath(path, options.method);
       if (!routePath) {
-        throw new Error('Route not found: ' + path);
+        throw new Error('API Route not found: ' + path);
       }
-      const { handler } = apiPathMap.get(routePath)!;
+      const { handler } = apiPathMap.get(`${options.method} ${routePath}`)!;
 
       const req = new Request(
         new URL(

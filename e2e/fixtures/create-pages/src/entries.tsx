@@ -127,6 +127,15 @@ const pages: ReturnType<typeof createPages> = createPages(
     }),
 
     createApi({
+      path: '/api/hi',
+      mode: 'static',
+      method: 'POST',
+      handler: async () => {
+        return new Response('POST to hello world!');
+      },
+    }),
+
+    createApi({
       path: '/api/empty',
       mode: 'static',
       method: 'GET',
