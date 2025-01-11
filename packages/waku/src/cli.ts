@@ -5,6 +5,7 @@ import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
 import { Hono } from 'hono';
 import { compress } from 'hono/compress';
+import { logger } from 'hono/logger'
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import * as dotenv from 'dotenv';
@@ -104,6 +105,7 @@ async function runDev() {
     if (values['experimental-compress']) {
       app.use(compress());
     }
+    app.use(logger());
     app.use(serverEngine({ cmd: 'dev', config, env: process.env as any }));
     app.notFound((c) => {
       // FIXME can we avoid hardcoding the public path?
