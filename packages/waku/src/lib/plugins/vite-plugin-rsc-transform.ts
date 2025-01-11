@@ -691,9 +691,9 @@ export function rscTransformPlugin(
       if (opts.isBuild) {
         return;
       }
-      if (id.startsWith('/@file_')) {
+      if (id.startsWith('/@resolved_')) {
         return (
-          await this.resolve(id.slice('/@file_'.length), importer, options)
+          await this.resolve(id.slice('/@resolved_'.length), importer, options)
         )?.id;
       }
       const resolved = await this.resolve(id, importer, options);

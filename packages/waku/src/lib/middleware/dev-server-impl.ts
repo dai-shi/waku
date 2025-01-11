@@ -142,8 +142,6 @@ const createMainViteServer = (
   const wakuDist = joinPath(fileURLToFilePath(import.meta.url), '../../..');
 
   const loadServerModuleMain = async (idOrFileURL: string) => {
-    console.log('----------loadServerModuleMain', idOrFileURL);
-    idOrFileURL = idOrFileURL.replace(/@file_/, '');
     const vite = await vitePromise;
     if (!idOrFileURL.startsWith('file://')) {
       if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
@@ -317,10 +315,8 @@ const createRscViteServer = (
     }
     if (file.startsWith(config.rootDir)) {
       file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
-    } else if (id.startsWith('/@fs/')) {
-      file = id; // Do we need this condition?
     } else {
-      file = '@file_' + file;
+      file = '@resolved_' + file;
     }
     return config.basePath + file;
   };
