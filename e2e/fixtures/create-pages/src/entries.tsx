@@ -5,19 +5,13 @@ import FooPage from './components/FooPage.js';
 import HomeLayout from './components/HomeLayout.js';
 import HomePage from './components/HomePage.js';
 import NestedBazPage from './components/NestedBazPage.js';
-import Root from './components/Root.js';
 import NestedLayout from './components/NestedLayout.js';
 import { DeeplyNestedLayout } from './components/DeeplyNestedLayout.js';
 import ErrorPage from './components/ErrorPage.js';
 import { readFile } from 'node:fs/promises';
 
 const pages: ReturnType<typeof createPages> = createPages(
-  async ({ createPage, createLayout, createRoot, createApi }) => [
-    createRoot({
-      render: 'static',
-      component: Root,
-    }),
-
+  async ({ createPage, createLayout, createApi }) => [
     createLayout({
       render: 'static',
       path: '/',
