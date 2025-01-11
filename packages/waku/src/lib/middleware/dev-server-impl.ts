@@ -315,10 +315,10 @@ const createRscViteServer = (
     }
     if (file.startsWith(config.rootDir)) {
       file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
-    } else if (file.startsWith('/')) {
-      file = '@fs' + file;
+    } else if (id.startsWith('/@fs/')) {
+      file = id; // Do we need this condition?
     } else {
-      file = '@id/' + file;
+      file = '@file_' + file;
     }
     return config.basePath + file;
   };

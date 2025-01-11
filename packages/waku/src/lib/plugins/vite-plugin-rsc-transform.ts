@@ -689,9 +689,10 @@ export function rscTransformPlugin(
       if (opts.isBuild) {
         return;
       }
-      if (id.startsWith('/@id/')) {
-        return (await this.resolve(id.slice('/@id/'.length), importer, options))
-          ?.id;
+      if (id.startsWith('/@file_')) {
+        return (
+          await this.resolve(id.slice('/@file_'.length), importer, options)
+        )?.id;
       }
       const resolved = await this.resolve(id, importer, options);
       let srcId =
