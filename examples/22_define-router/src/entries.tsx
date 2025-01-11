@@ -15,9 +15,9 @@ export default defineRouter({
       {
         pattern: '/',
         path: [],
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         elements: {
-          root: { isStatic: true },
           'layout:/': { isStatic: true },
           'page:/': { isStatic: true },
         },
@@ -25,9 +25,9 @@ export default defineRouter({
       {
         pattern: '/foo',
         path: [{ type: 'literal', name: 'foo' }],
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         elements: {
-          root: { isStatic: true },
           'layout:/': { isStatic: true },
           'page:/foo': { isStatic: true },
         },
@@ -35,9 +35,9 @@ export default defineRouter({
       {
         pattern: '/bar',
         path: [{ type: 'literal', name: 'bar' }],
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         elements: {
-          root: { isStatic: true },
           'layout:/': { isStatic: true },
           'page:/bar': { isStatic: true },
         },
@@ -48,9 +48,9 @@ export default defineRouter({
           { type: 'literal', name: 'nested' },
           { type: 'literal', name: 'baz' },
         ],
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         elements: {
-          root: { isStatic: true },
           'layout:/': { isStatic: true },
           'page:/nested/baz': { isStatic: true },
         },
@@ -61,9 +61,9 @@ export default defineRouter({
           { type: 'literal', name: 'dynamic' },
           { type: 'group', name: 'slug' },
         ],
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         elements: {
-          root: { isStatic: true },
           'layout:/': { isStatic: true },
           // using `[slug]` syntax is just an example and it technically conflicts with others. So, it's better to use a different prefix like `dynamic-page:`.
           'page:/dynamic/[slug]': {},
@@ -74,19 +74,17 @@ export default defineRouter({
   handleRoute: async (path) => {
     if (path === '/') {
       return {
+        rootElement: (
+          <Root>
+            <Children />
+          </Root>
+        ),
         routeElement: (
-          <Slot id="root">
-            <Slot id="layout:/">
-              <Slot id="page:/" />
-            </Slot>
+          <Slot id="layout:/">
+            <Slot id="page:/" />
           </Slot>
         ),
         elements: {
-          root: (
-            <Root>
-              <Children />
-            </Root>
-          ),
           'layout:/': (
             <HomeLayout>
               <Children />
@@ -98,19 +96,17 @@ export default defineRouter({
     }
     if (path === '/foo') {
       return {
+        rootElement: (
+          <Root>
+            <Children />
+          </Root>
+        ),
         routeElement: (
-          <Slot id="root">
-            <Slot id="layout:/">
-              <Slot id="page:/foo" />
-            </Slot>
+          <Slot id="layout:/">
+            <Slot id="page:/foo" />
           </Slot>
         ),
         elements: {
-          root: (
-            <Root>
-              <Children />
-            </Root>
-          ),
           'layout:/': (
             <HomeLayout>
               <Children />
@@ -122,19 +118,17 @@ export default defineRouter({
     }
     if (path === '/bar') {
       return {
+        rootElement: (
+          <Root>
+            <Children />
+          </Root>
+        ),
         routeElement: (
-          <Slot id="root">
-            <Slot id="layout:/">
-              <Slot id="page:/bar" />
-            </Slot>
+          <Slot id="layout:/">
+            <Slot id="page:/bar" />
           </Slot>
         ),
         elements: {
-          root: (
-            <Root>
-              <Children />
-            </Root>
-          ),
           'layout:/': (
             <HomeLayout>
               <Children />
@@ -146,19 +140,17 @@ export default defineRouter({
     }
     if (path === '/nested/baz') {
       return {
+        rootElement: (
+          <Root>
+            <Children />
+          </Root>
+        ),
         routeElement: (
-          <Slot id="root">
-            <Slot id="layout:/">
-              <Slot id="page:/nested/baz" />
-            </Slot>
+          <Slot id="layout:/">
+            <Slot id="page:/nested/baz" />
           </Slot>
         ),
         elements: {
-          root: (
-            <Root>
-              <Children />
-            </Root>
-          ),
           'layout:/': (
             <HomeLayout>
               <Children />
@@ -170,19 +162,17 @@ export default defineRouter({
     }
     if (path.startsWith('/dynamic/')) {
       return {
+        rootElement: (
+          <Root>
+            <Children />
+          </Root>
+        ),
         routeElement: (
-          <Slot id="root">
-            <Slot id="layout:/">
-              <Slot id="page:/dynamic/[slug]" />
-            </Slot>
+          <Slot id="layout:/">
+            <Slot id="page:/dynamic/[slug]" />
           </Slot>
         ),
         elements: {
-          root: (
-            <Root>
-              <Children />
-            </Root>
-          ),
           'layout:/': (
             <HomeLayout>
               <Children />

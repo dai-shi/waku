@@ -412,14 +412,16 @@ const InnerRouter = ({
     };
   }, [changeRoute, locationListeners]);
 
-  const routeElement = createElement(Slot, {
-    id: getRouteSlotId(route.path),
-  });
-
+  const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
+  const rootElement = createElement(
+    Slot,
+    { id: 'root', unstable_fallbackToPrev: true },
+    routeElement,
+  );
   return createElement(
     RouterContext.Provider,
     { value: { route, changeRoute, prefetchRoute } },
-    routeElement,
+    rootElement,
   );
 };
 
@@ -524,6 +526,11 @@ export function Router({
  */
 export function ServerRouter({ route }: { route: RouteProps }) {
   const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
+  const rootElement = createElement(
+    Slot,
+    { id: 'root', unstable_fallbackToPrev: true },
+    routeElement,
+  );
   return createElement(
     Fragment,
     null,
@@ -536,7 +543,7 @@ export function ServerRouter({ route }: { route: RouteProps }) {
           prefetchRoute: notAvailableInServer('prefetchRoute'),
         },
       },
-      routeElement,
+      rootElement,
     ),
   );
 }

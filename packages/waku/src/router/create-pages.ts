@@ -442,6 +442,7 @@ export const createPages = <
       const paths: {
         path: PathSpec;
         pathPattern?: PathSpec;
+        rootElement: { isStatic?: boolean };
         routeElement: { isStatic?: boolean };
         elements: Record<string, { isStatic?: boolean }>;
         noSsr: boolean;
@@ -463,13 +464,13 @@ export const createPages = <
             },
             {},
           ),
-          root: { isStatic: rootIsStatic },
           [`page:${path}`]: { isStatic: staticPathMap.has(path) },
         };
 
         paths.push({
           path: literalSpec,
           ...(originalSpec && { pathPattern: originalSpec }),
+          rootElement: { isStatic: rootIsStatic },
           routeElement: {
             isStatic: true,
           },
@@ -490,11 +491,11 @@ export const createPages = <
             },
             {},
           ),
-          root: { isStatic: rootIsStatic },
           [`page:${path}`]: { isStatic: false },
         };
         paths.push({
           path: pathSpec,
+          rootElement: { isStatic: rootIsStatic },
           routeElement: { isStatic: true },
           elements,
           noSsr,
@@ -513,11 +514,11 @@ export const createPages = <
             },
             {},
           ),
-          root: { isStatic: rootIsStatic },
           [`page:${path}`]: { isStatic: false },
         };
         paths.push({
           path: pathSpec,
+          rootElement: { isStatic: rootIsStatic },
           routeElement: { isStatic: true },
           elements,
           noSsr,
@@ -546,11 +547,6 @@ export const createPages = <
       const pathSpec = parsePathWithSlug(routePath);
       const mapping = getPathMapping(pathSpec, path);
       const result: Record<string, ReactNode> = {
-        root: createElement(
-          rootItem ? rootItem.component : DefaultRoot,
-          null,
-          createElement(Children),
-        ),
         [`page:${routePath}`]: createElement(
           pageComponent,
           { ...mapping, ...(query ? { query } : {}), path },
@@ -591,11 +587,12 @@ export const createPages = <
 
       return {
         elements: result,
-        routeElement: createElement(
-          Slot,
-          { id: 'root' },
-          createNestedElements(routeChildren),
+        rootElement: createElement(
+          rootItem ? rootItem.component : DefaultRoot,
+          null,
+          createElement(Children),
         ),
+        routeElement: createNestedElements(routeChildren),
       };
     },
     getApiConfig: async () => {

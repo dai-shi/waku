@@ -21,9 +21,9 @@ const router: ReturnType<typeof defineRouter> = defineRouter({
         .split('/')
         .filter(Boolean)
         .map((name) => ({ type: 'literal', name })),
+      rootElement: { isStatic: true },
       routeElement: { isStatic: true },
       elements: {
-        root: { isStatic: true },
         'layout:/': { isStatic: true },
         [`page:${path}`]: { isStatic: true },
       },
@@ -33,24 +33,22 @@ const router: ReturnType<typeof defineRouter> = defineRouter({
       throw new Error('renderRoute: No such path:' + path);
     }
     return {
+      rootElement: (
+        <html>
+          <head>
+            <title>Waku example</title>
+          </head>
+          <body>
+            <Children />
+          </body>
+        </html>
+      ),
       routeElement: (
-        <Slot id="root">
-          <Slot id="layout:/">
-            <Slot id={`page:${path}`} />
-          </Slot>
+        <Slot id="layout:/">
+          <Slot id={`page:${path}`} />
         </Slot>
       ),
       elements: {
-        root: (
-          <html>
-            <head>
-              <title>Waku example</title>
-            </head>
-            <body>
-              <Children />
-            </body>
-          </html>
-        ),
         'layout:/': (
           <Layout>
             <Children />
