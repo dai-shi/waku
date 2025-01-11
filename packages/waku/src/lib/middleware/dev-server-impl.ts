@@ -315,8 +315,10 @@ const createRscViteServer = (
     }
     if (file.startsWith(config.rootDir)) {
       file = file.slice(config.rootDir.length + 1); // '+ 1' to remove '/'
-    } else {
-      file = '@resolved_' + file;
+    } else if (file.startsWith('/')) {
+      file = '@w_fs' + file;
+     } else {
+      file = '@w_id/' + file;
     }
     return config.basePath + file;
   };

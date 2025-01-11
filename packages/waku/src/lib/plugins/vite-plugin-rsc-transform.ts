@@ -691,9 +691,14 @@ export function rscTransformPlugin(
       if (opts.isBuild) {
         return;
       }
-      if (id.startsWith('/@resolved_')) {
+      if (id.startsWith('/@w_id/')) {
         return (
-          await this.resolve(id.slice('/@resolved_'.length), importer, options)
+          await this.resolve(id.slice('/@w_id/'.length), importer, options)
+        )?.id;
+      }
+      if (id.startsWith('/@w_fs/')) {
+        return (
+          await this.resolve(id.slice('/@w_fs'.length), importer, options)
         )?.id;
       }
       const resolved = await this.resolve(id, importer, options);

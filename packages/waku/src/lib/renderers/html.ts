@@ -188,8 +188,10 @@ export async function renderHtml(
                 let id = filePath.slice(config.basePath.length);
                 if (id.startsWith('@fs/')) {
                   id = filePathToFileURL(id.slice('@fs'.length));
-                } else if (id.startsWith('@resolved_')) {
-                  id = id.slice('@resolved_'.length);
+                } else if (id.startsWith('@w_id/')) {
+                  id = id.slice('@w_id/'.length);
+                } else if (id.startsWith('@w_fs/')) {
+                  id = filePathToFileURL(id.slice('@w_fs'.length));
                 } else {
                   id = filePathToFileURL(id);
                 }
