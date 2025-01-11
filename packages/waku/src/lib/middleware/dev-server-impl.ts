@@ -142,9 +142,8 @@ const createMainViteServer = (
   const wakuDist = joinPath(fileURLToFilePath(import.meta.url), '../../..');
 
   const loadServerModuleMain = async (idOrFileURL: string) => {
-    if (idOrFileURL.startsWith('file://@file_')) {
-      idOrFileURL = 'file://' + idOrFileURL.slice('file://@file_'.length);
-    }
+    console.log('----------loadServerModuleMain', idOrFileURL);
+    idOrFileURL = idOrFileURL.replace(/@file_/, '');
     const vite = await vitePromise;
     if (!idOrFileURL.startsWith('file://')) {
       if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
