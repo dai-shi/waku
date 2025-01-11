@@ -141,6 +141,16 @@ const pages = createPages(
     }),
 
     createApi({
+      path: '/api/hi/[name]',
+      method: 'POST',
+      mode: 'dynamic',
+      handler: async (req) => {
+        const name = req.url.split('/').at(-1)!;
+        return new Response(`hello ${name}!`);
+      },
+    }),
+
+    createApi({
       path: '/api/empty',
       mode: 'static',
       method: 'GET',
