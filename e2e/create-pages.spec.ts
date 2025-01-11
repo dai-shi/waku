@@ -138,9 +138,10 @@ for (const mode of ['DEV', 'PRD'] as const) {
     test('api hi with POST', async () => {
       const res = await fetch(`http://localhost:${port}/api/hi`, {
         method: 'POST',
+        body: 'from the test!',
       });
       expect(res.status).toBe(200);
-      expect(await res.text()).toBe('POST to hello world!');
+      expect(await res.text()).toBe('POST to hello world! from the test!');
     });
   });
 }

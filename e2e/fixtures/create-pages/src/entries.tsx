@@ -130,8 +130,9 @@ const pages: ReturnType<typeof createPages> = createPages(
       path: '/api/hi',
       mode: 'static',
       method: 'POST',
-      handler: async () => {
-        return new Response('POST to hello world!');
+      handler: async (req) => {
+        const body = await req.text();
+        return new Response(`POST to hello world! ${body}`);
       },
     }),
 
