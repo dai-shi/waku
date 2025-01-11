@@ -16,6 +16,8 @@ const collectExportNames = (mod: swc.Module) => {
     if (item.type === 'ExportDeclaration') {
       if (item.declaration.type === 'FunctionDeclaration') {
         exportNames.add(item.declaration.identifier.value);
+      } else if (item.declaration.type === 'ClassDeclaration') {
+        exportNames.add(item.declaration.identifier.value);
       } else if (item.declaration.type === 'VariableDeclaration') {
         for (const d of item.declaration.declarations) {
           if (d.id.type === 'Identifier') {
