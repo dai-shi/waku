@@ -150,12 +150,21 @@ export type CreateLayout = <Path extends string>(
 
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
-export type CreateApi = <Path extends string>(params: {
-  path: Path;
-  mode: 'static' | 'dynamic';
-  method: Method;
-  handler: (req: Request) => Promise<Response>;
-}) => void;
+export type CreateApi = <Path extends string>(
+  params:
+    | {
+        path: Path;
+        mode: 'static';
+        method: 'GET';
+        handler: (req: Request) => Promise<Response>;
+      }
+    | {
+        path: Path;
+        mode: 'dynamic';
+        method: Method;
+        handler: (req: Request) => Promise<Response>;
+      },
+) => void;
 
 type RootItem = {
   render: 'static' | 'dynamic';
@@ -234,6 +243,7 @@ export const createPages = <
       handler: Parameters<CreateApi>[0]['handler'];
     }
   >();
+  const staticApiPaths = new Set<string>();
   const staticComponentMap = new Map<string, FunctionComponent<any>>();
   let rootItem: RootItem | undefined = undefined;
   const noSsrSet = new WeakSet<PathSpec>();
@@ -405,8 +415,12 @@ export const createPages = <
     }
     if (apiPathMap.has(`${method} ${path}`)) {
       throw new Error(`Duplicated api path+method: ${path} ${method}`);
+    } else if (mode === 'static' && staticApiPaths.has(path)) {
+      throw new Error('Static API Routes cannot share paths: ' + path);
     }
-
+    if (mode === 'static') {
+      staticApiPaths.add(path);
+    }
     const pathSpec = parsePathWithSlug(path);
     apiPathMap.set(`${method} ${path}`, { mode, pathSpec, handler });
   };

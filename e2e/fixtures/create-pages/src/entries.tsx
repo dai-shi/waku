@@ -113,7 +113,7 @@ const pages: ReturnType<typeof createPages> = createPages(
 
     createApi({
       path: '/api/hi',
-      mode: 'static',
+      mode: 'dynamic',
       method: 'GET',
       handler: async () => {
         return new Response('hello world!');
@@ -122,7 +122,7 @@ const pages: ReturnType<typeof createPages> = createPages(
 
     createApi({
       path: '/api/hi',
-      mode: 'static',
+      mode: 'dynamic',
       method: 'POST',
       handler: async (req) => {
         const body = await req.text();
