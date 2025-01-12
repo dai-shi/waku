@@ -64,7 +64,7 @@ const router: ReturnType<typeof defineRouter> = defineRouter({
         { type: 'literal', name: 'api' },
         { type: 'literal', name: 'hi' },
       ],
-      isStatic: true,
+      isStatic: false,
     },
     {
       path: [
@@ -81,7 +81,7 @@ const router: ReturnType<typeof defineRouter> = defineRouter({
       isStatic: true,
     },
   ],
-  handleApi: async (path) => {
+  handleApi: async (path, opt) => {
     if (path === '/api/hi.txt') {
       const hiTxt = await readFile('./private/hi.txt');
 
@@ -94,12 +94,25 @@ const router: ReturnType<typeof defineRouter> = defineRouter({
           },
         }),
       };
-    } else if (path === '/api/hi') {
+    } else if (path === '/api/hi' && opt.method === 'GET') {
       return {
         status: 200,
         body: new ReadableStream({
           start(controller) {
             controller.enqueue(new TextEncoder().encode('hello world!'));
+            controller.close();
+          },
+        }),
+      };
+    } else if (path === '/api/hi' && opt.method === 'POST') {
+      const bodyContent = await new Response(opt.body).text();
+      return {
+        status: 200,
+        body: new ReadableStream({
+          start(controller) {
+            controller.enqueue(
+              new TextEncoder().encode(`POST to hello world! ${bodyContent}`),
+            );
             controller.close();
           },
         }),
