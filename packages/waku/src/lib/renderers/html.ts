@@ -190,10 +190,6 @@ export async function renderHtml(
                   id = id.slice('@id/'.length);
                 } else if (id.startsWith('@fs/')) {
                   id = filePathToFileURL(id.slice('@fs'.length));
-                } else if (id.startsWith('@w_id/')) {
-                  id = id.slice('@w_id/'.length);
-                } else if (id.startsWith('@w_fs/')) {
-                  id = filePathToFileURL(id.slice('@w_fs'.length));
                 } else {
                   id = filePathToFileURL(id);
                 }

@@ -1,4 +1,3 @@
-import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 
@@ -692,19 +691,13 @@ export function rscTransformPlugin(
       if (opts.isBuild) {
         return;
       }
-      if (id.startsWith('/@w_id/')) {
-        return (
-          await this.resolve(id.slice('/@w_id/'.length), importer, options)
-        )?.id;
+      if (id.startsWith('/@id/')) {
+        return (await this.resolve(id.slice('/@id/'.length), importer, options))
+          ?.id;
       }
-      if (id.startsWith('/@w_fs/')) {
-        return (
-          await this.resolve(
-            normalizePath(id.slice('/@w_fs'.length)),
-            importer,
-            options,
-          )
-        )?.id;
+      if (id.startsWith('/@fs/')) {
+        return (await this.resolve(id.slice('/@fs'.length), importer, options))
+          ?.id;
       }
       const resolved = await this.resolve(id, importer, options);
       let srcId =
