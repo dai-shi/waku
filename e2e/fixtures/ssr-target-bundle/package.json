@@ -12,12 +12,12 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-server-dom-webpack": "19.0.0",
-    "react-textarea-autosize": "^8.5.6",
+    "react-textarea-autosize": "^8.5.7",
     "waku": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "^19.0.3",
-    "@types/react-dom": "^19.0.2",
-    "typescript": "^5.7.2"
+    "@types/react": "^19.0.5",
+    "@types/react-dom": "^19.0.3",
+    "typescript": "^5.7.3"
   }
 }

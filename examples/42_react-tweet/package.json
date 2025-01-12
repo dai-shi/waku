@@ -16,10 +16,10 @@
     "waku": "0.21.13"
   },
   "devDependencies": {
-    "@types/react": "19.0.3",
-    "@types/react-dom": "19.0.2",
+    "@types/react": "19.0.5",
+    "@types/react-dom": "19.0.3",
     "autoprefixer": "10.4.20",
     "tailwindcss": "3.4.17",
-    "typescript": "5.7.2"
+    "typescript": "5.7.3"
   }
 }
