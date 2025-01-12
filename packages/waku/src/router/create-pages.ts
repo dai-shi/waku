@@ -258,7 +258,7 @@ export const createPages = <
     path: string,
     method: string,
   ) => string | undefined = (path, method) => {
-    const allPaths = apiPathMap.keys();
+    const allPaths = [...apiPathMap.keys()];
     for (const pathKey of allPaths) {
       const [m, p] = pathKey.split(' ');
       if (m === method && getPathMapping(parsePathWithSlug(p!), path)) {
