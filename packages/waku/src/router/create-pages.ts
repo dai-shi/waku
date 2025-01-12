@@ -268,7 +268,9 @@ export const createPages = <
   };
 
   const pagePathExists = (path: string) => {
-    const apiRoutes = new Set(apiPathMap.keys().map(([path]) => path));
+    const apiRoutes = new Set(
+      apiPathMap.keys().map((pathKey) => pathKey.split(' ')[1]),
+    );
     return (
       staticPathMap.has(path) ||
       dynamicPagePathMap.has(path) ||
