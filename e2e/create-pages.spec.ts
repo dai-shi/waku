@@ -117,16 +117,16 @@ for (const mode of ['DEV', 'PRD'] as const) {
       ({ port, stopApp } = await startApp(mode));
     });
 
-    test('api hi.txt', async () => {
-      const res = await fetch(`http://localhost:${port}/api/hi.txt`);
-      expect(res.status).toBe(200);
-      expect(await res.text()).toBe('hello from a text file!');
-    });
-
     test('api hi', async () => {
       const res = await fetch(`http://localhost:${port}/api/hi`);
       expect(res.status).toBe(200);
       expect(await res.text()).toBe('hello world!');
+    });
+
+    test('api hi.txt', async () => {
+      const res = await fetch(`http://localhost:${port}/api/hi.txt`);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe('hello from a text file!');
     });
 
     test('api empty', async () => {
