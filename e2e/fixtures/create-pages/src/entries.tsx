@@ -8,9 +8,10 @@ import NestedBazPage from './components/NestedBazPage.js';
 import NestedLayout from './components/NestedLayout.js';
 import { DeeplyNestedLayout } from './components/DeeplyNestedLayout.js';
 import ErrorPage from './components/ErrorPage.js';
+import { readFile } from 'node:fs/promises';
 
 const pages: ReturnType<typeof createPages> = createPages(
-  async ({ createPage, createLayout }) => [
+  async ({ createPage, createLayout, createApi }) => [
     createLayout({
       render: 'static',
       path: '/',
@@ -98,6 +99,44 @@ const pages: ReturnType<typeof createPages> = createPages(
       render: 'static',
       path: '/404',
       component: () => <h2>Not Found</h2>,
+    }),
+
+    createApi({
+      path: '/api/hi.txt',
+      mode: 'static',
+      method: 'GET',
+      handler: async () => {
+        const hiTxt = await readFile('./private/hi.txt');
+        return new Response(hiTxt);
+      },
+    }),
+
+    createApi({
+      path: '/api/hi',
+      mode: 'dynamic',
+      method: 'GET',
+      handler: async () => {
+        return new Response('hello world!');
+      },
+    }),
+
+    createApi({
+      path: '/api/hi',
+      mode: 'dynamic',
+      method: 'POST',
+      handler: async (req) => {
+        const body = await req.text();
+        return new Response(`POST to hello world! ${body}`);
+      },
+    }),
+
+    createApi({
+      path: '/api/empty',
+      mode: 'static',
+      method: 'GET',
+      handler: async () => {
+        return new Response(null);
+      },
     }),
   ],
 );
