@@ -186,7 +186,9 @@ export async function renderHtml(
             get(_target, name: string) {
               if (isDev) {
                 let id = filePath.slice(config.basePath.length);
-                if (id.startsWith('@fs/')) {
+                if (id.startsWith('@id/')) {
+                  id = id.slice('@id/'.length);
+                } else if (id.startsWith('@fs/')) {
                   id = filePathToFileURL(id.slice('@fs'.length));
                 } else if (id.startsWith('@w_id/')) {
                   id = id.slice('@w_id/'.length);
