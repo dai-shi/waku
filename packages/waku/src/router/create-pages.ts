@@ -258,8 +258,7 @@ export const createPages = <
     path: string,
     method: string,
   ) => string | undefined = (path, method) => {
-    const allPaths = [...apiPathMap.keys()];
-    for (const pathKey of allPaths) {
+    for (const pathKey of apiPathMap.keys()) {
       const [m, p] = pathKey.split(' ');
       if (m === method && getPathMapping(parsePathWithSlug(p!), path)) {
         return p;
@@ -268,14 +267,16 @@ export const createPages = <
   };
 
   const pagePathExists = (path: string) => {
-    const apiRoutes = new Set(
-      [...apiPathMap.keys()].map((pathKey) => pathKey.split(' ')[1]),
-    );
+    for (const pathKey of apiPathMap.keys()) {
+      const [_m, p] = pathKey.split(' ');
+      if (p === path) {
+        return true;
+      }
+    }
     return (
       staticPathMap.has(path) ||
       dynamicPagePathMap.has(path) ||
-      wildcardPagePathMap.has(path) ||
-      apiRoutes.has(path)
+      wildcardPagePathMap.has(path)
     );
   };
 
