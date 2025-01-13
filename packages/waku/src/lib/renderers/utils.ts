@@ -42,6 +42,12 @@ export const encodeFuncId = (funcId: string) => {
   if (name.includes('/')) {
     throw new Error('Function name must not include `/`: ' + name);
   }
+  if (file.startsWith('_')) {
+    throw new Error('File must not start with `_`: ' + file);
+  }
+  if (file.startsWith('/')) {
+    return FUNC_PREFIX + '_' + file + '/' + name;
+  }
   return FUNC_PREFIX + file + '/' + name;
 };
 
@@ -50,9 +56,12 @@ export const decodeFuncId = (encoded: string) => {
     return null;
   }
   const index = encoded.lastIndexOf('/');
-  return (
-    encoded.slice(FUNC_PREFIX.length, index) + '#' + encoded.slice(index + 1)
-  );
+  const file = encoded.slice(FUNC_PREFIX.length, index);
+  const name = encoded.slice(index + 1);
+  if (file.startsWith('_')) {
+    return file.slice(1) + '#' + name;
+  }
+  return file + '#' + name;
 };
 
 export const hasStatusCode = (x: unknown): x is { statusCode: number } =>

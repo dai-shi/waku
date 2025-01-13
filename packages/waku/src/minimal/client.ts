@@ -9,6 +9,7 @@ import {
   useCallback,
   useEffect,
   useState,
+  Component,
 } from 'react';
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
@@ -244,21 +245,55 @@ const InnerSlot = ({
   id,
   elementsPromise,
   children,
+  setFallback,
 }: {
   id: string;
   elementsPromise: Elements;
   children?: ReactNode;
+  setFallback?: (fallback: ReactNode) => void;
 }) => {
   const elements = use(elementsPromise);
   if (!(id in elements)) {
     throw new Error('No such element: ' + id);
   }
-  return createElement(
-    ChildrenContextProvider,
-    { value: children },
-    elements[id],
-  );
+  const element = elements[id];
+  useEffect(() => {
+    if (setFallback) {
+      setFallback(element);
+    }
+  }, [element, setFallback]);
+  return createElement(ChildrenContextProvider, { value: children }, element);
 };
+
+const ThrowError = ({ error }: { error: unknown }) => {
+  throw error;
+};
+
+class Fallback extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { error?: unknown }
+> {
+  constructor(props: { children: ReactNode; fallback: ReactNode }) {
+    super(props);
+    this.state = {};
+  }
+  static getDerivedStateFromError(error: unknown) {
+    return { error };
+  }
+  render() {
+    if ('error' in this.state) {
+      if (this.props.fallback) {
+        return createElement(
+          ChildrenContextProvider,
+          { value: createElement(ThrowError, { error: this.state.error }) },
+          this.props.fallback,
+        );
+      }
+      throw this.state.error;
+    }
+    return this.props.children;
+  }
+}
 
 /**
  * Slot component
@@ -277,13 +312,23 @@ const InnerSlot = ({
 export const Slot = ({
   id,
   children,
+  unstable_fallbackToPrev,
 }: {
   id: string;
   children?: ReactNode;
+  unstable_fallbackToPrev?: boolean;
 }) => {
+  const [fallback, setFallback] = useState<ReactNode>();
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
     throw new Error('Missing Root component');
+  }
+  if (unstable_fallbackToPrev) {
+    return createElement(
+      Fallback,
+      { fallback } as never,
+      createElement(InnerSlot, { id, elementsPromise, setFallback }, children),
+    );
   }
   return createElement(InnerSlot, { id, elementsPromise }, children);
 };
