@@ -410,6 +410,10 @@ export const createPages = <
   };
 
   const createApi: CreateApi = ({ path, mode, method, handler }) => {
+    if (!import.meta.env.VITE_EXPERIMENTAL_WAKU_ROUTER) {
+      console.warn('createApi is still experimental');
+      return;
+    }
     if (configured) {
       throw new Error('createApi no longer available');
     }
