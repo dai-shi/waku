@@ -91,6 +91,7 @@ jobs:
       - run: pnpm exec playwright test --shard=${{ matrix.shared }}/${{ matrix.shardTotal }}
         env:
           TEMP_DIR: ${{ runner.temp }}
+          VITE_EXPERIMENTAL_WAKU_ROUTER: true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
