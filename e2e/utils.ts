@@ -139,7 +139,7 @@ export const prepareNormalSetup = (fixtureName: string) => {
 };
 
 const PACKAGE_INSTALL = {
-  npm: (path: string) => `npm add ${path}`,
+  npm: (path: string) => `npm add --force ${path}`,
   pnpm: (path: string) => `pnpm add ${path}`,
   yarn: (path: string) => `yarn add ${path}`,
 } as const;
@@ -172,14 +172,13 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
       });
       execSync(`pnpm pack --pack-destination ${standaloneDir}`, {
         cwd: wakuDir,
-        stdio: 'inherit',
       });
       const wakuPackageTgz = join(standaloneDir, `waku-${version}.tgz`);
       const installScript = PACKAGE_INSTALL[packageManager](wakuPackageTgz);
-      execSync(installScript, { cwd: standaloneDir, stdio: 'inherit' });
+      execSync(installScript, { cwd: standaloneDir });
       execSync(
         `npm install --force ${join(standaloneDir, `waku-${version}.tgz`)}`,
-        { cwd: standaloneDir, stdio: 'inherit' },
+        { cwd: standaloneDir },
       );
     }
     if (mode !== 'DEV' && !built) {
