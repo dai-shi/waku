@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import type { Config } from '../config.js';
 import type { PathSpec } from '../lib/utils/path.js';
+import type { METHODS } from './constants.js';
 
 type Elements = Record<string, ReactNode>;
 
@@ -100,3 +101,5 @@ export type HandlerRes = {
   headers?: Record<string, string | string[]>;
   status?: number;
 };
+
+export type Method = (typeof METHODS)[number];

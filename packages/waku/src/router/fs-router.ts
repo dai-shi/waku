@@ -1,7 +1,8 @@
 import { unstable_getPlatformObject } from '../server.js';
 import { createPages } from './create-pages.js';
 
-import { EXTENSIONS } from '../lib/constants.js';
+import { EXTENSIONS, METHODS } from '../lib/constants.js';
+import type { Method } from '../lib/types.js';
 
 const DO_NOT_BUNDLE = '';
 
@@ -76,13 +77,41 @@ export function fsRouter(
             'Page file cannot be named [path]. This will conflict with the path prop of the page component.',
           );
         } else if (pathItems.at(0) === 'api') {
-          createApi({
-            path: pathItems.slice(1).join('/'),
-            mode: 'dynamic',
-            method: 'GET',
-            handler: mod.default,
-            ...config,
-          });
+          if (config?.render === 'static') {
+            if (Object.keys(mod).length !== 2 || !mod.GET) {
+              console.warn(
+                `API ${path} is invalid. For static API routes, only a single GET handler is supported.`,
+              );
+            }
+            createApi({
+              path: pathItems.join('/'),
+              mode: 'static',
+              method: 'GET',
+              handler: mod.GET,
+            });
+          } else {
+            const validMethods = new Set(METHODS);
+            const handlers = Object.fromEntries(
+              Object.entries(mod).filter(([exportName]) => {
+                const isValidExport =
+                  exportName === 'getConfig' ||
+                  validMethods.has(exportName as Method);
+                if (!isValidExport) {
+                  console.warn(
+                    `API ${path} has an invalid export: ${exportName}. Valid exports are: ${METHODS.join(
+                      ', ',
+                    )}`,
+                  );
+                }
+                return isValidExport && exportName !== 'getConfig';
+              }),
+            );
+            createApi({
+              path: pathItems.join('/'),
+              mode: 'dynamic',
+              handlers,
+            });
+          }
         } else if (pathItems.at(-1) === '_layout') {
           createLayout({
             path,

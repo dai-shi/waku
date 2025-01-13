@@ -17,6 +17,7 @@ import type {
 } from './create-pages-utils/inferred-path-types.js';
 import { Children, Slot } from '../minimal/client.js';
 import { ErrorBoundary } from '../router/client.js';
+import type { Method } from 'waku/lib/types';
 
 const sanitizeSlug = (slug: string) =>
   slug.replace(/\./g, '').replace(/ /g, '-');
@@ -147,8 +148,6 @@ export type CreateLayout = <Path extends string>(
         component: FunctionComponent<{ children: ReactNode }>;
       },
 ) => void;
-
-type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
 type ApiHandler = (req: Request) => Promise<Response>;
 
