@@ -150,19 +150,20 @@ export type CreateLayout = <Path extends string>(
 
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
+type ApiHandler = (req: Request) => Promise<Response>;
+
 export type CreateApi = <Path extends string>(
   params:
     | {
-        path: Path;
         mode: 'static';
+        path: Path;
         method: 'GET';
-        handler: (req: Request) => Promise<Response>;
+        handler: ApiHandler;
       }
     | {
-        path: Path;
         mode: 'dynamic';
-        method: Method;
-        handler: (req: Request) => Promise<Response>;
+        path: Path;
+        handlers: Partial<Record<Method, ApiHandler>>;
       },
 ) => void;
 
@@ -240,10 +241,9 @@ export const createPages = <
     {
       mode: 'static' | 'dynamic';
       pathSpec: PathSpec;
-      handler: Parameters<CreateApi>[0]['handler'];
+      handlers: Partial<Record<Method, ApiHandler>>;
     }
   >();
-  const staticApiPaths = new Set<string>();
   const staticComponentMap = new Map<string, FunctionComponent<any>>();
   let rootItem: RootItem | undefined = undefined;
   const noSsrSet = new WeakSet<PathSpec>();
@@ -268,9 +268,8 @@ export const createPages = <
     path: string,
     method: string,
   ) => string | undefined = (path, method) => {
-    for (const pathKey of apiPathMap.keys()) {
-      const [m, p] = pathKey.split(' ');
-      if (m === method && getPathMapping(parsePathWithSlug(p!), path)) {
+    for (const [p, v] of apiPathMap.entries()) {
+      if (method in v.handlers && getPathMapping(parsePathWithSlug(p!), path)) {
         return p;
       }
     }
@@ -409,7 +408,7 @@ export const createPages = <
     }
   };
 
-  const createApi: CreateApi = ({ path, mode, method, handler }) => {
+  const createApi: CreateApi = (options) => {
     if (!import.meta.env.VITE_EXPERIMENTAL_WAKU_ROUTER) {
       console.warn('createApi is still experimental');
       return;
@@ -417,16 +416,23 @@ export const createPages = <
     if (configured) {
       throw new Error('createApi no longer available');
     }
-    if (apiPathMap.has(`${method} ${path}`)) {
-      throw new Error(`Duplicated api path+method: ${path} ${method}`);
-    } else if (mode === 'static' && staticApiPaths.has(path)) {
-      throw new Error('Static API Routes cannot share paths: ' + path);
+    if (apiPathMap.has(options.path)) {
+      throw new Error(`Duplicated api path: ${options.path}`);
     }
-    if (mode === 'static') {
-      staticApiPaths.add(path);
+    const pathSpec = parsePathWithSlug(options.path);
+    if (options.mode === 'static') {
+      apiPathMap.set(options.path, {
+        mode: 'static',
+        pathSpec,
+        handlers: { GET: options.handler },
+      });
+    } else {
+      apiPathMap.set(options.path, {
+        mode: 'dynamic',
+        pathSpec,
+        handlers: options.handlers,
+      });
     }
-    const pathSpec = parsePathWithSlug(path);
-    apiPathMap.set(`${method} ${path}`, { mode, pathSpec, handler });
   };
 
   const createRoot: CreateRoot = (root) => {
@@ -644,7 +650,7 @@ export const createPages = <
       if (!routePath) {
         throw new Error('API Route not found: ' + path);
       }
-      const { handler } = apiPathMap.get(`${options.method} ${routePath}`)!;
+      const { handlers } = apiPathMap.get(routePath)!;
 
       const req = new Request(
         new URL(
@@ -654,6 +660,12 @@ export const createPages = <
         ),
         options,
       );
+      const handler = handlers[options.method as Method];
+      if (!handler) {
+        throw new Error(
+          'API method not found: ' + options.method + 'for path: ' + path,
+        );
+      }
       const res = await handler(req);
 
       return {

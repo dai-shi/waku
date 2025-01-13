@@ -114,19 +114,14 @@ const pages: ReturnType<typeof createPages> = createPages(
     createApi({
       path: '/api/hi',
       mode: 'dynamic',
-      method: 'GET',
-      handler: async () => {
-        return new Response('hello world!');
-      },
-    }),
-
-    createApi({
-      path: '/api/hi',
-      mode: 'dynamic',
-      method: 'POST',
-      handler: async (req) => {
-        const body = await req.text();
-        return new Response(`POST to hello world! ${body}`);
+      handlers: {
+        GET: async () => {
+          return new Response('hello world!');
+        },
+        POST: async (req) => {
+          const body = await req.text();
+          return new Response(`POST to hello world! ${body}`);
+        },
       },
     }),
 
