@@ -8,4 +8,4 @@ jobs:
   canary-ci:
     uses: tylersayshi/waku/.github/workflows/e2e.yml@canary-ci-again
     with:
-      react_version: 'canary'
+      react_version: 'beta'
