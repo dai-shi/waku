@@ -18,6 +18,10 @@ import type {
 import { Children, Slot } from '../minimal/client.js';
 import { ErrorBoundary } from '../router/client.js';
 
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods partial
+export const METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] as const;
+export type Method = (typeof METHODS)[number];
+
 const sanitizeSlug = (slug: string) =>
   slug.replace(/\./g, '').replace(/ /g, '-');
 
@@ -147,8 +151,6 @@ export type CreateLayout = <Path extends string>(
         component: FunctionComponent<{ children: ReactNode }>;
       },
 ) => void;
-
-type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
 type ApiHandler = (req: Request) => Promise<Response>;
 
