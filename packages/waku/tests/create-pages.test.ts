@@ -298,10 +298,10 @@ describe('type tests', () => {
       createApi({
         path: '/foo',
         mode: 'dynamic',
-        // @ts-expect-error: method is not valid
-        method: 'foo',
-        // @ts-expect-error: null is not valid
-        handler: () => null,
+        handlers: {
+          // @ts-expect-error: null is not valid
+          GET: () => null,
+        },
       });
       // @ts-expect-error: handler is not valid
       createApi({ path: '/', mode: 'dynamic', method: 'GET', handler: 123 });
@@ -310,9 +310,10 @@ describe('type tests', () => {
       createApi({
         path: '/foo/[slug]',
         mode: 'dynamic',
-        method: 'GET',
-        handler: async () => {
-          return new Response('Hello World');
+        handlers: {
+          POST: async (req) => {
+            return new Response('Hello World ' + new URL(req.url).pathname);
+          },
         },
       });
     });
@@ -578,9 +579,10 @@ describe('createPages pages and layouts', () => {
       createApi({
         path: '/test/[slug]',
         mode: 'dynamic',
-        method: 'GET',
-        handler: async () => {
-          return new Response('Hello World');
+        handlers: {
+          GET: async () => {
+            return new Response('Hello World');
+          },
         },
       }),
     ]);
@@ -1340,9 +1342,10 @@ describe('createPages api', () => {
       createApi({
         path: '/test/[slug]',
         mode: 'dynamic',
-        method: 'GET',
-        handler: async (req) => {
-          return new Response('Hello World ' + req.url.split('/').at(-1)!);
+        handlers: {
+          GET: async (req) => {
+            return new Response('Hello World ' + req.url.split('/').at(-1)!);
+          },
         },
       }),
     ]);

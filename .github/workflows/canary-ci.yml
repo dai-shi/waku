@@ -1,0 +1,33 @@
+name: Canary CI
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  parse-version:
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/canary-ci run') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get React version from comment
+        id: get-version
+        run: |
+          comment="${{ github.event.comment.body }}"
+          # Extract version after '/canary-ci run', defaulting to 'canary' if not specified
+          version=$(echo "$comment" | sed -n 's/^\/canary-ci run\s*\(\S*\).*/\1/p')
+          if [ -z "$version" ]; then
+            version="canary"
+          fi
+          echo "react_version=$version" >> $GITHUB_OUTPUT
+
+  canary-ci-e2e:
+    needs: parse-version
+    uses: ./.github/workflows/e2e.yml
+    with:
+      react_version: ${{ needs.parse-version.outputs.react_version }}
+
+  canary-ci-test:
+    needs: parse-version
+    uses: ./.github/workflows/test.yml
+    with:
+      react_version: ${{ needs.parse-version.outputs.react_version }}
