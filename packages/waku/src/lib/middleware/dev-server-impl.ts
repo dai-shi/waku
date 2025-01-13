@@ -270,6 +270,7 @@ const createRscViteServer = (
                 'react',
                 'react/jsx-runtime',
                 'react/jsx-dev-runtime',
+                'react-dom',
               ],
               exclude: ['waku'],
             },
