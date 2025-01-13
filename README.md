@@ -522,7 +522,7 @@ The `router` object has two properties related to the current route: `path` (str
 ```tsx
 'use client';
 
-import { useRouter_UNSTABLE as useRouter } from 'waku';
+import { useRouter } from 'waku';
 
 export const Component = () => {
   const { path, query } = useRouter();
@@ -555,7 +555,7 @@ The `router` object also contains several methods for programmatic navigation:
 ```tsx
 'use client';
 
-import { useRouter_UNSTABLE as useRouter } from 'waku';
+import { useRouter } from 'waku';
 
 export const Component = () => {
   const router = useRouter();
