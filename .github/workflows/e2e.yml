@@ -15,6 +15,11 @@ on:
       - 'examples/**'
       - 'e2e/**'
       - '.github/workflows/e2e.yml'
+  workflow_call:
+    inputs:
+      react_version:
+        required: true
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -29,7 +34,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: ${{ !inputs.react_version && 'pnpm' || '' }}
+      - if: ${{ inputs.react_version }}
+        run: |
+          pnpm -r update react@${{ inputs.react_version }} react-dom@${{ inputs.react_version }} react-server-dom-webpack@${{ inputs.react_version }}
       - run: pnpm install
       - run: pnpm run compile
       - uses: actions/upload-artifact@v4
@@ -48,7 +56,7 @@ jobs:
           if-no-files-found: error
 
   e2e:
-    name: E2E on ${{ matrix.os }} (Node ${{ matrix.version }}) - (${{ matrix.shared }}/4)
+    name: E2E on ${{ matrix.os }} (Node ${{ matrix.version }}) - (${{ matrix.shared }}/4)${{ inputs.react_version && format(' with react@{0}', inputs.react_version) || '' }}
     needs:
       - build
     strategy:
@@ -75,7 +83,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.version }}
-          cache: 'pnpm'
+          cache: ${{ !inputs.react_version && 'pnpm' || '' }}
+      - if: ${{ inputs.react_version }}
+        run: |
+          pnpm -r update react@${{ inputs.react_version }} react-dom@${{ inputs.react_version }} react-server-dom-webpack@${{ inputs.react_version }}
       - run: pnpm install
       - uses: actions/download-artifact@v4
         with:

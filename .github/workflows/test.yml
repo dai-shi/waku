@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
     types: [opened, synchronize]
+  workflow_call:
+    inputs:
+      react_version:
+        required: true
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -24,7 +29,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.version }}
-          cache: 'pnpm'
+          cache: ${{ !inputs.react_version && 'pnpm' || '' }}
+      - if: ${{ inputs.react_version }}
+        run: |
+          pnpm -r update react@${{ inputs.react_version }} react-dom@${{ inputs.react_version }} react-server-dom-webpack@${{ inputs.react_version }}
       - run: pnpm install
       - run: pnpm test
         env:
