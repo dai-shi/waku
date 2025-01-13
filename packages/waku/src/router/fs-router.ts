@@ -1,8 +1,8 @@
 import { unstable_getPlatformObject } from '../server.js';
-import { createPages } from './create-pages.js';
+import { createPages, METHODS } from './create-pages.js';
+import type { Method } from './create-pages.js';
 
-import { EXTENSIONS, METHODS } from '../lib/constants.js';
-import type { Method } from '../lib/types.js';
+import { EXTENSIONS } from '../lib/constants.js';
 
 const DO_NOT_BUNDLE = '';
 
