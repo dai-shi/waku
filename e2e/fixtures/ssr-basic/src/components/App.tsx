@@ -1,8 +1,11 @@
+import { preload } from 'react-dom';
+
 import { Counter } from './Counter.js';
 import { AIProvider } from '../ai/index.js';
 import { AIClient } from './AIClient.js';
 
 const App = ({ name }: { name: string }) => {
+  preload('hello.js');
   return (
     <html>
       <head>
