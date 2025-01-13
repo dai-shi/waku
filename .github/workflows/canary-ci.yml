@@ -8,8 +8,6 @@ jobs:
   parse-version:
     if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/canary-ci run') }}
     runs-on: ubuntu-latest
-    outputs:
-      react_version: ${{ steps.get-version.outputs.react_version }}
     steps:
       - name: Get React version from comment
         id: get-version
