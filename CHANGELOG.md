@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.21.14] - 2025-01-13
+
+### Changed
+
+- Bug fixes
+
+## [0.21.13] - 2025-01-07
+
+### Changed
+
+- Error handling improvements
+- Bug fixes
+
 ## [0.21.12] - 2025-01-01
 
 ### Changed

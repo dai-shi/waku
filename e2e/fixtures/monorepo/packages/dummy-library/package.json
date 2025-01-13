@@ -1,0 +1,13 @@
+{
+  "name": "dummy-library",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Dummy package for testing",
+  "exports": {
+    "./entry-point": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js"
+    }
+  },
+  "private": true
+}

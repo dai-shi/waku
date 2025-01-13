@@ -15,7 +15,8 @@ import type {
   GetSlugs,
   PropsForPages,
 } from './create-pages-utils/inferred-path-types.js';
-import { Children, Slot, ThrowError_UNSTABLE } from '../minimal/client.js';
+import { Children, Slot } from '../minimal/client.js';
+import { ErrorBoundary } from '../router/client.js';
 
 const sanitizeSlug = (slug: string) =>
   slug.replace(/\./g, '').replace(/ /g, '-');
@@ -149,12 +150,21 @@ export type CreateLayout = <Path extends string>(
 
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
-export type CreateApi = <Path extends string>(params: {
-  path: Path;
-  mode: 'static' | 'dynamic';
-  method: Method;
-  handler: (req: Request) => Promise<Response>;
-}) => void;
+export type CreateApi = <Path extends string>(
+  params:
+    | {
+        path: Path;
+        mode: 'static';
+        method: 'GET';
+        handler: (req: Request) => Promise<Response>;
+      }
+    | {
+        path: Path;
+        mode: 'dynamic';
+        method: Method;
+        handler: (req: Request) => Promise<Response>;
+      },
+) => void;
 
 type RootItem = {
   render: 'static' | 'dynamic';
@@ -174,10 +184,14 @@ export type CreateRoot = (root: RootItem) => void;
  */
 const DefaultRoot = ({ children }: { children: ReactNode }) =>
   createElement(
-    'html',
+    ErrorBoundary,
     null,
-    createElement('head', null),
-    createElement('body', null, children),
+    createElement(
+      'html',
+      null,
+      createElement('head', null),
+      createElement('body', null, children),
+    ),
   );
 
 const createNestedElements = (
@@ -222,27 +236,26 @@ export const createPages = <
     [PathSpec, FunctionComponent<any>]
   >();
   const apiPathMap = new Map<
-    string,
+    string, // `${method} ${path}`
     {
       mode: 'static' | 'dynamic';
       pathSpec: PathSpec;
-      method: Method;
       handler: Parameters<CreateApi>[0]['handler'];
     }
   >();
+  const staticApiPaths = new Set<string>();
   const staticComponentMap = new Map<string, FunctionComponent<any>>();
   let rootItem: RootItem | undefined = undefined;
   const noSsrSet = new WeakSet<PathSpec>();
 
   /** helper to find dynamic path when slugs are used */
-  const getRoutePath: (path: string) => string | undefined = (path) => {
+  const getPageRoutePath: (path: string) => string | undefined = (path) => {
     if (staticComponentMap.has(joinPath(path, 'page').slice(1))) {
       return path;
     }
     const allPaths = [
       ...dynamicPagePathMap.keys(),
       ...wildcardPagePathMap.keys(),
-      ...apiPathMap.keys(),
     ];
     for (const p of allPaths) {
       if (getPathMapping(parsePathWithSlug(p), path)) {
@@ -251,12 +264,29 @@ export const createPages = <
     }
   };
 
-  const pathExists = (path: string) => {
+  const getApiRoutePath: (
+    path: string,
+    method: string,
+  ) => string | undefined = (path, method) => {
+    for (const pathKey of apiPathMap.keys()) {
+      const [m, p] = pathKey.split(' ');
+      if (m === method && getPathMapping(parsePathWithSlug(p!), path)) {
+        return p;
+      }
+    }
+  };
+
+  const pagePathExists = (path: string) => {
+    for (const pathKey of apiPathMap.keys()) {
+      const [_m, p] = pathKey.split(' ');
+      if (p === path) {
+        return true;
+      }
+    }
     return (
       staticPathMap.has(path) ||
       dynamicPagePathMap.has(path) ||
-      wildcardPagePathMap.has(path) ||
-      apiPathMap.has(path)
+      wildcardPagePathMap.has(path)
     );
   };
 
@@ -285,7 +315,7 @@ export const createPages = <
     if (configured) {
       throw new Error('createPage no longer available');
     }
-    if (pathExists(page.path)) {
+    if (pagePathExists(page.path)) {
       throw new Error(`Duplicated path: ${page.path}`);
     }
 
@@ -383,12 +413,16 @@ export const createPages = <
     if (configured) {
       throw new Error('createApi no longer available');
     }
-    if (apiPathMap.has(path)) {
-      throw new Error(`Duplicated api path: ${path}`);
+    if (apiPathMap.has(`${method} ${path}`)) {
+      throw new Error(`Duplicated api path+method: ${path} ${method}`);
+    } else if (mode === 'static' && staticApiPaths.has(path)) {
+      throw new Error('Static API Routes cannot share paths: ' + path);
     }
-
+    if (mode === 'static') {
+      staticApiPaths.add(path);
+    }
     const pathSpec = parsePathWithSlug(path);
-    apiPathMap.set(path, { mode, pathSpec, method, handler });
+    apiPathMap.set(`${method} ${path}`, { mode, pathSpec, handler });
   };
 
   const createRoot: CreateRoot = (root) => {
@@ -437,6 +471,7 @@ export const createPages = <
       const paths: {
         path: PathSpec;
         pathPattern?: PathSpec;
+        rootElement: { isStatic?: boolean };
         routeElement: { isStatic?: boolean };
         elements: Record<string, { isStatic?: boolean }>;
         noSsr: boolean;
@@ -458,13 +493,13 @@ export const createPages = <
             },
             {},
           ),
-          root: { isStatic: rootIsStatic },
           [`page:${path}`]: { isStatic: staticPathMap.has(path) },
         };
 
         paths.push({
           path: literalSpec,
           ...(originalSpec && { pathPattern: originalSpec }),
+          rootElement: { isStatic: rootIsStatic },
           routeElement: {
             isStatic: true,
           },
@@ -485,11 +520,11 @@ export const createPages = <
             },
             {},
           ),
-          root: { isStatic: rootIsStatic },
           [`page:${path}`]: { isStatic: false },
         };
         paths.push({
           path: pathSpec,
+          rootElement: { isStatic: rootIsStatic },
           routeElement: { isStatic: true },
           elements,
           noSsr,
@@ -508,11 +543,11 @@ export const createPages = <
             },
             {},
           ),
-          root: { isStatic: rootIsStatic },
           [`page:${path}`]: { isStatic: false },
         };
         paths.push({
           path: pathSpec,
+          rootElement: { isStatic: rootIsStatic },
           routeElement: { isStatic: true },
           elements,
           noSsr,
@@ -524,7 +559,7 @@ export const createPages = <
       await configure();
 
       // path without slugs
-      const routePath = getRoutePath(path);
+      const routePath = getPageRoutePath(path);
       if (!routePath) {
         throw new Error('Route not found: ' + path);
       }
@@ -541,11 +576,6 @@ export const createPages = <
       const pathSpec = parsePathWithSlug(routePath);
       const mapping = getPathMapping(pathSpec, path);
       const result: Record<string, ReactNode> = {
-        root: createElement(
-          rootItem ? rootItem.component : DefaultRoot,
-          null,
-          createElement(Children),
-        ),
         [`page:${routePath}`]: createElement(
           pageComponent,
           { ...mapping, ...(query ? { query } : {}), path },
@@ -586,24 +616,12 @@ export const createPages = <
 
       return {
         elements: result,
-        routeElement: createElement(
-          Slot,
-          { id: 'root' },
-          createNestedElements(routeChildren),
+        rootElement: createElement(
+          rootItem ? rootItem.component : DefaultRoot,
+          null,
+          createElement(Children),
         ),
-        // HACK this is hard-coded convention
-        // FIXME we should revisit the error boundary use case design
-        fallbackElement: createElement(
-          Slot,
-          { id: 'root', unstable_renderPrev: true },
-          layoutPaths.includes('/')
-            ? createElement(
-                Slot,
-                { id: 'layout:/', unstable_renderPrev: true },
-                createElement(ThrowError_UNSTABLE),
-              )
-            : createElement(ThrowError_UNSTABLE),
-        ),
+        routeElement: createNestedElements(routeChildren),
       };
     },
     getApiConfig: async () => {
@@ -618,11 +636,11 @@ export const createPages = <
     },
     handleApi: async (path, options) => {
       await configure();
-      const routePath = getRoutePath(path);
+      const routePath = getApiRoutePath(path, options.method);
       if (!routePath) {
-        throw new Error('Route not found: ' + path);
+        throw new Error('API Route not found: ' + path);
       }
-      const { handler } = apiPathMap.get(routePath)!;
+      const { handler } = apiPathMap.get(`${options.method} ${routePath}`)!;
 
       const req = new Request(
         new URL(

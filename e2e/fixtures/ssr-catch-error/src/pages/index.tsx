@@ -1,5 +1,7 @@
+import { Suspense } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Link } from 'waku';
+import ThrowsComponent from '../components/server/throws.js';
 
 export default async function HomePage() {
   return (
@@ -7,7 +9,9 @@ export default async function HomePage() {
       <p>Home Page</p>
       <Link to="/invalid">Invalid page</Link>
       <ErrorBoundary fallback={<div>Something went wrong</div>}>
-        Empty children
+        <Suspense fallback={<div>Loading...</div>}>
+          <ThrowsComponent />
+        </Suspense>
       </ErrorBoundary>
     </div>
   );

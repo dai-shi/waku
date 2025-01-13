@@ -16,6 +16,8 @@ const collectExportNames = (mod: swc.Module) => {
     if (item.type === 'ExportDeclaration') {
       if (item.declaration.type === 'FunctionDeclaration') {
         exportNames.add(item.declaration.identifier.value);
+      } else if (item.declaration.type === 'ClassDeclaration') {
+        exportNames.add(item.declaration.identifier.value);
       } else if (item.declaration.type === 'VariableDeclaration') {
         for (const d of item.declaration.declarations) {
           if (d.id.type === 'Identifier') {
@@ -691,6 +693,10 @@ export function rscTransformPlugin(
       }
       if (id.startsWith('/@id/')) {
         return (await this.resolve(id.slice('/@id/'.length), importer, options))
+          ?.id;
+      }
+      if (id.startsWith('/@fs/')) {
+        return (await this.resolve(id.slice('/@fs'.length), importer, options))
           ?.id;
       }
       const resolved = await this.resolve(id, importer, options);

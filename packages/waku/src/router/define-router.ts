@@ -77,6 +77,7 @@ export function unstable_defineRouter(fns: {
     Iterable<{
       path: PathSpec;
       pathPattern?: PathSpec;
+      rootElement: { isStatic?: boolean };
       routeElement: { isStatic?: boolean };
       elements: Record<SlotId, { isStatic?: boolean }>;
       noSsr?: boolean;
@@ -88,9 +89,9 @@ export function unstable_defineRouter(fns: {
       query?: string;
     },
   ) => Promise<{
+    rootElement: ReactNode;
     routeElement: ReactNode;
     elements: Record<SlotId, ReactNode>;
-    fallbackElement?: ReactNode;
   }>;
   getApiConfig?: () => Promise<
     Iterable<{
@@ -138,6 +139,7 @@ export function unstable_defineRouter(fns: {
             item.path[0]!.type === 'literal' &&
             item.path[0]!.name === '404';
           const isStatic =
+            !!item.rootElement.isStatic &&
             !!item.routeElement.isStatic &&
             Object.values(item.elements).every((x) => x.isStatic);
           return {
@@ -210,7 +212,7 @@ export function unstable_defineRouter(fns: {
     }
     const skip = isStringArray(skipParam) ? skipParam : [];
     const { query } = parseRscParams(rscParams);
-    const { routeElement, elements, fallbackElement } = await fns.handleRoute(
+    const { rootElement, routeElement, elements } = await fns.handleRoute(
       pathname,
       pathConfigItem.specs.isStatic ? {} : { query },
     );
@@ -221,11 +223,8 @@ export function unstable_defineRouter(fns: {
     }
     const entries = {
       ...elements,
+      root: rootElement,
       [ROUTE_SLOT_ID_PREFIX + pathname]: routeElement,
-      ...((fallbackElement ? { fallback: fallbackElement } : {}) as Record<
-        string,
-        ReactNode
-      >),
     };
     for (const skipId of await filterEffectiveSkip(pathname, skip)) {
       delete entries[skipId];
@@ -356,6 +355,9 @@ export function unstable_defineRouter(fns: {
       const entriesCache = new Map<string, Record<string, ReactNode>>();
       await Promise.all(
         pathConfig.map(async ({ pathSpec, pathname, pattern, specs }) => {
+          if (specs.isApi) {
+            return;
+          }
           const moduleIds = new Set<string>();
           moduleIdsForPrefetch.set(pathSpec, moduleIds);
           if (!pathname) {
@@ -392,6 +394,9 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
 };`;
 
       for (const { pathSpec, pathname, specs } of pathConfig) {
+        if (specs.isApi) {
+          continue;
+        }
         tasks.push(async () => {
           const moduleIds = moduleIdsForPrefetch.get(pathSpec)!;
           if (pathname) {

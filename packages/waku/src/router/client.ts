@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  Component,
   createContext,
   createElement,
   startTransition,
@@ -12,6 +11,7 @@ import {
   useState,
   useTransition,
   Fragment,
+  Component,
 } from 'react';
 import type {
   ComponentProps,
@@ -39,10 +39,14 @@ import {
 import type { RouteProps } from './common.js';
 import type { RouteConfig } from './base-types.js';
 
+type AllowPathDecorators<Path extends string> = Path extends unknown
+  ? Path | `${Path}?${string}` | `${Path}#${string}`
+  : never;
+
 type InferredPaths = RouteConfig extends {
-  paths: infer UserPaths;
+  paths: infer UserPaths extends string;
 }
-  ? UserPaths
+  ? AllowPathDecorators<UserPaths>
   : string;
 
 declare global {
@@ -276,7 +280,7 @@ function renderError(message: string) {
   );
 }
 
-class ErrorBoundary extends Component<
+export class ErrorBoundary extends Component<
   { children: ReactNode },
   { error?: unknown }
 > {
@@ -289,11 +293,8 @@ class ErrorBoundary extends Component<
   }
   render() {
     if ('error' in this.state) {
-      if (
-        this.state.error instanceof Error &&
-        (this.state.error as any).statusCode === 404
-      ) {
-        return renderError('Not Found');
+      if (this.state.error instanceof Error) {
+        return renderError(this.state.error.message);
       }
       return renderError(String(this.state.error));
     }
@@ -411,21 +412,16 @@ const InnerRouter = ({
     };
   }, [changeRoute, locationListeners]);
 
-  const routeElement = createElement(Slot, {
-    id: getRouteSlotId(route.path),
-    unstable_shouldRenderPrev: (_err, prevElements) =>
-      // HACK this might not work in some cases
-      'fallback' in prevElements,
-    fallback: createElement(Slot, {
-      id: 'fallback',
-      unstable_renderPrev: true,
-    }),
-  });
-
+  const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
+  const rootElement = createElement(
+    Slot,
+    { id: 'root', unstable_fallbackToPrev: true },
+    routeElement,
+  );
   return createElement(
     RouterContext.Provider,
     { value: { route, changeRoute, prefetchRoute } },
-    routeElement,
+    rootElement,
   );
 };
 
@@ -510,21 +506,17 @@ export function Router({
     };
   const initialRscParams = createRscParams(initialRoute.query);
   return createElement(
-    ErrorBoundary,
-    null,
-    createElement(
-      Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
-      {
-        initialRscPath,
-        initialRscParams,
-        unstable_enhanceFetch,
-        unstable_enhanceCreateData,
-      },
-      createElement(InnerRouter, {
-        routerData: routerData as Required<RouterData>,
-        initialRoute,
-      }),
-    ),
+    Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
+    {
+      initialRscPath,
+      initialRscParams,
+      unstable_enhanceFetch,
+      unstable_enhanceCreateData,
+    },
+    createElement(InnerRouter, {
+      routerData: routerData as Required<RouterData>,
+      initialRoute,
+    }),
   );
 }
 
@@ -534,6 +526,11 @@ export function Router({
  */
 export function ServerRouter({ route }: { route: RouteProps }) {
   const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
+  const rootElement = createElement(
+    Slot,
+    { id: 'root', unstable_fallbackToPrev: true },
+    routeElement,
+  );
   return createElement(
     Fragment,
     null,
@@ -546,7 +543,7 @@ export function ServerRouter({ route }: { route: RouteProps }) {
           prefetchRoute: notAvailableInServer('prefetchRoute'),
         },
       },
-      routeElement,
+      rootElement,
     ),
   );
 }

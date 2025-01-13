@@ -82,7 +82,7 @@ export function deployNetlifyPlugin(opts: {
       }
 
       if (deploy === 'netlify-functions') {
-        const functionsDir = path.join(rootDir, 'netlify/functions');
+        const functionsDir = path.join(rootDir, 'netlify-functions');
         mkdirSync(functionsDir, {
           recursive: true,
         });
@@ -99,7 +99,7 @@ export function deployNetlifyPlugin(opts: {
           path.join(functionsDir, 'serve.js'),
           `
 globalThis.__WAKU_NOT_FOUND_HTML__ = ${JSON.stringify(notFoundHtml)};
-export { default } from '../../${opts.distDir}/${SERVE_JS}';
+export { default } from '../${opts.distDir}/${SERVE_JS}';
 export const config = {
   preferStatic: true,
   path: ['/', '/*'],
@@ -117,6 +117,7 @@ export const config = {
   publish = "${opts.distDir}/${DIST_PUBLIC}"
 [functions]
   included_files = ["${opts.privateDir}/**"]
+  directory = "netlify-functions"
 `,
         );
       }
