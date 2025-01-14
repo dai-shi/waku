@@ -13,6 +13,14 @@ on:
       react_version:
         required: true
         type: string
+  workflow_trigger:
+    inputs:
+      ref:
+        required: true
+        type: string
+      react_version:
+        required: true
+        type: string
 
 jobs:
   test:
