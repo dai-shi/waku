@@ -116,10 +116,10 @@ export const prepareNormalSetup = (fixtureName: string) => {
     let cmd: string;
     switch (mode) {
       case 'DEV':
-        cmd = `node ${waku} dev --port ${port}`;
+        cmd = `VITE_EXPERIMENTAL_WAKU_ROUTER=true node ${waku} dev --port ${port}`;
         break;
       case 'PRD':
-        cmd = `node ${waku} start --port ${port}`;
+        cmd = `VITE_EXPERIMENTAL_WAKU_ROUTER=true node ${waku} start --port ${port}`;
         break;
       case 'STATIC':
         cmd = `pnpm serve -l ${port} dist/public`;
@@ -196,10 +196,10 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
     let cmd: string;
     switch (mode) {
       case 'DEV':
-        cmd = `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} dev --port ${port}`;
+        cmd = `VITE_EXPERIMENTAL_WAKU_ROUTER=true node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} dev --port ${port}`;
         break;
       case 'PRD':
-        cmd = `node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start --port ${port}`;
+        cmd = `VITE_EXPERIMENTAL_WAKU_ROUTER=true node ${join(standaloneDir, './node_modules/waku/dist/cli.js')} start --port ${port}`;
         break;
       case 'STATIC':
         cmd = `node ${join(standaloneDir, './node_modules/serve/build/main.js')} dist/public -p ${port}`;
