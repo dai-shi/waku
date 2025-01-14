@@ -26,12 +26,12 @@ jobs:
     needs: parse-version
     uses: ./.github/workflows/e2e.yml
     with:
-      ref: ${{ github.event.pull_request.head.ref }}
+      ref: ${{ github.event.issue.pull_request.head.ref }}
       react_version: ${{ needs.parse-version.outputs.react_version }}
 
   canary-ci-test:
     needs: parse-version
     uses: ./.github/workflows/test.yml
     with:
-      ref: ${{ github.event.pull_request.head.ref }}
+      ref: ${{ github.event.issue.pull_request.head.ref }}
       react_version: ${{ needs.parse-version.outputs.react_version }}
