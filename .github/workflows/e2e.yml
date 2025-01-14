@@ -17,6 +17,9 @@ on:
       - '.github/workflows/e2e.yml'
   workflow_call:
     inputs:
+      ref:
+        required: true
+        type: string
       react_version:
         required: true
         type: string
@@ -30,6 +33,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || '' }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -79,6 +84,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || '' }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

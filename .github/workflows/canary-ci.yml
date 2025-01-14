@@ -24,10 +24,12 @@ jobs:
     needs: parse-version
     uses: ./.github/workflows/e2e.yml
     with:
-      react_version: ${{ needs.parse-version.outputs.react_version }}
+      ref: ${{ github.ref }}
+      react_version: ${{ needs.get-version.outputs.react_version }}
 
   canary-ci-test:
     needs: parse-version
     uses: ./.github/workflows/test.yml
     with:
-      react_version: ${{ needs.parse-version.outputs.react_version }}
+      ref: ${{ github.ref }}
+      react_version: ${{ needs.get-version.outputs.react_version }}
