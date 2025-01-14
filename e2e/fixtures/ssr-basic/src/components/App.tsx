@@ -1,8 +1,17 @@
+import { Suspense } from 'react';
+import { preload } from 'react-dom';
+
 import { Counter } from './Counter.js';
 import { AIProvider } from '../ai/index.js';
 import { AIClient } from './AIClient.js';
 
+const DelayedBackground = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+  return <link href="background.css" rel="stylesheet" />;
+};
+
 const App = ({ name }: { name: string }) => {
+  preload('background.css', { as: 'style' });
   return (
     <html>
       <head>
@@ -19,6 +28,9 @@ const App = ({ name }: { name: string }) => {
               <AIClient />
             </AIProvider>
           </section>
+          <Suspense fallback="Loading...">
+            <DelayedBackground />
+          </Suspense>
         </div>
       </body>
     </html>
