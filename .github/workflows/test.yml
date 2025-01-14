@@ -13,7 +13,7 @@ on:
       react_version:
         required: true
         type: string
-  workflow_trigger:
+  workflow_dispatch:
     inputs:
       ref:
         required: true
