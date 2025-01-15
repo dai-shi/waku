@@ -75,3 +75,9 @@ export const GET = async () => {
     },
   });
 };
+
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  } as const;
+};
