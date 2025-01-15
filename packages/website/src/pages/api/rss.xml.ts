@@ -6,7 +6,6 @@ type Item = {
   link: string;
   description: string;
   pubDate: string;
-  author: string;
 };
 
 const generateRSSFeed = (items: Item[]) => {
@@ -17,7 +16,6 @@ const generateRSSFeed = (items: Item[]) => {
      <title>${item.title}</title>
      <link>${item.link}</link>
      <pubDate>${item.pubDate}</pubDate>
-     <author>${item.author}</author>
      <description>${item.description}</description>
    </item>`,
     )
@@ -57,7 +55,6 @@ export const GET = async () => {
       description: string;
       slug: string;
       date: string;
-      author: string;
     };
     const [year, month, day] = frontmatter.date.split('/').map(Number) as [
       number,
@@ -69,7 +66,6 @@ export const GET = async () => {
       link: `https://waku.gg/blog/${frontmatter.slug}`,
       description: frontmatter.description || '',
       pubDate: new Date(Date.UTC(year, month - 1, day)).toUTCString(),
-      author: frontmatter.author,
     });
   }
 
