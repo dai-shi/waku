@@ -4,9 +4,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "VITE_EXPERIMENTAL_WAKU_ROUTER=true waku dev",
-    "build": "VITE_EXPERIMENTAL_WAKU_ROUTER=true waku build",
-    "start": "VITE_EXPERIMENTAL_WAKU_ROUTER=true waku start"
+    "dev": "waku dev",
+    "build": "waku build",
+    "start": "waku start"
   },
   "dependencies": {
     "react": "19.0.0",
