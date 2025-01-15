@@ -56,6 +56,9 @@
     },
     {
       "path": "./e2e/fixtures/create-pages/tsconfig.json"
+    },
+    {
+      "path": "./e2e/fixtures/fs-router/tsconfig.json"
     }
   ]
 }
