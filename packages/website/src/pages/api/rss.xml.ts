@@ -59,11 +59,16 @@ export const GET = async () => {
       date: string;
       author: string;
     };
+    const [year, month, day] = frontmatter.date.split('/').map(Number) as [
+      number,
+      number,
+      number,
+    ];
     items.push({
       title: frontmatter.title,
       link: `https://waku.gg/blog/${frontmatter.slug}`,
       description: frontmatter.description || '',
-      pubDate: new Date(frontmatter.date).toISOString(),
+      pubDate: new Date(Date.UTC(year, month - 1, day)).toUTCString(),
       author: frontmatter.author,
     });
   }
