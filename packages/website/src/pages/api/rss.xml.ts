@@ -17,13 +17,15 @@ const generateRSSFeed = (items: Item[]) => {
      <link>${item.link}</link>
      <pubDate>${item.pubDate}</pubDate>
      <description>${item.description}</description>
+     <guid isPermaLink="true">${item.link}</guid>
    </item>`,
     )
     .join('');
 
   return `<?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
  <channel>
+   <atom:link href="https://waku.gg/api/rss.xml" rel="self" type="application/rss+xml" />
    <title>Waku</title>
    <link>https://waku.gg</link>
    <description>The minimal React framework</description>
