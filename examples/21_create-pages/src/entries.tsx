@@ -123,7 +123,7 @@ const pages = createPages(
 
     createApi({
       path: '/api/hi.txt',
-      mode: 'static',
+      render: 'static',
       method: 'GET',
       handler: async () => {
         const hiTxt = await readFile('./private/hi.txt');
@@ -133,7 +133,7 @@ const pages = createPages(
 
     createApi({
       path: '/api/hi',
-      mode: 'dynamic',
+      render: 'dynamic',
       handlers: {
         GET: async () => {
           return new Response('hello world!');
@@ -147,7 +147,7 @@ const pages = createPages(
 
     createApi({
       path: '/api/empty',
-      mode: 'static',
+      render: 'static',
       method: 'GET',
       handler: async () => {
         return new Response(null, {

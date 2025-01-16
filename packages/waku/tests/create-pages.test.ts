@@ -268,23 +268,29 @@ describe('type tests', () => {
   describe('createApi', () => {
     it('static', () => {
       const createApi: CreateApi = vi.fn();
-      // @ts-expect-error: mode is not valid
-      createApi({ path: '/', mode: 'foo', method: 'GET', handler: () => null });
       createApi({
         path: '/',
-        mode: 'static',
+        // @ts-expect-error: render is not valid
+        render: 'foo',
+        method: 'GET',
+        // @ts-expect-error: null is not valid Response
+        handler: () => null,
+      });
+      createApi({
+        path: '/',
+        render: 'static',
         // @ts-expect-error: method is not valid
         method: 'foo',
         // @ts-expect-error: null is not valid
         handler: () => null,
       });
       // @ts-expect-error: handler is not valid
-      createApi({ path: '/', mode: 'static', method: 'GET', handler: 123 });
+      createApi({ path: '/', render: 'static', method: 'GET', handler: 123 });
 
       // good
       createApi({
         path: '/',
-        mode: 'static',
+        render: 'static',
         method: 'GET',
         handler: async () => {
           return new Response('Hello World');
@@ -293,23 +299,29 @@ describe('type tests', () => {
     });
     it('dynamic', () => {
       const createApi: CreateApi = vi.fn();
-      // @ts-expect-error: mode & handler are not valid
-      createApi({ path: '/', mode: 'foo', method: 'GET', handler: () => null });
+      createApi({
+        path: '/',
+        // @ts-expect-error: render not valid
+        render: 'foo',
+        method: 'GET',
+        // @ts-expect-error: handler not valid
+        handler: () => null,
+      });
       createApi({
         path: '/foo',
-        mode: 'dynamic',
+        render: 'dynamic',
         handlers: {
           // @ts-expect-error: null is not valid
           GET: () => null,
         },
       });
       // @ts-expect-error: handler is not valid
-      createApi({ path: '/', mode: 'dynamic', method: 'GET', handler: 123 });
+      createApi({ path: '/', render: 'dynamic', method: 'GET', handler: 123 });
 
       // good
       createApi({
         path: '/foo/[slug]',
-        mode: 'dynamic',
+        render: 'dynamic',
         handlers: {
           POST: async (req) => {
             return new Response('Hello World ' + new URL(req.url).pathname);
@@ -546,7 +558,7 @@ describe('createPages pages and layouts', () => {
     createPages(async ({ createApi }) => [
       createApi({
         path: '/test',
-        mode: 'static',
+        render: 'static',
         method: 'GET',
         handler: async () => {
           return new Response('Hello World');
@@ -578,7 +590,7 @@ describe('createPages pages and layouts', () => {
     createPages(async ({ createApi }) => [
       createApi({
         path: '/test/[slug]',
-        mode: 'dynamic',
+        render: 'dynamic',
         handlers: {
           GET: async () => {
             return new Response('Hello World');
@@ -1309,7 +1321,7 @@ describe('createPages api', () => {
     createPages(async ({ createApi }) => [
       createApi({
         path: '/test',
-        mode: 'static',
+        render: 'static',
         method: 'GET',
         handler: async () => {
           return new Response('Hello World');
@@ -1341,7 +1353,7 @@ describe('createPages api', () => {
     createPages(async ({ createApi }) => [
       createApi({
         path: '/test/[slug]',
-        mode: 'dynamic',
+        render: 'dynamic',
         handlers: {
           GET: async (req) => {
             return new Response('Hello World ' + req.url.split('/').at(-1)!);

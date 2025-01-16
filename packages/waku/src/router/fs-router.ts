@@ -85,7 +85,7 @@ export function fsRouter(
             }
             createApi({
               path: pathItems.join('/'),
-              mode: 'static',
+              render: 'static',
               method: 'GET',
               handler: mod.GET,
             });
@@ -108,7 +108,7 @@ export function fsRouter(
             );
             createApi({
               path: pathItems.join('/'),
-              mode: 'dynamic',
+              render: 'dynamic',
               handlers,
             });
           }
