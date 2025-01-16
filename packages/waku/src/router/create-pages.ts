@@ -157,13 +157,13 @@ type ApiHandler = (req: Request) => Promise<Response>;
 export type CreateApi = <Path extends string>(
   params:
     | {
-        mode: 'static';
+        render: 'static';
         path: Path;
         method: 'GET';
         handler: ApiHandler;
       }
     | {
-        mode: 'dynamic';
+        render: 'dynamic';
         path: Path;
         handlers: Partial<Record<Method, ApiHandler>>;
       },
@@ -241,7 +241,7 @@ export const createPages = <
   const apiPathMap = new Map<
     string, // `${method} ${path}`
     {
-      mode: 'static' | 'dynamic';
+      render: 'static' | 'dynamic';
       pathSpec: PathSpec;
       handlers: Partial<Record<Method, ApiHandler>>;
     }
@@ -422,15 +422,15 @@ export const createPages = <
       throw new Error(`Duplicated api path: ${options.path}`);
     }
     const pathSpec = parsePathWithSlug(options.path);
-    if (options.mode === 'static') {
+    if (options.render === 'static') {
       apiPathMap.set(options.path, {
-        mode: 'static',
+        render: 'static',
         pathSpec,
         handlers: { GET: options.handler },
       });
     } else {
       apiPathMap.set(options.path, {
-        mode: 'dynamic',
+        render: 'dynamic',
         pathSpec,
         handlers: options.handlers,
       });
@@ -639,10 +639,10 @@ export const createPages = <
     getApiConfig: async () => {
       await configure();
 
-      return Array.from(apiPathMap.values()).map(({ pathSpec, mode }) => {
+      return Array.from(apiPathMap.values()).map(({ pathSpec, render }) => {
         return {
           path: pathSpec,
-          isStatic: mode === 'static',
+          isStatic: render === 'static',
         };
       });
     },
