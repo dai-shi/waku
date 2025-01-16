@@ -15,7 +15,7 @@
     "waku": "0.21.14"
   },
   "devDependencies": {
-    "@types/react": "19.0.5",
+    "@types/react": "19.0.7",
     "@types/react-dom": "19.0.3",
     "@vitejs/plugin-react": "4.3.4",
     "autoprefixer": "10.4.20",

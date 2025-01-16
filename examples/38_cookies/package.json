@@ -18,8 +18,8 @@
   },
   "devDependencies": {
     "@types/cookie": "1.0.0",
-    "@types/node": "22.10.5",
-    "@types/react": "19.0.5",
+    "@types/node": "22.10.7",
+    "@types/react": "19.0.7",
     "@types/react-dom": "19.0.3",
     "typescript": "5.7.3"
   }

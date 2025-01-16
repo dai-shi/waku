@@ -18,7 +18,7 @@
     "waku": "0.21.14"
   },
   "devDependencies": {
-    "@types/react": "19.0.5",
+    "@types/react": "19.0.7",
     "@types/react-dom": "19.0.3",
     "@vanilla-extract/vite-plugin": "4.0.19",
     "typescript": "5.7.3",
