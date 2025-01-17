@@ -24,6 +24,14 @@ for (const mode of ['DEV', 'PRD'] as const) {
         await page.goto(`http://localhost:${port}`);
         await expect(page.getByTestId('header')).toHaveText('Waku');
       });
+
+      test('shows context value', async ({ page }) => {
+        // continue using the previous page
+        await page.waitForSelector('[data-testid="context-consumer-mounted"]');
+        await expect(page.getByTestId('context-consumer-value')).toHaveText(
+          'provider value',
+        );
+      });
     });
   }
 }
