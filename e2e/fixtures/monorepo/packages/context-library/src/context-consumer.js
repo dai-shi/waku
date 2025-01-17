@@ -3,6 +3,8 @@
 // eslint-disable-next-line import/no-unresolved
 import { createElement, useContext, useEffect, useState } from 'react';
 
+// Do not add '.js' extension to reproduce the issue
+// https://github.com/dai-shi/waku/pull/1162
 import { Context } from './context-provider';
 
 export const ContextConsumer = () => {
