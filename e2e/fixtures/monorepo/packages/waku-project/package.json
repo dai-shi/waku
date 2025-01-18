@@ -9,6 +9,7 @@
     "start": "waku start"
   },
   "dependencies": {
+    "context-library": "0.0.0",
     "dummy-library": "0.0.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",

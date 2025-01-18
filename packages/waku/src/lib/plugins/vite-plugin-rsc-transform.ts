@@ -2,12 +2,7 @@ import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 
 import { EXTENSIONS } from '../constants.js';
-import {
-  extname,
-  joinPath,
-  fileURLToFilePath,
-  decodeFilePathFromAbsolute,
-} from '../utils/path.js';
+import { extname, joinPath } from '../utils/path.js';
 import { parseOpts } from '../utils/swc.js';
 
 const collectExportNames = (mod: swc.Module) => {
@@ -620,6 +615,7 @@ export function rscTransformPlugin(
     | {
         isClient: false;
         isBuild: false;
+        resolvedMap: Map<string, string>;
       }
     | {
         isClient: false;
@@ -628,25 +624,12 @@ export function rscTransformPlugin(
         serverEntryFiles: Record<string, string>;
       },
 ): Plugin {
-  let rootDir: string;
-  const resolvedMap = new Map<string, string>();
   const getClientId = (id: string): string => {
     if (opts.isClient) {
       throw new Error('getClientId is only for server');
     }
     if (!opts.isBuild) {
-      // HACK this logic is too heuristic
-      if (id.startsWith(rootDir) && !id.includes('?')) {
-        return id;
-      }
-      const origId = resolvedMap.get(id);
-      if (origId) {
-        if (origId.startsWith('/@fs/') && !origId.includes('?')) {
-          return origId;
-        }
-        return getClientId(origId);
-      }
-      return id;
+      return id.split('?')[0]!;
     }
     for (const [k, v] of Object.entries(opts.clientEntryFiles)) {
       if (v === id) {
@@ -657,18 +640,7 @@ export function rscTransformPlugin(
   };
   const getServerId = (id: string): string => {
     if (!opts.isBuild) {
-      // HACK this logic is too heuristic
-      if (id.startsWith(rootDir) && !id.includes('?')) {
-        return id;
-      }
-      const origId = resolvedMap.get(id);
-      if (origId) {
-        if (origId.startsWith('/@fs/') && !origId.includes('?')) {
-          return origId;
-        }
-        return getServerId(origId);
-      }
-      return id;
+      return id.split('?')[0]!;
     }
     for (const [k, v] of Object.entries(opts.serverEntryFiles)) {
       if (v === id) {
@@ -677,16 +649,9 @@ export function rscTransformPlugin(
     }
     throw new Error('server id not found: ' + id);
   };
-  const wakuDist = joinPath(
-    decodeFilePathFromAbsolute(fileURLToFilePath(import.meta.url)),
-    '../../..',
-  );
   return {
     name: 'rsc-transform-plugin',
     enforce: 'pre', // required for `resolveId`
-    configResolved(config) {
-      rootDir = config.root;
-    },
     async resolveId(id, importer, options) {
       if (opts.isBuild) {
         return;
@@ -699,17 +664,17 @@ export function rscTransformPlugin(
         return (await this.resolve(id.slice('/@fs'.length), importer, options))
           ?.id;
       }
-      const resolved = await this.resolve(id, importer, options);
-      let srcId =
-        importer && (id.startsWith('./') || id.startsWith('../'))
-          ? joinPath(importer.split('?')[0]!, '..', id)
-          : id;
-      if (srcId.startsWith('waku/')) {
-        srcId = wakuDist + srcId.slice('waku'.length) + '.js';
-      }
-      if (resolved && resolved.id !== srcId) {
-        if (!resolvedMap.has(resolved.id)) {
-          resolvedMap.set(resolved.id, srcId);
+      if ('resolvedMap' in opts) {
+        const resolved = await this.resolve(id, importer, options);
+        const srcId =
+          importer && (id.startsWith('./') || id.startsWith('../'))
+            ? joinPath(importer.split('?')[0]!, '..', id)
+            : id;
+        const dstId = resolved && resolved.id.split('?')[0]!;
+        if (dstId && dstId !== srcId) {
+          if (!opts.resolvedMap.has(dstId)) {
+            opts.resolvedMap.set(dstId, srcId);
+          }
         }
       }
     },

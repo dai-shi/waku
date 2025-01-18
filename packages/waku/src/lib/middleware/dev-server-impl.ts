@@ -73,16 +73,15 @@ const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
   return [writable, promise];
 };
 
-const hotUpdateCallbackSet = new Set<(payload: HotUpdatePayload) => void>();
-const registerHotUpdateCallback = (fn: (payload: HotUpdatePayload) => void) =>
-  hotUpdateCallbackSet.add(fn);
-const hotUpdateCallback = (payload: HotUpdatePayload) =>
-  hotUpdateCallbackSet.forEach((fn) => fn(payload));
-
 const createMainViteServer = (
   env: Record<string, string>,
   configPromise: ReturnType<typeof resolveConfig>,
+  hotUpdateCallbackSet: Set<(payload: HotUpdatePayload) => void>,
+  resolvedMap: Map<string, string>,
 ) => {
+  const registerHotUpdateCallback = (fn: (payload: HotUpdatePayload) => void) =>
+    hotUpdateCallbackSet.add(fn);
+
   const vitePromise = configPromise.then(async (config) => {
     const vite = await createViteServer(
       extendViteConfig(
@@ -158,6 +157,15 @@ const createMainViteServer = (
       // HACK `external: ['waku']` doesn't do the same
       return import(/* @vite-ignore */ filePathToFileURL(file));
     }
+    {
+      let id = file;
+      while (resolvedMap.has(id)) {
+        id = resolvedMap.get(id)!;
+      }
+      if (!id.startsWith('/')) {
+        return vite.ssrLoadModule(id);
+      }
+    }
     if (file.includes('/node_modules/')) {
       // HACK node_modules should be externalized
       return import(/* @vite-ignore */ filePathToFileURL(file));
@@ -226,7 +234,11 @@ const createMainViteServer = (
 const createRscViteServer = (
   env: Record<string, string>,
   configPromise: ReturnType<typeof resolveConfig>,
+  hotUpdateCallbackSet: Set<(payload: HotUpdatePayload) => void>,
+  resolvedMap: Map<string, string>,
 ) => {
+  const hotUpdateCallback = (payload: HotUpdatePayload) =>
+    hotUpdateCallbackSet.forEach((fn) => fn(payload));
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
 
   const vitePromise = configPromise.then(async (config) => {
@@ -246,7 +258,11 @@ const createRscViteServer = (
               hotUpdateCallback,
             }),
             rscManagedPlugin(config),
-            rscTransformPlugin({ isClient: false, isBuild: false }),
+            rscTransformPlugin({
+              isClient: false,
+              isBuild: false,
+              resolvedMap,
+            }),
             rscDelegatePlugin(hotUpdateCallback),
           ],
           optimizeDeps: {
@@ -346,15 +362,23 @@ export const devServer: Middleware = (options) => {
   (globalThis as any).__WAKU_CLIENT_IMPORT__ = (id: string) =>
     loadServerModuleMain(id);
 
+  const hotUpdateCallbackSet = new Set<(payload: HotUpdatePayload) => void>();
+  const resolvedMap = new Map<string, string>();
+
   const {
     vitePromise,
     loadServerModuleMain,
     transformIndexHtml,
     willBeHandled,
-  } = createMainViteServer(env, configPromise);
+  } = createMainViteServer(
+    env,
+    configPromise,
+    hotUpdateCallbackSet,
+    resolvedMap,
+  );
 
   const { loadServerModuleRsc, loadEntriesDev, resolveClientEntry } =
-    createRscViteServer(env, configPromise);
+    createRscViteServer(env, configPromise, hotUpdateCallbackSet, resolvedMap);
 
   let initialModules: ClonableModuleNode[];
 
