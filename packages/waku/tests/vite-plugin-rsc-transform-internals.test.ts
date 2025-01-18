@@ -6,6 +6,7 @@ describe('internal transform function for server environment', () => {
   const { transform } = rscTransformPlugin({
     isClient: false,
     isBuild: false,
+    resolvedMap: new Map(),
   }) as {
     transform(
       code: string,
