@@ -58,7 +58,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
   let entriesFilePossibilities: string[] | undefined;
   let pagesDir: string | undefined;
   let outputFile: string | undefined;
-  let formatter = (s: string): Promise<string> => Promise.resolve(s);
+
   return {
     name: 'vite-plugin-fs-router-typegen',
     apply: 'serve',
@@ -68,17 +68,6 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
         joinPath(config.root, opts.srcDir, SRC_ENTRIES + ext),
       );
       outputFile = joinPath(config.root, opts.srcDir, 'pages.gen.ts');
-
-      try {
-        const prettier = await import('prettier');
-        // Get user's prettier config
-        const config = await prettier.resolveConfig(outputFile);
-
-        formatter = (s) =>
-          prettier.format(s, { ...config, parser: 'typescript' });
-      } catch {
-        // ignore
-      }
     },
     configureServer(server) {
       if (
@@ -149,7 +138,7 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
         });
       };
 
-      const generateFile = (filePaths: string[]): string => {
+      const generateFile = (filePaths: string[]): string | null => {
         const fileInfo: { path: string; src: string; hasGetConfig: boolean }[] =
           [];
         const moduleNames = getImportModuleNames(filePaths);
@@ -157,7 +146,12 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
         for (const filePath of filePaths) {
           // where to import the component from
           const src = filePath.replace(/^\//, '');
-          const hasGetConfig = fileExportsGetConfig(filePath);
+          let hasGetConfig = false;
+          try {
+            hasGetConfig = fileExportsGetConfig(filePath);
+          } catch {
+            return null;
+          }
 
           if (filePath.endsWith('/_layout.tsx')) {
             continue;
@@ -177,7 +171,9 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
           }
         }
 
-        let result = `import type { PathsForPages, GetConfigResponse } from 'waku/router';\n\n`;
+        let result = `// deno-fmt-ignore-file
+/* eslint-disable */
+import type { PathsForPages, GetConfigResponse } from 'waku/router';\n\n`;
 
         for (const file of fileInfo) {
           const moduleName = moduleNames[file.src];
@@ -220,8 +216,12 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
         if (!files.length) {
           return;
         }
-        const formatted = await formatter(generateFile(files));
-        await writeFile(outputFile, formatted, 'utf-8');
+        const generation = generateFile(files);
+        if (!generation) {
+          // skip failures
+          return;
+        }
+        await writeFile(outputFile, generation, 'utf-8');
       };
 
       server.watcher.on('change', async (file) => {
