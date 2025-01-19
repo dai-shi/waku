@@ -6,7 +6,6 @@ import App from './components/App';
 import Dynamic from './components/Dynamic';
 
 // TODO(daishi)
-// - prefetch
 // - consider fetcher to run earlier
 // - fetcher should run only once
 // - wouldn't it be possible to use Suspense fallback?
@@ -46,7 +45,7 @@ export default defineEntries({
       const moduleIds = new Set<string>();
       const generateHtmlHead = () =>
         `<script type="module" async>${unstable_generatePrefetchCode(
-          [''],
+          ['Dynamic'],
           moduleIds,
         )}</script>`;
       const tasks = [
@@ -65,11 +64,6 @@ export default defineEntries({
             rscPath: '',
             htmlHead: generateHtmlHead(),
           }).then(({ body }) => body),
-        }),
-        async () => ({
-          type: 'htmlHead' as const,
-          pathSpec: [],
-          head: generateHtmlHead(),
         }),
       ];
       return tasks;

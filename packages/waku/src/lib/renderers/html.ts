@@ -59,9 +59,16 @@ const injectHtmlHead = (
       /(.*<script[^>]*>\nglobalThis\.__WAKU_PREFETCHED__ = {\n)(.*?)(\n};.*)/s,
     );
     if (matchPrefetched) {
+      // HACK This is very brittle
+      // TODO(daishi) find a better way
+      const removed = matchPrefetched[2]!.replace(
+        new RegExp(`  '${urlForFakeFetch}': .*?,`),
+        '',
+      );
       head =
         matchPrefetched[1] +
         `  '${urlForFakeFetch}': ${fakeFetchCode},` +
+        removed +
         matchPrefetched[3];
     }
     let code = `
