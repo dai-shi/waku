@@ -264,7 +264,9 @@ If statically prerendering a segment route at build time, a `staticPaths` array 
 import type { PageProps } from 'waku/router';
 
 // Create blog article pages
-export default async function BlogArticlePage({ slug }: PageProps<'/blog/[slug]'>) {
+export default async function BlogArticlePage({
+  slug,
+}: PageProps<'/blog/[slug]'>) {
   const data = await getData(slug);
 
   return <>{/* ...*/}</>;
@@ -287,7 +289,9 @@ export const getConfig = async () => {
 import type { PageProps } from 'waku/router';
 
 // Create product category pages
-export default async function ProductCategoryPage({ category }: PageProps<'/shop/[category]'>) {
+export default async function ProductCategoryPage({
+  category,
+}: PageProps<'/shop/[category]'>) {
   const data = await getData(category);
 
   return <>{/* ...*/}</>;
@@ -311,7 +315,9 @@ Static paths (or other config values) can also be generated programmatically.
 import type { PageProps } from 'waku/router';
 
 // Create blog article pages
-export default async function BlogArticlePage({ slug }: PageProps<'/blog/[slug]'>) {
+export default async function BlogArticlePage({
+  slug,
+}: PageProps<'/blog/[slug]'>) {
   const data = await getData(slug);
 
   return <>{/* ...*/}</>;
@@ -344,7 +350,10 @@ Routes can contain multiple segments (e.g., `/shop/[category]/[product]`) by cre
 import type { PageProps } from 'waku/router';
 
 // Create product category pages
-export default async function ProductDetailPage({ category, product }: PageProps<'/shop/[category]/[product]'>) {
+export default async function ProductDetailPage({
+  category,
+  product,
+}: PageProps<'/shop/[category]/[product]'>) {
   return <>{/* ...*/}</>;
 }
 
@@ -362,7 +371,10 @@ For static prerendering of nested segment routes, the `staticPaths` array is ins
 import type { PageProps } from 'waku/router';
 
 // Create product detail pages
-export default async function ProductDetailPage({ category, product }: PageProps<'/shop/[category]/[product]'>) {
+export default async function ProductDetailPage({
+  category,
+  product,
+}: PageProps<'/shop/[category]/[product]'>) {
   return <>{/* ...*/}</>;
 }
 
@@ -388,7 +400,9 @@ Wildcard routes receive a prop with segment values as an ordered array. For exam
 import type { PageProps } from 'waku/router';
 
 // Create dashboard page
-export default async function DashboardPage({ catchAll }: PageProps<'/app/[...catchAll]'>) {
+export default async function DashboardPage({
+  catchAll,
+}: PageProps<'/app/[...catchAll]'>) {
   return <>{/* ...*/}</>;
 }
 
@@ -744,7 +758,9 @@ import { MDX } from '../../components/mdx';
 import { getArticle, getStaticPaths } from '../../lib/blog';
 import type { PageProps } from 'waku/router';
 
-export default async function BlogArticlePage({ slug }: PageProps<'/blog/[slug]'>) {
+export default async function BlogArticlePage({
+  slug,
+}: PageProps<'/blog/[slug]'>) {
   const article = await getArticle(slug);
 
   return (
