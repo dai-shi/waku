@@ -245,23 +245,29 @@ const InnerSlot = ({
   id,
   elementsPromise,
   children,
+  unstable_fallback,
   setFallback,
 }: {
   id: string;
   elementsPromise: Elements;
   children?: ReactNode;
+  unstable_fallback?: ReactNode;
   setFallback?: (fallback: ReactNode) => void;
 }) => {
   const elements = use(elementsPromise);
-  if (!(id in elements)) {
-    throw new Error('No such element: ' + id);
-  }
+  const hasElement = id in elements;
   const element = elements[id];
   useEffect(() => {
-    if (setFallback) {
+    if (hasElement && setFallback) {
       setFallback(element);
     }
-  }, [element, setFallback]);
+  }, [hasElement, element, setFallback]);
+  if (!hasElement) {
+    if (unstable_fallback) {
+      return unstable_fallback;
+    }
+    throw new Error('No such element: ' + id);
+  }
   return createElement(ChildrenContextProvider, { value: children }, element);
 };
 
@@ -312,10 +318,12 @@ class Fallback extends Component<
 export const Slot = ({
   id,
   children,
+  unstable_fallback,
   unstable_fallbackToPrev,
 }: {
   id: string;
   children?: ReactNode;
+  unstable_fallback?: ReactNode;
   unstable_fallbackToPrev?: boolean;
 }) => {
   const [fallback, setFallback] = useState<ReactNode>();
@@ -330,7 +338,11 @@ export const Slot = ({
       createElement(InnerSlot, { id, elementsPromise, setFallback }, children),
     );
   }
-  return createElement(InnerSlot, { id, elementsPromise }, children);
+  return createElement(
+    InnerSlot,
+    { id, elementsPromise, unstable_fallback },
+    children,
+  );
 };
 
 export const Children = () => use(ChildrenContext);
