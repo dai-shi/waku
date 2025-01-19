@@ -86,12 +86,19 @@ describe('vite-plugin-fs-router-typegen', () => {
   test('creates the expected imports the generated entries file', async () => {
     await runTest(
       root,
-      `import type { getConfig as CategoryTagsIndex_getConfig } from './pages/[category]/[...tags]/index';
+      `// prettier-ignore
+import type { getConfig as CategoryTagsIndex_getConfig } from './pages/[category]/[...tags]/index';
+// prettier-ignore
 import type { getConfig as Root_getConfig } from './pages/_root';
+// prettier-ignore
 import type { getConfig as Index_getConfig } from './pages/index';
+// prettier-ignore
 import type { getConfig as OneTwoThree_getConfig } from './pages/one-two-three';
+// prettier-ignore
 import type { getConfig as OneTwoThree_1_getConfig } from './pages/one__two_three';
+// prettier-ignore
 import type { getConfig as OneTwoThree_2_getConfig } from './pages/one_two_three';
+// prettier-ignore
 import type { getConfig as ØnéTwoThree_getConfig } from './pages/øné_two_three';`,
     );
   });
