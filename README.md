@@ -23,7 +23,7 @@ We recommend other frameworks for heavy ecommerce or enterprise applications. Wa
 
 Start a new Waku project with the `create` command for your preferred package manager. It will scaffold a new project with our default [Waku starter](https://github.com/dai-shi/waku/tree/main/examples/01_template).
 
-```
+```sh
 npm create waku@latest
 ```
 
@@ -1009,7 +1009,7 @@ export const ClientComponent = () => {
 
 Waku projects can be deployed to Vercel with the [Vercel CLI](https://vercel.com/docs/cli) automatically.
 
-```
+```sh
 vercel
 ```
 
@@ -1017,7 +1017,7 @@ vercel
 
 Adding the `--with-vercel-static` flag to the build script will produce static sites without serverless functions.
 
-```
+```json
 {
   "scripts": {
     "build": "waku build --with-vercel-static"
@@ -1031,7 +1031,7 @@ Note: When rendering in static mode, please be sure to return `render: 'static'`
 
 Waku projects can be deployed to Netlify with the [Netlify CLI](https://docs.netlify.com/cli/get-started/).
 
-```
+```sh
 npm run build -- --with-netlify
 netlify deploy
 ```
@@ -1040,7 +1040,7 @@ netlify deploy
 
 Adding the `--with-netlify-static` flag to the build script will produce static sites without Netlify functions.
 
-```
+```json
 {
   "scripts": {
     "build": "waku build --with-netlify-static"
@@ -1052,28 +1052,28 @@ Note: When rendering in static mode, please be sure to return `render: 'static'`
 
 ### Cloudflare (experimental)
 
-```
+```sh
 npm run build -- --with-cloudflare
 npx wrangler dev # or deploy
 ```
 
 ### PartyKit (experimental)
 
-```
+```sh
 npm run build -- --with-partykit
 npx partykit dev # or deploy
 ```
 
 ### Deno Deploy (experimental)
 
-```
+```sh
 npm run build -- --with-deno
 deployctl deploy --prod dist/serve-deno.js --exclude node_modules
 ```
 
 ### AWS Lambda (experimental)
 
-```
+```sh
 npm run build -- --with-aws-lambda
 ```
 
