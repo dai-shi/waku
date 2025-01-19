@@ -172,37 +172,42 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
         }
 
         let result = `// deno-fmt-ignore-file
+// biome-ignore format: generated types do not need formatting
 /* eslint-disable */
+// prettier-ignore
 import type { PathsForPages, GetConfigResponse } from 'waku/router';\n\n`;
 
         for (const file of fileInfo) {
           const moduleName = moduleNames[file.src];
           if (file.hasGetConfig) {
-            result += `import type { getConfig as ${moduleName}_getConfig } from './${SRC_PAGES}/${file.src.replace('.tsx', '')}';\n`;
+            result += `// prettier-ignore\nimport type { getConfig as ${moduleName}_getConfig } from './${SRC_PAGES}/${file.src.replace('.tsx', '')}';\n`;
           }
         }
 
-        result += `\ntype Page =\n`;
+        result += `\n// prettier-ignore\ntype Page =\n`;
 
         for (const file of fileInfo) {
           const moduleName = moduleNames[file.src];
           if (file.hasGetConfig) {
-            result += `| ({path: '${file.path}'} & GetConfigResponse<typeof ${moduleName}_getConfig>)\n`;
+            result += `| ({ path: '${file.path}' } & GetConfigResponse<typeof ${moduleName}_getConfig>)\n`;
           } else {
-            result += `| {path: '${file.path}'; render: 'dynamic'}\n`;
+            result += `| { path: '${file.path}'; render: 'dynamic' }\n`;
           }
         }
 
-        result += `;
+        result =
+          result.slice(0, -1) +
+          `;
 
-  declare module 'waku/router' {
-    interface RouteConfig {
-      paths: PathsForPages<Page>;
-    }
-    interface CreatePagesConfig {
-      pages: Page;
-    }
+// prettier-ignore
+declare module 'waku/router' {
+  interface RouteConfig {
+    paths: PathsForPages<Page>;
   }
+  interface CreatePagesConfig {
+    pages: Page;
+  }
+}
   `;
 
         return result;
