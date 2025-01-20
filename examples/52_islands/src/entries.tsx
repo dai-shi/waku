@@ -7,7 +7,6 @@ import Dynamic from './components/Dynamic';
 
 // TODO(daishi)
 // - consider fetcher to run earlier
-// - fetcher should run only once
 // - wouldn't it be possible to use Suspense fallback?
 
 export default defineEntries({
@@ -18,7 +17,7 @@ export default defineEntries({
           App: <App name={input.rscPath || 'Waku'} />,
         });
       }
-      if (input.rscPath === 'Dynamic') {
+      if (input.rscPath === 'dynamic') {
         return renderRsc({
           Dynamic: (
             <Dynamic>
@@ -45,7 +44,7 @@ export default defineEntries({
       const moduleIds = new Set<string>();
       const generateHtmlHead = () =>
         `<script type="module" async>${unstable_generatePrefetchCode(
-          ['Dynamic'],
+          ['dynamic'],
           moduleIds,
         )}</script>`;
       const tasks = [

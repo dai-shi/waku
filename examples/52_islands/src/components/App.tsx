@@ -14,10 +14,7 @@ const App = ({ name }: { name: string }) => {
         >
           <h1>Hello {name}!!</h1>
           <h3>This is a static server component.</h3>
-          <Slot
-            id="Dynamic"
-            unstable_fetchOnInit={{ fallback: <p>Loading...</p> }}
-          >
+          <Slot id="Dynamic" unstable_fallback={<p>Loading...</p>}>
             <MyCounter />
           </Slot>
           <div>{new Date().toISOString()}</div>

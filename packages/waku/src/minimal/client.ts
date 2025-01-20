@@ -195,6 +195,8 @@ const ElementsContext = createContext<Elements | null>(null);
 export const Root = ({
   initialRscPath,
   initialRscParams,
+  delayedRscPath,
+  delayedRscParams,
   fetchCache = defaultFetchCache,
   unstable_enhanceFetch,
   unstable_enhanceCreateData,
@@ -202,6 +204,8 @@ export const Root = ({
 }: {
   initialRscPath?: string;
   initialRscParams?: unknown;
+  delayedRscPath?: string;
+  delayedRscParams?: unknown;
   fetchCache?: FetchCache;
   unstable_enhanceFetch?: EnhanceFetch;
   unstable_enhanceCreateData?: EnhanceCreateData;
@@ -224,6 +228,12 @@ export const Root = ({
     },
     [fetchCache],
   );
+  useEffect(() => {
+    if (typeof delayedRscPath === 'string') {
+      const data = fetchRsc(delayedRscPath, delayedRscParams, fetchCache);
+      setElements((prev) => mergeElements(prev, data));
+    }
+  }, [fetchCache, setElements, delayedRscPath, delayedRscParams]);
   return createElement(
     RefetchContext.Provider,
     { value: refetch },
@@ -246,31 +256,25 @@ const InnerSlot = ({
   elementsPromise,
   children,
   setFallback,
-  unstable_fetchOnInit,
+  unstable_fallback,
 }: {
   id: string;
   elementsPromise: Elements;
   children?: ReactNode;
   setFallback?: (fallback: ReactNode) => void;
-  unstable_fetchOnInit?: { fallback?: ReactNode };
+  unstable_fallback?: ReactNode;
 }) => {
-  const refetch = useRefetch();
   const elements = use(elementsPromise);
   const hasElement = id in elements;
   const element = elements[id];
-  const hasFetchOnInit = !!unstable_fetchOnInit;
-  const fallback = unstable_fetchOnInit?.fallback;
   useEffect(() => {
     if (hasElement && setFallback) {
       setFallback(element);
     }
-    if (!hasElement && hasFetchOnInit) {
-      refetch(id);
-    }
-  }, [id, refetch, hasElement, element, setFallback, hasFetchOnInit]);
+  }, [hasElement, element, setFallback]);
   if (!hasElement) {
-    if (hasFetchOnInit) {
-      return fallback;
+    if (unstable_fallback) {
+      return unstable_fallback;
     }
     throw new Error('No such element: ' + id);
   }
@@ -325,12 +329,12 @@ export const Slot = ({
   id,
   children,
   unstable_fallbackToPrev,
-  unstable_fetchOnInit,
+  unstable_fallback,
 }: {
   id: string;
   children?: ReactNode;
   unstable_fallbackToPrev?: boolean;
-  unstable_fetchOnInit?: { fallback?: ReactNode };
+  unstable_fallback?: ReactNode;
 }) => {
   const [fallback, setFallback] = useState<ReactNode>();
   const elementsPromise = use(ElementsContext);
@@ -344,14 +348,11 @@ export const Slot = ({
       createElement(InnerSlot, { id, elementsPromise, setFallback }, children),
     );
   }
-  if (unstable_fetchOnInit) {
-    return createElement(
-      InnerSlot,
-      { id, elementsPromise, unstable_fetchOnInit },
-      children,
-    );
-  }
-  return createElement(InnerSlot, { id, elementsPromise }, children);
+  return createElement(
+    InnerSlot,
+    { id, elementsPromise, unstable_fallback },
+    children,
+  );
 };
 
 export const Children = () => use(ChildrenContext);

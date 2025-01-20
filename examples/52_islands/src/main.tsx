@@ -4,7 +4,7 @@ import { Root, Slot } from 'waku/minimal/client';
 
 const rootElement = (
   <StrictMode>
-    <Root>
+    <Root delayedRscPath="dynamic">
       <Slot id="App" />
     </Root>
   </StrictMode>
