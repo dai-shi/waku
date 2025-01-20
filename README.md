@@ -754,9 +754,10 @@ All of the wonderful patterns enabled by React server components are supported. 
 
 ```tsx
 // ./src/pages/blog/[slug].tsx
+import type { PageProps } from 'waku/router';
+
 import { MDX } from '../../components/mdx';
 import { getArticle, getStaticPaths } from '../../lib/blog';
-import type { PageProps } from 'waku/router';
 
 export default async function BlogArticlePage({
   slug,
