@@ -5,10 +5,6 @@ import { unstable_createAsyncIterable as createAsyncIterable } from 'waku/server
 import App from './components/App';
 import Dynamic from './components/Dynamic';
 
-// TODO(daishi)
-// - consider fetcher to run earlier
-// - wouldn't it be possible to use Suspense fallback?
-
 export default defineEntries({
   handleRequest: async (input, { renderRsc, renderHtml }) => {
     if (input.type === 'component') {
