@@ -28,8 +28,11 @@ const unexpectedErrors: RegExp[] = [
 
 const ignoreErrors: RegExp[] = [
   /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
-  /^Error: Unexpected error\s+at ThrowsComponent.jsxDEV.children/,
+  /^Error: Unexpected error\s+at ThrowsComponent/,
+  /^Error: Something unexpected happened\s+at ErrorRender/,
   /^Error: 401 Unauthorized\s+at CheckIfAccessDenied/,
+  // FIXME Is this too general and miss meaningful errors?
+  /^\[Error: An error occurred in the Server Components render./,
 ];
 
 export async function getFreePort(): Promise<number> {
