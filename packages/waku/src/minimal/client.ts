@@ -218,7 +218,7 @@ export const Root = ({
   );
   useEffect(() => {
     fetchCache[SET_ELEMENTS] = setElements;
-  }, [fetchCache, setElements]);
+  }, [fetchCache]);
   const refetch = useCallback(
     (rscPath: string, rscParams?: unknown) => {
       // clear cache entry before fetching
@@ -233,7 +233,7 @@ export const Root = ({
       const data = fetchRsc(delayedRscPath, delayedRscParams, fetchCache);
       setElements((prev) => mergeElements(prev, data));
     }
-  }, [fetchCache, setElements, delayedRscPath, delayedRscParams]);
+  }, [fetchCache, delayedRscPath, delayedRscParams]);
   return createElement(
     RefetchContext.Provider,
     { value: refetch },
