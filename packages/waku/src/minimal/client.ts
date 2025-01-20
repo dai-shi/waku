@@ -245,26 +245,32 @@ const InnerSlot = ({
   id,
   elementsPromise,
   children,
-  unstable_fallback,
   setFallback,
+  unstable_fetchOnInit,
 }: {
   id: string;
   elementsPromise: Elements;
   children?: ReactNode;
-  unstable_fallback?: ReactNode;
   setFallback?: (fallback: ReactNode) => void;
+  unstable_fetchOnInit?: { fallback?: ReactNode };
 }) => {
+  const refetch = useRefetch();
   const elements = use(elementsPromise);
   const hasElement = id in elements;
   const element = elements[id];
+  const hasFetchOnInit = !!unstable_fetchOnInit;
+  const fallback = unstable_fetchOnInit?.fallback;
   useEffect(() => {
     if (hasElement && setFallback) {
       setFallback(element);
     }
-  }, [hasElement, element, setFallback]);
+    if (!hasElement && hasFetchOnInit) {
+      refetch(id);
+    }
+  }, [id, refetch, hasElement, element, setFallback, hasFetchOnInit]);
   if (!hasElement) {
-    if (unstable_fallback) {
-      return unstable_fallback;
+    if (hasFetchOnInit) {
+      return fallback;
     }
     throw new Error('No such element: ' + id);
   }
@@ -318,13 +324,13 @@ class Fallback extends Component<
 export const Slot = ({
   id,
   children,
-  unstable_fallback,
   unstable_fallbackToPrev,
+  unstable_fetchOnInit,
 }: {
   id: string;
   children?: ReactNode;
-  unstable_fallback?: ReactNode;
   unstable_fallbackToPrev?: boolean;
+  unstable_fetchOnInit?: { fallback?: ReactNode };
 }) => {
   const [fallback, setFallback] = useState<ReactNode>();
   const elementsPromise = use(ElementsContext);
@@ -338,11 +344,14 @@ export const Slot = ({
       createElement(InnerSlot, { id, elementsPromise, setFallback }, children),
     );
   }
-  return createElement(
-    InnerSlot,
-    { id, elementsPromise, unstable_fallback },
-    children,
-  );
+  if (unstable_fetchOnInit) {
+    return createElement(
+      InnerSlot,
+      { id, elementsPromise, unstable_fetchOnInit },
+      children,
+    );
+  }
+  return createElement(InnerSlot, { id, elementsPromise }, children);
 };
 
 export const Children = () => use(ChildrenContext);
