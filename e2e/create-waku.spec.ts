@@ -11,7 +11,7 @@ import {
 } from 'node:fs/promises';
 import { expect } from '@playwright/test';
 
-import { test, debugChildProcess } from './utils.js';
+import { test, debugChildProcess, terminate } from './utils.js';
 
 test('should create waku with default setup work', async () => {
   const cliPath = fileURLToPath(
@@ -49,7 +49,7 @@ test('should create waku with default setup work', async () => {
   expect(files).toContain('package.json');
   expect(files).toContain('src');
   expect(files).toContain('tsconfig.json');
-  childProcess.kill();
+  await terminate(childProcess.pid!);
   await rmdir(cwd, { recursive: true });
 });
 
@@ -98,6 +98,6 @@ test('should create waku with update notify work', async () => {
     }
   }
   expect(found).toBe(true);
-  childProcess.kill();
+  await terminate(childProcess.pid!);
   await rmdir(cwd, { recursive: true });
 });
