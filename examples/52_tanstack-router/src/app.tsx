@@ -5,7 +5,7 @@ export const App = () => {
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Vite App</title>
+        <title>Waku</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <style type="text/tailwindcss">
           {`html {
