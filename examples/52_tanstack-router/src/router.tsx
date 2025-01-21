@@ -7,6 +7,7 @@ import {
   createRouter,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
+import { ServerTime } from './server-time';
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -22,6 +23,7 @@ const rootRoute = createRootRoute({
       <hr />
       <Outlet />
       <TanStackRouterDevtools />
+      <ServerTime />
     </>
   ),
 });
