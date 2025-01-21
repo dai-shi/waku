@@ -49,7 +49,11 @@ test('should create waku with default setup work', async () => {
   expect(files).toContain('package.json');
   expect(files).toContain('src');
   expect(files).toContain('tsconfig.json');
-  await terminate(childProcess.pid!);
+  try {
+    await terminate(childProcess.pid!);
+  } catch {
+    // ignore
+  }
   await rmdir(cwd, { recursive: true });
 });
 
@@ -98,6 +102,10 @@ test('should create waku with update notify work', async () => {
     }
   }
   expect(found).toBe(true);
-  await terminate(childProcess.pid!);
+  try {
+    await terminate(childProcess.pid!);
+  } catch {
+    // ignore
+  }
   await rmdir(cwd, { recursive: true });
 });
