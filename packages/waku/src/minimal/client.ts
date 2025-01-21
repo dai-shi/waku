@@ -195,8 +195,6 @@ const ElementsContext = createContext<Elements | null>(null);
 export const Root = ({
   initialRscPath,
   initialRscParams,
-  delayedRscPath,
-  delayedRscParams,
   fetchCache = defaultFetchCache,
   unstable_enhanceFetch,
   unstable_enhanceCreateData,
@@ -204,8 +202,6 @@ export const Root = ({
 }: {
   initialRscPath?: string;
   initialRscParams?: unknown;
-  delayedRscPath?: string;
-  delayedRscParams?: unknown;
   fetchCache?: FetchCache;
   unstable_enhanceFetch?: EnhanceFetch;
   unstable_enhanceCreateData?: EnhanceCreateData;
@@ -228,12 +224,6 @@ export const Root = ({
     },
     [fetchCache],
   );
-  useEffect(() => {
-    if (typeof delayedRscPath === 'string') {
-      const data = fetchRsc(delayedRscPath, delayedRscParams, fetchCache);
-      setElements((prev) => mergeElements(prev, data));
-    }
-  }, [fetchCache, delayedRscPath, delayedRscParams]);
   return createElement(
     RefetchContext.Provider,
     { value: refetch },
