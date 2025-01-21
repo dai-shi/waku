@@ -13,7 +13,7 @@
     "react-dom": "19.0.0",
     "react-server-dom-webpack": "19.0.0",
     "react-wrap-balancer": "1.1.1",
-    "waku": "0.21.15"
+    "waku": "0.21.16"
   },
   "devDependencies": {
     "@types/react": "19.0.7",

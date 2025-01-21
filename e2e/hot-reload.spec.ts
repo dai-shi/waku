@@ -112,5 +112,20 @@ test.describe('hot reload', () => {
     await expect(page.getByText('About2 Page')).toBeVisible();
     await page.getByTestId('home').click();
     await expect(page.getByText('Edited Page')).toBeVisible();
+    // Modify with a JSX syntax error
+    await modifyFile(
+      standaloneDir,
+      'src/pages/index.tsx',
+      '<p>Edited Page</p>',
+      '<pEdited Page</p>',
+    );
+    await page.waitForTimeout(500); // need to wait for possible crash
+    await modifyFile(
+      standaloneDir,
+      'src/pages/index.tsx',
+      '<pEdited Page</p>',
+      '<p>Fixed Page</p>',
+    );
+    await expect(page.getByText('Fixed Page')).toBeVisible();
   });
 });
