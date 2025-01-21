@@ -1,7 +1,15 @@
-import { hydrateRoot } from "react-dom/client";
-import { StartClient } from "@tanstack/start";
-import { createRouter } from "./router";
+import { StrictMode } from 'react';
+import { createRoot, hydrateRoot } from 'react-dom/client';
+import { App } from './app';
 
-const router = createRouter();
+const rootElement = (
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
 
-hydrateRoot(document, <StartClient router={router} />);
+if ((globalThis as any).__WAKU_HYDRATE__) {
+  hydrateRoot(document, rootElement);
+} else {
+  createRoot(document as any).render(rootElement);
+}
