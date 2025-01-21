@@ -1,7 +1,14 @@
-import { exec, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
-import { mkdir, readdir, cp, readFile, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  rmdir,
+  readdir,
+  cp,
+  readFile,
+  writeFile,
+} from 'node:fs/promises';
 import { expect } from '@playwright/test';
 
 import { test, debugChildProcess } from './utils.js';
@@ -44,7 +51,7 @@ test('should create waku with default setup work', async () => {
   expect(files).toContain('package.json');
   expect(files).toContain('src');
   expect(files).toContain('tsconfig.json');
-  exec(`rm -rf ${cwd}`);
+  await rmdir(cwd, { recursive: true });
 });
 
 test('should create waku with update notify work', async () => {
@@ -88,6 +95,6 @@ test('should create waku with update notify work', async () => {
       break;
     }
   }
-  exec(`rm -rf ${cwd}`);
+  await rmdir(cwd, { recursive: true });
   // no need to kill the process, it will exit by itself
 });
