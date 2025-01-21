@@ -84,6 +84,7 @@ test('should create waku with update notify work', async () => {
   const stdin = childProcess.stdin!;
   const writeNewLine = async () =>
     new Promise<void>((resolve) => stdin.write('\n', () => resolve())); // will use default
+  let found = false;
   for await (const data of childProcess.stdout!) {
     const str = data.toString();
     if (str.includes('Project Name')) {
@@ -92,9 +93,11 @@ test('should create waku with update notify work', async () => {
       await writeNewLine();
     }
     if (str.includes(`A new version of 'create-waku' is available!`)) {
+      found = true;
       break;
     }
   }
+  expect(found).toBe(true);
+  childProcess.kill();
   await rmdir(cwd, { recursive: true });
-  // no need to kill the process, it will exit by itself
 });
