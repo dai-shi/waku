@@ -1,5 +1,5 @@
 import { StrictMode } from 'react';
-import { createRoot, hydrateRoot } from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import { App } from './app';
 
 const rootElement = (
@@ -8,8 +8,4 @@ const rootElement = (
   </StrictMode>
 );
 
-if ((globalThis as any).__WAKU_HYDRATE__) {
-  hydrateRoot(document, rootElement);
-} else {
-  createRoot(document as any).render(rootElement);
-}
+createRoot(document as any).render(rootElement);
