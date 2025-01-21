@@ -1184,7 +1184,7 @@ importers:
         specifier: 5.7.3
         version: 5.7.3
 
-  examples/52_islands:
+  examples/53_islands:
     dependencies:
       react:
         specifier: 19.0.0
