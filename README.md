@@ -23,7 +23,7 @@ We recommend other frameworks for heavy ecommerce or enterprise applications. Wa
 
 Start a new Waku project with the `create` command for your preferred package manager. It will scaffold a new project with our default [Waku starter](https://github.com/dai-shi/waku/tree/main/examples/01_template).
 
-```
+```sh
 npm create waku@latest
 ```
 
@@ -232,7 +232,7 @@ export default async function AboutPage() {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -247,7 +247,7 @@ export default async function BlogIndexPage() {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -261,9 +261,12 @@ If statically prerendering a segment route at build time, a `staticPaths` array 
 
 ```tsx
 // ./src/pages/blog/[slug].tsx
+import type { PageProps } from 'waku/router';
 
 // Create blog article pages
-export default async function BlogArticlePage({ slug }) {
+export default async function BlogArticlePage({
+  slug,
+}: PageProps<'/blog/[slug]'>) {
   const data = await getData(slug);
 
   return <>{/* ...*/}</>;
@@ -277,15 +280,18 @@ export const getConfig = async () => {
   return {
     render: 'static',
     staticPaths: ['introducing-waku', 'introducing-pages-router'],
-  };
+  } as const;
 };
 ```
 
 ```tsx
 // ./src/pages/shop/[category].tsx
+import type { PageProps } from 'waku/router';
 
 // Create product category pages
-export default async function ProductCategoryPage({ category }) {
+export default async function ProductCategoryPage({
+  category,
+}: PageProps<'/shop/[category]'>) {
   const data = await getData(category);
 
   return <>{/* ...*/}</>;
@@ -298,7 +304,7 @@ const getData = async (category) => {
 export const getConfig = async () => {
   return {
     render: 'dynamic',
-  };
+  } as const;
 };
 ```
 
@@ -306,9 +312,12 @@ Static paths (or other config values) can also be generated programmatically.
 
 ```tsx
 // ./src/pages/blog/[slug].tsx
+import type { PageProps } from 'waku/router';
 
 // Create blog article pages
-export default async function BlogArticlePage({ slug }) {
+export default async function BlogArticlePage({
+  slug,
+}: PageProps<'/blog/[slug]'>) {
   const data = await getData(slug);
 
   return <>{/* ...*/}</>;
@@ -324,7 +333,7 @@ export const getConfig = async () => {
   return {
     render: 'static',
     staticPaths,
-  };
+  } as const;
 };
 
 const getStaticPaths = async () => {
@@ -338,16 +347,20 @@ Routes can contain multiple segments (e.g., `/shop/[category]/[product]`) by cre
 
 ```tsx
 // ./src/pages/shop/[category]/[product].tsx
+import type { PageProps } from 'waku/router';
 
 // Create product category pages
-export default async function ProductDetailPage({ category, product }) {
+export default async function ProductDetailPage({
+  category,
+  product,
+}: PageProps<'/shop/[category]/[product]'>) {
   return <>{/* ...*/}</>;
 }
 
 export const getConfig = async () => {
   return {
     render: 'dynamic',
-  };
+  } as const;
 };
 ```
 
@@ -355,9 +368,13 @@ For static prerendering of nested segment routes, the `staticPaths` array is ins
 
 ```tsx
 // ./src/pages/shop/[category]/[product].tsx
+import type { PageProps } from 'waku/router';
 
 // Create product detail pages
-export default async function ProductDetailPage({ category, product }) {
+export default async function ProductDetailPage({
+  category,
+  product,
+}: PageProps<'/shop/[category]/[product]'>) {
   return <>{/* ...*/}</>;
 }
 
@@ -368,7 +385,7 @@ export const getConfig = async () => {
       ['same-category', 'some-product'],
       ['same-category', 'another-product'],
     ],
-  };
+  } as const;
 };
 ```
 
@@ -380,16 +397,19 @@ Wildcard routes receive a prop with segment values as an ordered array. For exam
 
 ```tsx
 // ./src/pages/app/[...catchAll].tsx
+import type { PageProps } from 'waku/router';
 
 // Create dashboard page
-export default async function DashboardPage({ catchAll }) {
+export default async function DashboardPage({
+  catchAll,
+}: PageProps<'/app/[...catchAll]'>) {
   return <>{/* ...*/}</>;
 }
 
 export const getConfig = async () => {
   return {
     render: 'dynamic',
-  };
+  } as const;
 };
 ```
 
@@ -467,7 +487,7 @@ export const getConfig = async () => {
 };
 ```
 
-### Root elements
+### Root element
 
 The attributes of `<html>`, `<head>`, or `<body>` elements can be customized with the root element API. Create a special `_root.tsx` file in the `./src/pages` directory that accepts a `children` prop of type `ReactNode`.
 
@@ -608,7 +628,7 @@ export default async function HomePage() {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -643,7 +663,7 @@ const getMetadata = async () => {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -722,7 +742,7 @@ export default async function HomePage() {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -734,10 +754,14 @@ All of the wonderful patterns enabled by React server components are supported. 
 
 ```tsx
 // ./src/pages/blog/[slug].tsx
+import type { PageProps } from 'waku/router';
+
 import { MDX } from '../../components/mdx';
 import { getArticle, getStaticPaths } from '../../lib/blog';
 
-export default async function BlogArticlePage({ slug }) {
+export default async function BlogArticlePage({
+  slug,
+}: PageProps<'/blog/[slug]'>) {
   const article = await getArticle(slug);
 
   return (
@@ -755,7 +779,7 @@ export const getConfig = async () => {
   return {
     render: 'static',
     staticPaths,
-  };
+  } as const;
 };
 ```
 
@@ -986,7 +1010,7 @@ export const ClientComponent = () => {
 
 Waku projects can be deployed to Vercel with the [Vercel CLI](https://vercel.com/docs/cli) automatically.
 
-```
+```sh
 vercel
 ```
 
@@ -994,7 +1018,7 @@ vercel
 
 Adding the `--with-vercel-static` flag to the build script will produce static sites without serverless functions.
 
-```
+```json
 {
   "scripts": {
     "build": "waku build --with-vercel-static"
@@ -1008,7 +1032,7 @@ Note: When rendering in static mode, please be sure to return `render: 'static'`
 
 Waku projects can be deployed to Netlify with the [Netlify CLI](https://docs.netlify.com/cli/get-started/).
 
-```
+```sh
 npm run build -- --with-netlify
 netlify deploy
 ```
@@ -1017,7 +1041,7 @@ netlify deploy
 
 Adding the `--with-netlify-static` flag to the build script will produce static sites without Netlify functions.
 
-```
+```json
 {
   "scripts": {
     "build": "waku build --with-netlify-static"
@@ -1029,28 +1053,28 @@ Note: When rendering in static mode, please be sure to return `render: 'static'`
 
 ### Cloudflare (experimental)
 
-```
+```sh
 npm run build -- --with-cloudflare
 npx wrangler dev # or deploy
 ```
 
 ### PartyKit (experimental)
 
-```
+```sh
 npm run build -- --with-partykit
 npx partykit dev # or deploy
 ```
 
 ### Deno Deploy (experimental)
 
-```
+```sh
 npm run build -- --with-deno
 deployctl deploy --prod dist/serve-deno.js --exclude node_modules
 ```
 
 ### AWS Lambda (experimental)
 
-```
+```sh
 npm run build -- --with-aws-lambda
 ```
 
