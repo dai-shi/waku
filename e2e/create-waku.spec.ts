@@ -28,20 +28,18 @@ test('should create waku with default setup work', async () => {
     env: process.env,
   });
   debugChildProcess(childProcess, fileURLToPath(import.meta.url));
-  const stdin = childProcess.stdin!;
-  await new Promise<void>((resolve) => {
-    childProcess.stdout!.on('data', (data) => {
-      const str = data.toString();
-      if (str.includes('Project Name')) {
-        stdin.write('\n'); // use default
-      } else if (str.includes('Choose a starter template')) {
-        stdin.write('\n'); // use default
-      }
-      if (str.includes('Done.')) {
-        resolve();
-      }
-    });
-  });
+  const writeNewLine = async () =>
+    new Promise<void>((resolve) =>
+      childProcess.stdin.write('\n', () => resolve()),
+    ); // will use default
+  for await (const data of childProcess.stdout!) {
+    const str = data.toString();
+    if (str.includes('Project Name')) {
+      await writeNewLine();
+    } else if (str.includes('Choose a starter template')) {
+      await writeNewLine();
+    }
+  }
   const paths = await readdir(cwd);
   expect(paths[0]).toBe('waku-project');
   expect(paths.length).toBe(1);
@@ -51,6 +49,7 @@ test('should create waku with default setup work', async () => {
   expect(files).toContain('package.json');
   expect(files).toContain('src');
   expect(files).toContain('tsconfig.json');
+  childProcess.kill();
   await rmdir(cwd, { recursive: true });
 });
 
@@ -81,9 +80,10 @@ test('should create waku with update notify work', async () => {
     env: process.env,
   });
   debugChildProcess(childProcess, fileURLToPath(import.meta.url));
-  const stdin = childProcess.stdin!;
   const writeNewLine = async () =>
-    new Promise<void>((resolve) => stdin.write('\n', () => resolve())); // will use default
+    new Promise<void>((resolve) =>
+      childProcess.stdin.write('\n', () => resolve()),
+    ); // will use default
   let found = false;
   for await (const data of childProcess.stdout!) {
     const str = data.toString();
