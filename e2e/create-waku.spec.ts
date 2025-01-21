@@ -32,7 +32,7 @@ test('should create waku with default setup work', async () => {
     new Promise<void>((resolve) =>
       childProcess.stdin.write('\n', () => resolve()),
     ); // will use default
-  for await (const data of childProcess.stdout!) {
+  for await (const data of childProcess.stdout) {
     const str = data.toString();
     if (str.includes('Project Name')) {
       await writeNewLine();
@@ -89,7 +89,7 @@ test('should create waku with update notify work', async () => {
       childProcess.stdin.write('\n', () => resolve()),
     ); // will use default
   let found = false;
-  for await (const data of childProcess.stdout!) {
+  for await (const data of childProcess.stdout) {
     const str = data.toString();
     if (str.includes('Project Name')) {
       await writeNewLine();
