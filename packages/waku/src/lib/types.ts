@@ -85,7 +85,7 @@ export type EntriesPrd = EntriesDev & {
   loadModule: (id: string) => Promise<unknown>;
   dynamicHtmlPaths: [pathSpec: PathSpec, htmlHead: string][];
   publicIndexHtml: string;
-  buildData?: Record<string, unknown>; // must be JSON serializable
+  loadPlatformData?: (key: string) => Promise<unknown>;
 };
 
 export type HandlerReq = {

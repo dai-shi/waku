@@ -13,7 +13,10 @@ import { randomBytes } from 'node:crypto';
 
 import type { Plugin } from 'vite';
 
-import { unstable_getPlatformObject } from '../../server.js';
+import {
+  iterateAllPlatformDataInternal,
+  unstable_getPlatformObject,
+} from '../../server.js';
 import { SRC_ENTRIES } from '../constants.js';
 import { DIST_ENTRIES_JS, DIST_PUBLIC } from '../builder/constants.js';
 
@@ -207,9 +210,34 @@ export function deployCloudflarePlugin(opts: {
         functionDir: workerDistDir,
       });
 
+      const DIST_PLATFORM_DATA = 'platform-data';
+      const keys = new Set<string>();
+      mkdirSync(path.join(workerDistDir, DIST_PLATFORM_DATA), {
+        recursive: true,
+      });
+      for (const [key, data] of iterateAllPlatformDataInternal()) {
+        keys.add(key);
+        const destFile = path.join(
+          workerDistDir,
+          DIST_PLATFORM_DATA,
+          key + '.js',
+        );
+        writeFileSync(destFile, `export default ${JSON.stringify(data)};`);
+      }
       appendFileSync(
         path.join(workerDistDir, DIST_ENTRIES_JS),
-        `export const buildData = ${JSON.stringify(platformObject.buildData)};`,
+        `
+export function loadPlatformData(key) {
+  switch (key) {
+    ${Array.from(keys)
+      .map(
+        (k) => `case '${k}': return import('./${DIST_PLATFORM_DATA}/${k}.js');`,
+      )
+      .join('\n')}
+    default: throw new Error('Cannot find platform data: ' + key);
+  }
+}
+`,
       );
 
       const wranglerTomlFile = path.join(rootDir, 'wrangler.toml');
