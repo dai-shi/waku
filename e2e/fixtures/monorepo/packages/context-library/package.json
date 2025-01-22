@@ -1,0 +1,16 @@
+{
+  "name": "context-library",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "A library with React Context",
+  "exports": {
+    "./entry-point": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js"
+    }
+  },
+  "private": true,
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  }
+}

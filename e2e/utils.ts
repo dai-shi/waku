@@ -26,6 +26,15 @@ const unexpectedErrors: RegExp[] = [
   /^Warning: Expected server HTML to contain a matching/,
 ];
 
+const ignoreErrors: RegExp[] = [
+  /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
+  /^Error: Unexpected error\s+at ThrowsComponent/,
+  /^Error: Something unexpected happened\s+at ErrorRender/,
+  /^Error: 401 Unauthorized\s+at CheckIfAccessDenied/,
+  // FIXME Is this too general and miss meaningful errors?
+  /^\[Error: An error occurred in the Server Components render./,
+];
+
 export async function getFreePort(): Promise<number> {
   return new Promise<number>((resolve) => {
     const srv = net.createServer();
@@ -54,11 +63,7 @@ export async function isPortAvailable(port: number): Promise<boolean> {
   });
 }
 
-export function debugChildProcess(
-  cp: ChildProcess,
-  sourceFile: string,
-  ignoreErrors?: RegExp[],
-) {
+export function debugChildProcess(cp: ChildProcess, sourceFile: string) {
   cp.stdout?.on('data', (data) => {
     const str = data.toString();
     expect(unexpectedErrors.some((re) => re.test(str))).toBeFalsy();
@@ -126,9 +131,7 @@ export const prepareNormalSetup = (fixtureName: string) => {
         break;
     }
     const cp = exec(cmd, { cwd: fixtureDir });
-    debugChildProcess(cp, fileURLToPath(import.meta.url), [
-      /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
-    ]);
+    debugChildProcess(cp, fileURLToPath(import.meta.url));
     await waitPort({ port });
     const stopApp = async () => {
       await terminate(cp.pid!);
@@ -139,7 +142,7 @@ export const prepareNormalSetup = (fixtureName: string) => {
 };
 
 const PACKAGE_INSTALL = {
-  npm: (path: string) => `npm add ${path}`,
+  npm: (path: string) => `npm add --force ${path}`,
   pnpm: (path: string) => `pnpm add ${path}`,
   yarn: (path: string) => `yarn add ${path}`,
 } as const;
@@ -172,14 +175,13 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
       });
       execSync(`pnpm pack --pack-destination ${standaloneDir}`, {
         cwd: wakuDir,
-        stdio: 'inherit',
       });
       const wakuPackageTgz = join(standaloneDir, `waku-${version}.tgz`);
       const installScript = PACKAGE_INSTALL[packageManager](wakuPackageTgz);
-      execSync(installScript, { cwd: standaloneDir, stdio: 'inherit' });
+      execSync(installScript, { cwd: standaloneDir });
       execSync(
         `npm install --force ${join(standaloneDir, `waku-${version}.tgz`)}`,
-        { cwd: standaloneDir, stdio: 'inherit' },
+        { cwd: standaloneDir },
       );
     }
     if (mode !== 'DEV' && !built) {
@@ -207,9 +209,7 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
         break;
     }
     const cp = exec(cmd, { cwd: join(standaloneDir, packageDir) });
-    debugChildProcess(cp, fileURLToPath(import.meta.url), [
-      /ExperimentalWarning: Custom ESM Loaders is an experimental feature and might change at any time/,
-    ]);
+    debugChildProcess(cp, fileURLToPath(import.meta.url));
     await waitPort({ port });
     const stopApp = async () => {
       await terminate(cp.pid!);

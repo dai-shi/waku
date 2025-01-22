@@ -9,6 +9,7 @@ import {
   useCallback,
   useEffect,
   useState,
+  Component,
 } from 'react';
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
@@ -213,7 +214,7 @@ export const Root = ({
   );
   useEffect(() => {
     fetchCache[SET_ELEMENTS] = setElements;
-  }, [fetchCache, setElements]);
+  }, [fetchCache]);
   const refetch = useCallback(
     (rscPath: string, rscParams?: unknown) => {
       // clear cache entry before fetching
@@ -244,21 +245,61 @@ const InnerSlot = ({
   id,
   elementsPromise,
   children,
+  setFallback,
+  unstable_fallback,
 }: {
   id: string;
   elementsPromise: Elements;
   children?: ReactNode;
+  setFallback?: (fallback: ReactNode) => void;
+  unstable_fallback?: ReactNode;
 }) => {
   const elements = use(elementsPromise);
-  if (!(id in elements)) {
+  const hasElement = id in elements;
+  const element = elements[id];
+  useEffect(() => {
+    if (hasElement && setFallback) {
+      setFallback(element);
+    }
+  }, [hasElement, element, setFallback]);
+  if (!hasElement) {
+    if (unstable_fallback) {
+      return unstable_fallback;
+    }
     throw new Error('No such element: ' + id);
   }
-  return createElement(
-    ChildrenContextProvider,
-    { value: children },
-    elements[id],
-  );
+  return createElement(ChildrenContextProvider, { value: children }, element);
 };
+
+const ThrowError = ({ error }: { error: unknown }) => {
+  throw error;
+};
+
+class Fallback extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { error?: unknown }
+> {
+  constructor(props: { children: ReactNode; fallback: ReactNode }) {
+    super(props);
+    this.state = {};
+  }
+  static getDerivedStateFromError(error: unknown) {
+    return { error };
+  }
+  render() {
+    if ('error' in this.state) {
+      if (this.props.fallback) {
+        return createElement(
+          ChildrenContextProvider,
+          { value: createElement(ThrowError, { error: this.state.error }) },
+          this.props.fallback,
+        );
+      }
+      throw this.state.error;
+    }
+    return this.props.children;
+  }
+}
 
 /**
  * Slot component
@@ -277,15 +318,31 @@ const InnerSlot = ({
 export const Slot = ({
   id,
   children,
+  unstable_fallbackToPrev,
+  unstable_fallback,
 }: {
   id: string;
   children?: ReactNode;
+  unstable_fallbackToPrev?: boolean;
+  unstable_fallback?: ReactNode;
 }) => {
+  const [fallback, setFallback] = useState<ReactNode>();
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
     throw new Error('Missing Root component');
   }
-  return createElement(InnerSlot, { id, elementsPromise }, children);
+  if (unstable_fallbackToPrev) {
+    return createElement(
+      Fallback,
+      { fallback } as never,
+      createElement(InnerSlot, { id, elementsPromise, setFallback }, children),
+    );
+  }
+  return createElement(
+    InnerSlot,
+    { id, elementsPromise, unstable_fallback },
+    children,
+  );
 };
 
 export const Children = () => use(ChildrenContext);

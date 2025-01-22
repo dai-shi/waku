@@ -1,6 +1,6 @@
 {
   "name": "create-waku",
-  "version": "0.11.0-0.21.13-0",
+  "version": "0.11.0-0.21.16-0",
   "author": "Daishi Kato",
   "type": "module",
   "contributors": [
@@ -29,7 +29,7 @@
     "@types/fs-extra": "^11.0.4",
     "@types/prompts": "^2.4.9",
     "@types/tar": "^6.1.13",
-    "fs-extra": "^11.2.0",
+    "fs-extra": "^11.3.0",
     "kolorist": "^1.8.0",
     "prompts": "^2.4.2",
     "tar": "^7.4.3",

@@ -123,46 +123,31 @@ const pages = createPages(
 
     createApi({
       path: '/api/hi.txt',
-      mode: 'static',
+      render: 'static',
       method: 'GET',
       handler: async () => {
         const hiTxt = await readFile('./private/hi.txt');
-        return new Response(
-          new ReadableStream({
-            start(controller) {
-              controller.enqueue(hiTxt);
-              controller.close();
-            },
-          }),
-          {
-            status: 200,
-          },
-        );
+        return new Response(hiTxt);
       },
     }),
 
     createApi({
       path: '/api/hi',
-      mode: 'static',
-      method: 'GET',
-      handler: async () => {
-        return new Response(
-          new ReadableStream({
-            start(controller) {
-              controller.enqueue(new TextEncoder().encode('hello world!'));
-              controller.close();
-            },
-          }),
-          {
-            status: 200,
-          },
-        );
+      render: 'dynamic',
+      handlers: {
+        GET: async () => {
+          return new Response('hello world!');
+        },
+        POST: async (req) => {
+          const name = await req.text();
+          return new Response(`hello ${name}!`);
+        },
       },
     }),
 
     createApi({
       path: '/api/empty',
-      mode: 'static',
+      render: 'static',
       method: 'GET',
       handler: async () => {
         return new Response(null, {

@@ -82,6 +82,7 @@ export function rscAnalyzePlugin(
   const rscTransform = rscTransformPlugin({
     isClient: false,
     isBuild: false,
+    resolvedMap: new Map(),
   }).transform;
   return {
     name: 'rsc-analyze-plugin',

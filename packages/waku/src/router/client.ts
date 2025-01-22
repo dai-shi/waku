@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  Component,
   createContext,
   createElement,
   startTransition,
@@ -12,6 +11,7 @@ import {
   useState,
   useTransition,
   Fragment,
+  Component,
 } from 'react';
 import type {
   ComponentProps,
@@ -280,7 +280,7 @@ function renderError(message: string) {
   );
 }
 
-class ErrorBoundary extends Component<
+export class ErrorBoundary extends Component<
   { children: ReactNode },
   { error?: unknown }
 > {
@@ -412,14 +412,16 @@ const InnerRouter = ({
     };
   }, [changeRoute, locationListeners]);
 
-  const routeElement = createElement(Slot, {
-    id: getRouteSlotId(route.path),
-  });
-
+  const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
+  const rootElement = createElement(
+    Slot,
+    { id: 'root', unstable_fallbackToPrev: true },
+    routeElement,
+  );
   return createElement(
     RouterContext.Provider,
     { value: { route, changeRoute, prefetchRoute } },
-    routeElement,
+    rootElement,
   );
 };
 
@@ -504,21 +506,17 @@ export function Router({
     };
   const initialRscParams = createRscParams(initialRoute.query);
   return createElement(
-    ErrorBoundary,
-    null,
-    createElement(
-      Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
-      {
-        initialRscPath,
-        initialRscParams,
-        unstable_enhanceFetch,
-        unstable_enhanceCreateData,
-      },
-      createElement(InnerRouter, {
-        routerData: routerData as Required<RouterData>,
-        initialRoute,
-      }),
-    ),
+    Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
+    {
+      initialRscPath,
+      initialRscParams,
+      unstable_enhanceFetch,
+      unstable_enhanceCreateData,
+    },
+    createElement(InnerRouter, {
+      routerData: routerData as Required<RouterData>,
+      initialRoute,
+    }),
   );
 }
 
@@ -528,6 +526,11 @@ export function Router({
  */
 export function ServerRouter({ route }: { route: RouteProps }) {
   const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
+  const rootElement = createElement(
+    Slot,
+    { id: 'root', unstable_fallbackToPrev: true },
+    routeElement,
+  );
   return createElement(
     Fragment,
     null,
@@ -540,7 +543,7 @@ export function ServerRouter({ route }: { route: RouteProps }) {
           prefetchRoute: notAvailableInServer('prefetchRoute'),
         },
       },
-      routeElement,
+      rootElement,
     ),
   );
 }

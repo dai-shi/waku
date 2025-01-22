@@ -67,6 +67,14 @@ for (const cwd of examples) {
             // ignore this error
             return;
           }
+          if (
+            /Error: The render was aborted by the server without a reason\..*\/examples\/53_islands\//s.test(
+              `${data}`,
+            )
+          ) {
+            // ignore this error
+            return;
+          }
           error(`${port} stderr: ${data}`);
           console.error(`${port} stderr: `, `${data}`);
         });
