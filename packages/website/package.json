@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "waku dev",
-    "build": "VITE_EXPERIMENTAL_WAKU_ROUTER=true waku build",
+    "build": "waku build",
     "start": "waku start"
   },
   "dependencies": {

@@ -9,10 +9,10 @@
     "compile": "pnpm -r --filter='./packages/*' run compile",
     "csb-install-FIXME": "pnpm install --no-frozen-lockfile",
     "test": "prettier -c . && eslint . && tsc -b && tsc -b --noEmit `find examples -mindepth 1 -maxdepth 1 -type d ! -name '*_js'` && pnpm run --filter waku test",
-    "test-vite-ecosystem-ci": "pnpm run --filter waku test && playwright test --project=chromium",
+    "test-vite-ecosystem-ci": "VITE_EXPERIMENTAL_WAKU_ROUTER=true pnpm run --filter waku test && VITE_EXPERIMENTAL_WAKU_ROUTER=true playwright test --project=chromium",
     "e2e": "playwright test",
     "website:dev": "pnpm -F waku-website dev",
-    "website:build": "pnpm -F waku-website build",
+    "website:build": "VITE_EXPERIMENTAL_WAKU_ROUTER=true pnpm -F waku-website build",
     "website:vercel": "pnpm run compile && pnpm run website:build --with-vercel-static && mv packages/website/.vercel/output .vercel/",
     "website:prd": "pnpm run website:build && pnpm -F waku-website start"
   },
