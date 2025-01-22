@@ -7,7 +7,11 @@ import type { LoggingFunction, RollupLog } from 'rollup';
 import type { ReactNode } from 'react';
 
 import type { Config } from '../../config.js';
-import { setAllEnvInternal, unstable_getPlatformObject } from '../../server.js';
+import {
+  setAllEnvInternal,
+  iterateAllPlatformDataInternal,
+  unstable_getPlatformObject,
+} from '../../server.js';
 import type { EntriesPrd } from '../types.js';
 import type { ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
@@ -763,9 +767,36 @@ export async function build(options: {
   delete platformObject.buildOptions.unstable_phase;
 
   if (existsSync(distEntriesFile)) {
+    const DIST_PLATFORM_DATA = 'platform-data';
+    const keys = new Set<string>();
+    await mkdir(joinPath(rootDir, config.distDir, DIST_PLATFORM_DATA), {
+      recursive: true,
+    });
+    for (const [key, data] of iterateAllPlatformDataInternal()) {
+      keys.add(key);
+      const destFile = joinPath(
+        rootDir,
+        config.distDir,
+        DIST_PLATFORM_DATA,
+        key + '.js',
+      );
+      await writeFile(destFile, `export default ${JSON.stringify(data)};`);
+    }
     await appendFile(
       distEntriesFile,
-      `export const buildData = ${JSON.stringify(platformObject.buildData)};`,
+      `
+export function loadPlatformData(key) {
+  switch (key) {
+    ${Array.from(keys)
+      .map(
+        (k) =>
+          `case '${k}': return import('./${DIST_PLATFORM_DATA}/${k}.js').then((m) => m.default);`,
+      )
+      .join('\n')}
+    default: throw new Error('Cannot find platform data: ' + key);
+  }
+}
+`,
     );
   }
 }

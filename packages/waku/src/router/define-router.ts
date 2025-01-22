@@ -2,7 +2,8 @@ import { createElement } from 'react';
 import type { ReactNode } from 'react';
 
 import {
-  unstable_getPlatformObject,
+  unstable_getPlatformData,
+  unstable_setPlatformData,
   unstable_createAsyncIterable as createAsyncIterable,
 } from '../server.js';
 import { unstable_defineEntries as defineEntries } from '../minimal/server.js';
@@ -112,7 +113,6 @@ export function unstable_defineRouter(fns: {
     status?: number;
   }>;
 }) {
-  const platformObject = unstable_getPlatformObject();
   type MyPathConfig = {
     pathSpec: PathSpec;
     pathname: string | undefined;
@@ -127,7 +127,9 @@ export function unstable_defineRouter(fns: {
   }[];
   let cachedPathConfig: MyPathConfig | undefined;
   const getMyPathConfig = async (): Promise<MyPathConfig> => {
-    const pathConfig = platformObject.buildData?.defineRouterPathConfigs;
+    const pathConfig = await unstable_getPlatformData(
+      'defineRouterPathConfigs',
+    );
     if (pathConfig) {
       return pathConfig as MyPathConfig;
     }
@@ -432,8 +434,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         });
       }
 
-      platformObject.buildData ||= {};
-      platformObject.buildData.defineRouterPathConfigs = pathConfig;
+      await unstable_setPlatformData('defineRouterPathConfigs', pathConfig);
       return tasks;
     });
 
