@@ -215,7 +215,7 @@ async function init() {
   installProcess.on('close', (code) => {
     // process exit code
     if (code !== 0) {
-      console.error(`Could not execute ${commands.install}. Please run`);
+      console.log(`Could not execute ${commands.install}. Please run`);
       console.log(`${bold(green(`cd ${targetDir}`))}`);
       console.log(`${bold(green(commands.install))}`);
       console.log(`${bold(green(commands.dev))}`);
@@ -232,5 +232,5 @@ async function init() {
 init()
   .then(notifyUpdate)
   .catch((e) => {
-    console.error(e);
+    console.log(e);
   });
