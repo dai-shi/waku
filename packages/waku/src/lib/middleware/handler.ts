@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { resolveConfig, extractPureConfig } from '../config.js';
 import type { PureConfig } from '../config.js';
-import { setAllEnvInternal } from '../../server.js';
+import { setAllEnvInternal, unstable_getPlatformObject } from '../../server.js';
 import type { HandleRequest, HandlerRes } from '../types.js';
 import type { Middleware, HandlerContext } from './types.js';
 import { renderRsc, decodeBody, decodePostAction } from '../renderers/rsc.js';
@@ -75,9 +75,12 @@ export const handler: Middleware = (options) => {
       : ('Error: loadEntries are not available' as never);
   const configPromise =
     options.cmd === 'start'
-      ? entriesPromise.then((entries) =>
-          entries.loadConfig().then((config) => resolveConfig(config)),
-        )
+      ? entriesPromise.then(async (entries) => {
+          if (entries.buildData) {
+            unstable_getPlatformObject().buildData = entries.buildData;
+          }
+          return resolveConfig(await entries.loadConfig());
+        })
       : resolveConfig(options.config);
 
   return async (ctx, next) => {
