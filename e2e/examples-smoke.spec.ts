@@ -62,10 +62,15 @@ for (const cwd of examples) {
         cp.stderr?.on('data', (data) => {
           if (
             command === 'dev' &&
-            (/WebSocket server error: Port is already in use/.test(`${data}`) ||
-              /Error: The render was aborted by the server without a reason\..*\/examples\/53_islands\//s.test(
-                `${data}`,
-              ))
+            /WebSocket server error: Port is already in use/.test(`${data}`)
+          ) {
+            // ignore this error
+            return;
+          }
+          if (
+            /Error: The render was aborted by the server without a reason\..*\/examples\/53_islands\//s.test(
+              `${data}`,
+            )
           ) {
             // ignore this error
             return;
