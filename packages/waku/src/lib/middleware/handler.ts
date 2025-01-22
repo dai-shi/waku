@@ -75,19 +75,13 @@ export const handler: Middleware = (options) => {
       : ('Error: loadEntries are not available' as never);
   const configPromise =
     options.cmd === 'start'
-      ? entriesPromise.then((entries) =>
-          entries.loadConfig().then((config) => resolveConfig(config)),
-        )
+      ? entriesPromise.then(async (entries) => {
+          if (entries.buildData) {
+            unstable_getPlatformObject().buildData = entries.buildData;
+          }
+          return resolveConfig(await entries.loadConfig());
+        })
       : resolveConfig(options.config);
-  if (options.cmd === 'start') {
-    entriesPromise
-      .then((entries) => {
-        if (entries.buildData) {
-          unstable_getPlatformObject().buildData = entries.buildData;
-        }
-      })
-      .catch(() => {});
-  }
 
   return async (ctx, next) => {
     const { unstable_devServer: devServer } = ctx;
