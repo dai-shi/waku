@@ -392,6 +392,10 @@ export const devServer: Middleware = (options) => {
       const processedModules = new Set<string>();
 
       const processModule = async (modulePath: string) => {
+        if (modulePath.endsWith('.css')) {
+          // HACK not sure if this is correct
+          return;
+        }
         if (processedModules.has(modulePath)) {
           return;
         }
