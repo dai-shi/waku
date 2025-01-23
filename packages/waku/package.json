@@ -87,10 +87,10 @@
   },
   "dependencies": {
     "@hono/node-server": "1.13.7",
-    "@swc/core": "1.10.8",
+    "@swc/core": "1.10.9",
     "@vitejs/plugin-react": "4.3.4",
     "dotenv": "16.4.7",
-    "hono": "4.6.17",
+    "hono": "4.6.18",
     "rsc-html-stream": "0.0.4",
     "vite": "6.0.11"
   },
@@ -102,7 +102,7 @@
     "react-server-dom-webpack": "19.0.0",
     "rollup": "^4.31.0",
     "ts-expect": "^1.3.0",
-    "vitest": "3.0.2"
+    "vitest": "3.0.3"
   },
   "peerDependencies": {
     "react": "~19.0.0",
