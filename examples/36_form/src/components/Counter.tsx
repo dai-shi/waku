@@ -1,6 +1,3 @@
-/// <reference types="react/canary" />
-/// <reference types="react-dom/canary" />
-
 'use client';
 
 import { useActionState } from 'react';
