@@ -173,7 +173,6 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
 
         let result = `// deno-fmt-ignore-file
 // biome-ignore format: generated types do not need formatting
-/* eslint-disable */
 // prettier-ignore
 import type { PathsForPages, GetConfigResponse } from 'waku/router';\n\n`;
 
