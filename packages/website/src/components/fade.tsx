@@ -20,7 +20,7 @@ export const Fade = ({ always = true }: FadeProps) => {
       )}
     >
       <div className="absolute inset-0 backdrop-blur" />
-      <div className="bg-gray-900/75 absolute inset-0" />
+      <div className="absolute inset-0 bg-gray-900/75" />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
     </div>
   );
