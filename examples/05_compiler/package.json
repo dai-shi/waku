@@ -12,11 +12,11 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-server-dom-webpack": "19.0.0",
-    "waku": "0.21.16"
+    "waku": "0.21.17"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.0.0",
-    "@types/react": "19.0.7",
+    "@types/react": "19.0.8",
     "@types/react-dom": "19.0.3",
     "@vitejs/plugin-react": "4.3.4",
     "babel-plugin-react-compiler": "19.0.0-beta-decd7b8-20250118",
