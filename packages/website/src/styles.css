@@ -49,8 +49,6 @@ body {
 .code + .code {
   @apply !-mt-8;
 }
-@layer utilities {
-  .text-shadow {
-    text-shadow: 0.03125em 0.03125em 0px black;
-  }
+@utility text-shadow {
+  text-shadow: 0.03125em 0.03125em 0px black;
 }

@@ -16,7 +16,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.0.0",
-    "autoprefixer": "10.4.20",
     "tailwindcss": "4.0.0"
   }
 }
