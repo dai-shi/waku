@@ -11,7 +11,7 @@ export default async function HomePage() {
       </div>
       <div className="bg-slate-100 rounded-md p-4">
         <h2 className="text-2xl">Client Form</h2>
-        <Form message={getMessage()} greet={greet} />
+        <Form message={await getMessage()} greet={greet} />
       </div>
     </div>
   );

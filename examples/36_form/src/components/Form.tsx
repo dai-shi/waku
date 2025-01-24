@@ -18,7 +18,7 @@ export const Form = ({
   message,
   greet,
 }: {
-  message: Promise<string>;
+  message: string;
   greet: (formData: FormData) => Promise<void>;
 }) => (
   <div style={{ border: '3px blue dashed', margin: '1em', padding: '1em' }}>
