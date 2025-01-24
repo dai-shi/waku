@@ -12,6 +12,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
 
   return (
     <div className="font-nunito">
+      <title>Waku</title>
       <meta name="description" content={data.description} />
       <link rel="icon" type="image/png" href={data.icon} />
       <Header />
