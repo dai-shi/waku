@@ -21,21 +21,21 @@ const waku = fileURLToPath(
 
 const commands = [
   {
-    command: 'dev',
+    command: `node ${waku} dev`,
   },
   {
-    build: 'build',
-    command: 'start',
+    build: `build`,
+    command: `node ${waku} start`,
   },
 ];
 
 const commandsCloudflare = [
   {
-    command: 'dev',
+    command: `node ${waku} dev`,
   },
   {
-    build: 'build --with-cloudflare',
-    alt: 'npx wrangler dev',
+    build: `build --with-cloudflare`,
+    command: 'npx wrangler dev',
   },
 ];
 
@@ -51,7 +51,7 @@ for (const cwd of examples) {
   const exampleCommands = cwd.includes('cloudflare')
     ? commandsCloudflare
     : commands;
-  for (const { build, command, alt } of exampleCommands) {
+  for (const { build, command } of exampleCommands) {
     test.describe(`smoke test on ${basename(cwd)}: ${command}`, () => {
       let cp: ChildProcess;
       let port: number;
@@ -67,8 +67,7 @@ for (const cwd of examples) {
           execSync(`node ${waku} ${build}`, { cwd });
         }
         port = await getFreePort();
-        const cmd = alt ? `${alt}` : `node ${waku} ${command}`;
-        cp = exec(`${cmd} --port ${port}`, { cwd });
+        cp = exec(`${command} --port ${port}`, { cwd });
         cp.stdout?.on('data', (data) => {
           info(`${port} stdout: ${data}`);
           console.log(`${port} stdout: `, `${data}`);
