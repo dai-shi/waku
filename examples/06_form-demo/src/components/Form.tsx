@@ -25,7 +25,7 @@ export const Form = ({
   greet: (formData: FormData) => Promise<void>;
 }) => (
   <div style={{ border: '3px blue dashed', margin: '1em', padding: '1em' }}>
-    <p>{message ?? ' '}</p>
+    <p>{message}</p>
     <form action={greet}>
       <div className="flex flex-col gap-1 text-left">
         <div>

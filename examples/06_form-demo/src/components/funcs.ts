@@ -1,16 +1,21 @@
 'use server';
 
+import { readFile, writeFile } from 'node:fs/promises';
 import { unstable_rerenderRoute } from 'waku/router/server';
 
-// module state on server
-let message = '';
-
-export const getMessage = async () => message;
+export const getMessage = async () => {
+  const data = await readFile('./private/message.txt', 'utf8');
+  return data;
+};
 
 export const greet = async (formData: FormData) => {
   // simulate a slow server response
   await new Promise((resolve) => setTimeout(resolve, 1000));
-  message = `Hello ${formData.get('name') || 'Anonymous'} from server!`;
+  const currentData = await getMessage();
+  await writeFile(
+    './private/message.txt',
+    currentData + '\n' + formData.get('name') + ' from server!',
+  );
   unstable_rerenderRoute('/');
 };
 
