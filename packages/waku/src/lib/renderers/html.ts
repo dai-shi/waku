@@ -158,6 +158,9 @@ const rectifyHtml = () => {
   });
 };
 
+// FIXME Why does it error on the rist time?
+let hackToIgnoreTheVeryFirstError = true;
+
 export async function renderHtml(
   config: PureConfig,
   ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
@@ -220,34 +223,53 @@ export async function renderHtml(
   const htmlNode: Promise<ReactNode> = createFromReadableStream(htmlStream, {
     serverConsumerManifest: { moduleMap, moduleLoading: null },
   });
-  const readable = await renderToReadableStream(
-    createElement(
-      ServerRoot as FunctionComponent<
-        Omit<ComponentProps<typeof ServerRoot>, 'children'>
-      >,
-      { elements: elementsPromise },
-      htmlNode as any,
-    ),
-    {
-      formState:
-        actionResult === undefined
-          ? null
-          : await getExtractFormState(ctx)(actionResult),
-      onError(err: unknown) {
-        console.error(err);
-      },
-    },
-  );
-  const injected: ReadableStream & { allReady?: Promise<void> } = readable
-    .pipeThrough(rectifyHtml())
-    .pipeThrough(
-      injectHtmlHead(
-        config.basePath + config.rscBase + '/' + encodeRscPath(rscPath),
-        htmlHead,
-        isDev ? `${config.basePath}${config.srcDir}/${SRC_MAIN}` : '',
+  try {
+    const readable = await renderToReadableStream(
+      createElement(
+        ServerRoot as FunctionComponent<
+          Omit<ComponentProps<typeof ServerRoot>, 'children'>
+        >,
+        { elements: elementsPromise },
+        htmlNode as any,
       ),
-    )
-    .pipeThrough(injectRSCPayload(stream2));
-  injected.allReady = readable.allReady;
-  return injected as never;
+      {
+        formState:
+          actionResult === undefined
+            ? null
+            : await getExtractFormState(ctx)(actionResult),
+        onError(err: unknown) {
+          if (hackToIgnoreTheVeryFirstError) {
+            return;
+          }
+          console.error(err);
+        },
+      },
+    );
+    const injected: ReadableStream & { allReady?: Promise<void> } = readable
+      .pipeThrough(rectifyHtml())
+      .pipeThrough(
+        injectHtmlHead(
+          config.basePath + config.rscBase + '/' + encodeRscPath(rscPath),
+          htmlHead,
+          isDev ? `${config.basePath}${config.srcDir}/${SRC_MAIN}` : '',
+        ),
+      )
+      .pipeThrough(injectRSCPayload(stream2));
+    injected.allReady = readable.allReady;
+    return injected as never;
+  } catch (e) {
+    if (hackToIgnoreTheVeryFirstError) {
+      hackToIgnoreTheVeryFirstError = false;
+      return renderHtml(
+        config,
+        ctx,
+        htmlHead,
+        elements,
+        html,
+        rscPath,
+        actionResult,
+      );
+    }
+    throw e;
+  }
 }
