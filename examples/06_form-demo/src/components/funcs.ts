@@ -1,5 +1,3 @@
-'use server';
-
 import { readFile, writeFile } from 'node:fs/promises';
 import { unstable_rerenderRoute } from 'waku/router/server';
 
@@ -9,6 +7,7 @@ export const getMessage = async () => {
 };
 
 export const greet = async (formData: FormData) => {
+  'use server';
   // simulate a slow server response
   await new Promise((resolve) => setTimeout(resolve, 1000));
   const currentData = await getMessage();
@@ -19,4 +18,7 @@ export const greet = async (formData: FormData) => {
   unstable_rerenderRoute('/');
 };
 
-export const increment = async (count: number) => count + 1;
+export const increment = async (count: number) => {
+  'use server';
+  return count + 1;
+};
