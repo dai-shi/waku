@@ -3,7 +3,7 @@ import { Form } from './Form';
 import { ServerForm } from './ServerForm';
 import { getMessage, greet, increment } from './funcs';
 
-const App = async ({ name }: { name: string }) => {
+const App = ({ name }: { name: string }) => {
   return (
     <html>
       <head>
@@ -16,7 +16,7 @@ const App = async ({ name }: { name: string }) => {
           <h1>Hello {name}!!</h1>
           <h3>This is a server component.</h3>
           <Counter increment={increment} />
-          <Form message={await getMessage()} greet={greet} />
+          <Form message={getMessage()} greet={greet} />
           <ServerForm />
         </div>
       </body>
