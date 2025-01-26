@@ -14,13 +14,20 @@ export default async function HomePage() {
   return (
     <div>
       <title>{data.title}</title>
-      <h1 className="text-4xl font-bold tracking-tight" data-testid="header">
+      <h1 style={{ fontSize: 32, fontWeight: 'bold' }} data-testid="header">
         {data.headline}
       </h1>
       <Hello />
       <p>{data.body}</p>
       <Counter />
-      <Link to="/about" className="mt-4 inline-block underline">
+      <Link
+        to="/about"
+        style={{
+          marginTop: 16,
+          display: 'inline-block',
+          textDecoration: 'underline',
+        }}
+      >
         About page
       </Link>
       <ContextProvider>
