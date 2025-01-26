@@ -11,11 +11,11 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   const data = await getData();
 
   return (
-    <div className="font-['Nunito']">
+    <div style={{ fontFamily: 'Nunito' }}>
       <meta name="description" content={data.description} />
       <link rel="icon" type="image/png" href={data.icon} />
       <Header />
-      <main className="m-6 flex items-center *:min-h-64 *:min-w-64 lg:m-0 lg:min-h-svh lg:justify-center">
+      <main style={{ margin: 40, display: 'flex', justifyContent: 'center' }}>
         {children}
       </main>
       <Footer />
