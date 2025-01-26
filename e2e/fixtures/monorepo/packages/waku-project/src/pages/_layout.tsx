@@ -1,5 +1,3 @@
-import '../styles.css';
-
 import type { ReactNode } from 'react';
 
 import { Header } from '../components/header';
@@ -11,7 +9,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   const data = await getData();
 
   return (
-    <div style={{ fontFamily: 'Nunito' }}>
+    <div style={{ fontFamily: 'sans-serif' }}>
       <meta name="description" content={data.description} />
       <link rel="icon" type="image/png" href={data.icon} />
       <Header />
