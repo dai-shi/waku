@@ -48,7 +48,7 @@ export default async function PokemonPage({ slug }: PageProps<'/[slug]'>) {
               {stats.map(([stat, value]: any) => (
                 <li
                   key={stat}
-                  className="inline-block rounded-xs bg-black px-1.5 py-1 text-[0.5rem] font-bold uppercase tracking-wider text-white"
+                  className="rounded-xs inline-block bg-black px-1.5 py-1 text-[0.5rem] font-bold uppercase tracking-wider text-white"
                 >
                   {stat}: {value}
                 </li>

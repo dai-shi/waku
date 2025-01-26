@@ -1,5 +1,5 @@
-import tailwindcss from "@tailwindcss/vite";
+import tailwindcss from '@tailwindcss/vite';
 
 export default {
- plugins: [tailwindcss()],
+  plugins: [tailwindcss()],
 };
