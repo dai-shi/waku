@@ -15,8 +15,8 @@ const App = ({ name }: { name: string }) => {
         >
           <h1>Hello {name}!!</h1>
           <h3>This is a server component.</h3>
-          <Counter increment={increment} />
           <Form message={getMessage()} greet={greet} />
+          <Counter increment={increment} />
           <ServerForm />
         </div>
       </body>
