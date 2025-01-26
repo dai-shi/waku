@@ -18,7 +18,7 @@ export default async function BlogIndexPage() {
           {articles.map((article) => (
             <li
               key={article.slug}
-              className="-mx-px first:-mt-4 first:sm:-mt-6 first:lg:-mt-12"
+              className="-mx-px first:-mt-4 sm:first:-mt-6 lg:first:-mt-12"
             >
               <Link
                 to={`/blog/${article.slug}`}

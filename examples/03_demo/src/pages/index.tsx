@@ -18,12 +18,12 @@ export default async function HomePage() {
             className="whitespace-nowrap text-xs font-bold hover:underline sm:text-base"
           >{`SELECT * FROM pokemon ORDER BY RANDOM() LIMIT 9`}</a>
         </div>
-        <ul className="relative mt-6 grid h-full w-full max-w-xl flex-shrink-0 grid-cols-2 gap-6 leading-none md:grid-cols-3 md:px-0">
+        <ul className="relative mt-6 grid h-full w-full max-w-xl shrink-0 grid-cols-2 gap-6 leading-none md:grid-cols-3 md:px-0">
           {rows.map((row) => (
             <li key={row.id}>
               <Link
                 to={`/${row.slug}`}
-                className="flex aspect-square w-full flex-shrink-0 flex-col items-center justify-center rounded-xl bg-gray-50 p-3 text-gray-950 transition-colors duration-500 ease-in-out hover:bg-gray-200"
+                className="flex aspect-square w-full shrink-0 flex-col items-center justify-center rounded-xl bg-gray-50 p-3 text-gray-950 transition-colors duration-500 ease-in-out hover:bg-gray-200"
               >
                 <img
                   src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${row.id}.png`}

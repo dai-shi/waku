@@ -33,7 +33,7 @@ export const Form = ({
           <input
             name="name"
             required
-            className="invalid:border-red-500 rounded border px-2 py-1"
+            className="invalid:border-red-500 rounded-sm border px-2 py-1"
           />
         </div>
         <div>
@@ -42,7 +42,7 @@ export const Form = ({
             type="email"
             name="email"
             required
-            className="invalid:border-red-500 rounded border px-2 py-1"
+            className="invalid:border-red-500 rounded-sm border px-2 py-1"
           />
         </div>
         <SubmitButton />

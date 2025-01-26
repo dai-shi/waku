@@ -36,7 +36,7 @@ export const Logo = ({ className = '' }: LogoProps) => {
       {isMenuOpen && (
         <div
           onContextMenu={handleContextMenu}
-          className="absolute -inset-8 flex items-center justify-center overflow-clip rounded-xl backdrop-blur-sm"
+          className="absolute -inset-8 flex items-center justify-center overflow-clip rounded-xl backdrop-blur-xs"
         >
           <a
             href="https://cdn.candycode.com/waku/waku-logo.zip"
