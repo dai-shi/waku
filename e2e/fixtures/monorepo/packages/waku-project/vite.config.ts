@@ -1,5 +1,10 @@
 import tailwindcss from '@tailwindcss/vite';
+import { defineConfig } from 'waku/config';
 
-export default {
-  plugins: [tailwindcss()],
-};
+export default defineConfig({
+  unstable_viteConfigs: {
+    common: () => ({
+      plugins: [tailwindcss()],
+    }),
+  },
+});
