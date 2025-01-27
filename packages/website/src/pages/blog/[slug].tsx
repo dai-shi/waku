@@ -58,7 +58,7 @@ export default async function BlogArticlePage({ slug }: BlogArticlePageProps) {
         <h1 className="font-serif text-3xl font-extrabold leading-none sm:text-6xl">
           {frontmatter.title}
         </h1>
-        <h3 className="mt-2 text-lg font-normal leading-snug text-white/60 sm:mt-0 sm:text-xl sm:font-bold">
+        <h3 className="mt-2 text-lg font-normal leading-snug text-white/60 sm:mt-1 sm:text-xl sm:font-bold">
           {frontmatter.description}
         </h3>
         <a
