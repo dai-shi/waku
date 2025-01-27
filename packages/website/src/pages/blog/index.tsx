@@ -18,11 +18,11 @@ export default async function BlogIndexPage() {
           {articles.map((article) => (
             <li
               key={article.slug}
-              className="-mx-px first:-mt-4 first:sm:-mt-6 first:lg:-mt-12"
+              className="-mx-px first:-mt-4 sm:first:-mt-6 lg:first:-mt-12"
             >
               <Link
                 to={`/blog/${article.slug}`}
-                className="group block rounded-xl border border-gray-800 bg-gray-950/90 p-4 transition-colors duration-300 ease-in-out hover:border-secondary sm:p-6 lg:p-12"
+                className="bg-gray-950/90 group block rounded-xl border border-gray-800 p-4 transition-colors duration-300 ease-in-out hover:border-secondary sm:p-6 lg:p-12"
               >
                 <div className="flex items-center gap-2 whitespace-nowrap sm:gap-4">
                   {article.release && (
