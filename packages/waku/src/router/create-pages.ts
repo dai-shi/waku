@@ -567,7 +567,7 @@ export const createPages = <
       }
       return paths;
     },
-    handleRoute: async (path, { skip, query }) => {
+    handleRoute: async (path, { query }) => {
       await configure();
 
       // path without slugs
@@ -587,15 +587,13 @@ export const createPages = <
 
       const pathSpec = parsePathWithSlug(routePath);
       const mapping = getPathMapping(pathSpec, path);
-      const elements: Record<string, ReactNode> = {};
-      const pageId = `page:${routePath}`;
-      if (!skip?.elements[pageId]) {
-        elements[pageId] = createElement(
+      const result: Record<string, ReactNode> = {
+        [`page:${routePath}`]: createElement(
           pageComponent,
           { ...mapping, ...(query ? { query } : {}), path },
           createElement(Children),
-        );
-      }
+        ),
+      };
 
       const layoutPaths = getLayouts(
         getOriginalStaticPathSpec(path) ?? pathSpec,
@@ -611,43 +609,32 @@ export const createPages = <
         // always true
         if (layout) {
           const id = 'layout:' + segment;
-          if (!skip?.elements[id]) {
-            elements[id] = createElement(
-              layout,
-              isDynamic ? { path } : null,
-              createElement(Children),
-            );
-          }
+          result[id] = createElement(
+            layout,
+            isDynamic ? { path } : null,
+            createElement(Children),
+          );
         }
       }
 
-      const result: {
-        rootElement?: ReactNode;
-        routeElement?: ReactNode;
-        elements: Record<string, ReactNode>;
-      } = { elements };
+      // loop over all layouts for path
+      const routeChildren = [
+        ...layoutPaths.map((lPath) => ({
+          component: Slot,
+          props: { id: `layout:${lPath}` },
+        })),
+        { component: Slot, props: { id: `page:${routePath}` } },
+      ];
 
-      if (!skip?.rootElement) {
-        result.rootElement = createElement(
+      return {
+        elements: result,
+        rootElement: createElement(
           rootItem ? rootItem.component : DefaultRoot,
           null,
           createElement(Children),
-        );
-      }
-
-      if (!skip?.routeElement) {
-        // loop over all layouts for path
-        const routeChildren = [
-          ...layoutPaths.map((lPath) => ({
-            component: Slot,
-            props: { id: `layout:${lPath}` },
-          })),
-          { component: Slot, props: { id: `page:${routePath}` } },
-        ];
-        result.routeElement = createNestedElements(routeChildren);
-      }
-
-      return result;
+        ),
+        routeElement: createNestedElements(routeChildren),
+      };
     },
     getApiConfig: async () => {
       await configure();
