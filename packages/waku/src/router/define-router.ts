@@ -87,16 +87,11 @@ export function unstable_defineRouter(fns: {
   handleRoute: (
     path: string,
     options: {
-      skip?: {
-        rootElement: boolean;
-        routeElement: boolean;
-        elements: Record<SlotId, boolean>;
-      };
       query?: string;
     },
   ) => Promise<{
-    rootElement?: ReactNode;
-    routeElement?: ReactNode;
+    rootElement: ReactNode;
+    routeElement: ReactNode;
     elements: Record<SlotId, ReactNode>;
   }>;
   getApiConfig?: () => Promise<
@@ -123,10 +118,8 @@ export function unstable_defineRouter(fns: {
     pathname: string | undefined;
     pattern: string;
     specs: {
-      rootElementIsStatic?: true;
-      routeElementIsStatic?: true;
-      staticElementIds?: SlotId[];
       isStatic?: true;
+      staticElementIds?: SlotId[];
       noSsr?: true;
       is404?: true;
       isApi?: true;
@@ -156,12 +149,6 @@ export function unstable_defineRouter(fns: {
             pathname: pathSpec2pathname(item.path),
             pattern: path2regexp(item.pathPattern || item.path),
             specs: {
-              ...(item.rootElement.isStatic
-                ? { rootElementIsStatic: true as const }
-                : {}),
-              ...(item.routeElement.isStatic
-                ? { routeElementIsStatic: true as const }
-                : {}),
               staticElementIds: Object.entries(item.elements).flatMap(
                 ([id, { isStatic }]) => (isStatic ? [id] : []),
               ),
@@ -202,16 +189,11 @@ export function unstable_defineRouter(fns: {
     skip: string[],
   ): Promise<string[]> => {
     const pathConfig = await getMyPathConfig();
-    const routeId = ROUTE_SLOT_ID_PREFIX + pathname;
     return skip.filter((slotId) => {
       const found = pathConfig.find(({ pathSpec }) =>
         getPathMapping(pathSpec, pathname),
       );
-      return (
-        (found?.specs.rootElementIsStatic && slotId === 'root') ||
-        (found?.specs.routeElementIsStatic && slotId === routeId) ||
-        found?.specs.staticElementIds?.includes(slotId)
-      );
+      return found?.specs.staticElementIds?.includes(slotId);
     });
   };
   const getEntries = async (
@@ -230,41 +212,24 @@ export function unstable_defineRouter(fns: {
     } catch {
       // ignore
     }
-    const skipIds = isStringArray(skipParam) ? skipParam : [];
-    const effectiveSkipIds = await filterEffectiveSkip(pathname, skipIds);
-    const routeId = ROUTE_SLOT_ID_PREFIX + pathname;
-    const skip = {
-      rootElement: effectiveSkipIds.includes('root'),
-      routeElement: effectiveSkipIds.includes(routeId),
-      elements: Object.fromEntries(
-        effectiveSkipIds.flatMap((id) => {
-          if (['root', routeId].includes(id)) {
-            return [];
-          }
-          return [[id, true]];
-        }),
-      ),
-    };
+    const skip = isStringArray(skipParam) ? skipParam : [];
     const { query } = parseRscParams(rscParams);
-    const result = await fns.handleRoute(
+    const { rootElement, routeElement, elements } = await fns.handleRoute(
       pathname,
-      pathConfigItem.specs.isStatic ? { skip } : { skip, query },
+      pathConfigItem.specs.isStatic ? {} : { query },
     );
     if (
-      Object.keys(result.elements).some((id) =>
-        id.startsWith(ROUTE_SLOT_ID_PREFIX),
-      )
+      Object.keys(elements).some((id) => id.startsWith(ROUTE_SLOT_ID_PREFIX))
     ) {
       throw new Error('Element ID cannot start with "route:"');
     }
-    const entries: Record<SlotId, ReactNode> = {
-      ...result.elements,
+    const entries = {
+      ...elements,
+      root: rootElement,
+      [ROUTE_SLOT_ID_PREFIX + pathname]: routeElement,
     };
-    if ('rootElement' in result) {
-      entries.root = result.rootElement;
-    }
-    if ('routeElement' in result) {
-      entries[routeId] = result.routeElement;
+    for (const skipId of await filterEffectiveSkip(pathname, skip)) {
+      delete entries[skipId];
     }
     entries[ROUTE_ID] = [pathname, query];
     entries[IS_STATIC_ID] = !!pathConfigItem.specs.isStatic;
