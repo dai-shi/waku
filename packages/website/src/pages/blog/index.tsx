@@ -42,7 +42,7 @@ export default async function BlogIndexPage() {
                 <h3 className="mt-6 font-serif text-2xl font-extrabold leading-none sm:text-4xl">
                   {article.title}
                 </h3>
-                <div className="mt-2 text-sm font-normal leading-snug text-white/60 sm:mt-0 sm:text-base">
+                <div className="mt-2 text-sm font-normal leading-snug text-white/60 sm:mt-1 sm:text-base">
                   {article.description}
                 </div>
               </Link>
