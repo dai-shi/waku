@@ -102,7 +102,7 @@ export const components = {
   code: ({ children, ...rest }: any) => {
     return (
       <span
-        className="-my-0.5 inline-block rounded bg-gray-900 px-1.5 py-px font-mono text-[13px] text-white/80 sm:text-base group-[.blockquote]:sm:text-sm"
+        className="-my-0.5 inline-block rounded-sm bg-gray-900 px-1.5 py-px font-mono text-[13px] text-white/80 sm:text-base sm:group-[.blockquote]:text-sm"
         {...rest}
       >
         {children}
@@ -113,14 +113,14 @@ export const components = {
     return (
       <Code
         code={children.props.children}
-        className="code !mb-16 max-w-full overflow-clip overflow-x-scroll rounded-xl bg-gray-900 p-4 font-mono text-sm sm:-mx-3 sm:max-w-[calc(100%+1rem)] sm:p-6 sm:text-base [&>*]:!bg-gray-900"
+        className="code mb-16! *:bg-gray-900! max-w-full overflow-clip overflow-x-scroll rounded-xl bg-gray-900 p-4 font-mono text-sm sm:-mx-3 sm:max-w-[calc(100%+1rem)] sm:p-6 sm:text-base"
         {...rest}
       />
     );
   },
   blockquote: ({ children, ...rest }: any) => {
     return (
-      <div className="mb-6 overflow-clip rounded-xl bg-gray-950 sm:!-mx-3">
+      <div className="sm:-mx-3! mb-6 overflow-clip rounded-xl bg-gray-950">
         <blockquote className="blockquote group p-4 sm:p-6" {...rest}>
           <div className="mb-1 flex items-center gap-2">
             <svg
@@ -136,7 +136,7 @@ export const components = {
               Note
             </div>
           </div>
-          <div className="[&>*]:!text-sm [&>*]:!text-white/60 [&>*]:last:!mb-0 [&>*]:sm:!text-base">
+          <div className="*:text-sm! *:text-white/60! last:*:mb-0! sm:*:text-base!">
             {children}
           </div>
         </blockquote>

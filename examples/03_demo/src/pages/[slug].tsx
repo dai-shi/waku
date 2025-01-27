@@ -17,7 +17,7 @@ export default async function PokemonPage({ slug }: PageProps<'/[slug]'>) {
     <>
       <title>{`Waku ${pokemon.name.english}`}</title>
       <div className="w-full p-6">
-        <div className="mx-auto flex w-full flex-shrink-0 flex-col items-center justify-center gap-6 rounded-xl bg-gray-50 p-12 leading-none md:w-full md:max-w-xl">
+        <div className="mx-auto flex w-full shrink-0 flex-col items-center justify-center gap-6 rounded-xl bg-gray-50 p-12 leading-none md:w-full md:max-w-xl">
           <div>
             <ul className="flex items-center justify-center gap-1.5">
               {pokemon.type.map((type: string) => (
@@ -34,7 +34,7 @@ export default async function PokemonPage({ slug }: PageProps<'/[slug]'>) {
             <img
               src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`}
               alt={pokemon.slug}
-              className="block size-[144px] flex-shrink-0"
+              className="block size-[144px] shrink-0"
             />
             <div className="flex flex-col items-center justify-center gap-1 text-2xl leading-none">
               <span className="font-bold">{pokemon.name.english}</span>
@@ -48,7 +48,7 @@ export default async function PokemonPage({ slug }: PageProps<'/[slug]'>) {
               {stats.map(([stat, value]: any) => (
                 <li
                   key={stat}
-                  className="inline-block rounded-sm bg-black px-1.5 py-1 text-[0.5rem] font-bold uppercase tracking-wider text-white"
+                  className="rounded-xs inline-block bg-black px-1.5 py-1 text-[0.5rem] font-bold uppercase tracking-wider text-white"
                 >
                   {stat}: {value}
                 </li>
