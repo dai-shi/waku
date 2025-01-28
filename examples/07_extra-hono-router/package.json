@@ -1,0 +1,26 @@
+{
+  "name": "06_form-demo",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "VITE_EXPERIMENTAL_WAKU_ROUTER=true waku dev",
+    "build": "VITE_EXPERIMENTAL_WAKU_ROUTER=true waku build",
+    "start": "VITE_EXPERIMENTAL_WAKU_ROUTER=true waku start"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "4.0.0",
+    "arktype": "^2.0.3",
+    "hono": "4.6.18",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-server-dom-webpack": "19.0.0",
+    "waku": "0.21.17"
+  },
+  "devDependencies": {
+    "@types/react": "19.0.8",
+    "@types/react-dom": "19.0.3",
+    "tailwindcss": "4.0.0",
+    "typescript": "5.7.3"
+  }
+}

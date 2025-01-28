@@ -703,6 +703,43 @@ importers:
         specifier: 5.7.3
         version: 5.7.3
 
+  examples/07_extra-hono-router:
+    dependencies:
+      '@tailwindcss/vite':
+        specifier: 4.0.0
+        version: 4.0.0(vite@6.0.11(@types/node@22.10.9)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.37.0)(tsx@4.19.2)(yaml@2.7.0))
+      arktype:
+        specifier: ^2.0.3
+        version: 2.0.3
+      hono:
+        specifier: 4.6.18
+        version: 4.6.18
+      react:
+        specifier: 19.0.0
+        version: 19.0.0
+      react-dom:
+        specifier: 19.0.0
+        version: 19.0.0(react@19.0.0)
+      react-server-dom-webpack:
+        specifier: 19.0.0
+        version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.97.1)
+      waku:
+        specifier: 0.21.17
+        version: link:../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 19.0.8
+        version: 19.0.8
+      '@types/react-dom':
+        specifier: 19.0.3
+        version: 19.0.3(@types/react@19.0.8)
+      tailwindcss:
+        specifier: 4.0.0
+        version: 4.0.0
+      typescript:
+        specifier: 5.7.3
+        version: 5.7.3
+
   examples/11_fs-router:
     dependencies:
       react:
@@ -1465,6 +1502,12 @@ packages:
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
     engines: {node: '>=6.0.0'}
+
+  '@ark/schema@0.38.0':
+    resolution: {integrity: sha512-ATH7tNpJvNmipTSRZD1Klfg00PBCQf+73grcrzIv6cbDanW7HJKYeNLeV1K3h0vXRthSD8OxQ3y0PI3dGcV/Cw==}
+
+  '@ark/util@0.38.0':
+    resolution: {integrity: sha512-0Vo0gCbaOsv/Z9TYsmk+qKZGn/FZyWlVsx2hcrHIP12S8Vcz9/EichNS/gb58K1q7jMlgXoPg2wS7OvuyfKILQ==}
 
   '@babel/code-frame@7.26.2':
     resolution: {integrity: sha512-RJlIHRueQgwWitWgF8OdFYGZX328Ax5BCemNGlqHfplnRT9ESi8JkFlvaVYbS+UubVY6dpv87Fs2u5M29iNFVQ==}
@@ -3169,6 +3212,9 @@ packages:
 
   argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
+
+  arktype@2.0.3:
+    resolution: {integrity: sha512-s+cLyFKHrSs59nyZ9zdNT79/ydpO/+tuNbcNxii82ux58PI1rUHQD4UXfUH7kgj8tgqXDsY8ipmrdOL7EG1WrQ==}
 
   array-buffer-byte-length@1.0.2:
     resolution: {integrity: sha512-LHE+8BuR7RYGDKvnrmcuSq3tDcKv9OFEXQt/HpbZhY7V6h0zlUXutnAD82GiFx9rdieCMjkvtcsPqBwgUl1Iiw==}
@@ -6153,6 +6199,12 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.8
       '@jridgewell/trace-mapping': 0.3.25
 
+  '@ark/schema@0.38.0':
+    dependencies:
+      '@ark/util': 0.38.0
+
+  '@ark/util@0.38.0': {}
+
   '@babel/code-frame@7.26.2':
     dependencies:
       '@babel/helper-validator-identifier': 7.25.9
@@ -7702,6 +7754,11 @@ snapshots:
   arg@5.0.2: {}
 
   argparse@2.0.1: {}
+
+  arktype@2.0.3:
+    dependencies:
+      '@ark/schema': 0.38.0
+      '@ark/util': 0.38.0
 
   array-buffer-byte-length@1.0.2:
     dependencies:
