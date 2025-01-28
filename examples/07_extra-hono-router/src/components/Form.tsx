@@ -44,12 +44,12 @@ export const NameForm = () => {
   useEffect(() => {
     setTimeout(() => {
       setName(undefined);
-    }, 1500);
+    }, 2000);
   }, [name]);
 
-  const formAction = async (prevState: any, formData: FormData) => {
+  const formAction = async (_prevState: any, formData: FormData) => {
     try {
-      const name = formData.get('name');
+      const name = formData.get('name') as string;
       const response = await client.api.hono.hello.$post({
         json: { name },
       });

@@ -9,6 +9,7 @@
     "start": "VITE_EXPERIMENTAL_WAKU_ROUTER=true waku start"
   },
   "dependencies": {
+    "@hono/arktype-validator": "^2.0.0",
     "@tailwindcss/vite": "4.0.0",
     "arktype": "^2.0.3",
     "hono": "4.6.18",

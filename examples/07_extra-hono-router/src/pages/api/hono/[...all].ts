@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { handle } from 'hono/vercel';
 import { type } from 'arktype';
+import { arktypeValidator } from '@hono/arktype-validator';
 
 let serverName: string | undefined;
 
@@ -12,23 +13,11 @@ const app = new Hono()
   .basePath('/api/hono')
   .post(
     '/hello',
-    async (c) => {
-      const body = await c.req.json();
-      const result = nameSchema(body);
-
-      if (result instanceof type.errors) {
-        return c.json(
-          {
-            error: 'Validation Error',
-            details: result.join(', '),
-          },
-          400,
-        );
+    arktypeValidator('json', nameSchema, (result, c) => {
+      if (!result.success) {
+        return c.text('Invalid!', 400);
       }
-
-      serverName = result.name;
-      return c.json({ message: `Hello ${serverName}!` });
-    },
+    }),
     async (c) => {
       const { name } = await c.req.json();
       serverName = name;
