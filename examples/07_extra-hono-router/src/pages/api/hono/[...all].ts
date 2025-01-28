@@ -16,10 +16,7 @@ const app = new Hono()
       const body = await c.req.json();
       const result = nameSchema(body);
 
-      if ('name' in result) {
-        serverName = result.name;
-        return c.json({ message: `Hello ${serverName}!` });
-      } else {
+      if (result instanceof type.errors) {
         return c.json(
           {
             error: 'Validation Error',
@@ -28,6 +25,9 @@ const app = new Hono()
           400,
         );
       }
+
+      serverName = result.name;
+      return c.json({ message: `Hello ${serverName}!` });
     },
     async (c) => {
       const { name } = await c.req.json();
