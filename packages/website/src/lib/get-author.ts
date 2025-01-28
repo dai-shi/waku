@@ -1,4 +1,11 @@
-export const getAuthor = (author: string) => {
+type Author = {
+  name: string;
+  biography: string;
+  avatar: string;
+  url: string;
+};
+
+export const getAuthor = (author: string): Author => {
   switch (author) {
     case 'daishi':
       return {
@@ -14,11 +21,19 @@ export const getAuthor = (author: string) => {
         avatar: `https://cdn.candycode.com/waku/sophia.png`,
         url: `https://x.com/razorbelle`,
       };
+    case 'tyler':
+      return {
+        name: 'Tyler Lawson',
+        biography: 'senior engineer at second spectrum',
+        avatar: 'https://avatars.githubusercontent.com/u/26290074',
+        url: 'https://tylur.dev',
+      };
     default:
       return {
         name: ``,
         biography: ``,
         avatar: ``,
+        url: '',
       };
   }
 };
