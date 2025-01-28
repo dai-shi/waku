@@ -118,8 +118,10 @@ export function unstable_defineRouter(fns: {
     pathname: string | undefined;
     pattern: string;
     specs: {
-      isStatic?: true;
+      rootElementIsStatic?: true;
+      routeElementIsStatic?: true;
       staticElementIds?: SlotId[];
+      isStatic?: true;
       noSsr?: true;
       is404?: true;
       isApi?: true;
@@ -149,6 +151,12 @@ export function unstable_defineRouter(fns: {
             pathname: pathSpec2pathname(item.path),
             pattern: path2regexp(item.pathPattern || item.path),
             specs: {
+              ...(item.rootElement.isStatic
+                ? { rootElementIsStatic: true as const }
+                : {}),
+              ...(item.routeElement.isStatic
+                ? { routeElementIsStatic: true as const }
+                : {}),
               staticElementIds: Object.entries(item.elements).flatMap(
                 ([id, { isStatic }]) => (isStatic ? [id] : []),
               ),
@@ -184,18 +192,6 @@ export function unstable_defineRouter(fns: {
     const pathConfig = await getMyPathConfig();
     return pathConfig.some(({ specs: { is404 } }) => is404);
   };
-  const filterEffectiveSkip = async (
-    pathname: string,
-    skip: string[],
-  ): Promise<string[]> => {
-    const pathConfig = await getMyPathConfig();
-    return skip.filter((slotId) => {
-      const found = pathConfig.find(({ pathSpec }) =>
-        getPathMapping(pathSpec, pathname),
-      );
-      return found?.specs.staticElementIds?.includes(slotId);
-    });
-  };
   const getEntries = async (
     rscPath: string,
     rscParams: unknown,
@@ -212,7 +208,7 @@ export function unstable_defineRouter(fns: {
     } catch {
       // ignore
     }
-    const skip = isStringArray(skipParam) ? skipParam : [];
+    const skipIdSet = new Set(isStringArray(skipParam) ? skipParam : []);
     const { query } = parseRscParams(rscParams);
     const { rootElement, routeElement, elements } = await fns.handleRoute(
       pathname,
@@ -225,11 +221,18 @@ export function unstable_defineRouter(fns: {
     }
     const entries = {
       ...elements,
-      root: rootElement,
-      [ROUTE_SLOT_ID_PREFIX + pathname]: routeElement,
     };
-    for (const skipId of await filterEffectiveSkip(pathname, skip)) {
-      delete entries[skipId];
+    for (const id of pathConfigItem.specs.staticElementIds || []) {
+      if (skipIdSet.has(id)) {
+        delete entries[id];
+      }
+    }
+    if (!pathConfigItem.specs.rootElementIsStatic || !skipIdSet.has('root')) {
+      entries.root = rootElement;
+    }
+    const routeId = ROUTE_SLOT_ID_PREFIX + pathname;
+    if (!pathConfigItem.specs.routeElementIsStatic || !skipIdSet.has(routeId)) {
+      entries[routeId] = routeElement;
     }
     entries[ROUTE_ID] = [pathname, query];
     entries[IS_STATIC_ID] = !!pathConfigItem.specs.isStatic;
