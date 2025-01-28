@@ -1,4 +1,3 @@
-// app/api/rpc/route.ts
 import { Hono } from 'hono';
 import { handle } from 'hono/vercel';
 import { type } from 'arktype';
