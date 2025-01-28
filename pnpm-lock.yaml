@@ -705,9 +705,6 @@ importers:
 
   examples/07_extra-hono-router:
     dependencies:
-      '@hono/arktype-validator':
-        specifier: ^2.0.0
-        version: 2.0.0(arktype@2.0.3)(hono@4.6.18)
       '@tailwindcss/vite':
         specifier: 4.0.0
         version: 4.0.0(vite@6.0.11(@types/node@22.10.9)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.37.0)(tsx@4.19.2)(yaml@2.7.0))
@@ -2266,12 +2263,6 @@ packages:
   '@fastify/busboy@2.1.1':
     resolution: {integrity: sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==}
     engines: {node: '>=14'}
-
-  '@hono/arktype-validator@2.0.0':
-    resolution: {integrity: sha512-ICNZrK6Qcw6gyPfW53ONXI4JomRcks0fQhqzn9EWsfr6nlL6BNXQ96vIgVDU8qimcbJ2m3GJFAqgzOvWbZk3jw==}
-    peerDependencies:
-      arktype: ^2.0.0-dev.14
-      hono: '*'
 
   '@hono/node-server@1.13.7':
     resolution: {integrity: sha512-kTfUMsoloVKtRA2fLiGSd9qBddmru9KadNyhJCwgKBxTiNkaAJEwkVN9KV/rS4HtmmNRtUh6P+YpmjRMl0d9vQ==}
@@ -6704,11 +6695,6 @@ snapshots:
       levn: 0.4.1
 
   '@fastify/busboy@2.1.1': {}
-
-  '@hono/arktype-validator@2.0.0(arktype@2.0.3)(hono@4.6.18)':
-    dependencies:
-      arktype: 2.0.3
-      hono: 4.6.18
 
   '@hono/node-server@1.13.7(hono@4.6.18)':
     dependencies:
