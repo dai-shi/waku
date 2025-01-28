@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useCallback, useState } from 'react';
+import { useActionState, useCallback, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { client } from '../rpc-client';
 
@@ -40,6 +40,12 @@ const GetNameButton = ({
 export const NameForm = () => {
   const [isGetting, setIsGetting] = useState(false);
   const [name, setName] = useState<string>();
+
+  useEffect(() => {
+    setTimeout(() => {
+      setName(undefined);
+    }, 1500);
+  }, [name]);
 
   const formAction = async (prevState: any, formData: FormData) => {
     try {
