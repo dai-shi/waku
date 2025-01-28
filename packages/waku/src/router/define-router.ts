@@ -208,7 +208,7 @@ export function unstable_defineRouter(fns: {
     } catch {
       // ignore
     }
-    const skipIds = isStringArray(skipParam) ? skipParam : [];
+    const skipIdSet = new Set(isStringArray(skipParam) ? skipParam : []);
     const { query } = parseRscParams(rscParams);
     const { rootElement, routeElement, elements } = await fns.handleRoute(
       pathname,
@@ -222,22 +222,16 @@ export function unstable_defineRouter(fns: {
     const entries = {
       ...elements,
     };
-    for (const skipId of skipIds) {
-      if (pathConfigItem.specs.staticElementIds?.includes(skipId)) {
-        delete entries[skipId];
+    for (const id of pathConfigItem.specs.staticElementIds || []) {
+      if (skipIdSet.has(id)) {
+        delete entries[id];
       }
     }
-    if (
-      !pathConfigItem.specs.rootElementIsStatic ||
-      !skipIds.includes('root')
-    ) {
+    if (!pathConfigItem.specs.rootElementIsStatic || !skipIdSet.has('root')) {
       entries.root = rootElement;
     }
     const routeId = ROUTE_SLOT_ID_PREFIX + pathname;
-    if (
-      !pathConfigItem.specs.routeElementIsStatic ||
-      !skipIds.includes(routeId)
-    ) {
+    if (!pathConfigItem.specs.routeElementIsStatic || !skipIdSet.has(routeId)) {
       entries[routeId] = routeElement;
     }
     entries[ROUTE_ID] = [pathname, query];
