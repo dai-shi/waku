@@ -49,35 +49,32 @@ const checkStatus = async (
   return response;
 };
 
-type Elements = Promise<Record<string, ReactNode>>;
+type Elements = Record<string, unknown>;
 
 const getCached = <T>(c: () => T, m: WeakMap<object, T>, k: object): T =>
   (m.has(k) ? m : m.set(k, c())).get(k) as T;
 const cache1 = new WeakMap();
-const mergeElements = (a: Elements, b: Elements): Elements => {
-  const getResult = () => {
-    const promise: Elements = new Promise((resolve, reject) => {
-      Promise.all([a, b])
-        .then(([a, b]) => {
-          const nextElements = { ...a, ...b };
-          delete nextElements._value;
-          resolve(nextElements);
-        })
-        .catch((e) => reject(e));
+const mergeElementsPromise = (
+  a: Promise<Elements>,
+  b: Promise<Elements>,
+): Promise<Elements> => {
+  const getResult = () =>
+    Promise.all([a, b]).then(([a, b]) => {
+      const nextElements = { ...a, ...b };
+      delete nextElements._value;
+      return nextElements;
     });
-    return promise;
-  };
   const cache2 = getCached(() => new WeakMap(), cache1, a);
   return getCached(getResult, cache2, b);
 };
 
-type SetElements = (updater: (prev: Elements) => Elements) => void;
+type SetElements = (
+  updater: (prev: Promise<Elements>) => Promise<Elements>,
+) => void;
 type EnhanceFetch = (fetchFn: typeof fetch) => typeof fetch;
 type EnhanceCreateData = (
-  createData: (
-    responsePromise: Promise<Response>,
-  ) => Promise<Record<string, ReactNode>>,
-) => (responsePromise: Promise<Response>) => Promise<Record<string, ReactNode>>;
+  createData: (responsePromise: Promise<Response>) => Promise<Elements>,
+) => (responsePromise: Promise<Response>) => Promise<Elements>;
 
 const ENTRY = 'e';
 const SET_ELEMENTS = 's';
@@ -85,7 +82,11 @@ const ENHANCE_FETCH = 'f';
 const ENHANCE_CREATE_DATA = 'd';
 
 type FetchCache = {
-  [ENTRY]?: [rscPath: string, rscParams: unknown, elements: Elements];
+  [ENTRY]?: [
+    rscPath: string,
+    rscParams: unknown,
+    elementsPromise: Promise<Elements>,
+  ];
   [SET_ELEMENTS]?: SetElements;
   [ENHANCE_FETCH]?: EnhanceFetch | undefined;
   [ENHANCE_CREATE_DATA]?: EnhanceCreateData | undefined;
@@ -105,7 +106,7 @@ export const callServerRsc = async (
   const enhanceFetch = fetchCache[ENHANCE_FETCH] || ((f) => f);
   const enhanceCreateData = fetchCache[ENHANCE_CREATE_DATA] || ((d) => d);
   const createData = (responsePromise: Promise<Response>) =>
-    createFromFetch<Awaited<Elements>>(checkStatus(responsePromise), {
+    createFromFetch<Elements>(checkStatus(responsePromise), {
       callServer: (funcId: string, args: unknown[]) =>
         callServerRsc(funcId, args, fetchCache),
     });
@@ -119,7 +120,7 @@ export const callServerRsc = async (
   const data = enhanceCreateData(createData)(responsePromise);
   const value = (await data)._value;
   // FIXME this causes rerenders even if data is empty
-  fetchCache[SET_ELEMENTS]?.((prev) => mergeElements(prev, data));
+  fetchCache[SET_ELEMENTS]?.((prev) => mergeElementsPromise(prev, data));
   return value;
 };
 
@@ -144,14 +145,14 @@ export const fetchRsc = (
   rscPath: string,
   rscParams?: unknown,
   fetchCache = defaultFetchCache,
-): Elements => {
+): Promise<Elements> => {
   const entry = fetchCache[ENTRY];
   if (entry && entry[0] === rscPath && entry[1] === rscParams) {
     return entry[2];
   }
   const enhanceCreateData = fetchCache[ENHANCE_CREATE_DATA] || ((d) => d);
   const createData = (responsePromise: Promise<Response>) =>
-    createFromFetch<Awaited<Elements>>(checkStatus(responsePromise), {
+    createFromFetch<Elements>(checkStatus(responsePromise), {
       callServer: (funcId: string, args: unknown[]) =>
         callServerRsc(funcId, args, fetchCache),
     });
@@ -190,7 +191,7 @@ const RefetchContext = createContext<
 >(() => {
   throw new Error('Missing Root component');
 });
-const ElementsContext = createContext<Elements | null>(null);
+const ElementsContext = createContext<Promise<Elements> | null>(null);
 
 export const Root = ({
   initialRscPath,
@@ -220,7 +221,7 @@ export const Root = ({
       // clear cache entry before fetching
       delete fetchCache[ENTRY];
       const data = fetchRsc(rscPath, rscParams, fetchCache);
-      setElements((prev) => mergeElements(prev, data));
+      setElements((prev) => mergeElementsPromise(prev, data));
     },
     [fetchCache],
   );
@@ -241,34 +242,49 @@ export const useRefetch = () => use(RefetchContext);
 const ChildrenContext = createContext<ReactNode>(undefined);
 const ChildrenContextProvider = memo(ChildrenContext.Provider);
 
+export const useElement = (id: string) => {
+  const elementsPromise = use(ElementsContext);
+  if (!elementsPromise) {
+    throw new Error('Missing Root component');
+  }
+  const elements = use(elementsPromise);
+  if (id in elements && elements[id] == undefined) {
+    throw new Error('Element cannot be undefined, use null instead: ' + id);
+  }
+  return elements[id];
+};
+
 const InnerSlot = ({
   id,
-  elementsPromise,
   children,
   setFallback,
   unstable_fallback,
 }: {
   id: string;
-  elementsPromise: Elements;
   children?: ReactNode;
   setFallback?: (fallback: ReactNode) => void;
   unstable_fallback?: ReactNode;
 }) => {
-  const elements = use(elementsPromise);
-  const hasElement = id in elements;
-  const element = elements[id];
+  const element = useElement(id);
+  const isValidElement = element !== undefined;
   useEffect(() => {
-    if (hasElement && setFallback) {
-      setFallback(element);
+    if (isValidElement && setFallback) {
+      // FIXME is there `isReactNode` type checker?
+      setFallback(element as ReactNode);
     }
-  }, [hasElement, element, setFallback]);
-  if (!hasElement) {
+  }, [isValidElement, element, setFallback]);
+  if (!isValidElement) {
     if (unstable_fallback) {
       return unstable_fallback;
     }
-    throw new Error('No such element: ' + id);
+    throw new Error('Invalid element: ' + id);
   }
-  return createElement(ChildrenContextProvider, { value: children }, element);
+  return createElement(
+    ChildrenContextProvider,
+    { value: children },
+    // FIXME is there `isReactNode` type checker?
+    element as ReactNode,
+  );
 };
 
 const ThrowError = ({ error }: { error: unknown }) => {
@@ -327,22 +343,14 @@ export const Slot = ({
   unstable_fallback?: ReactNode;
 }) => {
   const [fallback, setFallback] = useState<ReactNode>();
-  const elementsPromise = use(ElementsContext);
-  if (!elementsPromise) {
-    throw new Error('Missing Root component');
-  }
   if (unstable_fallbackToPrev) {
     return createElement(
       Fallback,
       { fallback } as never,
-      createElement(InnerSlot, { id, elementsPromise, setFallback }, children),
+      createElement(InnerSlot, { id, setFallback }, children),
     );
   }
-  return createElement(
-    InnerSlot,
-    { id, elementsPromise, unstable_fallback },
-    children,
-  );
+  return createElement(InnerSlot, { id, unstable_fallback }, children);
 };
 
 export const Children = () => use(ChildrenContext);
@@ -352,15 +360,15 @@ export const Children = () => use(ChildrenContext);
  * This is not a public API.
  */
 export const ServerRootInternal = ({
-  elements,
+  elementsPromise,
   children,
 }: {
-  elements: Elements;
+  elementsPromise: Promise<Elements>;
   children: ReactNode;
 }) =>
   createElement(
     ElementsContext.Provider,
-    { value: elements },
+    { value: elementsPromise },
     ...DEFAULT_HTML_HEAD,
     children,
   );
