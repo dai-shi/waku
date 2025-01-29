@@ -443,7 +443,6 @@ export function Router({
   const locationListeners = (routerData[0] ||= new Set());
   const staticPathSet = (routerData[1] ||= new Set());
   const cachedIdSet = (routerData[2] ||= new Set());
-  const has404 = (routerData[3] ||= false);
   const unstable_enhanceFetch =
     (fetchFn: typeof fetch) =>
     (input: RequestInfo | URL, init: RequestInit = {}) => {
@@ -463,6 +462,7 @@ export function Router({
       ) => Promise<Record<string, unknown>>,
     ) =>
     async (responsePromise: Promise<Response>) => {
+      const has404 = (routerData[3] ||= false);
       const response = await responsePromise;
       if (response.status === 404 && has404) {
         // HACK this is still an experimental logic. It's very fragile.
