@@ -460,7 +460,7 @@ export function Router({
     (
       createData: (
         responsePromise: Promise<Response>,
-      ) => Promise<Record<string, ReactNode>>,
+      ) => Promise<Record<string, unknown>>,
     ) =>
     async (responsePromise: Promise<Response>) => {
       const response = await responsePromise;

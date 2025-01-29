@@ -14,7 +14,7 @@ import { renderRsc, renderRscElement, getExtractFormState } from './rsc.js';
 // TODO move types somewhere
 import type { HandlerContext } from '../middleware/types.js';
 
-type Elements = Record<string, ReactNode>;
+type Elements = Record<string, unknown>;
 
 const fakeFetchCode = `
 Promise.resolve(new Response(new ReadableStream({
@@ -229,7 +229,7 @@ export async function renderHtml(
         ServerRoot as FunctionComponent<
           Omit<ComponentProps<typeof ServerRoot>, 'children'>
         >,
-        { elements: elementsPromise },
+        { elementsPromise },
         htmlNode as any,
       ),
       {

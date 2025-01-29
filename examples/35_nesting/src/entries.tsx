@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { unstable_defineEntries as defineEntries } from 'waku/minimal/server';
 import { Slot } from 'waku/minimal/client';
 import { unstable_createAsyncIterable as createAsyncIterable } from 'waku/server';
@@ -13,7 +12,7 @@ export default defineEntries({
       const params = new URLSearchParams(
         input.rscPath || 'App=Waku&InnerApp=0',
       );
-      const result: Record<string, ReactNode> = {};
+      const result: Record<string, unknown> = {};
       if (params.has('App')) {
         result.App = <App name={params.get('App')!} />;
       }
