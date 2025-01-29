@@ -158,6 +158,58 @@ const replaceNode = <T extends swc.Node>(origNode: swc.Node, newNode: T): T => {
   return Object.assign(origNode, newNode);
 };
 
+const transformExportedClientThings = (
+  mod: swc.Module,
+  getFuncId: () => string,
+): boolean => {
+  let changed = false;
+  for (let i = 0; i < mod.body.length; ++i) {
+    const item = mod.body[i]!;
+    const handleFunction = (name: string) => {
+      let code = `
+export ${name === 'default' ? name : `const ${name} =`} registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getFuncId()}#${name}'); }, '${getFuncId()}', '${name}');
+`;
+      if (!changed) {
+        changed = true;
+        code =
+          `
+import { registerClientReference } from 'react-server-dom-webpack/server.edge';
+` + code;
+      }
+      const stmts = swc.parseSync(code).body;
+      mod.body.splice(i, 1, ...stmts);
+      i += stmts.length - 1;
+    };
+    if (item.type === 'ExportDeclaration') {
+      if (item.declaration.type === 'FunctionDeclaration') {
+        handleFunction(item.declaration.identifier.value);
+      } else if (item.declaration.type === 'VariableDeclaration') {
+        for (const d of item.declaration.declarations) {
+          if (
+            d.id.type === 'Identifier' &&
+            (d.init?.type === 'FunctionExpression' ||
+              d.init?.type === 'ArrowFunctionExpression')
+          ) {
+            handleFunction(d.id.value);
+          }
+        }
+      }
+    } else if (item.type === 'ExportDefaultDeclaration') {
+      if (item.decl.type === 'FunctionExpression') {
+        handleFunction('default');
+      }
+    } else if (item.type === 'ExportDefaultExpression') {
+      if (
+        item.expression.type === 'FunctionExpression' ||
+        item.expression.type === 'ArrowFunctionExpression'
+      ) {
+        handleFunction('default');
+      }
+    }
+  }
+  return changed;
+};
+
 const transformExportedServerFunctions = (
   mod: swc.Module,
   getFuncId: () => string,
@@ -580,15 +632,8 @@ const transformServer = (
     }
   }
   if (hasUseClient) {
-    const exportNames = collectExportNames(mod);
-    let newCode = `
-import { registerClientReference } from 'react-server-dom-webpack/server.edge';
-`;
-    for (const name of exportNames) {
-      newCode += `
-export ${name === 'default' ? name : `const ${name} =`} registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getClientId()}#${name}'); }, '${getClientId()}', '${name}');
-`;
-    }
+    transformExportedClientThings(mod, getClientId);
+    const newCode = swc.printSync(mod).code;
     return newCode;
   }
   let transformed =
