@@ -165,23 +165,30 @@ const transformExportedClientThings = (
   let changed = false;
   for (let i = 0; i < mod.body.length; ++i) {
     const item = mod.body[i]!;
+    if (isUseClientDirective(item)) {
+      mod.body.splice(i--, 1);
+      continue;
+    }
     const handleFunction = (name: string) => {
       let code = `
-export ${name === 'default' ? name : `const ${name} =`} registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getFuncId()}#${name}'); }, '${getFuncId()}', '${name}');
+export ${name === 'default' ? name : `const ${name} =`} __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getFuncId()}#${name}'); }, '${getFuncId()}', '${name}');
 `;
       if (!changed) {
         changed = true;
         code =
           `
-import { registerClientReference } from 'react-server-dom-webpack/server.edge';
+import { registerClientReference as __waku_registerClientReference } from 'react-server-dom-webpack/server.edge';
 ` + code;
       }
+      // FIXME this is probably not efficient
       const stmts = swc.parseSync(code).body;
       mod.body.splice(i, 1, ...stmts);
       i += stmts.length - 1;
     };
     if (item.type === 'ExportDeclaration') {
       if (item.declaration.type === 'FunctionDeclaration') {
+        handleFunction(item.declaration.identifier.value);
+      } else if (item.declaration.type === 'ClassDeclaration') {
         handleFunction(item.declaration.identifier.value);
       } else if (item.declaration.type === 'VariableDeclaration') {
         for (const d of item.declaration.declarations) {
@@ -300,6 +307,12 @@ type FunctionWithBlockBody = (
   | swc.FunctionExpression
   | swc.ArrowFunctionExpression
 ) & { body: swc.BlockStatement };
+
+const isUseClientDirective = (node: swc.Node) =>
+  node.type === 'ExpressionStatement' &&
+  (node as swc.ExpressionStatement).expression.type === 'StringLiteral' &&
+  ((node as swc.ExpressionStatement).expression as swc.StringLiteral).value ===
+    'use client';
 
 const isUseServerDirective = (node: swc.Node) =>
   node.type === 'ExpressionStatement' &&
