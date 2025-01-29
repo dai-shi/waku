@@ -143,6 +143,10 @@ const serverInitCode = swc.parseSync(`
 import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
 `).body;
 
+const serverInitCode2 = swc.parseSync(`
+import { registerClientReference as __waku_registerClientReference } from 'react-server-dom-webpack/server.edge';
+`).body;
+
 const findLastImportIndex = (mod: swc.Module) => {
   const lastImportIndex = mod.body.findIndex(
     (node) =>
@@ -170,16 +174,10 @@ const transformExportedClientThings = (
       continue;
     }
     const handleFunction = (name: string) => {
-      let code = `
+      changed = true;
+      const code = `
 export ${name === 'default' ? name : `const ${name} =`} __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getFuncId()}#${name}'); }, '${getFuncId()}', '${name}');
 `;
-      if (!changed) {
-        changed = true;
-        code =
-          `
-import { registerClientReference as __waku_registerClientReference } from 'react-server-dom-webpack/server.edge';
-` + code;
-      }
       // FIXME this is probably not efficient
       const stmts = swc.parseSync(code).body;
       mod.body.splice(i, 1, ...stmts);
@@ -646,6 +644,7 @@ const transformServer = (
   }
   if (hasUseClient) {
     transformExportedClientThings(mod, getClientId);
+    mod.body.splice(findLastImportIndex(mod), 0, ...serverInitCode2);
     const newCode = swc.printSync(mod).code;
     return newCode;
   }

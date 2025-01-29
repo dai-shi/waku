@@ -7,9 +7,7 @@ export const treeshake = async (
 ): Promise<string> => {
   const mod = swc.parseSync(code, { syntax: 'typescript' });
   modifyModule?.(mod);
-  code = swc.printSync(mod).code;
-  // FIXME can we avoid this and transform with printSync directly?
-  code = swc.transformSync(code, {
+  const transformedCode = swc.transformSync(mod, {
     jsc: { parser: { syntax: 'typescript' } },
   }).code;
 
@@ -35,7 +33,7 @@ export const treeshake = async (
         },
         load(id) {
           if (id === '\0code') {
-            return code;
+            return transformedCode;
           }
         },
         resolveDynamicImport(id) {
