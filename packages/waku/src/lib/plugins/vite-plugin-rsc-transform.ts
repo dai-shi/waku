@@ -638,9 +638,7 @@ import { registerClientReference as __waku_registerClientReference } from 'react
 `;
     for (const name of exportNames) {
       newCode += `
-export ${name === 'default' ? name : `const ${name} =`} __waku_registerClientReference
-(() => { throw new Error('It is not possible to invoke a client function from th
-e server: ${getClientId()}#${name}'); }, '${getClientId()}', '${name}');
+export ${name === 'default' ? name : `const ${name} =`} __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getClientId()}#${name}'); }, '${getClientId()}', '${name}');
 `;
     }
     return newCode;
