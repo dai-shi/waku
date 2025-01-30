@@ -166,12 +166,16 @@ const transformExportedClientThings = (
   // HACK this doesn't cover all cases
   const allowServerItems = new Map<string, swc.Expression>();
   const allowServerDependencies = new Set<string>();
+  const visited = new WeakSet<swc.Node>();
   const findDependencies = (node: swc.Node) => {
+    if (visited.has(node)) {
+      return;
+    }
+    visited.add(node);
     if (node.type === 'Identifier') {
       const id = node as swc.Identifier;
-      if (!allowServerDependencies.has(id.value)) {
+      if (!allowServerItems.has(id.value) && !exportNames.has(id.value)) {
         allowServerDependencies.add(id.value);
-        findDependencies(id);
       }
     }
     Object.values(node).forEach((value) => {
@@ -201,7 +205,7 @@ const transformExportedClientThings = (
       }
     }
   }
-  // Pass 2: collect export names and allowServer names and dependencies
+  // Pass 2: collect export names and allowServer names
   for (const item of mod.body) {
     if (item.type === 'ExportDeclaration') {
       if (item.declaration.type === 'FunctionDeclaration') {
@@ -239,8 +243,33 @@ const transformExportedClientThings = (
       exportNames.add('default');
     }
   }
+  // Pass 3: collect dependencies
+  let dependenciesSize: number;
+  do {
+    dependenciesSize = allowServerDependencies.size;
+    for (const item of mod.body) {
+      if (item.type === 'VariableDeclaration') {
+        for (const d of item.declarations) {
+          if (
+            d.id.type === 'Identifier' &&
+            allowServerDependencies.has(d.id.value)
+          ) {
+            findDependencies(d);
+          }
+        }
+      } else if (item.type === 'FunctionDeclaration') {
+        if (allowServerDependencies.has(item.identifier.value)) {
+          findDependencies(item);
+        }
+      } else if (item.type === 'ClassDeclaration') {
+        if (allowServerDependencies.has(item.identifier.value)) {
+          findDependencies(item);
+        }
+      }
+    }
+  } while (dependenciesSize < allowServerDependencies.size);
   allowServerDependencies.delete(allowServer);
-  // Pass 3: filter with dependencies
+  // Pass 4: filter with dependencies
   for (let i = 0; i < mod.body.length; ++i) {
     const item = mod.body[i]!;
     if (
@@ -276,7 +305,7 @@ const transformExportedClientThings = (
     }
     mod.body.splice(i--, 1);
   }
-  // Pass 4: add allowServer exports
+  // Pass 5: add allowServer exports
   for (const [allowServerName, callExp] of allowServerItems) {
     const stmt: swc.ExportDeclaration = {
       type: 'ExportDeclaration',

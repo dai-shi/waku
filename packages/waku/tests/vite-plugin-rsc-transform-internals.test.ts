@@ -35,8 +35,9 @@ import { atom } from 'jotai/vanilla';
 import { allowServer } from 'waku/client';
 
 const initialCount = 1;
+const TWO = 2;
 function double (x: number) {
-  return x * 2;
+  return x * TWO;
 }
 export const countAtom = allowServer(atom(double(initialCount)));
 
@@ -80,8 +81,9 @@ export default function App() {
         import { registerClientReference as __waku_registerClientReference } from 'react-server-dom-webpack/server.edge';
         import { atom } from 'jotai/vanilla';
         const initialCount = 1;
+        const TWO = 2;
         function double(x: number) {
-            return x * 2;
+            return x * TWO;
         }
         export const countAtom = __waku_registerClientReference(atom(double(initialCount)), "/src/App.tsx", "countAtom");
 
