@@ -144,10 +144,6 @@ const serverInitCode = swc.parseSync(`
 import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
 `).body;
 
-const serverInitCode2 = swc.parseSync(`
-import { registerClientReference as __waku_registerClientReference } from 'react-server-dom-webpack/server.edge';
-`).body;
-
 const findLastImportIndex = (mod: swc.Module) => {
   const lastImportIndex = mod.body.findIndex(
     (node) =>
@@ -645,9 +641,18 @@ const transformServer = (
   }
   if (hasUseClient) {
     transformExportedClientThings(mod, getClientId);
-    mod.body.splice(findLastImportIndex(mod), 0, ...serverInitCode2);
-    const newCode = swc.printSync(mod).code;
-    return treeshakeJs(newCode);
+    const newCode = swc.transformSync(mod, {
+      jsc: {
+        target: 'esnext',
+        parser: { syntax: 'typescript', tsx: true },
+      },
+    }).code;
+    // HACK I'm not sure why transformSync removes the import statement
+    return treeshakeJs(
+      `
+import { registerClientReference as __waku_registerClientReference } from 'react-server-dom-webpack/server.edge';
+` + newCode,
+    );
   }
   let transformed =
     hasUseServer && transformExportedServerFunctions(mod, getServerId);

@@ -9,7 +9,10 @@ export const treeshake = async (
   const mod = swc.parseSync(code, { syntax: 'typescript', tsx });
   modifyModule?.(mod);
   const transformedCode = swc.transformSync(mod, {
-    jsc: { parser: { syntax: 'typescript', tsx } },
+    jsc: {
+      target: 'esnext',
+      parser: { syntax: 'typescript', tsx },
+    },
   }).code;
   return treeshakeJs(transformedCode);
 };

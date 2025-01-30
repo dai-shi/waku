@@ -37,6 +37,8 @@ export const Empty = () => null;
 function Private() {
   return "Secret";
 }
+const SecretComponent = () => <p>Secret</p>;
+const SecretFunction = (n: number) => 'Secret' + n;
 
 export function Greet({ name }: { name: string }) {
   return <>Hello {name}</>;
