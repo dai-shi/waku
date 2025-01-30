@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import type { Config } from '../config.js';
 import type { PathSpec } from '../lib/utils/path.js';
 
-type Elements = Record<string, ReactNode>;
+type Elements = Record<string, unknown>;
 
 type RenderRsc<Opts = unknown> = (
   elements: Record<string, unknown>,

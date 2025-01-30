@@ -571,7 +571,7 @@ const emitStaticFiles = async (
         options?.moduleIdCallback,
       ),
     renderHtml: async (
-      elements: Record<string, ReactNode>,
+      elements: Record<string, unknown>,
       html: ReactNode,
       options: { rscPath: string; htmlHead?: string },
     ) => {

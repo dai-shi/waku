@@ -587,7 +587,7 @@ export const createPages = <
 
       const pathSpec = parsePathWithSlug(routePath);
       const mapping = getPathMapping(pathSpec, path);
-      const result: Record<string, ReactNode> = {
+      const result: Record<string, unknown> = {
         [`page:${routePath}`]: createElement(
           pageComponent,
           { ...mapping, ...(query ? { query } : {}), path },
