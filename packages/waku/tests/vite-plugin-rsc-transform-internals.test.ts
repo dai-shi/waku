@@ -71,29 +71,17 @@ export default function App() {
         "
         import { registerClientReference as __waku_registerClientReference } from 'react-server-dom-webpack/server.edge';
 
-        export const Empty = __waku_registerClientReference
-        (() => { throw new Error('It is not possible to invoke a client function from th
-        e server: /src/App.tsx#Empty'); }, '/src/App.tsx', 'Empty');
+        export const Empty = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Empty'); }, '/src/App.tsx', 'Empty');
 
-        export const Greet = __waku_registerClientReference
-        (() => { throw new Error('It is not possible to invoke a client function from th
-        e server: /src/App.tsx#Greet'); }, '/src/App.tsx', 'Greet');
+        export const Greet = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Greet'); }, '/src/App.tsx', 'Greet');
 
-        export const MyComponent = __waku_registerClientReference
-        (() => { throw new Error('It is not possible to invoke a client function from th
-        e server: /src/App.tsx#MyComponent'); }, '/src/App.tsx', 'MyComponent');
+        export const MyComponent = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#MyComponent'); }, '/src/App.tsx', 'MyComponent');
 
-        export const useMyContext = __waku_registerClientReference
-        (() => { throw new Error('It is not possible to invoke a client function from th
-        e server: /src/App.tsx#useMyContext'); }, '/src/App.tsx', 'useMyContext');
+        export const useMyContext = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#useMyContext'); }, '/src/App.tsx', 'useMyContext');
 
-        export const NAME = __waku_registerClientReference
-        (() => { throw new Error('It is not possible to invoke a client function from th
-        e server: /src/App.tsx#NAME'); }, '/src/App.tsx', 'NAME');
+        export const NAME = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#NAME'); }, '/src/App.tsx', 'NAME');
 
-        export default __waku_registerClientReference
-        (() => { throw new Error('It is not possible to invoke a client function from th
-        e server: /src/App.tsx#default'); }, '/src/App.tsx', 'default');
+        export default __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#default'); }, '/src/App.tsx', 'default');
         "
       `);
   });
