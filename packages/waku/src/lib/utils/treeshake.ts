@@ -24,6 +24,9 @@ export const treeshakeJs = async (jsCode: string): Promise<string> => {
       }
       defaultHandler(warning);
     },
+    output: {
+      generatedCode: 'es2015',
+    },
     treeshake: {
       moduleSideEffects: 'no-external',
     },

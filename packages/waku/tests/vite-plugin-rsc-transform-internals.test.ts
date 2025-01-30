@@ -54,18 +54,24 @@ export default function App() {
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
-        "
-        import { registerClientReference } from 'react-server-dom-webpack/server.edge';
+      "import { registerClientReference } from 'react-server-dom-webpack/server.edge';
 
-        export const Empty = registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Empty'); }, '/src/App.tsx', 'Empty');
+      const Empty = registerClientReference(()=>{
+          throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Empty');
+      }, '/src/App.tsx', 'Empty');
+      const Greet = registerClientReference(()=>{
+          throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Greet');
+      }, '/src/App.tsx', 'Greet');
+      const MyComponent = registerClientReference(()=>{
+          throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#MyComponent');
+      }, '/src/App.tsx', 'MyComponent');
+      var _code = registerClientReference(()=>{
+          throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#default');
+      }, '/src/App.tsx', 'default');
 
-        export const Greet = registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Greet'); }, '/src/App.tsx', 'Greet');
-
-        export const MyComponent = registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#MyComponent'); }, '/src/App.tsx', 'MyComponent');
-
-        export default registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#default'); }, '/src/App.tsx', 'default');
-        "
-      `);
+      export { Empty, Greet, MyComponent, _code as default };
+      "
+    `);
   });
 
   test('top-level use server', async () => {

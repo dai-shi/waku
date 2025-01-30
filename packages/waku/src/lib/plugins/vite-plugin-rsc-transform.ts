@@ -4,6 +4,7 @@ import * as swc from '@swc/core';
 import { EXTENSIONS } from '../constants.js';
 import { extname, joinPath } from '../utils/path.js';
 import { parseOpts } from '../utils/swc.js';
+import { treeshakeJs } from '../utils/treeshake.js';
 
 const collectExportNames = (mod: swc.Module) => {
   const exportNames = new Set<string>();
@@ -646,7 +647,7 @@ const transformServer = (
     transformExportedClientThings(mod, getClientId);
     mod.body.splice(findLastImportIndex(mod), 0, ...serverInitCode2);
     const newCode = swc.printSync(mod).code;
-    return newCode;
+    return treeshakeJs(newCode);
   }
   let transformed =
     hasUseServer && transformExportedServerFunctions(mod, getServerId);
