@@ -30,7 +30,7 @@ export default function App() {
     const code = `
 'use client';
 
-import { Component, createContext, useContext } from 'react';
+import { Component, createContext, useContext, memo } from 'react';
 
 export const Empty = () => null;
 
@@ -52,38 +52,43 @@ export class MyComponent extends Component {
 
 const MyContext = createContext();
 
-// TODO export const useMyContext = () => useContext(MyContext);
+export const useMyContext = () => useContext(MyContext);
+
+// TODO const MyProvider = memo(MyContext.Provider);
 
 export const NAME = 'World';
 
 export default function App() {
   return (
-    <MyContext.Provider value="Hello">
+    <MyProvider value="Hello">
       <div>Hello World</div>
-    </MyContext.Provider>
+    </MyProvider>
   );
 }
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
-      "import { registerClientReference } from 'react-server-dom-webpack/server.edge';
+        "import { registerClientReference } from 'react-server-dom-webpack/server.edge';
 
-      const Empty = registerClientReference(()=>{
-          throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Empty');
-      }, '/src/App.tsx', 'Empty');
-      const Greet = registerClientReference(()=>{
-          throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Greet');
-      }, '/src/App.tsx', 'Greet');
-      const MyComponent = registerClientReference(()=>{
-          throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#MyComponent');
-      }, '/src/App.tsx', 'MyComponent');
-      var _code = registerClientReference(()=>{
-          throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#default');
-      }, '/src/App.tsx', 'default');
+        const Empty = registerClientReference(()=>{
+            throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Empty');
+        }, '/src/App.tsx', 'Empty');
+        const Greet = registerClientReference(()=>{
+            throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Greet');
+        }, '/src/App.tsx', 'Greet');
+        const MyComponent = registerClientReference(()=>{
+            throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#MyComponent');
+        }, '/src/App.tsx', 'MyComponent');
+        const useMyContext = registerClientReference(()=>{
+            throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#useMyContext');
+        }, '/src/App.tsx', 'useMyContext');
+        var _code = registerClientReference(()=>{
+            throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#default');
+        }, '/src/App.tsx', 'default');
 
-      export { Empty, Greet, MyComponent, _code as default };
-      "
-    `);
+        export { Empty, Greet, MyComponent, _code as default, useMyContext };
+        "
+      `);
   });
 
   test('top-level use server', async () => {
