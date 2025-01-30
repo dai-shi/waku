@@ -1,8 +1,9 @@
 'use client';
 
+import { allowServer } from 'waku/client';
 import { atom, useAtom } from 'jotai';
 
-export const countAtom = atom(0);
+export const countAtom = allowServer(atom(1));
 
 export const Counter = () => {
   const [count, setCount] = useAtom(countAtom);

@@ -20,8 +20,7 @@ const App = ({ name, atomValues }: { name: string; atomValues: unknown[] }) => {
           style={{ border: '3px red dashed', margin: '1em', padding: '1em' }}
         >
           <h1>
-            {/* TODO how can we get the initial value of atom? */}
-            Hello {name}!! (count={count ?? 0})
+            Hello {name}!! (count={count ?? countAtom.init})
           </h1>
           <h3>This is a server component.</h3>
           <Counter />
