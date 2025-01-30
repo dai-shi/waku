@@ -4,7 +4,6 @@ import * as swc from '@swc/core';
 import { EXTENSIONS } from '../constants.js';
 import { extname, joinPath } from '../utils/path.js';
 import { parseOpts } from '../utils/swc.js';
-import { treeshakeJs } from '../utils/treeshake.js';
 
 const collectExportNames = (mod: swc.Module) => {
   const exportNames = new Set<string>();
@@ -159,6 +158,7 @@ const replaceNode = <T extends swc.Node>(origNode: swc.Node, newNode: T): T => {
   return Object.assign(origNode, newNode);
 };
 
+/* TODO
 const transformExportedClientThings = (
   mod: swc.Module,
   getFuncId: () => string,
@@ -166,10 +166,7 @@ const transformExportedClientThings = (
   let changed = false;
   for (let i = 0; i < mod.body.length; ++i) {
     const item = mod.body[i]!;
-    if (isUseClientDirective(item)) {
-      mod.body.splice(i--, 1);
-      continue;
-    }
+    mod.body.splice(i--, 1);
     const handleFunction = (name: string) => {
       changed = true;
       const code = `
@@ -181,7 +178,6 @@ export ${name === 'default' ? name : `const ${name} =`} __waku_registerClientRef
       i += stmts.length;
     };
     if (item.type === 'ExportDeclaration') {
-      mod.body.splice(i--, 1);
       if (item.declaration.type === 'FunctionDeclaration') {
         handleFunction(item.declaration.identifier.value);
       } else if (item.declaration.type === 'ClassDeclaration') {
@@ -198,12 +194,10 @@ export ${name === 'default' ? name : `const ${name} =`} __waku_registerClientRef
         }
       }
     } else if (item.type === 'ExportDefaultDeclaration') {
-      mod.body.splice(i--, 1);
       if (item.decl.type === 'FunctionExpression') {
         handleFunction('default');
       }
     } else if (item.type === 'ExportDefaultExpression') {
-      mod.body.splice(i--, 1);
       if (
         item.expression.type === 'FunctionExpression' ||
         item.expression.type === 'ArrowFunctionExpression'
@@ -214,6 +208,7 @@ export ${name === 'default' ? name : `const ${name} =`} __waku_registerClientRef
   }
   return changed;
 };
+*/
 
 const transformExportedServerFunctions = (
   mod: swc.Module,
@@ -305,12 +300,6 @@ type FunctionWithBlockBody = (
   | swc.FunctionExpression
   | swc.ArrowFunctionExpression
 ) & { body: swc.BlockStatement };
-
-const isUseClientDirective = (node: swc.Node) =>
-  node.type === 'ExpressionStatement' &&
-  (node as swc.ExpressionStatement).expression.type === 'StringLiteral' &&
-  ((node as swc.ExpressionStatement).expression as swc.StringLiteral).value ===
-    'use client';
 
 const isUseServerDirective = (node: swc.Node) =>
   node.type === 'ExpressionStatement' &&
@@ -643,19 +632,18 @@ const transformServer = (
     }
   }
   if (hasUseClient) {
-    transformExportedClientThings(mod, getClientId);
-    const newCode = swc.transformSync(mod, {
-      jsc: {
-        target: 'esnext',
-        parser: { syntax: 'typescript', tsx: true },
-      },
-    }).code;
-    // HACK I'm not sure why transformSync removes the import statement
-    return treeshakeJs(
-      `
+    const exportNames = collectExportNames(mod);
+    let newCode = `
 import { registerClientReference as __waku_registerClientReference } from 'react-server-dom-webpack/server.edge';
-` + newCode,
-    );
+`;
+    for (const name of exportNames) {
+      newCode += `
+export ${name === 'default' ? name : `const ${name} =`} __waku_registerClientReference
+(() => { throw new Error('It is not possible to invoke a client function from th
+e server: ${getClientId()}#${name}'); }, '${getClientId()}', '${name}');
+`;
+    }
+    return newCode;
   }
   let transformed =
     hasUseServer && transformExportedServerFunctions(mod, getServerId);

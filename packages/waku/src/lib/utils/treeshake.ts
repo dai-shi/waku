@@ -8,16 +8,12 @@ export const treeshake = async (
 ): Promise<string> => {
   const mod = swc.parseSync(code, { syntax: 'typescript', tsx });
   modifyModule?.(mod);
-  const transformedCode = swc.transformSync(mod, {
+  const jsCode = swc.transformSync(mod, {
     jsc: {
       target: 'esnext',
       parser: { syntax: 'typescript', tsx },
     },
   }).code;
-  return treeshakeJs(transformedCode);
-};
-
-export const treeshakeJs = async (jsCode: string): Promise<string> => {
   const bundle = await rollup({
     input: '\0code',
     external: () => true,
