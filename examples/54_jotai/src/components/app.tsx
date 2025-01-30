@@ -1,6 +1,7 @@
 import type { Atom } from 'jotai/vanilla';
 
 import { Counter, countAtom } from './counter';
+import { SyncAtoms } from './syncatoms';
 
 // TODO this is more or less a hack for now
 export const atoms: Atom<unknown>[] = [];
@@ -26,6 +27,7 @@ const App = ({ name, atomValues }: { name: string; atomValues: unknown[] }) => {
           <Counter />
           <div>{new Date().toISOString()}</div>
         </div>
+        <SyncAtoms />
       </body>
     </html>
   );
