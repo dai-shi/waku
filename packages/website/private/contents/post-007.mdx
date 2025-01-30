@@ -6,15 +6,17 @@ author: tyler
 date: 2025/02/01
 ---
 
-With Oracle clinging on to the trademark for [javascript](https://javascript.tm/), you'll be happy to know that your forms will work without it!
+Remember the last time you submitted a form that did nothing?
 
-Jokes aside, this is a really cool framework feature that connects server actions directly to your forms.
+We can fix that!
 
 ## What does this look like?
 
-So before React 19 and before we had waku server actions, a very basic form might look like this:
+Before React 19 and Waku server actions, a basic form might look like this:
 
 ```jsx
+'use client';
+
 const ClientForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,7 +41,7 @@ This is just fine, but if we want to run our form in an environment with no java
 
 ## Introducing progressive forms with Waku Server actions
 
-In this example, it can be pure RSC built. There is no client JS needed.
+The form works without Javascript, which is helpful for making your forms interactive quicker on load. In slow network conditions, a user could load the html of the form and submit it, all before the Javascript for the page loads.
 
 ```jsx
 async function submitForm(formData) {
@@ -61,4 +63,4 @@ const ServerForm = () => {
 };
 ```
 
-We can sprinkle in some js where it can be helpful. Like for client-side validation, or for showing errors from the server. The key point though, is that the form will always submit and pair with your server action regardless of whether JS is running or not.
+We can sprinkle in some Javascript where it can be helpful. Like for client-side validation, or for showing errors from the server. The key point though, is that the form will always submit and pair with your server action regardless of whether Javascript is running or not.
