@@ -54,7 +54,7 @@ const MyContext = createContext();
 
 export const useMyContext = () => useContext(MyContext);
 
-// TODO const MyProvider = memo(MyContext.Provider);
+const MyProvider = memo(MyContext.Provider);
 
 export const NAME = 'World';
 

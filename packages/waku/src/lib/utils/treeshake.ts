@@ -32,6 +32,7 @@ export const treeshakeJs = async (jsCode: string): Promise<string> => {
     },
     treeshake: {
       moduleSideEffects: 'no-external',
+      propertyReadSideEffects: false,
     },
     plugins: [
       {
