@@ -158,57 +158,159 @@ const replaceNode = <T extends swc.Node>(origNode: swc.Node, newNode: T): T => {
   return Object.assign(origNode, newNode);
 };
 
-/* TODO
 const transformExportedClientThings = (
   mod: swc.Module,
   getFuncId: () => string,
-): boolean => {
-  let changed = false;
-  for (let i = 0; i < mod.body.length; ++i) {
-    const item = mod.body[i]!;
-    mod.body.splice(i--, 1);
-    const handleFunction = (name: string) => {
-      changed = true;
-      const code = `
-export ${name === 'default' ? name : `const ${name} =`} __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getFuncId()}#${name}'); }, '${getFuncId()}', '${name}');
-`;
-      // FIXME this is probably not efficient
-      const stmts = swc.parseSync(code).body;
-      mod.body.splice(i, 0, ...stmts);
-      i += stmts.length;
-    };
-    if (item.type === 'ExportDeclaration') {
-      if (item.declaration.type === 'FunctionDeclaration') {
-        handleFunction(item.declaration.identifier.value);
-      } else if (item.declaration.type === 'ClassDeclaration') {
-        handleFunction(item.declaration.identifier.value);
-      } else if (item.declaration.type === 'VariableDeclaration') {
-        for (const d of item.declaration.declarations) {
-          if (
-            d.id.type === 'Identifier' &&
-            (d.init?.type === 'FunctionExpression' ||
-              d.init?.type === 'ArrowFunctionExpression')
-          ) {
-            handleFunction(d.id.value);
+): Set<string> => {
+  const exportNames = new Set<string>();
+  // HACK this doesn't cover all cases
+  const allowServerItems = new Map<string, swc.Expression>();
+  const allowServerDependencies = new Set<string>();
+  const findDependencies = (node: swc.Node) => {
+    if (node.type === 'Identifier') {
+      const id = node as swc.Identifier;
+      if (!allowServerDependencies.has(id.value)) {
+        allowServerDependencies.add(id.value);
+        findDependencies(id);
+      }
+    }
+    Object.values(node).forEach((value) => {
+      (Array.isArray(value) ? value : [value]).forEach((v) => {
+        if (typeof v?.type === 'string') {
+          findDependencies(v);
+        } else if (typeof v?.expression?.type === 'string') {
+          findDependencies(v.expression);
+        }
+      });
+    });
+  };
+  // Pass 1: find allowServer identifier
+  let allowServer = 'allowServer';
+  for (const item of mod.body) {
+    if (item.type === 'ImportDeclaration') {
+      if (item.source.value === 'waku/client') {
+        for (const specifier of item.specifiers) {
+          if (specifier.type === 'ImportSpecifier') {
+            if (specifier.local.value === allowServer && specifier.imported) {
+              allowServer = specifier.imported.value;
+              break;
+            }
           }
         }
-      }
-    } else if (item.type === 'ExportDefaultDeclaration') {
-      if (item.decl.type === 'FunctionExpression') {
-        handleFunction('default');
-      }
-    } else if (item.type === 'ExportDefaultExpression') {
-      if (
-        item.expression.type === 'FunctionExpression' ||
-        item.expression.type === 'ArrowFunctionExpression'
-      ) {
-        handleFunction('default');
+        break;
       }
     }
   }
-  return changed;
+  // Pass 2: collect export names and allowServer names and dependencies
+  for (const item of mod.body) {
+    if (item.type === 'ExportDeclaration') {
+      if (item.declaration.type === 'FunctionDeclaration') {
+        exportNames.add(item.declaration.identifier.value);
+      } else if (item.declaration.type === 'ClassDeclaration') {
+        exportNames.add(item.declaration.identifier.value);
+      } else if (item.declaration.type === 'VariableDeclaration') {
+        for (const d of item.declaration.declarations) {
+          if (d.id.type === 'Identifier') {
+            if (
+              d.init?.type === 'CallExpression' &&
+              d.init.callee.type === 'Identifier' &&
+              d.init.callee.value === allowServer
+            ) {
+              if (d.init.arguments.length !== 1) {
+                throw new Error('allowServer should have exactly one argument');
+              }
+              allowServerItems.set(d.id.value, d.init.arguments[0]!.expression);
+              findDependencies(d.init);
+            } else {
+              exportNames.add(d.id.value);
+            }
+          }
+        }
+      }
+    } else if (item.type === 'ExportNamedDeclaration') {
+      for (const s of item.specifiers) {
+        if (s.type === 'ExportSpecifier') {
+          exportNames.add(s.exported ? s.exported.value : s.orig.value);
+        }
+      }
+    } else if (item.type === 'ExportDefaultExpression') {
+      exportNames.add('default');
+    } else if (item.type === 'ExportDefaultDeclaration') {
+      exportNames.add('default');
+    }
+  }
+  allowServerDependencies.delete(allowServer);
+  // Pass 3: filter with dependencies
+  for (let i = 0; i < mod.body.length; ++i) {
+    const item = mod.body[i]!;
+    if (
+      item.type === 'ImportDeclaration' &&
+      item.specifiers.some(
+        (s) =>
+          s.type === 'ImportSpecifier' &&
+          allowServerDependencies.has(
+            s.imported ? s.imported.value : s.local.value,
+          ),
+      )
+    ) {
+      continue;
+    }
+    if (item.type === 'VariableDeclaration') {
+      item.declarations = item.declarations.filter(
+        (d) =>
+          d.id.type === 'Identifier' && allowServerDependencies.has(d.id.value),
+      );
+      if (item.declarations.length) {
+        continue;
+      }
+    }
+    if (item.type === 'FunctionDeclaration') {
+      if (allowServerDependencies.has(item.identifier.value)) {
+        continue;
+      }
+    }
+    if (item.type === 'ClassDeclaration') {
+      if (allowServerDependencies.has(item.identifier.value)) {
+        continue;
+      }
+    }
+    mod.body.splice(i--, 1);
+  }
+  // Pass 4: add allowServer exports
+  for (const [allowServerName, callExp] of allowServerItems) {
+    const stmt: swc.ExportDeclaration = {
+      type: 'ExportDeclaration',
+      declaration: {
+        type: 'VariableDeclaration',
+        kind: 'const',
+        declare: false,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        ctxt: 0,
+        declarations: [
+          {
+            type: 'VariableDeclarator',
+            id: createIdentifier(allowServerName),
+            init: createCallExpression(
+              createIdentifier('__waku_registerClientReference'),
+              [
+                callExp,
+                createStringLiteral(getFuncId()),
+                createStringLiteral(allowServerName),
+              ],
+            ),
+            definite: false,
+            span: createEmptySpan(),
+          },
+        ],
+        span: createEmptySpan(),
+      },
+      span: createEmptySpan(),
+    };
+    mod.body.push(stmt);
+  }
+  return exportNames;
 };
-*/
 
 const transformExportedServerFunctions = (
   mod: swc.Module,
@@ -632,10 +734,11 @@ const transformServer = (
     }
   }
   if (hasUseClient) {
-    const exportNames = collectExportNames(mod);
+    const exportNames = transformExportedClientThings(mod, getClientId);
     let newCode = `
 import { registerClientReference as __waku_registerClientReference } from 'react-server-dom-webpack/server.edge';
 `;
+    newCode += swc.printSync(mod).code;
     for (const name of exportNames) {
       newCode += `
 export ${name === 'default' ? name : `const ${name} =`} __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getClientId()}#${name}'); }, '${getClientId()}', '${name}');

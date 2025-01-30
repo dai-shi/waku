@@ -31,6 +31,14 @@ export default function App() {
 'use client';
 
 import { Component, createContext, useContext, memo } from 'react';
+import { atom } from 'jotai/vanilla';
+import { allowServer } from 'waku/client';
+
+const initialCount = 1;
+function double (x: number) {
+  return x * 2;
+}
+export const countAtom = allowServer(atom(double(initialCount)));
 
 export const Empty = () => null;
 
@@ -70,6 +78,12 @@ export default function App() {
       .toMatchInlineSnapshot(`
         "
         import { registerClientReference as __waku_registerClientReference } from 'react-server-dom-webpack/server.edge';
+        import { atom } from 'jotai/vanilla';
+        const initialCount = 1;
+        function double(x: number) {
+            return x * 2;
+        }
+        export const countAtom = __waku_registerClientReference(atom(double(initialCount)), "/src/App.tsx", "countAtom");
 
         export const Empty = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Empty'); }, '/src/App.tsx', 'Empty');
 
