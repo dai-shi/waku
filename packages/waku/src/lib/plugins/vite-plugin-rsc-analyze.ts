@@ -71,6 +71,7 @@ export function rscAnalyzePlugin(
     | {
         isClient: true;
         serverFileSet: Set<string>;
+        fileHashMap: Map<string, string>;
       }
     | {
         isClient: false;
@@ -97,7 +98,6 @@ export function rscAnalyzePlugin(
           ) {
             if (!opts.isClient && item.expression.value === 'use client') {
               opts.clientFileSet.add(id);
-              opts.fileHashMap.set(id, await hash(code));
             } else if (item.expression.value === 'use server') {
               opts.serverFileSet.add(id);
             }
@@ -113,6 +113,7 @@ export function rscAnalyzePlugin(
           opts.serverFileSet.add(id);
         }
       }
+      opts.fileHashMap.set(id, await hash(code));
       // Avoid walking after the client boundary
       if (!opts.isClient && opts.clientFileSet.has(id)) {
         // TODO this isn't efficient. let's refactor it in the future.

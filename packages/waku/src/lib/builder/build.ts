@@ -171,7 +171,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
       {
         mode: 'production',
         plugins: [
-          rscAnalyzePlugin({ isClient: true, serverFileSet }),
+          rscAnalyzePlugin({ isClient: true, serverFileSet, fileHashMap }),
           rscManagedPlugin({ ...config, addMainToInput: true }),
           ...deployPlugins(config),
         ],
@@ -195,7 +195,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   );
   const serverEntryFiles = Object.fromEntries(
     Array.from(serverFileSet).map((fname, i) => [
-      `${DIST_ASSETS}/rsf${i}`,
+      `${DIST_ASSETS}/rsf${i}-${fileHashMap.get(fname) || 'lib'}`, // FIXME 'lib' is a workaround to avoid `undefined`
       fname,
     ]),
   );
