@@ -177,10 +177,11 @@ export ${name === 'default' ? name : `const ${name} =`} __waku_registerClientRef
 `;
       // FIXME this is probably not efficient
       const stmts = swc.parseSync(code).body;
-      mod.body.splice(i, 1, ...stmts);
-      i += stmts.length - 1;
+      mod.body.splice(i, 0, ...stmts);
+      i += stmts.length;
     };
     if (item.type === 'ExportDeclaration') {
+      mod.body.splice(i--, 1);
       if (item.declaration.type === 'FunctionDeclaration') {
         handleFunction(item.declaration.identifier.value);
       } else if (item.declaration.type === 'ClassDeclaration') {
@@ -197,10 +198,12 @@ export ${name === 'default' ? name : `const ${name} =`} __waku_registerClientRef
         }
       }
     } else if (item.type === 'ExportDefaultDeclaration') {
+      mod.body.splice(i--, 1);
       if (item.decl.type === 'FunctionExpression') {
         handleFunction('default');
       }
     } else if (item.type === 'ExportDefaultExpression') {
+      mod.body.splice(i--, 1);
       if (
         item.expression.type === 'FunctionExpression' ||
         item.expression.type === 'ArrowFunctionExpression'

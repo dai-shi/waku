@@ -30,7 +30,7 @@ export default function App() {
     const code = `
 'use client';
 
-import { Component } from 'react';
+import { Component, createContext, useContext } from 'react';
 
 export const Empty = () => null;
 
@@ -50,8 +50,18 @@ export class MyComponent extends Component {
   }
 }
 
+const MyContext = createContext();
+
+// TODO export const useMyContext = () => useContext(MyContext);
+
+export const NAME = 'World';
+
 export default function App() {
-  return <div>Hello World</div>;
+  return (
+    <MyContext.Provider value="Hello">
+      <div>Hello World</div>
+    </MyContext.Provider>
+  );
 }
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
