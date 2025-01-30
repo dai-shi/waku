@@ -4,13 +4,17 @@ import * as swc from '@swc/core';
 export const treeshake = async (
   code: string,
   modifyModule?: (mod: swc.Module) => void,
+  tsx = false,
 ): Promise<string> => {
-  const mod = swc.parseSync(code, { syntax: 'typescript' });
+  const mod = swc.parseSync(code, { syntax: 'typescript', tsx });
   modifyModule?.(mod);
   const transformedCode = swc.transformSync(mod, {
-    jsc: { parser: { syntax: 'typescript' } },
+    jsc: { parser: { syntax: 'typescript', tsx } },
   }).code;
+  return treeshakeJs(transformedCode);
+};
 
+export const treeshakeJs = async (jsCode: string): Promise<string> => {
   const bundle = await rollup({
     input: '\0code',
     external: () => true,
@@ -33,7 +37,7 @@ export const treeshake = async (
         },
         load(id) {
           if (id === '\0code') {
-            return transformedCode;
+            return jsCode;
           }
         },
         resolveDynamicImport(id) {
