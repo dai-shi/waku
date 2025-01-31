@@ -58,6 +58,7 @@ async function runTest(
         ? rscAnalyzePlugin({
             isClient: true,
             serverFileSet,
+            fileHashMap,
           })
         : rscAnalyzePlugin({
             isClient: false,
