@@ -3,14 +3,12 @@ import type { Atom } from 'jotai/vanilla';
 import { Counter, countAtom } from './counter';
 import { SyncAtoms } from './syncatoms';
 
-// TODO this is more or less a hack for now
-export const atoms: Atom<unknown>[] = [];
+type Store = {
+  get: <Value>(atom: Atom<Value>) => Value;
+};
 
-const App = ({ name, atomValues }: { name: string; atomValues: unknown[] }) => {
-  if (!atoms.includes(countAtom)) {
-    atoms.push(countAtom);
-  }
-  const count = atomValues[0] as number | undefined;
+const App = ({ name, store }: { name: string; store: Store }) => {
+  const count = store.get(countAtom);
   return (
     <html>
       <head>
@@ -21,7 +19,7 @@ const App = ({ name, atomValues }: { name: string; atomValues: unknown[] }) => {
           style={{ border: '3px red dashed', margin: '1em', padding: '1em' }}
         >
           <h1>
-            Hello {name}!! (count={count ?? countAtom.init})
+            Hello {name}!! (count={count})
           </h1>
           <h3>This is a server component.</h3>
           <Counter />
