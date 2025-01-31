@@ -92,7 +92,7 @@ export function unstable_defineRouter(fns: {
   ) => Promise<{
     rootElement: ReactNode;
     routeElement: ReactNode;
-    elements: Record<SlotId, ReactNode>;
+    elements: Record<SlotId, unknown>;
   }>;
   getApiConfig?: () => Promise<
     Iterable<{
@@ -265,7 +265,7 @@ export function unstable_defineRouter(fns: {
       return renderRsc(entries);
     }
     if (input.type === 'function') {
-      let elementsPromise: Promise<Record<string, ReactNode>> = Promise.resolve(
+      let elementsPromise: Promise<Record<string, unknown>> = Promise.resolve(
         {},
       );
       let rendered = false;
@@ -357,7 +357,7 @@ export function unstable_defineRouter(fns: {
       const path2moduleIds: Record<string, string[]> = {};
       const moduleIdsForPrefetch = new WeakMap<PathSpec, Set<string>>();
       // FIXME this approach keeps all entries in memory during the loop
-      const entriesCache = new Map<string, Record<string, ReactNode>>();
+      const entriesCache = new Map<string, Record<string, unknown>>();
       await Promise.all(
         pathConfig.map(async ({ pathSpec, pathname, pattern, specs }) => {
           if (specs.isApi) {

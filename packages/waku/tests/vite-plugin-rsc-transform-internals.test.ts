@@ -30,13 +30,24 @@ export default function App() {
     const code = `
 'use client';
 
-import { Component } from 'react';
+import { Component, createContext, useContext, memo } from 'react';
+import { atom } from 'jotai/vanilla';
+import { allowServer } from 'waku/client';
+
+const initialCount = 1;
+const TWO = 2;
+function double (x: number) {
+  return x * TWO;
+}
+export const countAtom = allowServer(atom(double(initialCount)));
 
 export const Empty = () => null;
 
 function Private() {
   return "Secret";
 }
+const SecretComponent = () => <p>Secret</p>;
+const SecretFunction = (n: number) => 'Secret' + n;
 
 export function Greet({ name }: { name: string }) {
   return <>Hello {name}</>;
@@ -48,22 +59,45 @@ export class MyComponent extends Component {
   }
 }
 
+const MyContext = createContext();
+
+export const useMyContext = () => useContext(MyContext);
+
+const MyProvider = memo(MyContext.Provider);
+
+export const NAME = 'World';
+
 export default function App() {
-  return <div>Hello World</div>;
+  return (
+    <MyProvider value="Hello">
+      <div>Hello World</div>
+    </MyProvider>
+  );
 }
 `;
     expect(await transform(code, '/src/App.tsx', { ssr: true }))
       .toMatchInlineSnapshot(`
         "
-        import { registerClientReference } from 'react-server-dom-webpack/server.edge';
+        import { registerClientReference as __waku_registerClientReference } from 'react-server-dom-webpack/server.edge';
+        import { atom } from 'jotai/vanilla';
+        const initialCount = 1;
+        const TWO = 2;
+        function double(x: number) {
+            return x * TWO;
+        }
+        export const countAtom = __waku_registerClientReference(atom(double(initialCount)), "/src/App.tsx", "countAtom");
 
-        export const Empty = registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Empty'); }, '/src/App.tsx', 'Empty');
+        export const Empty = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Empty'); }, '/src/App.tsx', 'Empty');
 
-        export const Greet = registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Greet'); }, '/src/App.tsx', 'Greet');
+        export const Greet = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Greet'); }, '/src/App.tsx', 'Greet');
 
-        export const MyComponent = registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#MyComponent'); }, '/src/App.tsx', 'MyComponent');
+        export const MyComponent = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#MyComponent'); }, '/src/App.tsx', 'MyComponent');
 
-        export default registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#default'); }, '/src/App.tsx', 'default');
+        export const useMyContext = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#useMyContext'); }, '/src/App.tsx', 'useMyContext');
+
+        export const NAME = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#NAME'); }, '/src/App.tsx', 'NAME');
+
+        export default __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#default'); }, '/src/App.tsx', 'default');
         "
       `);
   });

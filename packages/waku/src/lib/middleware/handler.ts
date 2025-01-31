@@ -133,7 +133,7 @@ export const handler: Middleware = (options) => {
       renderRsc: (elements: Record<string, unknown>) =>
         renderRsc(config, ctx, elements),
       renderHtml: async (
-        elements: Record<string, ReactNode>,
+        elements: Record<string, unknown>,
         html: ReactNode,
         options: { rscPath: string; actionResult?: unknown },
       ) => {

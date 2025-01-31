@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { unstable_defineRouter as defineRouter } from 'waku/router/server';
 import { Slot, Children } from 'waku/minimal/client';
 
@@ -8,7 +7,7 @@ import FooPage from './routes/foo/page.js';
 import { readFile } from 'node:fs/promises';
 
 const STATIC_PATHS = ['/', '/foo'];
-const PATH_PAGE: Record<string, ReactNode> = {
+const PATH_PAGE: Record<string, unknown> = {
   '/': <Page />,
   '/foo': <FooPage />,
 };
