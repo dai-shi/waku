@@ -1,14 +1,17 @@
-import type { Atom } from 'jotai/vanilla';
+import { atom } from 'jotai/vanilla';
 
+import { getStore, Provider } from '../lib/waku-jotai/server';
 import { Counter, countAtom } from './counter';
-import { SyncAtoms } from './syncatoms';
 
-type Store = {
-  get: <Value>(atom: Atom<Value>) => Value;
-};
+// server-only atom
+const doubleCountAtom = atom(async (get) => {
+  await new Promise((r) => setTimeout(r, 1000));
+  return get(countAtom) * 2;
+});
 
-const App = ({ name, store }: { name: string; store: Store }) => {
-  const count = store.get(countAtom);
+const MyApp = ({ name }: { name: string }) => {
+  const store = getStore();
+  const doubleCount = store.get(doubleCountAtom);
   return (
     <html>
       <head>
@@ -18,16 +21,22 @@ const App = ({ name, store }: { name: string; store: Store }) => {
         <div
           style={{ border: '3px red dashed', margin: '1em', padding: '1em' }}
         >
-          <h1>
-            Hello {name}!! (count={count})
-          </h1>
+          <h1>Hello {name}!!</h1>
+          <h2>(doubleCount={doubleCount})</h2>
           <h3>This is a server component.</h3>
           <Counter />
           <div>{new Date().toISOString()}</div>
         </div>
-        <SyncAtoms />
       </body>
     </html>
+  );
+};
+
+const App = ({ name, rscParams }: { name: string; rscParams: unknown }) => {
+  return (
+    <Provider rscParams={rscParams}>
+      <MyApp name={name} />
+    </Provider>
   );
 };
 

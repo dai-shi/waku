@@ -1,66 +1,22 @@
 import { unstable_defineEntries as defineEntries } from 'waku/minimal/server';
 import { Slot } from 'waku/minimal/client';
 import { unstable_createAsyncIterable as createAsyncIterable } from 'waku/server';
-import type { Atom } from 'jotai/vanilla';
 
 import App from './components/app';
 
-const CLIENT_REFERENCE_TAG = Symbol.for('react.client.reference');
-
 export default defineEntries({
   handleRequest: async (input, { renderRsc, renderHtml }) => {
-    // TODO Can we use actual jotai store? (w/ INTERNAL_buildStore)
-    // FIXME This doesn't work well with HMR.
-    const store = {
-      atoms: new Map<Atom<unknown>, string>(),
-      values: new Map<string, unknown>(),
-      get: <Value,>(a: Atom<Value>) => {
-        if ((a as any)['$$typeof'] === CLIENT_REFERENCE_TAG) {
-          const id: string = (a as any)['$$id'];
-          store.atoms.set(a, id);
-          if (store.values.has(id)) {
-            return store.values.get(id) as Value;
-          }
-        }
-        if (!('init' in a)) {
-          throw new Error('Only primitive atoms are supported.');
-        }
-        return a.init as Value;
-      },
-    };
     if (input.type === 'component') {
-      let resolve: (m: Map<Atom<unknown>, string>) => void;
-      const atomsPromise = new Promise((r) => {
-        resolve = r;
+      return renderRsc({
+        App: <App name={input.rscPath || 'Waku'} rscParams={input.rscParams} />,
       });
-      if (input.rscParams instanceof Map) {
-        store.values = input.rscParams;
-      }
-      const streamPromise = renderRsc({
-        App: <App name={input.rscPath || 'Waku'} store={store} />,
-        atomsPromise,
-      });
-      // FIXME It may resolve too early?
-      streamPromise.then(() => resolve(store.atoms)).catch(() => {});
-      return streamPromise;
     }
     if (input.type === 'custom' && input.pathname === '/') {
-      let resolve: (m: Map<Atom<unknown>, string>) => void;
-      const atomsPromise = new Promise((r) => {
-        resolve = r;
-      });
-      const streamPromise = renderHtml(
-        {
-          App: <App name="Waku" store={store} />,
-          atomsPromise,
-        },
+      return renderHtml(
+        { App: <App name="Waku" rscParams={undefined} /> },
         <Slot id="App" />,
-        {
-          rscPath: '',
-        },
+        { rscPath: '' },
       );
-      streamPromise.then(() => resolve(store.atoms)).catch(() => {});
-      return streamPromise;
     }
   },
   handleBuild: ({
