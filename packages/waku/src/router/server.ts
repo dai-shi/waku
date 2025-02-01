@@ -3,4 +3,4 @@ export {
   unstable_rerenderRoute,
 } from './define-router.js';
 export { createPages } from './create-pages.js';
-export { fsRouter } from './fs-router.js';
+export { unstable_fsRouter } from './fs-router.js';

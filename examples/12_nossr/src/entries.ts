@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 import { unstable_defineEntries as defineEntries } from 'waku/minimal/server';
-import { fsRouter } from 'waku/router/server';
+import { unstable_fsRouter as fsRouter } from 'waku/router/server';
 
 const router = fsRouter(
   import.meta.url,

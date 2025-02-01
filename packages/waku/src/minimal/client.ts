@@ -98,7 +98,7 @@ const defaultFetchCache: FetchCache = {};
  * callServer callback
  * This is not a public API.
  */
-export const callServerRsc = async (
+export const unstable_callServerRsc = async (
   funcId: string,
   args: unknown[],
   fetchCache = defaultFetchCache,
@@ -108,7 +108,7 @@ export const callServerRsc = async (
   const createData = (responsePromise: Promise<Response>) =>
     createFromFetch<Elements>(checkStatus(responsePromise), {
       callServer: (funcId: string, args: unknown[]) =>
-        callServerRsc(funcId, args, fetchCache),
+        unstable_callServerRsc(funcId, args, fetchCache),
     });
   const url = BASE_PATH + encodeRscPath(encodeFuncId(funcId));
   const responsePromise =
@@ -154,7 +154,7 @@ export const fetchRsc = (
   const createData = (responsePromise: Promise<Response>) =>
     createFromFetch<Elements>(checkStatus(responsePromise), {
       callServer: (funcId: string, args: unknown[]) =>
-        callServerRsc(funcId, args, fetchCache),
+        unstable_callServerRsc(funcId, args, fetchCache),
     });
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
   const url = BASE_PATH + encodeRscPath(rscPath);
@@ -359,7 +359,7 @@ export const Children = () => use(ChildrenContext);
  * ServerRoot for SSR
  * This is not a public API.
  */
-export const ServerRootInternal = ({
+export const INTERNAL_ServerRoot = ({
   elementsPromise,
   children,
 }: {

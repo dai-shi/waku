@@ -10,7 +10,7 @@ import { EXTENSIONS } from '../lib/constants.js';
 
 const DO_NOT_BUNDLE = '';
 
-export function fsRouter(
+export function unstable_fsRouter(
   importMetaUrl: string,
   loadPage: (file: string) => Promise<any> | undefined,
   pages: string,

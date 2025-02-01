@@ -17,7 +17,7 @@ import {
 } from './common.js';
 import { getPathMapping, path2regexp } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
-import { ServerRouter } from './client.js';
+import { INTERNAL_ServerRouter } from './client.js';
 import { getContext } from '../middleware/context.js';
 import { stringToStream } from '../lib/utils/stream.js';
 
@@ -318,7 +318,7 @@ export function unstable_defineRouter(fns: {
       if (!entries) {
         return null;
       }
-      const html = createElement(ServerRouter, {
+      const html = createElement(INTERNAL_ServerRouter, {
         route: { path: pathname, query, hash: '' },
       });
       const actionResult =
@@ -412,7 +412,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
               (specs.is404 ? 'globalThis.__WAKU_ROUTER_404__ = true;' : '');
             const entries = entriesCache.get(pathname);
             if (specs.isStatic && entries) {
-              const html = createElement(ServerRouter, {
+              const html = createElement(INTERNAL_ServerRouter, {
                 route: { path: pathname, query: '', hash: '' },
               });
               return {

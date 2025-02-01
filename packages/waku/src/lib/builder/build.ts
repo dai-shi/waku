@@ -8,8 +8,8 @@ import type { ReactNode } from 'react';
 
 import type { Config } from '../../config.js';
 import {
-  setAllEnvInternal,
-  iterateSerializablePlatformDataInternal,
+  INTERNAL_setAllEnv,
+  INTERNAL_iterateSerializablePlatformData,
   unstable_getBuildOptions,
 } from '../../server.js';
 import type { EntriesPrd } from '../types.js';
@@ -747,7 +747,7 @@ export async function build(options: {
     filePathToFileURL(distEntriesFile)
   );
 
-  setAllEnvInternal(env);
+  INTERNAL_setAllEnv(env);
   const cssAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
@@ -770,7 +770,7 @@ export async function build(options: {
     await mkdir(joinPath(rootDir, config.distDir, DIST_PLATFORM_DATA), {
       recursive: true,
     });
-    for (const [key, data] of iterateSerializablePlatformDataInternal()) {
+    for (const [key, data] of INTERNAL_iterateSerializablePlatformData()) {
       keys.add(key);
       const destFile = joinPath(
         rootDir,
