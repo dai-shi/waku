@@ -101,12 +101,12 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   const wakuMinimalClientDist = decodeFilePathFromAbsolute(
     joinPath(fileURLToFilePath(import.meta.url), '../../../minimal/client.js'),
   );
-  const clientFileSet = new Set<string>([
-    wakuClientDist,
-    wakuMinimalClientDist,
+  const clientFileMap = new Map<string, string>([
+    // FIXME 'lib' should be the real hash
+    [wakuClientDist, 'lib'],
+    [wakuMinimalClientDist, 'lib'],
   ]);
-  const serverFileSet = new Set<string>();
-  const fileHashMap = new Map<string, string>();
+  const serverFileMap = new Map<string, string>();
   const moduleFileMap = new Map<string, string>(); // module id -> full path
   const pagesDirPath = joinPath(rootDir, config.srcDir, config.pagesDir);
   if (existsSync(pagesDirPath)) {
@@ -131,9 +131,8 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
         plugins: [
           rscAnalyzePlugin({
             isClient: false,
-            clientFileSet,
-            serverFileSet,
-            fileHashMap,
+            clientFileMap,
+            serverFileMap,
           }),
           rscManagedPlugin({ ...config, addEntriesToInput: true }),
           ...deployPlugins(config),
@@ -161,8 +160,8 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
     ),
   );
   const clientEntryFiles = Object.fromEntries(
-    Array.from(clientFileSet).map((fname, i) => [
-      `${DIST_ASSETS}/rsc${i}-${fileHashMap.get(fname) || 'lib'}`, // FIXME 'lib' is a workaround to avoid `undefined`
+    Array.from(clientFileMap).map(([fname, hash], i) => [
+      `${DIST_ASSETS}/rsc${i}-${hash}`,
       fname,
     ]),
   );
@@ -171,7 +170,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
       {
         mode: 'production',
         plugins: [
-          rscAnalyzePlugin({ isClient: true, serverFileSet }),
+          rscAnalyzePlugin({ isClient: true, serverFileMap }),
           rscManagedPlugin({ ...config, addMainToInput: true }),
           ...deployPlugins(config),
         ],
@@ -194,8 +193,8 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
     ),
   );
   const serverEntryFiles = Object.fromEntries(
-    Array.from(serverFileSet).map((fname, i) => [
-      `${DIST_ASSETS}/rsf${i}`,
+    Array.from(serverFileMap).map(([fname, hash], i) => [
+      `${DIST_ASSETS}/rsf${i}-${hash}`,
       fname,
     ]),
   );
