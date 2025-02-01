@@ -17,10 +17,15 @@ export function getEnv(key: string): string | undefined {
 /**
  * This is an internal function and not for public use.
  */
-export function iterateAllPlatformDataInternal(): Iterable<[string, unknown]> {
-  const platformData: Record<string, unknown> =
-    (globalThis as any).__WAKU_SERVER_PLATFORM_DATA__ || {};
-  return Object.entries(platformData);
+export function iterateSerializablePlatformDataInternal(): Iterable<
+  [string, unknown]
+> {
+  const platformData: Record<string, [unknown, boolean]> = ((
+    globalThis as any
+  ).__WAKU_SERVER_PLATFORM_DATA__ ||= {});
+  return Object.entries(platformData).flatMap(([key, [data, serializable]]) =>
+    serializable ? [[key, data]] : [],
+  );
 }
 
 /**
@@ -32,55 +37,62 @@ export function setPlatformDataLoaderInternal(
   (globalThis as any).__WAKU_SERVER_PLATFORM_DATA_LOADER__ = loader;
 }
 
-// data must be JSON serializable
 export async function unstable_setPlatformData<T>(
   key: string,
   data: T,
+  serializable: boolean,
 ): Promise<void> {
-  ((globalThis as any).__WAKU_SERVER_PLATFORM_DATA__ ||= {})[key] = data;
+  const platformData: Record<string, [unknown, boolean]> = ((
+    globalThis as any
+  ).__WAKU_SERVER_PLATFORM_DATA__ ||= {});
+  platformData[key] = [data, serializable];
 }
 
 export async function unstable_getPlatformData<T>(
   key: string,
 ): Promise<T | undefined> {
+  const platformData: Record<string, [unknown, boolean]> = ((
+    globalThis as any
+  ).__WAKU_SERVER_PLATFORM_DATA__ ||= {});
+  const item = platformData[key];
+  if (item) {
+    return item[0] as T;
+  }
   const loader: ((key: string) => Promise<unknown>) | undefined = (
     globalThis as any
   ).__WAKU_SERVER_PLATFORM_DATA_LOADER__;
   if (loader) {
     return loader(key) as T;
   }
-  return (globalThis as any).__WAKU_SERVER_PLATFORM_DATA__?.[key];
 }
 
 export function unstable_getHeaders(): Readonly<Record<string, string>> {
   return getContext().req.headers;
 }
 
-type PlatformObject = {
-  buildOptions?: {
-    deploy?:
-      | 'vercel-static'
-      | 'vercel-serverless'
-      | 'netlify-static'
-      | 'netlify-functions'
-      | 'cloudflare'
-      | 'partykit'
-      | 'deno'
-      | 'aws-lambda'
-      | undefined;
-    unstable_phase?:
-      | 'analyzeEntries'
-      | 'buildServerBundle'
-      | 'buildSsrBundle'
-      | 'buildClientBundle'
-      | 'buildDeploy'
-      | 'emitStaticFiles';
-  };
-} & Record<string, unknown>;
+type BuildOptions = {
+  deploy?:
+    | 'vercel-static'
+    | 'vercel-serverless'
+    | 'netlify-static'
+    | 'netlify-functions'
+    | 'cloudflare'
+    | 'partykit'
+    | 'deno'
+    | 'aws-lambda'
+    | undefined;
+  unstable_phase?:
+    | 'analyzeEntries'
+    | 'buildServerBundle'
+    | 'buildSsrBundle'
+    | 'buildClientBundle'
+    | 'buildDeploy'
+    | 'emitStaticFiles';
+};
 
 // TODO tentative name
-export function unstable_getPlatformObject(): PlatformObject {
-  return ((globalThis as any).__WAKU_PLATFORM_OBJECT__ ||= {});
+export function unstable_getBuildOptions(): BuildOptions {
+  return ((globalThis as any).__WAKU_BUILD_OPTIONS__ ||= {});
 }
 
 export function unstable_createAsyncIterable<T extends () => unknown>(

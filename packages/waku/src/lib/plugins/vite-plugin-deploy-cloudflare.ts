@@ -14,8 +14,8 @@ import { randomBytes } from 'node:crypto';
 import type { Plugin } from 'vite';
 
 import {
-  iterateAllPlatformDataInternal,
-  unstable_getPlatformObject,
+  iterateSerializablePlatformDataInternal,
+  unstable_getBuildOptions,
 } from '../../server.js';
 import { SRC_ENTRIES } from '../constants.js';
 import { DIST_ENTRIES_JS, DIST_PUBLIC } from '../builder/constants.js';
@@ -150,13 +150,13 @@ export function deployCloudflarePlugin(opts: {
   distDir: string;
   privateDir: string;
 }): Plugin {
-  const platformObject = unstable_getPlatformObject();
+  const buildOptions = unstable_getBuildOptions();
   let rootDir: string;
   let entriesFile: string;
   return {
     name: 'deploy-cloudflare-plugin',
     config(viteConfig) {
-      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      const { deploy, unstable_phase } = buildOptions;
       if (unstable_phase !== 'buildServerBundle' || deploy !== 'cloudflare') {
         return;
       }
@@ -168,7 +168,7 @@ export function deployCloudflarePlugin(opts: {
     configResolved(config) {
       rootDir = config.root;
       entriesFile = `${rootDir}/${opts.srcDir}/${SRC_ENTRIES}`;
-      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      const { deploy, unstable_phase } = buildOptions;
       if (
         (unstable_phase !== 'buildServerBundle' &&
           unstable_phase !== 'buildSsrBundle') ||
@@ -194,7 +194,7 @@ export function deployCloudflarePlugin(opts: {
       }
     },
     closeBundle() {
-      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      const { deploy, unstable_phase } = buildOptions;
       if (unstable_phase !== 'buildDeploy' || deploy !== 'cloudflare') {
         return;
       }
@@ -215,7 +215,7 @@ export function deployCloudflarePlugin(opts: {
       mkdirSync(path.join(workerDistDir, DIST_PLATFORM_DATA), {
         recursive: true,
       });
-      for (const [key, data] of iterateAllPlatformDataInternal()) {
+      for (const [key, data] of iterateSerializablePlatformDataInternal()) {
         keys.add(key);
         const destFile = path.join(
           workerDistDir,

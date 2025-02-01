@@ -1,7 +1,7 @@
 import {
   unstable_getPlatformData,
   unstable_setPlatformData,
-  unstable_getPlatformObject,
+  unstable_getBuildOptions,
 } from '../server.js';
 import { createPages, METHODS } from './create-pages.js';
 import type { Method } from './create-pages.js';
@@ -15,7 +15,7 @@ export function fsRouter(
   loadPage: (file: string) => Promise<any> | undefined,
   pages: string,
 ) {
-  const platformObject = unstable_getPlatformObject();
+  const buildOptions = unstable_getBuildOptions();
   return createPages(
     async ({ createPage, createLayout, createRoot, createApi }) => {
       let files = await unstable_getPlatformData<string[]>('fsRouterFiles');
@@ -58,8 +58,8 @@ export function fsRouter(
         });
       }
       // build only - skip in dev
-      if (platformObject.buildOptions?.unstable_phase) {
-        await unstable_setPlatformData('fsRouterFiles', files);
+      if (buildOptions.unstable_phase) {
+        await unstable_setPlatformData('fsRouterFiles', files, true);
       }
       for (const file of files) {
         const mod = await loadPage(file);
