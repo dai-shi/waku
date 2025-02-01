@@ -20,8 +20,9 @@ export function getEnv(key: string): string | undefined {
 export function iterateSerializablePlatformDataInternal(): Iterable<
   [string, unknown]
 > {
-  const platformData: Record<string, [unknown, boolean]> =
-    (globalThis as any).__WAKU_SERVER_PLATFORM_DATA__ || {};
+  const platformData: Record<string, [unknown, boolean]> = ((
+    globalThis as any
+  ).__WAKU_SERVER_PLATFORM_DATA__ ||= {});
   return Object.entries(platformData).flatMap(([key, [data, serializable]]) =>
     serializable ? [[key, data]] : [],
   );
@@ -41,16 +42,18 @@ export async function unstable_setPlatformData<T>(
   data: T,
   serializable: boolean,
 ): Promise<void> {
-  const platformData: Record<string, [unknown, boolean]> =
-    (globalThis as any).__WAKU_SERVER_PLATFORM_DATA__ || {};
+  const platformData: Record<string, [unknown, boolean]> = ((
+    globalThis as any
+  ).__WAKU_SERVER_PLATFORM_DATA__ ||= {});
   platformData[key] = [data, serializable];
 }
 
 export async function unstable_getPlatformData<T>(
   key: string,
 ): Promise<T | undefined> {
-  const platformData: Record<string, [unknown, boolean]> =
-    (globalThis as any).__WAKU_SERVER_PLATFORM_DATA__ || {};
+  const platformData: Record<string, [unknown, boolean]> = ((
+    globalThis as any
+  ).__WAKU_SERVER_PLATFORM_DATA__ ||= {});
   const item = platformData[key];
   if (item) {
     return item[0] as T;
