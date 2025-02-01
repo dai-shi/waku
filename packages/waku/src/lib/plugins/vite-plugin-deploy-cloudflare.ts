@@ -14,7 +14,7 @@ import { randomBytes } from 'node:crypto';
 import type { Plugin } from 'vite';
 
 import {
-  iterateAllPlatformDataInternal,
+  iterateSerializablePlatformDataInternal,
   unstable_getPlatformObject,
 } from '../../server.js';
 import { SRC_ENTRIES } from '../constants.js';
@@ -215,7 +215,7 @@ export function deployCloudflarePlugin(opts: {
       mkdirSync(path.join(workerDistDir, DIST_PLATFORM_DATA), {
         recursive: true,
       });
-      for (const [key, data] of iterateAllPlatformDataInternal()) {
+      for (const [key, data] of iterateSerializablePlatformDataInternal()) {
         keys.add(key);
         const destFile = path.join(
           workerDistDir,

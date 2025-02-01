@@ -17,10 +17,12 @@ export function getEnv(key: string): string | undefined {
 /**
  * This is an internal function and not for public use.
  */
-export function iterateAllPlatformDataInternal(): Iterable<[string, unknown]> {
-  const platformData: Record<string, unknown> =
+export function iterateSerializablePlatformDataInternal(): Iterable<
+  [string, unknown]
+> {
+  const platformData: Record<string, [unknown, boolean]> =
     (globalThis as any).__WAKU_SERVER_PLATFORM_DATA__ || {};
-  return Object.entries(platformData);
+  return Object.entries(platformData).map(([key, [data]]) => [key, data]);
 }
 
 /**
@@ -32,24 +34,31 @@ export function setPlatformDataLoaderInternal(
   (globalThis as any).__WAKU_SERVER_PLATFORM_DATA_LOADER__ = loader;
 }
 
-// data must be JSON serializable
 export async function unstable_setPlatformData<T>(
   key: string,
   data: T,
+  serializable: boolean,
 ): Promise<void> {
-  ((globalThis as any).__WAKU_SERVER_PLATFORM_DATA__ ||= {})[key] = data;
+  const platformData: Record<string, [unknown, boolean]> =
+    (globalThis as any).__WAKU_SERVER_PLATFORM_DATA__ || {};
+  platformData[key] = [data, serializable];
 }
 
 export async function unstable_getPlatformData<T>(
   key: string,
 ): Promise<T | undefined> {
+  const platformData: Record<string, [unknown, boolean]> =
+    (globalThis as any).__WAKU_SERVER_PLATFORM_DATA__ || {};
+  const item = platformData[key];
+  if (item) {
+    return item[0] as T;
+  }
   const loader: ((key: string) => Promise<unknown>) | undefined = (
     globalThis as any
   ).__WAKU_SERVER_PLATFORM_DATA_LOADER__;
   if (loader) {
     return loader(key) as T;
   }
-  return (globalThis as any).__WAKU_SERVER_PLATFORM_DATA__?.[key];
 }
 
 export function unstable_getHeaders(): Readonly<Record<string, string>> {

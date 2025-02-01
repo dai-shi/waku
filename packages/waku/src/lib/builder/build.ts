@@ -9,7 +9,7 @@ import type { ReactNode } from 'react';
 import type { Config } from '../../config.js';
 import {
   setAllEnvInternal,
-  iterateAllPlatformDataInternal,
+  iterateSerializablePlatformDataInternal,
   unstable_getPlatformObject,
 } from '../../server.js';
 import type { EntriesPrd } from '../types.js';
@@ -771,7 +771,7 @@ export async function build(options: {
     await mkdir(joinPath(rootDir, config.distDir, DIST_PLATFORM_DATA), {
       recursive: true,
     });
-    for (const [key, data] of iterateAllPlatformDataInternal()) {
+    for (const [key, data] of iterateSerializablePlatformDataInternal()) {
       keys.add(key);
       const destFile = joinPath(
         rootDir,

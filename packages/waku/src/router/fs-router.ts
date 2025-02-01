@@ -59,7 +59,7 @@ export function fsRouter(
       }
       // build only - skip in dev
       if (platformObject.buildOptions?.unstable_phase) {
-        await unstable_setPlatformData('fsRouterFiles', files);
+        await unstable_setPlatformData('fsRouterFiles', files, true);
       }
       for (const file of files) {
         const mod = await loadPage(file);

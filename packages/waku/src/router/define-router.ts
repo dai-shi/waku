@@ -437,7 +437,11 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         });
       }
 
-      await unstable_setPlatformData('defineRouterPathConfigs', pathConfig);
+      await unstable_setPlatformData(
+        'defineRouterPathConfigs',
+        pathConfig,
+        true,
+      );
       return tasks;
     });
 
