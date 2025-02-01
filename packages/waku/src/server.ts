@@ -22,7 +22,9 @@ export function iterateSerializablePlatformDataInternal(): Iterable<
 > {
   const platformData: Record<string, [unknown, boolean]> =
     (globalThis as any).__WAKU_SERVER_PLATFORM_DATA__ || {};
-  return Object.entries(platformData).map(([key, [data]]) => [key, data]);
+  return Object.entries(platformData).flatMap(([key, [data, serializable]]) =>
+    serializable ? [[key, data]] : [],
+  );
 }
 
 /**
