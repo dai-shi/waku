@@ -1,6 +1,6 @@
 'use client';
 
-import { allowServer } from 'waku/client';
+import { unstable_allowServer as allowServer } from 'waku/client';
 import { atom, useAtom } from 'jotai';
 
 export const countAtom = allowServer(atom(1));
