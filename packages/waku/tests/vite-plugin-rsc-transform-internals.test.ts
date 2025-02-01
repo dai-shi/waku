@@ -32,7 +32,7 @@ export default function App() {
 
 import { Component, createContext, useContext, memo } from 'react';
 import { atom } from 'jotai/vanilla';
-import { allowServer } from 'waku/client';
+import { unstable_allowServer as allowServer } from 'waku/client';
 
 const initialCount = 1;
 const TWO = 2;
@@ -440,7 +440,7 @@ export default async function log4(mesg) {
     expect(await transform(code, '/src/func.ts')).toMatchInlineSnapshot(`
       "
       import { createServerReference } from 'react-server-dom-webpack/client';
-      import { callServerRsc } from 'waku/minimal/client';
+      import { unstable_callServerRsc as callServerRsc } from 'waku/minimal/client';
 
       export const log1 = createServerReference('/src/func.ts#log1', callServerRsc);
 

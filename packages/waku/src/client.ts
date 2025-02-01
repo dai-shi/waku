@@ -1,4 +1,4 @@
 /**
  * Highly experimental, the name might change.
  */
-export const allowServer = <T>(x: T) => x;
+export const unstable_allowServer = <T>(x: T) => x;

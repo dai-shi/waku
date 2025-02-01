@@ -70,13 +70,12 @@ export function rscAnalyzePlugin(
   opts:
     | {
         isClient: true;
-        serverFileSet: Set<string>;
+        serverFileMap: Map<string, string>;
       }
     | {
         isClient: false;
-        clientFileSet: Set<string>;
-        serverFileSet: Set<string>;
-        fileHashMap: Map<string, string>;
+        clientFileMap: Map<string, string>;
+        serverFileMap: Map<string, string>;
       },
 ): Plugin {
   const rscTransform = rscTransformPlugin({
@@ -96,25 +95,24 @@ export function rscAnalyzePlugin(
             item.expression.type === 'StringLiteral'
           ) {
             if (!opts.isClient && item.expression.value === 'use client') {
-              opts.clientFileSet.add(id);
-              opts.fileHashMap.set(id, await hash(code));
+              opts.clientFileMap.set(id, await hash(code));
             } else if (item.expression.value === 'use server') {
-              opts.serverFileSet.add(id);
+              opts.serverFileMap.set(id, await hash(code));
             }
           }
         }
         if (
           !opts.isClient &&
-          !opts.clientFileSet.has(id) &&
-          !opts.serverFileSet.has(id) &&
+          !opts.clientFileMap.has(id) &&
+          !opts.serverFileMap.has(id) &&
           code.includes('use server') &&
           containsServerFunction(mod)
         ) {
-          opts.serverFileSet.add(id);
+          opts.serverFileMap.set(id, await hash(code));
         }
       }
       // Avoid walking after the client boundary
-      if (!opts.isClient && opts.clientFileSet.has(id)) {
+      if (!opts.isClient && opts.clientFileMap.has(id)) {
         // TODO this isn't efficient. let's refactor it in the future.
         return (
           rscTransform as typeof rscTransform & { handler: undefined }

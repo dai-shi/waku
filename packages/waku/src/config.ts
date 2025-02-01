@@ -7,6 +7,7 @@ export interface Config {
   /**
    * The base path for serve HTTP.
    * Defaults to  "/".
+   * TODO https://github.com/dai-shi/waku/issues/698
    */
   basePath?: string;
   /**
