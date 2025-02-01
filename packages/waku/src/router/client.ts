@@ -524,7 +524,7 @@ export function Router({
  * ServerRouter for SSR
  * This is not a public API.
  */
-export function ServerRouter({ route }: { route: RouteProps }) {
+export function INTERNAL_ServerRouter({ route }: { route: RouteProps }) {
   const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
   const rootElement = createElement(
     Slot,

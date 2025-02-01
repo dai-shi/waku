@@ -6,7 +6,7 @@ import { getContext } from './middleware/context.js';
 /**
  * This is an internal function and not for public use.
  */
-export function setAllEnvInternal(newEnv: Readonly<Record<string, string>>) {
+export function INTERNAL_setAllEnv(newEnv: Readonly<Record<string, string>>) {
   (globalThis as any).__WAKU_SERVER_ENV__ = newEnv;
 }
 
@@ -17,7 +17,7 @@ export function getEnv(key: string): string | undefined {
 /**
  * This is an internal function and not for public use.
  */
-export function iterateSerializablePlatformDataInternal(): Iterable<
+export function INTERNAL_iterateSerializablePlatformData(): Iterable<
   [string, unknown]
 > {
   const platformData: Record<string, [unknown, boolean]> = ((
@@ -31,7 +31,7 @@ export function iterateSerializablePlatformDataInternal(): Iterable<
 /**
  * This is an internal function and not for public use.
  */
-export function setPlatformDataLoaderInternal(
+export function INTERNAL_setPlatformDataLoader(
   loader: (key: string) => Promise<unknown>,
 ): void {
   (globalThis as any).__WAKU_SERVER_PLATFORM_DATA_LOADER__ = loader;
