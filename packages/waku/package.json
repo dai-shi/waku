@@ -86,11 +86,11 @@
     "node": "^20.8.0 || ^18.17.0 || ^22.7.0"
   },
   "dependencies": {
-    "@hono/node-server": "1.13.7",
-    "@swc/core": "1.10.9",
+    "@hono/node-server": "1.13.8",
+    "@swc/core": "1.10.12",
     "@vitejs/plugin-react": "4.3.4",
     "dotenv": "16.4.7",
-    "hono": "4.6.18",
+    "hono": "4.6.20",
     "rsc-html-stream": "0.0.4",
     "vite": "6.0.11"
   },
@@ -100,9 +100,9 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-server-dom-webpack": "19.0.0",
-    "rollup": "^4.31.0",
+    "rollup": "^4.34.0",
     "ts-expect": "^1.3.0",
-    "vitest": "3.0.3"
+    "vitest": "3.0.4"
   },
   "peerDependencies": {
     "react": "~19.0.0",
