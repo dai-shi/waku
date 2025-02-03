@@ -1063,6 +1063,31 @@ importers:
         specifier: 5.7.3
         version: 5.7.3
 
+  examples/40_view_transitions:
+    dependencies:
+      react:
+        specifier: 19.0.0
+        version: 19.0.0
+      react-dom:
+        specifier: 19.0.0
+        version: 19.0.0(react@19.0.0)
+      react-server-dom-webpack:
+        specifier: 19.0.0
+        version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.97.1)
+      waku:
+        specifier: 0.21.18
+        version: link:../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 19.0.8
+        version: 19.0.8
+      '@types/react-dom':
+        specifier: 19.0.3
+        version: 19.0.3(@types/react@19.0.8)
+      typescript:
+        specifier: 5.7.3
+        version: 5.7.3
+
   examples/41_path-alias:
     dependencies:
       react:
