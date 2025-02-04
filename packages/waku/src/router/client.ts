@@ -364,7 +364,7 @@ const InnerRouter = ({
       };
 
       if ('startViewTransition' in document) {
-        performChange();
+        document.startViewTransition(performChange);
       } else {
         performChange();
       }
