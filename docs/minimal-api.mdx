@@ -23,14 +23,55 @@ export default defineEntries({
       return renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, '');
     }
   },
-  getBuildConfig: async () => [{ pathSpec: [], entries: [{ rscPath: '' }] }],
+  handleBuild: () => null,
 });
 ```
 
 Tips for experimenting:
 
+- Object keys like `App` are called RSC ID.
 - `input.type === 'custom'` condition can be omitted if you don't need SSR.
-- `getBuildConfig` can return `[]` if you don't need to build anything.
+
+#### `handleBuild`
+
+The `handleBuild` function is to produce a build for production.
+It has to return AsyncIterable of build instructions.
+
+```tsx
+  handleBuild: ({
+    renderRsc,
+    renderHtml,
+    rscPath2pathname,
+    unstable_generatePrefetchCode,
+  }) =>
+    createAsyncIterable(async () => {
+      const moduleIds = new Set<string>();
+      const generateHtmlHead = () =>
+        `<script type="module" async>${unstable_generatePrefetchCode(
+          [''],
+          moduleIds,
+        )}</script>`;
+      const tasks = [
+        async () => ({
+          type: 'file' as const,
+          pathname: rscPath2pathname(''),
+          body: renderRsc(
+            { App: <App name="Waku" /> },
+            { moduleIdCallback: (id) => moduleIds.add(id) },
+          ),
+        }),
+        async () => ({
+          type: 'file' as const,
+          pathname: '/',
+          body: renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, {
+            rscPath: '',
+            htmlHead: generateHtmlHead(),
+          }).then(({ body }) => body),
+        }),
+      ];
+      return tasks;
+    }),
+```
 
 ### Client API
 
@@ -72,3 +113,4 @@ const Component = () => {
 - [../examples/31_minimal](Minimal example)
 - [../examples/34_functions](With server functions)
 - [../examples/39_api](With custom API endpoints)
+- [../examples/51_spa](Fully client components)
