@@ -74,8 +74,11 @@ export const parsePathWithSlug = (path: string): PathSpec =>
   path
     .split('/')
     .filter(Boolean)
-    .map((name) => {
+    .flatMap((name) => {
       let type: 'literal' | 'group' | 'wildcard' = 'literal';
+      if (name.startsWith('(')) {
+        return [];
+      }
       const isSlug = name.startsWith('[') && name.endsWith(']');
       if (isSlug) {
         type = 'group';
@@ -86,7 +89,7 @@ export const parsePathWithSlug = (path: string): PathSpec =>
         type = 'wildcard';
         name = name.slice(3);
       }
-      return { type, name };
+      return [{ type, name }];
     });
 
 /**
