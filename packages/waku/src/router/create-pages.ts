@@ -222,6 +222,8 @@ export const createPages = <
 ) => {
   let configured = false;
 
+  // TODO pathSpecs should be considered for pathless routes
+
   const staticPathMap = new Map<
     string,
     { literalSpec: PathSpec; originalSpec?: PathSpec }
@@ -493,6 +495,7 @@ export const createPages = <
       for (const [path, { literalSpec, originalSpec }] of staticPathMap) {
         const noSsr = noSsrSet.has(literalSpec);
 
+        // TODO this needs to include paths with parens
         const layoutPaths = getLayouts(originalSpec ?? literalSpec);
 
         const elements = {
@@ -565,6 +568,7 @@ export const createPages = <
           noSsr,
         });
       }
+
       return paths;
     },
     handleRoute: async (path, { query }) => {

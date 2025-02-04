@@ -31,4 +31,12 @@ describe('path2regexp', () => {
     expect(matchPath('/foo/[x]/[...y]', '/foo')).toBe(false);
     expect(matchPath('/foo/[x]/[...y]', '/bar')).toBe(false);
   });
+
+  test('handles pathless routes', () => {
+    expect(matchPath('/foo/(hidden)/bar', '/foo/bar')).toBe(true);
+    expect(matchPath('/foo/(hidden)/[slug]', '/foo/bar/baz')).toBe(true);
+    expect(matchPath('/foo/(hidden)/[...slug]', '/foo/bar/baz')).toBe(true);
+    expect(matchPath('/(hidden)/[slug]', '/foo')).toBe(true);
+    expect(matchPath('/(hidden)', '/')).toBe(false);
+  });
 });
