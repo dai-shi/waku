@@ -1,8 +1,14 @@
 import { cache } from 'react';
 import type { ReactNode } from 'react';
 import type { Atom } from 'jotai/vanilla';
-import { INTERNAL_buildStore } from 'jotai/vanilla/internals';
-import type { INTERNAL_AtomState as AtomState } from 'jotai/vanilla/internals';
+import {
+  INTERNAL_buildStore as buildStore,
+  INTERNAL_createStoreArgs as createStoreArgs,
+} from 'jotai/vanilla/internals';
+import type {
+  INTERNAL_AtomState as AtomState,
+  INTERNAL_AtomStateMap as AtomStateMap,
+} from 'jotai/vanilla/internals';
 
 import { SyncAtoms } from './client';
 
@@ -22,9 +28,9 @@ export const getStore = cache(() => {
   const clientAtoms = new Map<Atom<unknown>, ClientReferenceId>();
   const clientAtomValues = new Map<ClientReferenceId, unknown>();
   const atomStateMap = new Map<Atom<unknown>, AtomState>();
-  const store = INTERNAL_buildStore(
-    (a) => atomStateMap.get(a) as never,
-    (a, s) => {
+  const patchedAtomStateMap: AtomStateMap = {
+    get: (a) => atomStateMap.get(a),
+    set: (a, s) => {
       const id = getClientReferenceId(a);
       if (id) {
         clientAtoms.set(a, id);
@@ -34,11 +40,8 @@ export const getStore = cache(() => {
       }
       atomStateMap.set(a, s);
     },
-    (a, ...params) => a.read(...params),
-    (a, ...params) => a.write(...params),
-    (a, ...params) => a.unstable_onInit?.(...params),
-    (a, ...params) => a.onMount?.(...params),
-  );
+  };
+  const store = buildStore(...createStoreArgs(patchedAtomStateMap));
   const getAtoms = () => clientAtoms;
   const setAtomValues = (values: Iterable<[ClientReferenceId, unknown]>) => {
     for (const [id, value] of values) {

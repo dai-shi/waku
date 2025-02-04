@@ -9,7 +9,7 @@
     "start": "waku start"
   },
   "dependencies": {
-    "jotai": "https://pkg.csb.dev/pmndrs/jotai/commit/74b5c9f6/jotai",
+    "jotai": "https://pkg.csb.dev/pmndrs/jotai/commit/014a3777/jotai",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-server-dom-webpack": "19.0.0",
