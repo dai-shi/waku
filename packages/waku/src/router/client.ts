@@ -363,7 +363,7 @@ const InnerRouter = ({
         });
       };
 
-      if ('startViewTransition' in document) {
+      if ('startViewTransition' in document && route.path !== '/404') {
         document.startViewTransition(performChange);
       } else {
         performChange();
