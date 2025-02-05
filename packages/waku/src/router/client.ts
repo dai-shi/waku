@@ -363,7 +363,7 @@ const InnerRouter = ({
         });
       };
 
-      if ('startViewTransition' in document && route.path !== '/404') {
+      if ('startViewTransition' in document && route.path !== '/404' && !skipRefetch) {
         document.startViewTransition(performChange);
       } else {
         performChange();
