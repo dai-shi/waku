@@ -89,6 +89,12 @@ export const parsePathWithSlug = (path: string): PathSpec =>
       return { type, name };
     });
 
+export const parseExactPath = (path: string): PathSpec =>
+  path
+    .split('/')
+    .filter(Boolean)
+    .map((name) => ({ type: 'literal', name }));
+
 /**
  * Transform a path spec to a regular expression.
  */

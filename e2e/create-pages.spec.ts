@@ -143,5 +143,12 @@ for (const mode of ['DEV', 'PRD'] as const) {
       expect(res.status).toBe(200);
       expect(await res.text()).toBe('POST to hello world! from the test!');
     });
+
+    test('exactPath', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/exact/[slug]/[...wild]`);
+      await expect(
+        page.getByRole('heading', { name: 'EXACTLY!!' }),
+      ).toBeVisible();
+    });
   });
 }
