@@ -214,7 +214,7 @@ const createMainViteServer = (
     const vite = await vitePromise;
     try {
       const result = await vite.transformRequest(pathname);
-      if (result?.code === `export default "/@fs${pathname}"`) {
+      if (result?.code === `export default "/@fs${encodeURI(pathname)}"`) {
         return false;
       }
       return !!result;
