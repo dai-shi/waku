@@ -1,10 +1,7 @@
 import { cache } from 'react';
 import type { ReactNode } from 'react';
 import type { Atom } from 'jotai/vanilla';
-import {
-  INTERNAL_buildStore as buildStore,
-  INTERNAL_createStoreArgs as createStoreArgs,
-} from 'jotai/vanilla/internals';
+import { INTERNAL_buildStoreRev1 as buildStore } from 'jotai/vanilla/internals';
 import type {
   INTERNAL_AtomState as AtomState,
   INTERNAL_AtomStateMap as AtomStateMap,
@@ -41,7 +38,7 @@ export const getStore = cache(() => {
       atomStateMap.set(a, s);
     },
   };
-  const store = buildStore(...createStoreArgs(patchedAtomStateMap));
+  const store = buildStore(patchedAtomStateMap);
   const getAtoms = () => clientAtoms;
   const setAtomValues = (values: Iterable<[ClientReferenceId, unknown]>) => {
     for (const [id, value] of values) {
