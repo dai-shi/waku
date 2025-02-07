@@ -20,6 +20,9 @@ export const ClientCounter = () => {
       <button data-testid="refetch2" onClick={() => refetch('[bar]')}>
         Refetch2
       </button>
+      <button data-testid="refetch3" onClick={() => refetch('baz/qux')}>
+        Refetch3
+      </button>
     </ClientBox>
   );
 };
