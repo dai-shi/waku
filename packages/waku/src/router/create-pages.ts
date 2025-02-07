@@ -108,7 +108,7 @@ export type CreatePage = <
   WildSlugKey extends string,
   Render extends 'static' | 'dynamic',
   StaticPaths extends StaticSlugRoutePaths<Path>,
-  EP extends boolean | undefined = undefined,
+  ExactPath extends boolean | undefined = undefined,
 >(
   page: (
     | {
@@ -120,7 +120,7 @@ export type CreatePage = <
         render: Extract<Render, 'static'>;
         path: PathWithStaticSlugs<Path>;
         component: FunctionComponent<PropsForPages<Path>>;
-      } & (EP extends true ? {} : { staticPaths: StaticPaths }))
+      } & (ExactPath extends true ? {} : { staticPaths: StaticPaths }))
     | {
         render: Extract<Render, 'dynamic'>;
         path: PathWithoutSlug<Path>;
@@ -137,7 +137,7 @@ export type CreatePage = <
      * If true, the path will be matched exactly, without wildcards or slugs.
      * This is intended for extending support to create custom routers.
      */
-    exactPath?: EP;
+    exactPath?: ExactPath;
   },
 ) => Omit<
   Exclude<typeof page, { path: never } | { render: never }>,
