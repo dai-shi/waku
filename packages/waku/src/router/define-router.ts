@@ -291,17 +291,16 @@ export function unstable_defineRouter(fns: {
       rendered = true;
       return renderRsc({ ...(await elementsPromise), _value: value });
     }
-    const cleanPath = decodeURIComponent(input.pathname);
-    const pathConfigItem = await getPathConfigItem(cleanPath);
+    const pathConfigItem = await getPathConfigItem(input.pathname);
     if (pathConfigItem?.specs?.isApi && fns.handleApi) {
-      return fns.handleApi(cleanPath, {
+      return fns.handleApi(input.pathname, {
         body: input.req.body,
         headers: input.req.headers,
         method: input.req.method,
       });
     }
     if (input.type === 'action' || input.type === 'custom') {
-      let pathname = cleanPath;
+      let pathname = input.pathname;
       const query = input.req.url.searchParams.toString();
       if (pathConfigItem?.specs?.noSsr) {
         return null;
