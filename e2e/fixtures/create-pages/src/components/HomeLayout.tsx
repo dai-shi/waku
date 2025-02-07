@@ -61,6 +61,9 @@ const HomeLayout = ({ children }: { children: ReactNode }) => (
       <li>
         <Link to="/error">Error</Link>
       </li>
+      <li>
+        <Link to="/exact/[slug]/[...wild]">Exact Path</Link>
+      </li>
     </ul>
     {children}
   </div>
