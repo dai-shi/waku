@@ -197,9 +197,27 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
       );
       const pnpmOverrides = rootPkg.pnpmOverrides;
       if (pnpmOverrides !== null && typeof pnpmOverrides === 'object') {
-        pkg.overrides = {
-          ...pnpmOverrides,
-        };
+        switch (packageManager) {
+          case 'npm': {
+            pkg.overrides = {
+              ...pnpmOverrides,
+            };
+            break;
+          }
+          case 'pnpm': {
+            pkg.pnpm = {
+              overrides: {
+                ...pnpmOverrides,
+              },
+            };
+            break;
+          }
+          case 'yarn': {
+            pkg.resolutions = {
+              ...pnpmOverrides,
+            };
+            break;
+        }
       }
       writeFileSync(
         join(standaloneDir, 'package.json'),
