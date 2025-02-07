@@ -217,6 +217,7 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
               ...pnpmOverrides,
             };
             break;
+          }
         }
       }
       writeFileSync(
