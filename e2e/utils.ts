@@ -193,7 +193,10 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
         readFileSync(join(standaloneDir, 'package.json'), 'utf-8'),
       );
       const rootPkg = JSON.parse(
-        readFileSync(join(process.cwd(), 'package.json'), 'utf-8'),
+        readFileSync(
+          fileURLToPath(new URL('../package.json', import.meta.url)),
+          'utf-8',
+        ),
       );
       const pnpmOverrides = rootPkg.pnpmOverrides;
       if (pnpmOverrides !== null && typeof pnpmOverrides === 'object') {
