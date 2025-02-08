@@ -133,6 +133,13 @@ const pages: ReturnType<typeof createPages> = createPages(
         return new Response(null);
       },
     }),
+
+    createPage({
+      render: 'static',
+      path: '/exact/[slug]/[...wild]',
+      exactPath: true,
+      component: () => <h1>EXACTLY!!</h1>,
+    }),
   ],
 );
 

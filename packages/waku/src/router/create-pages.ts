@@ -8,6 +8,7 @@ import {
   parsePathWithSlug,
   getPathMapping,
   pathSpecAsString,
+  parseExactPath,
 } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
 import type {
@@ -107,6 +108,7 @@ export type CreatePage = <
   WildSlugKey extends string,
   Render extends 'static' | 'dynamic',
   StaticPaths extends StaticSlugRoutePaths<Path>,
+  ExactPath extends boolean | undefined = undefined,
 >(
   page: (
     | {
@@ -114,12 +116,11 @@ export type CreatePage = <
         path: PathWithoutSlug<Path>;
         component: FunctionComponent<PropsForPages<Path>>;
       }
-    | {
+    | ({
         render: Extract<Render, 'static'>;
         path: PathWithStaticSlugs<Path>;
-        staticPaths: StaticPaths;
         component: FunctionComponent<PropsForPages<Path>>;
-      }
+      } & (ExactPath extends true ? {} : { staticPaths: StaticPaths }))
     | {
         render: Extract<Render, 'dynamic'>;
         path: PathWithoutSlug<Path>;
@@ -130,7 +131,14 @@ export type CreatePage = <
         path: PathWithWildcard<Path, SlugKey, WildSlugKey>;
         component: FunctionComponent<PropsForPages<Path>>;
       }
-  ) & { unstable_disableSSR?: boolean },
+  ) & {
+    unstable_disableSSR?: boolean;
+    /**
+     * If true, the path will be matched exactly, without wildcards or slugs.
+     * This is intended for extending support to create custom routers.
+     */
+    exactPath?: ExactPath;
+  },
 ) => Omit<
   Exclude<typeof page, { path: never } | { render: never }>,
   'unstable_disableSSR'
@@ -337,7 +345,19 @@ export const createPages = <
       }
       return { numSlugs, numWildcards };
     })();
-    if (page.render === 'static' && numSlugs === 0) {
+
+    if (page.exactPath) {
+      const spec = parseExactPath(page.path);
+      if (page.render === 'static') {
+        staticPathMap.set(page.path, {
+          literalSpec: parseExactPath(page.path),
+        });
+        const id = joinPath(page.path, 'page').replace(/^\//, '');
+        registerStaticComponent(id, page.component);
+      } else {
+        dynamicPagePathMap.set(page.path, [spec, page.component]);
+      }
+    } else if (page.render === 'static' && numSlugs === 0) {
       staticPathMap.set(page.path, { literalSpec: pathSpec });
       const id = joinPath(page.path, 'page').replace(/^\//, '');
       registerStaticComponent(id, page.component);
