@@ -7,23 +7,23 @@
     "build-cf-types": "wrangler types --experimental-include-runtime",
     "dev": "waku dev",
     "build": "waku build --with-cloudflare",
-    "start": "waku start",
-    "worker:dev": "wrangler dev"
+    "start": "wrangler dev"
   },
   "dependencies": {
     "hono": "4.7.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-server-dom-webpack": "19.0.0",
-    "server-only": "0.0.1",
     "waku": "0.21.19",
     "wrangler": "3.109.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "4.0.6",
     "@types/node": "22.13.4",
     "@types/react": "19.0.8",
     "@types/react-dom": "19.0.3",
     "miniflare": "3.20250204.1",
+    "tailwindcss": "4.0.6",
     "typescript": "5.7.3"
   }
 }

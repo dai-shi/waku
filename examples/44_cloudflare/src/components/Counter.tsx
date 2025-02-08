@@ -1,28 +1,21 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { Link, useRouter_UNSTABLE as useRouter } from 'waku/router/client';
-
-import { jump } from './funcs';
+import { useState } from 'react';
 
 export const Counter = () => {
-  const { path } = useRouter();
   const [count, setCount] = useState(0);
-  const [isPending, startTransition] = useTransition();
+
+  const handleIncrement = () => setCount((c) => c + 1);
+
   return (
-    <div style={{ border: '3px blue dashed', margin: '1em', padding: '1em' }}>
-      <p>Count: {count}</p>
-      <button onClick={() => setCount((c) => c + 1)}>Increment</button>
-      <h3>This is a client component.</h3>
-      <span>path: {path}</span>
-      <p>
-        <Link to="/">Go to Home</Link>
-      </p>
-      <p>
-        <button onClick={() => startTransition(jump)}>
-          Jump to random page{isPending && '...'}
-        </button>
-      </p>
-    </div>
+    <section className="border-blue-400 -mx-4 mt-4 rounded-sm border border-dashed p-4">
+      <div>Count: {count}</div>
+      <button
+        onClick={handleIncrement}
+        className="rounded-xs bg-black px-2 py-0.5 text-sm text-white"
+      >
+        Increment
+      </button>
+    </section>
   );
 };
