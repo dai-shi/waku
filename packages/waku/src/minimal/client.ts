@@ -291,11 +291,11 @@ const ThrowError = ({ error }: { error: unknown }) => {
   throw error;
 };
 
-class Fallback extends Component<
-  { children: ReactNode; fallback: ReactNode },
+class ErrorBoundary extends Component<
+  { children?: ReactNode; fallback: ReactNode },
   { error?: unknown }
 > {
-  constructor(props: { children: ReactNode; fallback: ReactNode }) {
+  constructor(props: { children?: ReactNode; fallback: ReactNode }) {
     super(props);
     this.state = {};
   }
@@ -334,23 +334,24 @@ class Fallback extends Component<
 export const Slot = ({
   id,
   children,
-  unstable_fallbackToPrev,
+  unstable_errorBoundaryWithPrev,
   unstable_fallback,
 }: {
   id: string;
   children?: ReactNode;
-  unstable_fallbackToPrev?: boolean;
+  unstable_errorBoundaryWithPrev?: boolean;
   unstable_fallback?: ReactNode;
 }) => {
   const [fallback, setFallback] = useState<ReactNode>();
-  if (unstable_fallbackToPrev) {
-    return createElement(
-      Fallback,
-      { fallback } as never,
-      createElement(InnerSlot, { id, setFallback }, children),
-    );
+  let ele: ReactNode = createElement(
+    InnerSlot,
+    { id, setFallback, unstable_fallback },
+    children,
+  );
+  if (unstable_errorBoundaryWithPrev) {
+    ele = createElement(ErrorBoundary, { fallback }, ele);
   }
-  return createElement(InnerSlot, { id, unstable_fallback }, children);
+  return ele;
 };
 
 export const Children = () => use(ChildrenContext);

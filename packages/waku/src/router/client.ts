@@ -415,7 +415,7 @@ const InnerRouter = ({
   const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
   const rootElement = createElement(
     Slot,
-    { id: 'root', unstable_fallbackToPrev: true },
+    { id: 'root', unstable_errorBoundaryWithPrev: true },
     routeElement,
   );
   return createElement(
@@ -528,7 +528,7 @@ export function INTERNAL_ServerRouter({ route }: { route: RouteProps }) {
   const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
   const rootElement = createElement(
     Slot,
-    { id: 'root', unstable_fallbackToPrev: true },
+    { id: 'root', unstable_errorBoundaryWithPrev: true },
     routeElement,
   );
   return createElement(
