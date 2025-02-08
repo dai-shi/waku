@@ -10,6 +10,7 @@ import {
   useEffect,
   useState,
   Component,
+  Suspense,
 } from 'react';
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
@@ -257,22 +258,22 @@ export const useElement = (id: string) => {
 const InnerSlot = ({
   id,
   children,
-  setFallback,
+  setPrev,
   unstable_fallback,
 }: {
   id: string;
   children?: ReactNode;
-  setFallback?: (fallback: ReactNode) => void;
+  setPrev?: (prev: ReactNode) => void;
   unstable_fallback?: ReactNode;
 }) => {
   const element = useElement(id);
   const isValidElement = element !== undefined;
   useEffect(() => {
-    if (isValidElement && setFallback) {
+    if (isValidElement && setPrev) {
       // FIXME is there `isReactNode` type checker?
-      setFallback(element as ReactNode);
+      setPrev(element as ReactNode);
     }
-  }, [isValidElement, element, setFallback]);
+  }, [isValidElement, element, setPrev]);
   if (!isValidElement) {
     if (unstable_fallback) {
       return unstable_fallback;
@@ -334,22 +335,27 @@ class ErrorBoundary extends Component<
 export const Slot = ({
   id,
   children,
+  unstable_suspenseWithPrev,
   unstable_errorBoundaryWithPrev,
   unstable_fallback,
 }: {
   id: string;
   children?: ReactNode;
+  unstable_suspenseWithPrev?: boolean;
   unstable_errorBoundaryWithPrev?: boolean;
   unstable_fallback?: ReactNode;
 }) => {
-  const [fallback, setFallback] = useState<ReactNode>();
+  const [prev, setPrev] = useState<ReactNode>();
   let ele: ReactNode = createElement(
     InnerSlot,
-    { id, setFallback, unstable_fallback },
+    { id, setPrev, unstable_fallback },
     children,
   );
+  if (unstable_suspenseWithPrev) {
+    ele = createElement(Suspense, { fallback: prev }, ele);
+  }
   if (unstable_errorBoundaryWithPrev) {
-    ele = createElement(ErrorBoundary, { fallback }, ele);
+    ele = createElement(ErrorBoundary, { fallback: prev }, ele);
   }
   return ele;
 };
