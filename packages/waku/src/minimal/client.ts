@@ -8,7 +8,6 @@ import {
   use,
   useCallback,
   useEffect,
-  useMemo,
   useState,
   Component,
   Suspense,
@@ -256,41 +255,53 @@ export const useElement = (id: string) => {
   return elements[id];
 };
 
+// TODO this might be unefficient because it runs effects for all slots
+const usePrevElement = (id: string) => {
+  const [prevElements, setPrevElements] = useState<Elements>({});
+  const elementsPromise = use(ElementsContext);
+  if (!elementsPromise) {
+    throw new Error('Missing Root component');
+  }
+  useEffect(() => {
+    let alive = true;
+    elementsPromise.then(
+      (elements) => {
+        if (alive) {
+          setPrevElements(elements);
+        }
+      },
+      () => {},
+    );
+    return () => {
+      alive = false;
+    };
+  }, [elementsPromise]);
+  return prevElements[id];
+};
+
 const InnerSlot = ({
   id,
   children,
-  setPrev,
   unstable_fallback,
 }: {
   id: string;
   children?: ReactNode;
-  setPrev: ((prev: ReactNode) => void) | undefined;
   unstable_fallback?: ReactNode;
 }) => {
   const element = useElement(id);
   // HACK this is a naive check for valid element
   const isValidElement = element !== undefined;
-  const ele = useMemo(
-    () =>
-      createElement(
-        ChildrenContextProvider,
-        { value: children },
-        element as ReactNode,
-      ),
-    [element, children],
-  );
-  useEffect(() => {
-    if (isValidElement && setPrev) {
-      setPrev(ele);
-    }
-  }, [isValidElement, ele, setPrev]);
   if (!isValidElement) {
     if (unstable_fallback) {
       return unstable_fallback;
     }
     throw new Error('Invalid element: ' + id);
   }
-  return ele;
+  return createElement(
+    ChildrenContextProvider,
+    { value: children },
+    element as ReactNode,
+  );
 };
 
 const ThrowError = ({ error }: { error: unknown }) => {
@@ -350,24 +361,25 @@ export const Slot = ({
   unstable_errorBoundaryWithPrev?: boolean;
   unstable_fallback?: ReactNode;
 }) => {
-  const [prev, setPrev] = useState<ReactNode>();
+  const prev = usePrevElement(id);
   let ele: ReactNode = createElement(
     InnerSlot,
-    {
-      id,
-      setPrev:
-        unstable_suspenseWithPrev || unstable_errorBoundaryWithPrev
-          ? setPrev
-          : undefined,
-      unstable_fallback,
-    },
+    { id, unstable_fallback },
     children,
   );
+  const fallback =
+    unstable_suspenseWithPrev || unstable_errorBoundaryWithPrev
+      ? createElement(
+          ChildrenContextProvider,
+          { value: children },
+          prev as ReactNode,
+        )
+      : undefined;
   if (unstable_suspenseWithPrev) {
-    ele = createElement(Suspense, { fallback: prev }, ele);
+    ele = createElement(Suspense, { fallback }, ele);
   }
   if (unstable_errorBoundaryWithPrev) {
-    ele = createElement(ErrorBoundary, { fallback: prev }, ele);
+    ele = createElement(ErrorBoundary, { fallback }, ele);
   }
   return ele;
 };
