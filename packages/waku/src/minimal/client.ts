@@ -52,21 +52,29 @@ const checkStatus = async (
 
 type Elements = Record<string, unknown>;
 
+const resolvedElementsMap = new WeakMap<Promise<Elements>, Elements>();
+const prevElementsMap = new WeakMap<Promise<Elements>, Elements | undefined>();
+
 const getCached = <T>(c: () => T, m: WeakMap<object, T>, k: object): T =>
   (m.has(k) ? m : m.set(k, c())).get(k) as T;
 const cache1 = new WeakMap();
 const mergeElementsPromise = (
-  a: Promise<Elements>,
-  b: Promise<Elements>,
+  prev: Promise<Elements>,
+  data: Promise<Elements>,
 ): Promise<Elements> => {
-  const getResult = () =>
-    Promise.all([a, b]).then(([a, b]) => {
-      const nextElements = { ...a, ...b };
+  const getResult = () => {
+    const newElements = Promise.all([prev, data]).then(([prev, data]) => {
+      const nextElements = { ...prev, ...data };
       delete nextElements._value;
+      resolvedElementsMap.set(newElements, nextElements);
       return nextElements;
     });
-  const cache2 = getCached(() => new WeakMap(), cache1, a);
-  return getCached(getResult, cache2, b);
+
+    prevElementsMap.set(newElements, resolvedElementsMap.get(prev));
+    return newElements;
+  };
+  const cache2 = getCached(() => new WeakMap(), cache1, prev);
+  return getCached(getResult, cache2, data);
 };
 
 type SetElements = (
@@ -255,30 +263,12 @@ export const useElement = (id: string) => {
   return elements[id];
 };
 
-const usePrevElement = (id: string, enabled: boolean) => {
-  const [prevElement, setPrevElement] = useState<unknown>();
+const usePrevElement = (id: string) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
     throw new Error('Missing Root component');
   }
-  useEffect(() => {
-    if (!enabled) {
-      return;
-    }
-    let alive = true;
-    elementsPromise.then(
-      (elements) => {
-        if (alive) {
-          setPrevElement(elements[id]);
-        }
-      },
-      () => {},
-    );
-    return () => {
-      alive = false;
-    };
-  }, [enabled, id, elementsPromise]);
-  return prevElement;
+  return prevElementsMap.get(elementsPromise)?.[id];
 };
 
 const InnerSlot = ({
@@ -360,16 +350,15 @@ export const Slot = ({
   unstable_errorBoundaryWithPrev?: boolean;
   unstable_fallback?: ReactNode;
 }) => {
-  const prevEnabled =
-    !!unstable_suspenseWithPrev || !!unstable_errorBoundaryWithPrev;
-  const prev = usePrevElement(id, prevEnabled);
+  const prev = usePrevElement(id);
   let ele: ReactNode = createElement(
     InnerSlot,
     { id, unstable_fallback },
     children,
   );
   const fallback =
-    prevEnabled && prev !== undefined
+    (unstable_suspenseWithPrev || unstable_errorBoundaryWithPrev) &&
+    prev !== undefined
       ? createElement(
           ChildrenContextProvider,
           { value: children },

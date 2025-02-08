@@ -418,7 +418,11 @@ const InnerRouter = ({
   });
   const rootElement = createElement(
     Slot,
-    { id: 'root', unstable_errorBoundaryWithPrev: true },
+    {
+      id: 'root',
+      unstable_suspenseWithPrev: true,
+      unstable_errorBoundaryWithPrev: true,
+    },
     routeElement,
   );
   return createElement(
@@ -534,7 +538,11 @@ export function INTERNAL_ServerRouter({ route }: { route: RouteProps }) {
   });
   const rootElement = createElement(
     Slot,
-    { id: 'root', unstable_errorBoundaryWithPrev: true },
+    {
+      id: 'root',
+      unstable_suspenseWithPrev: true,
+      unstable_errorBoundaryWithPrev: true,
+    },
     routeElement,
   );
   return createElement(
