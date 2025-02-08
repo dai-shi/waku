@@ -192,9 +192,7 @@ const RefetchContext = createContext<
 >(() => {
   throw new Error('Missing Root component');
 });
-const ElementsContext = createContext<
-  readonly [current?: Promise<Elements>, previous?: Elements | undefined]
->([]);
+const ElementsContext = createContext<Promise<Elements> | null>(null);
 
 export const Root = ({
   initialRscPath,
@@ -228,27 +226,12 @@ export const Root = ({
     },
     [fetchCache],
   );
-  const [prevElements, setPrevElements] = useState<Elements>();
-  useEffect(() => {
-    let alive = true;
-    elements.then(
-      (resolved) => {
-        if (alive) {
-          setPrevElements(resolved);
-        }
-      },
-      () => {},
-    );
-    return () => {
-      alive = false;
-    };
-  }, [elements]);
   return createElement(
     RefetchContext.Provider,
     { value: refetch },
     createElement(
       ElementsContext.Provider,
-      { value: [elements, prevElements] },
+      { value: elements },
       ...DEFAULT_HTML_HEAD,
       children,
     ),
@@ -261,7 +244,7 @@ const ChildrenContext = createContext<ReactNode>(undefined);
 const ChildrenContextProvider = memo(ChildrenContext.Provider);
 
 export const useElement = (id: string) => {
-  const [elementsPromise] = use(ElementsContext);
+  const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
     throw new Error('Missing Root component');
   }
@@ -272,8 +255,27 @@ export const useElement = (id: string) => {
   return elements[id];
 };
 
+// TODO this might be unefficient because it runs effects for all slots
 const usePrevElement = (id: string) => {
-  const [, prevElements = {}] = use(ElementsContext);
+  const [prevElements, setPrevElements] = useState<Elements>({});
+  const elementsPromise = use(ElementsContext);
+  if (!elementsPromise) {
+    throw new Error('Missing Root component');
+  }
+  useEffect(() => {
+    let alive = true;
+    elementsPromise.then(
+      (elements) => {
+        if (alive) {
+          setPrevElements(elements);
+        }
+      },
+      () => {},
+    );
+    return () => {
+      alive = false;
+    };
+  }, [elementsPromise]);
   return prevElements[id];
 };
 
@@ -397,7 +399,7 @@ export const INTERNAL_ServerRoot = ({
 }) =>
   createElement(
     ElementsContext.Provider,
-    { value: [elementsPromise] },
+    { value: elementsPromise },
     ...DEFAULT_HTML_HEAD,
     children,
   );
