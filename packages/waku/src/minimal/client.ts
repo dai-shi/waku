@@ -8,6 +8,7 @@ import {
   use,
   useCallback,
   useEffect,
+  useMemo,
   useState,
   Component,
   Suspense,
@@ -263,29 +264,33 @@ const InnerSlot = ({
 }: {
   id: string;
   children?: ReactNode;
-  setPrev?: (prev: ReactNode) => void;
+  setPrev: ((prev: ReactNode) => void) | undefined;
   unstable_fallback?: ReactNode;
 }) => {
   const element = useElement(id);
+  // HACK this is a naive check for valid element
   const isValidElement = element !== undefined;
+  const ele = useMemo(
+    () =>
+      createElement(
+        ChildrenContextProvider,
+        { value: children },
+        element as ReactNode,
+      ),
+    [element, children],
+  );
   useEffect(() => {
     if (isValidElement && setPrev) {
-      // FIXME is there `isReactNode` type checker?
-      setPrev(element as ReactNode);
+      setPrev(ele);
     }
-  }, [isValidElement, element, setPrev]);
+  }, [isValidElement, ele, setPrev]);
   if (!isValidElement) {
     if (unstable_fallback) {
       return unstable_fallback;
     }
     throw new Error('Invalid element: ' + id);
   }
-  return createElement(
-    ChildrenContextProvider,
-    { value: children },
-    // FIXME is there `isReactNode` type checker?
-    element as ReactNode,
-  );
+  return ele;
 };
 
 const ThrowError = ({ error }: { error: unknown }) => {
@@ -348,7 +353,14 @@ export const Slot = ({
   const [prev, setPrev] = useState<ReactNode>();
   let ele: ReactNode = createElement(
     InnerSlot,
-    { id, setPrev, unstable_fallback },
+    {
+      id,
+      setPrev:
+        unstable_suspenseWithPrev || unstable_errorBoundaryWithPrev
+          ? setPrev
+          : undefined,
+      unstable_fallback,
+    },
     children,
   );
   if (unstable_suspenseWithPrev) {
