@@ -255,19 +255,21 @@ export const useElement = (id: string) => {
   return elements[id];
 };
 
-// TODO this might be unefficient because it runs effects for all slots
-const usePrevElement = (id: string) => {
-  const [prevElements, setPrevElements] = useState<Elements>({});
+const usePrevElement = (id: string, enabled: boolean) => {
+  const [prevElement, setPrevElement] = useState<unknown>();
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
     throw new Error('Missing Root component');
   }
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
     let alive = true;
     elementsPromise.then(
       (elements) => {
         if (alive) {
-          setPrevElements(elements);
+          setPrevElement(elements[id]);
         }
       },
       () => {},
@@ -275,8 +277,8 @@ const usePrevElement = (id: string) => {
     return () => {
       alive = false;
     };
-  }, [elementsPromise]);
-  return prevElements[id];
+  }, [enabled, id, elementsPromise]);
+  return prevElement;
 };
 
 const InnerSlot = ({
@@ -321,14 +323,11 @@ class ErrorBoundary extends Component<
   }
   render() {
     if ('error' in this.state) {
-      if (this.props.fallback) {
-        return createElement(
-          ChildrenContextProvider,
-          { value: createElement(ThrowError, { error: this.state.error }) },
-          this.props.fallback,
-        );
-      }
-      throw this.state.error;
+      return createElement(
+        ChildrenContextProvider,
+        { value: createElement(ThrowError, { error: this.state.error }) },
+        this.props.fallback,
+      );
     }
     return this.props.children;
   }
@@ -361,24 +360,26 @@ export const Slot = ({
   unstable_errorBoundaryWithPrev?: boolean;
   unstable_fallback?: ReactNode;
 }) => {
-  const prev = usePrevElement(id);
+  const prevEnabled =
+    !!unstable_suspenseWithPrev || !!unstable_errorBoundaryWithPrev;
+  const prev = usePrevElement(id, prevEnabled);
   let ele: ReactNode = createElement(
     InnerSlot,
     { id, unstable_fallback },
     children,
   );
   const fallback =
-    unstable_suspenseWithPrev || unstable_errorBoundaryWithPrev
+    prevEnabled && prev !== undefined
       ? createElement(
           ChildrenContextProvider,
           { value: children },
           prev as ReactNode,
         )
       : undefined;
-  if (unstable_suspenseWithPrev) {
+  if (unstable_suspenseWithPrev && fallback !== undefined) {
     ele = createElement(Suspense, { fallback }, ele);
   }
-  if (unstable_errorBoundaryWithPrev) {
+  if (unstable_errorBoundaryWithPrev && fallback !== undefined) {
     ele = createElement(ErrorBoundary, { fallback }, ele);
   }
   return ele;
