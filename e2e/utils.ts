@@ -185,10 +185,6 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
       const wakuPackageTgz = join(standaloneDir, `waku-${version}.tgz`);
       const installScript = PACKAGE_INSTALL[packageManager](wakuPackageTgz);
       execSync(installScript, { cwd: standaloneDir });
-      execSync(
-        `npm install --force ${join(standaloneDir, `waku-${version}.tgz`)}`,
-        { cwd: standaloneDir },
-      );
       const pkg = JSON.parse(
         readFileSync(join(standaloneDir, 'package.json'), 'utf-8'),
       );
