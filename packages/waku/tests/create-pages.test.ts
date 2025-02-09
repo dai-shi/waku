@@ -1063,7 +1063,7 @@ describe('createPages pages and layouts', () => {
     await expect(getRouteConfig).rejects.toThrowError('Duplicated path: /test');
   });
 
-  it.fails(
+  it(
     'fails if duplicated static and dynamic paths override each other',
     async () => {
       createPages(async ({ createPage }) => [
@@ -1080,7 +1080,7 @@ describe('createPages pages and layouts', () => {
       ]);
       const { getRouteConfig } = injectedFunctions();
       await expect(getRouteConfig).rejects.toThrowError(
-        'Duplicated component for: test/page',
+        'Duplicated path: /test',
       );
     },
   );
