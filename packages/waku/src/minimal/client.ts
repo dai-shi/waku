@@ -274,15 +274,23 @@ const usePrevElement = (id: string) => {
 const InnerSlot = ({
   id,
   children,
+  setFallback,
   unstable_fallback,
 }: {
   id: string;
   children?: ReactNode;
+  setFallback?: (fallback: ReactNode) => void;
   unstable_fallback?: ReactNode;
 }) => {
   const element = useElement(id);
   // HACK this is a naive check for valid element
   const isValidElement = element !== undefined;
+  useEffect(() => {
+    if (isValidElement && setFallback) {
+      // FIXME is there `isReactNode` type checker?
+      setFallback(element as ReactNode);
+    }
+  }, [isValidElement, element, setFallback]);
   if (!isValidElement) {
     if (unstable_fallback) {
       return unstable_fallback;
@@ -350,25 +358,31 @@ export const Slot = ({
   unstable_errorBoundaryWithPrev?: boolean;
   unstable_fallback?: ReactNode;
 }) => {
+  const [fallback, setFallback] = useState<ReactNode>();
   const prev = usePrevElement(id);
   let ele: ReactNode = createElement(
     InnerSlot,
-    { id, unstable_fallback },
+    {
+      id,
+      ...(unstable_errorBoundaryWithPrev ? { setFallback } : {}),
+      unstable_fallback,
+    },
     children,
   );
-  const fallback =
-    (unstable_suspenseWithPrev || unstable_errorBoundaryWithPrev) &&
-    prev !== undefined
-      ? createElement(
+  if ('TODO'.length === 0 && unstable_suspenseWithPrev && prev !== undefined) {
+    ele = createElement(
+      Suspense,
+      {
+        fallback: createElement(
           ChildrenContextProvider,
           { value: children },
           prev as ReactNode,
-        )
-      : undefined;
-  if (unstable_suspenseWithPrev && fallback !== undefined) {
-    ele = createElement(Suspense, { fallback }, ele);
+        ),
+      },
+      ele,
+    );
   }
-  if (unstable_errorBoundaryWithPrev && fallback !== undefined) {
+  if (unstable_errorBoundaryWithPrev) {
     ele = createElement(ErrorBoundary, { fallback }, ele);
   }
   return ele;
