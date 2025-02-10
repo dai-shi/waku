@@ -68,6 +68,12 @@ export function unstable_fsRouter(
           .replace(/\.\w+$/, '')
           .split('/')
           .filter(Boolean);
+        if (
+          !pathItems.includes('_components') ||
+          !pathItems.includes('_hooks')
+        ) {
+          continue;
+        }
         const path =
           '/' +
           (['_layout', 'index', '_root'].includes(pathItems.at(-1)!)
@@ -127,10 +133,7 @@ export function unstable_fsRouter(
             render: 'static',
             ...config,
           });
-        } else if (
-          !pathItems.includes('_components') ||
-          !pathItems.includes('_hooks')
-        ) {
+        } else {
           createPage({
             path,
             component: mod.default,
