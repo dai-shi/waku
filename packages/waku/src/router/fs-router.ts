@@ -127,7 +127,10 @@ export function unstable_fsRouter(
             render: 'static',
             ...config,
           });
-        } else if (!pathItems.includes('_components') || !pathItems.includes('_hooks')) {
+        } else if (
+          !pathItems.includes('_components') ||
+          !pathItems.includes('_hooks')
+        ) {
           createPage({
             path,
             component: mod.default,
