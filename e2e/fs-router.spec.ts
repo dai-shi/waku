@@ -76,5 +76,12 @@ for (const mode of ['DEV', 'PRD'] as const) {
       expect(res.status).toBe(200);
       expect(await res.text()).toBe('POST Hello from API! from the test!');
     });
+
+    test('_components', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/_components/Counter`);
+      await expect(
+        page.getByText('Page not found: /_components/Counter'),
+      ).toBeVisible();
+    });
   });
 }
