@@ -1277,6 +1277,34 @@ importers:
         specifier: 5.7.3
         version: 5.7.3
 
+  examples/54_jotai:
+    dependencies:
+      jotai:
+        specifier: https://pkg.csb.dev/pmndrs/jotai/commit/4bd935a7/jotai
+        version: https://pkg.csb.dev/pmndrs/jotai/commit/4bd935a7/jotai(@types/react@19.0.8)(react@19.0.0)
+      react:
+        specifier: 19.0.0
+        version: 19.0.0
+      react-dom:
+        specifier: 19.0.0
+        version: 19.0.0(react@19.0.0)
+      react-server-dom-webpack:
+        specifier: 19.0.0
+        version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.97.1)
+      waku:
+        specifier: 0.21.18
+        version: link:../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: 19.0.8
+        version: 19.0.8
+      '@types/react-dom':
+        specifier: 19.0.3
+        version: 19.0.3(@types/react@19.0.8)
+      typescript:
+        specifier: 5.7.3
+        version: 5.7.3
+
   packages/create-waku:
     devDependencies:
       '@types/fs-extra':
@@ -4431,6 +4459,19 @@ packages:
 
   jotai@2.11.3:
     resolution: {integrity: sha512-B/PsewAQ0UOS5e2+TTWegUPQ3SCLPCjPY24LYUjfn2EorGlluTA2dFjVLgF1+xHLjK9Jit3y5mKHyMG3Xq/GZg==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@types/react': '>=17.0.0'
+      react: '>=17.0.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      react:
+        optional: true
+
+  jotai@https://pkg.csb.dev/pmndrs/jotai/commit/4bd935a7/jotai:
+    resolution: {tarball: https://pkg.csb.dev/pmndrs/jotai/commit/4bd935a7/jotai}
+    version: 2.11.3
     engines: {node: '>=12.20.0'}
     peerDependencies:
       '@types/react': '>=17.0.0'
@@ -9286,6 +9327,11 @@ snapshots:
   jiti@2.4.2: {}
 
   jotai@2.11.3(@types/react@19.0.8)(react@19.0.0):
+    optionalDependencies:
+      '@types/react': 19.0.8
+      react: 19.0.0
+
+  jotai@https://pkg.csb.dev/pmndrs/jotai/commit/4bd935a7/jotai(@types/react@19.0.8)(react@19.0.0):
     optionalDependencies:
       '@types/react': 19.0.8
       react: 19.0.0
