@@ -79,9 +79,7 @@ for (const mode of ['DEV', 'PRD'] as const) {
 
     test('_components', async ({ page }) => {
       await page.goto(`http://localhost:${port}/_components/Counter`);
-      await expect(
-        page.getByText('Page not found: /_components/Counter'),
-      ).toBeVisible();
+      await expect(page.getByText('404 Not Found')).toBeVisible();
     });
   });
 }
