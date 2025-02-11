@@ -349,17 +349,29 @@ const InnerRouter = ({
   const changeRoute: ChangeRoute = useCallback(
     (route, options) => {
       const { skipRefetch } = options || {};
-      startTransition(() => {
-        if (!staticPathSet.has(route.path) && !skipRefetch) {
-          const rscPath = encodeRoutePath(route.path);
-          const rscParams = createRscParams(route.query);
-          refetch(rscPath, rscParams);
-        }
-        if (options.shouldScroll) {
-          handleScroll();
-        }
-        setRoute(route);
-      });
+      const performChange = () => {
+        startTransition(() => {
+          if (!staticPathSet.has(route.path) && !skipRefetch) {
+            const rscPath = encodeRoutePath(route.path);
+            const rscParams = createRscParams(route.query);
+            refetch(rscPath, rscParams);
+          }
+          if (options.shouldScroll) {
+            handleScroll();
+          }
+          setRoute(route);
+        });
+      };
+
+      if (
+        'startViewTransition' in document &&
+        route.path !== '/404' &&
+        !skipRefetch
+      ) {
+        document.startViewTransition(performChange);
+      } else {
+        performChange();
+      }
     },
     [refetch, staticPathSet],
   );
@@ -404,7 +416,10 @@ const InnerRouter = ({
           url,
         );
       }
-      changeRoute(parseRoute(url), { skipRefetch: true, shouldScroll: false });
+      changeRoute(parseRoute(url), {
+        skipRefetch: true,
+        shouldScroll: false,
+      });
     };
     locationListeners.add(callback);
     return () => {
