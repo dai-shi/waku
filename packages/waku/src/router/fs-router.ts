@@ -68,10 +68,7 @@ export function unstable_fsRouter(
           .replace(/\.\w+$/, '')
           .split('/')
           .filter(Boolean);
-        if (
-          !pathItems.includes('_components') ||
-          !pathItems.includes('_hooks')
-        ) {
+        if (pathItems.includes('_components') || pathItems.includes('_hooks')) {
           continue;
         }
         const path =
