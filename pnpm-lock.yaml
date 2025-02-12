@@ -1173,43 +1173,6 @@ importers:
       react-server-dom-webpack:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.97.1(esbuild@0.17.19))
-      waku:
-        specifier: 0.21.18
-        version: link:../../packages/waku
-      wrangler:
-        specifier: 3.107.2
-        version: 3.107.2
-    devDependencies:
-      '@types/node':
-        specifier: 22.13.0
-        version: 22.13.0
-      '@types/react':
-        specifier: 19.0.8
-        version: 19.0.8
-      '@types/react-dom':
-        specifier: 19.0.3
-        version: 19.0.3(@types/react@19.0.8)
-      miniflare:
-        specifier: 3.20250129.0
-        version: 3.20250129.0
-      typescript:
-        specifier: 5.7.3
-        version: 5.7.3
-
-  examples/45_cloudflare-dynamic-routes:
-    dependencies:
-      hono:
-        specifier: 4.6.20
-        version: 4.6.20
-      react:
-        specifier: 19.0.0
-        version: 19.0.0
-      react-dom:
-        specifier: 19.0.0
-        version: 19.0.0(react@19.0.0)
-      react-server-dom-webpack:
-        specifier: 19.0.0
-        version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.97.1)
       server-only:
         specifier: 0.0.1
         version: 0.0.1
