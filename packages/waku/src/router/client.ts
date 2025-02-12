@@ -414,13 +414,13 @@ const InnerRouter = ({
 
   const routeElement = createElement(Slot, {
     id: getRouteSlotId(route.path),
-    unstable_suspenseWithPrev: true,
+    unstable_staleWhileRevalidate: true,
   });
   const rootElement = createElement(
     Slot,
     {
       id: 'root',
-      unstable_suspenseWithPrev: true,
+      unstable_staleWhileRevalidate: true,
       unstable_errorBoundaryWithPrev: true,
     },
     routeElement,
@@ -534,13 +534,13 @@ export function Router({
 export function INTERNAL_ServerRouter({ route }: { route: RouteProps }) {
   const routeElement = createElement(Slot, {
     id: getRouteSlotId(route.path),
-    unstable_suspenseWithPrev: true,
+    unstable_staleWhileRevalidate: true,
   });
   const rootElement = createElement(
     Slot,
     {
       id: 'root',
-      unstable_suspenseWithPrev: true,
+      unstable_staleWhileRevalidate: true,
       unstable_errorBoundaryWithPrev: true,
     },
     routeElement,

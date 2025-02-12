@@ -10,7 +10,6 @@ import {
   useEffect,
   useState,
   Component,
-  Suspense,
 } from 'react';
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
@@ -69,7 +68,6 @@ const mergeElementsPromise = (
       resolvedElementsMap.set(newElements, nextElements);
       return nextElements;
     });
-
     prevElementsMap.set(newElements, resolvedElementsMap.get(prev));
     return newElements;
   };
@@ -263,12 +261,42 @@ export const useElement = (id: string) => {
   return elements[id];
 };
 
-const usePrevElement = (id: string) => {
+const useSyncElement = (id: string) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
     throw new Error('Missing Root component');
   }
-  return prevElementsMap.get(elementsPromise)?.[id];
+  const [element, setElement] = useState<unknown>(
+    prevElementsMap.get(elementsPromise)?.[id],
+  );
+  const [error, setError] = useState<unknown>();
+  if (error) {
+    throw error;
+  }
+  useEffect(() => {
+    let alive = true;
+    elementsPromise.then(
+      (elements) => {
+        if (id in elements && elements[id] == undefined) {
+          throw new Error(
+            'Element cannot be undefined, use null instead: ' + id,
+          );
+        }
+        if (alive) {
+          setElement(elements[id]);
+        }
+      },
+      (err) => {
+        if (alive) {
+          setError(err);
+        }
+      },
+    );
+    return () => {
+      alive = false;
+    };
+  }, [elementsPromise, id]);
+  return element;
 };
 
 const InnerSlot = ({
@@ -297,6 +325,32 @@ const InnerSlot = ({
     }
     throw new Error('Invalid element: ' + id);
   }
+  return createElement(
+    ChildrenContextProvider,
+    { value: children },
+    element as ReactNode,
+  );
+};
+
+// TODO unstable_fallback isn't supported and setFallback is kind of duplicated
+const InnerSyncSlot = ({
+  id,
+  children,
+  setFallback,
+}: {
+  id: string;
+  children?: ReactNode;
+  setFallback?: (fallback: ReactNode) => void;
+}) => {
+  const element = useSyncElement(id);
+  // HACK this is a naive check for valid element
+  const isValidElement = element !== undefined;
+  useEffect(() => {
+    if (isValidElement && setFallback) {
+      // FIXME is there `isReactNode` type checker?
+      setFallback(element as ReactNode);
+    }
+  }, [id, isValidElement, element, setFallback]);
   return createElement(
     ChildrenContextProvider,
     { value: children },
@@ -348,38 +402,38 @@ class ErrorBoundary extends Component<
 export const Slot = ({
   id,
   children,
-  unstable_suspenseWithPrev,
+  unstable_staleWhileRevalidate,
   unstable_errorBoundaryWithPrev,
   unstable_fallback,
 }: {
   id: string;
   children?: ReactNode;
-  unstable_suspenseWithPrev?: boolean;
+  unstable_staleWhileRevalidate?: boolean;
   unstable_errorBoundaryWithPrev?: boolean;
   unstable_fallback?: ReactNode;
 }) => {
   const [fallback, setFallback] = useState<ReactNode>();
-  const prev = usePrevElement(id);
-  let ele: ReactNode = createElement(
-    InnerSlot,
-    {
-      id,
-      ...(unstable_errorBoundaryWithPrev ? { setFallback } : {}),
-      unstable_fallback,
-    },
-    children,
-  );
-  if ('TODO'.length === 0 && unstable_suspenseWithPrev && prev !== undefined) {
+  let ele: ReactNode;
+  if (unstable_staleWhileRevalidate) {
     ele = createElement(
-      Suspense,
+      InnerSyncSlot,
       {
-        fallback: createElement(
-          ChildrenContextProvider,
-          { value: children },
-          prev as ReactNode,
-        ),
+        key: id,
+        id,
+        ...(unstable_errorBoundaryWithPrev ? { setFallback } : {}),
       },
-      ele,
+      children,
+    );
+  } else {
+    ele = createElement(
+      InnerSlot,
+      {
+        key: id,
+        id,
+        ...(unstable_errorBoundaryWithPrev ? { setFallback } : {}),
+        unstable_fallback,
+      },
+      children,
     );
   }
   if (unstable_errorBoundaryWithPrev) {

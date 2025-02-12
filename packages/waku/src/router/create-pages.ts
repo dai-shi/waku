@@ -643,14 +643,14 @@ export const createPages = <
           component: Slot,
           props: {
             id: `layout:${lPath}`,
-            unstable_suspenseWithPrev: true,
+            unstable_staleWhileRevalidate: true,
           },
         })),
         {
           component: Slot,
           props: {
             id: `page:${routePath}`,
-            unstable_suspenseWithPrev: true,
+            unstable_staleWhileRevalidate: true,
           },
         },
       ];
