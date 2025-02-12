@@ -261,6 +261,7 @@ export const useElement = (id: string) => {
   return elements[id];
 };
 
+// HACK this is still an experimental hook
 const useSyncElement = (id: string) => {
   const elementsPromise = use(ElementsContext);
   if (!elementsPromise) {
