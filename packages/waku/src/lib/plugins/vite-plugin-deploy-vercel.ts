@@ -1,5 +1,11 @@
 import path from 'node:path';
-import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+  readdirSync,
+} from 'node:fs';
 import type { Plugin } from 'vite';
 
 import { unstable_getBuildOptions } from '../../server.js';
@@ -133,6 +139,10 @@ export function deployVercelPlugin(opts: {
         writeFileSync(
           path.join(serverlessDir, 'package.json'),
           JSON.stringify({ type: 'module' }, null, 2),
+        );
+        console.log(
+          'Vercel serverless dist',
+          readdirSync(path.join(serverlessDir, opts.distDir)),
         );
       }
 
