@@ -589,7 +589,7 @@ export const createPages = <
           [`page:${path}`]: { isStatic: false },
         };
         paths.push({
-          path: pathSpec,
+          path: pathSpec.filter((part) => !part.name?.startsWith('(')),
           rootElement: { isStatic: rootIsStatic },
           routeElement: { isStatic: true },
           elements,
@@ -612,7 +612,7 @@ export const createPages = <
           [`page:${path}`]: { isStatic: false },
         };
         paths.push({
-          path: pathSpec,
+          path: pathSpec.filter((part) => !part.name?.startsWith('(')),
           rootElement: { isStatic: rootIsStatic },
           routeElement: { isStatic: true },
           elements,
