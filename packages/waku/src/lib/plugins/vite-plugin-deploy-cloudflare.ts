@@ -1,21 +1,21 @@
-import path from 'node:path';
+import { randomBytes } from 'node:crypto';
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
   rmSync,
   writeFileSync,
-  copyFileSync,
 } from 'node:fs';
 import os from 'node:os';
-import { randomBytes } from 'node:crypto';
+import path from 'node:path';
 
 import type { Plugin } from 'vite';
 
-import { unstable_getBuildOptions } from '../../server.js';
-import { SRC_ENTRIES } from '../constants.js';
-import { DIST_PUBLIC } from '../builder/constants.js';
 import { emitPlatformData } from '../builder/platform-data.js';
+import { unstable_getBuildOptions } from '../../server.js';
+import { DIST_PUBLIC } from '../builder/constants.js';
+import { SRC_ENTRIES } from '../constants.js';
 
 const SERVE_JS = 'serve-cloudflare.js';
 
