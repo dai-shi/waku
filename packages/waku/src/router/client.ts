@@ -175,6 +175,7 @@ export type LinkProps = {
   children: ReactNode;
   unstable_prefetchOnEnter?: boolean;
   unstable_prefetchOnView?: boolean;
+  unstable_useViewTransition?: boolean;
 } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>;
 
 export function Link({
@@ -184,6 +185,7 @@ export function Link({
   notPending,
   unstable_prefetchOnEnter,
   unstable_prefetchOnView,
+  unstable_useViewTransition,
   ...props
 }: LinkProps): ReactElement {
   const router = useContext(RouterContext);
@@ -239,7 +241,13 @@ export function Link({
           '',
           url,
         );
-        changeRoute(route, { shouldScroll: true });
+        if (unstable_useViewTransition && 'startViewTransition' in document) {
+          document.startViewTransition(() =>
+            changeRoute(route, { shouldScroll: true }),
+          );
+        } else {
+          changeRoute(route, { shouldScroll: true });
+        }
       });
     }
     props.onClick?.(event);
