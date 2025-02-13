@@ -140,8 +140,8 @@ const createMainViteServer = (
 
   const wakuDist = joinPath(fileURLToFilePath(import.meta.url), '../../..');
 
+  // FIXME This function feels too hacky
   const loadServerModuleMain = async (idOrFileURL: string) => {
-    console.log('======loadServerModuleMain', idOrFileURL);
     const vite = await vitePromise;
     if (!idOrFileURL.startsWith('file://')) {
       if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
@@ -156,7 +156,10 @@ const createMainViteServer = (
       : joinPath(vite.config.root, filePath);
     if (file.startsWith(wakuDist)) {
       // HACK `external: ['waku']` doesn't do the same
-      return import(/* @vite-ignore */ filePathToFileURL(file));
+      return import(
+        /* @vite-ignore */ 'waku' +
+          file.slice(wakuDist.length).replace(/\.\w+$/, '')
+      );
     }
     {
       let id = file;
