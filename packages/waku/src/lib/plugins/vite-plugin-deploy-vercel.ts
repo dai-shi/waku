@@ -5,6 +5,7 @@ import type { Plugin } from 'vite';
 import { unstable_getBuildOptions } from '../../server.js';
 import { SRC_ENTRIES } from '../constants.js';
 import { DIST_PUBLIC } from '../builder/constants.js';
+import { emitPlatformData } from '../builder/platform-data.js';
 
 const SERVE_JS = 'serve-vercel.js';
 
@@ -84,7 +85,7 @@ export function deployVercelPlugin(opts: {
         return getServeJsContent(opts.distDir, DIST_PUBLIC, entriesFile);
       }
     },
-    closeBundle() {
+    async closeBundle() {
       const { deploy, unstable_phase } = buildOptions;
       if (
         unstable_phase !== 'buildDeploy' ||
@@ -112,6 +113,7 @@ export function deployVercelPlugin(opts: {
           path.join(serverlessDir, opts.distDir),
           { recursive: true },
         );
+        await emitPlatformData(path.join(serverlessDir, opts.distDir));
         if (existsSync(path.join(rootDir, opts.privateDir))) {
           cpSync(
             path.join(rootDir, opts.privateDir),
