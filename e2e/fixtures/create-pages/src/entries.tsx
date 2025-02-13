@@ -140,6 +140,12 @@ const pages: ReturnType<typeof createPages> = createPages(
       exactPath: true,
       component: () => <h1>EXACTLY!!</h1>,
     }),
+
+    createPage({
+      render: 'static',
+      path: '/(group)/test',
+      component: () => <h1>Group</h1>,
+    }),
   ],
 );
 

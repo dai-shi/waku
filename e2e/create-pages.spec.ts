@@ -150,5 +150,10 @@ for (const mode of ['DEV', 'PRD'] as const) {
         page.getByRole('heading', { name: 'EXACTLY!!' }),
       ).toBeVisible();
     });
+
+    test('group', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/test`);
+      await expect(page.getByRole('heading', { name: 'Group' })).toBeVisible();
+    });
   });
 }
