@@ -1,15 +1,15 @@
-import path from 'node:path';
+import { randomBytes } from 'node:crypto';
 import {
   appendFileSync,
+  copyFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
   rmSync,
   writeFileSync,
-  copyFileSync,
 } from 'node:fs';
 import os from 'node:os';
-import { randomBytes } from 'node:crypto';
+import path from 'node:path';
 
 import type { Plugin } from 'vite';
 
@@ -17,8 +17,8 @@ import {
   INTERNAL_iterateSerializablePlatformData,
   unstable_getBuildOptions,
 } from '../../server.js';
-import { SRC_ENTRIES } from '../constants.js';
 import { DIST_ENTRIES_JS, DIST_PUBLIC } from '../builder/constants.js';
+import { SRC_ENTRIES } from '../constants.js';
 
 const SERVE_JS = 'serve-cloudflare.js';
 
@@ -231,7 +231,8 @@ export function loadPlatformData(key) {
   switch (key) {
     ${Array.from(keys)
       .map(
-        (k) => `case '${k}': return import('./${DIST_PLATFORM_DATA}/${k}.js');`,
+        (k) =>
+          `case '${k}': return import('./${DIST_PLATFORM_DATA}/${k}.js').then(m => m.default);`,
       )
       .join('\n')}
     default: throw new Error('Cannot find platform data: ' + key);
