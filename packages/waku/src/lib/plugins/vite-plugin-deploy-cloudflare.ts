@@ -1,6 +1,5 @@
 import path from 'node:path';
 import {
-  appendFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -13,12 +12,10 @@ import { randomBytes } from 'node:crypto';
 
 import type { Plugin } from 'vite';
 
-import {
-  INTERNAL_iterateSerializablePlatformData,
-  unstable_getBuildOptions,
-} from '../../server.js';
+import { unstable_getBuildOptions } from '../../server.js';
 import { SRC_ENTRIES } from '../constants.js';
-import { DIST_ENTRIES_JS, DIST_PUBLIC } from '../builder/constants.js';
+import { DIST_PUBLIC } from '../builder/constants.js';
+import { emitPlatformData } from '../builder/platform-data.js';
 
 const SERVE_JS = 'serve-cloudflare.js';
 
@@ -193,7 +190,7 @@ export function deployCloudflarePlugin(opts: {
         return getServeJsContent(entriesFile);
       }
     },
-    closeBundle() {
+    async closeBundle() {
       const { deploy, unstable_phase } = buildOptions;
       if (unstable_phase !== 'buildDeploy' || deploy !== 'cloudflare') {
         return;
@@ -210,35 +207,7 @@ export function deployCloudflarePlugin(opts: {
         functionDir: workerDistDir,
       });
 
-      const DIST_PLATFORM_DATA = 'platform-data';
-      const keys = new Set<string>();
-      mkdirSync(path.join(workerDistDir, DIST_PLATFORM_DATA), {
-        recursive: true,
-      });
-      for (const [key, data] of INTERNAL_iterateSerializablePlatformData()) {
-        keys.add(key);
-        const destFile = path.join(
-          workerDistDir,
-          DIST_PLATFORM_DATA,
-          key + '.js',
-        );
-        writeFileSync(destFile, `export default ${JSON.stringify(data)};`);
-      }
-      appendFileSync(
-        path.join(workerDistDir, DIST_ENTRIES_JS),
-        `
-export function loadPlatformData(key) {
-  switch (key) {
-    ${Array.from(keys)
-      .map(
-        (k) => `case '${k}': return import('./${DIST_PLATFORM_DATA}/${k}.js');`,
-      )
-      .join('\n')}
-    default: throw new Error('Cannot find platform data: ' + key);
-  }
-}
-`,
-      );
+      await emitPlatformData(workerDistDir);
 
       const wranglerTomlFile = path.join(rootDir, 'wrangler.toml');
       if (!existsSync(wranglerTomlFile)) {
