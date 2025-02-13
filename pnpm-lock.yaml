@@ -1173,6 +1173,9 @@ importers:
       react-server-dom-webpack:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.97.1(esbuild@0.17.19))
+      server-only:
+        specifier: 0.0.1
+        version: 0.0.1
       waku:
         specifier: 0.21.18
         version: link:../../packages/waku

@@ -1063,27 +1063,22 @@ describe('createPages pages and layouts', () => {
     await expect(getRouteConfig).rejects.toThrowError('Duplicated path: /test');
   });
 
-  it.fails(
-    'fails if duplicated static and dynamic paths override each other',
-    async () => {
-      createPages(async ({ createPage }) => [
-        createPage({
-          render: 'dynamic',
-          path: '/test',
-          component: () => null,
-        }),
-        createPage({
-          render: 'static',
-          path: '/test',
-          component: () => null,
-        }),
-      ]);
-      const { getRouteConfig } = injectedFunctions();
-      await expect(getRouteConfig).rejects.toThrowError(
-        'Duplicated component for: test/page',
-      );
-    },
-  );
+  it('fails if duplicated static and dynamic paths override each other', async () => {
+    createPages(async ({ createPage }) => [
+      createPage({
+        render: 'dynamic',
+        path: '/test',
+        component: () => null,
+      }),
+      createPage({
+        render: 'static',
+        path: '/test',
+        component: () => null,
+      }),
+    ]);
+    const { getRouteConfig } = injectedFunctions();
+    await expect(getRouteConfig).rejects.toThrowError('Duplicated path: /test');
+  });
 
   it('creates a complex router', async () => {
     const TestPage = vi.fn();
