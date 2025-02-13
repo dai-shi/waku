@@ -321,6 +321,7 @@ const createRscViteServer = (
     config: { rootDir: string; basePath: string },
     initialModules: ClonableModuleNode[],
   ) => {
+    console.log('--------------------resolveClientEntry', id);
     let file = id;
     if (file.startsWith('/@fs/')) {
       file = file.slice('/@fs'.length); // keep '/' at the beginning
