@@ -1,12 +1,12 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
 export default function Root({ children }: { children: ReactNode }) {
-	return (
-		<html lang="en">
-			<head>
-				<title>Waku</title>
-			</head>
-			<body>{children}</body>
-		</html>
-	);
+  return (
+    <html lang="en">
+      <head>
+        <title>Waku</title>
+      </head>
+      <body>{children}</body>
+    </html>
+  );
 }
