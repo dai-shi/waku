@@ -21,6 +21,7 @@ const userAgent = process.env.npm_config_user_agent || '';
 
 // Bun doesn't update `npm_config_user_agent`
 // so fallback to checking if the `Bun` global is present
+// https://github.com/oven-sh/bun/issues/2530
 const isBun = 'Bun' in globalThis;
 
 const packageManager = isBun
