@@ -144,18 +144,9 @@ const createMainViteServer = (
   const loadServerModuleMain = async (idOrFileURL: string) => {
     const vite = await vitePromise;
     if (!idOrFileURL.startsWith('file://')) {
-      if (idOrFileURL === 'waku') {
-        return import(
-          /* @vite-ignore */ filePathToFileURL(wakuDist + '/main.js')
-        );
-      } else if (idOrFileURL.startsWith('waku/')) {
+      if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
         // HACK `external: ['waku']` doesn't do the same
-        // wakuDist + srcId.slice('waku'.length) + '.js';
-        return import(
-          /* @vite-ignore */ filePathToFileURL(
-            wakuDist + idOrFileURL.slice('waku'.length) + '.js',
-          )
-        );
+        return import(/* @vite-ignore */ idOrFileURL);
       }
       return vite.ssrLoadModule(idOrFileURL);
     }
@@ -331,6 +322,7 @@ const createRscViteServer = (
     config: { rootDir: string; basePath: string },
     initialModules: ClonableModuleNode[],
   ) => {
+    console.log('-------resolveClientEntry', id);
     let file = id;
     if (file.startsWith('/@fs/')) {
       file = file.slice('/@fs'.length); // keep '/' at the beginning
