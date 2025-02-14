@@ -151,19 +151,15 @@ const createMainViteServer = (
         // HACK `external: ['waku']` doesn't do the same
         return import(/* @vite-ignore */ idOrFileURL);
       }
-      console.log('==========', idOrFileURL);
       return vite.ssrLoadModule(idOrFileURL);
     }
     const filePath = fileURLToFilePath(idOrFileURL.split('?')[0]!);
     const file = filePath.startsWith('/')
       ? filePath
       : joinPath(vite.config.root, filePath);
-    if (file.startsWith(wakuDist)) {
+    if (decodeFilePathFromAbsolute(file).startsWith(wakuDist)) {
       // HACK `external: ['waku']` doesn't do the same
       return import(/* @vite-ignore */ filePathToFileURL(file));
-    }
-    if (file.includes('waku')) {
-      console.log('#############', { idOrFileURL, filePath, file, wakuDist });
     }
     {
       let id = file;
