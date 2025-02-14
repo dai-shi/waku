@@ -158,13 +158,15 @@ const createMainViteServer = (
       // HACK `external: ['waku']` doesn't do the same
       return import(/* @vite-ignore */ filePathToFileURL(file));
     }
+    if (file.includes('waku')) {
+      console.log('###############', { idOrFileURL, filePath, file, wakuDist });
+    }
     {
       let id = file;
       while (resolvedMap.has(id)) {
         id = resolvedMap.get(id)!;
       }
       if (!id.startsWith('/')) {
-        console.log('=====loadServerModuleMain(1)', id);
         return vite.ssrLoadModule(id);
       }
     }
@@ -172,7 +174,6 @@ const createMainViteServer = (
       // HACK node_modules should be externalized
       return import(/* @vite-ignore */ filePathToFileURL(file));
     }
-    console.log('=====loadServerModuleMain(2)', fileURLToFilePath(idOrFileURL));
     return vite.ssrLoadModule(fileURLToFilePath(idOrFileURL));
   };
 
