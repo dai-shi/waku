@@ -144,9 +144,18 @@ const createMainViteServer = (
   const loadServerModuleMain = async (idOrFileURL: string) => {
     const vite = await vitePromise;
     if (!idOrFileURL.startsWith('file://')) {
-      if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
+      if (idOrFileURL === 'waku') {
+        return import(
+          /* @vite-ignore */ filePathToFileURL(wakuDist + '/main.js')
+        );
+      } else if (idOrFileURL.startsWith('waku/')) {
         // HACK `external: ['waku']` doesn't do the same
-        return import(/* @vite-ignore */ idOrFileURL);
+        // wakuDist + srcId.slice('waku'.length) + '.js';
+        return import(
+          /* @vite-ignore */ filePathToFileURL(
+            wakuDist + idOrFileURL.slice('waku'.length) + '.js',
+          )
+        );
       }
       return vite.ssrLoadModule(idOrFileURL);
     }
@@ -156,10 +165,7 @@ const createMainViteServer = (
       : joinPath(vite.config.root, filePath);
     if (file.startsWith(wakuDist)) {
       // HACK `external: ['waku']` doesn't do the same
-      return import(
-        /* @vite-ignore */ 'waku' +
-          file.slice(wakuDist.length).replace(/\.\w+$/, '')
-      );
+      return import(/* @vite-ignore */ filePathToFileURL(file));
     }
     {
       let id = file;
