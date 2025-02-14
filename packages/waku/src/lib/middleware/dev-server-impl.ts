@@ -164,7 +164,7 @@ const createMainViteServer = (
         id = resolvedMap.get(id)!;
       }
       if (!id.startsWith('/')) {
-        console.log('====loadServerModuleMain(1)', idOrFileURL);
+        console.log('=====loadServerModuleMain(1)', id);
         return vite.ssrLoadModule(id);
       }
     }
@@ -172,7 +172,7 @@ const createMainViteServer = (
       // HACK node_modules should be externalized
       return import(/* @vite-ignore */ filePathToFileURL(file));
     }
-    console.log('====loadServerModuleMain(2)', fileURLToFilePath(idOrFileURL));
+    console.log('=====loadServerModuleMain(2)', fileURLToFilePath(idOrFileURL));
     return vite.ssrLoadModule(fileURLToFilePath(idOrFileURL));
   };
 
