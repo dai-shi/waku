@@ -142,6 +142,7 @@ const createMainViteServer = (
 
   // FIXME This function feels too hacky
   const loadServerModuleMain = async (idOrFileURL: string) => {
+    console.log('====loadServerModuleMain', idOrFileURL);
     const vite = await vitePromise;
     if (!idOrFileURL.startsWith('file://')) {
       if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
@@ -322,7 +323,6 @@ const createRscViteServer = (
     config: { rootDir: string; basePath: string },
     initialModules: ClonableModuleNode[],
   ) => {
-    console.log('-------resolveClientEntry', id);
     let file = id;
     if (file.startsWith('/@fs/')) {
       file = file.slice('/@fs'.length); // keep '/' at the beginning
