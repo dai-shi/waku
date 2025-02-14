@@ -142,7 +142,6 @@ const createMainViteServer = (
 
   // FIXME This function feels too hacky
   const loadServerModuleMain = async (idOrFileURL: string) => {
-    console.log('====loadServerModuleMain', idOrFileURL);
     const vite = await vitePromise;
     if (!idOrFileURL.startsWith('file://')) {
       if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
@@ -165,6 +164,7 @@ const createMainViteServer = (
         id = resolvedMap.get(id)!;
       }
       if (!id.startsWith('/')) {
+        console.log('====loadServerModuleMain(1)', idOrFileURL);
         return vite.ssrLoadModule(id);
       }
     }
@@ -172,6 +172,7 @@ const createMainViteServer = (
       // HACK node_modules should be externalized
       return import(/* @vite-ignore */ filePathToFileURL(file));
     }
+    console.log('====loadServerModuleMain(2)', fileURLToFilePath(idOrFileURL));
     return vite.ssrLoadModule(fileURLToFilePath(idOrFileURL));
   };
 
