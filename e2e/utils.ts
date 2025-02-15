@@ -2,7 +2,13 @@ import net from 'node:net';
 import { execSync, exec } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { cpSync, rmSync, mkdtempSync } from 'node:fs';
+import {
+  cpSync,
+  rmSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import type { ChildProcess } from 'node:child_process';
@@ -179,9 +185,44 @@ export const prepareStandaloneSetup = (fixtureName: string) => {
       const wakuPackageTgz = join(standaloneDir, `waku-${version}.tgz`);
       const installScript = PACKAGE_INSTALL[packageManager](wakuPackageTgz);
       execSync(installScript, { cwd: standaloneDir });
-      execSync(
-        `npm install --force ${join(standaloneDir, `waku-${version}.tgz`)}`,
-        { cwd: standaloneDir },
+      const pkg = JSON.parse(
+        readFileSync(join(standaloneDir, 'package.json'), 'utf-8'),
+      );
+      const rootPkg = JSON.parse(
+        readFileSync(
+          fileURLToPath(new URL('../package.json', import.meta.url)),
+          'utf-8',
+        ),
+      );
+      const pnpmOverrides = rootPkg.pnpmOverrides;
+      if (pnpmOverrides !== null && typeof pnpmOverrides === 'object') {
+        switch (packageManager) {
+          case 'npm': {
+            pkg.overrides = {
+              ...pnpmOverrides,
+            };
+            break;
+          }
+          case 'pnpm': {
+            pkg.pnpm = {
+              overrides: {
+                ...pnpmOverrides,
+              },
+            };
+            break;
+          }
+          case 'yarn': {
+            pkg.resolutions = {
+              ...pnpmOverrides,
+            };
+            break;
+          }
+        }
+      }
+      writeFileSync(
+        join(standaloneDir, 'package.json'),
+        JSON.stringify(pkg, null, 2),
+        'utf-8',
       );
     }
     if (mode !== 'DEV' && !built) {
