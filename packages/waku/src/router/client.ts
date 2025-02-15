@@ -175,7 +175,7 @@ export type LinkProps = {
   children: ReactNode;
   unstable_prefetchOnEnter?: boolean;
   unstable_prefetchOnView?: boolean;
-  unstable_useViewTransition?: boolean;
+  unstable_startTransition?: ((fn: () => void) => void) | undefined;
 } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>;
 
 export function Link({
@@ -185,7 +185,7 @@ export function Link({
   notPending,
   unstable_prefetchOnEnter,
   unstable_prefetchOnView,
-  unstable_useViewTransition,
+  unstable_startTransition,
   ...props
 }: LinkProps): ReactElement {
   const router = useContext(RouterContext);
@@ -232,7 +232,7 @@ export function Link({
     if (url.href !== window.location.href) {
       const route = parseRoute(url);
       prefetchRoute(route);
-      startTransition(() => {
+      (unstable_startTransition || startTransition)(() => {
         window.history.pushState(
           {
             ...window.history.state,
@@ -241,13 +241,7 @@ export function Link({
           '',
           url,
         );
-        if (unstable_useViewTransition && 'startViewTransition' in document) {
-          document.startViewTransition(() =>
-            changeRoute(route, { shouldScroll: true }),
-          );
-        } else {
-          changeRoute(route, { shouldScroll: true });
-        }
+        changeRoute(route, { shouldScroll: true });
       });
     }
     props.onClick?.(event);
