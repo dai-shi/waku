@@ -1663,4 +1663,45 @@ describe('createPages - grouped paths', () => {
     const { getRouteConfig } = injectedFunctions();
     await expect(getRouteConfig).rejects.toThrowError('Duplicated path: /test');
   });
+
+  it('supports grouped path with layout', async () => {
+    const TestPage = () => null;
+    const TestLayout = ({ children }: PropsWithChildren) => children;
+    createPages(async ({ createPage, createLayout }) => [
+      createLayout({
+        render: 'static',
+        path: '/(group)',
+        component: TestLayout,
+      }),
+      createPage({
+        render: 'static',
+        path: '/(group)/test',
+        component: TestPage,
+      }),
+    ]);
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
+      // ^?
+      {
+        elements: {
+          'layout:/test': { isStatic: true },
+          'page:/test': { isStatic: true },
+        },
+        rootElement: { isStatic: true },
+        routeElement: { isStatic: true },
+        noSsr: false,
+        path: [
+          { name: 'test', type: 'literal' },
+          { name: 'test', type: 'literal' },
+        ],
+      },
+    ]);
+    const route = await handleRoute('/test', {
+      query: '?skip=[]',
+    });
+    expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
+    expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual(['page:/test', 'layout:/test']);
+  });
 });
