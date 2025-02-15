@@ -1209,9 +1209,9 @@ importers:
         version: 19.0.0(react@19.0.0)
       react-server-dom-webpack:
         specifier: 19.0.0
-        version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.97.1)
+        version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.18
+        specifier: 0.21.19
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
