@@ -114,7 +114,16 @@ export function useRouter_UNSTABLE() {
   }
   const { route, changeRoute, prefetchRoute } = router;
   const push = useCallback(
-    (to: InferredPaths) => {
+    (
+      to: InferredPaths,
+      options?: {
+        /**
+         * indicates if the link should scroll or not on navigation
+         * @default true
+         */
+        scroll?: boolean;
+      },
+    ) => {
       const url = new URL(to, window.location.href);
       const newPath = url.pathname !== window.location.pathname;
       window.history.pushState(
@@ -125,16 +134,27 @@ export function useRouter_UNSTABLE() {
         '',
         url,
       );
-      changeRoute(parseRoute(url), { shouldScroll: newPath });
+      const shouldScroll = options?.scroll ?? newPath;
+      changeRoute(parseRoute(url), { shouldScroll: shouldScroll });
     },
     [changeRoute],
   );
   const replace = useCallback(
-    (to: InferredPaths) => {
+    (
+      to: InferredPaths,
+      options?: {
+        /**
+         * indicates if the link should scroll or not on navigation
+         * @default true
+         */
+        scroll?: boolean;
+      },
+    ) => {
       const url = new URL(to, window.location.href);
       const newPath = url.pathname !== window.location.pathname;
       window.history.replaceState(window.history.state, '', url);
-      changeRoute(parseRoute(url), { shouldScroll: newPath });
+      const shouldScroll = options?.scroll ?? newPath;
+      changeRoute(parseRoute(url), { shouldScroll: shouldScroll });
     },
     [changeRoute],
   );
@@ -172,6 +192,11 @@ export type LinkProps = {
   to: InferredPaths;
   pending?: ReactNode;
   notPending?: ReactNode;
+  /**
+   * indicates if the link should scroll or not on navigation
+   * @default true
+   */
+  scroll?: boolean;
   children: ReactNode;
   unstable_prefetchOnEnter?: boolean;
   unstable_prefetchOnView?: boolean;
@@ -186,6 +211,7 @@ export function Link({
   unstable_prefetchOnEnter,
   unstable_prefetchOnView,
   unstable_startTransition,
+  scroll = true,
   ...props
 }: LinkProps): ReactElement {
   const router = useContext(RouterContext);
@@ -241,7 +267,7 @@ export function Link({
           '',
           url,
         );
-        changeRoute(route, { shouldScroll: true });
+        changeRoute(route, { shouldScroll: scroll });
       });
     }
     props.onClick?.(event);
