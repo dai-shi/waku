@@ -1,4 +1,4 @@
-import { Counter } from './_components/Counter.js';
+import { Counter } from './Counter';
 
 const Bar = () => (
   <div>

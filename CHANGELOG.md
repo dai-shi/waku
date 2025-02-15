@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.21.19] - 2025-02-14
+
+### Changed
+
+- Bug fixes & some updates
+- Router improvement
+
 ## [0.21.18] - 2025-02-03
 
 ### Changed

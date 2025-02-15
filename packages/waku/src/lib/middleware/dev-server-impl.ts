@@ -8,6 +8,7 @@ import type { EntriesDev } from '../types.js';
 import { resolveConfig, extractPureConfig } from '../config.js';
 import { SRC_MAIN, SRC_ENTRIES } from '../constants.js';
 import {
+  decodeFilePathFromAbsolute,
   joinPath,
   fileURLToFilePath,
   filePathToFileURL,
@@ -138,8 +139,11 @@ const createMainViteServer = (
     return vite;
   });
 
-  const wakuDist = joinPath(fileURLToFilePath(import.meta.url), '../../..');
+  const wakuDist = decodeFilePathFromAbsolute(
+    joinPath(fileURLToFilePath(import.meta.url), '../../..'),
+  );
 
+  // FIXME This function feels too hacky
   const loadServerModuleMain = async (idOrFileURL: string) => {
     const vite = await vitePromise;
     if (!idOrFileURL.startsWith('file://')) {
@@ -153,7 +157,7 @@ const createMainViteServer = (
     const file = filePath.startsWith('/')
       ? filePath
       : joinPath(vite.config.root, filePath);
-    if (file.startsWith(wakuDist)) {
+    if (decodeFilePathFromAbsolute(file).startsWith(wakuDist)) {
       // HACK `external: ['waku']` doesn't do the same
       return import(/* @vite-ignore */ filePathToFileURL(file));
     }
@@ -214,7 +218,7 @@ const createMainViteServer = (
     const vite = await vitePromise;
     try {
       const result = await vite.transformRequest(pathname);
-      if (result?.code === `export default "/@fs${pathname}"`) {
+      if (result?.code === `export default "/@fs${encodeURI(pathname)}"`) {
         return false;
       }
       return !!result;

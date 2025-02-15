@@ -18,7 +18,6 @@ const Pending = ({ isPending }: { isPending: boolean }) => (
 
 const HomeLayout = ({ children }: { children: ReactNode }) => (
   <div>
-    <title>Waku</title>
     <ul>
       <li>
         <Link
@@ -57,12 +56,6 @@ const HomeLayout = ({ children }: { children: ReactNode }) => (
       </li>
       <li>
         <Link to="/nested/qux">Nested / Qux</Link>
-      </li>
-      <li>
-        <Link to="/error">Error</Link>
-      </li>
-      <li>
-        <Link to="/exact/[slug]/[...wild]">Exact Path</Link>
       </li>
     </ul>
     {children}
