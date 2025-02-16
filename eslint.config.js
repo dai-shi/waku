@@ -46,5 +46,5 @@ export default tseslint.config(
       'import/no-unresolved': 'off',
     },
   },
-  { ignores: ['examples/44_cloudflare/.wrangler/'] },
+  { ignores: ['examples/07_cloudflare/.wrangler/'] },
 );
