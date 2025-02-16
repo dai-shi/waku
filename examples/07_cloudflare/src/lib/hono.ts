@@ -1,4 +1,4 @@
-import { getHonoContext as getHonoContextFromWaku  } from 'waku/unstable_hono';
+import { getHonoContext as getHonoContextFromWaku } from 'waku/unstable_hono';
 import { isBuild } from './waku';
 
 export function getHonoContext() {
@@ -16,4 +16,4 @@ export function getHonoContext() {
 }
 const isHonoContextUnavailableError = (e: unknown): boolean => {
   return e instanceof Error && e.message === 'Hono context is not available';
-}
+};
