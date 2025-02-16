@@ -16,7 +16,7 @@ You should npm install the latest version of Cloudflare's build tool, [`wrangler
 
 After building, you can test your build by running `npx wrangler dev` or deploy it to Cloudflare using `npx wrangler deploy`.
 
-There is a [Cloudflare example in the Waku GitHub repository](https://github.com/dai-shi/waku/tree/main/examples/44_cloudflare).
+There is a [Cloudflare example in the Waku GitHub repository](https://github.com/dai-shi/waku/tree/main/examples/07_cloudflare).
 
 ## Notes on Cloudflare's workerd Runtime
 
@@ -30,7 +30,7 @@ Note that the latest `nodejs_compat` mocks the Node `fs` module. Cloudflare does
 
 ## Setting Up TypeScript
 
-You can run `npx wrangler types --experimental-include-runtime` to generate a `worker-configuration.d.ts` file based on the settings in your `wrangler.toml`. This defines a global `Env` interface with your bindings. In the [Cloudflare example in the Waku GitHub repository](https://github.com/dai-shi/waku/tree/main/examples/44_cloudflare), a package.json script is included to run this command and update the types: `pnpm run build-cf-types`. To ensure that your types are always up-to-date, make sure to run it after any changes to your `wrangler.toml` config file.
+You can run `npx wrangler types --experimental-include-runtime` to generate a `worker-configuration.d.ts` file based on the settings in your `wrangler.toml`. This defines a global `Env` interface with your bindings. In the [Cloudflare example in the Waku GitHub repository](https://github.com/dai-shi/waku/tree/main/examples/07_cloudflare), a package.json script is included to run this command and update the types: `pnpm run build-cf-types`. To ensure that your types are always up-to-date, make sure to run it after any changes to your `wrangler.toml` config file.
 
 ## Accessing Cloudflare Bindings, Execution Context, and Request/Response Objects
 
@@ -117,4 +117,4 @@ npm i --save-dev wrangler
 
 When starting the Waku dev server, we need to first start a wrangler/miniflare server and then pass them into the Hono app fetch.
 
-This can be done by creating a custom Waku plugin in your `waku.config.ts` file. Copy the `waku.cloudflare-dev-server.ts` and `waku.config.ts` to your project from [the Cloudflare example in the Waku GitHub repository](https://github.com/dai-shi/waku/tree/main/examples/44_cloudflare). Now when you run `waku dev`, you will be able to access Cloudflare env bindings and execution context on the Hono context.
+This can be done by creating a custom Waku plugin in your `waku.config.ts` file. Copy the `waku.cloudflare-dev-server.ts` and `waku.config.ts` to your project from [the Cloudflare example in the Waku GitHub repository](https://github.com/dai-shi/waku/tree/main/examples/07_cloudflare). Now when you run `waku dev`, you will be able to access Cloudflare env bindings and execution context on the Hono context.
