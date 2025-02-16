@@ -136,8 +136,9 @@ export function useRouter_UNSTABLE() {
         '',
         url,
       );
-      const shouldScroll = options?.scroll ?? newPath;
-      changeRoute(parseRoute(url), { shouldScroll: shouldScroll });
+      changeRoute(parseRoute(url), {
+        shouldScroll: options?.scroll ?? newPath,
+      });
     },
     [changeRoute],
   );
@@ -158,7 +159,7 @@ export function useRouter_UNSTABLE() {
       const newPath = url.pathname !== window.location.pathname;
       window.history.replaceState(window.history.state, '', url);
       const shouldScroll = options?.scroll ?? newPath;
-      changeRoute(parseRoute(url), { shouldScroll: shouldScroll });
+      changeRoute(parseRoute(url), { shouldScroll });
     },
     [changeRoute],
   );
