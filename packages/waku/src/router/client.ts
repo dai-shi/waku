@@ -119,7 +119,9 @@ export function useRouter_UNSTABLE() {
       options?: {
         /**
          * indicates if the link should scroll or not on navigation
-         * @default true
+         * - `true`: always scroll
+         * - `false`: never scroll
+         * - `undefined`: scroll on path change (not on searchParams change)
          */
         scroll?: boolean;
       },
@@ -145,7 +147,9 @@ export function useRouter_UNSTABLE() {
       options?: {
         /**
          * indicates if the link should scroll or not on navigation
-         * @default true
+         * - `true`: always scroll
+         * - `false`: never scroll
+         * - `undefined`: scroll on path change (not on searchParams change)
          */
         scroll?: boolean;
       },
@@ -194,7 +198,9 @@ export type LinkProps = {
   notPending?: ReactNode;
   /**
    * indicates if the link should scroll or not on navigation
-   * @default true
+   * - `true`: always scroll
+   * - `false`: never scroll
+   * - `undefined`: scroll on path change (not on searchParams change)
    */
   scroll?: boolean;
   children: ReactNode;
@@ -211,7 +217,7 @@ export function Link({
   unstable_prefetchOnEnter,
   unstable_prefetchOnView,
   unstable_startTransition,
-  scroll = true,
+  scroll,
   ...props
 }: LinkProps): ReactElement {
   const router = useContext(RouterContext);
@@ -259,15 +265,16 @@ export function Link({
       const route = parseRoute(url);
       prefetchRoute(route);
       (unstable_startTransition || startTransition)(() => {
+        const newPath = url.pathname !== window.location.pathname;
         window.history.pushState(
           {
             ...window.history.state,
-            waku_new_path: url.pathname !== window.location.pathname,
+            waku_new_path: newPath,
           },
           '',
           url,
         );
-        changeRoute(route, { shouldScroll: scroll });
+        changeRoute(route, { shouldScroll: scroll ?? newPath });
       });
     }
     props.onClick?.(event);
