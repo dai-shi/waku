@@ -111,10 +111,7 @@ async function doPrompts() {
           type: values['project-name'] ? null : 'text',
           message: 'Project Name',
           initial: defaultProjectName,
-          onState: (state: any) =>
-            (targetDir =
-              String(values['project-name']).trim() ||
-              String(state.value).trim()),
+          onState: (state: any) => (targetDir = String(state.value).trim()),
         },
         {
           name: 'shouldOverwrite',
