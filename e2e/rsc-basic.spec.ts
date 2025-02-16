@@ -49,6 +49,16 @@ for (const mode of ['DEV', 'PRD'] as const) {
       ).toHaveText('2');
     });
 
+    test('refetch', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/`);
+      await page.getByTestId('refetch1').click();
+      await expect(page.getByTestId('app-name')).toHaveText('foo');
+      await page.getByTestId('refetch2').click();
+      await expect(page.getByTestId('app-name')).toHaveText('[bar]');
+      await page.getByTestId('refetch3').click();
+      await expect(page.getByTestId('app-name')).toHaveText('baz/qux');
+    });
+
     test('server action', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
       await expect(page.getByTestId('app-name')).toHaveText('Waku');

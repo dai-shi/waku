@@ -1,6 +1,6 @@
 {
   "name": "create-waku",
-  "version": "0.11.1-0.21.17-0",
+  "version": "0.11.2-0.21.19-0",
   "author": "Daishi Kato",
   "type": "module",
   "contributors": [
@@ -33,7 +33,7 @@
     "kolorist": "^1.8.0",
     "prompts": "^2.4.2",
     "tar": "^7.4.3",
-    "tsup": "^8.3.5",
+    "tsup": "^8.3.6",
     "update-check": "^1.5.4"
   }
 }

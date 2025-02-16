@@ -180,7 +180,7 @@ export async function renderHtml(
   const {
     default: { createFromReadableStream },
   } = modules.rsdwClient as { default: typeof RSDWClientType };
-  const { ServerRootInternal: ServerRoot } =
+  const { INTERNAL_ServerRoot } =
     modules.wakuMinimalClient as typeof WakuMinimalClientType;
 
   const stream = await renderRsc(config, ctx, elements);
@@ -226,8 +226,8 @@ export async function renderHtml(
   try {
     const readable = await renderToReadableStream(
       createElement(
-        ServerRoot as FunctionComponent<
-          Omit<ComponentProps<typeof ServerRoot>, 'children'>
+        INTERNAL_ServerRoot as FunctionComponent<
+          Omit<ComponentProps<typeof INTERNAL_ServerRoot>, 'children'>
         >,
         { elementsPromise },
         htmlNode as any,

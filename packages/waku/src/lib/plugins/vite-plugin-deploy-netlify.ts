@@ -2,7 +2,7 @@ import path from 'node:path';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import type { Plugin } from 'vite';
 
-import { unstable_getPlatformObject } from '../../server.js';
+import { unstable_getBuildOptions } from '../../server.js';
 import { SRC_ENTRIES } from '../constants.js';
 import { DIST_PUBLIC } from '../builder/constants.js';
 
@@ -40,13 +40,13 @@ export function deployNetlifyPlugin(opts: {
   distDir: string;
   privateDir: string;
 }): Plugin {
-  const platformObject = unstable_getPlatformObject();
+  const buildOptions = unstable_getBuildOptions();
   let rootDir: string;
   let entriesFile: string;
   return {
     name: 'deploy-netlify-plugin',
     config(viteConfig) {
-      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      const { deploy, unstable_phase } = buildOptions;
       if (
         unstable_phase !== 'buildServerBundle' ||
         (deploy !== 'netlify-functions' && deploy !== 'netlify-static')
@@ -73,7 +73,7 @@ export function deployNetlifyPlugin(opts: {
       }
     },
     closeBundle() {
-      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      const { deploy, unstable_phase } = buildOptions;
       if (
         unstable_phase !== 'buildDeploy' ||
         (deploy !== 'netlify-functions' && deploy !== 'netlify-static')

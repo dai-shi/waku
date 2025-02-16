@@ -2,9 +2,10 @@ import path from 'node:path';
 import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import type { Plugin } from 'vite';
 
-import { unstable_getPlatformObject } from '../../server.js';
+import { unstable_getBuildOptions } from '../../server.js';
 import { SRC_ENTRIES } from '../constants.js';
 import { DIST_PUBLIC } from '../builder/constants.js';
+import { emitPlatformData } from '../builder/platform-data.js';
 
 const SERVE_JS = 'serve-vercel.js';
 
@@ -52,13 +53,13 @@ export function deployVercelPlugin(opts: {
   rscBase: string;
   privateDir: string;
 }): Plugin {
-  const platformObject = unstable_getPlatformObject();
+  const buildOptions = unstable_getBuildOptions();
   let rootDir: string;
   let entriesFile: string;
   return {
     name: 'deploy-vercel-plugin',
     config(viteConfig) {
-      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      const { deploy, unstable_phase } = buildOptions;
       if (
         unstable_phase !== 'buildServerBundle' ||
         (deploy !== 'vercel-serverless' && deploy !== 'vercel-static')
@@ -84,8 +85,8 @@ export function deployVercelPlugin(opts: {
         return getServeJsContent(opts.distDir, DIST_PUBLIC, entriesFile);
       }
     },
-    closeBundle() {
-      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+    async closeBundle() {
+      const { deploy, unstable_phase } = buildOptions;
       if (
         unstable_phase !== 'buildDeploy' ||
         (deploy !== 'vercel-serverless' && deploy !== 'vercel-static')
@@ -112,6 +113,7 @@ export function deployVercelPlugin(opts: {
           path.join(serverlessDir, opts.distDir),
           { recursive: true },
         );
+        await emitPlatformData(path.join(serverlessDir, opts.distDir));
         if (existsSync(path.join(rootDir, opts.privateDir))) {
           cpSync(
             path.join(rootDir, opts.privateDir),

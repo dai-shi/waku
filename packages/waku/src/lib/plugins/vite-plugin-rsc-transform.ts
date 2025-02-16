@@ -61,7 +61,7 @@ const transformClient = (
     const exportNames = collectExportNames(mod);
     let newCode = `
 import { createServerReference } from 'react-server-dom-webpack/client';
-import { callServerRsc } from 'waku/minimal/client';
+import { unstable_callServerRsc as callServerRsc } from 'waku/minimal/client';
 `;
     for (const name of exportNames) {
       newCode += `
@@ -189,14 +189,14 @@ const transformExportedClientThings = (
     });
   };
   // Pass 1: find allowServer identifier
-  let allowServer = 'allowServer';
+  let allowServer = 'unstable_allowServer';
   for (const item of mod.body) {
     if (item.type === 'ImportDeclaration') {
       if (item.source.value === 'waku/client') {
         for (const specifier of item.specifiers) {
           if (specifier.type === 'ImportSpecifier') {
-            if (specifier.local.value === allowServer && specifier.imported) {
-              allowServer = specifier.imported.value;
+            if (specifier.imported?.value === allowServer) {
+              allowServer = specifier.local.value;
               break;
             }
           }

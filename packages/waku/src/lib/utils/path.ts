@@ -61,7 +61,13 @@ export const joinPath = (...paths: string[]) => {
 
 export const extname = (filePath: string) => {
   const index = filePath.lastIndexOf('.');
-  return index > 0 ? filePath.slice(index) : '';
+  if (index <= 0) {
+    return '';
+  }
+  if (['/', '.'].includes(filePath[index - 1]!)) {
+    return '';
+  }
+  return filePath.slice(index);
 };
 
 export type PathSpecItem =
@@ -88,6 +94,12 @@ export const parsePathWithSlug = (path: string): PathSpec =>
       }
       return { type, name };
     });
+
+export const parseExactPath = (path: string): PathSpec =>
+  path
+    .split('/')
+    .filter(Boolean)
+    .map((name) => ({ type: 'literal', name }));
 
 /**
  * Transform a path spec to a regular expression.

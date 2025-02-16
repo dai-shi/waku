@@ -175,6 +175,7 @@ export type LinkProps = {
   children: ReactNode;
   unstable_prefetchOnEnter?: boolean;
   unstable_prefetchOnView?: boolean;
+  unstable_startTransition?: ((fn: () => void) => void) | undefined;
 } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>;
 
 export function Link({
@@ -184,6 +185,7 @@ export function Link({
   notPending,
   unstable_prefetchOnEnter,
   unstable_prefetchOnView,
+  unstable_startTransition,
   ...props
 }: LinkProps): ReactElement {
   const router = useContext(RouterContext);
@@ -230,7 +232,7 @@ export function Link({
     if (url.href !== window.location.href) {
       const route = parseRoute(url);
       prefetchRoute(route);
-      startTransition(() => {
+      (unstable_startTransition || startTransition)(() => {
         window.history.pushState(
           {
             ...window.history.state,
@@ -524,7 +526,7 @@ export function Router({
  * ServerRouter for SSR
  * This is not a public API.
  */
-export function ServerRouter({ route }: { route: RouteProps }) {
+export function INTERNAL_ServerRouter({ route }: { route: RouteProps }) {
   const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
   const rootElement = createElement(
     Slot,

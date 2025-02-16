@@ -13,7 +13,7 @@ const getManagedEntries = (
   srcDir: string,
   pagesDir: string,
 ) => `
-import { fsRouter } from 'waku/router/server';
+import { unstable_fsRouter as fsRouter } from 'waku/router/server';
 
 export default fsRouter(
   '${filePathToFileURL(filePath)}',

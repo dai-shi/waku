@@ -1,6 +1,6 @@
 import type { Plugin } from 'vite';
 
-import { unstable_getPlatformObject } from '../../server.js';
+import { unstable_getBuildOptions } from '../../server.js';
 import { SRC_ENTRIES } from '../constants.js';
 import { DIST_PUBLIC } from '../builder/constants.js';
 
@@ -49,12 +49,12 @@ export function deployDenoPlugin(opts: {
   srcDir: string;
   distDir: string;
 }): Plugin {
-  const platformObject = unstable_getPlatformObject();
+  const buildOptions = unstable_getBuildOptions();
   let entriesFile: string;
   return {
     name: 'deploy-deno-plugin',
     config(viteConfig) {
-      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      const { deploy, unstable_phase } = buildOptions;
       if (unstable_phase !== 'buildServerBundle' || deploy !== 'deno') {
         return;
       }
@@ -65,7 +65,7 @@ export function deployDenoPlugin(opts: {
     },
     configResolved(config) {
       entriesFile = `${config.root}/${opts.srcDir}/${SRC_ENTRIES}`;
-      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      const { deploy, unstable_phase } = buildOptions;
       if (
         (unstable_phase !== 'buildServerBundle' &&
           unstable_phase !== 'buildSsrBundle') ||

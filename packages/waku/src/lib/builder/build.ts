@@ -7,11 +7,7 @@ import type { LoggingFunction, RollupLog } from 'rollup';
 import type { ReactNode } from 'react';
 
 import type { Config } from '../../config.js';
-import {
-  setAllEnvInternal,
-  iterateAllPlatformDataInternal,
-  unstable_getPlatformObject,
-} from '../../server.js';
+import { INTERNAL_setAllEnv, unstable_getBuildOptions } from '../../server.js';
 import type { EntriesPrd } from '../types.js';
 import type { ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
@@ -65,6 +61,7 @@ import { deployCloudflarePlugin } from '../plugins/vite-plugin-deploy-cloudflare
 import { deployDenoPlugin } from '../plugins/vite-plugin-deploy-deno.js';
 import { deployPartykitPlugin } from '../plugins/vite-plugin-deploy-partykit.js';
 import { deployAwsLambdaPlugin } from '../plugins/vite-plugin-deploy-aws-lambda.js';
+import { emitPlatformData } from './platform-data.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -101,12 +98,12 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
   const wakuMinimalClientDist = decodeFilePathFromAbsolute(
     joinPath(fileURLToFilePath(import.meta.url), '../../../minimal/client.js'),
   );
-  const clientFileSet = new Set<string>([
-    wakuClientDist,
-    wakuMinimalClientDist,
+  const clientFileMap = new Map<string, string>([
+    // FIXME 'lib' should be the real hash
+    [wakuClientDist, 'lib'],
+    [wakuMinimalClientDist, 'lib'],
   ]);
-  const serverFileSet = new Set<string>();
-  const fileHashMap = new Map<string, string>();
+  const serverFileMap = new Map<string, string>();
   const moduleFileMap = new Map<string, string>(); // module id -> full path
   const pagesDirPath = joinPath(rootDir, config.srcDir, config.pagesDir);
   if (existsSync(pagesDirPath)) {
@@ -131,9 +128,8 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
         plugins: [
           rscAnalyzePlugin({
             isClient: false,
-            clientFileSet,
-            serverFileSet,
-            fileHashMap,
+            clientFileMap,
+            serverFileMap,
           }),
           rscManagedPlugin({ ...config, addEntriesToInput: true }),
           ...deployPlugins(config),
@@ -161,8 +157,8 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
     ),
   );
   const clientEntryFiles = Object.fromEntries(
-    Array.from(clientFileSet).map((fname, i) => [
-      `${DIST_ASSETS}/rsc${i}-${fileHashMap.get(fname) || 'lib'}`, // FIXME 'lib' is a workaround to avoid `undefined`
+    Array.from(clientFileMap).map(([fname, hash], i) => [
+      `${DIST_ASSETS}/rsc${i}-${hash}`,
       fname,
     ]),
   );
@@ -171,7 +167,7 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
       {
         mode: 'production',
         plugins: [
-          rscAnalyzePlugin({ isClient: true, serverFileSet }),
+          rscAnalyzePlugin({ isClient: true, serverFileMap }),
           rscManagedPlugin({ ...config, addMainToInput: true }),
           ...deployPlugins(config),
         ],
@@ -194,8 +190,8 @@ const analyzeEntries = async (rootDir: string, config: ResolvedConfig) => {
     ),
   );
   const serverEntryFiles = Object.fromEntries(
-    Array.from(serverFileSet).map((fname, i) => [
-      `${DIST_ASSETS}/rsf${i}`,
+    Array.from(serverFileMap).map(([fname, hash], i) => [
+      `${DIST_ASSETS}/rsf${i}-${hash}`,
       fname,
     ]),
   );
@@ -706,14 +702,13 @@ export async function build(options: {
   ).root;
   const distEntriesFile = joinPath(rootDir, config.distDir, DIST_ENTRIES_JS);
 
-  const platformObject = unstable_getPlatformObject();
-  platformObject.buildOptions ||= {};
-  platformObject.buildOptions.deploy = options.deploy;
+  const buildOptions = unstable_getBuildOptions();
+  buildOptions.deploy = options.deploy;
 
-  platformObject.buildOptions.unstable_phase = 'analyzeEntries';
+  buildOptions.unstable_phase = 'analyzeEntries';
   const { clientEntryFiles, serverEntryFiles, serverModuleFiles } =
     await analyzeEntries(rootDir, config);
-  platformObject.buildOptions.unstable_phase = 'buildServerBundle';
+  buildOptions.unstable_phase = 'buildServerBundle';
   const serverBuildOutput = await buildServerBundle(
     rootDir,
     env,
@@ -723,7 +718,7 @@ export async function build(options: {
     serverModuleFiles,
     !!options.partial,
   );
-  platformObject.buildOptions.unstable_phase = 'buildSsrBundle';
+  buildOptions.unstable_phase = 'buildSsrBundle';
   await buildSsrBundle(
     rootDir,
     env,
@@ -733,7 +728,7 @@ export async function build(options: {
     serverBuildOutput,
     !!options.partial,
   );
-  platformObject.buildOptions.unstable_phase = 'buildClientBundle';
+  buildOptions.unstable_phase = 'buildClientBundle';
   const clientBuildOutput = await buildClientBundle(
     rootDir,
     env,
@@ -743,17 +738,17 @@ export async function build(options: {
     serverBuildOutput,
     !!options.partial,
   );
-  delete platformObject.buildOptions.unstable_phase;
+  delete buildOptions.unstable_phase;
 
   const distEntries: EntriesPrd = await import(
     filePathToFileURL(distEntriesFile)
   );
 
-  setAllEnvInternal(env);
+  INTERNAL_setAllEnv(env);
   const cssAssets = clientBuildOutput.output.flatMap(({ type, fileName }) =>
     type === 'asset' && fileName.endsWith('.css') ? [fileName] : [],
   );
-  platformObject.buildOptions.unstable_phase = 'emitStaticFiles';
+  buildOptions.unstable_phase = 'emitStaticFiles';
   await emitStaticFiles(
     rootDir,
     config,
@@ -762,41 +757,11 @@ export async function build(options: {
     cssAssets,
   );
 
-  platformObject.buildOptions.unstable_phase = 'buildDeploy';
+  buildOptions.unstable_phase = 'buildDeploy';
   await buildDeploy(rootDir, config);
-  delete platformObject.buildOptions.unstable_phase;
+  delete buildOptions.unstable_phase;
 
   if (existsSync(distEntriesFile)) {
-    const DIST_PLATFORM_DATA = 'platform-data';
-    const keys = new Set<string>();
-    await mkdir(joinPath(rootDir, config.distDir, DIST_PLATFORM_DATA), {
-      recursive: true,
-    });
-    for (const [key, data] of iterateAllPlatformDataInternal()) {
-      keys.add(key);
-      const destFile = joinPath(
-        rootDir,
-        config.distDir,
-        DIST_PLATFORM_DATA,
-        key + '.js',
-      );
-      await writeFile(destFile, `export default ${JSON.stringify(data)};`);
-    }
-    await appendFile(
-      distEntriesFile,
-      `
-export function loadPlatformData(key) {
-  switch (key) {
-    ${Array.from(keys)
-      .map(
-        (k) =>
-          `case '${k}': return import('./${DIST_PLATFORM_DATA}/${k}.js').then((m) => m.default);`,
-      )
-      .join('\n')}
-    default: throw new Error('Cannot find platform data: ' + key);
-  }
-}
-`,
-    );
+    await emitPlatformData(joinPath(rootDir, config.distDir));
   }
 }

@@ -1,24 +1,21 @@
-import path from 'node:path';
+import { randomBytes } from 'node:crypto';
 import {
-  appendFileSync,
+  copyFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
   rmSync,
   writeFileSync,
-  copyFileSync,
 } from 'node:fs';
 import os from 'node:os';
-import { randomBytes } from 'node:crypto';
+import path from 'node:path';
 
 import type { Plugin } from 'vite';
 
-import {
-  iterateAllPlatformDataInternal,
-  unstable_getPlatformObject,
-} from '../../server.js';
+import { emitPlatformData } from '../builder/platform-data.js';
+import { unstable_getBuildOptions } from '../../server.js';
+import { DIST_PUBLIC } from '../builder/constants.js';
 import { SRC_ENTRIES } from '../constants.js';
-import { DIST_ENTRIES_JS, DIST_PUBLIC } from '../builder/constants.js';
 
 const SERVE_JS = 'serve-cloudflare.js';
 
@@ -150,13 +147,13 @@ export function deployCloudflarePlugin(opts: {
   distDir: string;
   privateDir: string;
 }): Plugin {
-  const platformObject = unstable_getPlatformObject();
+  const buildOptions = unstable_getBuildOptions();
   let rootDir: string;
   let entriesFile: string;
   return {
     name: 'deploy-cloudflare-plugin',
     config(viteConfig) {
-      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      const { deploy, unstable_phase } = buildOptions;
       if (unstable_phase !== 'buildServerBundle' || deploy !== 'cloudflare') {
         return;
       }
@@ -168,7 +165,7 @@ export function deployCloudflarePlugin(opts: {
     configResolved(config) {
       rootDir = config.root;
       entriesFile = `${rootDir}/${opts.srcDir}/${SRC_ENTRIES}`;
-      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      const { deploy, unstable_phase } = buildOptions;
       if (
         (unstable_phase !== 'buildServerBundle' &&
           unstable_phase !== 'buildSsrBundle') ||
@@ -193,8 +190,8 @@ export function deployCloudflarePlugin(opts: {
         return getServeJsContent(entriesFile);
       }
     },
-    closeBundle() {
-      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+    async closeBundle() {
+      const { deploy, unstable_phase } = buildOptions;
       if (unstable_phase !== 'buildDeploy' || deploy !== 'cloudflare') {
         return;
       }
@@ -210,35 +207,7 @@ export function deployCloudflarePlugin(opts: {
         functionDir: workerDistDir,
       });
 
-      const DIST_PLATFORM_DATA = 'platform-data';
-      const keys = new Set<string>();
-      mkdirSync(path.join(workerDistDir, DIST_PLATFORM_DATA), {
-        recursive: true,
-      });
-      for (const [key, data] of iterateAllPlatformDataInternal()) {
-        keys.add(key);
-        const destFile = path.join(
-          workerDistDir,
-          DIST_PLATFORM_DATA,
-          key + '.js',
-        );
-        writeFileSync(destFile, `export default ${JSON.stringify(data)};`);
-      }
-      appendFileSync(
-        path.join(workerDistDir, DIST_ENTRIES_JS),
-        `
-export function loadPlatformData(key) {
-  switch (key) {
-    ${Array.from(keys)
-      .map(
-        (k) => `case '${k}': return import('./${DIST_PLATFORM_DATA}/${k}.js');`,
-      )
-      .join('\n')}
-    default: throw new Error('Cannot find platform data: ' + key);
-  }
-}
-`,
-      );
+      await emitPlatformData(workerDistDir);
 
       const wranglerTomlFile = path.join(rootDir, 'wrangler.toml');
       if (!existsSync(wranglerTomlFile)) {

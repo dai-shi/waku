@@ -1,28 +1,37 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { default as prompts } from 'prompts';
-import { red, green, bold } from 'kolorist';
 import fse from 'fs-extra/esm';
+import { bold, green, red } from 'kolorist';
+import { default as prompts } from 'prompts';
 import checkForUpdate from 'update-check';
+import {
+  downloadAndExtract,
+  parseExampleOption,
+} from './helpers/example-option.js';
 import {
   getTemplateNames,
   installTemplate,
 } from './helpers/install-template.js';
-import {
-  parseExampleOption,
-  downloadAndExtract,
-} from './helpers/example-option.js';
-import { spawn } from 'node:child_process';
 
 const userAgent = process.env.npm_config_user_agent || '';
-const packageManager = /pnpm/.test(userAgent)
-  ? 'pnpm'
-  : /yarn/.test(userAgent)
-    ? 'yarn'
-    : 'npm';
+
+// Bun doesn't update `npm_config_user_agent`
+// so fallback to checking if the `Bun` global is present
+// https://github.com/oven-sh/bun/issues/2530
+const isBun = 'Bun' in globalThis;
+
+const packageManager = isBun
+  ? 'bun'
+  : /pnpm/.test(userAgent)
+    ? 'pnpm'
+    : /yarn/.test(userAgent)
+      ? 'yarn'
+      : 'npm';
+
 const commands = {
   pnpm: {
     install: 'pnpm install',
@@ -38,6 +47,11 @@ const commands = {
     install: 'npm install',
     dev: 'npm run dev',
     create: 'npm create waku',
+  },
+  bun: {
+    install: 'bun install',
+    dev: 'bun dev',
+    create: 'bun create waku',
   },
 }[packageManager];
 
