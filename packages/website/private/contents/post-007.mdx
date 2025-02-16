@@ -37,11 +37,11 @@ const ClientForm = () => {
 };
 ```
 
-This is just fine, but if we want to run our form in an environment with no JavaScript. Or we just want to optimize the form to not need to render, we can upgrade to a new way.
+This is just fine, but if we want our form to run in an environment without JavaScript or we just want to optimize the form to not need to render on the client, there is a new pattern available.
 
 ## Introducing progressive forms with server actions
 
-The form works without JavaScript, which is helpful for making your forms interactive quicker on load. In slow network conditions, a user could load the html of the form and submit it, all before the JavaScript for the page loads.
+The form below works without JavaScript, which is helpful for making your forms immediately interactive. In slow network conditions, for example, a user can now submit the form even before the JavaScript loads.
 
 ```jsx
 async function submitForm(formData) {
@@ -63,4 +63,4 @@ const ServerForm = () => {
 };
 ```
 
-We can sprinkle in some JavaScript where it can be helpful. Like for client-side validation, or for showing errors from the server. The key point though, is that the form will always submit and pair with your server action regardless of whether JavaScript is running or not.
+We can sprinkle in some JavaScript where it can be helpful like for client-side validation or for showing errors from the server. The key point though is that the form will always submit and pair with your server action regardless of whether JavaScript had loaded or not.
