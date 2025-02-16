@@ -2,6 +2,7 @@ import { Link } from 'waku';
 import { Suspense } from 'react';
 import { Counter } from '../components/counter';
 import { getHonoContext } from '../lib/hono';
+import { getEnv } from '../lib/waku';
 
 export default async function HomePage() {
   const data = await getData();
@@ -14,28 +15,26 @@ export default async function HomePage() {
     new Promise<void>((resolve) => {
       setTimeout(() => {
         console.log(
-          'waitUntil promise resolved... this is running after the response was sent',
+          'Cloudflare waitUntil() promise resolved. The server response does not wait for this.',
         );
         resolve();
       }, 1000);
     }),
   );
 
+  const maxItemsEnv = getEnv('MAX_ITEMS');
+  const maxItems = maxItemsEnv ? Number.parseInt(maxItemsEnv) : undefined;
+
   return (
-    <div className="container">
+    <div>
       <title>{data.title}</title>
       <h1 className="text-4xl font-bold tracking-tight">{data.headline}</h1>
       <p>{data.body}</p>
-      <p>
-        MAX_ITEMS server environment variable, set in wrangler.toml ={' '}
-        {c?.env.MAX_ITEMS}. Note that this is not available at build time. Use{' '}
-        <a href="https://waku.gg/#environment-variables">getEnv</a> to access
-        environment variables present at build time.
-      </p>
+      <p>MAX_ITEMS = {maxItems}.</p>
       <Suspense fallback="Pending...">
         <ServerMessage />
       </Suspense>
-      <Counter />
+      <Counter max={maxItems} />
       <Link to="/about" className="mt-4 inline-block underline">
         About page
       </Link>

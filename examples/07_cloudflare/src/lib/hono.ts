@@ -3,7 +3,6 @@ import { isBuild } from './waku';
 
 export function getHonoContext() {
   if (isBuild()) {
-    console.log("ITS BUILD!!!");
     return undefined;
   }
   try {
