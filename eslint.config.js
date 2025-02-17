@@ -16,7 +16,11 @@ export default tseslint.config(
   ...compat.extends('plugin:react-hooks/recommended'),
   {
     settings: {
-      'import/resolver': { typescript: true },
+      'import/resolver': {
+        typescript: {
+          project: './tsconfig.eslint.json',
+        },
+      },
       react: { version: '999.999.999' },
     },
     languageOptions: {
