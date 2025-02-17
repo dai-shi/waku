@@ -1,8 +1,8 @@
-import { getHighlighter } from 'shiki';
+import { createHighlighter } from 'shiki';
 
 import theme from '../theme.json';
 
-const highlighter = getHighlighter({
+const highlighter = createHighlighter({
   langs: ['tsx'],
   themes: [theme as any],
 });

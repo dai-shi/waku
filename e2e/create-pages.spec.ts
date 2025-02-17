@@ -116,5 +116,39 @@ for (const mode of ['DEV', 'PRD'] as const) {
       ).toBeVisible();
       ({ port, stopApp } = await startApp(mode));
     });
+
+    test('api hi', async () => {
+      const res = await fetch(`http://localhost:${port}/api/hi`);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe('hello world!');
+    });
+
+    test('api hi.txt', async () => {
+      const res = await fetch(`http://localhost:${port}/api/hi.txt`);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe('hello from a text file!');
+    });
+
+    test('api empty', async () => {
+      const res = await fetch(`http://localhost:${port}/api/empty`);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe('');
+    });
+
+    test('api hi with POST', async () => {
+      const res = await fetch(`http://localhost:${port}/api/hi`, {
+        method: 'POST',
+        body: 'from the test!',
+      });
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe('POST to hello world! from the test!');
+    });
+
+    test('exactPath', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/exact/[slug]/[...wild]`);
+      await expect(
+        page.getByRole('heading', { name: 'EXACTLY!!' }),
+      ).toBeVisible();
+    });
   });
 }

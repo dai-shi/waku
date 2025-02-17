@@ -268,23 +268,29 @@ describe('type tests', () => {
   describe('createApi', () => {
     it('static', () => {
       const createApi: CreateApi = vi.fn();
-      // @ts-expect-error: mode is not valid
-      createApi({ path: '/', mode: 'foo', method: 'GET', handler: () => null });
       createApi({
         path: '/',
-        mode: 'static',
+        // @ts-expect-error: render is not valid
+        render: 'foo',
+        method: 'GET',
+        // @ts-expect-error: null is not valid Response
+        handler: () => null,
+      });
+      createApi({
+        path: '/',
+        render: 'static',
         // @ts-expect-error: method is not valid
         method: 'foo',
         // @ts-expect-error: null is not valid
         handler: () => null,
       });
       // @ts-expect-error: handler is not valid
-      createApi({ path: '/', mode: 'static', method: 'GET', handler: 123 });
+      createApi({ path: '/', render: 'static', method: 'GET', handler: 123 });
 
       // good
       createApi({
         path: '/',
-        mode: 'static',
+        render: 'static',
         method: 'GET',
         handler: async () => {
           return new Response('Hello World');
@@ -293,26 +299,33 @@ describe('type tests', () => {
     });
     it('dynamic', () => {
       const createApi: CreateApi = vi.fn();
-      // @ts-expect-error: mode & handler are not valid
-      createApi({ path: '/', mode: 'foo', method: 'GET', handler: () => null });
       createApi({
-        path: '/foo',
-        mode: 'dynamic',
-        // @ts-expect-error: method is not valid
-        method: 'foo',
-        // @ts-expect-error: null is not valid
+        path: '/',
+        // @ts-expect-error: render not valid
+        render: 'foo',
+        method: 'GET',
+        // @ts-expect-error: handler not valid
         handler: () => null,
       });
+      createApi({
+        path: '/foo',
+        render: 'dynamic',
+        handlers: {
+          // @ts-expect-error: null is not valid
+          GET: () => null,
+        },
+      });
       // @ts-expect-error: handler is not valid
-      createApi({ path: '/', mode: 'dynamic', method: 'GET', handler: 123 });
+      createApi({ path: '/', render: 'dynamic', method: 'GET', handler: 123 });
 
       // good
       createApi({
         path: '/foo/[slug]',
-        mode: 'dynamic',
-        method: 'GET',
-        handler: async () => {
-          return new Response('Hello World');
+        render: 'dynamic',
+        handlers: {
+          POST: async (req) => {
+            return new Response('Hello World ' + new URL(req.url).pathname);
+          },
         },
       });
     });
@@ -478,7 +491,7 @@ function injectedFunctions() {
   };
 }
 
-describe('createPages', () => {
+describe('createPages pages and layouts', () => {
   it('creates a simple static page', async () => {
     const TestPage = () => null;
     createPages(async ({ createPage }) => [
@@ -493,9 +506,9 @@ describe('createPages', () => {
     expect(await getRouteConfig()).toEqual([
       {
         elements: {
-          root: { isStatic: true },
           'page:/test': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [{ name: 'test', type: 'literal' }],
@@ -506,8 +519,9 @@ describe('createPages', () => {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
     expect(route.routeElement).toBeDefined();
-    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test']);
+    expect(Object.keys(route.elements)).toEqual(['page:/test']);
   });
 
   it('creates a simple dynamic page', async () => {
@@ -523,9 +537,9 @@ describe('createPages', () => {
     expect(await getRouteConfig()).toEqual([
       {
         elements: {
-          root: { isStatic: true },
           'page:/test': { isStatic: false },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [{ name: 'test', type: 'literal' }],
@@ -535,15 +549,16 @@ describe('createPages', () => {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
     expect(route.routeElement).toBeDefined();
-    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test']);
+    expect(Object.keys(route.elements)).toEqual(['page:/test']);
   });
 
   it('creates a simple static api', async () => {
     createPages(async ({ createApi }) => [
       createApi({
         path: '/test',
-        mode: 'static',
+        render: 'static',
         method: 'GET',
         handler: async () => {
           return new Response('Hello World');
@@ -575,10 +590,11 @@ describe('createPages', () => {
     createPages(async ({ createApi }) => [
       createApi({
         path: '/test/[slug]',
-        mode: 'dynamic',
-        method: 'GET',
-        handler: async () => {
-          return new Response('Hello World');
+        render: 'dynamic',
+        handlers: {
+          GET: async () => {
+            return new Response('Hello World');
+          },
         },
       }),
     ]);
@@ -627,9 +643,9 @@ describe('createPages', () => {
       {
         elements: {
           'layout:/': { isStatic: true },
-          root: { isStatic: true },
           'page:/test': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [{ name: 'test', type: 'literal' }],
@@ -639,12 +655,9 @@ describe('createPages', () => {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
     expect(route.routeElement).toBeDefined();
-    expect(Object.keys(route.elements)).toEqual([
-      'root',
-      'page:/test',
-      'layout:/',
-    ]);
+    expect(Object.keys(route.elements)).toEqual(['page:/test', 'layout:/']);
   });
 
   it('creates a simple dynamic page with a layout', async () => {
@@ -668,9 +681,9 @@ describe('createPages', () => {
       {
         elements: {
           'layout:/': { isStatic: false },
-          root: { isStatic: true },
           'page:/test': { isStatic: false },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [{ name: 'test', type: 'literal' }],
@@ -681,12 +694,9 @@ describe('createPages', () => {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
     expect(route.routeElement).toBeDefined();
-    expect(Object.keys(route.elements)).toEqual([
-      'root',
-      'page:/test',
-      'layout:/',
-    ]);
+    expect(Object.keys(route.elements)).toEqual(['page:/test', 'layout:/']);
   });
 
   it('creates a nested static page', async () => {
@@ -702,9 +712,9 @@ describe('createPages', () => {
     expect(await getRouteConfig()).toEqual([
       {
         elements: {
-          root: { isStatic: true },
           'page:/test/nested': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -717,8 +727,9 @@ describe('createPages', () => {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
     expect(route.routeElement).toBeDefined();
-    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/nested']);
+    expect(Object.keys(route.elements)).toEqual(['page:/test/nested']);
   });
 
   it('creates a nested static page with nested layout', async () => {
@@ -739,10 +750,10 @@ describe('createPages', () => {
     expect(await getRouteConfig()).toEqual([
       {
         elements: {
-          root: { isStatic: true },
           'page:/test/nested': { isStatic: true },
           'layout:/test/nested': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -755,9 +766,9 @@ describe('createPages', () => {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
     expect(route.routeElement).toBeDefined();
     expect(Object.keys(route.elements)).toEqual([
-      'root',
       'page:/test/nested',
       'layout:/test/nested',
     ]);
@@ -776,9 +787,9 @@ describe('createPages', () => {
     expect(await getRouteConfig()).toEqual([
       {
         elements: {
-          root: { isStatic: true },
           'page:/test/nested': { isStatic: false },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -792,8 +803,9 @@ describe('createPages', () => {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
     expect(route.routeElement).toBeDefined();
-    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/nested']);
+    expect(Object.keys(route.elements)).toEqual(['page:/test/nested']);
   });
 
   it('creates a static page with slugs', async () => {
@@ -813,9 +825,9 @@ describe('createPages', () => {
     expect(await getRouteConfig()).toEqual([
       {
         elements: {
-          root: { isStatic: true },
           'page:/test/w/x': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -831,9 +843,9 @@ describe('createPages', () => {
       },
       {
         elements: {
-          root: { isStatic: true },
           'page:/test/y/z': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -852,8 +864,9 @@ describe('createPages', () => {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
     expect(route.routeElement).toBeDefined();
-    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/y/z']);
+    expect(Object.keys(route.elements)).toEqual(['page:/test/y/z']);
   });
 
   it('creates a dynamic page with slugs', async () => {
@@ -869,9 +882,9 @@ describe('createPages', () => {
     expect(await getRouteConfig()).toEqual([
       {
         elements: {
-          root: { isStatic: true },
           'page:/test/[a]/[b]': { isStatic: false },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -885,8 +898,9 @@ describe('createPages', () => {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
     expect(route.routeElement).toBeDefined();
-    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/[a]/[b]']);
+    expect(Object.keys(route.elements)).toEqual(['page:/test/[a]/[b]']);
   });
 
   it('creates a static page with wildcards', async () => {
@@ -903,9 +917,9 @@ describe('createPages', () => {
     expect(await getRouteConfig()).toEqual([
       {
         elements: {
-          root: { isStatic: true },
           'page:/test/a/b': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -923,8 +937,9 @@ describe('createPages', () => {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
     expect(route.routeElement).toBeDefined();
-    expect(Object.keys(route.elements)).toEqual(['root', 'page:/test/a/b']);
+    expect(Object.keys(route.elements)).toEqual(['page:/test/a/b']);
   });
 
   it('creates a dynamic page with wildcards', async () => {
@@ -940,9 +955,9 @@ describe('createPages', () => {
     expect(await getRouteConfig()).toEqual([
       {
         elements: {
-          root: { isStatic: true },
           'page:/test/[...path]': { isStatic: false },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -955,11 +970,9 @@ describe('createPages', () => {
       query: '?skip=[]',
     });
     expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
     expect(route.routeElement).toBeDefined();
-    expect(Object.keys(route.elements)).toEqual([
-      'root',
-      'page:/test/[...path]',
-    ]);
+    expect(Object.keys(route.elements)).toEqual(['page:/test/[...path]']);
   });
 
   it('fails if static paths do not match the slug pattern', async () => {
@@ -997,18 +1010,18 @@ describe('createPages', () => {
     expect(await getRouteConfig()).toEqual([
       {
         elements: {
-          root: { isStatic: true },
           'page:/static': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: true,
         path: [{ name: 'static', type: 'literal' }],
       },
       {
         elements: {
-          root: { isStatic: true },
           'page:/dynamic': { isStatic: false },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: true,
         path: [{ name: 'dynamic', type: 'literal' }],
@@ -1050,27 +1063,22 @@ describe('createPages', () => {
     await expect(getRouteConfig).rejects.toThrowError('Duplicated path: /test');
   });
 
-  it.fails(
-    'fails if duplicated static and dynamic paths override each other',
-    async () => {
-      createPages(async ({ createPage }) => [
-        createPage({
-          render: 'dynamic',
-          path: '/test',
-          component: () => null,
-        }),
-        createPage({
-          render: 'static',
-          path: '/test',
-          component: () => null,
-        }),
-      ]);
-      const { getRouteConfig } = injectedFunctions();
-      await expect(getRouteConfig).rejects.toThrowError(
-        'Duplicated component for: test/page',
-      );
-    },
-  );
+  it('fails if duplicated static and dynamic paths override each other', async () => {
+    createPages(async ({ createPage }) => [
+      createPage({
+        render: 'dynamic',
+        path: '/test',
+        component: () => null,
+      }),
+      createPage({
+        render: 'static',
+        path: '/test',
+        component: () => null,
+      }),
+    ]);
+    const { getRouteConfig } = injectedFunctions();
+    await expect(getRouteConfig).rejects.toThrowError('Duplicated path: /test');
+  });
 
   it('creates a complex router', async () => {
     const TestPage = vi.fn();
@@ -1081,9 +1089,9 @@ describe('createPages', () => {
     expect(await getRouteConfig()).toEqual([
       {
         elements: {
-          root: { isStatic: true },
           'page:/client/static': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -1093,9 +1101,9 @@ describe('createPages', () => {
       },
       {
         elements: {
-          root: { isStatic: true },
           'page:/server/static/static-echo': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -1111,9 +1119,9 @@ describe('createPages', () => {
       },
       {
         elements: {
-          root: { isStatic: true },
           'page:/server/static/static-echo-2': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -1129,9 +1137,9 @@ describe('createPages', () => {
       },
       {
         elements: {
-          root: { isStatic: true },
           'page:/server/static/static-echo/static-echo-2': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -1149,9 +1157,9 @@ describe('createPages', () => {
       },
       {
         elements: {
-          root: { isStatic: true },
           'page:/server/static/hello/hello-2': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -1169,9 +1177,9 @@ describe('createPages', () => {
       },
       {
         elements: {
-          root: { isStatic: true },
           'page:/static/wild/bar': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -1187,9 +1195,9 @@ describe('createPages', () => {
       },
       {
         elements: {
-          root: { isStatic: true },
           'page:/static/wild/hello/hello-2': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -1206,9 +1214,9 @@ describe('createPages', () => {
       },
       {
         elements: {
-          root: { isStatic: true },
           'page:/static/wild/foo/foo-2/foo-3': { isStatic: true },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -1226,9 +1234,9 @@ describe('createPages', () => {
       },
       {
         elements: {
-          root: { isStatic: true },
           'page:/client/dynamic': { isStatic: false },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -1238,9 +1246,9 @@ describe('createPages', () => {
       },
       {
         elements: {
-          root: { isStatic: true },
           'page:/server/one/[echo]': { isStatic: false },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -1251,9 +1259,9 @@ describe('createPages', () => {
       },
       {
         elements: {
-          root: { isStatic: true },
           'page:/server/two/[echo]/[echo2]': { isStatic: false },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -1265,9 +1273,9 @@ describe('createPages', () => {
       },
       {
         elements: {
-          root: { isStatic: true },
           'page:/server/wild/[...wild]': { isStatic: false },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -1278,9 +1286,9 @@ describe('createPages', () => {
       },
       {
         elements: {
-          root: { isStatic: true },
           'page:/server/oneAndWild/[slug]/[...wild]': { isStatic: false },
         },
+        rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
         path: [
@@ -1295,10 +1303,281 @@ describe('createPages', () => {
       query: '?skip=[]',
     });
     assert(route);
+    expect(route.rootElement).toBeDefined();
     expect(route.routeElement).toBeDefined();
     expect(Object.keys(route.elements)).toEqual([
-      'root',
       'page:/server/two/[echo]/[echo2]',
     ]);
+  });
+});
+
+describe('createPages api', () => {
+  it('creates a simple static api', async () => {
+    createPages(async ({ createApi }) => [
+      createApi({
+        path: '/test',
+        render: 'static',
+        method: 'GET',
+        handler: async () => {
+          return new Response('Hello World');
+        },
+      }),
+    ]);
+    const { getApiConfig, handleApi } = injectedFunctions();
+    expect(await getApiConfig()).toEqual([
+      {
+        path: [{ type: 'literal', name: 'test' }],
+        isStatic: true,
+      },
+    ]);
+    const res = await handleApi('/test', {
+      method: 'GET',
+      headers: {},
+      body: null,
+    });
+    expect(res.headers).toEqual({
+      'content-type': 'text/plain;charset=UTF-8',
+    });
+    const respParsed = new Response(res.body);
+    const text = await respParsed.text();
+    expect(text).toEqual('Hello World');
+    expect(res.status).toEqual(200);
+  });
+
+  it('creates a simple dynamic api', async () => {
+    createPages(async ({ createApi }) => [
+      createApi({
+        path: '/test/[slug]',
+        render: 'dynamic',
+        handlers: {
+          GET: async (req) => {
+            return new Response('Hello World ' + req.url.split('/').at(-1)!);
+          },
+        },
+      }),
+    ]);
+    const { getApiConfig, handleApi } = injectedFunctions();
+    expect(await getApiConfig()).toEqual([
+      {
+        path: [
+          { type: 'literal', name: 'test' },
+          { type: 'group', name: 'slug' },
+        ],
+        isStatic: false,
+      },
+    ]);
+    const res = await handleApi('/test/foo', {
+      method: 'GET',
+      headers: {},
+      body: null,
+    });
+    expect(res.headers).toEqual({
+      'content-type': 'text/plain;charset=UTF-8',
+    });
+    const respParsed = new Response(res.body);
+    const text = await respParsed.text();
+    expect(text).toEqual('Hello World foo');
+    expect(res.status).toEqual(200);
+  });
+});
+
+describe('createPages - exactPath', () => {
+  it('creates a simple static page', async () => {
+    const TestPage = () => null;
+    createPages(async ({ createPage }) => [
+      createPage({
+        render: 'static',
+        path: '/test',
+        exactPath: true,
+        component: TestPage,
+      }),
+    ]);
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
+      {
+        elements: {
+          'page:/test': { isStatic: true },
+        },
+        rootElement: { isStatic: true },
+        routeElement: { isStatic: true },
+        noSsr: false,
+        path: [{ name: 'test', type: 'literal' }],
+      },
+    ]);
+    const route = await handleRoute('/test', {
+      query: '?skip=[]',
+    });
+    expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
+    expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual(['page:/test']);
+  });
+
+  it('creates a simple dynamic page', async () => {
+    const TestPage = () => null;
+    createPages(async ({ createPage }) => [
+      createPage({
+        render: 'dynamic',
+        path: '/test',
+        exactPath: true,
+        component: TestPage,
+      }),
+    ]);
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
+      {
+        elements: {
+          'page:/test': { isStatic: false },
+        },
+        rootElement: { isStatic: true },
+        routeElement: { isStatic: true },
+        noSsr: false,
+        path: [{ name: 'test', type: 'literal' }],
+      },
+    ]);
+    const route = await handleRoute('/test', {
+      query: '?skip=[]',
+    });
+    expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
+    expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual(['page:/test']);
+  });
+
+  it('works with a slug path', async () => {
+    const TestPage = vi.fn();
+    createPages(async ({ createPage }) => [
+      createPage({
+        render: 'static',
+        path: '/test/[slug]',
+        exactPath: true,
+        component: TestPage,
+      }),
+    ]);
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
+      {
+        elements: {
+          'page:/test/[slug]': { isStatic: true },
+        },
+        rootElement: { isStatic: true },
+        routeElement: { isStatic: true },
+        noSsr: false,
+        path: [
+          { name: 'test', type: 'literal' },
+          { name: '[slug]', type: 'literal' },
+        ],
+      },
+    ]);
+    const route = await handleRoute('/test/[slug]', {
+      query: '?skip=[]',
+    });
+    expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
+    expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual(['page:/test/[slug]']);
+  });
+
+  it('works with a wildcard path', async () => {
+    const TestPage = vi.fn();
+    createPages(async ({ createPage }) => [
+      createPage({
+        render: 'static',
+        path: '/test/[...wildcard]',
+        exactPath: true,
+        component: TestPage,
+      }),
+    ]);
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
+      {
+        elements: {
+          'page:/test/[...wildcard]': { isStatic: true },
+        },
+        rootElement: { isStatic: true },
+        routeElement: { isStatic: true },
+        noSsr: false,
+        path: [
+          { name: 'test', type: 'literal' },
+          { name: '[...wildcard]', type: 'literal' },
+        ],
+      },
+    ]);
+    const route = await handleRoute('/test/[...wildcard]', {
+      query: '?skip=[]',
+    });
+    expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
+    expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual(['page:/test/[...wildcard]']);
+  });
+
+  it('works with wildcard and slug path', async () => {
+    const TestPage = vi.fn();
+    createPages(async ({ createPage }) => [
+      createPage({
+        render: 'static',
+        path: '/test/[...wildcard]/[slug]',
+        exactPath: true,
+        component: TestPage,
+      }),
+    ]);
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
+      {
+        elements: {
+          'page:/test/[...wildcard]/[slug]': { isStatic: true },
+        },
+        rootElement: { isStatic: true },
+        routeElement: { isStatic: true },
+        noSsr: false,
+        path: [
+          { name: 'test', type: 'literal' },
+          { name: '[...wildcard]', type: 'literal' },
+          { name: '[slug]', type: 'literal' },
+        ],
+      },
+    ]);
+    const route = await handleRoute('/test/[...wildcard]/[slug]', {
+      query: '?skip=[]',
+    });
+    expect(route).toBeDefined();
+    expect(route.rootElement).toBeDefined();
+    expect(route.routeElement).toBeDefined();
+    expect(Object.keys(route.elements)).toEqual([
+      'page:/test/[...wildcard]/[slug]',
+    ]);
+  });
+
+  it('does not work with slug match', async () => {
+    const TestPage = vi.fn();
+    createPages(async ({ createPage }) => [
+      createPage({
+        render: 'static',
+        path: '/test/[slug]',
+        exactPath: true,
+        component: TestPage,
+      }),
+    ]);
+    const { getRouteConfig, handleRoute } = injectedFunctions();
+    expect(await getRouteConfig()).toEqual([
+      {
+        elements: {
+          'page:/test/[slug]': { isStatic: true },
+        },
+        rootElement: { isStatic: true },
+        routeElement: { isStatic: true },
+        noSsr: false,
+        path: [
+          { name: 'test', type: 'literal' },
+          { name: '[slug]', type: 'literal' },
+        ],
+      },
+    ]);
+    await expect(async () => {
+      return handleRoute('/test/foo', {
+        query: '?skip=[]',
+      });
+    }).rejects.toThrowError();
   });
 });

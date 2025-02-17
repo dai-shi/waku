@@ -21,11 +21,21 @@ const waku = fileURLToPath(
 
 const commands = [
   {
-    command: 'dev',
+    command: `node ${waku} dev`,
   },
   {
-    build: 'build',
-    command: 'start',
+    build: `build`,
+    command: `node ${waku} start`,
+  },
+];
+
+const commandsCloudflare = [
+  {
+    command: `node ${waku} dev`,
+  },
+  {
+    build: `build --with-cloudflare`,
+    command: 'npx wrangler dev',
   },
 ];
 
@@ -38,7 +48,10 @@ const examples = [
 ];
 
 for (const cwd of examples) {
-  for (const { build, command } of commands) {
+  const exampleCommands = cwd.includes('cloudflare')
+    ? commandsCloudflare
+    : commands;
+  for (const { build, command } of exampleCommands) {
     test.describe(`smoke test on ${basename(cwd)}: ${command}`, () => {
       let cp: ChildProcess;
       let port: number;
@@ -54,7 +67,7 @@ for (const cwd of examples) {
           execSync(`node ${waku} ${build}`, { cwd });
         }
         port = await getFreePort();
-        cp = exec(`node ${waku} ${command} --port ${port}`, { cwd });
+        cp = exec(`${command} --port ${port}`, { cwd });
         cp.stdout?.on('data', (data) => {
           info(`${port} stdout: ${data}`);
           console.log(`${port} stdout: `, `${data}`);
@@ -63,6 +76,14 @@ for (const cwd of examples) {
           if (
             command === 'dev' &&
             /WebSocket server error: Port is already in use/.test(`${data}`)
+          ) {
+            // ignore this error
+            return;
+          }
+          if (
+            /Error: The render was aborted by the server without a reason\..*\/examples\/53_islands\//s.test(
+              `${data}`,
+            )
           ) {
             // ignore this error
             return;

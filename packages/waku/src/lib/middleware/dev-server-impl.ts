@@ -8,6 +8,7 @@ import type { EntriesDev } from '../types.js';
 import { resolveConfig, extractPureConfig } from '../config.js';
 import { SRC_MAIN, SRC_ENTRIES } from '../constants.js';
 import {
+  decodeFilePathFromAbsolute,
   joinPath,
   fileURLToFilePath,
   filePathToFileURL,
@@ -73,16 +74,15 @@ const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
   return [writable, promise];
 };
 
-const hotUpdateCallbackSet = new Set<(payload: HotUpdatePayload) => void>();
-const registerHotUpdateCallback = (fn: (payload: HotUpdatePayload) => void) =>
-  hotUpdateCallbackSet.add(fn);
-const hotUpdateCallback = (payload: HotUpdatePayload) =>
-  hotUpdateCallbackSet.forEach((fn) => fn(payload));
-
 const createMainViteServer = (
   env: Record<string, string>,
   configPromise: ReturnType<typeof resolveConfig>,
+  hotUpdateCallbackSet: Set<(payload: HotUpdatePayload) => void>,
+  resolvedMap: Map<string, string>,
 ) => {
+  const registerHotUpdateCallback = (fn: (payload: HotUpdatePayload) => void) =>
+    hotUpdateCallbackSet.add(fn);
+
   const vitePromise = configPromise.then(async (config) => {
     const vite = await createViteServer(
       extendViteConfig(
@@ -128,7 +128,7 @@ const createMainViteServer = (
               include: ['react-server-dom-webpack/client.edge'],
             },
           },
-          appType: 'custom',
+          appType: 'mpa',
           server: { middlewareMode: true },
         },
         config,
@@ -139,8 +139,11 @@ const createMainViteServer = (
     return vite;
   });
 
-  const wakuDist = joinPath(fileURLToFilePath(import.meta.url), '../../..');
+  const wakuDist = decodeFilePathFromAbsolute(
+    joinPath(fileURLToFilePath(import.meta.url), '../../..'),
+  );
 
+  // FIXME This function feels too hacky
   const loadServerModuleMain = async (idOrFileURL: string) => {
     const vite = await vitePromise;
     if (!idOrFileURL.startsWith('file://')) {
@@ -154,9 +157,18 @@ const createMainViteServer = (
     const file = filePath.startsWith('/')
       ? filePath
       : joinPath(vite.config.root, filePath);
-    if (file.startsWith(wakuDist)) {
+    if (decodeFilePathFromAbsolute(file).startsWith(wakuDist)) {
       // HACK `external: ['waku']` doesn't do the same
       return import(/* @vite-ignore */ filePathToFileURL(file));
+    }
+    {
+      let id = file;
+      while (resolvedMap.has(id)) {
+        id = resolvedMap.get(id)!;
+      }
+      if (!id.startsWith('/')) {
+        return vite.ssrLoadModule(id);
+      }
     }
     if (file.includes('/node_modules/')) {
       // HACK node_modules should be externalized
@@ -206,7 +218,7 @@ const createMainViteServer = (
     const vite = await vitePromise;
     try {
       const result = await vite.transformRequest(pathname);
-      if (result?.code === `export default "/@fs${pathname}"`) {
+      if (result?.code === `export default "/@fs${encodeURI(pathname)}"`) {
         return false;
       }
       return !!result;
@@ -226,7 +238,11 @@ const createMainViteServer = (
 const createRscViteServer = (
   env: Record<string, string>,
   configPromise: ReturnType<typeof resolveConfig>,
+  hotUpdateCallbackSet: Set<(payload: HotUpdatePayload) => void>,
+  resolvedMap: Map<string, string>,
 ) => {
+  const hotUpdateCallback = (payload: HotUpdatePayload) =>
+    hotUpdateCallbackSet.forEach((fn) => fn(payload));
   const dummyServer = new Server(); // FIXME we hope to avoid this hack
 
   const vitePromise = configPromise.then(async (config) => {
@@ -246,7 +262,11 @@ const createRscViteServer = (
               hotUpdateCallback,
             }),
             rscManagedPlugin(config),
-            rscTransformPlugin({ isClient: false, isBuild: false }),
+            rscTransformPlugin({
+              isClient: false,
+              isBuild: false,
+              resolvedMap,
+            }),
             rscDelegatePlugin(hotUpdateCallback),
           ],
           optimizeDeps: {
@@ -270,6 +290,7 @@ const createRscViteServer = (
                 'react',
                 'react/jsx-runtime',
                 'react/jsx-dev-runtime',
+                'react-dom',
               ],
               exclude: ['waku'],
             },
@@ -345,15 +366,23 @@ export const devServer: Middleware = (options) => {
   (globalThis as any).__WAKU_CLIENT_IMPORT__ = (id: string) =>
     loadServerModuleMain(id);
 
+  const hotUpdateCallbackSet = new Set<(payload: HotUpdatePayload) => void>();
+  const resolvedMap = new Map<string, string>();
+
   const {
     vitePromise,
     loadServerModuleMain,
     transformIndexHtml,
     willBeHandled,
-  } = createMainViteServer(env, configPromise);
+  } = createMainViteServer(
+    env,
+    configPromise,
+    hotUpdateCallbackSet,
+    resolvedMap,
+  );
 
   const { loadServerModuleRsc, loadEntriesDev, resolveClientEntry } =
-    createRscViteServer(env, configPromise);
+    createRscViteServer(env, configPromise, hotUpdateCallbackSet, resolvedMap);
 
   let initialModules: ClonableModuleNode[];
 
@@ -367,6 +396,10 @@ export const devServer: Middleware = (options) => {
       const processedModules = new Set<string>();
 
       const processModule = async (modulePath: string) => {
+        if (modulePath.endsWith('.css')) {
+          // HACK not sure if this is correct
+          return;
+        }
         if (processedModules.has(modulePath)) {
           return;
         }
@@ -460,6 +493,8 @@ export const devServer: Middleware = (options) => {
     const body = await readablePromise;
     if (body) {
       ctx.res.body = body;
+    } else if (ctx.res.status === 404) {
+      delete ctx.res.status;
     }
   };
 };

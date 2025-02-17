@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  Component,
   createContext,
   createElement,
   startTransition,
@@ -12,6 +11,7 @@ import {
   useState,
   useTransition,
   Fragment,
+  Component,
 } from 'react';
 import type {
   ComponentProps,
@@ -39,10 +39,14 @@ import {
 import type { RouteProps } from './common.js';
 import type { RouteConfig } from './base-types.js';
 
+type AllowPathDecorators<Path extends string> = Path extends unknown
+  ? Path | `${Path}?${string}` | `${Path}#${string}`
+  : never;
+
 type InferredPaths = RouteConfig extends {
-  paths: infer UserPaths;
+  paths: infer UserPaths extends string;
 }
-  ? UserPaths
+  ? AllowPathDecorators<UserPaths>
   : string;
 
 declare global {
@@ -110,7 +114,18 @@ export function useRouter_UNSTABLE() {
   }
   const { route, changeRoute, prefetchRoute } = router;
   const push = useCallback(
-    (to: InferredPaths) => {
+    (
+      to: InferredPaths,
+      options?: {
+        /**
+         * indicates if the link should scroll or not on navigation
+         * - `true`: always scroll
+         * - `false`: never scroll
+         * - `undefined`: scroll on path change (not on searchParams change)
+         */
+        scroll?: boolean;
+      },
+    ) => {
       const url = new URL(to, window.location.href);
       const newPath = url.pathname !== window.location.pathname;
       window.history.pushState(
@@ -121,16 +136,31 @@ export function useRouter_UNSTABLE() {
         '',
         url,
       );
-      changeRoute(parseRoute(url), { shouldScroll: newPath });
+      changeRoute(parseRoute(url), {
+        shouldScroll: options?.scroll ?? newPath,
+      });
     },
     [changeRoute],
   );
   const replace = useCallback(
-    (to: InferredPaths) => {
+    (
+      to: InferredPaths,
+      options?: {
+        /**
+         * indicates if the link should scroll or not on navigation
+         * - `true`: always scroll
+         * - `false`: never scroll
+         * - `undefined`: scroll on path change (not on searchParams change)
+         */
+        scroll?: boolean;
+      },
+    ) => {
       const url = new URL(to, window.location.href);
       const newPath = url.pathname !== window.location.pathname;
       window.history.replaceState(window.history.state, '', url);
-      changeRoute(parseRoute(url), { shouldScroll: newPath });
+      changeRoute(parseRoute(url), {
+        shouldScroll: options?.scroll ?? newPath,
+      });
     },
     [changeRoute],
   );
@@ -168,9 +198,17 @@ export type LinkProps = {
   to: InferredPaths;
   pending?: ReactNode;
   notPending?: ReactNode;
+  /**
+   * indicates if the link should scroll or not on navigation
+   * - `true`: always scroll
+   * - `false`: never scroll
+   * - `undefined`: scroll on path change (not on searchParams change)
+   */
+  scroll?: boolean;
   children: ReactNode;
   unstable_prefetchOnEnter?: boolean;
   unstable_prefetchOnView?: boolean;
+  unstable_startTransition?: ((fn: () => void) => void) | undefined;
 } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>;
 
 export function Link({
@@ -180,6 +218,8 @@ export function Link({
   notPending,
   unstable_prefetchOnEnter,
   unstable_prefetchOnView,
+  unstable_startTransition,
+  scroll,
   ...props
 }: LinkProps): ReactElement {
   const router = useContext(RouterContext);
@@ -226,16 +266,17 @@ export function Link({
     if (url.href !== window.location.href) {
       const route = parseRoute(url);
       prefetchRoute(route);
-      startTransition(() => {
+      (unstable_startTransition || startTransition)(() => {
+        const newPath = url.pathname !== window.location.pathname;
         window.history.pushState(
           {
             ...window.history.state,
-            waku_new_path: url.pathname !== window.location.pathname,
+            waku_new_path: newPath,
           },
           '',
           url,
         );
-        changeRoute(route, { shouldScroll: true });
+        changeRoute(route, { shouldScroll: scroll ?? newPath });
       });
     }
     props.onClick?.(event);
@@ -276,7 +317,7 @@ function renderError(message: string) {
   );
 }
 
-class ErrorBoundary extends Component<
+export class ErrorBoundary extends Component<
   { children: ReactNode },
   { error?: unknown }
 > {
@@ -408,14 +449,16 @@ const InnerRouter = ({
     };
   }, [changeRoute, locationListeners]);
 
-  const routeElement = createElement(Slot, {
-    id: getRouteSlotId(route.path),
-  });
-
+  const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
+  const rootElement = createElement(
+    Slot,
+    { id: 'root', unstable_fallbackToPrev: true },
+    routeElement,
+  );
   return createElement(
     RouterContext.Provider,
     { value: { route, changeRoute, prefetchRoute } },
-    routeElement,
+    rootElement,
   );
 };
 
@@ -437,7 +480,6 @@ export function Router({
   const locationListeners = (routerData[0] ||= new Set());
   const staticPathSet = (routerData[1] ||= new Set());
   const cachedIdSet = (routerData[2] ||= new Set());
-  const has404 = (routerData[3] ||= false);
   const unstable_enhanceFetch =
     (fetchFn: typeof fetch) =>
     (input: RequestInfo | URL, init: RequestInit = {}) => {
@@ -454,9 +496,10 @@ export function Router({
     (
       createData: (
         responsePromise: Promise<Response>,
-      ) => Promise<Record<string, ReactNode>>,
+      ) => Promise<Record<string, unknown>>,
     ) =>
     async (responsePromise: Promise<Response>) => {
+      const has404 = (routerData[3] ||= false);
       const response = await responsePromise;
       if (response.status === 404 && has404) {
         // HACK this is still an experimental logic. It's very fragile.
@@ -500,21 +543,17 @@ export function Router({
     };
   const initialRscParams = createRscParams(initialRoute.query);
   return createElement(
-    ErrorBoundary,
-    null,
-    createElement(
-      Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
-      {
-        initialRscPath,
-        initialRscParams,
-        unstable_enhanceFetch,
-        unstable_enhanceCreateData,
-      },
-      createElement(InnerRouter, {
-        routerData: routerData as Required<RouterData>,
-        initialRoute,
-      }),
-    ),
+    Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
+    {
+      initialRscPath,
+      initialRscParams,
+      unstable_enhanceFetch,
+      unstable_enhanceCreateData,
+    },
+    createElement(InnerRouter, {
+      routerData: routerData as Required<RouterData>,
+      initialRoute,
+    }),
   );
 }
 
@@ -522,8 +561,13 @@ export function Router({
  * ServerRouter for SSR
  * This is not a public API.
  */
-export function ServerRouter({ route }: { route: RouteProps }) {
+export function INTERNAL_ServerRouter({ route }: { route: RouteProps }) {
   const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
+  const rootElement = createElement(
+    Slot,
+    { id: 'root', unstable_fallbackToPrev: true },
+    routeElement,
+  );
   return createElement(
     Fragment,
     null,
@@ -536,7 +580,7 @@ export function ServerRouter({ route }: { route: RouteProps }) {
           prefetchRoute: notAvailableInServer('prefetchRoute'),
         },
       },
-      routeElement,
+      rootElement,
     ),
   );
 }

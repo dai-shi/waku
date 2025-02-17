@@ -2,7 +2,7 @@ import path from 'node:path';
 import { writeFileSync } from 'node:fs';
 import type { Plugin } from 'vite';
 
-import { unstable_getPlatformObject } from '../../server.js';
+import { unstable_getBuildOptions } from '../../server.js';
 import { SRC_ENTRIES } from '../constants.js';
 import { DIST_PUBLIC } from '../builder/constants.js';
 
@@ -57,12 +57,12 @@ export function deployAwsLambdaPlugin(opts: {
   srcDir: string;
   distDir: string;
 }): Plugin {
-  const platformObject = unstable_getPlatformObject();
+  const buildOptions = unstable_getBuildOptions();
   let entriesFile: string;
   return {
     name: 'deploy-aws-lambda-plugin',
     config(viteConfig) {
-      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      const { deploy, unstable_phase } = buildOptions;
       if (unstable_phase !== 'buildServerBundle' || deploy !== 'aws-lambda') {
         return;
       }
@@ -85,7 +85,7 @@ export function deployAwsLambdaPlugin(opts: {
       }
     },
     closeBundle() {
-      const { deploy, unstable_phase } = platformObject.buildOptions || {};
+      const { deploy, unstable_phase } = buildOptions;
       if (unstable_phase !== 'buildDeploy' || deploy !== 'aws-lambda') {
         return;
       }

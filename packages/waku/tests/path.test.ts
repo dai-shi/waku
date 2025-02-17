@@ -1,9 +1,22 @@
 import { test, describe, expect } from 'vitest';
-import { parsePathWithSlug, path2regexp } from '../src/lib/utils/path.js';
+import {
+  extname,
+  parsePathWithSlug,
+  path2regexp,
+} from '../src/lib/utils/path.js';
 
 function matchPath(path: string, input: string) {
   return new RegExp(path2regexp(parsePathWithSlug(path))).test(input);
 }
+
+describe('extname', () => {
+  test('returns the extension of a path', () => {
+    expect(extname('foo/bar/baz.js')).toBe('.js');
+    expect(extname('foo/bar/baz')).toBe('');
+    expect(extname('foo/bar/.baz')).toBe('');
+    expect(extname('foo/bar/..baz')).toBe('');
+  });
+});
 
 describe('path2regexp', () => {
   test('handles paths without slugs', () => {

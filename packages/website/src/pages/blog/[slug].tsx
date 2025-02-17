@@ -58,7 +58,7 @@ export default async function BlogArticlePage({ slug }: BlogArticlePageProps) {
         <h1 className="font-serif text-3xl font-extrabold leading-none sm:text-6xl">
           {frontmatter.title}
         </h1>
-        <h3 className="mt-2 text-lg font-normal leading-snug text-white/60 sm:mt-0 sm:text-xl sm:font-bold">
+        <h3 className="mt-2 text-lg font-normal leading-snug text-white/60 sm:mt-1 sm:text-xl sm:font-bold">
           {frontmatter.description}
         </h3>
         <a
@@ -91,7 +91,7 @@ export default async function BlogArticlePage({ slug }: BlogArticlePageProps) {
           href="https://github.com/dai-shi/waku"
           target="_blank"
           rel="noreferrer"
-          className="text-shadow !inline-block -rotate-[5deg] transform whitespace-nowrap text-center font-serif text-3xl font-extrabold leading-none text-white transition-colors duration-300 ease-in-out hover:text-primary sm:mr-4 sm:text-6xl"
+          className="text-shadow inline-block! -rotate-[5deg] transform whitespace-nowrap text-center font-serif text-3xl font-extrabold leading-none text-white transition-colors duration-300 ease-in-out hover:text-primary sm:mr-4 sm:text-6xl"
         >
           star Waku on GitHub!
         </a>
