@@ -31,6 +31,7 @@ export default defineConfig({
     return [
       import('waku/middleware/context'),
       import('waku/middleware/dev-server'),
+      import('./waku.cloudflare-middleware'),
       import('waku/middleware/handler'),
     ];
   },
