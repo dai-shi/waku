@@ -70,6 +70,9 @@ const { values } = parseArgs({
     example: {
       type: 'string',
     },
+    'project-name': {
+      type: 'string',
+    },
     help: {
       type: 'boolean',
       short: 'h',
@@ -98,14 +101,14 @@ async function doPrompts() {
   const templateNames = await getTemplateNames(templateRoot);
 
   const defaultProjectName = 'waku-project';
-  let targetDir = '';
+  let targetDir = values['project-name'] || defaultProjectName;
 
   try {
     const result = await prompts(
       [
         {
           name: 'projectName',
-          type: 'text',
+          type: values['project-name'] ? null : 'text',
           message: 'Project Name',
           initial: defaultProjectName,
           onState: (state: any) => (targetDir = String(state.value).trim()),
@@ -113,7 +116,7 @@ async function doPrompts() {
         {
           name: 'shouldOverwrite',
           type: () => (canSafelyOverwrite(targetDir) ? null : 'confirm'),
-          message: `${targetDir || defaultProjectName} is not empty. Remove existing files and continue?`,
+          message: `${targetDir} is not empty. Remove existing files and continue?`,
         },
         {
           name: 'overwriteChecker',
@@ -169,6 +172,7 @@ Usage: ${commands.create} [options]
 Options:
   --choose              Choose from the template list
   --example             Specify an example use as a template
+  --project-name        Specify a project name
   -h, --help            Display this help message
 `);
 }
