@@ -4,15 +4,16 @@ import * as swc from '@swc/core';
 export const treeshake = async (
   code: string,
   modifyModule?: (mod: swc.Module) => void,
+  tsx = false,
 ): Promise<string> => {
-  const mod = swc.parseSync(code, { syntax: 'typescript' });
+  const mod = swc.parseSync(code, { syntax: 'typescript', tsx });
   modifyModule?.(mod);
-  code = swc.printSync(mod).code;
-  // FIXME can we avoid this and transform with printSync directly?
-  code = swc.transformSync(code, {
-    jsc: { parser: { syntax: 'typescript' } },
+  const jsCode = swc.transformSync(mod, {
+    jsc: {
+      target: 'esnext',
+      parser: { syntax: 'typescript', tsx },
+    },
   }).code;
-
   const bundle = await rollup({
     input: '\0code',
     external: () => true,
@@ -22,8 +23,12 @@ export const treeshake = async (
       }
       defaultHandler(warning);
     },
+    output: {
+      generatedCode: 'es2015',
+    },
     treeshake: {
       moduleSideEffects: 'no-external',
+      propertyReadSideEffects: false,
     },
     plugins: [
       {
@@ -35,7 +40,7 @@ export const treeshake = async (
         },
         load(id) {
           if (id === '\0code') {
-            return code;
+            return jsCode;
           }
         },
         resolveDynamicImport(id) {

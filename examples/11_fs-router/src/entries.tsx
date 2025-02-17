@@ -1,4 +1,4 @@
-import { fsRouter } from 'waku/router/server';
+import { unstable_fsRouter as fsRouter } from 'waku/router/server';
 
 declare global {
   interface ImportMeta {
@@ -8,6 +8,7 @@ declare global {
 
 export default fsRouter(
   import.meta.url,
-  (file: string) => import.meta.glob('./pages/**/*.tsx')[`./pages/${file}`]?.(),
+  (file: string) =>
+    import.meta.glob('./pages/**/*.{tsx,ts}')[`./pages/${file}`]?.(),
   'pages',
 );

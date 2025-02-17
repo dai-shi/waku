@@ -2,12 +2,7 @@ import type { Plugin } from 'vite';
 import * as swc from '@swc/core';
 
 import { EXTENSIONS } from '../constants.js';
-import {
-  extname,
-  joinPath,
-  fileURLToFilePath,
-  decodeFilePathFromAbsolute,
-} from '../utils/path.js';
+import { extname, joinPath } from '../utils/path.js';
 import { parseOpts } from '../utils/swc.js';
 
 const collectExportNames = (mod: swc.Module) => {
@@ -15,6 +10,8 @@ const collectExportNames = (mod: swc.Module) => {
   for (const item of mod.body) {
     if (item.type === 'ExportDeclaration') {
       if (item.declaration.type === 'FunctionDeclaration') {
+        exportNames.add(item.declaration.identifier.value);
+      } else if (item.declaration.type === 'ClassDeclaration') {
         exportNames.add(item.declaration.identifier.value);
       } else if (item.declaration.type === 'VariableDeclaration') {
         for (const d of item.declaration.declarations) {
@@ -64,7 +61,7 @@ const transformClient = (
     const exportNames = collectExportNames(mod);
     let newCode = `
 import { createServerReference } from 'react-server-dom-webpack/client';
-import { callServerRsc } from 'waku/minimal/client';
+import { unstable_callServerRsc as callServerRsc } from 'waku/minimal/client';
 `;
     for (const name of exportNames) {
       newCode += `
@@ -159,6 +156,189 @@ const replaceNode = <T extends swc.Node>(origNode: swc.Node, newNode: T): T => {
     delete origNode[key as never];
   });
   return Object.assign(origNode, newNode);
+};
+
+const transformExportedClientThings = (
+  mod: swc.Module,
+  getFuncId: () => string,
+): Set<string> => {
+  const exportNames = new Set<string>();
+  // HACK this doesn't cover all cases
+  const allowServerItems = new Map<string, swc.Expression>();
+  const allowServerDependencies = new Set<string>();
+  const visited = new WeakSet<swc.Node>();
+  const findDependencies = (node: swc.Node) => {
+    if (visited.has(node)) {
+      return;
+    }
+    visited.add(node);
+    if (node.type === 'Identifier') {
+      const id = node as swc.Identifier;
+      if (!allowServerItems.has(id.value) && !exportNames.has(id.value)) {
+        allowServerDependencies.add(id.value);
+      }
+    }
+    Object.values(node).forEach((value) => {
+      (Array.isArray(value) ? value : [value]).forEach((v) => {
+        if (typeof v?.type === 'string') {
+          findDependencies(v);
+        } else if (typeof v?.expression?.type === 'string') {
+          findDependencies(v.expression);
+        }
+      });
+    });
+  };
+  // Pass 1: find allowServer identifier
+  let allowServer = 'unstable_allowServer';
+  for (const item of mod.body) {
+    if (item.type === 'ImportDeclaration') {
+      if (item.source.value === 'waku/client') {
+        for (const specifier of item.specifiers) {
+          if (specifier.type === 'ImportSpecifier') {
+            if (specifier.imported?.value === allowServer) {
+              allowServer = specifier.local.value;
+              break;
+            }
+          }
+        }
+        break;
+      }
+    }
+  }
+  // Pass 2: collect export names and allowServer names
+  for (const item of mod.body) {
+    if (item.type === 'ExportDeclaration') {
+      if (item.declaration.type === 'FunctionDeclaration') {
+        exportNames.add(item.declaration.identifier.value);
+      } else if (item.declaration.type === 'ClassDeclaration') {
+        exportNames.add(item.declaration.identifier.value);
+      } else if (item.declaration.type === 'VariableDeclaration') {
+        for (const d of item.declaration.declarations) {
+          if (d.id.type === 'Identifier') {
+            if (
+              d.init?.type === 'CallExpression' &&
+              d.init.callee.type === 'Identifier' &&
+              d.init.callee.value === allowServer
+            ) {
+              if (d.init.arguments.length !== 1) {
+                throw new Error('allowServer should have exactly one argument');
+              }
+              allowServerItems.set(d.id.value, d.init.arguments[0]!.expression);
+              findDependencies(d.init);
+            } else {
+              exportNames.add(d.id.value);
+            }
+          }
+        }
+      }
+    } else if (item.type === 'ExportNamedDeclaration') {
+      for (const s of item.specifiers) {
+        if (s.type === 'ExportSpecifier') {
+          exportNames.add(s.exported ? s.exported.value : s.orig.value);
+        }
+      }
+    } else if (item.type === 'ExportDefaultExpression') {
+      exportNames.add('default');
+    } else if (item.type === 'ExportDefaultDeclaration') {
+      exportNames.add('default');
+    }
+  }
+  // Pass 3: collect dependencies
+  let dependenciesSize: number;
+  do {
+    dependenciesSize = allowServerDependencies.size;
+    for (const item of mod.body) {
+      if (item.type === 'VariableDeclaration') {
+        for (const d of item.declarations) {
+          if (
+            d.id.type === 'Identifier' &&
+            allowServerDependencies.has(d.id.value)
+          ) {
+            findDependencies(d);
+          }
+        }
+      } else if (item.type === 'FunctionDeclaration') {
+        if (allowServerDependencies.has(item.identifier.value)) {
+          findDependencies(item);
+        }
+      } else if (item.type === 'ClassDeclaration') {
+        if (allowServerDependencies.has(item.identifier.value)) {
+          findDependencies(item);
+        }
+      }
+    }
+  } while (dependenciesSize < allowServerDependencies.size);
+  allowServerDependencies.delete(allowServer);
+  // Pass 4: filter with dependencies
+  for (let i = 0; i < mod.body.length; ++i) {
+    const item = mod.body[i]!;
+    if (
+      item.type === 'ImportDeclaration' &&
+      item.specifiers.some(
+        (s) =>
+          s.type === 'ImportSpecifier' &&
+          allowServerDependencies.has(
+            s.imported ? s.imported.value : s.local.value,
+          ),
+      )
+    ) {
+      continue;
+    }
+    if (item.type === 'VariableDeclaration') {
+      item.declarations = item.declarations.filter(
+        (d) =>
+          d.id.type === 'Identifier' && allowServerDependencies.has(d.id.value),
+      );
+      if (item.declarations.length) {
+        continue;
+      }
+    }
+    if (item.type === 'FunctionDeclaration') {
+      if (allowServerDependencies.has(item.identifier.value)) {
+        continue;
+      }
+    }
+    if (item.type === 'ClassDeclaration') {
+      if (allowServerDependencies.has(item.identifier.value)) {
+        continue;
+      }
+    }
+    mod.body.splice(i--, 1);
+  }
+  // Pass 5: add allowServer exports
+  for (const [allowServerName, callExp] of allowServerItems) {
+    const stmt: swc.ExportDeclaration = {
+      type: 'ExportDeclaration',
+      declaration: {
+        type: 'VariableDeclaration',
+        kind: 'const',
+        declare: false,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        ctxt: 0,
+        declarations: [
+          {
+            type: 'VariableDeclarator',
+            id: createIdentifier(allowServerName),
+            init: createCallExpression(
+              createIdentifier('__waku_registerClientReference'),
+              [
+                callExp,
+                createStringLiteral(getFuncId()),
+                createStringLiteral(allowServerName),
+              ],
+            ),
+            definite: false,
+            span: createEmptySpan(),
+          },
+        ],
+        span: createEmptySpan(),
+      },
+      span: createEmptySpan(),
+    };
+    mod.body.push(stmt);
+  }
+  return exportNames;
 };
 
 const transformExportedServerFunctions = (
@@ -583,13 +763,14 @@ const transformServer = (
     }
   }
   if (hasUseClient) {
-    const exportNames = collectExportNames(mod);
+    const exportNames = transformExportedClientThings(mod, getClientId);
     let newCode = `
-import { registerClientReference } from 'react-server-dom-webpack/server.edge';
+import { registerClientReference as __waku_registerClientReference } from 'react-server-dom-webpack/server.edge';
 `;
+    newCode += swc.printSync(mod).code;
     for (const name of exportNames) {
       newCode += `
-export ${name === 'default' ? name : `const ${name} =`} registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getClientId()}#${name}'); }, '${getClientId()}', '${name}');
+export ${name === 'default' ? name : `const ${name} =`} __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getClientId()}#${name}'); }, '${getClientId()}', '${name}');
 `;
     }
     return newCode;
@@ -618,6 +799,7 @@ export function rscTransformPlugin(
     | {
         isClient: false;
         isBuild: false;
+        resolvedMap: Map<string, string>;
       }
     | {
         isClient: false;
@@ -626,25 +808,12 @@ export function rscTransformPlugin(
         serverEntryFiles: Record<string, string>;
       },
 ): Plugin {
-  let rootDir: string;
-  const resolvedMap = new Map<string, string>();
   const getClientId = (id: string): string => {
     if (opts.isClient) {
       throw new Error('getClientId is only for server');
     }
     if (!opts.isBuild) {
-      // HACK this logic is too heuristic
-      if (id.startsWith(rootDir) && !id.includes('?')) {
-        return id;
-      }
-      const origId = resolvedMap.get(id);
-      if (origId) {
-        if (origId.startsWith('/@fs/') && !origId.includes('?')) {
-          return origId;
-        }
-        return getClientId(origId);
-      }
-      return id;
+      return id.split('?')[0]!;
     }
     for (const [k, v] of Object.entries(opts.clientEntryFiles)) {
       if (v === id) {
@@ -655,18 +824,7 @@ export function rscTransformPlugin(
   };
   const getServerId = (id: string): string => {
     if (!opts.isBuild) {
-      // HACK this logic is too heuristic
-      if (id.startsWith(rootDir) && !id.includes('?')) {
-        return id;
-      }
-      const origId = resolvedMap.get(id);
-      if (origId) {
-        if (origId.startsWith('/@fs/') && !origId.includes('?')) {
-          return origId;
-        }
-        return getServerId(origId);
-      }
-      return id;
+      return id.split('?')[0]!;
     }
     for (const [k, v] of Object.entries(opts.serverEntryFiles)) {
       if (v === id) {
@@ -675,16 +833,9 @@ export function rscTransformPlugin(
     }
     throw new Error('server id not found: ' + id);
   };
-  const wakuDist = joinPath(
-    decodeFilePathFromAbsolute(fileURLToFilePath(import.meta.url)),
-    '../../..',
-  );
   return {
     name: 'rsc-transform-plugin',
     enforce: 'pre', // required for `resolveId`
-    configResolved(config) {
-      rootDir = config.root;
-    },
     async resolveId(id, importer, options) {
       if (opts.isBuild) {
         return;
@@ -693,17 +844,21 @@ export function rscTransformPlugin(
         return (await this.resolve(id.slice('/@id/'.length), importer, options))
           ?.id;
       }
-      const resolved = await this.resolve(id, importer, options);
-      let srcId =
-        importer && (id.startsWith('./') || id.startsWith('../'))
-          ? joinPath(importer.split('?')[0]!, '..', id)
-          : id;
-      if (srcId.startsWith('waku/')) {
-        srcId = wakuDist + srcId.slice('waku'.length) + '.js';
+      if (id.startsWith('/@fs/')) {
+        return (await this.resolve(id.slice('/@fs'.length), importer, options))
+          ?.id;
       }
-      if (resolved && resolved.id !== srcId) {
-        if (!resolvedMap.has(resolved.id)) {
-          resolvedMap.set(resolved.id, srcId);
+      if ('resolvedMap' in opts) {
+        const resolved = await this.resolve(id, importer, options);
+        const srcId =
+          importer && (id.startsWith('./') || id.startsWith('../'))
+            ? joinPath(importer.split('?')[0]!, '..', id)
+            : id;
+        const dstId = resolved && resolved.id.split('?')[0]!;
+        if (dstId && dstId !== srcId) {
+          if (!opts.resolvedMap.has(dstId)) {
+            opts.resolvedMap.set(dstId, srcId);
+          }
         }
       }
     },

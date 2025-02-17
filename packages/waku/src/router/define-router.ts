@@ -2,7 +2,8 @@ import { createElement } from 'react';
 import type { ReactNode } from 'react';
 
 import {
-  unstable_getPlatformObject,
+  unstable_getPlatformData,
+  unstable_setPlatformData,
   unstable_createAsyncIterable as createAsyncIterable,
 } from '../server.js';
 import { unstable_defineEntries as defineEntries } from '../minimal/server.js';
@@ -16,7 +17,7 @@ import {
 } from './common.js';
 import { getPathMapping, path2regexp } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
-import { ServerRouter } from './client.js';
+import { INTERNAL_ServerRouter } from './client.js';
 import { getContext } from '../middleware/context.js';
 import { stringToStream } from '../lib/utils/stream.js';
 
@@ -77,6 +78,7 @@ export function unstable_defineRouter(fns: {
     Iterable<{
       path: PathSpec;
       pathPattern?: PathSpec;
+      rootElement: { isStatic?: boolean };
       routeElement: { isStatic?: boolean };
       elements: Record<SlotId, { isStatic?: boolean }>;
       noSsr?: boolean;
@@ -88,8 +90,9 @@ export function unstable_defineRouter(fns: {
       query?: string;
     },
   ) => Promise<{
+    rootElement: ReactNode;
     routeElement: ReactNode;
-    elements: Record<SlotId, ReactNode>;
+    elements: Record<SlotId, unknown>;
   }>;
   getApiConfig?: () => Promise<
     Iterable<{
@@ -110,14 +113,15 @@ export function unstable_defineRouter(fns: {
     status?: number;
   }>;
 }) {
-  const platformObject = unstable_getPlatformObject();
   type MyPathConfig = {
     pathSpec: PathSpec;
     pathname: string | undefined;
     pattern: string;
     specs: {
-      isStatic?: true;
+      rootElementIsStatic?: true;
+      routeElementIsStatic?: true;
       staticElementIds?: SlotId[];
+      isStatic?: true;
       noSsr?: true;
       is404?: true;
       isApi?: true;
@@ -125,7 +129,9 @@ export function unstable_defineRouter(fns: {
   }[];
   let cachedPathConfig: MyPathConfig | undefined;
   const getMyPathConfig = async (): Promise<MyPathConfig> => {
-    const pathConfig = platformObject.buildData?.defineRouterPathConfigs;
+    const pathConfig = await unstable_getPlatformData(
+      'defineRouterPathConfigs',
+    );
     if (pathConfig) {
       return pathConfig as MyPathConfig;
     }
@@ -137,6 +143,7 @@ export function unstable_defineRouter(fns: {
             item.path[0]!.type === 'literal' &&
             item.path[0]!.name === '404';
           const isStatic =
+            !!item.rootElement.isStatic &&
             !!item.routeElement.isStatic &&
             Object.values(item.elements).every((x) => x.isStatic);
           return {
@@ -144,6 +151,12 @@ export function unstable_defineRouter(fns: {
             pathname: pathSpec2pathname(item.path),
             pattern: path2regexp(item.pathPattern || item.path),
             specs: {
+              ...(item.rootElement.isStatic
+                ? { rootElementIsStatic: true as const }
+                : {}),
+              ...(item.routeElement.isStatic
+                ? { routeElementIsStatic: true as const }
+                : {}),
               staticElementIds: Object.entries(item.elements).flatMap(
                 ([id, { isStatic }]) => (isStatic ? [id] : []),
               ),
@@ -179,18 +192,6 @@ export function unstable_defineRouter(fns: {
     const pathConfig = await getMyPathConfig();
     return pathConfig.some(({ specs: { is404 } }) => is404);
   };
-  const filterEffectiveSkip = async (
-    pathname: string,
-    skip: string[],
-  ): Promise<string[]> => {
-    const pathConfig = await getMyPathConfig();
-    return skip.filter((slotId) => {
-      const found = pathConfig.find(({ pathSpec }) =>
-        getPathMapping(pathSpec, pathname),
-      );
-      return found?.specs.staticElementIds?.includes(slotId);
-    });
-  };
   const getEntries = async (
     rscPath: string,
     rscParams: unknown,
@@ -207,9 +208,9 @@ export function unstable_defineRouter(fns: {
     } catch {
       // ignore
     }
-    const skip = isStringArray(skipParam) ? skipParam : [];
+    const skipIdSet = new Set(isStringArray(skipParam) ? skipParam : []);
     const { query } = parseRscParams(rscParams);
-    const { routeElement, elements } = await fns.handleRoute(
+    const { rootElement, routeElement, elements } = await fns.handleRoute(
       pathname,
       pathConfigItem.specs.isStatic ? {} : { query },
     );
@@ -220,10 +221,18 @@ export function unstable_defineRouter(fns: {
     }
     const entries = {
       ...elements,
-      [ROUTE_SLOT_ID_PREFIX + pathname]: routeElement,
     };
-    for (const skipId of await filterEffectiveSkip(pathname, skip)) {
-      delete entries[skipId];
+    for (const id of pathConfigItem.specs.staticElementIds || []) {
+      if (skipIdSet.has(id)) {
+        delete entries[id];
+      }
+    }
+    if (!pathConfigItem.specs.rootElementIsStatic || !skipIdSet.has('root')) {
+      entries.root = rootElement;
+    }
+    const routeId = ROUTE_SLOT_ID_PREFIX + pathname;
+    if (!pathConfigItem.specs.routeElementIsStatic || !skipIdSet.has(routeId)) {
+      entries[routeId] = routeElement;
     }
     entries[ROUTE_ID] = [pathname, query];
     entries[IS_STATIC_ID] = !!pathConfigItem.specs.isStatic;
@@ -256,7 +265,7 @@ export function unstable_defineRouter(fns: {
       return renderRsc(entries);
     }
     if (input.type === 'function') {
-      let elementsPromise: Promise<Record<string, ReactNode>> = Promise.resolve(
+      let elementsPromise: Promise<Record<string, unknown>> = Promise.resolve(
         {},
       );
       let rendered = false;
@@ -309,7 +318,7 @@ export function unstable_defineRouter(fns: {
       if (!entries) {
         return null;
       }
-      const html = createElement(ServerRouter, {
+      const html = createElement(INTERNAL_ServerRouter, {
         route: { path: pathname, query, hash: '' },
       });
       const actionResult =
@@ -348,7 +357,7 @@ export function unstable_defineRouter(fns: {
       const path2moduleIds: Record<string, string[]> = {};
       const moduleIdsForPrefetch = new WeakMap<PathSpec, Set<string>>();
       // FIXME this approach keeps all entries in memory during the loop
-      const entriesCache = new Map<string, Record<string, ReactNode>>();
+      const entriesCache = new Map<string, Record<string, unknown>>();
       await Promise.all(
         pathConfig.map(async ({ pathSpec, pathname, pattern, specs }) => {
           if (specs.isApi) {
@@ -403,7 +412,7 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
               (specs.is404 ? 'globalThis.__WAKU_ROUTER_404__ = true;' : '');
             const entries = entriesCache.get(pathname);
             if (specs.isStatic && entries) {
-              const html = createElement(ServerRouter, {
+              const html = createElement(INTERNAL_ServerRouter, {
                 route: { path: pathname, query: '', hash: '' },
               });
               return {
@@ -428,8 +437,11 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
         });
       }
 
-      platformObject.buildData ||= {};
-      platformObject.buildData.defineRouterPathConfigs = pathConfig;
+      await unstable_setPlatformData(
+        'defineRouterPathConfigs',
+        pathConfig,
+        true,
+      );
       return tasks;
     });
 

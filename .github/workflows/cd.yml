@@ -21,6 +21,8 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install
       - run: pnpm test
+        env:
+          VITE_EXPERIMENTAL_WAKU_ROUTER: true
       - run: pnpm run compile
       - run: pnpm -r --filter='./packages/*' --no-git-checks publish
         env:

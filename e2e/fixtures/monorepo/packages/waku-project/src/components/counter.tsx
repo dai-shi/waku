@@ -8,11 +8,28 @@ export const Counter = () => {
   const handleIncrement = () => setCount((c) => c + 1);
 
   return (
-    <section className="border-blue-400 -mx-4 mt-4 rounded border border-dashed p-4">
+    <section
+      style={{
+        borderColor: 'blue',
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderRadius: 4,
+        marginTop: 16,
+        padding: 16,
+        marginLeft: -16,
+        marginRight: -16,
+      }}
+    >
       <div>Count: {count}</div>
       <button
         onClick={handleIncrement}
-        className="rounded-sm bg-black px-2 py-0.5 text-sm text-white"
+        style={{
+          borderRadius: 4,
+          padding: 8,
+          backgroundColor: 'black',
+          color: 'white',
+          fontSize: 16,
+        }}
       >
         Increment
       </button>

@@ -39,9 +39,8 @@ async function runTest(
   expectedClientFileSet: Set<string>,
   expectedServerFileSet: Set<string>,
 ) {
-  const clientFileSet = new Set<string>();
-  const serverFileSet = new Set<string>();
-  const fileHashMap = new Map<string, string>();
+  const clientFileMap = new Map<string, string>();
+  const serverFileMap = new Map<string, string>();
   await build({
     root: root,
     logLevel: 'silent',
@@ -57,28 +56,27 @@ async function runTest(
       isClient
         ? rscAnalyzePlugin({
             isClient: true,
-            serverFileSet,
+            serverFileMap,
           })
         : rscAnalyzePlugin({
             isClient: false,
-            clientFileSet,
-            serverFileSet,
-            fileHashMap,
+            clientFileMap,
+            serverFileMap,
           }),
     ],
   });
   // remove the base path
-  [...clientFileSet].forEach((value) => {
-    clientFileSet.delete(value);
-    clientFileSet.add(path.relative(root, value));
+  [...clientFileMap].forEach(([value]) => {
+    clientFileMap.delete(value);
+    clientFileMap.set(path.relative(root, value), 'hash');
   });
-  [...serverFileSet].forEach((value) => {
-    serverFileSet.delete(value);
-    serverFileSet.add(path.relative(root, value));
+  [...serverFileMap].forEach(([value]) => {
+    serverFileMap.delete(value);
+    serverFileMap.set(path.relative(root, value), 'hash');
   });
 
-  expect(clientFileSet).toEqual(expectedClientFileSet);
-  expect(serverFileSet).toEqual(expectedServerFileSet);
+  expect(new Set(clientFileMap.keys())).toEqual(expectedClientFileSet);
+  expect(new Set(serverFileMap.keys())).toEqual(expectedServerFileSet);
 }
 
 describe('vite-plugin-rsc-analyze', () => {

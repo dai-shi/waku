@@ -42,7 +42,7 @@ export default async function HomePage() {
           href="https://github.com/dai-shi/waku"
           target="_blank"
           rel="noreferrer"
-          className="text-shadow !inline-block -rotate-[5deg] transform whitespace-nowrap text-center font-serif text-3xl font-extrabold leading-none text-white transition-colors duration-300 ease-in-out hover:text-primary sm:mr-4 sm:text-6xl"
+          className="text-shadow inline-block! -rotate-[5deg] transform whitespace-nowrap text-center font-serif text-3xl font-extrabold leading-none text-white transition-colors duration-300 ease-in-out hover:text-primary sm:mr-4 sm:text-6xl"
         >
           star Waku on GitHub!
         </a>

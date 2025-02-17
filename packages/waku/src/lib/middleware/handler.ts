@@ -2,7 +2,10 @@ import type { ReactNode } from 'react';
 
 import { resolveConfig, extractPureConfig } from '../config.js';
 import type { PureConfig } from '../config.js';
-import { setAllEnvInternal } from '../../server.js';
+import {
+  INTERNAL_setAllEnv,
+  INTERNAL_setPlatformDataLoader,
+} from '../../server.js';
 import type { HandleRequest, HandlerRes } from '../types.js';
 import type { Middleware, HandlerContext } from './types.js';
 import { renderRsc, decodeBody, decodePostAction } from '../renderers/rsc.js';
@@ -68,16 +71,19 @@ const getInput = async (
 
 export const handler: Middleware = (options) => {
   const env = options.env || {};
-  setAllEnvInternal(env);
+  INTERNAL_setAllEnv(env);
   const entriesPromise =
     options.cmd === 'start'
       ? options.loadEntries()
       : ('Error: loadEntries are not available' as never);
   const configPromise =
     options.cmd === 'start'
-      ? entriesPromise.then((entries) =>
-          entries.loadConfig().then((config) => resolveConfig(config)),
-        )
+      ? entriesPromise.then(async (entries) => {
+          if (entries.loadPlatformData) {
+            INTERNAL_setPlatformDataLoader(entries.loadPlatformData);
+          }
+          return resolveConfig(await entries.loadConfig());
+        })
       : resolveConfig(options.config);
 
   return async (ctx, next) => {
@@ -127,7 +133,7 @@ export const handler: Middleware = (options) => {
       renderRsc: (elements: Record<string, unknown>) =>
         renderRsc(config, ctx, elements),
       renderHtml: async (
-        elements: Record<string, ReactNode>,
+        elements: Record<string, unknown>,
         html: ReactNode,
         options: { rscPath: string; actionResult?: unknown },
       ) => {

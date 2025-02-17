@@ -2,6 +2,50 @@
 
 ## [Unreleased]
 
+## [0.21.20] - 2025-02-17
+
+### Changed
+
+- Bug fixes & some updates
+- Router improvement
+
+## [0.21.19] - 2025-02-14
+
+### Changed
+
+- Bug fixes & some updates
+- Router improvement
+
+## [0.21.18] - 2025-02-03
+
+### Changed
+
+- Bug fixes & some updates
+
+## [0.21.17] - 2025-01-23
+
+### Changed
+
+- Bug fixes
+
+## [0.21.16] - 2025-01-20
+
+### Changed
+
+- Bug fixes
+
+## [0.21.15] - 2025-01-16
+
+### Changed
+
+- Bug fixes
+
+## [0.21.14] - 2025-01-13
+
+### Changed
+
+- Bug fixes
+
 ## [0.21.13] - 2025-01-07
 
 ### Changed

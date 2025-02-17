@@ -62,6 +62,10 @@ if (import.meta.hot && !globalThis.__WAKU_HMR_CONFIGURED__) {
       queueMicrotask(() => style.parentElement?.removeChild(style));
     }
   });
+  import.meta.hot.on('vite:invalidate', () => {
+    // FIXME is there a better solution?
+    location.reload();
+  });
 }
 `;
 
