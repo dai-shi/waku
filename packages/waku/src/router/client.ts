@@ -114,7 +114,18 @@ export function useRouter_UNSTABLE() {
   }
   const { route, changeRoute, prefetchRoute } = router;
   const push = useCallback(
-    (to: InferredPaths) => {
+    (
+      to: InferredPaths,
+      options?: {
+        /**
+         * indicates if the link should scroll or not on navigation
+         * - `true`: always scroll
+         * - `false`: never scroll
+         * - `undefined`: scroll on path change (not on searchParams change)
+         */
+        scroll?: boolean;
+      },
+    ) => {
       const url = new URL(to, window.location.href);
       const newPath = url.pathname !== window.location.pathname;
       window.history.pushState(
@@ -125,16 +136,31 @@ export function useRouter_UNSTABLE() {
         '',
         url,
       );
-      changeRoute(parseRoute(url), { shouldScroll: newPath });
+      changeRoute(parseRoute(url), {
+        shouldScroll: options?.scroll ?? newPath,
+      });
     },
     [changeRoute],
   );
   const replace = useCallback(
-    (to: InferredPaths) => {
+    (
+      to: InferredPaths,
+      options?: {
+        /**
+         * indicates if the link should scroll or not on navigation
+         * - `true`: always scroll
+         * - `false`: never scroll
+         * - `undefined`: scroll on path change (not on searchParams change)
+         */
+        scroll?: boolean;
+      },
+    ) => {
       const url = new URL(to, window.location.href);
       const newPath = url.pathname !== window.location.pathname;
       window.history.replaceState(window.history.state, '', url);
-      changeRoute(parseRoute(url), { shouldScroll: newPath });
+      changeRoute(parseRoute(url), {
+        shouldScroll: options?.scroll ?? newPath,
+      });
     },
     [changeRoute],
   );
@@ -172,6 +198,13 @@ export type LinkProps = {
   to: InferredPaths;
   pending?: ReactNode;
   notPending?: ReactNode;
+  /**
+   * indicates if the link should scroll or not on navigation
+   * - `true`: always scroll
+   * - `false`: never scroll
+   * - `undefined`: scroll on path change (not on searchParams change)
+   */
+  scroll?: boolean;
   children: ReactNode;
   unstable_prefetchOnEnter?: boolean;
   unstable_prefetchOnView?: boolean;
@@ -186,6 +219,7 @@ export function Link({
   unstable_prefetchOnEnter,
   unstable_prefetchOnView,
   unstable_startTransition,
+  scroll,
   ...props
 }: LinkProps): ReactElement {
   const router = useContext(RouterContext);
@@ -233,15 +267,16 @@ export function Link({
       const route = parseRoute(url);
       prefetchRoute(route);
       (unstable_startTransition || startTransition)(() => {
+        const newPath = url.pathname !== window.location.pathname;
         window.history.pushState(
           {
             ...window.history.state,
-            waku_new_path: url.pathname !== window.location.pathname,
+            waku_new_path: newPath,
           },
           '',
           url,
         );
-        changeRoute(route, { shouldScroll: true });
+        changeRoute(route, { shouldScroll: scroll ?? newPath });
       });
     }
     props.onClick?.(event);
