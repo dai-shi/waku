@@ -67,6 +67,9 @@ const { values } = parseArgs({
     choose: {
       type: 'boolean',
     },
+    template: {
+      type: 'string',
+    },
     example: {
       type: 'string',
     },
@@ -154,7 +157,7 @@ async function doPrompts() {
     return {
       ...result,
       packageName: result.packageName ?? toValidPackageName(targetDir),
-      templateName: result.templateName ?? templateNames[0],
+      templateName: result.templateName ?? values.template ?? templateNames[0],
       targetDir,
     };
   } catch (err) {
@@ -171,6 +174,7 @@ Usage: ${commands.create} [options]
 
 Options:
   --choose              Choose from the template list
+  --template            Specify a template
   --example             Specify an example use as a template
   --project-name        Specify a project name
   -h, --help            Display this help message
