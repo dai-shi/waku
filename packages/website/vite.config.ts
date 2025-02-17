@@ -1,10 +1,7 @@
-import tailwindcss from '@tailwindcss/vite';
-
 /** @type {import('vite').UserConfig} */
 export default ({ mode }: { mode: string }) => {
   if (mode === 'development') {
     return {
-      plugins: [tailwindcss()],
       optimizeDeps: {
         include: ['tailwindcss/colors'],
       },
@@ -15,7 +12,5 @@ export default ({ mode }: { mode: string }) => {
       },
     };
   }
-  return {
-    plugins: [tailwindcss()],
-  };
+  return {};
 };
