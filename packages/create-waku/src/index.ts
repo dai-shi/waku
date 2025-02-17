@@ -101,7 +101,7 @@ async function doPrompts() {
   const templateNames = await getTemplateNames(templateRoot);
 
   const defaultProjectName = 'waku-project';
-  let targetDir = values['project-name'] || '';
+  let targetDir = values['project-name'] || defaultProjectName;
 
   try {
     const result = await prompts(
@@ -116,7 +116,7 @@ async function doPrompts() {
         {
           name: 'shouldOverwrite',
           type: () => (canSafelyOverwrite(targetDir) ? null : 'confirm'),
-          message: `${targetDir || defaultProjectName} is not empty. Remove existing files and continue?`,
+          message: `${targetDir} is not empty. Remove existing files and continue?`,
         },
         {
           name: 'overwriteChecker',
