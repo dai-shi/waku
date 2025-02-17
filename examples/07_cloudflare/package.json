@@ -18,10 +18,11 @@
     "wrangler": "3.109.0"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "4.0.6",
+    "@tailwindcss/postcss": "4.0.6",
     "@types/node": "22.13.4",
     "@types/react": "19.0.8",
     "@types/react-dom": "19.0.3",
+    "postcss": "8.5.2",
     "miniflare": "3.20250204.1",
     "tailwindcss": "4.0.6",
     "typescript": "5.7.3"
