@@ -70,6 +70,9 @@ const { values } = parseArgs({
     example: {
       type: 'string',
     },
+    template: {
+      type: 'string',
+    },
     help: {
       type: 'boolean',
       short: 'h',
@@ -151,7 +154,7 @@ async function doPrompts() {
     return {
       ...result,
       packageName: result.packageName ?? toValidPackageName(targetDir),
-      templateName: result.templateName ?? templateNames[0],
+      templateName: result.templateName ?? values.template ?? templateNames[0],
       targetDir,
     };
   } catch (err) {
