@@ -1,3 +1,5 @@
+// Workaround https://github.com/cloudflare/workers-sdk/issues/6577
+
 import type { Middleware } from 'waku/config';
 
 export type HandlerReq = {
