@@ -158,8 +158,7 @@ export function useRouter_UNSTABLE() {
       const url = new URL(to, window.location.href);
       const newPath = url.pathname !== window.location.pathname;
       window.history.replaceState(window.history.state, '', url);
-      const shouldScroll = options?.scroll ?? newPath;
-      changeRoute(parseRoute(url), { shouldScroll });
+      changeRoute(parseRoute(url), { shouldScroll: options?.scroll ?? newPath });
     },
     [changeRoute],
   );
