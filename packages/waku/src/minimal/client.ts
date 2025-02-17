@@ -51,21 +51,28 @@ const checkStatus = async (
 
 type Elements = Record<string, unknown>;
 
+const resolvedElementsMap = new WeakMap<Promise<Elements>, Elements>();
+const prevElementsMap = new WeakMap<Promise<Elements>, Elements | undefined>();
+
 const getCached = <T>(c: () => T, m: WeakMap<object, T>, k: object): T =>
   (m.has(k) ? m : m.set(k, c())).get(k) as T;
 const cache1 = new WeakMap();
 const mergeElementsPromise = (
-  a: Promise<Elements>,
-  b: Promise<Elements>,
+  prev: Promise<Elements>,
+  data: Promise<Elements>,
 ): Promise<Elements> => {
-  const getResult = () =>
-    Promise.all([a, b]).then(([a, b]) => {
-      const nextElements = { ...a, ...b };
+  const getResult = () => {
+    const newElements = Promise.all([prev, data]).then(([prev, data]) => {
+      const nextElements = { ...prev, ...data };
       delete nextElements._value;
+      resolvedElementsMap.set(newElements, nextElements);
       return nextElements;
     });
-  const cache2 = getCached(() => new WeakMap(), cache1, a);
-  return getCached(getResult, cache2, b);
+    prevElementsMap.set(newElements, resolvedElementsMap.get(prev));
+    return newElements;
+  };
+  const cache2 = getCached(() => new WeakMap(), cache1, prev);
+  return getCached(getResult, cache2, data);
 };
 
 type SetElements = (
@@ -254,6 +261,45 @@ export const useElement = (id: string) => {
   return elements[id];
 };
 
+// HACK this is still an experimental hook
+const useSyncElement = (id: string) => {
+  const elementsPromise = use(ElementsContext);
+  if (!elementsPromise) {
+    throw new Error('Missing Root component');
+  }
+  const [element, setElement] = useState<unknown>(
+    prevElementsMap.get(elementsPromise)?.[id],
+  );
+  const [error, setError] = useState<unknown>();
+  if (error) {
+    throw error;
+  }
+  useEffect(() => {
+    let alive = true;
+    elementsPromise.then(
+      (elements) => {
+        if (id in elements && elements[id] == undefined) {
+          throw new Error(
+            'Element cannot be undefined, use null instead: ' + id,
+          );
+        }
+        if (alive) {
+          setElement(elements[id]);
+        }
+      },
+      (err) => {
+        if (alive) {
+          setError(err);
+        }
+      },
+    );
+    return () => {
+      alive = false;
+    };
+  }, [elementsPromise, id]);
+  return element;
+};
+
 const InnerSlot = ({
   id,
   children,
@@ -266,6 +312,7 @@ const InnerSlot = ({
   unstable_fallback?: ReactNode;
 }) => {
   const element = useElement(id);
+  // HACK this is a naive check for valid element
   const isValidElement = element !== undefined;
   useEffect(() => {
     if (isValidElement && setFallback) {
@@ -282,7 +329,32 @@ const InnerSlot = ({
   return createElement(
     ChildrenContextProvider,
     { value: children },
-    // FIXME is there `isReactNode` type checker?
+    element as ReactNode,
+  );
+};
+
+// TODO unstable_fallback isn't supported and setFallback is kind of duplicated
+const InnerSyncSlot = ({
+  id,
+  children,
+  setFallback,
+}: {
+  id: string;
+  children?: ReactNode;
+  setFallback?: (fallback: ReactNode) => void;
+}) => {
+  const element = useSyncElement(id);
+  // HACK this is a naive check for valid element
+  const isValidElement = element !== undefined;
+  useEffect(() => {
+    if (isValidElement && setFallback) {
+      // FIXME is there `isReactNode` type checker?
+      setFallback(element as ReactNode);
+    }
+  }, [id, isValidElement, element, setFallback]);
+  return createElement(
+    ChildrenContextProvider,
+    { value: children },
     element as ReactNode,
   );
 };
@@ -291,11 +363,11 @@ const ThrowError = ({ error }: { error: unknown }) => {
   throw error;
 };
 
-class Fallback extends Component<
-  { children: ReactNode; fallback: ReactNode },
+class ErrorBoundary extends Component<
+  { children?: ReactNode; fallback: ReactNode },
   { error?: unknown }
 > {
-  constructor(props: { children: ReactNode; fallback: ReactNode }) {
+  constructor(props: { children?: ReactNode; fallback: ReactNode }) {
     super(props);
     this.state = {};
   }
@@ -304,14 +376,11 @@ class Fallback extends Component<
   }
   render() {
     if ('error' in this.state) {
-      if (this.props.fallback) {
-        return createElement(
-          ChildrenContextProvider,
-          { value: createElement(ThrowError, { error: this.state.error }) },
-          this.props.fallback,
-        );
-      }
-      throw this.state.error;
+      return createElement(
+        ChildrenContextProvider,
+        { value: createElement(ThrowError, { error: this.state.error }) },
+        this.props.fallback,
+      );
     }
     return this.props.children;
   }
@@ -334,23 +403,44 @@ class Fallback extends Component<
 export const Slot = ({
   id,
   children,
-  unstable_fallbackToPrev,
+  unstable_staleWhileRevalidate,
+  unstable_errorBoundaryWithPrev,
   unstable_fallback,
 }: {
   id: string;
   children?: ReactNode;
-  unstable_fallbackToPrev?: boolean;
+  unstable_staleWhileRevalidate?: boolean;
+  unstable_errorBoundaryWithPrev?: boolean;
   unstable_fallback?: ReactNode;
 }) => {
   const [fallback, setFallback] = useState<ReactNode>();
-  if (unstable_fallbackToPrev) {
-    return createElement(
-      Fallback,
-      { fallback } as never,
-      createElement(InnerSlot, { id, setFallback }, children),
+  let ele: ReactNode;
+  if (unstable_staleWhileRevalidate) {
+    ele = createElement(
+      InnerSyncSlot,
+      {
+        key: id,
+        id,
+        ...(unstable_errorBoundaryWithPrev ? { setFallback } : {}),
+      },
+      children,
+    );
+  } else {
+    ele = createElement(
+      InnerSlot,
+      {
+        key: id,
+        id,
+        ...(unstable_errorBoundaryWithPrev ? { setFallback } : {}),
+        unstable_fallback,
+      },
+      children,
     );
   }
-  return createElement(InnerSlot, { id, unstable_fallback }, children);
+  if (unstable_errorBoundaryWithPrev) {
+    ele = createElement(ErrorBoundary, { fallback }, ele);
+  }
+  return ele;
 };
 
 export const Children = () => use(ChildrenContext);
