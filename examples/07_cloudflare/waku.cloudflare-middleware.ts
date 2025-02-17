@@ -1,6 +1,4 @@
 import type { Middleware } from 'waku/config';
-import type { Env } from 'hono';
-import { getHonoContext as _getHonoContext } from 'waku/unstable_hono';
 
 export type HandlerReq = {
   body: ReadableStream;
@@ -19,34 +17,9 @@ export type HandlerContext = {
   readonly context: Record<string, unknown>;
 };
 
-export type HonoContextType<E extends Env = Env> = ReturnType<
-  typeof _getHonoContext<E>
->;
-
-export const getHonoContext = <E extends Env = Env>(
-  ctx?: HandlerContext,
-): HonoContextType<E> | null => {
-  try {
-    if (ctx) {
-      return ctx.context.__hono_context as HonoContextType<E>;
-    }
-    if ((globalThis as Record<string, unknown>).__hono_context) {
-      return (globalThis as Record<string, unknown>)
-        .__hono_context as HonoContextType<E>;
-    }
-    const c = _getHonoContext<E>();
-    if (!c) {
-      return null;
-    }
-    return c;
-  } catch {
-    return null;
-  }
-};
-
-function isWranglerDev(headers: Headers | undefined): boolean {
+function isWranglerDev(headers?: Record<string, string | string[]>): boolean {
   // This header seems to only be set for production cloudflare workers
-  return Boolean(headers && !headers.has('cf-visitor'));
+  return !headers?.['cf-visitor'];
 }
 
 const cloudflareMiddleware: Middleware = () => {
@@ -55,8 +28,7 @@ const cloudflareMiddleware: Middleware = () => {
     if (!import.meta.env?.PROD) {
       return;
     }
-    const c = getHonoContext(ctx as HandlerContext);
-    if (!isWranglerDev(c?.req.raw.headers)) {
+    if (!isWranglerDev(ctx.req)) {
       return;
     }
     const contentType = ctx.res.headers?.['content-type'];
