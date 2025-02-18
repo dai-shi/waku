@@ -1,23 +1,5 @@
 // Workaround https://github.com/cloudflare/workers-sdk/issues/6577
-
 import type { Middleware } from 'waku/config';
-
-export type HandlerReq = {
-  body: ReadableStream;
-  url: URL;
-  method: string;
-  headers: Record<string, string>;
-};
-export type HandlerRes = {
-  body?: ReadableStream;
-  headers?: Record<string, string | string[]>;
-  status?: number;
-};
-export type HandlerContext = {
-  readonly req: HandlerReq;
-  readonly res: HandlerRes;
-  readonly context: Record<string, unknown>;
-};
 
 function isWranglerDev(headers?: Record<string, string | string[]>): boolean {
   // This header seems to only be set for production cloudflare workers
@@ -30,7 +12,7 @@ const cloudflareMiddleware: Middleware = () => {
     if (!import.meta.env?.PROD) {
       return;
     }
-    if (!isWranglerDev(ctx.req)) {
+    if (!isWranglerDev(ctx.req.headers)) {
       return;
     }
     const contentType = ctx.res.headers?.['content-type'];
