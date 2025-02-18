@@ -1,4 +1,4 @@
-import { getHonoContext as _getHonoContext } from 'waku/unstable_hono';
+import { getHonoContext as getHonoContextFromWaku } from 'waku/unstable_hono';
 import { isBuild } from './waku';
 
 export function getHonoContext() {
@@ -6,7 +6,7 @@ export function getHonoContext() {
     return undefined;
   }
   try {
-    return _getHonoContext<{ Bindings: Env }>();
+    return getHonoContextFromWaku<{ Bindings: Env }>();
   } catch (e) {
     if (isHonoContextUnavailableError(e)) {
       return undefined;
