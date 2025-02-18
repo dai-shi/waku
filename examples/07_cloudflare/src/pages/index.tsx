@@ -2,7 +2,7 @@ import { Link } from 'waku';
 import { Suspense } from 'react';
 import { Counter } from '../components/counter';
 import { getHonoContext } from '../lib/hono';
-import { getEnv } from '../lib/waku';
+import { getEnv, isBuild } from '../lib/waku';
 
 export default async function HomePage() {
   const data = await getData();
@@ -44,6 +44,9 @@ export default async function HomePage() {
 
 // Example async server component
 const ServerMessage = async () => {
+  if (isBuild()) {
+    console.warn('Note: server components are awaited during build.');
+  }
   await new Promise((resolve) => setTimeout(resolve, 2000));
   return <p>Hello from server!</p>;
 };
