@@ -7,6 +7,7 @@ import { createPages, METHODS } from './create-pages.js';
 import type { Method } from './create-pages.js';
 
 import { EXTENSIONS } from '../lib/constants.js';
+import { isIgnoredPath } from '../lib/utils/fs-router.js';
 
 const DO_NOT_BUNDLE = '';
 
@@ -68,7 +69,7 @@ export function unstable_fsRouter(
           .replace(/\.\w+$/, '')
           .split('/')
           .filter(Boolean);
-        if (pathItems.includes('_components') || pathItems.includes('_hooks')) {
+        if (isIgnoredPath(pathItems)) {
           continue;
         }
         const path =
