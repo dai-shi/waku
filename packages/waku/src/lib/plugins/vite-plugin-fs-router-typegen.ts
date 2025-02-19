@@ -2,7 +2,7 @@ import type { Plugin } from 'vite';
 import { readdir, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { SRC_ENTRIES, EXTENSIONS } from '../constants.js';
-import { joinPath } from '../utils/path.js';
+import { isIgnoredPath, joinPath } from '../utils/path.js';
 import * as swc from '@swc/core';
 
 const SRC_PAGES = 'pages';
@@ -153,7 +153,10 @@ export const fsRouterTypegenPlugin = (opts: { srcDir: string }): Plugin => {
             return null;
           }
 
-          if (filePath.endsWith('/_layout.tsx')) {
+          if (
+            filePath.endsWith('/_layout.tsx') ||
+            isIgnoredPath(filePath.split('/'))
+          ) {
             continue;
           } else if (filePath.endsWith('/index.tsx')) {
             const path = filePath.slice(0, -'/index.tsx'.length);
