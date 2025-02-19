@@ -2,7 +2,8 @@ import type { Plugin } from 'vite';
 import { readdir, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { SRC_ENTRIES, EXTENSIONS } from '../constants.js';
-import { isIgnoredPath, joinPath } from '../utils/path.js';
+import { joinPath } from '../utils/path.js';
+import { isIgnoredPath } from '../utils/fs-router.js';
 import * as swc from '@swc/core';
 
 const SRC_PAGES = 'pages';

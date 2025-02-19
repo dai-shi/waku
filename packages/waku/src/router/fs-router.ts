@@ -7,7 +7,7 @@ import { createPages, METHODS } from './create-pages.js';
 import type { Method } from './create-pages.js';
 
 import { EXTENSIONS } from '../lib/constants.js';
-import { isIgnoredPath } from 'waku/lib/utils/path';
+import { isIgnoredPath } from '../lib/utils/fs-router.js';
 
 const DO_NOT_BUNDLE = '';
 
