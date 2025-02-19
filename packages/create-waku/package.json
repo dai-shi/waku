@@ -1,6 +1,6 @@
 {
   "name": "create-waku",
-  "version": "0.11.1-0.21.18-0",
+  "version": "0.11.3-0.21.20-0",
   "author": "Daishi Kato",
   "type": "module",
   "contributors": [
@@ -22,7 +22,7 @@
     "start": "node ./dist/index.js",
     "dev": "pnpm build --watch",
     "compile": "rm -rf template dist *.tsbuildinfo && pnpm run template && pnpm run build",
-    "template": "cp -r ../../examples template && rm -rf template/*/dist && rm -rf template/*/node_modules && (for d in template/*; do mv $d/.gitignore $d/gitignore || true; done)",
+    "template": "cp -r ../../examples template && rm -rf template/*/dist && rm -rf template/*/node_modules && rm -rf template/*.tsbuildinfo && (for d in template/*; do mv $d/.gitignore $d/gitignore || true; done)",
     "build": "tsup"
   },
   "devDependencies": {

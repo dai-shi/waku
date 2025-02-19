@@ -7,11 +7,7 @@ import type { LoggingFunction, RollupLog } from 'rollup';
 import type { ReactNode } from 'react';
 
 import type { Config } from '../../config.js';
-import {
-  INTERNAL_setAllEnv,
-  INTERNAL_iterateSerializablePlatformData,
-  unstable_getBuildOptions,
-} from '../../server.js';
+import { INTERNAL_setAllEnv, unstable_getBuildOptions } from '../../server.js';
 import type { EntriesPrd } from '../types.js';
 import type { ResolvedConfig } from '../config.js';
 import { resolveConfig } from '../config.js';
@@ -65,6 +61,7 @@ import { deployCloudflarePlugin } from '../plugins/vite-plugin-deploy-cloudflare
 import { deployDenoPlugin } from '../plugins/vite-plugin-deploy-deno.js';
 import { deployPartykitPlugin } from '../plugins/vite-plugin-deploy-partykit.js';
 import { deployAwsLambdaPlugin } from '../plugins/vite-plugin-deploy-aws-lambda.js';
+import { emitPlatformData } from './platform-data.js';
 
 // TODO this file and functions in it are too long. will fix.
 
@@ -765,36 +762,6 @@ export async function build(options: {
   delete buildOptions.unstable_phase;
 
   if (existsSync(distEntriesFile)) {
-    const DIST_PLATFORM_DATA = 'platform-data';
-    const keys = new Set<string>();
-    await mkdir(joinPath(rootDir, config.distDir, DIST_PLATFORM_DATA), {
-      recursive: true,
-    });
-    for (const [key, data] of INTERNAL_iterateSerializablePlatformData()) {
-      keys.add(key);
-      const destFile = joinPath(
-        rootDir,
-        config.distDir,
-        DIST_PLATFORM_DATA,
-        key + '.js',
-      );
-      await writeFile(destFile, `export default ${JSON.stringify(data)};`);
-    }
-    await appendFile(
-      distEntriesFile,
-      `
-export function loadPlatformData(key) {
-  switch (key) {
-    ${Array.from(keys)
-      .map(
-        (k) =>
-          `case '${k}': return import('./${DIST_PLATFORM_DATA}/${k}.js').then((m) => m.default);`,
-      )
-      .join('\n')}
-    default: throw new Error('Cannot find platform data: ' + key);
-  }
-}
-`,
-    );
+    await emitPlatformData(joinPath(rootDir, config.distDir));
   }
 }
