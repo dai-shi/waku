@@ -64,9 +64,6 @@ export const decodeFuncId = (encoded: string) => {
   return file + '#' + name;
 };
 
-export const hasStatusCode = (x: unknown): x is { statusCode: number } =>
-  typeof (x as any)?.statusCode === 'number';
-
 export const generatePrefetchCode = (
   basePrefix: string,
   rscPaths: Iterable<string>,
