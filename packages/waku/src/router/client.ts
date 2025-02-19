@@ -206,6 +206,7 @@ export type LinkProps = {
    */
   scroll?: boolean;
   children: ReactNode;
+  unstable_defaultAltClick?: boolean;
   unstable_prefetchOnEnter?: boolean;
   unstable_prefetchOnView?: boolean;
   unstable_startTransition?: ((fn: () => void) => void) | undefined;
@@ -219,6 +220,7 @@ export function Link({
   unstable_prefetchOnEnter,
   unstable_prefetchOnView,
   unstable_startTransition,
+  unstable_defaultAltClick,
   scroll,
   ...props
 }: LinkProps): ReactElement {
@@ -261,9 +263,16 @@ export function Link({
     }
   }, [unstable_prefetchOnView, router, to]);
   const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    event.preventDefault();
+    const isAltClick =
+      unstable_defaultAltClick &&
+      Boolean(
+        event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0,
+      );
     const url = new URL(to, window.location.href);
-    if (url.href !== window.location.href) {
+    if (!isAltClick) {
+      event.preventDefault();
+    }
+    if (url.href !== window.location.href && !isAltClick) {
       const route = parseRoute(url);
       prefetchRoute(route);
       (unstable_startTransition || startTransition)(() => {
