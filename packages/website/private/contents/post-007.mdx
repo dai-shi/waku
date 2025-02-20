@@ -1,0 +1,66 @@
+---
+slug: progressive-forms
+title: Progressive forms
+description: Forms work without JavaScript!
+author: tyler
+date: 2025/02/20
+---
+
+Remember the last time you submitted a form that did nothing?
+
+We can fix that!
+
+## What does this look like?
+
+Before React 19 and server actions, a basic form might look like this:
+
+```jsx
+'use client';
+
+const ClientForm = () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    await fetch('/api/submit', {
+      method: 'POST',
+      body: JSON.stringify(Object.fromEntries(formData)),
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input name="email" type="email" required />
+      <input name="password" type="password" required />
+      <button type="submit">Submit</button>
+    </form>
+  );
+};
+```
+
+This is just fine, but if we want our form to run in an environment without JavaScript or we just want to optimize the form to not need to render on the client, there is a new pattern available.
+
+## Introducing progressive forms with server actions
+
+The form below works without JavaScript, which is helpful for making your forms immediately interactive. In slow network conditions, for example, a user can now submit the form even before the JavaScript loads.
+
+```jsx
+async function submitForm(formData) {
+  'use server';
+  await fetch('https://api.example.com/submit', {
+    method: 'POST',
+    body: JSON.stringify(Object.fromEntries(formData)),
+  });
+}
+
+const ServerForm = () => {
+  return (
+    <form action={submitForm}>
+      <input name="email" type="email" required />
+      <input name="password" type="password" required />
+      <button type="submit">Submit</button>
+    </form>
+  );
+};
+```
+
+We can sprinkle in some JavaScript where it can be helpful like for client-side validation or for showing errors from the server. The key point though is that the form will always submit and pair with your server action regardless of whether JavaScript had loaded or not.
