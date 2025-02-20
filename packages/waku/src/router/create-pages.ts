@@ -182,6 +182,16 @@ type RootItem = {
   component: FunctionComponent<{ children: ReactNode }>;
 };
 
+const getGrouplessPath = (path: string) => {
+  if (path.includes('(')) {
+    path = path
+      .split('/')
+      .filter((part) => !part.startsWith('('))
+      .join('/');
+  }
+  return path;
+};
+
 export type CreateRoot = (root: RootItem) => void;
 
 /**
@@ -350,7 +360,7 @@ export const createPages = <
       const spec = parseExactPath(page.path);
       if (page.render === 'static') {
         staticPathMap.set(page.path, {
-          literalSpec: parseExactPath(page.path),
+          literalSpec: spec,
         });
         const id = joinPath(page.path, 'page').replace(/^\//, '');
         registerStaticComponent(id, page.component);
@@ -358,8 +368,11 @@ export const createPages = <
         dynamicPagePathMap.set(page.path, [spec, page.component]);
       }
     } else if (page.render === 'static' && numSlugs === 0) {
-      staticPathMap.set(page.path, { literalSpec: pathSpec });
-      const id = joinPath(page.path, 'page').replace(/^\//, '');
+      const pagePath = getGrouplessPath(page.path);
+      staticPathMap.set(pagePath, {
+        literalSpec: pathSpec,
+      });
+      const id = joinPath(pagePath, 'page').replace(/^\//, '');
       registerStaticComponent(id, page.component);
     } else if (
       page.render === 'static' &&
@@ -393,7 +406,8 @@ export const createPages = <
               break;
           }
         });
-        staticPathMap.set('/' + pathItems.join('/'), {
+        const pagePath = getGrouplessPath('/' + pathItems.join('/'));
+        staticPathMap.set(pagePath, {
           literalSpec: pathItems.map((name) => ({ type: 'literal', name })),
           originalSpec: pathSpec,
         });
@@ -403,9 +417,11 @@ export const createPages = <
         registerStaticComponent(id, WrappedComponent);
       }
     } else if (page.render === 'dynamic' && numWildcards === 0) {
-      dynamicPagePathMap.set(page.path, [pathSpec, page.component]);
+      const pagePath = getGrouplessPath(page.path);
+      dynamicPagePathMap.set(pagePath, [pathSpec, page.component]);
     } else if (page.render === 'dynamic' && numWildcards === 1) {
-      wildcardPagePathMap.set(page.path, [pathSpec, page.component]);
+      const pagePath = getGrouplessPath(page.path);
+      wildcardPagePathMap.set(pagePath, [pathSpec, page.component]);
     } else {
       throw new Error('Invalid page configuration');
     }
@@ -509,7 +525,6 @@ export const createPages = <
         noSsr: boolean;
       }[] = [];
       const rootIsStatic = !rootItem || rootItem.render === 'static';
-
       for (const [path, { literalSpec, originalSpec }] of staticPathMap) {
         const noSsr = noSsrSet.has(literalSpec);
 
@@ -529,7 +544,7 @@ export const createPages = <
         };
 
         paths.push({
-          path: literalSpec,
+          path: literalSpec.filter((part) => !part.name?.startsWith('(')),
           ...(originalSpec && { pathPattern: originalSpec }),
           rootElement: { isStatic: rootIsStatic },
           routeElement: {
@@ -555,7 +570,7 @@ export const createPages = <
           [`page:${path}`]: { isStatic: false },
         };
         paths.push({
-          path: pathSpec,
+          path: pathSpec.filter((part) => !part.name?.startsWith('(')),
           rootElement: { isStatic: rootIsStatic },
           routeElement: { isStatic: true },
           elements,
@@ -578,7 +593,7 @@ export const createPages = <
           [`page:${path}`]: { isStatic: false },
         };
         paths.push({
-          path: pathSpec,
+          path: pathSpec.filter((part) => !part.name?.startsWith('(')),
           rootElement: { isStatic: rootIsStatic },
           routeElement: { isStatic: true },
           elements,
