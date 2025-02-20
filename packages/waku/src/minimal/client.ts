@@ -14,6 +14,7 @@ import {
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
 
+import { createCustomError } from '../lib/utils/custom-errors.js';
 import { encodeRscPath, encodeFuncId } from '../lib/renderers/utils.js';
 
 const { createFromFetch, encodeReply } = RSDWClient;
@@ -42,8 +43,11 @@ const checkStatus = async (
 ): Promise<Response> => {
   const response = await responsePromise;
   if (!response.ok) {
-    const err = new Error((await response.text()) || response.statusText);
-    (err as any).statusCode = response.status;
+    const err = createCustomError(
+      (await response.text()) || response.statusText,
+      response.status,
+      response.headers.get('location') || undefined,
+    );
     throw err;
   }
   return response;

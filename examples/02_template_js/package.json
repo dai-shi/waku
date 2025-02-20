@@ -12,10 +12,11 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-server-dom-webpack": "19.0.0",
-    "waku": "0.21.19"
+    "waku": "0.21.20"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "4.0.6",
-    "tailwindcss": "4.0.6"
+    "@tailwindcss/postcss": "4.0.6",
+    "tailwindcss": "4.0.6",
+    "postcss": "8.5.2"
   }
 }
