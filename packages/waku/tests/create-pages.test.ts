@@ -1683,16 +1683,13 @@ describe('createPages - grouped paths', () => {
     expect(await getRouteConfig()).toEqual([
       {
         elements: {
-          'layout:/test': { isStatic: true },
+          'layout:/(group)': { isStatic: true },
           'page:/test': { isStatic: true },
         },
         rootElement: { isStatic: true },
         routeElement: { isStatic: true },
         noSsr: false,
-        path: [
-          { name: 'test', type: 'literal' },
-          { name: 'test', type: 'literal' },
-        ],
+        path: [{ name: 'test', type: 'literal' }],
       },
     ]);
     const route = await handleRoute('/test', {
@@ -1701,6 +1698,9 @@ describe('createPages - grouped paths', () => {
     expect(route).toBeDefined();
     expect(route.rootElement).toBeDefined();
     expect(route.routeElement).toBeDefined();
-    expect(Object.keys(route.elements)).toEqual(['page:/test', 'layout:/test']);
+    expect(Object.keys(route.elements)).toEqual([
+      'page:/test',
+      'layout:/(group)',
+    ]);
   });
 });
