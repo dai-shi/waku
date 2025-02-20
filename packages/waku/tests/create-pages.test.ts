@@ -1681,7 +1681,6 @@ describe('createPages - grouped paths', () => {
     ]);
     const { getRouteConfig, handleRoute } = injectedFunctions();
     expect(await getRouteConfig()).toEqual([
-      // ^?
       {
         elements: {
           'layout:/test': { isStatic: true },

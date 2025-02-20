@@ -182,6 +182,16 @@ type RootItem = {
   component: FunctionComponent<{ children: ReactNode }>;
 };
 
+const getGrouplessPath = (path: string) => {
+  if (path.includes('(')) {
+    path = path
+      .split('/')
+      .filter((part) => !part.startsWith('('))
+      .join('/');
+  }
+  return path;
+};
+
 export type CreateRoot = (root: RootItem) => void;
 
 /**
@@ -358,13 +368,7 @@ export const createPages = <
         dynamicPagePathMap.set(page.path, [spec, page.component]);
       }
     } else if (page.render === 'static' && numSlugs === 0) {
-      let pagePath: string = page.path;
-      if (pagePath.includes('(')) {
-        pagePath = pagePath
-          .split('/')
-          .filter((part) => !part.startsWith('('))
-          .join('/');
-      }
+      const pagePath = getGrouplessPath(page.path);
       staticPathMap.set(pagePath, {
         literalSpec: pathSpec,
       });
@@ -402,13 +406,7 @@ export const createPages = <
               break;
           }
         });
-        let pagePath = '/' + pathItems.join('/');
-        if (pagePath.includes('(')) {
-          pagePath = pagePath
-            .split('/')
-            .filter((part) => !part.startsWith('('))
-            .join('/');
-        }
+        const pagePath = getGrouplessPath('/' + pathItems.join('/'));
         staticPathMap.set(pagePath, {
           literalSpec: pathItems.map((name) => ({ type: 'literal', name })),
           originalSpec: pathSpec,
@@ -419,22 +417,10 @@ export const createPages = <
         registerStaticComponent(id, WrappedComponent);
       }
     } else if (page.render === 'dynamic' && numWildcards === 0) {
-      let pagePath: string = page.path;
-      if (pagePath.includes('(')) {
-        pagePath = pagePath
-          .split('/')
-          .filter((part) => !part.startsWith('('))
-          .join('/');
-      }
+      const pagePath = getGrouplessPath(page.path);
       dynamicPagePathMap.set(pagePath, [pathSpec, page.component]);
     } else if (page.render === 'dynamic' && numWildcards === 1) {
-      let pagePath: string = page.path;
-      if (pagePath.includes('(')) {
-        pagePath = pagePath
-          .split('/')
-          .filter((part) => !part.startsWith('('))
-          .join('/');
-      }
+      const pagePath = getGrouplessPath(page.path);
       wildcardPagePathMap.set(pagePath, [pathSpec, page.component]);
     } else {
       throw new Error('Invalid page configuration');
