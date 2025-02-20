@@ -230,7 +230,6 @@ export const createPages = <
 ) => {
   let configured = false;
 
-  const groupLookup = new Map<string, string>();
   const staticPathMap = new Map<
     string,
     { literalSpec: PathSpec; originalSpec?: PathSpec }
@@ -365,7 +364,6 @@ export const createPages = <
           .split('/')
           .filter((part) => !part.startsWith('('))
           .join('/');
-        groupLookup.set(pagePath, page.path);
       }
       staticPathMap.set(pagePath, {
         literalSpec: pathSpec,
@@ -410,7 +408,6 @@ export const createPages = <
             .split('/')
             .filter((part) => !part.startsWith('('))
             .join('/');
-          groupLookup.set(pagePath, page.path);
         }
         staticPathMap.set(pagePath, {
           literalSpec: pathItems.map((name) => ({ type: 'literal', name })),
@@ -428,7 +425,6 @@ export const createPages = <
           .split('/')
           .filter((part) => !part.startsWith('('))
           .join('/');
-        groupLookup.set(pagePath, page.path);
       }
       dynamicPagePathMap.set(pagePath, [pathSpec, page.component]);
     } else if (page.render === 'dynamic' && numWildcards === 1) {
@@ -438,7 +434,6 @@ export const createPages = <
           .split('/')
           .filter((part) => !part.startsWith('('))
           .join('/');
-        groupLookup.set(pagePath, page.path);
       }
       wildcardPagePathMap.set(pagePath, [pathSpec, page.component]);
     } else {

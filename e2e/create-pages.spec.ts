@@ -153,7 +153,19 @@ for (const mode of ['DEV', 'PRD'] as const) {
 
     test('group', async ({ page }) => {
       await page.goto(`http://localhost:${port}/test`);
-      await expect(page.getByRole('heading', { name: 'Group' })).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: 'Group Page' }),
+      ).toBeVisible();
+    });
+
+    test('group layout', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/test`);
+      await expect(
+        page.getByRole('heading', { name: '/(group) Layout' }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: '/test Layout' }),
+      ).not.toBeVisible();
     });
   });
 }
