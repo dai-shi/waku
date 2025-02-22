@@ -3,7 +3,6 @@
 import {
   createContext,
   createElement,
-  startTransition,
   useCallback,
   useContext,
   useEffect,
@@ -196,8 +195,7 @@ export function useRouter_UNSTABLE() {
 
 export type LinkProps = {
   to: InferredPaths;
-  pending?: ReactNode;
-  notPending?: ReactNode;
+  children: ReactNode;
   /**
    * indicates if the link should scroll or not on navigation
    * - `true`: always scroll
@@ -205,7 +203,8 @@ export type LinkProps = {
    * - `undefined`: scroll on path change (not on searchParams change)
    */
   scroll?: boolean;
-  children: ReactNode;
+  unstable_pending?: ReactNode;
+  unstable_notPending?: ReactNode;
   unstable_prefetchOnEnter?: boolean;
   unstable_prefetchOnView?: boolean;
   unstable_startTransition?: ((fn: () => void) => void) | undefined;
@@ -214,12 +213,12 @@ export type LinkProps = {
 export function Link({
   to,
   children,
-  pending,
-  notPending,
+  scroll,
+  unstable_pending,
+  unstable_notPending,
   unstable_prefetchOnEnter,
   unstable_prefetchOnView,
   unstable_startTransition,
-  scroll,
   ...props
 }: LinkProps): ReactElement {
   const router = useContext(RouterContext);
@@ -234,6 +233,10 @@ export function Link({
         throw new Error('Missing Router');
       };
   const [isPending, startTransition] = useTransition();
+  const startTransitionFn =
+    unstable_startTransition ||
+    ((unstable_pending || unstable_notPending) && startTransition) ||
+    ((fn: () => void) => fn());
   const ref = useRef<HTMLAnchorElement>(undefined);
 
   useEffect(() => {
@@ -266,7 +269,7 @@ export function Link({
     if (url.href !== window.location.href) {
       const route = parseRoute(url);
       prefetchRoute(route);
-      (unstable_startTransition || startTransition)(() => {
+      startTransitionFn(() => {
         const newPath = url.pathname !== window.location.pathname;
         window.history.pushState(
           {
@@ -296,11 +299,11 @@ export function Link({
     { ...props, href: to, onClick, onMouseEnter, ref },
     children,
   );
-  if (isPending && pending !== undefined) {
-    return createElement(Fragment, null, ele, pending);
+  if (isPending && unstable_pending !== undefined) {
+    return createElement(Fragment, null, ele, unstable_pending);
   }
-  if (!isPending && notPending !== undefined) {
-    return createElement(Fragment, null, ele, notPending);
+  if (!isPending && unstable_notPending !== undefined) {
+    return createElement(Fragment, null, ele, unstable_notPending);
   }
   return ele;
 }
@@ -386,17 +389,15 @@ const InnerRouter = ({
   const changeRoute: ChangeRoute = useCallback(
     (route, options) => {
       const { skipRefetch } = options || {};
-      startTransition(() => {
-        if (!staticPathSet.has(route.path) && !skipRefetch) {
-          const rscPath = encodeRoutePath(route.path);
-          const rscParams = createRscParams(route.query);
-          refetch(rscPath, rscParams);
-        }
-        if (options.shouldScroll) {
-          handleScroll();
-        }
-        setRoute(route);
-      });
+      if (!staticPathSet.has(route.path) && !skipRefetch) {
+        const rscPath = encodeRoutePath(route.path);
+        const rscParams = createRscParams(route.query);
+        refetch(rscPath, rscParams);
+      }
+      if (options.shouldScroll) {
+        handleScroll();
+      }
+      setRoute(route);
     },
     [refetch, staticPathSet],
   );
