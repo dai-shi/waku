@@ -117,6 +117,19 @@ for (const mode of ['DEV', 'PRD'] as const) {
       ({ port, stopApp } = await startApp(mode));
     });
 
+    // https://github.com/dai-shi/waku/issues/1255
+    test('long suspense', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/long-suspense/1`);
+      await expect(
+        page.getByRole('heading', { name: 'Long Suspense Page 1' }),
+      ).toBeVisible();
+      await page.click("a[href='/long-suspense/2']");
+      await expect(page.getByTestId('long-suspense')).toHaveText('Loading...');
+      await expect(
+        page.getByRole('heading', { name: 'Long Suspense Page 2' }),
+      ).toBeVisible();
+    });
+
     test('api hi', async () => {
       const res = await fetch(`http://localhost:${port}/api/hi`);
       expect(res.status).toBe(200);

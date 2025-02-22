@@ -8,6 +8,7 @@ import NestedBazPage from './components/NestedBazPage.js';
 import NestedLayout from './components/NestedLayout.js';
 import { DeeplyNestedLayout } from './components/DeeplyNestedLayout.js';
 import ErrorPage from './components/ErrorPage.js';
+import LongSuspenseLayout from './components/LongSuspenseLayout.js';
 import { readFile } from 'node:fs/promises';
 
 const pages: ReturnType<typeof createPages> = createPages(
@@ -86,6 +87,24 @@ const pages: ReturnType<typeof createPages> = createPages(
       render: 'dynamic',
       path: '/error',
       component: ErrorPage,
+    }),
+
+    createLayout({
+      render: 'dynamic',
+      path: '/long-suspense',
+      component: LongSuspenseLayout,
+    }),
+
+    createPage({
+      render: 'static',
+      path: '/long-suspense/1',
+      component: () => <h3>Long Suspense Page 1</h3>,
+    }),
+
+    createPage({
+      render: 'static',
+      path: '/long-suspense/2',
+      component: () => <h3>Long Suspense Page 2</h3>,
     }),
 
     createPage({
