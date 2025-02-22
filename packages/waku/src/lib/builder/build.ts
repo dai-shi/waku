@@ -23,12 +23,12 @@ import {
 import { extendViteConfig } from '../utils/vite-config.js';
 import {
   appendFile,
+  copyFile,
   createWriteStream,
   existsSync,
   mkdir,
   readdir,
   readFile,
-  rename,
   unlink,
   writeFile,
 } from '../utils/node-fs.js';
@@ -441,7 +441,7 @@ const buildClientBundle = async (
   for (const nonJsAsset of nonJsAssets) {
     const from = joinPath(rootDir, config.distDir, nonJsAsset);
     const to = joinPath(rootDir, config.distDir, DIST_PUBLIC, nonJsAsset);
-    await rename(from, to);
+    await copyFile(from, to);
   }
   return clientBuildOutput;
 };
