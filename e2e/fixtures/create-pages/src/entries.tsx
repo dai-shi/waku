@@ -3,6 +3,7 @@ import type { PathsForPages } from 'waku/router';
 
 import FooPage from './components/FooPage.js';
 import HomeLayout from './components/HomeLayout.js';
+import DynamicLayout from './components/DynamicLayout.js';
 import HomePage from './components/HomePage.js';
 import NestedBazPage from './components/NestedBazPage.js';
 import NestedLayout from './components/NestedLayout.js';
@@ -158,6 +159,18 @@ const pages: ReturnType<typeof createPages> = createPages(
       path: '/exact/[slug]/[...wild]',
       exactPath: true,
       component: () => <h1>EXACTLY!!</h1>,
+    }),
+
+    createLayout({
+      render: 'dynamic',
+      path: '/dynamic',
+      component: DynamicLayout,
+    }),
+
+    createPage({
+      render: 'dynamic',
+      path: '/dynamic',
+      component: () => <h1>Dynamic Page</h1>,
     }),
   ],
 );

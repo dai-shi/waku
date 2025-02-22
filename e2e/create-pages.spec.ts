@@ -35,6 +35,16 @@ for (const mode of ['DEV', 'PRD'] as const) {
       await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
     });
 
+    test('dynamic', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/dynamic`);
+      await expect(page.getByRole('navigation')).toHaveText(
+        'Current path: /dynamic',
+      );
+      await expect(
+        page.getByRole('heading', { name: 'Dynamic Page' }),
+      ).toBeVisible();
+    });
+
     test('nested/foo', async ({ page }) => {
       // /nested/foo is defined as a staticPath of /nested/[id] which matches this layout
       await page.goto(`http://localhost:${port}/nested/foo`);
