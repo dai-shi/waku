@@ -34,9 +34,6 @@ export const serverEngine = (options: MiddlewareOptions): MiddlewareHandler => {
         headers: c.req.header(),
       },
       res: {},
-      context: {
-        [HONO_CONTEXT]: c,
-      },
       data: {
         [HONO_CONTEXT]: c,
       },
