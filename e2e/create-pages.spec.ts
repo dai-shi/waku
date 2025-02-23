@@ -35,6 +35,16 @@ for (const mode of ['DEV', 'PRD'] as const) {
       await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
     });
 
+    test('dynamic', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/dynamic`);
+      await expect(page.getByRole('navigation')).toHaveText(
+        'Current path: /dynamic',
+      );
+      await expect(
+        page.getByRole('heading', { name: 'Dynamic Page' }),
+      ).toBeVisible();
+    });
+
     test('nested/foo', async ({ page }) => {
       // /nested/foo is defined as a staticPath of /nested/[id] which matches this layout
       await page.goto(`http://localhost:${port}/nested/foo`);
@@ -115,6 +125,19 @@ for (const mode of ['DEV', 'PRD'] as const) {
         page.getByRole('heading', { name: 'Failed to Fetch' }),
       ).toBeVisible();
       ({ port, stopApp } = await startApp(mode));
+    });
+
+    // https://github.com/dai-shi/waku/issues/1255
+    test('long suspense', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/long-suspense/1`);
+      await expect(
+        page.getByRole('heading', { name: 'Long Suspense Page 1' }),
+      ).toBeVisible();
+      await page.click("a[href='/long-suspense/2']");
+      await expect(page.getByTestId('long-suspense')).toHaveText('Loading...');
+      await expect(
+        page.getByRole('heading', { name: 'Long Suspense Page 2' }),
+      ).toBeVisible();
     });
 
     test('api hi', async () => {

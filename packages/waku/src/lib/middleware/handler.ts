@@ -12,6 +12,7 @@ import { renderRsc, decodeBody, decodePostAction } from '../renderers/rsc.js';
 import { renderHtml } from '../renderers/html.js';
 import { decodeRscPath, decodeFuncId } from '../renderers/utils.js';
 import { filePathToFileURL, getPathMapping } from '../utils/path.js';
+import { hasStatusCode, hasLocationHeader } from '../utils/custom-errors.js';
 import { stringToStream } from '../utils/stream.js';
 
 export const SERVER_MODULE_MAP = {
@@ -161,10 +162,17 @@ export const handler: Middleware = (options) => {
       try {
         res = await entries.default.handleRequest(input, utils);
       } catch (e) {
-        ctx.res.status = 500;
+        if (hasStatusCode(e)) {
+          ctx.res.status = e.statusCode;
+        } else {
+          ctx.res.status = 500;
+        }
         ctx.res.body = stringToStream(
           (e as { message?: string } | undefined)?.message || String(e),
         );
+        if (hasLocationHeader(e)) {
+          (ctx.res.headers ||= {}).location = e.locationHeader;
+        }
       }
       if (res instanceof ReadableStream) {
         ctx.res.body = res;

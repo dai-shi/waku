@@ -7,6 +7,9 @@
   "include": ["playwright.config.base.ts", "playwright.config.ts", "./e2e"],
   "references": [
     {
+      "path": "./e2e/fixtures/rsc-asset/tsconfig.json"
+    },
+    {
       "path": "./e2e/fixtures/rsc-basic/tsconfig.json"
     },
     {
