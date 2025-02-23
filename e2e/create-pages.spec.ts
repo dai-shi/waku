@@ -160,6 +160,7 @@ for (const mode of ['DEV', 'PRD'] as const) {
 
     test('group layout', async ({ page }) => {
       await page.goto(`http://localhost:${port}/test`);
+      await expect(page.getByRole('link', { name: 'Home' })).toBeVisible();
       await expect(
         page.getByRole('heading', { name: '/(group) Layout' }),
       ).toBeVisible();

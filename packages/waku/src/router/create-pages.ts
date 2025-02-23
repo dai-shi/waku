@@ -10,6 +10,7 @@ import {
   pathSpecAsString,
   parseExactPath,
 } from '../lib/utils/path.js';
+import { getGrouplessPath } from '../lib/utils/create-pages.js';
 import type { PathSpec } from '../lib/utils/path.js';
 import type {
   AnyPage,
@@ -182,16 +183,6 @@ type RootItem = {
   component: FunctionComponent<{ children: ReactNode }>;
 };
 
-const getGrouplessPath = (path: string) => {
-  if (path.includes('(')) {
-    path = path
-      .split('/')
-      .filter((part) => !part.startsWith('('))
-      .join('/');
-  }
-  return path;
-};
-
 export type CreateRoot = (root: RootItem) => void;
 
 /**
@@ -240,6 +231,9 @@ export const createPages = <
 ) => {
   let configured = false;
 
+  // layout lookups retain (group) path and pathMaps store without group
+  // paths are stored without groups to easily detect duplicates
+  const groupPathLookup = new Map<string, string>();
   const staticPathMap = new Map<
     string,
     { literalSpec: PathSpec; originalSpec?: PathSpec }
@@ -373,6 +367,9 @@ export const createPages = <
         literalSpec: pathSpec,
       });
       const id = joinPath(pagePath, 'page').replace(/^\//, '');
+      if (pagePath !== page.path) {
+        groupPathLookup.set(pagePath, page.path);
+      }
       registerStaticComponent(id, page.component);
     } else if (
       page.render === 'static' &&
@@ -406,11 +403,15 @@ export const createPages = <
               break;
           }
         });
-        const pagePath = getGrouplessPath('/' + pathItems.join('/'));
+        const definedPath = '/' + pathItems.join('/');
+        const pagePath = getGrouplessPath(definedPath);
         staticPathMap.set(pagePath, {
           literalSpec: pathItems.map((name) => ({ type: 'literal', name })),
           originalSpec: pathSpec,
         });
+        if (pagePath !== definedPath) {
+          groupPathLookup.set(pagePath, definedPath);
+        }
         const id = joinPath(...pathItems, 'page');
         const WrappedComponent = (props: Record<string, unknown>) =>
           createElement(page.component as any, { ...props, ...mapping });
@@ -418,9 +419,15 @@ export const createPages = <
       }
     } else if (page.render === 'dynamic' && numWildcards === 0) {
       const pagePath = getGrouplessPath(page.path);
+      if (pagePath !== page.path) {
+        groupPathLookup.set(pagePath, page.path);
+      }
       dynamicPagePathMap.set(pagePath, [pathSpec, page.component]);
     } else if (page.render === 'dynamic' && numWildcards === 1) {
       const pagePath = getGrouplessPath(page.path);
+      if (pagePath !== page.path) {
+        groupPathLookup.set(pagePath, page.path);
+      }
       wildcardPagePathMap.set(pagePath, [pathSpec, page.component]);
     } else {
       throw new Error('Invalid page configuration');
@@ -620,7 +627,8 @@ export const createPages = <
         throw new Error('Page not found: ' + path);
       }
 
-      const pathSpec = parsePathWithSlug(routePath);
+      const layoutMatchPath = groupPathLookup.get(routePath) ?? routePath;
+      const pathSpec = parsePathWithSlug(layoutMatchPath);
       const mapping = getPathMapping(pathSpec, path);
       const result: Record<string, unknown> = {
         [`page:${routePath}`]: createElement(

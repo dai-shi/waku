@@ -1666,8 +1666,11 @@ describe('createPages - grouped paths', () => {
 
   it('supports grouped path with layout', async () => {
     const TestPage = () => null;
+    const TestHomePage = () => null;
     const TestLayout = ({ children }: PropsWithChildren) => children;
+    const TestRootLayout = ({ children }: PropsWithChildren) => children;
     createPages(async ({ createPage, createLayout }) => [
+      createLayout({ render: 'static', path: '/', component: TestRootLayout }),
       createLayout({
         render: 'static',
         path: '/(group)',
@@ -1678,11 +1681,17 @@ describe('createPages - grouped paths', () => {
         path: '/(group)/test',
         component: TestPage,
       }),
+      createPage({
+        render: 'static',
+        path: '/(group)',
+        component: TestHomePage,
+      }),
     ]);
     const { getRouteConfig, handleRoute } = injectedFunctions();
     expect(await getRouteConfig()).toEqual([
       {
         elements: {
+          'layout:/': { isStatic: true },
           'layout:/(group)': { isStatic: true },
           'page:/test': { isStatic: true },
         },
@@ -1690,6 +1699,17 @@ describe('createPages - grouped paths', () => {
         routeElement: { isStatic: true },
         noSsr: false,
         path: [{ name: 'test', type: 'literal' }],
+      },
+      {
+        elements: {
+          'page:/': { isStatic: true },
+          'layout:/(group)': { isStatic: true },
+          'layout:/': { isStatic: true },
+        },
+        rootElement: { isStatic: true },
+        routeElement: { isStatic: true },
+        noSsr: false,
+        path: [],
       },
     ]);
     const route = await handleRoute('/test', {
@@ -1700,6 +1720,19 @@ describe('createPages - grouped paths', () => {
     expect(route.routeElement).toBeDefined();
     expect(Object.keys(route.elements)).toEqual([
       'page:/test',
+      'layout:/',
+      'layout:/(group)',
+    ]);
+
+    const route2 = await handleRoute('/', {
+      query: '?skip=[]',
+    });
+    expect(route2).toBeDefined();
+    expect(route2.rootElement).toBeDefined();
+    expect(route2.routeElement).toBeDefined();
+    expect(Object.keys(route2.elements)).toEqual([
+      'page:/',
+      'layout:/',
       'layout:/(group)',
     ]);
   });
