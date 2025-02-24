@@ -24,8 +24,8 @@ const BarLayout = ({ children }: { children: ReactNode }) => {
         <li>
           <Link
             to="/"
-            pending={<Pending isPending />}
-            notPending={<Pending isPending={false} />}
+            unstable_pending={<Pending isPending />}
+            unstable_notPending={<Pending isPending={false} />}
           >
             Home
           </Link>
@@ -33,8 +33,8 @@ const BarLayout = ({ children }: { children: ReactNode }) => {
         <li>
           <Link
             to="/foo"
-            pending={<Pending isPending />}
-            notPending={<Pending isPending={false} />}
+            unstable_pending={<Pending isPending />}
+            unstable_notPending={<Pending isPending={false} />}
           >
             Foo
           </Link>
@@ -42,8 +42,8 @@ const BarLayout = ({ children }: { children: ReactNode }) => {
         <li>
           <Link
             to={'/nested/bar' as never}
-            pending={<Pending isPending />}
-            notPending={<Pending isPending={false} />}
+            unstable_pending={<Pending isPending />}
+            unstable_notPending={<Pending isPending={false} />}
           >
             Link to 404
           </Link>

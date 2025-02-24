@@ -3,7 +3,6 @@
 import {
   createContext,
   createElement,
-  startTransition,
   useCallback,
   useContext,
   useEffect,
@@ -38,6 +37,10 @@ import {
 } from './common.js';
 import type { RouteProps } from './common.js';
 import type { RouteConfig } from './base-types.js';
+import {
+  hasStatusCode,
+  hasLocationHeader,
+} from '../lib/utils/custom-errors.js';
 
 type AllowPathDecorators<Path extends string> = Path extends unknown
   ? Path | `${Path}?${string}` | `${Path}#${string}`
@@ -196,8 +199,7 @@ export function useRouter_UNSTABLE() {
 
 export type LinkProps = {
   to: InferredPaths;
-  pending?: ReactNode;
-  notPending?: ReactNode;
+  children: ReactNode;
   /**
    * indicates if the link should scroll or not on navigation
    * - `true`: always scroll
@@ -205,7 +207,8 @@ export type LinkProps = {
    * - `undefined`: scroll on path change (not on searchParams change)
    */
   scroll?: boolean;
-  children: ReactNode;
+  unstable_pending?: ReactNode;
+  unstable_notPending?: ReactNode;
   unstable_prefetchOnEnter?: boolean;
   unstable_prefetchOnView?: boolean;
   unstable_startTransition?: ((fn: () => void) => void) | undefined;
@@ -214,12 +217,12 @@ export type LinkProps = {
 export function Link({
   to,
   children,
-  pending,
-  notPending,
+  scroll,
+  unstable_pending,
+  unstable_notPending,
   unstable_prefetchOnEnter,
   unstable_prefetchOnView,
   unstable_startTransition,
-  scroll,
   ...props
 }: LinkProps): ReactElement {
   const router = useContext(RouterContext);
@@ -234,6 +237,10 @@ export function Link({
         throw new Error('Missing Router');
       };
   const [isPending, startTransition] = useTransition();
+  const startTransitionFn =
+    unstable_startTransition ||
+    ((unstable_pending || unstable_notPending) && startTransition) ||
+    ((fn: () => void) => fn());
   const ref = useRef<HTMLAnchorElement>(undefined);
 
   useEffect(() => {
@@ -266,7 +273,7 @@ export function Link({
     if (url.href !== window.location.href) {
       const route = parseRoute(url);
       prefetchRoute(route);
-      (unstable_startTransition || startTransition)(() => {
+      startTransitionFn(() => {
         const newPath = url.pathname !== window.location.pathname;
         window.history.pushState(
           {
@@ -296,11 +303,11 @@ export function Link({
     { ...props, href: to, onClick, onMouseEnter, ref },
     children,
   );
-  if (isPending && pending !== undefined) {
-    return createElement(Fragment, null, ele, pending);
+  if (isPending && unstable_pending !== undefined) {
+    return createElement(Fragment, null, ele, unstable_pending);
   }
-  if (!isPending && notPending !== undefined) {
-    return createElement(Fragment, null, ele, notPending);
+  if (!isPending && unstable_notPending !== undefined) {
+    return createElement(Fragment, null, ele, unstable_notPending);
   }
   return ele;
 }
@@ -334,6 +341,58 @@ export class ErrorBoundary extends Component<
         return renderError(this.state.error.message);
       }
       return renderError(String(this.state.error));
+    }
+    return this.props.children;
+  }
+}
+
+const NotFound = () => {
+  // FIXME totally unsure if this is a desired behavior
+  useEffect(() => {
+    window.location.replace('/404');
+  });
+  return createElement(
+    'html',
+    null,
+    createElement('body', null, createElement('h1', null, 'Not Found')),
+  );
+};
+
+const Redirect = ({ loc }: { loc: string }) => {
+  // FIXME unsure if this is a desired behavior
+  useEffect(() => {
+    window.location.replace(loc);
+  });
+  return createElement(
+    'html',
+    null,
+    createElement('body', null, createElement('a', { href: loc }, 'Redirect')),
+  );
+};
+
+class CustomErrorHandler extends Component<
+  { children: ReactNode },
+  { error?: unknown }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = {};
+  }
+  static getDerivedStateFromError(error: unknown) {
+    return { error };
+  }
+  render() {
+    if ('error' in this.state) {
+      const error = this.state.error;
+      if (hasStatusCode(error)) {
+        if (error.statusCode === 404) {
+          return createElement(NotFound);
+        }
+        if (hasLocationHeader(error)) {
+          return createElement(Redirect, { loc: error.locationHeader });
+        }
+      }
+      throw error;
     }
     return this.props.children;
   }
@@ -386,17 +445,15 @@ const InnerRouter = ({
   const changeRoute: ChangeRoute = useCallback(
     (route, options) => {
       const { skipRefetch } = options || {};
-      startTransition(() => {
-        if (!staticPathSet.has(route.path) && !skipRefetch) {
-          const rscPath = encodeRoutePath(route.path);
-          const rscParams = createRscParams(route.query);
-          refetch(rscPath, rscParams);
-        }
-        if (options.shouldScroll) {
-          handleScroll();
-        }
-        setRoute(route);
-      });
+      if (!staticPathSet.has(route.path) && !skipRefetch) {
+        const rscPath = encodeRoutePath(route.path);
+        const rscParams = createRscParams(route.query);
+        refetch(rscPath, rscParams);
+      }
+      if (options.shouldScroll) {
+        handleScroll();
+      }
+      setRoute(route);
     },
     [refetch, staticPathSet],
   );
@@ -542,7 +599,7 @@ export function Router({
       return data;
     };
   const initialRscParams = createRscParams(initialRoute.query);
-  return createElement(
+  const root = createElement(
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
     {
       initialRscPath,
@@ -555,6 +612,7 @@ export function Router({
       initialRoute,
     }),
   );
+  return createElement(CustomErrorHandler, null, root);
 }
 
 /**
