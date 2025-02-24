@@ -37,6 +37,10 @@ import {
 } from './common.js';
 import type { RouteProps } from './common.js';
 import type { RouteConfig } from './base-types.js';
+import {
+  hasStatusCode,
+  hasLocationHeader,
+} from '../lib/utils/custom-errors.js';
 
 type AllowPathDecorators<Path extends string> = Path extends unknown
   ? Path | `${Path}?${string}` | `${Path}#${string}`
@@ -342,6 +346,58 @@ export class ErrorBoundary extends Component<
   }
 }
 
+const NotFound = () => {
+  // FIXME totally unsure if this is a desired behavior
+  useEffect(() => {
+    window.location.replace('/404');
+  });
+  return createElement(
+    'html',
+    null,
+    createElement('body', null, createElement('h1', null, 'Not Found')),
+  );
+};
+
+const Redirect = ({ loc }: { loc: string }) => {
+  // FIXME unsure if this is a desired behavior
+  useEffect(() => {
+    window.location.replace(loc);
+  });
+  return createElement(
+    'html',
+    null,
+    createElement('body', null, createElement('a', { href: loc }, 'Redirect')),
+  );
+};
+
+class CustomErrorHandler extends Component<
+  { children: ReactNode },
+  { error?: unknown }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = {};
+  }
+  static getDerivedStateFromError(error: unknown) {
+    return { error };
+  }
+  render() {
+    if ('error' in this.state) {
+      const error = this.state.error;
+      if (hasStatusCode(error)) {
+        if (error.statusCode === 404) {
+          return createElement(NotFound);
+        }
+        if (hasLocationHeader(error)) {
+          return createElement(Redirect, { loc: error.locationHeader });
+        }
+      }
+      throw error;
+    }
+    return this.props.children;
+  }
+}
+
 const getRouteSlotId = (path: string) => 'route:' + path;
 
 const handleScroll = () => {
@@ -543,7 +599,7 @@ export function Router({
       return data;
     };
   const initialRscParams = createRscParams(initialRoute.query);
-  return createElement(
+  const root = createElement(
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
     {
       initialRscPath,
@@ -556,6 +612,7 @@ export function Router({
       initialRoute,
     }),
   );
+  return createElement(CustomErrorHandler, null, root);
 }
 
 /**
