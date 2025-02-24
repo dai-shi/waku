@@ -10,6 +10,7 @@ import {
   pathSpecAsString,
   parseExactPath,
 } from '../lib/utils/path.js';
+import { getGrouplessPath } from '../lib/utils/create-pages.js';
 import type { PathSpec } from '../lib/utils/path.js';
 import type {
   AnyPage,
@@ -230,6 +231,9 @@ export const createPages = <
 ) => {
   let configured = false;
 
+  // layout lookups retain (group) path and pathMaps store without group
+  // paths are stored without groups to easily detect duplicates
+  const groupPathLookup = new Map<string, string>();
   const staticPathMap = new Map<
     string,
     { literalSpec: PathSpec; originalSpec?: PathSpec }
@@ -350,7 +354,7 @@ export const createPages = <
       const spec = parseExactPath(page.path);
       if (page.render === 'static') {
         staticPathMap.set(page.path, {
-          literalSpec: parseExactPath(page.path),
+          literalSpec: spec,
         });
         const id = joinPath(page.path, 'page').replace(/^\//, '');
         registerStaticComponent(id, page.component);
@@ -358,8 +362,14 @@ export const createPages = <
         dynamicPagePathMap.set(page.path, [spec, page.component]);
       }
     } else if (page.render === 'static' && numSlugs === 0) {
-      staticPathMap.set(page.path, { literalSpec: pathSpec });
-      const id = joinPath(page.path, 'page').replace(/^\//, '');
+      const pagePath = getGrouplessPath(page.path);
+      staticPathMap.set(pagePath, {
+        literalSpec: pathSpec,
+      });
+      const id = joinPath(pagePath, 'page').replace(/^\//, '');
+      if (pagePath !== page.path) {
+        groupPathLookup.set(pagePath, page.path);
+      }
       registerStaticComponent(id, page.component);
     } else if (
       page.render === 'static' &&
@@ -393,19 +403,32 @@ export const createPages = <
               break;
           }
         });
-        staticPathMap.set('/' + pathItems.join('/'), {
+        const definedPath = '/' + pathItems.join('/');
+        const pagePath = getGrouplessPath(definedPath);
+        staticPathMap.set(pagePath, {
           literalSpec: pathItems.map((name) => ({ type: 'literal', name })),
           originalSpec: pathSpec,
         });
+        if (pagePath !== definedPath) {
+          groupPathLookup.set(pagePath, definedPath);
+        }
         const id = joinPath(...pathItems, 'page');
         const WrappedComponent = (props: Record<string, unknown>) =>
           createElement(page.component as any, { ...props, ...mapping });
         registerStaticComponent(id, WrappedComponent);
       }
     } else if (page.render === 'dynamic' && numWildcards === 0) {
-      dynamicPagePathMap.set(page.path, [pathSpec, page.component]);
+      const pagePath = getGrouplessPath(page.path);
+      if (pagePath !== page.path) {
+        groupPathLookup.set(pagePath, page.path);
+      }
+      dynamicPagePathMap.set(pagePath, [pathSpec, page.component]);
     } else if (page.render === 'dynamic' && numWildcards === 1) {
-      wildcardPagePathMap.set(page.path, [pathSpec, page.component]);
+      const pagePath = getGrouplessPath(page.path);
+      if (pagePath !== page.path) {
+        groupPathLookup.set(pagePath, page.path);
+      }
+      wildcardPagePathMap.set(pagePath, [pathSpec, page.component]);
     } else {
       throw new Error('Invalid page configuration');
     }
@@ -509,7 +532,6 @@ export const createPages = <
         noSsr: boolean;
       }[] = [];
       const rootIsStatic = !rootItem || rootItem.render === 'static';
-
       for (const [path, { literalSpec, originalSpec }] of staticPathMap) {
         const noSsr = noSsrSet.has(literalSpec);
 
@@ -529,7 +551,7 @@ export const createPages = <
         };
 
         paths.push({
-          path: literalSpec,
+          path: literalSpec.filter((part) => !part.name?.startsWith('(')),
           ...(originalSpec && { pathPattern: originalSpec }),
           rootElement: { isStatic: rootIsStatic },
           routeElement: {
@@ -555,7 +577,7 @@ export const createPages = <
           [`page:${path}`]: { isStatic: false },
         };
         paths.push({
-          path: pathSpec,
+          path: pathSpec.filter((part) => !part.name?.startsWith('(')),
           rootElement: { isStatic: rootIsStatic },
           routeElement: { isStatic: true },
           elements,
@@ -578,7 +600,7 @@ export const createPages = <
           [`page:${path}`]: { isStatic: false },
         };
         paths.push({
-          path: pathSpec,
+          path: pathSpec.filter((part) => !part.name?.startsWith('(')),
           rootElement: { isStatic: rootIsStatic },
           routeElement: { isStatic: true },
           elements,
@@ -605,7 +627,8 @@ export const createPages = <
         throw new Error('Page not found: ' + path);
       }
 
-      const pathSpec = parsePathWithSlug(routePath);
+      const layoutMatchPath = groupPathLookup.get(routePath) ?? routePath;
+      const pathSpec = parsePathWithSlug(layoutMatchPath);
       const mapping = getPathMapping(pathSpec, path);
       const result: Record<string, unknown> = {
         [`page:${routePath}`]: createElement(

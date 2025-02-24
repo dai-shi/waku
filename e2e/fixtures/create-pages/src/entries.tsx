@@ -161,6 +161,35 @@ const pages: ReturnType<typeof createPages> = createPages(
       component: () => <h1>EXACTLY!!</h1>,
     }),
 
+    createPage({
+      render: 'static',
+      path: '/(group)/test',
+      component: () => <h1>Group Page</h1>,
+    }),
+
+    // Should not show for /(group)/test
+    createLayout({
+      render: 'static',
+      path: '/test',
+      component: ({ children }) => (
+        <div>
+          <h2>/test Layout</h2>
+          {children}
+        </div>
+      ),
+    }),
+
+    createLayout({
+      render: 'static',
+      path: '/(group)',
+      component: ({ children }) => (
+        <div>
+          <h2>/(group) Layout</h2>
+          {children}
+        </div>
+      ),
+    }),
+
     createLayout({
       render: 'dynamic',
       path: '/dynamic',
