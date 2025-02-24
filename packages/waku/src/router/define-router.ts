@@ -20,6 +20,7 @@ import type { PathSpec } from '../lib/utils/path.js';
 import { INTERNAL_ServerRouter } from './client.js';
 import { getContext } from '../middleware/context.js';
 import { stringToStream } from '../lib/utils/stream.js';
+import { createCustomError } from '../lib/utils/custom-errors.js';
 
 const isStringArray = (x: unknown): x is string[] =>
   Array.isArray(x) && x.every((y) => typeof y === 'string');
@@ -67,6 +68,17 @@ const pathSpec2pathname = (pathSpec: PathSpec) => {
 export function unstable_rerenderRoute(pathname: string, query?: string) {
   const rscPath = encodeRoutePath(pathname);
   getRerender()(rscPath, query && new URLSearchParams({ query }));
+}
+
+export function unstable_notFound(): never {
+  throw createCustomError('Not Found', 404);
+}
+
+export function unstable_redirect(
+  locationHeader: string,
+  statusCode: 307 | 308 = 307,
+): never {
+  throw createCustomError('Redirect', statusCode, locationHeader);
 }
 
 type SlotId = string;
