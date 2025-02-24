@@ -94,10 +94,8 @@ export function rscDelegatePlugin(
               data: { ...transformedResult, source, id: ctx.file },
             });
           }
-        } else if (
-          ctx.modules.length &&
-          !isClientEntry(ctx.file, await ctx.read())
-        ) {
+        }
+        if (ctx.modules.length && !isClientEntry(ctx.file, await ctx.read())) {
           console.log('[rsc] hot reload', ctx.file);
           callback({ type: 'custom', event: 'rsc-reload' });
         }

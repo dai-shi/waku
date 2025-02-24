@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "composite": true,
     "strict": true,
     "target": "esnext",
     "downlevelIteration": true,
@@ -10,8 +11,7 @@
     "exactOptionalPropertyTypes": true,
     "types": ["react/experimental"],
     "jsx": "react-jsx",
-    "outDir": "./dist",
-    "composite": true
+    "outDir": "./dist"
   },
   "include": ["./src", "./waku.config.ts"]
 }

@@ -128,4 +128,34 @@ test.describe('hot reload', () => {
     );
     await expect(page.getByText('Fixed Page')).toBeVisible();
   });
+
+  test('css modules', async ({ page }) => {
+    await page.goto(`http://localhost:${port}/css-modules`);
+    await expect(page.getByTestId('css-modules-header')).toHaveText(
+      'CSS Modules',
+    );
+    const bgColor1 = await page.evaluate(() =>
+      window
+        .getComputedStyle(
+          document.querySelector('[data-testid="css-modules-header"]')!,
+        )
+        .getPropertyValue('background-color'),
+    );
+    expect(bgColor1).toBe('rgb(0, 128, 0)');
+    await modifyFile(
+      standaloneDir,
+      'src/pages/css-modules.module.css',
+      'background-color: green;',
+      'background-color: yellow;',
+    );
+    await page.waitForTimeout(500); // need to wait for full reload
+    const bgColor2 = await page.evaluate(() =>
+      window
+        .getComputedStyle(
+          document.querySelector('[data-testid="css-modules-header"]')!,
+        )
+        .getPropertyValue('background-color'),
+    );
+    expect(bgColor2).toBe('rgb(255, 255, 0)');
+  });
 });
