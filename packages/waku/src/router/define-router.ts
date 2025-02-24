@@ -70,15 +70,15 @@ export function unstable_rerenderRoute(pathname: string, query?: string) {
   getRerender()(rscPath, query && new URLSearchParams({ query }));
 }
 
-export function unstable_notFound() {
-  return createCustomError('Not Found', 404);
+export function unstable_notFound(): never {
+  throw createCustomError('Not Found', 404);
 }
 
 export function unstable_redirect(
   locationHeader: string,
   statusCode: 307 | 308 = 307,
-) {
-  return createCustomError('Redirect', statusCode, locationHeader);
+): never {
+  throw createCustomError('Redirect', statusCode, locationHeader);
 }
 
 type SlotId = string;
