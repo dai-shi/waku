@@ -563,7 +563,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@tailwindcss/postcss':
@@ -597,7 +597,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@tailwindcss/postcss':
@@ -622,7 +622,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@tailwindcss/postcss':
@@ -656,7 +656,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -681,7 +681,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@tailwindcss/postcss':
@@ -721,7 +721,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@tailwindcss/postcss':
@@ -758,7 +758,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0(esbuild@0.17.19))
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
       wrangler:
         specifier: 3.109.2
@@ -801,7 +801,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -826,7 +826,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@tailwindcss/postcss':
@@ -863,7 +863,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -891,7 +891,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -916,7 +916,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -941,7 +941,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
 
   examples/33_promise:
@@ -956,7 +956,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -984,7 +984,7 @@ importers:
         specifier: 1.1.1
         version: 1.1.1(react@19.0.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -1009,7 +1009,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -1034,7 +1034,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -1068,7 +1068,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -1108,7 +1108,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/cookie':
@@ -1139,7 +1139,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -1164,7 +1164,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -1198,7 +1198,7 @@ importers:
         specifier: ^3.2.1
         version: 3.2.1(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@tailwindcss/postcss':
@@ -1232,7 +1232,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -1260,7 +1260,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -1285,7 +1285,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -1316,7 +1316,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -1341,7 +1341,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
@@ -1369,7 +1369,7 @@ importers:
         specifier: 19.0.0
         version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
       waku:
-        specifier: 0.21.20
+        specifier: 0.21.21
         version: link:../../packages/waku
     devDependencies:
       '@types/react':
