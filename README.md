@@ -108,7 +108,7 @@ export default async function RootLayout({ children }) {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -185,7 +185,7 @@ export default async function RootLayout({ children }) {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -211,7 +211,7 @@ const getData = async () => {
 export const getConfig = async () => {
   return {
     render: 'dynamic',
-  };
+  } as const;
 };
 ```
 
@@ -447,7 +447,7 @@ export default async function RootLayout({ children }) {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -485,7 +485,7 @@ export default async function BlogLayout({ children }) {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -509,7 +509,7 @@ export default async function RootElement({ children }) {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -610,7 +610,7 @@ export default async function RootLayout({ children }) {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -686,7 +686,7 @@ export default async function RootLayout({ children }) {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
