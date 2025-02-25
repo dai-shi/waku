@@ -40,7 +40,7 @@ for (const mode of ['DEV', 'PRD'] as const) {
       ).toBeVisible();
     });
 
-    test('access lasync page with client navigation', async ({ page }) => {
+    test('access async page with client navigation', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
       await expect(
         page.getByRole('heading', { name: 'Home Page' }),

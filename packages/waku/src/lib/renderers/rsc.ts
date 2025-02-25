@@ -12,6 +12,12 @@ const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
   return config.basePath + id + '.js';
 };
 
+const onError = (err: unknown) => {
+  if (typeof (err as any)?.digest === 'string') {
+    return (err as { digest: string }).digest;
+  }
+};
+
 export async function renderRsc(
   config: PureConfig,
   ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
@@ -39,7 +45,7 @@ export async function renderRsc(
       },
     },
   );
-  return renderToReadableStream(elements, clientBundlerConfig);
+  return renderToReadableStream(elements, clientBundlerConfig, { onError });
 }
 
 export function renderRscElement(
@@ -67,7 +73,7 @@ export function renderRscElement(
       },
     },
   );
-  return renderToReadableStream(element, clientBundlerConfig);
+  return renderToReadableStream(element, clientBundlerConfig, { onError });
 }
 
 export async function collectClientModules(
@@ -90,7 +96,9 @@ export async function collectClientModules(
       },
     },
   );
-  const readable = renderToReadableStream(elements, clientBundlerConfig);
+  const readable = renderToReadableStream(elements, clientBundlerConfig, {
+    onError,
+  });
   await new Promise<void>((resolve, reject) => {
     const writable = new WritableStream({
       close() {

@@ -343,12 +343,15 @@ export class ErrorBoundary extends Component<
   }
 }
 
-const NotFound = () => {
+const NotFound = ({ reset }: { reset: () => void }) => {
   // TODO show a custom 404 page
+  useEffect(() => {
+    reset();
+  }, [reset]);
   return createElement('h1', null, 'Not Found');
 };
 
-const Redirect = ({ to }: { to: string }) => {
+const Redirect = ({ to, reset }: { to: string; reset: () => void }) => {
   const router = useContext(RouterContext);
   if (!router) {
     throw new Error('Missing Router');
@@ -369,10 +372,9 @@ const Redirect = ({ to }: { to: string }) => {
       '',
       url,
     );
-    changeRoute(parseRoute(url), {
-      shouldScroll: newPath,
-    });
-  }, [to, changeRoute]);
+    changeRoute(parseRoute(url), { shouldScroll: newPath });
+    reset();
+  }, [to, reset, changeRoute]);
   return null;
 };
 
@@ -383,19 +385,26 @@ class CustomErrorHandler extends Component<
   constructor(props: { children: ReactNode }) {
     super(props);
     this.state = {};
+    this.reset = this.reset.bind(this);
   }
   static getDerivedStateFromError(error: unknown) {
     return { error };
+  }
+  reset() {
+    this.setState({});
   }
   render() {
     if ('error' in this.state) {
       const error = this.state.error;
       const info = getErrorInfo(error);
       if (info?.status === 404) {
-        return createElement(NotFound);
+        return createElement(NotFound, { reset: this.reset });
       }
       if (info?.location) {
-        return createElement(Redirect, { to: info.location });
+        return createElement(Redirect, {
+          to: info.location,
+          reset: this.reset,
+        });
       }
       throw error;
     }

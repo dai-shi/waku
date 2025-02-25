@@ -158,7 +158,7 @@ const rectifyHtml = () => {
   });
 };
 
-// FIXME Why does it error on the rist time?
+// FIXME Why does it error on the first time?
 let hackToIgnoreTheVeryFirstError = true;
 
 export async function renderHtml(
@@ -240,6 +240,9 @@ export async function renderHtml(
         onError(err: unknown) {
           if (hackToIgnoreTheVeryFirstError) {
             return;
+          }
+          if (typeof (err as any)?.digest === 'string') {
+            return (err as { digest: string }).digest;
           }
           console.error(err);
         },

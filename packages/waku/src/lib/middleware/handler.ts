@@ -163,15 +163,14 @@ export const handler: Middleware = (options) => {
         res = await entries.default.handleRequest(input, utils);
       } catch (e) {
         const info = getErrorInfo(e);
-        if (info?.status === 404) {
-          return;
-        }
-        ctx.res.status = info?.status || 500;
-        ctx.res.body = stringToStream(
-          (e as { message?: string } | undefined)?.message || String(e),
-        );
-        if (info?.location) {
-          (ctx.res.headers ||= {}).location = info.location;
+        if (info?.status !== 404) {
+          ctx.res.status = info?.status || 500;
+          ctx.res.body = stringToStream(
+            (e as { message?: string } | undefined)?.message || String(e),
+          );
+          if (info?.location) {
+            (ctx.res.headers ||= {}).location = info.location;
+          }
         }
       }
       if (res instanceof ReadableStream) {
