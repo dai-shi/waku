@@ -7,6 +7,6 @@ export default async function SyncPage() {
 
 export const getConfig = async () => {
   return {
-    render: 'static',
+    render: 'dynamic',
   } as const;
 };

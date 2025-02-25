@@ -427,23 +427,14 @@ globalThis.__WAKU_ROUTER_PREFETCH__ = (path) => {
               const html = createElement(INTERNAL_ServerRouter, {
                 route: { path: pathname, query: '', hash: '' },
               });
-              try {
-                const { body } = await renderHtml(entries, html, {
+              return {
+                type: 'file',
+                pathname,
+                body: renderHtml(entries, html, {
                   rscPath,
                   htmlHead: `<script type="module" async>${code}</script>`,
-                });
-                return {
-                  type: 'file',
-                  pathname,
-                  body: Promise.resolve(body),
-                };
-              } catch (e) {
-                if (typeof (e as any)?.digest === 'string') {
-                  // ignore
-                } else {
-                  throw e;
-                }
-              }
+                }).then(({ body }) => body),
+              };
             }
           }
           const code =

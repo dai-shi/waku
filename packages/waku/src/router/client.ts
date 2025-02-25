@@ -359,6 +359,7 @@ const Redirect = ({ to, reset }: { to: string; reset: () => void }) => {
   const { changeRoute } = router;
   useEffect(() => {
     const url = new URL(to, window.location.href);
+    // FIXME this condition seems too naive
     if (url.hostname !== window.location.hostname) {
       window.location.replace(to);
       return;
