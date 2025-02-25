@@ -664,9 +664,18 @@ export const createPages = <
       const routeChildren = [
         ...layoutPaths.map((lPath) => ({
           component: Slot,
-          props: { id: `layout:${lPath}` },
+          props: {
+            id: `layout:${lPath}`,
+            unstable_staleWhileRevalidate: true,
+          },
         })),
-        { component: Slot, props: { id: `page:${routePath}` } },
+        {
+          component: Slot,
+          props: {
+            id: `page:${routePath}`,
+            unstable_staleWhileRevalidate: true,
+          },
+        },
       ];
 
       return {
