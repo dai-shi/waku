@@ -28,6 +28,7 @@ import { rscManagedPlugin } from '../plugins/vite-plugin-rsc-managed.js';
 import { rscDelegatePlugin } from '../plugins/vite-plugin-rsc-delegate.js';
 import type { ClonableModuleNode, Middleware } from './types.js';
 import { fsRouterTypegenPlugin } from '../plugins/vite-plugin-fs-router-typegen.js';
+import { hackTailwindcss4Stackblitz } from '../plugins/hack-tailwindcss4-stackblitz.js';
 
 // TODO there is huge room for refactoring in this file
 
@@ -112,6 +113,7 @@ const createMainViteServer = (
             rscTransformPlugin({ isClient: true, isBuild: false }),
             rscHmrPlugin(),
             fsRouterTypegenPlugin(config),
+            hackTailwindcss4Stackblitz(),
           ],
           optimizeDeps: {
             include: ['react-server-dom-webpack/client', 'react-dom/client'],
@@ -268,6 +270,7 @@ const createRscViteServer = (
               resolvedMap,
             }),
             rscDelegatePlugin(hotUpdateCallback),
+            hackTailwindcss4Stackblitz(),
           ],
           optimizeDeps: {
             include: ['react-server-dom-webpack/client', 'react-dom/client'],
