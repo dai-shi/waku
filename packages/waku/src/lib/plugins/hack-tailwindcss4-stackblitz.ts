@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite';
 
 const isStackBlitz =
-  typeof process !== 'undefined' && 'STACKBLITZ' in (process.env || {});
+  typeof process !== 'undefined' && 'webcontainer' in (process.versions || {});
 
 export function hackTailwindcss4Stackblitz(): Plugin {
   return {
