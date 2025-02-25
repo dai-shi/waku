@@ -237,7 +237,7 @@ export async function renderHtml(
           actionResult === undefined
             ? null
             : await getExtractFormState(ctx)(actionResult),
-        onError(err: unknown) {
+        onError(err) {
           if (hackToIgnoreTheVeryFirstError) {
             return;
           }

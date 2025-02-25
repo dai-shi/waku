@@ -14,6 +14,7 @@ const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
 
 const onError = (err: unknown) => {
   if (typeof (err as any)?.digest === 'string') {
+    // This is not correct according to the type though.
     return (err as { digest: string }).digest;
   }
 };
