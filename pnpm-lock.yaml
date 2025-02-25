@@ -470,6 +470,31 @@ importers:
         specifier: ^5.7.3
         version: 5.7.3
 
+  e2e/fixtures/ssr-redirect:
+    dependencies:
+      react:
+        specifier: 19.0.0
+        version: 19.0.0
+      react-dom:
+        specifier: 19.0.0
+        version: 19.0.0(react@19.0.0)
+      react-server-dom-webpack:
+        specifier: 19.0.0
+        version: 19.0.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(webpack@5.98.0)
+      waku:
+        specifier: workspace:*
+        version: link:../../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.10
+        version: 19.0.10
+      '@types/react-dom':
+        specifier: ^19.0.4
+        version: 19.0.4(@types/react@19.0.10)
+      typescript:
+        specifier: ^5.7.3
+        version: 5.7.3
+
   e2e/fixtures/ssr-swr:
     dependencies:
       react:

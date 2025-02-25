@@ -12,7 +12,7 @@ import { renderRsc, decodeBody, decodePostAction } from '../renderers/rsc.js';
 import { renderHtml } from '../renderers/html.js';
 import { decodeRscPath, decodeFuncId } from '../renderers/utils.js';
 import { filePathToFileURL, getPathMapping } from '../utils/path.js';
-import { hasStatusCode, hasLocationHeader } from '../utils/custom-errors.js';
+import { getErrorInfo } from '../utils/custom-errors.js';
 import { stringToStream } from '../utils/stream.js';
 
 export const SERVER_MODULE_MAP = {
@@ -162,16 +162,15 @@ export const handler: Middleware = (options) => {
       try {
         res = await entries.default.handleRequest(input, utils);
       } catch (e) {
-        if (hasStatusCode(e)) {
-          ctx.res.status = e.statusCode;
-        } else {
-          ctx.res.status = 500;
-        }
-        ctx.res.body = stringToStream(
-          (e as { message?: string } | undefined)?.message || String(e),
-        );
-        if (hasLocationHeader(e)) {
-          (ctx.res.headers ||= {}).location = e.locationHeader;
+        const info = getErrorInfo(e);
+        if (info?.status !== 404) {
+          ctx.res.status = info?.status || 500;
+          ctx.res.body = stringToStream(
+            (e as { message?: string } | undefined)?.message || String(e),
+          );
+          if (info?.location) {
+            (ctx.res.headers ||= {}).location = info.location;
+          }
         }
       }
       if (res instanceof ReadableStream) {

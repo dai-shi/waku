@@ -43,10 +43,13 @@ const checkStatus = async (
 ): Promise<Response> => {
   const response = await responsePromise;
   if (!response.ok) {
+    const location = response.headers.get('location');
     const err = createCustomError(
       (await response.text()) || response.statusText,
-      response.status,
-      response.headers.get('location') || undefined,
+      {
+        status: response.status,
+        ...(location && { location }),
+      },
     );
     throw err;
   }

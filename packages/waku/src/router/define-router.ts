@@ -71,14 +71,14 @@ export function unstable_rerenderRoute(pathname: string, query?: string) {
 }
 
 export function unstable_notFound(): never {
-  throw createCustomError('Not Found', 404);
+  throw createCustomError('Not Found', { status: 404 });
 }
 
 export function unstable_redirect(
-  locationHeader: string,
-  statusCode: 307 | 308 = 307,
+  location: string,
+  status: 307 | 308 = 307,
 ): never {
-  throw createCustomError('Redirect', statusCode, locationHeader);
+  throw createCustomError('Redirect', { status, location });
 }
 
 type SlotId = string;

@@ -37,10 +37,7 @@ import {
 } from './common.js';
 import type { RouteProps } from './common.js';
 import type { RouteConfig } from './base-types.js';
-import {
-  hasStatusCode,
-  hasLocationHeader,
-} from '../lib/utils/custom-errors.js';
+import { getErrorInfo } from '../lib/utils/custom-errors.js';
 
 type AllowPathDecorators<Path extends string> = Path extends unknown
   ? Path | `${Path}?${string}` | `${Path}#${string}`
@@ -346,51 +343,69 @@ export class ErrorBoundary extends Component<
   }
 }
 
-const NotFound = () => {
-  // FIXME totally unsure if this is a desired behavior
+const NotFound = ({ reset }: { reset: () => void }) => {
+  // TODO show a custom 404 page
   useEffect(() => {
-    window.location.replace('/404');
-  });
-  return createElement(
-    'html',
-    null,
-    createElement('body', null, createElement('h1', null, 'Not Found')),
-  );
+    reset();
+  }, [reset]);
+  return createElement('h1', null, 'Not Found');
 };
 
-const Redirect = ({ loc }: { loc: string }) => {
-  // FIXME unsure if this is a desired behavior
+const Redirect = ({ to, reset }: { to: string; reset: () => void }) => {
+  const router = useContext(RouterContext);
+  if (!router) {
+    throw new Error('Missing Router');
+  }
+  const { changeRoute } = router;
   useEffect(() => {
-    window.location.replace(loc);
-  });
-  return createElement(
-    'html',
-    null,
-    createElement('body', null, createElement('a', { href: loc }, 'Redirect')),
-  );
+    const url = new URL(to, window.location.href);
+    // FIXME this condition seems too naive
+    if (url.hostname !== window.location.hostname) {
+      window.location.replace(to);
+      return;
+    }
+    const newPath = url.pathname !== window.location.pathname;
+    window.history.pushState(
+      {
+        ...window.history.state,
+        waku_new_path: newPath,
+      },
+      '',
+      url,
+    );
+    changeRoute(parseRoute(url), { shouldScroll: newPath });
+    reset();
+  }, [to, reset, changeRoute]);
+  return null;
 };
 
 class CustomErrorHandler extends Component<
   { children: ReactNode },
-  { error?: unknown }
+  { error: unknown | null }
 > {
   constructor(props: { children: ReactNode }) {
     super(props);
-    this.state = {};
+    this.state = { error: null };
+    this.reset = this.reset.bind(this);
   }
   static getDerivedStateFromError(error: unknown) {
     return { error };
   }
+  reset() {
+    this.setState({ error: null });
+  }
   render() {
-    if ('error' in this.state) {
-      const error = this.state.error;
-      if (hasStatusCode(error)) {
-        if (error.statusCode === 404) {
-          return createElement(NotFound);
-        }
-        if (hasLocationHeader(error)) {
-          return createElement(Redirect, { loc: error.locationHeader });
-        }
+    const { error } = this.state;
+    if (error !== null) {
+      const info = getErrorInfo(error);
+      if (info?.status === 404) {
+        return createElement(NotFound, { reset: this.reset });
+      }
+      if (info?.location) {
+        return createElement(Redirect, {
+          to: info.location,
+          reset: this.reset,
+        });
       }
       throw error;
     }
@@ -510,7 +525,7 @@ const InnerRouter = ({
   const rootElement = createElement(
     Slot,
     { id: 'root', unstable_fallbackToPrev: true },
-    routeElement,
+    createElement(CustomErrorHandler, null, routeElement),
   );
   return createElement(
     RouterContext.Provider,
@@ -599,7 +614,7 @@ export function Router({
       return data;
     };
   const initialRscParams = createRscParams(initialRoute.query);
-  const root = createElement(
+  return createElement(
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
     {
       initialRscPath,
@@ -612,7 +627,6 @@ export function Router({
       initialRoute,
     }),
   );
-  return createElement(CustomErrorHandler, null, root);
 }
 
 /**
