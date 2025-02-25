@@ -37,10 +37,7 @@ import {
 } from './common.js';
 import type { RouteProps } from './common.js';
 import type { RouteConfig } from './base-types.js';
-import {
-  hasStatusCode,
-  hasLocationHeader,
-} from '../lib/utils/custom-errors.js';
+import { getErrorInfo } from '../lib/utils/custom-errors.js';
 
 type AllowPathDecorators<Path extends string> = Path extends unknown
   ? Path | `${Path}?${string}` | `${Path}#${string}`
@@ -347,27 +344,36 @@ export class ErrorBoundary extends Component<
 }
 
 const NotFound = () => {
-  // FIXME totally unsure if this is a desired behavior
-  useEffect(() => {
-    window.location.replace('/404');
-  });
-  return createElement(
-    'html',
-    null,
-    createElement('body', null, createElement('h1', null, 'Not Found')),
-  );
+  // TODO show a custom 404 page
+  return createElement('h1', null, 'Not Found');
 };
 
-const Redirect = ({ loc }: { loc: string }) => {
-  // FIXME unsure if this is a desired behavior
+const Redirect = ({ to }: { to: string }) => {
+  const router = useContext(RouterContext);
+  if (!router) {
+    throw new Error('Missing Router');
+  }
+  const { changeRoute } = router;
   useEffect(() => {
-    window.location.replace(loc);
-  });
-  return createElement(
-    'html',
-    null,
-    createElement('body', null, createElement('a', { href: loc }, 'Redirect')),
-  );
+    const url = new URL(to, window.location.href);
+    if (url.hostname !== window.location.hostname) {
+      window.location.replace(to);
+      return;
+    }
+    const newPath = url.pathname !== window.location.pathname;
+    window.history.pushState(
+      {
+        ...window.history.state,
+        waku_new_path: newPath,
+      },
+      '',
+      url,
+    );
+    changeRoute(parseRoute(url), {
+      shouldScroll: newPath,
+    });
+  }, [to, changeRoute]);
+  return null;
 };
 
 class CustomErrorHandler extends Component<
@@ -384,13 +390,12 @@ class CustomErrorHandler extends Component<
   render() {
     if ('error' in this.state) {
       const error = this.state.error;
-      if (hasStatusCode(error)) {
-        if (error.statusCode === 404) {
-          return createElement(NotFound);
-        }
-        if (hasLocationHeader(error)) {
-          return createElement(Redirect, { loc: error.locationHeader });
-        }
+      const info = getErrorInfo(error);
+      if (info?.status === 404) {
+        return createElement(NotFound);
+      }
+      if (info?.location) {
+        return createElement(Redirect, { to: info.location });
       }
       throw error;
     }
@@ -510,7 +515,7 @@ const InnerRouter = ({
   const rootElement = createElement(
     Slot,
     { id: 'root', unstable_fallbackToPrev: true },
-    routeElement,
+    createElement(CustomErrorHandler, null, routeElement),
   );
   return createElement(
     RouterContext.Provider,
@@ -599,7 +604,7 @@ export function Router({
       return data;
     };
   const initialRscParams = createRscParams(initialRoute.query);
-  const root = createElement(
+  return createElement(
     Root as FunctionComponent<Omit<ComponentProps<typeof Root>, 'children'>>,
     {
       initialRscPath,
@@ -612,7 +617,6 @@ export function Router({
       initialRoute,
     }),
   );
-  return createElement(CustomErrorHandler, null, root);
 }
 
 /**
