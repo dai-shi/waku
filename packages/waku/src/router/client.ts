@@ -380,22 +380,22 @@ const Redirect = ({ to, reset }: { to: string; reset: () => void }) => {
 
 class CustomErrorHandler extends Component<
   { children: ReactNode },
-  { error?: unknown }
+  { error: unknown | null }
 > {
   constructor(props: { children: ReactNode }) {
     super(props);
-    this.state = {};
+    this.state = { error: null };
     this.reset = this.reset.bind(this);
   }
   static getDerivedStateFromError(error: unknown) {
     return { error };
   }
   reset() {
-    this.setState({});
+    this.setState({ error: null });
   }
   render() {
-    if ('error' in this.state) {
-      const error = this.state.error;
+    const { error } = this.state;
+    if (error !== null) {
       const info = getErrorInfo(error);
       if (info?.status === 404) {
         return createElement(NotFound, { reset: this.reset });
