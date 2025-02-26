@@ -20,17 +20,17 @@ import type {
 import { Children, Slot } from '../minimal/client.js';
 import { ErrorBoundary } from '../router/client.js';
 
-// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods partial
-// Intentionally not supporting TRACE and CONNECT since they're not
-// usually used in traditional web APIs
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
 export const METHODS = [
   'GET',
+  'HEAD',
   'POST',
   'PUT',
   'DELETE',
-  'PATCH',
-  'HEAD',
+  'CONNECT',
   'OPTIONS',
+  'TRACE',
+  'PATCH',
 ] as const;
 export type Method = (typeof METHODS)[number];
 
