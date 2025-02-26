@@ -16,6 +16,12 @@ export default function Index() {
       <p>
         <Link to="/broken-redirect">Broken redirect</Link>
       </p>
+      <p>
+        <Link to="/dynamic-not-found/sync">Dynamic not found sync</Link>
+      </p>
+      <p>
+        <Link to="/dynamic-not-found/async">Dynamic not found async</Link>
+      </p>
     </div>
   );
 }

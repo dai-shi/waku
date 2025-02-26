@@ -17,38 +17,26 @@ for (const mode of ['DEV', 'PRD'] as const) {
 
     test('access sync page directly', async ({ page }) => {
       await page.goto(`http://localhost:${port}/sync`);
-      await expect(
-        page.getByRole('heading', { name: 'Destination Page' }),
-      ).toBeVisible();
+      await expect(page.getByRole('heading')).toHaveText('Destination Page');
     });
 
     test('access async page directly', async ({ page }) => {
       await page.goto(`http://localhost:${port}/async`);
-      await expect(
-        page.getByRole('heading', { name: 'Destination Page' }),
-      ).toBeVisible();
+      await expect(page.getByRole('heading')).toHaveText('Destination Page');
     });
 
     test('access sync page with client navigation', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
-      await expect(
-        page.getByRole('heading', { name: 'Home Page' }),
-      ).toBeVisible();
+      await expect(page.getByRole('heading')).toHaveText('Home Page');
       await page.click("a[href='/sync']");
-      await expect(
-        page.getByRole('heading', { name: 'Destination Page' }),
-      ).toBeVisible();
+      await expect(page.getByRole('heading')).toHaveText('Destination Page');
     });
 
     test('access async page with client navigation', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
-      await expect(
-        page.getByRole('heading', { name: 'Home Page' }),
-      ).toBeVisible();
+      await expect(page.getByRole('heading')).toHaveText('Home Page');
       await page.click("a[href='/async']");
-      await expect(
-        page.getByRole('heading', { name: 'Destination Page' }),
-      ).toBeVisible();
+      await expect(page.getByRole('heading')).toHaveText('Destination Page');
     });
   });
 }
