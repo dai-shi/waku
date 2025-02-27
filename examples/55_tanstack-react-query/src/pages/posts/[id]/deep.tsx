@@ -4,8 +4,12 @@ import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { makeQueryClient } from '../../../utils/query-client';
 import { postQueryOptions } from '../../../utils/posts';
 import { Suspense } from 'react';
+import { isBuild } from '../../../utils/build';
 
 export default async function PostPage({ id }: { id: number }) {
+  if (isBuild()) {
+    return;
+  }
   const queryClient = makeQueryClient();
   queryClient.prefetchQuery(postQueryOptions({ id }));
 

@@ -4,8 +4,12 @@ import { postsQueryOptions } from '../../utils/posts';
 import { makeQueryClient } from '../../utils/query-client';
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { ClientHydrationBoundary } from '../../components/hydration-boundary';
+import { isBuild } from '../../utils/build';
 
 export default async function PostsPage({ query }) {
+  if (isBuild()) {
+    return;
+  }
   const queryParams = new URLSearchParams(query);
   const start = queryParams.has('start')
     ? Number.parseInt(queryParams.get('start') || '') || 0
