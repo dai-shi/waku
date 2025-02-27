@@ -20,7 +20,7 @@ import type { PathSpec } from '../lib/utils/path.js';
 import { INTERNAL_ServerRouter } from './client.js';
 import { getContext } from '../middleware/context.js';
 import { stringToStream } from '../lib/utils/stream.js';
-import { createCustomError } from '../lib/utils/custom-errors.js';
+import { createCustomError, getErrorInfo } from '../lib/utils/custom-errors.js';
 
 const isStringArray = (x: unknown): x is string[] =>
   Array.isArray(x) && x.every((y) => typeof y === 'string');
@@ -312,30 +312,39 @@ export function unstable_defineRouter(fns: {
       });
     }
     if (input.type === 'action' || input.type === 'custom') {
-      let pathname = input.pathname;
+      const renderIt = async (pathname: string, query: string) => {
+        const rscPath = encodeRoutePath(pathname);
+        const rscParams = new URLSearchParams({ query });
+        const entries = await getEntries(rscPath, rscParams, input.req.headers);
+        if (!entries) {
+          return null;
+        }
+        const html = createElement(INTERNAL_ServerRouter, {
+          route: { path: pathname, query, hash: '' },
+        });
+        const actionResult =
+          input.type === 'action' ? await input.fn() : undefined;
+        return renderHtml(entries, html, { rscPath, actionResult });
+      };
       const query = input.req.url.searchParams.toString();
       if (pathConfigItem?.specs?.noSsr) {
         return null;
       }
-      if (!pathConfigItem) {
-        if (await has404()) {
-          pathname = '/404';
-        } else {
-          return null;
+      try {
+        if (pathConfigItem) {
+          return await renderIt(input.pathname, query);
+        }
+      } catch (e) {
+        const info = getErrorInfo(e);
+        if (info?.status !== 404) {
+          throw e;
         }
       }
-      const rscPath = encodeRoutePath(pathname);
-      const rscParams = new URLSearchParams({ query });
-      const entries = await getEntries(rscPath, rscParams, input.req.headers);
-      if (!entries) {
+      if (await has404()) {
+        return { ...(await renderIt('/404', '')), status: 404 };
+      } else {
         return null;
       }
-      const html = createElement(INTERNAL_ServerRouter, {
-        route: { path: pathname, query, hash: '' },
-      });
-      const actionResult =
-        input.type === 'action' ? await input.fn() : undefined;
-      return renderHtml(entries, html, { rscPath, actionResult });
     }
   };
 
