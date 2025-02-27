@@ -1,4 +1,3 @@
-
 import { unstable_getBuildOptions } from 'waku/server';
 
 export function isBuild() {
