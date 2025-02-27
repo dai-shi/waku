@@ -156,14 +156,14 @@ for (const mode of ['DEV', 'PRD'] as const) {
 
     test('access sync page with client navigation', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
-      await expect(page.getByRole('heading')).toHaveText('Home Page');
+      await expect(page.getByRole('heading')).toHaveText('Index');
       await page.click("a[href='/dynamic-not-found/sync']");
       await expect(page.getByRole('heading')).toHaveText('Custom not found');
     });
 
     test('access async page with client navigation', async ({ page }) => {
       await page.goto(`http://localhost:${port}/`);
-      await expect(page.getByRole('heading')).toHaveText('Home Page');
+      await expect(page.getByRole('heading')).toHaveText('Index');
       await page.click("a[href='/dynamic-not-found/async']");
       await expect(page.getByRole('heading')).toHaveText('Custom not found');
     });

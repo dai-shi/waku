@@ -343,11 +343,25 @@ export class ErrorBoundary extends Component<
   }
 }
 
-const NotFound = ({ reset }: { reset: () => void }) => {
-  // TODO show a custom 404 page
+const NotFound = ({
+  has404,
+  reset,
+}: {
+  has404: boolean;
+  reset: () => void;
+}) => {
+  const router = useContext(RouterContext);
+  if (!router) {
+    throw new Error('Missing Router');
+  }
+  const { changeRoute } = router;
   useEffect(() => {
-    reset();
-  }, [reset]);
+    if (has404) {
+      const url = new URL('/404', window.location.href);
+      changeRoute(parseRoute(url), { shouldScroll: true });
+      reset();
+    }
+  }, [has404, reset, changeRoute]);
   return createElement('h1', null, 'Not Found');
 };
 
@@ -380,10 +394,10 @@ const Redirect = ({ to, reset }: { to: string; reset: () => void }) => {
 };
 
 class CustomErrorHandler extends Component<
-  { children: ReactNode },
+  { has404: boolean; children?: ReactNode },
   { error: unknown | null }
 > {
-  constructor(props: { children: ReactNode }) {
+  constructor(props: { has404: boolean; children?: ReactNode }) {
     super(props);
     this.state = { error: null };
     this.reset = this.reset.bind(this);
@@ -399,7 +413,10 @@ class CustomErrorHandler extends Component<
     if (error !== null) {
       const info = getErrorInfo(error);
       if (info?.status === 404) {
-        return createElement(NotFound, { reset: this.reset });
+        return createElement(NotFound, {
+          has404: this.props.has404,
+          reset: this.reset,
+        });
       }
       if (info?.location) {
         return createElement(Redirect, {
@@ -433,7 +450,7 @@ const InnerRouter = ({
   routerData: Required<RouterData>;
   initialRoute: RouteProps;
 }) => {
-  const [locationListeners, staticPathSet] = routerData;
+  const [locationListeners, staticPathSet, , has404] = routerData;
   const refetch = useRefetch();
   const [route, setRoute] = useState(() => ({
     // This is the first initialization of the route, and it has
@@ -525,7 +542,7 @@ const InnerRouter = ({
   const rootElement = createElement(
     Slot,
     { id: 'root', unstable_fallbackToPrev: true },
-    createElement(CustomErrorHandler, null, routeElement),
+    createElement(CustomErrorHandler, { has404 }, routeElement),
   );
   return createElement(
     RouterContext.Provider,
