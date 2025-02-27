@@ -1,6 +1,6 @@
 /** Remove (group)s from path. Like /(group)/foo => /foo */
 export const getGrouplessPath = (path: string) => {
-  if (!process.env.VITE_EXPERIMENTAL_WAKU_ROUTER) {
+  if (!import.meta.env.VITE_EXPERIMENTAL_WAKU_ROUTER) {
     return path;
   }
   if (path.includes('(')) {
