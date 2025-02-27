@@ -1,6 +1,6 @@
 'use server';
 
-import { FetchPostProps, Post } from "./types";
+import { FetchPostProps, Post } from './types';
 
 async function generatePost(creationDelay = 1): Promise<Post> {
   return new Promise((resolve) => {
