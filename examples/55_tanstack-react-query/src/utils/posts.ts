@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
-import { fetchPost, fetchPosts, FetchPostsProps } from '../functions/posts';
+import { fetchPost, fetchPosts } from '../functions/posts';
 import { useMemo } from 'react';
+import type { FetchPostsProps } from '../functions/types';
 
 export const postsQueryOptions = ({ start = 0, limit = 50 }: FetchPostsProps) =>
   queryOptions({

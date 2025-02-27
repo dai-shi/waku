@@ -9,7 +9,7 @@ export default async function HomePage() {
       <h1 className="text-4xl font-bold tracking-tight">{data.headline}</h1>
       <p>{data.body}</p>
       <Link to="/posts" className="mt-4 inline-block underline">
-        Query demo page
+        @tanstack/react-query demo page
       </Link>
     </div>
   );
