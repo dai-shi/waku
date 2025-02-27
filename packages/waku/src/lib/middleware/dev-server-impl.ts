@@ -461,18 +461,6 @@ export const devServer: Middleware = (options) => {
       if (ctx.res.body || ctx.res.status) {
         return;
       }
-      // Try /404
-      // FIXME better implementation?
-      const res = await fetch(new URL(vite.config.base + '404', ctx.req.url));
-      if (res.status === 200 && res.body) {
-        ctx.res.status = 404;
-        ctx.res.body = res.body;
-        const contentType = res.headers.get('content-type');
-        if (typeof contentType === 'string') {
-          (ctx.res.headers ||= {})['content-type'] = contentType;
-        }
-        return;
-      }
     }
 
     const viteUrl = ctx.req.url.toString().slice(ctx.req.url.origin.length);
