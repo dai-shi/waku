@@ -5,7 +5,7 @@
     "allowJs": true
   },
   "include": [
-    "eslint.config.js",
+    "eslint.config.ts",
     "packages/",
     "examples/",
     "e2e/",

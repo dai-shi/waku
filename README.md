@@ -108,7 +108,7 @@ export default async function RootLayout({ children }) {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -159,6 +159,8 @@ Waku currently supports two rendering options:
 
 - `'dynamic'` for server-side rendering (SSR)
 
+Layouts are `static` by default while pages are `dynamic` by default.
+
 For example, you can statically prerender a global header and footer in the root layout at build time, but dynamically render the rest of a home page at request time for personalized user experiences.
 
 ```tsx
@@ -183,7 +185,7 @@ export default async function RootLayout({ children }) {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -209,7 +211,7 @@ const getData = async () => {
 export const getConfig = async () => {
   return {
     render: 'dynamic',
-  };
+  } as const;
 };
 ```
 
@@ -445,7 +447,7 @@ export default async function RootLayout({ children }) {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -483,7 +485,7 @@ export default async function BlogLayout({ children }) {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -507,7 +509,7 @@ export default async function RootElement({ children }) {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -608,7 +610,7 @@ export default async function RootLayout({ children }) {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 
@@ -684,7 +686,7 @@ export default async function RootLayout({ children }) {
 export const getConfig = async () => {
   return {
     render: 'static',
-  };
+  } as const;
 };
 ```
 

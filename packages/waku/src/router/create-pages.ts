@@ -20,8 +20,18 @@ import type {
 import { Children, Slot } from '../minimal/client.js';
 import { ErrorBoundary } from '../router/client.js';
 
-// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods partial
-export const METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] as const;
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
+export const METHODS = [
+  'GET',
+  'HEAD',
+  'POST',
+  'PUT',
+  'DELETE',
+  'CONNECT',
+  'OPTIONS',
+  'TRACE',
+  'PATCH',
+] as const;
 export type Method = (typeof METHODS)[number];
 
 const sanitizeSlug = (slug: string) =>

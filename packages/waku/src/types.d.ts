@@ -112,7 +112,7 @@ declare module 'react-dom/server.edge' {
     bootstrapModules?: Array<string | BootstrapScriptDescriptor>;
     progressiveChunkSize?: number;
     signal?: AbortSignal;
-    onError?: (error: mixed, errorInfo: ErrorInfo) => string | void;
+    onError?: (error: unknown, errorInfo: ErrorInfo) => string | void;
     onPostpone?: (reason: string, postponeInfo: PostponeInfo) => void;
     unstable_externalRuntimeSrc?: string | BootstrapScriptDescriptor;
     importMap?: ImportMap;

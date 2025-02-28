@@ -34,7 +34,7 @@ const DEFAULT_HTML_HEAD = [
   createElement('meta', { name: 'generator', content: 'Waku' }),
 ];
 
-const BASE_PATH = `${import.meta.env?.WAKU_CONFIG_BASE_PATH}${
+const BASE_RSC_PATH = `${import.meta.env?.WAKU_CONFIG_BASE_PATH}${
   import.meta.env?.WAKU_CONFIG_RSC_BASE
 }/`;
 
@@ -43,10 +43,13 @@ const checkStatus = async (
 ): Promise<Response> => {
   const response = await responsePromise;
   if (!response.ok) {
+    const location = response.headers.get('location');
     const err = createCustomError(
       (await response.text()) || response.statusText,
-      response.status,
-      response.headers.get('location') || undefined,
+      {
+        status: response.status,
+        ...(location && { location }),
+      },
     );
     throw err;
   }
@@ -114,7 +117,7 @@ export const unstable_callServerRsc = async (
       callServer: (funcId: string, args: unknown[]) =>
         unstable_callServerRsc(funcId, args, fetchCache),
     });
-  const url = BASE_PATH + encodeRscPath(encodeFuncId(funcId));
+  const url = BASE_RSC_PATH + encodeRscPath(encodeFuncId(funcId));
   const responsePromise =
     args.length === 1 && args[0] instanceof URLSearchParams
       ? enhanceFetch(fetch)(url + '?' + args[0])
@@ -161,7 +164,7 @@ export const fetchRsc = (
         unstable_callServerRsc(funcId, args, fetchCache),
     });
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-  const url = BASE_PATH + encodeRscPath(rscPath);
+  const url = BASE_RSC_PATH + encodeRscPath(rscPath);
   const hasValidPrefetchedResponse =
     !!prefetched[url] &&
     // HACK .has() is for the initial hydration
@@ -183,7 +186,7 @@ export const prefetchRsc = (
   fetchCache = defaultFetchCache,
 ): void => {
   const prefetched = ((globalThis as any).__WAKU_PREFETCHED__ ||= {});
-  const url = BASE_PATH + encodeRscPath(rscPath);
+  const url = BASE_RSC_PATH + encodeRscPath(rscPath);
   if (!(url in prefetched)) {
     prefetched[url] = fetchRscInternal(url, rscParams, fetchCache);
     prefetchedParams.set(prefetched[url], rscParams);
