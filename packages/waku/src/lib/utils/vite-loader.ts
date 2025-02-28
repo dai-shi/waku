@@ -3,7 +3,7 @@ import type { RunnableDevEnvironment } from 'vite';
 
 import { fileURLToFilePath } from '../utils/path.js';
 
-export const loadServerFile = async (fileURL: string) => {
+export const loadServerModule = async (idOrFileURL: string) => {
   const vite = await createViteServer({
     server: { middlewareMode: true, watch: null },
     appType: 'custom',
@@ -21,6 +21,10 @@ export const loadServerFile = async (fileURL: string) => {
   );
   const mod = await (
     vite.environments.config as RunnableDevEnvironment
-  ).runner.import(fileURLToFilePath(fileURL));
+  ).runner.import(
+    idOrFileURL.startsWith('file://')
+      ? fileURLToFilePath(idOrFileURL)
+      : idOrFileURL,
+  );
   return mod;
 };
