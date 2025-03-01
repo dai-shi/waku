@@ -1,10 +1,10 @@
-import { resolveConfig } from '../config.js';
+import { resolveConfigDev } from '../config.js';
 import { stringToStream } from '../utils/stream.js';
 import type { Middleware } from './types.js';
 
 export const fallback: Middleware = (options) => {
   if (options.cmd === 'dev') {
-    const configPromise = resolveConfig(options.config);
+    const configPromise = resolveConfigDev(options.config);
     return async (ctx, next) => {
       if (!ctx.res.body) {
         const config = await configPromise;

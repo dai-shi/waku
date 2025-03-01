@@ -5,7 +5,7 @@ import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../types.js';
-import { resolveConfig } from '../config.js';
+import { resolveConfigDev } from '../config.js';
 import { SRC_MAIN, SRC_ENTRIES } from '../constants.js';
 import {
   decodeFilePathFromAbsolute,
@@ -77,7 +77,7 @@ const createStreamPair = (): [Writable, Promise<ReadableStream | null>] => {
 
 const createMainViteServer = (
   env: Record<string, string>,
-  configPromise: ReturnType<typeof resolveConfig>,
+  configPromise: ReturnType<typeof resolveConfigDev>,
   hotUpdateCallbackSet: Set<(payload: HotUpdatePayload) => void>,
   resolvedMap: Map<string, string>,
 ) => {
@@ -239,7 +239,7 @@ const createMainViteServer = (
 
 const createRscViteServer = (
   env: Record<string, string>,
-  configPromise: ReturnType<typeof resolveConfig>,
+  configPromise: ReturnType<typeof resolveConfigDev>,
   hotUpdateCallbackSet: Set<(payload: HotUpdatePayload) => void>,
   resolvedMap: Map<string, string>,
 ) => {
@@ -361,7 +361,7 @@ export const devServer: Middleware = (options) => {
   }
 
   const env = options.env || {};
-  const configPromise = resolveConfig(options.config);
+  const configPromise = resolveConfigDev(options.config);
 
   (globalThis as any).__WAKU_SERVER_IMPORT__ = (id: string) =>
     loadServerModuleRsc(id);

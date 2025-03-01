@@ -1,7 +1,7 @@
 import { mergeConfig } from 'vite';
 import type { UserConfig } from 'vite';
 
-import type { ResolvedConfig } from '../config.js';
+import type { ConfigDev } from '../config.js';
 
 const areProbablySamePlugins = (a: unknown, b: unknown): boolean => {
   if (typeof a !== 'object' || a === null) {
@@ -21,16 +21,13 @@ const areProbablySamePlugins = (a: unknown, b: unknown): boolean => {
 
 export const extendViteConfig = (
   viteConfig: UserConfig,
-  resolvedConfig: ResolvedConfig,
-  key: Exclude<
-    keyof NonNullable<ResolvedConfig['unstable_viteConfigs']>,
-    'common'
-  >,
+  configDev: ConfigDev,
+  key: Exclude<keyof NonNullable<ConfigDev['unstable_viteConfigs']>, 'common'>,
 ) => {
   const mergedConfig = mergeConfig(viteConfig, {
     // shallow merge
-    ...resolvedConfig.unstable_viteConfigs?.['common']?.(),
-    ...resolvedConfig.unstable_viteConfigs?.[key]?.(),
+    ...configDev.unstable_viteConfigs?.['common']?.(),
+    ...configDev.unstable_viteConfigs?.[key]?.(),
   });
   // remove duplicate plugins (latter wins)
   mergedConfig.plugins = (mergedConfig as UserConfig).plugins?.filter(

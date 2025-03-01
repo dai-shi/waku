@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { resolveConfig } from '../config.js';
+import { resolveConfigDev } from '../config.js';
 import type { ConfigPrd } from '../config.js';
 import {
   INTERNAL_setAllEnv,
@@ -83,7 +83,7 @@ export const handler: Middleware = (options) => {
     })
     .catch(() => {});
   const configDevPromise =
-    options.cmd === 'dev' ? resolveConfig(options.config) : null;
+    options.cmd === 'dev' ? resolveConfigDev(options.config) : null;
 
   return async (ctx, next) => {
     const { unstable_devServer: devServer } = ctx;

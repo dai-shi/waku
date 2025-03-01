@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from 'hono';
 
-import { resolveConfig } from '../config.js';
+import { resolveConfigDev } from '../config.js';
 import type {
   HandlerContext,
   Middleware,
@@ -15,7 +15,7 @@ export const serverEngine = (options: MiddlewareOptions): MiddlewareHandler => {
   const middlewarePromise: Promise<{ default: Middleware }[]> =
     options.cmd === 'start'
       ? options.loadEntries().then((entries) => entries.loadMiddleware())
-      : resolveConfig(options.config).then((config) =>
+      : resolveConfigDev(options.config).then((config) =>
           Promise.all(
             config.middleware.map(
               // TODO use load module instead of import
