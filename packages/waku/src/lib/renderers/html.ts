@@ -5,7 +5,7 @@ import type { default as RSDWClientType } from 'react-server-dom-webpack/client.
 import { injectRSCPayload } from 'rsc-html-stream/server';
 
 import type * as WakuMinimalClientType from '../../minimal/client.js';
-import type { PureConfig } from '../config.js';
+import type { ResolvedConfig, ConfigPrd } from '../config.js';
 import { SRC_MAIN } from '../constants.js';
 import { concatUint8Arrays } from '../utils/stream.js';
 import { filePathToFileURL } from '../utils/path.js';
@@ -162,7 +162,7 @@ const rectifyHtml = () => {
 let hackToIgnoreTheVeryFirstError = true;
 
 export async function renderHtml(
-  config: PureConfig,
+  config: ResolvedConfig | ConfigPrd,
   ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
   htmlHead: string,
   elements: Elements,
@@ -254,7 +254,9 @@ export async function renderHtml(
         injectHtmlHead(
           config.basePath + config.rscBase + '/' + encodeRscPath(rscPath),
           htmlHead,
-          isDev ? `${config.basePath}${config.srcDir}/${SRC_MAIN}` : '',
+          isDev
+            ? `${config.basePath}${(config as ResolvedConfig).srcDir}/${SRC_MAIN}`
+            : '',
         ),
       )
       .pipeThrough(injectRSCPayload(stream2));

@@ -15,6 +15,8 @@ const stripExt = (fname: string) => {
 const CONFIG_FILE = 'waku.config.ts'; // XXX only ts extension
 
 export function rscEntriesPlugin(opts: {
+  basePath: string;
+  rscBase: string;
   srcDir: string;
   ssrDir: string;
   moduleMap: Record<string, string>;
@@ -23,6 +25,10 @@ export function rscEntriesPlugin(opts: {
 globalThis.AsyncLocalStorage = require('node:async_hooks').AsyncLocalStorage;
 `;
   const codeToAppend = `
+export const configPrd = {
+  basePath: '${opts.basePath}',
+  rscBase: '${opts.rscBase}',
+};
 export function loadModule(id) {
   switch (id) {
     ${Object.entries(opts.moduleMap)

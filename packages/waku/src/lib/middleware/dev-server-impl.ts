@@ -5,7 +5,7 @@ import { createServer as createViteServer } from 'vite';
 import viteReact from '@vitejs/plugin-react';
 
 import type { EntriesDev } from '../types.js';
-import { resolveConfig, extractPureConfig } from '../config.js';
+import { resolveConfig } from '../config.js';
 import { SRC_MAIN, SRC_ENTRIES } from '../constants.js';
 import {
   decodeFilePathFromAbsolute,
@@ -390,10 +390,7 @@ export const devServer: Middleware = (options) => {
   let initialModules: ClonableModuleNode[];
 
   return async (ctx, next) => {
-    const [config, vite] = await Promise.all([
-      configPromise.then(extractPureConfig),
-      vitePromise,
-    ]);
+    const [config, vite] = await Promise.all([configPromise, vitePromise]);
 
     if (!initialModules) {
       const processedModules = new Set<string>();
