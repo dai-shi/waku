@@ -1,29 +1,30 @@
 import type { MiddlewareHandler } from 'hono';
 
 import { resolveConfig } from '../config.js';
-import type { HandlerContext, MiddlewareOptions } from '../middleware/types.js';
+import type {
+  HandlerContext,
+  Middleware,
+  MiddlewareOptions,
+} from '../middleware/types.js';
 
 // Internal context key
 const HONO_CONTEXT = '__hono_context';
 
 // serverEngine returns hono middleware that runs Waku middleware.
 export const serverEngine = (options: MiddlewareOptions): MiddlewareHandler => {
-  const entriesPromise =
+  const middlewarePromise: Promise<{ default: Middleware }[]> =
     options.cmd === 'start'
-      ? options.loadEntries()
-      : ('Error: loadEntries are not available' as never);
-  const configPromise =
-    options.cmd === 'start'
-      ? entriesPromise.then((entries) =>
-          entries.loadConfig().then((config) => resolveConfig(config)),
-        )
-      : resolveConfig(options.config);
-  const handlersPromise = configPromise.then((config) =>
-    Promise.all(
-      config
-        .middleware()
-        .map(async (middleware) => (await middleware).default(options)),
-    ),
+      ? options.loadEntries().then((entries) => entries.loadMiddleware())
+      : resolveConfig(options.config).then((config) =>
+          Promise.all(
+            config.middleware.map(
+              // TODO use load module instead of import
+              (name) => import(name) as Promise<{ default: Middleware }>,
+            ),
+          ),
+        );
+  const handlersPromise = middlewarePromise.then((middlewareList) =>
+    middlewareList.map((middleware) => middleware.default(options)),
   );
   return async (c, next) => {
     const ctx: HandlerContext = {
