@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import type { Config } from '../config.js';
+import type { ConfigPrd } from '../lib/config.js';
 import type { PathSpec } from '../lib/utils/path.js';
 
 type Elements = Record<string, unknown>;
@@ -81,7 +82,9 @@ export type EntriesDev = {
 };
 
 export type EntriesPrd = EntriesDev & {
+  // TODO eliminate loadConfig
   loadConfig: () => Promise<Config>;
+  configPrd: ConfigPrd;
   loadModule: (id: string) => Promise<unknown>;
   dynamicHtmlPaths: [pathSpec: PathSpec, htmlHead: string][];
   publicIndexHtml: string;
