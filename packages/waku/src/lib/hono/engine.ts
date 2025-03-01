@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from 'hono';
 
-import { resolveConfig } from '../config.js';
+import { resolveConfigDev } from '../config.js';
 import type { HandlerContext, MiddlewareOptions } from '../middleware/types.js';
 
 // Internal context key
@@ -15,9 +15,10 @@ export const serverEngine = (options: MiddlewareOptions): MiddlewareHandler => {
   const configPromise =
     options.cmd === 'start'
       ? entriesPromise.then((entries) =>
-          entries.loadConfig().then((config) => resolveConfig(config)),
+          // TODO eliminate loadConfig
+          entries.loadConfig().then((config) => resolveConfigDev(config)),
         )
-      : resolveConfig(options.config);
+      : resolveConfigDev(options.config);
   const handlersPromise = configPromise.then((config) =>
     Promise.all(
       config
