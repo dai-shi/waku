@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import type { Middleware } from '../config.js';
+import type { ConfigPrd } from '../lib/config.js';
 import type { PathSpec } from '../lib/utils/path.js';
 
 type Elements = Record<string, unknown>;
@@ -82,6 +83,7 @@ export type EntriesDev = {
 
 export type EntriesPrd = EntriesDev & {
   loadMiddleware: () => Promise<{ default: Middleware }>[];
+  configPrd: ConfigPrd;
   loadModule: (id: string) => Promise<unknown>;
   dynamicHtmlPaths: [pathSpec: PathSpec, htmlHead: string][];
   publicIndexHtml: string;

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { default as RSDWServerType } from 'react-server-dom-webpack/server.edge';
 
-import type { PureConfig } from '../config.js';
+import type { ConfigPrd } from '../config.js';
 // TODO move types somewhere
 import type { HandlerContext } from '../middleware/types.js';
 import { filePathToFileURL } from '../utils/path.js';
@@ -20,7 +20,7 @@ const onError = (err: unknown) => {
 };
 
 export async function renderRsc(
-  config: PureConfig,
+  config: ConfigPrd,
   ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
   elements: Record<string, unknown>,
   moduleIdCallback?: (id: string) => void,
@@ -50,7 +50,7 @@ export async function renderRsc(
 }
 
 export function renderRscElement(
-  config: PureConfig,
+  config: ConfigPrd,
   ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
   element: ReactNode,
 ): ReadableStream {
@@ -78,7 +78,7 @@ export function renderRscElement(
 }
 
 export async function collectClientModules(
-  config: PureConfig,
+  config: ConfigPrd,
   rsdwServer: { default: typeof RSDWServerType },
   elements: Record<string, unknown>,
 ): Promise<string[]> {

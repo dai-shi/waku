@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
-import { resolveConfig, extractPureConfig } from '../config.js';
-import type { PureConfig } from '../config.js';
+import { resolveConfig } from '../config.js';
+import type { ConfigPrd } from '../config.js';
 import {
   INTERNAL_setAllEnv,
   INTERNAL_setPlatformDataLoader,
@@ -26,7 +26,7 @@ export const CLIENT_MODULE_MAP = {
 export const CLIENT_PREFIX = 'client/';
 
 const getInput = async (
-  config: PureConfig,
+  config: ConfigPrd,
   ctx: HandlerContext,
   loadServerModule: (fileId: string) => Promise<unknown>,
 ): Promise<Parameters<HandleRequest>[0] | null> => {
@@ -73,28 +73,25 @@ const getInput = async (
 export const handler: Middleware = (options) => {
   const env = options.env || {};
   INTERNAL_setAllEnv(env);
-  const entriesPromise =
-    options.cmd === 'start'
-      ? options.loadEntries()
-      : ('Error: loadEntries are not available' as never);
-  const configPromise =
-    options.cmd === 'start'
-      ? entriesPromise.then(async (entries) => {
-          if (entries.loadPlatformData) {
-            INTERNAL_setPlatformDataLoader(entries.loadPlatformData);
-          }
-          return resolveConfig(await entries.loadConfig());
-        })
-      : resolveConfig(options.config);
+  const entriesPrdPromise =
+    options.cmd === 'start' ? options.loadEntries() : null;
+  entriesPrdPromise
+    ?.then((entries) => {
+      if (entries.loadPlatformData) {
+        INTERNAL_setPlatformDataLoader(entries.loadPlatformData);
+      }
+    })
+    .catch(() => {});
+  const configDevPromise =
+    options.cmd === 'dev' ? resolveConfig(options.config) : null;
 
   return async (ctx, next) => {
     const { unstable_devServer: devServer } = ctx;
-    const [config, entriesPrd] = await Promise.all([
-      configPromise.then(extractPureConfig),
-      entriesPromise,
-    ]);
-    const entriesDev = devServer && (await devServer.loadEntriesDev(config));
-    const entries = devServer ? entriesDev! : entriesPrd;
+    const entriesPrd = await entriesPrdPromise!;
+    const config = devServer ? await configDevPromise! : entriesPrd.configPrd;
+    const entries = devServer
+      ? await devServer.loadEntriesDev(await configDevPromise!)
+      : entriesPrd;
     const rsdwServer = devServer
       ? await devServer.loadServerModuleRsc(SERVER_MODULE_MAP['rsdw-server'])
       : await entriesPrd.loadModule('rsdw-server');

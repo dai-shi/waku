@@ -25,17 +25,4 @@ export async function resolveConfig(config: Config) {
   return resolvedConfig;
 }
 
-export type PureConfig = Omit<
-  Required<Config>,
-  'middleware' | 'unstable_honoEnhancer' | 'unstable_viteConfigs'
->;
-
-export function extractPureConfig(config: ResolvedConfig): PureConfig {
-  const {
-    middleware: _removed1,
-    unstable_honoEnhancer: _removed2,
-    unstable_viteConfigs: _removed3,
-    ...pureConfig
-  } = config;
-  return pureConfig;
-}
+export type ConfigPrd = Pick<Required<Config>, 'basePath' | 'rscBase'>;
