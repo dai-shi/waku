@@ -1,6 +1,6 @@
 import type { Config } from '../config.js';
 
-export type ResolvedConfig = Required<Config>;
+export type ConfigDev = Required<Config>;
 
 const DEFAULT_MIDDLEWARE = () => [
   import('waku/middleware/context'),
@@ -9,8 +9,8 @@ const DEFAULT_MIDDLEWARE = () => [
 ];
 
 // Keep async function for future extension
-export async function resolveConfig(config: Config) {
-  const resolvedConfig: ResolvedConfig = {
+export async function resolveConfigDev(config: Config) {
+  const configDev: ConfigDev = {
     basePath: '/',
     srcDir: 'src',
     distDir: 'dist',
@@ -22,7 +22,7 @@ export async function resolveConfig(config: Config) {
     unstable_viteConfigs: undefined,
     ...config,
   };
-  return resolvedConfig;
+  return configDev;
 }
 
 export type ConfigPrd = Pick<Required<Config>, 'basePath' | 'rscBase'>;
