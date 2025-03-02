@@ -17,6 +17,8 @@ const CONFIG_FILE = 'waku.config.ts'; // XXX only ts extension
 export function rscEntriesPlugin(opts: {
   basePath: string;
   rscBase: string;
+  middleware: string[];
+  rootDir: string;
   srcDir: string;
   ssrDir: string;
   moduleMap: Record<string, string>;
@@ -28,6 +30,15 @@ globalThis.AsyncLocalStorage = require('node:async_hooks').AsyncLocalStorage;
 export const configPrd = {
   basePath: '${opts.basePath}',
   rscBase: '${opts.rscBase}',
+};
+export function loadMiddleware() {
+  return Promise.all([
+    ${opts.middleware
+      .map(
+        (m) => `import('${m.startsWith('./') ? `${opts.rootDir}/${m}` : m}')`,
+      )
+      .join(',\n')}
+  ]);
 };
 export function loadModule(id) {
   switch (id) {
