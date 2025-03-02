@@ -1,5 +1,6 @@
 import type { MiddlewareHandler } from 'hono';
 
+import type { ConfigDev } from '../config.js';
 import { resolveConfigDev } from '../config.js';
 import type {
   HandlerContext,
@@ -16,12 +17,7 @@ export const serverEngine = (options: MiddlewareOptions): MiddlewareHandler => {
     options.cmd === 'start'
       ? options.loadEntries().then((entries) => entries.loadMiddleware())
       : resolveConfigDev(options.config).then((config) =>
-          Promise.all(
-            config.middleware.map(
-              // TODO use load module instead of import
-              (name) => import(name) as Promise<{ default: Middleware }>,
-            ),
-          ),
+          loadMiddlewareDev(config),
         );
   const handlersPromise = middlewarePromise.then((middlewareList) =>
     middlewareList.map((middleware) => middleware.default(options)),
@@ -67,3 +63,24 @@ export const serverEngine = (options: MiddlewareOptions): MiddlewareHandler => {
     await next();
   };
 };
+
+const DO_NOT_BUNDLE = '';
+
+async function loadMiddlewareDev(
+  configDev: ConfigDev,
+): Promise<{ default: Middleware }[]> {
+  const [{ resolve }, { pathToFileURL }, { loadServerModule }] =
+    await Promise.all([
+      import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:path'),
+      import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:url'),
+      import(/* @vite-ignore */ DO_NOT_BUNDLE + '../utils/vite-loader.js'),
+    ]);
+  return Promise.all(
+    configDev.middleware.map(async (file) => {
+      const idOrFileURL = file.startsWith('./')
+        ? pathToFileURL(resolve(file)).toString()
+        : file;
+      return loadServerModule(idOrFileURL);
+    }),
+  );
+}

@@ -96,15 +96,11 @@ if (values.version) {
   }
 }
 
-type HonoEnhancer = <Hono>(
-  createApp: (app: Hono) => Hono,
-) => (app: Hono) => Hono;
-
 async function runDev() {
   const config = await loadConfig();
   const honoEnhancer: HonoEnhancer = config.unstable_honoEnhancer
-    ? await loadModule<HonoEnhancer>(config.unstable_honoEnhancer)
-    : (createApp) => createApp;
+    ? await loadHonoEnhancer(config.unstable_honoEnhancer)
+    : (fn) => fn;
   const createApp = (app: Hono) => {
     if (values['experimental-compress']) {
       app.use(compress());
@@ -153,8 +149,8 @@ async function runStart() {
   const config = await loadConfig();
   const { distDir = 'dist' } = config;
   const honoEnhancer: HonoEnhancer = config.unstable_honoEnhancer
-    ? await loadModule<HonoEnhancer>(config.unstable_honoEnhancer)
-    : (createApp) => createApp;
+    ? await loadHonoEnhancer(config.unstable_honoEnhancer)
+    : (fn) => fn;
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, DIST_ENTRIES_JS)).toString());
   const createApp = (app: Hono) => {
@@ -222,18 +218,19 @@ Options:
 `);
 }
 
-async function loadModule<T>(idOrFileURL: string): Promise<T> {
-  if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
-    return (await import(idOrFileURL)).default;
-  }
-  const { loadServerModule } = await import('./lib/utils/vite-loader.js');
-  return (await loadServerModule(idOrFileURL)).default;
-}
-
 async function loadConfig(): Promise<Config> {
   if (!existsSync(CONFIG_FILE)) {
     return {};
   }
+  const { loadServerModule } = await import('./lib/utils/vite-loader.js');
   const fileUrl = pathToFileURL(path.resolve(CONFIG_FILE)).toString();
-  return loadModule<Config>(fileUrl);
+  return (await loadServerModule<{ default: Config }>(fileUrl)).default;
+}
+
+type HonoEnhancer = <Hono>(fn: (app: Hono) => Hono) => (app: Hono) => Hono;
+
+async function loadHonoEnhancer(file: string): Promise<HonoEnhancer> {
+  const { loadServerModule } = await import('./lib/utils/vite-loader.js');
+  const fileUrl = pathToFileURL(path.resolve(file)).toString();
+  return (await loadServerModule<{ default: HonoEnhancer }>(fileUrl)).default;
 }
