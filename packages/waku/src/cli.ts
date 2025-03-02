@@ -231,6 +231,8 @@ type HonoEnhancer = <Hono>(fn: (app: Hono) => Hono) => (app: Hono) => Hono;
 
 async function loadHonoEnhancer(file: string): Promise<HonoEnhancer> {
   const { loadServerModule } = await import('./lib/utils/vite-loader.js');
-  const fileUrl = pathToFileURL(path.resolve(CONFIG_FILE, file)).toString();
+  const fileUrl = pathToFileURL(
+    path.resolve(CONFIG_FILE, '..', file),
+  ).toString();
   return (await loadServerModule<{ default: HonoEnhancer }>(fileUrl)).default;
 }
