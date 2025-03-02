@@ -69,17 +69,7 @@ globalThis.__WAKU_CLIENT_IMPORT__ = (id) => loadModule('${opts.ssrDir}/' + id);
         return codeToPrepend + code;
       }
       if (stripExt(id).endsWith(entriesFile)) {
-        return (
-          code +
-          codeToAppend +
-          (configFile
-            ? `
-export const loadConfig = async () => (await import('${configFile}')).default;
-`
-            : `
-export const loadConfig = async () => ({});
-`)
-        );
+        return code + codeToAppend;
       }
       if (id === configFile) {
         // FIXME this naively removes code with object key name
