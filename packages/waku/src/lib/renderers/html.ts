@@ -195,7 +195,8 @@ export async function renderHtml(
           {
             get(_target, name: string) {
               if (isDev) {
-                let id = filePath.slice(config.basePath.length);
+                // TODO: slice 1 for now
+                let id = filePath.slice(1);
                 if (id.startsWith('@id/')) {
                   id = id.slice('@id/'.length);
                 } else if (id.startsWith('@fs/')) {
@@ -255,7 +256,7 @@ export async function renderHtml(
           config.basePath + config.rscBase + '/' + encodeRscPath(rscPath),
           htmlHead,
           isDev
-            ? `${config.basePath}${(config as ConfigDev).srcDir}/${SRC_MAIN}`
+            ? `/${(config as ConfigDev).srcDir}/${SRC_MAIN}`
             : '',
         ),
       )
