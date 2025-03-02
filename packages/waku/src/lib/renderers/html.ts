@@ -163,7 +163,10 @@ let hackToIgnoreTheVeryFirstError = true;
 
 export async function renderHtml(
   config: ConfigDev | ConfigPrd,
-  ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
+  ctx: Pick<
+    HandlerContext,
+    'unstable_modules' | 'unstable_devServer' | 'unstable_errs'
+  >,
   htmlHead: string,
   elements: Elements,
   html: ReactNode,
@@ -241,6 +244,7 @@ export async function renderHtml(
           if (hackToIgnoreTheVeryFirstError) {
             return;
           }
+          (ctx.unstable_errs ||= []).push(err);
           if (typeof (err as any)?.digest === 'string') {
             return (err as { digest: string }).digest;
           }
