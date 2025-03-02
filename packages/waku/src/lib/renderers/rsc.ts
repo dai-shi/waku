@@ -12,16 +12,12 @@ const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
   return config.basePath + id + '.js';
 };
 
-const onError = (err: unknown) => {
-  if (typeof (err as any)?.digest === 'string') {
-    // This is not correct according to the type though.
-    return (err as { digest: string }).digest;
-  }
-};
-
 export async function renderRsc(
   config: ConfigPrd,
-  ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
+  ctx: Pick<
+    HandlerContext,
+    'unstable_modules' | 'unstable_devServer' | 'unstable_errs'
+  >,
   elements: Record<string, unknown>,
   moduleIdCallback?: (id: string) => void,
 ): Promise<ReadableStream> {
@@ -46,12 +42,23 @@ export async function renderRsc(
       },
     },
   );
-  return renderToReadableStream(elements, clientBundlerConfig, { onError });
+  return renderToReadableStream(elements, clientBundlerConfig, {
+    onError: (err: unknown) => {
+      (ctx.unstable_errs ||= []).push(err);
+      if (typeof (err as any)?.digest === 'string') {
+        // This is not correct according to the type though.
+        return (err as { digest: string }).digest;
+      }
+    },
+  });
 }
 
 export function renderRscElement(
   config: ConfigPrd,
-  ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
+  ctx: Pick<
+    HandlerContext,
+    'unstable_modules' | 'unstable_devServer' | 'unstable_errs'
+  >,
   element: ReactNode,
 ): ReadableStream {
   const modules = ctx.unstable_modules;
@@ -74,7 +81,15 @@ export function renderRscElement(
       },
     },
   );
-  return renderToReadableStream(element, clientBundlerConfig, { onError });
+  return renderToReadableStream(element, clientBundlerConfig, {
+    onError: (err: unknown) => {
+      (ctx.unstable_errs ||= []).push(err);
+      if (typeof (err as any)?.digest === 'string') {
+        // This is not correct according to the type though.
+        return (err as { digest: string }).digest;
+      }
+    },
+  });
 }
 
 export async function collectClientModules(
@@ -97,9 +112,7 @@ export async function collectClientModules(
       },
     },
   );
-  const readable = renderToReadableStream(elements, clientBundlerConfig, {
-    onError,
-  });
+  const readable = renderToReadableStream(elements, clientBundlerConfig);
   await new Promise<void>((resolve, reject) => {
     const writable = new WritableStream({
       close() {

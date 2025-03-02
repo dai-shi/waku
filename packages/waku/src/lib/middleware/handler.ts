@@ -159,6 +159,7 @@ export const handler: Middleware = (options) => {
       try {
         res = await entries.default.handleRequest(input, utils);
       } catch (e) {
+        (ctx.unstable_errs ||= []).push(e);
         const info = getErrorInfo(e);
         if (info?.status !== 404) {
           ctx.res.status = info?.status || 500;
