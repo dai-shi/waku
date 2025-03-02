@@ -98,8 +98,9 @@ if (values.version) {
 
 async function runDev() {
   const config = await loadConfig();
-  const honoEnhancer =
-    config.unstable_honoEnhancer || ((createApp) => createApp);
+  const honoEnhancer: HonoEnhancer = config.unstable_honoEnhancer
+    ? await loadHonoEnhancer(config.unstable_honoEnhancer)
+    : (fn) => fn;
   const createApp = (app: Hono) => {
     if (values['experimental-compress']) {
       app.use(compress());
@@ -147,8 +148,9 @@ async function runBuild() {
 async function runStart() {
   const config = await loadConfig();
   const { distDir = 'dist' } = config;
-  const honoEnhancer =
-    config.unstable_honoEnhancer || ((createApp) => createApp);
+  const honoEnhancer: HonoEnhancer = config.unstable_honoEnhancer
+    ? await loadHonoEnhancer(config.unstable_honoEnhancer)
+    : (fn) => fn;
   const loadEntries = () =>
     import(pathToFileURL(path.resolve(distDir, DIST_ENTRIES_JS)).toString());
   const createApp = (app: Hono) => {
@@ -220,7 +222,17 @@ async function loadConfig(): Promise<Config> {
   if (!existsSync(CONFIG_FILE)) {
     return {};
   }
-  const { loadServerFile } = await import('./lib/utils/vite-loader.js');
-  const file = pathToFileURL(path.resolve(CONFIG_FILE)).toString();
-  return (await loadServerFile(file)).default;
+  const { loadServerModule } = await import('./lib/utils/vite-loader.js');
+  const fileUrl = pathToFileURL(path.resolve(CONFIG_FILE)).toString();
+  return (await loadServerModule<{ default: Config }>(fileUrl)).default;
+}
+
+type HonoEnhancer = <Hono>(fn: (app: Hono) => Hono) => (app: Hono) => Hono;
+
+async function loadHonoEnhancer(file: string): Promise<HonoEnhancer> {
+  const { loadServerModule } = await import('./lib/utils/vite-loader.js');
+  const fileUrl = pathToFileURL(
+    path.resolve(CONFIG_FILE, '..', file),
+  ).toString();
+  return (await loadServerModule<{ default: HonoEnhancer }>(fileUrl)).default;
 }
