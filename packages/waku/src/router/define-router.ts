@@ -22,7 +22,7 @@ import { getContext } from '../middleware/context.js';
 import { stringToStream } from '../lib/utils/stream.js';
 import { createCustomError, getErrorInfo } from '../lib/utils/custom-errors.js';
 import { createStreamableValue } from '../lib/utils/create-streamable-value.js';
-import type { RSCCall } from 'waku/lib/types';
+import type { RSCCall } from '../lib/types.js';
 
 const isStringArray = (x: unknown): x is string[] =>
   Array.isArray(x) && x.every((y) => typeof y === 'string');
