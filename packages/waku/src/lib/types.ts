@@ -103,3 +103,7 @@ export type HandlerRes = {
   headers?: Record<string, string | string[]>;
   status?: number;
 };
+
+export type RSCCall =
+  | ['elementUpdate', Promise<Record<string, unknown>>]
+  | ['fnResult', unknown];

@@ -21,6 +21,8 @@ import { INTERNAL_ServerRouter } from './client.js';
 import { getContext } from '../middleware/context.js';
 import { stringToStream } from '../lib/utils/stream.js';
 import { createCustomError, getErrorInfo } from '../lib/utils/custom-errors.js';
+import { createStreamableValue } from '../lib/utils/create-streamable-value.js';
+import type { RSCCall } from '../lib/types.js';
 
 const isStringArray = (x: unknown): x is string[] =>
   Array.isArray(x) && x.every((y) => typeof y === 'string');
@@ -277,31 +279,28 @@ export function unstable_defineRouter(fns: {
       return renderRsc(entries);
     }
     if (input.type === 'function') {
-      let elementsPromise: Promise<Record<string, unknown>> = Promise.resolve(
-        {},
-      );
-      let rendered = false;
+      const valueWrapper = createStreamableValue<RSCCall>(undefined);
       const rerender = async (rscPath: string, rscParams?: unknown) => {
-        if (rendered) {
-          throw new Error('already rendered');
-        }
-        elementsPromise = Promise.all([
-          elementsPromise,
-          getEntries(rscPath, rscParams, input.req.headers),
-        ]).then(([oldElements, newElements]) => {
-          if (newElements === null) {
-            console.warn('getEntries returned null');
-          }
-          return {
-            ...oldElements,
-            ...newElements,
-          };
-        });
+        const elementsPromise = getEntries(
+          rscPath,
+          rscParams,
+          input.req.headers,
+        );
+        valueWrapper.update([
+          'elementUpdate',
+          elementsPromise.then((entries) => entries ?? {}),
+        ]);
       };
       setRerender(rerender);
-      const value = await input.fn(...input.args);
-      rendered = true;
-      return renderRsc({ ...(await elementsPromise), _value: value });
+      input
+        .fn(...input.args)
+        .then((value) => {
+          valueWrapper.done(['fnResult', value]);
+        })
+        .catch((error) => {
+          valueWrapper.error(error);
+        });
+      return renderRsc({ _value: valueWrapper.value as any });
     }
     const pathConfigItem = await getPathConfigItem(input.pathname);
     if (pathConfigItem?.specs?.isApi && fns.handleApi) {
