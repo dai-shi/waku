@@ -21,7 +21,7 @@ import { INTERNAL_ServerRouter } from './client.js';
 import { getContext } from '../middleware/context.js';
 import { stringToStream } from '../lib/utils/stream.js';
 import { createCustomError, getErrorInfo } from '../lib/utils/custom-errors.js';
-import { createStreamableValue } from 'ai/rsc';
+import { createStreamableValue } from '../lib/utils/create-streamable-value.js';
 import type { RSCCall } from 'waku/lib/types';
 
 const isStringArray = (x: unknown): x is string[] =>

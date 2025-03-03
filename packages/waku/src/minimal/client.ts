@@ -16,8 +16,9 @@ import RSDWClient from 'react-server-dom-webpack/client';
 
 import { createCustomError } from '../lib/utils/custom-errors.js';
 import { encodeRscPath, encodeFuncId } from '../lib/renderers/utils.js';
-import { readStreamableValue, type StreamableValue } from 'ai/rsc';
-import type { RSCCall } from 'waku/lib/types';
+import type { RSCCall } from '../lib/types.js';
+import { isStreamableValue } from '../lib/utils/is-streamable-value.js';
+import { readStreamableValue } from '../lib/utils/reac-streamable-value.js';
 
 const { createFromFetch, encodeReply } = RSDWClient;
 
@@ -103,14 +104,6 @@ type FetchCache = {
 
 const defaultFetchCache: FetchCache = {};
 
-function isStreamableValue(value: unknown): value is StreamableValue {
-  return (
-    value != null &&
-    typeof value === 'object' &&
-    'type' in value &&
-    value.type === Symbol.for('ui.streamable.value')
-  );
-}
 /**
  * callServer callback
  * This is not a public API.
