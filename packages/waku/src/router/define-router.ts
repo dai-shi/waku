@@ -106,7 +106,7 @@ export function unstable_defineRouter(fns: {
   ) => Promise<{
     rootElement: ReactNode;
     routeElement: ReactNode;
-    elements: Record<SlotId, ReactNode>;
+    elements: Record<SlotId, unknown>;
   }>;
   getApiConfig?: () => Promise<
     Iterable<{
