@@ -2,10 +2,10 @@ import type { Config } from '../config.js';
 
 export type ConfigDev = Required<Config>;
 
-const DEFAULT_MIDDLEWARE = () => [
-  import('waku/middleware/context'),
-  import('waku/middleware/dev-server'),
-  import('waku/middleware/handler'),
+const DEFAULT_MIDDLEWARE = [
+  'waku/middleware/context',
+  'waku/middleware/dev-server',
+  'waku/middleware/handler',
 ];
 
 // Keep async function for future extension
