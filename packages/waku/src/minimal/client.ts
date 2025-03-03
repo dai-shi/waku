@@ -148,7 +148,7 @@ export const unstable_callServerRsc = async (
             break;
           }
           case 'fnResult': {
-            return v;
+            return v[1];
           }
         }
       }
