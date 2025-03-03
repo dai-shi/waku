@@ -21,7 +21,8 @@ import { INTERNAL_ServerRouter } from './client.js';
 import { getContext } from '../middleware/context.js';
 import { stringToStream } from '../lib/utils/stream.js';
 import { createCustomError, getErrorInfo } from '../lib/utils/custom-errors.js';
-import { createStreamableValue } from 'ai/rsc'
+import { createStreamableValue } from 'ai/rsc';
+import type { RSCCall } from 'waku/lib/types';
 
 const isStringArray = (x: unknown): x is string[] =>
   Array.isArray(x) && x.every((y) => typeof y === 'string');
@@ -278,22 +279,27 @@ export function unstable_defineRouter(fns: {
       return renderRsc(entries);
     }
     if (input.type === 'function') {
-      const valueWrapper = createStreamableValue<ReactNode>(undefined);
+      const valueWrapper = createStreamableValue<RSCCall>(undefined);
       const rerender = async (rscPath: string, rscParams?: unknown) => {
-        const newElements = await getEntries(rscPath, rscParams, input.req.headers)
+        const elementsPromise = getEntries(
+          rscPath,
+          rscParams,
+          input.req.headers,
+        );
         valueWrapper.update([
           'elementUpdate',
-          {
-            ...newElements,
-          }
-        ] as any);
+          elementsPromise.then((entries) => entries ?? {}),
+        ]);
       };
       setRerender(rerender);
-      input.fn(...input.args).then(value => {
-        valueWrapper.done(value as ReactNode);
-      }).catch(error => {
-        valueWrapper.error(error);
-      });
+      input
+        .fn(...input.args)
+        .then((value) => {
+          valueWrapper.done(['fnResult', value]);
+        })
+        .catch((error) => {
+          valueWrapper.error(error);
+        });
       return renderRsc({ _value: valueWrapper.value as any });
     }
     const pathConfigItem = await getPathConfigItem(input.pathname);

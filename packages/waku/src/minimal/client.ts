@@ -16,7 +16,8 @@ import RSDWClient from 'react-server-dom-webpack/client';
 
 import { createCustomError } from '../lib/utils/custom-errors.js';
 import { encodeRscPath, encodeFuncId } from '../lib/renderers/utils.js';
-import { readStreamableValue } from 'ai/rsc';
+import { readStreamableValue, type StreamableValue } from 'ai/rsc';
+import type { RSCCall } from 'waku/lib/types';
 
 const { createFromFetch, encodeReply } = RSDWClient;
 
@@ -102,6 +103,14 @@ type FetchCache = {
 
 const defaultFetchCache: FetchCache = {};
 
+function isStreamableValue(value: unknown): value is StreamableValue {
+  return (
+    value != null &&
+    typeof value === 'object' &&
+    'type' in value &&
+    value.type === Symbol.for('ui.streamable.value')
+  );
+}
 /**
  * callServer callback
  * This is not a public API.
@@ -127,12 +136,26 @@ export const unstable_callServerRsc = async (
         );
   const data = enhanceCreateData(createData)(responsePromise);
   const value = (await data)._value as any;
-  for await (const v of readStreamableValue(value)) {
-    if (Array.isArray(v) && v[0] === 'elementUpdate') {
-      fetchCache[SET_ELEMENTS]?.((prev) => mergeElementsPromise(prev, v[1]));
-    } else {
-      return v;
+  if (isStreamableValue(value)) {
+    for await (const v of readStreamableValue<RSCCall>(value)) {
+      if (v) {
+        switch (v[0]) {
+          case 'elementUpdate': {
+            const elements = v[1];
+            fetchCache[SET_ELEMENTS]?.((prev) =>
+              mergeElementsPromise(prev, elements),
+            );
+            break;
+          }
+          case 'fnResult': {
+            return v;
+          }
+        }
+      }
     }
+  } else {
+    fetchCache[SET_ELEMENTS]?.((prev) => mergeElementsPromise(prev, data));
+    return value;
   }
 };
 
