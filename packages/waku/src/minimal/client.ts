@@ -16,6 +16,7 @@ import RSDWClient from 'react-server-dom-webpack/client';
 
 import { createCustomError } from '../lib/utils/custom-errors.js';
 import { encodeRscPath, encodeFuncId } from '../lib/renderers/utils.js';
+import { readStreamableValue } from 'ai/rsc';
 
 const { createFromFetch, encodeReply } = RSDWClient;
 
@@ -125,10 +126,14 @@ export const unstable_callServerRsc = async (
           enhanceFetch(fetch)(url, { method: 'POST', body }),
         );
   const data = enhanceCreateData(createData)(responsePromise);
-  const value = (await data)._value;
-  // FIXME this causes rerenders even if data is empty
-  fetchCache[SET_ELEMENTS]?.((prev) => mergeElementsPromise(prev, data));
-  return value;
+  const value = (await data)._value as any;
+  for await (const v of readStreamableValue(value)) {
+    if (Array.isArray(v) && v[0] === 'elementUpdate') {
+      fetchCache[SET_ELEMENTS]?.((prev) => mergeElementsPromise(prev, v[1]));
+    } else {
+      return v;
+    }
+  }
 };
 
 const prefetchedParams = new WeakMap<Promise<unknown>, unknown>();

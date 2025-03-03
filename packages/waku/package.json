@@ -89,6 +89,7 @@
     "@hono/node-server": "1.13.8",
     "@swc/core": "1.11.4",
     "@vitejs/plugin-react": "4.3.4",
+    "ai": "^4.1.47",
     "dotenv": "16.4.7",
     "hono": "4.7.2",
     "rsc-html-stream": "0.0.4",
