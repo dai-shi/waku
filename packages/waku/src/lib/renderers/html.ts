@@ -165,7 +165,10 @@ export async function renderHtml(
   config: ConfigDev | ConfigPrd,
   ctx: Pick<
     HandlerContext,
-    'unstable_modules' | 'unstable_devServer' | 'unstable_errs' | 'unstable_onError'
+    | 'unstable_modules'
+    | 'unstable_devServer'
+    | 'unstable_errs'
+    | 'unstable_onError'
   >,
   htmlHead: string,
   elements: Elements,
@@ -249,7 +252,7 @@ export async function renderHtml(
           if (typeof (err as any)?.digest === 'string') {
             return (err as { digest: string }).digest;
           }
-          console.log("renderHtml error");
+          console.log('renderHtml error');
           console.error(err);
         },
       },

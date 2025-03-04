@@ -25,8 +25,7 @@ const validateMiddleware: Middleware = () => {
     }
     const existingOnError = ctx.unstable_onError;
     ctx.unstable_onError = (err) => {
-
-      console.log("unstable_onError", err.message);
+      console.log('unstable_onError', err.message);
       existingOnError?.(err);
     };
     await next();
