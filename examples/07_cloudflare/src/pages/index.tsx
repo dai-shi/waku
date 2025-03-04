@@ -46,6 +46,7 @@ export default async function HomePage() {
 const ServerMessage = async () => {
   if (isBuild()) {
     console.warn('Note: server components are awaited during build.');
+    return null;
   }
   await new Promise((resolve) => setTimeout(resolve, 2000));
   return <p>Hello from server!</p>;
