@@ -244,11 +244,11 @@ export async function renderHtml(
           if (hackToIgnoreTheVeryFirstError) {
             return;
           }
+          console.error(err);
           (ctx.unstable_errs ||= []).push(err);
           if (typeof (err as any)?.digest === 'string') {
             return (err as { digest: string }).digest;
           }
-          console.error(err);
         },
       },
     );
