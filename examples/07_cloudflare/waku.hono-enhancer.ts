@@ -1,6 +1,9 @@
 import type { Hono } from 'hono';
 
 const honoEnhancer = (createApp: (app: Hono) => Hono) => {
+  if (!import.meta.env || import.meta.env.PROD) {
+    return createApp;
+  }
   const handlerPromise = import('./waku.cloudflare-dev-server').then(
     ({ cloudflareDevServer }) =>
       cloudflareDevServer({
