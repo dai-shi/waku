@@ -23,7 +23,17 @@ const validateMiddleware: Middleware = () => {
     if (ctx.req.url.pathname.startsWith(`/${rscBase}/R/invalid`)) {
       ctx.data.unauthorized = true;
     }
+    const existingOnError = ctx.unstable_onError;
+    ctx.unstable_onError = (err) => {
+
+      console.log("unstable_onError", err.message);
+      existingOnError?.(err);
+    };
     await next();
+    console.log(
+      'ctx.unstable_errs',
+      ctx.unstable_errs?.map((e) => e.message),
+    );
   };
 };
 

@@ -16,6 +16,7 @@ export type HandlerContext = {
   readonly context: Record<string, unknown>;
   readonly data: Record<string, unknown>;
   unstable_errs?: unknown[];
+  unstable_onError?: (err: unknown) => void;
   unstable_devServer?: {
     rootDir: string;
     resolveClientEntry: (id: string) => string;

@@ -1,18 +1,18 @@
 import { Suspense } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Link } from 'waku';
-import ThrowsComponent from '../components/server/throws.js';
+import ThrowsDelayedComponent from '../components/server/throws-delayed.js';
 
 export default async function HomePage() {
   return (
     <div>
-      <p>Home Page</p>
-      <Link to="/invalid">Invalid page</Link>
+      <p>Delayed Throws Page</p>
+      <Link to="/">Home page</Link>
       <br />
-      <Link to="/delayed">Delayed page</Link>
+      <Link to="/invalid">Invalid page</Link>
       <ErrorBoundary fallback={<div>Something went wrong</div>}>
         <Suspense fallback={<div>Loading...</div>}>
-          <ThrowsComponent />
+          <ThrowsDelayedComponent />
         </Suspense>
       </ErrorBoundary>
     </div>
