@@ -692,16 +692,16 @@ export const getConfig = async () => {
 
 ```css
 /* ./src/styles.css */
-@import "tailwindcss";
+@import 'tailwindcss';
 ```
 
 ```js
 // ./postcss.config.js
 export default {
   plugins: {
-    "@tailwindcss/postcss": {},
-  }
-}
+    '@tailwindcss/postcss': {},
+  },
+};
 ```
 
 ## Static assets
