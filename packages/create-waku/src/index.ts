@@ -5,8 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import fse from 'fs-extra/esm';
-import { bold, green, red } from 'kolorist';
-import { default as prompts } from 'prompts';
+import { bold, green, red } from 'picocolors';
+import * as p from '@clack/prompts';
 import checkForUpdate from 'update-check';
 import {
   downloadAndExtract,
@@ -78,6 +78,11 @@ const { values } = parseArgs({
   },
 });
 
+const onCancel = () => {
+  p.cancel(red('✖') + ' Operation cancelled');
+  process.exit(0);
+};
+
 async function doPrompts() {
   const isValidPackageName = (projectName: string) =>
     /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
@@ -102,57 +107,58 @@ async function doPrompts() {
   let targetDir = values['project-name'] || defaultProjectName;
 
   try {
-    const result = await prompts(
-      [
-        {
-          name: 'projectName',
-          type: values['project-name'] ? null : 'text',
-          message: 'Project Name',
-          initial: defaultProjectName,
-          onState: (state: any) => (targetDir = String(state.value).trim()),
-        },
-        {
-          name: 'shouldOverwrite',
-          type: () => (canSafelyOverwrite(targetDir) ? null : 'confirm'),
-          message: `${targetDir} is not empty. Remove existing files and continue?`,
-        },
-        {
-          name: 'overwriteChecker',
-          type: (values: any) => {
-            if (values === false) {
-              throw new Error(red('✖') + ' Operation cancelled');
-            }
-            return null;
-          },
-        },
-        {
-          name: 'packageName',
-          type: () => (isValidPackageName(targetDir) ? null : 'text'),
-          message: 'Package name',
-          initial: () => toValidPackageName(targetDir),
-          validate: (dir: string) =>
-            isValidPackageName(dir) || 'Invalid package.json name',
-        },
-        {
-          name: 'templateName',
-          type: values['choose'] ? 'select' : null,
-          message: 'Choose a starter template',
-          choices: templateNames.map((name) => ({
-            title: name,
-            value: name,
-          })),
-        },
-      ],
+    const { projectName } = await p.group(
       {
-        onCancel: () => {
-          throw new Error(red('✖') + ' Operation cancelled');
-        },
+        projectName: () =>
+          p.text({
+            defaultValue: targetDir,
+            message: 'Project Name',
+            placeholder: defaultProjectName,
+          }),
+      },
+      { onCancel },
+    );
+    targetDir =
+      typeof projectName === 'string' ? projectName.trim() : targetDir;
+    if (!canSafelyOverwrite(targetDir)) {
+      const confirmed = await p.confirm({
+        message: `${targetDir} is not empty. Remove existing files and continue?`,
+      });
+      if (!confirmed) {
+        p.cancel(red('✖') + ' Operation cancelled');
+        process.exit(0);
+      }
+    }
+
+    const results = await p.group(
+      {
+        packageName: () =>
+          p.text({
+            message: 'Package name',
+            validate: (dir: string) => {
+              if (!isValidPackageName(dir)) {
+                return 'Invalid package.json name';
+              }
+            },
+          }),
+        templateName: () =>
+          p.select({
+            message: 'Choose a starter template',
+            options: templateNames.map((name) => ({
+              label: name,
+              value: name,
+            })),
+          }),
+      },
+      {
+        onCancel,
       },
     );
+
     return {
-      ...result,
-      packageName: result.packageName ?? toValidPackageName(targetDir),
-      templateName: result.templateName ?? values.template ?? templateNames[0],
+      ...results,
+      packageName: results.packageName ?? toValidPackageName(targetDir),
+      templateName: results.templateName ?? values.template ?? templateNames[0],
       targetDir,
     };
   } catch (err) {
@@ -197,15 +203,14 @@ async function init() {
 
   const exampleOption = await parseExampleOption(values.example);
 
-  const { packageName, templateName, shouldOverwrite, targetDir } =
-    await doPrompts();
+  const { packageName, templateName, targetDir } = await doPrompts();
   const root = path.resolve(targetDir);
 
   console.log('Setting up project...');
 
-  if (shouldOverwrite) {
-    fse.emptyDirSync(root);
-  } else if (!existsSync(root)) {
+  // doPrompts would exit if the dir exists and overwrite is false
+  fse.emptyDirSync(root);
+  if (!existsSync(root)) {
     await fsPromises.mkdir(root, { recursive: true });
   }
 
