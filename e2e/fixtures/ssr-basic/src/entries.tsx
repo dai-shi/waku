@@ -3,6 +3,7 @@ import { Slot } from 'waku/minimal/client';
 import { unstable_createAsyncIterable as createAsyncIterable } from 'waku/server';
 
 import App from './components/App.js';
+import { FUNCTION_RESULT } from 'waku/config';
 
 const entries: ReturnType<typeof defineEntries> = defineEntries({
   handleRequest: async (input, { renderRsc, renderHtml }) => {
@@ -11,7 +12,7 @@ const entries: ReturnType<typeof defineEntries> = defineEntries({
     }
     if (input.type === 'function') {
       const value = await input.fn(...input.args);
-      return renderRsc({ _value: value });
+      return renderRsc({ [FUNCTION_RESULT]: value });
     }
     if (input.type === 'custom' && input.pathname === '/') {
       return renderHtml({ App: <App name="Waku" /> }, <Slot id="App" />, {

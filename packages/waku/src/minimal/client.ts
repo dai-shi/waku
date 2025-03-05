@@ -1,7 +1,9 @@
 /// <reference types="react/canary" />
 'use client';
 
+import type { ReactNode } from 'react';
 import {
+  Component,
   createContext,
   createElement,
   memo,
@@ -9,13 +11,12 @@ import {
   useCallback,
   useEffect,
   useState,
-  Component,
 } from 'react';
-import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
 
 import { createCustomError } from '../lib/utils/custom-errors.js';
-import { encodeRscPath, encodeFuncId } from '../lib/renderers/utils.js';
+import { encodeFuncId, encodeRscPath } from '../lib/renderers/utils.js';
+import { FUNCTION_RESULT } from '../lib/constants.js';
 
 const { createFromFetch, encodeReply } = RSDWClient;
 
@@ -68,8 +69,10 @@ const mergeElementsPromise = (
   const getResult = () =>
     Promise.all([a, b]).then(([a, b]) => {
       const nextElements = { ...a, ...b };
-      delete nextElements._value;
-      return nextElements;
+      if (FUNCTION_RESULT in nextElements) {
+        delete nextElements[FUNCTION_RESULT];
+      }
+      return { ...nextElements };
     });
   const cache2 = getCached(() => new WeakMap(), cache1, a);
   return getCached(getResult, cache2, b);
@@ -125,10 +128,12 @@ export const unstable_callServerRsc = async (
           enhanceFetch(fetch)(url, { method: 'POST', body }),
         );
   const data = enhanceCreateData(createData)(responsePromise);
-  const value = (await data)._value;
   // FIXME this causes rerenders even if data is empty
   fetchCache[SET_ELEMENTS]?.((prev) => mergeElementsPromise(prev, data));
-  return value;
+  const result = await data;
+  if (FUNCTION_RESULT in result) {
+    return result[FUNCTION_RESULT];
+  }
 };
 
 const prefetchedParams = new WeakMap<Promise<unknown>, unknown>();

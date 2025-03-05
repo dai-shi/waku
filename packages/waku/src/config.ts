@@ -2,6 +2,7 @@ import type { UserConfig } from 'vite';
 import type { Middleware } from './lib/middleware/types.js';
 
 export type { Middleware };
+export { FUNCTION_RESULT } from './lib/constants.js';
 
 export interface Config {
   /**

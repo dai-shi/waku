@@ -4,6 +4,7 @@ import { unstable_createAsyncIterable as createAsyncIterable } from 'waku/server
 
 import App from './components/App';
 import { runWithRerender } from './als';
+import { FUNCTION_RESULT } from 'waku/config';
 
 export default defineEntries({
   handleRequest: async (input, { renderRsc, renderHtml }) => {
@@ -18,7 +19,7 @@ export default defineEntries({
       const value = await runWithRerender(rerender, () =>
         input.fn(...input.args),
       );
-      return renderRsc({ ...elements, _value: value });
+      return renderRsc({ ...elements, [FUNCTION_RESULT]: value });
     }
     if (
       (input.type === 'action' || input.type === 'custom') &&

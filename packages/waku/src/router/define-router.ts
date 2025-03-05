@@ -21,6 +21,7 @@ import { INTERNAL_ServerRouter } from './client.js';
 import { getContext } from '../middleware/context.js';
 import { stringToStream } from '../lib/utils/stream.js';
 import { createCustomError, getErrorInfo } from '../lib/utils/custom-errors.js';
+import { FUNCTION_RESULT } from '../lib/constants.js';
 
 const isStringArray = (x: unknown): x is string[] =>
   Array.isArray(x) && x.every((y) => typeof y === 'string');
@@ -301,7 +302,10 @@ export function unstable_defineRouter(fns: {
       setRerender(rerender);
       const value = await input.fn(...input.args);
       rendered = true;
-      return renderRsc({ ...(await elementsPromise), _value: value });
+      return renderRsc({
+        ...(await elementsPromise),
+        [FUNCTION_RESULT]: value,
+      });
     }
     const pathConfigItem = await getPathConfigItem(input.pathname);
     if (pathConfigItem?.specs?.isApi && fns.handleApi) {
