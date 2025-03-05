@@ -17,7 +17,7 @@ const loadEntries = () => import('${srcEntriesFile}');
 const configPromise = loadEntries().then((entries) => entries.loadConfig());
 
 const createApp = (app) => {
-  app.use(serverEngine({ cmd: 'start', loadEntries, env: process.env }));
+  app.use(serverEngine({ cmd: 'start', loadEntries, env: process.env, unstable_onError: new Set() }));
   app.notFound((c) => {
     const notFoundHtml = globalThis.__WAKU_NOT_FOUND_HTML__;
     if (typeof notFoundHtml === 'string') {

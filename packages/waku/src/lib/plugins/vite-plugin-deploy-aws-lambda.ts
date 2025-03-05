@@ -36,7 +36,7 @@ const configPromise = loadEntries().then((entries) => entries.loadConfig());
 
 const createApp = (app) => {
   app.use(serveStatic({ root: distDir + '/' + publicDir }));
-  app.use(serverEngine({ cmd: 'start', loadEntries, env: process.env }));
+  app.use(serverEngine({ cmd: 'start', loadEntries, env: process.env, unstable_onError: new Set() }));
   app.notFound(async (c) => {
     const file = path.join(distDir, publicDir, '404.html');
     if (existsSync(file)) {

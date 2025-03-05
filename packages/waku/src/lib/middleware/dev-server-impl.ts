@@ -360,7 +360,7 @@ export const devServer: Middleware = (options) => {
     return (_ctx, next) => next();
   }
 
-  const env = options.env || {};
+  const env = options.env;
   const configPromise = resolveConfigDev(options.config);
 
   (globalThis as any).__WAKU_SERVER_IMPORT__ = (id: string) =>

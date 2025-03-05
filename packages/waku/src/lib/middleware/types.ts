@@ -38,8 +38,16 @@ export type Handler = (
   next: () => Promise<void>,
 ) => Promise<void>;
 
+// This is highly experimental
+export type ErrorCallback = (
+  err: unknown,
+  ctx: HandlerContext,
+  origin: 'handler' | 'rsc' | 'html',
+) => void;
+
 export type MiddlewareOptions = {
-  env?: Record<string, string>;
+  env: Record<string, string>;
+  unstable_onError: Set<ErrorCallback>;
 } & (
   | { cmd: 'dev'; config: Config }
   | { cmd: 'start'; loadEntries: () => Promise<EntriesPrd> }

@@ -40,7 +40,7 @@ const createApp = (app) => {
 export default {
   async onFetch(request, lobby, ctx) {
     if (!serve) {
-      serve = serverEngine({ cmd: 'start', loadEntries, env: lobby });
+      serve = serverEngine({ cmd: 'start', loadEntries, env: lobby, unstable_onError: new Set() });
     }
     if (!app) {
       const entries = await loadEntries();
