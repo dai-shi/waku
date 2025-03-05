@@ -673,7 +673,7 @@ export const getConfig = async () => {
 
 ### Global styles
 
-Install any required dev dependencies (e.g., `npm i -D tailwindcss autoprefixer`) and set up any required configuration (e.g., `postcss.config.js`). Then create your global stylesheet (e.g., `./src/styles.css`) and import it into the root layout.
+Install any required dev dependencies (e.g., `npm i -D tailwindcss @tailwindcss/postcss postcss`) and set up any required configuration (e.g., `postcss.config.js`). Then create your global stylesheet (e.g., `./src/styles.css`) and import it into the root layout.
 
 ```tsx
 // ./src/pages/_layout.tsx
@@ -692,24 +692,14 @@ export const getConfig = async () => {
 
 ```css
 /* ./src/styles.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-```
-
-```js
-// ./tailwind.config.js
-export default {
-  content: ['./src/**/*.{js,jsx,ts,tsx}'],
-};
+@import 'tailwindcss';
 ```
 
 ```js
 // ./postcss.config.js
 export default {
   plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
+    '@tailwindcss/postcss': {},
   },
 };
 ```
