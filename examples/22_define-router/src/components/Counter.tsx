@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Link, useRouter_UNSTABLE as useRouter } from 'waku/router/client';
+import { Link, useRouter } from 'waku/router/client';
 
 export const Counter = () => {
   const { path } = useRouter();
