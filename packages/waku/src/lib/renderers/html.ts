@@ -11,8 +11,7 @@ import { concatUint8Arrays } from '../utils/stream.js';
 import { filePathToFileURL } from '../utils/path.js';
 import { encodeRscPath } from './utils.js';
 import { renderRsc, renderRscElement, getExtractFormState } from './rsc.js';
-// TODO move types somewhere
-import type { HandlerContext } from '../middleware/types.js';
+import type { HandlerContext, ErrorCallback } from '../middleware/types.js';
 
 type Elements = Record<string, unknown>;
 
@@ -163,12 +162,10 @@ let hackToIgnoreTheVeryFirstError = true;
 
 export async function renderHtml(
   config: ConfigDev | ConfigPrd,
-  ctx: Pick<
-    HandlerContext,
-    'unstable_modules' | 'unstable_devServer' | 'unstable_errs'
-  >,
+  ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
   htmlHead: string,
   elements: Elements,
+  onError: Set<ErrorCallback>,
   html: ReactNode,
   rscPath: string,
   actionResult?: unknown,
@@ -186,8 +183,8 @@ export async function renderHtml(
   const { INTERNAL_ServerRoot } =
     modules.wakuMinimalClient as typeof WakuMinimalClientType;
 
-  const stream = await renderRsc(config, ctx, elements);
-  const htmlStream = renderRscElement(config, ctx, html);
+  const stream = await renderRsc(config, ctx, elements, onError);
+  const htmlStream = renderRscElement(config, ctx, html, onError);
   const isDev = !!ctx.unstable_devServer;
   const moduleMap = new Proxy(
     {} as Record<string, Record<string, ImportManifestEntry>>,
@@ -245,7 +242,7 @@ export async function renderHtml(
             return;
           }
           console.error(err);
-          (ctx.unstable_errs ||= []).push(err);
+          onError.forEach((fn) => fn(err, ctx as HandlerContext, 'html'));
           if (typeof (err as any)?.digest === 'string') {
             return (err as { digest: string }).digest;
           }
@@ -274,6 +271,7 @@ export async function renderHtml(
         ctx,
         htmlHead,
         elements,
+        onError,
         html,
         rscPath,
         actionResult,

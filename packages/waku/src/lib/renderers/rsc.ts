@@ -3,7 +3,7 @@ import type { default as RSDWServerType } from 'react-server-dom-webpack/server.
 
 import type { ConfigPrd } from '../config.js';
 // TODO move types somewhere
-import type { HandlerContext } from '../middleware/types.js';
+import type { HandlerContext, ErrorCallback } from '../middleware/types.js';
 import { filePathToFileURL } from '../utils/path.js';
 import { streamToArrayBuffer } from '../utils/stream.js';
 import { bufferToString, parseFormData } from '../utils/buffer.js';
@@ -14,11 +14,9 @@ const resolveClientEntryForPrd = (id: string, config: { basePath: string }) => {
 
 export async function renderRsc(
   config: ConfigPrd,
-  ctx: Pick<
-    HandlerContext,
-    'unstable_modules' | 'unstable_devServer' | 'unstable_errs'
-  >,
+  ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
   elements: Record<string, unknown>,
+  onError: Set<ErrorCallback>,
   moduleIdCallback?: (id: string) => void,
 ): Promise<ReadableStream> {
   const modules = ctx.unstable_modules;
@@ -44,7 +42,7 @@ export async function renderRsc(
   );
   return renderToReadableStream(elements, clientBundlerConfig, {
     onError: (err: unknown) => {
-      (ctx.unstable_errs ||= []).push(err);
+      onError.forEach((fn) => fn(err, ctx as HandlerContext, 'rsc'));
       if (typeof (err as any)?.digest === 'string') {
         // This is not correct according to the type though.
         return (err as { digest: string }).digest;
@@ -55,11 +53,9 @@ export async function renderRsc(
 
 export function renderRscElement(
   config: ConfigPrd,
-  ctx: Pick<
-    HandlerContext,
-    'unstable_modules' | 'unstable_devServer' | 'unstable_errs'
-  >,
+  ctx: Pick<HandlerContext, 'unstable_modules' | 'unstable_devServer'>,
   element: ReactNode,
+  onError: Set<ErrorCallback>,
 ): ReadableStream {
   const modules = ctx.unstable_modules;
   if (!modules) {
@@ -83,7 +79,7 @@ export function renderRscElement(
   );
   return renderToReadableStream(element, clientBundlerConfig, {
     onError: (err: unknown) => {
-      (ctx.unstable_errs ||= []).push(err);
+      onError.forEach((fn) => fn(err, ctx as HandlerContext, 'rsc'));
       if (typeof (err as any)?.digest === 'string') {
         // This is not correct according to the type though.
         return (err as { digest: string }).digest;

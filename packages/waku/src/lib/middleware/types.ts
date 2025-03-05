@@ -15,7 +15,6 @@ export type HandlerContext = {
   /** @deprecated use `data` */
   readonly context: Record<string, unknown>;
   readonly data: Record<string, unknown>;
-  unstable_errs?: unknown[];
   unstable_devServer?: {
     rootDir: string;
     resolveClientEntry: (id: string) => string;
@@ -39,8 +38,16 @@ export type Handler = (
   next: () => Promise<void>,
 ) => Promise<void>;
 
+// This is highly experimental
+export type ErrorCallback = (
+  err: unknown,
+  ctx: HandlerContext,
+  origin: 'handler' | 'rsc' | 'html',
+) => void;
+
 export type MiddlewareOptions = {
-  env?: Record<string, string>;
+  env: Record<string, string>;
+  unstable_onError: Set<ErrorCallback>;
 } & (
   | { cmd: 'dev'; config: Config }
   | { cmd: 'start'; loadEntries: () => Promise<EntriesPrd> }
