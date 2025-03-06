@@ -1,6 +1,6 @@
 import { INTERNAL_iterateSerializablePlatformData } from '../../server.js';
 import { joinPath } from '../utils/path.js';
-import { appendFile, mkdir, writeFile } from '../utils/node-fs.js';
+import { mkdir, readFile, writeFile } from '../utils/node-fs.js';
 import { DIST_ENTRIES_JS } from './constants.js';
 
 const DIST_PLATFORM_DATA = 'platform-data';
@@ -15,10 +15,14 @@ export const emitPlatformData = async (distDir: string) => {
     const destFile = joinPath(distDir, DIST_PLATFORM_DATA, key + '.js');
     await writeFile(destFile, `export default ${JSON.stringify(data)};`);
   }
-  await appendFile(
-    joinPath(distDir, DIST_ENTRIES_JS),
+  const distEntriesFile = joinPath(distDir, DIST_ENTRIES_JS);
+  let distEntriesFileContent = await readFile(distEntriesFile, {
+    encoding: 'utf8',
+  });
+  distEntriesFileContent = distEntriesFileContent.replace(
+    'globalThis.__WAKU_LOAD_PLATFORM_DATA__',
     `
-export function loadPlatformData(key) {
+(key) => {
   switch (key) {
     ${Array.from(keys)
       .map(
@@ -31,4 +35,5 @@ export function loadPlatformData(key) {
 }
 `,
   );
+  await writeFile(distEntriesFile, distEntriesFileContent);
 };
