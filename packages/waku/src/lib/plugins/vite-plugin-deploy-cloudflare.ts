@@ -64,7 +64,6 @@ export default {
       serve = serverEngine({ cmd: 'start', loadEntries, env });
     }
     if (!app) {
-      const entries = await loadEntries();
       const honoEnhancer = await loadHonoEnhancer();
       app = honoEnhancer(createApp)(new Hono());
     }
