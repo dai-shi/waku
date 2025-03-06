@@ -220,7 +220,7 @@ async function loadConfig(): Promise<Config> {
   if (!existsSync(CONFIG_FILE)) {
     return {};
   }
-  const { loadServerFile } = await import('./lib/utils/vite-loader.js');
+  const { loadServerModule } = await import('./lib/utils/vite-loader.js');
   const file = pathToFileURL(path.resolve(CONFIG_FILE)).toString();
-  return (await loadServerFile(file)).default;
+  return (await loadServerModule<{ default: Config }>(file)).default;
 }
