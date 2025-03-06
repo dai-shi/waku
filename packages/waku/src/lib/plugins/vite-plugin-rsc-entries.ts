@@ -39,6 +39,9 @@ export function loadModule(id) {
 }
 globalThis.__WAKU_SERVER_IMPORT__ = loadModule;
 globalThis.__WAKU_CLIENT_IMPORT__ = (id) => loadModule('${opts.ssrDir}/' + id);
+export const dynamicHtmlPaths = globalThis.__WAKU_DYNAMIC_HTML_PATHS__;
+export const publicIndexHtml = globalThis.__WAKU_PUBLIC_INDEX_HTML__;
+export const loadPlatformData = globalThis.__WAKU_LOAD_PLATFORM_DATA__;
 `;
   let entriesFile = '';
   let configFile = '';
