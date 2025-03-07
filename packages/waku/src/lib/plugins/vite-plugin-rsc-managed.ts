@@ -20,7 +20,7 @@ export default fsRouter(
   (file) => import.meta.glob('/${srcDir}/pages/**/*.{${EXTENSIONS.map((ext) =>
     ext.replace(/^\./, ''),
   ).join(',')}}')[\`/${srcDir}/pages/\${file}\`]?.(),
-  {pagesDir:'${options.pagesDir}', apiDir:'${options.apiDir}'},
+  { pagesDir: '${options.pagesDir}', apiDir: '${options.apiDir}' },
 );
 `;
 
