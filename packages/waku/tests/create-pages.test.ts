@@ -573,6 +573,7 @@ describe('createPages pages and layouts', () => {
       },
     ]);
     const res = await handleApi('/test', {
+      url: new URL('http://localhost:3000/test'),
       method: 'GET',
       headers: {},
       body: null,
@@ -609,6 +610,7 @@ describe('createPages pages and layouts', () => {
       },
     ]);
     const res = await handleApi('/test/foo', {
+      url: new URL('http://localhost:3000/test/foo'),
       method: 'GET',
       headers: {},
       body: null,
@@ -1331,6 +1333,7 @@ describe('createPages api', () => {
       },
     ]);
     const res = await handleApi('/test', {
+      url: new URL('http://localhost:3000/test'),
       method: 'GET',
       headers: {},
       body: null,
@@ -1367,6 +1370,7 @@ describe('createPages api', () => {
       },
     ]);
     const res = await handleApi('/test/foo', {
+      url: new URL('http://localhost:3000/test/foo'),
       method: 'GET',
       headers: {},
       body: null,

@@ -115,6 +115,7 @@ export function unstable_defineRouter(fns: {
   handleApi?: (
     path: string,
     options: {
+      url: URL;
       body: ReadableStream | null;
       headers: Readonly<Record<string, string>>;
       method: string;
@@ -306,6 +307,7 @@ export function unstable_defineRouter(fns: {
     const pathConfigItem = await getPathConfigItem(input.pathname);
     if (pathConfigItem?.specs?.isApi && fns.handleApi) {
       return fns.handleApi(input.pathname, {
+        url: input.req.url,
         body: input.req.body,
         headers: input.req.headers,
         method: input.req.method,
@@ -367,6 +369,7 @@ export function unstable_defineRouter(fns: {
             type: 'file',
             pathname,
             body: handleApi(pathname, {
+              url: new URL(pathname, 'http://localhost:3000'),
               body: null,
               headers: {},
               method: 'GET',
