@@ -61,7 +61,7 @@ const createApp = (app) => {
 export default {
   async fetch(request, env, ctx) {
     if (!serve) {
-      serve = serverEngine({ cmd: 'start', loadEntries, env });
+      serve = serverEngine({ cmd: 'start', loadEntries, env, unstable_onError: new Set() });
     }
     if (!app) {
       const honoEnhancer = await loadHonoEnhancer();
