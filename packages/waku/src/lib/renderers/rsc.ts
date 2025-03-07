@@ -207,9 +207,17 @@ export async function decodePostAction(
       typeof contentType === 'string' &&
       contentType.startsWith('multipart/form-data')
     ) {
-      const bodyBuf = await streamToArrayBuffer(ctx.req.body);
+      const [stream1, stream2] = ctx.req.body.tee();
+      ctx.req.body = stream1;
+      const bodyBuf = await streamToArrayBuffer(stream2);
       // XXX This doesn't support streaming unlike busboy
       const formData = await parseFormData(bodyBuf, contentType);
+      if (
+        Array.from(formData.keys()).every((key) => !key.startsWith('$ACTION_'))
+      ) {
+        // Assuming this is probably for api
+        return null;
+      }
       const serverBundlerConfig = new Proxy(
         {},
         {
