@@ -27,6 +27,11 @@ export interface Config {
    */
   pagesDir?: string;
   /**
+   * The api directory inside pagesDir.
+   * Defaults to "api".
+   */
+  apiDir?: string;
+  /**
    * The private directory relative to root.
    * This folder will contain files that should be read only on the server.
    * Defaults to  "private".
