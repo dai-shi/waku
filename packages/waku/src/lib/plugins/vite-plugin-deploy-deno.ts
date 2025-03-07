@@ -23,7 +23,7 @@ const env = Deno.env.toObject();
 
 const createApp = (app) => {
   app.use(serveStatic({ root: distDir + '/' + publicDir }));
-  app.use(serverEngine({ cmd: 'start', loadEntries, env }));
+  app.use(serverEngine({ cmd: 'start', loadEntries, env, unstable_onError: new Set() }));
   app.notFound(async (c) => {
     const file = distDir + '/' + publicDir + '/404.html';
     try {

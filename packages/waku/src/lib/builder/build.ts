@@ -565,6 +565,7 @@ const emitStaticFiles = async (
         config,
         { unstable_modules },
         elements,
+        new Set(),
         options?.moduleIdCallback,
       ),
     renderHtml: async (
@@ -577,6 +578,7 @@ const emitStaticFiles = async (
         { unstable_modules },
         defaultHtmlHead + (options.htmlHead || ''),
         elements,
+        new Set(),
         html,
         options.rscPath,
       );
