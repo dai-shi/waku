@@ -158,6 +158,7 @@ export function deployCloudflarePlugin(opts: {
   const buildOptions = unstable_getBuildOptions();
   let rootDir: string;
   let entriesFile: string;
+  let honoEnhancerFile: string | undefined;
   return {
     name: 'deploy-cloudflare-plugin',
     config(viteConfig) {
@@ -173,6 +174,9 @@ export function deployCloudflarePlugin(opts: {
     configResolved(config) {
       rootDir = config.root;
       entriesFile = `${rootDir}/${opts.srcDir}/${SRC_ENTRIES}`;
+      if (opts.unstable_honoEnhancer) {
+        honoEnhancerFile = `${rootDir}/${opts.unstable_honoEnhancer}`;
+      }
       const { deploy, unstable_phase } = buildOptions;
       if (
         (unstable_phase !== 'buildServerBundle' &&
@@ -195,11 +199,7 @@ export function deployCloudflarePlugin(opts: {
     },
     load(id) {
       if (id === `${opts.srcDir}/${SERVE_JS}`) {
-        return getServeJsContent(
-          entriesFile,
-          opts.unstable_honoEnhancer &&
-            path.resolve(rootDir, opts.unstable_honoEnhancer),
-        );
+        return getServeJsContent(entriesFile, honoEnhancerFile);
       }
     },
     async closeBundle() {
