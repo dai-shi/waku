@@ -212,11 +212,11 @@ export async function decodePostAction(
       const bodyBuf = await streamToArrayBuffer(stream2);
       // XXX This doesn't support streaming unlike busboy
       const formData = await parseFormData(bodyBuf, contentType);
-      for (const [key] of formData) {
-        if (!key.startsWith('$ACTION_')) {
-          // Assuming this is probably for api
-          return null;
-        }
+      if (
+        Array.from(formData.keys()).every((key) => !key.startsWith('$ACTION_'))
+      ) {
+        // Assuming this is probably for api
+        return null;
       }
       const serverBundlerConfig = new Proxy(
         {},
