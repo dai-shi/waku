@@ -37,7 +37,7 @@ const clearAnyPreviousFolders = () => {
   }
 };
 
-describe.skip('create-waku CLI with args', () => {
+describe('create-waku CLI with args', () => {
   beforeAll(() => clearAnyPreviousFolders());
   afterEach(() => clearAnyPreviousFolders());
 
