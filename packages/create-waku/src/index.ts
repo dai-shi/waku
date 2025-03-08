@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import fse from 'fs-extra/esm';
-import { bold, green, red } from 'picocolors';
+import pc from 'picocolors';
 import * as p from '@clack/prompts';
 import checkForUpdate from 'update-check';
 import {
@@ -82,7 +82,7 @@ const { values } = parseArgs({
 });
 
 const onCancel = () => {
-  p.cancel(red('✖') + ' Operation cancelled');
+  p.cancel(pc.red('✖') + ' Operation cancelled');
   process.exit(0);
 };
 
@@ -132,7 +132,7 @@ async function doPrompts() {
         message: `${targetDir} is not empty. Remove existing files and continue?`,
       });
       if (!confirmed) {
-        p.cancel(red('✖') + ' Operation cancelled');
+        p.cancel(pc.red('✖') + ' Operation cancelled');
         process.exit(0);
       }
     }
@@ -261,14 +261,14 @@ async function init() {
     // process exit code
     if (code !== 0) {
       console.log(`Could not execute ${commands.install}. Please run`);
-      console.log(`${bold(green(`cd ${targetDir}`))}`);
-      console.log(`${bold(green(commands.install))}`);
-      console.log(`${bold(green(commands.dev))}`);
+      console.log(`${pc.bold(pc.green(`cd ${targetDir}`))}`);
+      console.log(`${pc.bold(pc.green(commands.install))}`);
+      console.log(`${pc.bold(pc.green(commands.dev))}`);
       console.log();
     } else {
       console.log(`\nDone. Now run:\n`);
-      console.log(`${bold(green(`cd ${targetDir}`))}`);
-      console.log(`${bold(green(commands.dev))}`);
+      console.log(`${pc.bold(pc.green(`cd ${targetDir}`))}`);
+      console.log(`${pc.bold(pc.green(commands.dev))}`);
       console.log();
     }
   });
