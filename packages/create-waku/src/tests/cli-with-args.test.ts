@@ -4,7 +4,7 @@ import type { SyncOptions, SyncResult } from 'execa';
 import { execaCommandSync } from 'execa';
 import { afterEach, beforeAll, describe, expect, test } from 'vitest';
 
-const CLI_PATH = path.join(__dirname, '../dist/index.js');
+const CLI_PATH = path.join(__dirname, '../../dist/index.js');
 
 const projectName = 'test-waku-app';
 const genPath = path.join(__dirname, projectName);
