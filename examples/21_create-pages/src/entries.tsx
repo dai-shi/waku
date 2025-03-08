@@ -132,7 +132,7 @@ const pages = createPages(
     }),
 
     createApi({
-      path: '/api',
+      path: '/api/hi',
       render: 'dynamic',
       handlers: {
         GET: async (req) => {
