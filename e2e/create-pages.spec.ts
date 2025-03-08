@@ -150,7 +150,7 @@ for (const mode of ['DEV', 'PRD'] as const) {
       const res = await fetch(`http://localhost:${port}/api/url?foo=bar`);
       expect(res.status).toBe(200);
       expect(await res.text()).toBe(
-        `url https://localhost:${port}/api/url?foo=bar`,
+        `url http://localhost:${port}/api/url?foo=bar`,
       );
     });
 
