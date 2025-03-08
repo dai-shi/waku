@@ -8,7 +8,7 @@
     "dev": "pnpm -r --filter='./packages/*' run dev",
     "compile": "pnpm -r --filter='./packages/*' run compile",
     "csb-install-FIXME": "pnpm install --no-frozen-lockfile",
-    "test": "prettier -c . && eslint . && tsc -b && tsc -b --noEmit `find examples -mindepth 1 -maxdepth 1 -type d ! -name '*_js'` && pnpm run --filter waku test",
+    "test": "prettier -c . && eslint . && tsc -b && tsc -b --noEmit `find examples -mindepth 1 -maxdepth 1 -type d ! -name '*_js'` && pnpm -r test",
     "test-vite-ecosystem-ci": "VITE_EXPERIMENTAL_WAKU_ROUTER=true pnpm run --filter waku test && VITE_EXPERIMENTAL_WAKU_ROUTER=true playwright test --project=chromium",
     "e2e": "playwright test",
     "website:dev": "pnpm -F waku-website dev",
