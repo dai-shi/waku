@@ -23,16 +23,19 @@
     "dev": "pnpm build --watch",
     "compile": "rm -rf template dist *.tsbuildinfo && pnpm run template && pnpm run build",
     "template": "cp -r ../../examples template && rm -rf template/*/dist && rm -rf template/*/node_modules && rm -rf template/*.tsbuildinfo && (for d in template/*; do mv $d/.gitignore $d/gitignore || true; done)",
-    "build": "tsup"
+    "build": "tsup",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@clack/prompts": "^0.10.0",
     "@types/fs-extra": "^11.0.4",
     "@types/tar": "^6.1.13",
+    "execa": "^9.5.2",
     "fs-extra": "^11.3.0",
     "picocolors": "^1.1.1",
     "tar": "^7.4.3",
     "tsup": "^8.4.0",
-    "update-check": "^1.5.4"
+    "update-check": "^1.5.4",
+    "vitest": "3.0.7"
   }
 }

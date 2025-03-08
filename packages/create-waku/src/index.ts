@@ -71,6 +71,9 @@ const { values } = parseArgs({
     'project-name': {
       type: 'string',
     },
+    'package-name': {
+      type: 'string',
+    },
     help: {
       type: 'boolean',
       short: 'h',
@@ -104,22 +107,26 @@ async function doPrompts() {
   const templateNames = await getTemplateNames(templateRoot);
 
   const defaultProjectName = 'waku-project';
-  let targetDir = values['project-name'] || defaultProjectName;
+  let targetDir = defaultProjectName;
 
   try {
-    const { projectName } = await p.group(
-      {
-        projectName: () =>
-          p.text({
-            defaultValue: targetDir,
-            message: 'Project Name',
-            placeholder: defaultProjectName,
-          }),
-      },
-      { onCancel },
-    );
-    targetDir =
-      typeof projectName === 'string' ? projectName.trim() : targetDir;
+    if (values['project-name']) {
+      targetDir = values['project-name'];
+    } else {
+      const { projectName } = await p.group(
+        {
+          projectName: () =>
+            p.text({
+              defaultValue: targetDir,
+              message: 'Project Name',
+              placeholder: defaultProjectName,
+            }),
+        },
+        { onCancel },
+      );
+      targetDir =
+        typeof projectName === 'string' ? projectName.trim() : targetDir;
+    }
     if (!canSafelyOverwrite(targetDir)) {
       const confirmed = await p.confirm({
         message: `${targetDir} is not empty. Remove existing files and continue?`,
@@ -132,23 +139,31 @@ async function doPrompts() {
 
     const results = await p.group(
       {
-        packageName: () =>
-          p.text({
-            message: 'Package name',
-            validate: (dir: string) => {
-              if (!isValidPackageName(dir)) {
-                return 'Invalid package.json name';
-              }
-            },
-          }),
-        templateName: () =>
-          p.select({
-            message: 'Choose a starter template',
-            options: templateNames.map((name) => ({
-              label: name,
-              value: name,
-            })),
-          }),
+        ...(!values['package-name']
+          ? {
+              packageName: () =>
+                p.text({
+                  message: 'Package name',
+                  validate: (dir: string) => {
+                    if (!isValidPackageName(dir)) {
+                      return 'Invalid package.json name';
+                    }
+                  },
+                }),
+            }
+          : {}),
+        ...(!values['template'] && !values['example']
+          ? {
+              templateName: () =>
+                p.select({
+                  message: 'Choose a starter template',
+                  options: templateNames.map((name) => ({
+                    label: name,
+                    value: name,
+                  })),
+                }),
+            }
+          : {}),
       },
       {
         onCancel,
@@ -157,8 +172,15 @@ async function doPrompts() {
 
     return {
       ...results,
-      packageName: results.packageName ?? toValidPackageName(targetDir),
-      templateName: results.templateName ?? values.template ?? templateNames[0],
+      packageName:
+        values['package-name'] ??
+        results.packageName ??
+        toValidPackageName(targetDir),
+      templateName:
+        values['template'] ??
+        results.templateName ??
+        templateNames[0] ??
+        toValidPackageName(targetDir),
       targetDir,
     };
   } catch (err) {
@@ -178,6 +200,7 @@ Options:
   --template            Specify a template
   --example             Specify an example use as a template
   --project-name        Specify a project name
+  --package-name        Specify a package name
   -h, --help            Display this help message
 `);
 }

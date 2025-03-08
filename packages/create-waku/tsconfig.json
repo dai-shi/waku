@@ -6,6 +6,7 @@
     "outDir": "./dist",
     "lib": ["esnext"],
     "emitDeclarationOnly": false,
+    "exactOptionalPropertyTypes": false,
     "moduleResolution": "bundler"
   },
   "include": ["./src"],

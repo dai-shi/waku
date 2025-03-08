@@ -13,3 +13,4 @@ dist
 .node-version
 pages.gen.ts
 test-results
+.test
