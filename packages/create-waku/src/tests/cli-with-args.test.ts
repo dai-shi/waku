@@ -14,6 +14,7 @@ const run = <SO extends SyncOptions>(
   args: string[],
   options?: SO,
 ): SyncResult<SO> => {
+  // @ts-expect-error relies on exactOptionalPropertyTypes being false
   return execaCommandSync(`node ${CLI_PATH} ${args.join(' ')}`, options);
 };
 
