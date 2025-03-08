@@ -146,6 +146,14 @@ for (const mode of ['DEV', 'PRD'] as const) {
       expect(await res.text()).toBe('hello world!');
     });
 
+    test('api hi with search params', async () => {
+      const res = await fetch(`http://localhost:${port}/api/hi?foo=bar`);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe(
+        `hello world! https://localhost:${port}/api/hi?foo=bar`,
+      );
+    });
+
     test('api hi.txt', async () => {
       const res = await fetch(`http://localhost:${port}/api/hi.txt`);
       expect(res.status).toBe(200);

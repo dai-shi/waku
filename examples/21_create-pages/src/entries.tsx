@@ -132,11 +132,11 @@ const pages = createPages(
     }),
 
     createApi({
-      path: '/api/hi',
+      path: '/api',
       render: 'dynamic',
       handlers: {
-        GET: async () => {
-          return new Response('hello world!');
+        GET: async (req) => {
+          return new Response('hello world! ' + req.url);
         },
         POST: async (req) => {
           const name = await req.text();
