@@ -14,7 +14,15 @@ const DO_NOT_BUNDLE = '';
 export function unstable_fsRouter(
   importMetaUrl: string,
   loadPage: (file: string) => Promise<any> | undefined,
-  pages: string,
+  options: {
+    /** e.g. `"pages"` will detect pages in `src/pages`. */
+    pagesDir: string;
+    /**
+     * e.g. `"api"` will detect pages in `src/pages/api`. Or, if `options.pagesDir`
+     * is `"foo"`, then it will detect pages in `src/foo/api`.
+     */
+    apiDir: string;
+  },
 ) {
   const buildOptions = unstable_getBuildOptions();
   return createPages(
@@ -31,7 +39,10 @@ export function unstable_fsRouter(
           import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:path'),
           import(/* @vite-ignore */ DO_NOT_BUNDLE + 'node:url'),
         ]);
-        const pagesDir = join(dirname(fileURLToPath(importMetaUrl)), pages);
+        const pagesDir = join(
+          dirname(fileURLToPath(importMetaUrl)),
+          options.pagesDir,
+        );
         files = await readdir(pagesDir, {
           encoding: 'utf8',
           recursive: true,
@@ -82,7 +93,7 @@ export function unstable_fsRouter(
           throw new Error(
             'Page file cannot be named [path]. This will conflict with the path prop of the page component.',
           );
-        } else if (pathItems.at(0) === 'api') {
+        } else if (pathItems.at(0) === options.apiDir) {
           if (config?.render === 'static') {
             if (Object.keys(mod).length !== 2 || !mod.GET) {
               console.warn(

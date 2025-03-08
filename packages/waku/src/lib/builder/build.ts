@@ -22,7 +22,6 @@ import {
 } from '../utils/path.js';
 import { extendViteConfig } from '../utils/vite-config.js';
 import {
-  appendFile,
   copyFile,
   createWriteStream,
   existsSync,
@@ -566,6 +565,7 @@ const emitStaticFiles = async (
         config,
         { unstable_modules },
         elements,
+        new Set(),
         options?.moduleIdCallback,
       ),
     renderHtml: async (
@@ -578,6 +578,7 @@ const emitStaticFiles = async (
         { unstable_modules },
         defaultHtmlHead + (options.htmlHead || ''),
         elements,
+        new Set(),
         html,
         options.rscPath,
       );
@@ -629,11 +630,18 @@ const emitStaticFiles = async (
   }
   await waitForTasks();
   const dynamicHtmlPaths = Array.from(dynamicHtmlPathMap);
-  const code = `
-export const dynamicHtmlPaths = ${JSON.stringify(dynamicHtmlPaths)};
-export const publicIndexHtml = ${JSON.stringify(defaultHtmlStr)};
-`;
-  await appendFile(distEntriesFile, code);
+  let distEntriesFileContent = await readFile(distEntriesFile, {
+    encoding: 'utf8',
+  });
+  distEntriesFileContent = distEntriesFileContent.replace(
+    'globalThis.__WAKU_DYNAMIC_HTML_PATHS__',
+    JSON.stringify(dynamicHtmlPaths),
+  );
+  distEntriesFileContent = distEntriesFileContent.replace(
+    'globalThis.__WAKU_PUBLIC_INDEX_HTML__',
+    JSON.stringify(defaultHtmlStr),
+  );
+  await writeFile(distEntriesFile, distEntriesFileContent);
 };
 
 // For Deploy

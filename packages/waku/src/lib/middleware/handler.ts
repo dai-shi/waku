@@ -71,7 +71,7 @@ const getInput = async (
 };
 
 export const handler: Middleware = (options) => {
-  const env = options.env || {};
+  const env = options.env;
   INTERNAL_setAllEnv(env);
   const entriesPrdPromise =
     options.cmd === 'start' ? options.loadEntries() : null;
@@ -129,20 +129,21 @@ export const handler: Middleware = (options) => {
       devServer && (await devServer.transformIndexHtml(ctx.req.url.pathname));
     const utils = {
       renderRsc: (elements: Record<string, unknown>) =>
-        renderRsc(config, ctx, elements),
+        renderRsc(config, ctx, elements, options.unstable_onError),
       renderHtml: async (
         elements: Record<string, unknown>,
         html: ReactNode,
-        options: { rscPath: string; actionResult?: unknown },
+        opts: { rscPath: string; actionResult?: unknown },
       ) => {
         const readable = await renderHtml(
           config,
           ctx,
           htmlHead,
           elements,
+          options.unstable_onError,
           html,
-          options.rscPath,
-          options.actionResult,
+          opts.rscPath,
+          opts.actionResult,
         );
         const headers = { 'content-type': 'text/html; charset=utf-8' };
         let body = readable;
@@ -159,6 +160,7 @@ export const handler: Middleware = (options) => {
       try {
         res = await entries.default.handleRequest(input, utils);
       } catch (e) {
+        options.unstable_onError.forEach((fn) => fn(e, ctx, 'handler'));
         const info = getErrorInfo(e);
         if (info?.status !== 404) {
           ctx.res.status = info?.status || 500;

@@ -3,7 +3,11 @@ import type { RunnableDevEnvironment } from 'vite';
 
 import { fileURLToFilePath } from '../utils/path.js';
 
-export const loadServerFile = async (fileURL: string) => {
+export const loadServerModule = async <T>(idOrFileURL: string): Promise<T> => {
+  if (idOrFileURL === 'waku' || idOrFileURL.startsWith('waku/')) {
+    // HACK `external: ['waku']` doesn't do the same
+    return import(idOrFileURL) as T;
+  }
   const vite = await createViteServer({
     server: { middlewareMode: true, watch: null },
     appType: 'custom',
@@ -21,6 +25,10 @@ export const loadServerFile = async (fileURL: string) => {
   );
   const mod = await (
     vite.environments.config as RunnableDevEnvironment
-  ).runner.import(fileURLToFilePath(fileURL));
-  return mod;
+  ).runner.import(
+    idOrFileURL.startsWith('file://')
+      ? fileURLToFilePath(idOrFileURL)
+      : idOrFileURL,
+  );
+  return mod as T;
 };

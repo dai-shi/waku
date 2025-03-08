@@ -10,5 +10,5 @@ export default fsRouter(
   import.meta.url,
   (file: string) =>
     import.meta.glob('./pages/**/*.{tsx,ts}')[`./pages/${file}`]?.(),
-  'pages',
+  { pagesDir: 'pages', apiDir: 'api' },
 );

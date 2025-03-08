@@ -104,7 +104,14 @@ async function runDev() {
     if (values['experimental-compress']) {
       app.use(compress());
     }
-    app.use(serverEngine({ cmd: 'dev', config, env: process.env as any }));
+    app.use(
+      serverEngine({
+        cmd: 'dev',
+        config,
+        env: process.env as any,
+        unstable_onError: new Set(),
+      }),
+    );
     app.notFound((c) => {
       // FIXME can we avoid hardcoding the public path?
       const file = path.join('public', '404.html');
@@ -157,7 +164,12 @@ async function runStart() {
     }
     app.use(serveStatic({ root: path.join(distDir, DIST_PUBLIC) }));
     app.use(
-      serverEngine({ cmd: 'start', loadEntries, env: process.env as any }),
+      serverEngine({
+        cmd: 'start',
+        loadEntries,
+        env: process.env as any,
+        unstable_onError: new Set(),
+      }),
     );
     app.notFound((c) => {
       // FIXME better implementation using node stream?
@@ -220,7 +232,7 @@ async function loadConfig(): Promise<Config> {
   if (!existsSync(CONFIG_FILE)) {
     return {};
   }
-  const { loadServerFile } = await import('./lib/utils/vite-loader.js');
+  const { loadServerModule } = await import('./lib/utils/vite-loader.js');
   const file = pathToFileURL(path.resolve(CONFIG_FILE)).toString();
-  return (await loadServerFile(file)).default;
+  return (await loadServerModule<{ default: Config }>(file)).default;
 }

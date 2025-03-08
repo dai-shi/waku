@@ -27,7 +27,7 @@ const loadEntries = () => import('${srcEntriesFile}');
 const configPromise = loadEntries().then((entries) => entries.loadConfig());
 
 const createApp = (app) => {
-  app.use(serverEngine({ cmd: 'start', loadEntries, env: process.env }));
+  app.use(serverEngine({ cmd: 'start', loadEntries, env: process.env, unstable_onError: new Set() }));
   app.notFound((c) => {
     // FIXME better implementation using node stream?
     const file = path.join(distDir, publicDir, '404.html');
