@@ -2,7 +2,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type { ReadableStream } from 'stream/web';
 import * as tar from 'tar';
-import { red, cyan } from 'picocolors';
+import pc from 'picocolors';
 
 type RepoInfo = {
   username: string | undefined;
@@ -132,7 +132,7 @@ export async function parseExampleOption(
 
   if (!repoUrl) {
     console.error(
-      `Not a valid URL ${red(
+      `Not a valid URL ${pc.red(
         `"${example}"`,
       )}. Please check the URL syntax and try again.`,
     );
@@ -145,7 +145,7 @@ export async function parseExampleOption(
     repoUrl.origin !== 'https://www.github.com'
   ) {
     console.error(
-      `Invalid URL: ${red(
+      `Invalid URL: ${pc.red(
         `"${example}"`,
       )}. Only GitHub repositories are supported. Please use a GitHub URL and try again.`,
     );
@@ -156,7 +156,7 @@ export async function parseExampleOption(
   // NOTE validate reproInfo
   if (!repoInfo) {
     console.error(
-      `Found invalid GitHub URL: ${red(
+      `Found invalid GitHub URL: ${pc.red(
         `"${example}"`,
       )}. Please fix the URL and try again.`,
     );
@@ -166,7 +166,7 @@ export async function parseExampleOption(
   // NOTE Do the repo exist?
   if (!(await hasRepo(repoInfo))) {
     console.error(
-      `Could not locate the repository for ${red(
+      `Could not locate the repository for ${pc.red(
         `"${example}"`,
       )}. Please check that the repository exists and try again.`,
     );
@@ -181,7 +181,7 @@ export async function downloadAndExtract(
   { example, repoInfo }: ParsedExampleOption,
 ): Promise<void> {
   console.log(
-    `Downloading files from repo ${cyan(example)}. This might take a moment.
+    `Downloading files from repo ${pc.cyan(example)}. This might take a moment.
 `,
   );
   await downloadAndExtractRepo(root, repoInfo);
