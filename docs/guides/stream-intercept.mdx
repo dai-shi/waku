@@ -64,11 +64,11 @@ import { defineConfig } from 'waku/config';
 
 export default defineConfig({
   // ...
-  middleware: () => [
-    import('waku/middleware/context'),
-    import('./src/middleware/themePreload.js'), // + this is the one we just added
-    import('waku/middleware/dev-server'),
-    import('waku/middleware/handler'),
+  middleware: [
+    'waku/middleware/context',
+    './src/middleware/themePreload.js', // + this is the one we just added
+    'waku/middleware/dev-server',
+    'waku/middleware/handler',
   ],
 });
 ```
