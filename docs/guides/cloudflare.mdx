@@ -117,4 +117,4 @@ npm i --save-dev wrangler
 
 When starting the Waku dev server, we need to first start a wrangler/miniflare server and then pass them into the Hono app fetch.
 
-This can be done by creating a custom Waku plugin in your `waku.config.ts` file. Copy the `waku.cloudflare-dev-server.ts` and `waku.config.ts` to your project from [the Cloudflare example in the Waku GitHub repository](https://github.com/dai-shi/waku/tree/main/examples/07_cloudflare). Now when you run `waku dev`, you will be able to access Cloudflare env bindings and execution context on the Hono context.
+This can be done by creating a custom Waku plugin in your `waku.config.ts` file. Copy the `waku.cloudflare-dev-server.ts`, `waku.hono-enhahcer.ts` and `waku.config.ts` to your project from [the Cloudflare example in the Waku GitHub repository](https://github.com/dai-shi/waku/tree/main/examples/07_cloudflare). Now when you run `waku dev`, you will be able to access Cloudflare env bindings and execution context on the Hono context.

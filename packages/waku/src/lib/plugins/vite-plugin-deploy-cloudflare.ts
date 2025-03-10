@@ -19,12 +19,22 @@ import { SRC_ENTRIES } from '../constants.js';
 
 const SERVE_JS = 'serve-cloudflare.js';
 
-const getServeJsContent = (srcEntriesFile: string) => `
+const getServeJsContent = (
+  srcEntriesFile: string,
+  honoEnhancerFile: string | undefined,
+) => `
 import { serverEngine, importHono } from 'waku/unstable_hono';
 
 const { Hono } = await importHono();
 
 const loadEntries = () => import('${srcEntriesFile}');
+const loadHonoEnhancer = async () => {
+  ${
+    honoEnhancerFile
+      ? `return (await import('${honoEnhancerFile}')).default;`
+      : `return (fn) => fn;`
+  }
+};
 let serve;
 let app;
 
@@ -54,10 +64,7 @@ export default {
       serve = serverEngine({ cmd: 'start', loadEntries, env, unstable_onError: new Set() });
     }
     if (!app) {
-      const entries = await loadEntries();
-      const config = await entries.loadConfig();
-      const honoEnhancer =
-        config.unstable_honoEnhancer || ((createApp) => createApp);
+      const honoEnhancer = await loadHonoEnhancer();
       app = honoEnhancer(createApp)(new Hono());
     }
     return app.fetch(request, env, ctx);
@@ -146,10 +153,12 @@ export function deployCloudflarePlugin(opts: {
   srcDir: string;
   distDir: string;
   privateDir: string;
+  unstable_honoEnhancer: string | undefined;
 }): Plugin {
   const buildOptions = unstable_getBuildOptions();
   let rootDir: string;
   let entriesFile: string;
+  let honoEnhancerFile: string | undefined;
   return {
     name: 'deploy-cloudflare-plugin',
     config(viteConfig) {
@@ -165,6 +174,9 @@ export function deployCloudflarePlugin(opts: {
     configResolved(config) {
       rootDir = config.root;
       entriesFile = `${rootDir}/${opts.srcDir}/${SRC_ENTRIES}`;
+      if (opts.unstable_honoEnhancer) {
+        honoEnhancerFile = `${rootDir}/${opts.unstable_honoEnhancer}`;
+      }
       const { deploy, unstable_phase } = buildOptions;
       if (
         (unstable_phase !== 'buildServerBundle' &&
@@ -187,7 +199,7 @@ export function deployCloudflarePlugin(opts: {
     },
     load(id) {
       if (id === `${opts.srcDir}/${SERVE_JS}`) {
-        return getServeJsContent(entriesFile);
+        return getServeJsContent(entriesFile, honoEnhancerFile);
       }
     },
     async closeBundle() {

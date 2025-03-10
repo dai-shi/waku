@@ -17,6 +17,8 @@ const CONFIG_FILE = 'waku.config.ts'; // XXX only ts extension
 export function rscEntriesPlugin(opts: {
   basePath: string;
   rscBase: string;
+  middleware: string[];
+  rootDir: string;
   srcDir: string;
   ssrDir: string;
   moduleMap: Record<string, string>;
@@ -28,6 +30,15 @@ globalThis.AsyncLocalStorage = require('node:async_hooks').AsyncLocalStorage;
 export const configPrd = {
   basePath: '${opts.basePath}',
   rscBase: '${opts.rscBase}',
+};
+export function loadMiddleware() {
+  return Promise.all([
+    ${opts.middleware
+      .map(
+        (m) => `import('${m.startsWith('./') ? `${opts.rootDir}/${m}` : m}')`,
+      )
+      .join(',\n')}
+  ]);
 };
 export function loadModule(id) {
   switch (id) {
@@ -61,17 +72,7 @@ export const loadPlatformData = globalThis.__WAKU_LOAD_PLATFORM_DATA__;
         return codeToPrepend + code;
       }
       if (stripExt(id).endsWith(entriesFile)) {
-        return (
-          code +
-          codeToAppend +
-          (configFile
-            ? `
-export const loadConfig = async () => (await import('${configFile}')).default;
-`
-            : `
-export const loadConfig = async () => ({});
-`)
-        );
+        return code + codeToAppend;
       }
       if (id === configFile) {
         // FIXME this naively removes code with object key name
