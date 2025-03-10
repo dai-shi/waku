@@ -146,6 +146,16 @@ const pages: ReturnType<typeof createPages> = createPages(
     }),
 
     createApi({
+      path: '/api/url',
+      render: 'dynamic',
+      handlers: {
+        GET: async (req) => {
+          return new Response('url ' + req.url);
+        },
+      },
+    }),
+
+    createApi({
       path: '/api/empty',
       render: 'static',
       method: 'GET',
