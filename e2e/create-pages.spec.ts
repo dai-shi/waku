@@ -67,6 +67,13 @@ for (const mode of ['DEV', 'PRD'] as const) {
       ).toBeVisible();
     });
 
+    test("nested/cat's pajamas", async ({ page }) => {
+      await page.goto(`http://localhost:${port}/nested/cat's%20pajamas`);
+      await expect(
+        page.getByRole('heading', { name: "Dynamic: cat's pajamas" }),
+      ).toBeVisible();
+    });
+
     test('jump', async ({ page }) => {
       await page.goto(`http://localhost:${port}`);
       await page.click("a[href='/foo']");
