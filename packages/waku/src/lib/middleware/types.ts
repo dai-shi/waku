@@ -12,8 +12,6 @@ export type ClonableModuleNode = { url: string; file: string };
 export type HandlerContext = {
   readonly req: HandlerReq;
   readonly res: HandlerRes;
-  /** @deprecated use `data` */
-  readonly context: Record<string, unknown>;
   readonly data: Record<string, unknown>;
   unstable_devServer?: {
     rootDir: string;
