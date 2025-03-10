@@ -30,6 +30,13 @@ export function unstable_fsRouter(
       let files = await unstable_getPlatformData<string[]>('fsRouterFiles');
       if (!files) {
         // dev and build only
+        if (
+          import.meta.env &&
+          import.meta.env.MODE === 'production' &&
+          !buildOptions.unstable_phase
+        ) {
+          throw new Error('files must be set in production.');
+        }
         const [
           { readdir },
           { join, dirname, extname, sep },
