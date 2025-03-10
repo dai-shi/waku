@@ -430,7 +430,7 @@ class CustomErrorHandler extends Component<
   }
 }
 
-const getRouteSlotId = (path: string) => 'route:' + path;
+const getRouteSlotId = (path: string) => 'route:' + decodeURIComponent(path);
 
 const handleScroll = () => {
   const { hash } = window.location;
