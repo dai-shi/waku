@@ -5,8 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import fse from 'fs-extra/esm';
-import { bold, green, red } from 'kolorist';
-import { default as prompts } from 'prompts';
+import pc from 'picocolors';
+import * as p from '@clack/prompts';
 import checkForUpdate from 'update-check';
 import {
   downloadAndExtract,
@@ -71,12 +71,20 @@ const { values } = parseArgs({
     'project-name': {
       type: 'string',
     },
+    'package-name': {
+      type: 'string',
+    },
     help: {
       type: 'boolean',
       short: 'h',
     },
   },
 });
+
+const onCancel = () => {
+  p.cancel(pc.red('✖') + ' Operation cancelled');
+  process.exit(0);
+};
 
 async function doPrompts() {
   const isValidPackageName = (projectName: string) =>
@@ -99,60 +107,80 @@ async function doPrompts() {
   const templateNames = await getTemplateNames(templateRoot);
 
   const defaultProjectName = 'waku-project';
-  let targetDir = values['project-name'] || defaultProjectName;
+  let targetDir = defaultProjectName;
 
   try {
-    const result = await prompts(
-      [
+    if (values['project-name']) {
+      targetDir = values['project-name'];
+    } else {
+      const { projectName } = await p.group(
         {
-          name: 'projectName',
-          type: values['project-name'] ? null : 'text',
-          message: 'Project Name',
-          initial: defaultProjectName,
-          onState: (state: any) => (targetDir = String(state.value).trim()),
+          projectName: () =>
+            p.text({
+              defaultValue: targetDir,
+              message: 'Project Name',
+              placeholder: defaultProjectName,
+            }),
         },
-        {
-          name: 'shouldOverwrite',
-          type: () => (canSafelyOverwrite(targetDir) ? null : 'confirm'),
-          message: `${targetDir} is not empty. Remove existing files and continue?`,
-        },
-        {
-          name: 'overwriteChecker',
-          type: (values: any) => {
-            if (values === false) {
-              throw new Error(red('✖') + ' Operation cancelled');
-            }
-            return null;
-          },
-        },
-        {
-          name: 'packageName',
-          type: () => (isValidPackageName(targetDir) ? null : 'text'),
-          message: 'Package name',
-          initial: () => toValidPackageName(targetDir),
-          validate: (dir: string) =>
-            isValidPackageName(dir) || 'Invalid package.json name',
-        },
-        {
-          name: 'templateName',
-          type: values['choose'] ? 'select' : null,
-          message: 'Choose a starter template',
-          choices: templateNames.map((name) => ({
-            title: name,
-            value: name,
-          })),
-        },
-      ],
+        { onCancel },
+      );
+      targetDir =
+        typeof projectName === 'string' ? projectName.trim() : targetDir;
+    }
+    if (!canSafelyOverwrite(targetDir)) {
+      const confirmed = await p.confirm({
+        message: `${targetDir} is not empty. Remove existing files and continue?`,
+      });
+      if (!confirmed) {
+        p.cancel(pc.red('✖') + ' Operation cancelled');
+        process.exit(0);
+      }
+    }
+
+    const results = await p.group(
       {
-        onCancel: () => {
-          throw new Error(red('✖') + ' Operation cancelled');
-        },
+        ...(!values['package-name']
+          ? {
+              packageName: () =>
+                p.text({
+                  message: 'Package name',
+                  validate: (dir: string) => {
+                    if (!isValidPackageName(dir)) {
+                      return 'Invalid package.json name';
+                    }
+                  },
+                }),
+            }
+          : {}),
+        ...(!values['template'] && !values['example']
+          ? {
+              templateName: () =>
+                p.select({
+                  message: 'Choose a starter template',
+                  options: templateNames.map((name) => ({
+                    label: name,
+                    value: name,
+                  })),
+                }),
+            }
+          : {}),
+      },
+      {
+        onCancel,
       },
     );
+
     return {
-      ...result,
-      packageName: result.packageName ?? toValidPackageName(targetDir),
-      templateName: result.templateName ?? values.template ?? templateNames[0],
+      ...results,
+      packageName:
+        values['package-name'] ??
+        results.packageName ??
+        toValidPackageName(targetDir),
+      templateName:
+        values['template'] ??
+        results.templateName ??
+        templateNames[0] ??
+        toValidPackageName(targetDir),
       targetDir,
     };
   } catch (err) {
@@ -172,6 +200,7 @@ Options:
   --template            Specify a template
   --example             Specify an example use as a template
   --project-name        Specify a project name
+  --package-name        Specify a package name
   -h, --help            Display this help message
 `);
 }
@@ -197,15 +226,14 @@ async function init() {
 
   const exampleOption = await parseExampleOption(values.example);
 
-  const { packageName, templateName, shouldOverwrite, targetDir } =
-    await doPrompts();
+  const { packageName, templateName, targetDir } = await doPrompts();
   const root = path.resolve(targetDir);
 
   console.log('Setting up project...');
 
-  if (shouldOverwrite) {
-    fse.emptyDirSync(root);
-  } else if (!existsSync(root)) {
+  // doPrompts would exit if the dir exists and overwrite is false
+  fse.emptyDirSync(root);
+  if (!existsSync(root)) {
     await fsPromises.mkdir(root, { recursive: true });
   }
 
@@ -233,14 +261,14 @@ async function init() {
     // process exit code
     if (code !== 0) {
       console.log(`Could not execute ${commands.install}. Please run`);
-      console.log(`${bold(green(`cd ${targetDir}`))}`);
-      console.log(`${bold(green(commands.install))}`);
-      console.log(`${bold(green(commands.dev))}`);
+      console.log(`${pc.bold(pc.green(`cd ${targetDir}`))}`);
+      console.log(`${pc.bold(pc.green(commands.install))}`);
+      console.log(`${pc.bold(pc.green(commands.dev))}`);
       console.log();
     } else {
       console.log(`\nDone. Now run:\n`);
-      console.log(`${bold(green(`cd ${targetDir}`))}`);
-      console.log(`${bold(green(commands.dev))}`);
+      console.log(`${pc.bold(pc.green(`cd ${targetDir}`))}`);
+      console.log(`${pc.bold(pc.green(commands.dev))}`);
       console.log();
     }
   });
