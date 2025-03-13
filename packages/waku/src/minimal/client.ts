@@ -66,11 +66,26 @@ const mergeElementsPromise = (
   b: Promise<Elements>,
 ): Promise<Elements> => {
   const getResult = () =>
-    Promise.all([a, b]).then(([a, b]) => {
-      const nextElements = { ...a, ...b };
-      delete nextElements._value;
-      return nextElements;
-    });
+    a
+      .then((a) =>
+        b
+          .then((b) => {
+            const nextElements = { ...a, ...b };
+            delete nextElements._value;
+            return nextElements;
+          })
+          .catch(() => {
+            (b as any).prev = a; // HACK
+            return b;
+          }),
+      )
+      .catch(() =>
+        b.then((b) => {
+          const nextElements = { ...(a as any).prev, ...b }; // HACK
+          delete nextElements._value;
+          return nextElements;
+        }),
+      );
   const cache2 = getCached(() => new WeakMap(), cache1, a);
   return getCached(getResult, cache2, b);
 };
@@ -248,6 +263,27 @@ export const useRefetch = () => use(RefetchContext);
 
 const ChildrenContext = createContext<ReactNode>(undefined);
 const ChildrenContextProvider = memo(ChildrenContext.Provider);
+const ErrorContext = createContext<
+  [error: unknown, reset: () => void] | undefined
+>(undefined);
+const ErrorContextProvider = memo(ErrorContext.Provider);
+
+export const Children = () => use(ChildrenContext);
+
+export const ThrowError_UNSTABLE = () => {
+  const errAndReset = use(ErrorContext);
+  if (errAndReset) {
+    throw errAndReset[0];
+  }
+  return null;
+};
+
+export const useResetError_UNSTABLE = () => {
+  const errAndReset = use(ErrorContext);
+  if (errAndReset) {
+    return errAndReset[1];
+  }
+};
 
 export const useElement = (id: string) => {
   const elementsPromise = use(ElementsContext);
@@ -294,31 +330,40 @@ const InnerSlot = ({
   );
 };
 
-const ThrowError = ({ error }: { error: unknown }) => {
-  throw error;
-};
-
 class Fallback extends Component<
-  { children: ReactNode; fallback: ReactNode },
-  { error?: unknown }
+  { children: ReactNode; fallback: ReactNode; fallbackChildren: ReactNode },
+  { error: unknown | null }
 > {
-  constructor(props: { children: ReactNode; fallback: ReactNode }) {
+  constructor(props: {
+    children: ReactNode;
+    fallback: ReactNode;
+    fallbackChildren: ReactNode;
+  }) {
     super(props);
-    this.state = {};
+    this.state = { error: null };
+    this.reset = this.reset.bind(this);
   }
   static getDerivedStateFromError(error: unknown) {
     return { error };
   }
+  reset() {
+    this.setState({ error: null });
+  }
   render() {
-    if ('error' in this.state) {
+    const { error } = this.state;
+    if (error !== null) {
       if (this.props.fallback) {
         return createElement(
-          ChildrenContextProvider,
-          { value: createElement(ThrowError, { error: this.state.error }) },
-          this.props.fallback,
+          ErrorContextProvider,
+          { value: [error, this.reset] },
+          createElement(
+            ChildrenContextProvider,
+            { value: this.props.fallbackChildren },
+            this.props.fallback,
+          ),
         );
       }
-      throw this.state.error;
+      throw error;
     }
     return this.props.children;
   }
@@ -342,25 +387,25 @@ export const Slot = ({
   id,
   children,
   unstable_fallbackToPrev,
+  unstable_fallbackChildren,
   unstable_fallback,
 }: {
   id: string;
   children?: ReactNode;
   unstable_fallbackToPrev?: boolean;
+  unstable_fallbackChildren?: ReactNode;
   unstable_fallback?: ReactNode;
 }) => {
   const [fallback, setFallback] = useState<ReactNode>();
   if (unstable_fallbackToPrev) {
     return createElement(
       Fallback,
-      { fallback } as never,
+      { fallback, fallbackChildren: unstable_fallbackChildren } as never,
       createElement(InnerSlot, { id, setFallback }, children),
     );
   }
   return createElement(InnerSlot, { id, unstable_fallback }, children);
 };
-
-export const Children = () => use(ChildrenContext);
 
 /**
  * ServerRoot for SSR
