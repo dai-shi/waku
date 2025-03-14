@@ -51,11 +51,11 @@ export default redirectsMiddleware;
 import type { Config } from 'waku/config';
 
 export default {
-  middleware: () => [
-    import('waku/middleware/context'),
-    import('./src/middleware/redirects.js'),
-    import('waku/middleware/dev-server'),
-    import('waku/middleware/handler'),
+  middleware: [
+    'waku/middleware/context',
+    './src/middleware/redirects.js',
+    'waku/middleware/dev-server',
+    'waku/middleware/handler',
   ],
 } satisfies Config;
 ```

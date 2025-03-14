@@ -45,20 +45,18 @@ export interface Config {
   /**
    * Middleware to use
    * Defaults to:
-   * () => [
-   *   import('waku/middleware/context'),
-   *   import('waku/middleware/dev-server'),
-   *   import('waku/middleware/handler'),
+   * [
+   *   'waku/middleware/context',
+   *   'waku/middleware/dev-server',
+   *   'waku/middleware/handler',
    * ]
    */
-  middleware?: () => Promise<{ default: Middleware }>[];
+  middleware?: string[];
   /**
    * Enhancer for Hono
    * Defaults to `undefined`
    */
-  unstable_honoEnhancer?:
-    | (<Hono>(createApp: (app: Hono) => Hono) => (app: Hono) => Hono)
-    | undefined;
+  unstable_honoEnhancer?: string | undefined;
   /**
    * Vite configuration options.
    * `common` can contains shared configs that are shallowly merged with other configs.

@@ -1,10 +1,10 @@
 import { defineConfig } from 'waku/config';
 
 export default defineConfig({
-  middleware: () => [
-    import('waku/middleware/context'),
-    import('waku/middleware/dev-server'),
-    import('waku/middleware/handler'),
-    import('waku/middleware/fallback'),
+  middleware: [
+    'waku/middleware/context',
+    'waku/middleware/dev-server',
+    'waku/middleware/handler',
+    'waku/middleware/fallback',
   ],
 });
