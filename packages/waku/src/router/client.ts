@@ -365,10 +365,11 @@ const NotFound = ({
       reset();
     }
   }, [has404, resetError, reset, changeRoute]);
-  return createElement('h1', null, 'Not Found');
+  return has404 ? null : createElement('h1', null, 'Not Found');
 };
 
 const Redirect = ({ to, reset }: { to: string; reset: () => void }) => {
+  const resetError = useResetError();
   const router = useContext(RouterContext);
   if (!router) {
     throw new Error('Missing Router');
@@ -391,8 +392,9 @@ const Redirect = ({ to, reset }: { to: string; reset: () => void }) => {
       url,
     );
     changeRoute(parseRoute(url), { shouldScroll: newPath });
+    resetError?.();
     reset();
-  }, [to, reset, changeRoute]);
+  }, [to, resetError, reset, changeRoute]);
   return null;
 };
 

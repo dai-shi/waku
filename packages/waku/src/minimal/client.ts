@@ -58,6 +58,12 @@ const checkStatus = async (
 
 type Elements = Record<string, unknown>;
 
+// HACK I'm not super happy with this hack
+const erroredElementsPromiseMap = new WeakMap<
+  Promise<Elements>,
+  Promise<Elements>
+>();
+
 const getCached = <T>(c: () => T, m: WeakMap<object, T>, k: object): T =>
   (m.has(k) ? m : m.set(k, c())).get(k) as T;
 const cache1 = new WeakMap();
@@ -65,27 +71,19 @@ const mergeElementsPromise = (
   a: Promise<Elements>,
   b: Promise<Elements>,
 ): Promise<Elements> => {
-  const getResult = () =>
-    a
-      .then((a) =>
-        b
-          .then((b) => {
-            const nextElements = { ...a, ...b };
-            delete nextElements._value;
-            return nextElements;
-          })
-          .catch(() => {
-            (b as any).prev = a; // HACK
-            return b;
-          }),
-      )
-      .catch(() =>
-        b.then((b) => {
-          const nextElements = { ...(a as any).prev, ...b }; // HACK
-          delete nextElements._value;
-          return nextElements;
-        }),
-      );
+  const getResult = () => {
+    const p = Promise.all([erroredElementsPromiseMap.get(a) || a, b])
+      .then(([a, b]) => {
+        const nextElements = { ...a, ...b };
+        delete nextElements._value;
+        return nextElements;
+      })
+      .catch((err) => {
+        erroredElementsPromiseMap.set(p, a);
+        throw err;
+      });
+    return p;
+  };
   const cache2 = getCached(() => new WeakMap(), cache1, a);
   return getCached(getResult, cache2, b);
 };
