@@ -298,22 +298,22 @@ export const useElement = (id: string) => {
 const InnerSlot = ({
   id,
   children,
-  setFallback,
+  setValidElement,
   unstable_fallback,
 }: {
   id: string;
   children?: ReactNode;
-  setFallback?: (fallback: ReactNode) => void;
+  setValidElement?: (element: ReactNode) => void;
   unstable_fallback?: ReactNode;
 }) => {
   const element = useElement(id);
   const isValidElement = element !== undefined;
   useEffect(() => {
-    if (isValidElement && setFallback) {
+    if (isValidElement && setValidElement) {
       // FIXME is there `isReactNode` type checker?
-      setFallback(element as ReactNode);
+      setValidElement(element as ReactNode);
     }
-  }, [isValidElement, element, setFallback]);
+  }, [isValidElement, element, setValidElement]);
   if (!isValidElement) {
     if (unstable_fallback) {
       return unstable_fallback;
@@ -328,15 +328,11 @@ const InnerSlot = ({
   );
 };
 
-class Fallback extends Component<
-  { children: ReactNode; fallback: ReactNode; fallbackChildren: ReactNode },
+class GeneralErrorHandler extends Component<
+  { children?: ReactNode; errorHandler: ReactNode },
   { error: unknown | null }
 > {
-  constructor(props: {
-    children: ReactNode;
-    fallback: ReactNode;
-    fallbackChildren: ReactNode;
-  }) {
+  constructor(props: { children?: ReactNode; errorHandler: ReactNode }) {
     super(props);
     this.state = { error: null };
     this.reset = this.reset.bind(this);
@@ -350,15 +346,11 @@ class Fallback extends Component<
   render() {
     const { error } = this.state;
     if (error !== null) {
-      if (this.props.fallback) {
+      if (this.props.errorHandler) {
         return createElement(
           ErrorContextProvider,
           { value: [error, this.reset] },
-          createElement(
-            ChildrenContextProvider,
-            { value: this.props.fallbackChildren },
-            this.props.fallback,
-          ),
+          this.props.errorHandler,
         );
       }
       throw error;
@@ -384,22 +376,31 @@ class Fallback extends Component<
 export const Slot = ({
   id,
   children,
-  unstable_fallbackToPrev,
-  unstable_fallbackChildren,
+  unstable_handleError,
   unstable_fallback,
 }: {
   id: string;
   children?: ReactNode;
-  unstable_fallbackToPrev?: boolean;
-  unstable_fallbackChildren?: ReactNode;
+  unstable_handleError?: ReactNode;
   unstable_fallback?: ReactNode;
 }) => {
-  const [fallback, setFallback] = useState<ReactNode>();
-  if (unstable_fallbackToPrev) {
+  const [errorHandler, setErrorHandler] = useState<ReactNode>();
+  const setValidElement = useCallback(
+    (element: ReactNode) =>
+      setErrorHandler(
+        createElement(
+          ChildrenContextProvider,
+          { value: unstable_handleError },
+          element,
+        ),
+      ),
+    [unstable_handleError],
+  );
+  if (unstable_handleError !== undefined) {
     return createElement(
-      Fallback,
-      { fallback, fallbackChildren: unstable_fallbackChildren } as never,
-      createElement(InnerSlot, { id, setFallback }, children),
+      GeneralErrorHandler,
+      { errorHandler },
+      createElement(InnerSlot, { id, setValidElement }, children),
     );
   }
   return createElement(InnerSlot, { id, unstable_fallback }, children);
