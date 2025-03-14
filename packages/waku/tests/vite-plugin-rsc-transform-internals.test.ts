@@ -12,7 +12,7 @@ describe('internal transform function for server environment', () => {
       code: string,
       id: string,
       options?: { ssr?: boolean },
-    ): Promise<string | undefined>;
+    ): Promise<{ code: string; map?: string } | undefined>;
   };
 
   test('no transformation', async () => {
@@ -75,31 +75,36 @@ export default function App() {
   );
 }
 `;
-    expect(await transform(code, '/src/App.tsx', { ssr: true }))
+    expect((await transform(code, '/src/App.tsx', { ssr: true }))?.code)
       .toMatchInlineSnapshot(`
-        "
-        import { registerClientReference as __waku_registerClientReference } from 'react-server-dom-webpack/server.edge';
-        import { atom } from 'jotai/vanilla';
-        const initialCount = 1;
-        const TWO = 2;
-        function double(x: number) {
-            return x * TWO;
-        }
-        export const countAtom = __waku_registerClientReference(atom(double(initialCount)), "/src/App.tsx", "countAtom");
-
-        export const Empty = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Empty'); }, '/src/App.tsx', 'Empty');
-
-        export const Greet = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Greet'); }, '/src/App.tsx', 'Greet');
-
-        export const MyComponent = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#MyComponent'); }, '/src/App.tsx', 'MyComponent');
-
-        export const useMyContext = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#useMyContext'); }, '/src/App.tsx', 'useMyContext');
-
-        export const NAME = __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#NAME'); }, '/src/App.tsx', 'NAME');
-
-        export default __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#default'); }, '/src/App.tsx', 'default');
-        "
-      `);
+      "import { registerClientReference as __waku_registerClientReference } from 'react-server-dom-webpack/server.edge';
+      import { atom } from 'jotai/vanilla';
+      const initialCount = 1;
+      const TWO = 2;
+      function double(x) {
+          return x * TWO;
+      }
+      export const countAtom = __waku_registerClientReference(atom(double(initialCount)), "/src/App.tsx", "countAtom");
+      export const Empty = __waku_registerClientReference(()=>{
+          throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Empty');
+      }, '/src/App.tsx', 'Empty');
+      export const Greet = __waku_registerClientReference(()=>{
+          throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#Greet');
+      }, '/src/App.tsx', 'Greet');
+      export const MyComponent = __waku_registerClientReference(()=>{
+          throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#MyComponent');
+      }, '/src/App.tsx', 'MyComponent');
+      export const useMyContext = __waku_registerClientReference(()=>{
+          throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#useMyContext');
+      }, '/src/App.tsx', 'useMyContext');
+      export const NAME = __waku_registerClientReference(()=>{
+          throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#NAME');
+      }, '/src/App.tsx', 'NAME');
+      export default __waku_registerClientReference(()=>{
+          throw new Error('It is not possible to invoke a client function from the server: /src/App.tsx#default');
+      }, '/src/App.tsx', 'default');
+      "
+    `);
   });
 
   test('top-level use server', async () => {
@@ -120,7 +125,7 @@ export default async function() {
   return Date.now();
 }
 `;
-    expect(await transform(code, '/src/App.tsx', { ssr: true }))
+    expect((await transform(code, '/src/App.tsx', { ssr: true }))?.code)
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         const privateFunction = ()=>'Secret';
@@ -156,7 +161,7 @@ export function ServerProvider({ children }: { children: ReactNode }) {
   return <AI>{children}</AI>;
 }
 `;
-    expect(await transform(code, '/src/App.tsx', { ssr: true }))
+    expect((await transform(code, '/src/App.tsx', { ssr: true }))?.code)
       .toMatchInlineSnapshot(`
         "import type { ReactNode } from 'react';
         import { createAI } from 'ai/rsc';
@@ -201,7 +206,7 @@ export async function exportedAction() {
 
 export default async () => null;
 `;
-    expect(await transform(code, '/src/App.tsx', { ssr: true }))
+    expect((await transform(code, '/src/App.tsx', { ssr: true }))?.code)
       .toMatchInlineSnapshot(`
         "import { InternalProvider } from './shared.js';
         import { jsx } from 'react/jsx-runtime';
@@ -235,7 +240,7 @@ export default function App({ a }) {
   return <Hello log={log} />;
 }
 `;
-    expect(await transform(code, '/src/App.tsx', { ssr: true }))
+    expect((await transform(code, '/src/App.tsx', { ssr: true }))?.code)
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         export async function __waku_func1(a, mesg) {
@@ -261,7 +266,7 @@ export default function App() {
   return <Hello log={log} />;
 }
 `;
-    expect(await transform(code, '/src/App.tsx', { ssr: true }))
+    expect((await transform(code, '/src/App.tsx', { ssr: true }))?.code)
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         export const __waku_func1 = __waku_registerServerReference(async function(rand, mesg, rand) {
@@ -287,7 +292,7 @@ export default function App() {
   return <Hello log={log} />;
 }
 `;
-    expect(await transform(code, '/src/App.tsx', { ssr: true }))
+    expect((await transform(code, '/src/App.tsx', { ssr: true }))?.code)
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         export const __waku_func1 = __waku_registerServerReference(async (mesg)=>{
@@ -312,7 +317,7 @@ export default function App() {
   }} />;
 }
 `;
-    expect(await transform(code, '/src/App.tsx', { ssr: true }))
+    expect((await transform(code, '/src/App.tsx', { ssr: true }))?.code)
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         export const __waku_func1 = __waku_registerServerReference((mesg)=>{
@@ -359,7 +364,7 @@ export default async function(mesg) {
   console.log(mesg);
 }
 `;
-    expect(await transform(code, '/src/App.tsx', { ssr: true }))
+    expect((await transform(code, '/src/App.tsx', { ssr: true }))?.code)
       .toMatchInlineSnapshot(`
         "import { registerServerReference as __waku_registerServerReference } from 'react-server-dom-webpack/server.edge';
         export const __waku_func1 = __waku_registerServerReference(async (mesg)=>{
@@ -399,7 +404,7 @@ describe('internal transform function for client environment', () => {
       code: string,
       id: string,
       options?: { ssr?: boolean },
-    ): Promise<string | undefined>;
+    ): Promise<{ code: string; map?: string } | undefined>;
   };
 
   test('no transformation', async () => {
@@ -437,17 +442,13 @@ export default async function log4(mesg) {
   console.log(mesg);
 }
 `;
-    expect(await transform(code, '/src/func.ts')).toMatchInlineSnapshot(`
-      "
-      import { createServerReference } from 'react-server-dom-webpack/client';
+    expect((await transform(code, '/src/func.ts'))?.code)
+      .toMatchInlineSnapshot(`
+      "import { createServerReference } from 'react-server-dom-webpack/client';
       import { unstable_callServerRsc as callServerRsc } from 'waku/minimal/client';
-
       export const log1 = createServerReference('/src/func.ts#log1', callServerRsc);
-
       export const log2 = createServerReference('/src/func.ts#log2', callServerRsc);
-
       export const log3 = createServerReference('/src/func.ts#log3', callServerRsc);
-
       export default createServerReference('/src/func.ts#default', callServerRsc);
       "
     `);
@@ -465,11 +466,10 @@ export async function log(mesg) {
   console.log(mesg);
 }
 `;
-    expect(await transform(code, '/src/func.ts', { ssr: true }))
+    expect((await transform(code, '/src/func.ts', { ssr: true }))?.code)
       .toMatchInlineSnapshot(`
-      "
-      export const log = () => {
-        throw new Error('You cannot call server functions during SSR');
+      "export const log = ()=>{
+          throw new Error('You cannot call server functions during SSR');
       };
       "
     `);

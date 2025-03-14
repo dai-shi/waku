@@ -68,7 +68,10 @@ import { unstable_callServerRsc as callServerRsc } from 'waku/minimal/client';
 export ${name === 'default' ? name : `const ${name} =`} createServerReference('${getServerId()}#${name}', callServerRsc);
 `;
     }
-    return newCode;
+    return swc.transformSync(newCode, {
+      jsc: { parser: parseOpts(ext), target: 'esnext' },
+      sourceMaps: true,
+    });
   }
 };
 
@@ -100,7 +103,10 @@ export ${name === 'default' ? name : `const ${name} =`} () => {
 };
 `;
     }
-    return newCode;
+    return swc.transformSync(newCode, {
+      jsc: { parser: parseOpts(ext), target: 'esnext' },
+      sourceMaps: true,
+    });
   }
 };
 
@@ -773,15 +779,17 @@ import { registerClientReference as __waku_registerClientReference } from 'react
 export ${name === 'default' ? name : `const ${name} =`} __waku_registerClientReference(() => { throw new Error('It is not possible to invoke a client function from the server: ${getClientId()}#${name}'); }, '${getClientId()}', '${name}');
 `;
     }
-    return newCode;
+    return swc.transformSync(newCode, {
+      jsc: { parser: parseOpts(ext), target: 'esnext' },
+      sourceMaps: true,
+    });
   }
   let transformed =
     hasUseServer && transformExportedServerFunctions(mod, getServerId);
   transformed = transformInlineServerFunctions(mod, getServerId) || transformed;
   if (transformed) {
     mod.body.splice(findLastImportIndex(mod), 0, ...serverInitCode);
-    const newCode = swc.printSync(mod).code;
-    return newCode;
+    return swc.printSync(mod, { sourceMaps: true });
   }
 };
 
