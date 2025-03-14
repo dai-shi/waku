@@ -22,11 +22,12 @@ import type {
 } from 'react';
 
 import {
-  fetchRsc,
   prefetchRsc,
   Root,
   Slot,
   useRefetch,
+  ThrowError_UNSTABLE as ThrowError,
+  useResetError_UNSTABLE as useResetError,
 } from '../minimal/client.js';
 import {
   encodeRoutePath,
@@ -350,6 +351,7 @@ const NotFound = ({
   has404: boolean;
   reset: () => void;
 }) => {
+  const resetError = useResetError();
   const router = useContext(RouterContext);
   if (!router) {
     throw new Error('Missing Router');
@@ -359,13 +361,15 @@ const NotFound = ({
     if (has404) {
       const url = new URL('/404', window.location.href);
       changeRoute(parseRoute(url), { shouldScroll: true });
+      resetError?.();
       reset();
     }
-  }, [has404, reset, changeRoute]);
-  return createElement('h1', null, 'Not Found');
+  }, [has404, resetError, reset, changeRoute]);
+  return has404 ? null : createElement('h1', null, 'Not Found');
 };
 
 const Redirect = ({ to, reset }: { to: string; reset: () => void }) => {
+  const resetError = useResetError();
   const router = useContext(RouterContext);
   if (!router) {
     throw new Error('Missing Router');
@@ -388,8 +392,9 @@ const Redirect = ({ to, reset }: { to: string; reset: () => void }) => {
       url,
     );
     changeRoute(parseRoute(url), { shouldScroll: newPath });
+    resetError?.();
     reset();
-  }, [to, reset, changeRoute]);
+  }, [to, resetError, reset, changeRoute]);
   return null;
 };
 
@@ -541,7 +546,14 @@ const InnerRouter = ({
   const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
   const rootElement = createElement(
     Slot,
-    { id: 'root', unstable_fallbackToPrev: true },
+    {
+      id: 'root',
+      unstable_handleError: createElement(
+        CustomErrorHandler,
+        { has404 },
+        createElement(ThrowError),
+      ),
+    },
     createElement(CustomErrorHandler, { has404 }, routeElement),
   );
   return createElement(
@@ -588,13 +600,6 @@ export function Router({
       ) => Promise<Record<string, unknown>>,
     ) =>
     async (responsePromise: Promise<Response>) => {
-      const has404 = (routerData[3] ||= false);
-      const response = await responsePromise;
-      if (response.status === 404 && has404) {
-        // HACK this is still an experimental logic. It's very fragile.
-        // FIXME we should cache it if 404.txt is static.
-        return fetchRsc(encodeRoutePath('/404'));
-      }
       const data = createData(responsePromise);
       Promise.resolve(data)
         .then((data) => {
@@ -654,7 +659,7 @@ export function INTERNAL_ServerRouter({ route }: { route: RouteProps }) {
   const routeElement = createElement(Slot, { id: getRouteSlotId(route.path) });
   const rootElement = createElement(
     Slot,
-    { id: 'root', unstable_fallbackToPrev: true },
+    { id: 'root', unstable_handleError: null },
     routeElement,
   );
   return createElement(
