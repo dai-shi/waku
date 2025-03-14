@@ -1,4 +1,5 @@
 import type { Plugin } from 'vite';
+import * as swc from '@swc/core';
 
 const patchRsdw = (code: string, type: 'SERVER' | 'CLIENT') => {
   code = code.replace(
@@ -68,7 +69,9 @@ export function rscRsdwPlugin(): Plugin {
           '/react-server-dom-webpack_server__edge.js',
         ].some((suffix) => file!.endsWith(suffix))
       ) {
-        return patchRsdw(code, 'SERVER');
+        return swc.transformSync(patchRsdw(code, 'SERVER'), {
+          sourceMaps: true,
+        });
       }
       if (
         [
@@ -80,7 +83,9 @@ export function rscRsdwPlugin(): Plugin {
           '/react-server-dom-webpack_client__edge.js',
         ].some((suffix) => file!.endsWith(suffix))
       ) {
-        return patchRsdw(code, 'CLIENT');
+        return swc.transformSync(patchRsdw(code, 'CLIENT'), {
+          sourceMaps: true,
+        });
       }
       if (code.includes('function requireAsyncModule(id)')) {
         throw new Error('rscRsdwPlugin: Untransformed file: ' + file);
