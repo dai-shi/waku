@@ -563,6 +563,12 @@ const InnerRouter = ({
   );
 };
 
+type Elements = Record<string, unknown>;
+type EnhanceFetch = (fetchFn: typeof fetch) => typeof fetch;
+type EnhanceCreateData = (
+  createData: (responsePromise: Promise<Response>) => Promise<Elements>,
+) => (responsePromise: Promise<Response>) => Promise<Elements>;
+
 // Note: The router data must be a stable mutable object (array).
 type RouterData = [
   locationListeners?: Set<(path: string, query: string) => void>,
@@ -576,12 +582,19 @@ const DEFAULT_ROUTER_DATA: RouterData = [];
 export function Router({
   routerData = DEFAULT_ROUTER_DATA,
   initialRoute = parseRouteFromLocation(),
+  unstable_enhanceFetch,
+  unstable_enhanceCreateData,
+}: {
+  routerData?: RouterData;
+  initialRoute?: RouteProps;
+  unstable_enhanceFetch?: EnhanceFetch;
+  unstable_enhanceCreateData?: EnhanceCreateData;
 }) {
   const initialRscPath = encodeRoutePath(initialRoute.path);
   const locationListeners = (routerData[0] ||= new Set());
   const staticPathSet = (routerData[1] ||= new Set());
   const cachedIdSet = (routerData[2] ||= new Set());
-  const unstable_enhanceFetch =
+  const enhanceFetch =
     (fetchFn: typeof fetch) =>
     (input: RequestInfo | URL, init: RequestInit = {}) => {
       const skipStr = JSON.stringify(Array.from(cachedIdSet));
@@ -593,7 +606,7 @@ export function Router({
       }
       return fetchFn(input, init);
     };
-  const unstable_enhanceCreateData =
+  const enhanceCreateData =
     (
       createData: (
         responsePromise: Promise<Response>,
@@ -641,8 +654,12 @@ export function Router({
     {
       initialRscPath,
       initialRscParams,
-      unstable_enhanceFetch,
-      unstable_enhanceCreateData,
+      unstable_enhanceFetch: unstable_enhanceFetch
+        ? (fn) => unstable_enhanceFetch(enhanceFetch(fn))
+        : enhanceFetch,
+      unstable_enhanceCreateData: unstable_enhanceCreateData
+        ? (fn) => unstable_enhanceCreateData(enhanceCreateData(fn))
+        : enhanceCreateData,
     },
     createElement(InnerRouter, {
       routerData: routerData as Required<RouterData>,
