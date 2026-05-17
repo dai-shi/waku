@@ -1,10 +1,7 @@
-import { buildMetadata } from 'virtual:vite-rsc-waku/build-metadata';
 import serverEntry from 'virtual:vite-rsc-waku/server-entry';
 import { INTERNAL_setAllEnv } from '../../server.js';
-import { BUILD_METADATA_FILE, DIST_SERVER } from '../constants.js';
 import type { Unstable_EmitFile } from '../types.js';
 import { joinPath } from '../utils/path.js';
-import { stringToStream } from '../utils/stream.js';
 
 const DO_NOT_BUNDLE = '';
 
@@ -50,12 +47,6 @@ export async function INTERNAL_runBuild({
       },
     },
     serverEntry.buildOptions || {},
-  );
-  await emitFile(
-    joinPath(DIST_SERVER, BUILD_METADATA_FILE),
-    stringToStream(
-      `export const buildMetadata = new Map(${JSON.stringify(Array.from(buildMetadata))});`,
-    ),
   );
   return { prunableFiles: Array.from(prunableFiles) };
 }

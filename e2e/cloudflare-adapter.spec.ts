@@ -24,8 +24,11 @@ test.describe('cloudflare adapter', () => {
     await stopApp();
   });
 
-  test('renders the home page through wrangler', async ({ page }) => {
+  // https://github.com/wakujs/waku/issues/2083
+  test('renders _root and _layout on dynamic pages', async ({ page }) => {
     await page.goto(`http://localhost:${port}/`);
+    await expect(page.getByTestId('root-marker')).toHaveText('ROOT_MARKER');
+    await expect(page.getByTestId('layout-marker')).toHaveText('LAYOUT_MARKER');
     await expect(page.getByTestId('page-marker')).toHaveText('PAGE_MARKER');
   });
 

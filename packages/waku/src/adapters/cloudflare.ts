@@ -146,6 +146,7 @@ export default createServerEntryAdapter(
         });
         const response = await fetch(
           server.baseUrl + internalPathToBuildStaticFiles,
+          { headers: { connection: 'close' } },
         );
         await consumeMultiplexedStream(response.body!, async (key, stream) => {
           if (key.startsWith(PRUNABLE_KEY_PREFIX)) {
@@ -156,6 +157,8 @@ export default createServerEntryAdapter(
           }
           await utils.emitFile(key, stream);
         });
+        // https://github.com/nodejs/node/issues/56645
+        await new Promise((resolve) => setTimeout(resolve, 100));
         await server.close();
       },
       buildOptions,
