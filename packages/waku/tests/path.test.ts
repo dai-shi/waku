@@ -57,6 +57,15 @@ describe('path2regexp', () => {
     expect(matchPath('/pre-[id]-suf', '/pre-123-suf')).toBe(true);
     expect(matchPath('/pre-[id]-suf', '/pre-123')).toBe(false);
   });
+
+  test('treats regex metacharacters in literals as literal characters', () => {
+    expect(matchPath('/file.txt', '/file.txt')).toBe(true);
+    expect(matchPath('/file.txt', '/fileAtxt')).toBe(false);
+    expect(matchPath('/a+b', '/a+b')).toBe(true);
+    expect(matchPath('/a+b', '/aab')).toBe(false);
+    expect(matchPath('/(group)', '/(group)')).toBe(true);
+    expect(matchPath('/(group)', '/group')).toBe(false);
+  });
 });
 
 describe('parsePathWithSlug', () => {

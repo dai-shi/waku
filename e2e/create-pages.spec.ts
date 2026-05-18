@@ -87,9 +87,12 @@ const expectNoPageErrorFor = async (page: Page) => {
 test.describe(`create-pages`, () => {
   let port: number;
   let stopApp: () => Promise<void>;
+  const serverOutput: string[] = [];
 
   test.beforeAll(async ({ mode }) => {
-    ({ port, stopApp } = await startApp(mode));
+    ({ port, stopApp } = await startApp(mode, {
+      onServerOutput: (data) => serverOutput.push(data),
+    }));
   });
 
   test.afterAll(async () => {
@@ -230,6 +233,7 @@ test.describe(`create-pages`, () => {
   });
 
   test('errors', async ({ page }) => {
+    serverOutput.splice(0);
     await page.goto(`http://localhost:${port}`);
     await waitForHydration(page);
     await page.locator("a[href='/error']").click();
@@ -245,7 +249,10 @@ test.describe(`create-pages`, () => {
     ).toBeVisible();
     await expect(
       page.getByTestId('server-throws').getByTestId('throws-error'),
-    ).toHaveText('Something unexpected happened');
+    ).toHaveText('Internal Server Error');
+    await expect
+      .poll(() => serverOutput.join(''))
+      .toContain('Input is required');
   });
 
   test('server function unreachable', async ({ page, mode, browserName }) => {

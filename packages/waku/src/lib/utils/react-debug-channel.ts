@@ -104,7 +104,7 @@ const createWsDebugChannel = (debugId: string) => {
   const writable = new WritableStream<Uint8Array>({
     write(chunk) {
       if (closed) {
-        throw new TypeError('Channel is closed');
+        throw new Error('Channel is closed');
       }
       hot.send(DEBUG_CMD_EVENT, {
         i: debugId,

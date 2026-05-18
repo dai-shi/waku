@@ -35,7 +35,8 @@ export function staticBuildPlugin({
         const progress = createProgressLogger();
         const emitFile = async (filePath: string, body: ReadableStream) => {
           const destFile = joinPath(rootDir, distDir, filePath);
-          if (!destFile.startsWith(rootDir)) {
+          const rel = path.relative(rootDir, destFile);
+          if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) {
             throw new Error('Invalid filePath: ' + filePath);
           }
           progress.update(`generating a file ${pc.dim(filePath)}`);

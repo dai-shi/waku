@@ -582,9 +582,11 @@ const Redirect = ({
     handledErrorSet.add(error as object);
 
     const url = new URL(to, window.location.href);
-    // FIXME this condition seems too naive
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return;
+    }
     if (url.hostname !== window.location.hostname) {
-      window.location.replace(to);
+      window.location.replace(url.href);
       return;
     }
     const currentPath = window.location.pathname;

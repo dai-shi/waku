@@ -24,14 +24,14 @@ async function postBuild({
     writeFileSync(
       path.join(functionsDir, 'serve.js'),
       `\
-const { INTERNAL_runFetch } = await import('../${distDir}/server/index.js');
+const { INTERNAL_runFetch } = await import(${JSON.stringify(`../${distDir}/server/index.js`)});
 
 export default async (request, context) =>
   INTERNAL_runFetch(process.env, request, { context });
 
 export const config = {
   preferStatic: true,
-  path: ['/', '/*', '/${rscBase}/**/*'],
+  path: ['/', '/*', ${JSON.stringify(`/${rscBase}/**/*`)}],
 };
 `,
     );
@@ -43,9 +43,9 @@ export const config = {
       `\
 [build]
   command = "npm run build"
-  publish = "${distDir}/${DIST_PUBLIC}"
+  publish = ${JSON.stringify(`${distDir}/${DIST_PUBLIC}`)}
 [functions]
-  included_files = ["${privateDir}/**"]
+  included_files = [${JSON.stringify(`${privateDir}/**`)}]
   directory = "netlify-functions"
 `,
     );

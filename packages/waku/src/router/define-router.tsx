@@ -823,7 +823,7 @@ export function unstable_defineRouter(fns: {
         const routePath = pathnameToRoutePath(pathname);
         const rscPath = encodeRoutePath(routePath);
         const rscParams = new URLSearchParams({ query });
-        const entries = await getEntriesForRoute(
+        let entries = await getEntriesForRoute(
           rscPath,
           rscParams,
           headers,
@@ -844,7 +844,7 @@ export function unstable_defineRouter(fns: {
         if (input.type === 'action') {
           const { value, elements } = await withRerender(() => input.fn());
           formState = value;
-          Object.assign(entries, elements);
+          entries = { ...entries, ...elements };
         }
         const nonce = getNonce();
         return renderHtml(await renderRsc(entries), html, {

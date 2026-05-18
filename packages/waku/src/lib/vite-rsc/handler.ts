@@ -79,9 +79,14 @@ const toProcessRequest =
     } catch (e) {
       const info = getErrorInfo(e);
       const status = info?.status || 500;
-      const body = stringToStream(
-        (e as { message?: string } | undefined)?.message || String(e),
-      );
+      let message: string;
+      if (info) {
+        message = (e as { message?: string } | undefined)?.message || String(e);
+      } else {
+        console.warn(e);
+        message = 'Internal Server Error';
+      }
+      const body = stringToStream(message);
       const headers: { location?: string } = {};
       if (info?.location) {
         headers.location = info.location;

@@ -6,9 +6,12 @@ const startApp = prepareNormalSetup('rsc-basic');
 test.describe(`rsc-basic`, () => {
   let port: number;
   let stopApp: () => Promise<void>;
+  const serverOutput: string[] = [];
 
   test.beforeAll(async ({ mode }) => {
-    ({ port, stopApp } = await startApp(mode));
+    ({ port, stopApp } = await startApp(mode, {
+      onServerOutput: (data) => serverOutput.push(data),
+    }));
   });
 
   test.afterAll(async () => {
@@ -134,12 +137,16 @@ test.describe(`rsc-basic`, () => {
   });
 
   test('server throws', async ({ page }) => {
+    serverOutput.splice(0);
     await page.goto(`http://localhost:${port}/`);
     await expect(page.getByTestId('app-name')).toHaveText('Waku');
     await page.getByTestId('server-throws').getByTestId('throws').click();
     await expect(
       page.getByTestId('server-throws').getByTestId('throws-error'),
-    ).toHaveText('Something unexpected happened');
+    ).toHaveText('Internal Server Error');
+    await expect
+      .poll(() => serverOutput.join(''))
+      .toContain('Input is required');
   });
 
   test('server handle network errors', async ({ page, mode, browserName }) => {

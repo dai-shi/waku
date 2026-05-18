@@ -105,16 +105,18 @@ export const parseExactPath = (path: string): PathSpec =>
     .filter(Boolean)
     .map((name) => ({ type: 'literal', name }));
 
+const escapeRegExp = (s: string) => s.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
+
 /**
  * Transform a path spec to a regular expression.
  */
 export const path2regexp = (path: PathSpec) => {
   const parts = path.map((item) => {
     if (item.type === 'literal') {
-      return item.name;
+      return escapeRegExp(item.name);
     } else if (item.type === 'group') {
-      const prefix = item.prefix ?? '';
-      const suffix = item.suffix ?? '';
+      const prefix = escapeRegExp(item.prefix ?? '');
+      const suffix = escapeRegExp(item.suffix ?? '');
       return `${prefix}([^/]+)${suffix}`;
     } else {
       return `(.*)`;

@@ -1,6 +1,8 @@
 import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
+const escapeRegExp = (s: string) => s.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
+
 export type BuildOptions = {
   assetsDir: string;
   distDir: string;
@@ -68,7 +70,7 @@ export default getRequestListener(
   }
   const routes = [
     {
-      src: `^${basePath}${assetsDir}/(.*)$`,
+      src: `^${escapeRegExp(basePath)}${escapeRegExp(assetsDir)}/(.*)$`,
       headers: {
         'cache-control': 'public, immutable, max-age=31536000',
       },
@@ -77,7 +79,7 @@ export default getRequestListener(
       ? [
           { handle: 'filesystem' },
           {
-            src: basePath + '(.*)',
+            src: escapeRegExp(basePath) + '(.*)',
             dest: basePath + rscBase + '/',
           },
         ]
