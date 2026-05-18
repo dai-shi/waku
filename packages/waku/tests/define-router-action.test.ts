@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
+import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
 import {
   unstable_defineRouter,
+  unstable_redirect,
   unstable_rerenderRoute,
 } from '../src/router/define-router.js';
 
@@ -74,6 +76,36 @@ describe('define-router action requests', () => {
       expect.objectContaining({
         formState: 'form-state',
       }),
+    );
+  });
+});
+
+describe('unstable_redirect', () => {
+  const getRedirectInfo = (location: string) => {
+    try {
+      unstable_redirect(location, 303);
+    } catch (e) {
+      return getErrorInfo(e);
+    }
+  };
+
+  it('accepts pathname redirects', () => {
+    expect(getRedirectInfo('/login?next=%2Fdashboard')).toEqual({
+      status: 303,
+      location: '/login?next=%2Fdashboard',
+    });
+  });
+
+  it.each([
+    'https://example.com/',
+    '//example.com/',
+    '/\\example.com/',
+    'login',
+    '/bad\npath',
+    '/bad\x7fpath',
+  ])('rejects invalid redirect location %s', (location) => {
+    expect(() => unstable_redirect(location)).toThrow(
+      'Invalid redirect location',
     );
   });
 });

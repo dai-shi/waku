@@ -153,10 +153,23 @@ export function unstable_notFound(): never {
   throw createCustomError('Not Found', { status: 404 });
 }
 
+/**
+ * Redirect to a path in the current application.
+ * The `location` must start with a single `/`.
+ */
 export function unstable_redirect(
-  location: string, // only URL `pathname` is supported.
+  location: string,
   status: 303 | 307 | 308 = 307,
 ): never {
+  if (!location.startsWith('/') || location.startsWith('//')) {
+    throw new Error('Invalid redirect location');
+  }
+  for (let i = 0; i < location.length; ++i) {
+    const charCode = location.charCodeAt(i);
+    if (charCode < 0x20 || charCode === 0x7f || charCode === 0x5c) {
+      throw new Error('Invalid redirect location');
+    }
+  }
   throw createCustomError('Redirect', { status, location });
 }
 
