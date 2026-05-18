@@ -2,6 +2,7 @@ import type { ReactFormState } from 'react-dom/client';
 import type { Config } from '../../config.js';
 import type { Unstable_HandleRequest as HandleRequest } from '../types.js';
 import { decodeFuncId, decodeRscPath } from '../utils/rsc-path.js';
+import { createCustomError } from './custom-errors.js';
 import { removeBase } from './path.js';
 
 type HandleRequestInput = Parameters<HandleRequest>[0];
@@ -31,6 +32,7 @@ export async function getInput(
     // server action: js
     const actionId = decodeFuncId(rscPath);
     if (actionId) {
+      validateServerActionRequest(req);
       const body = await getActionBody(req);
       const args = await decodeReply(body, { temporaryReferences });
       const action = await loadServerAction(actionId);
@@ -65,6 +67,7 @@ export async function getInput(
       contentType.startsWith('multipart/form-data')
     ) {
       // server action: no js (progressive enhancement)
+      validateServerActionRequest(req);
       input = {
         type: 'action',
         fn: async () => {
@@ -93,6 +96,30 @@ export async function getInput(
     };
   }
   return input;
+}
+
+function validateServerActionRequest(req: Request) {
+  if (req.method !== 'POST') {
+    throw createCustomError('Method Not Allowed', { status: 405 });
+  }
+  const origin = req.headers.get('origin');
+  if (origin) {
+    if (origin === 'null') {
+      throw createCustomError('Forbidden', { status: 403 });
+    }
+    const requestOrigin = new URL(req.url).origin;
+    let originUrl: URL;
+    try {
+      originUrl = new URL(origin);
+    } catch {
+      throw createCustomError('Forbidden', { status: 403 });
+    }
+    if (originUrl.origin !== requestOrigin) {
+      throw createCustomError('Forbidden', { status: 403 });
+    }
+  } else if (req.headers.get('sec-fetch-site') === 'cross-site') {
+    throw createCustomError('Forbidden', { status: 403 });
+  }
 }
 
 async function getActionBody(req: Request) {
