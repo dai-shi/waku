@@ -818,7 +818,7 @@ export function unstable_defineRouter(fns: {
       const renderIt = async (
         pathname: string,
         query: string,
-        httpstatus = 200,
+        status = 200,
       ) => {
         const routePath = pathnameToRoutePath(pathname);
         const rscPath = encodeRoutePath(routePath);
@@ -834,23 +834,19 @@ export function unstable_defineRouter(fns: {
           return null;
         }
         const path2moduleIds = await getPath2moduleIds();
-        const html = (
-          <INTERNAL_ServerRouter
-            route={{ path: routePath, query, hash: '' }}
-            httpstatus={httpstatus}
-          />
-        );
+        const route = { path: routePath, query, hash: '' };
+        const nonce = getNonce();
+        const html = <INTERNAL_ServerRouter route={route} />;
         let formState: unknown;
         if (input.type === 'action') {
           const { value, elements } = await withRerender(() => input.fn());
           formState = value;
           entries = { ...entries, ...elements };
         }
-        const nonce = getNonce();
         return renderHtml(await renderRsc(entries), html, {
           rscPath,
           formState,
-          status: httpstatus,
+          status,
           ...(nonce ? { nonce } : {}),
           unstable_extraScriptContent: getRouterPrefetchCode(path2moduleIds),
         });
@@ -1054,7 +1050,6 @@ export function unstable_defineRouter(fns: {
             const html = (
               <INTERNAL_ServerRouter
                 route={{ path: routePath, query: '', hash: '' }}
-                httpstatus={is404(item.path) ? 404 : 200}
               />
             );
             const res = await renderHtml(stream2, html, {

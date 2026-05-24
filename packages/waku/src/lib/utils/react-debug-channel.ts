@@ -124,10 +124,10 @@ const createWsDebugChannel = (debugId: string) => {
 
 export const setupDebugChannel = (
   baseFetchFn: typeof fetch,
-  prefetchedEntry: { d?: string } | undefined,
+  prefetched: boolean,
+  debugId?: string,
 ) => {
-  if (prefetchedEntry) {
-    const debugId = prefetchedEntry.d;
+  if (prefetched) {
     if (debugId) {
       const debugChannel = createWsDebugChannel(debugId);
       return { debugChannel };
@@ -135,11 +135,11 @@ export const setupDebugChannel = (
     return {};
   }
 
-  const debugId = crypto.randomUUID();
-  const debugChannel = createWsDebugChannel(debugId);
+  const newDebugId = crypto.randomUUID();
+  const debugChannel = createWsDebugChannel(newDebugId);
   const fetchFn = ((input: RequestInfo | URL, init?: RequestInit) => {
     const headers = new Headers(init?.headers);
-    headers.set(DEBUG_ID_HEADER, debugId);
+    headers.set(DEBUG_ID_HEADER, newDebugId);
     return baseFetchFn(input, {
       ...init,
       headers,

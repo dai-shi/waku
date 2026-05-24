@@ -31,7 +31,6 @@ import {
   Slice,
   unstable_encodeRoutePath,
   unstable_encodeSliceId,
-  unstable_getHttpStatusFromMeta,
   unstable_getRouteSlotId,
   unstable_getSliceSlotId,
   unstable_parseRoute,
@@ -297,15 +296,6 @@ describe('router/client utilities', () => {
       query: 'q=1',
       hash: '',
     });
-  });
-
-  test('reads httpstatus meta content', () => {
-    expect(unstable_getHttpStatusFromMeta()).toBeUndefined();
-    const meta = document.createElement('meta');
-    meta.setAttribute('name', 'httpstatus');
-    meta.setAttribute('content', '404');
-    document.head.append(meta);
-    expect(unstable_getHttpStatusFromMeta()).toBe('404');
   });
 
   test('returns deterministic route/slice slot ids', () => {
@@ -951,11 +941,8 @@ describe('Router integration', () => {
     view.unmount();
   });
 
-  test('uses /404 as initial route when httpstatus meta is 404', async () => {
-    const meta = document.createElement('meta');
-    meta.setAttribute('name', 'httpstatus');
-    meta.setAttribute('content', '404');
-    document.head.append(meta);
+  test('uses route data as initial route', async () => {
+    window.history.replaceState({}, '', '/missing');
 
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -966,7 +953,7 @@ describe('Router integration', () => {
       [IS_STATIC_ID]: true,
     };
 
-    const view = await renderRouter({}, elements);
+    const view = await renderRouterInStrictMode({}, elements);
     expect(capture.router?.path).toBe('/404');
     view.unmount();
   });
@@ -2248,7 +2235,6 @@ describe('INTERNAL_ServerRouter', () => {
       <INTERNAL_ServerRoot elementsPromise={elementsPromise}>
         <INTERNAL_ServerRouter
           route={{ path: '/server', query: '', hash: '' }}
-          httpstatus={200}
         />
       </INTERNAL_ServerRoot>,
     );

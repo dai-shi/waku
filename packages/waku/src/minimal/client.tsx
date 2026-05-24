@@ -12,6 +12,16 @@ import {
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
 import { createCustomError } from '../lib/utils/custom-errors.js';
+import {
+  type INTERNAL_PrefetchedEntry,
+  createPrefetchedEntry,
+  getPrefetchedClose,
+  getPrefetchedDebugId,
+  getPrefetchedResponse,
+  getPrefetchedRscParams,
+  getPrefetchedRscPath,
+  getPrefetchedTemporaryReferences,
+} from '../lib/utils/prefetch.js';
 import { setupDebugChannel } from '../lib/utils/react-debug-channel.js';
 import { encodeFuncId, encodeRscPath } from '../lib/utils/rsc-path.js';
 import { waitForRootPrerequisites } from '../lib/utils/rsc-stream.js';
@@ -122,21 +132,32 @@ type Unstable_FetchRscStore = {
 
 const defaultFetchRscStore: Unstable_FetchRscStore = {};
 
-// XXX some of these keys are used in packages/waku/src/lib/utils/ssr.ts.
-const KEY_RESPONSE = 'r';
-const KEY_CLOSE = 'x';
-const KEY_CLIENT_PREFETCHED = 'c';
-const KEY_RSC_PARAMS = 'p';
-const KEY_TEMPORARY_REFERENCES = 't';
-const KEY_DEBUG_ID = 'd';
+const getClientPrefetchedEntries = (): INTERNAL_PrefetchedEntry[] =>
+  ((globalThis as any).__WAKU_PREFETCHED__ ||= []);
 
-type PrefetchedEntry = {
-  [KEY_RESPONSE]: Promise<Response>;
-  [KEY_CLOSE]?: () => void;
-  [KEY_CLIENT_PREFETCHED]?: boolean;
-  [KEY_RSC_PARAMS]?: unknown | undefined;
-  [KEY_TEMPORARY_REFERENCES]?: ReturnType<typeof createTemporaryReferenceSet>;
-  [KEY_DEBUG_ID]?: string;
+const consumeInitialPrefetchedEntry = () => {
+  const initialRsc = (globalThis as any).__WAKU_INITIAL_RSC__ as
+    | INTERNAL_PrefetchedEntry
+    | undefined;
+  if (initialRsc) {
+    delete (globalThis as any).__WAKU_INITIAL_RSC__;
+    return initialRsc;
+  }
+  return undefined;
+};
+
+const consumeClientPrefetchedEntry = (
+  prefetchedEntries: INTERNAL_PrefetchedEntry[],
+  rscPath: string,
+  rscParams: unknown,
+) => {
+  const index = prefetchedEntries.findIndex(
+    (entry) =>
+      getPrefetchedRscPath(entry) === rscPath &&
+      // rscParams is intentionally compared by reference.
+      getPrefetchedRscParams(entry) === rscParams,
+  );
+  return index >= 0 ? prefetchedEntries.splice(index, 1)[0] : undefined;
 };
 
 const fetchRscInternal: FetchRscInternal = (
@@ -156,32 +177,29 @@ const fetchRscInternal: FetchRscInternal = (
     }
   }
   const baseFetchFn = fetchRscStore[FETCH_FN] || fetch;
-  const prefetched: Record<string, PrefetchedEntry> = ((
-    globalThis as any
-  ).__WAKU_PREFETCHED__ ||= {});
-  let prefetchedEntry = prefetchOnly ? undefined : prefetched[rscPath];
-  delete prefetched[rscPath];
-  if (prefetchedEntry) {
-    if (prefetchedEntry[KEY_CLIENT_PREFETCHED]) {
-      // We only check rscParams for client prefetch.
-      // For initial hydration, we ignore rscParams,
-      // but I wonder if this can cause a problem. FIXME
-      if (prefetchedEntry[KEY_RSC_PARAMS] !== rscParams) {
-        prefetchedEntry = undefined;
-      }
-    }
-  }
+  const prefetchedEntries = getClientPrefetchedEntries();
+  const prefetchedEntry = !prefetchOnly
+    ? consumeClientPrefetchedEntry(prefetchedEntries, rscPath, rscParams) ||
+      consumeInitialPrefetchedEntry()
+    : undefined;
   const debug =
     import.meta.hot && !prefetchOnly
-      ? setupDebugChannel(baseFetchFn, prefetchedEntry)
+      ? setupDebugChannel(
+          baseFetchFn,
+          !!prefetchedEntry,
+          prefetchedEntry ? getPrefetchedDebugId(prefetchedEntry) : undefined,
+        )
       : undefined;
   const fetchFn = debug?.fetchFn || baseFetchFn;
   const temporaryReferences =
-    prefetchedEntry?.[KEY_TEMPORARY_REFERENCES] ||
+    (prefetchedEntry &&
+      getPrefetchedTemporaryReferences<
+        ReturnType<typeof createTemporaryReferenceSet>
+      >(prefetchedEntry)) ||
     createTemporaryReferenceSet();
   const url = BASE_RSC_PATH + encodeRscPath(rscPath);
   const responsePromise = prefetchedEntry
-    ? prefetchedEntry[KEY_RESPONSE]
+    ? getPrefetchedResponse(prefetchedEntry)
     : rscParams === undefined
       ? fetchFn(url)
       : rscParams instanceof URLSearchParams
@@ -190,12 +208,14 @@ const fetchRscInternal: FetchRscInternal = (
             fetchFn(url, { method: 'POST', body }),
           );
   if (prefetchOnly) {
-    prefetched[rscPath] = {
-      [KEY_RESPONSE]: responsePromise,
-      [KEY_CLIENT_PREFETCHED]: true,
-      [KEY_RSC_PARAMS]: rscParams,
-      [KEY_TEMPORARY_REFERENCES]: temporaryReferences,
-    };
+    prefetchedEntries.push(
+      createPrefetchedEntry(
+        rscPath,
+        responsePromise,
+        rscParams,
+        temporaryReferences,
+      ),
+    );
     return undefined as never;
   }
   const elements = createFromFetch<Elements>(checkStatus(responsePromise), {
@@ -217,7 +237,7 @@ const fetchRscInternal: FetchRscInternal = (
       () => {},
     );
   }
-  const closeFn = prefetchedEntry?.[KEY_CLOSE];
+  const closeFn = prefetchedEntry && getPrefetchedClose(prefetchedEntry);
   if (closeFn) {
     waitForRootPrerequisites(elements).then(closeFn, closeFn);
   }
@@ -333,14 +353,14 @@ export const unstable_prefetchRsc = (
   ) => Unstable_FetchRscStore = (s) => s,
 ): void => {
   const fetchRscStore = unstable_enhanceFetchRscStore(defaultFetchRscStore);
-  const prefetched: Record<string, PrefetchedEntry> = ((
-    globalThis as any
-  ).__WAKU_PREFETCHED__ ||= {});
-  const prefetchedEntry = prefetched[rscPath];
-  if (
-    prefetchedEntry?.[KEY_CLIENT_PREFETCHED] &&
-    prefetchedEntry?.[KEY_RSC_PARAMS] === rscParams
-  ) {
+  const prefetched = getClientPrefetchedEntries();
+  const prefetchedEntry = prefetched.find(
+    (entry) =>
+      getPrefetchedRscPath(entry) === rscPath &&
+      // rscParams is intentionally compared by reference.
+      getPrefetchedRscParams(entry) === rscParams,
+  );
+  if (prefetchedEntry) {
     return; // already prefetched
   }
   fetchRscInternal(fetchRscStore, rscPath, rscParams, true);
