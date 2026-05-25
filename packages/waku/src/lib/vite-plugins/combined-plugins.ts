@@ -17,9 +17,29 @@ import { rscDevtoolsPlugin } from './rsc-devtools.js';
 import { staticBuildPlugin } from './static-build.js';
 import { virtualConfigPlugin } from './virtual-config.js';
 
+const hasPluginName = (plugin: PluginOption, name: string): boolean => {
+  if (!plugin) {
+    return false;
+  }
+  if (Array.isArray(plugin)) {
+    return plugin.some((item) => hasPluginName(item, name));
+  }
+  return typeof plugin === 'object' && 'name' in plugin && plugin.name === name;
+};
+
+const excludeOverriddenPlugins = (
+  config: Pick<Required<Config>, 'vite'>,
+  plugins: PluginOption[],
+) =>
+  plugins.filter((plugin) => {
+    if (!plugin || Array.isArray(plugin) || !('name' in plugin)) {
+      return true;
+    }
+    return !hasPluginName(config.vite?.plugins, plugin.name);
+  });
+
 export function combinedPlugins(config: Required<Config>): PluginOption {
-  return [
-    extraPlugins(config),
+  const ourPlugins = [
     allowServerPlugin(), // apply `allowServer` DCE before "use client" transform
     rsc({
       serverHandler: false,
@@ -40,5 +60,9 @@ export function combinedPlugins(config: Required<Config>): PluginOption {
     privateDirPlugin(config),
     htmlShellPlugin(),
     fsRouterTypegenPlugin(config),
+  ];
+  return [
+    extraPlugins(config),
+    ...excludeOverriddenPlugins(config, ourPlugins),
   ];
 }

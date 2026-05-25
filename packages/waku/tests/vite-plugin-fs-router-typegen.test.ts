@@ -1,6 +1,8 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
+import { resolveConfig } from '../src/lib/utils/config.js';
+import { combinedPlugins } from '../src/lib/vite-plugins/combined-plugins.js';
 import {
   detectFsRouterUsage,
   generateFsRouterTypes,
@@ -117,6 +119,27 @@ import type { getConfig as File_ØnéTwoThree_getConfig } from './pages/øné_tw
         path.join(fixturesDir, 'plugin-fs-router-typegen-with-createpages'),
       ),
     ).toMatchInlineSnapshot(`false`);
+  });
+
+  test('skips built-in Waku plugin when user plugin overrides it', async () => {
+    const pluginName = 'waku:vite-plugins:build-id';
+    const plugins = combinedPlugins(
+      resolveConfig({
+        vite: {
+          plugins: [{ name: pluginName }],
+        },
+      }),
+    );
+    const flatPlugins = [plugins].flat(2);
+    expect(
+      flatPlugins.filter(
+        (plugin) =>
+          plugin &&
+          typeof plugin === 'object' &&
+          'name' in plugin &&
+          plugin.name === pluginName,
+      ),
+    ).toHaveLength(1);
   });
 
   test('returns undefined when there are no page files to scan', async () => {
