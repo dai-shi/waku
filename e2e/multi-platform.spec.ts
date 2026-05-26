@@ -2,8 +2,10 @@ import { exec } from 'node:child_process';
 import {
   cpSync,
   existsSync,
+  mkdirSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -104,6 +106,20 @@ const buildPlatformTarget: BuildPlatformTarget[] = [
   },
 ];
 
+// Symlink each entry's realpath so the destination doesn't depend on pnpm's relative symlinks into the virtual store (https://github.com/pnpm/pnpm/issues/5717). Recurse into @scope dirs.
+const linkNodeModules = (srcDir: string, destDir: string) => {
+  mkdirSync(destDir);
+  for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
+    const srcPath = join(srcDir, entry.name);
+    const destPath = join(destDir, entry.name);
+    if (entry.isDirectory() && entry.name.startsWith('@')) {
+      linkNodeModules(srcPath, destPath);
+    } else {
+      symlinkSync(realpathSync(srcPath), destPath, 'junction');
+    }
+  }
+};
+
 const ensureServerEntryWithAdapter = (file: string, adapter: string) => {
   const content = existsSync(file)
     ? readFileSync(file, 'utf-8')
@@ -136,13 +152,12 @@ test.describe(`multi platform builds`, () => {
         const temp = makeTempDir(project);
         const serverEntryFile = join(temp, 'src', 'waku.server.tsx');
         try {
-          // node_modules is symlinked, not copied: Node 24.2+ cpSync walks into NTFS junctions on Windows (https://github.com/nodejs/node/pull/58461), breaking pnpm's link to the workspace .pnpm cache.
           const cwdNodeModules = join(cwd, 'node_modules');
           cpSync(cwd, temp, {
             recursive: true,
             filter: (src) => !src.startsWith(cwdNodeModules),
           });
-          symlinkSync(cwdNodeModules, join(temp, 'node_modules'), 'junction');
+          linkNodeModules(cwdNodeModules, join(temp, 'node_modules'));
           ensureServerEntryWithAdapter(serverEntryFile, adapter);
           for (const name of clearDirOrFile) {
             rmSync(join(temp, name), { recursive: true, force: true });

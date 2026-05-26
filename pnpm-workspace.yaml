@@ -7,7 +7,6 @@ packages:
 preferWorkspacePackages: true
 saveWorkspaceProtocol: true
 linkWorkspacePackages: true
-minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - '@vitejs/plugin-rsc'
   - 'react'
@@ -15,3 +14,9 @@ minimumReleaseAgeExclude:
   - 'react-server-dom-webpack'
   - 'scheduler'
   - 'waku-jotai'
+allowBuilds:
+  '@swc/core': false
+  esbuild: false
+  sharp: false
+  unrs-resolver: false
+  workerd: false

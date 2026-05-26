@@ -2,7 +2,6 @@
   "name": "waku-monorepo",
   "version": "0.1.0",
   "type": "module",
-  "packageManager": "pnpm@10.18.3",
   "private": true,
   "scripts": {
     "dev": "pnpm -r --filter='./packages/*' run dev",
@@ -59,5 +58,6 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.2",
     "waku": "workspace:*"
-  }
+  },
+  "packageManager": "pnpm@11.3.0+sha512.2c403d6594527287672b1f7056343a1f7c3634036a67ffabfcc2b3d7595d843768f8787148d1b57cf7956c90606bbd192857c363af19e96d2d0ec9ec5741d215"
 }
