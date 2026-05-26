@@ -401,8 +401,8 @@ const getRouterPrefetchCode = (path2moduleIds: Record<string, string[]>) => {
   );
   const ids = Array.from(moduleIdSet);
   const path2idxs: Record<string, number[]> = {};
-  Object.entries(path2moduleIds).forEach(([path, ids]) => {
-    path2idxs[path] = ids.map((id) => ids.indexOf(id));
+  Object.entries(path2moduleIds).forEach(([path, pathIds]) => {
+    path2idxs[path] = pathIds.map((id) => ids.indexOf(id));
   });
   return `
 globalThis.__WAKU_ROUTER_PREFETCH__ = (path, callback) => {

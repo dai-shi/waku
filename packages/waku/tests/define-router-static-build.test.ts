@@ -1,4 +1,6 @@
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it, vi } from 'vitest';
+import { ROUTE_ID } from '../src/router/common.js';
 import { unstable_defineRouter } from '../src/router/define-router.js';
 
 vi.mock('../src/server.js', () => ({
@@ -16,6 +18,92 @@ const makeStream = () =>
   });
 
 describe('define-router handleBuild', () => {
+  it('maps router prefetch module ids through the shared id table', async () => {
+    const scripts: string[] = [];
+    const moduleIdsByRoute = new Map([
+      ['/foo', ['shared-module', 'foo-module']],
+      ['/bar', ['shared-module', 'bar-module']],
+    ]);
+    const { handleBuild } = unstable_defineRouter({
+      getConfigs: async () => [
+        {
+          type: 'route',
+          path: [{ type: 'literal', name: 'foo' }],
+          isStatic: true,
+          rootElement: { isStatic: true, renderer: () => null },
+          routeElement: { isStatic: true, renderer: () => null },
+          elements: {
+            'page:/foo': { isStatic: true, renderer: () => null },
+          },
+        },
+        {
+          type: 'route',
+          path: [{ type: 'literal', name: 'bar' }],
+          isStatic: true,
+          rootElement: { isStatic: true, renderer: () => null },
+          routeElement: { isStatic: true, renderer: () => null },
+          elements: {
+            'page:/bar': { isStatic: true, renderer: () => null },
+          },
+        },
+      ],
+    });
+
+    type HandleBuildUtils = Parameters<typeof handleBuild>[0];
+    const renderRsc: HandleBuildUtils['renderRsc'] = async (
+      entries,
+      options,
+    ) => {
+      const route = (entries as Record<string, unknown>)[ROUTE_ID];
+      if (!Array.isArray(route) || typeof route[0] !== 'string') {
+        throw new Error('route data was not rendered');
+      }
+      options?.unstable_clientModuleCallback?.(
+        moduleIdsByRoute.get(route[0]) ?? [],
+      );
+      return makeStream();
+    };
+    const renderHtml: HandleBuildUtils['renderHtml'] = async (
+      _elementsStream,
+      _html,
+      options,
+    ) => {
+      scripts.push(options.unstable_extraScriptContent ?? '');
+      return new Response('<!doctype html>');
+    };
+
+    await handleBuild({
+      renderRsc,
+      parseRsc: vi.fn().mockResolvedValue({}),
+      renderHtml,
+      rscPath2pathname: (rscPath: string) => `dist/${rscPath}.txt`,
+      saveBuildMetadata: vi.fn().mockResolvedValue(undefined),
+      withRequest: <T>(_req: Request, fn: () => T) => fn(),
+      generateFile: vi.fn().mockResolvedValue(undefined),
+      generateDefaultHtml: vi.fn().mockResolvedValue(undefined),
+      unstable_registerPrunableFile: vi.fn(),
+    });
+
+    const script = scripts.find((content) => content.includes('bar-module'));
+    if (!script) {
+      throw new Error('router prefetch script was not rendered');
+    }
+    const sandbox: {
+      __WAKU_ROUTER_PREFETCH__?: (
+        path: string,
+        callback: (id: string) => void,
+      ) => void;
+    } = {};
+    runInNewContext(script, sandbox);
+
+    const preloadedIds: string[] = [];
+    sandbox.__WAKU_ROUTER_PREFETCH__?.('/bar', (id) => {
+      preloadedIds.push(id);
+    });
+
+    expect(preloadedIds).toEqual(['shared-module', 'bar-module']);
+  });
+
   it('caches static elements inside routes whose path is non-literal', async () => {
     const layoutRenderer = vi.fn(() => null);
     const pageRenderer = vi.fn(() => null);
