@@ -9,15 +9,15 @@
     "typegen": "waku router typegen"
   },
   "dependencies": {
-    "@tanstack/react-router": "^1.169.2",
-    "@tanstack/react-router-devtools": "^1.166.13",
+    "@tanstack/react-router": "^1.170.8",
+    "@tanstack/react-router-devtools": "^1.167.0",
     "react": "~19.2.6",
     "react-dom": "~19.2.6",
     "react-server-dom-webpack": "~19.2.6",
     "waku": "1.0.0-beta.1"
   },
   "devDependencies": {
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "typescript": "^6.0.3"
   }

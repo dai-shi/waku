@@ -14,11 +14,11 @@
     "react-dom": "~19.2.6",
     "react-server-dom-webpack": "~19.2.6",
     "serve": "^14.2.6",
-    "styled-components": "^6.4.1",
+    "styled-components": "^6.4.2",
     "waku": "latest"
   },
   "devDependencies": {
-    "@types/react": "^19.2.14",
+    "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "typescript": "^6.0.3"
   }
