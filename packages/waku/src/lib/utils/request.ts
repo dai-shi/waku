@@ -47,6 +47,7 @@ export async function getInput(
       // client RSC request
       let rscParams: unknown = url.searchParams;
       if (req.body) {
+        validateServerActionRequest(req);
         const body = await getActionBody(req);
         rscParams = await decodeReply(body, {
           temporaryReferences,
