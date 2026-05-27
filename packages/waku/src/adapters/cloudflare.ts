@@ -26,9 +26,9 @@ const emptyStream = () =>
     },
   });
 
-function isWranglerDev(req: Request): boolean {
+function isProductionWorker(req: Request): boolean {
   // This header seems to only be set for production cloudflare workers
-  return !req.headers.get('cf-visitor');
+  return !!req.headers.get('cf-visitor');
 }
 
 function removeGzipEncoding(res: Response): Response {
@@ -96,7 +96,10 @@ export default createServerEntryAdapter(
       });
 
     const fetchFn = async (req: Request) => {
-      if (new URL(req.url).pathname === `/${internalPathToBuildStaticFiles}`) {
+      if (
+        new URL(req.url).pathname === `/${internalPathToBuildStaticFiles}` &&
+        !isProductionWorker(req)
+      ) {
         return new Response(buildBody());
       }
       let cloudflareContext;
@@ -119,7 +122,7 @@ export default createServerEntryAdapter(
         res = app.fetch(req);
       }
       // Workaround https://github.com/cloudflare/workers-sdk/issues/6577
-      if (import.meta.env?.PROD && isWranglerDev(req)) {
+      if (import.meta.env?.PROD && !isProductionWorker(req)) {
         if ('then' in res) {
           res = res.then((res) => removeGzipEncoding(res));
         } else {
