@@ -1,5 +1,6 @@
 import path from 'node:path';
 import type { MiddlewareHandler } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { serveStatic } from 'hono/bun';
 import { Hono } from 'hono/tiny';
 import { unstable_createServerEntryAdapter as createServerEntryAdapter } from 'waku/adapter-builders';
@@ -12,15 +13,22 @@ import type { BuildOptions } from './bun-build-enhancer.js';
 const { DIST_PUBLIC } = constants;
 const { contextMiddleware, rscMiddleware, middlewareRunner } = honoMiddleware;
 
+const DEFAULT_BODY_LIMIT_MAX_SIZE = 100 * 1024 * 1024;
+
 export default createServerEntryAdapter(
   (
     { processRequest, processBuild, config, isBuild, notFoundHtml },
     options?: {
+      bodyLimit?: Parameters<typeof bodyLimit>[0] | false;
       middlewareFns?: (() => MiddlewareHandler)[];
       middlewareModules?: Record<string, () => Promise<unknown>>;
     },
   ) => {
-    const { middlewareFns = [], middlewareModules = {} } = options || {};
+    const {
+      bodyLimit: bodyLimitOptions,
+      middlewareFns = [],
+      middlewareModules = {},
+    } = options || {};
     const app = new Hono();
     app.notFound((c) => {
       if (notFoundHtml) {
@@ -38,6 +46,11 @@ export default createServerEntryAdapter(
       );
     }
     app.use(contextMiddleware());
+    if (bodyLimitOptions !== false) {
+      app.use(
+        bodyLimit(bodyLimitOptions ?? { maxSize: DEFAULT_BODY_LIMIT_MAX_SIZE }),
+      );
+    }
     for (const middlewareFn of middlewareFns) {
       app.use(middlewareFn());
     }

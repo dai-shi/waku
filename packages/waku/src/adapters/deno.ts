@@ -1,5 +1,6 @@
 import path from 'node:path';
 import type { MiddlewareHandler } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 // FIXME hopefully we should avoid bundling this
 import { Hono as HonoForDevAndBuild } from 'hono/tiny';
 import { unstable_createServerEntryAdapter as createServerEntryAdapter } from 'waku/adapter-builders';
@@ -12,15 +13,22 @@ import type { BuildOptions } from './deno-build-enhancer.js';
 const { DIST_PUBLIC } = constants;
 const { contextMiddleware, rscMiddleware, middlewareRunner } = honoMiddleware;
 
+const DEFAULT_BODY_LIMIT_MAX_SIZE = 100 * 1024 * 1024;
+
 export default createServerEntryAdapter(
   (
     { processRequest, processBuild, config, notFoundHtml },
     options?: {
+      bodyLimit?: Parameters<typeof bodyLimit>[0] | false;
       middlewareFns?: (() => MiddlewareHandler)[];
       middlewareModules?: Record<string, () => Promise<unknown>>;
     },
   ) => {
-    const { middlewareFns = [], middlewareModules = {} } = options || {};
+    const {
+      bodyLimit: bodyLimitOptions,
+      middlewareFns = [],
+      middlewareModules = {},
+    } = options || {};
     const {
       __WAKU_DENO_ADAPTER_HONO__: Hono = HonoForDevAndBuild,
       __WAKU_DENO_ADAPTER_SERVE_STATIC__: serveStatic,
@@ -36,6 +44,11 @@ export default createServerEntryAdapter(
       app.use(serveStatic({ root: path.join(config.distDir, DIST_PUBLIC) }));
     }
     app.use(contextMiddleware());
+    if (bodyLimitOptions !== false) {
+      app.use(
+        bodyLimit(bodyLimitOptions ?? { maxSize: DEFAULT_BODY_LIMIT_MAX_SIZE }),
+      );
+    }
     for (const middlewareFn of middlewareFns) {
       app.use(middlewareFn());
     }

@@ -1,4 +1,5 @@
 import type { MiddlewareHandler } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { Hono } from 'hono/tiny';
 import {
   unstable_createServerEntryAdapter as createServerEntryAdapter,
@@ -14,6 +15,8 @@ import type { BuildOptions } from './cloudflare-build-enhancer.js';
 
 const { DIST_PUBLIC } = constants;
 const { contextMiddleware, rscMiddleware, middlewareRunner } = honoMiddleware;
+
+const DEFAULT_BODY_LIMIT_MAX_SIZE = 100 * 1024 * 1024;
 
 const DO_NOT_BUNDLE = '';
 
@@ -56,12 +59,14 @@ export default createServerEntryAdapter(
       static?: boolean;
       handlers?: Record<string, unknown>;
       assetsDir?: string;
+      bodyLimit?: Parameters<typeof bodyLimit>[0] | false;
       middlewareFns?: (() => MiddlewareHandler)[];
       middlewareModules?: Record<string, () => Promise<unknown>>;
       internalPathToBuildStaticFiles?: string;
     },
   ) => {
     const {
+      bodyLimit: bodyLimitOptions,
       middlewareFns = [],
       middlewareModules = {},
       internalPathToBuildStaticFiles = '__waku_internal_build_static_files',
@@ -74,6 +79,11 @@ export default createServerEntryAdapter(
       return c.text('404 Not Found', 404);
     });
     app.use(contextMiddleware());
+    if (bodyLimitOptions !== false) {
+      app.use(
+        bodyLimit(bodyLimitOptions ?? { maxSize: DEFAULT_BODY_LIMIT_MAX_SIZE }),
+      );
+    }
     for (const middlewareFn of middlewareFns) {
       app.use(middlewareFn());
     }
