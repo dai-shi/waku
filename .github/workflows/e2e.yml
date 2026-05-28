@@ -17,7 +17,6 @@ on:
       - 'e2e/**'
       - '.github/workflows/e2e.yml'
       - 'pnpm-lock.yaml'
-  merge_group:
   workflow_call:
     inputs:
       ref:
