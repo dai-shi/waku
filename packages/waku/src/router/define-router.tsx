@@ -441,6 +441,12 @@ export function unstable_defineRouter(fns: {
     configs.forEach((item) => {
       if (item.type === 'route') {
         Object.keys(item.elements).forEach(assertNonReservedSlotId);
+      } else if (item.type === 'slice') {
+        if (item.isStatic && item.pathSpec) {
+          throw new Error(
+            `defineRouter: static slice "${item.id}" cannot have a pathSpec`,
+          );
+        }
       }
     });
     cachedConfigs = configs;
