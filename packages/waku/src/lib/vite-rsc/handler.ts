@@ -51,7 +51,9 @@ const toProcessRequest =
       loadServerAction,
     );
 
-    const debugId = req.headers.get(DEBUG_ID_HEADER.toLowerCase()) || undefined;
+    const debugId =
+      (import.meta.env.DEV && req.headers.get(DEBUG_ID_HEADER.toLowerCase())) ||
+      undefined;
     const debugChannels = (globalThis as any).__WAKU_DEBUG_CHANNELS__ as
       | Map<string, { readable: ReadableStream; writable: WritableStream }>
       | undefined;
