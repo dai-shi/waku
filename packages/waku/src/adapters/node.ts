@@ -46,12 +46,12 @@ export default createServerEntryAdapter(
         }),
       );
     }
-    app.use(contextMiddleware());
     if (bodyLimitOptions !== false) {
       app.use(
         bodyLimit(bodyLimitOptions ?? { maxSize: DEFAULT_BODY_LIMIT_MAX_SIZE }),
       );
     }
+    app.use(contextMiddleware());
     for (const middlewareFn of middlewareFns) {
       app.use(middlewareFn());
     }
