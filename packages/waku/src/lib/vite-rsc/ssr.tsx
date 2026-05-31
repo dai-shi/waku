@@ -6,6 +6,7 @@ import { injectRSCPayload } from 'rsc-html-stream/server';
 import htmlShell from 'virtual:vite-rsc-waku/html-shell';
 import { INTERNAL_ServerRoot } from '../../minimal/client.js';
 import { getErrorInfo } from '../utils/custom-errors.js';
+import { sanitizeLog } from '../utils/log.js';
 import { waitForRootPrerequisites } from '../utils/rsc-stream.js';
 import { getBootstrapPreamble } from '../utils/ssr.js';
 import { batchReadableStream, deferReadableStream } from '../utils/stream.js';
@@ -90,7 +91,12 @@ export const renderHtmlStream: RenderHtmlStream = async (
         ) {
           return e.digest;
         }
-        console.error('[SSR Error]', captureOwnerStack?.() || '', '\n', e);
+        console.error(
+          '[SSR Error]',
+          sanitizeLog(captureOwnerStack?.() || ''),
+          '\n',
+          sanitizeLog(e),
+        );
       },
       ...(options.nonce ? { nonce: options.nonce } : {}),
       ...(options.formState ? { formState: options.formState } : {}),

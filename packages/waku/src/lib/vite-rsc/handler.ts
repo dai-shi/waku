@@ -21,6 +21,7 @@ import type {
   Unstable_ProcessRequest as ProcessRequest,
 } from '../types.js';
 import { getErrorInfo } from '../utils/custom-errors.js';
+import { sanitizeLog } from '../utils/log.js';
 import { joinPath } from '../utils/path.js';
 import { DEBUG_ID_HEADER } from '../utils/react-debug-channel.js';
 import { createRenderUtils } from '../utils/render.js';
@@ -85,7 +86,7 @@ const toProcessRequest =
       if (info) {
         message = (e as { message?: string } | undefined)?.message || String(e);
       } else {
-        console.warn(e);
+        console.warn(sanitizeLog(e));
         message = 'Internal Server Error';
       }
       const body = stringToStream(message);

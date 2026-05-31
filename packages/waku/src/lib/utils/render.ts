@@ -3,6 +3,7 @@ import type {
   Unstable_RenderHtml,
   Unstable_RenderRsc,
 } from '../types.js';
+import { sanitizeLog } from './log.js';
 
 const validateRscElementIds = (elements: Record<string, unknown>) => {
   for (const id of Object.keys(elements)) {
@@ -45,7 +46,7 @@ export function createRenderUtils(
     ) {
       return e.digest;
     }
-    console.error('Error during rendering:', e);
+    console.error('Error during rendering:', sanitizeLog(e));
   };
 
   return {
