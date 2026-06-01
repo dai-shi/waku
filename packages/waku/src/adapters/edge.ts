@@ -3,7 +3,10 @@ import { bodyLimit } from 'hono/body-limit';
 import { Hono } from 'hono/tiny';
 import type { ImportGlobFunction } from 'vite/types/importGlob.d.ts';
 import { unstable_createServerEntryAdapter as createServerEntryAdapter } from 'waku/adapter-builders';
-import { unstable_honoMiddleware as honoMiddleware } from 'waku/internals';
+import {
+  unstable_honoMiddleware as honoMiddleware,
+  unstable_runWithContext as runWithContext,
+} from 'waku/internals';
 
 declare global {
   interface ImportMeta {
@@ -11,7 +14,14 @@ declare global {
   }
 }
 
-const { contextMiddleware, rscMiddleware, middlewareRunner } = honoMiddleware;
+const { rscMiddleware, middlewareRunner } = honoMiddleware;
+
+function contextMiddleware(): MiddlewareHandler {
+  return (c, next) => {
+    const req = c.req.raw;
+    return runWithContext(req, next);
+  };
+}
 
 const DEFAULT_BODY_LIMIT_MAX_SIZE = 100 * 1024 * 1024;
 

@@ -5,11 +5,19 @@ import { unstable_createServerEntryAdapter as createServerEntryAdapter } from 'w
 import {
   unstable_constants as constants,
   unstable_honoMiddleware as honoMiddleware,
+  unstable_runWithContext as runWithContext,
 } from 'waku/internals';
 import type { BuildOptions } from './netlify-build-enhancer.js';
 
 const { DIST_PUBLIC } = constants;
-const { contextMiddleware, rscMiddleware, middlewareRunner } = honoMiddleware;
+const { rscMiddleware, middlewareRunner } = honoMiddleware;
+
+function contextMiddleware(): MiddlewareHandler {
+  return (c, next) => {
+    const req = c.req.raw;
+    return runWithContext(req, next);
+  };
+}
 
 const DEFAULT_BODY_LIMIT_MAX_SIZE = 100 * 1024 * 1024;
 

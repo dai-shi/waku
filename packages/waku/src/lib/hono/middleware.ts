@@ -1,14 +1,6 @@
 import type { MiddlewareHandler } from 'hono';
 import type { Hono } from 'hono/tiny';
-import { INTERNAL_runWithContext } from '../context.js';
 import type { Unstable_ProcessRequest as ProcessRequest } from '../types.js';
-
-export function contextMiddleware(): MiddlewareHandler {
-  return (c, next) => {
-    const req = c.req.raw;
-    return INTERNAL_runWithContext(req, next);
-  };
-}
 
 export function rscMiddleware({
   processRequest,
