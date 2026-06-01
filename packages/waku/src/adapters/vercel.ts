@@ -23,7 +23,7 @@ export default createServerEntryAdapter(
       static?: boolean;
       assetsDir?: string;
       bodyLimit?: Parameters<typeof bodyLimit>[0] | false;
-      middlewareFns?: (() => MiddlewareHandler)[];
+      middlewareFns?: ((opts: { app: Hono }) => MiddlewareHandler)[];
       middlewareModules?: Record<string, () => Promise<unknown>>;
     },
   ) => {
@@ -46,9 +46,9 @@ export default createServerEntryAdapter(
     }
     app.use(contextMiddleware());
     for (const middlewareFn of middlewareFns) {
-      app.use(middlewareFn());
+      app.use(middlewareFn({ app }));
     }
-    app.use(middlewareRunner(middlewareModules as never));
+    app.use(middlewareRunner(middlewareModules as never, { app }));
     app.use(rscMiddleware({ processRequest }));
     const buildOptions: BuildOptions = {
       assetsDir: options?.assetsDir || 'assets',

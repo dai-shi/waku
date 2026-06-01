@@ -60,7 +60,7 @@ export default createServerEntryAdapter(
       handlers?: Record<string, unknown>;
       assetsDir?: string;
       bodyLimit?: Parameters<typeof bodyLimit>[0] | false;
-      middlewareFns?: (() => MiddlewareHandler)[];
+      middlewareFns?: ((opts: { app: Hono }) => MiddlewareHandler)[];
       middlewareModules?: Record<string, () => Promise<unknown>>;
       internalPathToBuildStaticFiles?: string;
     },
@@ -85,9 +85,9 @@ export default createServerEntryAdapter(
     }
     app.use(contextMiddleware());
     for (const middlewareFn of middlewareFns) {
-      app.use(middlewareFn());
+      app.use(middlewareFn({ app }));
     }
-    app.use(middlewareRunner(middlewareModules as never));
+    app.use(middlewareRunner(middlewareModules as never, { app }));
     app.use(rscMiddleware({ processRequest }));
     const buildOptions: BuildOptions = {
       srcDir: config.srcDir,

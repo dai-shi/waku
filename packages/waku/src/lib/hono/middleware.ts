@@ -1,4 +1,5 @@
 import type { MiddlewareHandler } from 'hono';
+import type { Hono } from 'hono/tiny';
 import { INTERNAL_runWithContext } from '../context.js';
 import type { Unstable_ProcessRequest as ProcessRequest } from '../types.js';
 
@@ -29,16 +30,17 @@ export function middlewareRunner(
   middlewareModules: Record<
     string,
     () => Promise<{
-      default: () => MiddlewareHandler;
+      default: (opts: { app: Hono }) => MiddlewareHandler;
     }>
   >,
+  opts: { app: Hono },
 ): MiddlewareHandler {
   let handlersPromise: Promise<MiddlewareHandler[]> | undefined;
   return async (c, next) => {
     if (!handlersPromise) {
       handlersPromise = Promise.all(
         Object.values(middlewareModules).map((m) =>
-          m().then((mod) => mod.default()),
+          m().then((mod) => mod.default(opts)),
         ),
       );
     }
