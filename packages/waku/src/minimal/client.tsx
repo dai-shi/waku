@@ -12,16 +12,12 @@ import {
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
 import { createCustomError } from '../lib/utils/custom-errors.js';
+import { consumeInitialRscEntry } from '../lib/utils/initial-rsc.js';
 import {
-  type INTERNAL_PrefetchedEntry,
-  createPrefetchedEntry,
-  getPrefetchedClose,
-  getPrefetchedDebugId,
-  getPrefetchedResponse,
-  getPrefetchedRscParams,
-  getPrefetchedRscPath,
-  getPrefetchedTemporaryReferences,
-} from '../lib/utils/prefetch.js';
+  addPrefetchEntry,
+  consumePrefetchEntry,
+  hasPrefetchEntry,
+} from '../lib/utils/prefetch-cache.js';
 import { setupDebugChannel } from '../lib/utils/react-debug-channel.js';
 import { encodeFuncId, encodeRscPath } from '../lib/utils/rsc-path.js';
 import { waitForRootPrerequisites } from '../lib/utils/rsc-stream.js';
@@ -132,40 +128,122 @@ type Unstable_FetchRscStore = {
 
 const defaultFetchRscStore: Unstable_FetchRscStore = {};
 
-const getClientPrefetchedEntries = (): INTERNAL_PrefetchedEntry[] =>
-  ((globalThis as any).__WAKU_PREFETCHED__ ||= []);
-
-const consumeInitialPrefetchedEntry = () => {
-  const initialRsc = (globalThis as any).__WAKU_INITIAL_RSC__ as
-    | INTERNAL_PrefetchedEntry
-    | undefined;
-  if (initialRsc) {
-    delete (globalThis as any).__WAKU_INITIAL_RSC__;
-    return initialRsc;
-  }
-  return undefined;
-};
-
-const consumeClientPrefetchedEntry = (
-  prefetchedEntries: INTERNAL_PrefetchedEntry[],
+const requestRsc = (
+  fetchFn: typeof fetch,
   rscPath: string,
   rscParams: unknown,
-) => {
-  const index = prefetchedEntries.findIndex(
-    (entry) =>
-      getPrefetchedRscPath(entry) === rscPath &&
-      // rscParams is intentionally compared by reference.
-      getPrefetchedRscParams(entry) === rscParams,
+  temporaryReferences: ReturnType<typeof createTemporaryReferenceSet>,
+): Promise<Response> => {
+  const url = BASE_RSC_PATH + encodeRscPath(rscPath);
+  if (rscParams === undefined) {
+    return fetchFn(url);
+  }
+  if (rscParams instanceof URLSearchParams) {
+    return fetchFn(url + '?' + rscParams);
+  }
+  return encodeReply(rscParams, { temporaryReferences }).then((body) =>
+    fetchFn(url, { method: 'POST', body }),
   );
-  return index >= 0 ? prefetchedEntries.splice(index, 1)[0] : undefined;
 };
 
-const fetchRscInternal: FetchRscInternal = (
+// `getStore` is read lazily when a server action fires: a prefetched tree is
+// decoded early but must act against the consuming navigation's store.
+const decodeRsc = (
+  getStore: () => Unstable_FetchRscStore,
+  responsePromise: Promise<Response>,
+  temporaryReferences: ReturnType<typeof createTemporaryReferenceSet>,
+  debugChannel:
+    | ReturnType<typeof setupDebugChannel>['debugChannel']
+    | undefined,
+): Promise<Elements> =>
+  createFromFetch<Elements>(checkStatus(responsePromise), {
+    callServer: (funcId: string, args: unknown[]) =>
+      unstable_callServerRsc(funcId, args, getStore),
+    debugChannel,
+    temporaryReferences,
+  });
+
+const reloadOnBuildIdMismatch = (
+  fetchRscStore: Unstable_FetchRscStore,
+  elements: Promise<Elements>,
+) => {
+  if (!import.meta.env?.WAKU_BUILD_ID) {
+    return;
+  }
+  Promise.resolve(elements).then(
+    (data) => {
+      if (data._buildId !== import.meta.env.WAKU_BUILD_ID) {
+        (
+          fetchRscStore[ON_BUILD_ID_MISMATCH] ??
+          (() => window.location.reload())
+        )();
+      }
+    },
+    () => {},
+  );
+};
+
+const prefetchRscInternal = (
+  fetchRscStore: Unstable_FetchRscStore,
+  rscPath: string,
+  rscParams: unknown,
+): void => {
+  const fetchFn = fetchRscStore[FETCH_FN] || fetch;
+  const temporaryReferences = createTemporaryReferenceSet();
+  const responsePromise = requestRsc(
+    fetchFn,
+    rscPath,
+    rscParams,
+    temporaryReferences,
+  );
+  addPrefetchEntry(rscPath, rscParams, fetchRscStore, (getStore) =>
+    decodeRsc(getStore, responsePromise, temporaryReferences, undefined),
+  );
+};
+
+const fetchRscElements = (
+  fetchRscStore: Unstable_FetchRscStore,
+  rscPath: string,
+  rscParams: unknown,
+): Promise<Elements> => {
+  const prefetched = consumePrefetchEntry<
+    Unstable_FetchRscStore,
+    Promise<Elements>
+  >(rscPath, rscParams, fetchRscStore);
+  if (prefetched) {
+    reloadOnBuildIdMismatch(fetchRscStore, prefetched);
+    return prefetched;
+  }
+  const initial = consumeInitialRscEntry();
+  const baseFetchFn = fetchRscStore[FETCH_FN] || fetch;
+  const debug = import.meta.hot
+    ? setupDebugChannel(baseFetchFn, !!initial, initial?.debugId)
+    : undefined;
+  const fetchFn = debug?.fetchFn || baseFetchFn;
+  const temporaryReferences = createTemporaryReferenceSet();
+  const responsePromise = initial
+    ? initial.response
+    : requestRsc(fetchFn, rscPath, rscParams, temporaryReferences);
+  const elements = decodeRsc(
+    () => fetchRscStore,
+    responsePromise,
+    temporaryReferences,
+    debug?.debugChannel,
+  );
+  reloadOnBuildIdMismatch(fetchRscStore, elements);
+  if (initial) {
+    const { close } = initial;
+    waitForRootPrerequisites(elements).then(close, close);
+  }
+  return elements;
+};
+
+const applyInputTransformers = (
   fetchRscStore: Unstable_FetchRscStore,
   rscPath: string,
   rscParams: unknown,
   prefetchOnly: boolean,
-) => {
+): readonly [rscPath: string, rscParams: unknown, prefetchOnly: boolean] => {
   const fetchRscInputTransformers = fetchRscStore[FETCH_RSC_INPUT_TRANSFORMERS];
   if (fetchRscInputTransformers) {
     for (const transformFetchRscInput of fetchRscInputTransformers) {
@@ -176,72 +254,28 @@ const fetchRscInternal: FetchRscInternal = (
       );
     }
   }
-  const baseFetchFn = fetchRscStore[FETCH_FN] || fetch;
-  const prefetchedEntries = getClientPrefetchedEntries();
-  const prefetchedEntry = !prefetchOnly
-    ? consumeClientPrefetchedEntry(prefetchedEntries, rscPath, rscParams) ||
-      consumeInitialPrefetchedEntry()
-    : undefined;
-  const debug =
-    import.meta.hot && !prefetchOnly
-      ? setupDebugChannel(
-          baseFetchFn,
-          !!prefetchedEntry,
-          prefetchedEntry ? getPrefetchedDebugId(prefetchedEntry) : undefined,
-        )
-      : undefined;
-  const fetchFn = debug?.fetchFn || baseFetchFn;
-  const temporaryReferences =
-    (prefetchedEntry &&
-      getPrefetchedTemporaryReferences<
-        ReturnType<typeof createTemporaryReferenceSet>
-      >(prefetchedEntry)) ||
-    createTemporaryReferenceSet();
-  const url = BASE_RSC_PATH + encodeRscPath(rscPath);
-  const responsePromise = prefetchedEntry
-    ? getPrefetchedResponse(prefetchedEntry)
-    : rscParams === undefined
-      ? fetchFn(url)
-      : rscParams instanceof URLSearchParams
-        ? fetchFn(url + '?' + rscParams)
-        : encodeReply(rscParams, { temporaryReferences }).then((body) =>
-            fetchFn(url, { method: 'POST', body }),
-          );
+  return [rscPath, rscParams, prefetchOnly];
+};
+
+const fetchRscInternal: FetchRscInternal = (
+  fetchRscStore: Unstable_FetchRscStore,
+  rscPath: string,
+  rscParams: unknown,
+  prefetchOnly: boolean,
+) => {
+  [rscPath, rscParams, prefetchOnly] = applyInputTransformers(
+    fetchRscStore,
+    rscPath,
+    rscParams,
+    prefetchOnly,
+  );
   if (prefetchOnly) {
-    prefetchedEntries.push(
-      createPrefetchedEntry(
-        rscPath,
-        responsePromise,
-        rscParams,
-        temporaryReferences,
-      ),
-    );
+    if (!hasPrefetchEntry(rscPath, rscParams)) {
+      prefetchRscInternal(fetchRscStore, rscPath, rscParams);
+    }
     return undefined as never;
   }
-  const elements = createFromFetch<Elements>(checkStatus(responsePromise), {
-    callServer: (funcId: string, args: unknown[]) =>
-      unstable_callServerRsc(funcId, args, () => fetchRscStore),
-    debugChannel: debug?.debugChannel,
-    temporaryReferences,
-  });
-  if (import.meta.env?.WAKU_BUILD_ID) {
-    Promise.resolve(elements).then(
-      (data) => {
-        if (data._buildId !== import.meta.env.WAKU_BUILD_ID) {
-          (
-            fetchRscStore[ON_BUILD_ID_MISMATCH] ??
-            (() => window.location.reload())
-          )();
-        }
-      },
-      () => {},
-    );
-  }
-  const closeFn = prefetchedEntry && getPrefetchedClose(prefetchedEntry);
-  if (closeFn) {
-    waitForRootPrerequisites(elements).then(closeFn, closeFn);
-  }
-  return elements;
+  return fetchRscElements(fetchRscStore, rscPath, rscParams);
 };
 
 /**
@@ -353,16 +387,6 @@ export const unstable_prefetchRsc = (
   ) => Unstable_FetchRscStore = (s) => s,
 ): void => {
   const fetchRscStore = unstable_enhanceFetchRscStore(defaultFetchRscStore);
-  const prefetched = getClientPrefetchedEntries();
-  const prefetchedEntry = prefetched.find(
-    (entry) =>
-      getPrefetchedRscPath(entry) === rscPath &&
-      // rscParams is intentionally compared by reference.
-      getPrefetchedRscParams(entry) === rscParams,
-  );
-  if (prefetchedEntry) {
-    return; // already prefetched
-  }
   fetchRscInternal(fetchRscStore, rscPath, rscParams, true);
 };
 

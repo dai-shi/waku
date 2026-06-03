@@ -434,6 +434,39 @@ test.describe('router-client', () => {
     expect(prefetchedViewRequests).toHaveLength(afterPrefetchCount);
   });
 
+  // The prefetch also warms the route's client chunk: decoding the prefetched
+  // RSC pulls /view-target's client component, so clicking loads no new JS.
+  // Regression test for https://github.com/wakujs/waku/issues/2099.
+  test('unstable_prefetchOnView warms the route client chunk', async ({
+    page,
+    mode,
+  }) => {
+    test.skip(mode === 'DEV', 'production chunking');
+    const jsUrls: string[] = [];
+    page.on('request', (request) => {
+      const url = request.url();
+      if (request.method() === 'GET' && url.endsWith('.js')) {
+        jsUrls.push(url);
+      }
+    });
+
+    await page.goto(`http://localhost:${port}/start`);
+    await waitForHydration(page);
+    // /view-target's chunk is not used on /start, so it is not loaded yet.
+    const initialJs = new Set(jsUrls);
+
+    await page.getByTestId('prefetch-on-view-link').scrollIntoViewIfNeeded();
+    // The prefetch fetches and decodes the route, pulling its client chunk.
+    await expect.poll(() => jsUrls.some((u) => !initialJs.has(u))).toBe(true);
+
+    const beforeClick = new Set(jsUrls);
+    await page.getByTestId('prefetch-on-view-link').click();
+    await expect(page.getByTestId('view-target-marker')).toBeVisible();
+
+    const newJsOnClick = jsUrls.filter((u) => !beforeClick.has(u));
+    expect(newJsOnClick).toEqual([]);
+  });
+
   test('unstable_prefetchOnEnter triggers prefetch on hover', async ({
     page,
   }) => {

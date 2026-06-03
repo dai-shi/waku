@@ -1,14 +1,12 @@
-import { createInitialPrefetchedEntryCode } from './prefetch.js';
+import { createInitialRscEntryCode } from './initial-rsc.js';
 
 export function getBootstrapPreamble(options: {
-  rscPath: string;
   hydrate: boolean;
   debugId?: string | undefined;
 }) {
   return `
     ${options.hydrate ? 'globalThis.__WAKU_HYDRATE__ = true;' : ''}
-    globalThis.__WAKU_INITIAL_RSC__ = ${createInitialPrefetchedEntryCode(
-      options.rscPath,
+    globalThis.__WAKU_INITIAL_RSC__ = ${createInitialRscEntryCode(
       options.debugId,
     )};
   `;

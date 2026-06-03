@@ -76,7 +76,6 @@ export const renderHtmlStream: RenderHtmlStream = async (
     htmlStream = await renderToReadableStream(<SsrRoot />, {
       bootstrapScriptContent:
         getBootstrapPreamble({
-          rscPath: options.rscPath || '',
           hydrate: true,
           debugId: options.debugId,
         }) +
@@ -117,7 +116,6 @@ export const renderHtmlStream: RenderHtmlStream = async (
     htmlStream = await renderToReadableStream(ssrErrorRoot, {
       bootstrapScriptContent:
         getBootstrapPreamble({
-          rscPath: options.rscPath || '',
           hydrate: false,
         }) +
         bootstrapScriptContent +
