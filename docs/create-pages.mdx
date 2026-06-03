@@ -750,6 +750,46 @@ With the file-system router, slug slices work the same way as slug pages — cre
 
 Multiple dynamic segments are also supported (e.g., `items/[category]/[id]`), and each extracted parameter is passed as a separate prop.
 
+### Handler interceptors
+
+A handler interceptor wraps each render, in both the request and build phases, so it runs inside the request scope where `unstable_getRequest` is available. It also wraps API route handlers. Use it to install an `AsyncLocalStorage` for the render or to set the inline-script nonce.
+
+```ts
+type HandlerInterceptor = <T>(next: () => Promise<T>) => Promise<T>;
+```
+
+Register interceptors with `createInterceptor` inside `createPages`. They compose as onion wrappers around `next`: the first registered interceptor is the outermost, so it runs first on the way in and last on the way out.
+
+```tsx
+// ./src/waku.server.tsx
+import { createPages } from 'waku';
+import adapter from 'waku/adapters/default';
+
+import { HomePage } from './templates/home-page';
+
+const pages = createPages(async ({ createPage, createInterceptor }) => {
+  createInterceptor(async (next) => {
+    console.log('render start');
+    const result = await next();
+    console.log('render end');
+    return result;
+  });
+  return [
+    createPage({
+      render: 'dynamic',
+      path: '/',
+      component: HomePage,
+    }),
+  ];
+});
+
+export default adapter(pages);
+```
+
+The `HandlerInterceptor` type is available from `waku/router/server`. The file-system router has an equivalent `src/pages/_interceptors/` convention, where modules are registered in sorted filename order (so the first becomes the outermost wrapper).
+
+See [Request Context](/guides/request-context) for seeding your own store and [Configure CSP](/guides/csp) for the nonce recipe.
+
 ### Build options
 
 `createPages` accepts an optional second argument with `unstable_skipBuild`. This callback receives a route path and can skip static build output for matching static routes or APIs.

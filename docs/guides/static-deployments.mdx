@@ -23,7 +23,7 @@ Do not use a static-only deployment if the app needs request-time behavior:
 - dynamic API routes
 - server actions
 - per-request cookies, headers, authentication, or personalization
-- Waku middleware that must run for deployed requests
+- middleware that must run for deployed requests
 - redirects or rewrites that must be decided at request time
 
 If you need those features, deploy Waku with a server-capable adapter instead. Static pages can still be part of a server-capable deployment.

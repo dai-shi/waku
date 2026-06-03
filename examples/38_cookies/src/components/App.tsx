@@ -1,6 +1,5 @@
 import { Suspense, cache } from 'react';
-import { unstable_getContextData as getContextData } from 'waku/server';
-import { getHonoContext } from '../waku.server';
+import { getCount, getHonoContext } from '../waku.server';
 import { Counter } from './Counter';
 
 const cachedFn = cache(() => Date.now());
@@ -12,13 +11,13 @@ const InternalAsyncComponent = async () => {
   if (val1 !== val2) {
     throw new Error('Cache not working');
   }
-  console.log('waku context', Object.keys(getContextData()));
+  console.log('cookie count', getCount());
   console.log('hono context', getHonoContext());
   return null;
 };
 
 const App = ({ name, items }: { name: string; items: unknown[] }) => {
-  const data = getContextData() as { count?: number };
+  const count = getCount();
   return (
     <html>
       <head>
@@ -30,7 +29,7 @@ const App = ({ name, items }: { name: string; items: unknown[] }) => {
         >
           <h1>Hello {name}!!</h1>
           <h3>This is a server component.</h3>
-          <p>Cookie count: {data.count || 0}</p>
+          <p>Cookie count: {count}</p>
           <Counter />
           <p>Item count: {items.length}</p>
           <Suspense>

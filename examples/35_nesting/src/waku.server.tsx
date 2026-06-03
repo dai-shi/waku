@@ -36,28 +36,17 @@ export default adapter({
   handleBuild: async ({
     renderRsc,
     rscPath2pathname,
-    withRequest,
     generateFile,
     generateDefaultHtml,
   }) => {
-    await withRequest(
-      new Request(new URL('http://localhost:3000/')),
-      async () => {
-        const body = await renderRsc({
-          App: <App name="Waku" />,
-          InnerApp: <InnerApp count={0} />,
-        });
-        await generateFile(rscPath2pathname(''), body);
-      },
-    );
+    const body = await renderRsc({
+      App: <App name="Waku" />,
+      InnerApp: <InnerApp count={0} />,
+    });
+    await generateFile(rscPath2pathname(''), body);
     for (const count of [1, 2, 3, 4, 5]) {
-      await withRequest(
-        new Request(new URL('http://localhost:3000/')),
-        async () => {
-          const body = await renderRsc({ App: <App name="Waku" /> });
-          await generateFile(rscPath2pathname(`InnerApp=${count}`), body);
-        },
-      );
+      const innerBody = await renderRsc({ App: <App name="Waku" /> });
+      await generateFile(rscPath2pathname(`InnerApp=${count}`), innerBody);
     }
     await generateDefaultHtml('index.html');
     await generateDefaultHtml('no-ssr/index.html');

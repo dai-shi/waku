@@ -204,6 +204,11 @@ Every input also includes:
 - `pathname`: pathname from the request URL
 - `req`: the original `Request` object
 
+`input.req` is the request for this handler. The Minimal API does not provide an
+ambient `unstable_getRequest()` (that is a router feature); pass `input.req`
+where you need it, or wrap the body in your own `AsyncLocalStorage` to reach it
+from deeper components and server functions.
+
 Typical handling patterns:
 
 `component` requests usually return an RSC payload:
@@ -305,7 +310,6 @@ The build utilities are:
 | `renderHtml(elementsStream, html, options)` | Render HTML from an RSC stream and client shell.                                                   |
 | `rscPath2pathname(rscPath)`                 | Convert an RSC path into the correct output pathname for the RSC payload.                          |
 | `saveBuildMetadata(key, value)`             | Persist metadata that will later be available through `loadBuildMetadata(...)` in `handleRequest`. |
-| `withRequest(req, fn)`                      | Install a request context while rendering at build time.                                           |
 | `generateFile(fileName, body)`              | Write a file to `dist/public`. Accepts `ReadableStream` or `string`.                               |
 | `generateDefaultHtml(fileName)`             | Write Waku's default fallback HTML to `dist/public`.                                               |
 
@@ -368,18 +372,16 @@ handleRequest: async (input, { renderRsc, loadBuildMetadata }) => {
 },
 ```
 
-Render with request-scoped context during build:
+Render during build:
 
 ```tsx
-handleBuild: async ({ renderRsc, withRequest, generateFile, rscPath2pathname }) => {
-  await withRequest(new Request('http://localhost:3000/'), async () => {
-    const body = await renderRsc({ App: <App name="Waku" /> });
-    await generateFile(rscPath2pathname(''), body);
-  });
+handleBuild: async ({ renderRsc, generateFile, rscPath2pathname }) => {
+  const body = await renderRsc({ App: <App name="Waku" /> });
+  await generateFile(rscPath2pathname(''), body);
 },
 ```
 
-`withRequest(...)` matters when your render path reads request-scoped data such as the URL, cookies, or values stored in request context.
+At build time there is no real request. If your render reads request-scoped data through your own `AsyncLocalStorage`, wrap the render and seed it with a synthetic `Request`.
 
 ### Client API
 
@@ -616,7 +618,7 @@ For adapter implementation details, see [Adapter Authoring](/guides/adapter-auth
 - [Minimal SSR and prerendered root route](https://github.com/wakujs/waku/tree/main/examples/31_minimal)
 - [Using `Children` to compose client content into a server tree](https://github.com/wakujs/waku/tree/main/examples/33_promise)
 - [Server functions returning a value and updated elements](https://github.com/wakujs/waku/tree/main/examples/34_functions)
-- [Nested slots, `useRefetch`, `withRequest`, and fallback HTML generation](https://github.com/wakujs/waku/tree/main/examples/35_nesting)
+- [Nested slots, `useRefetch`, `runWithRequest`, and fallback HTML generation](https://github.com/wakujs/waku/tree/main/examples/35_nesting)
 - [Server actions and `formState`](https://github.com/wakujs/waku/tree/main/examples/36_form)
 - [Custom API endpoints alongside minimal SSR](https://github.com/wakujs/waku/tree/main/examples/39_api)
 - [SPA-style build using `generateDefaultHtml`](https://github.com/wakujs/waku/tree/main/examples/51_spa)

@@ -14,7 +14,7 @@ Write a custom adapter only when you need to integrate Waku with a runtime or de
 
 - translating platform requests into Waku request processing
 - serving static assets in development or build preview environments
-- wiring Waku middleware and request context
+- wiring middleware
 - exposing the platform-specific default export
 - injecting platform environment bindings into Waku server code
 - adding deployment files after `waku build`
@@ -85,16 +85,16 @@ import { Hono } from 'hono/tiny';
 import { unstable_createServerEntryAdapter as createServerEntryAdapter } from 'waku/adapter-builders';
 import { unstable_honoMiddleware as honoMiddleware } from 'waku/internals';
 
-const { contextMiddleware, rscMiddleware, middlewareRunner } = honoMiddleware;
+const { rscMiddleware, middlewareRunner } = honoMiddleware;
 
 export default createServerEntryAdapter(
   (
     { processRequest, processBuild, notFoundHtml },
     options?: {
-      middlewareFns?: (() => MiddlewareHandler)[];
+      middlewareFns?: ((opts: { app: Hono }) => MiddlewareHandler)[];
       middlewareModules?: Record<
         string,
-        () => Promise<{ default: () => MiddlewareHandler }>
+        () => Promise<{ default: (opts: { app: Hono }) => MiddlewareHandler }>
       >;
     },
   ) => {
@@ -108,13 +108,11 @@ export default createServerEntryAdapter(
       return c.text('404 Not Found', 404);
     });
 
-    app.use(contextMiddleware());
-
     for (const middlewareFn of middlewareFns) {
-      app.use(middlewareFn());
+      app.use(middlewareFn({ app }));
     }
 
-    app.use(middlewareRunner(middlewareModules));
+    app.use(middlewareRunner(middlewareModules, { app }));
     app.use(rscMiddleware({ processRequest }));
 
     return {
@@ -125,7 +123,7 @@ export default createServerEntryAdapter(
 );
 ```
 
-`contextMiddleware()` is what makes Waku request context APIs such as `unstable_getContext` work. `middlewareRunner(...)` runs middleware modules discovered from `src/middleware`. `rscMiddleware(...)` delegates the final request handling to Waku.
+`middlewareRunner(...)` runs middleware modules discovered from `src/middleware`, passing each the `{ app }` Hono instance. `rscMiddleware(...)` delegates the final request handling to Waku. Request context such as `unstable_getRequest` is established by the app's handlers around each render, so the adapter does not install it.
 
 `waku/internals` is intentionally internal. It is useful for adapter authors, but it is not a stable application API.
 

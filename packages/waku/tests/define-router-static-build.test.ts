@@ -6,7 +6,6 @@ import { unstable_defineRouter } from '../src/router/define-router.js';
 vi.mock('../src/server.js', () => ({
   deserializeRsc: vi.fn().mockResolvedValue(null),
   serializeRsc: vi.fn().mockResolvedValue(new Uint8Array([1])),
-  unstable_getContext: vi.fn(),
 }));
 
 const makeStream = () =>
@@ -78,7 +77,6 @@ describe('define-router handleBuild', () => {
       renderHtml,
       rscPath2pathname: (rscPath: string) => `dist/${rscPath}.txt`,
       saveBuildMetadata: vi.fn().mockResolvedValue(undefined),
-      withRequest: <T>(_req: Request, fn: () => T) => fn(),
       generateFile: vi.fn().mockResolvedValue(undefined),
       generateDefaultHtml: vi.fn().mockResolvedValue(undefined),
       unstable_registerPrunableFile: vi.fn(),
@@ -136,7 +134,6 @@ describe('define-router handleBuild', () => {
       renderHtml: vi.fn().mockResolvedValue(new Response('<!doctype html>')),
       rscPath2pathname: (rscPath: string) => `dist/${rscPath}.txt`,
       saveBuildMetadata,
-      withRequest: <T>(_req: Request, fn: () => T) => fn(),
       generateFile: vi.fn().mockResolvedValue(undefined),
       generateDefaultHtml: vi.fn().mockResolvedValue(undefined),
       unstable_registerPrunableFile: vi.fn(),
@@ -200,7 +197,6 @@ describe('define-router handleBuild', () => {
       renderHtml: vi.fn().mockResolvedValue(new Response('<!doctype html>')),
       rscPath2pathname: (rscPath: string) => `dist/${rscPath}.txt`,
       saveBuildMetadata,
-      withRequest: <T>(_req: Request, fn: () => T) => fn(),
       generateFile: vi.fn().mockResolvedValue(undefined),
       generateDefaultHtml: vi.fn().mockResolvedValue(undefined),
       unstable_registerPrunableFile: vi.fn(),
@@ -259,7 +255,6 @@ describe('define-router handleBuild', () => {
         renderHtml: vi.fn().mockResolvedValue(new Response('<!doctype html>')),
         rscPath2pathname: (rscPath: string) => `dist/${rscPath}.txt`,
         saveBuildMetadata: vi.fn().mockResolvedValue(undefined),
-        withRequest: <T>(_req: Request, fn: () => T) => fn(),
         generateFile,
         generateDefaultHtml: vi.fn().mockResolvedValue(undefined),
         unstable_registerPrunableFile: vi.fn(),
@@ -297,7 +292,6 @@ describe('define-router handleBuild', () => {
       renderHtml: vi.fn().mockResolvedValue(new Response('<!doctype html>')),
       rscPath2pathname: (rscPath: string) => `dist/${rscPath}.txt`,
       saveBuildMetadata: buildSave,
-      withRequest: <T>(_req: Request, fn: () => T) => fn(),
       generateFile: vi.fn().mockResolvedValue(undefined),
       generateDefaultHtml: vi.fn().mockResolvedValue(undefined),
       unstable_registerPrunableFile: vi.fn(),
@@ -388,7 +382,6 @@ describe('define-router handleBuild', () => {
       renderHtml: vi.fn().mockResolvedValue(new Response('<!doctype html>')),
       rscPath2pathname: (rscPath: string) => `dist/${rscPath}.txt`,
       saveBuildMetadata: vi.fn().mockResolvedValue(undefined),
-      withRequest: <T>(_req: Request, fn: () => T) => fn(),
       generateFile: vi.fn().mockResolvedValue(undefined),
       generateDefaultHtml: vi.fn().mockResolvedValue(undefined),
       unstable_registerPrunableFile: register,

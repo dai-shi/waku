@@ -1,4 +1,4 @@
-import { unstable_getContext as getContext } from 'waku/server';
+import { unstable_getRequest as getRequest } from 'waku/router/server';
 import { Echo } from './Echo.js';
 
 export function ServerEcho({ echo }: { echo: string }) {
@@ -8,7 +8,7 @@ export function ServerEcho({ echo }: { echo: string }) {
   return (
     <>
       <Echo echo={echo} timestamp={now} />
-      <p data-testid="req-url">{getContext().req.url}</p>
+      <p data-testid="req-url">{getRequest().url}</p>
     </>
   );
 }

@@ -1045,6 +1045,26 @@ export default logger;
 
 If you provide a custom `./src/waku.server.tsx`, pass middleware through the adapter options with `middlewareModules` or `middlewareFns`.
 
+## Interceptors
+
+Files in `./src/pages/_interceptors` are loaded as handler interceptors. Each file should default export a `HandlerInterceptor` from `waku/router/server`.
+
+An interceptor wraps each render, in both the request and build phases, and runs inside the request scope. Use it for cross-cutting concerns around a render, such as logging or installing an `AsyncLocalStorage`.
+
+```ts
+// ./src/pages/_interceptors/logger.ts
+import type { HandlerInterceptor } from 'waku/router/server';
+
+const logger: HandlerInterceptor = async (next) => {
+  console.log('render start');
+  const result = await next();
+  console.log('render end');
+  return result;
+};
+
+export default logger;
+```
+
 ## Data fetching
 
 ### Server

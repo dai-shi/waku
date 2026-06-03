@@ -4,7 +4,6 @@ import { createPages } from '../src/router/create-pages.js';
 vi.mock('../src/server.js', () => ({
   deserializeRsc: vi.fn().mockResolvedValue(null),
   serializeRsc: vi.fn().mockResolvedValue(new Uint8Array([1])),
-  unstable_getContext: vi.fn(),
 }));
 
 const makeStream = () =>
@@ -37,7 +36,6 @@ describe('createPages - build-time pruning', () => {
       renderHtml: vi.fn().mockResolvedValue(new Response('<!doctype html>')),
       rscPath2pathname: (rscPath: string) => `dist/${rscPath}.txt`,
       saveBuildMetadata: vi.fn().mockResolvedValue(undefined),
-      withRequest: <T>(_req: Request, fn: () => T) => fn(),
       generateFile: vi.fn().mockResolvedValue(undefined),
       generateDefaultHtml: vi.fn().mockResolvedValue(undefined),
       unstable_registerPrunableFile: register,

@@ -19,7 +19,7 @@ import type {
   PropsForPages,
 } from './create-pages-utils/inferred-path-types.js';
 import { unstable_defineRouter } from './define-router.js';
-import type { ApiHandler } from './define-router.js';
+import type { ApiHandler, HandlerInterceptor } from './define-router.js';
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
 export const METHODS = [
@@ -328,6 +328,8 @@ export type CreateRoot = (
       },
 ) => void;
 
+export type CreateInterceptor = (interceptor: HandlerInterceptor) => void;
+
 /**
  * Root component for all pages
  * ```tsx
@@ -419,6 +421,7 @@ export const createPages = <
     createRoot: CreateRoot;
     createApi: CreateApi;
     createSlice: CreateSlice;
+    createInterceptor: CreateInterceptor;
   }) => Promise<AllPages>,
   options?: {
     unstable_skipBuild?: (routePath: string) => boolean;
@@ -842,6 +845,14 @@ export const createPages = <
     });
   };
 
+  const interceptors: HandlerInterceptor[] = [];
+  const createInterceptor: CreateInterceptor = (interceptor) => {
+    if (configured) {
+      throw new Error('createInterceptor no longer available');
+    }
+    interceptors.push(interceptor);
+  };
+
   let ready: Promise<AllPages | void> | undefined;
   const configure = async () => {
     if (!configured && !ready) {
@@ -851,6 +862,7 @@ export const createPages = <
         createRoot,
         createApi,
         createSlice,
+        createInterceptor,
       });
       await ready;
 
@@ -1095,6 +1107,7 @@ export const createPages = <
     ...(options?.unstable_skipBuild && {
       unstable_skipBuild: options.unstable_skipBuild,
     }),
+    unstable_interceptors: interceptors,
   });
 
   return definedRouter as typeof definedRouter & {

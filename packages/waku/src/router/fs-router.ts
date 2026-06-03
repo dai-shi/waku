@@ -3,6 +3,7 @@ import type { ImportGlobFunction } from 'vite/types/importGlob.d.ts';
 import { isIgnoredPath } from '../lib/utils/fs-router.js';
 import { METHODS, createPages } from './create-pages.js';
 import type { Method } from './create-pages.js';
+import type { HandlerInterceptor } from './define-router.js';
 
 declare global {
   interface ImportMeta {
@@ -35,6 +36,12 @@ export function fsRouter(
     apiDir?: string;
     /** e.g. `"_slices"` will detect slices in `src/pages/_slices`. */
     slicesDir?: string;
+    /**
+     * e.g. `"_interceptors"` will detect handler interceptors in
+     * `src/pages/_interceptors`. Each module must default-export a
+     * `HandlerInterceptor`.
+     */
+    interceptorsDir?: string;
     unstable_skipBuild?: (routePath: string) => boolean;
   },
 ) {
@@ -42,6 +49,7 @@ export function fsRouter(
     pagesDir = 'pages',
     apiDir = '_api',
     slicesDir = '_slices',
+    interceptorsDir = '_interceptors',
     unstable_skipBuild,
   } = options || {};
   return createPages(
@@ -51,14 +59,30 @@ export function fsRouter(
       createRoot,
       createApi,
       createSlice,
+      createInterceptor,
     }) => {
       const pagesDirPrefix = pagesDir + '/';
-      for (const file in modules) {
+      for (const file of Object.keys(modules).sort()) {
         // Use WHATWG URL encoding for the file path (different from RFC2396-based encoding)
         const srcPath = new URL(file, 'http://localhost:3000').pathname.slice(
           1,
         );
         if (!srcPath.startsWith(pagesDirPrefix)) {
+          continue;
+        }
+        const pathItems = srcPath
+          .slice(pagesDirPrefix.length)
+          .replace(/\.\w+$/, '')
+          .split('/')
+          .filter(Boolean);
+        if (isIgnoredPath(pathItems)) {
+          continue;
+        }
+        if (pathItems.at(0) === interceptorsDir) {
+          const interceptorMod = (await modules[file]!()) as {
+            default: HandlerInterceptor;
+          };
+          createInterceptor(interceptorMod.default);
           continue;
         }
         const mod = (await modules[file]!()) as {
@@ -70,14 +94,6 @@ export function fsRouter(
         };
 
         const config = await mod.getConfig?.();
-        const pathItems = srcPath
-          .slice(pagesDirPrefix.length)
-          .replace(/\.\w+$/, '')
-          .split('/')
-          .filter(Boolean);
-        if (isIgnoredPath(pathItems)) {
-          continue;
-        }
         const path =
           '/' +
           (['_layout', 'index', '_root'].includes(pathItems.at(-1)!)

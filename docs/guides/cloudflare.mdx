@@ -135,10 +135,10 @@ For general Waku request context usage, see [Request Context](/guides/request-co
 
 ```ts
 import { env, waitUntil } from 'cloudflare:workers'; // eslint-disable-line import/no-unresolved
-import { unstable_getContext as getContext } from 'waku/server';
+import { unstable_getRequest as getRequest } from 'waku/router/server';
 
 const getData = async () => {
-  const { req } = getContext();
+  const req = getRequest();
   waitUntil(
     new Promise<void>((resolve) => {
       console.log('Waiting for 5 seconds');
@@ -206,7 +206,7 @@ A configuration in the `wrangler.jsonc` file tells Cloudflare to route requests 
 }
 ```
 
-You can also access static assets from your server-side worker code in a server component, server function or Waku middleware. For example, if you want to fetch HTML from static assets to render:
+You can also access static assets from your server-side worker code in a server component, server function or middleware. For example, if you want to fetch HTML from static assets to render:
 
 ```ts
 import { env } from 'cloudflare:workers'; // eslint-disable-line import/no-unresolved
@@ -224,7 +224,7 @@ It is also possible to always run the worker before serving static assets. See t
 
 ### Custom Headers
 
-You can set response headers on the `res` object of the Waku context. Since Cloudflare supports response body streaming, server components might not be able to set headers if they were already sent in the response stream. Headers can be set from custom Waku middleware.
+You can set response headers from custom middleware on the Hono response (`c.res`). Since Cloudflare supports response body streaming, server components might not be able to set headers if they were already sent in the response stream.
 
 For static assets, add a [`_headers`](https://developers.cloudflare.com/workers/static-assets/headers/#custom-headers) file to the root of your `public` folder to set custom headers for static assets.
 

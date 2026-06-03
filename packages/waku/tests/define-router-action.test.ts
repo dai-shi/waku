@@ -7,12 +7,9 @@ import {
   unstable_rerenderRoute,
 } from '../src/router/define-router.js';
 
-const requestContext = vi.hoisted(() => ({}));
-
 vi.mock('../src/server.js', () => ({
   deserializeRsc: vi.fn().mockResolvedValue(null),
   serializeRsc: vi.fn().mockResolvedValue(new Uint8Array([1])),
-  unstable_getContext: vi.fn(() => requestContext),
 }));
 
 const makeStream = () =>

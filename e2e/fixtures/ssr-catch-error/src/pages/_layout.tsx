@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react';
-import { unstable_getContextData as getContextData } from 'waku/server';
 import { ClientLayout } from '../components/client-layout.js';
+import { authStorage } from '../middleware/validator.js';
 
 const CheckIfAccessDenied = ({ children }: { children: ReactNode }) => {
-  const data = getContextData();
-  if (data.unauthorized) {
+  if (authStorage.getStore()?.unauthorized) {
     throw new Error('401 Unauthorized');
   }
   return children;

@@ -1,6 +1,6 @@
 'use server';
 
-import { unstable_getContext as getContext } from 'waku/server';
+import { getRequest } from '../als';
 
 export const greet = async (name: string) => {
   await Promise.resolve();
@@ -9,6 +9,6 @@ export const greet = async (name: string) => {
 
 export const hello = async (name: string) => {
   await Promise.resolve();
-  console.log('Context:', getContext());
+  console.log('Request:', getRequest());
   console.log('Hello', name, '!');
 };

@@ -23,39 +23,70 @@ Waku has 2 ways to set `nonce`.
 
 ### Hono Middleware
 
-Hono provides a [middleware](https://hono.dev/docs/middleware/builtin/secure-headers) which simplifies the setup of security headers. Set up a middleware in `src/middleware/nonce.ts`:
+Hono provides a [middleware](https://hono.dev/docs/middleware/builtin/secure-headers) which simplifies the setup of security headers. Set up a middleware in `src/middleware/nonce.ts` that enables Hono's [context storage](https://hono.dev/docs/middleware/builtin/context-storage) and generates the nonce:
 
 ```ts
 import type { MiddlewareHandler } from 'hono';
+import { every } from 'hono/combine';
+import { contextStorage } from 'hono/context-storage';
 import { NONCE, secureHeaders } from 'hono/secure-headers';
-import { unstable_getContext as getContext } from 'waku/server';
 
-const nonceMiddleware = (): MiddlewareHandler => {
-  const secure = secureHeaders({
-    contentSecurityPolicy: {
-      scriptSrc: ["'self'", NONCE],
-    },
-  });
-
-  return async (c, next) => {
-    await secure(c, async () => {
-      // Bridge Hono's nonce to Waku
-      const nonce = c.get('secureHeadersNonce');
-      if (nonce) {
-        const context = getContext();
-        context.nonce = nonce;
-      }
-      await next();
-    });
-  };
-};
+const nonceMiddleware = (): MiddlewareHandler =>
+  every(
+    contextStorage(),
+    secureHeaders({
+      contentSecurityPolicy: {
+        scriptSrc: ["'self'", NONCE],
+      },
+    }),
+  );
 
 export default nonceMiddleware;
 ```
 
-Behind the scenes, hono generates the `nonce`, passes it to `Content-Security-Policy` headers (you can add more here) and stores it in `secureHeadersNonce` context. We need to pass it again to Waku context so Waku can apply it to its inline script.
+Behind the scenes, hono generates the `nonce`, passes it to `Content-Security-Policy` headers (you can add more here) and stores it in the `secureHeadersNonce` context. To apply that nonce to Waku's inline scripts, bridge it with a handler interceptor that reads the nonce from Hono's context and calls `unstable_setNonce`. Use `tryGetContext` rather than `getContext`, since interceptors also run at build time where there is no Hono request context.
 
-For more on request context and middleware data, see [Request Context](/guides/request-context).
+In managed mode (no `waku.server.tsx`), drop the interceptor in `src/pages/_interceptors/nonce.ts`:
+
+```ts
+import { tryGetContext } from 'hono/context-storage';
+import type { HandlerInterceptor } from 'waku/router/server';
+import { unstable_setNonce as setNonce } from 'waku/router/server';
+
+const nonceInterceptor: HandlerInterceptor = (next) => {
+  const nonce = tryGetContext()?.get('secureHeadersNonce');
+  if (typeof nonce === 'string') {
+    setNonce(nonce);
+  }
+  return next();
+};
+
+export default nonceInterceptor;
+```
+
+With a custom `waku.server.tsx` using `createPages`, register the same logic through `createInterceptor`:
+
+```ts
+import { tryGetContext } from 'hono/context-storage';
+import { unstable_setNonce as setNonce } from 'waku/router/server';
+
+createPages(async ({ createPage, createInterceptor }) => {
+  createInterceptor((next) => {
+    const nonce = tryGetContext()?.get('secureHeadersNonce');
+    if (typeof nonce === 'string') {
+      setNonce(nonce);
+    }
+    return next();
+  });
+  return [
+    // ...pages...
+  ];
+});
+```
+
+An interceptor wraps each render in both the request and build phases, so reading the nonce and calling `setNonce` runs inside the render scope where Waku picks it up.
+
+For more on request context and handler interceptors, see [Request Context](/guides/request-context).
 
 ### Pass nonce in `waku.server.entry`
 
@@ -92,7 +123,6 @@ export default adapter({
         },
       );
 
-      // Set CSP header with the nonce
       response.headers.set(
         'Content-Security-Policy',
         `script-src 'self' 'nonce-${NONCE}';`,
@@ -100,6 +130,7 @@ export default adapter({
 
       return response;
     }
+    return null;
   },
   handleBuild: async () => {},
 });
@@ -110,3 +141,5 @@ We set a minimal CSP header here. In practice, CSP should be as minimal or stric
 ### Limitation
 
 In the case of SSG, a nonce is not secure because it must be randomly generated for every response. Since SSG produces static HTML, this is not possible. If your security requirements prioritize a nonce over static HTML benefits, consider disabling HTML pre-rendering, or use [SSR Stream Interception](/guides/stream-intercept) if your host platform provides a similar middleware mechanism (e.g. Netlify's Edge Function).
+
+For this reason `unstable_setNonce` applies to dynamic (request-time) rendering only and has no effect on statically generated HTML. It must be called from within a render scope such as a handler interceptor; called elsewhere it is a no-op.

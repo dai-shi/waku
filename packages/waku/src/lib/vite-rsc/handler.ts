@@ -11,7 +11,6 @@ import { buildMetadata } from 'virtual:vite-rsc-waku/build-metadata';
 import { config, isBuild } from 'virtual:vite-rsc-waku/config';
 import notFoundHtml from 'virtual:vite-rsc-waku/not-found';
 import { BUILD_METADATA_FILE, DIST_PUBLIC, DIST_SERVER } from '../constants.js';
-import { runWithContext } from '../context.js';
 import { setAllEnv } from '../env.js';
 import type {
   Unstable_CreateServerEntryAdapter as CreateServerEntryAdapter,
@@ -144,7 +143,6 @@ const toProcessBuild =
       saveBuildMetadata: async (key, value) => {
         buildMetadata.set(key, value);
       },
-      withRequest: (req, fn) => runWithContext(req, fn),
       generateFile: async (fileName, body) => {
         await emitFile(
           joinPath(DIST_PUBLIC, fileName),
