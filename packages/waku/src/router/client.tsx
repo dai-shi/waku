@@ -8,6 +8,7 @@ import {
   useContext,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   useTransition,
@@ -324,6 +325,19 @@ function useSharedRef<T>(
   return [managedRef, handleRef];
 }
 
+type NavigationStatus = { pending?: boolean };
+
+const NavigationStatusContext = createContext<NavigationStatus>({});
+
+/**
+ * Returns the navigation status of the enclosing `Link`, like React's
+ * `useFormStatus`. `pending` is `true` while the navigation transition is in
+ * flight, until the destination route's async components resolve. Returns an
+ * empty object when called outside a `Link`.
+ */
+export const useNavigationStatus_UNSTABLE = (): NavigationStatus =>
+  useContext(NavigationStatusContext);
+
 export type LinkProps = {
   to: InferredPaths;
   children: ReactNode;
@@ -334,10 +348,14 @@ export type LinkProps = {
    * - `undefined`: scroll on path/hash change (not on query-only change)
    */
   scroll?: boolean;
-  unstable_pending?: ReactNode;
-  unstable_notPending?: ReactNode;
   unstable_prefetchOnEnter?: boolean;
   unstable_prefetchOnView?: boolean;
+  /**
+   * Overrides how the navigation transition is started, e.g. to integrate the
+   * browser View Transitions API. When provided, React's `useTransition` is
+   * bypassed, so `useNavigationStatus_UNSTABLE()` stays `{ pending: false }` for
+   * this link.
+   */
   unstable_startTransition?: ((fn: TransitionFunction) => void) | undefined;
   ref?: Ref<HTMLAnchorElement> | undefined;
 } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>;
@@ -346,8 +364,6 @@ export function Link({
   to,
   children,
   scroll,
-  unstable_pending,
-  unstable_notPending,
   unstable_prefetchOnEnter,
   unstable_prefetchOnView,
   unstable_startTransition,
@@ -367,10 +383,7 @@ export function Link({
         throw new Error('Missing Router');
       };
   const [isPending, startTransition] = useTransition();
-  const startTransitionFn =
-    unstable_startTransition ||
-    ((unstable_pending || unstable_notPending) && startTransition) ||
-    ((fn: TransitionFunction) => fn());
+  const startTransitionFn = unstable_startTransition || startTransition;
   const [ref, setRef] = useSharedRef<HTMLAnchorElement>(refProp);
 
   useEffect(() => {
@@ -437,34 +450,20 @@ export function Link({
         props.onMouseEnter?.(event);
       }
     : props.onMouseEnter;
-  const ele = (
-    <a
-      {...props}
-      href={resolvedTo}
-      onClick={onClick}
-      onMouseEnter={onMouseEnter}
-      ref={setRef}
-    >
-      {children}
-    </a>
+  const navigationStatus = useMemo(() => ({ pending: isPending }), [isPending]);
+  return (
+    <NavigationStatusContext value={navigationStatus}>
+      <a
+        {...props}
+        href={resolvedTo}
+        onClick={onClick}
+        onMouseEnter={onMouseEnter}
+        ref={setRef}
+      >
+        {children}
+      </a>
+    </NavigationStatusContext>
   );
-  if (isPending && unstable_pending !== undefined) {
-    return (
-      <>
-        {ele}
-        {unstable_pending}
-      </>
-    );
-  }
-  if (!isPending && unstable_notPending !== undefined) {
-    return (
-      <>
-        {ele}
-        {unstable_notPending}
-      </>
-    );
-  }
-  return ele;
 }
 
 const notAvailableInServer = (name: string) => () => {

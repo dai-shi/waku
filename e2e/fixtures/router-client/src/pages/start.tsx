@@ -1,4 +1,6 @@
 import { Link } from 'waku';
+import { ResolveClientSuspenseButton } from '../components/client-suspense.js';
+import { NavIndicator } from '../components/nav-indicator.js';
 import { PushMissingButton, RouteState } from '../components/route-state.js';
 
 export default function StartPage() {
@@ -31,18 +33,19 @@ export default function StartPage() {
         </Link>
       </p>
       <p>
-        <Link
-          to="/next?from=pending"
-          unstable_pending={
-            <span data-testid="pending-indicator">Pending transition...</span>
-          }
-          unstable_notPending={
-            <span data-testid="not-pending-indicator">Not pending</span>
-          }
-          data-testid="pending-link"
-        >
+        <Link to="/next?from=pending" data-testid="pending-link">
           Go next with pending state
+          <NavIndicator />
         </Link>
+      </p>
+      <p>
+        <Link to="/pending-client" data-testid="pending-client-link">
+          Go to a route with a client-only delay
+          <NavIndicator name="client" />
+        </Link>
+      </p>
+      <p>
+        <ResolveClientSuspenseButton />
       </p>
       <p>
         <Link to="/trigger-not-found" data-testid="go-trigger-not-found">

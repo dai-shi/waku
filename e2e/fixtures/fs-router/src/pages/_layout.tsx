@@ -1,102 +1,63 @@
 import type { ReactNode } from 'react';
 import { Link } from 'waku/router/client';
-
-const Pending = ({ isPending }: { isPending: boolean }) => (
-  <span
-    style={{
-      marginLeft: 5,
-      transition: 'opacity 75ms 100ms',
-      opacity: isPending ? 1 : 0,
-    }}
-  >
-    Pending...
-  </span>
-);
+import { Pending } from '../components/pending';
 
 const HomeLayout = ({ children }: { children: ReactNode }) => (
   <div>
     <title>Waku</title>
     <ul>
       <li>
-        <Link
-          to="/"
-          unstable_pending={<Pending isPending />}
-          unstable_notPending={<Pending isPending={false} />}
-        >
+        <Link to="/">
           Home
+          <Pending />
         </Link>
       </li>
       <li>
-        <Link
-          to="/foo"
-          unstable_pending={<Pending isPending />}
-          unstable_notPending={<Pending isPending={false} />}
-        >
+        <Link to="/foo">
           Foo
+          <Pending />
         </Link>
       </li>
       <li>
-        <Link
-          to="/bar"
-          unstable_prefetchOnEnter
-          unstable_pending={<Pending isPending />}
-          unstable_notPending={<Pending isPending={false} />}
-        >
+        <Link to="/bar" unstable_prefetchOnEnter>
           Bar
+          <Pending />
         </Link>
       </li>
       <li>
-        <Link
-          to="/nested/baz"
-          unstable_pending={<Pending isPending />}
-          unstable_notPending={<Pending isPending={false} />}
-        >
+        <Link to="/nested/baz">
           Nested / Baz
+          <Pending />
         </Link>
       </li>
       <li>
-        <Link
-          to="/nested/qux"
-          unstable_pending={<Pending isPending />}
-          unstable_notPending={<Pending isPending={false} />}
-        >
+        <Link to="/nested/qux">
           Nested / Qux
+          <Pending />
         </Link>
       </li>
       <li>
-        <Link
-          to="/nested/encoded%20path"
-          unstable_pending={<Pending isPending />}
-          unstable_notPending={<Pending isPending={false} />}
-        >
+        <Link to="/nested/encoded%20path">
           Nested / Encoded Path
+          <Pending />
         </Link>
       </li>
       <li>
-        <Link
-          to="/nested/encoded%E6%B8%AC%E8%A9%A6path"
-          unstable_pending={<Pending isPending />}
-          unstable_notPending={<Pending isPending={false} />}
-        >
+        <Link to="/nested/encoded%E6%B8%AC%E8%A9%A6path">
           Nested / Encoded Unicode Path
+          <Pending />
         </Link>
       </li>
       <li>
-        <Link
-          to="/static-nested/encoded%20path"
-          unstable_pending={<Pending isPending />}
-          unstable_notPending={<Pending isPending={false} />}
-        >
+        <Link to="/static-nested/encoded%20path">
           Nested / Static Encoded Path
+          <Pending />
         </Link>
       </li>
       <li>
-        <Link
-          to="/static-nested/encoded%E6%B8%AC%E8%A9%A6path"
-          unstable_pending={<Pending isPending />}
-          unstable_notPending={<Pending isPending={false} />}
-        >
+        <Link to="/static-nested/encoded%E6%B8%AC%E8%A9%A6path">
           Nested / Static Encoded Unicode Path
+          <Pending />
         </Link>
       </li>
       <li>

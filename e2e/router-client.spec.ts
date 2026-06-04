@@ -490,7 +490,7 @@ test.describe('router-client', () => {
     await expect(page.getByRole('heading', { name: 'Start' })).toBeVisible();
   });
 
-  test('unstable_pending and unstable_notPending reflect async transition state', async ({
+  test('useNavigationStatus pending reflects async transition state', async ({
     page,
   }) => {
     await page.route('**/RSC/R/next.txt**', async (route) => {
@@ -506,6 +506,33 @@ test.describe('router-client', () => {
     await expect(page.getByTestId('pending-indicator')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Next' })).toBeVisible();
     await expect(page.getByTestId('pending-indicator')).toHaveCount(0);
+  });
+
+  test('pending stays until a client-only async resolves, not just data loading', async ({
+    page,
+  }) => {
+    // The target route's RSC loads normally, but it renders a client component
+    // that suspends with no data fetch. Pending must persist until that
+    // client-only async resolves, proving it tracks the transition.
+    await page.goto(`http://localhost:${port}/start`);
+    await waitForHydration(page);
+
+    const rscResponse = page.waitForResponse('**/RSC/R/pending-client.txt**');
+    await page.getByTestId('pending-client-link').click();
+
+    // Once the RSC has arrived the router's data loading is done, yet the
+    // pending indicator must STILL be visible because the client component is
+    // suspended. This is the load-bearing assertion: a data-loading-only
+    // implementation would have cleared pending by now.
+    await rscResponse;
+    await expect(page.getByTestId('pending-client-indicator')).toBeVisible();
+    await expect(page.getByTestId('client-suspense-content')).toHaveCount(0);
+
+    // Release the client-only async from the still-mounted start page; the
+    // transition settles and pending clears.
+    await page.getByTestId('resolve-client-suspense').click();
+    await expect(page.getByTestId('client-suspense-content')).toBeVisible();
+    await expect(page.getByTestId('pending-client-indicator')).toHaveCount(0);
   });
 
   test('client notFound navigation uses /404 page content when present', async ({

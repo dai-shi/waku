@@ -82,29 +82,36 @@ Prefer intent-based prefetching for expensive dynamic routes. View-based prefetc
 
 ## Pending UI
 
-`<Link>` can render adjacent pending UI while a navigation transition is in progress:
+A descendant of `<Link>` can read the navigation status with `useNavigationStatus_UNSTABLE()` and render pending UI while a navigation transition is in progress. It works like React's `useFormStatus`: it reflects the nearest enclosing `<Link>`, and `pending` stays `true` until the destination route's async components resolve (including client-only Suspense).
+
+```tsx
+'use client';
+
+import { useNavigationStatus_UNSTABLE as useNavigationStatus } from 'waku/router/client';
+
+export const PendingIndicator = () => {
+  const { pending } = useNavigationStatus();
+  return (
+    <span aria-hidden style={{ opacity: pending ? 1 : 0 }}>
+      Loading...
+    </span>
+  );
+};
+```
 
 ```tsx
 import { Link } from 'waku';
-
-const Pending = ({ active }: { active: boolean }) => (
-  <span aria-hidden style={{ opacity: active ? 1 : 0 }}>
-    Loading...
-  </span>
-);
+import { PendingIndicator } from './pending-indicator';
 
 export const NavLink = () => (
-  <Link
-    to="/reports"
-    unstable_pending={<Pending active />}
-    unstable_notPending={<Pending active={false} />}
-  >
+  <Link to="/reports">
     Reports
+    <PendingIndicator />
   </Link>
 );
 ```
 
-The pending nodes are rendered next to the link. They do not replace the link's children.
+`useNavigationStatus_UNSTABLE()` must be called from a Client Component rendered inside the `<Link>`, which means the indicator lives inside the `<a>`. Keep it non-interactive and `aria-hidden` (as above), since it becomes part of the link's accessible name and click target; to render pending UI outside the anchor, drive it from route-change events instead. Called outside any `<Link>`, the hook returns an empty object (not `{ pending: false }`).
 
 ## Custom Transitions
 
@@ -127,5 +134,7 @@ export const Link = (props: ComponentProps<typeof WakuLink>) => (
   <WakuLink {...props} unstable_startTransition={startViewTransition} />
 );
 ```
+
+Because `unstable_startTransition` replaces React's transition, `useNavigationStatus_UNSTABLE()` stays `{ pending: false }` for links that use it.
 
 The prefetch and transition props in this guide are experimental and may change.
