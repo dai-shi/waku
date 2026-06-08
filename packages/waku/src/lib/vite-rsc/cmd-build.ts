@@ -1,13 +1,14 @@
 import * as vite from 'vite';
 import type { Config } from '../../config.js';
 import { combinedPlugins } from '../vite-plugins/combined-plugins.js';
-import { loadConfig, loadDotEnv, overrideNodeEnv } from './loader.js';
+import { loadConfig, loadDotEnv } from './loader.js';
 import type { PreviewServer } from './preview.js';
 
 loadDotEnv();
 
 export async function runBuild() {
-  overrideNodeEnv('production');
+  // set NODE_ENV before vite.runnerImport: https://github.com/vitejs/vite/issues/20299
+  process.env.NODE_ENV ??= 'production';
   const config = await loadConfig();
   const builder = await vite.createBuilder({
     configFile: false,

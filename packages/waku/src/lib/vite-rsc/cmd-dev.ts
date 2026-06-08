@@ -2,7 +2,7 @@ import path from 'node:path';
 import * as vite from 'vite';
 import type { Config } from '../../config.js';
 import { combinedPlugins } from '../vite-plugins/combined-plugins.js';
-import { loadConfig, loadDotEnv, overrideNodeEnv } from './loader.js';
+import { loadConfig, loadDotEnv } from './loader.js';
 
 loadDotEnv();
 
@@ -79,7 +79,8 @@ async function startDevServer(
 }
 
 export async function runDev(flags: { host?: string; port?: string }) {
-  overrideNodeEnv('development');
+  // set NODE_ENV before vite.runnerImport: https://github.com/vitejs/vite/issues/20299
+  process.env.NODE_ENV ??= 'development';
   const config = await loadConfig();
   const host = flags.host;
   const port = parseInt(flags.port || '3000', 10);
