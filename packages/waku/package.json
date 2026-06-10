@@ -15,6 +15,9 @@
     "url": "https://github.com/wakujs/waku.git",
     "directory": "packages/waku"
   },
+  "bugs": {
+    "url": "https://github.com/wakujs/waku/issues"
+  },
   "exports": {
     "./package.json": "./package.json",
     ".": {
