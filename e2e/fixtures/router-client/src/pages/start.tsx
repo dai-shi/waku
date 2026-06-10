@@ -24,6 +24,16 @@ export default function StartPage() {
         </Link>
       </p>
       <p>
+        <Link to="/start#日本語見出し" data-testid="go-hash-japanese">
+          Go hash japanese
+        </Link>
+      </p>
+      <p>
+        <Link to="#日本語見出し" data-testid="go-hash-only-japanese">
+          Go hash only japanese
+        </Link>
+      </p>
+      <p>
         <Link
           to="/next?from=enter"
           unstable_prefetchOnEnter
@@ -63,6 +73,10 @@ export default function StartPage() {
       <div style={{ minHeight: '200vh' }} />
       <div id="scroll-target" data-testid="scroll-target">
         Scroll Target
+      </div>
+      <div style={{ minHeight: '200vh' }} />
+      <div id="日本語見出し" data-testid="japanese-target">
+        日本語見出し
       </div>
       <p>
         <Link
