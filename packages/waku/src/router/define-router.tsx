@@ -13,6 +13,7 @@ import { unstable_defineHandlers as defineHandlers } from '../minimal/server.js'
 import { deserializeRsc, serializeRsc } from '../server.js';
 import { INTERNAL_ServerRouter } from './client.js';
 import {
+  ETAG_ID_PREFIX,
   HAS404_ID,
   IS_STATIC_ID,
   ROUTE_ID,
@@ -29,8 +30,19 @@ export type ApiHandler = (
   apiContext: { params: Record<string, string | string[]> },
 ) => Promise<Response>;
 
-const isStringArray = (x: unknown): x is string[] =>
-  Array.isArray(x) && x.every((y) => typeof y === 'string');
+const isStringRecord = (x: unknown): x is Record<string, string> =>
+  typeof x === 'object' &&
+  x !== null &&
+  !Array.isArray(x) &&
+  Object.values(x).every((v) => typeof v === 'string');
+
+const safeJsonParse = (text: string): unknown => {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+};
 
 const parseRscParams = (
   rscParams: unknown,
@@ -180,6 +192,9 @@ const ROOT_SLOT_ID = 'root';
 const ROUTE_SLOT_ID_PREFIX = 'route:';
 const SLICE_SLOT_ID_PREFIX = 'slice:';
 
+// The element tag (etag) used for every static slot; known without rendering.
+const STATIC_ETAG = 'static';
+
 type CacheId = string;
 
 const getSlotCacheId = (slotId: SlotId): CacheId => `slot/${slotId}`;
@@ -202,6 +217,13 @@ const assertNonReservedSlotId = (slotId: SlotId) => {
 
 type RendererOption = { routePath: string; query: string | undefined };
 
+type GetEtagFromOption = (
+  option: RendererOption,
+) => Promise<string | undefined>;
+type GetEtagFromParams = (
+  params?: Record<string, string | string[]>,
+) => Promise<string | undefined>;
+
 type RouteConfig = {
   type: 'route';
   path: PathSpec;
@@ -210,17 +232,20 @@ type RouteConfig = {
   rootElement: {
     isStatic: boolean;
     renderer: (option: RendererOption) => ReactNode;
+    getEtagFromOption?: GetEtagFromOption;
     sourceFile?: string;
   };
   routeElement: {
     isStatic: boolean;
     renderer: (option: RendererOption) => ReactNode;
+    getEtagFromOption?: GetEtagFromOption;
   };
   elements: Record<
     SlotId,
     {
       isStatic: boolean;
       renderer: (option: RendererOption) => ReactNode;
+      getEtagFromOption?: GetEtagFromOption;
       sourceFile?: string;
     }
   >;
@@ -242,6 +267,7 @@ type SliceConfig = {
   pathSpec?: PathSpec;
   isStatic: boolean;
   renderer: (params?: Record<string, string | string[]>) => Promise<ReactNode>;
+  getEtagFromParams?: GetEtagFromParams;
   sourceFile?: string;
 };
 
@@ -251,14 +277,26 @@ type SerializableRouteConfig = Omit<
   RouteConfig,
   'rootElement' | 'routeElement' | 'elements'
 > & {
-  rootElement: Omit<RouteConfig['rootElement'], 'renderer'>;
-  routeElement: Omit<RouteConfig['routeElement'], 'renderer'>;
-  elements: Record<SlotId, Omit<RouteConfig['elements'][string], 'renderer'>>;
+  rootElement: Omit<
+    RouteConfig['rootElement'],
+    'renderer' | 'getEtagFromOption'
+  >;
+  routeElement: Omit<
+    RouteConfig['routeElement'],
+    'renderer' | 'getEtagFromOption'
+  >;
+  elements: Record<
+    SlotId,
+    Omit<RouteConfig['elements'][string], 'renderer' | 'getEtagFromOption'>
+  >;
 };
 
 type SerializableApiConfig = Omit<ApiConfig, 'handler'>;
 
-type SerializableSliceConfig = Omit<SliceConfig, 'renderer'>;
+type SerializableSliceConfig = Omit<
+  SliceConfig,
+  'renderer' | 'getEtagFromParams'
+>;
 
 type SerializableConfig =
   | SerializableRouteConfig
@@ -268,17 +306,27 @@ type SerializableConfig =
 const toSerializable = (c: RuntimeConfig): SerializableConfig => {
   if (c.type === 'route') {
     const { rootElement, routeElement, elements, ...rest } = c;
-    const { renderer: _rootRenderer, ...rootElementRest } = rootElement;
-    const { renderer: _routeRenderer, ...routeElementRest } = routeElement;
+    const {
+      renderer: _rootRenderer,
+      getEtagFromOption: _rootGetEtag,
+      ...rootElementRest
+    } = rootElement;
+    const {
+      renderer: _routeRenderer,
+      getEtagFromOption: _routeGetEtag,
+      ...routeElementRest
+    } = routeElement;
     return {
       ...rest,
       rootElement: rootElementRest,
       routeElement: routeElementRest,
       elements: Object.fromEntries(
-        Object.entries(elements).map(([id, { renderer: _r, ...elRest }]) => [
-          id,
-          elRest,
-        ]),
+        Object.entries(elements).map(
+          ([id, { renderer: _r, getEtagFromOption: _g, ...elRest }]) => [
+            id,
+            elRest,
+          ],
+        ),
       ),
     };
   }
@@ -286,7 +334,7 @@ const toSerializable = (c: RuntimeConfig): SerializableConfig => {
     const { handler: _handler, ...rest } = c;
     return rest;
   }
-  const { renderer: _renderer, ...rest } = c;
+  const { renderer: _r, getEtagFromParams: _g, ...rest } = c;
   return rest;
 };
 
@@ -339,12 +387,16 @@ const mergeWithRuntimeConfigs = (
       const label = `route ${pathSpecAsString(c.path)}`;
       const elements: RouteConfig['elements'] = {};
       for (const [id, val] of Object.entries(c.elements)) {
+        const elementSpec = runtimeItem?.elements[id];
         elements[id] = {
           isStatic: val.isStatic,
           renderer:
-            runtimeItem?.elements[id]?.renderer ??
+            elementSpec?.renderer ??
             sharedElementRenderers.get(id) ??
             (() => noRuntimeFn(`element "${id}" of ${label}`)),
+          ...(elementSpec?.getEtagFromOption
+            ? { getEtagFromOption: elementSpec.getEtagFromOption }
+            : {}),
           ...(val.sourceFile ? { sourceFile: val.sourceFile } : {}),
         };
       }
@@ -359,6 +411,9 @@ const mergeWithRuntimeConfigs = (
             runtimeItem?.rootElement.renderer ??
             sharedRootRenderer ??
             (() => noRuntimeFn(`rootElement of ${label}`)),
+          ...(runtimeItem?.rootElement.getEtagFromOption
+            ? { getEtagFromOption: runtimeItem.rootElement.getEtagFromOption }
+            : {}),
           ...(c.rootElement.sourceFile
             ? { sourceFile: c.rootElement.sourceFile }
             : {}),
@@ -368,6 +423,9 @@ const mergeWithRuntimeConfigs = (
           renderer:
             runtimeItem?.routeElement.renderer ??
             (() => noRuntimeFn(`routeElement of ${label}`)),
+          ...(runtimeItem?.routeElement.getEtagFromOption
+            ? { getEtagFromOption: runtimeItem.routeElement.getEtagFromOption }
+            : {}),
         },
         elements,
         ...(c.noSsr !== undefined ? { noSsr: c.noSsr } : {}),
@@ -394,6 +452,9 @@ const mergeWithRuntimeConfigs = (
       isStatic: c.isStatic,
       renderer:
         runtimeItem?.renderer ?? (async () => noRuntimeFn(`slice ${c.id}`)),
+      ...(runtimeItem?.getEtagFromParams
+        ? { getEtagFromParams: runtimeItem.getEtagFromParams }
+        : {}),
       ...(c.sourceFile ? { sourceFile: c.sourceFile } : {}),
     };
   });
@@ -540,13 +601,12 @@ export function unstable_defineRouter(fns: {
     if (pathConfigItem?.type !== 'route') {
       return null;
     }
-    let skipParam: unknown;
-    try {
-      skipParam = JSON.parse(headers[SKIP_HEADER.toLowerCase()] || '');
-    } catch {
-      // ignore
-    }
-    const skipIdSet = new Set(isStringArray(skipParam) ? skipParam : []);
+    const parsedEtags = safeJsonParse(
+      headers[SKIP_HEADER.toLowerCase()] || '{}',
+    );
+    const clientEtags: Record<string, string> = isStringRecord(parsedEtags)
+      ? parsedEtags
+      : {};
     const { query } = parseRscParams(rscParams);
     const routeId = ROUTE_SLOT_ID_PREFIX + routePath;
     const routeTemplateCacheId = getPathSpecCacheId(pathConfigItem.path);
@@ -564,6 +624,8 @@ export function unstable_defineRouter(fns: {
         renderer: (
           params?: Record<string, string | string[]>,
         ) => Promise<ReactNode>;
+        getEtagFromParams?: GetEtagFromParams;
+        params?: Record<string, string | string[]>;
       }
     >();
     slices.forEach((sliceId) => {
@@ -575,67 +637,83 @@ export function unstable_defineRouter(fns: {
               !!getPathMapping(item.pathSpec, '/' + sliceId))),
       );
       if (sliceConfig) {
-        sliceConfigMap.set(sliceId, sliceConfig);
+        const params = sliceConfig.pathSpec
+          ? getPathMapping(sliceConfig.pathSpec, '/' + sliceId)
+          : null;
+        sliceConfigMap.set(sliceId, {
+          ...sliceConfig,
+          ...(params ? { params } : {}),
+        });
       }
     });
     const entries: Record<SlotId, unknown> = {};
+    const addEntry = async (
+      slotId: SlotId,
+      isStatic: boolean,
+      cacheId: CacheId,
+      render: () => ReactNode | Promise<ReactNode>,
+      getEtag: () => Promise<string | undefined> | undefined,
+    ) => {
+      if (isStatic) {
+        if (clientEtags[slotId] === STATIC_ETAG) {
+          return;
+        }
+        if (!getCachedElement(cacheId)) {
+          await setCachedElement(cacheId, await render());
+        }
+        entries[slotId] = await getCachedElement(cacheId);
+        entries[ETAG_ID_PREFIX + slotId] = STATIC_ETAG;
+      } else {
+        const etag = await getEtag();
+        if (etag !== undefined && etag === clientEtags[slotId]) {
+          return;
+        }
+        entries[slotId] = await render();
+        if (etag !== undefined) {
+          entries[ETAG_ID_PREFIX + slotId] = etag;
+        } else if (clientEtags[slotId] !== undefined) {
+          // The slot no longer has a tag but the client still holds one; send
+          // an empty tag to clear it (the client drops empty tags).
+          entries[ETAG_ID_PREFIX + slotId] = '';
+        }
+      }
+    };
     await Promise.all([
-      (async () => {
-        const cacheId = getSlotCacheId(ROOT_SLOT_ID);
-        if (!pathConfigItem.rootElement.isStatic) {
-          entries[ROOT_SLOT_ID] = pathConfigItem.rootElement.renderer(option);
-        } else if (!skipIdSet.has(ROOT_SLOT_ID)) {
-          if (!getCachedElement(cacheId)) {
-            await setCachedElement(
-              cacheId,
-              pathConfigItem.rootElement.renderer(option),
-            );
-          }
-          entries[ROOT_SLOT_ID] = await getCachedElement(cacheId);
-        }
-      })(),
-      (async () => {
-        if (!pathConfigItem.routeElement.isStatic) {
-          entries[routeId] = pathConfigItem.routeElement.renderer(option);
-        } else if (!skipIdSet.has(routeId)) {
-          if (!getCachedElement(routeTemplateCacheId)) {
-            await setCachedElement(
-              routeTemplateCacheId,
-              pathConfigItem.routeElement.renderer(option),
-            );
-          }
-          entries[routeId] = await getCachedElement(routeTemplateCacheId);
-        }
-      })(),
-      ...Object.entries(pathConfigItem.elements).map(
-        async ([id, { isStatic }]) => {
-          const cacheId = getSlotCacheId(id);
-          const renderer = pathConfigItem.elements[id]?.renderer;
-          if (!isStatic) {
-            entries[id] = renderer?.(option);
-          } else if (!skipIdSet.has(id)) {
-            if (!getCachedElement(cacheId)) {
-              await setCachedElement(cacheId, renderer?.(option));
-            }
-            entries[id] = await getCachedElement(cacheId);
-          }
-        },
+      addEntry(
+        ROOT_SLOT_ID,
+        pathConfigItem.rootElement.isStatic,
+        getSlotCacheId(ROOT_SLOT_ID),
+        () => pathConfigItem.rootElement.renderer(option),
+        () => pathConfigItem.rootElement.getEtagFromOption?.(option),
       ),
-      ...slices.map(async (sliceId) => {
-        const id = SLICE_SLOT_ID_PREFIX + sliceId;
+      addEntry(
+        routeId,
+        pathConfigItem.routeElement.isStatic,
+        routeTemplateCacheId,
+        () => pathConfigItem.routeElement.renderer(option),
+        () => pathConfigItem.routeElement.getEtagFromOption?.(option),
+      ),
+      ...Object.entries(pathConfigItem.elements).map(([id, el]) =>
+        addEntry(
+          id,
+          el.isStatic,
+          getSlotCacheId(id),
+          () => el.renderer(option),
+          () => el.getEtagFromOption?.(option),
+        ),
+      ),
+      ...slices.map((sliceId) => {
         const sliceConfig = sliceConfigMap.get(sliceId);
         if (!sliceConfig) {
           throw new Error(`Slice not found: ${sliceId}`);
         }
-        if (sliceConfig.isStatic && skipIdSet.has(id)) {
-          return null;
-        }
-        const sliceElement = await getSliceElement(
-          sliceConfig,
-          getCachedElement,
-          setCachedElement,
+        return addEntry(
+          SLICE_SLOT_ID_PREFIX + sliceId,
+          sliceConfig.isStatic,
+          getSlotCacheId(SLICE_SLOT_ID_PREFIX + sliceId),
+          () => sliceConfig.renderer(sliceConfig.params),
+          () => sliceConfig.getEtagFromParams?.(sliceConfig.params),
         );
-        entries[id] = sliceElement;
       }),
     ]);
     entries[ROUTE_ID] = [routePath, query];
@@ -758,6 +836,9 @@ export function unstable_defineRouter(fns: {
         if (sliceId !== null) {
           // LIMITATION: This is a single slice request.
           // Ideally, we should be able to respond with multiple slices in one request.
+          // The skip header is not consulted here; the etag skip only covers
+          // route-bundled slices. The etag is still sent to keep the client's
+          // tag fresh.
           let sliceConfig: SliceConfig | undefined;
           let sliceParams: Record<string, string | string[]> | undefined;
           for (const item of getCachedConfigs()) {
@@ -780,6 +861,9 @@ export function unstable_defineRouter(fns: {
           if (!sliceConfig) {
             return null;
           }
+          const sliceEtag = sliceConfig.isStatic
+            ? STATIC_ETAG
+            : await sliceConfig.getEtagFromParams?.(sliceParams);
           const sliceElement = await getSliceElement(
             sliceConfig,
             getCachedElement,
@@ -794,6 +878,9 @@ export function unstable_defineRouter(fns: {
                   // FIXME: hard-coded for now
                   [IS_STATIC_ID + ':' + SLICE_SLOT_ID_PREFIX + sliceId]: true,
                 }
+              : {}),
+            ...(sliceEtag !== undefined
+              ? { [ETAG_ID_PREFIX + SLICE_SLOT_ID_PREFIX + sliceId]: sliceEtag }
               : {}),
           });
         }
@@ -1149,6 +1236,7 @@ export function unstable_defineRouter(fns: {
             [SLICE_SLOT_ID_PREFIX + item.id]: sliceElement,
             // FIXME: hard-coded for now
             [IS_STATIC_ID + ':' + SLICE_SLOT_ID_PREFIX + item.id]: true,
+            [ETAG_ID_PREFIX + SLICE_SLOT_ID_PREFIX + item.id]: STATIC_ETAG,
           });
           await generateFile(rscPath2pathname(rscPath), body);
         });

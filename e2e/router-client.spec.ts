@@ -353,9 +353,9 @@ test.describe('router-client', () => {
 
     const skipHeader = request.headers()['x-waku-router-skip'];
     expect(skipHeader).toBeTruthy();
-    const skippedIds = JSON.parse(skipHeader as string) as unknown;
-    expect(Array.isArray(skippedIds)).toBe(true);
-    expect((skippedIds as unknown[]).length).toBeGreaterThan(0);
+    const skipped = JSON.parse(skipHeader as string) as Record<string, string>;
+    expect(Array.isArray(skipped)).toBe(false);
+    expect(Object.keys(skipped).length).toBeGreaterThan(0);
 
     await expect(page.getByRole('heading', { name: 'Next' })).toBeVisible();
     await expect(page.getByTestId('route-path')).toHaveText('/next');
@@ -388,9 +388,9 @@ test.describe('router-client', () => {
     const skipHeader = request.headers()['x-waku-router-skip'];
 
     expect(skipHeader).toBeTruthy();
-    const skipIds = JSON.parse(skipHeader as string) as unknown;
-    expect(Array.isArray(skipIds)).toBe(true);
-    expect(skipIds).toContain('root');
+    const skipped = JSON.parse(skipHeader as string) as Record<string, string>;
+    expect(Array.isArray(skipped)).toBe(false);
+    expect('root' in skipped).toBe(true);
 
     const payload = await response.text();
     expect(payload).toContain('SKIP_B_PAGE_MARKER');

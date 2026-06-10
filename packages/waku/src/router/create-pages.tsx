@@ -158,6 +158,20 @@ export type PathWithWildcard<
   WildSlugKey extends string,
 > = PathWithSlug<Path, SlugKey | `...${WildSlugKey}`>;
 
+/**
+ * Returns a `dynamic` slot's element tag (etag). While the tag is unchanged the
+ * client reuses its cached element instead of receiving it again. Only consulted
+ * for dynamic slots.
+ *
+ * - Opaque to Waku; compared with `===`.
+ * - Must change whenever the rendered content would.
+ * - Keep it a short ASCII string (a hash or version): the client echoes its
+ *   tags in a header.
+ * - Return `undefined` for no tag: the element is always sent, overriding the
+ *   client's cache for the slot.
+ */
+type GetEtag<Props> = (props: Props) => Promise<string | undefined>;
+
 export type CreatePage = <
   Path extends string,
   SlugKey extends string,
@@ -209,6 +223,11 @@ export type CreatePage = <
      * chunks from the runtime server bundle if the route is fully static.
      */
     unstable_sourceFile?: string | undefined;
+    /**
+     * Per-render element tag (etag) for a `dynamic` page. Ignored for `static`
+     * pages.
+     */
+    unstable_getEtag?: GetEtag<PropsForPages<Path>>;
   },
 ) => Omit<
   Extract<
@@ -219,7 +238,7 @@ export type CreatePage = <
 >;
 
 export type CreateLayout = <Path extends string>(
-  layout:
+  layout: (
     | {
         render: 'dynamic';
         path: Path;
@@ -238,7 +257,14 @@ export type CreateLayout = <Path extends string>(
       }
     | {
         component: null; // For build-time pruning
-      },
+      }
+  ) & {
+    /**
+     * Per-render element tag (etag) for a `dynamic` layout. Ignored for `static`
+     * layouts.
+     */
+    unstable_getEtag?: GetEtag<Omit<PropsForPages<Path>, 'path' | 'query'>>;
+  },
 ) => void;
 
 export type CreateApi = <Path extends string>(
@@ -282,7 +308,7 @@ export type CreateSlice = <
   ID extends string,
   StaticPaths extends StaticSlugRoutePaths<`/${ID}`>,
 >(
-  slice:
+  slice: (
     | {
         render: 'dynamic';
         id: ID;
@@ -311,13 +337,25 @@ export type CreateSlice = <
       }
     | {
         component: null; // For build-time pruning
-      },
+      }
+  ) & {
+    /**
+     * Per-render element tag (etag) for a `dynamic` slice. Ignored for `static`
+     * slices.
+     */
+    unstable_getEtag?: GetEtag<SlugPropsFromId<ID>>;
+  },
 ) => void;
 
 type RootItem = {
   render: 'static' | 'dynamic';
   component: FunctionComponent<{ children: ReactNode }>;
   unstable_sourceFile?: string | undefined;
+  /**
+   * Per-render element tag (etag) for a `dynamic` root. Ignored for a `static`
+   * root. The root takes no props, so the getter is parameterless.
+   */
+  unstable_getEtag?: () => Promise<string | undefined>;
 };
 
 export type CreateRoot = (
@@ -441,16 +479,18 @@ export const createPages = <
       sourceFile?: string | undefined;
     }
   >();
-  type DynamicPageEntry = {
+  type DynamicPageEntry<Props = any> = {
     routePathSpec: PathSpec;
-    component: FunctionComponent<any>;
+    component: FunctionComponent<Props>;
     noSsr: boolean;
     sourceFile?: string | undefined;
+    getEtag?: GetEtag<Props> | undefined;
   };
-  type LayoutEntry = {
+  type LayoutEntry<Props = any> = {
     routePathSpec: PathSpec;
-    component: FunctionComponent<any>;
+    component: FunctionComponent<{ children: ReactNode } & Props>;
     sourceFile?: string | undefined;
+    getEtag?: GetEtag<Props> | undefined;
   };
   const dynamicPageEntryByRoutePath = new Map<string, DynamicPageEntry>();
   const wildcardPageEntryByRoutePath = new Map<string, DynamicPageEntry>();
@@ -472,14 +512,13 @@ export const createPages = <
   const getStaticLayout = (id: string) =>
     staticComponentById.get(joinPath(id, 'layout').slice(1))?.component;
   const sliceIdsByRoutePath = new Map<string, string[]>();
-  const sliceEntryById = new Map<
-    string,
-    {
-      component: FunctionComponent<any>;
-      isStatic: boolean;
-      sourceFile?: string | undefined;
-    }
-  >();
+  type SliceEntry<Props = any> = {
+    component: FunctionComponent<{ children?: ReactNode } & Props>;
+    isStatic: boolean;
+    sourceFile?: string | undefined;
+    getEtag?: GetEtag<Props> | undefined;
+  };
+  const sliceEntryById = new Map<string, SliceEntry>();
   let rootItem: RootItem | undefined = undefined;
 
   const pagePathExists = (path: string) =>
@@ -579,6 +618,7 @@ export const createPages = <
     const noSsr = page.unstable_disableSSR ?? false;
     const slices = page.slices || [];
     const sourceFile = page.unstable_sourceFile;
+    const getEtag = page.unstable_getEtag;
 
     const registerPageWithExactPath = () => {
       const routePath = pageRoutePath;
@@ -597,6 +637,7 @@ export const createPages = <
           component: page.component,
           noSsr,
           sourceFile,
+          getEtag,
         });
       }
       sliceIdsByRoutePath.set(routePath, slices);
@@ -658,6 +699,7 @@ export const createPages = <
         component: page.component,
         noSsr,
         sourceFile,
+        getEtag,
       });
       sliceIdsByRoutePath.set(routePath, slices);
     };
@@ -672,6 +714,7 @@ export const createPages = <
         component: page.component,
         noSsr,
         sourceFile,
+        getEtag,
       });
       sliceIdsByRoutePath.set(routePath, slices);
     };
@@ -705,6 +748,7 @@ export const createPages = <
     }
     const routePath = pathnameToRoutePath(layout.path);
     const sourceFile = layout.unstable_sourceFile;
+    const getEtag = layout.unstable_getEtag;
     if (layout.render === 'static') {
       const id = joinPath(routePath, 'layout').replace(/^\//, '');
       registerStaticComponent(id, layout.component, sourceFile);
@@ -717,6 +761,7 @@ export const createPages = <
         routePathSpec,
         component: layout.component,
         sourceFile,
+        getEtag,
       });
     } else {
       throw new Error('Invalid layout configuration');
@@ -810,6 +855,7 @@ export const createPages = <
     const slicePathSpec = parsePathWithSlug(slice.id);
     const { numSlugs } = countSlugsAndWildcards(slicePathSpec);
     const sourceFile = slice.unstable_sourceFile;
+    const getEtag = slice.unstable_getEtag;
     if (slice.render === 'static' && numSlugs > 0) {
       if (!('staticPaths' in slice) || !slice.staticPaths) {
         throw new Error(
@@ -842,6 +888,7 @@ export const createPages = <
       component: slice.component,
       isStatic: slice.render === 'static',
       sourceFile,
+      getEtag,
     });
   };
 
@@ -889,13 +936,14 @@ export const createPages = <
   const definedRouter = unstable_defineRouter({
     getConfigs: async () => {
       await configure();
+      type RendererOption = { routePath: string; query: string | undefined };
       type ElementSpec = {
         isStatic: boolean;
-        renderer: (options: {
-          routePath: string;
-          query: string | undefined;
-        }) => ReactNode;
+        renderer: (option: RendererOption) => ReactNode;
         sourceFile?: string;
+        getEtagFromOption?: (
+          option: RendererOption,
+        ) => Promise<string | undefined>;
       };
       type LayoutMatch = { layoutPath: string; layoutIdPath: string };
       const collectLayoutMatches = (
@@ -908,6 +956,35 @@ export const createPages = <
             ? getLayoutIdPath(layoutPath, routePath)
             : layoutPath,
         }));
+      // Memoize so component and getEtag get the same props reference.
+      const buildElementSpec = <Props,>(
+        component: FunctionComponent<Props>,
+        buildProps: (option: RendererOption) => Props,
+        isStatic: boolean,
+        sourceFile: string | undefined,
+        getEtag: GetEtag<Props> | undefined,
+      ): ElementSpec => {
+        const propsCache = new WeakMap<RendererOption, Props>();
+        const toProps = (option: RendererOption): Props => {
+          if (!propsCache.has(option)) {
+            propsCache.set(option, buildProps(option));
+          }
+          return propsCache.get(option)!;
+        };
+        return {
+          isStatic,
+          renderer: (option) =>
+            createElement(
+              component as FunctionComponent<any>,
+              toProps(option),
+              <Children />,
+            ),
+          ...(sourceFile ? { sourceFile } : {}),
+          ...(getEtag
+            ? { getEtagFromOption: (option) => getEtag(toProps(option)) }
+            : {}),
+        };
+      };
       const buildLayoutElement = (layoutPath: string): ElementSpec => {
         const dynamicEntry = dynamicLayoutEntryByRoutePath.get(layoutPath);
         const staticEntry = dynamicEntry
@@ -919,16 +996,13 @@ export const createPages = <
         }
         const sourceFile = dynamicEntry?.sourceFile ?? staticEntry?.sourceFile;
         const getLayoutPropsMapping = createLayoutPropsMapper(layoutPath);
-        return {
-          isStatic: !dynamicEntry,
-          renderer: (option) =>
-            createElement(
-              layout,
-              getLayoutPropsMapping(option.routePath),
-              <Children />,
-            ),
-          ...(sourceFile ? { sourceFile } : {}),
-        };
+        return buildElementSpec(
+          layout,
+          (option) => getLayoutPropsMapping(option.routePath),
+          !dynamicEntry,
+          sourceFile,
+          dynamicEntry?.getEtag,
+        );
       };
       const buildLayoutElements = (
         matches: LayoutMatch[],
@@ -939,31 +1013,33 @@ export const createPages = <
             buildLayoutElement(layoutPath),
           ]),
         );
-      const buildPageElement = (
-        component: FunctionComponent<any>,
+      const buildPageElement = <Props,>(
+        component: FunctionComponent<Props>,
         getPropsMapping: (routePath: string) => Record<string, unknown> | null,
         isStatic: boolean,
         sourceFile?: string,
-      ): ElementSpec => ({
-        isStatic,
-        renderer: (option) =>
-          createElement(
-            component,
-            {
+        getEtag?: GetEtag<Props>,
+      ): ElementSpec =>
+        buildElementSpec(
+          component,
+          (option) =>
+            ({
               ...getPropsMapping(option.routePath),
               ...(option.query ? { query: option.query } : {}),
               path: option.routePath,
-            },
-            <Children />,
-          ),
-        ...(sourceFile ? { sourceFile } : {}),
-      });
+            }) as unknown as Props,
+          isStatic,
+          sourceFile,
+          getEtag,
+        );
       const rootIsStatic = !rootItem || rootItem.render === 'static';
       const rootSourceFile = rootItem?.unstable_sourceFile;
+      const rootGetEtag = rootItem?.unstable_getEtag;
       const buildRootElement = (): ElementSpec => ({
         isStatic: rootIsStatic,
         renderer: renderRoot,
         ...(rootSourceFile ? { sourceFile: rootSourceFile } : {}),
+        ...(rootGetEtag ? { getEtagFromOption: () => rootGetEtag() } : {}),
       });
       const buildStaticRouteConfigs = () =>
         Array.from(
@@ -1010,7 +1086,13 @@ export const createPages = <
         );
       const buildDynamicLikeRouteConfig = (
         routePath: string,
-        { routePathSpec, component, noSsr, sourceFile }: DynamicPageEntry,
+        {
+          routePathSpec,
+          component,
+          noSsr,
+          sourceFile,
+          getEtag,
+        }: DynamicPageEntry,
       ) => {
         const layouts = collectLayoutMatches(routePathSpec);
         const getPropsMapping = createPathPropsMapper(routePath);
@@ -1021,6 +1103,7 @@ export const createPages = <
           getPropsMapping,
           false,
           sourceFile,
+          getEtag,
         );
         return {
           type: 'route' as const,
@@ -1075,24 +1158,28 @@ export const createPages = <
           }),
         );
       const buildSliceConfigs = () =>
-        Array.from(sliceEntryById, ([id, { isStatic, sourceFile }]) => {
-          const slicePathSpec = parsePathWithSlug(id);
-          const hasSlug = slicePathSpec.some((s) => s.type !== 'literal');
-          return {
-            type: 'slice' as const,
-            id,
-            ...(hasSlug ? { pathSpec: slicePathSpec } : {}),
-            isStatic,
-            renderer: async (params?: Record<string, string | string[]>) => {
-              const slice = sliceEntryById.get(id);
-              if (!slice) {
-                throw new Error('Slice not found: ' + id);
-              }
-              return createElement(slice.component, params, <Children />);
-            },
-            ...(sourceFile ? { sourceFile } : {}),
-          };
-        });
+        Array.from(
+          sliceEntryById,
+          ([id, { isStatic, sourceFile, getEtag }]) => {
+            const slicePathSpec = parsePathWithSlug(id);
+            const hasSlug = slicePathSpec.some((s) => s.type !== 'literal');
+            return {
+              type: 'slice' as const,
+              id,
+              ...(hasSlug ? { pathSpec: slicePathSpec } : {}),
+              isStatic,
+              renderer: async (params?: Record<string, string | string[]>) => {
+                const slice = sliceEntryById.get(id);
+                if (!slice) {
+                  throw new Error('Slice not found: ' + id);
+                }
+                return createElement(slice.component, params, <Children />);
+              },
+              ...(sourceFile ? { sourceFile } : {}),
+              ...(getEtag ? { getEtagFromParams: getEtag } : {}),
+            };
+          },
+        );
 
       const routeConfigs = [
         ...buildStaticRouteConfigs(),

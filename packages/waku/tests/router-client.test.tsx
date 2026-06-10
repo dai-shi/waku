@@ -38,6 +38,7 @@ import {
   useRouter,
 } from '../src/router/client.js';
 import {
+  ETAG_ID_PREFIX,
   HAS404_ID,
   IS_STATIC_ID,
   ROUTE_ID,
@@ -1841,8 +1842,12 @@ describe('Router integration', () => {
       [unstable_getRouteSlotId('/next')]: <Probe />,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
-      foo: true,
-      bar: true,
+      [`${ETAG_ID_PREFIX}foo`]: 'etag-foo',
+      [`${ETAG_ID_PREFIX}bar`]: 'etag-bar',
+      // An empty tag is the server's clear signal; it must not be sent back.
+      [`${ETAG_ID_PREFIX}cleared`]: '',
+      // A non-Latin1 tag would make fetch reject the header; it must be dropped.
+      [`${ETAG_ID_PREFIX}nonLatin1`]: 'tag-☃',
     };
 
     const view = await renderRouter(
@@ -1864,9 +1869,14 @@ describe('Router integration', () => {
       const headers = (requestInit?.headers ?? {}) as Record<string, string>;
       expect(headers).toBeDefined();
       expect(headers[SKIP_HEADER]).toBeTypeOf('string');
-      const skipped = JSON.parse(headers[SKIP_HEADER]! as string) as string[];
-      expect(skipped).toContain('foo');
-      expect(skipped).toContain('bar');
+      const skipped = JSON.parse(headers[SKIP_HEADER]! as string) as Record<
+        string,
+        string
+      >;
+      expect(skipped.foo).toBe('etag-foo');
+      expect(skipped.bar).toBe('etag-bar');
+      expect('cleared' in skipped).toBe(false);
+      expect('nonLatin1' in skipped).toBe(false);
       expect(capture.router.path).toBe('/next');
       expect(capture.router.query).toBe('');
     } finally {

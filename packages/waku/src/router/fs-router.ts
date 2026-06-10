@@ -89,6 +89,7 @@ export function fsRouter(
           default: FunctionComponent<{ children: ReactNode }>;
           getConfig?: () => Promise<{
             render?: 'static' | 'dynamic';
+            unstable_getEtag?: (props?: any) => Promise<string | undefined>;
           }>;
           GET?: (req: Request) => Promise<Response>;
         };

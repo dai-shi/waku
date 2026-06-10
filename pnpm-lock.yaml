@@ -122,6 +122,31 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  e2e/fixtures/cache-tag:
+    dependencies:
+      react:
+        specifier: ~19.2.6
+        version: 19.2.6
+      react-dom:
+        specifier: ~19.2.6
+        version: 19.2.6(react@19.2.6)
+      react-server-dom-webpack:
+        specifier: ~19.2.6
+        version: 19.2.6(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(webpack@5.99.9)
+      waku:
+        specifier: latest
+        version: link:../../../packages/waku
+    devDependencies:
+      '@types/react':
+        specifier: ^19.2.16
+        version: 19.2.16
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.16)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
   e2e/fixtures/cloudflare-adapter:
     dependencies:
       hono:
