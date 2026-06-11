@@ -16,9 +16,7 @@ export const encodeRscPath = (rscPath: string) => {
 
 export const decodeRscPath = (rscPath: string) => {
   if (!rscPath.endsWith('.txt')) {
-    const err = new Error('Invalid encoded rscPath');
-    (err as any).statusCode = 400;
-    throw err;
+    throw new Error('Invalid encoded rscPath');
   }
   rscPath = rscPath.slice(0, -'.txt'.length);
   if (rscPath.startsWith('_')) {
