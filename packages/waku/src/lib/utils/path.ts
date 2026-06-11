@@ -145,6 +145,39 @@ export const pathSpecAsString = (path: PathSpec) => {
   );
 };
 
+const matchSpecSegment = (
+  spec: Exclude<PathSpecItem, { type: 'wildcard' }>,
+  segment: string | undefined,
+  mapping: Record<string, string | string[]>,
+): boolean => {
+  if (spec.type === 'literal') {
+    return spec.name === segment;
+  }
+  if (segment === undefined) {
+    return false;
+  }
+  const prefix = spec.prefix ?? '';
+  const suffix = spec.suffix ?? '';
+  if (prefix || suffix) {
+    if (!segment.startsWith(prefix) || !segment.endsWith(suffix)) {
+      return false;
+    }
+    const value = segment.slice(
+      prefix.length,
+      suffix ? -suffix.length : undefined,
+    );
+    if (!value) {
+      return false;
+    }
+    if (spec.name) {
+      mapping[spec.name] = value;
+    }
+  } else if (spec.name) {
+    mapping[spec.name] = segment;
+  }
+  return true;
+};
+
 /**
  * Helper function to get the path mapping from the path spec and the pathname.
  *
@@ -189,37 +222,12 @@ export const getPathMapping = (
   let wildcardStartIndex = -1;
   for (let i = 0; i < pathSpec.length; i++) {
     const spec = pathSpec[i]!;
-    if (spec.type === 'literal') {
-      if (spec.name !== actual[i]) {
-        return null;
-      }
-    } else if (spec.type === 'wildcard') {
+    if (spec.type === 'wildcard') {
       wildcardStartIndex = i;
       break;
-    } else {
-      const segment = actual[i];
-      if (segment === undefined) {
-        return null;
-      }
-      const prefix = spec.prefix ?? '';
-      const suffix = spec.suffix ?? '';
-      if (prefix || suffix) {
-        if (!segment.startsWith(prefix) || !segment.endsWith(suffix || '')) {
-          return null;
-        }
-        const value = segment.slice(
-          prefix.length,
-          suffix ? -suffix.length : undefined,
-        );
-        if (!value) {
-          return null;
-        }
-        if (spec.name) {
-          mapping[spec.name] = value;
-        }
-      } else if (spec.name) {
-        mapping[spec.name] = segment;
-      }
+    }
+    if (!matchSpecSegment(spec, actual[i], mapping)) {
+      return null;
     }
   }
   if (wildcardStartIndex === -1) {
@@ -240,41 +248,13 @@ export const getPathMapping = (
   let wildcardEndIndex = -1;
   for (let i = 0; i < pathSpec.length; i++) {
     const spec = pathSpec[pathSpec.length - i - 1]!;
-    if (spec.type === 'literal') {
-      if (spec.name !== actual[actual.length - i - 1]) {
-        return null;
-      }
-    } else if (spec.type === 'wildcard') {
+    if (spec.type === 'wildcard') {
       wildcardEndIndex = actual.length - i - 1;
       break;
-    } else {
-      const segment = actual[actual.length - i - 1];
-      if (segment === undefined) {
-        return null;
-      }
-      const prefix = spec.prefix ?? '';
-      const suffix = spec.suffix ?? '';
-      if (prefix || suffix) {
-        if (!segment.startsWith(prefix) || !segment.endsWith(suffix || '')) {
-          return null;
-        }
-        const value = segment.slice(
-          prefix.length,
-          suffix ? -suffix.length : undefined,
-        );
-        if (!value) {
-          return null;
-        }
-        if (spec.name) {
-          mapping[spec.name] = value;
-        }
-      } else if (spec.name) {
-        mapping[spec.name] = segment;
-      }
     }
-  }
-  if (wildcardStartIndex === -1) {
-    throw new Error('Invalid wildcard path');
+    if (!matchSpecSegment(spec, actual[actual.length - i - 1], mapping)) {
+      return null;
+    }
   }
   const wildcardName = pathSpec[wildcardStartIndex]!.name;
   if (wildcardName) {
