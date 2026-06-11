@@ -1,8 +1,7 @@
 import { describe, expect, test, vi } from 'vitest';
+import { base64ToBytes, bytesToBase64 } from '../src/lib/utils/base64-web.js';
 import {
-  base64ToBytes,
   batchReadableStream,
-  bytesToBase64,
   bytesToStream,
   consumeMultiplexedStream,
   produceMultiplexedStream,

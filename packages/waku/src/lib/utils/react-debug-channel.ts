@@ -1,19 +1,10 @@
 // This file should not include Node specific code.
 
+import { base64ToBytes, bytesToBase64 } from './base64-web.js';
+
 export const DEBUG_ID_HEADER = 'X-Waku-Debug-Id';
 export const DEBUG_CMD_EVENT = 'waku:debug-cmd';
 export const DEBUG_DATA_EVENT = 'waku:debug-data';
-
-const bytesToBase64 = (bytes: Uint8Array) => {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]!);
-  }
-  return btoa(binary);
-};
-
-const base64ToBytes = (base64: string) =>
-  Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
 
 type DebugCmdEventReadyPayload = {
   i: string; // debugId

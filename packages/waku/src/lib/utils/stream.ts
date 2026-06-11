@@ -30,17 +30,6 @@ export const streamToBytes = async (
   return concatUint8Array(chunks);
 };
 
-export const bytesToBase64 = (bytes: Uint8Array): string => {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]!);
-  }
-  return btoa(binary);
-};
-
-export const base64ToBytes = (base64: string): Uint8Array =>
-  Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-
 export const bytesToStream = (bytes: Uint8Array): ReadableStream =>
   new ReadableStream({
     start(controller) {

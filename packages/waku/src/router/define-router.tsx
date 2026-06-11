@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { base64ToBytes, bytesToBase64 } from '../lib/utils/base64-web.js';
 import { createCustomError, getErrorInfo } from '../lib/utils/custom-errors.js';
 import {
   getPathMapping,
@@ -7,7 +8,6 @@ import {
   pathSpecAsString,
 } from '../lib/utils/path.js';
 import type { PathSpec } from '../lib/utils/path.js';
-import { base64ToBytes, bytesToBase64 } from '../lib/utils/stream.js';
 import { createTaskRunner } from '../lib/utils/task-runner.js';
 import { unstable_defineHandlers as defineHandlers } from '../minimal/server.js';
 import { deserializeRsc, serializeRsc } from '../server.js';

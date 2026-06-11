@@ -1,4 +1,5 @@
 import type { Plugin } from 'vite';
+import { base64ToBytes, bytesToBase64 } from '../utils/base64-node.js';
 import {
   DEBUG_CMD_EVENT,
   DEBUG_DATA_EVENT,
@@ -12,12 +13,6 @@ const getDebugChannels = () =>
     string,
     { readable: ReadableStream; writable: WritableStream }
   >;
-
-const bytesToBase64 = (bytes: Uint8Array) =>
-  Buffer.from(bytes).toString('base64');
-
-const base64ToBytes = (base64: string) =>
-  new Uint8Array(Buffer.from(base64, 'base64'));
 
 const setRequestHeader = (
   req: {
