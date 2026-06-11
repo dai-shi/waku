@@ -134,6 +134,14 @@ const toProcessBuild =
       return fallbackHtml;
     };
 
+    const getPublicFilePath = (fileName: string) => {
+      const filePath = joinPath(DIST_PUBLIC, fileName);
+      if (!filePath.startsWith(DIST_PUBLIC + '/')) {
+        throw new Error('fileName escapes the public directory: ' + fileName);
+      }
+      return filePath;
+    };
+
     await handleBuild({
       renderRsc: renderUtils.renderRsc,
       parseRsc: renderUtils.parseRsc,
@@ -145,13 +153,13 @@ const toProcessBuild =
       },
       generateFile: async (fileName, body) => {
         await emitFile(
-          joinPath(DIST_PUBLIC, fileName),
+          getPublicFilePath(fileName),
           typeof body === 'string' ? stringToStream(body) : body,
         );
       },
       generateDefaultHtml: async (fileName) => {
         await emitFile(
-          joinPath(DIST_PUBLIC, fileName),
+          getPublicFilePath(fileName),
           stringToStream(await getFallbackHtml()),
         );
       },
