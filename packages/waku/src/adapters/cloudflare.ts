@@ -34,6 +34,16 @@ function isProductionWorker(req: Request): boolean {
   return !!req.headers.get('cf-visitor');
 }
 
+function isLoopbackRequest(req: Request): boolean {
+  const { hostname } = new URL(req.url);
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '::1' ||
+    hostname === '[::1]'
+  );
+}
+
 function removeGzipEncoding(res: Response): Response {
   const contentType = res.headers.get('content-type');
   if (
@@ -107,6 +117,7 @@ export default createServerEntryAdapter(
     const fetchFn = async (req: Request) => {
       if (
         new URL(req.url).pathname === `/${internalPathToBuildStaticFiles}` &&
+        isLoopbackRequest(req) &&
         !isProductionWorker(req)
       ) {
         return new Response(buildBody());
