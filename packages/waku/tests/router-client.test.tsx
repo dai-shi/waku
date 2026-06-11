@@ -519,6 +519,130 @@ describe('useRouter + Link with context', () => {
     view.unmount();
   });
 
+  test('Link re-scrolls to the same hash on a repeated click', async () => {
+    const changeRoute = vi.fn(async () => {});
+    const prefetchRoute = vi.fn();
+    // Same href as the link's resolved target, so `internalOnClick` takes the
+    // "no route change" path that previously bailed out entirely.
+    window.history.replaceState({}, '', '/start#target');
+
+    const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {
+      return;
+    });
+    const scrollYDescriptor = Object.getOwnPropertyDescriptor(
+      window,
+      'scrollY',
+    );
+    Object.defineProperty(window, 'scrollY', {
+      configurable: true,
+      value: 100,
+    });
+    const hashTarget = document.createElement('div');
+    hashTarget.id = 'target';
+    const getBoundingClientRectSpy = vi
+      .spyOn(hashTarget, 'getBoundingClientRect')
+      .mockReturnValue({ top: 30 } as DOMRect);
+    document.body.append(hashTarget);
+
+    const view = await renderApp(
+      <RouterContext
+        value={{
+          route: { path: '/start', query: '', hash: '#target' },
+          changeRoute,
+          prefetchRoute,
+          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
+          fetchingSlices: new Set(),
+        }}
+      >
+        <Link to="/start#target" data-testid="hash-link">
+          hash
+        </Link>
+      </RouterContext>,
+    );
+    try {
+      const link = view.container.querySelector('[data-testid="hash-link"]')!;
+      await act(async () => {
+        link.dispatchEvent(
+          new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            button: 0,
+          }),
+        );
+        await Promise.resolve();
+      });
+
+      // No route change (the href is unchanged), but it should still scroll.
+      expect(changeRoute).not.toHaveBeenCalled();
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        left: 0,
+        top: 130,
+        behavior: 'auto',
+      });
+    } finally {
+      view.unmount();
+      scrollToSpy.mockRestore();
+      getBoundingClientRectSpy.mockRestore();
+      hashTarget.remove();
+      window.history.replaceState({}, '', '/');
+      if (scrollYDescriptor) {
+        Object.defineProperty(window, 'scrollY', scrollYDescriptor);
+      } else {
+        Reflect.deleteProperty(window, 'scrollY');
+      }
+    }
+  });
+
+  test('Link with scroll={false} does not re-scroll on a same-hash click', async () => {
+    const changeRoute = vi.fn(async () => {});
+    const prefetchRoute = vi.fn();
+    window.history.replaceState({}, '', '/start#target');
+
+    const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {
+      return;
+    });
+    const hashTarget = document.createElement('div');
+    hashTarget.id = 'target';
+    document.body.append(hashTarget);
+
+    const view = await renderApp(
+      <RouterContext
+        value={{
+          route: { path: '/start', query: '', hash: '#target' },
+          changeRoute,
+          prefetchRoute,
+          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
+          fetchingSlices: new Set(),
+        }}
+      >
+        <Link to="/start#target" scroll={false} data-testid="hash-link">
+          hash
+        </Link>
+      </RouterContext>,
+    );
+    try {
+      const link = view.container.querySelector('[data-testid="hash-link"]')!;
+      await act(async () => {
+        link.dispatchEvent(
+          new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            button: 0,
+          }),
+        );
+        await Promise.resolve();
+      });
+
+      expect(changeRoute).not.toHaveBeenCalled();
+      expect(scrollToSpy).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+      scrollToSpy.mockRestore();
+      hashTarget.remove();
+      window.history.replaceState({}, '', '/');
+    }
+  });
+
   test('Link intercepts external, target, and download clicks', async () => {
     const changeRoute = vi.fn(async () => {});
     const prefetchRoute = vi.fn();

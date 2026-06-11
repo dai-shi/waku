@@ -223,6 +223,35 @@ test.describe('router-client', () => {
     ).toBeLessThanOrEqual(1);
   });
 
+  test('hash link re-scrolls to the same anchor on a repeated click', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/start`);
+    await waitForHydration(page);
+    await installScrollToRecorder(page);
+
+    // First click scrolls to the target (issue #2124 is about the second one).
+    await page.getByTestId('go-hash-target').click();
+    await expect(page).toHaveURL(/\/start#scroll-target$/);
+    expect((await getScrollToCalls(page)).at(-1)?.top).toBeGreaterThan(100);
+
+    // Scroll away and clear the recorder, then click the same link again. A
+    // native anchor re-scrolls every time; `<Link>` must too.
+    await page.evaluate(() => {
+      window.scrollTo({ left: 0, top: 0 });
+    });
+    await resetScrollToCalls(page);
+
+    await page.getByTestId('go-hash-target').click();
+
+    await expect(page).toHaveURL(/\/start#scroll-target$/);
+    const scrollToCalls = await getScrollToCalls(page);
+    const lastScrollToCall = scrollToCalls.at(-1);
+    expect(lastScrollToCall).toBeDefined();
+    expect(lastScrollToCall?.left).toBe(0);
+    expect(lastScrollToCall?.top).toBeGreaterThan(100);
+  });
+
   test('hash-only navigation preserves scroll when hash target is missing', async ({
     page,
   }) => {
