@@ -9,8 +9,9 @@ export function privateDirPlugin({
   let privatePath: string;
   return {
     name: 'waku:vite-plugins:private-dir',
+    enforce: 'pre',
     configResolved(viteConfig) {
-      privatePath = joinPath(viteConfig.root, privateDir);
+      privatePath = joinPath(viteConfig.root, privateDir) + '/';
     },
     load(id) {
       if (this.environment.name === 'rsc') {
