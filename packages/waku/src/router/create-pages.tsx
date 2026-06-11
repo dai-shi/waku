@@ -509,8 +509,10 @@ export const createPages = <
     string,
     { component: FunctionComponent<any>; sourceFile?: string | undefined }
   >();
+  const getStaticComponentId = (routePath: string, kind: 'page' | 'layout') =>
+    joinPath(routePath, kind).slice(1);
   const getStaticLayout = (id: string) =>
-    staticComponentById.get(joinPath(id, 'layout').slice(1))?.component;
+    staticComponentById.get(getStaticComponentId(id, 'layout'))?.component;
   const sliceIdsByRoutePath = new Map<string, string[]>();
   type SliceEntry<Props = any> = {
     component: FunctionComponent<{ children?: ReactNode } & Props>;
@@ -629,7 +631,7 @@ export const createPages = <
           noSsr,
           sourceFile,
         });
-        const id = joinPath(routePath, 'page').replace(/^\//, '');
+        const id = getStaticComponentId(routePath, 'page');
         registerStaticComponent(id, page.component, sourceFile);
       } else {
         dynamicPageEntryByRoutePath.set(routePath, {
@@ -650,7 +652,7 @@ export const createPages = <
         noSsr,
         sourceFile,
       });
-      const id = joinPath(routePath, 'page').replace(/^\//, '');
+      const id = getStaticComponentId(routePath, 'page');
       if (routePath !== pageRoutePath) {
         groupedRoutePathByRoutePath.set(routePath, pageRoutePath);
       }
@@ -680,7 +682,7 @@ export const createPages = <
           if (routePath !== concreteRoutePath) {
             groupedRoutePathByRoutePath.set(routePath, concreteRoutePath);
           }
-          const id = joinPath(routePath, 'page').replace(/^\//, '');
+          const id = getStaticComponentId(routePath, 'page');
           const WrappedComponent = (props: Record<string, unknown>) =>
             createElement(page.component as any, { ...props, ...mapping });
           registerStaticComponent(id, WrappedComponent, sourceFile);
@@ -750,7 +752,7 @@ export const createPages = <
     const sourceFile = layout.unstable_sourceFile;
     const getEtag = layout.unstable_getEtag;
     if (layout.render === 'static') {
-      const id = joinPath(routePath, 'layout').replace(/^\//, '');
+      const id = getStaticComponentId(routePath, 'layout');
       registerStaticComponent(id, layout.component, sourceFile);
     } else if (layout.render === 'dynamic') {
       if (dynamicLayoutEntryByRoutePath.has(routePath)) {
@@ -989,7 +991,7 @@ export const createPages = <
         const dynamicEntry = dynamicLayoutEntryByRoutePath.get(layoutPath);
         const staticEntry = dynamicEntry
           ? undefined
-          : staticComponentById.get(joinPath(layoutPath, 'layout').slice(1));
+          : staticComponentById.get(getStaticComponentId(layoutPath, 'layout'));
         const layout = dynamicEntry?.component ?? staticEntry?.component;
         if (!layout) {
           throw new Error('Invalid layout ' + layoutPath);
@@ -1041,6 +1043,28 @@ export const createPages = <
         ...(rootSourceFile ? { sourceFile: rootSourceFile } : {}),
         ...(rootGetEtag ? { getEtagFromOption: () => rootGetEtag() } : {}),
       });
+      const buildRouteConfigBase = (
+        routePath: string,
+        pathSpec: PathSpec,
+        layouts: LayoutMatch[],
+        elements: Record<string, ElementSpec>,
+        noSsr: boolean,
+      ) => ({
+        type: 'route' as const,
+        path: pathSpec.filter((part) => !part.name?.startsWith('(')),
+        isStatic:
+          rootIsStatic &&
+          isAllElementsStatic(elements) &&
+          isAllSlicesStatic(routePath),
+        rootElement: buildRootElement(),
+        routeElement: {
+          isStatic: true,
+          renderer: buildRouteElement(layouts, routePath),
+        },
+        elements,
+        noSsr,
+        slices: sliceIdsByRoutePath.get(routePath)!,
+      });
       const buildStaticRouteConfigs = () =>
         Array.from(
           staticPageEntryByRoutePath,
@@ -1052,7 +1076,7 @@ export const createPages = <
               groupedRoutePath,
             );
             const pageEntry = staticComponentById.get(
-              joinPath(routePath, 'page').slice(1),
+              getStaticComponentId(routePath, 'page'),
             )!;
             const getPropsMapping = createPathPropsMapper(routePath);
             const elements: Record<string, ElementSpec> =
@@ -1064,23 +1088,14 @@ export const createPages = <
               pageEntry.sourceFile,
             );
             return {
-              type: 'route' as const,
-              path: concretePathSpec.filter(
-                (part) => !part.name?.startsWith('('),
+              ...buildRouteConfigBase(
+                routePath,
+                concretePathSpec,
+                layouts,
+                elements,
+                noSsr,
               ),
-              isStatic:
-                rootIsStatic &&
-                isAllElementsStatic(elements) &&
-                isAllSlicesStatic(routePath),
               ...(pathPatternSpec && { pathPattern: pathPatternSpec }),
-              rootElement: buildRootElement(),
-              routeElement: {
-                isStatic: true,
-                renderer: buildRouteElement(layouts, routePath),
-              },
-              elements,
-              noSsr,
-              slices: sliceIdsByRoutePath.get(routePath)!,
             };
           },
         );
@@ -1105,22 +1120,13 @@ export const createPages = <
           sourceFile,
           getEtag,
         );
-        return {
-          type: 'route' as const,
-          isStatic:
-            rootIsStatic &&
-            isAllElementsStatic(elements) &&
-            isAllSlicesStatic(routePath),
-          path: routePathSpec.filter((part) => !part.name?.startsWith('(')),
-          rootElement: buildRootElement(),
-          routeElement: {
-            isStatic: true,
-            renderer: buildRouteElement(layouts, routePath),
-          },
+        return buildRouteConfigBase(
+          routePath,
+          routePathSpec,
+          layouts,
           elements,
           noSsr,
-          slices: sliceIdsByRoutePath.get(routePath)!,
-        };
+        );
       };
       const buildDynamicRouteConfigs = () =>
         Array.from(dynamicPageEntryByRoutePath, ([routePath, entry]) =>

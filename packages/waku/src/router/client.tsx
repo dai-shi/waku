@@ -139,6 +139,25 @@ const createRscParams = (query: string): URLSearchParams => {
   return rscParams;
 };
 
+const createSkipHeaderEnhancer =
+  (cachedEtagsRef: { current: Record<string, string> }, signal?: AbortSignal) =>
+  (fetchFn: typeof fetch) =>
+  (input: RequestInfo | URL, init: RequestInit = {}) => {
+    if (signal && init.signal === undefined) {
+      init.signal = signal;
+    }
+    const skipStr = JSON.stringify(cachedEtagsRef.current);
+    const headers = (init.headers ||= {});
+    if (Array.isArray(headers)) {
+      headers.push([SKIP_HEADER, skipStr]);
+    } else if (headers instanceof Headers) {
+      headers.set(SKIP_HEADER, skipStr);
+    } else {
+      (headers as Record<string, string>)[SKIP_HEADER] = skipStr;
+    }
+    return fetchFn(input, init);
+  };
+
 type ChangeRouteOptions = {
   shouldScroll: boolean;
   refetch?: boolean; // true: force refetch, false: don't refetch, undefined: auto-decide based on route change
@@ -769,6 +788,48 @@ const writeUrlToHistory = (mode: 'push' | 'replace', url: URL) => {
   }
 };
 
+const useElementsMetadata = (
+  elementsPromise: ReturnType<typeof useElementsPromise>,
+) => {
+  const [has404, setHas404] = useState(false);
+  const staticPathSetRef = useRef(new Set<string>());
+  const cachedEtagsRef = useRef<Record<string, string>>({});
+  useEffect(() => {
+    elementsPromise.then(
+      (elements) => {
+        const {
+          [ROUTE_ID]: routeData,
+          [IS_STATIC_ID]: isStatic,
+          [HAS404_ID]: has404FromElements,
+        } = elements;
+        if (has404FromElements) {
+          setHas404(true);
+        }
+        if (routeData) {
+          const [path, _query] = routeData as [string, string];
+          if (isStatic) {
+            staticPathSetRef.current.add(path);
+          }
+        }
+        const etags: Record<string, string> = {};
+        for (const [key, value] of Object.entries(elements)) {
+          // Drop empty (clear signal) and non-Latin1 (breaks fetch) tags.
+          if (
+            key.startsWith(ETAG_ID_PREFIX) &&
+            typeof value === 'string' &&
+            /^[\u0020-\u00ff]+$/.test(value)
+          ) {
+            etags[key.slice(ETAG_ID_PREFIX.length)] = value;
+          }
+        }
+        cachedEtagsRef.current = etags;
+      },
+      () => {},
+    );
+  }, [elementsPromise]);
+  return { has404, staticPathSetRef, cachedEtagsRef };
+};
+
 const defaultRouteInterceptor = (route: RouteProps) => route;
 
 const InnerRouter = ({
@@ -808,44 +869,10 @@ const InnerRouter = ({
     globalThis.__WAKU_REFETCH_ROUTE__ = refetchRoute;
   }
 
-  const [has404, setHas404] = useState(false);
-  const staticPathSetRef = useRef(new Set<string>());
-  const cachedEtagsRef = useRef<Record<string, string>>({});
+  const { has404, staticPathSetRef, cachedEtagsRef } =
+    useElementsMetadata(elementsPromise);
   // FIXME this "fetchingSlices" hack feels suboptimal.
   const fetchingSlicesRef = useRef(new Set<SliceId>());
-  useEffect(() => {
-    elementsPromise.then(
-      (elements) => {
-        const {
-          [ROUTE_ID]: routeData,
-          [IS_STATIC_ID]: isStatic,
-          [HAS404_ID]: has404FromElements,
-        } = elements;
-        if (has404FromElements) {
-          setHas404(true);
-        }
-        if (routeData) {
-          const [path, _query] = routeData as [string, string];
-          if (isStatic) {
-            staticPathSetRef.current.add(path);
-          }
-        }
-        const etags: Record<string, string> = {};
-        for (const [key, value] of Object.entries(elements)) {
-          // Drop empty (clear signal) and non-Latin1 (breaks fetch) tags.
-          if (
-            key.startsWith(ETAG_ID_PREFIX) &&
-            typeof value === 'string' &&
-            /^[\u0020-\u00ff]+$/.test(value)
-          ) {
-            etags[key.slice(ETAG_ID_PREFIX.length)] = value;
-          }
-        }
-        cachedEtagsRef.current = etags;
-      },
-      () => {},
-    );
-  }, [elementsPromise]);
 
   const refetch = useRefetch();
   const [route, setRoute] = useState(() => ({
@@ -920,23 +947,10 @@ const InnerRouter = ({
       if (!staticPathSetRef.current.has(nextRoute.path) && shouldRefetch) {
         const rscPath = encodeRoutePath(nextRoute.path);
         const rscParams = createRscParams(nextRoute.query);
-        const skipHeaderEnhancer =
-          (fetchFn: typeof fetch) =>
-          (input: RequestInfo | URL, init: RequestInit = {}) => {
-            if (init.signal === undefined) {
-              init.signal = abortController.signal;
-            }
-            const skipStr = JSON.stringify(cachedEtagsRef.current);
-            const headers = (init.headers ||= {});
-            if (Array.isArray(headers)) {
-              headers.push([SKIP_HEADER, skipStr]);
-            } else if (headers instanceof Headers) {
-              headers.set(SKIP_HEADER, skipStr);
-            } else {
-              (headers as Record<string, string>)[SKIP_HEADER] = skipStr;
-            }
-            return fetchFn(input, init);
-          };
+        const skipHeaderEnhancer = createSkipHeaderEnhancer(
+          cachedEtagsRef,
+          abortController.signal,
+        );
         try {
           const targetUrl = url || getRouteUrl(nextRoute);
           const elements = await refetch(rscPath, rscParams, (store) =>
@@ -994,7 +1008,7 @@ const InnerRouter = ({
         emitRouteChangeEvent('complete', nextRoute);
       });
     },
-    [emitRouteChangeEvent, refetch],
+    [emitRouteChangeEvent, refetch, staticPathSetRef, cachedEtagsRef],
   );
   const applyChangeRouteData = useCallback(
     async (routeData: unknown, isStatic: unknown) => {
@@ -1033,31 +1047,24 @@ const InnerRouter = ({
     return registerCallServerElementsListener(fetchRscStore, listener);
   }, [applyChangeRouteData, fetchRscStore]);
 
-  const prefetchRoute: PrefetchRoute = useCallback((route) => {
-    if (staticPathSetRef.current.has(route.path)) {
-      return;
-    }
-    const rscPath = encodeRoutePath(route.path);
-    const rscParams = createRscParams(route.query);
-    const skipHeaderEnhancer =
-      (fetchFn: typeof fetch) =>
-      (input: RequestInfo | URL, init: RequestInit = {}) => {
-        const skipStr = JSON.stringify(cachedEtagsRef.current);
-        const headers = (init.headers ||= {});
-        if (Array.isArray(headers)) {
-          headers.push([SKIP_HEADER, skipStr]);
-        } else if (headers instanceof Headers) {
-          headers.set(SKIP_HEADER, skipStr);
-        } else {
-          (headers as Record<string, string>)[SKIP_HEADER] = skipStr;
-        }
-        return fetchFn(input, init);
-      };
-    prefetchRsc(rscPath, rscParams, withEnhanceFetchFn(skipHeaderEnhancer));
-    (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(route.path, (id: string) => {
-      preloadModule(id, { as: 'script' });
-    });
-  }, []);
+  const prefetchRoute: PrefetchRoute = useCallback(
+    (route) => {
+      if (staticPathSetRef.current.has(route.path)) {
+        return;
+      }
+      const rscPath = encodeRoutePath(route.path);
+      const rscParams = createRscParams(route.query);
+      const skipHeaderEnhancer = createSkipHeaderEnhancer(cachedEtagsRef);
+      prefetchRsc(rscPath, rscParams, withEnhanceFetchFn(skipHeaderEnhancer));
+      (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(
+        route.path,
+        (id: string) => {
+          preloadModule(id, { as: 'script' });
+        },
+      );
+    },
+    [staticPathSetRef, cachedEtagsRef],
+  );
 
   useEffect(() => {
     const callback = () => {
