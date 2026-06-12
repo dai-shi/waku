@@ -1056,12 +1056,9 @@ const InnerRouter = ({
       const rscParams = createRscParams(route.query);
       const skipHeaderEnhancer = createSkipHeaderEnhancer(cachedEtagsRef);
       prefetchRsc(rscPath, rscParams, withEnhanceFetchFn(skipHeaderEnhancer));
-      (globalThis as any).__WAKU_ROUTER_PREFETCH__?.(
-        route.path,
-        (id: string) => {
-          preloadModule(id, { as: 'script' });
-        },
-      );
+      globalThis.__WAKU_ROUTER_PREFETCH__?.(route.path, (id) => {
+        preloadModule(id, { as: 'script' });
+      });
     },
     [staticPathSetRef, cachedEtagsRef],
   );

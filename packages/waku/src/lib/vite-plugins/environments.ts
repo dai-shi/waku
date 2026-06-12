@@ -136,8 +136,9 @@ export function environmentsPlugin(config: Required<Config>): Plugin {
     async configureServer(server) {
       const { getRequestListener } = await import('@hono/node-server');
       const environment = server.environments.rsc! as RunnableDevEnvironment;
-      const entryId = (environment.config.build.rolldownOptions.input as any)
-        .index;
+      const entryId = (
+        environment.config.build.rolldownOptions.input as { index: string }
+      ).index;
       return () => {
         server.middlewares.use(async (req, res, next) => {
           try {
@@ -146,7 +147,7 @@ export function environmentsPlugin(config: Required<Config>): Plugin {
             const mod: typeof import('../vite-entries/entry.server.js') =
               await environment.runner.import(entryId);
             await getRequestListener((req, ...args) =>
-              mod.INTERNAL_runFetch(process.env as any, req, ...args),
+              mod.INTERNAL_runFetch(process.env, req, ...args),
             )(req, res);
           } catch (e) {
             next(e);

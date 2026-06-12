@@ -684,7 +684,7 @@ export const createPages = <
           }
           const id = getStaticComponentId(routePath, 'page');
           const WrappedComponent = (props: Record<string, unknown>) =>
-            createElement(page.component as any, { ...props, ...mapping });
+            createElement(page.component as never, { ...props, ...mapping });
           registerStaticComponent(id, WrappedComponent, sourceFile);
           sliceIdsByRoutePath.set(routePath, slices);
         },
@@ -873,7 +873,7 @@ export const createPages = <
             throw new Error(`Duplicated slice id: ${concreteId}`);
           }
           const WrappedComponent = (props: Record<string, unknown>) =>
-            createElement(slice.component as any, { ...props, ...mapping });
+            createElement(slice.component as never, { ...props, ...mapping });
           sliceEntryById.set(concreteId, {
             component: WrappedComponent,
             isStatic: true,

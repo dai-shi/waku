@@ -4,7 +4,7 @@ import { setAllEnv } from '../env.js';
 export { serverEntry as unstable_serverEntry };
 
 export async function INTERNAL_runFetch(
-  env: Readonly<Record<string, string>>,
+  env: Readonly<Record<string, unknown>>,
   req: Request,
   ...args: any[]
 ) {

@@ -188,7 +188,7 @@ export default createServerEntryAdapter(
       buildEnhancers: ['waku/adapters/cloudflare-build-enhancer'],
       defaultExport: {
         ...options?.handlers,
-        fetch(req: Request, env: Record<string, string>) {
+        fetch(req: Request, env: Record<string, unknown>) {
           setAllEnv(env);
           return fetchFn(req);
         },

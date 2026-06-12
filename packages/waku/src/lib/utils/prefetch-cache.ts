@@ -9,15 +9,15 @@ export const PREFETCH_TTL = 1000 * 60;
 /** Maximum number of prefetched entries kept at once. */
 export const PREFETCH_LIMIT = 100;
 
-type PrefetchEntry = {
+// This is exported only for global-types.ts. It is not a public API.
+export type PrefetchEntry = {
   rscPath: string;
   rscParams: unknown;
   getElements: (store: never) => unknown;
   expireAt: number;
 };
 
-const getCache = (): PrefetchEntry[] =>
-  ((globalThis as any).__WAKU_PREFETCHED__ ||= []);
+const getCache = (): PrefetchEntry[] => (globalThis.__WAKU_PREFETCHED__ ||= []);
 
 const findFreshIndex = (
   cache: PrefetchEntry[],

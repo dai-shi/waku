@@ -13,8 +13,7 @@ const { DIST_PUBLIC } = constants;
 const { rscMiddleware, middlewareRunner } = honoMiddleware;
 
 const DEFAULT_BODY_LIMIT_MAX_SIZE = 100 * 1024 * 1024;
-(global as any).__WAKU_HONO_NODE_SERVER_GET_REQUEST_LISTENER__ =
-  getRequestListener;
+globalThis.__WAKU_HONO_NODE_SERVER_GET_REQUEST_LISTENER__ = getRequestListener;
 
 export default createServerEntryAdapter(
   (

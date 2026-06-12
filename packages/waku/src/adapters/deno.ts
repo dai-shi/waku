@@ -34,9 +34,9 @@ export default createServerEntryAdapter(
     const {
       __WAKU_DENO_ADAPTER_HONO__: Hono = HonoForDevAndBuild,
       __WAKU_DENO_ADAPTER_SERVE_STATIC__: serveStatic,
-    } = globalThis as any;
+    } = globalThis;
     const app = new Hono();
-    app.notFound((c: any) => {
+    app.notFound((c) => {
       if (notFoundHtml) {
         return c.html(notFoundHtml, 404);
       }

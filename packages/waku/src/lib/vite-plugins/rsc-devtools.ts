@@ -9,10 +9,7 @@ import {
 } from '../utils/react-debug-channel.js';
 
 const getDebugChannels = () =>
-  ((globalThis as any).__WAKU_DEBUG_CHANNELS__ ||= new Map()) as Map<
-    string,
-    { readable: ReadableStream; writable: WritableStream }
-  >;
+  (globalThis.__WAKU_DEBUG_CHANNELS__ ||= new Map());
 
 const setRequestHeader = (
   req: {

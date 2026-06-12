@@ -38,7 +38,7 @@ export async function getInput(
       const action = await loadServerAction(actionId);
       input = {
         type: 'function',
-        fn: action as any,
+        fn: action as never,
         args,
         pathname,
         req,

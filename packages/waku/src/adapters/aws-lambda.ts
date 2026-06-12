@@ -54,7 +54,7 @@ export default createServerEntryAdapter(
     const buildOptions: BuildOptions = {
       distDir: config.distDir,
     };
-    (globalThis as any).__WAKU_AWS_LAMBDA_HANDLE__ = options?.streaming
+    globalThis.__WAKU_AWS_LAMBDA_HANDLE__ = options?.streaming
       ? honoAwsLambda.streamHandle
       : honoAwsLambda.handle;
     return {

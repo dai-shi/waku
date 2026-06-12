@@ -54,9 +54,7 @@ const toProcessRequest =
     const debugId =
       (import.meta.env.DEV && req.headers.get(DEBUG_ID_HEADER.toLowerCase())) ||
       undefined;
-    const debugChannels = (globalThis as any).__WAKU_DEBUG_CHANNELS__ as
-      | Map<string, { readable: ReadableStream; writable: WritableStream }>
-      | undefined;
+    const debugChannels = globalThis.__WAKU_DEBUG_CHANNELS__;
     const debugChannel = debugId ? debugChannels?.get(debugId) : undefined;
     if (debugId) {
       debugChannels?.delete(debugId);

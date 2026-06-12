@@ -31,7 +31,7 @@ export async function INTERNAL_runBuild({
   rootDir: string;
   emitFile: Unstable_EmitFile;
 }) {
-  setAllEnv(process.env as any);
+  setAllEnv(process.env);
   const prunableFiles = new Set<string>();
   let build = serverEntry.build;
   for (const enhancer of serverEntry.buildEnhancers || []) {

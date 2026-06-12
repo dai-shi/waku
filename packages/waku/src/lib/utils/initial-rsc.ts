@@ -2,18 +2,17 @@
 // the streamed RSC payload of the first render as a `Response`, so the client
 // can hydrate without an extra round trip. It is consumed exactly once.
 
-type InitialRscEntry = {
+// This is exported only for global-types.ts. It is not a public API.
+export type InitialRscEntry = {
   response: Promise<Response>;
   close: () => void;
   debugId?: string;
 };
 
 export const consumeInitialRscEntry = (): InitialRscEntry | undefined => {
-  const entry = (globalThis as any).__WAKU_INITIAL_RSC__ as
-    | InitialRscEntry
-    | undefined;
+  const entry = globalThis.__WAKU_INITIAL_RSC__;
   if (entry) {
-    delete (globalThis as any).__WAKU_INITIAL_RSC__;
+    globalThis.__WAKU_INITIAL_RSC__ = undefined;
   }
   return entry;
 };
