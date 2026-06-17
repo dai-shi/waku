@@ -627,10 +627,23 @@ test.describe('router-client', () => {
     await expect(page.getByTestId('pending-client-indicator')).toBeVisible();
     await expect(page.getByTestId('client-suspense-content')).toHaveCount(0);
 
+    // The destination is held by the transition: the previous page stays
+    // mounted and visible while the suspending route does not commit (no
+    // Suspense fallback flash). This only holds because changeRoute re-wraps the
+    // post-fetch commit in startTransition (React does not treat state updates
+    // after an `await` inside startTransition as part of the transition).
+    await expect(page.getByRole('heading', { name: 'Start' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Pending Client' }),
+    ).toHaveCount(0);
+
     // Release the client-only async from the still-mounted start page; the
-    // transition settles and pending clears.
+    // transition settles, the destination commits, and pending clears.
     await page.getByTestId('resolve-client-suspense').click();
     await expect(page.getByTestId('client-suspense-content')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Pending Client' }),
+    ).toBeVisible();
     await expect(page.getByTestId('pending-client-indicator')).toHaveCount(0);
   });
 

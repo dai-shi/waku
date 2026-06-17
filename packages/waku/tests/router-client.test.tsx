@@ -812,7 +812,7 @@ describe('useRouter + Link with context', () => {
     expect(changeRoute).toHaveBeenCalledWith(
       { path: '/next', query: '', hash: '' },
       expect.objectContaining({
-        unstable_startTransition: unstableStartTransition,
+        startTransition: unstableStartTransition,
       }),
     );
 

@@ -163,7 +163,7 @@ type ChangeRouteOptions = {
   refetch?: boolean; // true: force refetch, false: don't refetch, undefined: auto-decide based on route change
   mode?: undefined | 'push' | 'replace';
   url?: URL | undefined;
-  unstable_startTransition?: ((fn: TransitionFunction) => void) | undefined;
+  startTransition?: ((fn: TransitionFunction) => void) | undefined;
 };
 
 type ChangeRoute = (
@@ -440,7 +440,7 @@ export function Link({
           shouldScroll: scroll ?? shouldScrollByDefault(url),
           mode: 'push',
           url,
-          unstable_startTransition: startTransitionFn,
+          startTransition: startTransitionFn,
         });
       });
     } else if (url.hash && scroll !== false) {
@@ -937,7 +937,7 @@ const InnerRouter = ({
       const isAborted = () => abortController.signal.aborted;
       emitRouteChangeEvent('start', nextRoute);
       const startTransitionFn =
-        options.unstable_startTransition || ((fn: TransitionFunction) => fn());
+        options.startTransition || ((fn: TransitionFunction) => fn());
       const prevPathname = window.location.pathname;
       let { mode, url } = options;
       const routeBeforeChange = routeRef.current;
