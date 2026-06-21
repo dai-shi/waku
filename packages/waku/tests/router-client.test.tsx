@@ -4,6 +4,8 @@ import { StrictMode, act, use } from 'react';
 import type { ReactElement } from 'react';
 import { preloadModule } from 'react-dom';
 import { createRoot } from 'react-dom/client';
+import { expectType } from 'ts-expect';
+import type { TypeEqual } from 'ts-expect';
 import {
   afterAll,
   afterEach,
@@ -38,6 +40,7 @@ import {
   useNavigationStatus_UNSTABLE as useNavigationStatus,
   useRouter,
 } from '../src/router/client.js';
+import type { Unstable_InferredPaths } from '../src/router/client.js';
 import {
   ETAG_ID_PREFIX,
   HAS404_ID,
@@ -255,6 +258,17 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
+});
+
+describe('router navigation method path typing', () => {
+  test('prefetch accepts the same path type as push and replace', () => {
+    type PrefetchArg = Parameters<RouterApi['prefetch']>[0];
+    type PushArg = Parameters<RouterApi['push']>[0];
+    type ReplaceArg = Parameters<RouterApi['replace']>[0];
+    expectType<TypeEqual<PrefetchArg, Unstable_InferredPaths>>(true);
+    expectType<TypeEqual<PrefetchArg, PushArg>>(true);
+    expectType<TypeEqual<PrefetchArg, ReplaceArg>>(true);
+  });
 });
 
 describe('router/client utilities', () => {

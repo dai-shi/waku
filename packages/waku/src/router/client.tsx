@@ -285,7 +285,7 @@ export function useRouter() {
     window.history.forward();
   }, []);
   const prefetch = useCallback(
-    (to: string) => {
+    (to: InferredPaths) => {
       const url = new URL(to, window.location.href);
       prefetchRoute(parseRoute(url));
     },
