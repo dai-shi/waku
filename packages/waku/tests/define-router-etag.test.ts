@@ -6,7 +6,7 @@ import {
   SKIP_HEADER,
   encodeRoutePath,
   encodeSliceId,
-} from '../src/router/common.js';
+} from '../src/router/common-utils/route-path.js';
 import { unstable_defineRouter } from '../src/router/define-router.js';
 
 vi.mock('../src/server.js', () => ({

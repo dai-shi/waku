@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
-import { ROUTE_ID } from '../src/router/common.js';
+import { ROUTE_ID } from '../src/router/common-utils/route-path.js';
 import {
   unstable_defineRouter,
   unstable_redirect,

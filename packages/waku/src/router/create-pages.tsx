@@ -12,7 +12,7 @@ import {
 import type { PathSpec } from '../lib/utils/path.js';
 import { Children, Slot } from '../minimal/client.js';
 import { ErrorBoundary } from '../router/client.js';
-import { pathnameToRoutePath } from './common.js';
+import { pathnameToRoutePath } from './common-utils/route-path.js';
 import type {
   AnyPage,
   GetSlugs,

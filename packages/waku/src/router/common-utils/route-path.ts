@@ -1,6 +1,3 @@
-// This is a common module for client.tsx and define-router.tsx
-// TODO(daishi): Rename this file to be more explicit.
-
 export type RouteProps<Path extends string = string> = {
   path: Path;
   query: string;

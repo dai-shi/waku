@@ -23,7 +23,7 @@ import {
   encodeRoutePath,
   encodeSliceId,
   pathnameToRoutePath,
-} from './common.js';
+} from './common-utils/route-path.js';
 
 export type ApiHandler = (
   req: Request,

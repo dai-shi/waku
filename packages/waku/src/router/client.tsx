@@ -44,8 +44,8 @@ import {
   encodeRoutePath,
   encodeSliceId,
   pathnameToRoutePath,
-} from './common.js';
-import type { RouteProps } from './common.js';
+} from './common-utils/route-path.js';
+import type { RouteProps } from './common-utils/route-path.js';
 
 type AllowTrailingSlash<Path extends string> = Path extends '/'
   ? Path

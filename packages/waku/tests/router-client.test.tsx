@@ -47,7 +47,7 @@ import {
   IS_STATIC_ID,
   ROUTE_ID,
   SKIP_HEADER,
-} from '../src/router/common.js';
+} from '../src/router/common-utils/route-path.js';
 
 type ElementsMap = Record<string, unknown>;
 type RouterApi = ReturnType<typeof useRouter>;
