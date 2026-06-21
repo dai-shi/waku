@@ -20,6 +20,7 @@ import {
   INTERNAL_ServerRoot,
   Root,
   unstable_prefetchRsc as prefetchRsc,
+  useFetchRscStore_UNSTABLE,
   useRefetch,
 } from '../src/minimal/client.js';
 import {
@@ -47,18 +48,15 @@ import {
 
 type ElementsMap = Record<string, unknown>;
 type RouterApi = ReturnType<typeof useRouter>;
-type RouterFetchRscStore = NonNullable<
-  Parameters<typeof Router>[0]['unstable_fetchRscStore']
->;
-type TestFetchRscStore = RouterFetchRscStore & {
-  __testElements?: ElementsMap | undefined;
-};
 type IntersectionObserverMockInstance = IntersectionObserver & {
   callback: IntersectionObserverCallback;
 };
 
-const createRefetchMock = () =>
-  vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
+// Elements the mocked `Root` provides for the current render. Hoisted so the
+// `vi.mock` factory can read it.
+const testHoisted = vi.hoisted(() => ({
+  elements: {} as Record<string, unknown>,
+}));
 
 const createDeferred = <T,>() => {
   let resolve!: (value: T | PromiseLike<T>) => void;
@@ -75,6 +73,9 @@ const resolvedThenable = <T,>(value: T): Promise<T> =>
     status: 'fulfilled' as const,
     value,
   });
+
+const createRefetchMock = () =>
+  vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
 
 const getRefetchMock = () => {
   const results = vi.mocked(useRefetch).mock.results;
@@ -109,11 +110,6 @@ const getIntersectionObserverMockInstance = () => {
   throw new Error('IntersectionObserver was not constructed');
 };
 
-const createMockFetchRscStore = (elements: ElementsMap): RouterFetchRscStore =>
-  ({
-    __testElements: elements,
-  }) as TestFetchRscStore;
-
 vi.mock('react-dom', async () => {
   const actual = await vi.importActual<typeof import('react-dom')>('react-dom');
   return {
@@ -122,6 +118,17 @@ vi.mock('react-dom', async () => {
   };
 });
 
+vi.mock('react-server-dom-webpack/client', () => ({
+  default: {
+    createFromFetch: vi.fn(async (responsePromise: Promise<Response>) => {
+      await responsePromise;
+      return {};
+    }),
+    encodeReply: vi.fn(async () => ''),
+    createTemporaryReferenceSet: vi.fn(() => new Map()),
+  },
+}));
+
 vi.mock('../src/minimal/client.js', async () => {
   const actual = await vi.importActual<
     typeof import('../src/minimal/client.js')
@@ -129,22 +136,15 @@ vi.mock('../src/minimal/client.js', async () => {
 
   return {
     ...actual,
-    Root: vi.fn((props: Parameters<typeof actual.Root>[0]) => {
-      const fetchRscStore = props.unstable_fetchRscStore as
-        | TestFetchRscStore
-        | undefined;
-      if (fetchRscStore) {
-        fetchRscStore.e = [
-          props.initialRscPath || '',
-          props.initialRscParams,
-          resolvedThenable({
-            root: <Children />,
-            ...(fetchRscStore.__testElements || {}),
-          }),
-        ];
-      }
-      return actual.Root(props);
-    }),
+    Root: vi.fn((props: Parameters<typeof actual.Root>[0]) =>
+      actual.INTERNAL_ServerRoot({
+        elementsPromise: resolvedThenable({
+          root: <Children />,
+          ...testHoisted.elements,
+        }),
+        children: props.children,
+      }),
+    ),
     unstable_prefetchRsc: vi.fn(),
     useRefetch: vi.fn(),
   };
@@ -177,49 +177,29 @@ const renderRouter = async (
   props: Parameters<typeof Router>[0],
   elements: ElementsMap,
 ) => {
-  type RouterWithFetchRscStoreProps = Parameters<typeof Router>[0] & {
-    unstable_fetchRscStore?: RouterFetchRscStore | undefined;
-  };
-  const RouterWithFetchRscStore = Router as unknown as (
-    props: RouterWithFetchRscStoreProps,
-  ) => ReactElement;
-  return renderApp(
-    <RouterWithFetchRscStore
-      {...(props || {})}
-      unstable_fetchRscStore={createMockFetchRscStore(elements)}
-    />,
-  );
+  testHoisted.elements = elements;
+  return renderApp(<Router {...(props || {})} />);
 };
 
 const renderRouterInStrictMode = async (
   props: Parameters<typeof Router>[0],
   elements: ElementsMap,
 ) => {
-  type RouterWithFetchRscStoreProps = Parameters<typeof Router>[0] & {
-    unstable_fetchRscStore?: RouterFetchRscStore | undefined;
-  };
-  const RouterWithFetchRscStore = Router as unknown as (
-    props: RouterWithFetchRscStoreProps,
-  ) => ReactElement;
+  testHoisted.elements = elements;
   return renderApp(
     <StrictMode>
-      <RouterWithFetchRscStore
-        {...(props || {})}
-        unstable_fetchRscStore={createMockFetchRscStore(elements)}
-      />
+      <Router {...(props || {})} />
     </StrictMode>,
   );
 };
 
-const renderWithMinimalRoot = (element: ReactElement, elements: ElementsMap) =>
-  renderApp(
-    <Root
-      initialRscPath=""
-      unstable_fetchRscStore={createMockFetchRscStore(elements)}
-    >
-      {element}
-    </Root>,
-  );
+const renderWithMinimalRoot = (
+  element: ReactElement,
+  elements: ElementsMap,
+) => {
+  testHoisted.elements = elements;
+  return renderApp(<Root initialRscPath="">{element}</Root>);
+};
 
 beforeAll(async () => {
   (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
@@ -233,6 +213,9 @@ afterAll(() => {
 
 beforeEach(() => {
   window.history.replaceState({}, '', '/start');
+
+  delete (globalThis as Record<string, unknown>).__WAKU_PREFETCHED__;
+  testHoisted.elements = {};
 
   vi.mocked(useRefetch).mockReset();
   vi.mocked(useRefetch).mockReturnValue(createRefetchMock());
@@ -990,7 +973,7 @@ describe('Slice', () => {
   test('logs refetch failures and clears fetching set', async () => {
     const fetchingSlices = new Set<string>();
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const refetch = createRefetchMock();
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
     refetch.mockRejectedValueOnce(new Error('slice failed'));
     vi.mocked(useRefetch).mockReturnValue(refetch);
 
@@ -1082,6 +1065,42 @@ describe('Router integration', () => {
     const view = await renderRouterInStrictMode({}, elements);
     expect(capture.router?.path).toBe('/404');
     view.unmount();
+  });
+
+  test('registers its fetch enhancer and callServer listener once, and removes them on unmount (StrictMode)', async () => {
+    const warn = console.warn;
+    console.warn = () => {};
+    // The store is a module-level singleton; 'f' is FETCH_ENHANCERS, 'l' is
+    // CALL_SERVER_ELEMENTS_LISTENERS.
+    const store = useFetchRscStore_UNSTABLE() as unknown as Record<
+      string,
+      unknown
+    >;
+    console.warn = warn;
+    delete store.f;
+    delete store.l;
+    const size = (key: string) =>
+      (store[key] as Set<unknown> | undefined)?.size ?? 0;
+
+    const elements = {
+      [unstable_getRouteSlotId('/start')]: <div>start</div>,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: true,
+    };
+    const view = await renderRouterInStrictMode(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      elements,
+    );
+
+    // Registered exactly once despite StrictMode's mount/unmount/mount cycle.
+    expect(size('f')).toBe(1);
+    expect(size('l')).toBe(1);
+
+    view.unmount();
+
+    // Fully unregistered on unmount, so nothing leaks into later RSC requests.
+    expect(size('f')).toBe(0);
+    expect(size('l')).toBe(0);
   });
 
   test('push performs refetch for dynamic routes and emits start/complete events', async () => {
@@ -1746,7 +1765,7 @@ describe('Router integration', () => {
   test('push writes history when refetch fails', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
-    const refetch = createRefetchMock();
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
     refetch.mockRejectedValueOnce(new Error('refetch failed'));
     vi.mocked(useRefetch).mockReturnValue(refetch);
     const historyPushSpy = vi.spyOn(window.history, 'pushState');
@@ -1916,7 +1935,7 @@ describe('Router integration', () => {
     expect(getRefetchMock()).toHaveBeenCalledWith(
       unstable_encodeRoutePath('/intercepted'),
       expect.any(URLSearchParams),
-      expect.any(Function),
+      expect.any(Object),
     );
     expect(capture.router?.path).toBe('/intercepted');
     expect(capture.router?.query).toBe('from=interceptor');
@@ -2087,21 +2106,26 @@ describe('Router integration', () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
       .mockImplementation(fetchSpy as typeof fetch);
-    const refetch = vi.fn(
-      async (_rscPath, _rscParams, unstable_enhanceFetchRscStore) => {
-        const fetchRscStore = (
-          unstable_enhanceFetchRscStore
-            ? unstable_enhanceFetchRscStore({} as RouterFetchRscStore)
-            : {}
-        ) as RouterFetchRscStore;
-        const fetchFn = fetchRscStore.f || fetch;
-        await fetchFn('http://localhost/rsc', {});
-        return {};
-      },
-    );
-    vi.mocked(useRefetch).mockReturnValue(
-      refetch as ReturnType<typeof useRefetch>,
-    );
+    // Apply the router's registered fetch enhancers (the skip-header enhancer)
+    // the way the real refetch would, so the header is asserted on the request.
+    // ('f' is the internal FETCH_ENHANCERS key.)
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => {
+      const warn = console.warn;
+      console.warn = () => {};
+      const enhancers = (
+        useFetchRscStore_UNSTABLE() as {
+          f?: Set<(fn: typeof fetch) => typeof fetch>;
+        }
+      ).f;
+      console.warn = warn;
+      let fetchFn: typeof fetch = fetch;
+      for (const enhance of enhancers ?? []) {
+        fetchFn = enhance(fetchFn);
+      }
+      await fetchFn('http://localhost/rsc', {});
+      return {};
+    });
+    vi.mocked(useRefetch).mockReturnValue(refetch);
 
     const elements = {
       [unstable_getRouteSlotId('/start')]: <Probe />,
@@ -2129,16 +2153,24 @@ describe('Router integration', () => {
       await act(async () => {
         await capture.router!.push('/next');
       });
-      const requestInit = fetchSpy.mock.calls[0]?.[1] as
-        | RequestInit
-        | undefined;
-      const headers = (requestInit?.headers ?? {}) as Record<string, string>;
-      expect(headers).toBeDefined();
-      expect(headers[SKIP_HEADER]).toBeTypeOf('string');
-      const skipped = JSON.parse(headers[SKIP_HEADER]! as string) as Record<
-        string,
-        string
-      >;
+      const readHeader = (init: RequestInit | undefined, name: string) => {
+        const h = init?.headers;
+        if (!h) {
+          return undefined;
+        }
+        if (h instanceof Headers) {
+          return h.get(name) ?? undefined;
+        }
+        if (Array.isArray(h)) {
+          return (h as [string, string][]).find(([k]) => k === name)?.[1];
+        }
+        return (h as Record<string, string>)[name];
+      };
+      const skipStr = fetchSpy.mock.calls
+        .map((call) => readHeader(call[1], SKIP_HEADER))
+        .find((value) => value != null);
+      expect(skipStr).toBeTypeOf('string');
+      const skipped = JSON.parse(skipStr!) as Record<string, string>;
       expect(skipped.foo).toBe('etag-foo');
       expect(skipped.bar).toBe('etag-bar');
       expect('cleared' in skipped).toBe(false);
@@ -2177,14 +2209,15 @@ describe('Router integration', () => {
       .spyOn(globalThis, 'fetch')
       .mockImplementation(fetchSpy as typeof fetch);
     const refetch = vi.fn(
-      async (_rscPath, _rscParams, unstable_enhanceFetchRscStore) => {
-        const fetchRscStore = (
-          unstable_enhanceFetchRscStore
-            ? unstable_enhanceFetchRscStore({} as RouterFetchRscStore)
-            : {}
-        ) as RouterFetchRscStore;
-        const fetchFn = fetchRscStore.f || fetch;
-        await fetchFn('http://localhost/rsc', {});
+      async (
+        _rscPath: string,
+        _rscParams?: unknown,
+        options?: { signal?: AbortSignal },
+      ) => {
+        await fetch(
+          'http://localhost/rsc',
+          options?.signal ? { signal: options.signal } : {},
+        );
         return {};
       },
     );
@@ -2331,7 +2364,7 @@ describe('Router integration', () => {
     expect(getRefetchMock()).toHaveBeenCalledWith(
       unstable_encodeRoutePath('/404'),
       expect.any(URLSearchParams),
-      expect.any(Function),
+      expect.any(Object),
     );
     expect(capture.router?.path).toBe('/404');
 
@@ -2367,7 +2400,7 @@ describe('Router integration', () => {
       expect(getRefetchMock()).toHaveBeenCalledWith(
         unstable_encodeRoutePath('/404'),
         expect.any(URLSearchParams),
-        expect.any(Function),
+        expect.any(Object),
       );
       expect(capture.router?.path).toBe('/404');
 
@@ -2408,7 +2441,7 @@ describe('Router integration', () => {
     expect(getRefetchMock()).toHaveBeenCalledWith(
       unstable_encodeRoutePath('/target'),
       expect.any(URLSearchParams),
-      expect.any(Function),
+      expect.any(Object),
     );
     expect(capture.router?.path).toBe('/target');
     expect(capture.router?.query).toBe('ok=1');
@@ -2489,7 +2522,7 @@ describe('Router integration', () => {
       expect(getRefetchMock()).toHaveBeenCalledWith(
         unstable_encodeRoutePath('/target'),
         expect.any(URLSearchParams),
-        expect.any(Function),
+        expect.any(Object),
       );
     } finally {
       view.unmount();

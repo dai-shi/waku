@@ -29,17 +29,17 @@ All `unstable_*` exports in this document are genuinely unstable and may change.
 
 The minimal API is small, but it exposes both server-side handlers and client-side rendering primitives:
 
-| Entry point           | Surface                          | Use when                                                              |
-| --------------------- | -------------------------------- | --------------------------------------------------------------------- |
-| `waku/minimal/server` | `unstable_defineHandlers`        | Defining `handleRequest` and `handleBuild`.                           |
-| `waku/minimal/server` | `unstable_defineServerEntry`     | Writing server entries directly, usually for adapters.                |
-| `waku/minimal/client` | `Root`                           | Installing the minimal client runtime.                                |
-| `waku/minimal/client` | `Slot`                           | Rendering a server element by RSC ID.                                 |
-| `waku/minimal/client` | `Children`                       | Placing client-side `Slot` children inside a server-rendered element. |
-| `waku/minimal/client` | `useRefetch`                     | Fetching and merging another RSC payload.                             |
-| `waku/minimal/client` | `unstable_*` fetch-store helpers | Building router-like abstractions.                                    |
+| Entry point           | Surface                      | Use when                                                              |
+| --------------------- | ---------------------------- | --------------------------------------------------------------------- |
+| `waku/minimal/server` | `unstable_defineHandlers`    | Defining `handleRequest` and `handleBuild`.                           |
+| `waku/minimal/server` | `unstable_defineServerEntry` | Writing server entries directly, usually for adapters.                |
+| `waku/minimal/client` | `Root`                       | Installing the minimal client runtime.                                |
+| `waku/minimal/client` | `Slot`                       | Rendering a server element by RSC ID.                                 |
+| `waku/minimal/client` | `Children`                   | Placing client-side `Slot` children inside a server-rendered element. |
+| `waku/minimal/client` | `useRefetch`                 | Fetching and merging another RSC payload.                             |
+| `waku/minimal/client` | `unstable_*` helpers         | Building router-like abstractions.                                    |
 
-The components and hooks without `unstable_` names are the intended minimal client primitives. This guide does not document every exported helper from `waku/minimal/client`; undocumented exports are for Waku internals or custom integrations and should be treated as unstable.
+`Root`, `Slot`, and `Children` are the stable minimal client primitives. This guide does not document every exported helper from `waku/minimal/client`; undocumented exports are for Waku internals or custom integrations and should be treated as unstable.
 
 ### Mental Model
 
@@ -399,16 +399,13 @@ Props:
 
 - `initialRscPath?: string`
 - `initialRscParams?: unknown`
-- `unstable_fetchRscStore?`: opaque internal store object
 - `children: ReactNode`
 
 Important behavior:
 
 - `initialRscPath` defaults to `''`.
-- `Root` is required for `Slot` and `useRefetch`.
-- `unstable_fetchRscStore` is an unstable escape hatch for custom integrations.
-- The store type is intentionally not exported. Treat it as opaque.
-- If you mount multiple `Root` instances, they share the default store unless you pass a different `unstable_fetchRscStore` object to each one. This is uncommon, but it matters if you want isolation.
+- `Root` is required for `Slot`, `Children`, and `useRefetch`.
+- The client store is a module-level singleton (normally one per document), so mounting multiple `Root` instances is not supported.
 - `Root` injects default head tags for charset, viewport, and generator.
 - For SSR or SSG, use `hydrateRoot(document, rootElement)` when `globalThis.__WAKU_HYDRATE__` is set.
 - For purely client-side rendering, use `createRoot(document).render(rootElement)`.
@@ -486,13 +483,13 @@ This is useful for nested layouts and composition patterns where the server tree
 
 #### `useRefetch()`
 
-`useRefetch()` returns a function with this shape:
+`useRefetch()` returns a function that fetches a new RSC payload and merges it into the current element map:
 
 ```tsx
 refetch(
   rscPath: string,
   rscParams?: unknown,
-  unstable_enhanceFetchRscStore?: (store) => store,
+  options?: { signal?: AbortSignal; onBuildIdMismatch?: () => void },
 )
 ```
 
@@ -527,7 +524,6 @@ Important behavior:
 - The returned payload is merged into the current element map by key.
 - If you return only `InnerApp`, previously rendered elements such as `App` stay mounted.
 - If the refetch fails, the existing element map stays in place.
-- `unstable_enhanceFetchRscStore` is an unstable escape hatch for custom fetch-store behavior and is usually unnecessary unless you are building router-like abstractions.
 
 ### Common Patterns
 

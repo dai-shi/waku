@@ -30,11 +30,9 @@ import {
   Slot,
   unstable_prefetchRsc as prefetchRsc,
   unstable_registerCallServerElementsListener as registerCallServerElementsListener,
+  unstable_registerFetchEnhancer as registerFetchEnhancer,
   useElementsPromise_UNSTABLE as useElementsPromise,
-  useFetchRscStore_UNSTABLE as useFetchRscStore,
   useRefetch,
-  unstable_withBuildIdMismatchHandler as withBuildIdMismatchHandler,
-  unstable_withEnhanceFetchFn as withEnhanceFetchFn,
 } from '../minimal/client.js';
 import type { RouteConfig } from './base-types.js';
 import {
@@ -140,12 +138,9 @@ const createRscParams = (query: string): URLSearchParams => {
 };
 
 const createSkipHeaderEnhancer =
-  (cachedEtagsRef: { current: Record<string, string> }, signal?: AbortSignal) =>
+  (cachedEtagsRef: { current: Record<string, string> }) =>
   (fetchFn: typeof fetch) =>
   (input: RequestInfo | URL, init: RequestInit = {}) => {
-    if (signal && init.signal === undefined) {
-      init.signal = signal;
-    }
     const skipStr = JSON.stringify(cachedEtagsRef.current);
     const headers = (init.headers ||= {});
     if (Array.isArray(headers)) {
@@ -947,18 +942,15 @@ const InnerRouter = ({
       if (!staticPathSetRef.current.has(nextRoute.path) && shouldRefetch) {
         const rscPath = encodeRoutePath(nextRoute.path);
         const rscParams = createRscParams(nextRoute.query);
-        const skipHeaderEnhancer = createSkipHeaderEnhancer(
-          cachedEtagsRef,
-          abortController.signal,
-        );
         try {
           const targetUrl = url || getRouteUrl(nextRoute);
-          const elements = await refetch(rscPath, rscParams, (store) =>
-            withBuildIdMismatchHandler(() => {
+          const elements = await refetch(rscPath, rscParams, {
+            signal: abortController.signal,
+            onBuildIdMismatch: () => {
               window.history.pushState(window.history.state, '', targetUrl);
               window.location.reload();
-            })(withEnhanceFetchFn(skipHeaderEnhancer)(store)),
-          );
+            },
+          });
           const { [ROUTE_ID]: routeData, [IS_STATIC_ID]: isStatic } = elements;
           if (routeData) {
             const [path, query] = routeData as [string, string];
@@ -1008,7 +1000,7 @@ const InnerRouter = ({
         emitRouteChangeEvent('complete', nextRoute);
       });
     },
-    [emitRouteChangeEvent, refetch, staticPathSetRef, cachedEtagsRef],
+    [emitRouteChangeEvent, refetch, staticPathSetRef],
   );
   const applyChangeRouteData = useCallback(
     async (routeData: unknown, isStatic: unknown) => {
@@ -1036,7 +1028,10 @@ const InnerRouter = ({
     },
     [changeRoute],
   );
-  const fetchRscStore = useFetchRscStore();
+  useEffect(
+    () => registerFetchEnhancer(createSkipHeaderEnhancer(cachedEtagsRef)),
+    [cachedEtagsRef],
+  );
   useEffect(() => {
     const listener = (elements: Record<string, unknown>) => {
       const { [ROUTE_ID]: routeData, [IS_STATIC_ID]: isStatic } = elements;
@@ -1044,8 +1039,8 @@ const InnerRouter = ({
         console.log('Error while handling route updates:', err);
       });
     };
-    return registerCallServerElementsListener(fetchRscStore, listener);
-  }, [applyChangeRouteData, fetchRscStore]);
+    return registerCallServerElementsListener(listener);
+  }, [applyChangeRouteData]);
 
   const prefetchRoute: PrefetchRoute = useCallback(
     (route) => {
@@ -1054,13 +1049,12 @@ const InnerRouter = ({
       }
       const rscPath = encodeRoutePath(route.path);
       const rscParams = createRscParams(route.query);
-      const skipHeaderEnhancer = createSkipHeaderEnhancer(cachedEtagsRef);
-      prefetchRsc(rscPath, rscParams, withEnhanceFetchFn(skipHeaderEnhancer));
+      prefetchRsc(rscPath, rscParams);
       globalThis.__WAKU_ROUTER_PREFETCH__?.(route.path, (id) => {
         preloadModule(id, { as: 'script' });
       });
     },
-    [staticPathSetRef, cachedEtagsRef],
+    [staticPathSetRef],
   );
 
   useEffect(() => {
@@ -1111,21 +1105,15 @@ const InnerRouter = ({
 
 export function Router({
   initialRoute = parseRouteFromLocation(),
-  unstable_fetchRscStore,
   unstable_routeInterceptor,
 }: {
   initialRoute?: RouteProps;
-  unstable_fetchRscStore?: Parameters<typeof Root>[0]['unstable_fetchRscStore'];
   unstable_routeInterceptor?: (route: RouteProps) => RouteProps | false;
 }) {
   const initialRscPath = encodeRoutePath(initialRoute.path);
   const initialRscParams = createRscParams(initialRoute.query);
   return (
-    <Root
-      initialRscPath={initialRscPath}
-      initialRscParams={initialRscParams}
-      unstable_fetchRscStore={unstable_fetchRscStore}
-    >
+    <Root initialRscPath={initialRscPath} initialRscParams={initialRscParams}>
       <InnerRouter
         fallbackRoute={initialRoute}
         routeInterceptor={unstable_routeInterceptor}
