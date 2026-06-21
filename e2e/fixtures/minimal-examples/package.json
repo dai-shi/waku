@@ -1,0 +1,26 @@
+{
+  "name": "minimal-examples",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "waku dev",
+    "build": "waku build",
+    "start": "waku start"
+  },
+  "dependencies": {
+    "cookie": "^1.1.1",
+    "hono": "^4.12.14",
+    "jotai": "^2.20.0",
+    "react": "~19.2.6",
+    "react-dom": "~19.2.6",
+    "react-server-dom-webpack": "~19.2.6",
+    "waku": "latest",
+    "waku-jotai": "^0.4.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.16",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^6.0.3"
+  }
+}

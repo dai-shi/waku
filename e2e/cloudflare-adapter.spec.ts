@@ -30,6 +30,7 @@ test.describe('cloudflare adapter', () => {
     await expect(page.getByTestId('root-marker')).toHaveText('ROOT_MARKER');
     await expect(page.getByTestId('layout-marker')).toHaveText('LAYOUT_MARKER');
     await expect(page.getByTestId('page-marker')).toHaveText('PAGE_MARKER');
+    await expect(page.getByTestId('cloudflare-env')).toHaveText('MAX_ITEMS=10');
   });
 
   test('build does not warn about Node.js imports in the ssr (worker) environment', () => {

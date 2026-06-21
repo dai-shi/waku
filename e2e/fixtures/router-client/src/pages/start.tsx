@@ -2,6 +2,7 @@ import { Link } from 'waku';
 import { ResolveClientSuspenseButton } from '../components/client-suspense.js';
 import { NavIndicator } from '../components/nav-indicator.js';
 import { PushMissingButton, RouteState } from '../components/route-state.js';
+import { TransitionLink } from '../components/transition-link.js';
 
 export default function StartPage() {
   return (
@@ -53,6 +54,9 @@ export default function StartPage() {
           Go to a route with a client-only delay
           <NavIndicator name="client" />
         </Link>
+      </p>
+      <p>
+        <TransitionLink />
       </p>
       <p>
         <ResolveClientSuspenseButton />

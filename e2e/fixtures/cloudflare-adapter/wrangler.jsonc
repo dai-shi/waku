@@ -9,6 +9,9 @@
     "directory": "./dist/public",
     "html_handling": "drop-trailing-slash"
   },
+  "vars": {
+    "MAX_ITEMS": 10
+  },
   "rules": [
     {
       "type": "ESModule",

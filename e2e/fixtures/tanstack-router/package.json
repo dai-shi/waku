@@ -1,0 +1,24 @@
+{
+  "name": "tanstack-router",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "waku dev",
+    "build": "waku build",
+    "start": "waku start"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "^1.170.10",
+    "@tanstack/react-router-devtools": "^1.167.0",
+    "react": "~19.2.6",
+    "react-dom": "~19.2.6",
+    "react-server-dom-webpack": "~19.2.6",
+    "waku": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.16",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^6.0.3"
+  }
+}
