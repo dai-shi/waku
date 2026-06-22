@@ -43,3 +43,26 @@ export const PostButton = ({ slug }: { slug: string }) => {
 - `to` is a route pattern (e.g. `/posts/[slug]`, `/docs/[...path]`). `params` is required when the pattern has slugs and is typed from it; a catch-all takes a `string[]`.
 - `search` is an object of string query values (use an array for repeated keys); `undefined` values are omitted. `hash` is optional.
 - The plain string form (`router.push('/posts/hello')`) keeps working.
+
+## Reading Route Params
+
+`useParams()` reads the current route's params, typed from the route pattern you pass. It returns `null` when the current path does not match that pattern, so it is safe to call from a component rendered under more than one route.
+
+```tsx
+'use client';
+
+import { useParams_UNSTABLE as useParams } from 'waku/router/client';
+
+export const PostTitle = () => {
+  const params = useParams({ from: '/posts/[slug]' });
+  if (!params) {
+    return null;
+  }
+  return <h1>{params.slug}</h1>;
+};
+```
+
+- The result is typed from the pattern: `/posts/[slug]` gives `{ slug: string }`, and a catch-all like `/docs/[...path]` gives `{ path: string[] }`.
+- Values are URL-decoded, mirroring how `router.push` encodes them.
+- It re-renders when the current route path changes.
+- Page components already receive their params through props; `useParams()` is for client and shared components that do not.

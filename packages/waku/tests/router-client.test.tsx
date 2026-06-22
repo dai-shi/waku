@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { StrictMode, act, use } from 'react';
+import { StrictMode, act, use, useState } from 'react';
 import type { ReactElement } from 'react';
 import { preloadModule } from 'react-dom';
 import { createRoot } from 'react-dom/client';
@@ -38,6 +38,7 @@ import {
   unstable_getSliceSlotId,
   unstable_parseRoute,
   useNavigationStatus_UNSTABLE as useNavigationStatus,
+  useParams_UNSTABLE as useParams,
   useRouter,
 } from '../src/router/client.js';
 import type { Unstable_InferredPaths } from '../src/router/client.js';
@@ -517,6 +518,120 @@ describe('useRouter + Link with context', () => {
         | undefined
     )?.url;
     expect(pushedUrl?.href).toContain('/posts/a%20b%2Fc?tab=comments#top');
+
+    view.unmount();
+  });
+
+  test('useParams returns decoded params for the matching route', async () => {
+    const capture = { params: undefined as unknown };
+    const Probe = () => {
+      capture.params = useParams({ from: '/posts/[slug]' });
+      return null;
+    };
+
+    const view = await renderApp(
+      <RouterContext
+        value={{
+          route: { path: '/posts/a%20b', query: '', hash: '' },
+          changeRoute: vi.fn(async () => {}),
+          prefetchRoute: vi.fn(),
+          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
+          fetchingSlices: new Set(),
+        }}
+      >
+        <Probe />
+      </RouterContext>,
+    );
+
+    expect(capture.params).toEqual({ slug: 'a b' });
+    view.unmount();
+  });
+
+  test('useParams returns null when the pattern does not match', async () => {
+    const capture = { params: undefined as unknown };
+    const Probe = () => {
+      capture.params = useParams({ from: '/posts/[slug]' });
+      return null;
+    };
+
+    const view = await renderApp(
+      <RouterContext
+        value={{
+          route: { path: '/about', query: '', hash: '' },
+          changeRoute: vi.fn(async () => {}),
+          prefetchRoute: vi.fn(),
+          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
+          fetchingSlices: new Set(),
+        }}
+      >
+        <Probe />
+      </RouterContext>,
+    );
+
+    expect(capture.params).toBeNull();
+    view.unmount();
+  });
+
+  test('useParams params are typed from the pattern', () => {
+    // Type-level assertions; the component is never rendered.
+    const TypeProbe = () => {
+      const slugParams = useParams({ from: '/posts/[slug]' });
+      if (slugParams) {
+        const slug: string = slugParams.slug;
+        void slug;
+        // @ts-expect-error unknown param name
+        void slugParams.id;
+      }
+      const catchAllParams = useParams({ from: '/docs/[...path]' });
+      if (catchAllParams) {
+        const path: string[] = catchAllParams.path;
+        void path;
+      }
+      return null;
+    };
+    expect(typeof TypeProbe).toBe('function');
+  });
+
+  test('useParams re-renders when the route path changes', async () => {
+    const capture = { params: undefined as unknown };
+    let setRoute:
+      | ((route: { path: string; query: string; hash: string }) => void)
+      | undefined;
+
+    const Probe = () => {
+      capture.params = useParams({ from: '/posts/[slug]' });
+      return null;
+    };
+
+    const Harness = () => {
+      const [route, setRouteState] = useState({
+        path: '/posts/a',
+        query: '',
+        hash: '',
+      });
+      setRoute = setRouteState;
+      return (
+        <RouterContext
+          value={{
+            route,
+            changeRoute: vi.fn(async () => {}),
+            prefetchRoute: vi.fn(),
+            routeChangeEvents: { on: vi.fn(), off: vi.fn() },
+            fetchingSlices: new Set(),
+          }}
+        >
+          <Probe />
+        </RouterContext>
+      );
+    };
+
+    const view = await renderApp(<Harness />);
+    expect(capture.params).toEqual({ slug: 'a' });
+
+    await act(async () => {
+      setRoute!({ path: '/posts/b', query: '', hash: '' });
+    });
+    expect(capture.params).toEqual({ slug: 'b' });
 
     view.unmount();
   });

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { buildRouteHref } from '../src/router/common-utils/build-route-href.js';
+import { buildRouteHref } from '../src/router/client-utils/build-route-href.js';
 
 describe('buildRouteHref', () => {
   test('static routes', () => {

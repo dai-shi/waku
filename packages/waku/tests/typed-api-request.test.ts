@@ -13,7 +13,7 @@ import type { ApiContext } from '../src/router/create-pages-utils/inferred-path-
  * @see https://github.com/wakujs/waku/issues/1906
  */
 
-describe('ApiParams type tests', () => {
+describe('ApiContext params type tests', () => {
   it('extracts single slug parameter', () => {
     type Params = ApiContext<'/users/[id]'>['params'];
     expectType<TypeEqual<Params, { id: string }>>(true);

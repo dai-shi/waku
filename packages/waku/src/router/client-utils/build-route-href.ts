@@ -2,18 +2,18 @@ import { getGrouplessPath } from '../../lib/utils/create-pages.js';
 import { getPathMapping, parsePathWithSlug } from '../../lib/utils/path.js';
 import type { CreatePagesConfig } from '../base-types.js';
 import type {
-  ApiParams,
   PagePath,
+  RouteParams,
 } from '../create-pages-utils/inferred-path-types.js';
 
 export type RoutePattern = [PagePath<CreatePagesConfig>] extends [never]
   ? string
   : PagePath<CreatePagesConfig>;
 
-type RouteParams<Pattern extends RoutePattern> = {
-  [Key in keyof ApiParams<Pattern>]: ApiParams<Pattern>[Key] extends string[]
+type RouteParamsInput<Pattern extends RoutePattern> = {
+  [Key in keyof RouteParams<Pattern>]: RouteParams<Pattern>[Key] extends string[]
     ? readonly string[]
-    : ApiParams<Pattern>[Key];
+    : RouteParams<Pattern>[Key];
 };
 
 type SearchValue = string | readonly string[] | undefined;
@@ -24,9 +24,9 @@ export type BuildRouteHrefTarget<Pattern extends RoutePattern> = {
   to: Pattern;
   search?: BuildRouteHrefSearch;
   hash?: string;
-} & (keyof RouteParams<Pattern> extends never
+} & (keyof RouteParamsInput<Pattern> extends never
   ? { params?: never }
-  : { params: RouteParams<Pattern> });
+  : { params: RouteParamsInput<Pattern> });
 
 const serializeSearch = (search: BuildRouteHrefSearch | undefined): string => {
   if (search === undefined) {
