@@ -1,0 +1,45 @@
+---
+slug: typed-routes
+title: Typed Routes
+description: Type-safe navigation to dynamic routes with router.push and router.replace.
+category: Routing and Navigation
+order: 11
+tags: [Experimental]
+---
+
+## Overview
+
+Waku's router provides type-safe routing helpers layered on top of the string-based APIs. The string APIs keep working; the typed helpers are additive.
+
+## Typed Navigation
+
+`router.push()` and `router.replace()` accept a structured target, so you can navigate to a dynamic route without interpolating slugs by hand. The `params` are type-checked against the route pattern:
+
+```tsx
+'use client';
+
+import { useRouter } from 'waku';
+
+export const PostButton = ({ slug }: { slug: string }) => {
+  const router = useRouter();
+
+  return (
+    <button
+      onClick={() =>
+        router.push({
+          to: '/posts/[slug]',
+          params: { slug },
+          search: { tab: 'comments' },
+          hash: 'top',
+        })
+      }
+    >
+      Open post
+    </button>
+  );
+};
+```
+
+- `to` is a route pattern (e.g. `/posts/[slug]`, `/docs/[...path]`). `params` is required when the pattern has slugs and is typed from it; a catch-all takes a `string[]`.
+- `search` is an object of string query values (use an array for repeated keys); `undefined` values are omitted. `hash` is optional.
+- The plain string form (`router.push('/posts/hello')`) keeps working.

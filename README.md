@@ -804,11 +804,11 @@ export const Component = () => {
 
 The `router` object also contains several methods for programmatic navigation:
 
-- `router.push(to: string)` - navigate to the provided route
+- `router.push(to)` - navigate to the provided route. `to` is a route string, or a structured `{ to, params, search, hash }` target for typed navigation to dynamic routes (see [Typed Routes](https://github.com/wakujs/waku/blob/main/docs/guides/typed-routes.mdx))
 
 - `router.prefetch(to: string)` - prefetch the provided route
 
-- `router.replace(to: string)` - replace the current history entry
+- `router.replace(to)` - replace the current history entry (same argument as `push`)
 
 - `router.reload()` - reload the current route
 

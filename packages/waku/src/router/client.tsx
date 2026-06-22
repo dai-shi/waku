@@ -35,6 +35,11 @@ import {
   useRefetch,
 } from '../minimal/client.js';
 import type { RouteConfig } from './base-types.js';
+import { buildRouteHref } from './common-utils/build-route-href.js';
+import type {
+  BuildRouteHrefTarget,
+  RoutePattern,
+} from './common-utils/build-route-href.js';
 import {
   ETAG_ID_PREFIX,
   HAS404_ID,
@@ -65,6 +70,24 @@ type InferredPaths = RouteConfig extends {
 }
   ? AllowPathDecorators<UserPaths>
   : string;
+
+type NavigateOptions = {
+  /**
+   * indicates if the link should scroll or not on navigation
+   * - `true`: always scroll
+   * - `false`: never scroll
+   * - `undefined`: scroll on path/hash change (not on query-only change)
+   */
+  scroll?: boolean;
+};
+
+type Navigate = {
+  (to: InferredPaths, options?: NavigateOptions): Promise<void>;
+  <Pattern extends RoutePattern>(
+    target: BuildRouteHrefTarget<Pattern>,
+    options?: NavigateOptions,
+  ): Promise<void>;
+};
 
 const pathnameToCurrentRoutePath = (pathname: string) =>
   pathnameToRoutePath(
@@ -228,19 +251,14 @@ export function useRouter() {
   const { route, changeRoute, prefetchRoute } = router;
   const push = useCallback(
     async (
-      to: InferredPaths,
-      options?: {
-        /**
-         * indicates if the link should scroll or not on navigation
-         * - `true`: always scroll
-         * - `false`: never scroll
-         * - `undefined`: scroll on path/hash change (not on query-only change)
-         */
-        scroll?: boolean;
-      },
+      to: InferredPaths | BuildRouteHrefTarget<RoutePattern>,
+      options?: NavigateOptions,
     ) => {
-      to = addBase(to, import.meta.env.WAKU_CONFIG_BASE_PATH);
-      const url = new URL(to, window.location.href);
+      const href = typeof to === 'string' ? to : buildRouteHref(to);
+      const url = new URL(
+        addBase(href, import.meta.env.WAKU_CONFIG_BASE_PATH),
+        window.location.href,
+      );
       await changeRoute(parseRoute(url), {
         shouldScroll: options?.scroll ?? shouldScrollByDefault(url),
         mode: 'push',
@@ -248,22 +266,17 @@ export function useRouter() {
       });
     },
     [changeRoute],
-  );
+  ) as Navigate;
   const replace = useCallback(
     async (
-      to: InferredPaths,
-      options?: {
-        /**
-         * indicates if the link should scroll or not on navigation
-         * - `true`: always scroll
-         * - `false`: never scroll
-         * - `undefined`: scroll on path/hash change (not on query-only change)
-         */
-        scroll?: boolean;
-      },
+      to: InferredPaths | BuildRouteHrefTarget<RoutePattern>,
+      options?: NavigateOptions,
     ) => {
-      to = addBase(to, import.meta.env.WAKU_CONFIG_BASE_PATH);
-      const url = new URL(to, window.location.href);
+      const href = typeof to === 'string' ? to : buildRouteHref(to);
+      const url = new URL(
+        addBase(href, import.meta.env.WAKU_CONFIG_BASE_PATH),
+        window.location.href,
+      );
       await changeRoute(parseRoute(url), {
         shouldScroll: options?.scroll ?? shouldScrollByDefault(url),
         mode: 'replace',
@@ -271,7 +284,7 @@ export function useRouter() {
       });
     },
     [changeRoute],
-  );
+  ) as Navigate;
   const reload = useCallback(async () => {
     const url = new URL(window.location.href);
     await changeRoute(parseRoute(url), { shouldScroll: true, refetch: true });
@@ -450,7 +463,11 @@ export function Link({
     if (props.target && props.target.toLowerCase() !== '_self') {
       console.warn('[Link] `target` is discouraged. Use `<a>` for this case.');
     }
-    if (props.download != null && props.download !== false) {
+    if (
+      props.download !== undefined &&
+      props.download !== null &&
+      props.download !== false
+    ) {
       console.warn(
         '[Link] `download` is discouraged. Use `<a>` for this case.',
       );

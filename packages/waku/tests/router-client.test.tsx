@@ -261,13 +261,21 @@ afterEach(() => {
 });
 
 describe('router navigation method path typing', () => {
-  test('prefetch accepts the same path type as push and replace', () => {
+  test('prefetch is string-only; push/replace also accept structured targets', () => {
     type PrefetchArg = Parameters<RouterApi['prefetch']>[0];
-    type PushArg = Parameters<RouterApi['push']>[0];
-    type ReplaceArg = Parameters<RouterApi['replace']>[0];
     expectType<TypeEqual<PrefetchArg, Unstable_InferredPaths>>(true);
-    expectType<TypeEqual<PrefetchArg, PushArg>>(true);
-    expectType<TypeEqual<PrefetchArg, ReplaceArg>>(true);
+
+    // Type-level assertions; the closure is never invoked.
+    const assertTypes = (router: RouterApi) => {
+      void router.prefetch('/x');
+      void router.push('/x');
+      void router.replace('/x');
+      void router.push({ to: '/posts/[slug]', params: { slug: 'a' } });
+      void router.replace({ to: '/posts/[slug]', params: { slug: 'a' } });
+      // @ts-expect-error prefetch does not accept a structured target
+      void router.prefetch({ to: '/posts/[slug]', params: { slug: 'a' } });
+    };
+    expect(typeof assertTypes).toBe('function');
   });
 });
 
@@ -439,6 +447,76 @@ describe('useRouter + Link with context', () => {
       hash: '#h',
     });
     expect(capture.router.unstable_events).toBe(routeChangeEvents);
+
+    view.unmount();
+  });
+
+  test('push/replace execute a structured target through changeRoute', async () => {
+    const capture = { router: null as RouterApi | null };
+    const setRouter = (router: RouterApi) => {
+      capture.router = router;
+    };
+    const changeRoute = vi.fn(async () => {});
+
+    const Probe = () => {
+      setRouter(useRouter() as unknown as RouterApi);
+      return null;
+    };
+
+    const view = await renderApp(
+      <RouterContext
+        value={{
+          route: { path: '/start', query: '', hash: '' },
+          changeRoute,
+          prefetchRoute: vi.fn(),
+          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
+          fetchingSlices: new Set(),
+        }}
+      >
+        <Probe />
+      </RouterContext>,
+    );
+
+    if (!capture.router) {
+      throw new Error('router was not initialized');
+    }
+
+    await act(async () => {
+      await capture.router!.push({
+        to: '/posts/[slug]',
+        params: { slug: 'a b/c' },
+        search: { tab: 'comments' },
+        hash: 'top',
+      });
+      await capture.router!.replace({
+        to: '/posts/[slug]',
+        params: { slug: 'a b/c' },
+        search: { tab: 'comments' },
+        hash: 'top',
+      });
+    });
+
+    const expectedRoute = {
+      path: '/posts/a%20b%2Fc',
+      query: 'tab=comments',
+      hash: '#top',
+    };
+    expect(changeRoute).toHaveBeenNthCalledWith(
+      1,
+      expectedRoute,
+      expect.objectContaining({ mode: 'push', url: expect.any(URL) }),
+    );
+    expect(changeRoute).toHaveBeenNthCalledWith(
+      2,
+      expectedRoute,
+      expect.objectContaining({ mode: 'replace', url: expect.any(URL) }),
+    );
+    const pushedUrl = (
+      (changeRoute.mock.calls[0] as unknown[] | undefined)?.[1] as
+        | { url?: URL }
+        | undefined
+    )?.url;
+    expect(pushedUrl?.href).toContain('/posts/a%20b%2Fc?tab=comments#top');
 
     view.unmount();
   });
@@ -1158,6 +1236,47 @@ describe('Router integration', () => {
     expect(capture.router.path).toBe('/next');
     expect(capture.router.query).toBe('x=1');
     expect(capture.router.hash).toBe('#h');
+
+    view.unmount();
+  });
+
+  test('push accepts a structured target and builds the href', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+
+    const elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [unstable_getRouteSlotId('/posts/hello')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+
+    const view = await renderRouter(
+      {
+        initialRoute: { path: '/start', query: '', hash: '' },
+      },
+      elements,
+    );
+
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+    const refetch = getRefetchMock();
+
+    await act(async () => {
+      await capture.router!.push({
+        to: '/posts/[slug]',
+        params: { slug: 'hello' },
+        search: { tab: 'comments' },
+      });
+    });
+
+    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(refetch.mock.calls[0]?.[0]).toBe(
+      unstable_encodeRoutePath('/posts/hello'),
+    );
+    expect(capture.router.path).toBe('/posts/hello');
+    expect(capture.router.query).toBe('tab=comments');
 
     view.unmount();
   });
@@ -2182,7 +2301,7 @@ describe('Router integration', () => {
       };
       const skipStr = fetchSpy.mock.calls
         .map((call) => readHeader(call[1], SKIP_HEADER))
-        .find((value) => value != null);
+        .find((value) => value !== null && value !== undefined);
       expect(skipStr).toBeTypeOf('string');
       const skipped = JSON.parse(skipStr!) as Record<string, string>;
       expect(skipped.foo).toBe('etag-foo');
