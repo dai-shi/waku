@@ -11,26 +11,28 @@ pnpm install
 
 ## Building
 
-Before you start, make sure to build Waku so that the examples can be run.
+Before you start, make sure to build Waku so that the templates can be run.
 
 ```shell
 pnpm run compile
 ```
 
-## Start with example
+## Start with a template
+
+The `create-waku` starter templates live in the `templates` directory.
 
 ```shell
-pnpm -F 01_template dev # to run examples/01_template in dev mode
+pnpm -F 01_basic dev # to run the default template in dev mode
 ```
 
 `build` and `start` can be run with the same pattern:
 
 ```shell
-pnpm -F 01_template build
-pnpm -F 01_template start
+pnpm -F 01_basic build
+pnpm -F 01_basic start
 ```
 
-More examples can be found in the `examples` directory.
+More examples can be found in the [waku-examples](https://github.com/wakujs/waku-examples) repository.
 
 ## Testing
 

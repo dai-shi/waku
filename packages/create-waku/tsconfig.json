@@ -9,7 +9,7 @@
     "moduleResolution": "bundler"
   },
   "include": ["./src"],
-  "exclude": ["./template"],
+  "exclude": ["./templates"],
   "references": [
     {
       "path": "../waku"

@@ -5,9 +5,9 @@ import fse from 'fs-extra/esm';
 
 export async function getTemplateNames(templateRoot: string) {
   // maybe include `.DS_Store` on macOS
-  const names = (await fsPromises.readdir(templateRoot)).filter(
-    (dir) => !dir.startsWith('.'),
-  );
+  const names = (await fsPromises.readdir(templateRoot))
+    .filter((dir) => !dir.startsWith('.'))
+    .sort();
   return names;
 }
 

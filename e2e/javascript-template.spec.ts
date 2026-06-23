@@ -1,9 +1,14 @@
+import { fileURLToPath } from 'node:url';
 import { expect } from '@playwright/test';
 import { prepareNormalSetup, test, waitForHydration } from './utils.js';
 
-const startApp = prepareNormalSetup('javascript-template');
+const startApp = prepareNormalSetup('javascript-template', {
+  fixtureDir: fileURLToPath(
+    new URL('../templates/02_basic-js', import.meta.url),
+  ),
+});
 
-test.describe('javascript template coverage', () => {
+test.describe('javascript template', () => {
   let port: number;
   let stopApp: () => Promise<void>;
 
@@ -15,25 +20,50 @@ test.describe('javascript template coverage', () => {
     await stopApp();
   });
 
-  test('builds JavaScript pages, hydrates client code, and loads routes', async ({
+  test('renders the home page, hydrates the counter, and navigates', async ({
     page,
   }) => {
     await page.goto(`http://localhost:${port}/`);
     await waitForHydration(page);
-    await expect(page.getByTestId('title')).toHaveText('Waku JavaScript');
+    await expect(page).toHaveTitle('Waku');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Waku', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText('Hello world!')).toBeVisible();
+
+    await expect(page.getByText('Count: 0')).toBeVisible();
     await page.getByRole('button', { name: 'Increment' }).click();
-    await expect(page.getByTestId('count')).toHaveText('Count: 1');
+    await expect(page.getByText('Count: 1')).toBeVisible();
+
     await page.getByRole('link', { name: 'About page' }).click();
-    await expect(page.getByTestId('title')).toHaveText('About JavaScript');
+    await expect(page).toHaveURL(`http://localhost:${port}/about`);
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'About Waku' }),
+    ).toBeVisible();
   });
 
-  test('loads managed middleware modules from JavaScript', async ({
+  test('redirects trailing slashes via managed middleware in dev', async ({
+    mode,
     request,
   }) => {
+    test.skip(mode !== 'DEV', 'DEV only middleware redirect assertion');
+
     const response = await request.get(`http://localhost:${port}/about/`, {
       maxRedirects: 0,
     });
     expect(response.status()).toBe(301);
     expect(response.headers().location).toMatch(/\/about$/);
+  });
+
+  test('serves the static trailing-slash page in production', async ({
+    mode,
+    request,
+  }) => {
+    test.skip(mode !== 'PRD', 'PRD only static output assertion');
+
+    const response = await request.get(`http://localhost:${port}/about/`, {
+      maxRedirects: 0,
+    });
+    expect(response.status()).toBe(200);
   });
 });

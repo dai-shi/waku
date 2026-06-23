@@ -1,6 +1,6 @@
 {
   "name": "create-waku",
-  "version": "0.12.6-1.0.0-beta.3-0",
+  "version": "0.13.0-1.0.0-beta.3-0",
   "author": "Daishi Kato",
   "type": "module",
   "contributors": [
@@ -16,13 +16,12 @@
   },
   "files": [
     "dist",
-    "template"
+    "templates"
   ],
   "scripts": {
     "start": "node ./dist/index.js",
     "dev": "pnpm build --watch",
-    "compile": "rm -rf template dist *.tsbuildinfo && pnpm run template && pnpm run build",
-    "template": "cp -r ../../examples template && rm -rf template/*/dist && rm -rf template/*/node_modules && rm -rf template/*.tsbuildinfo && (for d in template/*; do mv $d/.gitignore $d/gitignore || true; done)",
+    "compile": "rm -rf dist *.tsbuildinfo templates && cp -r ../../templates templates && rm -rf templates/*/node_modules templates/*/dist templates/*/.cache templates/*/*.tsbuildinfo templates/*/src/pages.gen.ts && (for d in templates/*; do mv $d/.gitignore $d/gitignore || true; done) && pnpm run build",
     "build": "tsup",
     "test": "npm_config_user_agent=pnpm vitest run"
   },

@@ -93,8 +93,8 @@ type TemplateCaseArgs = { name: string; index: number; dependencies: string[] };
 
 const templateChooseCases = (() => {
   // grab the current list of templates
-  const templatesRootPath = path.join(import.meta.dirname, '../../template');
-  const templates = fs.readdirSync(templatesRootPath);
+  const templatesRootPath = path.join(import.meta.dirname, '../../templates');
+  const templates = fs.readdirSync(templatesRootPath).sort();
 
   const seenDependecies: Set<string>[] = [];
 
@@ -179,10 +179,21 @@ describe('create-waku CLI with args', () => {
 
   test('accepts template option from command line', () => {
     const { stdout } = run(
-      ['--project-name', projectName, '--template', '01_template'],
+      ['--project-name', projectName, '--template', '01_basic'],
       { cwd: import.meta.dirname },
     );
     expect(stdout).toContain('Setting up project...');
+  }, 10000);
+
+  test('rejects an unknown template with a helpful message', () => {
+    const { stdout, stderr, exitCode } = run(
+      ['--project-name', projectName, '--template', 'does-not-exist'],
+      { cwd: import.meta.dirname, reject: false },
+    );
+    const output = stdout + stderr;
+    expect(output).toContain('Unknown template "does-not-exist"');
+    expect(output).toContain('--example');
+    expect(exitCode).not.toBe(0);
   }, 10000);
 
   test(
@@ -194,7 +205,7 @@ describe('create-waku CLI with args', () => {
           '--project-name',
           projectName,
           '--example',
-          'https://github.com/wakujs/waku/tree/main/examples/01_template',
+          'https://github.com/wakujs/waku-examples/tree/main/fs-router/basic',
         ],
         { cwd: import.meta.dirname, timeout: 30000, reject: false },
       );
@@ -204,7 +215,7 @@ describe('create-waku CLI with args', () => {
 
   test('shows installation instructions after setup', () => {
     const { stdout } = run(
-      ['--project-name', projectName, '--template', '01_template'],
+      ['--project-name', projectName, '--template', '01_basic'],
       { cwd: import.meta.dirname, timeout: 30000, reject: false },
     );
 
@@ -220,7 +231,7 @@ describe('create-waku CLI with args', () => {
 
   test('starts installation process after template selection', () => {
     const { stdout } = run(
-      ['--project-name', projectName, '--template', '01_template'],
+      ['--project-name', projectName, '--template', '01_basic'],
       { cwd: import.meta.dirname, timeout: 30000, reject: false },
     );
     expect(stdout).toContain('Setting up project...');
@@ -233,7 +244,7 @@ describe('create-waku CLI with args', () => {
         '--project-name',
         projectName,
         '--template',
-        '01_template',
+        '01_basic',
         '--skip-install',
       ],
       { cwd: import.meta.dirname, reject: false },

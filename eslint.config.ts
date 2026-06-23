@@ -14,8 +14,7 @@ export default defineConfig(
       '**/.cache/',
       '**/.vercel/',
       '**/pages.gen.ts',
-      'packages/create-waku/template/',
-      'examples/07_cloudflare/.wrangler/',
+      'packages/create-waku/templates/',
     ],
   },
   eslint.configs.recommended,
@@ -120,7 +119,6 @@ export default defineConfig(
       'packages/waku/src/lib/vite-entries/*',
       'packages/waku/src/lib/vite-rsc/**/*',
       'packages/create-waku/cli.js',
-      'examples/41_path-alias/**/*.tsx',
     ],
     rules: {
       'import/no-unresolved': 'off',

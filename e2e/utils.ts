@@ -161,13 +161,16 @@ export const test = basicTest.extend<
   },
 });
 
-export const prepareNormalSetup = (fixtureName: string) => {
+export const prepareNormalSetup = (
+  fixtureName: string,
+  { fixtureDir: fixtureDirOverride }: { fixtureDir?: string } = {},
+) => {
   const waku = fileURLToPath(
     new URL('../packages/waku/dist/cli.js', import.meta.url),
   );
-  const fixtureDir = fileURLToPath(
-    new URL('./fixtures/' + fixtureName, import.meta.url),
-  );
+  const fixtureDir =
+    fixtureDirOverride ??
+    fileURLToPath(new URL('./fixtures/' + fixtureName, import.meta.url));
   let built = false;
   let buildResult: { stdout: string; stderr: string } | undefined;
   const startApp = async (

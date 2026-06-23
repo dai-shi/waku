@@ -51,7 +51,7 @@ const commands = {
 
 const templateRoot = path.join(
   fileURLToPath(import.meta.url),
-  '../../template',
+  '../../templates',
 );
 
 // FIXME is there a better way with prompts?
@@ -104,6 +104,19 @@ async function doPrompts() {
     !existsSync(dir) || readdirSync(dir).length === 0;
 
   const templateNames = await getTemplateNames(templateRoot);
+
+  if (
+    !values.example &&
+    values.template &&
+    !templateNames.includes(values.template)
+  ) {
+    p.cancel(
+      `${pc.red('✖')} Unknown template "${values.template}". ` +
+        `Available templates: ${templateNames.join(', ')}. ` +
+        `Use --example <github-url> to scaffold from an example repository.`,
+    );
+    process.exit(1);
+  }
 
   const defaultProjectName = 'waku-project';
   let targetDir = values['project-name'] || defaultProjectName;

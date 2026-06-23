@@ -17,7 +17,7 @@ visit [waku.gg](https://waku.gg) or `npm create waku@latest`
 
 ## Getting started
 
-Start a new Waku project with the `create` command for your preferred package manager. It will scaffold a new project with our default [Waku starter](https://github.com/wakujs/waku/tree/main/examples/01_template).
+Start a new Waku project with the `create` command for your preferred package manager. It will scaffold a new project with our default [Waku starter](https://github.com/wakujs/waku-examples/tree/main/fs-router/basic).
 
 ```sh
 npm create waku@latest

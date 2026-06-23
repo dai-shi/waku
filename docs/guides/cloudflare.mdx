@@ -10,7 +10,7 @@ order: 10
 
 Waku comes "out of the box" with a custom adapter for [Cloudflare Workers](https://developers.cloudflare.com/workers/).
 
-Create your project with `npm create waku@latest -- --template 07_cloudflare` to use the starter template for Cloudflare Workers.
+Create your project with `npm create waku@latest -- --example https://github.com/wakujs/waku-examples/tree/main/fs-router/cloudflare` to use the starter example for Cloudflare Workers.
 
 Then use these commands:
 
@@ -123,7 +123,7 @@ Note that the latest `nodejs_compat` mocks the Node `fs` module. Cloudflare does
 
 ## Setting Up TypeScript
 
-You can run `npx wrangler types` to generate a `worker-configuration.d.ts` file based on the settings in your `wrangler.jsonc`. This defines a global `Env` interface with your bindings. In the [Cloudflare example in the Waku GitHub repository](https://github.com/wakujs/waku/tree/main/examples/07_cloudflare), a package.json script is included to run this command and update the types: `pnpm run cf-typegen`. To ensure that your types are always up-to-date, make sure to run it after any changes to your `wrangler.jsonc` config file.
+You can run `npx wrangler types` to generate a `worker-configuration.d.ts` file based on the settings in your `wrangler.jsonc`. This defines a global `Env` interface with your bindings. In the [Cloudflare example in the Waku examples repository](https://github.com/wakujs/waku-examples/tree/main/fs-router/cloudflare), a package.json script is included to run this command and update the types: `pnpm run cf-typegen`. To ensure that your types are always up-to-date, make sure to run it after any changes to your `wrangler.jsonc` config file.
 
 ## Accessing Cloudflare Bindings, Execution Context, and Request/Response Objects
 

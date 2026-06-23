@@ -1,9 +1,12 @@
+import { fileURLToPath } from 'node:url';
 import { expect } from '@playwright/test';
 import { prepareNormalSetup, test, waitForHydration } from './utils.js';
 
-const startApp = prepareNormalSetup('typescript-template');
+const startApp = prepareNormalSetup('typescript-template', {
+  fixtureDir: fileURLToPath(new URL('../templates/01_basic', import.meta.url)),
+});
 
-test.describe('typescript template coverage', () => {
+test.describe('typescript template', () => {
   let port: number;
   let stopApp: () => Promise<void>;
 
@@ -15,23 +18,29 @@ test.describe('typescript template coverage', () => {
     await stopApp();
   });
 
-  test('builds the default TypeScript template stack and hydrates client code', async ({
+  test('renders the home page, hydrates the counter, and navigates', async ({
     page,
   }) => {
     await page.goto(`http://localhost:${port}/`);
     await waitForHydration(page);
     await expect(page).toHaveTitle('Waku');
-    await expect(page.getByTestId('title')).toHaveText('Waku TypeScript');
-    await expect(page.getByTestId('count')).toHaveText('Count: 0');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Waku', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText('Hello world!')).toBeVisible();
+
+    await expect(page.getByText('Count: 0')).toBeVisible();
     await page.getByRole('button', { name: 'Increment' }).click();
-    await expect(page.getByTestId('count')).toHaveText('Count: 1');
+    await expect(page.getByText('Count: 1')).toBeVisible();
 
     await page.getByRole('link', { name: 'About page' }).click();
     await expect(page).toHaveURL(`http://localhost:${port}/about`);
-    await expect(page.getByTestId('title')).toHaveText('About TypeScript');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'About Waku' }),
+    ).toBeVisible();
   });
 
-  test('loads managed middleware modules from TypeScript in dev', async ({
+  test('redirects trailing slashes via managed middleware in dev', async ({
     mode,
     request,
   }) => {

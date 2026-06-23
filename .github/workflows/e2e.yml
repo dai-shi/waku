@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'packages/**'
-      - 'examples/**'
+      - 'templates/**'
       - 'e2e/**'
       - '.github/workflows/e2e.yml'
       - 'pnpm-lock.yaml'
@@ -13,7 +13,7 @@ on:
     types: [opened, synchronize]
     paths:
       - 'packages/**'
-      - 'examples/**'
+      - 'templates/**'
       - 'e2e/**'
       - '.github/workflows/e2e.yml'
       - 'pnpm-lock.yaml'

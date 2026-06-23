@@ -7,7 +7,7 @@
   "include": [
     "eslint.config.ts",
     "packages/",
-    "examples/",
+    "templates/",
     "e2e/",
     "playwright.config.ts"
   ],
