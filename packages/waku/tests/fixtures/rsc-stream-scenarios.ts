@@ -191,12 +191,38 @@ async function runBridgeChunkScenario() {
   };
 }
 
+async function runPlainPendingDataScenario() {
+  const root = {
+    props: {
+      children: [
+        {
+          id: '1',
+          hostname: 'a.example.com',
+          status: 'pending',
+          sslStatus: 'pending_validation',
+        },
+        { id: '2', hostname: 'b.example.com', status: 'blocked' },
+      ],
+    },
+  };
+
+  let settled = false;
+  await waitForRootPrerequisites(root).then(() => {
+    settled = true;
+  });
+
+  return { settled };
+}
+
 switch (scenarioName) {
   case 'bridge-chunk':
     console.log(JSON.stringify(await runBridgeChunkScenario()));
     break;
   case 'settled-root':
     console.log(JSON.stringify(await runSettledRootScenario()));
+    break;
+  case 'plain-pending-data':
+    console.log(JSON.stringify(await runPlainPendingDataScenario()));
     break;
   default:
     throw new Error(`Unknown scenario: ${scenarioName}`);

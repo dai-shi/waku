@@ -94,4 +94,11 @@ describe('waitForRootPrerequisites', () => {
     expect(result.bridgePendingCountBeforeResolve).toBeGreaterThan(0);
     expect(result.bridgeWaitSettledBeforeResolve).toBe(false);
   });
+
+  test('settles on plain data whose status field is "pending"/"blocked"', async () => {
+    const result = await runNodeScenario<{ settled: boolean }>(
+      'plain-pending-data',
+    );
+    expect(result.settled).toBe(true);
+  });
 });

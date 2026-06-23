@@ -118,8 +118,9 @@ const collectFlightChunks = (root: unknown): FlightChunk[] => {
 
 export async function waitForRootPrerequisites(root: unknown): Promise<void> {
   while (true) {
-    const unresolvedChunks = collectFlightChunks(root).filter((chunk) =>
-      isPendingStatus(chunk.status),
+    const unresolvedChunks = collectFlightChunks(root).filter(
+      (chunk) =>
+        isPendingStatus(chunk.status) && typeof chunk.then === 'function',
     );
     if (unresolvedChunks.length === 0) {
       return;
