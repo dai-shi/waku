@@ -9,8 +9,8 @@
     "start": "waku start"
   },
   "dependencies": {
-    "@ai-sdk/rsc": "^2.0.204",
-    "ai": "^6.0.204",
+    "@ai-sdk/rsc": "^2.0.208",
+    "ai": "^6.0.208",
     "react": "~19.2.6",
     "react-dom": "~19.2.6",
     "react-server-dom-webpack": "~19.2.6",

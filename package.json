@@ -43,7 +43,7 @@
     "@eslint/js": "9.39.4",
     "@playwright/test": "^1.59.1",
     "@types/babel__core": "^7.20.5",
-    "@types/node": "^25.9.3",
+    "@types/node": "^26.0.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "eslint": "9.39.4",
@@ -52,11 +52,11 @@
     "eslint-plugin-playwright": "^2.10.4",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "7.1.1",
-    "eslint-plugin-unicorn": "^65.0.1",
+    "eslint-plugin-unicorn": "^68.0.0",
     "prettier": "^3.8.4",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.61.0",
+    "typescript-eslint": "^8.61.1",
     "waku": "workspace:*"
   },
   "packageManager": "pnpm@11.3.0+sha512.2c403d6594527287672b1f7056343a1f7c3634036a67ffabfcc2b3d7595d843768f8787148d1b57cf7956c90606bbd192857c363af19e96d2d0ec9ec5741d215"

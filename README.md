@@ -29,7 +29,7 @@ npm create waku@latest
 - `waku build` to generate a production build
 - `waku start` to serve the production build locally
 
-**Node.js version requirement:** `^26.0.0` or `^24.0.0` or `^22.13.0`
+**Node.js version requirement:** `^26.0.0` or `^24.0.0` or `^22.15.0`
 
 ## Rendering
 
