@@ -89,45 +89,6 @@ export function batchReadableStream(
   );
 }
 
-export function deferReadableStream<T>(
-  stream: ReadableStream<T>,
-  promise: Promise<void>,
-): ReadableStream<T> {
-  const reader = stream.getReader();
-  let canceled = false;
-  return new ReadableStream<T>({
-    async pull(controller) {
-      try {
-        const { done, value } = await reader.read();
-        if (done) {
-          await promise;
-          if (!canceled) {
-            controller.close();
-          }
-          reader.releaseLock();
-          return;
-        }
-        if (!canceled) {
-          controller.enqueue(value);
-        }
-      } catch (error) {
-        if (!canceled) {
-          controller.error(error);
-        }
-        reader.releaseLock();
-      }
-    },
-    async cancel(reason) {
-      canceled = true;
-      try {
-        await reader.cancel(reason);
-      } finally {
-        reader.releaseLock();
-      }
-    },
-  });
-}
-
 // Stream Multiplexer
 
 const FRAME_START = 0x01;

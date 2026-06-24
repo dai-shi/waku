@@ -5,7 +5,6 @@
 // This is exported only for global-types.ts. It is not a public API.
 export type InitialRscEntry = {
   response: Promise<Response>;
-  close: () => void;
   debugId?: string;
 };
 
@@ -17,6 +16,7 @@ export const consumeInitialRscEntry = (): InitialRscEntry | undefined => {
   return entry;
 };
 
+// DEV: hold the stream ~5s so React's late debug-channel chunks settle before close. https://github.com/wakujs/waku/pull/2154
 export const createInitialRscEntryCode = (debugId: string | undefined) =>
   `
   (() => {
@@ -29,13 +29,12 @@ export const createInitialRscEntryCode = (debugId: string | undefined) =>
         d.forEach(f);
         d.length = 0;
         d.push = f;
-        e.close = () => {
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => c.close());
-          } else {
-            c.close();
-          }
-        };
+        const close = ${import.meta.env.DEV ? '() => setTimeout(() => c.close(), 5000)' : '() => c.close()'};
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', close);
+        } else {
+          close();
+        }
       }
     })));
     ${debugId ? `e.debugId = ${JSON.stringify(debugId)};` : ''}

@@ -20,7 +20,6 @@ import {
 } from '../lib/utils/prefetch-cache.js';
 import { setupDebugChannel } from '../lib/utils/react-debug-channel.js';
 import { encodeFuncId, encodeRscPath } from '../lib/utils/rsc-path.js';
-import { waitForRootPrerequisites } from '../lib/utils/rsc-stream.js';
 
 const { createFromFetch, encodeReply, createTemporaryReferenceSet } =
   RSDWClient;
@@ -249,10 +248,6 @@ const fetchRscElements = (
     debug?.debugChannel,
   );
   reloadOnBuildIdMismatch(elements, options?.onBuildIdMismatch);
-  if (initial) {
-    const { close } = initial;
-    waitForRootPrerequisites(elements).then(close, close);
-  }
   return elements;
 };
 
