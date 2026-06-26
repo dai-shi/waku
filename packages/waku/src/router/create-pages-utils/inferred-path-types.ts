@@ -1,3 +1,4 @@
+import type { SearchCodecsConfig } from '../base-types.js';
 import type { RouteProps } from '../common-utils/route-path.js';
 import type { PathWithoutSlug } from '../create-pages.js';
 import type { Join, Prettify, ReplaceAll, Split } from './util-types.js';
@@ -199,7 +200,7 @@ type SlugTypes<Path extends string> =
       }
     : never;
 
-/** Extracts route parameters from a route path pattern. */
+/** Extracts route parameters from a route path. */
 export type RouteParams<Path extends string> = Prettify<SlugTypes<Path>>;
 
 /** Context object passed to API route handlers with typed route parameters. */
@@ -207,9 +208,53 @@ export interface ApiContext<Path extends string> {
   readonly params: RouteParams<Path>;
 }
 
+/**
+ * Bring-your-own search-params codec: converts the URL's `query` string to a
+ * typed `search` object and back, identified by a stable `id`. Waku provides
+ * this contract and the integration; the implementation (a library, an adapter
+ * for nuqs/zod, or a hand-written object) lives outside core. `parse` may throw
+ * to reject a malformed query (the framework turns it into a 400). `serialize`
+ * must return an already URL-encoded query string (e.g. via
+ * `URLSearchParams.toString()`); it is placed after `?` in the href as-is.
+ */
+export type Unstable_SearchCodec<Search extends Record<string, unknown>> = {
+  id: string;
+  parse: (query: string) => Search;
+  serialize: (search: Search) => string;
+};
+
+/** The typed `search` for a route path, or `never` if none. */
+export type RouteSearch<Path extends string> =
+  Path extends keyof SearchCodecsConfig
+    ? SearchCodecsConfig[Path] extends Unstable_SearchCodec<infer Search>
+      ? Search
+      : never
+    : never;
+
+/**
+ * Builds the `SearchCodecsConfig` augmentation from a `Page` union: maps each
+ * page that declared `unstable_searchCodec` in getConfig to its codec, keyed by
+ * path. Used by the fs-router typegen.
+ */
+export type SearchCodecsForPages<Pages> = {
+  [Page in Extract<Pages, { unstable_searchCodec: unknown }> as Page extends {
+    path: infer Path extends string;
+  }
+    ? Path
+    : never]: Page extends { unstable_searchCodec: infer Codec }
+    ? Codec
+    : never;
+};
+
+/** A `search` prop, present only when the route has a search codec. */
+type SearchProps<Path extends string> = [RouteSearch<Path>] extends [never]
+  ? {}
+  : { search: RouteSearch<Path> };
+
 export type PropsForPages<Path extends string> = Prettify<
   Omit<RouteProps<ReplaceAll<Path, `[${string}]`, string>>, 'hash'> &
-    SlugTypes<Path>
+    SlugTypes<Path> &
+    SearchProps<Path>
 >;
 
 type GetResponseType<Response extends { render: string }> =

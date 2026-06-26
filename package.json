@@ -11,7 +11,7 @@
     "test:lint": "prettier -c . && eslint . && tsc -b && pnpm run tsc-templates",
     "test:unit": "pnpm run -r test",
     "test-vite-ecosystem-ci": "VITE_EXPERIMENTAL_WAKU_ROUTER=true pnpm run -r --filter='!create-waku' test && VITE_EXPERIMENTAL_WAKU_ROUTER=true playwright test --project=chromium-prd --project=chromium-dev",
-    "tsc-templates": "tsc -b ./templates/*/tsconfig.json ./e2e/fixtures/*/tsconfig.json ./e2e/fixtures/monorepo/packages/waku-project/tsconfig.json",
+    "tsc-templates": "pnpm --filter fs-router run typegen && tsc -b ./templates/*/tsconfig.json ./e2e/fixtures/*/tsconfig.json ./e2e/fixtures/monorepo/packages/waku-project/tsconfig.json",
     "e2e": "playwright test",
     "e2e-dev": "playwright test --project=chromium-dev",
     "e2e-prd": "playwright test --project=chromium-prd",

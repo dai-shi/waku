@@ -3,6 +3,7 @@ import { expectType } from 'ts-expect';
 import type { TypeEqual } from 'ts-expect';
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MockedFunction } from 'vitest';
+import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
 import { parsePathWithSlug } from '../src/lib/utils/path.js';
 import { Children } from '../src/minimal/client.js';
 import type { PathsForPages } from '../src/router/base-types.js';
@@ -3319,6 +3320,83 @@ describe('createPages - grouped paths', () => {
     expect(element.props.section).toBe('docs');
     expect(element.props.slug).toBeUndefined();
     expect(element.props.children.type).toBe(Children);
+  });
+});
+
+describe('createPages search codec', () => {
+  it('injects parsed props.search and 400s on a malformed query', async () => {
+    type S = { page: number };
+    const codec = {
+      id: 'search-test',
+      parse: (query: string): S => {
+        const v = new URLSearchParams(query).get('page');
+        if (v === 'bad') {
+          throw new Error('invalid');
+        }
+        return { page: Number(v) || 1 };
+      },
+      serialize: (s: S) => `page=${s.page}`,
+    } as const;
+    createPages(async ({ createPage }) => [
+      createPage({
+        render: 'dynamic',
+        path: '/search-test',
+        component: () => null,
+        unstable_searchCodec: codec,
+      }),
+    ]);
+    const { getConfigs } = injectedFunctions();
+    const configs = Array.from(await getConfigs()) as any[];
+    const routeConfig = configs.find(
+      (config) =>
+        config.type === 'route' && config.path?.[0]?.name === 'search-test',
+    );
+    // the codec id rides the route config; the client resolves it via the
+    // route -> codec id map (__WAKU_ROUTER_SEARCH_CODECS__) for both the search
+    // hooks and push/Link
+    expect(routeConfig.searchCodecId).toBe('search-test');
+    const pageEl = routeConfig.elements['page:/search-test'];
+    // parsed search is injected from the query
+    expect(
+      pageEl.renderer({ routePath: '/search-test', query: 'page=2' }).props
+        .search,
+    ).toEqual({ page: 2 });
+    // default search when there is no query
+    expect(
+      pageEl.renderer({ routePath: '/search-test', query: undefined }).props
+        .search,
+    ).toEqual({ page: 1 });
+    // a thrown parse becomes a 400
+    let thrown: unknown;
+    try {
+      pageEl.renderer({ routePath: '/search-test', query: 'page=bad' });
+    } catch (e) {
+      thrown = e;
+    }
+    expect(getErrorInfo(thrown)?.status).toBe(400);
+    // the original parse error is preserved as the cause
+    expect((thrown as { cause?: Error }).cause?.message).toBe('invalid');
+  });
+
+  it('rejects unstable_searchCodec on a static route', async () => {
+    const codec = {
+      id: 'static-codec',
+      parse: () => ({}),
+      serialize: () => '',
+    } as const;
+    createPages(
+      async ({ createPage }) =>
+        [
+          createPage({
+            render: 'static',
+            path: '/static-search',
+            component: () => null,
+            unstable_searchCodec: codec,
+          }),
+        ] as never,
+    );
+    const { getConfigs } = injectedFunctions();
+    await expect(getConfigs()).rejects.toThrow(/static route/);
   });
 });
 

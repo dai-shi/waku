@@ -130,6 +130,75 @@ test.describe(`create-pages`, () => {
     await expect(page.getByRole('heading', { name: 'Foo' })).toBeVisible();
   });
 
+  test('search params (props.search + useSearch + setSearch)', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/search?q=hi&page=2`);
+    await waitForHydration(page);
+    // server component received the parsed, typed search
+    await expect(page.getByTestId('server-search')).toHaveText(
+      '{"q":"hi","page":2}',
+    );
+    // client useSearch resolved the same codec by id and re-parsed the query
+    await expect(page.getByTestId('client-search')).toHaveText(
+      '{"q":"hi","page":2}',
+    );
+    // setSearch serializes with the codec, navigates, and the route re-renders
+    await page.getByTestId('next-page').click();
+    await expect(page).toHaveURL(/[?&]page=3(&|$)/);
+    await expect(page.getByTestId('client-search')).toHaveText(
+      '{"q":"hi","page":3}',
+    );
+    await expect(page.getByTestId('server-search')).toHaveText(
+      '{"q":"hi","page":3}',
+    );
+  });
+
+  test('search params (cross-route push with typed search)', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/`);
+    await waitForHydration(page);
+    // push({ to: '/search', search }) serializes via the target route's codec,
+    // resolved from the route -> codec id map shipped to the client
+    await page.getByTestId('home-to-search').click();
+    await expect(page).toHaveURL(/\/search\?q=hello&page=5$/);
+    await expect(page.getByTestId('server-search')).toHaveText(
+      '{"q":"hello","page":5}',
+    );
+    await expect(page.getByTestId('client-search')).toHaveText(
+      '{"q":"hello","page":5}',
+    );
+  });
+
+  test('search params (cross-route Link with typed search)', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/`);
+    await waitForHydration(page);
+    // <Link to={{ to: '/search', search }}> serializes via the target codec too
+    await page.getByTestId('home-to-search-link').click();
+    await expect(page).toHaveURL(/\/search\?q=linked&page=7$/);
+    await expect(page.getByTestId('server-search')).toHaveText(
+      '{"q":"linked","page":7}',
+    );
+    await expect(page.getByTestId('client-search')).toHaveText(
+      '{"q":"linked","page":7}',
+    );
+  });
+
+  test('search params (cross-route Link serializes its href during SSR)', async () => {
+    // The cross-route <Link to={{ to: '/search', search }}> serializes its href
+    // on the server. This requires the route -> codec id map to be available
+    // during SSR (not only the browser-injected global), otherwise the link
+    // throws while rendering and its href is missing from the server HTML.
+    const res = await fetch(`http://localhost:${port}/`);
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('data-testid="home-to-search-link"');
+    expect(html).toContain('/search?q=linked');
+  });
+
   test('dynamic', async ({ page }) => {
     await page.goto(`http://localhost:${port}/dynamic`);
     await expect(page.getByRole('navigation')).toHaveText('Dynamic Layout');

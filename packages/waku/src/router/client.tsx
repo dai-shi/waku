@@ -42,6 +42,11 @@ import type {
 } from './client-utils/build-route-href.js';
 import { matchRouteParams } from './client-utils/match-route-params.js';
 import {
+  type AnyCodec,
+  getRouteSearchCodecId,
+  isCodec,
+} from './client-utils/search-codec-registry.js';
+import {
   ETAG_ID_PREFIX,
   HAS404_ID,
   IS_STATIC_ID,
@@ -52,7 +57,10 @@ import {
   pathnameToRoutePath,
 } from './common-utils/route-path.js';
 import type { RouteProps } from './common-utils/route-path.js';
-import type { RouteParams } from './create-pages-utils/inferred-path-types.js';
+import type {
+  RouteParams,
+  RouteSearch,
+} from './create-pages-utils/inferred-path-types.js';
 
 type AllowTrailingSlash<Path extends string> = Path extends '/'
   ? Path
@@ -244,6 +252,21 @@ const RouterContext = createContext<{
   fetchingSlices: Set<SliceId>;
 } | null>(null);
 
+const SearchCodecsContext = createContext<ReadonlyMap<string, AnyCodec>>(
+  new Map(),
+);
+
+const useResolveSearchCodec = () => {
+  const codecs = useContext(SearchCodecsContext);
+  return useCallback(
+    (routePath: string): AnyCodec | undefined => {
+      const id = getRouteSearchCodecId(routePath);
+      return id !== undefined ? codecs.get(id) : undefined;
+    },
+    [codecs],
+  );
+};
+
 export function useRouter() {
   const router = useContext(RouterContext);
   if (!router) {
@@ -251,12 +274,14 @@ export function useRouter() {
   }
 
   const { route, changeRoute, prefetchRoute } = router;
+  const resolveCodec = useResolveSearchCodec();
   const push = useCallback(
     async (
       to: InferredPaths | BuildRouteHrefTarget<RoutePath>,
       options?: NavigateOptions,
     ) => {
-      const href = typeof to === 'string' ? to : buildRouteHref(to);
+      const href =
+        typeof to === 'string' ? to : buildRouteHref(to, resolveCodec);
       const url = new URL(
         addBase(href, import.meta.env.WAKU_CONFIG_BASE_PATH),
         window.location.href,
@@ -267,14 +292,15 @@ export function useRouter() {
         url,
       });
     },
-    [changeRoute],
+    [changeRoute, resolveCodec],
   ) as Navigate;
   const replace = useCallback(
     async (
       to: InferredPaths | BuildRouteHrefTarget<RoutePath>,
       options?: NavigateOptions,
     ) => {
-      const href = typeof to === 'string' ? to : buildRouteHref(to);
+      const href =
+        typeof to === 'string' ? to : buildRouteHref(to, resolveCodec);
       const url = new URL(
         addBase(href, import.meta.env.WAKU_CONFIG_BASE_PATH),
         window.location.href,
@@ -285,7 +311,7 @@ export function useRouter() {
         url,
       });
     },
-    [changeRoute],
+    [changeRoute, resolveCodec],
   ) as Navigate;
   const reload = useCallback(async () => {
     const url = new URL(window.location.href);
@@ -332,6 +358,118 @@ export function useParams_UNSTABLE<Path extends RoutePath>({
 }): RouteParams<Path> | null {
   const { path } = useRouter();
   return useMemo(() => matchRouteParams(from, path), [from, path]);
+}
+
+/**
+ * Provide search codecs to `useSearch_UNSTABLE`, `useSetSearch_UNSTABLE`,
+ * `push`, and `Link`. Render it in your root layout so the codecs are present in
+ * both the SSR render and the browser. Pass only search codecs: a codec-only
+ * module (via `import * as`), a record, or an array. A value that is not a codec
+ * is ignored with a warning, so keep helpers and constants out of the module you
+ * pass (or list the codecs explicitly).
+ */
+export function Unstable_SearchCodecsProvider({
+  searchCodecs,
+  children,
+}: {
+  searchCodecs: Record<string, unknown> | readonly unknown[];
+  children: ReactNode;
+}): ReactElement {
+  const codecs = useMemo(() => {
+    const map = new Map<string, AnyCodec>();
+    const values = Array.isArray(searchCodecs)
+      ? searchCodecs
+      : Object.values(searchCodecs);
+    for (const value of values) {
+      if (!isCodec(value)) {
+        console.warn(
+          'Unstable_SearchCodecsProvider ignored a value that is not a search codec; pass only codecs (a codec-only module or an explicit array).',
+          value,
+        );
+        continue;
+      }
+      const existing = map.get(value.id);
+      if (existing && existing !== value) {
+        throw new Error(`Duplicate search codec id: "${value.id}"`);
+      }
+      map.set(value.id, value);
+    }
+    return map;
+  }, [searchCodecs]);
+  return <SearchCodecsContext value={codecs}>{children}</SearchCodecsContext>;
+}
+
+/**
+ * Read the current route's typed `search`, parsed client-side with the route's
+ * codec (provided via `Unstable_SearchCodecsProvider`), or null when the current
+ * path does not match `from` or the route has no codec. Re-renders when the
+ * query changes.
+ */
+export function useSearch_UNSTABLE<Path extends RoutePath>({
+  from,
+}: {
+  from: Path;
+}): RouteSearch<Path> | null {
+  const { path, query } = useRouter();
+  const codecs = useContext(SearchCodecsContext);
+  return useMemo(() => {
+    if (matchRouteParams(from, path) === null) {
+      return null;
+    }
+    const codecId = getRouteSearchCodecId(from);
+    const codec = codecId !== undefined ? codecs.get(codecId) : undefined;
+    return codec ? (codec.parse(query) as RouteSearch<Path>) : null;
+  }, [from, path, query, codecs]);
+}
+
+type SetSearch<Path extends RoutePath> = (
+  update:
+    | Partial<RouteSearch<Path>>
+    | ((prev: RouteSearch<Path>) => Partial<RouteSearch<Path>>),
+  options?: { history?: 'push' | 'replace'; scroll?: boolean },
+) => Promise<void>;
+
+/**
+ * Returns a setter for the current route's `search`, serialized client-side with
+ * the route's codec (provided via `Unstable_SearchCodecsProvider`). Accepts a
+ * partial or an updater of the current search and navigates (push by default, or
+ * replace) to the same path. A no-op when the current path does not match `from`
+ * or has no codec.
+ */
+export function useSetSearch_UNSTABLE<Path extends RoutePath>({
+  from,
+}: {
+  from: Path;
+}): SetSearch<Path> {
+  const router = useContext(RouterContext);
+  if (!router) {
+    throw new Error('Missing Router');
+  }
+  const { route, changeRoute } = router;
+  const codecs = useContext(SearchCodecsContext);
+  return useCallback<SetSearch<Path>>(
+    async (update, options) => {
+      if (matchRouteParams(from, route.path) === null) {
+        return;
+      }
+      const codecId = getRouteSearchCodecId(from);
+      const codec = codecId !== undefined ? codecs.get(codecId) : undefined;
+      if (!codec) {
+        return;
+      }
+      const prev = codec.parse(route.query) as RouteSearch<Path>;
+      const partial = typeof update === 'function' ? update(prev) : update;
+      const nextQuery = codec.serialize({ ...prev, ...partial });
+      const url = new URL(window.location.href);
+      url.search = nextQuery;
+      await changeRoute(parseRoute(url), {
+        shouldScroll: options?.scroll ?? false,
+        mode: options?.history ?? 'push',
+        url,
+      });
+    },
+    [from, route.path, route.query, codecs, changeRoute],
+  );
 }
 
 function useSharedRef<T>(
@@ -384,8 +522,8 @@ const NavigationStatusContext = createContext<NavigationStatus>({});
 export const useNavigationStatus_UNSTABLE = (): NavigationStatus =>
   useContext(NavigationStatusContext);
 
-export type LinkProps = {
-  to: InferredPaths;
+export type LinkProps<Path extends RoutePath> = {
+  to: InferredPaths | BuildRouteHrefTarget<Path>;
   children: ReactNode;
   /**
    * indicates if the link should scroll or not on navigation
@@ -406,7 +544,7 @@ export type LinkProps = {
   ref?: Ref<HTMLAnchorElement> | undefined;
 } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>;
 
-export function Link({
+export function Link<Path extends RoutePath>({
   to,
   children,
   scroll,
@@ -415,8 +553,10 @@ export function Link({
   unstable_startTransition,
   ref: refProp,
   ...props
-}: LinkProps): ReactElement {
-  const resolvedTo = addBase(to, import.meta.env.WAKU_CONFIG_BASE_PATH);
+}: LinkProps<Path>): ReactElement {
+  const resolveCodec = useResolveSearchCodec();
+  const href = typeof to === 'string' ? to : buildRouteHref(to, resolveCodec);
+  const resolvedTo = addBase(href, import.meta.env.WAKU_CONFIG_BASE_PATH);
   const router = useContext(RouterContext);
   const changeRoute = router
     ? router.changeRoute

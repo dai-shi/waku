@@ -4,6 +4,8 @@ import type { CreatePagesConfig } from '../base-types.js';
 import type {
   PagePath,
   RouteParams,
+  RouteSearch,
+  Unstable_SearchCodec,
 } from '../create-pages-utils/inferred-path-types.js';
 
 export type RoutePath = [PagePath<CreatePagesConfig>] extends [never]
@@ -16,37 +18,13 @@ type RouteParamsInput<Path extends RoutePath> = {
     : RouteParams<Path>[Key];
 };
 
-type SearchValue = string | readonly string[] | undefined;
-
-type BuildRouteHrefSearch = Record<string, SearchValue>;
-
 export type BuildRouteHrefTarget<Path extends RoutePath> = {
   to: Path;
-  search?: BuildRouteHrefSearch;
+  search?: RouteSearch<Path>;
   hash?: string;
 } & (keyof RouteParamsInput<Path> extends never
   ? { params?: never }
   : { params: RouteParamsInput<Path> });
-
-const serializeSearch = (search: BuildRouteHrefSearch | undefined): string => {
-  if (search === undefined) {
-    return '';
-  }
-  const searchParams = new URLSearchParams();
-  for (const [key, value] of Object.entries(search)) {
-    if (value === undefined) {
-      continue;
-    }
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        searchParams.append(key, item);
-      }
-    } else {
-      searchParams.append(key, value as string);
-    }
-  }
-  return searchParams.toString();
-};
 
 /**
  * Build an href string from a route path, params, search, and hash.
@@ -57,10 +35,11 @@ const serializeSearch = (search: BuildRouteHrefSearch | undefined): string => {
  */
 export const buildRouteHref = <Path extends RoutePath>(
   target: BuildRouteHrefTarget<Path>,
+  resolveCodec?: (routePath: string) => Unstable_SearchCodec<any> | undefined,
 ): string => {
   const { to, search, hash, params } = target as {
     to: string;
-    search?: BuildRouteHrefSearch;
+    search?: Record<string, unknown>;
     hash?: string;
     params?: Record<string, string | readonly string[]>;
   };
@@ -91,7 +70,16 @@ export const buildRouteHref = <Path extends RoutePath>(
   if (!getPathMapping(pathSpec, pathname)) {
     throw new Error(`Cannot build "${to}" with the given params`);
   }
-  const query = serializeSearch(search);
+  let query = '';
+  if (search !== undefined) {
+    const codec = resolveCodec?.(to);
+    if (!codec) {
+      throw new Error(
+        `Cannot serialize "search" for "${to}": no search codec resolved. Provide it via <Unstable_SearchCodecsProvider> in a module rendered on every page (e.g. your root layout) so navigation can serialize it.`,
+      );
+    }
+    query = codec.serialize(search);
+  }
   return (
     pathname +
     (query ? '?' + query : '') +

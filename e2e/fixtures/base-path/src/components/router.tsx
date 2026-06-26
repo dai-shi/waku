@@ -7,13 +7,15 @@ export function ClickLink(
   props: ComponentProps<typeof Link> & { replace?: boolean },
 ) {
   const router = useRouter();
+  const { to } = props;
+  const navigate = props.replace ? router.replace : router.push;
   return (
     <button
       onClick={async () => {
-        if (props.replace) {
-          await router.replace(props.to);
+        if (typeof to === 'string') {
+          await navigate(to);
         } else {
-          await router.push(props.to);
+          await navigate(to);
         }
       }}
     >

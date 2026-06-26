@@ -1,6 +1,7 @@
 import { createElement } from 'react';
 import type { FunctionComponent, ReactElement, ReactNode } from 'react';
 import { getGrouplessPath } from '../lib/utils/create-pages.js';
+import { createCustomError } from '../lib/utils/custom-errors.js';
 import {
   countSlugsAndWildcards,
   getPathMapping,
@@ -17,6 +18,7 @@ import type {
   AnyPage,
   GetSlugs,
   PropsForPages,
+  Unstable_SearchCodec,
 } from './create-pages-utils/inferred-path-types.js';
 import { unstable_defineRouter } from './define-router.js';
 import type { ApiHandler, HandlerInterceptor } from './define-router.js';
@@ -66,6 +68,19 @@ const assertStaticPathArity = (
 
 const getPageSlotId = (routePath: string) => `page:${routePath}`;
 const getLayoutSlotId = (layoutIdPath: string) => `layout:${layoutIdPath}`;
+
+const parseSearchOrThrow = (
+  codec: Unstable_SearchCodec<any>,
+  query: string,
+): Record<string, unknown> => {
+  try {
+    return codec.parse(query);
+  } catch (cause) {
+    const err = createCustomError('Bad Request', { status: 400 });
+    err.cause = cause;
+    throw err;
+  }
+};
 
 const forEachConcreteStaticPath = (
   routePathSpec: PathSpec,
@@ -228,6 +243,14 @@ export type CreatePage = <
      * pages.
      */
     unstable_getEtag?: GetEtag<PropsForPages<Path>>;
+    /**
+     * Bring-your-own search-params codec for this route. The server parses the
+     * `query` with it (rejecting a malformed query as 400 and injecting a typed
+     * `search` prop); its `id` is sent to the client to resolve the same codec
+     * for `useSearch`/`push`. The route's `search` type is declared separately
+     * via the `SearchCodecsConfig` augmentation (or fs-router typegen).
+     */
+    unstable_searchCodec?: Unstable_SearchCodec<any>;
   },
 ) => Omit<
   Extract<
@@ -485,6 +508,7 @@ export const createPages = <
     noSsr: boolean;
     sourceFile?: string | undefined;
     getEtag?: GetEtag<Props> | undefined;
+    searchCodec?: Unstable_SearchCodec<any> | undefined;
   };
   type LayoutEntry<Props = any> = {
     routePathSpec: PathSpec;
@@ -621,6 +645,12 @@ export const createPages = <
     const slices = page.slices || [];
     const sourceFile = page.unstable_sourceFile;
     const getEtag = page.unstable_getEtag;
+    const searchCodec = page.unstable_searchCodec;
+    if (searchCodec && page.render === 'static') {
+      throw new Error(
+        `unstable_searchCodec is not supported on a static route (${page.path}); search params need a per-request query, so use render: 'dynamic'.`,
+      );
+    }
 
     const registerPageWithExactPath = () => {
       const routePath = pageRoutePath;
@@ -640,6 +670,7 @@ export const createPages = <
           noSsr,
           sourceFile,
           getEtag,
+          searchCodec,
         });
       }
       sliceIdsByRoutePath.set(routePath, slices);
@@ -702,6 +733,7 @@ export const createPages = <
         noSsr,
         sourceFile,
         getEtag,
+        searchCodec,
       });
       sliceIdsByRoutePath.set(routePath, slices);
     };
@@ -717,6 +749,7 @@ export const createPages = <
         noSsr,
         sourceFile,
         getEtag,
+        searchCodec,
       });
       sliceIdsByRoutePath.set(routePath, slices);
     };
@@ -1021,6 +1054,7 @@ export const createPages = <
         isStatic: boolean,
         sourceFile?: string,
         getEtag?: GetEtag<Props>,
+        searchCodec?: Unstable_SearchCodec<any>,
       ): ElementSpec =>
         buildElementSpec(
           component,
@@ -1028,6 +1062,11 @@ export const createPages = <
             ({
               ...getPropsMapping(option.routePath),
               ...(option.query ? { query: option.query } : {}),
+              ...(searchCodec
+                ? {
+                    search: parseSearchOrThrow(searchCodec, option.query ?? ''),
+                  }
+                : {}),
               path: option.routePath,
             }) as unknown as Props,
           isStatic,
@@ -1107,6 +1146,7 @@ export const createPages = <
           noSsr,
           sourceFile,
           getEtag,
+          searchCodec,
         }: DynamicPageEntry,
       ) => {
         const layouts = collectLayoutMatches(routePathSpec);
@@ -1119,14 +1159,18 @@ export const createPages = <
           false,
           sourceFile,
           getEtag,
+          searchCodec,
         );
-        return buildRouteConfigBase(
-          routePath,
-          routePathSpec,
-          layouts,
-          elements,
-          noSsr,
-        );
+        return {
+          ...buildRouteConfigBase(
+            routePath,
+            routePathSpec,
+            layouts,
+            elements,
+            noSsr,
+          ),
+          ...(searchCodec ? { searchCodecId: searchCodec.id } : {}),
+        };
       };
       const buildDynamicRouteConfigs = () =>
         Array.from(dynamicPageEntryByRoutePath, ([routePath, entry]) =>

@@ -29,7 +29,6 @@ export const PostButton = ({ slug }: { slug: string }) => {
         router.push({
           to: '/posts/[slug]',
           params: { slug },
-          search: { tab: 'comments' },
           hash: 'top',
         })
       }
@@ -41,7 +40,7 @@ export const PostButton = ({ slug }: { slug: string }) => {
 ```
 
 - `to` is a route pattern (e.g. `/posts/[slug]`, `/docs/[...path]`). `params` is required when the pattern has slugs and is typed from it; a catch-all takes a `string[]`.
-- `search` is an object of string query values (use an array for repeated keys); `undefined` values are omitted. `hash` is optional.
+- `hash` is optional. `search` is typed per route by a search codec — see [Search Params](#search-params).
 - The plain string form (`router.push('/posts/hello')`) keeps working.
 
 ## Reading Route Params
@@ -66,3 +65,158 @@ export const PostTitle = () => {
 - Values are URL-decoded, mirroring how `router.push` encodes them.
 - It re-renders when the current route path changes.
 - Page components already receive their params through props; `useParams()` is for client and shared components that do not.
+
+## Search Params
+
+Waku types the URL search params (the query string) per route with a **search codec** you provide. The codec converts the query string to a typed object and back, so server components, client hooks, and navigation share one typed shape. Waku ships the contract; you bring the implementation (hand-written, or wrapping a library).
+
+### Define a codec
+
+A codec is a plain object with a stable `id`, a `parse`, and a `serialize`:
+
+```ts
+// ./src/lib/search.ts
+import type { Unstable_SearchCodec } from 'waku/router';
+
+export type Search = { q: string; page: number };
+
+export const searchCodec = {
+  id: 'search',
+  parse: (query: string): Search => {
+    const params = new URLSearchParams(query);
+    return { q: params.get('q') ?? '', page: Number(params.get('page')) || 1 };
+  },
+  serialize: ({ q, page }: Search) =>
+    new URLSearchParams({ q, page: String(page) }).toString(),
+} as const satisfies Unstable_SearchCodec<Search>;
+```
+
+`parse` may throw to reject a malformed query; Waku turns that into a 400.
+
+### Attach the codec to a route
+
+Set it on the route's config, and map the route to the codec for typing.
+
+With `createPages`, pass `unstable_searchCodec` and declare the mapping:
+
+```tsx
+import { searchCodec } from './lib/search';
+
+declare module 'waku/router' {
+  interface SearchCodecsConfig {
+    '/search': typeof searchCodec;
+  }
+}
+
+// inside createPages(...)
+createPage({
+  render: 'dynamic',
+  path: '/search',
+  component: SearchPage,
+  unstable_searchCodec: searchCodec,
+});
+```
+
+With the file-system router, export it from `getConfig` and the types are generated for you:
+
+```tsx
+// ./src/pages/search.tsx
+import { searchCodec } from '../lib/search';
+
+export const getConfig = async () => ({
+  render: 'dynamic',
+  unstable_searchCodec: searchCodec,
+});
+```
+
+### Read search on the server
+
+The page component receives a typed `search` prop:
+
+```tsx
+import type { PageProps } from 'waku/router';
+
+export default function SearchPage({ search }: PageProps<'/search'>) {
+  return (
+    <p>
+      {search.q} (page {search.page})
+    </p>
+  );
+}
+```
+
+### Provide codecs on the client
+
+To read, update, or navigate with search on the client, the codec has to be available there. Wrap your app with `Unstable_SearchCodecsProvider`. Because codecs hold functions, the provider must be rendered from a `'use client'` module that imports them:
+
+```tsx
+// ./src/components/search-codecs.tsx
+'use client';
+
+import type { ReactNode } from 'react';
+import { Unstable_SearchCodecsProvider } from 'waku/router/client';
+import * as searchCodecs from '../lib/search';
+
+export const SearchCodecs = ({ children }: { children: ReactNode }) => (
+  <Unstable_SearchCodecsProvider searchCodecs={searchCodecs}>
+    {children}
+  </Unstable_SearchCodecsProvider>
+);
+```
+
+Pass only codecs. `import * as` works when the module exports just codecs (types are erased); if the module also has non-codec exports, list the codecs explicitly instead, e.g. `searchCodecs={[searchCodec]}`. Non-codec values are ignored with a warning.
+
+Render it in your root layout so it wraps every page:
+
+```tsx
+// ./src/pages/_layout.tsx (fs-router root layout)
+import type { ReactNode } from 'react';
+import { SearchCodecs } from '../components/search-codecs';
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return <SearchCodecs>{children}</SearchCodecs>;
+}
+```
+
+With `createPages`, wrap your root layout (or root) component's children the same way.
+
+> **Provide codecs app-wide, not per route.** A codec must be available on the page you navigate **from**. If a link on your home page does `push({ to: '/search', search })`, the home page needs `/search`'s codec to serialize the URL — so a provider only around `/search` is not enough. Wrapping your root layout covers every page.
+
+### Read and update search on the client
+
+```tsx
+'use client';
+
+import {
+  useSearch_UNSTABLE as useSearch,
+  useSetSearch_UNSTABLE as useSetSearch,
+} from 'waku/router/client';
+
+export const Pager = () => {
+  const search = useSearch({ from: '/search' });
+  const setSearch = useSetSearch({ from: '/search' });
+  if (!search) {
+    return null;
+  }
+  return (
+    <button onClick={() => setSearch((prev) => ({ page: prev.page + 1 }))}>
+      page {search.page}
+    </button>
+  );
+};
+```
+
+- `useSearch` returns the typed `search`, or `null` when the current path does not match `from`.
+- `setSearch` takes a partial or an updater, serializes with the codec, and navigates (push by default, or `{ history: 'replace' }`).
+
+### Navigate with search
+
+`push`, `replace`, and `Link` accept a typed `search` for the target route:
+
+```tsx
+router.push({ to: '/search', search: { q: 'waku', page: 1 } });
+
+<Link to={{ to: '/search', search: { q: 'waku', page: 1 } }}>Search</Link>;
+```
+
+A route without a codec takes no `search` (its `search` is `never`); use the plain string form (`push('/foo?ref=home')`) for ad-hoc queries.

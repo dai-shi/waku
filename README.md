@@ -761,6 +761,8 @@ This allows you to have a `dynamic` slice component while keeping the rest of th
 
 The `<Link />` component should be used for internal links. It accepts a `to` prop for the destination and handles client-side navigation through Waku's router.
 
+`to` is either a route string, or a structured `{ to, params, search, hash }` target for typed navigation (the same shape `router.push` accepts; see [Typed Routes](https://github.com/wakujs/waku/blob/main/docs/guides/typed-routes.mdx)).
+
 ```tsx
 // ./src/pages/index.tsx
 import { Link } from 'waku';
@@ -770,6 +772,7 @@ export default async function HomePage() {
     <>
       <h1>Home</h1>
       <Link to="/about">About</Link>
+      <Link to={{ to: '/search', search: { q: 'waku' } }}>Search</Link>
     </>
   );
 }

@@ -270,7 +270,7 @@ export async function generateFsRouterTypes(pagesDir: string) {
       '// biome-ignore format: generated types do not need formatting',
       '// prettier-ignore',
       hasAnyGetConfig
-        ? "import type { PathsForPages, GetConfigResponse } from 'waku/router';"
+        ? "import type { PathsForPages, GetConfigResponse, SearchCodecsForPages } from 'waku/router';"
         : "import type { PathsForPages } from 'waku/router';",
     ];
 
@@ -311,6 +311,11 @@ export async function generateFsRouterTypes(pagesDir: string) {
       '  interface CreatePagesConfig {',
       '    pages: Page;',
       '  }',
+      ...(hasAnyGetConfig
+        ? [
+            '  interface SearchCodecsConfig extends SearchCodecsForPages<Page> {}',
+          ]
+        : []),
       '}',
       '',
     );

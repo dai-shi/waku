@@ -99,6 +99,46 @@ test.describe('fs-router', () => {
     ).toBeVisible();
   });
 
+  test('search params (fs-router getConfig codec, typegen)', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/search?q=hi&page=2`);
+    await waitForHydration(page);
+    // props.search parsed on the server by the route's getConfig codec
+    await expect(page.getByTestId('server-search')).toHaveText(
+      '{"q":"hi","page":2}',
+    );
+    // useSearch resolves the same codec on the client (provider in _layout)
+    await expect(page.getByTestId('client-search')).toHaveText(
+      '{"q":"hi","page":2}',
+    );
+    // setSearch serializes with the codec and navigates
+    await page.getByTestId('next-page').click();
+    await expect(page).toHaveURL(/[?&]page=3(&|$)/);
+    await expect(page.getByTestId('client-search')).toHaveText(
+      '{"q":"hi","page":3}',
+    );
+    await expect(page.getByTestId('server-search')).toHaveText(
+      '{"q":"hi","page":3}',
+    );
+  });
+
+  test('search params (grouped route, normalized path keys)', async ({
+    page,
+  }) => {
+    // a route inside a (group) is keyed by its groupless path everywhere; the
+    // client useSearch must resolve via the same normalized key in the
+    // route -> codec id map (the codec is shared with /search by id)
+    await page.goto(`http://localhost:${port}/grouped-search?q=hi&page=2`);
+    await waitForHydration(page);
+    await expect(page.getByTestId('grouped-server-search')).toHaveText(
+      '{"q":"hi","page":2}',
+    );
+    await expect(page.getByTestId('grouped-client-search')).toHaveText(
+      '{"q":"hi","page":2}',
+    );
+  });
+
   test('static-nested encoded path with trailing slash', async ({ page }) => {
     await page.goto(`http://localhost:${port}/static-nested/encoded%20path/`);
     await expect(

@@ -79,6 +79,11 @@ import type { getConfig as File_OneTwoThree_2_getConfig } from './pages/one_two_
 // prettier-ignore
 import type { getConfig as File_ØnéTwoThree_getConfig } from './pages/øné_two_three';`,
     );
+    // search codecs are derived from getConfig and augmented automatically
+    expect(generated).toContain('SearchCodecsForPages');
+    expect(generated).toContain(
+      'interface SearchCodecsConfig extends SearchCodecsForPages<Page> {}',
+    );
   });
 
   test('generates types when waku.server uses fsRouter (managed mode)', async () => {
@@ -161,6 +166,7 @@ import type { getConfig as File_ØnéTwoThree_getConfig } from './pages/øné_tw
 
     expect(generated).not.toContain('GetConfigResponse');
     expect(generated).not.toContain('_getConfig');
+    expect(generated).not.toContain('SearchCodecsConfig');
     expect(generated).not.toContain('\n\n\n');
     expect(generated).toContain("| { path: '/'; render: 'static' }");
     expect(generated).toContain("| { path: '/about'; render: 'static' }");

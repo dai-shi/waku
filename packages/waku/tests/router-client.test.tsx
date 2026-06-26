@@ -32,6 +32,7 @@ import {
   Router,
   unstable_RouterContext as RouterContext,
   Slice,
+  Unstable_SearchCodecsProvider,
   unstable_encodeRoutePath,
   unstable_encodeSliceId,
   unstable_getRouteSlotId,
@@ -49,6 +50,25 @@ import {
   ROUTE_ID,
   SKIP_HEADER,
 } from '../src/router/common-utils/route-path.js';
+
+const postsSearchCodec = {
+  id: 'posts-test',
+  parse: (query: string) => ({
+    tab: new URLSearchParams(query).get('tab') ?? '',
+  }),
+  serialize: (search: { tab: string }) =>
+    new URLSearchParams({ tab: search.tab }).toString(),
+} as const;
+
+declare module '../src/router/base-types.js' {
+  interface SearchCodecsConfig {
+    '/posts/[slug]': typeof postsSearchCodec;
+  }
+}
+
+(
+  globalThis as { __WAKU_ROUTER_SEARCH_CODECS__?: Record<string, string> }
+).__WAKU_ROUTER_SEARCH_CODECS__ = { '/posts/[slug]': 'posts-test' };
 
 type ElementsMap = Record<string, unknown>;
 type RouterApi = ReturnType<typeof useRouter>;
@@ -182,7 +202,11 @@ const renderRouter = async (
   elements: ElementsMap,
 ) => {
   testHoisted.elements = elements;
-  return renderApp(<Router {...(props || {})} />);
+  return renderApp(
+    <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+      <Router {...(props || {})} />
+    </Unstable_SearchCodecsProvider>,
+  );
 };
 
 const renderRouterInStrictMode = async (
@@ -192,7 +216,9 @@ const renderRouterInStrictMode = async (
   testHoisted.elements = elements;
   return renderApp(
     <StrictMode>
-      <Router {...(props || {})} />
+      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <Router {...(props || {})} />
+      </Unstable_SearchCodecsProvider>
     </StrictMode>,
   );
 };
@@ -281,6 +307,43 @@ describe('router navigation method path typing', () => {
 });
 
 describe('router/client utilities', () => {
+  test('SearchCodecsProvider throws on a duplicate codec id', async () => {
+    const a = { id: 'dup', parse: () => ({}), serialize: () => '' } as const;
+    const b = {
+      id: 'dup',
+      parse: () => ({ x: 1 }),
+      serialize: () => '',
+    } as const;
+    await expect(
+      renderApp(
+        <Unstable_SearchCodecsProvider searchCodecs={[a, b]}>
+          <div />
+        </Unstable_SearchCodecsProvider>,
+      ),
+    ).rejects.toThrow(/Duplicate search codec id/);
+  });
+
+  test('SearchCodecsProvider warns on and ignores non-codec values', async () => {
+    const codec = {
+      id: 'real',
+      parse: () => ({}),
+      serialize: () => '',
+    } as const;
+    const notCodec = { id: 3, first: 'react', last: 'js' };
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const view = await renderApp(
+      <Unstable_SearchCodecsProvider searchCodecs={{ codec, notCodec }}>
+        <div />
+      </Unstable_SearchCodecsProvider>,
+    );
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('not a search codec'),
+      notCodec,
+    );
+    warn.mockRestore();
+    view.unmount();
+  });
+
   test('parses route path/query/hash and canonicalizes path from pathname', () => {
     const route = unstable_parseRoute(
       new URL('http://localhost/foo/index.html?count=2#hash'),
@@ -465,17 +528,19 @@ describe('useRouter + Link with context', () => {
     };
 
     const view = await renderApp(
-      <RouterContext
-        value={{
-          route: { path: '/start', query: '', hash: '' },
-          changeRoute,
-          prefetchRoute: vi.fn(),
-          routeChangeEvents: { on: vi.fn(), off: vi.fn() },
-          fetchingSlices: new Set(),
-        }}
-      >
-        <Probe />
-      </RouterContext>,
+      <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+        <RouterContext
+          value={{
+            route: { path: '/start', query: '', hash: '' },
+            changeRoute,
+            prefetchRoute: vi.fn(),
+            routeChangeEvents: { on: vi.fn(), off: vi.fn() },
+            fetchingSlices: new Set(),
+          }}
+        >
+          <Probe />
+        </RouterContext>
+      </Unstable_SearchCodecsProvider>,
     );
 
     if (!capture.router) {

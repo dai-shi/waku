@@ -18,9 +18,11 @@ import NestedBazPage from './components/NestedBazPage.js';
 import NestedLayout from './components/NestedLayout.js';
 import NoSsr from './components/NoSsr.js';
 import { RerenderActionPage } from './components/RerenderActionPage.js';
+import SearchPage from './components/SearchPage.js';
 import { Slice001 } from './components/slice001.js';
 import { Slice002 } from './components/slice002.js';
 import { Slice003 } from './components/slice003.js';
+import { demoSearchCodec } from './lib/search.js';
 
 const renderLayoutProps = (title: string, testIdPrefix: string, props: any) => (
   <div>
@@ -59,6 +61,13 @@ const pages: ReturnType<typeof createPages> = createPages(
       render: 'static',
       path: '/foo',
       component: FooPage,
+    }),
+
+    createPage({
+      render: 'dynamic',
+      path: '/search',
+      component: SearchPage,
+      unstable_searchCodec: demoSearchCodec,
     }),
 
     createPage({

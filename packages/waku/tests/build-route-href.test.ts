@@ -1,6 +1,32 @@
 import { describe, expect, test } from 'vitest';
 import { buildRouteHref } from '../src/router/client-utils/build-route-href.js';
 
+type Search = { tab: string; page: number };
+
+const codec = {
+  id: 'href-test',
+  parse: (query: string): Search => {
+    const sp = new URLSearchParams(query);
+    return { tab: sp.get('tab') ?? '', page: Number(sp.get('page')) || 1 };
+  },
+  serialize: (search: Search) =>
+    new URLSearchParams({
+      tab: search.tab,
+      page: String(search.page),
+    }).toString(),
+} as const;
+
+declare module '../src/router/base-types.js' {
+  interface SearchCodecsConfig {
+    '/href-search': typeof codec;
+    '/p/[slug]': typeof codec;
+  }
+}
+
+// A codec resolver, as push/Link build it from <Unstable_SearchCodecsProvider>.
+const resolveCodec = (routePath: string) =>
+  routePath === '/href-search' || routePath === '/p/[slug]' ? codec : undefined;
+
 describe('buildRouteHref', () => {
   test('static routes', () => {
     expect(buildRouteHref({ to: '/' })).toBe('/');
@@ -44,22 +70,26 @@ describe('buildRouteHref', () => {
     expect(buildRouteHref({ to: '/(marketing)/about' })).toBe('/about');
   });
 
-  test('serializes an object search', () => {
+  test('serializes search via the resolved codec', () => {
     expect(
-      buildRouteHref({
-        to: '/about',
-        search: { page: '2', q: 'x', ok: 'true' },
-      }),
-    ).toBe('/about?page=2&q=x&ok=true');
+      buildRouteHref(
+        { to: '/href-search', search: { tab: 'x', page: 2 } },
+        resolveCodec,
+      ),
+    ).toBe('/href-search?tab=x&page=2');
   });
 
-  test('omits undefined search and supports arrays', () => {
-    expect(
-      buildRouteHref({
-        to: '/about',
-        search: { a: undefined, tag: ['x', 'y'] },
-      }),
-    ).toBe('/about?tag=x&tag=y');
+  test('throws when search is passed but no codec resolves', () => {
+    expect(() =>
+      buildRouteHref(
+        {
+          to: '/about',
+          // @ts-expect-error a route without a codec cannot pass search
+          search: { a: '1' },
+        },
+        resolveCodec,
+      ),
+    ).toThrow(/no search codec/);
   });
 
   test('appends a hash with or without a leading #', () => {
@@ -69,13 +99,16 @@ describe('buildRouteHref', () => {
 
   test('combines params, search, and hash', () => {
     expect(
-      buildRouteHref({
-        to: '/posts/[slug]',
-        params: { slug: 'hello' },
-        search: { tab: 'comments' },
-        hash: 'reply',
-      }),
-    ).toBe('/posts/hello?tab=comments#reply');
+      buildRouteHref(
+        {
+          to: '/p/[slug]',
+          params: { slug: 'hello' },
+          search: { tab: 'comments', page: 1 },
+          hash: 'reply',
+        },
+        resolveCodec,
+      ),
+    ).toBe('/p/hello?tab=comments&page=1#reply');
   });
 
   test('throws on a missing param', () => {
@@ -98,14 +131,23 @@ describe('buildRouteHref types', () => {
       buildRouteHref({ to: '/about', params: { slug: 'a' } });
       // @ts-expect-error unknown param name
       buildRouteHref({ to: '/posts/[slug]', params: { id: 'a' } });
-      buildRouteHref({ to: '/about', search: { page: '2', tags: ['a', 'b'] } });
-      buildRouteHref({ to: '/about', search: { page: undefined } });
-      // @ts-expect-error search values must be strings, not numbers
-      buildRouteHref({ to: '/about', search: { page: 2 } });
-      // @ts-expect-error search values are not nullable (use undefined to omit)
-      buildRouteHref({ to: '/about', search: { page: null } });
-      // @ts-expect-error search must be an object, not a query string
-      buildRouteHref({ to: '/about', search: 'page=2' });
+    };
+    expect(typeof assertTypes).toBe('function');
+  });
+
+  test('search is typed by the route codec', () => {
+    const assertTypes = () => {
+      buildRouteHref({ to: '/href-search', search: { tab: 'x', page: 2 } });
+      buildRouteHref({
+        to: '/href-search',
+        // @ts-expect-error search must match the codec's shape
+        search: { tab: 'x' },
+      });
+      buildRouteHref({
+        to: '/about',
+        // @ts-expect-error a route without a codec cannot pass search
+        search: { a: '1' },
+      });
     };
     expect(typeof assertTypes).toBe('function');
   });
