@@ -12,6 +12,7 @@ import {
   test,
   vi,
 } from 'vitest';
+import { fetchRscStore } from '../src/minimal/client-utils/fetch-store.js';
 import {
   Root,
   Slot,
@@ -21,7 +22,6 @@ import {
   unstable_registerCallServerElementsListener,
   unstable_registerFetchEnhancer,
   unstable_registerFetchRscInputTransformer,
-  useFetchRscStore_UNSTABLE,
 } from '../src/minimal/client.js';
 
 type CallServer = (funcId: string, args: unknown[]) => Promise<unknown>;
@@ -55,16 +55,8 @@ const resolvedThenable = <T,>(value: T): Promise<T> =>
     value,
   });
 
-// The client store is a module singleton; capture it to reset between tests.
-const clientStore = (() => {
-  const warn = console.warn;
-  console.warn = () => {};
-  try {
-    return useFetchRscStore_UNSTABLE() as unknown as Record<string, unknown>;
-  } finally {
-    console.warn = warn;
-  }
-})();
+// The client store is a module singleton; reset it between tests.
+const clientStore = fetchRscStore as unknown as Record<string, unknown>;
 
 const track = <T,>(unregister: T): T => unregister;
 
@@ -312,31 +304,5 @@ describe('minimal/client input transformer', () => {
 
     expect(transform).toHaveBeenCalledWith('R/original.txt', undefined, false);
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain('rewritten');
-  });
-
-  test('the deprecated (store, transformer) form still works and warns', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    try {
-      const fetchMock = vi.fn<typeof fetch>(async () => new Response('{}'));
-      track(unstable_registerFetchEnhancer(() => fetchMock));
-      const transform = vi.fn(
-        (_rscPath: string, _rscParams: unknown, prefetchOnly: boolean) =>
-          ['R/legacy.txt', undefined, prefetchOnly] as const,
-      );
-      track(
-        unstable_registerFetchRscInputTransformer(
-          useFetchRscStore_UNSTABLE(),
-          transform,
-        ),
-      );
-
-      await unstable_fetchRsc('R/orig2.txt', undefined);
-
-      expect(transform).toHaveBeenCalled();
-      expect(String(fetchMock.mock.calls[0]?.[0])).toContain('legacy');
-      expect(warnSpy).toHaveBeenCalled();
-    } finally {
-      warnSpy.mockRestore();
-    }
   });
 });

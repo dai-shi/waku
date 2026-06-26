@@ -20,6 +20,19 @@ import {
 } from '../lib/utils/prefetch-cache.js';
 import { setupDebugChannel } from '../lib/utils/react-debug-channel.js';
 import { encodeFuncId, encodeRscPath } from '../lib/utils/rsc-path.js';
+import {
+  CALL_SERVER_ELEMENTS_LISTENERS,
+  ENTRY,
+  FETCH_ENHANCERS,
+  FETCH_RSC_INPUT_TRANSFORMERS,
+  SET_ELEMENTS,
+  fetchRscStore,
+} from './client-utils/fetch-store.js';
+import type {
+  FetchEnhancer,
+  FetchRscInputTransformer,
+  SetElements,
+} from './client-utils/fetch-store.js';
 
 const { createFromFetch, encodeReply, createTemporaryReferenceSet } =
   RSDWClient;
@@ -76,42 +89,6 @@ const mergeElementsPromise = (
   const cache2 = getCached(() => new WeakMap(), cache1, a);
   return getCached(getResult, cache2, b);
 };
-
-const ENTRY = 'e';
-const SET_ELEMENTS = 's';
-const FETCH_ENHANCERS = 'f';
-const FETCH_RSC_INPUT_TRANSFORMERS = 't';
-const CALL_SERVER_ELEMENTS_LISTENERS = 'l';
-
-type SetElements = (
-  updater: (prev: Promise<Elements>) => Promise<Elements>,
-) => void;
-
-type FetchEnhancer = (fetchFn: typeof fetch) => typeof fetch;
-type FetchEnhancers = Set<FetchEnhancer>;
-
-type FetchRscInputTransformer = (
-  rscPath: string,
-  rscParams: unknown,
-  prefetchOnly: boolean,
-) => readonly [rscPath: string, rscParams: unknown, prefetchOnly: boolean];
-type FetchRscInputTransformers = Set<FetchRscInputTransformer>;
-
-type CallServerElementsListeners = Set<(elements: Elements) => void>;
-
-type FetchRscStore = {
-  [ENTRY]?: [
-    rscPath: string,
-    rscParams: unknown,
-    elementsPromise: Promise<Elements>,
-  ];
-  [SET_ELEMENTS]?: SetElements;
-  [FETCH_ENHANCERS]?: FetchEnhancers;
-  [FETCH_RSC_INPUT_TRANSFORMERS]?: FetchRscInputTransformers;
-  [CALL_SERVER_ELEMENTS_LISTENERS]?: CallServerElementsListeners;
-};
-
-const fetchRscStore: FetchRscStore = {};
 
 type FetchRscOptions = {
   signal?: AbortSignal;
@@ -368,40 +345,14 @@ export const unstable_registerFetchEnhancer = (
   };
 };
 
-let registerTransformerStoreArgWarned = false;
-
 /**
  * Register a transformer that rewrites the RSC fetch input
  * (`rscPath`, `rscParams`, `prefetchOnly`) before each request. Returns a
  * function that unregisters the transformer.
  */
-export function unstable_registerFetchRscInputTransformer(
+export const unstable_registerFetchRscInputTransformer = (
   transformFetchRscInput: FetchRscInputTransformer,
-): Unregister;
-/**
- * @deprecated Pass only the transformer. The store argument is ignored and this
- * overload will be removed in a future release.
- */
-export function unstable_registerFetchRscInputTransformer(
-  store: FetchRscStore,
-  transformFetchRscInput: FetchRscInputTransformer,
-): Unregister;
-export function unstable_registerFetchRscInputTransformer(
-  storeOrTransform: FetchRscStore | FetchRscInputTransformer,
-  maybeTransform?: FetchRscInputTransformer,
-): Unregister {
-  let transformFetchRscInput: FetchRscInputTransformer;
-  if (typeof storeOrTransform === 'function') {
-    transformFetchRscInput = storeOrTransform;
-  } else {
-    transformFetchRscInput = maybeTransform!;
-    if (!registerTransformerStoreArgWarned) {
-      registerTransformerStoreArgWarned = true;
-      console.warn(
-        '[waku] Passing a store to `unstable_registerFetchRscInputTransformer` is deprecated. Pass only the transformer.',
-      );
-    }
-  }
+): Unregister => {
   const fetchRscInputTransformers = (fetchRscStore[
     FETCH_RSC_INPUT_TRANSFORMERS
   ] ||= new Set());
@@ -409,7 +360,7 @@ export function unstable_registerFetchRscInputTransformer(
   return () => {
     fetchRscInputTransformers.delete(transformFetchRscInput);
   };
-}
+};
 
 const registerHmrRefetch = (refetch: () => void) => {
   globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];
@@ -508,23 +459,6 @@ export const useElementsPromise_UNSTABLE = () => {
     throw new Error('Missing Root component');
   }
   return elementsPromise;
-};
-
-let useFetchRscStoreDeprecationWarned = false;
-
-/**
- * @deprecated The store is an internal singleton; you no longer need to pass it
- * to `unstable_registerFetchRscInputTransformer`. This will be removed in a
- * future release.
- */
-export const useFetchRscStore_UNSTABLE = () => {
-  if (!useFetchRscStoreDeprecationWarned) {
-    useFetchRscStoreDeprecationWarned = true;
-    console.warn(
-      '[waku] `useFetchRscStore_UNSTABLE` is deprecated and will be removed.',
-    );
-  }
-  return fetchRscStore;
 };
 
 /**

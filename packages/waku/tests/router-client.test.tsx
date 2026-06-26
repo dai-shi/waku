@@ -17,12 +17,12 @@ import {
   vi,
 } from 'vitest';
 import { createCustomError } from '../src/lib/utils/custom-errors.js';
+import { fetchRscStore } from '../src/minimal/client-utils/fetch-store.js';
 import {
   Children,
   INTERNAL_ServerRoot,
   Root,
   unstable_prefetchRsc as prefetchRsc,
-  useFetchRscStore_UNSTABLE,
   useRefetch,
 } from '../src/minimal/client.js';
 import {
@@ -1275,15 +1275,9 @@ describe('Router integration', () => {
   });
 
   test('registers its fetch enhancer and callServer listener once, and removes them on unmount (StrictMode)', async () => {
-    const warn = console.warn;
-    console.warn = () => {};
     // The store is a module-level singleton; 'f' is FETCH_ENHANCERS, 'l' is
     // CALL_SERVER_ELEMENTS_LISTENERS.
-    const store = useFetchRscStore_UNSTABLE() as unknown as Record<
-      string,
-      unknown
-    >;
-    console.warn = warn;
+    const store = fetchRscStore as unknown as Record<string, unknown>;
     delete store.f;
     delete store.l;
     const size = (key: string) =>
@@ -2358,14 +2352,11 @@ describe('Router integration', () => {
     // the way the real refetch would, so the header is asserted on the request.
     // ('f' is the internal FETCH_ENHANCERS key.)
     const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => {
-      const warn = console.warn;
-      console.warn = () => {};
       const enhancers = (
-        useFetchRscStore_UNSTABLE() as {
+        fetchRscStore as {
           f?: Set<(fn: typeof fetch) => typeof fetch>;
         }
       ).f;
-      console.warn = warn;
       let fetchFn: typeof fetch = fetch;
       for (const enhance of enhancers ?? []) {
         fetchFn = enhance(fetchFn);
