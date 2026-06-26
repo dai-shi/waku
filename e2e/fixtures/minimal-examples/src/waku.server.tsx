@@ -67,7 +67,9 @@ export default adapter(
       }
       if (input.type === 'custom') {
         const mode = modeFromPathname(input.pathname);
-        const cookies = cookie.parse(input.req.headers.get('cookie') || '');
+        const cookies = cookie.parseCookie(
+          input.req.headers.get('cookie') || '',
+        );
         const count = (Number(cookies.count) || 0) + 1;
         const items = JSON.parse(
           await fs.readFile('./private/items.json', 'utf8'),
@@ -87,7 +89,7 @@ export default adapter(
             if (mode === 'cookie') {
               html.headers.append(
                 'set-cookie',
-                cookie.serialize('count', `${count}`),
+                cookie.stringifySetCookie({ name: 'count', value: `${count}` }),
               );
             }
             return html;

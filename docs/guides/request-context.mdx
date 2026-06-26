@@ -137,7 +137,7 @@ import * as cookie from 'cookie';
 import { unstable_getHeaders as getHeaders } from 'waku/router/server';
 
 export default function Page() {
-  const cookies = cookie.parse(getHeaders()['cookie'] ?? '');
+  const cookies = cookie.parseCookie(getHeaders()['cookie'] ?? '');
 
   return <p>Session: {cookies.sessionId ?? 'none'}</p>;
 }
@@ -152,7 +152,7 @@ import type { MiddlewareHandler } from 'hono';
 
 const sessionMiddleware = (): MiddlewareHandler => {
   return async (c, next) => {
-    const cookies = cookie.parse(c.req.header('cookie') || '');
+    const cookies = cookie.parseCookie(c.req.header('cookie') || '');
     const sessionId = cookies.sessionId;
 
     await next();
@@ -161,7 +161,9 @@ const sessionMiddleware = (): MiddlewareHandler => {
       const headers = new Headers(c.res.headers);
       headers.append(
         'set-cookie',
-        cookie.serialize('sessionId', sessionId, {
+        cookie.stringifySetCookie({
+          name: 'sessionId',
+          value: sessionId,
           httpOnly: true,
           path: '/',
           sameSite: 'lax',
