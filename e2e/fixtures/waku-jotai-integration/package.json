@@ -14,7 +14,7 @@
     "react-dom": "~19.2.6",
     "react-server-dom-webpack": "~19.2.6",
     "waku": "latest",
-    "waku-jotai": "^0.4.0"
+    "waku-jotai": "^0.5.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",

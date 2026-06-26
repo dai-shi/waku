@@ -432,8 +432,8 @@ importers:
         specifier: latest
         version: link:../../../packages/waku
       waku-jotai:
-        specifier: ^0.4.0
-        version: 0.4.0(jotai@2.20.1(@babel/core@7.29.7)(@babel/template@7.29.7)(@types/react@19.2.17)(react@19.2.6))(react@19.2.6)(waku@packages+waku)
+        specifier: ^0.5.0
+        version: 0.5.0(jotai@2.20.1(@babel/core@7.29.7)(@babel/template@7.29.7)(@types/react@19.2.17)(react@19.2.6))(react@19.2.6)(waku@packages+waku)
     devDependencies:
       '@types/react':
         specifier: ^19.2.17
@@ -1147,8 +1147,8 @@ importers:
         specifier: latest
         version: link:../../../packages/waku
       waku-jotai:
-        specifier: ^0.4.0
-        version: 0.4.0(jotai@2.20.1(@babel/core@7.29.7)(@babel/template@7.29.7)(@types/react@19.2.17)(react@19.2.6))(react@19.2.6)(waku@packages+waku)
+        specifier: ^0.5.0
+        version: 0.5.0(jotai@2.20.1(@babel/core@7.29.7)(@babel/template@7.29.7)(@types/react@19.2.17)(react@19.2.6))(react@19.2.6)(waku@packages+waku)
     devDependencies:
       '@types/react':
         specifier: ^19.2.17
@@ -6589,12 +6589,12 @@ packages:
       jsdom:
         optional: true
 
-  waku-jotai@0.4.0:
-    resolution: {integrity: sha512-WPMimcqSetE7ptLkyTo9JXw4Gpcesi5qnPdGEKY0e9+ahJKi2alhK/muoi2CFEm0M4WgT+7AfvxTT9qlE5NyKQ==}
+  waku-jotai@0.5.0:
+    resolution: {integrity: sha512-hA9w7rdgYKdrKzzd/yxbFzIkEHIHcG8n0/sjJcTVwD5o7NFKhcYli5Eh2sx0Mrk5KoG/YJz8/6DfSesLvuhTPA==}
     peerDependencies:
       jotai: '>=2.20.0'
       react: '>=19.0.0'
-      waku: '>=1.0.0-alpha.5'
+      waku: '>=1.0.0-beta.4'
 
   watchpack@2.5.2:
     resolution: {integrity: sha512-6i/00NBjP4yGPs+caKSyRfpTF/8Torsu0MOW3mMzIbhgISFder8i7xbqgHlLMwJrdiN8ndBV3UA1/AfzPSr+jg==}
@@ -12298,7 +12298,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  waku-jotai@0.4.0(jotai@2.20.1(@babel/core@7.29.7)(@babel/template@7.29.7)(@types/react@19.2.17)(react@19.2.6))(react@19.2.6)(waku@packages+waku):
+  waku-jotai@0.5.0(jotai@2.20.1(@babel/core@7.29.7)(@babel/template@7.29.7)(@types/react@19.2.17)(react@19.2.6))(react@19.2.6)(waku@packages+waku):
     dependencies:
       jotai: 2.20.1(@babel/core@7.29.7)(@babel/template@7.29.7)(@types/react@19.2.17)(react@19.2.6)
       react: 19.2.6
