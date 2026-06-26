@@ -1,7 +1,7 @@
 import { getGrouplessPath } from '../../lib/utils/create-pages.js';
 import { getPathMapping, parsePathWithSlug } from '../../lib/utils/path.js';
 import type { RouteParams } from '../create-pages-utils/inferred-path-types.js';
-import type { RoutePattern } from './build-route-href.js';
+import type { RoutePath } from './build-route-href.js';
 
 const safeDecodeURIComponent = (value: string): string | null => {
   try {
@@ -12,7 +12,7 @@ const safeDecodeURIComponent = (value: string): string | null => {
 };
 
 /**
- * Match a concrete pathname against a route pattern and return its params, or
+ * Match a concrete pathname against a route path and return its params, or
  * null when the pathname does not match. This is the inverse of buildRouteHref:
  * route groups are stripped, the existing matcher decides the match, and each
  * matched segment is decoded once. The pathname must be the encoded form stored
@@ -22,11 +22,11 @@ const safeDecodeURIComponent = (value: string): string | null => {
  * router: a prefixed terminal catch-all (/docs/[...path]) does not match its
  * base (/docs), while a root catch-all (/[...path]) matches / as { path: [] }.
  */
-export const matchRouteParams = <Pattern extends RoutePattern>(
-  pattern: Pattern,
+export const matchRouteParams = <Path extends RoutePath>(
+  path: Path,
   pathname: string,
-): RouteParams<Pattern> | null => {
-  const pathSpec = parsePathWithSlug(getGrouplessPath(pattern));
+): RouteParams<Path> | null => {
+  const pathSpec = parsePathWithSlug(getGrouplessPath(path));
   const mapping = getPathMapping(pathSpec, pathname);
   if (mapping === null) {
     return null;
@@ -51,5 +51,5 @@ export const matchRouteParams = <Pattern extends RoutePattern>(
       params[key] = decodedValue;
     }
   }
-  return params as RouteParams<Pattern>;
+  return params as RouteParams<Path>;
 };

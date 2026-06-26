@@ -38,7 +38,7 @@ import type { RouteConfig } from './base-types.js';
 import { buildRouteHref } from './client-utils/build-route-href.js';
 import type {
   BuildRouteHrefTarget,
-  RoutePattern,
+  RoutePath,
 } from './client-utils/build-route-href.js';
 import { matchRouteParams } from './client-utils/match-route-params.js';
 import {
@@ -85,8 +85,8 @@ type NavigateOptions = {
 
 type Navigate = {
   (to: InferredPaths, options?: NavigateOptions): Promise<void>;
-  <Pattern extends RoutePattern>(
-    target: BuildRouteHrefTarget<Pattern>,
+  <Path extends RoutePath>(
+    target: BuildRouteHrefTarget<Path>,
     options?: NavigateOptions,
   ): Promise<void>;
 };
@@ -253,7 +253,7 @@ export function useRouter() {
   const { route, changeRoute, prefetchRoute } = router;
   const push = useCallback(
     async (
-      to: InferredPaths | BuildRouteHrefTarget<RoutePattern>,
+      to: InferredPaths | BuildRouteHrefTarget<RoutePath>,
       options?: NavigateOptions,
     ) => {
       const href = typeof to === 'string' ? to : buildRouteHref(to);
@@ -271,7 +271,7 @@ export function useRouter() {
   ) as Navigate;
   const replace = useCallback(
     async (
-      to: InferredPaths | BuildRouteHrefTarget<RoutePattern>,
+      to: InferredPaths | BuildRouteHrefTarget<RoutePath>,
       options?: NavigateOptions,
     ) => {
       const href = typeof to === 'string' ? to : buildRouteHref(to);
@@ -319,17 +319,17 @@ export function useRouter() {
 }
 
 /**
- * Read the current route's params, typed from the `from` pattern, or null when
+ * Read the current route's params, typed from the `from` path, or null when
  * the current path does not match it. Re-renders when the route path changes.
  * The result is memoized by path, so its identity changes on navigation to a
  * different path; read its fields rather than using the object itself as an
  * effect dependency.
  */
-export function useParams_UNSTABLE<Pattern extends RoutePattern>({
+export function useParams_UNSTABLE<Path extends RoutePath>({
   from,
 }: {
-  from: Pattern;
-}): RouteParams<Pattern> | null {
+  from: Path;
+}): RouteParams<Path> | null {
   const { path } = useRouter();
   return useMemo(() => matchRouteParams(from, path), [from, path]);
 }

@@ -6,27 +6,27 @@ import type {
   RouteParams,
 } from '../create-pages-utils/inferred-path-types.js';
 
-export type RoutePattern = [PagePath<CreatePagesConfig>] extends [never]
+export type RoutePath = [PagePath<CreatePagesConfig>] extends [never]
   ? string
   : PagePath<CreatePagesConfig>;
 
-type RouteParamsInput<Pattern extends RoutePattern> = {
-  [Key in keyof RouteParams<Pattern>]: RouteParams<Pattern>[Key] extends string[]
+type RouteParamsInput<Path extends RoutePath> = {
+  [Key in keyof RouteParams<Path>]: RouteParams<Path>[Key] extends string[]
     ? readonly string[]
-    : RouteParams<Pattern>[Key];
+    : RouteParams<Path>[Key];
 };
 
 type SearchValue = string | readonly string[] | undefined;
 
 type BuildRouteHrefSearch = Record<string, SearchValue>;
 
-export type BuildRouteHrefTarget<Pattern extends RoutePattern> = {
-  to: Pattern;
+export type BuildRouteHrefTarget<Path extends RoutePath> = {
+  to: Path;
   search?: BuildRouteHrefSearch;
   hash?: string;
-} & (keyof RouteParamsInput<Pattern> extends never
+} & (keyof RouteParamsInput<Path> extends never
   ? { params?: never }
-  : { params: RouteParamsInput<Pattern> });
+  : { params: RouteParamsInput<Path> });
 
 const serializeSearch = (search: BuildRouteHrefSearch | undefined): string => {
   if (search === undefined) {
@@ -49,14 +49,14 @@ const serializeSearch = (search: BuildRouteHrefSearch | undefined): string => {
 };
 
 /**
- * Build an href string from a route pattern, params, search, and hash.
+ * Build an href string from a route path, params, search, and hash.
  *
- * Route groups in the pattern are removed, path params are URL-encoded, and the
+ * Route groups in the path are removed, path params are URL-encoded, and the
  * result is validated against the route matcher; building a pathname that the
- * pattern would not match (e.g. an empty array for a prefixed catch-all) throws.
+ * path would not match (e.g. an empty array for a prefixed catch-all) throws.
  */
-export const buildRouteHref = <Pattern extends RoutePattern>(
-  target: BuildRouteHrefTarget<Pattern>,
+export const buildRouteHref = <Path extends RoutePath>(
+  target: BuildRouteHrefTarget<Path>,
 ): string => {
   const { to, search, hash, params } = target as {
     to: string;
