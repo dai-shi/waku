@@ -12,12 +12,13 @@ import { createTaskRunner } from '../lib/utils/task-runner.js';
 import { unstable_defineHandlers as defineHandlers } from '../minimal/server.js';
 import { deserializeRsc, serializeRsc } from '../server.js';
 import { INTERNAL_ServerRouter } from './client.js';
-import { buildRouteHref } from './common-utils/build-route-href.js';
+import type { Unstable_SearchCodec } from './create-pages-utils/inferred-path-types.js';
+import { buildRouteHref } from './isomorphic-utils/build-route-href.js';
 import type {
   BuildRouteHrefTarget,
   RouteHref,
   RoutePath,
-} from './common-utils/build-route-href.js';
+} from './isomorphic-utils/build-route-href.js';
 import {
   ETAG_ID_PREFIX,
   HAS404_ID,
@@ -29,8 +30,7 @@ import {
   encodeRoutePath,
   encodeSliceId,
   pathnameToRoutePath,
-} from './common-utils/route-path.js';
-import type { Unstable_SearchCodec } from './create-pages-utils/inferred-path-types.js';
+} from './isomorphic-utils/route-path.js';
 
 export type ApiHandler = (
   req: Request,

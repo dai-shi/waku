@@ -1,6 +1,6 @@
 import type { SearchCodecsConfig } from '../base-types.js';
-import type { RouteProps } from '../common-utils/route-path.js';
 import type { PathWithoutSlug } from '../create-pages.js';
+import type { RouteProps } from '../isomorphic-utils/route-path.js';
 import type { Join, Prettify, ReplaceAll, Split } from './util-types.js';
 
 type ReadOnlyStringTupleList = readonly (readonly string[])[];

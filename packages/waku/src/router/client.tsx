@@ -34,18 +34,17 @@ import {
   useElementsPromise_UNSTABLE as useElementsPromise,
   useRefetch,
 } from '../minimal/client.js';
-import { matchRouteParams } from './client-utils/match-route-params.js';
-import {
-  type AnyCodec,
-  getRouteSearchCodecId,
-  isCodec,
-} from './client-utils/search-codec-registry.js';
-import { buildRouteHref } from './common-utils/build-route-href.js';
+import type {
+  RouteParams,
+  RouteSearch,
+} from './create-pages-utils/inferred-path-types.js';
+import { buildRouteHref } from './isomorphic-utils/build-route-href.js';
 import type {
   BuildRouteHrefTarget,
   RouteHref,
   RoutePath,
-} from './common-utils/build-route-href.js';
+} from './isomorphic-utils/build-route-href.js';
+import { matchRouteParams } from './isomorphic-utils/match-route-params.js';
 import {
   ETAG_ID_PREFIX,
   HAS404_ID,
@@ -55,12 +54,13 @@ import {
   encodeRoutePath,
   encodeSliceId,
   pathnameToRoutePath,
-} from './common-utils/route-path.js';
-import type { RouteProps } from './common-utils/route-path.js';
-import type {
-  RouteParams,
-  RouteSearch,
-} from './create-pages-utils/inferred-path-types.js';
+} from './isomorphic-utils/route-path.js';
+import type { RouteProps } from './isomorphic-utils/route-path.js';
+import {
+  type AnyCodec,
+  getRouteSearchCodecId,
+  isCodec,
+} from './isomorphic-utils/search-codec-registry.js';
 
 type NavigateOptions = {
   /**
@@ -1331,4 +1331,5 @@ export type Unstable_ChangeRouteCallback = ChangeRouteCallback;
 export type Unstable_PrefetchRoute = PrefetchRoute;
 export type Unstable_SliceId = SliceId;
 export type Unstable_RouteHref = RouteHref;
+export type Unstable_RoutePath = RoutePath;
 export const unstable_parseRoute = parseRoute;

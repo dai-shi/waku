@@ -1,7 +1,7 @@
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it, vi } from 'vitest';
-import { ROUTE_ID } from '../src/router/common-utils/route-path.js';
 import { unstable_defineRouter } from '../src/router/define-router.js';
+import { ROUTE_ID } from '../src/router/isomorphic-utils/route-path.js';
 
 vi.mock('../src/server.js', () => ({
   deserializeRsc: vi.fn().mockResolvedValue(null),

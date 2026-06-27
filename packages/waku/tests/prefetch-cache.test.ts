@@ -5,7 +5,7 @@ import {
   addPrefetchEntry,
   consumePrefetchEntry,
   hasPrefetchEntry,
-} from '../src/lib/utils/prefetch-cache.js';
+} from '../src/minimal/client-utils/prefetch-cache.js';
 
 beforeEach(() => {
   vi.useFakeTimers();

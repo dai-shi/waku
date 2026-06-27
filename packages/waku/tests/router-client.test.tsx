@@ -49,7 +49,7 @@ import {
   IS_STATIC_ID,
   ROUTE_ID,
   SKIP_HEADER,
-} from '../src/router/common-utils/route-path.js';
+} from '../src/router/isomorphic-utils/route-path.js';
 
 const postsSearchCodec = {
   id: 'posts-test',

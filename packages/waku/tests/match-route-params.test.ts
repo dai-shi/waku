@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { matchRouteParams } from '../src/router/client-utils/match-route-params.js';
-import { buildRouteHref } from '../src/router/common-utils/build-route-href.js';
+import { buildRouteHref } from '../src/router/isomorphic-utils/build-route-href.js';
+import { matchRouteParams } from '../src/router/isomorphic-utils/match-route-params.js';
 
 describe('matchRouteParams', () => {
   test('matches a static route', () => {

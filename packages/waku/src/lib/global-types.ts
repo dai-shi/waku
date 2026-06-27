@@ -7,7 +7,7 @@ declare global {
     | undefined;
   var __WAKU_SERVER_ENV__: Readonly<Record<string, string>> | undefined;
   var __WAKU_PREFETCHED__:
-    | import('./utils/prefetch-cache.js').PrefetchEntry[]
+    | import('../minimal/client-utils/prefetch-cache.js').PrefetchEntry[]
     | undefined;
   var __WAKU_INITIAL_RSC__:
     | import('./utils/initial-rsc.js').InitialRscEntry

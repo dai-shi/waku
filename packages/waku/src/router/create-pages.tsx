@@ -13,7 +13,6 @@ import {
 import type { PathSpec } from '../lib/utils/path.js';
 import { Children, Slot } from '../minimal/client.js';
 import { ErrorBoundary } from '../router/client.js';
-import { pathnameToRoutePath } from './common-utils/route-path.js';
 import type {
   AnyPage,
   GetSlugs,
@@ -22,6 +21,7 @@ import type {
 } from './create-pages-utils/inferred-path-types.js';
 import { unstable_defineRouter } from './define-router.js';
 import type { ApiHandler, HandlerInterceptor } from './define-router.js';
+import { pathnameToRoutePath } from './isomorphic-utils/route-path.js';
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
 export const METHODS = [

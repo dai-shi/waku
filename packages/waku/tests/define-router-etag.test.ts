@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 import { createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { unstable_defineRouter } from '../src/router/define-router.js';
 import {
   ETAG_ID_PREFIX,
   SKIP_HEADER,
   encodeRoutePath,
   encodeSliceId,
-} from '../src/router/common-utils/route-path.js';
-import { unstable_defineRouter } from '../src/router/define-router.js';
+} from '../src/router/isomorphic-utils/route-path.js';
 
 vi.mock('../src/server.js', () => ({
   // Static slots round-trip through serialize/deserialize; for these tests the

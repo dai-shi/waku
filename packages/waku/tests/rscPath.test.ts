@@ -9,7 +9,7 @@ import {
   decodeRoutePath,
   encodeRoutePath,
   pathnameToRoutePath,
-} from '../src/router/common-utils/route-path.js';
+} from '../src/router/isomorphic-utils/route-path.js';
 
 describe('encodeRscPath', () => {
   test('encodes rscPath', () => {

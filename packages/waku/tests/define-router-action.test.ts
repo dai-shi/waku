@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
 import {
-  ROUTE_ID,
-  encodeRoutePath,
-} from '../src/router/common-utils/route-path.js';
-import {
   unstable_defineRouter,
   unstable_redirect,
   unstable_rerenderRoute,
 } from '../src/router/define-router.js';
+import {
+  ROUTE_ID,
+  encodeRoutePath,
+} from '../src/router/isomorphic-utils/route-path.js';
 
 vi.mock('../src/server.js', () => ({
   deserializeRsc: vi.fn().mockResolvedValue(null),

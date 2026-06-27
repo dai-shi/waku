@@ -13,11 +13,6 @@ import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
 import { createCustomError } from '../lib/utils/custom-errors.js';
 import { consumeInitialRscEntry } from '../lib/utils/initial-rsc.js';
-import {
-  addPrefetchEntry,
-  consumePrefetchEntry,
-  hasPrefetchEntry,
-} from '../lib/utils/prefetch-cache.js';
 import { setupDebugChannel } from '../lib/utils/react-debug-channel.js';
 import { encodeFuncId, encodeRscPath } from '../lib/utils/rsc-path.js';
 import {
@@ -33,6 +28,11 @@ import type {
   FetchRscInputTransformer,
   SetElements,
 } from './client-utils/fetch-store.js';
+import {
+  addPrefetchEntry,
+  consumePrefetchEntry,
+  hasPrefetchEntry,
+} from './client-utils/prefetch-cache.js';
 
 const { createFromFetch, encodeReply, createTemporaryReferenceSet } =
   RSDWClient;

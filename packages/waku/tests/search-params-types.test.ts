@@ -1,12 +1,12 @@
 import { expectType } from 'ts-expect';
 import type { TypeEqual } from 'ts-expect';
 import { describe, expect, it, vi } from 'vitest';
-import { buildRouteHref } from '../src/router/common-utils/build-route-href.js';
 import type {
   PropsForPages,
   RouteSearch,
 } from '../src/router/create-pages-utils/inferred-path-types.js';
 import { unstable_redirect } from '../src/router/define-router.js';
+import { buildRouteHref } from '../src/router/isomorphic-utils/build-route-href.js';
 
 // define-router pulls in server.js (react-server-dom-webpack); mock it so this
 // pure type/codec test loads without the `react-server` condition.
