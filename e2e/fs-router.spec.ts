@@ -139,6 +139,41 @@ test.describe('fs-router', () => {
     );
   });
 
+  test('search params (Zod-backed codec via typegen)', async ({ page }) => {
+    // the codec is attached via getConfig and typed via generated pages.gen.ts;
+    // no hand-written `declare module` augmentation is needed
+    await page.goto(`http://localhost:${port}/zod-search?q=hi&page=2`);
+    await waitForHydration(page);
+    await expect(page.getByTestId('zod-server-search')).toHaveText(
+      '{"q":"hi","page":2}',
+    );
+    await expect(page.getByTestId('zod-client-search')).toHaveText(
+      '{"q":"hi","page":2}',
+    );
+  });
+
+  test('search params (Zod codec rejects an invalid query with 400)', async () => {
+    const res = await fetch(`http://localhost:${port}/zod-search?page=0`);
+    expect(res.status).toBe(400);
+  });
+
+  test('search params (nuqs-backed codec via typegen)', async ({ page }) => {
+    await page.goto(`http://localhost:${port}/nuqs-search?q=hi&page=2`);
+    await waitForHydration(page);
+    await expect(page.getByTestId('nuqs-server-search')).toHaveText(
+      '{"q":"hi","page":2}',
+    );
+    await expect(page.getByTestId('nuqs-client-search')).toHaveText(
+      '{"q":"hi","page":2}',
+    );
+  });
+
+  test('search params (nuqs codec rejects an invalid query with 400)', async () => {
+    // the codec loads with { strict: true }, so a bad value throws -> 400
+    const res = await fetch(`http://localhost:${port}/nuqs-search?page=abc`);
+    expect(res.status).toBe(400);
+  });
+
   test('static-nested encoded path with trailing slash', async ({ page }) => {
     await page.goto(`http://localhost:${port}/static-nested/encoded%20path/`);
     await expect(

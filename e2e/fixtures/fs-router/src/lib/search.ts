@@ -1,6 +1,6 @@
 import type { Unstable_SearchCodec } from 'waku/router';
 
-export type DemoSearch = { q: string; page: number };
+type DemoSearch = { q: string; page: number };
 
 export const demoSearchCodec = {
   id: 'fs-demo',
@@ -10,4 +10,8 @@ export const demoSearchCodec = {
   },
   serialize: (search: DemoSearch): string =>
     new URLSearchParams({ q: search.q, page: String(search.page) }).toString(),
-} as const satisfies Unstable_SearchCodec<DemoSearch>;
+} satisfies Unstable_SearchCodec<DemoSearch>;
+
+// Re-exported so the namespace-imported provider registers them on the client.
+export { zodSearchCodec } from './zod-search.js';
+export { nuqsSearchCodec } from './nuqs-search.js';
