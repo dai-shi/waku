@@ -37,7 +37,7 @@ export default function Page() {
 
 `unstable_getRequest` and `unstable_getHeaders` are exported from `waku/router/server` and are available wherever the router runs your code: renders (request and build), API route handlers, and interceptors. In the Minimal API, use `input.req` from `handleRequest` instead, and bring your own `AsyncLocalStorage` if you need it deeper in the tree.
 
-Components rendered as `static` are cached at build time, so do not read `unstable_getRequest`, headers, or interceptor-seeded state in a static page, layout, or slice — those values would be baked into the cached output. Read request-scoped data only in `dynamic` rendering. (During a static route build `unstable_getRequest().url` is the route's path, but a static slice build uses a placeholder root request that does not identify the slice.)
+Components rendered as `static` are cached at build time, so do not read `unstable_getRequest`, headers, or interceptor-seeded state in a static page, layout, or slice; those values would be baked into the cached output. Read request-scoped data only in `dynamic` rendering. (During a static route build `unstable_getRequest().url` is the route's path, but a static slice build uses a placeholder root request that does not identify the slice.)
 
 ## Read Request Headers
 

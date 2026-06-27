@@ -746,7 +746,7 @@ export const HomePage = () => {
 
 When `<Slice id="tooltip/123" lazy />` is requested, Waku matches it against the `tooltip/[id]` pattern, extracts `{ id: "123" }`, and passes those params as props to the component.
 
-With the file-system router, slug slices work the same way as slug pages — create a file at `src/pages/_slices/tooltip/[id].tsx` and the ID pattern is derived from the file path.
+With the file-system router, slug slices work the same way as slug pages: create a file at `src/pages/_slices/tooltip/[id].tsx` and the ID pattern is derived from the file path.
 
 Multiple dynamic segments are also supported (e.g., `items/[category]/[id]`), and each extracted parameter is passed as a separate prop.
 

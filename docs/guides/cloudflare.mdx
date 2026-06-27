@@ -23,7 +23,7 @@ Then use these commands:
 
 Waku integrates with Cloudflare Workers via [`@cloudflare/vite-plugin`](https://developers.cloudflare.com/workers/vite-plugin/). This plugin runs your code in the actual Cloudflare workerd runtime during both development and build, so Cloudflare bindings (D1, KV, etc.) work without additional shims.
 
-> `@cloudflare/vite-plugin` is optional. If you don't need Cloudflare-specific features like D1, KV, or other bindings, you can deploy to Cloudflare Workers without it — just use `waku/adapters/cloudflare` in your `src/waku.server.tsx`.
+> `@cloudflare/vite-plugin` is optional. If you don't need Cloudflare-specific features like D1, KV, or other bindings, you can deploy to Cloudflare Workers without it; just use `waku/adapters/cloudflare` in your `src/waku.server.tsx`.
 
 Install `@cloudflare/vite-plugin` and [`wrangler`](https://www.npmjs.com/package/wrangler) as development dependencies:
 
