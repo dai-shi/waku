@@ -1,7 +1,7 @@
 import { getGrouplessPath } from '../../lib/utils/create-pages.js';
 import { getPathMapping, parsePathWithSlug } from '../../lib/utils/path.js';
+import type { RoutePath } from '../common-utils/build-route-href.js';
 import type { RouteParams } from '../create-pages-utils/inferred-path-types.js';
-import type { RoutePath } from './build-route-href.js';
 
 const safeDecodeURIComponent = (value: string): string | null => {
   try {

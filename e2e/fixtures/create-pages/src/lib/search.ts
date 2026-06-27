@@ -18,5 +18,6 @@ demoSearchCodec satisfies Unstable_SearchCodec<DemoSearch>;
 declare module 'waku/router' {
   interface SearchCodecsConfig {
     '/search': typeof demoSearchCodec;
+    '/items/[id]': typeof demoSearchCodec;
   }
 }

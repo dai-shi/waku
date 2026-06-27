@@ -46,6 +46,15 @@ export default async function AccountPage() {
 
 The default is `307`.
 
+`redirect` also accepts the same typed target as `router.push` / `router.replace`: a structured `{ to, params, search, hash }`, so a dynamic route's params and a route's typed `search` are checked and serialized for you:
+
+```tsx
+redirect({ to: '/posts/[slug]', params: { slug: post.slug } });
+redirect({ to: '/products', search: { q: 'waku', page: 1 } }, 303);
+```
+
+`search` is serialized with that route's search codec (see the [Typed Routes](/guides/typed-routes) guide).
+
 ## Redirect After a Server Action
 
 For form submissions and mutations, use `303` when the next page should be loaded with a `GET` request:

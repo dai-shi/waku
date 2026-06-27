@@ -21,7 +21,7 @@ import type {
 } from '../types.js';
 import { getErrorInfo } from '../utils/custom-errors.js';
 import { sanitizeLog } from '../utils/log.js';
-import { joinPath } from '../utils/path.js';
+import { addBase, joinPath } from '../utils/path.js';
 import { DEBUG_ID_HEADER } from '../utils/react-debug-channel.js';
 import { createRenderUtils } from '../utils/render.js';
 import { getInput } from '../utils/request.js';
@@ -89,7 +89,7 @@ const toProcessRequest =
       const body = stringToStream(message);
       const headers: { location?: string } = {};
       if (info?.location) {
-        headers.location = info.location;
+        headers.location = addBase(info.location, config.basePath);
       }
       return new Response(body, { status, headers });
     }

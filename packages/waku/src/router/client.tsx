@@ -34,18 +34,18 @@ import {
   useElementsPromise_UNSTABLE as useElementsPromise,
   useRefetch,
 } from '../minimal/client.js';
-import type { RouteConfig } from './base-types.js';
-import { buildRouteHref } from './client-utils/build-route-href.js';
-import type {
-  BuildRouteHrefTarget,
-  RoutePath,
-} from './client-utils/build-route-href.js';
 import { matchRouteParams } from './client-utils/match-route-params.js';
 import {
   type AnyCodec,
   getRouteSearchCodecId,
   isCodec,
 } from './client-utils/search-codec-registry.js';
+import { buildRouteHref } from './common-utils/build-route-href.js';
+import type {
+  BuildRouteHrefTarget,
+  RouteHref,
+  RoutePath,
+} from './common-utils/build-route-href.js';
 import {
   ETAG_ID_PREFIX,
   HAS404_ID,
@@ -61,25 +61,6 @@ import type {
   RouteParams,
   RouteSearch,
 } from './create-pages-utils/inferred-path-types.js';
-
-type AllowTrailingSlash<Path extends string> = Path extends '/'
-  ? Path
-  : Path | `${Path}/`;
-
-type AllowPathDecorators<Path extends string> = Path extends unknown
-  ?
-      | AllowTrailingSlash<Path>
-      | `${AllowTrailingSlash<Path>}?${string}`
-      | `${AllowTrailingSlash<Path>}#${string}`
-      | `?${string}`
-      | `#${string}`
-  : never;
-
-type RouteHref = RouteConfig extends {
-  paths: infer UserPaths extends string;
-}
-  ? AllowPathDecorators<UserPaths>
-  : string;
 
 type NavigateOptions = {
   /**

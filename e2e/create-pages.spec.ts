@@ -199,6 +199,33 @@ test.describe(`create-pages`, () => {
     expect(html).toContain('/search?q=linked');
   });
 
+  test('search params (typed structured redirect serializes search via server codec)', async ({
+    page,
+  }) => {
+    // unstable_redirect({ to: '/search', search }) is typed against /search's
+    // codec and serialized server-side via the codec-instance registry; the
+    // browser follows the 307 to the built href.
+    await page.goto(`http://localhost:${port}/redirect-to-search`);
+    await waitForHydration(page);
+    await expect(page).toHaveURL(/\/search\?q=hi&page=2$/);
+    await expect(page.getByTestId('server-search')).toHaveText(
+      '{"q":"hi","page":2}',
+    );
+  });
+
+  test('search params (typed structured redirect to a dynamic route with a codec)', async ({
+    request,
+  }) => {
+    // resolves the codec for a dynamic route (/items/[id]) and serializes both
+    // params and search into the Location (catches a route-key normalization
+    // mismatch, which would otherwise throw instead of redirecting)
+    const res = await request.get(`http://localhost:${port}/redirect-to-item`, {
+      maxRedirects: 0,
+    });
+    expect(res.status()).toBe(307);
+    expect(res.headers()['location']).toBe('/items/7?q=hi&page=2');
+  });
+
   test('dynamic', async ({ page }) => {
     await page.goto(`http://localhost:${port}/dynamic`);
     await expect(page.getByRole('navigation')).toHaveText('Dynamic Layout');

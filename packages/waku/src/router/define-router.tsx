@@ -12,6 +12,12 @@ import { createTaskRunner } from '../lib/utils/task-runner.js';
 import { unstable_defineHandlers as defineHandlers } from '../minimal/server.js';
 import { deserializeRsc, serializeRsc } from '../server.js';
 import { INTERNAL_ServerRouter } from './client.js';
+import { buildRouteHref } from './common-utils/build-route-href.js';
+import type {
+  BuildRouteHrefTarget,
+  RouteHref,
+  RoutePath,
+} from './common-utils/build-route-href.js';
 import {
   ETAG_ID_PREFIX,
   HAS404_ID,
@@ -24,6 +30,7 @@ import {
   encodeSliceId,
   pathnameToRoutePath,
 } from './common-utils/route-path.js';
+import type { Unstable_SearchCodec } from './create-pages-utils/inferred-path-types.js';
 
 export type ApiHandler = (
   req: Request,
@@ -70,6 +77,9 @@ type RouterStore = {
   rscParams?: unknown;
   rerender?: Rerender;
   nonce?: string;
+  resolveSearchCodec?: (
+    routePath: string,
+  ) => Unstable_SearchCodec<any> | undefined;
 };
 const routerStorage = new AsyncLocalStorage<RouterStore>();
 
@@ -167,20 +177,26 @@ export function unstable_notFound(): never {
 }
 
 /**
- * Redirect to a path in the current application.
- * The `location` must start with a single `/`.
+ * Redirect within the current application. Accepts the same target as
+ * `router.push` / `router.replace`: a typed route href, a structured
+ * `{ to, params, search, hash }`, or an arbitrary string. The resolved
+ * location must start with a single `/`.
  */
-export function unstable_redirect(
-  location: string,
+export function unstable_redirect<Path extends RoutePath = RoutePath>(
+  to: RouteHref | BuildRouteHrefTarget<Path> | (string & {}),
   status: 303 | 307 | 308 = 307,
 ): never {
+  const location =
+    typeof to === 'string'
+      ? to
+      : buildRouteHref(to, routerStorage.getStore()?.resolveSearchCodec);
   if (!location.startsWith('/') || location.startsWith('//')) {
-    throw new Error('Invalid redirect location');
+    throw new Error(`Invalid redirect location: ${JSON.stringify(location)}`);
   }
   for (let i = 0; i < location.length; ++i) {
     const charCode = location.charCodeAt(i);
     if (charCode < 0x20 || charCode === 0x7f || charCode === 0x5c) {
-      throw new Error('Invalid redirect location');
+      throw new Error(`Invalid redirect location: ${JSON.stringify(location)}`);
     }
   }
   throw createCustomError('Redirect', { status, location });
@@ -285,7 +301,7 @@ type RouteConfig = {
   >;
   noSsr?: boolean;
   slices?: string[];
-  searchCodecId?: string;
+  searchCodec?: Unstable_SearchCodec<any>;
 };
 
 type ApiConfig = {
@@ -310,7 +326,7 @@ type RuntimeConfig = RouteConfig | ApiConfig | SliceConfig;
 
 type SerializableRouteConfig = Omit<
   RouteConfig,
-  'rootElement' | 'routeElement' | 'elements'
+  'rootElement' | 'routeElement' | 'elements' | 'searchCodec'
 > & {
   rootElement: Omit<
     RouteConfig['rootElement'],
@@ -340,7 +356,13 @@ type SerializableConfig =
 
 const toSerializable = (c: RuntimeConfig): SerializableConfig => {
   if (c.type === 'route') {
-    const { rootElement, routeElement, elements, ...rest } = c;
+    const {
+      rootElement,
+      routeElement,
+      elements,
+      searchCodec: _searchCodec,
+      ...rest
+    } = c;
     const {
       renderer: _rootRenderer,
       getEtagFromOption: _rootGetEtag,
@@ -465,8 +487,8 @@ const mergeWithRuntimeConfigs = (
         elements,
         ...(c.noSsr !== undefined ? { noSsr: c.noSsr } : {}),
         ...(c.slices !== undefined ? { slices: c.slices } : {}),
-        ...(c.searchCodecId !== undefined
-          ? { searchCodecId: c.searchCodecId }
+        ...(runtimeItem?.searchCodec !== undefined
+          ? { searchCodec: runtimeItem.searchCodec }
           : {}),
       };
     }
@@ -525,9 +547,9 @@ const buildRoutePath2searchCodecId = (
 ): Record<string, string> => {
   const routePath2searchCodecId: Record<string, string> = {};
   for (const item of configs) {
-    if (item.type === 'route' && item.searchCodecId !== undefined) {
+    if (item.type === 'route' && item.searchCodec !== undefined) {
       routePath2searchCodecId[pathSpecAsString(item.pathPattern ?? item.path)] =
-        item.searchCodecId;
+        item.searchCodec.id;
     }
   }
   return routePath2searchCodecId;
@@ -563,7 +585,7 @@ export function unstable_defineRouter(fns: {
 }) {
   const runHandled = <T,>(req: Request, fn: () => Promise<T>): Promise<T> =>
     routerStorage.run(
-      { req },
+      { req, resolveSearchCodec },
       (fns.unstable_interceptors ?? []).reduceRight(
         (next, interceptor) => () => interceptor(next),
         fn,
@@ -610,6 +632,26 @@ export function unstable_defineRouter(fns: {
       throw new Error('defineRouter: configs not initialized');
     }
     return cachedConfigs;
+  };
+
+  let cachedRoutePath2searchCodec:
+    | Map<string, Unstable_SearchCodec<any>>
+    | undefined;
+  const resolveSearchCodec = (
+    routePath: string,
+  ): Unstable_SearchCodec<any> | undefined => {
+    if (!cachedRoutePath2searchCodec) {
+      cachedRoutePath2searchCodec = new Map();
+      for (const item of getCachedConfigs()) {
+        if (item.type === 'route' && item.searchCodec) {
+          cachedRoutePath2searchCodec.set(
+            pathSpecAsString(item.pathPattern ?? item.path),
+            item.searchCodec,
+          );
+        }
+      }
+    }
+    return cachedRoutePath2searchCodec.get(routePath);
   };
 
   const has404 = (): boolean => {

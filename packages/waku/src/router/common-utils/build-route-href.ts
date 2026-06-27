@@ -1,6 +1,6 @@
 import { getGrouplessPath } from '../../lib/utils/create-pages.js';
 import { getPathMapping, parsePathWithSlug } from '../../lib/utils/path.js';
-import type { CreatePagesConfig } from '../base-types.js';
+import type { CreatePagesConfig, RouteConfig } from '../base-types.js';
 import type {
   PagePath,
   RouteParams,
@@ -11,6 +11,25 @@ import type {
 export type RoutePath = [PagePath<CreatePagesConfig>] extends [never]
   ? string
   : PagePath<CreatePagesConfig>;
+
+type AllowTrailingSlash<Path extends string> = Path extends '/'
+  ? Path
+  : Path | `${Path}/`;
+
+type AllowPathDecorators<Path extends string> = Path extends unknown
+  ?
+      | AllowTrailingSlash<Path>
+      | `${AllowTrailingSlash<Path>}?${string}`
+      | `${AllowTrailingSlash<Path>}#${string}`
+      | `?${string}`
+      | `#${string}`
+  : never;
+
+export type RouteHref = RouteConfig extends {
+  paths: infer UserPaths extends string;
+}
+  ? AllowPathDecorators<UserPaths>
+  : string;
 
 type RouteParamsInput<Path extends RoutePath> = {
   [Key in keyof RouteParams<Path>]: RouteParams<Path>[Key] extends string[]

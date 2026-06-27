@@ -1169,7 +1169,7 @@ export const createPages = <
             elements,
             noSsr,
           ),
-          ...(searchCodec ? { searchCodecId: searchCodec.id } : {}),
+          ...(searchCodec ? { searchCodec } : {}),
         };
       };
       const buildDynamicRouteConfigs = () =>

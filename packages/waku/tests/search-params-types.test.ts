@@ -1,11 +1,19 @@
 import { expectType } from 'ts-expect';
 import type { TypeEqual } from 'ts-expect';
-import { describe, expect, it } from 'vitest';
-import { buildRouteHref } from '../src/router/client-utils/build-route-href.js';
+import { describe, expect, it, vi } from 'vitest';
+import { buildRouteHref } from '../src/router/common-utils/build-route-href.js';
 import type {
   PropsForPages,
   RouteSearch,
 } from '../src/router/create-pages-utils/inferred-path-types.js';
+import { unstable_redirect } from '../src/router/define-router.js';
+
+// define-router pulls in server.js (react-server-dom-webpack); mock it so this
+// pure type/codec test loads without the `react-server` condition.
+vi.mock('../src/server.js', () => ({
+  deserializeRsc: vi.fn().mockResolvedValue(null),
+  serializeRsc: vi.fn().mockResolvedValue(new Uint8Array([1])),
+}));
 
 type Search = { page: number; nested: { a: string } };
 
@@ -67,6 +75,33 @@ describe('search params type foundation', () => {
       });
     };
     expect(typeof assertPush).toBe('function');
+
+    // 4. unstable_redirect is typed by `to`, exactly like push (arrows avoid the
+    // `never` return making later statements unreachable)
+    const assertRedirect = [
+      () =>
+        unstable_redirect({
+          to: '/typed-search/[id]',
+          params: { id: 'x' },
+          search: { page: 2, nested: { a: 'y' } },
+        }),
+      () =>
+        unstable_redirect({
+          to: '/typed-search/[id]',
+          params: { id: 'x' },
+          // @ts-expect-error search must match the route's codec
+          search: { page: 'two' },
+        }),
+      () =>
+        unstable_redirect({
+          to: '/no-codec',
+          // @ts-expect-error a route without a codec cannot pass search
+          search: { page: 2 },
+        }),
+      // the string escape hatch is still accepted
+      () => unstable_redirect('/anything?ref=home'),
+    ];
+    expect(assertRedirect).toHaveLength(4);
 
     // runtime: the same codec round-trips
     expect(typedSearchCodec.parse('page=2&a=x')).toEqual({

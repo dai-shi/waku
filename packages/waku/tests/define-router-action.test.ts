@@ -344,4 +344,26 @@ describe('unstable_redirect', () => {
       'Invalid redirect location',
     );
   });
+
+  // The structured form serializes server-side via buildRouteHref; `to` is cast
+  // because this test file declares no routes (RouteSearch<string> is `never`).
+  const getStructuredRedirectInfo = (to: unknown) => {
+    try {
+      unstable_redirect(to as never, 303);
+    } catch (e) {
+      return getErrorInfo(e);
+    }
+  };
+
+  it('serializes a structured target with params', () => {
+    expect(
+      getStructuredRedirectInfo({
+        to: '/posts/[slug]',
+        params: { slug: 'hello world' },
+      }),
+    ).toEqual({ status: 303, location: '/posts/hello%20world' });
+  });
+
+  // Search serialization needs the per-request router store (codec resolver),
+  // so it is covered end to end by the create-pages e2e (/redirect-to-search).
 });
