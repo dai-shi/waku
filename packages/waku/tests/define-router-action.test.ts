@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
-import { ROUTE_ID } from '../src/router/common-utils/route-path.js';
+import {
+  ROUTE_ID,
+  encodeRoutePath,
+} from '../src/router/common-utils/route-path.js';
 import {
   unstable_defineRouter,
   unstable_redirect,
@@ -21,6 +24,96 @@ const makeStream = () =>
   });
 
 describe('define-router action requests', () => {
+  it('does not let catch-all api routes intercept component requests', async () => {
+    const apiHandler = vi.fn().mockResolvedValue(new Response('api'));
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [
+        {
+          type: 'api' as const,
+          path: [
+            { type: 'group' as const, name: 'bucket' },
+            { type: 'wildcard' as const, name: 'path' },
+          ],
+          isStatic: false,
+          handler: apiHandler,
+        },
+        {
+          type: 'route' as const,
+          path: [{ type: 'literal' as const, name: 'about' }],
+          isStatic: false,
+          rootElement: { isStatic: false, renderer: () => 'root' },
+          routeElement: { isStatic: false, renderer: () => 'route' },
+          elements: {},
+        },
+      ],
+    });
+
+    const renderRsc = vi.fn().mockResolvedValue(makeStream());
+
+    await handleRequest(
+      {
+        type: 'component',
+        pathname: '/RSC/R/about',
+        rscPath: encodeRoutePath('/about'),
+        rscParams: undefined,
+        req: new Request('http://localhost/RSC/R/about'),
+      },
+      {
+        renderRsc,
+        parseRsc: vi.fn(),
+        renderHtml: vi.fn(),
+        loadBuildMetadata: vi.fn(),
+      },
+    );
+
+    expect(apiHandler).not.toHaveBeenCalled();
+    expect(renderRsc).toHaveBeenCalledWith(
+      expect.objectContaining({ [ROUTE_ID]: ['/about', ''] }),
+    );
+  });
+
+  it('does not let catch-all api routes intercept function requests', async () => {
+    const apiHandler = vi.fn().mockResolvedValue(new Response('api'));
+    const actionFn = vi.fn().mockResolvedValue('action-result');
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [
+        {
+          type: 'api' as const,
+          path: [
+            { type: 'group' as const, name: 'bucket' },
+            { type: 'wildcard' as const, name: 'path' },
+          ],
+          isStatic: false,
+          handler: apiHandler,
+        },
+      ],
+    });
+
+    const renderRsc = vi.fn().mockResolvedValue(makeStream());
+
+    await handleRequest(
+      {
+        type: 'function',
+        pathname: '/RSC/F/actions/submit.txt',
+        fn: actionFn,
+        args: ['arg'],
+        req: new Request('http://localhost/RSC/F/actions/submit.txt', {
+          method: 'POST',
+        }),
+      },
+      {
+        renderRsc,
+        parseRsc: vi.fn(),
+        renderHtml: vi.fn(),
+        loadBuildMetadata: vi.fn(),
+      },
+    );
+
+    expect(apiHandler).not.toHaveBeenCalled();
+    expect(actionFn).toHaveBeenCalledWith('arg');
+    expect(renderRsc).toHaveBeenCalledWith({}, { value: 'action-result' });
+  });
+
   it('sets router initial route for 404 HTML', async () => {
     const { handleRequest } = unstable_defineRouter({
       getConfigs: async () => [
@@ -116,6 +209,110 @@ describe('define-router action requests', () => {
         formState: 'form-state',
       }),
     );
+  });
+
+  it('does not let catch-all api routes intercept no-JS form actions', async () => {
+    let message = 'before';
+    const apiHandler = vi.fn().mockResolvedValue(new Response('api'));
+    const renderPage = vi.fn(() => `page:${message}`);
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [
+        {
+          type: 'route' as const,
+          path: [],
+          isStatic: false,
+          rootElement: { isStatic: false, renderer: () => 'root' },
+          routeElement: { isStatic: false, renderer: () => 'route' },
+          elements: {
+            'page:/': { isStatic: false, renderer: renderPage },
+          },
+        },
+        {
+          type: 'api' as const,
+          path: [{ type: 'wildcard' as const, name: 'path' }],
+          isStatic: false,
+          handler: apiHandler,
+        },
+      ],
+    });
+
+    const renderRsc = vi.fn().mockResolvedValue(makeStream());
+    const renderHtml = vi.fn().mockResolvedValue(new Response('ok'));
+
+    const res = await handleRequest(
+      {
+        type: 'action',
+        fn: async () => {
+          message = 'after';
+          unstable_rerenderRoute('/');
+          return 'form-state';
+        },
+        pathname: '/',
+        req: new Request('http://localhost/', { method: 'POST' }),
+      },
+      {
+        renderRsc,
+        parseRsc: vi.fn(),
+        renderHtml,
+        loadBuildMetadata: vi.fn(),
+      },
+    );
+
+    expect(res).toBeInstanceOf(Response);
+    expect(apiHandler).not.toHaveBeenCalled();
+    expect(renderPage).toHaveBeenCalledTimes(2);
+    expect(renderRsc).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'page:/': 'page:after',
+      }),
+    );
+    expect(renderHtml).toHaveBeenCalledWith(
+      expect.any(ReadableStream),
+      expect.anything(),
+      expect.objectContaining({
+        formState: 'form-state',
+      }),
+    );
+  });
+
+  it('lets api routes handle action requests when no route matches', async () => {
+    const apiHandler = vi.fn().mockResolvedValue(new Response('api'));
+    const actionFn = vi.fn();
+    const { handleRequest } = unstable_defineRouter({
+      getConfigs: async () => [
+        {
+          type: 'api' as const,
+          path: [
+            { type: 'literal' as const, name: 'api' },
+            { type: 'literal' as const, name: 'form-data' },
+          ],
+          isStatic: false,
+          handler: apiHandler,
+        },
+      ],
+    });
+
+    const res = await handleRequest(
+      {
+        type: 'action',
+        fn: actionFn,
+        pathname: '/api/form-data',
+        req: new Request('http://localhost/api/form-data', {
+          method: 'POST',
+        }),
+      },
+      {
+        renderRsc: vi.fn(),
+        parseRsc: vi.fn(),
+        renderHtml: vi.fn(),
+        loadBuildMetadata: vi.fn(),
+      },
+    );
+
+    expect(res).toBeInstanceOf(Response);
+    expect(await (res as Response).text()).toBe('api');
+    expect(apiHandler).toHaveBeenCalledTimes(1);
+    expect(actionFn).not.toHaveBeenCalled();
   });
 });
 
