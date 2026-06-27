@@ -75,7 +75,7 @@ type AllowPathDecorators<Path extends string> = Path extends unknown
       | `#${string}`
   : never;
 
-type InferredPaths = RouteConfig extends {
+type RouteHref = RouteConfig extends {
   paths: infer UserPaths extends string;
 }
   ? AllowPathDecorators<UserPaths>
@@ -92,7 +92,7 @@ type NavigateOptions = {
 };
 
 type Navigate = {
-  (to: InferredPaths, options?: NavigateOptions): Promise<void>;
+  (to: RouteHref, options?: NavigateOptions): Promise<void>;
   <Path extends RoutePath>(
     target: BuildRouteHrefTarget<Path>,
     options?: NavigateOptions,
@@ -277,7 +277,7 @@ export function useRouter() {
   const resolveCodec = useResolveSearchCodec();
   const push = useCallback(
     async (
-      to: InferredPaths | BuildRouteHrefTarget<RoutePath>,
+      to: RouteHref | BuildRouteHrefTarget<RoutePath>,
       options?: NavigateOptions,
     ) => {
       const href =
@@ -296,7 +296,7 @@ export function useRouter() {
   ) as Navigate;
   const replace = useCallback(
     async (
-      to: InferredPaths | BuildRouteHrefTarget<RoutePath>,
+      to: RouteHref | BuildRouteHrefTarget<RoutePath>,
       options?: NavigateOptions,
     ) => {
       const href =
@@ -326,7 +326,7 @@ export function useRouter() {
     window.history.forward();
   }, []);
   const prefetch = useCallback(
-    (to: InferredPaths) => {
+    (to: RouteHref) => {
       const url = new URL(to, window.location.href);
       prefetchRoute(parseRoute(url));
     },
@@ -523,7 +523,7 @@ export const useNavigationStatus_UNSTABLE = (): NavigationStatus =>
   useContext(NavigationStatusContext);
 
 export type LinkProps<Path extends RoutePath> = {
-  to: InferredPaths | BuildRouteHrefTarget<Path>;
+  to: RouteHref | BuildRouteHrefTarget<Path>;
   children: ReactNode;
   /**
    * indicates if the link should scroll or not on navigation
@@ -1349,5 +1349,5 @@ export type Unstable_ChangeRouteEvent = ChangeRouteEvent;
 export type Unstable_ChangeRouteCallback = ChangeRouteCallback;
 export type Unstable_PrefetchRoute = PrefetchRoute;
 export type Unstable_SliceId = SliceId;
-export type Unstable_InferredPaths = InferredPaths;
+export type Unstable_RouteHref = RouteHref;
 export const unstable_parseRoute = parseRoute;

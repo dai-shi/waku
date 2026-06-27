@@ -42,7 +42,7 @@ import {
   useParams_UNSTABLE as useParams,
   useRouter,
 } from '../src/router/client.js';
-import type { Unstable_InferredPaths } from '../src/router/client.js';
+import type { Unstable_RouteHref } from '../src/router/client.js';
 import {
   ETAG_ID_PREFIX,
   HAS404_ID,
@@ -290,7 +290,7 @@ afterEach(() => {
 describe('router navigation method path typing', () => {
   test('prefetch is string-only; push/replace also accept structured targets', () => {
     type PrefetchArg = Parameters<RouterApi['prefetch']>[0];
-    expectType<TypeEqual<PrefetchArg, Unstable_InferredPaths>>(true);
+    expectType<TypeEqual<PrefetchArg, Unstable_RouteHref>>(true);
 
     // Type-level assertions; the closure is never invoked.
     const assertTypes = (router: RouterApi) => {
