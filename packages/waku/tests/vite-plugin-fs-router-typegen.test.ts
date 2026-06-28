@@ -84,6 +84,11 @@ import type { getConfig as File_ØnéTwoThree_getConfig } from './pages/øné_tw
     expect(generated).toContain(
       'interface SearchCodecsConfig extends SearchCodecsForPages<Page> {}',
     );
+    // layout paths (including dynamic ones) are emitted into a Layout union
+    expect(generated).toContain('type Layout =');
+    expect(generated).toContain("| { path: '/' }");
+    expect(generated).toContain("| { path: '/[category]' }");
+    expect(generated).toContain('layouts: Layout;');
   });
 
   test('generates types when waku.server uses fsRouter (managed mode)', async () => {
@@ -172,7 +177,7 @@ import type { getConfig as File_ØnéTwoThree_getConfig } from './pages/øné_tw
     expect(generated).toContain("| { path: '/about'; render: 'static' }");
   });
 
-  test('generates paths while skipping ignored/layout files and missing getConfig', async () => {
+  test('emits page and layout paths while skipping ignored files and missing getConfig', async () => {
     const generated = await generateFsRouterTypes(
       path.join(fixturesDir, 'plugin-fs-router-typegen-complex', 'pages'),
     );
@@ -187,6 +192,7 @@ import type { getConfig as File_ØnéTwoThree_getConfig } from './pages/øné_tw
     expect(generated).toContain(
       `import type { getConfig as File_DocsIndex_getConfig } from './pages/docs/index';`,
     );
+    // layout files are not imported and their filename is never leaked
     expect(generated).not.toContain('_layout');
     expect(generated).not.toContain('_components');
     expect(generated).toContain(
@@ -199,6 +205,10 @@ import type { getConfig as File_ØnéTwoThree_getConfig } from './pages/øné_tw
       "| ({ path: '/admin/dashboard' } & GetConfigResponse<typeof File_AdminDashboard_getConfig>)",
     );
     expect(generated).toContain("| { path: '/blog/[slug]'; render: 'static' }");
+    // the layout at docs/_layout.tsx is emitted as a layout path
+    expect(generated).toContain('type Layout =');
+    expect(generated).toContain("| { path: '/docs' }");
+    expect(generated).toContain('layouts: Layout;');
     expect(generated).toContain("declare module 'waku/router'");
   });
 });

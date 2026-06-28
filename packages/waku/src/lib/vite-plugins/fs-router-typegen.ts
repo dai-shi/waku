@@ -231,6 +231,7 @@ export async function generateFsRouterTypes(pagesDir: string) {
 
   const generateFile = async (filePaths: string[]): Promise<string | null> => {
     const fileInfo: { path: string; src: string; hasGetConfig: boolean }[] = [];
+    const layoutPaths: string[] = [];
     const moduleNames = getImportModuleNames(filePaths);
 
     for (const filePath of filePaths) {
@@ -243,11 +244,11 @@ export async function generateFsRouterTypes(pagesDir: string) {
         return null;
       }
 
-      if (
-        filePath.endsWith('/_layout.tsx') ||
-        isIgnoredPath(filePath.split('/'))
-      ) {
+      if (isIgnoredPath(filePath.split('/'))) {
         continue;
+      } else if (filePath.endsWith('/_layout.tsx')) {
+        const path = filePath.slice(0, -'/_layout.tsx'.length);
+        layoutPaths.push(getGrouplessPath(path) || '/');
       } else if (filePath.endsWith('/index.tsx')) {
         const path = filePath.slice(0, -'/index.tsx'.length);
         fileInfo.push({
@@ -301,6 +302,15 @@ export async function generateFsRouterTypes(pagesDir: string) {
     }
     lines[lines.length - 1] += ';';
 
+    const uniqueLayoutPaths = [...new Set(layoutPaths)];
+    if (uniqueLayoutPaths.length) {
+      lines.push('', '// prettier-ignore', 'type Layout =');
+      for (const path of uniqueLayoutPaths) {
+        lines.push(`| { path: '${path}' }`);
+      }
+      lines[lines.length - 1] += ';';
+    }
+
     lines.push(
       '',
       '// prettier-ignore',
@@ -310,6 +320,7 @@ export async function generateFsRouterTypes(pagesDir: string) {
       '  }',
       '  interface CreatePagesConfig {',
       '    pages: Page;',
+      ...(uniqueLayoutPaths.length ? ['    layouts: Layout;'] : []),
       '  }',
       ...(hasAnyGetConfig
         ? [

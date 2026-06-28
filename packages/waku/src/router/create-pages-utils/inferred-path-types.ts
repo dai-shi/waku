@@ -185,6 +185,13 @@ export type PagePath<Config> = Config extends {
   ? Path
   : never;
 
+/** Layout paths with slugs as string literals */
+export type LayoutPath<Config> = Config extends {
+  layouts: { path: infer Path };
+}
+  ? Path
+  : never;
+
 type IndividualSlugType<Slug extends string> = Slug extends `...${string}`
   ? string[]
   : string;
