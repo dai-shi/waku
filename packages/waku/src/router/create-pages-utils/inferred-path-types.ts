@@ -88,8 +88,7 @@ type CollectPathsForStaticSlugPage<Page extends StaticSlugPage> = Page extends {
   path: infer Path extends string;
   render: 'static';
   staticPaths: infer StaticPaths extends
-    | readonly string[]
-    | ReadOnlyStringTupleList;
+    readonly string[] | ReadOnlyStringTupleList;
 }
   ? StaticPaths extends readonly string[]
     ? ReplaceSlugSet<Path, StaticPaths[number]>
@@ -203,7 +202,9 @@ type CleanWildcard<Slug extends string> = Slug extends `...${infer Wildcard}`
 type SlugTypes<Path extends string> =
   GetSlugs<Path> extends string[]
     ? {
-        [Slug in GetSlugs<Path>[number] as CleanWildcard<Slug>]: IndividualSlugType<Slug>;
+        [
+          Slug in GetSlugs<Path>[number] as CleanWildcard<Slug>
+        ]: IndividualSlugType<Slug>;
       }
     : never;
 
@@ -244,13 +245,13 @@ export type RouteSearch<Path extends string> =
  * path. Used by the fs-router typegen.
  */
 export type SearchCodecsForPages<Pages> = {
-  [Page in Extract<Pages, { unstable_searchCodec: unknown }> as Page extends {
-    path: infer Path extends string;
-  }
-    ? Path
-    : never]: Page extends { unstable_searchCodec: infer Codec }
-    ? Codec
-    : never;
+  [
+    Page in Extract<Pages, { unstable_searchCodec: unknown }> as Page extends {
+      path: infer Path extends string;
+    }
+      ? Path
+      : never
+  ]: Page extends { unstable_searchCodec: infer Codec } ? Codec : never;
 };
 
 /** A `search` prop, present only when the route has a search codec. */

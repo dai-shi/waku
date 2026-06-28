@@ -350,9 +350,7 @@ type SerializableSliceConfig = Omit<
 >;
 
 type SerializableConfig =
-  | SerializableRouteConfig
-  | SerializableApiConfig
-  | SerializableSliceConfig;
+  SerializableRouteConfig | SerializableApiConfig | SerializableSliceConfig;
 
 const toSerializable = (c: RuntimeConfig): SerializableConfig => {
   if (c.type === 'route') {
@@ -635,8 +633,7 @@ export function unstable_defineRouter(fns: {
   };
 
   let cachedRoutePath2searchCodec:
-    | Map<string, Unstable_SearchCodec<any>>
-    | undefined;
+    Map<string, Unstable_SearchCodec<any>> | undefined;
   const resolveSearchCodec = (
     routePath: string,
   ): Unstable_SearchCodec<any> | undefined => {

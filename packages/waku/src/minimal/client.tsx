@@ -171,8 +171,7 @@ const decodeRsc = (
   responsePromise: Promise<Response>,
   temporaryReferences: ReturnType<typeof createTemporaryReferenceSet>,
   debugChannel:
-    | ReturnType<typeof setupDebugChannel>['debugChannel']
-    | undefined,
+    ReturnType<typeof setupDebugChannel>['debugChannel'] | undefined,
 ): Promise<Elements> =>
   createFromFetch<Elements>(checkStatus(responsePromise), {
     callServer: (funcId: string, args: unknown[]) =>

@@ -31,9 +31,9 @@ export interface SearchCodecsConfig {
 
 /** Props for pages when using `createPages` */
 export type PageProps<
-  Path extends [PagePath<CreatePagesConfig>] extends [never]
+  Path extends ([PagePath<CreatePagesConfig>] extends [never]
     ? string
-    : PagePath<CreatePagesConfig>,
+    : PagePath<CreatePagesConfig>),
 > = PropsForPages<Path>;
 
 /**
@@ -43,7 +43,7 @@ export type PageProps<
  * include layout-only paths that have no co-located page.
  */
 export type LayoutProps<
-  Path extends [LayoutPath<CreatePagesConfig>] extends [never]
+  Path extends ([LayoutPath<CreatePagesConfig>] extends [never]
     ? string
-    : LayoutPath<CreatePagesConfig>,
+    : LayoutPath<CreatePagesConfig>),
 > = Prettify<{ children: ReactNode } & RouteParams<Path>>;

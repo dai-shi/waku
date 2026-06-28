@@ -499,14 +499,12 @@ describe('useRouter + Link with context', () => {
     );
     const firstUrl = (
       (changeRoute.mock.calls[0] as unknown[] | undefined)?.[1] as
-        | { url?: URL }
-        | undefined
+        { url?: URL } | undefined
     )?.url;
     expect(firstUrl?.href).toContain('/start?query=1');
     const secondUrl = (
       (changeRoute.mock.calls[1] as unknown[] | undefined)?.[1] as
-        | { url?: URL }
-        | undefined
+        { url?: URL } | undefined
     )?.url;
     expect(secondUrl?.href).toContain('/start?query=2');
     expect(pushStateSpy).not.toHaveBeenCalled();
@@ -587,8 +585,7 @@ describe('useRouter + Link with context', () => {
     );
     const pushedUrl = (
       (changeRoute.mock.calls[0] as unknown[] | undefined)?.[1] as
-        | { url?: URL }
-        | undefined
+        { url?: URL } | undefined
     )?.url;
     expect(pushedUrl?.href).toContain('/posts/a%20b%2Fc?tab=comments#top');
 
@@ -814,8 +811,7 @@ describe('useRouter + Link with context', () => {
     );
     const firstUrl = (
       (changeRoute.mock.calls[0] as unknown[] | undefined)?.[1] as
-        | { url?: URL }
-        | undefined
+        { url?: URL } | undefined
     )?.url;
     expect(firstUrl?.href).toContain('/next');
 
@@ -1373,12 +1369,10 @@ describe('Router integration', () => {
     );
 
     const rootProps = vi.mocked(Root).mock.calls[0]?.[0] as
-      | Parameters<typeof Root>[0]
-      | undefined;
+      Parameters<typeof Root>[0] | undefined;
     expect(rootProps?.initialRscPath).toBe(unstable_encodeRoutePath('/start'));
     const initialParams = rootProps?.initialRscParams as
-      | URLSearchParams
-      | undefined;
+      URLSearchParams | undefined;
     expect(initialParams).toBeDefined();
     expect(initialParams!.get('query')).toBe('a=1');
     expect(capture.router?.hash).toBe('#hash');

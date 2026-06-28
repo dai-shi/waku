@@ -8,12 +8,11 @@ type AllowTrailingSlash<Path extends string> = Path extends '/'
   : Path | `${Path}/`;
 
 type AllowPathDecorators<Path extends string> = Path extends unknown
-  ?
-      | AllowTrailingSlash<Path>
-      | `${AllowTrailingSlash<Path>}?${string}`
-      | `${AllowTrailingSlash<Path>}#${string}`
-      | `?${string}`
-      | `#${string}`
+  ? | AllowTrailingSlash<Path>
+    | `${AllowTrailingSlash<Path>}?${string}`
+    | `${AllowTrailingSlash<Path>}#${string}`
+    | `?${string}`
+    | `#${string}`
   : never;
 
 describe('AllowPathDecorators', () => {
