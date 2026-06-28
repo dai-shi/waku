@@ -81,6 +81,11 @@ type Navigate = {
   ): Promise<void>;
 };
 
+type Prefetch = {
+  (to: RouteHref): void;
+  <Path extends RoutePath>(target: BuildRouteHrefTarget<Path>): void;
+};
+
 const pathnameToCurrentRoutePath = (pathname: string) =>
   pathnameToRoutePath(
     removeBase(pathname, import.meta.env.WAKU_CONFIG_BASE_PATH),
@@ -308,12 +313,17 @@ export function useRouter() {
     window.history.forward();
   }, []);
   const prefetch = useCallback(
-    (to: RouteHref | (string & {})) => {
-      const url = new URL(to, window.location.href);
+    (to: RouteHref | BuildRouteHrefTarget<RoutePath>) => {
+      const href =
+        typeof to === 'string' ? to : buildRouteHref(to, resolveCodec);
+      const url = new URL(
+        addBase(href, import.meta.env.WAKU_CONFIG_BASE_PATH),
+        window.location.href,
+      );
       prefetchRoute(parseRoute(url));
     },
-    [prefetchRoute],
-  );
+    [prefetchRoute, resolveCodec],
+  ) as Prefetch;
   return {
     ...route,
     push,

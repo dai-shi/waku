@@ -176,6 +176,31 @@ test.describe('useRouter', () => {
       expect(rscRequests).toHaveLength(prefetchedCount);
     });
 
+    test('router.prefetch accepts a structured target and push reuses it', async ({
+      page,
+    }) => {
+      const rscRequests: string[] = [];
+      page.on('request', (request) => {
+        const requestUrl = request.url();
+        if (requestUrl.includes('/RSC/')) {
+          rscRequests.push(requestUrl);
+        }
+      });
+
+      await page.goto(`http://localhost:${port}/dynamic`);
+      await waitForHydration(page);
+      const beforePrefetch = rscRequests.length;
+
+      await page.getByTestId('router-prefetch-structured').click();
+      await expect.poll(() => rscRequests.length).toBe(beforePrefetch + 1);
+      const prefetchedCount = rscRequests.length;
+
+      await page.getByTestId('router-push-structured').click();
+      await expect(page.getByRole('heading', { name: 'Static' })).toBeVisible();
+      await expect(page.getByTestId('hash')).toHaveText('Hash: 77');
+      expect(rscRequests).toHaveLength(prefetchedCount);
+    });
+
     test('router.push last call wins during fast consecutive pushes', async ({
       page,
     }) => {

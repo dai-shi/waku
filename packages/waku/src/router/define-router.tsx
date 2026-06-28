@@ -181,12 +181,12 @@ export function unstable_notFound(): never {
 
 /**
  * Redirect within the current application. Accepts the same target as
- * `router.push` / `router.replace`: a typed route href, a structured
- * `{ to, params, search, hash }`, or an arbitrary string. The resolved
- * location must start with a single `/`.
+ * `router.push` / `router.replace`: a typed route href or a structured
+ * `{ to, params, search, hash }`. The resolved location must start with a
+ * single `/`.
  */
 export function unstable_redirect<Path extends RoutePath = RoutePath>(
-  to: RouteHref | BuildRouteHrefTarget<Path> | (string & {}),
+  to: RouteHref | BuildRouteHrefTarget<Path>,
   status: 303 | 307 | 308 = 307,
 ): never {
   const location =

@@ -77,6 +77,22 @@ export default function TestRouter() {
       </p>
       <p>
         <button
+          data-testid="router-prefetch-structured"
+          onClick={() => router.prefetch({ to: '/static', hash: '#77' })}
+        >
+          router.prefetch structured target
+        </button>
+      </p>
+      <p>
+        <button
+          data-testid="router-push-structured"
+          onClick={() => router.push({ to: '/static', hash: '#77' })}
+        >
+          router.push structured target
+        </button>
+      </p>
+      <p>
+        <button
           data-testid="router-push-static-trailing"
           onClick={() => router.push('/static/')}
         >

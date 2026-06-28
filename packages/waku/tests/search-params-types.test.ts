@@ -98,8 +98,8 @@ describe('search params type foundation', () => {
           // @ts-expect-error a route without a codec cannot pass search
           search: { page: 2 },
         }),
-      // the string escape hatch is still accepted
-      () => unstable_redirect('/anything?ref=home'),
+      // a plain route href string is also accepted
+      () => unstable_redirect('/no-codec'),
     ];
     expect(assertRedirect).toHaveLength(4);
 

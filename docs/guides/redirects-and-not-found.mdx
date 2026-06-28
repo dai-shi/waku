@@ -74,7 +74,7 @@ export default function NewPostPage() {
           title: String(formData.get('title') || ''),
         });
 
-        redirect(`/posts/${post.slug}`, 303);
+        redirect({ to: '/posts/[slug]', params: { slug: post.slug } }, 303);
       }}
     >
       <input name="title" />
