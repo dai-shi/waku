@@ -307,7 +307,7 @@ export function useRouter() {
     window.history.forward();
   }, []);
   const prefetch = useCallback(
-    (to: RouteHref) => {
+    (to: RouteHref | (string & {})) => {
       const url = new URL(to, window.location.href);
       prefetchRoute(parseRoute(url));
     },

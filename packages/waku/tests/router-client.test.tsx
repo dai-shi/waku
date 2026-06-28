@@ -288,13 +288,20 @@ afterEach(() => {
 });
 
 describe('router navigation method path typing', () => {
-  test('prefetch is string-only; push/replace also accept structured targets', () => {
+  test('prefetch takes a route href or any string; push/replace also accept structured targets', () => {
+    // prefetch accepts a typed route href plus a `(string & {})` escape hatch
+    // (so computed/dynamic hrefs work). The escape hatch only widens the type
+    // when routes are augmented and RouteHref is a literal union; in this test
+    // RouteConfig.paths is not augmented, so RouteHref is `string`.
     type PrefetchArg = Parameters<RouterApi['prefetch']>[0];
-    expectType<TypeEqual<PrefetchArg, Unstable_RouteHref>>(true);
+    expectType<TypeEqual<PrefetchArg, Unstable_RouteHref | (string & {})>>(
+      true,
+    );
 
     // Type-level assertions; the closure is never invoked.
-    const assertTypes = (router: RouterApi) => {
+    const assertTypes = (router: RouterApi, computed: string) => {
       void router.prefetch('/x');
+      void router.prefetch(computed); // escape hatch: any string href
       void router.push('/x');
       void router.replace('/x');
       void router.push({ to: '/posts/[slug]', params: { slug: 'a' } });
