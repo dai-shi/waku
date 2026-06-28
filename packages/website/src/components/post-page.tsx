@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { compileMDX } from '../lib/compile-mdx';
 import { getAuthor } from '../lib/get-author';
 import { getFileName } from '../lib/get-file-name';
+import type { GuideTag } from '../types';
+import { GuideTags } from './guide-list';
 import { components } from './mdx';
 import { Meta } from './meta';
 import { Page } from './page';
@@ -35,6 +37,7 @@ export async function compilePost({
     date?: string;
     author?: string;
     release?: string;
+    tags?: GuideTag[];
   };
 
   const author = frontmatter.author ? getAuthor(frontmatter.author) : undefined;
@@ -92,6 +95,11 @@ export async function PostPage({
         <h3 className="mt-2 text-lg font-normal leading-snug text-white/60 sm:mt-1 sm:text-xl sm:font-bold">
           {frontmatter.description}
         </h3>
+        {frontmatter.tags && frontmatter.tags.length > 0 && (
+          <div className="mt-4">
+            <GuideTags tags={frontmatter.tags} />
+          </div>
+        )}
         {author && (
           <a
             href={author.url}

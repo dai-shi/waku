@@ -35,7 +35,6 @@ Let's take a look at the files and code that we were given:
 If we take a deeper look at `/src/pages/index.tsx`, we notice that our component is an `async` [server component](https://waku.gg/#server-components):
 
 ```tsx
-// line 5
 export default async function HomePage() {
   const data = await getData();
   // ...rest of the file
@@ -73,7 +72,7 @@ Everything that's inside the `/src/pages` directory abides by the router's rules
 - `/pages/index.tsx` is a single route page
 - `/pages/about.tsx` is a single route page
 
-As you can see, there's two ways to create **pages**:
+As you can see, there are two ways to create **pages**:
 
 1. use an `index` file (e.g., `/pages/contact/index.tsx`)
 2. use a single named file (e.g., `/pages/contact.tsx`)

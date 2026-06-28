@@ -13,7 +13,7 @@ export type GuideSectionProps = {
   guides: GuideItemProps[];
 };
 
-const GuideTags = ({ tags }: { tags: GuideTag[] }) => {
+export const GuideTags = ({ tags }: { tags: GuideTag[] }) => {
   if (!tags.length) {
     return null;
   }

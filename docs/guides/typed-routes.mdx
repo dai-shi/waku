@@ -42,6 +42,7 @@ export const PostButton = ({ slug }: { slug: string }) => {
 - `to` is a route pattern (e.g. `/posts/[slug]`, `/docs/[...path]`). `params` is required when the pattern has slugs and is typed from it; a catch-all takes a `string[]`.
 - `hash` is optional. `search` is typed per route by a search codec (see [Search Params](#search-params)).
 - The plain string form (`router.push('/posts/hello')`) keeps working.
+- For same-page navigation, a bare `#hash` or `?query` (e.g. `router.push('#section')` or `router.push('?tab=2')`) is resolved against the current URL; a `#hash` also scrolls to that element.
 
 ## Reading Route Params
 

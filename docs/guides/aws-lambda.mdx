@@ -101,11 +101,11 @@ pnpx serverless deploy
 Output:
 
 ```
-✔ Service deployed to stack waku-aws-lambda-m-dev (95s)
+Service deployed to stack waku-aws-lambda-dev (95s)
 
 endpoint: ANY - https://<your-application>.execute-api.us-east-1.amazonaws.com
 functions:
-  ssr: waku-aws-lambda-m-dev-ssr (325 kB)
+  ssr: waku-aws-lambda-dev-ssr (325 kB)
 ```
 
 You can access the frontend through the url provided as the `endpoint:`
@@ -299,12 +299,9 @@ export default $config({
       url: true,
       streaming: true,
       //timeout: "15 minutes",
-      handler: 'dist/serve-aws-lambda.handler',
-      bundle: 'bundle', // disable bundling with esbuild
+      handler: 'serve-aws-lambda.handler',
+      bundle: 'dist', // skip SST's esbuild and deploy the prebuilt dist/ as-is
       copyFiles: [
-        {
-          from: 'dist',
-        },
         {
           from: 'private',
         },
