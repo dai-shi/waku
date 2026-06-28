@@ -1,7 +1,7 @@
 ---
 slug: navigation-prefetching
 title: Navigation and Prefetching
-description: How Waku navigates between routes, caches static RSC payloads, and prefetches likely next pages.
+description: How Waku navigates between routes, caches static RSC payloads, prefetches likely next pages, and reveals cached shells instantly.
 category: Routing and Navigation
 order: 10
 tags: [Experimental]
@@ -88,6 +88,79 @@ export const Nav = () => (
 
 Prefer intent-based prefetching for expensive dynamic routes. View-based prefetching can be useful for short pages with a small number of important links, but it can waste server work if applied to every link in a large list.
 
+## Instant Navigation
+
+By default, navigating to a dynamic route waits for the server response before the page updates. With the experimental `unstable_instant` option, Waku instead paints the route's cached static shell (including its `<Suspense>` fallbacks) right away, then streams the dynamic parts in.
+
+It relies on two things:
+
+- The route's **static shell is already cached**, for example from an earlier visit. A route's first visit is never instant.
+- The dynamic part of the page sits inside a `<Suspense>` boundary, so there is a fallback to show while it streams.
+
+Opt in per navigation with the `unstable_instant` prop on `<Link>`. Here a static layout wraps the dynamic page in `<Suspense>`:
+
+```tsx
+import { Suspense } from 'react';
+import type { ReactNode } from 'react';
+import { Link } from 'waku';
+
+export default function Layout({ children }: { children: ReactNode }) {
+  return (
+    <div>
+      <nav>
+        <Link to="/posts/1" unstable_instant>
+          Post 1
+        </Link>
+        <Link to="/posts/2" unstable_instant>
+          Post 2
+        </Link>
+      </nav>
+      <Suspense fallback={<p>Loading...</p>}>{children}</Suspense>
+    </div>
+  );
+}
+```
+
+The page it streams in is an ordinary dynamic route:
+
+```tsx
+import type { PageProps } from 'waku/router';
+
+export default async function Post({ id }: PageProps<'/posts/[id]'>) {
+  const post = await loadPost(id); // request-specific work
+  return <article>{post.body}</article>;
+}
+
+export const getConfig = async () => {
+  return { render: 'dynamic' } as const;
+};
+```
+
+You can also navigate programmatically with `router.push` or `router.replace`:
+
+```tsx
+'use client';
+
+import { useRouter } from 'waku';
+
+export const PostButton = () => {
+  const router = useRouter();
+  return (
+    <button onClick={() => router.push('/posts/1', { unstable_instant: true })}>
+      Post 1
+    </button>
+  );
+};
+```
+
+When the shell is cached, the layout and the `Loading...` fallback appear with no round trip, and the post's content streams into the fallback once the server responds. When the shell is **not** cached, the navigation falls back to normal behavior: the current page stays put until the response arrives, so there is no blank flash.
+
+The `<Suspense>` boundary decides how localized the loading state is. Wrapping the whole page area (as above) swaps the page for a skeleton; wrapping only a dynamic slice inside an otherwise-static page leaves the rest in place and shows the skeleton for just that slice.
+
+Because an instant navigation commits before the server responds, it reconciles afterward: a server redirect updates the URL to the redirect target, while a not-found (404) response keeps the attempted URL, so the 404 page shows at the address the user tried.
+
+Instant navigation commits urgently rather than inside a React transition, since a transition would suppress the immediate skeleton. A custom `unstable_startTransition` therefore does not run for instant links, and `useNavigationStatus_UNSTABLE()` does not report `pending` for them; drive pending UI from route-change events instead.
+
 ## Pending UI
 
 A descendant of `<Link>` can read the navigation status with `useNavigationStatus_UNSTABLE()` and render pending UI while a navigation transition is in progress. It works like React's `useFormStatus`: it reflects the nearest enclosing `<Link>`, and `pending` stays `true` until the destination route's async components resolve (including client-only Suspense).
@@ -145,4 +218,4 @@ export const Link = (props: ComponentProps<typeof WakuLink>) => (
 
 Because `unstable_startTransition` replaces React's transition, `useNavigationStatus_UNSTABLE()` stays `{ pending: false }` for links that use it.
 
-The prefetch and transition props in this guide are experimental and may change.
+The prefetch, instant-navigation, and transition props in this guide are experimental and may change.

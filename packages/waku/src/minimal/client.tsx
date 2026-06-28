@@ -79,13 +79,37 @@ const cache1 = new WeakMap();
 const mergeElementsPromise = (
   a: Promise<Elements>,
   b: Promise<Elements> | Elements,
+  isEager?: (key: string) => boolean,
 ): Promise<Elements> => {
-  const getResult = () =>
-    Promise.all([a, b]).then(([a, b]) => {
-      const nextElements = { ...a, ...b };
-      delete nextElements._value;
-      return nextElements;
+  const getResult = () => {
+    if (!isEager) {
+      return Promise.all([a, b]).then(([a, b]) => {
+        const nextElements = { ...a, ...b };
+        delete nextElements._value;
+        return nextElements;
+      });
+    }
+    return Promise.resolve(a).then((aRes) => {
+      const bPromise: Promise<Elements> = Promise.resolve(b);
+      const base: Elements = { ...aRes };
+      delete base._value;
+      return new Proxy(base, {
+        get(target, key: string) {
+          if (
+            key !== '_value' &&
+            !isEager(key) &&
+            // a lazy key still equal to aRes's value hasn't been streamed yet
+            target[key] === aRes[key]
+          ) {
+            target[key] = bPromise.then((bRes) =>
+              key in bRes ? bRes[key] : aRes[key],
+            );
+          }
+          return target[key];
+        },
+      });
     });
+  };
   const cache2 = getCached(() => new WeakMap(), cache1, a);
   return getCached(getResult, cache2, b);
 };
@@ -98,7 +122,7 @@ type FetchRscOptions = {
 type Refetch = (
   rscPath: string,
   rscParams?: unknown,
-  options?: FetchRscOptions,
+  options?: FetchRscOptions & { unstable_isEager?: (key: string) => boolean },
 ) => Promise<Elements>;
 
 const getFetchFn = (): typeof fetch => {
@@ -413,6 +437,9 @@ const ElementsContext = createContext<Promise<Elements> | null>(null);
 /**
  * Client root. Seeds the initial elements, bridges the store to React state,
  * and provides the elements to `Slot` descendants.
+ *
+ * This API is technically unstable and may change or be removed,
+ * even though it does not carry the `unstable_` prefix.
  */
 export const Root = ({
   initialRscPath,
@@ -433,7 +460,9 @@ export const Root = ({
     delete fetchRscStore[ENTRY];
     const data = unstable_fetchRsc(rscPath, rscParams, options);
     const dataWithoutErrors = Promise.resolve(data).catch(() => ({}));
-    setElements((prev) => mergeElementsPromise(prev, dataWithoutErrors));
+    setElements((prev) =>
+      mergeElementsPromise(prev, dataWithoutErrors, options?.unstable_isEager),
+    );
     return data;
   }, []);
   return (
@@ -446,11 +475,19 @@ export const Root = ({
   );
 };
 
+/**
+ * This API is technically unstable and may change or be removed,
+ * even though it does not carry the `unstable_` prefix.
+ */
 export const useRefetch = () => use(RefetchContext);
 
 const ChildrenContext = createContext<ReactNode>(undefined);
 const ChildrenContextProvider = memo(ChildrenContext);
 
+/**
+ * This API is technically unstable and may change or be removed,
+ * even though it does not carry the `unstable_` prefix.
+ */
 export const Children = () => use(ChildrenContext);
 
 export const useElementsPromise_UNSTABLE = () => {
@@ -474,6 +511,9 @@ export const useElementsPromise_UNSTABLE = () => {
  * ```
  *   <Root><Slot id="foo" /><Slot id="bar" /></Root>
  * ```
+ *
+ * This API is technically unstable and may change or be removed,
+ * even though it does not carry the `unstable_` prefix.
  */
 export const Slot = ({
   id,

@@ -71,6 +71,11 @@ type NavigateOptions = {
    * - `undefined`: scroll on path/hash change (not on query-only change)
    */
   scroll?: boolean;
+  /**
+   * Commit instantly: paint the cached shell + its <Suspense> fallbacks right
+   * away and stream the dynamic parts in, instead of waiting for the response.
+   */
+  unstable_instant?: boolean;
 };
 
 type Navigate = {
@@ -122,6 +127,12 @@ const getRouteFromElements = (
   }
   return undefined;
 };
+
+const isMetaKey = (key: string) =>
+  key === ROUTE_ID ||
+  key === HAS404_ID ||
+  key.startsWith(IS_STATIC_ID) ||
+  key.startsWith(ETAG_ID_PREFIX);
 
 const shouldScrollByDefault = (url: URL) =>
   pathnameToCurrentRoutePath(url.pathname) !==
@@ -179,6 +190,7 @@ type ChangeRouteOptions = {
   mode?: undefined | 'push' | 'replace';
   url?: URL | undefined;
   startTransition?: ((fn: TransitionFunction) => void) | undefined;
+  instant?: boolean | undefined;
 };
 
 type ChangeRoute = (
@@ -277,6 +289,7 @@ export function useRouter() {
         shouldScroll: options?.scroll ?? shouldScrollByDefault(url),
         mode: 'push',
         url,
+        instant: options?.unstable_instant,
       });
     },
     [changeRoute, resolveCodec],
@@ -296,6 +309,7 @@ export function useRouter() {
         shouldScroll: options?.scroll ?? shouldScrollByDefault(url),
         mode: 'replace',
         url,
+        instant: options?.unstable_instant,
       });
     },
     [changeRoute, resolveCodec],
@@ -524,6 +538,11 @@ export type LinkProps<Path extends RoutePath> = {
    * - `undefined`: scroll on path/hash change or repeated same-hash click (not query-only)
    */
   scroll?: boolean;
+  /**
+   * Commit instantly: paint the cached shell + its <Suspense> fallbacks right
+   * away and stream the dynamic parts in.
+   */
+  unstable_instant?: boolean;
   unstable_prefetchOnEnter?: boolean;
   unstable_prefetchOnView?: boolean;
   /**
@@ -540,6 +559,7 @@ export function Link<Path extends RoutePath>({
   to,
   children,
   scroll,
+  unstable_instant,
   unstable_prefetchOnEnter,
   unstable_prefetchOnView,
   unstable_startTransition,
@@ -593,14 +613,23 @@ export function Link<Path extends RoutePath>({
     if (url.href !== window.location.href) {
       const route = parseRoute(url);
       prefetchRoute(route);
-      startTransitionFn(async () => {
-        await changeRoute(route, {
+      if (unstable_instant) {
+        changeRoute(route, {
           shouldScroll: scroll ?? shouldScrollByDefault(url),
           mode: 'push',
           url,
-          startTransition: startTransitionFn,
+          instant: true,
+        }).catch(() => {});
+      } else {
+        startTransitionFn(async () => {
+          await changeRoute(route, {
+            shouldScroll: scroll ?? shouldScrollByDefault(url),
+            mode: 'push',
+            url,
+            startTransition: startTransitionFn,
+          });
         });
-      });
+      }
     } else if (url.hash && scroll !== false) {
       scrollToRoute(parseRoute(url), 'auto', false);
     }
@@ -960,6 +989,9 @@ const useElementsMetadata = (
   useEffect(() => {
     elementsPromise.then(
       (elements) => {
+        // Under `unstable_instant` the eager merge serves static etags and
+        // ROUTE_ID from the previous bag; a dynamic slot's etag stays a hole,
+        // so it is skipped here until it resolves rather than going stale.
         const {
           [ROUTE_ID]: routeData,
           [IS_STATIC_ID]: isStatic,
@@ -1108,68 +1140,119 @@ const InnerRouter = ({
       const shouldRefetch =
         options.refetch ?? !isSameRoute(nextRoute, routeBeforeChange);
       const pathChanged = isPathChange(nextRoute, routeBeforeChange);
-      if (!staticPathSetRef.current.has(nextRoute.path) && shouldRefetch) {
-        const rscPath = encodeRoutePath(nextRoute.path);
-        const rscParams = createRscParams(nextRoute.query);
-        try {
-          const targetUrl = url || getRouteUrl(nextRoute);
-          const elements = await refetch(rscPath, rscParams, {
-            signal: abortController.signal,
-            onBuildIdMismatch: () => {
-              window.history.pushState(window.history.state, '', targetUrl);
-              window.location.reload();
-            },
-          });
-          const { [ROUTE_ID]: routeData, [IS_STATIC_ID]: isStatic } = elements;
-          if (routeData) {
-            const [path, query] = routeData as [string, string];
-            if (
-              nextRoute.path !== path ||
-              (!isStatic && nextRoute.query !== query)
-            ) {
-              nextRoute = {
-                path,
-                query,
-                hash: '',
-              };
-              if (mode) {
-                mode = path === '/404' ? undefined : 'push';
-                url = undefined;
-              }
-            }
-          }
-        } catch (e) {
-          if (isAborted()) {
-            return;
-          }
-          routeChangeAbortRef.current = null;
-          // Write URL synchronously
-          // React may rollback transition state updates when the render throws
-          if (mode && window.location.pathname === prevPathname) {
-            const urlToWrite = url || getRouteUrl(nextRoute);
-            writeUrlToHistory(mode, urlToWrite);
-          }
-          setErr(e);
-          throw e;
-        }
-      }
-      if (isAborted()) {
-        return;
-      }
-      startTransitionFn(() => {
-        if (isAborted()) {
-          return;
-        }
-        routeRef.current = nextRoute;
-        setRoute(nextRoute);
+      const isStaticSlot = (key: string) =>
+        cachedEtagsRef.current[key] === STATIC_ETAG;
+      const commitRoute = (route: RouteProps) => {
+        routeRef.current = route;
+        setRoute(route);
         setErr(null);
         setPendingScroll(options.shouldScroll ? { pathChanged } : null);
         setPendingHistory(mode ? { mode, url } : null);
+      };
+      const getRedirect = (
+        elements: Record<string, unknown>,
+      ): RouteProps | undefined => {
+        const serverRoute = getRouteFromElements(elements);
+        const isStatic = elements[IS_STATIC_ID];
+        if (
+          serverRoute &&
+          (serverRoute.path !== nextRoute.path ||
+            (!isStatic && serverRoute.query !== nextRoute.query))
+        ) {
+          return serverRoute;
+        }
+        return undefined;
+      };
+      const commitInTransition = () => {
+        if (isAborted()) {
+          return;
+        }
+        startTransitionFn(() => {
+          commitRoute(nextRoute);
+          routeChangeAbortRef.current = null;
+          emitRouteChangeEvent('complete', nextRoute);
+        });
+      };
+      if (staticPathSetRef.current.has(nextRoute.path) || !shouldRefetch) {
+        commitInTransition();
+        return;
+      }
+      const rscPath = encodeRoutePath(nextRoute.path);
+      const rscParams = createRscParams(nextRoute.query);
+      const targetUrl = url || getRouteUrl(nextRoute);
+      const onBuildIdMismatch = () => {
+        window.history.pushState(window.history.state, '', targetUrl);
+        window.location.reload();
+      };
+      if (options.instant && isStaticSlot(getRouteSlotId(nextRoute.path))) {
+        const isEager = (key: string) =>
+          key.startsWith(ETAG_ID_PREFIX)
+            ? isStaticSlot(key.slice(ETAG_ID_PREFIX.length))
+            : isMetaKey(key) || isStaticSlot(key);
+        const dataPromise = refetch(rscPath, rscParams, {
+          signal: abortController.signal,
+          unstable_isEager: isEager,
+          onBuildIdMismatch,
+        });
+        commitRoute(nextRoute);
+        return dataPromise.then(
+          (elements) => {
+            if (isAborted()) {
+              return;
+            }
+            routeChangeAbortRef.current = null;
+            const redirect = getRedirect(elements);
+            if (redirect) {
+              routeRef.current = redirect;
+              setRoute(redirect);
+              if (redirect.path !== '/404') {
+                setPendingHistory({
+                  mode: 'replace',
+                  url: getRouteUrl(redirect),
+                });
+              }
+            }
+            emitRouteChangeEvent('complete', redirect ?? nextRoute);
+          },
+          (e) => {
+            if (isAborted()) {
+              return;
+            }
+            routeChangeAbortRef.current = null;
+            setErr(e);
+            throw e;
+          },
+        );
+      }
+      try {
+        const elements = await refetch(rscPath, rscParams, {
+          signal: abortController.signal,
+          onBuildIdMismatch,
+        });
+        const redirect = getRedirect(elements);
+        if (redirect) {
+          nextRoute = redirect;
+          if (mode) {
+            mode = redirect.path === '/404' ? undefined : 'push';
+            url = undefined;
+          }
+        }
+      } catch (e) {
+        if (isAborted()) {
+          return;
+        }
         routeChangeAbortRef.current = null;
-        emitRouteChangeEvent('complete', nextRoute);
-      });
+        // Write URL synchronously
+        // React may rollback transition state updates when the render throws
+        if (mode && window.location.pathname === prevPathname) {
+          writeUrlToHistory(mode, targetUrl);
+        }
+        setErr(e);
+        throw e;
+      }
+      commitInTransition();
     },
-    [emitRouteChangeEvent, refetch, staticPathSetRef],
+    [emitRouteChangeEvent, refetch, staticPathSetRef, cachedEtagsRef],
   );
   const applyChangeRouteData = useCallback(
     async (routeData: unknown, isStatic: unknown) => {

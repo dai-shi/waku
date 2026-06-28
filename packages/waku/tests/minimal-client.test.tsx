@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { Suspense, act } from 'react';
+import { Suspense, act, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   afterAll,
@@ -22,6 +22,7 @@ import {
   unstable_registerCallServerElementsListener,
   unstable_registerFetchEnhancer,
   unstable_registerFetchRscInputTransformer,
+  useRefetch,
 } from '../src/minimal/client.js';
 
 type CallServer = (funcId: string, args: unknown[]) => Promise<unknown>;
@@ -304,5 +305,103 @@ describe('minimal/client input transformer', () => {
 
     expect(transform).toHaveBeenCalledWith('R/original.txt', undefined, false);
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain('rewritten');
+  });
+});
+
+describe('minimal/client eager merge', () => {
+  test('keeps a slot that b introduces but a never had', async () => {
+    // Cached a: a slot resolved eagerly + a slot resolved lazily. No `extra`.
+    mocks.createFromFetch.mockReturnValueOnce(
+      resolvedThenable({ _value: null, cached: 'C', dynamic: 'D1' }),
+    );
+    stubFetch();
+
+    let refetch: ReturnType<typeof useRefetch> | undefined;
+    let mountExtra: () => void = () => {};
+    const Probe = () => {
+      refetch = useRefetch();
+      const [extra, setExtra] = useState(false);
+      mountExtra = () => setExtra(true);
+      return extra ? <Slot id="extra" /> : null;
+    };
+
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <Root initialRscPath="R/app.txt">
+          <Suspense fallback={null}>
+            <Slot id="cached" />
+            <Slot id="dynamic" />
+            <Probe />
+          </Suspense>
+        </Root>,
+      );
+    });
+    expect(container.textContent).toBe('CD1');
+
+    // Optimistic refetch: b refreshes the lazy slot AND introduces `extra`, a
+    // key the eager merge must not drop (e.g. a redirect target's slot).
+    mocks.createFromFetch.mockReturnValueOnce(
+      resolvedThenable({ dynamic: 'D2', extra: 'X' }),
+    );
+    const unstable_isEager = (key: string) => key === 'cached';
+    await act(async () => {
+      await refetch!('R/next.txt', undefined, { unstable_isEager });
+    });
+    await act(async () => {
+      mountExtra();
+    });
+
+    // cached slot from a, dynamic streamed fresh, and the brand-new `extra`
+    expect(container.textContent).toBe('CD2X');
+
+    act(() => root.unmount());
+  });
+
+  test('serves an eager key from a even when b has a fresh value', async () => {
+    // The eager merge keeps eager keys (metadata/etags) from `a`, even when
+    // `b` carries a fresh value for them; only non-eager (hole) keys stream
+    // from `b`. This is why an instant navigation reuses the cached metadata
+    // bag instead of the fresh response.
+    mocks.createFromFetch.mockReturnValueOnce(
+      resolvedThenable({ _value: null, eager: 'A1', hole: 'H1' }),
+    );
+    stubFetch();
+
+    let refetch: ReturnType<typeof useRefetch> | undefined;
+    const Probe = () => {
+      refetch = useRefetch();
+      return null;
+    };
+
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <Root initialRscPath="R/app.txt">
+          <Suspense fallback={null}>
+            <Slot id="eager" />
+            <Slot id="hole" />
+            <Probe />
+          </Suspense>
+        </Root>,
+      );
+    });
+    expect(container.textContent).toBe('A1H1');
+
+    // b refreshes BOTH keys, but only the hole may change.
+    mocks.createFromFetch.mockReturnValueOnce(
+      resolvedThenable({ eager: 'A2', hole: 'H2' }),
+    );
+    const unstable_isEager = (key: string) => key === 'eager';
+    await act(async () => {
+      await refetch!('R/next.txt', undefined, { unstable_isEager });
+    });
+
+    // eager stays A1 (from a), hole streams H2 (from b).
+    expect(container.textContent).toBe('A1H2');
+
+    act(() => root.unmount());
   });
 });
