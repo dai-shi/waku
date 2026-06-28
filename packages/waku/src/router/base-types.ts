@@ -27,5 +27,7 @@ export interface SearchCodecsConfig {
 
 /** Props for pages when using `createPages` */
 export type PageProps<
-  Path extends PagePath<CreatePagesConfig> | (string & {}),
+  Path extends [PagePath<CreatePagesConfig>] extends [never]
+    ? string
+    : PagePath<CreatePagesConfig>,
 > = PropsForPages<Path>;
