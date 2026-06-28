@@ -25,6 +25,7 @@ import {
   IS_STATIC_ID,
   ROUTE_ID,
   SKIP_HEADER,
+  STATIC_ETAG,
   decodeRoutePath,
   decodeSliceId,
   encodeRoutePath,
@@ -37,11 +38,13 @@ export type ApiHandler = (
   apiContext: { params: Record<string, string | string[]> },
 ) => Promise<Response>;
 
-const isStringRecord = (x: unknown): x is Record<string, string> =>
+const isEtagRecord = (
+  x: unknown,
+): x is Record<string, string | typeof STATIC_ETAG> =>
   typeof x === 'object' &&
   x !== null &&
   !Array.isArray(x) &&
-  Object.values(x).every((v) => typeof v === 'string');
+  Object.values(x).every((v) => typeof v === 'string' || v === STATIC_ETAG);
 
 const safeJsonParse = (text: string): unknown => {
   try {
@@ -207,9 +210,6 @@ type SlotId = string;
 const ROOT_SLOT_ID = 'root';
 const ROUTE_SLOT_ID_PREFIX = 'route:';
 const SLICE_SLOT_ID_PREFIX = 'slice:';
-
-// The element tag (etag) used for every static slot; known without rendering.
-const STATIC_ETAG = 'static';
 
 type CacheId = string;
 
@@ -735,9 +735,8 @@ export function unstable_defineRouter(fns: {
     const parsedEtags = safeJsonParse(
       headers[SKIP_HEADER.toLowerCase()] || '{}',
     );
-    const clientEtags: Record<string, string> = isStringRecord(parsedEtags)
-      ? parsedEtags
-      : {};
+    const clientEtags: Record<string, string | typeof STATIC_ETAG> =
+      isEtagRecord(parsedEtags) ? parsedEtags : {};
     const { query } = parseRscParams(rscParams);
     const routeId = ROUTE_SLOT_ID_PREFIX + routePath;
     const routeTemplateCacheId = getPathSpecCacheId(pathConfigItem.path);
@@ -839,12 +838,6 @@ export function unstable_defineRouter(fns: {
     ]);
     entries[ROUTE_ID] = [routePath, query];
     entries[IS_STATIC_ID] = pathConfigItem.isStatic;
-    sliceConfigMap.forEach((sliceConfig, sliceId) => {
-      if (sliceConfig.isStatic) {
-        // FIXME: hard-coded for now
-        entries[IS_STATIC_ID + ':' + SLICE_SLOT_ID_PREFIX + sliceId] = true;
-      }
-    });
     if (has404()) {
       entries[HAS404_ID] = true;
     }
@@ -947,12 +940,6 @@ export function unstable_defineRouter(fns: {
           );
           return renderRsc({
             [SLICE_SLOT_ID_PREFIX + sliceId]: sliceElement,
-            ...(sliceConfig.isStatic
-              ? {
-                  // FIXME: hard-coded for now
-                  [IS_STATIC_ID + ':' + SLICE_SLOT_ID_PREFIX + sliceId]: true,
-                }
-              : {}),
             ...(sliceEtag !== undefined
               ? { [ETAG_ID_PREFIX + SLICE_SLOT_ID_PREFIX + sliceId]: sliceEtag }
               : {}),
@@ -1295,8 +1282,6 @@ export function unstable_defineRouter(fns: {
           const sliceElement = await getSliceElement(item, buildElementCache);
           const body = await renderRsc({
             [SLICE_SLOT_ID_PREFIX + item.id]: sliceElement,
-            // FIXME: hard-coded for now
-            [IS_STATIC_ID + ':' + SLICE_SLOT_ID_PREFIX + item.id]: true,
             [ETAG_ID_PREFIX + SLICE_SLOT_ID_PREFIX + item.id]: STATIC_ETAG,
           });
           await generateFile(rscPath2pathname(rscPath), body);

@@ -4,7 +4,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { unstable_defineRouter } from '../src/router/define-router.js';
 import {
   ETAG_ID_PREFIX,
+  IS_STATIC_ID,
   SKIP_HEADER,
+  STATIC_ETAG,
   encodeRoutePath,
   encodeSliceId,
 } from '../src/router/isomorphic-utils/route-path.js';
@@ -77,7 +79,7 @@ const drive = async (
 
 const getEntries = (
   router: ReturnType<typeof unstable_defineRouter>,
-  clientEtags?: Record<string, string>,
+  clientEtags?: Record<string, string | typeof STATIC_ETAG>,
 ): Promise<Record<string, unknown>> =>
   drive(
     router,
@@ -170,21 +172,21 @@ describe('define-router etags (element tag skip)', () => {
     expect(entries[etagKey('page')]).toBe('');
   });
 
-  it('uses the constant "static" etag for static slots and omits on match', async () => {
+  it('uses the static sentinel etag for static slots and omits on match', async () => {
     const router = buildRouter({
       page: { isStatic: true, renderer: () => createElement('div') },
     });
 
     const first = await getEntries(router);
     expect('page' in first).toBe(true);
-    expect(first[etagKey('page')]).toBe('static');
+    expect(first[etagKey('page')]).toBe(STATIC_ETAG);
 
-    const second = await getEntries(router, { page: 'static' });
+    const second = await getEntries(router, { page: STATIC_ETAG });
     expect('page' in second).toBe(false);
     expect(etagKey('page') in second).toBe(false);
   });
 
-  it('ignores a getEtag on a static slot (tag stays "static")', async () => {
+  it('ignores a getEtag on a static slot (tag stays the sentinel)', async () => {
     const router = buildRouter({
       page: {
         isStatic: true,
@@ -194,7 +196,7 @@ describe('define-router etags (element tag skip)', () => {
     });
 
     const entries = await getEntries(router);
-    expect(entries[etagKey('page')]).toBe('static');
+    expect(entries[etagKey('page')]).toBe(STATIC_ETAG);
   });
 
   it('passes the element option to getEtag', async () => {
@@ -359,6 +361,39 @@ describe('define-router etags (element tag skip)', () => {
     expect(entries[etagKey('slice:mySlice')]).toBe(''); // cleared
   });
 
+  it('marks a static slice by the etag sentinel, not an IS_STATIC marker', async () => {
+    const router = unstable_defineRouter({
+      getConfigs: async () => [
+        {
+          type: 'route' as const,
+          path: [{ type: 'literal' as const, name: 'foo' }],
+          isStatic: false,
+          rootElement: { isStatic: false, renderer: () => 'root' },
+          routeElement: { isStatic: false, renderer: () => 'route' },
+          elements: {
+            page: {
+              isStatic: false,
+              renderer: () => createElement('div', null, 'page'),
+            },
+          },
+          slices: ['mySlice'],
+        },
+        {
+          type: 'slice' as const,
+          id: 'mySlice',
+          isStatic: true,
+          renderer: async () => createElement('div', null, 'slice'),
+        },
+      ],
+    });
+
+    const entries = await getEntries(router);
+    expect(entries['slice:mySlice']).toBeDefined();
+    expect(entries[etagKey('slice:mySlice')]).toBe(STATIC_ETAG);
+    // the etag is the only static signal; no IS_STATIC:<slot> marker
+    expect(`${IS_STATIC_ID}:slice:mySlice` in entries).toBe(false);
+  });
+
   it('ignores a legacy, malformed, or non-string skip header', async () => {
     const build = () =>
       buildRouter({
@@ -369,11 +404,11 @@ describe('define-router etags (element tag skip)', () => {
     for (const header of [
       JSON.stringify(['page']), // legacy array of ids
       'not json',
-      JSON.stringify({ page: 123 }), // non-string value
+      JSON.stringify({ page: 123 }), // non-string value other than the sentinel
     ]) {
       const entries = await getEntriesWithSkipHeader(build(), header);
       expect('page' in entries).toBe(true);
-      expect(entries[etagKey('page')]).toBe('static');
+      expect(entries[etagKey('page')]).toBe(STATIC_ETAG);
     }
   });
 });
