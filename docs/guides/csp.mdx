@@ -106,26 +106,25 @@ const generateNonce = () => {
     : encodeBase64(arrayBuffer.buffer);
 };
 
-const NONCE = generateNonce();
-
 export default adapter({
   handleRequest: async (input, { renderRsc, renderHtml }) => {
     if (input.type === 'component') {
       return renderRsc({ App: <App /> });
     }
     if (input.type === 'custom' && input.pathname === '/') {
+      const nonce = generateNonce();
       const response = await renderHtml(
         await renderRsc({ App: <App /> }),
         <Slot id="App" />,
         {
           rscPath: '',
-          nonce: NONCE,
+          nonce,
         },
       );
 
       response.headers.set(
         'Content-Security-Policy',
-        `script-src 'self' 'nonce-${NONCE}';`,
+        `script-src 'self' 'nonce-${nonce}';`,
       );
 
       return response;
@@ -142,4 +141,4 @@ We set a minimal CSP header here. In practice, CSP should be as minimal or stric
 
 In the case of SSG, a nonce is not secure because it must be randomly generated for every response. Since SSG produces static HTML, this is not possible. If your security requirements prioritize a nonce over static HTML benefits, consider disabling HTML pre-rendering, or use [SSR Stream Interception](/guides/stream-intercept) if your host platform provides a similar middleware mechanism (e.g. Netlify's Edge Function).
 
-For this reason `unstable_setNonce` applies to dynamic (request-time) rendering only and has no effect on statically generated HTML. It must be called from within a render scope such as a handler interceptor; called elsewhere it is a no-op.
+For this reason `unstable_setNonce` applies to dynamic (request-time) rendering only and has no effect on statically generated HTML. It must be called from within a render scope such as a handler interceptor; called elsewhere it is a no-op. It currently uses an `unstable_` name and may change.
