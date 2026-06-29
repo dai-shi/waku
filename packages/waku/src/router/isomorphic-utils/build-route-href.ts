@@ -1,5 +1,4 @@
-import { getGrouplessPath } from '../../lib/utils/create-pages.js';
-import { getPathMapping, parsePathWithSlug } from '../../lib/utils/path.js';
+import { unstable_getGrouplessPath as getGrouplessPath } from '../../minimal/server.js';
 import type { CreatePagesConfig, RouteConfig } from '../base-types.js';
 import type {
   PagePath,
@@ -7,6 +6,7 @@ import type {
   RouteSearch,
   Unstable_SearchCodec,
 } from '../create-pages-utils/inferred-path-types.js';
+import { getPathMapping, parsePathWithSlug } from './path-spec.js';
 
 export type RoutePath = [PagePath<CreatePagesConfig>] extends [never]
   ? string

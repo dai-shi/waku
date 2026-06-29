@@ -23,14 +23,15 @@ import type {
   TransitionFunction,
 } from 'react';
 import { preloadModule } from 'react-dom';
-import { getErrorInfo } from '../lib/utils/custom-errors.js';
-import { addBase, removeBase } from '../lib/utils/path.js';
 import {
   Root,
   Slot,
+  unstable_addBase as addBase,
+  unstable_getErrorInfo as getErrorInfo,
   unstable_prefetchRsc as prefetchRsc,
   unstable_registerCallServerElementsListener as registerCallServerElementsListener,
   unstable_registerFetchEnhancer as registerFetchEnhancer,
+  unstable_removeBase as removeBase,
   useElementsPromise_UNSTABLE as useElementsPromise,
   useRefetch,
 } from '../minimal/client.js';
@@ -1406,7 +1407,7 @@ export function INTERNAL_ServerRouter({ route }: { route: RouteProps }) {
   );
 }
 
-// Highly experimental to expose internal APIs
+// Expose internal APIs
 // Subject to change without notice
 export type Unstable_RouteProps = RouteProps;
 export const unstable_HAS404_ID = HAS404_ID;
@@ -1428,4 +1429,11 @@ export type Unstable_PrefetchRoute = PrefetchRoute;
 export type Unstable_SliceId = SliceId;
 export type Unstable_RouteHref = RouteHref;
 export type Unstable_RoutePath = RoutePath;
+export type Unstable_BuildRouteHrefTarget<Path extends RoutePath> =
+  BuildRouteHrefTarget<Path>;
+export type Unstable_RouteParams<Path extends RoutePath> = RouteParams<Path>;
+export type Unstable_RouteSearch<Path extends RoutePath> = RouteSearch<Path>;
+export const unstable_buildRouteHref = buildRouteHref;
+export const unstable_matchRouteParams = matchRouteParams;
+export const unstable_useResolveSearchCodec = useResolveSearchCodec;
 export const unstable_parseRoute = parseRoute;

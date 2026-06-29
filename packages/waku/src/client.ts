@@ -1,7 +1,7 @@
 import { getErrorInfo } from './lib/utils/custom-errors.js';
 
 /**
- * Highly experimental, the name might change.
+ * Experimental, the name and the behavior might change.
  */
 export const unstable_allowServer = <T>(x: T) => x;
 

@@ -556,3 +556,11 @@ export const INTERNAL_ServerRoot = ({
     </ElementsContext>
   </RefetchContext>
 );
+
+// Expose internal APIs
+// Subject to change without notice
+export {
+  addBase as unstable_addBase,
+  removeBase as unstable_removeBase,
+} from '../lib/utils/path.js';
+export { getErrorInfo as unstable_getErrorInfo } from '../lib/utils/custom-errors.js';

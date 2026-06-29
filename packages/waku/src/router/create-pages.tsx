@@ -1,17 +1,10 @@
 import { createElement } from 'react';
 import type { FunctionComponent, ReactElement, ReactNode } from 'react';
-import { getGrouplessPath } from '../lib/utils/create-pages.js';
-import { createCustomError } from '../lib/utils/custom-errors.js';
-import {
-  countSlugsAndWildcards,
-  getPathMapping,
-  joinPath,
-  parseExactPath,
-  parsePathWithSlug,
-  pathSpecAsString,
-} from '../lib/utils/path.js';
-import type { PathSpec } from '../lib/utils/path.js';
 import { Children, Slot } from '../minimal/client.js';
+import {
+  unstable_createCustomError as createCustomError,
+  unstable_getGrouplessPath as getGrouplessPath,
+} from '../minimal/server.js';
 import { ErrorBoundary } from '../router/client.js';
 import type {
   AnyPage,
@@ -20,8 +13,18 @@ import type {
   RouteParams,
   Unstable_SearchCodec,
 } from './create-pages-utils/inferred-path-types.js';
+import {
+  countSlugsAndWildcards,
+  parseExactPath,
+} from './create-pages-utils/path-spec.js';
 import { unstable_defineRouter } from './define-router.js';
 import type { ApiHandler, HandlerInterceptor } from './define-router.js';
+import {
+  getPathMapping,
+  parsePathWithSlug,
+  pathSpecAsString,
+} from './isomorphic-utils/path-spec.js';
+import type { PathSpec } from './isomorphic-utils/path-spec.js';
 import { pathnameToRoutePath } from './isomorphic-utils/route-path.js';
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
@@ -535,7 +538,7 @@ export const createPages = <
     { component: FunctionComponent<any>; sourceFile?: string | undefined }
   >();
   const getStaticComponentId = (routePath: string, kind: 'page' | 'layout') =>
-    joinPath(routePath, kind).slice(1);
+    (routePath + '/' + kind).slice(1);
   const getStaticLayout = (id: string) =>
     staticComponentById.get(getStaticComponentId(id, 'layout'))?.component;
   const sliceIdsByRoutePath = new Map<string, string[]>();

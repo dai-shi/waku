@@ -1,6 +1,6 @@
 import type { FunctionComponent, ReactNode } from 'react';
 import type { ImportGlobFunction } from 'vite/types/importGlob.d.ts';
-import { isIgnoredPath } from '../lib/utils/fs-router.js';
+import { unstable_isIgnoredPath as isIgnoredPath } from '../minimal/server.js';
 import type { Unstable_SearchCodec } from './create-pages-utils/inferred-path-types.js';
 import { METHODS, createPages } from './create-pages.js';
 import type { Method } from './create-pages.js';
