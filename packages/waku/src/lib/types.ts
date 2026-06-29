@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Config } from '../config.js';
+import type { Etags } from './utils/etags.js';
 
 type Elements = Record<string, unknown>;
 
@@ -7,6 +8,7 @@ export type Unstable_RenderRsc = (
   elements: Elements,
   options?: {
     value?: unknown;
+    etags?: Etags;
     unstable_clientModuleCallback?: (ids: string[]) => void;
   },
 ) => Promise<ReadableStream>;
@@ -48,6 +50,7 @@ export type Unstable_HandleRequest = (
   ) & {
     pathname: string;
     req: Request;
+    etags?: Etags;
   },
   utils: {
     renderRsc: Unstable_RenderRsc;

@@ -3,6 +3,7 @@ import type { Config } from '../../config.js';
 import type { Unstable_HandleRequest as HandleRequest } from '../types.js';
 import { decodeFuncId, decodeRscPath } from '../utils/rsc-path.js';
 import { createCustomError } from './custom-errors.js';
+import { ETAGS_HEADER, parseClientEtags } from './etags.js';
 import { removeBase } from './path.js';
 
 type HandleRequestInput = Parameters<HandleRequest>[0];
@@ -25,6 +26,7 @@ export async function getInput(
   const url = new URL(req.url);
   const pathname = removeBase(url.pathname, config.basePath);
   const rscPathPrefix = '/' + config.rscBase + '/';
+  const etags = parseClientEtags(req.headers.get(ETAGS_HEADER));
   let rscPath: string | undefined;
   let input: HandleRequestInput;
   if (pathname.startsWith(rscPathPrefix)) {
@@ -42,6 +44,7 @@ export async function getInput(
         args,
         pathname,
         req,
+        etags,
       };
     } else {
       // client RSC request
@@ -59,6 +62,7 @@ export async function getInput(
         rscParams,
         pathname,
         req,
+        etags,
       };
     }
   } else if (req.method === 'POST') {
@@ -79,6 +83,7 @@ export async function getInput(
         },
         pathname,
         req,
+        etags,
       };
     } else {
       // POST API request
@@ -86,6 +91,7 @@ export async function getInput(
         type: 'custom',
         pathname,
         req,
+        etags,
       };
     }
   } else {
@@ -94,6 +100,7 @@ export async function getInput(
       type: 'custom',
       pathname,
       req,
+      etags,
     };
   }
   return input;

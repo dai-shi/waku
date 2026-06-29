@@ -12,10 +12,19 @@ import {
 import type { ReactNode } from 'react';
 import RSDWClient from 'react-server-dom-webpack/client';
 import { createCustomError } from '../lib/utils/custom-errors.js';
+import {
+  ETAGS_HEADER,
+  ETAG_ID_PREFIX,
+  IMMUTABLE_ETAG,
+  isValidEtag,
+  serializeClientEtags,
+} from '../lib/utils/etags.js';
+import type { Etags } from '../lib/utils/etags.js';
 import { consumeInitialRscEntry } from '../lib/utils/initial-rsc.js';
 import { setupDebugChannel } from '../lib/utils/react-debug-channel.js';
 import { encodeFuncId, encodeRscPath } from '../lib/utils/rsc-path.js';
 import {
+  CACHED_ETAGS,
   CALL_SERVER_ELEMENTS_LISTENERS,
   ENTRY,
   FETCH_ENHANCERS,
@@ -71,7 +80,26 @@ const checkStatus = async (
 
 type Elements = Record<string, unknown>;
 
-// TODO(daishi) do we still this?
+const collectCachedEtags = (elements: Elements): Etags => {
+  const etags: Etags = {};
+  for (const [key, value] of Object.entries(elements)) {
+    if (key.startsWith(ETAG_ID_PREFIX) && isValidEtag(value)) {
+      etags[key.slice(ETAG_ID_PREFIX.length)] = value;
+    }
+  }
+  return etags;
+};
+
+const updateCachedEtags = (elements: Elements): void => {
+  fetchRscStore[CACHED_ETAGS] = collectCachedEtags(elements);
+};
+
+export const unstable_isImmutableElement = (
+  elements: Elements,
+  slotId: string,
+): boolean => elements[ETAG_ID_PREFIX + slotId] === IMMUTABLE_ETAG;
+
+// TODO(daishi) do we still need this?
 const getCached = <T,>(c: () => T, m: WeakMap<WeakKey, T>, k: object): T =>
   (m.has(k) ? m : m.set(k, c())).get(k) as T;
 
@@ -95,9 +123,13 @@ const mergeElementsPromise = (
       delete base._value;
       return new Proxy(base, {
         get(target, key: string) {
+          // an _etag:<slot> key follows its slot's eagerness, not its own
+          const eager = key.startsWith(ETAG_ID_PREFIX)
+            ? isEager(key.slice(ETAG_ID_PREFIX.length))
+            : isEager(key);
           if (
             key !== '_value' &&
-            !isEager(key) &&
+            !eager &&
             // a lazy key still equal to aRes's value hasn't been streamed yet
             target[key] === aRes[key]
           ) {
@@ -152,7 +184,11 @@ const requestRsc = (
   signal: AbortSignal | undefined,
 ): Promise<Response> => {
   const url = BASE_RSC_PATH + encodeRscPath(rscPath);
-  const init: RequestInit = {};
+  const init: RequestInit = {
+    headers: {
+      [ETAGS_HEADER]: serializeClientEtags(fetchRscStore[CACHED_ETAGS] ?? {}),
+    },
+  };
   if (signal) {
     init.signal = signal;
   }
@@ -386,16 +422,20 @@ export const unstable_registerFetchRscInputTransformer = (
 };
 
 const registerHmrRefetch = (refetch: () => void) => {
+  const reload = () => {
+    fetchRscStore[CACHED_ETAGS] = {};
+    refetch();
+  };
   globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];
   const index = globalThis.__WAKU_RSC_RELOAD_LISTENERS__.indexOf(
     globalThis.__WAKU_REFETCH_RSC__!,
   );
   if (index !== -1) {
-    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.splice(index, 1, refetch);
+    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.splice(index, 1, reload);
   } else {
-    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.push(refetch);
+    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.push(reload);
   }
-  globalThis.__WAKU_REFETCH_RSC__ = refetch;
+  globalThis.__WAKU_REFETCH_RSC__ = reload;
 };
 
 /** Fetch elements for an RSC path, reusing a cached or prefetched result. */
@@ -455,6 +495,9 @@ export const Root = ({
   useEffect(() => {
     fetchRscStore[SET_ELEMENTS] = setElements;
   }, []);
+  useEffect(() => {
+    elements.then(updateCachedEtags, () => {});
+  }, [elements]);
   const refetch = useCallback<Refetch>(async (rscPath, rscParams, options) => {
     delete fetchRscStore[ENTRY];
     const data = unstable_fetchRsc(rscPath, rscParams, options);

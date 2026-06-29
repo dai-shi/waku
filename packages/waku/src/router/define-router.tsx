@@ -2,10 +2,15 @@ import type { ReactNode } from 'react';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import {
   unstable_base64ToBytes as base64ToBytes,
+  unstable_buildElements as buildElements,
   unstable_bytesToBase64 as bytesToBase64,
   unstable_createCustomError as createCustomError,
   unstable_defineHandlers as defineHandlers,
   unstable_getErrorInfo as getErrorInfo,
+} from '../minimal/server.js';
+import type {
+  Unstable_ElementSource as ElementSource,
+  Unstable_Etags as Etags,
 } from '../minimal/server.js';
 import { deserializeRsc, serializeRsc } from '../server.js';
 import { INTERNAL_ServerRouter } from './client.js';
@@ -24,12 +29,9 @@ import {
 } from './isomorphic-utils/path-spec.js';
 import type { PathSpec } from './isomorphic-utils/path-spec.js';
 import {
-  ETAG_ID_PREFIX,
   HAS404_ID,
   IS_STATIC_ID,
   ROUTE_ID,
-  SKIP_HEADER,
-  STATIC_ETAG,
   decodeRoutePath,
   decodeSliceId,
   encodeRoutePath,
@@ -41,22 +43,6 @@ export type ApiHandler = (
   req: Request,
   apiContext: { params: Record<string, string | string[]> },
 ) => Promise<Response>;
-
-const isEtagRecord = (
-  x: unknown,
-): x is Record<string, string | typeof STATIC_ETAG> =>
-  typeof x === 'object' &&
-  x !== null &&
-  !Array.isArray(x) &&
-  Object.values(x).every((v) => typeof v === 'string' || v === STATIC_ETAG);
-
-const safeJsonParse = (text: string): unknown => {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return undefined;
-  }
-};
 
 const parseRscParams = (
   rscParams: unknown,
@@ -211,6 +197,11 @@ export function unstable_redirect<Path extends RoutePath = RoutePath>(
 
 type SlotId = string;
 
+type RouteEntries = {
+  elements: Record<string, unknown>;
+  etags: Etags;
+};
+
 const ROOT_SLOT_ID = 'root';
 const ROUTE_SLOT_ID_PREFIX = 'route:';
 const SLICE_SLOT_ID_PREFIX = 'slice:';
@@ -277,6 +268,12 @@ type GetEtagFromOption = (
 type GetEtagFromParams = (
   params?: Record<string, string | string[]>,
 ) => Promise<string | undefined>;
+
+const bindEtag = <A,>(
+  getEtag: ((arg: A) => Promise<string | undefined>) | undefined,
+  arg: A,
+): (() => Promise<string | undefined>) | undefined =>
+  getEtag && (() => getEtag(arg));
 
 type RouteConfig = {
   type: 'route';
@@ -723,9 +720,9 @@ export function unstable_defineRouter(fns: {
   const getEntriesForRoute = async (
     rscPath: string,
     rscParams: unknown,
-    headers: Readonly<Record<string, string>>,
+    clientEtags: Etags,
     elementCache: ElementCache,
-  ) => {
+  ): Promise<RouteEntries | null> => {
     setRscPath(rscPath);
     setRscParams(rscParams);
     const routePath = decodeRoutePath(rscPath);
@@ -733,11 +730,6 @@ export function unstable_defineRouter(fns: {
     if (pathConfigItem?.type !== 'route') {
       return null;
     }
-    const parsedEtags = safeJsonParse(
-      headers[SKIP_HEADER.toLowerCase()] || '{}',
-    );
-    const clientEtags: Record<string, string | typeof STATIC_ETAG> =
-      isEtagRecord(parsedEtags) ? parsedEtags : {};
     const { query } = parseRscParams(rscParams);
     const routeId = ROUTE_SLOT_ID_PREFIX + routePath;
     const routeTemplateCacheId = getPathSpecCacheId(pathConfigItem.path);
@@ -767,82 +759,67 @@ export function unstable_defineRouter(fns: {
         });
       }
     });
-    const entries: Record<SlotId, unknown> = {};
-    const addEntry = async (
-      slotId: SlotId,
+    const makeElementSource = (
       isStatic: boolean,
       cacheId: CacheId,
       render: () => ReactNode | Promise<ReactNode>,
-      getEtag: () => Promise<string | undefined> | undefined,
-    ) => {
-      if (isStatic) {
-        if (clientEtags[slotId] === STATIC_ETAG) {
-          return;
-        }
-        if (!elementCache.get(cacheId)) {
-          await elementCache.set(cacheId, await render());
-        }
-        entries[slotId] = await elementCache.get(cacheId);
-        entries[ETAG_ID_PREFIX + slotId] = STATIC_ETAG;
-      } else {
-        const etag = await getEtag();
-        if (etag !== undefined && etag === clientEtags[slotId]) {
-          return;
-        }
-        entries[slotId] = await render();
-        if (etag !== undefined) {
-          entries[ETAG_ID_PREFIX + slotId] = etag;
-        } else if (clientEtags[slotId] !== undefined) {
-          // The slot no longer has a tag but the client still holds one; send
-          // an empty tag to clear it (the client drops empty tags).
-          entries[ETAG_ID_PREFIX + slotId] = '';
-        }
-      }
-    };
-    await Promise.all([
-      addEntry(
-        ROOT_SLOT_ID,
+      getEtag?: () => Promise<string | undefined>,
+    ): ElementSource =>
+      isStatic
+        ? {
+            immutable: true,
+            render: async () => {
+              if (!elementCache.get(cacheId)) {
+                await elementCache.set(cacheId, await render());
+              }
+              return elementCache.get(cacheId);
+            },
+          }
+        : { getEtag, render };
+    const elementSources: Record<SlotId, ElementSource> = {
+      [ROOT_SLOT_ID]: makeElementSource(
         pathConfigItem.rootElement.isStatic,
         getSlotCacheId(ROOT_SLOT_ID),
         () => pathConfigItem.rootElement.renderer(option),
-        () => pathConfigItem.rootElement.getEtagFromOption?.(option),
+        bindEtag(pathConfigItem.rootElement.getEtagFromOption, option),
       ),
-      addEntry(
-        routeId,
+      [routeId]: makeElementSource(
         pathConfigItem.routeElement.isStatic,
         routeTemplateCacheId,
         () => pathConfigItem.routeElement.renderer(option),
-        () => pathConfigItem.routeElement.getEtagFromOption?.(option),
+        bindEtag(pathConfigItem.routeElement.getEtagFromOption, option),
       ),
-      ...Object.entries(pathConfigItem.elements).map(([id, el]) =>
-        addEntry(
-          id,
-          el.isStatic,
-          getSlotCacheId(id),
-          () => el.renderer(option),
-          () => el.getEtagFromOption?.(option),
-        ),
-      ),
-      ...slices.map((sliceId) => {
-        const sliceConfig = sliceConfigMap.get(sliceId);
-        if (!sliceConfig) {
-          throw new Error(`Slice not found: ${sliceId}`);
-        }
-        return addEntry(
-          SLICE_SLOT_ID_PREFIX + sliceId,
-          sliceConfig.isStatic,
-          getSlotCacheId(SLICE_SLOT_ID_PREFIX + sliceId),
-          () => sliceConfig.renderer(sliceConfig.params),
-          () => sliceConfig.getEtagFromParams?.(sliceConfig.params),
-        );
-      }),
-    ]);
-    entries[ROUTE_ID] = [routePath, query];
-    entries[IS_STATIC_ID] = pathConfigItem.isStatic;
-    if (has404()) {
-      entries[HAS404_ID] = true;
+    };
+    for (const [id, el] of Object.entries(pathConfigItem.elements)) {
+      elementSources[id] = makeElementSource(
+        el.isStatic,
+        getSlotCacheId(id),
+        () => el.renderer(option),
+        bindEtag(el.getEtagFromOption, option),
+      );
     }
-    return entries;
+    for (const sliceId of slices) {
+      const sliceConfig = sliceConfigMap.get(sliceId);
+      if (!sliceConfig) {
+        throw new Error(`Slice not found: ${sliceId}`);
+      }
+      elementSources[SLICE_SLOT_ID_PREFIX + sliceId] = makeElementSource(
+        sliceConfig.isStatic,
+        getSlotCacheId(SLICE_SLOT_ID_PREFIX + sliceId),
+        () => sliceConfig.renderer(sliceConfig.params),
+        bindEtag(sliceConfig.getEtagFromParams, sliceConfig.params),
+      );
+    }
+    const { elements, etags } = await buildElements(
+      clientEtags,
+      elementSources,
+    );
+    elements[ROUTE_ID] = [routePath, query];
+    elements[IS_STATIC_ID] = pathConfigItem.isStatic;
+    if (has404()) {
+      elements[HAS404_ID] = true;
+    }
+    return { elements, etags };
   };
 
   type HandleRequest = Parameters<typeof defineHandlers>[0]['handleRequest'];
@@ -883,35 +860,40 @@ export function unstable_defineRouter(fns: {
         return cachedPath2moduleIds!;
       };
 
-      const headers = Object.fromEntries(input.req.headers.entries());
+      const clientEtags = input.etags ?? {};
       const withRerender = async <T,>(fn: () => Promise<T>) => {
-        let elementsPromise: Promise<Record<string, unknown>> = Promise.resolve(
-          {},
-        );
+        let entriesPromise: Promise<RouteEntries> = Promise.resolve({
+          elements: {},
+          etags: {},
+        });
         let rendered = false;
         const rerender = (rscPath: string, rscParams?: unknown) => {
           if (rendered) {
             throw new Error('already rendered');
           }
-          elementsPromise = Promise.all([
-            elementsPromise,
+          entriesPromise = Promise.all([
+            entriesPromise,
             getEntriesForRoute(
               rscPath,
               rscParams,
-              headers,
+              clientEtags,
               requestElementCache,
             ),
-          ]).then(([oldElements, newElements]) => {
-            if (newElements === null) {
+          ]).then(([oldEntries, newEntries]) => {
+            if (newEntries === null) {
               console.warn('getEntries returned null');
+              return oldEntries;
             }
-            return { ...oldElements, ...newElements };
+            return {
+              elements: { ...oldEntries.elements, ...newEntries.elements },
+              etags: { ...oldEntries.etags, ...newEntries.etags },
+            };
           });
         };
         setRerender(rerender);
         try {
           const value = await fn();
-          return { value, elements: await elementsPromise };
+          return { value, entries: await entriesPromise };
         } finally {
           rendered = true;
         }
@@ -930,40 +912,43 @@ export function unstable_defineRouter(fns: {
             return null;
           }
           const { sliceConfig, params: sliceParams } = found;
-          const sliceEtag = sliceConfig.isStatic
-            ? STATIC_ETAG
-            : await sliceConfig.getEtagFromParams?.(sliceParams);
-          const sliceElement = await getSliceElement(
-            sliceConfig,
-            requestElementCache,
-            sliceId,
-            sliceParams,
+          const sliceSlotId = SLICE_SLOT_ID_PREFIX + sliceId;
+          const { elements, etags } = await buildElements(
+            {},
+            {
+              [sliceSlotId]: {
+                immutable: sliceConfig.isStatic,
+                getEtag: bindEtag(sliceConfig.getEtagFromParams, sliceParams),
+                render: () =>
+                  getSliceElement(
+                    sliceConfig,
+                    requestElementCache,
+                    sliceId,
+                    sliceParams,
+                  ),
+              },
+            },
           );
-          return renderRsc({
-            [SLICE_SLOT_ID_PREFIX + sliceId]: sliceElement,
-            ...(sliceEtag !== undefined
-              ? { [ETAG_ID_PREFIX + SLICE_SLOT_ID_PREFIX + sliceId]: sliceEtag }
-              : {}),
-          });
+          return renderRsc(elements, { etags });
         }
         const entries = await getEntriesForRoute(
           input.rscPath,
           input.rscParams,
-          headers,
+          clientEtags,
           requestElementCache,
         );
         if (!entries) {
           return null;
         }
-        return renderRsc(entries);
+        return renderRsc(entries.elements, { etags: entries.etags });
       }
 
       if (input.type === 'function') {
         try {
-          const { value, elements } = await withRerender(() =>
+          const { value, entries } = await withRerender(() =>
             input.fn(...input.args),
           );
-          return renderRsc(elements, { value });
+          return renderRsc(entries.elements, { value, etags: entries.etags });
         } catch (e) {
           const info = getErrorInfo(e);
           if (info?.location) {
@@ -972,13 +957,13 @@ export function unstable_defineRouter(fns: {
             const entries = await getEntriesForRoute(
               rscPath,
               undefined,
-              headers,
+              clientEtags,
               requestElementCache,
             );
             if (!entries) {
               unstable_notFound();
             }
-            return renderRsc(entries);
+            return renderRsc(entries.elements, { etags: entries.etags });
           }
           throw e;
         }
@@ -1005,7 +990,7 @@ export function unstable_defineRouter(fns: {
           let entries = await getEntriesForRoute(
             rscPath,
             rscParams,
-            headers,
+            clientEtags,
             requestElementCache,
           );
           if (!entries) {
@@ -1017,19 +1002,28 @@ export function unstable_defineRouter(fns: {
           const html = <INTERNAL_ServerRouter route={route} />;
           let formState: unknown;
           if (input.type === 'action') {
-            const { value, elements } = await withRerender(() => input.fn());
+            const { value, entries: rerendered } = await withRerender(() =>
+              input.fn(),
+            );
             formState = value;
-            entries = { ...entries, ...elements };
+            entries = {
+              elements: { ...entries.elements, ...rerendered.elements },
+              etags: { ...entries.etags, ...rerendered.etags },
+            };
           }
-          return renderHtml(await renderRsc(entries), html, {
-            rscPath,
-            formState,
-            status,
-            ...(nonce ? { nonce } : {}),
-            unstable_extraScriptContent:
-              getRouterPrefetchCode(path2moduleIds) +
-              setupRouterSearchCodecs(getCachedConfigs()),
-          });
+          return renderHtml(
+            await renderRsc(entries.elements, { etags: entries.etags }),
+            html,
+            {
+              rscPath,
+              formState,
+              status,
+              ...(nonce ? { nonce } : {}),
+              unstable_extraScriptContent:
+                getRouterPrefetchCode(path2moduleIds) +
+                setupRouterSearchCodecs(getCachedConfigs()),
+            },
+          );
         };
         const url = new URL(input.req.url);
         const query = url.searchParams.toString();
@@ -1203,12 +1197,13 @@ export function unstable_defineRouter(fns: {
           if (!entries) {
             return;
           }
-          for (const id of Object.keys(entries)) {
+          for (const id of Object.keys(entries.elements)) {
             const cached = buildElementCache.get(id);
-            entries[id] = cached ? await cached : entries[id];
+            entries.elements[id] = cached ? await cached : entries.elements[id];
           }
           const moduleIds = new Set<string>();
-          const stream = await renderRsc(entries, {
+          const stream = await renderRsc(entries.elements, {
+            etags: entries.etags,
             unstable_clientModuleCallback: (ids) =>
               ids.forEach((id) => moduleIds.add(id)),
           });
@@ -1280,11 +1275,17 @@ export function unstable_defineRouter(fns: {
       const req = new Request(new URL('http://localhost:3000'));
       runTask(async () => {
         await runHandled(req, async () => {
-          const sliceElement = await getSliceElement(item, buildElementCache);
-          const body = await renderRsc({
-            [SLICE_SLOT_ID_PREFIX + item.id]: sliceElement,
-            [ETAG_ID_PREFIX + SLICE_SLOT_ID_PREFIX + item.id]: STATIC_ETAG,
-          });
+          const sliceSlotId = SLICE_SLOT_ID_PREFIX + item.id;
+          const { elements, etags } = await buildElements(
+            {},
+            {
+              [sliceSlotId]: {
+                immutable: true,
+                render: () => getSliceElement(item, buildElementCache),
+              },
+            },
+          );
+          const body = await renderRsc(elements, { etags });
           await generateFile(rscPath2pathname(rscPath), body);
         });
       });

@@ -1,12 +1,15 @@
 import type { ReactNode } from 'react';
 import { createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { unstable_defineRouter } from '../src/router/define-router.js';
 import {
   ETAG_ID_PREFIX,
+  IMMUTABLE_ETAG,
+  parseClientEtags,
+} from '../src/lib/utils/etags.js';
+import type { Etags } from '../src/lib/utils/etags.js';
+import { unstable_defineRouter } from '../src/router/define-router.js';
+import {
   IS_STATIC_ID,
-  SKIP_HEADER,
-  STATIC_ETAG,
   encodeRoutePath,
   encodeSliceId,
 } from '../src/router/isomorphic-utils/route-path.js';
@@ -48,11 +51,12 @@ const buildRouter = (elements: Record<string, ElementSpec>) =>
     ],
   });
 
-// Drive a single RSC ("component") request and capture the entries record that
-// the router hands to renderRsc, so we can assert which slots were sent.
+// Drive a single RSC request and reconstruct the on-wire record: the `elements`
+// the router passes to renderRsc, merged with its `etags` re-encoded as
+// `_etag:<slot>` keys (what renderRsc attaches post-validation).
 const drive = async (
   router: ReturnType<typeof unstable_defineRouter>,
-  headers: Record<string, string>,
+  etags: Etags,
   rscPath = encodeRoutePath('/foo'),
 ): Promise<Record<string, unknown>> => {
   let captured: Record<string, unknown> = {};
@@ -62,13 +66,22 @@ const drive = async (
       pathname: '/foo',
       rscPath,
       rscParams: undefined,
-      req: new Request('http://localhost/foo', { headers }),
+      req: new Request('http://localhost/foo'),
+      etags,
     },
     {
-      renderRsc: vi.fn(async (entries: unknown) => {
-        captured = entries as Record<string, unknown>;
-        return makeStream();
-      }),
+      renderRsc: vi.fn(
+        async (
+          elements: Record<string, unknown>,
+          options?: { etags?: Record<string, unknown> },
+        ) => {
+          captured = { ...elements };
+          for (const [slotId, tag] of Object.entries(options?.etags ?? {})) {
+            captured[ETAG_ID_PREFIX + slotId] = tag;
+          }
+          return makeStream();
+        },
+      ),
       parseRsc: vi.fn(),
       renderHtml: vi.fn(),
       loadBuildMetadata: vi.fn(),
@@ -79,23 +92,20 @@ const drive = async (
 
 const getEntries = (
   router: ReturnType<typeof unstable_defineRouter>,
-  clientEtags?: Record<string, string | typeof STATIC_ETAG>,
-): Promise<Record<string, unknown>> =>
-  drive(
-    router,
-    clientEtags ? { [SKIP_HEADER]: JSON.stringify(clientEtags) } : {},
-  );
+  clientEtags?: Record<string, string | typeof IMMUTABLE_ETAG>,
+): Promise<Record<string, unknown>> => drive(router, clientEtags ?? {});
 
-// Drive with a raw, un-serialized skip header (for legacy/malformed inputs).
-const getEntriesWithSkipHeader = (
+// Drive with a raw, un-serialized etags header value parsed through the real
+// minimal parser (for legacy/malformed inputs), mirroring what getInput does.
+const getEntriesWithEtagsHeader = (
   router: ReturnType<typeof unstable_defineRouter>,
-  skipHeader: string,
+  etagsHeader: string,
 ): Promise<Record<string, unknown>> =>
-  drive(router, { [SKIP_HEADER]: skipHeader });
+  drive(router, parseClientEtags(etagsHeader));
 
 const etagKey = (slotId: string) => `${ETAG_ID_PREFIX}${slotId}`;
 
-describe('define-router etags (element tag skip)', () => {
+describe('define-router etags (per-slot omit)', () => {
   it('sends a dynamic slot with its etag when the client has none', async () => {
     const router = buildRouter({
       page: {
@@ -179,9 +189,9 @@ describe('define-router etags (element tag skip)', () => {
 
     const first = await getEntries(router);
     expect('page' in first).toBe(true);
-    expect(first[etagKey('page')]).toBe(STATIC_ETAG);
+    expect(first[etagKey('page')]).toBe(IMMUTABLE_ETAG);
 
-    const second = await getEntries(router, { page: STATIC_ETAG });
+    const second = await getEntries(router, { page: IMMUTABLE_ETAG });
     expect('page' in second).toBe(false);
     expect(etagKey('page') in second).toBe(false);
   });
@@ -196,7 +206,7 @@ describe('define-router etags (element tag skip)', () => {
     });
 
     const entries = await getEntries(router);
-    expect(entries[etagKey('page')]).toBe(STATIC_ETAG);
+    expect(entries[etagKey('page')]).toBe(IMMUTABLE_ETAG);
   });
 
   it('passes the element option to getEtag', async () => {
@@ -216,7 +226,7 @@ describe('define-router etags (element tag skip)', () => {
     expect(seen).toContainEqual(expect.objectContaining({ routePath: '/foo' }));
   });
 
-  it('applies the same etag skip to a dynamic slice', async () => {
+  it('applies the same etag omit to a dynamic slice', async () => {
     let sliceTag = 'sv1';
     const router = unstable_defineRouter({
       getConfigs: async () => [
@@ -278,7 +288,7 @@ describe('define-router etags (element tag skip)', () => {
     expect(calls).toEqual(['etag', 'render']);
   });
 
-  it('applies the etag skip to the root element', async () => {
+  it('applies the etag omit to the root element', async () => {
     let tag = 'r1';
     const router = unstable_defineRouter({
       getConfigs: async () => [
@@ -389,26 +399,34 @@ describe('define-router etags (element tag skip)', () => {
 
     const entries = await getEntries(router);
     expect(entries['slice:mySlice']).toBeDefined();
-    expect(entries[etagKey('slice:mySlice')]).toBe(STATIC_ETAG);
+    expect(entries[etagKey('slice:mySlice')]).toBe(IMMUTABLE_ETAG);
     // the etag is the only static signal; no IS_STATIC:<slot> marker
     expect(`${IS_STATIC_ID}:slice:mySlice` in entries).toBe(false);
   });
 
-  it('ignores a legacy, malformed, or non-string skip header', async () => {
+  it('ignores a legacy, malformed, or non-string etags header', async () => {
     const build = () =>
       buildRouter({
         page: { isStatic: true, renderer: () => createElement('div') },
       });
 
-    // A valid map would skip the static slot; these never do.
+    // A valid map would omit the static slot; these never do.
     for (const header of [
       JSON.stringify(['page']), // legacy array of ids
       'not json',
       JSON.stringify({ page: 123 }), // non-string value other than the sentinel
     ]) {
-      const entries = await getEntriesWithSkipHeader(build(), header);
+      const entries = await getEntriesWithEtagsHeader(build(), header);
       expect('page' in entries).toBe(true);
-      expect(entries[etagKey('page')]).toBe(STATIC_ETAG);
+      expect(entries[etagKey('page')]).toBe(IMMUTABLE_ETAG);
     }
+  });
+
+  it('parseClientEtags keeps only string and sentinel values', () => {
+    expect(
+      parseClientEtags(
+        JSON.stringify({ keep: 'v1', sentinel: IMMUTABLE_ETAG, drop: 123 }),
+      ),
+    ).toEqual({ keep: 'v1', sentinel: IMMUTABLE_ETAG });
   });
 });

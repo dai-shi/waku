@@ -17,6 +17,7 @@ import {
   vi,
 } from 'vitest';
 import { createCustomError } from '../src/lib/utils/custom-errors.js';
+import { ETAG_ID_PREFIX, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
 import { fetchRscStore } from '../src/minimal/client-utils/fetch-store.js';
 import {
   Children,
@@ -43,12 +44,9 @@ import {
   useRouter,
 } from '../src/router/client.js';
 import {
-  ETAG_ID_PREFIX,
   HAS404_ID,
   IS_STATIC_ID,
   ROUTE_ID,
-  SKIP_HEADER,
-  STATIC_ETAG,
 } from '../src/router/isomorphic-utils/route-path.js';
 
 const postsSearchCodec = {
@@ -1247,7 +1245,7 @@ describe('Slice', () => {
     const slotId = unstable_getSliceSlotId('slice-1');
     const elements = {
       [slotId]: <div>loaded</div>,
-      [`${ETAG_ID_PREFIX}${slotId}`]: STATIC_ETAG,
+      [`${ETAG_ID_PREFIX}${slotId}`]: IMMUTABLE_ETAG,
     };
 
     const view = await renderWithMinimalRoot(
@@ -1397,11 +1395,12 @@ describe('Router integration', () => {
     view.unmount();
   });
 
-  test('registers its fetch enhancer and callServer listener once, and removes them on unmount (StrictMode)', async () => {
-    // The store is a module-level singleton; 'f' is FETCH_ENHANCERS, 'l' is
-    // CALL_SERVER_ELEMENTS_LISTENERS.
+  test('registers its callServer listener once, and removes it on unmount (StrictMode)', async () => {
+    // The store is a module-level singleton; 'l' is CALL_SERVER_ELEMENTS_LISTENERS.
+    // NOTE: the etags-header *fetch enhancer* ('f') is no longer owned by the
+    // router; it moved into the minimal layer (covered by the minimal
+    // carry/replay test). The router keeps only the callServer listener.
     const store = fetchRscStore as unknown as Record<string, unknown>;
-    delete store.f;
     delete store.l;
     const size = (key: string) =>
       (store[key] as Set<unknown> | undefined)?.size ?? 0;
@@ -1417,13 +1416,11 @@ describe('Router integration', () => {
     );
 
     // Registered exactly once despite StrictMode's mount/unmount/mount cycle.
-    expect(size('f')).toBe(1);
     expect(size('l')).toBe(1);
 
     view.unmount();
 
     // Fully unregistered on unmount, so nothing leaks into later RSC requests.
-    expect(size('f')).toBe(0);
     expect(size('l')).toBe(0);
   });
 
@@ -2462,31 +2459,13 @@ describe('Router integration', () => {
     }
   });
 
-  test('changeRoute refetch injects skip header', async () => {
+  // NOTE: etags carry/replay moved into the minimal layer; it is now
+  // covered by tests/minimal-etags.test.tsx. The router only triggers the
+  // refetch on navigation, which this test pins.
+  test('changeRoute refetches on navigation to a dynamic route', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
-    const fetchSpy = vi.fn<typeof fetch>(
-      async () => new Response(null, { status: 200 }),
-    );
-    const fetchMock = vi
-      .spyOn(globalThis, 'fetch')
-      .mockImplementation(fetchSpy as typeof fetch);
-    // Apply the router's registered fetch enhancers (the skip-header enhancer)
-    // the way the real refetch would, so the header is asserted on the request.
-    // ('f' is the internal FETCH_ENHANCERS key.)
-    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => {
-      const enhancers = (
-        fetchRscStore as {
-          f?: Set<(fn: typeof fetch) => typeof fetch>;
-        }
-      ).f;
-      let fetchFn: typeof fetch = fetch;
-      for (const enhance of enhancers ?? []) {
-        fetchFn = enhance(fetchFn);
-      }
-      await fetchFn('http://localhost/rsc', {});
-      return {};
-    });
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({}));
     vi.mocked(useRefetch).mockReturnValue(refetch);
 
     const elements = {
@@ -2494,12 +2473,6 @@ describe('Router integration', () => {
       [unstable_getRouteSlotId('/next')]: <Probe />,
       [ROUTE_ID]: ['/start', ''],
       [IS_STATIC_ID]: false,
-      [`${ETAG_ID_PREFIX}foo`]: 'etag-foo',
-      [`${ETAG_ID_PREFIX}bar`]: 'etag-bar',
-      // An empty tag is the server's clear signal; it must not be sent back.
-      [`${ETAG_ID_PREFIX}cleared`]: '',
-      // A non-Latin1 tag would make fetch reject the header; it must be dropped.
-      [`${ETAG_ID_PREFIX}nonLatin1`]: 'tag-☃',
     };
 
     const view = await renderRouter(
@@ -2515,33 +2488,11 @@ describe('Router integration', () => {
       await act(async () => {
         await capture.router!.push('/next');
       });
-      const readHeader = (init: RequestInit | undefined, name: string) => {
-        const h = init?.headers;
-        if (!h) {
-          return undefined;
-        }
-        if (h instanceof Headers) {
-          return h.get(name) ?? undefined;
-        }
-        if (Array.isArray(h)) {
-          return (h as [string, string][]).find(([k]) => k === name)?.[1];
-        }
-        return (h as Record<string, string>)[name];
-      };
-      const skipStr = fetchSpy.mock.calls
-        .map((call) => readHeader(call[1], SKIP_HEADER))
-        .find((value) => value !== null && value !== undefined);
-      expect(skipStr).toBeTypeOf('string');
-      const skipped = JSON.parse(skipStr!) as Record<string, string>;
-      expect(skipped.foo).toBe('etag-foo');
-      expect(skipped.bar).toBe('etag-bar');
-      expect('cleared' in skipped).toBe(false);
-      expect('nonLatin1' in skipped).toBe(false);
+      expect(refetch).toHaveBeenCalled();
       expect(capture.router.path).toBe('/next');
       expect(capture.router.query).toBe('');
     } finally {
       view.unmount();
-      fetchMock.mockRestore();
     }
   });
 

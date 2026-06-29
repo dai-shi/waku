@@ -1,0 +1,213 @@
+// @vitest-environment happy-dom
+
+// Proves the per-slot cache-validator carry/replay lives in the minimal layer
+// (router-agnostic), driving the real minimal Root.
+import { act } from 'react';
+import type { ReactElement } from 'react';
+import { createRoot } from 'react-dom/client';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  ETAGS_HEADER,
+  ETAG_ID_PREFIX,
+  IMMUTABLE_ETAG,
+  isValidEtag,
+} from '../src/lib/utils/etags.js';
+import {
+  CACHED_ETAGS,
+  ENTRY,
+  FETCH_ENHANCERS,
+  SET_ELEMENTS,
+  fetchRscStore,
+} from '../src/minimal/client-utils/fetch-store.js';
+import {
+  Root,
+  unstable_isImmutableElement as isImmutableElement,
+  unstable_prefetchRsc as prefetchRsc,
+  useRefetch,
+} from '../src/minimal/client.js';
+import { unstable_buildElements as buildElements } from '../src/minimal/server.js';
+
+const testHoisted = vi.hoisted(() => ({
+  elements: {} as Record<string, unknown>,
+}));
+
+vi.mock('react-server-dom-webpack/client', () => ({
+  default: {
+    createFromFetch: vi.fn(async (responsePromise: Promise<Response>) => {
+      await responsePromise;
+      return testHoisted.elements;
+    }),
+    encodeReply: vi.fn(async () => ''),
+    createTemporaryReferenceSet: vi.fn(() => new Map()),
+  },
+}));
+
+const flush = async () => {
+  await act(async () => {
+    await new Promise<void>((resolve) => setTimeout(resolve));
+  });
+};
+
+const renderApp = async (element: ReactElement) => {
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  await act(async () => {
+    root.render(element);
+  });
+  return {
+    unmount: () => {
+      act(() => root.unmount());
+      container.remove();
+    },
+  };
+};
+
+beforeEach(() => {
+  (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    new Response(null, { status: 200 }),
+  );
+  delete fetchRscStore[ENTRY];
+  delete fetchRscStore[SET_ELEMENTS];
+  delete fetchRscStore[FETCH_ENHANCERS];
+  delete fetchRscStore[CACHED_ETAGS];
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('minimal per-slot cache-validator (carry + replay)', () => {
+  it('caches header-safe tags from a response and drops the clear/non-Latin1 ones', async () => {
+    testHoisted.elements = {
+      page: <div>page</div>,
+      [`${ETAG_ID_PREFIX}page`]: 'etag-foo',
+      [`${ETAG_ID_PREFIX}bar`]: 'etag-bar',
+      // numeric sentinel-style tag (opaque to minimal) is carried
+      [`${ETAG_ID_PREFIX}static`]: 1,
+      // empty string is the server's "clear" signal -> dropped
+      [`${ETAG_ID_PREFIX}cleared`]: '',
+      // non-Latin1 cannot ride in a header -> dropped
+      [`${ETAG_ID_PREFIX}nonLatin1`]: 'tag-☃',
+    };
+
+    const view = await renderApp(
+      <Root initialRscPath="R/foo">
+        <div>child</div>
+      </Root>,
+    );
+    await flush();
+
+    const cached = fetchRscStore[CACHED_ETAGS] ?? {};
+    expect(cached.page).toBe('etag-foo');
+    expect(cached.bar).toBe('etag-bar');
+    expect(cached.static).toBe(1);
+    expect('cleared' in cached).toBe(false);
+    expect('nonLatin1' in cached).toBe(false);
+
+    view.unmount();
+  });
+
+  it('sends the cached tags in the etags request header', () => {
+    fetchRscStore[CACHED_ETAGS] = { page: 'etag-foo' };
+
+    prefetchRsc('R/bar');
+
+    // requestRsc built the request init with the cached tags as a header.
+    const fetchSpy = globalThis.fetch as ReturnType<typeof vi.fn>;
+    const init = fetchSpy.mock.calls[0]?.[1] as RequestInit;
+    const header = (init.headers as Record<string, string>)[ETAGS_HEADER];
+    expect(JSON.parse(header as string)).toEqual({ page: 'etag-foo' });
+  });
+
+  it('isImmutableElement detects the immutable sentinel by tag', () => {
+    const elements = {
+      [`${ETAG_ID_PREFIX}static`]: IMMUTABLE_ETAG,
+      [`${ETAG_ID_PREFIX}dynamic`]: 'v1',
+    };
+    expect(isImmutableElement(elements, 'static')).toBe(true);
+    expect(isImmutableElement(elements, 'dynamic')).toBe(false);
+    expect(isImmutableElement(elements, 'missing')).toBe(false);
+  });
+
+  it('keeps a static slot etag eager through an instant-nav merge', async () => {
+    testHoisted.elements = {
+      page: <div>a</div>,
+      [`${ETAG_ID_PREFIX}page`]: IMMUTABLE_ETAG,
+    };
+    let refetch!: ReturnType<typeof useRefetch>;
+    const Capture = () => {
+      refetch = useRefetch();
+      return null;
+    };
+    const view = await renderApp(
+      <Root initialRscPath="R/foo">
+        <Capture />
+      </Root>,
+    );
+    await flush();
+
+    // an instant nav: a fresh fetch, with the static slot marked eager
+    testHoisted.elements = {
+      page: <div>b</div>,
+      [`${ETAG_ID_PREFIX}page`]: IMMUTABLE_ETAG,
+    };
+    await act(async () => {
+      await refetch('R/bar', undefined, {
+        unstable_isEager: (key) => key === 'page',
+      });
+    });
+    await flush();
+
+    // the etag survived the eager-merge Proxy as a value, not dropped as a
+    // pending promise (which collectCachedEtags would reject)
+    expect(fetchRscStore[CACHED_ETAGS]?.page).toBe(IMMUTABLE_ETAG);
+
+    view.unmount();
+  });
+});
+
+describe('unstable_buildElements', () => {
+  it('omits matched slots, attaches/clears tags, and maps immutable to the sentinel', async () => {
+    const render = () => Promise.resolve('el');
+    const { elements, etags } = await buildElements(
+      { match: 'v1', stale: 'old' },
+      {
+        match: { getEtag: () => Promise.resolve('v1'), render },
+        changed: { getEtag: () => Promise.resolve('v2'), render },
+        immut: { immutable: true, render },
+        stale: { getEtag: () => Promise.resolve(undefined), render },
+      },
+    );
+
+    expect(Object.keys(elements).sort()).toEqual(['changed', 'immut', 'stale']);
+    expect(etags).toEqual({ changed: 'v2', immut: IMMUTABLE_ETAG, stale: '' });
+  });
+
+  it('drops empty or invalid getEtag results server-side (no etag, not the clear sentinel)', async () => {
+    const render = () => Promise.resolve('el');
+    const { elements, etags } = await buildElements(
+      {},
+      {
+        empty: { getEtag: () => Promise.resolve(''), render },
+        control: { getEtag: () => Promise.resolve('tag\x7f'), render },
+      },
+    );
+
+    expect(elements).toEqual({ empty: 'el', control: 'el' });
+    expect(etags).toEqual({});
+  });
+});
+
+describe('isValidEtag', () => {
+  it('accepts the sentinel and printable Latin-1, rejects empty, control, and non-Latin1', () => {
+    expect(isValidEtag(IMMUTABLE_ETAG)).toBe(true);
+    expect(isValidEtag('v1')).toBe(true);
+    expect(isValidEtag('café')).toBe(true);
+    expect(isValidEtag('')).toBe(false);
+    expect(isValidEtag('tag\x7f')).toBe(false);
+    expect(isValidEtag('tag\x80')).toBe(false);
+    expect(isValidEtag('tag-☃')).toBe(false);
+    expect(isValidEtag(123)).toBe(false);
+  });
+});

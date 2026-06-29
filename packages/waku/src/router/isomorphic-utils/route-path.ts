@@ -84,10 +84,3 @@ export function decodeSliceId(rscPath: string): string | null {
 export const ROUTE_ID = 'ROUTE';
 export const IS_STATIC_ID = 'IS_STATIC';
 export const HAS404_ID = 'HAS404';
-export const ETAG_ID_PREFIX = 'ETAG:';
-// Etag for any static slot, known without rendering. A number, never a string,
-// so it cannot equal a user `unstable_getEtag` value.
-export const STATIC_ETAG = 1;
-
-// For HTTP header
-export const SKIP_HEADER = 'X-Waku-Router-Skip';

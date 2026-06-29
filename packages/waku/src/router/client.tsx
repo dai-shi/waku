@@ -28,9 +28,9 @@ import {
   Slot,
   unstable_addBase as addBase,
   unstable_getErrorInfo as getErrorInfo,
+  unstable_isImmutableElement as isImmutableElement,
   unstable_prefetchRsc as prefetchRsc,
   unstable_registerCallServerElementsListener as registerCallServerElementsListener,
-  unstable_registerFetchEnhancer as registerFetchEnhancer,
   unstable_removeBase as removeBase,
   useElementsPromise_UNSTABLE as useElementsPromise,
   useRefetch,
@@ -47,12 +47,9 @@ import type {
 } from './isomorphic-utils/build-route-href.js';
 import { matchRouteParams } from './isomorphic-utils/match-route-params.js';
 import {
-  ETAG_ID_PREFIX,
   HAS404_ID,
   IS_STATIC_ID,
   ROUTE_ID,
-  SKIP_HEADER,
-  STATIC_ETAG,
   encodeRoutePath,
   encodeSliceId,
   pathnameToRoutePath,
@@ -130,10 +127,7 @@ const getRouteFromElements = (
 };
 
 const isMetaKey = (key: string) =>
-  key === ROUTE_ID ||
-  key === HAS404_ID ||
-  key.startsWith(IS_STATIC_ID) ||
-  key.startsWith(ETAG_ID_PREFIX);
+  key === ROUTE_ID || key === HAS404_ID || key.startsWith(IS_STATIC_ID);
 
 const shouldScrollByDefault = (url: URL) =>
   pathnameToCurrentRoutePath(url.pathname) !==
@@ -168,22 +162,6 @@ const createRscParams = (query: string): URLSearchParams => {
   savedRscParams = [query, rscParams];
   return rscParams;
 };
-
-const createSkipHeaderEnhancer =
-  (cachedEtagsRef: { current: Record<string, string | typeof STATIC_ETAG> }) =>
-  (fetchFn: typeof fetch) =>
-  (input: RequestInfo | URL, init: RequestInit = {}) => {
-    const skipStr = JSON.stringify(cachedEtagsRef.current);
-    const headers = (init.headers ||= {});
-    if (Array.isArray(headers)) {
-      headers.push([SKIP_HEADER, skipStr]);
-    } else if (headers instanceof Headers) {
-      headers.set(SKIP_HEADER, skipStr);
-    } else {
-      (headers as Record<string, string>)[SKIP_HEADER] = skipStr;
-    }
-    return fetchFn(input, init);
-  };
 
 type ChangeRouteOptions = {
   shouldScroll: boolean;
@@ -900,8 +878,7 @@ export function Slice({
   const elements = use(elementsPromise);
   const needsToFetchSlice =
     props.lazy &&
-    (!(slotId in elements) ||
-      elements[ETAG_ID_PREFIX + slotId] !== STATIC_ETAG);
+    (!(slotId in elements) || !isImmutableElement(elements, slotId));
   useEffect(() => {
     // FIXME this works because of subtle timing behavior.
     if (needsToFetchSlice && !fetchingSlices.has(id)) {
@@ -984,15 +961,12 @@ const useElementsMetadata = (
 ) => {
   const [has404, setHas404] = useState(false);
   const staticPathSetRef = useRef(new Set<string>());
-  const cachedEtagsRef = useRef<Record<string, string | typeof STATIC_ETAG>>(
-    {},
-  );
+  const resolvedElementsRef = useRef<Record<string, unknown>>({});
   useEffect(() => {
     elementsPromise.then(
       (elements) => {
-        // Under `unstable_instant` the eager merge serves static etags and
-        // ROUTE_ID from the previous bag; a dynamic slot's etag stays a hole,
-        // so it is skipped here until it resolves rather than going stale.
+        // plain copy: the live elements may be an eager-merge Proxy, and isStaticSlot reads this ref
+        resolvedElementsRef.current = { ...elements };
         const {
           [ROUTE_ID]: routeData,
           [IS_STATIC_ID]: isStatic,
@@ -1007,24 +981,11 @@ const useElementsMetadata = (
             staticPathSetRef.current.add(path);
           }
         }
-        const etags: Record<string, string | typeof STATIC_ETAG> = {};
-        for (const [key, value] of Object.entries(elements)) {
-          // Keep the static sentinel; for string tags drop empty (clear
-          // signal) and non-Latin1 (breaks fetch).
-          if (
-            key.startsWith(ETAG_ID_PREFIX) &&
-            (value === STATIC_ETAG ||
-              (typeof value === 'string' && /^[\u0020-\u00ff]+$/.test(value)))
-          ) {
-            etags[key.slice(ETAG_ID_PREFIX.length)] = value;
-          }
-        }
-        cachedEtagsRef.current = etags;
       },
       () => {},
     );
   }, [elementsPromise]);
-  return { has404, staticPathSetRef, cachedEtagsRef };
+  return { has404, staticPathSetRef, resolvedElementsRef };
 };
 
 const defaultRouteInterceptor = (route: RouteProps) => route;
@@ -1046,9 +1007,10 @@ const InnerRouter = ({
   const initialRouteRef = useRef(resolvedRoute);
 
   if (import.meta.hot) {
+    // The etag cache is cleared by minimal's own reload listener, which Root
+    // registers (via unstable_fetchRsc) ahead of this one, so it runs first.
     const refetchRoute = () => {
       staticPathSetRef.current.clear();
-      cachedEtagsRef.current = {};
       const rscPath = encodeRoutePath(route.path);
       const rscParams = createRscParams(route.query);
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -1061,12 +1023,12 @@ const InnerRouter = ({
     if (index !== -1) {
       globalThis.__WAKU_RSC_RELOAD_LISTENERS__.splice(index, 1, refetchRoute);
     } else {
-      globalThis.__WAKU_RSC_RELOAD_LISTENERS__.unshift(refetchRoute);
+      globalThis.__WAKU_RSC_RELOAD_LISTENERS__.push(refetchRoute);
     }
     globalThis.__WAKU_REFETCH_ROUTE__ = refetchRoute;
   }
 
-  const { has404, staticPathSetRef, cachedEtagsRef } =
+  const { has404, staticPathSetRef, resolvedElementsRef } =
     useElementsMetadata(elementsPromise);
   // FIXME this "fetchingSlices" hack feels suboptimal.
   const fetchingSlicesRef = useRef(new Set<SliceId>());
@@ -1142,7 +1104,7 @@ const InnerRouter = ({
         options.refetch ?? !isSameRoute(nextRoute, routeBeforeChange);
       const pathChanged = isPathChange(nextRoute, routeBeforeChange);
       const isStaticSlot = (key: string) =>
-        cachedEtagsRef.current[key] === STATIC_ETAG;
+        isImmutableElement(resolvedElementsRef.current, key);
       const commitRoute = (route: RouteProps) => {
         routeRef.current = route;
         setRoute(route);
@@ -1186,10 +1148,7 @@ const InnerRouter = ({
         window.location.reload();
       };
       if (options.instant && isStaticSlot(getRouteSlotId(nextRoute.path))) {
-        const isEager = (key: string) =>
-          key.startsWith(ETAG_ID_PREFIX)
-            ? isStaticSlot(key.slice(ETAG_ID_PREFIX.length))
-            : isMetaKey(key) || isStaticSlot(key);
+        const isEager = (key: string) => isMetaKey(key) || isStaticSlot(key);
         const dataPromise = refetch(rscPath, rscParams, {
           signal: abortController.signal,
           unstable_isEager: isEager,
@@ -1253,7 +1212,7 @@ const InnerRouter = ({
       }
       commitInTransition();
     },
-    [emitRouteChangeEvent, refetch, staticPathSetRef, cachedEtagsRef],
+    [emitRouteChangeEvent, refetch, staticPathSetRef, resolvedElementsRef],
   );
   const applyChangeRouteData = useCallback(
     async (routeData: unknown, isStatic: unknown) => {
@@ -1280,10 +1239,6 @@ const InnerRouter = ({
       });
     },
     [changeRoute],
-  );
-  useEffect(
-    () => registerFetchEnhancer(createSkipHeaderEnhancer(cachedEtagsRef)),
-    [cachedEtagsRef],
   );
   useEffect(() => {
     const listener = (elements: Record<string, unknown>) => {
@@ -1413,7 +1368,6 @@ export type Unstable_RouteProps = RouteProps;
 export const unstable_HAS404_ID = HAS404_ID;
 export const unstable_IS_STATIC_ID = IS_STATIC_ID;
 export const unstable_ROUTE_ID = ROUTE_ID;
-export const unstable_SKIP_HEADER = SKIP_HEADER;
 export const unstable_encodeRoutePath = encodeRoutePath;
 export const unstable_encodeSliceId = encodeSliceId;
 export const unstable_getRouteSlotId = getRouteSlotId;

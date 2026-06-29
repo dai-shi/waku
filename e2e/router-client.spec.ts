@@ -439,7 +439,7 @@ test.describe('router-client', () => {
     expect(lastScrollToCall?.top).toBeGreaterThan(100);
   });
 
-  test('route fetch includes X-Waku-Router-Skip header', async ({ page }) => {
+  test('route fetch sends the cached etags header', async ({ page }) => {
     await page.goto(`http://localhost:${port}/start`);
     await waitForHydration(page);
 
@@ -450,11 +450,11 @@ test.describe('router-client', () => {
     await page.getByTestId('go-next').click();
     const request = await nextRscRequestPromise;
 
-    const skipHeader = request.headers()['x-waku-router-skip'];
-    expect(skipHeader).toBeTruthy();
-    const skipped = JSON.parse(skipHeader as string) as Record<string, string>;
-    expect(Array.isArray(skipped)).toBe(false);
-    expect(Object.keys(skipped).length).toBeGreaterThan(0);
+    const etagsHeader = request.headers()['x-waku-etags'];
+    expect(etagsHeader).toBeTruthy();
+    const etags = JSON.parse(etagsHeader as string) as Record<string, unknown>;
+    expect(Array.isArray(etags)).toBe(false);
+    expect(Object.keys(etags).length).toBeGreaterThan(0);
 
     await expect(page.getByRole('heading', { name: 'Next' })).toBeVisible();
     await expect(page.getByTestId('route-path')).toHaveText('/next');
@@ -479,7 +479,7 @@ test.describe('router-client', () => {
       .toBe(true);
   });
 
-  test('skip header omits static layout payload on soft navigation', async ({
+  test('soft navigation omits the unchanged static layout payload', async ({
     page,
   }) => {
     await page.goto(`http://localhost:${port}/skip/a`);
@@ -502,12 +502,12 @@ test.describe('router-client', () => {
 
     const response = await rscResponsePromise;
     const request = response.request();
-    const skipHeader = request.headers()['x-waku-router-skip'];
+    const etagsHeader = request.headers()['x-waku-etags'];
 
-    expect(skipHeader).toBeTruthy();
-    const skipped = JSON.parse(skipHeader as string) as Record<string, string>;
-    expect(Array.isArray(skipped)).toBe(false);
-    expect('root' in skipped).toBe(true);
+    expect(etagsHeader).toBeTruthy();
+    const etags = JSON.parse(etagsHeader as string) as Record<string, unknown>;
+    expect(Array.isArray(etags)).toBe(false);
+    expect('root' in etags).toBe(true);
 
     const payload = await response.text();
     expect(payload).toContain('SKIP_B_PAGE_MARKER');

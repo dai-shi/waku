@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { resolveConfig } from '../src/lib/utils/config.js';
 import { getErrorInfo } from '../src/lib/utils/custom-errors.js';
+import { ETAGS_HEADER } from '../src/lib/utils/etags.js';
 import { getInput } from '../src/lib/utils/request.js';
 
 const makeConfig = () => {
@@ -125,5 +126,28 @@ describe('getInput server action request validation', () => {
         ),
       ),
     ).resolves.toBe(403);
+  });
+});
+
+describe('getInput etags', () => {
+  it('parses the etags header into input.etags', async () => {
+    const input = await makeInput(
+      makeRequest({
+        origin: 'https://app.test',
+        [ETAGS_HEADER]: JSON.stringify({ page: 'v1' }),
+      }),
+    );
+
+    expect(input.etags).toEqual({ page: 'v1' });
+  });
+
+  it('defaults input.etags to {} for an absent or malformed header', async () => {
+    const absent = await makeInput(makeRequest({ origin: 'https://app.test' }));
+    expect(absent.etags).toEqual({});
+
+    const malformed = await makeInput(
+      makeRequest({ origin: 'https://app.test', [ETAGS_HEADER]: 'nope' }),
+    );
+    expect(malformed.etags).toEqual({});
   });
 });

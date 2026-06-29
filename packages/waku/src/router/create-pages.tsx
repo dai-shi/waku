@@ -185,7 +185,7 @@ export type PathWithWildcard<
  * - Opaque to Waku; compared with `===`.
  * - Must change whenever the rendered content would.
  * - Keep it a short ASCII string (a hash or version): the client echoes its
- *   tags in a header.
+ *   tags in a header. A non-header-safe or empty value is treated as no tag.
  * - Return `undefined` for no tag: the element is always sent, overriding the
  *   client's cache for the slot.
  */

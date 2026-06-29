@@ -69,6 +69,7 @@ describe('define-router action requests', () => {
     expect(apiHandler).not.toHaveBeenCalled();
     expect(renderRsc).toHaveBeenCalledWith(
       expect.objectContaining({ [ROUTE_ID]: ['/about', ''] }),
+      { etags: {} },
     );
   });
 
@@ -111,7 +112,10 @@ describe('define-router action requests', () => {
 
     expect(apiHandler).not.toHaveBeenCalled();
     expect(actionFn).toHaveBeenCalledWith('arg');
-    expect(renderRsc).toHaveBeenCalledWith({}, { value: 'action-result' });
+    expect(renderRsc).toHaveBeenCalledWith(
+      {},
+      { value: 'action-result', etags: {} },
+    );
   });
 
   it('sets router initial route for 404 HTML', async () => {
@@ -147,6 +151,7 @@ describe('define-router action requests', () => {
 
     expect(renderRsc).toHaveBeenCalledWith(
       expect.objectContaining({ [ROUTE_ID]: ['/404', ''] }),
+      { etags: {} },
     );
     expect(renderHtml).toHaveBeenCalledWith(
       expect.any(ReadableStream),
@@ -201,6 +206,7 @@ describe('define-router action requests', () => {
       expect.objectContaining({
         'page:/': 'page:after',
       }),
+      { etags: {} },
     );
     expect(renderHtml).toHaveBeenCalledWith(
       expect.any(ReadableStream),
@@ -265,6 +271,7 @@ describe('define-router action requests', () => {
       expect.objectContaining({
         'page:/': 'page:after',
       }),
+      { etags: {} },
     );
     expect(renderHtml).toHaveBeenCalledWith(
       expect.any(ReadableStream),
