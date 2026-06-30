@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { resolveConfig } from '../src/lib/utils/config.js';
 import { combinedPlugins } from '../src/lib/vite-plugins/combined-plugins.js';
 import {
@@ -9,6 +9,22 @@ import {
   getImportModuleNames,
   toIdentifier,
 } from '../src/lib/vite-plugins/fs-router-typegen.js';
+
+// Run every typegen test under a reversed readdir order to simulate a different
+// platform's filesystem; the generated output must stay deterministic (sorted),
+// so pages.gen.ts does not churn across operating systems.
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>();
+  return {
+    ...actual,
+    readdir: (async (...args: Parameters<typeof actual.readdir>) => {
+      const entries = await (
+        actual.readdir as (...a: unknown[]) => Promise<unknown>
+      )(...args);
+      return Array.isArray(entries) ? entries.reverse() : entries;
+    }) as typeof actual.readdir,
+  };
+});
 
 const fixturesDir = fileURLToPath(new URL('./fixtures', import.meta.url));
 

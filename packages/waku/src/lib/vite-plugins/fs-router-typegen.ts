@@ -336,7 +336,7 @@ export async function generateFsRouterTypes(pagesDir: string) {
     return result;
   };
 
-  const files = await collectFiles(pagesDir);
+  const files = (await collectFiles(pagesDir)).sort();
   if (!files.length) {
     return;
   }
