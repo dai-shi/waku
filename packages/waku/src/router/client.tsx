@@ -60,6 +60,13 @@ import {
   getRouteSearchCodecId,
   isCodec,
 } from './isomorphic-utils/search-codec-registry.js';
+import type { PrefetchCache, PrefetchEntry } from './prefetch-cache.js';
+import {
+  PREFETCH_TTL,
+  getPrefetch,
+  prefetchCacheKey,
+  setPrefetch,
+} from './prefetch-cache.js';
 
 type NavigateOptions = {
   /**
@@ -1032,6 +1039,9 @@ const InnerRouter = ({
     useElementsMetadata(elementsPromise);
   // FIXME this "fetchingSlices" hack feels suboptimal.
   const fetchingSlicesRef = useRef(new Set<SliceId>());
+  // A ref (not a module-level map) so it is scoped to the router instance and
+  // reset on remount.
+  const prefetchCacheRef = useRef<PrefetchCache>(new Map());
 
   const refetch = useRefetch();
   const [route, setRoute] = useState(() => ({
@@ -1148,11 +1158,31 @@ const InnerRouter = ({
         window.location.reload();
       };
       if (options.instant && isStaticSlot(getRouteSlotId(nextRoute.path))) {
-        const isEager = (key: string) => isMetaKey(key) || isStaticSlot(key);
+        const isSwr = (key: string) => isMetaKey(key) || isStaticSlot(key);
+        // An in-flight or absent prefetch fetches fresh instead — an instant
+        // nav must not wait.
+        const cacheKey = prefetchCacheKey(rscPath, nextRoute.query);
+        const cached = getPrefetch(
+          prefetchCacheRef.current,
+          cacheKey,
+          Date.now(),
+        );
+        // TODO(daishi) keep the resolved shell for repeat instant navs.
+        if (cached) {
+          prefetchCacheRef.current.delete(cacheKey);
+        }
         const dataPromise = refetch(rscPath, rscParams, {
           signal: abortController.signal,
-          unstable_isEager: isEager,
+          unstable_isSwr: isSwr,
           onBuildIdMismatch,
+          ...(cached?.resolved
+            ? {
+                unstable_prefetched: {
+                  elements: cached.resolved,
+                  complete: true,
+                },
+              }
+            : null),
         });
         commitRoute(nextRoute);
         return dataPromise.then(
@@ -1184,10 +1214,30 @@ const InnerRouter = ({
           },
         );
       }
+      // Consume the prefetch (matched by path and query) so it is not reused by
+      // a later navigation.
+      const cacheKey = prefetchCacheKey(rscPath, nextRoute.query);
+      const cached = getPrefetch(
+        prefetchCacheRef.current,
+        cacheKey,
+        Date.now(),
+      );
+      if (cached) {
+        prefetchCacheRef.current.delete(cacheKey);
+      }
       try {
         const elements = await refetch(rscPath, rscParams, {
           signal: abortController.signal,
           onBuildIdMismatch,
+          // Reuse only resolved prefetches; an in-flight one isn't abortable.
+          ...(cached?.resolved
+            ? {
+                unstable_prefetched: {
+                  elements: cached.resolved,
+                  complete: true,
+                },
+              }
+            : null),
         });
         const redirect = getRedirect(elements);
         if (redirect) {
@@ -1212,7 +1262,13 @@ const InnerRouter = ({
       }
       commitInTransition();
     },
-    [emitRouteChangeEvent, refetch, staticPathSetRef, resolvedElementsRef],
+    [
+      emitRouteChangeEvent,
+      refetch,
+      staticPathSetRef,
+      resolvedElementsRef,
+      prefetchCacheRef,
+    ],
   );
   const applyChangeRouteData = useCallback(
     async (routeData: unknown, isStatic: unknown) => {
@@ -1257,12 +1313,36 @@ const InnerRouter = ({
       }
       const rscPath = encodeRoutePath(route.path);
       const rscParams = createRscParams(route.query);
-      prefetchRsc(rscPath, rscParams);
+      // Dedupe per (path, query) so a click that re-prefetches before an instant
+      // nav keeps an already-resolved shell instead of replacing it with an
+      // in-flight one (which would lose the instant shell).
+      const cache = prefetchCacheRef.current;
+      const key = prefetchCacheKey(rscPath, route.query);
+      if (!getPrefetch(cache, key, Date.now())) {
+        const promise = prefetchRsc(rscPath, rscParams);
+        const entry: PrefetchEntry = {
+          promise,
+          expireAt: Date.now() + PREFETCH_TTL,
+        };
+        setPrefetch(cache, key, entry);
+        promise.then(
+          (resolved) => {
+            if (cache.get(key) === entry) {
+              entry.resolved = resolved;
+            }
+          },
+          () => {
+            if (cache.get(key) === entry) {
+              cache.delete(key);
+            }
+          },
+        );
+      }
       globalThis.__WAKU_ROUTER_PREFETCH__?.(route.path, (id) => {
         preloadModule(id, { as: 'script' });
       });
     },
-    [staticPathSetRef],
+    [staticPathSetRef, prefetchCacheRef],
   );
 
   useEffect(() => {

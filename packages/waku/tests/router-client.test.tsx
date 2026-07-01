@@ -248,7 +248,10 @@ beforeEach(() => {
   vi.mocked(useRefetch).mockReset();
   vi.mocked(useRefetch).mockReturnValue(createRefetchMock());
   vi.mocked(preloadModule).mockClear();
-  vi.mocked(prefetchRsc).mockClear();
+  vi.mocked(prefetchRsc).mockReset();
+  // prefetchRsc returns the decoded Promise<Elements>; default to an empty
+  // shell so prefetchRoute's cache wiring has a promise to track.
+  vi.mocked(prefetchRsc).mockReturnValue(resolvedThenable({}));
   vi.mocked(Root).mockClear();
 
   const IntersectionObserverMock = vi.fn(function (
@@ -2239,6 +2242,202 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  // The instant shell: a RESOLVED prefetch for the target is passed to refetch
+  // as `unstable_prefetched`, so the merge Proxy paints the static shell from
+  // it while dynamic holes stream from the fresh fetch.
+  const instantNavElements = () => ({
+    [unstable_getRouteSlotId('/start')]: <div>start</div>,
+    [unstable_getRouteSlotId('/next')]: <div>next</div>,
+    [ROUTE_ID]: ['/start', ''],
+    [IS_STATIC_ID]: false,
+    // mark /next's route slot static so the instant branch engages
+    [`${ETAG_ID_PREFIX}${unstable_getRouteSlotId('/next')}`]: IMMUTABLE_ETAG,
+  });
+
+  test('instant nav reuses a resolved prefetch as the shell base', async () => {
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({
+      [ROUTE_ID]: ['/next', ''],
+      [IS_STATIC_ID]: true,
+    }));
+    vi.mocked(useRefetch).mockReturnValue(refetch);
+
+    const shell = {
+      [unstable_getRouteSlotId('/next')]: <div>next-shell</div>,
+      [ROUTE_ID]: ['/next', ''],
+      [IS_STATIC_ID]: true,
+    };
+    vi.mocked(prefetchRsc).mockReturnValue(resolvedThenable(shell));
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const elements = {
+      ...instantNavElements(),
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+    };
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      elements,
+    );
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+
+    // Warm the prefetch cache and let it settle.
+    await act(async () => {
+      capture.router!.prefetch('/next');
+      await flush();
+    });
+
+    await act(async () => {
+      await capture.router!.push('/next', { unstable_instant: true });
+    });
+
+    expect(refetch).toHaveBeenCalledWith(
+      unstable_encodeRoutePath('/next'),
+      expect.any(URLSearchParams),
+      expect.objectContaining({
+        unstable_prefetched: { elements: shell, complete: true },
+      }),
+    );
+
+    view.unmount();
+  });
+
+  test('instant nav does not reuse an in-flight prefetch', async () => {
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({
+      [ROUTE_ID]: ['/next', ''],
+      [IS_STATIC_ID]: true,
+    }));
+    vi.mocked(useRefetch).mockReturnValue(refetch);
+
+    // Never resolves: the prefetch stays in-flight, so it is not reused (an
+    // instant nav must not wait) and refetch fetches fresh instead.
+    const pending = createDeferred<Record<string, unknown>>();
+    vi.mocked(prefetchRsc).mockReturnValue(pending.promise);
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const elements = {
+      ...instantNavElements(),
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+    };
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      elements,
+    );
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+
+    await act(async () => {
+      capture.router!.prefetch('/next');
+    });
+    await act(async () => {
+      await capture.router!.push('/next', { unstable_instant: true });
+    });
+
+    expect(refetch).toHaveBeenCalledWith(
+      unstable_encodeRoutePath('/next'),
+      expect.any(URLSearchParams),
+      expect.not.objectContaining({ unstable_prefetched: expect.anything() }),
+    );
+
+    view.unmount();
+  });
+
+  test('instant nav does not reuse a prefetch for a different query', async () => {
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({
+      [ROUTE_ID]: ['/next', ''],
+      [IS_STATIC_ID]: true,
+    }));
+    vi.mocked(useRefetch).mockReturnValue(refetch);
+
+    const shell = {
+      [unstable_getRouteSlotId('/next')]: <div>next-shell</div>,
+      [ROUTE_ID]: ['/next', ''],
+      [IS_STATIC_ID]: true,
+    };
+    vi.mocked(prefetchRsc).mockReturnValue(resolvedThenable(shell));
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const elements = {
+      ...instantNavElements(),
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+    };
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      elements,
+    );
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+
+    // Prefetch the target for one query, then instant-navigate with another.
+    await act(async () => {
+      capture.router!.prefetch('/next?q=a');
+      await flush();
+    });
+    await act(async () => {
+      await capture.router!.push('/next?q=b', { unstable_instant: true });
+    });
+
+    // The q=a shell must not be served for the q=b navigation.
+    expect(refetch).toHaveBeenCalledWith(
+      unstable_encodeRoutePath('/next'),
+      expect.any(URLSearchParams),
+      expect.not.objectContaining({ unstable_prefetched: expect.anything() }),
+    );
+
+    view.unmount();
+  });
+
+  test('non-instant nav does not reuse an in-flight prefetch', async () => {
+    const refetch = vi.fn<ReturnType<typeof useRefetch>>(async () => ({
+      [ROUTE_ID]: ['/next', ''],
+      [IS_STATIC_ID]: true,
+    }));
+    vi.mocked(useRefetch).mockReturnValue(refetch);
+
+    // Never resolves: the prefetch stays in-flight (no abort signal), so it
+    // must not become the navigation's data source.
+    const pending = createDeferred<Record<string, unknown>>();
+    vi.mocked(prefetchRsc).mockReturnValue(pending.promise);
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const elements = {
+      ...instantNavElements(),
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+    };
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      elements,
+    );
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+
+    await act(async () => {
+      capture.router!.prefetch('/next');
+    });
+    await act(async () => {
+      await capture.router!.push('/next');
+    });
+
+    expect(refetch).toHaveBeenCalledWith(
+      unstable_encodeRoutePath('/next'),
+      expect.any(URLSearchParams),
+      expect.not.objectContaining({ unstable_prefetched: expect.anything() }),
+    );
+
+    view.unmount();
+  });
+
   test('popstate honors route interceptor return false', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
@@ -2297,7 +2496,7 @@ describe('Router integration', () => {
     expect(getRefetchMock()).toHaveBeenCalledWith(
       unstable_encodeRoutePath('/intercepted'),
       expect.any(URLSearchParams),
-      expect.any(Object),
+      expect.anything(),
     );
     expect(capture.router?.path).toBe('/intercepted');
     expect(capture.router?.query).toBe('from=interceptor');
@@ -2677,7 +2876,7 @@ describe('Router integration', () => {
     expect(getRefetchMock()).toHaveBeenCalledWith(
       unstable_encodeRoutePath('/404'),
       expect.any(URLSearchParams),
-      expect.any(Object),
+      expect.anything(),
     );
     expect(capture.router?.path).toBe('/404');
 
@@ -2713,7 +2912,7 @@ describe('Router integration', () => {
       expect(getRefetchMock()).toHaveBeenCalledWith(
         unstable_encodeRoutePath('/404'),
         expect.any(URLSearchParams),
-        expect.any(Object),
+        expect.anything(),
       );
       expect(capture.router?.path).toBe('/404');
 
@@ -2754,7 +2953,7 @@ describe('Router integration', () => {
     expect(getRefetchMock()).toHaveBeenCalledWith(
       unstable_encodeRoutePath('/target'),
       expect.any(URLSearchParams),
-      expect.any(Object),
+      expect.anything(),
     );
     expect(capture.router?.path).toBe('/target');
     expect(capture.router?.query).toBe('ok=1');
@@ -2835,7 +3034,7 @@ describe('Router integration', () => {
       expect(getRefetchMock()).toHaveBeenCalledWith(
         unstable_encodeRoutePath('/target'),
         expect.any(URLSearchParams),
-        expect.any(Object),
+        expect.anything(),
       );
     } finally {
       view.unmount();

@@ -111,7 +111,7 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
   it('sends the cached tags in the etags request header', () => {
     fetchRscStore[CACHED_ETAGS] = { page: 'etag-foo' };
 
-    prefetchRsc('R/bar');
+    void prefetchRsc('R/bar');
 
     // requestRsc built the request init with the cached tags as a header.
     const fetchSpy = globalThis.fetch as ReturnType<typeof vi.fn>;
@@ -154,13 +154,13 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
     };
     await act(async () => {
       await refetch('R/bar', undefined, {
-        unstable_isEager: (key) => key === 'page',
+        unstable_isSwr: (key) => key === 'page',
       });
     });
     await flush();
 
-    // the etag survived the eager-merge Proxy as a value, not dropped as a
-    // pending promise (which collectCachedEtags would reject)
+    // the _etag: key follows its slot's swr-ness through the merge Proxy, so a
+    // pinned static slot's etag stays a concrete value and survives in the cache
     expect(fetchRscStore[CACHED_ETAGS]?.page).toBe(IMMUTABLE_ETAG);
 
     view.unmount();

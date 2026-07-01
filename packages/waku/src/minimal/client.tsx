@@ -37,11 +37,6 @@ import type {
   FetchRscInputTransformer,
   SetElements,
 } from './client-utils/fetch-store.js';
-import {
-  addPrefetchEntry,
-  consumePrefetchEntry,
-  hasPrefetchEntry,
-} from './client-utils/prefetch-cache.js';
 
 const { createFromFetch, encodeReply, createTemporaryReferenceSet } =
   RSDWClient;
@@ -107,10 +102,10 @@ const cache1 = new WeakMap();
 const mergeElementsPromise = (
   a: Promise<Elements>,
   b: Promise<Elements> | Elements,
-  isEager?: (key: string) => boolean,
+  isSwr?: (key: string) => boolean,
 ): Promise<Elements> => {
   const getResult = () => {
-    if (!isEager) {
+    if (!isSwr) {
       return Promise.all([a, b]).then(([a, b]) => {
         const nextElements = { ...a, ...b };
         delete nextElements._value;
@@ -123,13 +118,13 @@ const mergeElementsPromise = (
       delete base._value;
       return new Proxy(base, {
         get(target, key: string) {
-          // an _etag:<slot> key follows its slot's eagerness, not its own
-          const eager = key.startsWith(ETAG_ID_PREFIX)
-            ? isEager(key.slice(ETAG_ID_PREFIX.length))
-            : isEager(key);
+          // an _etag:<slot> key follows its slot's swr-ness, not its own
+          const swr = key.startsWith(ETAG_ID_PREFIX)
+            ? isSwr(key.slice(ETAG_ID_PREFIX.length))
+            : isSwr(key);
           if (
             key !== '_value' &&
-            !eager &&
+            !swr &&
             // a lazy key still equal to aRes's value hasn't been streamed yet
             target[key] === aRes[key]
           ) {
@@ -154,7 +149,13 @@ type FetchRscOptions = {
 type Refetch = (
   rscPath: string,
   rscParams?: unknown,
-  options?: FetchRscOptions & { unstable_isEager?: (key: string) => boolean },
+  options?: FetchRscOptions & {
+    unstable_isSwr?: (key: string) => boolean;
+    unstable_prefetched?: {
+      elements: Elements | Promise<Elements>;
+      complete?: boolean;
+    };
+  },
 ) => Promise<Elements>;
 
 const getFetchFn = (): typeof fetch => {
@@ -233,20 +234,22 @@ const reloadOnBuildIdMismatch = (
   );
 };
 
-const prefetchRscInternal = (rscPath: string, rscParams: unknown): void => {
-  const temporaryReferences = createTemporaryReferenceSet();
-  const responsePromise = requestRsc(
-    getFetchFn(),
-    rscPath,
-    rscParams,
-    temporaryReferences,
-    undefined,
-  );
-  addPrefetchEntry(
-    rscPath,
-    rscParams,
-    decodeRsc(responsePromise, temporaryReferences, undefined),
-  );
+const applyInputTransformers = (
+  rscPath: string,
+  rscParams: unknown,
+  prefetchOnly: boolean,
+): readonly [rscPath: string, rscParams: unknown, prefetchOnly: boolean] => {
+  const fetchRscInputTransformers = fetchRscStore[FETCH_RSC_INPUT_TRANSFORMERS];
+  if (fetchRscInputTransformers) {
+    for (const transformFetchRscInput of fetchRscInputTransformers) {
+      [rscPath, rscParams, prefetchOnly] = transformFetchRscInput(
+        rscPath,
+        rscParams,
+        prefetchOnly,
+      );
+    }
+  }
+  return [rscPath, rscParams, prefetchOnly];
 };
 
 const fetchRscElements = (
@@ -254,14 +257,7 @@ const fetchRscElements = (
   rscParams: unknown,
   options: FetchRscOptions | undefined,
 ): Promise<Elements> => {
-  const prefetched = consumePrefetchEntry<Promise<Elements>>(
-    rscPath,
-    rscParams,
-  );
-  if (prefetched) {
-    reloadOnBuildIdMismatch(prefetched, options?.onBuildIdMismatch);
-    return prefetched;
-  }
+  [rscPath, rscParams] = applyInputTransformers(rscPath, rscParams, false);
   const initial = consumeInitialRscEntry();
   const baseFetchFn = getFetchFn();
   const debug = import.meta.hot
@@ -287,59 +283,6 @@ const fetchRscElements = (
   return elements;
 };
 
-const applyInputTransformers = (
-  rscPath: string,
-  rscParams: unknown,
-  prefetchOnly: boolean,
-): readonly [rscPath: string, rscParams: unknown, prefetchOnly: boolean] => {
-  const fetchRscInputTransformers = fetchRscStore[FETCH_RSC_INPUT_TRANSFORMERS];
-  if (fetchRscInputTransformers) {
-    for (const transformFetchRscInput of fetchRscInputTransformers) {
-      [rscPath, rscParams, prefetchOnly] = transformFetchRscInput(
-        rscPath,
-        rscParams,
-        prefetchOnly,
-      );
-    }
-  }
-  return [rscPath, rscParams, prefetchOnly];
-};
-
-type FetchRscInternal = {
-  (
-    rscPath: string,
-    rscParams: unknown,
-    prefetchOnly: false,
-    options: FetchRscOptions | undefined,
-  ): Promise<Elements>;
-  (
-    rscPath: string,
-    rscParams: unknown,
-    prefetchOnly: true,
-    options: undefined,
-  ): void;
-};
-
-const fetchRscInternal: FetchRscInternal = (
-  rscPath: string,
-  rscParams: unknown,
-  prefetchOnly: boolean,
-  options: FetchRscOptions | undefined,
-) => {
-  [rscPath, rscParams, prefetchOnly] = applyInputTransformers(
-    rscPath,
-    rscParams,
-    prefetchOnly,
-  );
-  if (prefetchOnly) {
-    if (!hasPrefetchEntry(rscPath, rscParams)) {
-      prefetchRscInternal(rscPath, rscParams);
-    }
-    return undefined as never;
-  }
-  return fetchRscElements(rscPath, rscParams, options);
-};
-
 /**
  * callServer callback
  * This is not a public API.
@@ -351,10 +294,9 @@ export const unstable_callServerRsc = async (
   const rscPath = encodeFuncId(funcId);
   const rscParams =
     args.length === 1 && args[0] instanceof URLSearchParams ? args[0] : args;
-  const { _value: value, ...data } = await fetchRscInternal(
+  const { _value: value, ...data } = await fetchRscElements(
     rscPath,
     rscParams,
-    false,
     undefined,
   );
   if (Object.keys(data).length) {
@@ -455,17 +397,27 @@ export const unstable_fetchRsc = (
   if (entry && entry[0] === rscPath && entry[1] === rscParams) {
     return entry[2];
   }
-  const data = fetchRscInternal(rscPath, rscParams, false, options);
+  const data = fetchRscElements(rscPath, rscParams, options);
   fetchRscStore[ENTRY] = [rscPath, rscParams, data];
   return data;
 };
 
-/** Eagerly fetch and cache elements so a later fetch reuses them. */
+/** Fetch + decode a route's elements; the caller (the router) holds the result. */
 export const unstable_prefetchRsc = (
   rscPath: string,
   rscParams?: unknown,
-): void => {
-  fetchRscInternal(rscPath, rscParams, true, undefined);
+): Promise<Elements> => {
+  // Transformers must be prefetchOnly-agnostic (prefetches reused as navs).
+  [rscPath, rscParams] = applyInputTransformers(rscPath, rscParams, true);
+  const temporaryReferences = createTemporaryReferenceSet();
+  const responsePromise = requestRsc(
+    getFetchFn(),
+    rscPath,
+    rscParams,
+    temporaryReferences,
+    undefined,
+  );
+  return decodeRsc(responsePromise, temporaryReferences, undefined);
 };
 
 const RefetchContext = createContext<Refetch>(() => {
@@ -499,12 +451,18 @@ export const Root = ({
     elements.then(updateCachedEtags, () => {});
   }, [elements]);
   const refetch = useCallback<Refetch>(async (rscPath, rscParams, options) => {
+    const { unstable_isSwr: isSwr, unstable_prefetched: prefetched } =
+      options ?? {};
     delete fetchRscStore[ENTRY];
-    const data = unstable_fetchRsc(rscPath, rscParams, options);
+    let data: Promise<Elements>;
+    if (prefetched?.complete) {
+      data = Promise.resolve(prefetched.elements);
+      reloadOnBuildIdMismatch(data, options?.onBuildIdMismatch);
+    } else {
+      data = unstable_fetchRsc(rscPath, rscParams, options);
+    }
     const dataWithoutErrors = Promise.resolve(data).catch(() => ({}));
-    setElements((prev) =>
-      mergeElementsPromise(prev, dataWithoutErrors, options?.unstable_isEager),
-    );
+    setElements((prev) => mergeElementsPromise(prev, dataWithoutErrors, isSwr));
     return data;
   }, []);
   return (
