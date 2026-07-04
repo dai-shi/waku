@@ -972,8 +972,7 @@ const useElementsMetadata = (
   useEffect(() => {
     elementsPromise.then(
       (elements) => {
-        // plain copy: the live elements may be an eager-merge Proxy, and isStaticSlot reads this ref
-        resolvedElementsRef.current = { ...elements };
+        resolvedElementsRef.current = elements;
         const {
           [ROUTE_ID]: routeData,
           [IS_STATIC_ID]: isStatic,

@@ -159,8 +159,47 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
     });
     await flush();
 
-    // the _etag: key follows its slot's swr-ness through the merge Proxy, so a
+    // the _etag: key follows its slot's swr-ness through the eager merge, so a
     // pinned static slot's etag stays a concrete value and survives in the cache
+    expect(fetchRscStore[CACHED_ETAGS]?.page).toBe(IMMUTABLE_ETAG);
+
+    view.unmount();
+  });
+
+  it('caches the etag of a slot a response newly introduces in an instant-nav merge', async () => {
+    // A response-only slot lands via the second swr commit, and its etag must
+    // enter the cache like any other (the old merge Proxy never enumerated
+    // response-only keys, so these etags were silently dropped).
+    testHoisted.elements = {
+      page: <div>a</div>,
+      [`${ETAG_ID_PREFIX}page`]: IMMUTABLE_ETAG,
+    };
+    let refetch!: ReturnType<typeof useRefetch>;
+    const Capture = () => {
+      refetch = useRefetch();
+      return null;
+    };
+    const view = await renderApp(
+      <Root initialRscPath="R/foo">
+        <Capture />
+      </Root>,
+    );
+    await flush();
+
+    testHoisted.elements = {
+      page: <div>b</div>,
+      [`${ETAG_ID_PREFIX}page`]: IMMUTABLE_ETAG,
+      widget: <div>w</div>,
+      [`${ETAG_ID_PREFIX}widget`]: 'etag-widget',
+    };
+    await act(async () => {
+      await refetch('R/bar', undefined, {
+        unstable_isSwr: (key) => key === 'page',
+      });
+    });
+    await flush();
+
+    expect(fetchRscStore[CACHED_ETAGS]?.widget).toBe('etag-widget');
     expect(fetchRscStore[CACHED_ETAGS]?.page).toBe(IMMUTABLE_ETAG);
 
     view.unmount();

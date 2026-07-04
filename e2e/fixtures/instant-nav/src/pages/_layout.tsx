@@ -1,12 +1,10 @@
 import { Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'waku/router/client';
-import { RouteEvents } from '../components/route-events.js';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <div>
-      <RouteEvents />
       <nav data-testid="nav">
         <Link to="/">home</Link>
         {' | '}

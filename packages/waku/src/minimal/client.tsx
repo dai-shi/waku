@@ -94,51 +94,91 @@ export const unstable_isImmutableElement = (
   slotId: string,
 ): boolean => elements[ETAG_ID_PREFIX + slotId] === IMMUTABLE_ETAG;
 
-// TODO(daishi) do we still need this?
 const getCached = <T,>(c: () => T, m: WeakMap<WeakKey, T>, k: object): T =>
   (m.has(k) ? m : m.set(k, c())).get(k) as T;
 
-const cache1 = new WeakMap();
+const resolvedMergeResults = new WeakMap<Promise<Elements>, Elements>();
+const swrMergeSources = new WeakMap<Promise<Elements>, Promise<Elements>>();
+
+const mergeCache = new WeakMap();
 const mergeElementsPromise = (
   a: Promise<Elements>,
   b: Promise<Elements> | Elements,
-  isSwr?: (key: string) => boolean,
+): Promise<Elements> => {
+  const getResult = () =>
+    Promise.all([a, b]).then(([a, b]) => {
+      const nextElements = { ...a, ...b };
+      delete nextElements._value;
+      return nextElements;
+    });
+  const cache2 = getCached(() => new WeakMap(), mergeCache, a);
+  return getCached(getResult, cache2, b);
+};
+
+const swrCache = new WeakMap();
+const swrElementsPromise = (
+  a: Promise<Elements>,
+  b: Promise<Elements>,
+  isSwr: (key: string) => boolean,
 ): Promise<Elements> => {
   const getResult = () => {
-    if (!isSwr) {
-      return Promise.all([a, b]).then(([a, b]) => {
-        const nextElements = { ...a, ...b };
-        delete nextElements._value;
-        return nextElements;
-      });
-    }
-    return Promise.resolve(a).then((aRes) => {
-      const bPromise: Promise<Elements> = Promise.resolve(b);
-      const base: Elements = { ...aRes };
-      delete base._value;
-      return new Proxy(base, {
-        get(target, key: string) {
-          // an _etag:<slot> key follows its slot's swr-ness, not its own
-          const swr = key.startsWith(ETAG_ID_PREFIX)
-            ? isSwr(key.slice(ETAG_ID_PREFIX.length))
-            : isSwr(key);
-          if (
-            key !== '_value' &&
-            !swr &&
-            // a lazy key still equal to aRes's value hasn't been streamed yet
-            target[key] === aRes[key]
-          ) {
-            target[key] = bPromise.then((bRes) =>
-              key in bRes ? bRes[key] : aRes[key],
-            );
-          }
-          return target[key];
-        },
-      });
+    const result: Promise<Elements> = Promise.resolve(a).then((aRes) => {
+      const nextElements: Elements = {};
+      for (const key of Object.keys(aRes)) {
+        if (key === '_value') {
+          continue;
+        }
+        // an _etag:<slot> key follows its slot's swr-ness, not its own
+        const swr = key.startsWith(ETAG_ID_PREFIX)
+          ? isSwr(key.slice(ETAG_ID_PREFIX.length))
+          : isSwr(key);
+        nextElements[key] = swr
+          ? aRes[key]
+          : b.then((bRes) => (key in bRes ? bRes[key] : aRes[key]));
+      }
+      resolvedMergeResults.set(result, nextElements);
+      return nextElements;
     });
+    return result;
   };
-  const cache2 = getCached(() => new WeakMap(), cache1, a);
-  return getCached(getResult, cache2, b);
+  const cache2 = getCached(() => new WeakMap(), swrCache, a);
+  const result = getCached(getResult, cache2, b);
+  swrMergeSources.set(result, b);
+  return result;
+};
+
+const swrNewKeysCache = new WeakMap();
+const swrNewKeysElementsPromise = (
+  prev: Promise<Elements>,
+  b: Promise<Elements>,
+  bRes: Elements,
+): Promise<Elements> => {
+  if (swrMergeSources.get(prev) !== b) {
+    return prev;
+  }
+  const prevRes = resolvedMergeResults.get(prev);
+  if (
+    prevRes &&
+    !Object.keys(bRes).some((key) => key !== '_value' && !(key in prevRes))
+  ) {
+    return prev;
+  }
+  const getResult = () =>
+    Promise.resolve(prev).then((prevRes) => {
+      const newKeys = Object.keys(bRes).filter(
+        (key) => key !== '_value' && !(key in prevRes),
+      );
+      if (!newKeys.length) {
+        return prevRes;
+      }
+      const nextElements = { ...prevRes };
+      for (const key of newKeys) {
+        nextElements[key] = bRes[key];
+      }
+      return nextElements;
+    });
+  const cache2 = getCached(() => new WeakMap(), swrNewKeysCache, prev);
+  return getCached(getResult, cache2, bRes);
 };
 
 type FetchRscOptions = {
@@ -402,7 +442,9 @@ export const unstable_fetchRsc = (
   return data;
 };
 
-/** Fetch + decode a route's elements; the caller (the router) holds the result. */
+/**
+ * Fetch + decode a route's elements; the caller (the router) holds the result.
+ */
 export const unstable_prefetchRsc = (
   rscPath: string,
   rscParams?: unknown,
@@ -462,7 +504,16 @@ export const Root = ({
       data = unstable_fetchRsc(rscPath, rscParams, options);
     }
     const dataWithoutErrors = Promise.resolve(data).catch(() => ({}));
-    setElements((prev) => mergeElementsPromise(prev, dataWithoutErrors, isSwr));
+    if (isSwr) {
+      setElements((prev) => swrElementsPromise(prev, dataWithoutErrors, isSwr));
+      return Promise.resolve(data).then((resolved) => {
+        setElements((prev) =>
+          swrNewKeysElementsPromise(prev, dataWithoutErrors, resolved),
+        );
+        return resolved;
+      });
+    }
+    setElements((prev) => mergeElementsPromise(prev, dataWithoutErrors));
     return data;
   }, []);
   return (

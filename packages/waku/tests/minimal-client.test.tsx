@@ -23,6 +23,7 @@ import {
   unstable_registerCallServerElementsListener,
   unstable_registerFetchEnhancer,
   unstable_registerFetchRscInputTransformer,
+  useElementsPromise_UNSTABLE,
   useRefetch,
 } from '../src/minimal/client.js';
 
@@ -344,10 +345,57 @@ describe('minimal/client eager merge', () => {
     act(() => root.unmount());
   });
 
+  test('a slot only b introduces is mountable as soon as refetch resolves', async () => {
+    // The router's redirect reconcile switches the route in the refetch
+    // continuation, rendering a slot only the response carries. The elements
+    // state must already contain it by then (commit-2 before resolution).
+    mocks.createFromFetch.mockReturnValueOnce(
+      resolvedThenable({ _value: null, cached: 'C' }),
+    );
+    stubFetch();
+
+    let refetch: ReturnType<typeof useRefetch> | undefined;
+    let mountExtra: () => void = () => {};
+    const Probe = () => {
+      refetch = useRefetch();
+      const [extra, setExtra] = useState(false);
+      mountExtra = () => setExtra(true);
+      return extra ? <Slot id="extra" /> : null;
+    };
+
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <Root initialRscPath="R/app.txt">
+          <Suspense fallback={null}>
+            <Slot id="cached" />
+            <Probe />
+          </Suspense>
+        </Root>,
+      );
+    });
+    expect(container.textContent).toBe('C');
+
+    mocks.createFromFetch.mockReturnValueOnce(resolvedThenable({ extra: 'X' }));
+    await act(async () => {
+      await refetch!('R/next.txt', undefined, {
+        unstable_isSwr: (key) => key === 'cached',
+      }).then(() => {
+        // synchronously in the continuation, like the redirect handler
+        mountExtra();
+      });
+    });
+
+    expect(container.textContent).toBe('CX');
+
+    act(() => root.unmount());
+  });
+
   test('serves an isSwr key from a even when b has a fresh value', async () => {
-    // isSwr pins the slot to its cached value from `a` (the eager-merge
-    // Proxy); only non-isSwr holes stream from `b`. Separate Suspense
-    // boundaries let us observe the pinned eager value while the hole streams.
+    // isSwr pins the slot to its cached value from `a` (the eager merge);
+    // only non-isSwr holes stream from `b`. Separate Suspense boundaries let
+    // us observe the pinned eager value while the hole streams.
     mocks.createFromFetch.mockReturnValueOnce(
       resolvedThenable({ _value: null, eager: 'A1', hole: 'H1' }),
     );
@@ -398,6 +446,363 @@ describe('minimal/client eager merge', () => {
 
     // the eager key stays A1 (pinned to a); the hole streams b's H2.
     expect(container.textContent).toBe('A1H2');
+
+    act(() => root.unmount());
+  });
+
+  test('skips the second commit when b introduces no new keys', async () => {
+    // The common case: every response key was already delivered by the eager
+    // merge, so commit-2 bails out (same promise, same map) and nothing is
+    // re-rendered through a second commit.
+    mocks.createFromFetch.mockReturnValueOnce(
+      resolvedThenable({ _value: null, eager: 'A1', hole: 'H1' }),
+    );
+    stubFetch();
+
+    let refetch: ReturnType<typeof useRefetch> | undefined;
+    let elementsPromise: Promise<Record<string, unknown>> | undefined;
+    const Probe = () => {
+      refetch = useRefetch();
+      elementsPromise = useElementsPromise_UNSTABLE();
+      return null;
+    };
+
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <Root initialRscPath="R/app.txt">
+          <Probe />
+        </Root>,
+      );
+    });
+
+    let resolveB: (value: Record<string, unknown>) => void = () => {};
+    mocks.createFromFetch.mockReturnValueOnce(
+      new Promise<Record<string, unknown>>((resolve) => {
+        resolveB = resolve;
+      }),
+    );
+    let refetched: Promise<unknown> | undefined;
+    await act(async () => {
+      refetched = refetch!('R/next.txt', undefined, {
+        unstable_isSwr: (key) => key === 'eager',
+      });
+    });
+    const midPromise = elementsPromise!;
+    const midElements = await midPromise;
+    const holeThenable = midElements.hole;
+
+    await act(async () => {
+      resolveB({ eager: 'A2', hole: 'H2' });
+      await refetched;
+    });
+
+    expect(elementsPromise).toBe(midPromise);
+    const finalElements = await elementsPromise!;
+    expect(finalElements).toBe(midElements);
+    expect(finalElements.hole).toBe(holeThenable);
+    expect(finalElements.eager).toBe('A1');
+    await expect(finalElements.hole).resolves.toBe('H2');
+
+    act(() => root.unmount());
+  });
+
+  test('merges new keys even while the previous elements are still streaming', async () => {
+    // The response can resolve before the previous elements do. The second
+    // commit cannot inspect a pending state synchronously, so it chains on
+    // it instead; this is safe because a pending state has never rendered.
+    let resolveInitial: (value: Record<string, unknown>) => void = () => {};
+    mocks.createFromFetch.mockReturnValueOnce(
+      new Promise<Record<string, unknown>>((resolve) => {
+        resolveInitial = resolve;
+      }),
+    );
+    stubFetch();
+
+    let refetch: ReturnType<typeof useRefetch> | undefined;
+    let elementsPromise: Promise<Record<string, unknown>> | undefined;
+    const Probe = () => {
+      refetch = useRefetch();
+      elementsPromise = useElementsPromise_UNSTABLE();
+      return null;
+    };
+
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <Root initialRscPath="R/app.txt">
+          <Suspense fallback={null}>
+            <Slot id="eager" />
+            <Slot id="hole" />
+          </Suspense>
+          <Probe />
+        </Root>,
+      );
+    });
+
+    mocks.createFromFetch.mockReturnValueOnce(
+      resolvedThenable({ eager: 'A2', hole: 'H2', extra: 'X' }),
+    );
+    let refetched: unknown;
+    await act(async () => {
+      refetched = await refetch!('R/next.txt', undefined, {
+        unstable_isSwr: (key) => key === 'eager',
+      });
+    });
+    expect(refetched).toEqual({ eager: 'A2', hole: 'H2', extra: 'X' });
+
+    await act(async () => {
+      resolveInitial({ _value: null, eager: 'A1', hole: 'H1' });
+    });
+
+    expect(container.textContent).toBe('A1H2');
+    const finalElements = await elementsPromise!;
+    expect(finalElements.eager).toBe('A1');
+    expect(finalElements.extra).toBe('X');
+    await expect(finalElements.hole).resolves.toBe('H2');
+
+    act(() => root.unmount());
+  });
+
+  test('a superseded refetch does not commit onto the newer state', async () => {
+    // If another refetch commits between the eager merge and the response,
+    // the stale response's second commit must leave the newer state as is:
+    // grafting onto it would re-render it and plant stale keys.
+    mocks.createFromFetch.mockReturnValueOnce(
+      resolvedThenable({ _value: null, eager: 'A1', hole: 'H1' }),
+    );
+    stubFetch();
+
+    let refetch: ReturnType<typeof useRefetch> | undefined;
+    let elementsPromise: Promise<Record<string, unknown>> | undefined;
+    const Probe = () => {
+      refetch = useRefetch();
+      elementsPromise = useElementsPromise_UNSTABLE();
+      return null;
+    };
+
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <Root initialRscPath="R/app.txt">
+          <Probe />
+        </Root>,
+      );
+    });
+
+    let resolveB1: (value: Record<string, unknown>) => void = () => {};
+    mocks.createFromFetch.mockReturnValueOnce(
+      new Promise<Record<string, unknown>>((resolve) => {
+        resolveB1 = resolve;
+      }),
+    );
+    let refetched1: Promise<unknown> | undefined;
+    await act(async () => {
+      refetched1 = refetch!('R/first.txt', undefined, {
+        unstable_isSwr: (key) => key === 'eager',
+      });
+    });
+
+    let resolveB2: (value: Record<string, unknown>) => void = () => {};
+    mocks.createFromFetch.mockReturnValueOnce(
+      new Promise<Record<string, unknown>>((resolve) => {
+        resolveB2 = resolve;
+      }),
+    );
+    let refetched2: Promise<unknown> | undefined;
+    await act(async () => {
+      refetched2 = refetch!('R/second.txt', undefined, {
+        unstable_isSwr: (key) => key === 'eager',
+      });
+    });
+    const midPromise = elementsPromise!;
+
+    // the superseded response resolves with a key the state has never seen
+    await act(async () => {
+      resolveB1({ hole: 'H1x', stale: 'S' });
+      await refetched1;
+    });
+    expect(elementsPromise).toBe(midPromise);
+    const midElements = await elementsPromise!;
+    expect('stale' in midElements).toBe(false);
+
+    await act(async () => {
+      resolveB2({ hole: 'H2', fresh: 'F' });
+      await refetched2;
+    });
+    const finalElements = await elementsPromise!;
+    expect('stale' in finalElements).toBe(false);
+    expect(finalElements.fresh).toBe('F');
+    await expect(finalElements.hole).resolves.toBe('H2');
+
+    act(() => root.unmount());
+  });
+
+  test('merges keys only b introduces in a second commit', async () => {
+    // The rare case (e.g. a rerendered route's elements): commit-2 adds the
+    // new keys while every already-delivered key keeps its exact value.
+    mocks.createFromFetch.mockReturnValueOnce(
+      resolvedThenable({ _value: null, eager: 'A1', hole: 'H1' }),
+    );
+    stubFetch();
+
+    let refetch: ReturnType<typeof useRefetch> | undefined;
+    let elementsPromise: Promise<Record<string, unknown>> | undefined;
+    const Probe = () => {
+      refetch = useRefetch();
+      elementsPromise = useElementsPromise_UNSTABLE();
+      return null;
+    };
+
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <Root initialRscPath="R/app.txt">
+          <Probe />
+        </Root>,
+      );
+    });
+
+    let resolveB: (value: Record<string, unknown>) => void = () => {};
+    mocks.createFromFetch.mockReturnValueOnce(
+      new Promise<Record<string, unknown>>((resolve) => {
+        resolveB = resolve;
+      }),
+    );
+    let refetched: Promise<unknown> | undefined;
+    await act(async () => {
+      refetched = refetch!('R/next.txt', undefined, {
+        unstable_isSwr: (key) => key === 'eager',
+      });
+    });
+    const midElements = await elementsPromise!;
+    const holeThenable = midElements.hole;
+
+    await act(async () => {
+      resolveB({ eager: 'A2', hole: 'H2', extra: 'X' });
+      await refetched;
+    });
+    const finalElements = await elementsPromise!;
+
+    expect(finalElements).not.toBe(midElements);
+    expect(finalElements.hole).toBe(holeThenable);
+    expect(finalElements.eager).toBe('A1');
+    expect(finalElements.extra).toBe('X');
+    expect('extra' in midElements).toBe(false);
+    await expect(finalElements.hole).resolves.toBe('H2');
+
+    act(() => root.unmount());
+  });
+
+  test('an incomplete prefetch is ignored: refetch fetches fresh', async () => {
+    // complete: false is reserved: the elements must not serve as the data
+    // source nor be grafted (a stale graft would shadow the response's
+    // values); a fresh request serves the navigation.
+    mocks.createFromFetch.mockReturnValueOnce(
+      resolvedThenable({ _value: null, cached: 'C', dynamic: 'D1' }),
+    );
+    stubFetch();
+
+    let refetch: ReturnType<typeof useRefetch> | undefined;
+    let elementsPromise: Promise<Record<string, unknown>> | undefined;
+    const Probe = () => {
+      refetch = useRefetch();
+      elementsPromise = useElementsPromise_UNSTABLE();
+      return null;
+    };
+
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <Root initialRscPath="R/app.txt">
+          <Suspense fallback={null}>
+            <Slot id="cached" />
+            <Slot id="dynamic" />
+            <Probe />
+          </Suspense>
+        </Root>,
+      );
+    });
+    expect(container.textContent).toBe('CD1');
+
+    mocks.createFromFetch.mockReturnValueOnce(
+      resolvedThenable({ dynamic: 'D2' }),
+    );
+    let refetched: unknown;
+    await act(async () => {
+      refetched = await refetch!('R/next.txt', undefined, {
+        unstable_isSwr: (key) => key === 'cached',
+        unstable_prefetched: {
+          elements: { cached: 'STALE', dynamic: 'STALE', planted: 'STALE' },
+          complete: false,
+        },
+      });
+    });
+
+    // a fresh request was made and its response won
+    expect(mocks.createFromFetch).toHaveBeenCalledTimes(2);
+    expect(container.textContent).toBe('CD2');
+    expect(refetched).toEqual({ dynamic: 'D2' });
+    const finalElements = await elementsPromise!;
+    expect('planted' in finalElements).toBe(false);
+
+    act(() => root.unmount());
+  });
+
+  test('an isSwr refetch works with decode promises whose then() returns undefined', async () => {
+    // react-server-dom decode promises are flight Chunks: then() registers
+    // callbacks but returns undefined, so they must never be chained directly.
+    const chunkLike = <T,>(value: T): Promise<T> => {
+      const p = Promise.resolve(value);
+      return {
+        then: (f: (v: T) => unknown, r?: (e: unknown) => unknown) => {
+          void p.then(f, r);
+        },
+      } as unknown as Promise<T>;
+    };
+    mocks.createFromFetch.mockReturnValueOnce(
+      chunkLike({ _value: null, cached: 'C' }),
+    );
+    stubFetch();
+
+    let refetch: ReturnType<typeof useRefetch> | undefined;
+    let mountExtra: () => void = () => {};
+    const Probe = () => {
+      refetch = useRefetch();
+      const [extra, setExtra] = useState(false);
+      mountExtra = () => setExtra(true);
+      return extra ? <Slot id="extra" /> : null;
+    };
+
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <Root initialRscPath="R/app.txt">
+          <Suspense fallback={null}>
+            <Slot id="cached" />
+            <Probe />
+          </Suspense>
+        </Root>,
+      );
+    });
+    expect(container.textContent).toBe('C');
+
+    mocks.createFromFetch.mockReturnValueOnce(chunkLike({ extra: 'X' }));
+    await act(async () => {
+      await refetch!('R/next.txt', undefined, {
+        unstable_isSwr: (key) => key === 'cached',
+      }).then(() => {
+        mountExtra();
+      });
+    });
+
+    expect(container.textContent).toBe('CX');
 
     act(() => root.unmount());
   });
