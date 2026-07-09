@@ -73,10 +73,10 @@ import { Link } from 'waku';
 
 export const Nav = () => (
   <nav>
-    <Link to="/docs" unstable_prefetchOnEnter>
+    <Link to="/docs" unstable_prefetchOnEnter={{}}>
       Docs
     </Link>
-    <Link to="/blog" unstable_prefetchOnView>
+    <Link to="/blog" unstable_prefetchOnView={{ mode: 'once' }}>
       Blog
     </Link>
   </nav>
@@ -86,6 +86,14 @@ export const Nav = () => (
 - `unstable_prefetchOnEnter` starts prefetching when the pointer enters the link.
 - `unstable_prefetchOnView` starts prefetching when the link enters the viewport.
 
+Both props take an options object. Passing an empty object enables prefetching with the defaults; omitting the prop disables it.
+
+- `mode: 'always'` (the default) fetches on the first trigger and dedupes repeat triggers for the same path and query within the `ttl`. Within the `ttl`, navigation reuses the prefetched response without another request.
+- `mode: 'once'` fetches a route at most once per session, ignoring the query. Its main purpose is to warm the route's static parts, which cannot change within a build, so instant navigation can paint them even on the route's first visit. Warmed routes are kept in a bounded store, so a long session may eventually fetch a route again.
+- `ttl` sets how long a prefetched response stays reusable, in milliseconds (default: 60000).
+
+The same options work with `router.prefetch(to, options)`.
+
 Prefer intent-based prefetching for expensive dynamic routes. View-based prefetching can be useful for short pages with a small number of important links, but it can waste server work if applied to every link in a large list.
 
 ## Instant Navigation
@@ -94,7 +102,7 @@ By default, navigating to a dynamic route waits for the server response before t
 
 It relies on two things:
 
-- The route's **static shell is already cached**, for example from an earlier visit. A route's first visit is never instant.
+- The route's **static shell is already cached**, from an earlier visit or from a prefetch (any prefetch caches the static parts it learns, so a prefetched route's first visit can be instant).
 - The dynamic part of the page sits inside a `<Suspense>` boundary, so there is a fallback to show while it streams.
 
 Opt in per navigation with the `unstable_instant` prop on `<Link>`. Here a static layout wraps the dynamic page in `<Suspense>`:

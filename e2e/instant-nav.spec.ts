@@ -99,6 +99,98 @@ test.describe('instant-nav', () => {
     await expect(page).toHaveURL(/\/post\/1$/);
   });
 
+  // A view prefetch with mode 'once' warms the route's static parts, so even
+  // the route's first visit paints the shell instantly.
+  test('a prefetched route is instant on its first visit', async ({ page }) => {
+    const slowRequests: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('R/slow')) {
+        slowRequests.push(request.url());
+      }
+    });
+    await page.goto(`http://localhost:${port}/post/1`);
+    await waitForHydration(page);
+    // link-slow is in view, so its 'once' prefetch fires on load
+    await expect.poll(() => slowRequests.length).toBe(1);
+    // let the prefetched response expire (ttl: 300); the statics stay
+    await page.waitForTimeout(500);
+
+    await page.getByTestId('link-slow').click();
+    // the shell paints before the slow response arrives
+    await expect(page).toHaveURL(/\/slow$/);
+    await expect(page.getByTestId('page-skeleton')).toBeVisible();
+    await expect(page.getByTestId('slow-body')).toHaveText('Slow page');
+  });
+
+  test('mode once warms a route only once per session', async ({ page }) => {
+    const slowRequests: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('R/slow')) {
+        slowRequests.push(request.url());
+      }
+    });
+    await page.goto(`http://localhost:${port}/post/1`);
+    await waitForHydration(page);
+    await expect.poll(() => slowRequests.length).toBe(1);
+    await page.waitForTimeout(500);
+
+    // the navigation fetches fresh (the prefetched response expired)
+    await page.getByTestId('link-slow').click();
+    await expect(page.getByTestId('slow-body')).toHaveText('Slow page');
+    expect(slowRequests.length).toBe(2);
+
+    // back on a page with the link in view: 'once' does not warm again
+    await page.getByTestId('link-post-1').click();
+    await expect(page.getByTestId('post-body')).toHaveText('Post 1');
+    await page.waitForTimeout(500);
+    expect(slowRequests.length).toBe(2);
+  });
+
+  // Within the ttl, a navigation reuses the prefetched response and makes no
+  // request of its own.
+  test('a navigation within the ttl reuses the prefetch', async ({ page }) => {
+    const hoverRequests: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('R/hover')) {
+        hoverRequests.push(request.url());
+      }
+    });
+    await page.goto(`http://localhost:${port}/post/1`);
+    await waitForHydration(page);
+
+    await page.getByTestId('link-hover').hover();
+    await expect.poll(() => hoverRequests.length).toBe(1);
+    await page.getByTestId('link-hover').click();
+    await expect(page.getByTestId('hover-body')).toHaveText('Hover page');
+    expect(hoverRequests.length).toBe(1);
+  });
+
+  test('a prefetch after the ttl fetches again', async ({ page }) => {
+    const hoverRequests: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('R/hover')) {
+        hoverRequests.push(request.url());
+      }
+    });
+    await page.goto(`http://localhost:${port}/post/1`);
+    await waitForHydration(page);
+
+    await page.getByTestId('link-hover').hover();
+    await expect.poll(() => hoverRequests.length).toBe(1);
+
+    // hovering again within the ttl is deduped
+    await page.getByTestId('link-post-1').hover();
+    await page.getByTestId('link-hover').hover();
+    await page.waitForTimeout(100);
+    expect(hoverRequests.length).toBe(1);
+
+    // after the ttl (600), the same trigger fetches again
+    await page.waitForTimeout(700);
+    await page.getByTestId('link-post-1').hover();
+    await page.getByTestId('link-hover').hover();
+    await expect.poll(() => hoverRequests.length).toBe(2);
+  });
+
   // The optimistic commit happens before the response, so it reconciles a
   // server redirect once the response lands.
   test('a redirected instant navigation reconciles to the target', async ({

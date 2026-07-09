@@ -27,6 +27,23 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Link to="/gate" unstable_instant data-testid="link-gate">
           gate
         </Link>
+        {' | '}
+        <Link
+          to="/slow"
+          unstable_instant
+          unstable_prefetchOnView={{ mode: 'once', ttl: 300 }}
+          data-testid="link-slow"
+        >
+          slow
+        </Link>
+        {' | '}
+        <Link
+          to="/hover"
+          unstable_prefetchOnEnter={{ ttl: 600 }}
+          data-testid="link-hover"
+        >
+          hover
+        </Link>
       </nav>
       <main>
         <Suspense fallback={<div data-testid="page-skeleton">loading...</div>}>

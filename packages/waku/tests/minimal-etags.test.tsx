@@ -154,7 +154,7 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
     };
     await act(async () => {
       await refetch('R/bar', undefined, {
-        unstable_isSwr: (key) => key === 'page',
+        unstable_swr: { pin: (key) => key === 'page' },
       });
     });
     await flush();
@@ -166,10 +166,56 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
     view.unmount();
   });
 
+  it("sends a base's etags with the request it accompanies", async () => {
+    // Statics served from an incomplete prefetch must ride the request as
+    // etags, so the server skips re-rendering and re-sending them.
+    testHoisted.elements = {
+      page: <div>a</div>,
+      [`${ETAG_ID_PREFIX}page`]: 'etag-page',
+    };
+    let refetch!: ReturnType<typeof useRefetch>;
+    const Capture = () => {
+      refetch = useRefetch();
+      return null;
+    };
+    const view = await renderApp(
+      <Root initialRscPath="R/foo">
+        <Capture />
+      </Root>,
+    );
+    await flush();
+
+    testHoisted.elements = { page: <div>b</div> };
+    await act(async () => {
+      await refetch('R/bar', undefined, {
+        unstable_swr: {
+          pin: () => false,
+          base: {
+            widget: <div>w</div>,
+            [`${ETAG_ID_PREFIX}widget`]: 'etag-widget',
+            page: <div>p</div>,
+            [`${ETAG_ID_PREFIX}page`]: 'etag-page-2',
+          },
+        },
+      });
+    });
+
+    const lastCall = vi.mocked(globalThis.fetch).mock.calls.at(-1);
+    const headers = new Headers(
+      (lastCall?.[1] as RequestInit | undefined)?.headers,
+    );
+    const sent = JSON.parse(headers.get(ETAGS_HEADER) ?? '{}');
+    expect(sent.widget).toBe('etag-widget');
+    // for a key the base holds, the base's etag is claimed: an omission then
+    // proves the base copy current, and the merge falls back to it
+    expect(sent.page).toBe('etag-page-2');
+
+    view.unmount();
+  });
+
   it('caches the etag of a slot a response newly introduces in an instant-nav merge', async () => {
-    // A response-only slot lands via the second swr commit, and its etag must
-    // enter the cache like any other (the old merge Proxy never enumerated
-    // response-only keys, so these etags were silently dropped).
+    // A slot only the response introduces lands via the second swr commit,
+    // and its etag must enter the cache like any other.
     testHoisted.elements = {
       page: <div>a</div>,
       [`${ETAG_ID_PREFIX}page`]: IMMUTABLE_ETAG,
@@ -194,7 +240,7 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
     };
     await act(async () => {
       await refetch('R/bar', undefined, {
-        unstable_isSwr: (key) => key === 'page',
+        unstable_swr: { pin: (key) => key === 'page' },
       });
     });
     await flush();

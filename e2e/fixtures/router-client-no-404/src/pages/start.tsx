@@ -28,7 +28,7 @@ export default function StartPage() {
       <p>
         <Link
           to="/view-target?from=view"
-          unstable_prefetchOnView
+          unstable_prefetchOnView={{}}
           data-testid="prefetch-on-view-link"
         >
           Prefetch on view target

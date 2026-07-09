@@ -13,6 +13,7 @@ import {
   test,
   vi,
 } from 'vitest';
+import { ETAG_ID_PREFIX, IMMUTABLE_ETAG } from '../src/lib/utils/etags.js';
 import { fetchRscStore } from '../src/minimal/client-utils/fetch-store.js';
 import {
   Root,
@@ -332,7 +333,7 @@ describe('minimal/client eager merge', () => {
     const unstable_isEager = (key: string) => key === 'cached';
     await act(async () => {
       await refetch!('R/next.txt', undefined, {
-        unstable_isSwr: unstable_isEager,
+        unstable_swr: { pin: unstable_isEager },
       });
     });
     await act(async () => {
@@ -380,7 +381,7 @@ describe('minimal/client eager merge', () => {
     mocks.createFromFetch.mockReturnValueOnce(resolvedThenable({ extra: 'X' }));
     await act(async () => {
       await refetch!('R/next.txt', undefined, {
-        unstable_isSwr: (key) => key === 'cached',
+        unstable_swr: { pin: (key) => key === 'cached' },
       }).then(() => {
         // synchronously in the continuation, like the redirect handler
         mountExtra();
@@ -433,7 +434,7 @@ describe('minimal/client eager merge', () => {
     );
     const isSwr = (key: string) => key === 'eager';
     await act(async () => {
-      void refetch!('R/next.txt', undefined, { unstable_isSwr: isSwr });
+      void refetch!('R/next.txt', undefined, { unstable_swr: { pin: isSwr } });
     });
 
     // eager shows its cached A1 instantly; the hole suspends.
@@ -486,7 +487,7 @@ describe('minimal/client eager merge', () => {
     let refetched: Promise<unknown> | undefined;
     await act(async () => {
       refetched = refetch!('R/next.txt', undefined, {
-        unstable_isSwr: (key) => key === 'eager',
+        unstable_swr: { pin: (key) => key === 'eager' },
       });
     });
     const midPromise = elementsPromise!;
@@ -548,7 +549,7 @@ describe('minimal/client eager merge', () => {
     let refetched: unknown;
     await act(async () => {
       refetched = await refetch!('R/next.txt', undefined, {
-        unstable_isSwr: (key) => key === 'eager',
+        unstable_swr: { pin: (key) => key === 'eager' },
       });
     });
     expect(refetched).toEqual({ eager: 'A2', hole: 'H2', extra: 'X' });
@@ -562,6 +563,55 @@ describe('minimal/client eager merge', () => {
     expect(finalElements.eager).toBe('A1');
     expect(finalElements.extra).toBe('X');
     await expect(finalElements.hole).resolves.toBe('H2');
+
+    act(() => root.unmount());
+  });
+
+  test('an overlapping key falls back to the base when the response omits it', async () => {
+    // The base's etag is what rides the request for keys the base holds, so
+    // an omission proves the base copy current: the fallback must serve the
+    // base copy, not a possibly older live one.
+    mocks.createFromFetch.mockReturnValueOnce(
+      resolvedThenable({ _value: null, eager: 'A1', shared: 'LIVE' }),
+    );
+    stubFetch();
+
+    let refetch: ReturnType<typeof useRefetch> | undefined;
+    let elementsPromise: Promise<Record<string, unknown>> | undefined;
+    const Probe = () => {
+      refetch = useRefetch();
+      elementsPromise = useElementsPromise_UNSTABLE();
+      return null;
+    };
+
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <Root initialRscPath="R/app.txt">
+          <Suspense fallback={null}>
+            <Slot id="eager" />
+            <Slot id="shared" />
+          </Suspense>
+          <Probe />
+        </Root>,
+      );
+    });
+    expect(container.textContent).toBe('A1LIVE');
+
+    mocks.createFromFetch.mockReturnValueOnce(resolvedThenable({}));
+    await act(async () => {
+      await refetch!('R/next.txt', undefined, {
+        unstable_swr: {
+          pin: (key) => key === 'eager',
+          base: { shared: 'BASE' },
+        },
+      });
+    });
+
+    expect(container.textContent).toBe('A1BASE');
+    const finalElements = await elementsPromise!;
+    await expect(finalElements.shared).resolves.toBe('BASE');
 
     act(() => root.unmount());
   });
@@ -602,7 +652,7 @@ describe('minimal/client eager merge', () => {
     let refetched1: Promise<unknown> | undefined;
     await act(async () => {
       refetched1 = refetch!('R/first.txt', undefined, {
-        unstable_isSwr: (key) => key === 'eager',
+        unstable_swr: { pin: (key) => key === 'eager' },
       });
     });
 
@@ -615,7 +665,7 @@ describe('minimal/client eager merge', () => {
     let refetched2: Promise<unknown> | undefined;
     await act(async () => {
       refetched2 = refetch!('R/second.txt', undefined, {
-        unstable_isSwr: (key) => key === 'eager',
+        unstable_swr: { pin: (key) => key === 'eager' },
       });
     });
     const midPromise = elementsPromise!;
@@ -676,7 +726,7 @@ describe('minimal/client eager merge', () => {
     let refetched: Promise<unknown> | undefined;
     await act(async () => {
       refetched = refetch!('R/next.txt', undefined, {
-        unstable_isSwr: (key) => key === 'eager',
+        unstable_swr: { pin: (key) => key === 'eager' },
       });
     });
     const midElements = await elementsPromise!;
@@ -698,21 +748,36 @@ describe('minimal/client eager merge', () => {
     act(() => root.unmount());
   });
 
-  test('an incomplete prefetch is ignored: refetch fetches fresh', async () => {
-    // complete: false is reserved: the elements must not serve as the data
-    // source nor be grafted (a stale graft would shadow the response's
-    // values); a fresh request serves the navigation.
+  test('a base serves pinned keys and falls back for keys the response omits', async () => {
+    // A base (e.g. a stored prefetched response) joins the merge like extra
+    // previous elements: immutable keys pin immediately, the rest become
+    // holes on the response and fall back to the base value only when the
+    // server omits the key, which the etag protocol guarantees means
+    // unchanged.
     mocks.createFromFetch.mockReturnValueOnce(
       resolvedThenable({ _value: null, cached: 'C', dynamic: 'D1' }),
     );
     stubFetch();
 
     let refetch: ReturnType<typeof useRefetch> | undefined;
-    let elementsPromise: Promise<Record<string, unknown>> | undefined;
+    let mountExtra: () => void = () => {};
     const Probe = () => {
       refetch = useRefetch();
-      elementsPromise = useElementsPromise_UNSTABLE();
-      return null;
+      const [extra, setExtra] = useState(false);
+      mountExtra = () => setExtra(true);
+      return extra ? (
+        <>
+          <Suspense fallback={<span>[S]</span>}>
+            <Slot id="shell" />
+          </Suspense>
+          <Suspense fallback={<span>[K]</span>}>
+            <Slot id="kept" />
+          </Suspense>
+          <Suspense fallback={<span>[L]</span>}>
+            <Slot id="lazy" />
+          </Suspense>
+        </>
+      ) : null;
     };
 
     const container = document.createElement('div');
@@ -722,34 +787,51 @@ describe('minimal/client eager merge', () => {
         <Root initialRscPath="R/app.txt">
           <Suspense fallback={null}>
             <Slot id="cached" />
-            <Slot id="dynamic" />
-            <Probe />
           </Suspense>
+          <Suspense fallback={<span>[D]</span>}>
+            <Slot id="dynamic" />
+          </Suspense>
+          <Probe />
         </Root>,
       );
     });
     expect(container.textContent).toBe('CD1');
 
+    let resolveB: (value: Record<string, unknown>) => void = () => {};
     mocks.createFromFetch.mockReturnValueOnce(
-      resolvedThenable({ dynamic: 'D2' }),
+      new Promise<Record<string, unknown>>((resolve) => {
+        resolveB = resolve;
+      }),
     );
-    let refetched: unknown;
+    let refetched: Promise<unknown> | undefined;
     await act(async () => {
-      refetched = await refetch!('R/next.txt', undefined, {
-        unstable_isSwr: (key) => key === 'cached',
-        unstable_prefetched: {
-          elements: { cached: 'STALE', dynamic: 'STALE', planted: 'STALE' },
-          complete: false,
+      refetched = refetch!('R/next.txt', undefined, {
+        unstable_swr: {
+          // the pin predicate governs previous elements only: shell pins
+          // because the base proves it immutable, not because of this
+          pin: (key) => key === 'cached',
+          base: {
+            cached: 'STALE',
+            shell: 'S',
+            [`${ETAG_ID_PREFIX}shell`]: IMMUTABLE_ETAG,
+            kept: 'K',
+            lazy: 'STALE',
+          },
         },
       });
+      mountExtra();
     });
+    // pinned: cached from prev (not the base), shell from the base;
+    // holes: dynamic, kept and lazy suspend on the response
+    expect(container.textContent).toBe('C[D]S[K][L]');
 
-    // a fresh request was made and its response won
+    await act(async () => {
+      resolveB({ dynamic: 'D2', lazy: 'L' });
+      await refetched;
+    });
+    // the response wins where it has the key; the base fills the omission
+    expect(container.textContent).toBe('CD2SKL');
     expect(mocks.createFromFetch).toHaveBeenCalledTimes(2);
-    expect(container.textContent).toBe('CD2');
-    expect(refetched).toEqual({ dynamic: 'D2' });
-    const finalElements = await elementsPromise!;
-    expect('planted' in finalElements).toBe(false);
 
     act(() => root.unmount());
   });
@@ -796,7 +878,7 @@ describe('minimal/client eager merge', () => {
     mocks.createFromFetch.mockReturnValueOnce(chunkLike({ extra: 'X' }));
     await act(async () => {
       await refetch!('R/next.txt', undefined, {
-        unstable_isSwr: (key) => key === 'cached',
+        unstable_swr: { pin: (key) => key === 'cached' },
       }).then(() => {
         mountExtra();
       });
@@ -866,7 +948,7 @@ describe('minimal/client refetch scenarios', () => {
     view.unmount();
   });
 
-  test('a complete prefetch paints elements immediately without fetching', async () => {
+  test('prefetched elements are adopted as the data source without fetching', async () => {
     const view = await mount({ _value: null, page: 'P1' }, () => (
       <Suspense fallback={null}>
         <Slot id="page" />
@@ -877,10 +959,7 @@ describe('minimal/client refetch scenarios', () => {
     mocks.createFromFetch.mockClear();
     await act(async () => {
       await view.refetch()('R/done.txt', undefined, {
-        unstable_prefetched: {
-          elements: { _value: null, page: 'P2' },
-          complete: true,
-        },
+        unstable_prefetched: { _value: null, page: 'P2' },
       });
     });
     expect(view.container.textContent).toBe('P2');
@@ -889,7 +968,7 @@ describe('minimal/client refetch scenarios', () => {
     view.unmount();
   });
 
-  test('reusing a complete prefetch re-checks the build id', async () => {
+  test('adopting prefetched elements re-checks the build id', async () => {
     vi.stubEnv('WAKU_BUILD_ID', 'build-1');
     const view = await mount(
       { _value: null, page: 'P1', _buildId: 'build-1' },
@@ -902,10 +981,7 @@ describe('minimal/client refetch scenarios', () => {
     const onBuildIdMismatch = vi.fn();
     await act(async () => {
       await view.refetch()('R/done.txt', undefined, {
-        unstable_prefetched: {
-          elements: { _value: null, page: 'P2', _buildId: 'build-2' },
-          complete: true,
-        },
+        unstable_prefetched: { _value: null, page: 'P2', _buildId: 'build-2' },
         onBuildIdMismatch,
       });
       await wait();

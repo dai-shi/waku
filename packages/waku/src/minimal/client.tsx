@@ -115,26 +115,43 @@ const mergeElementsPromise = (
   return getCached(getResult, cache2, b);
 };
 
+const slotIdOf = (key: string) =>
+  key.startsWith(ETAG_ID_PREFIX) ? key.slice(ETAG_ID_PREFIX.length) : key;
+
 const swrCache = new WeakMap();
 const swrElementsPromise = (
   a: Promise<Elements>,
   b: Promise<Elements>,
-  isSwr: (key: string) => boolean,
+  pin: (key: string) => boolean,
+  base?: Elements,
 ): Promise<Elements> => {
   const getResult = () => {
     const result: Promise<Elements> = Promise.resolve(a).then((aRes) => {
+      const holeFor = (key: string) =>
+        b.then((bRes) =>
+          key in bRes ? bRes[key] : base && key in base ? base[key] : aRes[key],
+        );
       const nextElements: Elements = {};
       for (const key of Object.keys(aRes)) {
         if (key === '_value') {
           continue;
         }
         // an _etag:<slot> key follows its slot's swr-ness, not its own
-        const swr = key.startsWith(ETAG_ID_PREFIX)
-          ? isSwr(key.slice(ETAG_ID_PREFIX.length))
-          : isSwr(key);
-        nextElements[key] = swr
-          ? aRes[key]
-          : b.then((bRes) => (key in bRes ? bRes[key] : aRes[key]));
+        nextElements[key] = pin(slotIdOf(key)) ? aRes[key] : holeFor(key);
+      }
+      if (base) {
+        for (const key of Object.keys(base)) {
+          if (key === '_value' || key in nextElements) {
+            continue;
+          }
+          // pin only what the base proves immutable; pinning a mutable
+          // base key would eagerly serve possibly-stale content
+          if (unstable_isImmutableElement(base, slotIdOf(key))) {
+            nextElements[key] = base[key];
+          } else {
+            nextElements[key] = holeFor(key);
+          }
+        }
       }
       resolvedMergeResults.set(result, nextElements);
       return nextElements;
@@ -190,10 +207,10 @@ type Refetch = (
   rscPath: string,
   rscParams?: unknown,
   options?: FetchRscOptions & {
-    unstable_isSwr?: (key: string) => boolean;
-    unstable_prefetched?: {
-      elements: Elements | Promise<Elements>;
-      complete?: boolean;
+    unstable_prefetched?: Elements | Promise<Elements>;
+    unstable_swr?: {
+      pin: (key: string) => boolean;
+      base?: Elements;
     };
   },
 ) => Promise<Elements>;
@@ -493,19 +510,27 @@ export const Root = ({
     elements.then(updateCachedEtags, () => {});
   }, [elements]);
   const refetch = useCallback<Refetch>(async (rscPath, rscParams, options) => {
-    const { unstable_isSwr: isSwr, unstable_prefetched: prefetched } =
+    const { unstable_prefetched: prefetched, unstable_swr: swr } =
       options ?? {};
     delete fetchRscStore[ENTRY];
     let data: Promise<Elements>;
-    if (prefetched?.complete) {
-      data = Promise.resolve(prefetched.elements);
+    if (prefetched) {
+      data = Promise.resolve(prefetched);
       reloadOnBuildIdMismatch(data, options?.onBuildIdMismatch);
     } else {
+      if (swr?.base) {
+        fetchRscStore[CACHED_ETAGS] = {
+          ...fetchRscStore[CACHED_ETAGS],
+          ...collectCachedEtags(swr.base),
+        };
+      }
       data = unstable_fetchRsc(rscPath, rscParams, options);
     }
     const dataWithoutErrors = Promise.resolve(data).catch(() => ({}));
-    if (isSwr) {
-      setElements((prev) => swrElementsPromise(prev, dataWithoutErrors, isSwr));
+    if (swr) {
+      setElements((prev) =>
+        swrElementsPromise(prev, dataWithoutErrors, swr.pin, swr.base),
+      );
       return Promise.resolve(data).then((resolved) => {
         setElements((prev) =>
           swrNewKeysElementsPromise(prev, dataWithoutErrors, resolved),

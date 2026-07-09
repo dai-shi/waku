@@ -27,7 +27,7 @@ const HomeLayout = ({ children }: { children: ReactNode }) => {
             </Link>
           </li>
           <li>
-            <Link to="/bar" unstable_prefetchOnEnter>
+            <Link to="/bar" unstable_prefetchOnEnter={{}}>
               Bar
             </Link>
           </li>

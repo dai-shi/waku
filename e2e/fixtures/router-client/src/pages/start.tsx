@@ -37,7 +37,7 @@ export default function StartPage() {
       <p>
         <Link
           to="/next?from=enter"
-          unstable_prefetchOnEnter
+          unstable_prefetchOnEnter={{}}
           data-testid="prefetch-on-enter-link"
         >
           Prefetch on enter
@@ -85,7 +85,7 @@ export default function StartPage() {
       <p>
         <Link
           to="/view-target?from=view"
-          unstable_prefetchOnView
+          unstable_prefetchOnView={{}}
           data-testid="prefetch-on-view-link"
         >
           Prefetch on view target
