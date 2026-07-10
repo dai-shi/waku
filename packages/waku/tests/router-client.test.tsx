@@ -2255,6 +2255,42 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  test('a hover prefetch without a router is a no-op', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const errors: unknown[] = [];
+    const onError = (event: ErrorEvent) => {
+      errors.push(event.error);
+      event.preventDefault();
+    };
+    window.addEventListener('error', onError);
+    try {
+      await act(async () => {
+        root.render(
+          <Link to="/next" unstable_prefetchOnEnter={{}}>
+            next
+          </Link>,
+        );
+      });
+      const anchor = container.querySelector('a');
+      if (!anchor) {
+        throw new Error('anchor not rendered');
+      }
+      await act(async () => {
+        anchor.dispatchEvent(
+          new MouseEvent('mouseover', { bubbles: true, cancelable: true }),
+        );
+      });
+      expect(errors).toEqual([]);
+      expect(prefetchRsc).not.toHaveBeenCalled();
+      act(() => root.unmount());
+    } finally {
+      window.removeEventListener('error', onError);
+      container.remove();
+    }
+  });
+
   // The instant shell: a prefetch for the target is adopted via
   // `unstable_prefetched` as the navigation's data source, while the eager
   // merge paints the static shell and the base.

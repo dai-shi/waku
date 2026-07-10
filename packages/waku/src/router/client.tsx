@@ -32,6 +32,7 @@ import {
   unstable_prefetchRsc as prefetchRsc,
   unstable_registerCallServerElementsListener as registerCallServerElementsListener,
   unstable_removeBase as removeBase,
+  unstable_upsertRscReloadListener as upsertRscReloadListener,
   useElementsPromise_UNSTABLE as useElementsPromise,
   useRefetch,
 } from '../minimal/client.js';
@@ -256,12 +257,30 @@ const useResolveSearchCodec = () => {
   );
 };
 
-export function useRouter() {
+const useRouterOrThrow = () => {
   const router = useContext(RouterContext);
   if (!router) {
     throw new Error('Missing Router');
   }
+  return router;
+};
 
+const resolveRouteHref = <Path extends RoutePath>(
+  to: RouteHref | BuildRouteHrefTarget<Path>,
+  resolveCodec: ReturnType<typeof useResolveSearchCodec>,
+): string =>
+  addBase(
+    typeof to === 'string' ? to : buildRouteHref(to, resolveCodec),
+    import.meta.env.WAKU_CONFIG_BASE_PATH,
+  );
+
+const resolveRouteUrl = <Path extends RoutePath>(
+  to: RouteHref | BuildRouteHrefTarget<Path>,
+  resolveCodec: ReturnType<typeof useResolveSearchCodec>,
+): URL => new URL(resolveRouteHref(to, resolveCodec), window.location.href);
+
+export function useRouter() {
+  const router = useRouterOrThrow();
   const { route, changeRoute, prefetchRoute } = router;
   const resolveCodec = useResolveSearchCodec();
   const push = useCallback(
@@ -269,12 +288,7 @@ export function useRouter() {
       to: RouteHref | BuildRouteHrefTarget<RoutePath>,
       options?: NavigateOptions,
     ) => {
-      const href =
-        typeof to === 'string' ? to : buildRouteHref(to, resolveCodec);
-      const url = new URL(
-        addBase(href, import.meta.env.WAKU_CONFIG_BASE_PATH),
-        window.location.href,
-      );
+      const url = resolveRouteUrl(to, resolveCodec);
       await changeRoute(parseRoute(url), {
         shouldScroll: options?.scroll ?? shouldScrollByDefault(url),
         mode: 'push',
@@ -289,12 +303,7 @@ export function useRouter() {
       to: RouteHref | BuildRouteHrefTarget<RoutePath>,
       options?: NavigateOptions,
     ) => {
-      const href =
-        typeof to === 'string' ? to : buildRouteHref(to, resolveCodec);
-      const url = new URL(
-        addBase(href, import.meta.env.WAKU_CONFIG_BASE_PATH),
-        window.location.href,
-      );
+      const url = resolveRouteUrl(to, resolveCodec);
       await changeRoute(parseRoute(url), {
         shouldScroll: options?.scroll ?? shouldScrollByDefault(url),
         mode: 'replace',
@@ -321,12 +330,7 @@ export function useRouter() {
       to: RouteHref | BuildRouteHrefTarget<RoutePath>,
       options?: PrefetchOptions,
     ) => {
-      const href =
-        typeof to === 'string' ? to : buildRouteHref(to, resolveCodec);
-      const url = new URL(
-        addBase(href, import.meta.env.WAKU_CONFIG_BASE_PATH),
-        window.location.href,
-      );
+      const url = resolveRouteUrl(to, resolveCodec);
       prefetchRoute(parseRoute(url), options);
     },
     [prefetchRoute, resolveCodec],
@@ -440,10 +444,7 @@ export function useSetSearch_UNSTABLE<Path extends RoutePath>({
 }: {
   from: Path;
 }): SetSearch<Path> {
-  const router = useContext(RouterContext);
-  if (!router) {
-    throw new Error('Missing Router');
-  }
+  const router = useRouterOrThrow();
   const { route, changeRoute } = router;
   const codecs = useContext(SearchCodecsContext);
   return useCallback<SetSearch<Path>>(
@@ -560,16 +561,10 @@ export function Link<Path extends RoutePath>({
   ...props
 }: LinkProps<Path>): ReactElement {
   const resolveCodec = useResolveSearchCodec();
-  const href = typeof to === 'string' ? to : buildRouteHref(to, resolveCodec);
-  const resolvedTo = addBase(href, import.meta.env.WAKU_CONFIG_BASE_PATH);
+  const resolvedTo = resolveRouteHref(to, resolveCodec);
   const router = useContext(RouterContext);
   const changeRoute = router
     ? router.changeRoute
-    : () => {
-        throw new Error('Missing Router');
-      };
-  const prefetchRoute = router
-    ? router.prefetchRoute
     : () => {
         throw new Error('Missing Router');
       };
@@ -666,7 +661,7 @@ export function Link<Path extends RoutePath>({
     ? (event: MouseEvent<HTMLAnchorElement>) => {
         const url = new URL(resolvedTo, window.location.href);
         if (url.href !== window.location.href) {
-          prefetchRoute(parseRoute(url), unstable_prefetchOnEnter);
+          router?.prefetchRoute(parseRoute(url), unstable_prefetchOnEnter);
         }
         props.onMouseEnter?.(event);
       }
@@ -748,10 +743,7 @@ const NotFound = ({
   reset: () => void;
   handledErrorSet: WeakSet<object>;
 }) => {
-  const router = useContext(RouterContext);
-  if (!router) {
-    throw new Error('Missing Router');
-  }
+  const router = useRouterOrThrow();
   const { changeRoute } = router;
   useEffect(() => {
     if (has404) {
@@ -783,10 +775,7 @@ const Redirect = ({
   reset: () => void;
   handledErrorSet: WeakSet<object>;
 }) => {
-  const router = useContext(RouterContext);
-  if (!router) {
-    throw new Error('Missing Router');
-  }
+  const router = useRouterOrThrow();
   const { changeRoute } = router;
   useEffect(() => {
     // ensure single re-fetch per server redirection error on StrictMode
@@ -902,10 +891,7 @@ export function Slice({
       fallback: ReactNode;
     }
 )) {
-  const router = useContext(RouterContext);
-  if (!router) {
-    throw new Error('Missing Router');
-  }
+  const router = useRouterOrThrow();
   const { fetchingSlices } = router;
   const refetch = useRefetch();
   const slotId = getSliceSlotId(id);
@@ -1050,15 +1036,7 @@ const InnerRouter = ({
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       refetch(rscPath, rscParams);
     };
-    globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];
-    const index = globalThis.__WAKU_RSC_RELOAD_LISTENERS__.indexOf(
-      globalThis.__WAKU_REFETCH_ROUTE__!,
-    );
-    if (index !== -1) {
-      globalThis.__WAKU_RSC_RELOAD_LISTENERS__.splice(index, 1, refetchRoute);
-    } else {
-      globalThis.__WAKU_RSC_RELOAD_LISTENERS__.push(refetchRoute);
-    }
+    upsertRscReloadListener(globalThis.__WAKU_REFETCH_ROUTE__, refetchRoute);
     globalThis.__WAKU_REFETCH_ROUTE__ = refetchRoute;
   }
 

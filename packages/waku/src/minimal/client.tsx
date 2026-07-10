@@ -420,20 +420,27 @@ export const unstable_registerFetchRscInputTransformer = (
   };
 };
 
+export const unstable_upsertRscReloadListener = (
+  previous: (() => void) | undefined,
+  listener: () => void,
+): void => {
+  globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];
+  const index = previous
+    ? globalThis.__WAKU_RSC_RELOAD_LISTENERS__.indexOf(previous)
+    : -1;
+  if (index !== -1) {
+    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.splice(index, 1, listener);
+  } else {
+    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.push(listener);
+  }
+};
+
 const registerHmrRefetch = (refetch: () => void) => {
   const reload = () => {
     fetchRscStore[CACHED_ETAGS] = {};
     refetch();
   };
-  globalThis.__WAKU_RSC_RELOAD_LISTENERS__ ||= [];
-  const index = globalThis.__WAKU_RSC_RELOAD_LISTENERS__.indexOf(
-    globalThis.__WAKU_REFETCH_RSC__!,
-  );
-  if (index !== -1) {
-    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.splice(index, 1, reload);
-  } else {
-    globalThis.__WAKU_RSC_RELOAD_LISTENERS__.push(reload);
-  }
+  unstable_upsertRscReloadListener(globalThis.__WAKU_REFETCH_RSC__, reload);
   globalThis.__WAKU_REFETCH_RSC__ = reload;
 };
 
