@@ -127,6 +127,31 @@ describe('getInput server action request validation', () => {
       ),
     ).resolves.toBe(403);
   });
+
+  it('rejects form action requests without an action reference', async () => {
+    const formData = new FormData();
+    formData.set('key', 'value');
+
+    const input = await getInput(
+      new Request('https://app.test/', {
+        method: 'POST',
+        body: formData,
+        headers: { origin: 'https://app.test' },
+      }),
+      makeConfig(),
+      undefined,
+      vi.fn(),
+      vi.fn().mockReturnValue(null),
+      vi.fn(),
+      vi.fn(),
+    );
+
+    expect(input.type).toBe('action');
+    if (input.type !== 'action') {
+      throw new Error('unreachable');
+    }
+    await expect(getStatus(input.fn())).resolves.toBe(400);
+  });
 });
 
 describe('getInput etags', () => {

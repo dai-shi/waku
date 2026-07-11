@@ -16,7 +16,7 @@ export async function getInput(
     body: string | FormData,
     options?: object,
   ) => Promise<unknown[]>,
-  decodeAction: (body: FormData) => Promise<() => Promise<void>>,
+  decodeAction: (body: FormData) => Promise<() => Promise<void>> | null,
   decodeFormState: (
     actionResult: unknown,
     body: FormData,
@@ -78,6 +78,10 @@ export async function getInput(
         fn: async () => {
           const formData = (await getActionBody(req)) as FormData;
           const decodedAction = await decodeAction(formData);
+          if (typeof decodedAction !== 'function') {
+            // multipart/form-data POST without an action reference (e.g. crawlers)
+            throw createCustomError('Bad Request', { status: 400 });
+          }
           const result = await decodedAction();
           return await decodeFormState(result, formData);
         },
