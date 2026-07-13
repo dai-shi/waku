@@ -2536,6 +2536,48 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  test('a repeat prefetch claims the stored response as its base', async () => {
+    const first = {
+      [unstable_getRouteSlotId('/next')]: <div>next-shell</div>,
+      [ROUTE_ID]: ['/next', ''],
+      [IS_STATIC_ID]: false,
+    };
+    vi.mocked(prefetchRsc).mockReturnValue(resolvedThenable(first));
+
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+    const elements = {
+      ...instantNavElements(),
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+    };
+
+    const view = await renderRouter(
+      { initialRoute: { path: '/start', query: '', hash: '' } },
+      elements,
+    );
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+
+    await act(async () => {
+      capture.router!.prefetch('/next');
+      await flush();
+    });
+    expect(vi.mocked(prefetchRsc).mock.calls.at(0)?.[2]).toEqual({});
+
+    await act(async () => {
+      capture.router!.prefetch('/next?q=b');
+      await flush();
+    });
+    expect(vi.mocked(prefetchRsc).mock.calls.at(1)?.[2]).toEqual({
+      unstable_base: expect.objectContaining({
+        [unstable_getRouteSlotId('/next')]: expect.anything(),
+      }),
+    });
+
+    view.unmount();
+  });
+
   test('mode once dedupes concurrent prefetches by rscPath', async () => {
     const pending = createDeferred<Record<string, unknown>>();
     vi.mocked(prefetchRsc).mockReturnValue(pending.promise);

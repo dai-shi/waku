@@ -1030,6 +1030,8 @@ const InnerRouter = ({
     // The etag cache is cleared by minimal's own reload listener, which Root
     // registers (via unstable_fetchRsc) ahead of this one, so it runs first.
     const refetchRoute = () => {
+      prefetchCacheRef.current = new Map();
+      prefetchedElementsStoreRef.current = new Map();
       staticPathSetRef.current.clear();
       const rscPath = encodeRoutePath(route.path);
       const rscParams = createRscParams(route.query);
@@ -1308,7 +1310,10 @@ const InnerRouter = ({
         prefetchedElementsStoreRef.current,
         rscPath,
         route.query,
-        () => prefetchRsc(rscPath, rscParams),
+        (base) =>
+          prefetchRsc(rscPath, rscParams, {
+            ...(base ? { unstable_base: base } : {}),
+          }),
         options,
       );
     },

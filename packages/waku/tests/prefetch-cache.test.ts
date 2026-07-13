@@ -102,6 +102,46 @@ describe('router prefetch cache', () => {
     expect(store.get('/p')).toEqual({ a: 1 });
   });
 
+  it('passes the stored entry to the fetcher as the base', async () => {
+    const cache: PrefetchCache = new Map();
+    const store: PrefetchedElementsStore = new Map();
+    await startAndSettle(cache, store, '/p', 'q=a', { a: 1 });
+    let received: unknown = 'unset';
+    startPrefetch(
+      cache,
+      store,
+      '/p',
+      'q=b',
+      (base) => {
+        received = base;
+        return new Promise(() => {});
+      },
+      undefined,
+    );
+    expect(received).toEqual({ a: 1 });
+  });
+
+  it('passes no base while the first prefetch is in flight', async () => {
+    const cache: PrefetchCache = new Map();
+    const store: PrefetchedElementsStore = new Map();
+    startPrefetch(cache, store, '/p', 'q=a', () => new Promise(() => {}), {
+      mode: 'always',
+    });
+    let received: unknown = 'unset';
+    startPrefetch(
+      cache,
+      store,
+      '/p',
+      'q=b',
+      (base) => {
+        received = base;
+        return new Promise(() => {});
+      },
+      undefined,
+    );
+    expect(received).toBeUndefined();
+  });
+
   it('releases only an unfulfilled reservation', async () => {
     const cache: PrefetchCache = new Map();
     const store: PrefetchedElementsStore = new Map();

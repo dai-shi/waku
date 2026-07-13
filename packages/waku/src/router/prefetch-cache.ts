@@ -105,7 +105,7 @@ export const startPrefetch = (
   store: PrefetchedElementsStore,
   rscPath: string,
   query: string,
-  fetchElements: () => Promise<Elements>,
+  fetchElements: (base: Elements | undefined) => Promise<Elements>,
   options: PrefetchOptions | undefined,
 ): void => {
   if (options?.mode === 'once' && store.has(rscPath)) {
@@ -118,7 +118,8 @@ export const startPrefetch = (
   if (getPrefetch(cache, key, now)) {
     return;
   }
-  const promise = fetchElements();
+  const base = store.get(rscPath) ?? undefined;
+  const promise = fetchElements(base);
   const entry: PrefetchEntry = {
     promise,
     expireAt: now + (options?.ttl ?? PREFETCH_TTL),

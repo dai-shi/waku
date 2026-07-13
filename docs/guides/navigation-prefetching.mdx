@@ -92,6 +92,8 @@ Both props take an options object. Passing an empty object enables prefetching w
 - `mode: 'once'` fetches a route at most once per session, ignoring the query. Its main purpose is to warm the route's static parts, which cannot change within a build, so instant navigation can paint them even on the route's first visit. Warmed routes are kept in a bounded store, so a long session may eventually fetch a route again.
 - `ttl` sets how long a prefetched response stays reusable, in milliseconds (default: 60000).
 
+A repeat prefetch sends the etags of the stored response, so the server only renders and sends what changed.
+
 The same options work with `router.prefetch(to, options)`.
 
 Prefer intent-based prefetching for expensive dynamic routes. View-based prefetching can be useful for short pages with a small number of important links, but it can waste server work if applied to every link in a large list.

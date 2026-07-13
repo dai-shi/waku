@@ -108,18 +108,6 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
     view.unmount();
   });
 
-  it('sends the cached tags in the etags request header', () => {
-    fetchRscStore[CACHED_ETAGS] = { page: 'etag-foo' };
-
-    void prefetchRsc('R/bar');
-
-    // requestRsc built the request init with the cached tags as a header.
-    const fetchSpy = globalThis.fetch as ReturnType<typeof vi.fn>;
-    const init = fetchSpy.mock.calls[0]?.[1] as RequestInit;
-    const header = (init.headers as Record<string, string>)[ETAGS_HEADER];
-    expect(JSON.parse(header as string)).toEqual({ page: 'etag-foo' });
-  });
-
   it('isImmutableElement detects the immutable sentinel by tag', () => {
     const elements = {
       [`${ETAG_ID_PREFIX}static`]: IMMUTABLE_ETAG,
@@ -211,6 +199,48 @@ describe('minimal per-slot cache-validator (carry + replay)', () => {
     expect(sent.page).toBe('etag-page-2');
 
     view.unmount();
+  });
+
+  it('a prefetch without a base claims nothing', async () => {
+    fetchRscStore[CACHED_ETAGS] = { widget: 'etag-live' };
+    testHoisted.elements = { page: <div>b</div> };
+    await prefetchRsc('R/bar');
+
+    const lastCall = vi.mocked(globalThis.fetch).mock.calls.at(-1);
+    const headers = new Headers(
+      (lastCall?.[1] as RequestInit | undefined)?.headers,
+    );
+    expect(JSON.parse(headers.get(ETAGS_HEADER) ?? 'null')).toEqual({});
+  });
+
+  it('a prefetch claims the etags of its base and returns the merge', async () => {
+    fetchRscStore[CACHED_ETAGS] = { widget: 'etag-live', page: 'etag-page' };
+    testHoisted.elements = {
+      page: <div>b</div>,
+      [`${ETAG_ID_PREFIX}page`]: 'etag-page-2',
+    };
+    const result = await prefetchRsc('R/bar', undefined, {
+      unstable_base: {
+        widget: <div>w</div>,
+        [`${ETAG_ID_PREFIX}widget`]: 'etag-widget',
+      },
+    });
+
+    const lastCall = vi.mocked(globalThis.fetch).mock.calls.at(-1);
+    const headers = new Headers(
+      (lastCall?.[1] as RequestInit | undefined)?.headers,
+    );
+    const sent = JSON.parse(headers.get(ETAGS_HEADER) ?? '{}');
+    // only the base's etags are claimed: a live copy the prefetch does not
+    // retain must not let the server omit an element
+    expect(sent.widget).toBe('etag-widget');
+    expect(sent.page).toBeUndefined();
+
+    // a key the response omits is kept from the base, with its etag: a
+    // caller cannot claim copies it does not keep
+    expect(result.widget).toBeDefined();
+    expect(result[`${ETAG_ID_PREFIX}widget`]).toBe('etag-widget');
+    expect(result[`${ETAG_ID_PREFIX}page`]).toBe('etag-page-2');
   });
 
   it('caches the etag of a slot a response newly introduces in an instant-nav merge', async () => {
