@@ -157,6 +157,15 @@ const isSameRoute = (next: RouteProps, prev: RouteProps) =>
   next.query === prev.query &&
   next.hash === prev.hash;
 
+const MAX_ERROR_HOPS = 20;
+
+const parseRedirectUrl = (location: string, base: string | URL) => {
+  const url = new URL(location, base);
+  return url.protocol === 'http:' || url.protocol === 'https:'
+    ? url
+    : undefined;
+};
+
 const shouldScrollForRouteChange = (next: RouteProps, prev: RouteProps) =>
   isPathChange(next, prev) || isHashChange(next, prev);
 
@@ -785,21 +794,18 @@ const Redirect = ({
     }
     handledErrorSet.add(error as object);
 
-    const url = new URL(to, window.location.href);
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    const url = parseRedirectUrl(to, window.location.href);
+    if (!url) {
       return;
     }
-    if (url.hostname !== window.location.hostname) {
+    if (url.origin !== window.location.origin) {
       window.location.replace(url.href);
       return;
     }
-    const currentPath = window.location.pathname;
-    const newPath = url.pathname !== currentPath;
-    const historyUrl = url.origin === window.location.origin ? url : undefined;
     changeRoute(parseRoute(url), {
-      shouldScroll: newPath,
+      shouldScroll: url.pathname !== window.location.pathname,
       mode: 'replace',
-      url: historyUrl,
+      url,
     })
       .then(() => {
         handledErrorSet.delete(error as object);
@@ -1120,10 +1126,10 @@ const InnerRouter = ({
       const routeBeforeChange = routeRef.current;
       const shouldRefetch =
         options.refetch ?? !isSameRoute(nextRoute, routeBeforeChange);
-      const pathChanged = isPathChange(nextRoute, routeBeforeChange);
       const isStaticSlot = (key: string) =>
         isImmutableElement(resolvedElementsRef.current, key);
       const commitRoute = (route: RouteProps) => {
+        const pathChanged = isPathChange(route, routeBeforeChange);
         routeRef.current = route;
         setRoute(route);
         setErr(null);
@@ -1144,36 +1150,123 @@ const InnerRouter = ({
         }
         return undefined;
       };
-      const commitInTransition = () => {
+      const targetUrl = url ?? getRouteUrl(nextRoute);
+      const commitNavigation = (destination: {
+        route: RouteProps;
+        routeUrl: URL;
+        elements?: Awaited<ReturnType<typeof refetch>>;
+      }) => {
         if (isAborted()) {
           return;
         }
-        startTransitionFn(() => {
+        const followed = !isSameRoute(destination.route, nextRoute);
+        if (followed) {
+          nextRoute = destination.route;
+          url = mode ? destination.routeUrl : undefined;
+        }
+        if (destination.elements) {
+          const redirect = getRedirect(destination.elements);
+          if (redirect) {
+            nextRoute = redirect;
+            if (mode) {
+              mode = redirect.path === '/404' ? undefined : 'push';
+              url = undefined;
+            }
+          }
+        }
+        const commit = () => {
           commitRoute(nextRoute);
           routeChangeAbortRef.current = null;
           emitRouteChangeEvent('complete', nextRoute);
-        });
+        };
+        if (followed) {
+          commit();
+        } else {
+          void startTransitionFn(commit);
+        }
       };
       if (staticPathSetRef.current.has(nextRoute.path) || !shouldRefetch) {
-        commitInTransition();
+        commitNavigation({ route: nextRoute, routeUrl: targetUrl });
         return;
       }
-      const rscPath = encodeRoutePath(nextRoute.path);
-      const rscParams = createRscParams(nextRoute.query);
-      const targetUrl = url || getRouteUrl(nextRoute);
-      const onBuildIdMismatch = () => {
-        window.history.pushState(window.history.state, '', targetUrl);
-        window.location.reload();
+      const fetchRoute = (route: RouteProps, routeUrl: URL) => {
+        const rscPath = encodeRoutePath(route.path);
+        // Reuse a prefetch (matched by path and query) within its ttl; an
+        // in-flight one is adopted as the data source (it resolves no later
+        // than a fresh request, and prefetches are not abortable anyway).
+        const cached = getPrefetch(
+          prefetchCacheRef.current,
+          prefetchCacheKey(rscPath, route.query),
+          Date.now(),
+        );
+        return refetch(rscPath, createRscParams(route.query), {
+          signal: abortController.signal,
+          onBuildIdMismatch: () => {
+            window.history.pushState(window.history.state, '', routeUrl);
+            window.location.reload();
+          },
+          ...(cached ? { unstable_prefetched: cached.promise } : {}),
+        });
       };
-      // Reuse a prefetch (matched by path and query) within its ttl; an
-      // in-flight one is adopted as the data source (it resolves no later
-      // than a fresh request, and prefetches are not abortable anyway).
-      const cached = getPrefetch(
-        prefetchCacheRef.current,
-        prefetchCacheKey(rscPath, nextRoute.query),
-        Date.now(),
-      );
+      const resolveFollowingErrors = async (
+        route: RouteProps,
+        routeUrl: URL,
+        errorToFollow: unknown,
+      ) => {
+        for (let hops = 0; hops <= MAX_ERROR_HOPS; hops++) {
+          if (errorToFollow) {
+            const info = getErrorInfo(errorToFollow);
+            const redirectUrl = info?.location
+              ? parseRedirectUrl(info.location, routeUrl)
+              : undefined;
+            if (redirectUrl) {
+              if (redirectUrl.origin !== window.location.origin) {
+                if (mode && window.location.href !== targetUrl.href) {
+                  writeUrlToHistory(mode, targetUrl);
+                  setPendingHistory(null);
+                }
+                window.location.replace(redirectUrl.href);
+                return undefined;
+              }
+              route = parseRoute(redirectUrl);
+              routeUrl = redirectUrl;
+            } else if (
+              info?.status === 404 &&
+              has404 &&
+              route.path !== '/404'
+            ) {
+              route = parseRoute(new URL('/404', window.location.href));
+            } else {
+              throw errorToFollow;
+            }
+            errorToFollow = undefined;
+          }
+          if (
+            hops > 0 &&
+            (staticPathSetRef.current.has(route.path) ||
+              isSameRoute(route, routeBeforeChange))
+          ) {
+            return { route, routeUrl };
+          }
+          try {
+            return {
+              route,
+              routeUrl,
+              elements: await fetchRoute(route, routeUrl),
+            };
+          } catch (e) {
+            if (isAborted()) {
+              throw e;
+            }
+            errorToFollow = e;
+          }
+        }
+        throw new Error('too many redirect or 404 follows', {
+          cause: errorToFollow,
+        });
+      };
       if (options.instant) {
+        const rscPath = encodeRoutePath(nextRoute.path);
         const prefetchedElements =
           prefetchedElementsStoreRef.current.get(rscPath);
         const routeSlotId = getRouteSlotId(nextRoute.path);
@@ -1183,59 +1276,84 @@ const InnerRouter = ({
             isImmutableElement(prefetchedElements, routeSlotId))
         ) {
           const pin = (key: string) => isMetaKey(key) || isStaticSlot(key);
-          const dataPromise = refetch(rscPath, rscParams, {
-            signal: abortController.signal,
-            unstable_swr: {
-              pin,
-              ...(prefetchedElements ? { base: prefetchedElements } : {}),
-            },
-            onBuildIdMismatch,
-            ...(cached ? { unstable_prefetched: cached.promise } : {}),
-          });
-          commitRoute(nextRoute);
-          return dataPromise.then(
-            (elements) => {
-              if (isAborted()) {
-                return;
-              }
-              routeChangeAbortRef.current = null;
-              const redirect = getRedirect(elements);
-              if (redirect) {
-                routeRef.current = redirect;
-                setRoute(redirect);
-                if (redirect.path !== '/404') {
-                  setPendingHistory({
-                    mode: 'replace',
-                    url: getRouteUrl(redirect),
-                  });
-                }
-              }
-              emitRouteChangeEvent('complete', redirect ?? nextRoute);
-            },
-            (e) => {
-              if (isAborted()) {
-                return;
-              }
-              routeChangeAbortRef.current = null;
-              setErr(e);
-              throw e;
+          const cached = getPrefetch(
+            prefetchCacheRef.current,
+            prefetchCacheKey(rscPath, nextRoute.query),
+            Date.now(),
+          );
+          const dataPromise = refetch(
+            rscPath,
+            createRscParams(nextRoute.query),
+            {
+              signal: abortController.signal,
+              unstable_swr: {
+                pin,
+                ...(prefetchedElements ? { base: prefetchedElements } : {}),
+              },
+              onBuildIdMismatch: () => {
+                window.history.pushState(window.history.state, '', targetUrl);
+                window.location.reload();
+              },
+              ...(cached ? { unstable_prefetched: cached.promise } : {}),
             },
           );
+          commitRoute(nextRoute);
+          try {
+            const elements = await dataPromise;
+            if (isAborted()) {
+              return;
+            }
+            routeChangeAbortRef.current = null;
+            const redirect = getRedirect(elements);
+            if (redirect) {
+              routeRef.current = redirect;
+              setRoute(redirect);
+              if (redirect.path !== '/404') {
+                setPendingHistory({
+                  mode: 'replace',
+                  url: getRouteUrl(redirect),
+                });
+              }
+            }
+            emitRouteChangeEvent('complete', redirect ?? nextRoute);
+          } catch (e) {
+            if (isAborted()) {
+              return;
+            }
+            if (mode && window.location.href !== targetUrl.href) {
+              writeUrlToHistory(mode, targetUrl);
+              setPendingHistory(null);
+            }
+            mode = mode && 'replace';
+            try {
+              const destination = await resolveFollowingErrors(
+                nextRoute,
+                targetUrl,
+                e,
+              );
+              if (destination) {
+                commitNavigation(destination);
+              }
+            } catch (e2) {
+              if (isAborted()) {
+                return;
+              }
+              routeChangeAbortRef.current = null;
+              setErr(e2);
+              throw e2;
+            }
+          }
+          return;
         }
       }
       try {
-        const elements = await refetch(rscPath, rscParams, {
-          signal: abortController.signal,
-          onBuildIdMismatch,
-          ...(cached ? { unstable_prefetched: cached.promise } : {}),
-        });
-        const redirect = getRedirect(elements);
-        if (redirect) {
-          nextRoute = redirect;
-          if (mode) {
-            mode = redirect.path === '/404' ? undefined : 'push';
-            url = undefined;
-          }
+        const destination = await resolveFollowingErrors(
+          nextRoute,
+          targetUrl,
+          undefined,
+        );
+        if (destination) {
+          commitNavigation(destination);
         }
       } catch (e) {
         if (isAborted()) {
@@ -1250,11 +1368,11 @@ const InnerRouter = ({
         setErr(e);
         throw e;
       }
-      commitInTransition();
     },
     [
       emitRouteChangeEvent,
       refetch,
+      has404,
       staticPathSetRef,
       resolvedElementsRef,
       prefetchCacheRef,

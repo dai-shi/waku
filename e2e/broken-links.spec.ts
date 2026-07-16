@@ -1,6 +1,12 @@
 import { expect } from '@playwright/test';
 import { prepareNormalSetup, test, waitForHydration } from './utils.js';
 
+declare global {
+  interface Window {
+    __pushOutcome?: string;
+  }
+}
+
 const startApp = prepareNormalSetup('broken-links');
 
 test.describe('broken-links: normal server', () => {
@@ -68,6 +74,35 @@ test.describe('broken-links: normal server', () => {
       // Go back to the index page
       await page.getByRole('link', { name: 'Back' }).click();
       await expect(page.getByRole('heading')).toHaveText('Index');
+    });
+  });
+
+  test.describe('client side navigation', () => {
+    test('a thrown redirect on client navigation resolves the push', async ({
+      page,
+    }) => {
+      await page.goto(`http://localhost:${port}/`);
+      await waitForHydration(page);
+      await page.getByTestId('push-throw-redirect').click();
+      await expect(page.getByRole('heading')).toHaveText('Existing page');
+      expect(page.url()).toBe(`http://localhost:${port}/exists`);
+      // the navigation follows the redirect instead of rejecting
+      await expect
+        .poll(() => page.evaluate(() => window.__pushOutcome))
+        .toBe('resolved');
+      // Go back to the index page
+      await page.getByRole('link', { name: 'Back' }).click();
+      await expect(page.getByRole('heading')).toHaveText('Index');
+    });
+
+    test('a 404 on client navigation resolves the push', async ({ page }) => {
+      await page.goto(`http://localhost:${port}/`);
+      await waitForHydration(page);
+      await page.getByTestId('push-missing').click();
+      await expect(page.getByRole('heading')).toHaveText('Custom not found');
+      await expect
+        .poll(() => page.evaluate(() => window.__pushOutcome))
+        .toBe('resolved');
     });
   });
 });
