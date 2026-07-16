@@ -4011,6 +4011,49 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  test('two routers recover from the same revived 404 error', async () => {
+    const captureA = { router: null as RouterApi | null };
+    const ProbeA = makeProbe(captureA);
+    const sharedError = createCustomError('not-found', { status: 404 });
+    const ThrowShared = () => {
+      throw sharedError;
+    };
+
+    testHoisted.elements = {
+      [unstable_getRouteSlotId('/start')]: <ThrowShared />,
+      [unstable_getRouteSlotId('/404')]: (
+        <div>
+          <ProbeA />
+          <span>found-page</span>
+        </div>
+      ),
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+      [HAS404_ID]: true,
+    };
+
+    const initialRoute = { path: '/start', query: '', hash: '' };
+    const view = await renderApp(
+      <StrictMode>
+        <Unstable_SearchCodecsProvider searchCodecs={[postsSearchCodec]}>
+          <Router initialRoute={initialRoute} />
+          <Router initialRoute={initialRoute} />
+        </Unstable_SearchCodecsProvider>
+      </StrictMode>,
+    );
+    await flush();
+
+    // each boundary follows independently and both recover
+    expect(captureA.router?.path).toBe('/404');
+    expect(
+      (view.container.textContent?.match(/found-page/g) ?? []).length,
+    ).toBe(2);
+    // exactly one navigation per router, even under strict-mode replay
+    expect(getRefetchMock()).toHaveBeenCalledTimes(2);
+
+    view.unmount();
+  });
+
   test('custom 404 handling with a /404 page triggers client navigation to /404', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
