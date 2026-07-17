@@ -4203,6 +4203,54 @@ describe('Router integration', () => {
     }
   });
 
+  test('a non-fetching navigation does not abort the completed fetch', async () => {
+    const { view, router, refetch, capture } = await renderFollowRouter({
+      responses: [
+        { resolve: { [ROUTE_ID]: ['/next', ''], [IS_STATIC_ID]: false } },
+      ],
+      slots: ['/next'],
+    });
+    await act(async () => {
+      await router.push('/next');
+      await flush();
+    });
+    const { signal } = refetch.mock.calls[0]![2]!;
+    expect(capture.router?.path).toBe('/next');
+    // a same route push takes the no refetch shortcut
+    await act(async () => {
+      await router.push('/next');
+      await flush();
+    });
+    expect(signal!.aborted).toBe(false);
+    view.unmount();
+  });
+
+  test('a cross origin redirect on push keeps the attempted history entry', async () => {
+    const { view, router } = await renderFollowRouter({
+      responses: [
+        { reject: { status: 307, location: 'http://elsewhere.test/login' } },
+      ],
+      slots: [],
+    });
+    const replaceLocationSpy = vi
+      .spyOn(window.location, 'replace')
+      .mockImplementation(() => {});
+    window.history.replaceState(null, '', '/dashboard');
+    const lengthBefore = window.history.length;
+    await act(async () => {
+      await router.push('/protected');
+      await flush();
+    });
+    // the attempted url is pushed first, so Back returns to /dashboard
+    expect(window.location.pathname).toBe('/protected');
+    expect(window.history.length).toBe(lengthBefore + 1);
+    expect(replaceLocationSpy).toHaveBeenCalledWith(
+      'http://elsewhere.test/login',
+    );
+    replaceLocationSpy.mockRestore();
+    view.unmount();
+  });
+
   test('redirect error with a different origin leaves the app', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);
