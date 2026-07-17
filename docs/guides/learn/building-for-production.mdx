@@ -1,0 +1,71 @@
+---
+slug: building-for-production
+title: Building for Production
+description: Build the app, inspect what got prerendered, and watch the rendering model hold.
+category: Learn
+order: 50
+---
+
+## Build
+
+Stop the dev server and run:
+
+```sh
+npm run build
+```
+
+The build bundles the client and server code, then executes every static page and layout to prerender them. The result lands in `dist`:
+
+```text
+dist/
+├── public/                    # served as static files
+│   ├── index.html
+│   ├── about/index.html
+│   ├── blog/index.html
+│   ├── blog/hello-waku/index.html
+│   ├── blog/server-components/index.html
+│   ├── built/index.html
+│   ├── contact/index.html
+│   ├── RSC/                   # prerendered payloads for client-side navigation
+│   ├── assets/                # JS and CSS bundles
+│   └── ...                    # plus everything copied from public/
+└── server/                    # the server that renders dynamic routes
+```
+
+You can read the rendering model straight out of this listing:
+
+- Every static page is now an HTML file, including one page per `staticPaths` entry of the blog post route.
+- `/now` is nowhere in `dist/public`. A dynamic page has no build-time output; it lives in `dist/server` and executes when requested.
+- The `RSC` directory holds the prerendered payloads that make client-side navigation between static pages fast.
+
+## Run it
+
+```sh
+npm run start
+```
+
+Open [http://localhost:8080](http://localhost:8080) and check the two pages from the [previous chapter](/guides/static-and-dynamic-rendering):
+
+- `/built` shows the moment the build ran, and reloading never changes it. The page executed once, during `npm run build`; you are now being served its artifact.
+- `/now` shows a new timestamp on every reload. The page executes on each request, and Waku does not implicitly cache the result.
+
+This is the whole freshness model, observed: **static at build time, fresh at request time**. To update prerendered content, such as a blog post in `src/lib/posts.ts`, run `npm run build` again: a rebuild produces new artifacts.
+
+## Deploy
+
+The starter uses Waku's default adapter, which targets Node.js and automatically switches when the build runs on Vercel, Netlify, or Cloudflare. Other adapters cover AWS Lambda, Deno, and Bun. Fully static sites can skip the server entirely and deploy `dist/public` to any static host.
+
+See the deployment guides for specifics:
+
+- [Static Deployments](/guides/static-deployments)
+- [Cloudflare](/guides/cloudflare)
+- [AWS Lambda](/guides/aws-lambda)
+- [Docker](/guides/docker)
+
+## Where to go from here
+
+You have now seen every idea from [The Mental Model](/guides/concept) working: file-based routing, server and client components, declared rendering modes, and a production build that honors them.
+
+- The [guides](/guides) cover specific capabilities: styling, metadata, request context, middleware, and more.
+- The [waku-examples](https://github.com/wakujs/waku-examples) repository has focused, runnable examples for common patterns.
+- The [API reference](https://waku.gg/#routing) documents the full routing convention set, server actions, and API routes.

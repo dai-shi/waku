@@ -1,0 +1,33 @@
+---
+slug: use-cases
+title: Use Cases
+description: Where Waku fits well, and where another framework may serve you better.
+category: Getting Started
+order: 50
+---
+
+## What fit means here
+
+Whether Waku fits is a question about the architecture you want (how much of the application the framework should own), not about the size of your company or your traffic. Waku's rendering granularity is per page, per layout, and per slice, so the shapes below are about how much of your UI is stable versus request-dependent, and who you want managing the difference.
+
+## Strong fits
+
+- **Content, marketing, documentation, and editorial sites** with some dynamic or personalized surfaces. The stable majority is prerendered at build time; the dynamic parts execute per request.
+- **Headless commerce.** Catalog and editorial pages are static; inventory, pricing, cart, account, and recommendation surfaces are dynamic and always fresh, with no cache invalidation choreography between your commerce backend and your frontend framework.
+- **Full-stack React products** that want React Server Components and server actions without adopting a framework-owned data lifecycle. You choose your database client, auth approach, and (if ever needed) caching.
+- **Teams that value deployment portability.** Agencies shipping to whatever host each client uses, and products that don't want architecture coupled to a platform.
+- **Framework and platform authors** who need a thin React Server Components substrate to build on, rather than a competing opinion stack.
+
+## Weaker fits
+
+Waku is intentionally not everything. Consider a more batteries-included framework if:
+
+- You want the framework to own **integrated solutions** for authentication, image processing, internationalization, analytics, and similar concerns, rather than assembling ecosystem libraries.
+- Your application's core requirement is a **framework-managed distributed cache and revalidation platform**. Waku treats caching as an explicit, application-owned optimization, not a built-in subsystem.
+- You want a **single vendor's platform** to manage the entire application lifecycle from framework through hosting.
+
+None of these are failures of scale; Waku serves small sites and large ones. They are differences in how much framework you want.
+
+## Next Step
+
+Ready to build? The Learn series begins with [The Mental Model](/guides/concept).

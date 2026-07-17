@@ -9,6 +9,7 @@ import type { GuideFrontmatter } from '../../types';
 
 const GUIDE_CATEGORY_ORDER = [
   'Getting Started',
+  'Learn',
   'Advanced Setup',
   'Routing and Navigation',
   'Runtime and Middleware',
@@ -48,7 +49,10 @@ const getGuideSections = async (): Promise<GuideSectionProps[]> => {
     tags: NonNullable<GuideFrontmatter['tags']>;
   }> = [];
 
-  readdirSync('../../docs/guides/').forEach((fileName) => {
+  readdirSync('../../docs/guides/', {
+    recursive: true,
+    encoding: 'utf8',
+  }).forEach((fileName) => {
     if (fileName.endsWith('.mdx')) {
       guideFileNames.push(fileName);
     }

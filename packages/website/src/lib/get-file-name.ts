@@ -5,11 +5,13 @@ export const getFileName = async (folder: string, slug: string) => {
   const blogFileNames: Array<string> = [];
   const blogSlugToFileName: Record<string, string> = {};
 
-  readdirSync(folder).forEach((fileName) => {
-    if (fileName.endsWith('.mdx')) {
-      blogFileNames.push(fileName);
-    }
-  });
+  readdirSync(folder, { recursive: true, encoding: 'utf8' }).forEach(
+    (fileName) => {
+      if (fileName.endsWith('.mdx')) {
+        blogFileNames.push(fileName);
+      }
+    },
+  );
 
   for await (const fileName of blogFileNames) {
     const path = `${folder}/${fileName}`;
@@ -31,11 +33,13 @@ export const getPostPaths = async (folder: string) => {
   const blogPaths: Array<string> = [];
   const blogFileNames: Array<string> = [];
 
-  readdirSync(folder).forEach((fileName) => {
-    if (fileName.endsWith('.mdx')) {
-      blogFileNames.push(fileName);
-    }
-  });
+  readdirSync(folder, { recursive: true, encoding: 'utf8' }).forEach(
+    (fileName) => {
+      if (fileName.endsWith('.mdx')) {
+        blogFileNames.push(fileName);
+      }
+    },
+  );
 
   for await (const fileName of blogFileNames) {
     const path = `${folder}/${fileName}`;

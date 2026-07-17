@@ -1,0 +1,44 @@
+---
+slug: introduction
+title: What is Waku?
+description: The minimal React framework built around React Server Components.
+category: Getting Started
+order: 20
+---
+
+## The minimal React framework
+
+**Waku** _(wah-ku)_ or **わく** means "frame" in Japanese, as in framework. It is the minimal React framework, built around React Server Components and server actions.
+
+Minimal is not just about size. It means fewer hidden execution semantics: you can read a Waku route file and predict when its server code runs. Pages are prerendered at build time by default, pages you declare dynamic execute on every request, and Waku does not place an implicit cache in front of your rendering or data fetching.
+
+## What you get
+
+- **File-based routing.** Files in `src/pages` become routes. Layouts, dynamic segments, catch-all routes, and API routes are all part of the same convention.
+- **Static and dynamic rendering in one app.** Each page, layout, and slice (an independently rendered fragment of a page) declares its own rendering mode, so a prerendered marketing page and a per-request dashboard live side by side.
+- **Server and client components.** Fetch data with `await` directly in server components. Add `'use client'` where you need interactivity.
+- **All React.** Waku adds no parallel programming model or component format. Skills learned in Waku are React skills, and React patterns from elsewhere work in Waku.
+- **Deployment adapters.** The same application deploys to Node.js, Vercel, Netlify, Cloudflare, AWS Lambda, Deno, or Bun without changing how you write React.
+
+## A route at a glance
+
+```tsx
+// ./src/pages/index.tsx
+export default async function HomePage() {
+  const posts = await getPosts();
+
+  return (
+    <ul>
+      {posts.map((post) => (
+        <li key={post.slug}>{post.title}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+This is a complete Waku page: a server component that fetches its own data. It is prerendered at build time by default; adding a `getConfig` export with `render: 'dynamic'` makes it execute on every request instead.
+
+## Next Step
+
+Curious why Waku is designed this way? Read the [Philosophy](/guides/philosophy).

@@ -1,0 +1,43 @@
+---
+slug: comparison
+title: Comparison
+description: How Waku compares architecturally with other frameworks.
+category: Getting Started
+order: 40
+---
+
+## How to read this page
+
+Frameworks are best compared by their durable architectural choices, not by feature checklists that change every release. All of the frameworks below are excellent at what they are designed for; the question is which model fits your project. Details reviewed in July 2026 against each framework's documentation. Always check the linked docs for the current state.
+
+## At a glance
+
+|                                   | Waku | [Next.js](https://nextjs.org/docs) | [Astro](https://docs.astro.build) | [React Router](https://reactrouter.com) | [TanStack Start](https://tanstack.com/start/latest) |
+| --------------------------------- | ---- | ---------------------------------- | --------------------------------- | --------------------------------------- | --------------------------------------------------- |
+| React Server Components           | ✅   | ✅                                 | ➖                                | 🧪                                      | 🧪                                                  |
+| Static pages with dynamic regions | ✅   | ✅                                 | ✅                                | ➖                                      | ➖                                                  |
+| Framework-managed caching         | ➖   | ✅                                 | ➖                                | ➖                                      | ➖                                                  |
+| UI libraries beyond React         | ➖   | ➖                                 | ✅                                | ➖                                      | ➖                                                  |
+| Deployment adapters               | ✅   | 🧪                                 | ✅                                | ✅                                      | ✅                                                  |
+
+✅ supported, 🧪 experimental, ➖ not part of the design. React Router is compared in its framework mode; TanStack Start is powered by [TanStack Router](https://tanstack.com/router/latest). The sections below carry the substance the checkmarks cannot.
+
+## Next.js
+
+Next.js optimizes for an integrated application platform: the broadest feature set in the React ecosystem, with the framework owning much of the application lifecycle, including a caching and revalidation model that controls rendering from whole routes down to individual functions. Waku optimizes for the opposite trade: a small framework-owned surface with direct execution semantics, no implicit cache to reason about, and ecosystem libraries for the concerns the framework doesn't own. If you want an integrated platform, Next.js is a strong choice; if you prefer to keep more of those decisions in your own hands, Waku may be the better fit.
+
+## Astro
+
+Astro is optimized for content-first, multi-framework sites: static-first delivery, minimal browser JavaScript, content collections for local data, and islands from any UI library. Its server islands overlap conceptually with Waku's slices. The difference is that Waku is React-native throughout: server components, client components, layouts, pages, and slices belong to one React mental model, so a site that starts mostly static can grow meaningful server-driven application behavior without changing its UI model or adding a second component format.
+
+## React Router
+
+React Router is built for progressive adoption (declarative, data, and framework modes) with mature loader/action conventions, per-route SSR, prerendering, and SPA modes, and a web-standards request/response model. Its React Server Components support is currently experimental. The architectural distinction: React Router begins with routing and layers framework behavior on top; Waku begins with the React server-component model and supplies the routing needed to compose it. Data flows through route loaders there, and through component composition here.
+
+## TanStack Start
+
+TanStack Start, powered by TanStack Router, offers end-to-end type-safe routing, server functions, full-document SSR with streaming, and an explicit, router-centered programming model across multiple deployment targets. It shares Waku's taste for explicitness and portability. The distinction is which abstraction sits at the center: if you want an elaborate type-safe router and server-function model as the dominant abstraction, TanStack may fit you better. Waku is the stronger fit when the abstraction you want is React itself: server components as the architecture, with routing in a supporting role.
+
+## Next Step
+
+[Use Cases](/guides/use-cases) describes the application shapes Waku fits best, and the ones where another framework is the better call.

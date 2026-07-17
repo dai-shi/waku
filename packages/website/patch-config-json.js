@@ -11,6 +11,11 @@ config.routes.push(
     headers: { Location: 'https://discord.gg/MrQdmzd' },
   },
   {
+    src: '/guides/getting-started',
+    status: 308,
+    headers: { Location: '/guides/quick-start' },
+  },
+  {
     src: '/RSC/(.*)',
     headers: { 'X-Robots-Tag': 'noindex' },
   },

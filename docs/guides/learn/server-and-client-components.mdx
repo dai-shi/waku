@@ -1,0 +1,153 @@
+---
+slug: server-and-client-components
+title: Server and Client Components
+description: Fetch data in server components and add interactivity at the client boundary.
+category: Learn
+order: 30
+---
+
+## Server components by default
+
+Components in a Waku app are server components by default: everything is server code except the subtrees you mark with `'use client'`. A `'use client'` module and all of its imports, direct and transitive, are bundled for the browser. Everything outside those subtrees executes only on the server, at build time if the route is static or on each request if it is dynamic, and only its rendered output is sent to the browser; its code never becomes part of the client bundle.
+
+That is why they can be `async` and fetch data directly, the way the starter's home page does. Let's use this for real data in the blog from the [previous chapter](/guides/pages-and-layouts).
+
+## Fetch where you render
+
+Create a small data module at `src/lib/posts.ts`. In a real application this would query a database or CMS; the shape of the page code stays the same.
+
+```ts
+// ./src/lib/posts.ts
+const posts = [
+  {
+    slug: 'hello-waku',
+    title: 'Hello Waku',
+    body: 'Waku is the minimal React framework.',
+  },
+  {
+    slug: 'server-components',
+    title: 'Thinking in Server Components',
+    body: 'Fetch where you render.',
+  },
+];
+
+export const getPosts = async () => posts;
+
+export const getPost = async (slug: string) =>
+  posts.find((post) => post.slug === slug);
+```
+
+Update the blog index to list posts:
+
+```tsx
+// ./src/pages/blog/index.tsx
+import { Link } from 'waku';
+import { getPosts } from '../../lib/posts';
+
+export default async function BlogIndexPage() {
+  const posts = await getPosts();
+
+  return (
+    <div>
+      <title>Blog</title>
+      <h1 className="text-4xl font-bold tracking-tight">Blog</h1>
+      <ul className="mt-4">
+        {posts.map((post) => (
+          <li key={post.slug}>
+            <Link to={`/blog/${post.slug}`} className="underline">
+              {post.title}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+And update `src/pages/blog/[slug].tsx` to load the post it is rendering:
+
+```tsx
+// ./src/pages/blog/[slug].tsx
+import type { PageProps } from 'waku/router';
+import { getPost } from '../../lib/posts';
+
+export default async function BlogPostPage({
+  slug,
+}: PageProps<'/blog/[slug]'>) {
+  const post = await getPost(slug);
+
+  if (!post) {
+    return <h1>Post not found</h1>;
+  }
+
+  return (
+    <div>
+      <title>{post.title}</title>
+      <h1 className="text-4xl font-bold tracking-tight">{post.title}</h1>
+      <p>{post.body}</p>
+    </div>
+  );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'dynamic',
+  } as const;
+};
+```
+
+The component fetches its own data with `await`: no loader functions, no data-passing configuration. Composition determines data flow. (For returning a real 404 status, see [Redirects and Not Found](/guides/redirects-and-not-found).)
+
+## Client components for interactivity
+
+Server components have no state or event handlers, since they don't run in the browser. When you need interactivity, mark a component with `'use client'`, like the starter's `Counter`. Let's add a like button for blog posts. Create `src/components/like-button.tsx`:
+
+```tsx
+// ./src/components/like-button.tsx
+'use client';
+
+import { useState } from 'react';
+
+export const LikeButton = ({ title }: { title: string }) => {
+  const [liked, setLiked] = useState(false);
+
+  return (
+    <button
+      onClick={() => setLiked((l) => !l)}
+      className="rounded-xs mt-4 bg-black px-2 py-0.5 text-sm text-white"
+    >
+      {liked ? `You like ${title}` : 'Like'}
+    </button>
+  );
+};
+```
+
+Then import it in the post page:
+
+```tsx
+// ./src/pages/blog/[slug].tsx
+import { LikeButton } from '../../components/like-button';
+```
+
+and render it below the body text in the returned JSX:
+
+```tsx
+      <p>{post.body}</p>
+      <LikeButton title={post.title} />
+```
+
+The post page is still a server component; the like button is a client component receiving a serializable prop across the boundary. Clicking updates state in the browser without involving the server.
+
+## Rules of the boundary
+
+- `'use client'` marks the entry to client territory: that file and everything it imports are bundled for the browser.
+- Server components can render client components. The reverse is not true: a client component cannot import a server component (importing it would pull it into the client bundle), but it can receive server-rendered content via `children` or other props.
+- Props passed from server to client components must be serializable: no functions (except server actions), class instances, or other non-serializable values.
+- Client components also execute once on the server per page render to produce the initial HTML, then hydrate in the browser. Code that must never run on the server belongs in effects or event handlers.
+
+A useful default: keep components on the server, and push `'use client'` toward the leaves of the tree: the button, not the page.
+
+## Next Step
+
+The blog index renders statically while the post page declared `render: 'dynamic'`, but what does that actually mean? [Static and Dynamic Rendering](/guides/static-and-dynamic-rendering) explains both modes, when to choose each, and how to prerender the post pages too.

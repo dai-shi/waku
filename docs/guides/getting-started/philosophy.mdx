@@ -1,0 +1,41 @@
+---
+slug: philosophy
+title: Philosophy
+description: The principles behind Waku's design.
+category: Getting Started
+order: 30
+---
+
+## Minimal is the feature
+
+Waku keeps its API surface small enough to hold in your head: files in `src/pages` become routes, `getConfig` declares how a route renders, `'use client'` marks the interactive boundary, and server actions handle mutations. Everything else is React.
+
+A small surface is not a limitation. It means less framework-specific knowledge between you and your application, and fewer places where behavior needs explaining.
+
+## Explicit over implicit
+
+Waku's rendering model is a set of declarations, not heuristics:
+
+- **Static is the default.** Pages and layouts are prerendered at build time unless you declare them dynamic. Static output is a build artifact: it stays the same until the next build replaces it. A rebuild is not "cache invalidation"; it is producing a new artifact.
+- **Dynamic means every request.** A route declared `render: 'dynamic'` executes on each request and sees current data.
+- **No implicit caching.** Waku does not put a cache in front of dynamic rendering or data fetching. What you fetch is what you render. There is no framework revalidation model to learn, because there is nothing to invalidate until you deliberately add a cache yourself.
+
+In short: **static at build time, fresh at request time, cache explicitly.**
+
+The result is a simple render model. Code runs in one of three places, and every piece of the app clearly belongs to one of them:
+
+1. **At build time.** Static pages and layouts execute once during the production build.
+2. **On the server, per request.** Dynamic pages and layouts, server actions, and API routes.
+3. **In the browser.** Client components (which also render once on the server to produce the initial HTML).
+
+Because the model is small, you rarely have to ask "when does this code actually run?" The answer is in the file you are looking at.
+
+## Extensible without compiler magic
+
+Waku's capabilities grow through libraries, not compiler plugins. The compilers in a Waku app belong to React and Vite; Waku itself avoids adding compile-time magic, so extending it means writing ordinary code.
+
+The best evidence is Waku itself: `waku/router`, with its pages, layouts, and file conventions, is a library built on top of the Waku core. Extensions can take the same shape at any scale: a published package, a private shared library, or a module inside your repository. Because they are ordinary code, they compose, version, and debug like ordinary code.
+
+## Next Step
+
+See how these choices play out against other frameworks in the [Comparison](/guides/comparison).

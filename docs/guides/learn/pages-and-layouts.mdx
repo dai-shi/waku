@@ -1,0 +1,140 @@
+---
+slug: pages-and-layouts
+title: Pages and Layouts
+description: Add routes, nest layouts, and link between pages with the file-based router.
+category: Learn
+order: 20
+---
+
+## Files become routes
+
+This chapter continues the project from the [Quick Start](/guides/quick-start). Everything inside `src/pages` follows the router's conventions. The starter already contains:
+
+- `src/pages/index.tsx` → `/`
+- `src/pages/about.tsx` → `/about`
+- `src/pages/_layout.tsx` → the root layout wrapping every page
+
+There are two equivalent ways to define a page: a named file (`contact.tsx`) or an index file in a directory (`contact/index.tsx`). Both render at `/contact`.
+
+## Add a page
+
+Create `src/pages/contact.tsx`:
+
+```tsx
+// ./src/pages/contact.tsx
+import { Link } from 'waku';
+
+export default async function ContactPage() {
+  return (
+    <div>
+      <title>Contact</title>
+      <h1 className="text-4xl font-bold tracking-tight">Contact</h1>
+      <p>You can reach us at hello@example.com.</p>
+      <Link to="/" className="mt-4 inline-block underline">
+        Return home
+      </Link>
+    </div>
+  );
+}
+```
+
+With the dev server running, visit [http://localhost:3000/contact](http://localhost:3000/contact). That is the whole route definition; there is no registration step.
+
+Two things worth noticing:
+
+- The `<title>` element is hoisted into the document head automatically. The same works for `meta` and `link` tags.
+- `<Link>` performs client-side navigation between pages. Use it instead of `<a>` for internal links. For programmatic navigation, there is also a `useRouter` hook.
+
+## Layouts
+
+A `_layout.tsx` file wraps every page in its directory and below. The starter's root layout at `src/pages/_layout.tsx` renders the header, footer, and global styles around all pages.
+
+Layouts nest. Let's build a blog section with its own sub-layout. Create `src/pages/blog/_layout.tsx`:
+
+```tsx
+// ./src/pages/blog/_layout.tsx
+import type { ReactNode } from 'react';
+import { Link } from 'waku';
+
+export default async function BlogLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <nav className="mb-4">
+        <Link to="/blog" className="underline">
+          Blog
+        </Link>
+      </nav>
+      {children}
+    </div>
+  );
+}
+```
+
+And a blog index page at `src/pages/blog/index.tsx`:
+
+```tsx
+// ./src/pages/blog/index.tsx
+export default async function BlogIndexPage() {
+  return (
+    <div>
+      <title>Blog</title>
+      <h1 className="text-4xl font-bold tracking-tight">Blog</h1>
+      <p>Posts will appear here.</p>
+    </div>
+  );
+}
+```
+
+Visiting `/blog` now renders the root layout, then the blog layout, then the page, outermost to innermost.
+
+## Dynamic segments
+
+Square brackets in a file name declare a route segment whose value comes from the URL. Create `src/pages/blog/[slug].tsx`:
+
+```tsx
+// ./src/pages/blog/[slug].tsx
+import type { PageProps } from 'waku/router';
+
+export default async function BlogPostPage({
+  slug,
+}: PageProps<'/blog/[slug]'>) {
+  return (
+    <div>
+      <title>{slug}</title>
+      <h1 className="text-4xl font-bold tracking-tight">{slug}</h1>
+    </div>
+  );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'dynamic',
+  } as const;
+};
+```
+
+Visit `/blog/hello-world` and the page receives `slug: 'hello-world'` as a prop, typed via `PageProps`.
+
+The `getConfig` export is required here: a segment page must declare how its concrete paths come about: either it renders on demand (`render: 'dynamic'`, as above) or you list the paths to prerender at build time. Rendering modes are the subject of [Static and Dynamic Rendering](/guides/static-and-dynamic-rendering), where we will revisit this page.
+
+## More conventions
+
+Other conventions you will meet later, for reference:
+
+- `[...parts].tsx`: catch-all segment matching any number of path parts
+- `(group)/`: route groups that organize files without affecting the URL
+- `_components/` and `_hooks/`: directories ignored by the router, for co-locating files inside `src/pages`
+- `_root.tsx`: customizes the outermost document structure
+- `_api/`: API route handlers
+- `_slices/`: page fragments with their own rendering mode
+- `_interceptors/`: request handler interceptors
+
+See the [API reference](https://waku.gg/#routing) for the details of each.
+
+## Next Step
+
+Pages so far have only rendered markup. [Server and Client Components](/guides/server-and-client-components) brings in data and interactivity.

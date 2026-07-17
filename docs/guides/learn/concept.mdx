@@ -1,0 +1,51 @@
+---
+slug: concept
+title: The Mental Model
+description: The five ideas that explain every Waku app.
+category: Learn
+order: 10
+---
+
+## Five ideas
+
+Everything you will build in this series follows from five ideas. Hold onto these and the rest of Waku is detail.
+
+### 1. Server components first
+
+Components are server components by default. They execute on the server, can be `async`, and can fetch data, read files, or query databases directly. Their output, not their code, is sent to the browser. When you need interactivity, you add `'use client'` to a file; that module and everything it imports, directly or transitively, become client code running in the browser.
+
+### 2. Static first
+
+Every page and layout is prerendered at build time by default. If a page should instead reflect the current request (current data, cookies, headers), you declare it dynamic with `getConfig`. Static output is a build artifact: it stays exactly the same until the next build replaces it.
+
+### 3. Fresh at request time
+
+A dynamic page executes on every request, and Waku does not implicitly cache the result or the data fetched inside it. When your data changes, the next request sees it. There is no revalidation API to call because there is no hidden cache to invalidate.
+
+### 4. All React, small surface
+
+Waku adds conventions, not a parallel programming model. Routing is files in `src/pages`, navigation is the `<Link>` component, rendering mode is a `getConfig` export, and mutations are React server actions. Data fetching is `await` inside a server component; there is no framework data layer between you and your sources.
+
+### 5. Portable across runtimes
+
+The same application deploys through adapters to Node.js, Vercel, Netlify, Cloudflare, AWS Lambda, Deno, and Bun. The React programming model does not change per host; only runtime-specific capabilities (like filesystem access) vary.
+
+## Where code runs
+
+| Code                      | Where it runs          | When it runs              |
+| ------------------------- | ---------------------- | ------------------------- |
+| Static page or layout     | Server (build machine) | Once, at build time       |
+| Dynamic page or layout    | Server                 | On every request          |
+| Server action / API route | Server                 | When invoked              |
+| Client component          | Browser                | On render and interaction |
+
+One nuance: client components also execute once on the server per page render to produce the initial HTML (server-side rendering), then hydrate in the browser.
+
+## What this series proves
+
+Each chapter demonstrates one of these ideas hands-on, continuing the project from the [Quick Start](/guides/quick-start):
+
+1. [Pages and Layouts](/guides/pages-and-layouts): routing with files
+2. [Server and Client Components](/guides/server-and-client-components): the component model and the `'use client'` boundary
+3. [Static and Dynamic Rendering](/guides/static-and-dynamic-rendering): declaring rendering modes and observing freshness
+4. [Building for Production](/guides/building-for-production): seeing the model hold in a real build

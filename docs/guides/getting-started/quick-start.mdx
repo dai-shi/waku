@@ -1,0 +1,94 @@
+---
+slug: quick-start
+title: Quick Start
+description: Scaffold a new Waku project and run it locally in five minutes.
+category: Getting Started
+order: 10
+---
+
+## Prerequisites
+
+- [Node.js](https://nodejs.org) `^26.0.0`, `^24.0.0`, or `^22.15.0`
+- Any package manager (the commands below use `npm`)
+
+## Scaffold a project
+
+Run the following command in your terminal:
+
+```sh
+npm create waku@latest
+```
+
+Follow the CLI prompts. The default project name is `waku-project`. Then install dependencies and start the development server:
+
+```sh
+cd waku-project
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser. You should see a small demo app with an interactive counter.
+
+## Project structure
+
+The starter contains the following files:
+
+```text
+waku-project/
+├── public/            # static assets served as-is
+├── src/
+│   ├── components/    # reusable React components
+│   ├── middleware/    # optional server middleware
+│   ├── pages/         # file-based routes
+│   │   ├── _layout.tsx
+│   │   ├── about.tsx
+│   │   └── index.tsx
+│   ├── global.d.ts
+│   └── styles.css
+├── package.json
+├── tsconfig.json
+└── waku.config.ts
+```
+
+- `src/pages` is the router: each file becomes a route, and `_layout.tsx` wraps the pages next to and below it.
+- `src/components` holds regular React components that pages import.
+- `src/middleware` contains optional [Hono](https://hono.dev) middleware that the default setup picks up automatically. The starter ships one that removes trailing slashes.
+- `public` files are copied to the site root unchanged, such as images and fonts.
+- `waku.config.ts` configures Waku and Vite. The starter enables Tailwind CSS and React Compiler plugins.
+
+While the development server is running, Waku also generates `src/pages.gen.ts` containing route types for type-safe links. It is regenerated automatically whenever your pages change, so you never edit it by hand.
+
+## Make your first edit
+
+Open `src/pages/index.tsx`:
+
+```tsx
+// ./src/pages/index.tsx (excerpt)
+export default async function HomePage() {
+  const data = await getData();
+
+  return (
+    <div>
+      <title>{data.title}</title>
+      <h1 className="text-4xl font-bold tracking-tight">{data.headline}</h1>
+      <p>{data.body}</p>
+      <Counter />
+      <Link to="/about" className="mt-4 inline-block underline">
+        About page
+      </Link>
+    </div>
+  );
+}
+```
+
+The content comes from a `getData` function defined below the component. Change its `body` text and save. The browser updates instantly without a full reload.
+
+## Commands
+
+- `npm run dev` starts the development server at [http://localhost:3000](http://localhost:3000)
+- `npm run build` creates a production build in `dist`
+- `npm run start` serves the production build at [http://localhost:8080](http://localhost:8080)
+
+## Next Step
+
+Read [What is Waku?](/guides/introduction) for a tour of what the framework offers.

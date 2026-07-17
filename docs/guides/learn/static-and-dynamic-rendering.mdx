@@ -1,0 +1,108 @@
+---
+slug: static-and-dynamic-rendering
+title: Static and Dynamic Rendering
+description: Declare when each route executes and understand Waku's freshness model.
+category: Learn
+order: 40
+---
+
+## The model
+
+Every page and layout renders in one of two modes, declared by its `getConfig` export:
+
+| Mode                 | When server code runs | How its content updates            |
+| -------------------- | --------------------- | ---------------------------------- |
+| `'static'` (default) | Once, at build time   | The next build replaces it         |
+| `'dynamic'`          | On every request      | The next request sees current data |
+
+Static pages are **prerendered at build time**: the HTML and the component output are produced during `npm run build` and served as-is until a new build replaces them. Dynamic pages are **executed on every request**: they see current data, cookies, and headers.
+
+Waku does not implicitly cache dynamic rendering or the data you fetch inside it. What you fetch is what you render, so there is no revalidation step when your data changes; the next request is simply fresh. If you ever want caching, you add it explicitly around the specific expensive work, as a deliberate optimization.
+
+## Static is the default
+
+The pages you created without a `getConfig` export, `/contact` and `/blog`, are static. The starter's pages spell it out explicitly, which means the same thing:
+
+```tsx
+export const getConfig = async () => {
+  return {
+    render: 'static',
+  } as const;
+};
+```
+
+Static fits any content that is the same for every visitor and only changes when you deploy: marketing pages, documentation, blog posts. Because static pages execute at build time, request-specific information does not exist for them; there is no "current user" during a build.
+
+## Declare a dynamic page
+
+Create `src/pages/now.tsx`:
+
+```tsx
+// ./src/pages/now.tsx
+export default async function NowPage() {
+  const now = new Date().toISOString();
+
+  return (
+    <div>
+      <title>Now</title>
+      <h1 className="text-4xl font-bold tracking-tight">Now</h1>
+      <p>This page rendered at {now}.</p>
+      <p>It is executed on every request.</p>
+    </div>
+  );
+}
+
+export const getConfig = async () => {
+  return {
+    render: 'dynamic',
+  } as const;
+};
+```
+
+Visit `/now` and reload: the timestamp changes on every request, in development and production alike.
+
+For comparison, create a static counterpart at `src/pages/built.tsx`:
+
+```tsx
+// ./src/pages/built.tsx
+export default async function BuiltPage() {
+  const builtAt = new Date().toISOString();
+
+  return (
+    <div>
+      <title>Built</title>
+      <h1 className="text-4xl font-bold tracking-tight">Built</h1>
+      <p>This page was prerendered at {builtAt}.</p>
+    </div>
+  );
+}
+```
+
+Reload `/built` and the timestamp does not change: even in development, a static page executes once and its result is reused. It re-executes when you edit the file, because the dev server re-renders on code changes. In the production build this becomes permanent: the page executes during `npm run build` and its output is frozen until the next build, as the next chapter shows.
+
+## Prerender dynamic segments with staticPaths
+
+The blog post page from the previous chapters is `render: 'dynamic'`, executing on every request. But blog posts are stable content, ideal for prerendering. A segment route can be static if you provide the list of paths to prerender. In `src/pages/blog/[slug].tsx`, replace the `getConfig` export (and add `getPosts` to the existing import from `../../lib/posts`):
+
+```tsx
+export const getConfig = async () => {
+  const posts = await getPosts();
+
+  return {
+    render: 'static',
+    staticPaths: posts.map((post) => post.slug),
+  } as const;
+};
+```
+
+At build time, Waku calls `getConfig`, receives the slugs, and prerenders one page per post. The component code is unchanged; only the declaration of when it runs is different. Note that paths outside the list now return 404 instead of rendering the component.
+
+## Choosing a mode
+
+- Same content for every visitor until the next deploy? **Static.**
+- Depends on the request (user, cookies, headers) or must show current data? **Dynamic.**
+- Stable shell with one fresh region inside it? Keep the page static and make the layout or a [slice](https://waku.gg/#slices) dynamic; modes are declared per page, per layout, and per slice, so you can mix them in one tree.
+
+## Next Step
+
+Declarations only matter if the build honors them. [Building for Production](/guides/building-for-production) runs the production build and shows exactly what got prerendered and what stays fresh.
