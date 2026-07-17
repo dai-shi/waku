@@ -733,7 +733,7 @@ const FollowError = ({
       targetRef.current = undefined;
       reset();
     }
-  });
+  }, [route, reset]);
   useEffect(() => {
     // ensure a single re-fetch per error on StrictMode
     // https://github.com/wakujs/waku/pull/1512
