@@ -1485,6 +1485,41 @@ describe('Router integration', () => {
     view.unmount();
   });
 
+  test('committing a route whose slot has not arrived renders nothing instead of crashing', async () => {
+    const capture = { router: null as RouterApi | null };
+    const Probe = makeProbe(capture);
+
+    // The target route slot is intentionally absent: the mocked refetch never
+    // updates the elements context, simulating a route commit that lands
+    // before the fetched elements do.
+    const elements = {
+      [unstable_getRouteSlotId('/start')]: <Probe />,
+      [ROUTE_ID]: ['/start', ''],
+      [IS_STATIC_ID]: false,
+    };
+
+    const view = await renderRouter(
+      {
+        initialRoute: { path: '/start', query: '', hash: '' },
+      },
+      elements,
+    );
+
+    if (!capture.router) {
+      throw new Error('router not initialized');
+    }
+
+    await act(async () => {
+      await capture.router!.push('/next');
+    });
+
+    // Previously this threw 'Invalid element: route:/next' from Slot and
+    // poisoned the error boundaries.
+    expect(view.container.textContent).toBe('');
+
+    view.unmount();
+  });
+
   test('push accepts a structured target and builds the href', async () => {
     const capture = { router: null as RouterApi | null };
     const Probe = makeProbe(capture);

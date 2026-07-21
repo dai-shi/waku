@@ -1341,12 +1341,13 @@ const InnerRouter = ({
     };
   }, [changeRoute, routeInterceptor]);
 
+  const routeSlotId = getRouteSlotId(committed.route.path);
   const routeElement =
     err !== null ? (
       <ThrowError error={err} />
-    ) : (
-      <Slot id={getRouteSlotId(committed.route.path)} />
-    );
+    ) : routeSlotId in elements ? (
+      <Slot id={routeSlotId} />
+    ) : null;
   const rootElement = (
     <Slot id="root">
       <CustomErrorHandler has404={has404}>{routeElement}</CustomErrorHandler>
