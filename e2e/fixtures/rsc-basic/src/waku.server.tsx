@@ -6,7 +6,7 @@ const BUILD_MATADATA_VALUE = 'metadata-value';
 
 export default adapter({
   handleRequest: async (input, { renderRsc, loadBuildMetadata }) => {
-    if (input.type === 'component') {
+    if (input.type === 'rsc') {
       return renderRsc({
         App: (
           <App
@@ -17,7 +17,7 @@ export default adapter({
         ),
       });
     }
-    if (input.type === 'function') {
+    if (input.type === 'call') {
       const value = await input.fn(...input.args);
       return renderRsc({}, { value });
     }

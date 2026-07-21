@@ -9,7 +9,7 @@ export default adapter({
     if (result) {
       return result;
     }
-    if (input.type === 'custom') {
+    if (input.type === 'http') {
       return router.handleRequest({ ...input, pathname: '/' }, utils);
     }
   },

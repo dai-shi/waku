@@ -52,7 +52,7 @@ describe('define-router action requests', () => {
 
     await handleRequest(
       {
-        type: 'component',
+        type: 'rsc',
         pathname: '/RSC/R/about',
         rscPath: encodeRoutePath('/about'),
         rscParams: undefined,
@@ -94,7 +94,7 @@ describe('define-router action requests', () => {
 
     await handleRequest(
       {
-        type: 'function',
+        type: 'call',
         pathname: '/RSC/F/actions/submit.txt',
         fn: actionFn,
         args: ['arg'],
@@ -137,7 +137,7 @@ describe('define-router action requests', () => {
 
     await handleRequest(
       {
-        type: 'custom',
+        type: 'http',
         pathname: '/missing',
         req: new Request('http://localhost/missing'),
       },
@@ -183,11 +183,11 @@ describe('define-router action requests', () => {
 
     const res = await handleRequest(
       {
-        type: 'action',
-        fn: async () => {
+        type: 'http',
+        tryAction: async () => {
           message = 'after';
           unstable_rerenderRoute('/');
-          return 'form-state';
+          return { action: true as const, formState: 'form-state' };
         },
         pathname: '/',
         req: new Request('http://localhost/', { method: 'POST' }),
@@ -247,11 +247,11 @@ describe('define-router action requests', () => {
 
     const res = await handleRequest(
       {
-        type: 'action',
-        fn: async () => {
+        type: 'http',
+        tryAction: async () => {
           message = 'after';
           unstable_rerenderRoute('/');
-          return 'form-state';
+          return { action: true as const, formState: 'form-state' };
         },
         pathname: '/',
         req: new Request('http://localhost/', { method: 'POST' }),
@@ -301,8 +301,8 @@ describe('define-router action requests', () => {
 
     const res = await handleRequest(
       {
-        type: 'action',
-        fn: actionFn,
+        type: 'http',
+        tryAction: actionFn,
         pathname: '/api/form-data',
         req: new Request('http://localhost/api/form-data', {
           method: 'POST',

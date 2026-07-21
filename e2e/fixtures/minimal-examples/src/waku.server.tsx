@@ -47,7 +47,7 @@ const appForMode = (
 export default adapter(
   {
     handleRequest: async (input, { renderRsc, renderHtml }) => {
-      if (input.type === 'component') {
+      if (input.type === 'rsc') {
         if (input.rscPath === 'island') {
           return renderRsc({
             'slice:dynamic': (
@@ -62,10 +62,10 @@ export default adapter(
           App: appForMode(mode, input.rscPath || 'Waku', input.rscParams),
         });
       }
-      if (input.type === 'custom' && input.pathname === '/api/hello') {
+      if (input.type === 'http' && input.pathname === '/api/hello') {
         return new Response('world');
       }
-      if (input.type === 'custom') {
+      if (input.type === 'http') {
         const mode = modeFromPathname(input.pathname);
         const cookies = cookie.parseCookie(
           input.req.headers.get('cookie') || '',

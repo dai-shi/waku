@@ -9,6 +9,10 @@ if (window.location.pathname === '/test') {
   rscPath = 'test';
   slotId = 'TestApp';
 }
+if (window.location.pathname === '/mixed-forms') {
+  rscPath = 'mixed-forms';
+  slotId = 'MixedForms';
+}
 
 const rootElement = (
   <StrictMode>

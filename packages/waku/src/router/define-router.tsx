@@ -899,7 +899,7 @@ export function unstable_defineRouter(fns: {
         }
       };
 
-      if (input.type === 'component') {
+      if (input.type === 'rsc') {
         const sliceId = decodeSliceId(input.rscPath);
         if (sliceId !== null) {
           // LIMITATION: This is a single slice request.
@@ -943,7 +943,7 @@ export function unstable_defineRouter(fns: {
         return renderRsc(entries.elements, { etags: entries.etags });
       }
 
-      if (input.type === 'function') {
+      if (input.type === 'call') {
         try {
           const { value, entries } = await withRerender(() =>
             input.fn(...input.args),
@@ -969,7 +969,7 @@ export function unstable_defineRouter(fns: {
         }
       }
 
-      if (input.type === 'action' || input.type === 'custom') {
+      if (input.type === 'http') {
         const pathConfigItem = getPathConfigItem(input.pathname);
         if (pathConfigItem?.type === 'api') {
           const url = new URL(input.req.url);
@@ -1001,11 +1001,11 @@ export function unstable_defineRouter(fns: {
           const nonce = getNonce();
           const html = <INTERNAL_ServerRouter route={route} />;
           let formState: unknown;
-          if (input.type === 'action') {
-            const { value, entries: rerendered } = await withRerender(() =>
-              input.fn(),
+          if (input.tryAction) {
+            const { value, entries: rerendered } = await withRerender(
+              input.tryAction,
             );
-            formState = value;
+            formState = value.action ? value.formState : undefined;
             entries = {
               elements: { ...entries.elements, ...rerendered.elements },
               etags: { ...entries.etags, ...rerendered.etags },

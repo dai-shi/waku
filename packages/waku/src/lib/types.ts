@@ -36,17 +36,19 @@ export type Unstable_EmitFile = (
 
 export type Unstable_HandleRequest = (
   input: (
-    | { type: 'component'; rscPath: string; rscParams: unknown }
+    | { type: 'rsc'; rscPath: string; rscParams: unknown }
     | {
-        type: 'function';
+        type: 'call';
         fn: (...args: unknown[]) => Promise<unknown>;
         args: unknown[];
       }
     | {
-        type: 'action';
-        fn: () => Promise<unknown>;
+        type: 'http';
+        tryAction?: () => Promise<
+          | { action: true; formState: unknown }
+          | { action: false; formData: FormData }
+        >;
       }
-    | { type: 'custom' }
   ) & {
     pathname: string;
     req: Request;

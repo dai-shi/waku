@@ -60,7 +60,7 @@ const router = fsRouter(import.meta.glob('./**/*.tsx', { base: './pages' }));
 
 export default adapter({
   handleRequest: async (input, utils) => {
-    if (input.type === 'custom') {
+    if (input.type === 'http') {
       return 'fallback';
     }
     return router.handleRequest(input, utils);
@@ -75,7 +75,7 @@ You can also make this conditional:
 
 ```tsx
 handleRequest: async (input, utils) => {
-  if (input.type === 'custom' && input.pathname.startsWith('/app')) {
+  if (input.type === 'http' && input.pathname.startsWith('/app')) {
     return 'fallback';
   }
   return router.handleRequest(input, utils);

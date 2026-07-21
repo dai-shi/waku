@@ -92,10 +92,10 @@ import App from './components/App.js';
 
 const handlers = defineHandlers({
   handleRequest: async (input, { renderRsc, renderHtml }) => {
-    if (input.type === 'component') {
+    if (input.type === 'rsc') {
       return renderRsc({ App: <App name={input.rscPath || 'Waku'} /> });
     }
-    if (input.type === 'custom' && input.pathname === '/') {
+    if (input.type === 'http' && input.pathname === '/') {
       const rscPath = '';
       return renderHtml(
         await renderRsc({ App: <App name="Waku" /> }),
@@ -152,7 +152,7 @@ if ((globalThis as any).__WAKU_HYDRATE__) {
 
 In the example above, a request to `/` looks like this:
 
-1. The adapter receives `GET /` and calls `handleRequest` with `input.type === 'custom'`.
+1. The adapter receives `GET /` and calls `handleRequest` with `input.type === 'http'`.
 2. `handleRequest` renders an RSC payload with `renderRsc(...)`.
 3. `handleRequest` passes that payload to `renderHtml(...)` together with an HTML tree containing `<Slot id="App" />`.
 4. The browser loads `src/waku.client.tsx`.
@@ -192,12 +192,11 @@ export default adapter({
 
 The `input` argument is one of the following shapes:
 
-| `input.type` | When it is used                                                      | Extra fields           |
-| ------------ | -------------------------------------------------------------------- | ---------------------- |
-| `component`  | RSC payload fetches initiated by `Root` or `useRefetch`              | `rscPath`, `rscParams` |
-| `function`   | Server function calls                                                | `fn`, `args`           |
-| `action`     | Server action submissions                                            | `fn`                   |
-| `custom`     | Ordinary HTTP requests such as document requests or custom endpoints | none                   |
+| `input.type` | When it is used                                                                          | Extra fields           |
+| ------------ | ---------------------------------------------------------------------------------------- | ---------------------- |
+| `rsc`        | RSC payload fetches initiated by `Root` or `useRefetch`                                  | `rscPath`, `rscParams` |
+| `call`       | Server function calls                                                                    | `fn`, `args`           |
+| `http`       | Ordinary HTTP requests such as document requests, custom endpoints, and form submissions | `tryAction?`           |
 
 Every input also includes:
 
@@ -211,20 +210,20 @@ from deeper components and server functions.
 
 Typical handling patterns:
 
-`component` requests usually return an RSC payload:
+`rsc` requests usually return an RSC payload:
 
 ```tsx
-if (input.type === 'component') {
+if (input.type === 'rsc') {
   return renderRsc({
     App: <App name={input.rscPath || 'Waku'} />,
   });
 }
 ```
 
-`function` requests usually execute the server function and return its result with the `value` option:
+`call` requests usually execute the server function and return its result with the `value` option:
 
 ```tsx
-if (input.type === 'function') {
+if (input.type === 'call') {
   const value = await input.fn(...input.args);
   return renderRsc({}, { value });
 }
@@ -233,17 +232,36 @@ if (input.type === 'function') {
 If a server function should also update the rendered server elements, return the updated elements and pass the function result with `value`:
 
 ```tsx
-if (input.type === 'function') {
+if (input.type === 'call') {
   const value = await input.fn(...input.args);
   return renderRsc({ App: <App name="Updated" /> }, { value });
 }
 ```
 
-`action` requests often re-render HTML and pass `formState`:
+On multipart `POST` requests, which may be no-JS server action submissions,
+the input carries `tryAction`. Calling it consumes the request body
+and resolves `{ action: true, formState }` for a decoded server action, or
+`{ action: false, formData }` with the parsed form data when the body
+contains no server action reference (a plain HTML form or a crawler) —
+route that to your ordinary `POST` handling. `tryAction` is memoized, so
+calling it again returns the same result, and it rejects cross-origin
+requests only when they carry an action reference: an ordinary
+cross-origin form post is delivered as form data. Requests without
+`tryAction` cannot be action submissions, and their body stays
+untouched unless you read it:
 
 ```tsx
-if (input.type === 'action' && input.pathname === '/') {
-  const formState = await input.fn();
+if (input.type === 'http' && input.pathname === '/') {
+  let formState;
+  if (input.tryAction) {
+    const result = await input.tryAction();
+    if (result.action) {
+      formState = result.formState;
+    } else {
+      // an ordinary multipart form: treat it like any other POST
+      await handlePost(result.formData);
+    }
+  }
   return renderHtml(
     await renderRsc({ App: <App name="Waku" /> }),
     <Slot id="App" />,
@@ -255,10 +273,10 @@ if (input.type === 'action' && input.pathname === '/') {
 }
 ```
 
-`custom` requests are where you implement document rendering and custom endpoints:
+`http` requests are where you implement document rendering and custom endpoints:
 
 ```tsx
-if (input.type === 'custom' && input.pathname === '/') {
+if (input.type === 'http' && input.pathname === '/') {
   return renderHtml(
     await renderRsc({ App: <App name="Waku" /> }),
     <Slot id="App" />,
@@ -266,7 +284,7 @@ if (input.type === 'custom' && input.pathname === '/') {
   );
 }
 
-if (input.type === 'custom' && input.pathname === '/api/hello') {
+if (input.type === 'http' && input.pathname === '/api/hello') {
   return new Response('world');
 }
 ```
@@ -361,7 +379,7 @@ handleBuild: async ({ saveBuildMetadata }) => {
 },
 
 handleRequest: async (input, { renderRsc, loadBuildMetadata }) => {
-  if (input.type === 'component') {
+  if (input.type === 'rsc') {
     return renderRsc({
       App: (
         <App metadata={(await loadBuildMetadata(BUILD_METADATA_KEY)) || 'Empty'} />
@@ -534,10 +552,10 @@ Use `renderHtml(...)` for document requests and leave `handleBuild` empty:
 ```tsx
 export default adapter({
   handleRequest: async (input, { renderRsc, renderHtml }) => {
-    if (input.type === 'component') {
+    if (input.type === 'rsc') {
       return renderRsc({ App: <App name={input.rscPath || 'Waku'} /> });
     }
-    if (input.type === 'custom' && input.pathname === '/') {
+    if (input.type === 'http' && input.pathname === '/') {
       return renderHtml(
         await renderRsc({ App: <App name="Waku" /> }),
         <Slot id="App" />,
@@ -552,10 +570,10 @@ export default adapter({
 
 #### Custom API endpoints
 
-Use `input.type === 'custom'` and return a `Response` directly:
+Use `input.type === 'http'` and return a `Response` directly:
 
 ```tsx
-if (input.type === 'custom' && input.pathname === '/api/hello') {
+if (input.type === 'http' && input.pathname === '/api/hello') {
   return new Response('world');
 }
 ```
@@ -565,7 +583,7 @@ if (input.type === 'custom' && input.pathname === '/api/hello') {
 Server functions typically return their result with the `value` option, and may optionally return updated server elements in the same payload:
 
 ```tsx
-if (input.type === 'function') {
+if (input.type === 'call') {
   const value = await input.fn(...input.args);
   return renderRsc({ App: <App name="Updated" /> }, { value });
 }
@@ -576,11 +594,9 @@ if (input.type === 'function') {
 Server actions often return HTML rather than a bare RSC payload so that the same flow works with or without JavaScript:
 
 ```tsx
-if (
-  (input.type === 'action' || input.type === 'custom') &&
-  input.pathname === '/'
-) {
-  const formState = input.type === 'action' ? await input.fn() : undefined;
+if (input.type === 'http' && input.pathname === '/') {
+  const result = input.tryAction ? await input.tryAction() : undefined;
+  const formState = result?.action ? result.formState : undefined;
   return renderHtml(
     await renderRsc({ App: <App name="Waku" /> }),
     <Slot id="App" />,

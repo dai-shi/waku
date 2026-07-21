@@ -321,7 +321,7 @@ describe('define-router handleBuild', () => {
       loadBuildMetadata,
     };
     const makeReq = () => ({
-      type: 'component' as const,
+      type: 'rsc' as const,
       rscPath: 'R/foo',
       rscParams: undefined,
       pathname: '/foo',

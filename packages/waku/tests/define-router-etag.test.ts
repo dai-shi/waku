@@ -62,7 +62,7 @@ const drive = async (
   let captured: Record<string, unknown> = {};
   await router.handleRequest(
     {
-      type: 'component',
+      type: 'rsc',
       pathname: '/foo',
       rscPath,
       rscParams: undefined,

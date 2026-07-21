@@ -39,7 +39,7 @@ export async function getInput(
       const args = await decodeReply(body, { temporaryReferences });
       const action = await loadServerAction(actionId);
       input = {
-        type: 'function',
+        type: 'call',
         fn: action as never,
         args,
         pathname,
@@ -57,7 +57,7 @@ export async function getInput(
         });
       }
       input = {
-        type: 'component',
+        type: 'rsc',
         rscPath,
         rscParams,
         pathname,
@@ -71,20 +71,27 @@ export async function getInput(
       typeof contentType === 'string' &&
       contentType.startsWith('multipart/form-data')
     ) {
-      // server action: no js (progressive enhancement)
-      validateServerActionRequest(req);
+      // possibly a no-js server action submission (progressive enhancement)
+      let parsing:
+        | Promise<
+            | { action: true; formState: unknown }
+            | { action: false; formData: FormData }
+          >
+        | undefined;
       input = {
-        type: 'action',
-        fn: async () => {
-          const formData = (await getActionBody(req)) as FormData;
-          const decodedAction = await decodeAction(formData);
-          if (typeof decodedAction !== 'function') {
-            // multipart/form-data POST without an action reference (e.g. crawlers)
-            throw createCustomError('Bad Request', { status: 400 });
-          }
-          const result = await decodedAction();
-          return await decodeFormState(result, formData);
-        },
+        type: 'http',
+        tryAction: () =>
+          (parsing ??= (async () => {
+            const formData = (await getActionBody(req)) as FormData;
+            const decodedAction = await decodeAction(formData);
+            if (typeof decodedAction !== 'function') {
+              return { action: false as const, formData };
+            }
+            validateServerActionRequest(req);
+            const result = await decodedAction();
+            const formState = await decodeFormState(result, formData);
+            return { action: true as const, formState };
+          })()),
         pathname,
         req,
         etags,
@@ -92,7 +99,7 @@ export async function getInput(
     } else {
       // POST API request
       input = {
-        type: 'custom',
+        type: 'http',
         pathname,
         req,
         etags,
@@ -101,7 +108,7 @@ export async function getInput(
   } else {
     // SSR
     input = {
-      type: 'custom',
+      type: 'http',
       pathname,
       req,
       etags,

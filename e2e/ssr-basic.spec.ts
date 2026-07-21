@@ -15,6 +15,33 @@ test.describe(`ssr-basic`, () => {
     await stopApp();
   });
 
+  test('mixed forms without js', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    try {
+      await page.goto(`http://localhost:${port}/mixed-forms`);
+      // a plain multipart form resolves as { action: false } with its data
+      await page.getByTestId('plain-submit').click();
+      await expect(page.getByTestId('echo')).toHaveText('custom:plain-value');
+      await page.getByLabel('Name').fill('nojs');
+      await page.getByTestId('action-submit').click();
+      await expect(page.getByTestId('echo')).toHaveText('action:nojs');
+      // useActionState: the POST response renders with the returned state
+      await page.getByTestId('stateful-submit').click();
+      await expect(page.getByTestId('echo')).toHaveText('action:stateful');
+      await expect(page.getByTestId('stateful-state')).toHaveText(
+        'updated:initial',
+      );
+      // useActionState with a bare permalink works as-is
+      await page.getByTestId('permalink-submit').click();
+      await expect(page.getByTestId('echo')).toHaveText('action:permalink');
+      expect(new URL(page.url()).pathname).toBe('/mixed-forms');
+    } finally {
+      await page.close();
+      await context.close();
+    }
+  });
+
   test('increase counter', async ({ page }) => {
     await page.goto(`http://localhost:${port}/`);
     await waitForHydration(page);

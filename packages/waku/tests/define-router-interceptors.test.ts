@@ -47,7 +47,7 @@ const callHandleRequest = (
 ) =>
   router.handleRequest(
     {
-      type: 'custom',
+      type: 'http',
       pathname,
       req: new Request(`http://localhost${pathname}`),
     },
