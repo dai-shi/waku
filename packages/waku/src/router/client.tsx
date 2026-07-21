@@ -37,6 +37,13 @@ import {
   useRefetch,
 } from '../minimal/client.js';
 import {
+  getRouteFromElements,
+  getServerRedirect,
+  has404FromElements,
+  isMetaKey,
+  isStaticFromElements,
+} from './client-utils/elements-meta.js';
+import {
   deriveCommitted,
   getRouteUrl,
   isSameRoute,
@@ -114,20 +121,6 @@ type Prefetch = {
 const parseRouteFromLocation = (): RouteProps => {
   return parseRoute(new URL(window.location.href));
 };
-
-const getRouteFromElements = (
-  elements: Record<string, unknown>,
-): RouteProps | undefined => {
-  const routeData = elements[ROUTE_ID];
-  if (routeData) {
-    const [path, query] = routeData as [string, string];
-    return { path, query, hash: '' };
-  }
-  return undefined;
-};
-
-const isMetaKey = (key: string) =>
-  key === ROUTE_ID || key === HAS404_ID || key.startsWith(IS_STATIC_ID);
 
 const shouldScrollByDefault = (url: URL) =>
   pathnameToCurrentRoutePath(url.pathname) !==
@@ -492,6 +485,50 @@ function useSharedRef<T>(
   return [managedRef, handleRef];
 }
 
+const prefetchIfNotCurrent = (
+  router: { prefetchRoute: PrefetchRoute } | null,
+  resolvedTo: string,
+  options: PrefetchOptions | undefined,
+) => {
+  const url = new URL(resolvedTo, window.location.href);
+  if (router && url.href !== window.location.href) {
+    router.prefetchRoute(parseRoute(url), options);
+  }
+};
+
+const usePrefetchOnView = (
+  ref: RefObject<HTMLAnchorElement | null>,
+  router: { prefetchRoute: PrefetchRoute } | null,
+  resolvedTo: string,
+  options: PrefetchOptions | undefined,
+) => {
+  const enabled = !!options;
+  const mode = options?.mode;
+  const ttl = options?.ttl;
+  useEffect(() => {
+    if (!enabled || !ref.current) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            prefetchIfNotCurrent(router, resolvedTo, {
+              ...(mode ? { mode } : {}),
+              ...(ttl !== undefined ? { ttl } : {}),
+            });
+          }
+        });
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(ref.current);
+    return () => {
+      observer.disconnect();
+    };
+  }, [enabled, mode, ttl, router, resolvedTo, ref]);
+};
+
 type NavigationStatus = { pending?: boolean };
 
 const NavigationStatusContext = createContext<NavigationStatus>({});
@@ -555,45 +592,7 @@ export function Link<Path extends RoutePath>({
   const startTransitionFn = unstable_startTransition || startTransition;
   const [ref, setRef] = useSharedRef<HTMLAnchorElement>(refProp);
 
-  const prefetchOnView = !!unstable_prefetchOnView;
-  const prefetchOnViewMode = unstable_prefetchOnView?.mode;
-  const prefetchOnViewTtl = unstable_prefetchOnView?.ttl;
-  useEffect(() => {
-    if (!prefetchOnView || !ref.current) {
-      return;
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const url = new URL(resolvedTo, window.location.href);
-            if (router && url.href !== window.location.href) {
-              router.prefetchRoute(parseRoute(url), {
-                ...(prefetchOnViewMode ? { mode: prefetchOnViewMode } : {}),
-                ...(prefetchOnViewTtl !== undefined
-                  ? { ttl: prefetchOnViewTtl }
-                  : {}),
-              });
-            }
-          }
-        });
-      },
-      { threshold: 0.1 },
-    );
-
-    observer.observe(ref.current);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [
-    prefetchOnView,
-    prefetchOnViewMode,
-    prefetchOnViewTtl,
-    router,
-    resolvedTo,
-    ref,
-  ]);
+  usePrefetchOnView(ref, router, resolvedTo, unstable_prefetchOnView);
   const internalOnClick = () => {
     const url = new URL(resolvedTo, window.location.href);
     if (url.href !== window.location.href) {
@@ -642,10 +641,7 @@ export function Link<Path extends RoutePath>({
   };
   const onMouseEnter = unstable_prefetchOnEnter
     ? (event: MouseEvent<HTMLAnchorElement>) => {
-        const url = new URL(resolvedTo, window.location.href);
-        if (url.href !== window.location.href) {
-          router?.prefetchRoute(parseRoute(url), unstable_prefetchOnEnter);
-        }
+        prefetchIfNotCurrent(router, resolvedTo, unstable_prefetchOnEnter);
         props.onMouseEnter?.(event);
       }
     : props.onMouseEnter;
@@ -819,22 +815,6 @@ const ThrowError = ({ error }: { error: unknown }) => {
   throw error;
 };
 
-const getServerRedirect = (
-  elements: Record<string, unknown>,
-  route: RouteProps,
-): RouteProps | undefined => {
-  const serverRoute = getRouteFromElements(elements);
-  const isStatic = elements[IS_STATIC_ID];
-  if (
-    serverRoute &&
-    (serverRoute.path !== route.path ||
-      (!isStatic && serverRoute.query !== route.query))
-  ) {
-    return serverRoute;
-  }
-  return undefined;
-};
-
 const getRouteSlotId = (path: string) => 'route:' + path;
 const getSliceSlotId = (id: SliceId) => 'slice:' + id;
 
@@ -948,19 +928,12 @@ const useElementsMetadata = (
     elementsPromise.then(
       (elements) => {
         resolvedElementsRef.current = elements;
-        const {
-          [ROUTE_ID]: routeData,
-          [IS_STATIC_ID]: isStatic,
-          [HAS404_ID]: has404FromElements,
-        } = elements;
-        if (has404FromElements) {
+        if (has404FromElements(elements)) {
           setHas404(true);
         }
-        if (routeData) {
-          const [path, _query] = routeData as [string, string];
-          if (isStatic) {
-            staticPathSetRef.current.add(path);
-          }
+        const route = getRouteFromElements(elements);
+        if (route && isStaticFromElements(elements)) {
+          staticPathSetRef.current.add(route.path);
         }
       },
       () => {},
