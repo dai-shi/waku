@@ -14,7 +14,9 @@ const validateMiddleware = (): MiddlewareHandler => {
       return;
     }
     const store = {
-      unauthorized: url.pathname.startsWith(`/${rscBase}/R/invalid`),
+      unauthorized:
+        url.pathname.startsWith(`/${rscBase}/R/invalid`) ||
+        url.searchParams.get('query') === 'fail=1',
     };
     await authStorage.run(store, next);
   };

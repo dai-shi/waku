@@ -60,4 +60,19 @@ test.describe(`ssr-catch-error`, () => {
     await page.goBack();
     await expect(page.getByText('Home Page')).toBeVisible();
   });
+
+  test('navigate back after invalid query through client router', async ({
+    page,
+  }) => {
+    await page.goto(`http://localhost:${port}/dynamic`);
+    await waitForHydration(page);
+    await page.getByText('Invalid query').click();
+    await expect(
+      page.getByText('Unexpected error in client fallback'),
+    ).toBeVisible();
+    // A query-only back-navigation keeps the path; the boundary reset must
+    // key on the query as well.
+    await page.goBack();
+    await expect(page.getByText('Home Page')).toBeVisible();
+  });
 });
