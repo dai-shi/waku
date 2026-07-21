@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { AsyncLocalStorage } from 'node:async_hooks';
 import {
   unstable_base64ToBytes as base64ToBytes,
   unstable_buildElements as buildElements,
@@ -15,6 +14,20 @@ import type {
 import { deserializeRsc, serializeRsc } from '../server.js';
 import { INTERNAL_ServerRouter } from './client.js';
 import { path2regexp } from './define-router-utils/path-spec.js';
+import {
+  getHeaders,
+  getNonce,
+  getRequest,
+  getRerender,
+  getResolveSearchCodec,
+  getRscParams,
+  getRscPath,
+  runWithRouterStore,
+  setNonce,
+  setRerender,
+  setRscParams,
+  setRscPath,
+} from './define-router-utils/request-store.js';
 import { createTaskRunner } from './define-router-utils/task-runner.js';
 import { buildRouteHref } from './isomorphic-utils/build-route-href.js';
 import type {
@@ -62,87 +75,13 @@ const parseRscParams = (
 
 export type HandlerInterceptor = <T>(next: () => Promise<T>) => Promise<T>;
 
-type Rerender = (rscPath: string, rscParams?: unknown) => void;
-
-type RouterStore = {
-  req: Request;
-  rscPath?: string;
-  rscParams?: unknown;
-  rerender?: Rerender;
-  nonce?: string;
-  resolveSearchCodec?: (
-    routePath: string,
-  ) => Unstable_SearchCodec<any> | undefined;
+export {
+  getRequest as unstable_getRequest,
+  getHeaders as unstable_getHeaders,
+  getRscPath as unstable_getRscPath,
+  getRscParams as unstable_getRscParams,
+  setNonce as unstable_setNonce,
 };
-const routerStorage = new AsyncLocalStorage<RouterStore>();
-
-/**
- * Access the request being handled. Available during a render, an API route
- * handler, or a handler interceptor (request and build phases). Throws if called
- * outside that scope.
- */
-export function unstable_getRequest(): Request {
-  const store = routerStorage.getStore();
-  if (!store) {
-    throw new Error('Request is not available.');
-  }
-  return store.req;
-}
-
-export function unstable_getHeaders(): Readonly<Record<string, string>> {
-  return Object.fromEntries(unstable_getRequest().headers.entries());
-}
-
-const setRscPath = (rscPath: string) => {
-  const store = routerStorage.getStore();
-  if (store) {
-    store.rscPath = rscPath;
-  }
-};
-
-const setRscParams = (rscParams: unknown) => {
-  const store = routerStorage.getStore();
-  if (store) {
-    store.rscParams = rscParams;
-  }
-};
-
-export function unstable_getRscPath(): string | undefined {
-  return routerStorage.getStore()?.rscPath;
-}
-
-export function unstable_getRscParams(): unknown {
-  return routerStorage.getStore()?.rscParams;
-}
-
-const setRerender = (rerender: Rerender) => {
-  const store = routerStorage.getStore();
-  if (store) {
-    store.rerender = rerender;
-  }
-};
-
-const getRerender = (): Rerender => {
-  const rerender = routerStorage.getStore()?.rerender;
-  if (!rerender) {
-    throw new Error('Rerender is not available.');
-  }
-  return rerender;
-};
-
-/**
- * Set the nonce applied to framework inline scripts for the current request.
- * Call this from a handler interceptor (e.g. bridging a Hono middleware's
- * generated nonce) before rendering.
- */
-export function unstable_setNonce(nonce: string): void {
-  const store = routerStorage.getStore();
-  if (store) {
-    store.nonce = nonce;
-  }
-}
-
-const getNonce = (): string | undefined => routerStorage.getStore()?.nonce;
 
 const is404 = (pathSpec: PathSpec) =>
   pathSpec.length === 1 &&
@@ -180,9 +119,7 @@ export function unstable_redirect<Path extends RoutePath = RoutePath>(
   status: 303 | 307 | 308 = 307,
 ): never {
   const location =
-    typeof to === 'string'
-      ? to
-      : buildRouteHref(to, routerStorage.getStore()?.resolveSearchCodec);
+    typeof to === 'string' ? to : buildRouteHref(to, getResolveSearchCodec());
   if (!location.startsWith('/') || location.startsWith('//')) {
     throw new Error(`Invalid redirect location: ${JSON.stringify(location)}`);
   }
@@ -583,7 +520,7 @@ export function unstable_defineRouter(fns: {
   unstable_interceptors?: HandlerInterceptor[];
 }) {
   const runHandled = <T,>(req: Request, fn: () => Promise<T>): Promise<T> =>
-    routerStorage.run(
+    runWithRouterStore(
       { req, resolveSearchCodec },
       (fns.unstable_interceptors ?? []).reduceRight(
         (next, interceptor) => () => interceptor(next),
