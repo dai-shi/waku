@@ -1,6 +1,7 @@
 import type { SearchCodecsConfig } from '../base-types.js';
 import type { PathWithoutSlug } from '../create-pages.js';
 import type { RouteProps } from '../isomorphic-utils/route-path.js';
+import type { Unstable_SearchCodec } from '../isomorphic-utils/search-codec-registry.js';
 import type { Join, Prettify, ReplaceAll, Split } from './util-types.js';
 
 type ReadOnlyStringTupleList = readonly (readonly string[])[];
@@ -215,21 +216,6 @@ export type RouteParams<Path extends string> = Prettify<SlugTypes<Path>>;
 export interface ApiContext<Path extends string> {
   readonly params: RouteParams<Path>;
 }
-
-/**
- * Bring-your-own search-params codec: converts the URL's `query` string to a
- * typed `search` object and back, identified by a stable `id`. Waku provides
- * this contract and the integration; the implementation (a library, an adapter
- * for nuqs/zod, or a hand-written object) lives outside core. `parse` may throw
- * to reject a malformed query (the framework turns it into a 400). `serialize`
- * must return an already URL-encoded query string (e.g. via
- * `URLSearchParams.toString()`); it is placed after `?` in the href as-is.
- */
-export type Unstable_SearchCodec<Search extends Record<string, unknown>> = {
-  id: string;
-  parse: (query: string) => Search;
-  serialize: (search: Search) => string;
-};
 
 /** The typed `search` for a route path, or `never` if none. */
 export type RouteSearch<Path extends string> =

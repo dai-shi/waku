@@ -1,10 +1,10 @@
 import type { FunctionComponent, ReactNode } from 'react';
 import type { ImportGlobFunction } from 'vite/types/importGlob.d.ts';
 import { unstable_isIgnoredPath as isIgnoredPath } from '../minimal/server.js';
-import type { Unstable_SearchCodec } from './create-pages-utils/inferred-path-types.js';
 import { METHODS, createPages } from './create-pages.js';
 import type { Method } from './create-pages.js';
 import type { HandlerInterceptor } from './define-router.js';
+import type { Unstable_SearchCodec } from './isomorphic-utils/search-codec-registry.js';
 
 declare global {
   interface ImportMeta {

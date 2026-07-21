@@ -14,7 +14,6 @@ import type {
 } from '../minimal/server.js';
 import { deserializeRsc, serializeRsc } from '../server.js';
 import { INTERNAL_ServerRouter } from './client.js';
-import type { Unstable_SearchCodec } from './create-pages-utils/inferred-path-types.js';
 import { path2regexp } from './define-router-utils/path-spec.js';
 import { createTaskRunner } from './define-router-utils/task-runner.js';
 import { buildRouteHref } from './isomorphic-utils/build-route-href.js';
@@ -38,6 +37,7 @@ import {
   encodeSliceId,
   pathnameToRoutePath,
 } from './isomorphic-utils/route-path.js';
+import type { Unstable_SearchCodec } from './isomorphic-utils/search-codec-registry.js';
 
 export type ApiHandler = (
   req: Request,

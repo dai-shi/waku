@@ -13,9 +13,9 @@ export type {
   ApiContext,
   PathsForPages,
   GetConfigResponse,
-  Unstable_SearchCodec,
   SearchCodecsForPages,
 } from './create-pages-utils/inferred-path-types.js';
+export type { Unstable_SearchCodec } from './isomorphic-utils/search-codec-registry.js';
 
 export interface RouteConfig {
   // routes to be overridden by users

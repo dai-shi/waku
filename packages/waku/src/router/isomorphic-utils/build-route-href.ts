@@ -4,9 +4,9 @@ import type {
   PagePath,
   RouteParams,
   RouteSearch,
-  Unstable_SearchCodec,
 } from '../create-pages-utils/inferred-path-types.js';
 import { getPathMapping, parsePathWithSlug } from './path-spec.js';
+import type { Unstable_SearchCodec } from './search-codec-registry.js';
 
 export type RoutePath = [PagePath<CreatePagesConfig>] extends [never]
   ? string

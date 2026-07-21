@@ -11,7 +11,6 @@ import type {
   GetSlugs,
   PropsForPages,
   RouteParams,
-  Unstable_SearchCodec,
 } from './create-pages-utils/inferred-path-types.js';
 import {
   countSlugsAndWildcards,
@@ -26,6 +25,7 @@ import {
 } from './isomorphic-utils/path-spec.js';
 import type { PathSpec } from './isomorphic-utils/path-spec.js';
 import { pathnameToRoutePath } from './isomorphic-utils/route-path.js';
+import type { Unstable_SearchCodec } from './isomorphic-utils/search-codec-registry.js';
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
 export const METHODS = [
