@@ -10,7 +10,11 @@ export async function runStart(flags: { host?: string; port?: string }) {
   process.env.NODE_ENV ??= 'production';
   const config = await loadConfig();
   const host = flags.host;
-  const port = await getFreePort(parseInt(flags.port || '8080', 10));
+  const configuredPort = flags.port ?? process.env.PORT;
+  const port =
+    configuredPort === undefined
+      ? await getFreePort(8080)
+      : parseInt(configuredPort, 10);
   const distDir = config?.distDir ?? 'dist';
   const serveFileUrl = pathToFileURL(
     path.resolve(distDir, 'serve-node.js'),
