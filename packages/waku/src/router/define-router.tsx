@@ -1,9 +1,7 @@
 import type { ReactNode } from 'react';
 import {
-  unstable_base64ToBytes as base64ToBytes,
   unstable_createCustomError as createCustomError,
   unstable_defineHandlers as defineHandlers,
-  unstable_getErrorInfo as getErrorInfo,
 } from '../minimal/server.js';
 import { INTERNAL_ServerRouter } from './client.js';
 import { DEFINE_ROUTER_METADATA } from './define-router-utils/build-metadata.js';
@@ -28,9 +26,9 @@ import {
 } from './define-router-utils/element-cache.js';
 import type { CacheId } from './define-router-utils/element-cache.js';
 import { path2regexp } from './define-router-utils/path-spec.js';
+import { createRequestHandler } from './define-router-utils/request-handler.js';
 import {
   getHeaders,
-  getNonce,
   getRequest,
   getRerender,
   getResolveSearchCodec,
@@ -38,10 +36,8 @@ import {
   getRscPath,
   runWithRouterStore,
   setNonce,
-  setRerender,
 } from './define-router-utils/request-store.js';
 import { createRouteEntries } from './define-router-utils/route-entries.js';
-import type { RouteEntries } from './define-router-utils/route-entries.js';
 import { createTaskRunner } from './define-router-utils/task-runner.js';
 import { buildRouteHref } from './isomorphic-utils/build-route-href.js';
 import type {
@@ -49,13 +45,9 @@ import type {
   RouteHref,
   RoutePath,
 } from './isomorphic-utils/build-route-href.js';
-import {
-  getPathMapping,
-  pathSpecAsString,
-} from './isomorphic-utils/path-spec.js';
+import { pathSpecAsString } from './isomorphic-utils/path-spec.js';
 import type { PathSpec } from './isomorphic-utils/path-spec.js';
 import {
-  decodeSliceId,
   encodeRoutePath,
   encodeSliceId,
   pathnameToRoutePath,
@@ -131,213 +123,13 @@ export function unstable_defineRouter(fns: {
       ),
     );
 
-  type HandleRequest = Parameters<typeof defineHandlers>[0]['handleRequest'];
   type HandleBuild = Parameters<typeof defineHandlers>[0]['handleBuild'];
 
-  const requestElementCache = createElementCache();
-  let requestElementCacheInit: Promise<void> | undefined;
-  let cachedPath2moduleIds: Record<string, string[]> | undefined;
-
-  const handleRequest: HandleRequest = async (
-    input,
-    { renderRsc, renderHtml, loadBuildMetadata },
-  ): Promise<ReadableStream | Response | 'fallback' | null | undefined> => {
-    await configRegistry.initialize(loadBuildMetadata);
-    return runHandled(input.req, async () => {
-      requestElementCacheInit ??= (async () => {
-        const cachedElementsMetadata = await loadBuildMetadata(
-          DEFINE_ROUTER_METADATA.cachedElements,
-        );
-        if (cachedElementsMetadata) {
-          Object.entries(JSON.parse(cachedElementsMetadata)).forEach(
-            ([cacheId, str]) => {
-              requestElementCache.preload(
-                cacheId,
-                base64ToBytes(str as string),
-              );
-            },
-          );
-        }
-      })();
-      await requestElementCacheInit;
-      const getPath2moduleIds = async () => {
-        if (!cachedPath2moduleIds) {
-          cachedPath2moduleIds = JSON.parse(
-            (await loadBuildMetadata(DEFINE_ROUTER_METADATA.path2moduleIds)) ||
-              '{}',
-          );
-        }
-        return cachedPath2moduleIds!;
-      };
-
-      const clientEtags = input.etags ?? {};
-      const withRerender = async <T,>(fn: () => Promise<T>) => {
-        let entriesPromise: Promise<RouteEntries> = Promise.resolve({
-          elements: {},
-          etags: {},
-        });
-        let rendered = false;
-        const rerender = (rscPath: string, rscParams?: unknown) => {
-          if (rendered) {
-            throw new Error('already rendered');
-          }
-          entriesPromise = Promise.all([
-            entriesPromise,
-            routeEntries.getEntriesForRoute(
-              rscPath,
-              rscParams,
-              clientEtags,
-              requestElementCache,
-            ),
-          ]).then(([oldEntries, newEntries]) => {
-            if (newEntries === null) {
-              console.warn('getEntries returned null');
-              return oldEntries;
-            }
-            return {
-              elements: { ...oldEntries.elements, ...newEntries.elements },
-              etags: { ...oldEntries.etags, ...newEntries.etags },
-            };
-          });
-        };
-        setRerender(rerender);
-        try {
-          const value = await fn();
-          return { value, entries: await entriesPromise };
-        } finally {
-          rendered = true;
-        }
-      };
-
-      if (input.type === 'rsc') {
-        const sliceId = decodeSliceId(input.rscPath);
-        if (sliceId !== null) {
-          const entries = await routeEntries.getEntriesForSlice(
-            sliceId,
-            requestElementCache,
-          );
-          if (!entries) {
-            return null;
-          }
-          return renderRsc(entries.elements, { etags: entries.etags });
-        }
-        const entries = await routeEntries.getEntriesForRoute(
-          input.rscPath,
-          input.rscParams,
-          clientEtags,
-          requestElementCache,
-        );
-        if (!entries) {
-          return null;
-        }
-        return renderRsc(entries.elements, { etags: entries.etags });
-      }
-
-      if (input.type === 'call') {
-        try {
-          const { value, entries } = await withRerender(() =>
-            input.fn(...input.args),
-          );
-          return renderRsc(entries.elements, { value, etags: entries.etags });
-        } catch (e) {
-          const info = getErrorInfo(e);
-          if (info?.location) {
-            const routePath = pathnameToRoutePath(info.location);
-            const rscPath = encodeRoutePath(routePath);
-            const entries = await routeEntries.getEntriesForRoute(
-              rscPath,
-              undefined,
-              clientEtags,
-              requestElementCache,
-            );
-            if (!entries) {
-              unstable_notFound();
-            }
-            return renderRsc(entries.elements, { etags: entries.etags });
-          }
-          throw e;
-        }
-      }
-
-      if (input.type === 'http') {
-        const pathConfigItem = configRegistry.findPathConfig(input.pathname);
-        if (pathConfigItem?.type === 'api') {
-          const url = new URL(input.req.url);
-          url.pathname = input.pathname;
-          const req = new Request(url, input.req);
-          const params =
-            getPathMapping(pathConfigItem.path, input.pathname) ?? {};
-          return pathConfigItem.handler(req, { params });
-        }
-        const renderIt = async (
-          pathname: string,
-          query: string,
-          status = 200,
-        ) => {
-          const routePath = pathnameToRoutePath(pathname);
-          const rscPath = encodeRoutePath(routePath);
-          const rscParams = new URLSearchParams({ query });
-          let entries = await routeEntries.getEntriesForRoute(
-            rscPath,
-            rscParams,
-            clientEtags,
-            requestElementCache,
-          );
-          if (!entries) {
-            return null;
-          }
-          const path2moduleIds = await getPath2moduleIds();
-          const route = { path: routePath, query, hash: '' };
-          const nonce = getNonce();
-          const html = <INTERNAL_ServerRouter route={route} />;
-          let formState: unknown;
-          if (input.tryAction) {
-            const { value, entries: rerendered } = await withRerender(
-              input.tryAction,
-            );
-            formState = value.action ? value.formState : undefined;
-            entries = {
-              elements: { ...entries.elements, ...rerendered.elements },
-              etags: { ...entries.etags, ...rerendered.etags },
-            };
-          }
-          return renderHtml(
-            await renderRsc(entries.elements, { etags: entries.etags }),
-            html,
-            {
-              rscPath,
-              formState,
-              status,
-              ...(nonce ? { nonce } : {}),
-              unstable_extraScriptContent:
-                getRouterPrefetchCode(path2moduleIds) +
-                setupRouterSearchCodecs(configRegistry.getAll()),
-            },
-          );
-        };
-        const url = new URL(input.req.url);
-        const query = url.searchParams.toString();
-        if (pathConfigItem?.noSsr) {
-          return 'fallback';
-        }
-        try {
-          if (pathConfigItem) {
-            return await renderIt(input.pathname, query);
-          }
-        } catch (e) {
-          const info = getErrorInfo(e);
-          if (info?.status !== 404) {
-            throw e;
-          }
-        }
-        if (configRegistry.has404()) {
-          return renderIt('/404', '', 404);
-        } else {
-          return null;
-        }
-      }
-    });
-  };
+  const handleRequest = createRequestHandler({
+    configRegistry,
+    routeEntries,
+    runHandled,
+  });
 
   const handleBuild: HandleBuild = async ({
     renderRsc,
