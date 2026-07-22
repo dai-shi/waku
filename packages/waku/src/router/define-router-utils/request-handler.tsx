@@ -172,7 +172,7 @@ export const createRequestHandler = ({
           const params = getPathMapping(pathConfigItem.path, pathname) ?? {};
           return pathConfigItem.handler(apiReq, { params });
         }
-        const renderIt = async (
+        const renderPage = async (
           pathname: string,
           query: string,
           status = 200,
@@ -224,7 +224,7 @@ export const createRequestHandler = ({
         }
         try {
           if (pathConfigItem) {
-            return await renderIt(pathname, query);
+            return await renderPage(pathname, query);
           }
         } catch (e) {
           const info = getErrorInfo(e);
@@ -233,7 +233,7 @@ export const createRequestHandler = ({
           }
         }
         if (configRegistry.has404()) {
-          return renderIt('/404', '', 404);
+          return renderPage('/404', '', 404);
         } else {
           return null;
         }
