@@ -16,10 +16,8 @@ import {
   getRouterPrefetchCode,
   setupRouterSearchCodecs,
 } from './define-router-utils/client-code.js';
-import {
-  mergeWithRuntimeConfigs,
-  toSerializable,
-} from './define-router-utils/config-serialization.js';
+import { createConfigRegistry } from './define-router-utils/config-registry.js';
+import { toSerializable } from './define-router-utils/config-serialization.js';
 import type {
   ApiHandler,
   GetEtagFromParams,
@@ -27,15 +25,12 @@ import type {
   RendererOption,
   RouteConfig,
   RuntimeConfig,
-  SerializableConfig,
-  SliceConfig,
   SlotId,
 } from './define-router-utils/config-types.js';
 import {
   ROOT_SLOT_ID,
   ROUTE_SLOT_ID_PREFIX,
   SLICE_SLOT_ID_PREFIX,
-  assertNonReservedSlotId,
   createElementCache,
   getPathSpecCacheId,
   getSlotCacheId,
@@ -81,7 +76,6 @@ import {
   encodeSliceId,
   pathnameToRoutePath,
 } from './isomorphic-utils/route-path.js';
-import type { Unstable_SearchCodec } from './isomorphic-utils/search-codec-registry.js';
 
 const parseRscParams = (
   rscParams: unknown,
@@ -107,11 +101,6 @@ export {
   setNonce as unstable_setNonce,
 };
 export type { ApiHandler, HandlerInterceptor };
-
-const is404 = (pathSpec: PathSpec) =>
-  pathSpec.length === 1 &&
-  pathSpec[0]!.type === 'literal' &&
-  pathSpec[0]!.name === '404';
 
 const pathSpecToRoutePath = (pathSpec: PathSpec) => {
   if (pathSpec.some(({ type }) => type !== 'literal')) {
@@ -173,116 +162,16 @@ export function unstable_defineRouter(fns: {
   unstable_skipBuild?: (routePath: string) => boolean;
   unstable_interceptors?: HandlerInterceptor[];
 }) {
+  const configRegistry = createConfigRegistry(fns.getConfigs);
+
   const runHandled = <T,>(req: Request, fn: () => Promise<T>): Promise<T> =>
     runWithRouterStore(
-      { req, resolveSearchCodec },
+      { req, resolveSearchCodec: configRegistry.resolveSearchCodec },
       (fns.unstable_interceptors ?? []).reduceRight(
         (next, interceptor) => () => interceptor(next),
         fn,
       ),
     );
-
-  let cachedConfigs: RuntimeConfig[] | undefined;
-  let cachedHas404 = false;
-
-  const initConfigs = async (
-    loadBuildMetadata?: (key: string) => Promise<string | undefined>,
-  ) => {
-    if (cachedConfigs) {
-      return;
-    }
-    const runtimeConfigs = Array.from(await fns.getConfigs());
-    let configs: RuntimeConfig[] = runtimeConfigs;
-    if (loadBuildMetadata) {
-      const raw = await loadBuildMetadata(
-        DEFINE_ROUTER_METADATA.serializableConfigs,
-      );
-      if (raw) {
-        const serializableConfigs = JSON.parse(raw) as SerializableConfig[];
-        configs = mergeWithRuntimeConfigs(serializableConfigs, runtimeConfigs);
-      }
-    }
-    configs.forEach((item) => {
-      if (item.type === 'route') {
-        Object.keys(item.elements).forEach(assertNonReservedSlotId);
-      } else if (item.type === 'slice') {
-        if (item.isStatic && item.pathSpec) {
-          throw new Error(
-            `defineRouter: static slice "${item.id}" cannot have a pathSpec`,
-          );
-        }
-      }
-    });
-    cachedConfigs = configs;
-    cachedHas404 = configs.some(
-      (item) => item.type === 'route' && is404(item.path),
-    );
-  };
-
-  const getCachedConfigs = () => {
-    if (!cachedConfigs) {
-      throw new Error('defineRouter: configs not initialized');
-    }
-    return cachedConfigs;
-  };
-
-  let cachedRoutePath2searchCodec:
-    Map<string, Unstable_SearchCodec<any>> | undefined;
-  const resolveSearchCodec = (
-    routePath: string,
-  ): Unstable_SearchCodec<any> | undefined => {
-    if (!cachedRoutePath2searchCodec) {
-      cachedRoutePath2searchCodec = new Map();
-      for (const item of getCachedConfigs()) {
-        if (item.type === 'route' && item.searchCodec) {
-          cachedRoutePath2searchCodec.set(
-            pathSpecAsString(item.pathPattern ?? item.path),
-            item.searchCodec,
-          );
-        }
-      }
-    }
-    return cachedRoutePath2searchCodec.get(routePath);
-  };
-
-  const has404 = (): boolean => {
-    if (!cachedConfigs) {
-      throw new Error('defineRouter: configs not initialized');
-    }
-    return cachedHas404;
-  };
-
-  const getPathConfigItem = (pathname: string) => {
-    const routePath = pathnameToRoutePath(pathname);
-    return getCachedConfigs().find(
-      (item): item is typeof item & { type: 'route' | 'api' } =>
-        (item.type === 'route' || item.type === 'api') &&
-        !!getPathMapping(item.path, routePath),
-    );
-  };
-
-  const findSliceConfig = (
-    sliceId: string,
-  ):
-    | { sliceConfig: SliceConfig; params?: Record<string, string | string[]> }
-    | undefined => {
-    const slicePath = '/' + sliceId;
-    for (const item of getCachedConfigs()) {
-      if (item.type !== 'slice') {
-        continue;
-      }
-      if (item.id === sliceId) {
-        return { sliceConfig: item };
-      }
-      if (item.pathSpec) {
-        const params = getPathMapping(item.pathSpec, slicePath);
-        if (params) {
-          return { sliceConfig: item, params };
-        }
-      }
-    }
-    return undefined;
-  };
 
   const getSliceElement = async (
     sliceConfig: {
@@ -319,7 +208,7 @@ export function unstable_defineRouter(fns: {
     setRscPath(rscPath);
     setRscParams(rscParams);
     const routePath = decodeRoutePath(rscPath);
-    const pathConfigItem = getPathConfigItem(routePath);
+    const pathConfigItem = configRegistry.findPathConfig(routePath);
     if (pathConfigItem?.type !== 'route') {
       return null;
     }
@@ -344,7 +233,7 @@ export function unstable_defineRouter(fns: {
       }
     >();
     slices.forEach((sliceId) => {
-      const found = findSliceConfig(sliceId);
+      const found = configRegistry.findSliceConfig(sliceId);
       if (found) {
         sliceConfigMap.set(sliceId, {
           ...found.sliceConfig,
@@ -409,7 +298,7 @@ export function unstable_defineRouter(fns: {
     );
     elements[ROUTE_ID] = [routePath, query];
     elements[IS_STATIC_ID] = pathConfigItem.isStatic;
-    if (has404()) {
+    if (configRegistry.has404()) {
       elements[HAS404_ID] = true;
     }
     return { elements, etags };
@@ -426,7 +315,7 @@ export function unstable_defineRouter(fns: {
     input,
     { renderRsc, renderHtml, loadBuildMetadata },
   ): Promise<ReadableStream | Response | 'fallback' | null | undefined> => {
-    await initConfigs(loadBuildMetadata);
+    await configRegistry.initialize(loadBuildMetadata);
     return runHandled(input.req, async () => {
       requestElementCacheInit ??= (async () => {
         const cachedElementsMetadata = await loadBuildMetadata(
@@ -501,7 +390,7 @@ export function unstable_defineRouter(fns: {
           // The skip header is not consulted here; the etag skip only covers
           // route-bundled slices. The etag is still sent to keep the client's
           // tag fresh.
-          const found = findSliceConfig(sliceId);
+          const found = configRegistry.findSliceConfig(sliceId);
           if (!found) {
             return null;
           }
@@ -564,7 +453,7 @@ export function unstable_defineRouter(fns: {
       }
 
       if (input.type === 'http') {
-        const pathConfigItem = getPathConfigItem(input.pathname);
+        const pathConfigItem = configRegistry.findPathConfig(input.pathname);
         if (pathConfigItem?.type === 'api') {
           const url = new URL(input.req.url);
           url.pathname = input.pathname;
@@ -615,7 +504,7 @@ export function unstable_defineRouter(fns: {
               ...(nonce ? { nonce } : {}),
               unstable_extraScriptContent:
                 getRouterPrefetchCode(path2moduleIds) +
-                setupRouterSearchCodecs(getCachedConfigs()),
+                setupRouterSearchCodecs(configRegistry.getAll()),
             },
           );
         };
@@ -634,7 +523,7 @@ export function unstable_defineRouter(fns: {
             throw e;
           }
         }
-        if (has404()) {
+        if (configRegistry.has404()) {
           return renderIt('/404', '', 404);
         } else {
           return null;
@@ -652,8 +541,8 @@ export function unstable_defineRouter(fns: {
     generateDefaultHtml,
     unstable_registerPrunableFile,
   }) => {
-    await initConfigs();
-    const configs = getCachedConfigs();
+    await configRegistry.initialize();
+    const configs = configRegistry.getAll();
     const allSourceFiles = new Set<string>();
     const dynamicSourceFiles = new Set<string>();
     const recordSourceFile = (
@@ -903,6 +792,6 @@ export function unstable_defineRouter(fns: {
   };
 
   return Object.assign(defineHandlers({ handleRequest, handleBuild }), {
-    unstable_getRouterConfigs: async () => getCachedConfigs(),
+    unstable_getRouterConfigs: async () => configRegistry.getAll(),
   });
 }
