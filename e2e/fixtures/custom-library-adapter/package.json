@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "custom-adapter": "link:modules/custom-adapter",
-    "react": "~19.2.6",
-    "react-dom": "~19.2.6",
-    "react-server-dom-webpack": "~19.2.6",
+    "react": "~19.2.8",
+    "react-dom": "~19.2.8",
+    "react-server-dom-webpack": "~19.2.8",
     "waku": "latest"
   },
   "devDependencies": {

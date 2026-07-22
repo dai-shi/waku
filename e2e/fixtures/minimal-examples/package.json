@@ -12,9 +12,9 @@
     "cookie": "^2.0.1",
     "hono": "^4.12.14",
     "jotai": "^2.20.2",
-    "react": "~19.2.6",
-    "react-dom": "~19.2.6",
-    "react-server-dom-webpack": "~19.2.6",
+    "react": "~19.2.8",
+    "react-dom": "~19.2.8",
+    "react-server-dom-webpack": "~19.2.8",
     "waku": "latest",
     "waku-jotai": "^0.5.0"
   },

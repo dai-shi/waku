@@ -10,10 +10,10 @@
   },
   "dependencies": {
     "hono": "^4.12.14",
-    "react": "~19.2.6",
-    "react-dom": "~19.2.6",
+    "react": "~19.2.8",
+    "react-dom": "~19.2.8",
     "react-error-boundary": "^6.1.2",
-    "react-server-dom-webpack": "~19.2.6",
+    "react-server-dom-webpack": "~19.2.8",
     "waku": "latest"
   },
   "devDependencies": {

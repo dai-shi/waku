@@ -10,9 +10,9 @@
     "start:static": "serve dist/public"
   },
   "dependencies": {
-    "react": "~19.2.6",
-    "react-dom": "~19.2.6",
-    "react-server-dom-webpack": "~19.2.6",
+    "react": "~19.2.8",
+    "react-dom": "~19.2.8",
+    "react-server-dom-webpack": "~19.2.8",
     "serve": "^14.2.6",
     "styled-components": "^6.4.3",
     "waku": "latest"
