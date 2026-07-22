@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import {
   unstable_base64ToBytes as base64ToBytes,
   unstable_buildElements as buildElements,
-  unstable_bytesToBase64 as bytesToBase64,
   unstable_createCustomError as createCustomError,
   unstable_defineHandlers as defineHandlers,
   unstable_getErrorInfo as getErrorInfo,
@@ -11,11 +10,9 @@ import type {
   Unstable_ElementSource as ElementSource,
   Unstable_Etags as Etags,
 } from '../minimal/server.js';
-import { deserializeRsc, serializeRsc } from '../server.js';
 import { INTERNAL_ServerRouter } from './client.js';
 import {
   mergeWithRuntimeConfigs,
-  pathSpecKey,
   toSerializable,
 } from './define-router-utils/config-serialization.js';
 import type {
@@ -29,6 +26,19 @@ import type {
   SliceConfig,
   SlotId,
 } from './define-router-utils/config-types.js';
+import {
+  ROOT_SLOT_ID,
+  ROUTE_SLOT_ID_PREFIX,
+  SLICE_SLOT_ID_PREFIX,
+  assertNonReservedSlotId,
+  createElementCache,
+  getPathSpecCacheId,
+  getSlotCacheId,
+} from './define-router-utils/element-cache.js';
+import type {
+  CacheId,
+  ElementCache,
+} from './define-router-utils/element-cache.js';
 import { path2regexp } from './define-router-utils/path-spec.js';
 import {
   getHeaders,
@@ -145,64 +155,6 @@ export function unstable_redirect<Path extends RoutePath = RoutePath>(
 type RouteEntries = {
   elements: Record<string, unknown>;
   etags: Etags;
-};
-
-const ROOT_SLOT_ID = 'root';
-const ROUTE_SLOT_ID_PREFIX = 'route:';
-const SLICE_SLOT_ID_PREFIX = 'slice:';
-
-type CacheId = string;
-
-const createElementCache = (
-  onSerialize?: (cacheId: CacheId, serialized: string) => void,
-) => {
-  const cache = new Map<CacheId, Promise<Uint8Array>>();
-  return {
-    preload: (cacheId: CacheId, bytes: Uint8Array) => {
-      cache.set(cacheId, Promise.resolve(bytes));
-    },
-    get: (cacheId: CacheId) => {
-      const cachedBytes = cache.get(cacheId);
-      if (!cachedBytes) {
-        return undefined;
-      }
-      return cachedBytes.then((bytes) =>
-        deserializeRsc(bytes),
-      ) as Promise<ReactNode>;
-    },
-    set: (cacheId: CacheId, element: ReactNode) => {
-      if (cache.has(cacheId)) {
-        return;
-      }
-      const bytesPromise = serializeRsc(element);
-      cache.set(cacheId, bytesPromise);
-      if (onSerialize) {
-        return bytesPromise.then((bytes) => {
-          onSerialize(cacheId, bytesToBase64(bytes));
-        });
-      }
-    },
-  };
-};
-
-type ElementCache = ReturnType<typeof createElementCache>;
-
-const getSlotCacheId = (slotId: SlotId): CacheId => `slot/${slotId}`;
-const getPathSpecCacheId = (pathSpec: PathSpec): CacheId =>
-  `pathSpec/${pathSpecKey(pathSpec)}`; // For routeElement
-
-const assertNonReservedSlotId = (slotId: SlotId) => {
-  if (
-    slotId === ROOT_SLOT_ID ||
-    slotId.startsWith(ROUTE_SLOT_ID_PREFIX) ||
-    slotId.startsWith(SLICE_SLOT_ID_PREFIX) ||
-    // Capitalized ids are reserved for define-router such as ROUTE_ID, IS_STATIC_ID, HAS404_ID
-    /^[A-Z]/.test(slotId)
-  ) {
-    throw new Error(
-      'Element ID cannot be "root", "route:*", "slice:*", or start with a capital letter',
-    );
-  }
 };
 
 const bindEtag = <A,>(
