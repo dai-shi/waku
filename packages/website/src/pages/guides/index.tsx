@@ -13,6 +13,7 @@ const GUIDE_CATEGORY_ORDER = [
   'Advanced Setup',
   'Routing and Navigation',
   'Runtime and Middleware',
+  'Integrations',
   'Low-level APIs',
   'Deployment',
 ];

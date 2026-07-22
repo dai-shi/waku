@@ -39,7 +39,7 @@ While there's a bit of a learning curve to modern React rendering, it introduces
 
 So please don't be intimidated by the `'use client'` directive! Once you get the hang of it, you'll appreciate how awesome it is to flexibly move server-client boundaries with a single line of code as your full-stack React codebase evolves over time. It's way simpler than maintaining separate codebases for your backend and frontend.
 
-And please don't fret about client components! Even if you only lightly optimize towards server components, your client bundle size will be smaller than traditional React frameworks, which are always 100% client components.
+And please don't fret about client components! Even if you only lightly optimize towards server components, your client bundle size will be smaller than that of a fully client-rendered React app.
 
 > Future versions of Waku may provide additional opt-in APIs to abstract some of the complexity away for an improved developer experience.
 

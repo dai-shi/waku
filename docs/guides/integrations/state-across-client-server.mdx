@@ -2,7 +2,7 @@
 slug: state-across-client-server
 title: State Across Client and Server
 description: Share selected client-module values with server code using unstable_allowServer.
-category: Advanced Setup
+category: Integrations
 order: 30
 tags: [Experimental]
 ---
@@ -78,6 +78,12 @@ export default async function Page() {
     </>
   );
 }
+
+export const getConfig = async () => {
+  return {
+    render: 'dynamic',
+  } as const;
+};
 ```
 
 For file-system-router apps, wrap the route tree with `RouterProvider`:
@@ -90,9 +96,23 @@ import { RouterProvider } from 'waku-jotai/router';
 export default function RootLayout({ children }: { children: ReactNode }) {
   return <RouterProvider>{children}</RouterProvider>;
 }
+
+export const getConfig = async () => {
+  return {
+    render: 'dynamic',
+  } as const;
+};
 ```
 
-If you use the Minimal API, use `Provider` and `getStore` from `waku-jotai/minimal` instead.
+Every page or layout that reads `getStore()` or mounts `RouterProvider` must render dynamically: the store is request-scoped and the atom values arrive with each RSC request, so a static render would bake in build-time values.
+
+If you use the Minimal API, use `Provider` and `getStore` from `waku-jotai/minimal`. Unlike `RouterProvider`, this `Provider` needs the RSC request identity as props:
+
+```tsx
+<Provider rscPath="" rscParams={rscParams}>
+  {children}
+</Provider>
+```
 
 ## Prefer a Neutral Module When Possible
 
@@ -147,7 +167,7 @@ export const countAtom = allowServer(atom(1));
 
 ## What It Does Not Do
 
-`unstable_allowServer` does not synchronize live state between the server and browser. In the Jotai example, the shared value is the atom definition. The current atom value still belongs to the store/provider for the current render and client session.
+`unstable_allowServer` itself only gives the atom a shared, server-safe identity. When the waku-jotai provider is mounted, wrapped atom values are synchronized from the client to the server during RSC refetches: the client subscribes to the allowed atoms and refetches the route with their current values, which the server reads through the request-scoped store. The synchronization is one way; the server does not independently push atom updates back to the browser.
 
 It also does not make browser-only code safe on the server. This is unsafe:
 

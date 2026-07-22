@@ -1,0 +1,135 @@
+---
+slug: explicit-caching
+title: Explicit Caching
+description: Why caching is outside Waku's core, and waku-cache as one solution.
+category: Integrations
+order: 10
+---
+
+## Rendering in Waku
+
+Waku's rendering model has two modes and no hidden cache:
+
+| Rendering | When server code runs | Freshness                  | Invalidation                            |
+| --------- | --------------------- | -------------------------- | --------------------------------------- |
+| Static    | At build time         | Fixed until the next build | None; a rebuild produces a new artifact |
+| Dynamic   | On every request      | Fresh by default           | None needed; nothing is cached          |
+
+Static pages and layouts are prerendered into build artifacts that a deploy replaces wholesale. Dynamic ones execute on every request, and what you fetch is what you render. Waku does not place a cache in front of either, so there is no framework revalidation model to learn: when your data changes, the next request sees it. The [Learn series](/guides/static-and-dynamic-rendering) covers this model hands-on.
+
+## Caching is outside the core
+
+That is a deliberate boundary, not a missing feature. A built-in cache would give the framework its own data lifecycle, with keys, lifetimes, and invalidation rules that every app inherits whether it needs them or not. Waku keeps the core minimal and its execution semantics visible (see [Philosophy](/guides/philosophy)), and leaves caching to ordinary libraries, the same way `waku/router` itself is a library on top of the Waku core.
+
+Practically, this means:
+
+1. Correctness never depends on a cache. Start without one.
+2. Measure before caching. Look for repeated, expensive work: hot database queries, slow upstream APIs, costly renders.
+3. Choose the tool that fits: HTTP and CDN caching for whole responses, memoization you write yourself, or a caching library. Whatever you pick, you own its policy, and removing it changes performance, never correctness.
+
+## waku-cache, one solution
+
+[`waku-cache`](https://github.com/wakujs/waku-cache) is one library that fills this space: a separate, still-evolving package that caches exactly what you wrap and nothing else. It offers two primitives, caching a function and caching an RSC subtree, over a small swappable storage interface.
+
+Create one cache instance for your app:
+
+```ts
+// ./src/lib/cache.ts
+import { createCache } from 'waku-cache';
+import { memoryStore } from 'waku-cache/stores/memory';
+
+export const cache = createCache({
+  store: memoryStore(),
+  defaults: { ttl: 60_000 },
+});
+```
+
+The memory store is process-local, so a multi-instance deployment needs a shared store instead.
+
+### Cache a function
+
+Wrap an async function; the call signature is unchanged, so it is a drop-in:
+
+```ts
+import { cache } from './lib/cache.js';
+
+const getProduct = cache.fn(
+  async (id: string) => db.products.findUnique({ where: { id } }),
+  {
+    key: (id) => ['product', id],
+    ttl: 5 * 60_000,
+  },
+);
+
+const product = await getProduct('abc'); // identical to the unwrapped call
+```
+
+The key is a function of the arguments, and concurrent misses for the same key are single-flighted within a process.
+
+### Cache an RSC subtree
+
+Wrap a server component; its rendered subtree is serialized once and replayed on later requests:
+
+```tsx
+import { cache } from '../lib/cache.js';
+
+const ProductCard = async ({ id }: { id: string }) => {
+  const product = await getProduct(id);
+  return <article>{product.name}</article>;
+};
+
+const { Component, getEtag } = cache.rsc(ProductCard, {
+  key: ({ id }) => ['product', id, 'card'],
+  ttl: 60_000,
+});
+
+export default Component;
+```
+
+The returned `getEtag` is optional; the section below explains what it is for.
+
+### Keys and invalidation
+
+Keys are arrays of parts, and invalidation matches by prefix, so one call can drop a whole group of entries:
+
+```ts
+await cache.invalidate({ key: ['product', 'abc'] }); // one product and its card
+await cache.invalidate({ key: ['product'] }); // every product entry
+```
+
+A common place to call `invalidate` is wherever you handle a mutation, such as a server action or an API route. This is the only invalidation in a Waku app, and it exists only because you added the cache.
+
+Include every value that can affect the output in the cache key: the user, tenant, locale, permissions, and anything else read from request context rather than from arguments or props. The cache returns entries purely by key, so a missing dimension replays one request's output to another, and a process-local store does not make this safe. Do not cache request-specific or sensitive subtrees unless the key safely scopes them. The same applies to `cache.fn` when the wrapped function depends on context that is not part of its arguments.
+
+## Etags: skipping unchanged payloads
+
+The client keeps a small cache of etags for the elements it currently holds. Each slot in an RSC response (a page, a layout, a slice) can carry an etag; the client remembers them and sends them back with the next navigation fetch in the `X-Waku-Etags` header. The server compares them and omits any slot whose etag still matches, so the response carries only what changed, and the client keeps the elements it already has for the omitted slots.
+
+Static slots are marked immutable, which is how the router knows it can always reuse them. Dynamic slots have no etag by default, so they are always re-sent: without one, the server cannot know whether the content changed.
+
+A dynamic route can opt in through `getConfig`'s `unstable_getEtag`, and this is where waku-cache fits: `cache.rsc` returns a `getEtag` that hashes the cached subtree's serialized bytes. The tag stays stable while the cached bytes are unchanged; after invalidation or TTL expiry the entry is regenerated, and the tag changes only when the serialized content changes:
+
+```tsx
+export const getConfig = () => {
+  return {
+    render: 'dynamic',
+    unstable_getEtag: getEtag, // delete this line and the render cache still works
+  } as const;
+};
+```
+
+The two savings compose: `cache.rsc` saves the server from re-rendering the subtree, and the etag saves the network from re-sending it. See the [waku-cache README](https://github.com/wakujs/waku-cache#readme) for the details.
+
+## What stays uncached
+
+During client-side navigation, the router reuses prefetched RSC payloads so that moving between pages is fast. This is a browser-side navigation optimization: it does not create a server data cache. Static payloads can be reused freely because they change only with a deploy. An explicitly prefetched dynamic response may also be reused until its prefetch TTL expires (60 seconds by default), so a navigation shortly after a prefetch may not issue a new request; whenever a request does reach the server, it renders fresh. See [Navigation and Prefetching](/guides/navigation-prefetching) for the details and the experimental tuning APIs.
+
+Beyond the application, other caches exist with their own controls: the browser cache and CDNs (driven by HTTP headers), static build output (typically served with long-lived caching by hosts), and database drivers or API SDKs that cache internally. Waku does not control these caches; they can affect whether a request reaches your server at all, and what data your dependencies return when it does.
+
+## Common misconceptions
+
+- **"Dynamic means uncached."** Dynamic means uncached _by Waku_. You can still cache expensive work explicitly, and infrastructure layers can cache responses if you tell them to.
+- **"Static output is a cache."** Static output is a build artifact. It has no keys, no TTL, and no invalidation API; it is replaced wholesale by the next build.
+- **"Client navigation reuse makes server data stale."** It only affects what the browser shows during navigation; the server's answer to any request it receives is computed fresh.
+- **"Server components run once."** Static server components execute at build time; dynamic server components execute on every request. Neither runs in the browser.
+- **"Every framework needs a revalidation model."** An invalidation responsibility appears when a cache is added. Waku without an explicit cache has nothing to invalidate.

@@ -17,7 +17,7 @@ Every page and layout renders in one of two modes, declared by its `getConfig` e
 
 Static pages are **prerendered at build time**: the HTML and the component output are produced during `npm run build` and served as-is until a new build replaces them. Dynamic pages are **executed on every request**: they see current data, cookies, and headers.
 
-Waku does not implicitly cache dynamic rendering or the data you fetch inside it. What you fetch is what you render, so there is no revalidation step when your data changes; the next request is simply fresh. If you ever want caching, you add it explicitly around the specific expensive work, as a deliberate optimization.
+Waku does not implicitly cache dynamic rendering or the data you fetch inside it. What you fetch is what you render, so there is no revalidation step when your data changes; the next request is simply fresh. If you ever want caching, you add it explicitly around the specific expensive work, as a deliberate optimization; see [Explicit Caching](/guides/explicit-caching).
 
 ## Static is the default
 
