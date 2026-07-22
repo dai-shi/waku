@@ -1,7 +1,11 @@
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it, vi } from 'vitest';
 import { unstable_defineRouter } from '../src/router/define-router.js';
-import { ROUTE_ID } from '../src/router/isomorphic-utils/route-path.js';
+import {
+  ROUTE_ID,
+  encodeRoutePath,
+  encodeSliceId,
+} from '../src/router/isomorphic-utils/route-path.js';
 
 vi.mock('../src/server.js', () => ({
   deserializeRsc: vi.fn().mockResolvedValue(null),
@@ -381,5 +385,76 @@ describe('define-router handleBuild', () => {
     });
 
     expect(register).not.toHaveBeenCalledWith('pages/shared.tsx');
+  });
+
+  it('emits files and metadata for static routes, apis, slices, 404, and noSsr', async () => {
+    const generated = new Set<string>();
+    const savedMetadata = new Map<string, string>();
+    const generateDefaultHtml = vi.fn().mockResolvedValue(undefined);
+    const staticRoute = (name: string, extra: object = {}) => ({
+      type: 'route' as const,
+      path: [{ type: 'literal' as const, name }],
+      isStatic: true,
+      rootElement: { isStatic: true, renderer: () => null },
+      routeElement: { isStatic: true, renderer: () => null },
+      elements: {},
+      ...extra,
+    });
+    const { handleBuild } = unstable_defineRouter({
+      getConfigs: async () => [
+        staticRoute('foo'),
+        staticRoute('404'),
+        staticRoute('skipme'),
+        staticRoute('nossr', { noSsr: true }),
+        {
+          type: 'api' as const,
+          path: [{ type: 'literal' as const, name: 'data.txt' }],
+          isStatic: true,
+          handler: async () => new Response('api-body'),
+        },
+        {
+          type: 'slice' as const,
+          id: 'sb',
+          isStatic: true,
+          renderer: async () => 'SLICE',
+        },
+      ],
+      unstable_skipBuild: (routePath) => routePath === '/skipme',
+    });
+
+    await handleBuild({
+      renderRsc: () => Promise.resolve(makeStream()),
+      renderHtml: vi.fn().mockResolvedValue(new Response('<!doctype html>')),
+      rscPath2pathname: (rscPath: string) => `dist/${rscPath}.txt`,
+      saveBuildMetadata: vi.fn(async (key: string, value: string) => {
+        savedMetadata.set(key, value);
+      }),
+      generateFile: vi.fn(async (fileName: string) => {
+        generated.add(fileName);
+      }),
+      generateDefaultHtml,
+      unstable_registerPrunableFile: vi.fn(),
+    });
+
+    expect(generated.has(`dist/${encodeRoutePath('/foo')}.txt`)).toBe(true);
+    expect(generated.has('/foo/index.html')).toBe(true);
+    expect(generated.has('404.html')).toBe(true);
+    expect([...generated].some((f) => f.includes('skipme'))).toBe(false);
+    expect(generateDefaultHtml).toHaveBeenCalledWith('/nossr/index.html');
+    expect(generated.has('/data.txt')).toBe(true);
+    expect(generated.has(`dist/${encodeSliceId('sb')}.txt`)).toBe(true);
+
+    const cachedElements = JSON.parse(
+      savedMetadata.get('defineRouter:cachedElements')!,
+    ) as Record<string, string>;
+    expect(Object.keys(cachedElements).length).toBeGreaterThan(0);
+    const serializableConfigs = JSON.parse(
+      savedMetadata.get('defineRouter:serializableConfigs')!,
+    ) as { type: string; rootElement?: object }[];
+    expect(serializableConfigs).toHaveLength(6);
+    expect(
+      serializableConfigs.find((c) => c.type === 'route')!.rootElement,
+    ).not.toHaveProperty('renderer');
+    expect(savedMetadata.has('defineRouter:path2moduleIds')).toBe(true);
   });
 });
