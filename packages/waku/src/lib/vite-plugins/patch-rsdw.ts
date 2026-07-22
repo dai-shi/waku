@@ -56,7 +56,7 @@ export function patchRsdwPlugin(): Plugin {
       if (id === virtualId(RSDW_CLIENT_EDGE_ID)) {
         if (this.environment.name === 'rsc') {
           return `
-            import { createFromReadableStream as createFromReadableStreamBase } from ${JSON.stringify(import.meta.resolve('@vitejs/plugin-rsc/react/rsc'))};
+            import { createFromReadableStream as createFromReadableStreamBase } from ${JSON.stringify(import.meta.resolve('@vitejs/plugin-rsc/react/rsc/client'))};
             export function createFromReadableStream(stream) {
               return createFromReadableStreamBase(stream);
             }
@@ -67,7 +67,7 @@ export function patchRsdwPlugin(): Plugin {
       if (id === virtualId(RSDW_SERVER_EDGE_ID)) {
         if (this.environment.name === 'rsc') {
           return `
-            import { renderToReadableStream as renderToReadableStreamBase } from ${JSON.stringify(import.meta.resolve('@vitejs/plugin-rsc/react/rsc'))};
+            import { renderToReadableStream as renderToReadableStreamBase } from ${JSON.stringify(import.meta.resolve('@vitejs/plugin-rsc/react/rsc/server'))};
             export function renderToReadableStream(model, _webpackMap, options) {
               return renderToReadableStreamBase(model, options);
             }

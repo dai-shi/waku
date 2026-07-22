@@ -60,7 +60,6 @@ describe('define-router action requests', () => {
       },
       {
         renderRsc,
-        parseRsc: vi.fn(),
         renderHtml: vi.fn(),
         loadBuildMetadata: vi.fn(),
       },
@@ -104,7 +103,6 @@ describe('define-router action requests', () => {
       },
       {
         renderRsc,
-        parseRsc: vi.fn(),
         renderHtml: vi.fn(),
         loadBuildMetadata: vi.fn(),
       },
@@ -143,7 +141,6 @@ describe('define-router action requests', () => {
       },
       {
         renderRsc,
-        parseRsc: vi.fn(),
         renderHtml,
         loadBuildMetadata: vi.fn(),
       },
@@ -194,7 +191,6 @@ describe('define-router action requests', () => {
       },
       {
         renderRsc,
-        parseRsc: vi.fn(),
         renderHtml,
         loadBuildMetadata: vi.fn(),
       },
@@ -258,7 +254,6 @@ describe('define-router action requests', () => {
       },
       {
         renderRsc,
-        parseRsc: vi.fn(),
         renderHtml,
         loadBuildMetadata: vi.fn(),
       },
@@ -310,7 +305,6 @@ describe('define-router action requests', () => {
       },
       {
         renderRsc: vi.fn(),
-        parseRsc: vi.fn(),
         renderHtml: vi.fn(),
         loadBuildMetadata: vi.fn(),
       },

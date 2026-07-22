@@ -291,12 +291,11 @@ if (input.type === 'http' && input.pathname === '/api/hello') {
 
 The `utils` argument provides these helpers:
 
-| Utility                                     | Purpose                                                                                                                          |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `renderRsc(elements, options?)`             | Render an RSC payload as a `ReadableStream`. Object keys become RSC IDs; use `options.value` for a server function result.       |
-| `parseRsc(stream)`                          | Parse an RSC stream back into an elements object. Useful when you need to inspect an RSC payload rather than stream it directly. |
-| `renderHtml(elementsStream, html, options)` | Render the full HTML response that boots the client.                                                                             |
-| `loadBuildMetadata(key)`                    | Read metadata saved during `handleBuild`.                                                                                        |
+| Utility                                     | Purpose                                                                                                                    |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `renderRsc(elements, options?)`             | Render an RSC payload as a `ReadableStream`. Object keys become RSC IDs; use `options.value` for a server function result. |
+| `renderHtml(elementsStream, html, options)` | Render the full HTML response that boots the client.                                                                       |
+| `loadBuildMetadata(key)`                    | Read metadata saved during `handleBuild`.                                                                                  |
 
 `handleRequest` may return any of the following:
 
@@ -324,7 +323,6 @@ The build utilities are:
 | Utility                                     | Purpose                                                                                            |
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `renderRsc(elements, options?)`             | Render an RSC payload stream. Use `options.value` for a server function result.                    |
-| `parseRsc(stream)`                          | Parse an RSC stream back into elements. Useful for build-time inspection.                          |
 | `renderHtml(elementsStream, html, options)` | Render HTML from an RSC stream and client shell.                                                   |
 | `rscPath2pathname(rscPath)`                 | Convert an RSC path into the correct output pathname for the RSC payload.                          |
 | `saveBuildMetadata(key, value)`             | Persist metadata that will later be available through `loadBuildMetadata(...)` in `handleRequest`. |

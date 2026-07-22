@@ -1,8 +1,4 @@
-import type {
-  Unstable_ParseRsc,
-  Unstable_RenderHtml,
-  Unstable_RenderRsc,
-} from '../types.js';
+import type { Unstable_RenderHtml, Unstable_RenderRsc } from '../types.js';
 import { ETAG_ID_PREFIX } from './etags.js';
 import { sanitizeLog } from './log.js';
 
@@ -23,10 +19,6 @@ export function createRenderUtils(
     options?: object,
     extraOptions?: object,
   ) => ReadableStream,
-  createFromReadableStream: (
-    stream: ReadableStream,
-    options?: object,
-  ) => Promise<unknown>,
   loadSsrEntryModule: () => Promise<
     typeof import('../vite-entries/entry.ssr.js')
   >,
@@ -35,7 +27,6 @@ export function createRenderUtils(
   debugId?: string,
 ): {
   renderRsc: Unstable_RenderRsc;
-  parseRsc: Unstable_ParseRsc;
   renderHtml: Unstable_RenderHtml;
 } {
   const onError = (e: unknown) => {
@@ -81,11 +72,6 @@ export function createRenderUtils(
           },
         },
       );
-    },
-    async parseRsc(stream) {
-      return createFromReadableStream(stream, {}) as Promise<
-        Record<string, unknown>
-      >;
     },
     async renderHtml(elementsStream, html, options) {
       const { INTERNAL_renderHtmlStream: renderHtmlStream } =

@@ -7,11 +7,9 @@ const makeRenderUtils = () => {
     (_data: unknown, _options?: object, _extraOptions?: object) =>
       new ReadableStream(),
   );
-  const createFromReadableStream = vi.fn();
   const renderUtils = createRenderUtils(
     undefined,
     renderToReadableStream,
-    createFromReadableStream,
     async () => ({}) as any,
     '',
   );
@@ -71,7 +69,6 @@ describe('createRenderUtils', () => {
     const renderUtils = createRenderUtils(
       undefined,
       renderToReadableStream,
-      vi.fn(),
       async () =>
         ({
           INTERNAL_renderHtmlStream: renderHtmlStream,

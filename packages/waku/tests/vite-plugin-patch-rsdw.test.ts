@@ -90,7 +90,7 @@ test('rewrites RSDW edge imports to Vite RSC wrappers', async () => {
   ).resolves.toContain('createFromReadableStreamBase');
   await expect(
     runLoad('react-server-dom-webpack/client.edge', 'rsc'),
-  ).resolves.toContain('@vitejs/plugin-rsc/dist/react/rsc.js');
+  ).resolves.toContain('@vitejs/plugin-rsc/dist/react/rsc/client.js');
   await expect(
     runLoad('react-server-dom-webpack/server.edge', 'rsc'),
   ).resolves.toContain('renderToReadableStreamBase');
@@ -102,7 +102,7 @@ test('rewrites RSDW edge imports to Vite RSC wrappers', async () => {
   ).resolves.not.toContain('registerClientReference');
   await expect(
     runLoad('react-server-dom-webpack/server.edge', 'rsc'),
-  ).resolves.toContain('@vitejs/plugin-rsc/dist/react/rsc.js');
+  ).resolves.toContain('@vitejs/plugin-rsc/dist/react/rsc/server.js');
   await expect(
     runLoad('react-server-dom-webpack/client.edge', 'client'),
   ).resolves.toBe('export {}');

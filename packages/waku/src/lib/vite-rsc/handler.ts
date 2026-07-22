@@ -1,12 +1,11 @@
 import {
-  createFromReadableStream,
   createTemporaryReferenceSet,
   decodeAction,
   decodeFormState,
   decodeReply,
   loadServerAction,
   renderToReadableStream,
-} from '@vitejs/plugin-rsc/rsc';
+} from '@vitejs/plugin-rsc/rsc/server';
 import { buildMetadata } from 'virtual:vite-rsc-waku/build-metadata';
 import { config, isBuild } from 'virtual:vite-rsc-waku/config';
 import notFoundHtml from 'virtual:vite-rsc-waku/not-found';
@@ -63,7 +62,6 @@ const toProcessRequest =
     const renderUtils = createRenderUtils(
       temporaryReferences,
       renderToReadableStream,
-      createFromReadableStream,
       loadSsrEntryModule,
       import.meta.env.WAKU_BUILD_ID ?? '',
       debugChannel,
@@ -118,7 +116,6 @@ const toProcessBuild =
     const renderUtils = createRenderUtils(
       undefined,
       renderToReadableStream,
-      createFromReadableStream,
       loadSsrEntryModule,
       import.meta.env.WAKU_BUILD_ID ?? '',
     );
@@ -142,7 +139,6 @@ const toProcessBuild =
 
     await handleBuild({
       renderRsc: renderUtils.renderRsc,
-      parseRsc: renderUtils.parseRsc,
       renderHtml: renderUtils.renderHtml,
       rscPath2pathname: (rscPath) =>
         joinPath(config.rscBase, encodeRscPath(rscPath)),

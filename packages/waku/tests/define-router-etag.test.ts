@@ -15,8 +15,6 @@ import {
 } from '../src/router/isomorphic-utils/route-path.js';
 
 vi.mock('../src/server.js', () => ({
-  // Static slots round-trip through serialize/deserialize; for these tests the
-  // identity of the deserialized element does not matter, only its presence.
   deserializeRsc: vi.fn().mockResolvedValue('static-element'),
   serializeRsc: vi.fn().mockResolvedValue(new Uint8Array([1])),
 }));
@@ -82,7 +80,6 @@ const drive = async (
           return makeStream();
         },
       ),
-      parseRsc: vi.fn(),
       renderHtml: vi.fn(),
       loadBuildMetadata: vi.fn(),
     },

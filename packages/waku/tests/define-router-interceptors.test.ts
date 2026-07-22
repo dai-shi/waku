@@ -53,7 +53,6 @@ const callHandleRequest = (
     },
     {
       renderRsc: vi.fn().mockResolvedValue(makeStream()),
-      parseRsc: vi.fn(),
       renderHtml: vi.fn().mockResolvedValue(new Response('ok')),
       loadBuildMetadata: vi.fn(),
     },
@@ -62,7 +61,6 @@ const callHandleRequest = (
 const callHandleBuild = (router: ReturnType<typeof unstable_defineRouter>) =>
   router.handleBuild({
     renderRsc: vi.fn().mockResolvedValue(makeStream()),
-    parseRsc: vi.fn(),
     renderHtml: vi.fn().mockResolvedValue(new Response('ok')),
     rscPath2pathname: (rscPath: string) => '/' + rscPath,
     saveBuildMetadata: vi.fn().mockResolvedValue(undefined),
@@ -233,7 +231,6 @@ describe('define-router handler interceptors', () => {
 
     await router.handleBuild({
       renderRsc: vi.fn().mockResolvedValue(makeStream()),
-      parseRsc: vi.fn(),
       // The static HTML render is deferred; it must still run in scope.
       renderHtml: vi.fn().mockImplementation(async () => {
         seenInHtml = als.getStore();

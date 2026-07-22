@@ -1,4 +1,3 @@
-import { createFromReadableStream } from 'react-server-dom-webpack/client.edge';
 import { renderToReadableStream } from 'react-server-dom-webpack/server.edge';
 import { bytesToStream, streamToBytes } from './lib/utils/stream.js';
 
@@ -9,5 +8,8 @@ export async function serializeRsc(element: unknown): Promise<Uint8Array> {
 }
 
 export async function deserializeRsc(bytes: Uint8Array): Promise<unknown> {
+  // Lazy import to keep the RSC client runtime out of the rsc startup graph.
+  const { createFromReadableStream } =
+    await import('react-server-dom-webpack/client.edge');
   return createFromReadableStream(bytesToStream(bytes));
 }

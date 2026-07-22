@@ -10,11 +10,11 @@ import { serializeRsc } from '../src/server.js';
 
 // Reversible stand-ins so a round-trip through the cache is observable.
 vi.mock('../src/server.js', () => ({
-  serializeRsc: vi.fn(async (el: unknown) =>
-    new TextEncoder().encode(JSON.stringify(el)),
-  ),
   deserializeRsc: vi.fn(async (bytes: Uint8Array) =>
     JSON.parse(new TextDecoder().decode(bytes)),
+  ),
+  serializeRsc: vi.fn(async (el: unknown) =>
+    new TextEncoder().encode(JSON.stringify(el)),
   ),
 }));
 
