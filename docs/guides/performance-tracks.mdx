@@ -1,0 +1,30 @@
+---
+slug: performance-tracks
+title: Server Components Performance Tracks
+description: View React's Server Components performance tracks for a Waku app in Chrome DevTools, and what to check when component spans do not appear.
+category: Advanced Setup
+order: 30
+---
+
+## What They Are
+
+React can emit [Server Components performance tracks](https://react.dev/reference/dev-tools/react-performance-tracks) — timing for how long each server component took to render, shown as a dedicated **Server Components** track in the Chrome DevTools Performance panel. Waku wires this up in the dev server, so there is nothing to configure.
+
+## Viewing the Track
+
+1. Run your app in development with `waku dev`.
+2. Open the page in Chrome and open DevTools.
+3. Go to the **Performance** panel and click **Record and reload**.
+4. Once the page has finished rendering, stop the recording.
+5. Find the **Server Components** track. Each server component appears as a named entry; on React 19.3 or newer the entries also carry render durations, and nested `await`s show up as a staircase.
+
+Both the initial SSR render and later client navigations contribute entries.
+
+## If Component Spans Do Not Appear
+
+This feature relies on React development internals, which Waku patches so that its RSC payload keeps the debug information React needs to build the track. That patch targets a specific React version, so mismatched versions are the usual cause of missing spans:
+
+- The transform matches React's development build by an exact source string, so it is tied to the React version. It is currently verified against `react`, `react-dom`, and `react-server-dom-webpack` at `19.2.8` (Waku's own dependency, checked by an automated test). Use that version for all three packages; a different React release is the usual cause of missing spans.
+- On React 19.2.x each server component shows as a named marker in the track; the render **durations** (the staircase spans) require React 19.3 or newer.
+
+This is a development-only, best-effort aid; it has no effect on production builds.

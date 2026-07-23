@@ -1,5 +1,13 @@
 // This file should not include Node specific code.
 
+// TODO: this WS debug channel keeps dev payloads lean by offloading React's
+// Server Components debug info (component stacks, timing, console, async
+// metadata) out of the main Flight stream. Our transport is bespoke: paired
+// HMR events here plus the debug-id header hack in rsc-devtools.ts. Waku is
+// cited as prior art for a shared @vitejs/plugin-rsc debug-channel example
+// (https://github.com/vitejs/vite-plugin-react/issues/1306). Once that lands,
+// consider adopting it so we can delete our own transport and rsc-devtools.ts.
+
 import { base64ToBytes, bytesToBase64 } from './base64-web.js';
 
 export const DEBUG_ID_HEADER = 'X-Waku-Debug-Id';
